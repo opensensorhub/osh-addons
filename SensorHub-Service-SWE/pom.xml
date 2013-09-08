@@ -21,4 +21,5 @@
         </dependency>
      </dependencies>
   </dependencyManagement>
+  <description>Integration of SWE services as SensorHub's services and virtual sensors</description>
 </project>
