@@ -33,6 +33,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Common"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Common"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
