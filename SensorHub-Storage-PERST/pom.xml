@@ -21,4 +21,5 @@
         </dependency>
      </dependencies>
   </dependencyManagement>
+  <description>PERST based storage module</description>
 </project>
