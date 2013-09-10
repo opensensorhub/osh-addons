@@ -1,0 +1,202 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+ The contents of this file are Copyright (C) 2013 Sensia Software LLC.
+ All Rights Reserved.
+ 
+ Contributor(s): 
+    Alexandre Robin <alex.robin@sensiasoftware.com>
+ 
+******************************* END LICENSE BLOCK ***************************/
+
+package org.sensorhub.test.impl.sensor.v4l;
+
+import java.util.UUID;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.sensorhub.api.common.Event;
+import org.sensorhub.api.common.IEventListener;
+import org.sensorhub.api.sensor.ISensorControlInterface;
+import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.impl.sensor.v4l.V4LCameraDriver;
+import org.sensorhub.impl.sensor.v4l.V4LCameraConfig;
+import org.sensorhub.impl.sensor.v4l.V4LCameraOutput;
+import org.vast.cdm.common.DataBlock;
+import org.vast.cdm.common.DataComponent;
+import org.vast.cdm.common.DataType;
+import org.vast.data.DataValue;
+import org.vast.sweCommon.SWECommonUtils;
+import org.vast.xml.DOMHelper;
+import org.w3c.dom.Element;
+import static org.junit.Assert.*;
+
+
+public class TestV4LCameraDriver implements IEventListener
+{
+    V4LCameraDriver driver;
+    V4LCameraConfig config;
+    int actualWidth, actualHeight;
+    
+    
+    @Before
+    public void init() throws Exception
+    {
+        config = new V4LCameraConfig();
+        config.deviceName = "/dev/video0";
+        config.id = UUID.randomUUID().toString();
+        
+        driver = new V4LCameraDriver();
+        driver.init(config);
+    }
+    
+    
+    private void startCapture() throws Exception
+    {
+        // update config to start capture
+        config.defaultParams.doCapture = true;
+        driver.updateConfig(config);
+    }
+    
+    
+    @Test
+    public void testGetOutputDesc() throws Exception
+    {
+        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        {
+            DataComponent dataMsg = di.getRecordDescription();
+            DOMHelper dom = new DOMHelper();
+            Element elt = new SWECommonUtils().writeComponent(dom, dataMsg);
+            dom.serialize(elt, System.out, true);
+        }
+    }
+    
+    
+    @Test
+    public void testGetCommandDesc() throws Exception
+    {
+        for (ISensorControlInterface ci: driver.getCommandInputs().values())
+        {
+            DataComponent commandMsg = ci.getCommandDescription();
+            DOMHelper dom = new DOMHelper();
+            Element elt = new SWECommonUtils().writeComponent(dom, commandMsg);
+            dom.serialize(elt, System.out, true);
+        }
+    }
+    
+    
+    @Test
+    public void testCaptureAtDefaultRes() throws Exception
+    {
+        // register listener on data interface
+        ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+        di.registerListener(this);
+        
+        // start capture and wait until we receive the first frame
+        synchronized (this)
+        {
+            startCapture();
+            this.wait();
+            ((V4LCameraOutput)di).cleanup();
+        }
+        
+        assertTrue(actualWidth == config.defaultParams.imgWidth);
+        assertTrue(actualHeight == config.defaultParams.imgHeight);
+    }
+    
+    
+    @Test
+    public void testChangeParams() throws Exception
+    {
+        // register listener on data interface
+        ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+        di.registerListener(this);
+        
+        int expectedWidth = config.defaultParams.imgWidth = 320;
+        int expectedHeight = config.defaultParams.imgHeight = 240;
+        
+        // start capture and wait until we receive the first frame
+        synchronized (this)
+        {
+            startCapture();
+            this.wait();
+            ((V4LCameraOutput)di).cleanup();
+        }
+        
+        assertTrue(actualWidth == expectedWidth);
+        assertTrue(actualHeight == expectedHeight);
+    }
+    
+    
+    @Test
+    public void testSendCommand() throws Exception
+    {
+        // register listener on data interface
+        ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+        di.registerListener(this);
+        
+        // start capture and wait until we receive the first frame
+        synchronized (this)
+        {            
+            startCapture();
+            this.wait();
+            ((V4LCameraOutput)di).cleanup();
+        }        
+        
+        int expectedWidth = 160;
+        int expectedHeight = 120;            
+        
+        ISensorControlInterface ci = driver.getCommandInputs().values().iterator().next();
+        DataBlock commandData = ci.getCommandDescription().createDataBlock();
+        int fieldIndex = 0;
+        commandData.setStringValue(fieldIndex++, "YUYV");
+        if (((DataValue)ci.getCommandDescription().getComponent(1)).getDataType() != DataType.INT)
+        {
+            commandData.setStringValue(fieldIndex++, expectedWidth+"x"+expectedHeight);
+        }
+        else
+        {
+            commandData.setIntValue(fieldIndex++, expectedWidth);
+            commandData.setIntValue(fieldIndex++, expectedHeight);
+        }
+        commandData.setIntValue(fieldIndex++, 10);
+        
+        // send command to control interface
+        ci.execCommand(commandData);
+        
+        // start capture and wait until we receive the first frame
+        // after we changed settings
+        synchronized (this)
+        {            
+            this.wait();
+            ((V4LCameraOutput)di).cleanup();
+        }
+        
+        assertTrue(actualWidth == expectedWidth);
+        assertTrue(actualHeight == expectedHeight);
+    }
+    
+    
+    @Override
+    public void handleEvent(Event e)
+    {
+        assertTrue(e instanceof SensorDataEvent);
+        SensorDataEvent newDataEvent = (SensorDataEvent)e;
+        DataComponent camDataStruct = newDataEvent.getRecordDescription();
+        
+        actualWidth = camDataStruct.getComponent(0).getComponentCount();
+        actualHeight = camDataStruct.getComponentCount();
+        
+        System.out.println("New data received from sensor " + newDataEvent.getSensorId());
+        System.out.println("Image is " + actualWidth + "x" + actualHeight);
+        
+        synchronized (this) { this.notify(); }
+    }
+    
+    
+    @After
+    public void cleanup()
+    {
+        driver.cleanup();
+    }
+}
