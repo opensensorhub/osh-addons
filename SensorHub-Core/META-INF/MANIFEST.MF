@@ -1,6 +1,0 @@
-Manifest-Version: 1.0
-Bundle-ManifestVersion: 2
-Bundle-Name: SensorHub-Core
-Bundle-SymbolicName: SensorHub-Core
-Bundle-Version: 0.5.0.qualifier
-Bundle-Vendor: Sensia Software LLC
