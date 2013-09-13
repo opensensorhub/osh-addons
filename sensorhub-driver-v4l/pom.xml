@@ -1,26 +1,42 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.sensorhub</groupId>
-    <artifactId>SensorHub</artifactId>
-    <version>0.5</version>
-  </parent>
-  <artifactId>SensorHub-Driver-V4L</artifactId>
-  <dependencies>
-
-  <dependency>
-     <groupId>org.sensorhub</groupId>
-     <artifactId>SensorHub-Core</artifactId>
-  </dependency>
-  </dependencies>
-  <description>Example driver for Video4Linux compatible cameras</description>
-  <dependencyManagement>
-     <dependencies>
-        <dependency>
-           <groupId>org.sensorhub</groupId>
-           <artifactId>SensorHub-Core</artifactId>
-           <version>0.5</version>
-        </dependency>
-     </dependencies>
-  </dependencyManagement>
+   <modelVersion>4.0.0</modelVersion>
+   <parent>
+      <groupId>org.sensorhub</groupId>
+      <artifactId>sensorhub-all</artifactId>
+      <version>0.5</version>
+      <relativePath>../sensorhub-all/pom.xml</relativePath>
+   </parent>
+   <artifactId>sensorhub-driver-v4l</artifactId>
+   <name>SensorHub V4L Driver</name>
+   <description>Example driver for Video4Linux compatible cameras</description>
+   <packaging>bundle</packaging>
+   <dependencies>
+      <dependency>
+         <groupId>org.sensorhub</groupId>
+         <artifactId>sensorhub-core</artifactId>
+         <version>0.5</version>
+      </dependency>
+      <dependency>
+         <groupId>au.edu.jcu</groupId>
+         <artifactId>v4l4j</artifactId>
+         <version>0.9.1</version>
+         <scope>system</scope>
+         <systemPath>${project.basedir}/lib/v4l4j.jar</systemPath>
+      </dependency>
+   </dependencies>
+   <build>
+      <plugins>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+               <forkMode>once</forkMode>
+               <environmentVariables>
+                  <LD_LIBRARY_PATH>${project.basedir}/lib</LD_LIBRARY_PATH>
+               </environmentVariables>
+               <argLine>-Djava.library.path=${project.basedir}/lib</argLine>
+            </configuration>
+         </plugin>
+      </plugins>
+   </build>
 </project>
