@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module rename-to='sensorML'>
+  
+  <inherits name="com.google.gwt.user.User" />
+  <inherits name="com.google.gwt.emul.Emulation" />
+  
+  <entry-point class='org.sensorhub.gwt.CoreModule'/>
+  
+  <source path="gwt"/>
+  <source path="api">
+    <include name="module/ModuleConfig.java" />
+  </source>
+  <source path="impl">
+    <include name="service/HttpServerConfig.java" />
+  </source>
+  
+</module>
