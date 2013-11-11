@@ -31,11 +31,16 @@ import com.google.gwt.editor.client.Editor;
 import com.google.gwt.editor.ui.client.ValueBoxEditorDecorator;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
+import com.google.gwt.uibinder.client.UiConstructor;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.Widget;
+import com.sencha.gxt.widget.core.client.form.NumberField;
+import com.sencha.gxt.widget.core.client.form.NumberPropertyEditor;
+import com.sencha.gxt.widget.core.client.form.NumberPropertyEditor.IntegerPropertyEditor;
+import com.sencha.gxt.widget.core.client.form.TextField;
 
 
 public class HttpServerConfigEditor extends Composite implements Editor<HttpServerConfig>
@@ -45,19 +50,25 @@ public class HttpServerConfigEditor extends Composite implements Editor<HttpServ
 
     
     @UiField
-    ValueBoxEditorDecorator<String> httpPort;
+    NumberField<Integer> httpPort;
     
     @UiField
-    ValueBoxEditorDecorator<String> rootURL;
-    
+    TextField rootURL;
 
+    @UiField(provided = true)
+    NumberPropertyEditor<Integer> integerPropertyEditor = new IntegerPropertyEditor();
+
+    
+    @UiConstructor
     public HttpServerConfigEditor()
-    {
+    {        
         initWidget(uiBinder.createAndBindUi(this));
     }
 
+    
 
-    @UiHandler("button")
+
+    @UiHandler("saveButton")
     void onClick(ClickEvent e)
     {
         Window.alert("Hello!");
