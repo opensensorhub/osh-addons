@@ -196,6 +196,8 @@ public class GenericConfigForm implements IModuleConfigForm<ModuleConfig>
                 f.setFloat(config, (Float)w.getValue());
             else if (f.getType().equals(double.class))
                 f.setDouble(config, (Double)w.getValue());
+            else if (f.getType().equals(String.class))
+                f.set(config, (String)w.getValue());
             // else TODO
         }
         catch (IllegalAccessException e)

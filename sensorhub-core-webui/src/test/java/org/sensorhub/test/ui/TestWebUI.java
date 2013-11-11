@@ -81,6 +81,7 @@ public class TestWebUI
         VaadinServlet vaadin = new VaadinServlet();
         Map<String, String> initParams = new HashMap<String, String>();
         initParams.put("UI", AdminUI.class.getCanonicalName());
+        initParams.put("productionMode", "true");
         server.deployServlet("/*", vaadin, initParams);
     }
     
