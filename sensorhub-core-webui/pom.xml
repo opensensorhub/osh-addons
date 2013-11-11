@@ -28,8 +28,29 @@
          <version>0.5</version>
          <type>bundle</type>
       </dependency>
+      <dependency>
+         <groupId>com.sencha.gxt</groupId>
+         <artifactId>gxt</artifactId>
+         <version>3.0.1</version>
+      </dependency>
+      <dependency>
+         <groupId>com.vaadin</groupId>
+         <artifactId>vaadin-server</artifactId>
+         <version>7.0.0</version>
+      </dependency>
+      <dependency>
+         <groupId>com.vaadin</groupId>
+         <artifactId>vaadin-client-compiled</artifactId>
+         <version>7.0.0</version>
+      </dependency>
+      <dependency>
+         <groupId>com.vaadin</groupId>
+         <artifactId>vaadin-themes</artifactId>
+         <version>7.0.0</version>
+      </dependency>
    </dependencies>
    <build>
+      <outputDirectory>target/webapp/WEB-INF/classes</outputDirectory>
       <plugins>
          <plugin>
             <groupId>org.codehaus.mojo</groupId>

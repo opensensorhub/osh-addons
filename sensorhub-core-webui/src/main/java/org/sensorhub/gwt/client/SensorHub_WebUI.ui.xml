@@ -6,10 +6,36 @@
 
   <g:DockLayoutPanel unit="EM">
     <g:north size="5">
-      SensorHub Web Interface
+      <g:Label>SensorHub Web Interface</g:Label>
     </g:north>
     <g:center>
       <s:HttpServerConfigEditor ui:field="config"/>
     </g:center>
   </g:DockLayoutPanel>
+  
+  <!--
+  <g:StackLayoutPanel styleName='{style.shortcuts}' unit='EM'>
+    <g:stack>
+      <g:header size='4'>
+        <g:Label styleName='{style.stackHeader}'>Mailboxes</g:Label>
+      </g:header>
+      <mail:Mailboxes ui:field='mailboxes'/>
+    </g:stack>
+
+    <g:stack>
+      <g:header size='4'>
+        <g:Label styleName='{style.stackHeader}'>Tasks</g:Label>
+      </g:header>
+      <mail:Tasks ui:field='tasks'/>
+    </g:stack>
+
+    <g:stack>
+      <g:header size='4'>
+        <g:Label styleName='{style.stackHeader}'>Contacts</g:Label>
+      </g:header>
+      <mail:Contacts ui:field='contacts'/>
+    </g:stack>
+  </g:StackLayoutPanel>
+   -->
+   
 </ui:UiBinder>

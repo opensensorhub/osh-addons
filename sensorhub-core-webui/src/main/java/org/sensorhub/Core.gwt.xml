@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module rename-to='sensorML'>
+<module rename-to='core'>
   
   <inherits name="com.google.gwt.user.User" />
   <inherits name="com.google.gwt.emul.Emulation" />
+  <inherits name="com.sencha.gxt.ui.GXT" />
   
   <entry-point class='org.sensorhub.gwt.CoreModule'/>
   
