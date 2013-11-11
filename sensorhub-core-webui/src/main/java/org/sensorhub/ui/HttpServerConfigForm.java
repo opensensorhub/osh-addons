@@ -25,12 +25,9 @@
 
 package org.sensorhub.ui;
 
-import com.google.gwt.user.client.ui.TextBox;
-import com.vaadin.data.Property.ReadOnlyException;
 import com.vaadin.data.Validator;
 import com.vaadin.server.Sizeable.Unit;
 import com.vaadin.ui.Field;
-import com.vaadin.ui.Slider;
 import com.vaadin.ui.TextField;
 
 
@@ -39,7 +36,6 @@ public class HttpServerConfigForm extends GenericConfigForm
     private static final long serialVersionUID = -7803356484824238642L;
     
     
-    @Override
     protected Field<?> buildWidget(java.lang.reflect.Field f, Object obj)
     {
         String fname = f.getName();
