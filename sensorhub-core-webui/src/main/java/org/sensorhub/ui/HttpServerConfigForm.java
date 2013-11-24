@@ -31,7 +31,7 @@ import com.vaadin.ui.Field;
 import com.vaadin.ui.TextField;
 
 
-public class HttpServerConfigForm extends GenericConfigForm
+public class HttpServerConfigForm extends GenericConfigFormBuilder
 {
     private static final long serialVersionUID = -7803356484824238642L;
     

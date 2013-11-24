@@ -25,33 +25,8 @@
 
 package org.sensorhub.ui;
 
-import org.sensorhub.api.module.ModuleConfig;
-import com.vaadin.ui.FormLayout;
 
-
-/**
- * <p>
- * Interface for all form panel used to configure modules
- * </p>
- *
- * <p>Copyright (c) 2013</p>
- * @author Alexandre Robin <alex.robin@sensiasoftware.com>
- * @since Nov 11, 2013
- */
-public interface IModuleConfigForm<ConfigType extends ModuleConfig>
+public class SensorConfigFormBuilder extends GenericConfigFormBuilder
 {
-    
-    /**
-     * Builds the whole form for a given config object.
-     * @param form
-     * @param config
-     */
-    public void buildForm(FormLayout form, ConfigType config);
-       
-    
-    /**
-     * Saves the content of the form back to the object
-     */
-    public void save();
-    
+
 }
