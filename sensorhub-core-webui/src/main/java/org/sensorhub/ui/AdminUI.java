@@ -34,6 +34,7 @@ import org.sensorhub.api.processing.ProcessConfig;
 import org.sensorhub.api.sensor.SensorConfig;
 import org.sensorhub.api.service.ServiceConfig;
 import org.sensorhub.impl.module.ModuleRegistry;
+import org.sensorhub.impl.service.HttpServerConfig;
 import org.sensorhub.ui.data.MyBeanItem;
 import org.sensorhub.ui.data.MyBeanItemContainer;
 import com.vaadin.annotations.Theme;
@@ -91,9 +92,10 @@ public class AdminUI extends UI
         // build left stack
         Accordion stack = new Accordion();
         stack.setHeight(100.0f, Unit.PERCENTAGE);
+        
         VerticalLayout layout = new VerticalLayout();
-        layout.setMargin(true);
         stack.addTab(layout, "General");
+        buildGeneralConfig(layout);
         
         layout = new VerticalLayout();
         stack.addTab(layout, "Sensors");
@@ -122,6 +124,15 @@ public class AdminUI extends UI
     }
     
     
+    protected void buildGeneralConfig(VerticalLayout layout)
+    {
+        // add config objects to container
+        MyBeanItemContainer<ModuleConfig> container = new MyBeanItemContainer<ModuleConfig>(ModuleConfig.class);
+        container.addBean(new HttpServerConfig());        
+        displayModuleList(layout, container, null);
+    }
+    
+    
     @SuppressWarnings("serial")
     protected void buildModuleList(VerticalLayout layout, final Class<?> configType)
     {
@@ -134,6 +145,13 @@ public class AdminUI extends UI
                 container.addBean(config);
         }
         
+        displayModuleList(layout, container, configType);
+    }
+    
+    
+    @SuppressWarnings("serial")
+    protected void displayModuleList(VerticalLayout layout, MyBeanItemContainer<ModuleConfig> container, final Class<?> configType)
+    {
         // create table to display module list
         final Table table = new Table();
         table.setSizeFull();
@@ -149,7 +167,7 @@ public class AdminUI extends UI
             @Override
             public void itemClick(ItemClickEvent event)
             {
-                openModuleConfig((MyBeanItem<ModuleConfig>)event.getItem());
+                openModuleInfo((MyBeanItem<ModuleConfig>)event.getItem());
             }            
         });        
         layout.addComponent(table);
@@ -170,9 +188,10 @@ public class AdminUI extends UI
                         actions.add(ENABLE_MODULE_ACTION);
                     actions.add(REMOVE_MODULE_ACTION);
                 }
-                else 
+                else
                 {
-                    actions.add(ADD_MODULE_ACTION);
+                    if (configType != null)
+                        actions.add(ADD_MODULE_ACTION);
                 }
                 
                 return actions.toArray(new Action[0]);
@@ -274,9 +293,12 @@ public class AdminUI extends UI
     
     
     @SuppressWarnings("serial")
-    protected void openModuleConfig(MyBeanItem<ModuleConfig> beanItem)
+    protected void openModuleInfo(MyBeanItem<ModuleConfig> beanItem)
     {
         configArea.removeAllComponents();
+        
+        //SplitPanel panel = new SplitPanel();
+        
         IModuleConfigFormBuilder<ModuleConfig> configForm = new GenericConfigFormBuilder();
                 
         // create panel with module name

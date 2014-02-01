@@ -25,9 +25,13 @@
 
 package org.sensorhub.ui;
 
+import com.vaadin.data.Property;
 import com.vaadin.data.Validator;
+import com.vaadin.data.Validator.InvalidValueException;
+import com.vaadin.data.fieldgroup.FieldGroup;
 import com.vaadin.server.Sizeable.Unit;
 import com.vaadin.ui.Field;
+import com.vaadin.ui.FormLayout;
 import com.vaadin.ui.TextField;
 
 
@@ -36,47 +40,24 @@ public class HttpServerConfigForm extends GenericConfigFormBuilder
     private static final long serialVersionUID = -7803356484824238642L;
     
     
-    protected Field<?> buildWidget(java.lang.reflect.Field f, Object obj)
-    {
-        String fname = f.getName();
-        
-        try
-        {
-            if (fname.equals("httpPort"))
-            {
-                TextField tb = new TextField(fname);
-                tb.setWidth(50, Unit.PIXELS);
-                tb.setValue(Integer.toString(f.getInt(obj)));
-                return tb;
-            }
-        }
-        catch (Exception e)
-        {            
-        }
-            
-        return super.buildWidget(f, obj);
-    }
-    
-    
     @Override
-    protected void validateFieldValue(Field<?> w)
+    protected void customizeField(String propId, Property<?> prop, Field<?> field)
     {
-        // retrieve corresponding java attribute
-        java.lang.reflect.Field f = mapComponentToField.get(w);
+        super.customizeField(propId, prop, field);
         
-        if (f.getName().equals("httpPort"))
+        if (propId.equals("httpPort"))
         {
-            try
-            {
-                int portNum = 0;
-                portNum = Integer.parseInt(w.getValue().toString());
-                if (portNum > 10000 || portNum <= 80)
-                    throw new Exception();
-            }
-            catch (Exception e)
-            {
-                throw new Validator.InvalidValueException("Port number must be an integer number greater than 80 and lower than 65535");
-            }
+            field.setWidth(50, Unit.PIXELS);
+            //((TextField)field).getConverter().
+            field.addValidator(new Validator() {
+                private static final long serialVersionUID = 1L;
+                public void validate(Object value) throws InvalidValueException
+                {
+                    int portNum = (Integer)value;
+                    if (portNum > 10000 || portNum <= 80)
+                        throw new InvalidValueException("Port number must be an integer number greater than 80 and lower than 10000");
+                }
+            });
         }
     }
 }
