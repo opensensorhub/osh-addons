@@ -73,6 +73,13 @@ public class AndroidSensorsDriver implements ISensorInterface<AndroidSensorsConf
     
     
     @Override
+    public boolean isEnabled()
+    {
+        return config.enabled;
+    }
+    
+    
+    @Override
     public void init(AndroidSensorsConfig config) throws SensorHubException
     {
         this.config = config;
