@@ -39,6 +39,16 @@ import com.vaadin.ui.Label;
 import com.vaadin.ui.TextField;
 
 
+/**
+ * <p>
+ * Generic form builder based on Vaadin framework
+ * This auto-generates widget giving types of properties. 
+ * </p>
+ *
+ * <p>Copyright (c) 2013</p>
+ * @author Alexandre Robin <alex.robin@sensiasoftware.com>
+ * @since Feb 1, 2014
+ */
 public class GenericConfigFormBuilder implements IModuleConfigFormBuilder<ModuleConfig>
 {
     private static final long serialVersionUID = 1916649317564542150L;
@@ -57,7 +67,6 @@ public class GenericConfigFormBuilder implements IModuleConfigFormBuilder<Module
     }
     
     
-    @SuppressWarnings("serial")
     @Override
     public void buildForm(FormLayout form, FieldGroup fieldGroup)
     {
@@ -67,21 +76,7 @@ public class GenericConfigFormBuilder implements IModuleConfigFormBuilder<Module
             Field<?> field = fieldGroup.buildAndBind(getPrettyName((String)propId), propId);
             Property<?> prop = field.getPropertyDataSource();
             
-            if (propId.equals(ID_PROPERTY))
-                field.setReadOnly(true);
-            
-            if (prop.getType().equals(String.class))
-                field.setWidth(250, Unit.PIXELS);
-            else if (prop.getType().equals(int.class) || prop.getType().equals(Integer.class))
-                field.setWidth(50, Unit.PIXELS);
-            
-            field.addValidator(new Validator() {
-                @Override
-                public void validate(Object value) throws InvalidValueException
-                {
-                    
-                }
-            });
+            customizeField((String)propId, prop, field);
             
             if (field instanceof Label)
                 labels.add(field);
@@ -101,7 +96,23 @@ public class GenericConfigFormBuilder implements IModuleConfigFormBuilder<Module
         for (Field<?> w: checkBoxes)
             form.addComponent(w);
         for (Field<?> w: otherWidgets)
-            form.addComponent(w);        
+            form.addComponent(w);
+    }
+    
+    
+    protected void customizeField(String propId, Property<?> prop, Field<?> field)
+    {
+        if (propId.equals(ID_PROPERTY))
+            field.setReadOnly(true);
+        
+        if (prop.getType().equals(String.class))
+            field.setWidth(250, Unit.PIXELS);
+        else if (prop.getType().equals(int.class) || prop.getType().equals(Integer.class))
+            field.setWidth(50, Unit.PIXELS);
+        else if (prop.getType().equals(float.class) || prop.getType().equals(Float.class))
+            field.setWidth(50, Unit.PIXELS);
+        else if (prop.getType().equals(double.class) || prop.getType().equals(Double.class))
+            field.setWidth(50, Unit.PIXELS);
     }
     
     

@@ -121,6 +121,13 @@ public class MyBeanItem<BT> extends BeanItem<BT>
         
         for (Field f: clazz.getDeclaredFields())
         {
+            // skip complex sub objects for now
+            // TODO handle complex properties
+            if (f.getType() == List.class)
+                return;
+            if (f.getType() == Map.class)
+                return;
+            
             if ((f.getModifiers() & Modifier.PUBLIC) != 0)
                 selectedFields.add(f);
         }
