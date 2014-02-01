@@ -66,6 +66,14 @@ public class AndroidSensorOutput implements ISensorDataInterface, SensorEventLis
     
     
     @Override
+    public boolean isEnabled()
+    {
+        // TODO Auto-generated method stub
+        return true;
+    }
+    
+    
+    @Override
     public boolean isStorageSupported()
     {
         // TODO Auto-generated method stub
