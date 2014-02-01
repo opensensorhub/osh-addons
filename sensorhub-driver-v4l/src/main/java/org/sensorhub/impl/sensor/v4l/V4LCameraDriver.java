@@ -75,6 +75,13 @@ public class V4LCameraDriver implements ISensorInterface<V4LCameraConfig>
 
 
     @Override
+    public boolean isEnabled()
+    {
+        return config.enabled;
+    }
+    
+    
+    @Override
     public void init(V4LCameraConfig config) throws SensorException
     {
         this.config = config;

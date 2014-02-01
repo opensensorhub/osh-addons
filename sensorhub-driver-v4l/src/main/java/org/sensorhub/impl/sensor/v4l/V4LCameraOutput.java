@@ -126,7 +126,14 @@ public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
         DataBlock camData = camDataStruct.createDataBlock();
         ((DataBlockByte)camData).setUnderlyingObject(frame.getBytes());
         frame.recycle();
-        eventHandler.publishEvent(new SensorDataEvent(sensorId, camDataStruct, camData));    
+        eventHandler.publishEvent(new SensorDataEvent(sensorId, frame.getCaptureTime(), camDataStruct, camData));    
+    }
+    
+    
+    @Override
+    public boolean isEnabled()
+    {
+        return true;
     }
     
     
