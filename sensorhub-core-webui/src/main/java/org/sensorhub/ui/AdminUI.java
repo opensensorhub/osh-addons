@@ -33,7 +33,7 @@ import org.sensorhub.api.persistence.StorageConfig;
 import org.sensorhub.api.processing.ProcessConfig;
 import org.sensorhub.api.sensor.SensorConfig;
 import org.sensorhub.api.service.ServiceConfig;
-import org.sensorhub.impl.module.ModuleRegistry;
+import org.sensorhub.impl.SensorHub;
 import org.sensorhub.impl.service.HttpServerConfig;
 import org.sensorhub.ui.data.MyBeanItem;
 import org.sensorhub.ui.data.MyBeanItemContainer;
@@ -137,7 +137,7 @@ public class AdminUI extends UI
     protected void buildModuleList(VerticalLayout layout, final Class<?> configType)
     {
         // add config objects to container
-        List<ModuleConfig> moduleConfigs = ModuleRegistry.getInstance().getAvailableModules();
+        List<ModuleConfig> moduleConfigs = SensorHub.getInstance().getModuleRegistry().getAvailableModules();
         MyBeanItemContainer<ModuleConfig> container = new MyBeanItemContainer<ModuleConfig>(ModuleConfig.class);
         for (ModuleConfig config: moduleConfigs)
         {
@@ -223,7 +223,7 @@ public class AdminUI extends UI
                             {                    
                                 try
                                 {
-                                    ModuleRegistry.getInstance().destroyModule(moduleId);
+                                    SensorHub.getInstance().getModuleRegistry().destroyModule(moduleId);
                                     table.removeItem(selectedModule);
                                 }
                                 catch (SensorHubException ex)
@@ -248,7 +248,7 @@ public class AdminUI extends UI
                             {                    
                                 try 
                                 {
-                                    ModuleRegistry.getInstance().enableModule(moduleId);
+                                    SensorHub.getInstance().getModuleRegistry().enableModule(moduleId);
                                     item.getItemProperty("enabled").setValue(true);
                                 }
                                 catch (SensorHubException ex)
@@ -272,7 +272,7 @@ public class AdminUI extends UI
                             {                    
                                 try 
                                 {
-                                    ModuleRegistry.getInstance().disableModule(moduleId);
+                                    SensorHub.getInstance().getModuleRegistry().disableModule(moduleId);
                                     item.getItemProperty("enabled").setValue(false);
                                 }
                                 catch (SensorHubException ex)
