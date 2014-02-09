@@ -62,7 +62,8 @@ public class TestWebUI
     static public void setup() throws Exception
     {
         // instantiate module registry
-        ModuleRegistry registry = ModuleRegistry.create(setupConfig(), true);
+        ModuleRegistry registry = new ModuleRegistry(setupConfig());
+        SensorHub.createInstance(null, registry);
         //registry.loadAllModules();
         
         // start HTTP server

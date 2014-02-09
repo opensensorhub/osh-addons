@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.persistence.IDataStorage;
-import org.sensorhub.impl.module.ModuleRegistry;
+import org.sensorhub.impl.SensorHub;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Table;
@@ -60,7 +60,7 @@ public class ModuleTypeSelectionPopup extends Window
         table.setColumnHeaders(new String[] {"Module Type", "Implementing Class"});
                 
         final Map<Object, Class<?>> configMap = new HashMap<Object, Class<?>>();
-        for (IModuleProvider provider: ModuleRegistry.getInstance().getInstalledModuleTypes())
+        for (IModuleProvider provider: SensorHub.getInstance().getModuleRegistry().getInstalledModuleTypes())
         {
             Class<?> configClass = provider.getModuleConfigClass();
             if (configClass.equals(moduleType))
