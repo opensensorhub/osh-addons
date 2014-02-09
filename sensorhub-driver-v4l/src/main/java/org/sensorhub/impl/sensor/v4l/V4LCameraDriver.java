@@ -108,7 +108,7 @@ public class V4LCameraDriver implements ISensorInterface<V4LCameraConfig>
     public void updateConfig(V4LCameraConfig config) throws SensorHubException
     {
         // cleanup previously used device adn reinit
-        cleanup();
+        stop();
         init(config);
     }
     
@@ -259,7 +259,7 @@ public class V4LCameraDriver implements ISensorInterface<V4LCameraConfig>
     
     
     @Override
-    public void cleanup()
+    public void stop()
     {
         if (videoDevice != null)
         {
@@ -269,10 +269,17 @@ public class V4LCameraDriver implements ISensorInterface<V4LCameraConfig>
         }
     }
     
+
+    @Override
+    public void cleanup()
+    {
+        
+    }
+    
     
     @Override
     public void finalize()
     {
-        cleanup();
+        stop();
     }
 }

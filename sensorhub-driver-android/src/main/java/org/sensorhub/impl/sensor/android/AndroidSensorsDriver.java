@@ -34,6 +34,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModuleStateLoader;
 import org.sensorhub.api.module.IModuleStateSaver;
+import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.ISensorInterface;
@@ -210,6 +211,13 @@ public class AndroidSensorsDriver implements ISensorInterface<AndroidSensorsConf
         // TODO deactivate sensors        
     }
 
+
+    @Override
+    public void stop() throws StorageException
+    {
+        // TODO Auto-generated method stub
+    }
+    
 
     @Override
     public void registerListener(IEventListener listener)
