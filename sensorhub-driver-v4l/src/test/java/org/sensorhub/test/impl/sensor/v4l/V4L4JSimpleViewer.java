@@ -103,6 +103,7 @@ public class V4L4JSimpleViewer extends WindowAdapter implements CaptureCallback{
         private void initFrameGrabber() throws V4L4JException{
                 videoDevice = new VideoDevice(device);
                 frameGrabber = videoDevice.getJPEGFrameGrabber(width, height, channel, std, 80);
+                //frameGrabber.setFrameInterval(1, 10);
                 frameGrabber.setCaptureCallback(this);
                 width = frameGrabber.getWidth();
                 height = frameGrabber.getHeight();
@@ -158,6 +159,7 @@ public class V4L4JSimpleViewer extends WindowAdapter implements CaptureCallback{
                 e.printStackTrace();
         }
 
+        long t0;
         @Override
         public void nextFrame(VideoFrame frame) {
                 // This method is called when a new frame is ready.
@@ -168,5 +170,9 @@ public class V4L4JSimpleViewer extends WindowAdapter implements CaptureCallback{
                 
                 // recycle the frame
                 frame.recycle();
+                
+                long t1 = System.currentTimeMillis();
+                System.out.println(t1-t0);
+                t0 = t1;
         }
 }

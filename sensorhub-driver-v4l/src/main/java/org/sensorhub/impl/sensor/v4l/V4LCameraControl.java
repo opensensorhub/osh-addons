@@ -31,6 +31,7 @@ import org.sensorhub.api.common.CommandStatus;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.CommandStatus.StatusCode;
 import org.sensorhub.api.sensor.ISensorControlInterface;
+import org.sensorhub.api.sensor.ISensorInterface;
 import org.sensorhub.api.sensor.SensorException;
 import org.vast.cdm.common.DataBlock;
 import org.vast.cdm.common.DataComponent;
@@ -43,7 +44,6 @@ import org.vast.sweCommon.EnumTokenConstraint;
 import org.vast.sweCommon.IntervalConstraint;
 import org.vast.sweCommon.SweConstants;
 import org.vast.util.DateTime;
-import au.edu.jcu.v4l4j.DeviceInfo;
 import au.edu.jcu.v4l4j.FrameInterval;
 import au.edu.jcu.v4l4j.FrameInterval.DiscreteInterval;
 import au.edu.jcu.v4l4j.ImageFormat;
@@ -75,16 +75,16 @@ public class V4LCameraControl implements ISensorControlInterface
     }
     
     
-    protected void init(V4LCameraParams camParams, DeviceInfo deviceInfo)
+    protected void init()
     {
-        this.camParams = camParams;
+        this.camParams = driver.camParams;
         
         // build command message structure from V4L info
         this.commandData = new DataGroup(2, "camParams");
         ConstraintList constraints;
         
         // choice of image format
-        List<ImageFormat> v4lImgFormats = deviceInfo.getFormatList().getRGBEncodableFormats();//.getNativeFormats();
+        List<ImageFormat> v4lImgFormats = driver.deviceInfo.getFormatList().getRGBEncodableFormats();//.getNativeFormats();
         String[] formatList = new String[v4lImgFormats.size()];
         for (int i=0; i<v4lImgFormats.size(); i++)
             formatList[i] = v4lImgFormats.get(i).getName();
@@ -324,6 +324,27 @@ public class V4LCameraControl implements ISensorControlInterface
     public void unregisterListener(IEventListener listener)
     {
         // do nothing since we don't deal with async commands
+    }
+
+
+    @Override
+    public ISensorInterface<?> getParentSensor()
+    {
+        return driver;
+    }
+
+
+    @Override
+    public boolean isEnabled()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+    
+    
+    public void stop()
+    {
+        
     }
 
 }

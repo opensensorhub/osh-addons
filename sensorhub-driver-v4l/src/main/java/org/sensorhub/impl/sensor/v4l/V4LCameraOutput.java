@@ -29,20 +29,27 @@ import java.util.List;
 import org.sensorhub.api.common.IEventHandler;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.sensor.ISensorInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.common.BasicEventHandler;
+import org.vast.cdm.common.BinaryComponent;
+import org.vast.cdm.common.BinaryEncoding;
+import org.vast.cdm.common.BinaryOptions;
 import org.vast.cdm.common.DataBlock;
 import org.vast.cdm.common.DataComponent;
+import org.vast.cdm.common.DataEncoding;
 import org.vast.cdm.common.DataType;
+import org.vast.cdm.common.BinaryEncoding.ByteEncoding;
+import org.vast.cdm.common.BinaryEncoding.ByteOrder;
 import org.vast.data.DataArray;
 import org.vast.data.DataBlockByte;
 import org.vast.data.DataGroup;
 import org.vast.data.DataValue;
+import org.vast.sweCommon.SweConstants;
 import au.edu.jcu.v4l4j.CaptureCallback;
 import au.edu.jcu.v4l4j.RGBFrameGrabber;
 import au.edu.jcu.v4l4j.V4L4JConstants;
-import au.edu.jcu.v4l4j.VideoDevice;
 import au.edu.jcu.v4l4j.VideoFrame;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 
@@ -58,31 +65,29 @@ import au.edu.jcu.v4l4j.exceptions.V4L4JException;
  */
 public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
 {
-    String sensorId;
-    VideoDevice videoDevice;
+    V4LCameraDriver driver;
     RGBFrameGrabber frameGrabber;
-    V4LCameraParams camParams;
     IEventHandler eventHandler;
     DataComponent camDataStruct;
+    DataBlock latestRecord;
     
     
-    protected V4LCameraOutput()
+    protected V4LCameraOutput(V4LCameraDriver driver)
     {
+        this.driver = driver;
         this.eventHandler = new BasicEventHandler();
     }
     
     
-    protected void init(String sensorId, VideoDevice videoDevice, V4LCameraParams camParams) throws SensorException
+    protected void init() throws SensorException
     {
-        this.sensorId = sensorId;
-        this.videoDevice = videoDevice;
-        this.camParams = camParams;
+        V4LCameraParams camParams = driver.camParams;
         
         // init frame grabber
         try
         {
-            frameGrabber = videoDevice.getRGBFrameGrabber(camParams.imgWidth, camParams.imgHeight, 0, V4L4JConstants.STANDARD_WEBCAM);
-            frameGrabber.setFrameInterval(1, camParams.frameRate);
+            frameGrabber = driver.videoDevice.getRGBFrameGrabber(camParams.imgWidth, camParams.imgHeight, 0, V4L4JConstants.STANDARD_WEBCAM);
+            //frameGrabber.setFrameInterval(1, camParams.frameRate);
             
             // adjust params to what was actually set up by V4L
             camParams.imgWidth = frameGrabber.getWidth();
@@ -102,6 +107,7 @@ public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
         // build output structure
         camDataStruct = new DataArray(camParams.imgHeight);
         camDataStruct.setName("videoFrame");
+        camDataStruct.setProperty(SweConstants.DEF_URI, "http://myonto/def/videoFrame");
         DataArray imgRow = new DataArray(camParams.imgWidth);
         imgRow.setName("row");
         ((DataArray)camDataStruct).addComponent(imgRow);        
@@ -123,10 +129,32 @@ public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
     @Override
     public void nextFrame(VideoFrame frame)
     {
-        DataBlock camData = camDataStruct.createDataBlock();
-        ((DataBlockByte)camData).setUnderlyingObject(frame.getBytes());
-        frame.recycle();
-        eventHandler.publishEvent(new SensorDataEvent(sensorId, frame.getCaptureTime(), camDataStruct, camData));    
+        try
+        {
+            DataBlock camData = camDataStruct.createDataBlock();
+            ((DataBlockByte)camData).setUnderlyingObject(frame.getBytes());
+            latestRecord = camData;
+            eventHandler.publishEvent(new SensorDataEvent(this, frame.getCaptureTime(), camDataStruct, camData));
+            frame.recycle();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }    
+    }
+    
+    
+    @Override
+    public DataEncoding getRecommendedEncoding() throws SensorException
+    {
+        BinaryEncoding dataEnc = new BinaryEncoding();
+        dataEnc.byteEncoding = ByteEncoding.RAW;
+        dataEnc.byteOrder = ByteOrder.BIG_ENDIAN;
+        dataEnc.componentEncodings = new BinaryOptions[3];
+        dataEnc.componentEncodings[0] = new BinaryComponent("row/pixel/red", DataType.BYTE);
+        dataEnc.componentEncodings[1] = new BinaryComponent("row/pixel/green", DataType.BYTE);
+        dataEnc.componentEncodings[2] = new BinaryComponent("row/pixel/blue", DataType.BYTE);
+        return dataEnc;
     }
     
     
@@ -137,6 +165,13 @@ public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
     }
     
     
+    @Override
+    public ISensorInterface<?> getSensorInterface()
+    {
+        return driver;
+    }
+
+
     @Override
     public boolean isStorageSupported()
     {
@@ -152,9 +187,9 @@ public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
 
 
     @Override
-    public double getAverageSamplingRate()
+    public double getAverageSamplingPeriod()
     {
-        return camParams.frameRate;
+        return driver.camParams.frameRate;
     }
 
 
@@ -168,8 +203,7 @@ public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
     @Override
     public DataBlock getLatestRecord()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return latestRecord;
     }
 
 
@@ -211,11 +245,12 @@ public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
     }
     
     
-    public void cleanup()
+    public void stop()
     {
         if (frameGrabber != null)
         {
-            videoDevice.releaseFrameGrabber();
+            frameGrabber.stopCapture();
+            driver.videoDevice.releaseFrameGrabber();
             frameGrabber = null;
         }
     }

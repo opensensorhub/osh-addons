@@ -69,7 +69,7 @@ public class V4LCameraDriver implements ISensorInterface<V4LCameraConfig>
     public V4LCameraDriver()
     {
         this.eventHandler = new BasicEventHandler();
-        this.dataInterface = new V4LCameraOutput();
+        this.dataInterface = new V4LCameraOutput(this);
         this.controlInterface = new V4LCameraControl(this);
     }
 
@@ -85,6 +85,22 @@ public class V4LCameraDriver implements ISensorInterface<V4LCameraConfig>
     public void init(V4LCameraConfig config) throws SensorException
     {
         this.config = config;
+    }
+
+
+    @Override
+    public void updateConfig(V4LCameraConfig config) throws SensorHubException
+    {
+        // cleanup previously used device and restart
+        stop();
+        init(config);
+        start();
+    }
+    
+    
+    @Override
+    public void start() throws SensorException
+    {
         this.camParams = config.defaultParams.clone();
         
         // init video device
@@ -99,26 +115,34 @@ public class V4LCameraDriver implements ISensorInterface<V4LCameraConfig>
         }
         
         // init data and control interfaces
-        dataInterface.init(config.id, videoDevice, camParams);
-        controlInterface.init(camParams, deviceInfo);
+        dataInterface.init();
+        controlInterface.init();
     }
-
-
+    
+    
     @Override
-    public void updateConfig(V4LCameraConfig config) throws SensorHubException
+    public void stop()
     {
-        // cleanup previously used device adn reinit
-        stop();
-        init(config);
+        if (dataInterface != null)
+            dataInterface.stop();
+        
+        if (controlInterface != null)
+            controlInterface.stop();
+        
+        if (videoDevice != null)
+        {
+            videoDevice.release();
+            videoDevice = null;
+        }
     }
     
     
     public void updateParams(V4LCameraParams params) throws SensorException
     {
         // cleanup framegrabber and reinit sensor interfaces
-        dataInterface.cleanup();
-        dataInterface.init(config.id, videoDevice, params);
-        controlInterface.init(params, deviceInfo);
+        dataInterface.stop();
+        dataInterface.init();
+        controlInterface.init();
     }
 
 
@@ -160,8 +184,10 @@ public class V4LCameraDriver implements ISensorInterface<V4LCameraConfig>
     @Override
     public SMLSystem getCurrentSensorDescription()
     {
+        SMLSystem smlSys = new SMLSystem();
         // TODO build SML description
-        return new SMLSystem();
+        smlSys.setIdentifier("local://sensors/v4l" + videoDevice.getDevicefile());
+        return smlSys;
     }
 
 
@@ -255,18 +281,6 @@ public class V4LCameraDriver implements ISensorInterface<V4LCameraConfig>
     {
         // TODO Auto-generated method stub
         
-    }
-    
-    
-    @Override
-    public void stop()
-    {
-        if (videoDevice != null)
-        {
-            videoDevice.releaseFrameGrabber();
-            videoDevice.release();
-            videoDevice = null;
-        }
     }
     
 

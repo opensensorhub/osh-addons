@@ -28,9 +28,12 @@ package org.sensorhub.impl.sensor.android;
 import java.util.List;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.sensor.ISensorInterface;
 import org.sensorhub.api.sensor.SensorException;
+import org.vast.cdm.common.AsciiEncoding;
 import org.vast.cdm.common.DataBlock;
 import org.vast.cdm.common.DataComponent;
+import org.vast.cdm.common.DataEncoding;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -90,7 +93,7 @@ public class AndroidSensorOutput implements ISensorDataInterface, SensorEventLis
 
 
     @Override
-    public double getAverageSamplingRate()
+    public double getAverageSamplingPeriod()
     {
         // TODO Auto-generated method stub
         return 0;
@@ -105,6 +108,13 @@ public class AndroidSensorOutput implements ISensorDataInterface, SensorEventLis
     }
 
 
+    @Override
+    public DataEncoding getRecommendedEncoding() throws SensorException
+    {
+        return new AsciiEncoding("\n", ",");
+    }
+
+    
     @Override
     public DataBlock getLatestRecord() throws SensorException
     {
@@ -178,5 +188,13 @@ public class AndroidSensorOutput implements ISensorDataInterface, SensorEventLis
     public void onSensorChanged(SensorEvent e)
     {
         // TODO Auto-generated method stub        
+    }
+
+
+    @Override
+    public ISensorInterface<?> getSensorInterface()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 }
