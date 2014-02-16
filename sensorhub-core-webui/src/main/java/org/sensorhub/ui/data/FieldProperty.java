@@ -26,11 +26,12 @@
 package org.sensorhub.ui.data;
 
 import java.lang.reflect.Field;
+import org.sensorhub.api.config.Annotations.DisplayInfo;
 import com.vaadin.data.util.AbstractProperty;
 
 
 @SuppressWarnings("serial")
-class FieldProperty extends AbstractProperty<Object>
+public class FieldProperty extends AbstractProperty<Object>
 {
     Object instance;
     Field f;
@@ -132,5 +133,15 @@ class FieldProperty extends AbstractProperty<Object>
             }
         }
         return type;
+    }
+    
+    
+    public String getLabel()
+    {
+        DisplayInfo ann = f.getAnnotation(DisplayInfo.class);
+        if (ann != null)
+            return ann.label();
+        else
+            return null;
     }
 }

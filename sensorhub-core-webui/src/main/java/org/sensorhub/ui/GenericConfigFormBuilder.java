@@ -28,8 +28,8 @@ package org.sensorhub.ui;
 import java.util.ArrayList;
 import java.util.List;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.ui.data.FieldProperty;
 import com.vaadin.data.Property;
-import com.vaadin.data.Validator;
 import com.vaadin.data.fieldgroup.FieldGroup;
 import com.vaadin.server.Sizeable.Unit;
 import com.vaadin.ui.CheckBox;
@@ -51,8 +51,6 @@ import com.vaadin.ui.TextField;
  */
 public class GenericConfigFormBuilder implements IModuleConfigFormBuilder<ModuleConfig>
 {
-    private static final long serialVersionUID = 1916649317564542150L;
-    
     public static String ID_PROPERTY = "id";    
     
     List<Field<?>> labels = new ArrayList<Field<?>>();
@@ -73,9 +71,21 @@ public class GenericConfigFormBuilder implements IModuleConfigFormBuilder<Module
         // add widget for each visible attribute
         for (Object propId: fieldGroup.getUnboundPropertyIds())
         {
-            Field<?> field = fieldGroup.buildAndBind(getPrettyName((String)propId), propId);
-            Property<?> prop = field.getPropertyDataSource();
+            Field<?> field = null;
+            try
+            {
+                String label = ((FieldProperty)fieldGroup.getItemDataSource().getItemProperty(propId)).getLabel();
+                if (label == null)
+                    label = getPrettyName((String)propId);
+                field = fieldGroup.buildAndBind(label, propId);
+            }
+            catch (Exception e)
+            {
+                System.err.println("No UI generator for field " + propId);
+                continue;
+            }
             
+            Property<?> prop = field.getPropertyDataSource();            
             customizeField((String)propId, prop, field);
             
             if (field instanceof Label)

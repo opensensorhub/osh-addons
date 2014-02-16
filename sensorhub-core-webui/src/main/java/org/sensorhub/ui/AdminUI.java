@@ -49,11 +49,8 @@ import com.vaadin.event.ItemClickEvent.ItemClickListener;
 import com.vaadin.server.ClassResource;
 import com.vaadin.server.Resource;
 import com.vaadin.server.VaadinRequest;
-import com.vaadin.server.Sizeable.Unit;
 import com.vaadin.ui.Accordion;
-import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
-import com.vaadin.ui.Form;
 import com.vaadin.ui.FormLayout;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.HorizontalSplitPanel;
@@ -133,7 +130,6 @@ public class AdminUI extends UI
     }
     
     
-    @SuppressWarnings("serial")
     protected void buildModuleList(VerticalLayout layout, final Class<?> configType)
     {
         // add config objects to container
@@ -141,7 +137,7 @@ public class AdminUI extends UI
         MyBeanItemContainer<ModuleConfig> container = new MyBeanItemContainer<ModuleConfig>(ModuleConfig.class);
         for (ModuleConfig config: moduleConfigs)
         {
-            if (config.getClass().equals(configType))
+            if (configType.isAssignableFrom(config.getClass()))
                 container.addBean(config);
         }
         
