@@ -92,6 +92,20 @@ public class AndroidSensorsDriver implements ISensorInterface<AndroidSensorsConf
     {
         // TODO Auto-generated method stub
     }
+    
+    
+    @Override
+    public void start() throws StorageException
+    {
+        // TODO Auto-generated method stub
+    }
+    
+    
+    @Override
+    public void stop() throws StorageException
+    {
+        // TODO Auto-generated method stub
+    }
 
 
     @Override
@@ -209,13 +223,6 @@ public class AndroidSensorsDriver implements ISensorInterface<AndroidSensorsConf
     public void cleanup() throws SensorHubException
     {
         // TODO deactivate sensors        
-    }
-
-
-    @Override
-    public void stop() throws StorageException
-    {
-        // TODO Auto-generated method stub
     }
     
 
