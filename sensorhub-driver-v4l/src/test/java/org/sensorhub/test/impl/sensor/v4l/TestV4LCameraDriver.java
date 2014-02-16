@@ -25,6 +25,7 @@
 
 package org.sensorhub.test.impl.sensor.v4l;
 
+import java.io.File;
 import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
@@ -36,7 +37,6 @@ import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.v4l.V4LCameraDriver;
 import org.sensorhub.impl.sensor.v4l.V4LCameraConfig;
-import org.sensorhub.impl.sensor.v4l.V4LCameraOutput;
 import org.vast.cdm.common.DataBlock;
 import org.vast.cdm.common.DataComponent;
 import org.vast.cdm.common.DataType;
@@ -54,6 +54,13 @@ public class TestV4LCameraDriver implements IEventListener
     int actualWidth, actualHeight;
     
     
+    static
+    {
+        System.load(new File(new File("."), "/lib/libvideo.so.0").getAbsolutePath());
+        System.load(new File(new File("."), "/lib/libv4l4j.so").getAbsolutePath());        
+    }    
+    
+    
     @Before
     public void init() throws Exception
     {
@@ -63,6 +70,7 @@ public class TestV4LCameraDriver implements IEventListener
         
         driver = new V4LCameraDriver();
         driver.init(config);
+        driver.start();
     }
     
     
@@ -112,7 +120,7 @@ public class TestV4LCameraDriver implements IEventListener
         {
             startCapture();
             this.wait();
-            ((V4LCameraOutput)di).cleanup();
+            driver.stop();
         }
         
         assertTrue(actualWidth == config.defaultParams.imgWidth);
@@ -135,7 +143,6 @@ public class TestV4LCameraDriver implements IEventListener
         {
             startCapture();
             this.wait();
-            ((V4LCameraOutput)di).cleanup();
         }
         
         assertTrue(actualWidth == expectedWidth);
@@ -155,11 +162,10 @@ public class TestV4LCameraDriver implements IEventListener
         {            
             startCapture();
             this.wait();
-            ((V4LCameraOutput)di).cleanup();
         }        
         
         int expectedWidth = 160;
-        int expectedHeight = 120;            
+        int expectedHeight = 120;
         
         ISensorControlInterface ci = driver.getCommandInputs().values().iterator().next();
         DataBlock commandData = ci.getCommandDescription().createDataBlock();
@@ -184,7 +190,6 @@ public class TestV4LCameraDriver implements IEventListener
         synchronized (this)
         {            
             this.wait();
-            ((V4LCameraOutput)di).cleanup();
         }
         
         assertTrue(actualWidth == expectedWidth);
@@ -212,6 +217,6 @@ public class TestV4LCameraDriver implements IEventListener
     @After
     public void cleanup()
     {
-        driver.cleanup();
+        driver.stop();
     }
 }
