@@ -40,6 +40,7 @@ import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.ISensorInterface;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.common.BasicEventHandler;
+import org.vast.sensorML.SMLProcess;
 import org.vast.sensorML.system.SMLSystem;
 import org.vast.util.DateTime;
 import android.content.Context;
@@ -162,7 +163,7 @@ public class AndroidSensorsDriver implements ISensorInterface<AndroidSensorsConf
 
 
     @Override
-    public void updateSensorDescription(SMLSystem systemDesc, boolean recordHistory) throws SensorException
+    public void updateSensorDescription(SMLProcess systemDesc, boolean recordHistory) throws SensorException
     {
         // TODO Auto-generated method stub
 

@@ -37,6 +37,7 @@ import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.ISensorInterface;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.common.BasicEventHandler;
+import org.vast.sensorML.SMLProcess;
 import org.vast.sensorML.system.SMLSystem;
 import org.vast.util.DateTime;
 import au.edu.jcu.v4l4j.DeviceInfo;
@@ -199,7 +200,7 @@ public class V4LCameraDriver implements ISensorInterface<V4LCameraConfig>
 
 
     @Override
-    public void updateSensorDescription(SMLSystem systemDesc, boolean recordHistory) throws SensorException
+    public void updateSensorDescription(SMLProcess systemDesc, boolean recordHistory) throws SensorException
     {
         throw new SensorException("Update of sensor description is not supported by the V4LCamera driver");
     }
