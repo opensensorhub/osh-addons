@@ -249,7 +249,8 @@ public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
     {
         if (frameGrabber != null)
         {
-            frameGrabber.stopCapture();
+            if (driver.camParams.doCapture)
+                frameGrabber.stopCapture();
             driver.videoDevice.releaseFrameGrabber();
             frameGrabber = null;
         }
