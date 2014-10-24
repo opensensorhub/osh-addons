@@ -60,8 +60,8 @@ public class MyBeanItem<BT> extends BeanItem<BT>
         super(bean);
         
         // clear all properties added by parent
-        for (Object id: this.getItemPropertyIds())
-            this.removeItemProperty(id);
+        //for (Object id: this.getItemPropertyIds())
+        //    this.removeItemProperty(id);
         
         // recreate bean information
         Map<String, VaadinPropertyDescriptor<BT>> pds = getPropertyDescriptors((Class<BT>)bean.getClass());

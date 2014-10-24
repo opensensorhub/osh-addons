@@ -70,6 +70,7 @@ public class TestWebUI
         HttpServer server = HttpServer.getInstance();
         HttpServerConfig config = new HttpServerConfig();
         server.init(config);
+        server.start();
         
         // connect to servlet and check response
         URL url = new URL("http://localhost:" + config.httpPort + config.rootURL + "/test");
