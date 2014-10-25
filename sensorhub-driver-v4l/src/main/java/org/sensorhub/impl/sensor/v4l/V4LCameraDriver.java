@@ -32,7 +32,6 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModuleStateLoader;
 import org.sensorhub.api.module.IModuleStateSaver;
-import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.ISensorInterface;
 import org.sensorhub.api.sensor.SensorException;
@@ -207,7 +206,7 @@ public class V4LCameraDriver implements ISensorInterface<V4LCameraConfig>
 
 
     @Override
-    public Map<String, ISensorDataInterface> getAllOutputs()
+    public Map<String, V4LCameraOutput> getAllOutputs()
     {
         return getObservationOutputs();
     }
@@ -222,18 +221,18 @@ public class V4LCameraDriver implements ISensorInterface<V4LCameraConfig>
 
 
     @Override
-    public Map<String, ISensorDataInterface> getObservationOutputs()
+    public Map<String, V4LCameraOutput> getObservationOutputs()
     {
-        Map<String, ISensorDataInterface> outputs = new HashMap<String, ISensorDataInterface>();
+        Map<String, V4LCameraOutput> outputs = new HashMap<String, V4LCameraOutput>();
         outputs.put("camOutput", dataInterface);
         return outputs;
     }
 
 
     @Override
-    public Map<String, ISensorControlInterface> getCommandInputs()
+    public Map<String, V4LCameraControl> getCommandInputs()
     {
-        Map<String, ISensorControlInterface> commandInputs = new HashMap<String, ISensorControlInterface>();
+        Map<String, V4LCameraControl> commandInputs = new HashMap<String, V4LCameraControl>();
         commandInputs.put("camParams", controlInterface);        
         return commandInputs;
     }
