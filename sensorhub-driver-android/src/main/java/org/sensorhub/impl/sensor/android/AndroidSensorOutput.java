@@ -28,7 +28,7 @@ package org.sensorhub.impl.sensor.android;
 import java.util.List;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.ISensorInterface;
+import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorException;
 import org.vast.cdm.common.AsciiEncoding;
 import org.vast.cdm.common.DataBlock;
@@ -192,7 +192,7 @@ public class AndroidSensorOutput implements ISensorDataInterface, SensorEventLis
 
 
     @Override
-    public ISensorInterface<?> getSensorInterface()
+    public ISensorModule<?> getSensorInterface()
     {
         // TODO Auto-generated method stub
         return null;
