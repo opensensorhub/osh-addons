@@ -65,7 +65,7 @@ public class ModuleTypeSelectionPopup extends Window
             Class<?> configClass = provider.getModuleConfigClass();
             if (configClass.equals(moduleType))
             {
-                Object id = table.addItem(new Object[] {provider.getModuleTypeName(), provider.getModuleClass().getCanonicalName()}, null);
+                Object id = table.addItem(new Object[] {provider.getModuleName(), provider.getModuleClass().getCanonicalName()}, null);
                 configMap.put(id, configClass);
             }
         }
