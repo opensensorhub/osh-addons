@@ -29,7 +29,7 @@ import java.util.List;
 import org.sensorhub.api.common.CommandStatus;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorControlInterface;
-import org.sensorhub.api.sensor.ISensorInterface;
+import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorException;
 import org.vast.cdm.common.DataBlock;
 import org.vast.cdm.common.DataComponent;
@@ -187,7 +187,7 @@ public class AndroidSensorControl implements ISensorControlInterface
 
 
     @Override
-    public ISensorInterface<?> getParentSensor()
+    public ISensorModule<?> getParentSensor()
     {
         // TODO Auto-generated method stub
         return null;
