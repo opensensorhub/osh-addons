@@ -44,9 +44,30 @@ public class AndroidSensorsModuleDescriptor implements IModuleProvider
 {
 
     @Override
-    public String getModuleTypeName()
+    public String getModuleName()
     {
         return "Android Sensors Driver";
+    }
+
+
+    @Override
+    public String getModuleDescription()
+    {
+        return "Driver supporting any sensor discoverable through the standard Android API";
+    }
+
+
+    @Override
+    public String getModuleVersion()
+    {
+        return "0.5";
+    }
+
+
+    @Override
+    public String getProviderName()
+    {
+        return "Sensia Software LLC";
     }
 
 
