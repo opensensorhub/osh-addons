@@ -44,9 +44,30 @@ public class V4LCameraModuleDescriptor implements IModuleProvider
 {
 
     @Override
-    public String getModuleTypeName()
+    public String getModuleName()
     {
         return "Video4Linux Camera Driver";
+    }
+    
+    
+    @Override
+    public String getModuleDescription()
+    {
+        return "Driver supporting any V4L2 compatible camera on Linux (not supported on Windows platform)";
+    }
+
+
+    @Override
+    public String getModuleVersion()
+    {
+        return "0.5";
+    }
+
+
+    @Override
+    public String getProviderName()
+    {
+        return "Sensia Software LLC";
     }
 
 

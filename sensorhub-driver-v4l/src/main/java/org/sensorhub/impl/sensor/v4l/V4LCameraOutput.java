@@ -29,7 +29,7 @@ import java.util.List;
 import org.sensorhub.api.common.IEventHandler;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.ISensorInterface;
+import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.common.BasicEventHandler;
@@ -166,7 +166,7 @@ public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
     
     
     @Override
-    public ISensorInterface<?> getSensorInterface()
+    public ISensorModule<?> getSensorInterface()
     {
         return driver;
     }
