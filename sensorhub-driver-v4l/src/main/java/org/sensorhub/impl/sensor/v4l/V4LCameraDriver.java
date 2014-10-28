@@ -33,7 +33,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModuleStateLoader;
 import org.sensorhub.api.module.IModuleStateSaver;
 import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.ISensorInterface;
+import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.common.BasicEventHandler;
 import org.vast.sensorML.SMLProcess;
@@ -55,7 +55,7 @@ import au.edu.jcu.v4l4j.exceptions.V4L4JException;
  * @author Alexandre Robin <alex.robin@sensiasoftware.com>
  * @since Sep 5, 2013
  */
-public class V4LCameraDriver implements ISensorInterface<V4LCameraConfig>
+public class V4LCameraDriver implements ISensorModule<V4LCameraConfig>
 {
     IEventHandler eventHandler;
     V4LCameraConfig config;
