@@ -37,7 +37,7 @@ import org.sensorhub.api.module.IModuleStateSaver;
 import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.ISensorInterface;
+import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.common.BasicEventHandler;
 import org.vast.sensorML.SMLProcess;
@@ -48,7 +48,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorManager;
 
 
-public class AndroidSensorsDriver implements ISensorInterface<AndroidSensorsConfig>
+public class AndroidSensorsDriver implements ISensorModule<AndroidSensorsConfig>
 {
     AndroidSensorsConfig config;
     IEventHandler eventHandler;
