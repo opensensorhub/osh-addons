@@ -25,20 +25,13 @@
 
 package org.sensorhub.impl.sensor.v4l;
 
-import java.util.HashMap;
-import java.util.Map;
-import org.sensorhub.api.common.IEventHandler;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModuleStateLoader;
 import org.sensorhub.api.module.IModuleStateSaver;
-import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.common.BasicEventHandler;
-import org.vast.sensorML.SMLProcess;
+import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.vast.sensorML.system.SMLSystem;
-import org.vast.util.DateTime;
 import au.edu.jcu.v4l4j.DeviceInfo;
 import au.edu.jcu.v4l4j.VideoDevice;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
@@ -55,10 +48,8 @@ import au.edu.jcu.v4l4j.exceptions.V4L4JException;
  * @author Alexandre Robin <alex.robin@sensiasoftware.com>
  * @since Sep 5, 2013
  */
-public class V4LCameraDriver implements ISensorModule<V4LCameraConfig>
+public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
 {
-    IEventHandler eventHandler;
-    V4LCameraConfig config;
     V4LCameraParams camParams;
     VideoDevice videoDevice;
     DeviceInfo deviceInfo;
@@ -68,23 +59,11 @@ public class V4LCameraDriver implements ISensorModule<V4LCameraConfig>
     
     public V4LCameraDriver()
     {
-        this.eventHandler = new BasicEventHandler();
         this.dataInterface = new V4LCameraOutput(this);
+        obsOutputs.put("camOutput", dataInterface);
+        
         this.controlInterface = new V4LCameraControl(this);
-    }
-
-
-    @Override
-    public boolean isEnabled()
-    {
-        return config.enabled;
-    }
-    
-    
-    @Override
-    public void init(V4LCameraConfig config) throws SensorException
-    {
-        this.config = config;
+        controlInputs.put("camParams", controlInterface);
     }
 
 
@@ -144,41 +123,6 @@ public class V4LCameraDriver implements ISensorModule<V4LCameraConfig>
         dataInterface.init();
         controlInterface.init();
     }
-
-
-    @Override
-    public V4LCameraConfig getConfiguration()
-    {
-        return config;
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return config.name;
-    }
-    
-    
-    @Override
-    public String getLocalID()
-    {
-        return config.id;
-    }
-
-
-    @Override
-    public boolean isSensorDescriptionUpdateSupported()
-    {
-        return false;
-    }
-    
-    
-    @Override
-    public boolean isSensorDescriptionHistorySupported()
-    {
-        return false;
-    }
     
     
     @Override
@@ -188,53 +132,6 @@ public class V4LCameraDriver implements ISensorModule<V4LCameraConfig>
         // TODO build SML description
         smlSys.setIdentifier("local://sensors/v4l" + videoDevice.getDevicefile());
         return smlSys;
-    }
-
-
-    @Override
-    public SMLSystem getSensorDescription(DateTime t) throws SensorException
-    {
-        throw new SensorException("History of sensor description is not supported by the V4LCamera driver");
-    }
-
-
-    @Override
-    public void updateSensorDescription(SMLProcess systemDesc, boolean recordHistory) throws SensorException
-    {
-        throw new SensorException("Update of sensor description is not supported by the V4LCamera driver");
-    }
-
-
-    @Override
-    public Map<String, V4LCameraOutput> getAllOutputs()
-    {
-        return getObservationOutputs();
-    }
-
-
-    @Override
-    public Map<String, ISensorDataInterface> getStatusOutputs()
-    {
-        // return empty map = no status outputs
-        return new HashMap<String, ISensorDataInterface>();
-    }
-
-
-    @Override
-    public Map<String, V4LCameraOutput> getObservationOutputs()
-    {
-        Map<String, V4LCameraOutput> outputs = new HashMap<String, V4LCameraOutput>();
-        outputs.put("camOutput", dataInterface);
-        return outputs;
-    }
-
-
-    @Override
-    public Map<String, V4LCameraControl> getCommandInputs()
-    {
-        Map<String, V4LCameraControl> commandInputs = new HashMap<String, V4LCameraControl>();
-        commandInputs.put("camParams", controlInterface);        
-        return commandInputs;
     }
 
 
