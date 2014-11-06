@@ -25,40 +25,30 @@
 
 package org.sensorhub.test.ui;
 
-import static org.junit.Assert.*;
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.api.persistence.StorageConfig;
 import org.sensorhub.api.processing.ProcessConfig;
 import org.sensorhub.api.sensor.SensorConfig;
 import org.sensorhub.api.service.ServiceConfig;
 import org.sensorhub.impl.SensorHub;
+import org.sensorhub.impl.module.DummyModule;
+import org.sensorhub.impl.module.InMemoryConfigDb;
 import org.sensorhub.impl.module.ModuleRegistry;
 import org.sensorhub.impl.service.HttpServer;
 import org.sensorhub.impl.service.HttpServerConfig;
-import org.sensorhub.test.module.DummyModule;
-import org.sensorhub.test.module.InMemoryConfigDb;
 import org.sensorhub.ui.AdminUI;
 import com.vaadin.server.VaadinServlet;
 
 
 public class TestWebUI
 {
-    
-    
-    @BeforeClass
+        
     static public void setup() throws Exception
     {
         // instantiate module registry
@@ -118,9 +108,9 @@ public class TestWebUI
     }
     
     
-    @Test
-    public void testChangeConfig() throws Exception
+    public static void main(String[] args) throws Exception
     {
+        setup();
         Thread.sleep(1000*3600);
     }
 }
