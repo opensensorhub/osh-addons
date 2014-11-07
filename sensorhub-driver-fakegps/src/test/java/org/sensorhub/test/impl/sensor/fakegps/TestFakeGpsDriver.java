@@ -93,7 +93,7 @@ public class TestFakeGpsDriver implements IEventListener
         gpsOutput.registerListener(this);
         driver.start();
         
-        Thread.sleep(300000);
+        Thread.sleep(3000);
     }
     
     

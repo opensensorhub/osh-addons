@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
@@ -36,6 +38,7 @@ import com.google.gson.JsonParser;
 
 public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
 {
+    private static final Log log = LogFactory.getLog(FakeGpsOutput.class);
     DataComponent posDataStruct;
     DataBlock latestRecord;
     List<double[]> trajPoints;
@@ -55,7 +58,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     {
         DataValue c;
 
-        // bWE Common data structure
+        // SWE Common data structure
         posDataStruct = new DataGroup(3, "location");
         posDataStruct.setProperty(SweConstants.DEF_URI, "http://sensorml.com/ont/swe/property/Location");
         
@@ -96,8 +99,8 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         double startLong;
         if (trajPoints.isEmpty())
         {
-            startLat = config.centerLatitude + (Math.random()-1.0) * config.areaSize;
-            startLong = config.centerLongitude + (Math.random()-1.0) * config.areaSize;
+            startLat = config.centerLatitude + (Math.random()-0.5) * config.areaSize;
+            startLong = config.centerLongitude + (Math.random()-0.5) * config.areaSize;
         }
         else
         {
@@ -106,15 +109,15 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             startLat = lastPoint[0];
             startLong = lastPoint[1];
         }        
-        double endLat = config.centerLatitude + (Math.random()-1.0) * config.areaSize;
-        double endLong = config.centerLongitude + (Math.random()-1.0) * config.areaSize;
+        double endLat = config.centerLatitude + (Math.random()-0.5) * config.areaSize;
+        double endLong = config.centerLongitude + (Math.random()-0.5) * config.areaSize;
         
         try
         {
             // request directions using Google API
             URL dirRequest = new URL(config.googleApiUrl + "?origin=" + startLat + "," + startLong +
                     "&destination=" + endLat + "," + endLong);
-            System.out.println(dirRequest);
+            log.debug("Google API request: " + dirRequest);
             InputStream is = new BufferedInputStream(dirRequest.openStream());
             
             // parse JSON track
@@ -125,7 +128,6 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             String encodedData = polyline.getAsJsonObject().get("points").getAsString();
             
             // decode polyline data
-            System.out.println("Using polyline: " + encodedData);
             decodePoly(encodedData);
             currentTrackPos = 0.0;
         }
@@ -183,7 +185,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         }
         
         // convert speed from km/h to lat/lon deg/s
-        double speed = getSensorInterface().getConfiguration().vehicleSpeed / 40000 * 180 / 3600;
+        double speed = getSensorInterface().getConfiguration().vehicleSpeed / 20000 * 180 / 3600;
         int trackIndex = (int)currentTrackPos;
         double ratio = currentTrackPos - trackIndex;
         double[] p0 = trajPoints.get(trackIndex);
