@@ -25,10 +25,7 @@
 
 package org.sensorhub.impl.sensor.v4l;
 
-import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.module.IModuleStateLoader;
-import org.sensorhub.api.module.IModuleStateSaver;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.vast.sensorML.system.SMLSystem;
@@ -148,36 +145,6 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
         }
         
         return true;
-    }
-
-
-    @Override
-    public void registerListener(IEventListener listener)
-    {
-        eventHandler.registerListener(listener);        
-    }
-
-
-    @Override
-    public void unregisterListener(IEventListener listener)
-    {
-        eventHandler.unregisterListener(listener);
-    }
-    
-    
-    @Override
-    public void saveState(IModuleStateSaver saver)
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
-
-    @Override
-    public void loadState(IModuleStateLoader loader)
-    {
-        // TODO Auto-generated method stub
-        
     }
     
 
