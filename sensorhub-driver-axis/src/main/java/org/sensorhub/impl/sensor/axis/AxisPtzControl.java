@@ -9,10 +9,44 @@ import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorException;
 import org.vast.cdm.common.DataBlock;
 import org.vast.cdm.common.DataComponent;
+import org.vast.data.ConstraintList;
+import org.vast.data.DataGroup;
 import org.vast.util.DateTime;
 
 public class AxisPtzControl implements ISensorControlInterface
 {
+	
+    //private static String ERROR_ASYNC = "Asynchronous commands are not supported by this Axis Camera";
+    
+    AxisCameraDriver driver;
+    DataComponent commandData;
+    
+    
+    protected AxisPtzControl(AxisCameraDriver driver)
+    {
+        this.driver = driver;
+    }
+    
+    
+    protected void init()
+    {
+        // first check for taskable parameters (e.g. PTZ, zoom, etc.)
+    	
+    	
+    	
+    	
+        // build command message structure from IP queries
+        this.commandData = new DataGroup(6, "camParams");
+        ConstraintList constraints;
+        
+        
+        
+        
+        
+    }
+    
+    
+    
 
 	@Override
 	public void registerListener(IEventListener listener)
