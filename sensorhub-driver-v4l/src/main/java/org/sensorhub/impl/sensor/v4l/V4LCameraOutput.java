@@ -25,14 +25,9 @@
 
 package org.sensorhub.impl.sensor.v4l;
 
-import java.util.List;
-import org.sensorhub.api.common.IEventHandler;
-import org.sensorhub.api.common.IEventListener;
-import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.common.BasicEventHandler;
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.cdm.common.BinaryComponent;
 import org.vast.cdm.common.BinaryEncoding;
 import org.vast.cdm.common.BinaryOptions;
@@ -63,30 +58,27 @@ import au.edu.jcu.v4l4j.exceptions.V4L4JException;
  * @author Alexandre Robin <alex.robin@sensiasoftware.com>
  * @since Sep 5, 2013
  */
-public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
+public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> implements CaptureCallback
 {
-    V4LCameraDriver driver;
     RGBFrameGrabber frameGrabber;
-    IEventHandler eventHandler;
     DataComponent camDataStruct;
     DataBlock latestRecord;
     
     
     protected V4LCameraOutput(V4LCameraDriver driver)
     {
-        this.driver = driver;
-        this.eventHandler = new BasicEventHandler();
+        super(driver);
     }
     
     
     protected void init() throws SensorException
     {
-        V4LCameraParams camParams = driver.camParams;
+        V4LCameraParams camParams = parentSensor.camParams;
         
         // init frame grabber
         try
         {
-            frameGrabber = driver.videoDevice.getRGBFrameGrabber(camParams.imgWidth, camParams.imgHeight, 0, V4L4JConstants.STANDARD_WEBCAM);
+            frameGrabber = parentSensor.videoDevice.getRGBFrameGrabber(camParams.imgWidth, camParams.imgHeight, 0, V4L4JConstants.STANDARD_WEBCAM);
             //frameGrabber.setFrameInterval(1, camParams.frameRate);
             
             // adjust params to what was actually set up by V4L
@@ -156,27 +148,6 @@ public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
         dataEnc.componentEncodings[2] = new BinaryComponent("row/pixel/blue", DataType.BYTE);
         return dataEnc;
     }
-    
-    
-    @Override
-    public boolean isEnabled()
-    {
-        return true;
-    }
-    
-    
-    @Override
-    public ISensorModule<?> getSensorInterface()
-    {
-        return driver;
-    }
-
-
-    @Override
-    public boolean isStorageSupported()
-    {
-        return true;
-    }
 
 
     @Override
@@ -189,7 +160,7 @@ public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
     @Override
     public double getAverageSamplingPeriod()
     {
-        return driver.camParams.frameRate;
+        return parentSensor.camParams.frameRate;
     }
 
 
@@ -205,68 +176,16 @@ public class V4LCameraOutput implements ISensorDataInterface, CaptureCallback
     {
         return latestRecord;
     }
-
-
-    @Override
-    public int getStorageCapacity()
-    {
-        return 0;
-    }
-
-
-    @Override
-    public int getNumberOfAvailableRecords()
-    {
-        return 0;
-    }
-
-
-    @Override
-    public List<DataBlock> getLatestRecords(int maxRecords, boolean clear)
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public List<DataBlock> getAllRecords(boolean clear)
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public int clearAllRecords()
-    {
-        // TODO Auto-generated method stub
-        return 0;
-    }
     
     
-    public void stop()
+    protected void stop()
     {
         if (frameGrabber != null)
         {
-            if (driver.camParams.doCapture)
+            if (parentSensor.camParams.doCapture)
                 frameGrabber.stopCapture();
-            driver.videoDevice.releaseFrameGrabber();
+            parentSensor.videoDevice.releaseFrameGrabber();
             frameGrabber = null;
         }
-    }
-
-
-    @Override
-    public void registerListener(IEventListener listener)
-    {
-        eventHandler.registerListener(listener);        
-    }
-
-
-    @Override
-    public void unregisterListener(IEventListener listener)
-    {
-        eventHandler.unregisterListener(listener);        
     }
 }
