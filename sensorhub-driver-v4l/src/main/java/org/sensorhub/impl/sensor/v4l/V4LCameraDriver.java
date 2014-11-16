@@ -25,10 +25,10 @@
 
 package org.sensorhub.impl.sensor.v4l;
 
+import net.opengis.sensorml.v20.AbstractProcess;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.vast.sensorML.system.SMLSystem;
 import au.edu.jcu.v4l4j.DeviceInfo;
 import au.edu.jcu.v4l4j.VideoDevice;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
@@ -123,12 +123,11 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     
     
     @Override
-    public SMLSystem getCurrentSensorDescription()
+    public AbstractProcess getCurrentSensorDescription() throws SensorException
     {
-        SMLSystem smlSys = new SMLSystem();
-        // TODO build SML description
-        smlSys.setIdentifier("local://sensors/v4l" + videoDevice.getDevicefile());
-        return smlSys;
+        AbstractProcess sensorDesc = super.getCurrentSensorDescription();
+        sensorDesc.setDescription("Video4Linux camera on port " + videoDevice.getDevicefile());
+        return sensorDesc;
     }
 
 

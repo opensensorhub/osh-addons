@@ -25,23 +25,24 @@
 
 package org.sensorhub.impl.sensor.v4l;
 
+import java.nio.ByteOrder;
+import net.opengis.swe.v20.BinaryEncoding;
+import net.opengis.swe.v20.ByteEncoding;
+import net.opengis.swe.v20.DataArray;
+import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
+import net.opengis.swe.v20.DataEncoding;
+import net.opengis.swe.v20.DataRecord;
+import net.opengis.swe.v20.DataType;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.vast.cdm.common.BinaryComponent;
-import org.vast.cdm.common.BinaryEncoding;
-import org.vast.cdm.common.BinaryOptions;
-import org.vast.cdm.common.DataBlock;
-import org.vast.cdm.common.DataComponent;
-import org.vast.cdm.common.DataEncoding;
-import org.vast.cdm.common.DataType;
-import org.vast.cdm.common.BinaryEncoding.ByteEncoding;
-import org.vast.cdm.common.BinaryEncoding.ByteOrder;
-import org.vast.data.DataArray;
+import org.vast.data.BinaryComponentImpl;
+import org.vast.data.BinaryEncodingImpl;
+import org.vast.data.CountImpl;
+import org.vast.data.DataArrayImpl;
 import org.vast.data.DataBlockByte;
-import org.vast.data.DataGroup;
-import org.vast.data.DataValue;
-import org.vast.sweCommon.SweConstants;
+import org.vast.data.DataRecordImpl;
 import au.edu.jcu.v4l4j.CaptureCallback;
 import au.edu.jcu.v4l4j.RGBFrameGrabber;
 import au.edu.jcu.v4l4j.V4L4JConstants;
@@ -97,17 +98,15 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
         }
         
         // build output structure
-        camDataStruct = new DataArray(camParams.imgHeight);
-        camDataStruct.setName("videoFrame");
-        camDataStruct.setProperty(SweConstants.DEF_URI, "http://myonto/def/videoFrame");
-        DataArray imgRow = new DataArray(camParams.imgWidth);
-        imgRow.setName("row");
-        ((DataArray)camDataStruct).addComponent(imgRow);        
-        DataGroup imgPixel = new DataGroup(3, "pixel");
-        imgPixel.addComponent(new DataValue("red", DataType.BYTE));
-        imgPixel.addComponent(new DataValue("green", DataType.BYTE));
-        imgPixel.addComponent(new DataValue("blue", DataType.BYTE));
-        imgRow.addComponent(imgPixel);
+        camDataStruct = new DataArrayImpl(camParams.imgHeight);
+        camDataStruct.setDefinition("http://sensorml.com/ont/swe/property/VideoFrame");
+        DataArray imgRow = new DataArrayImpl(camParams.imgWidth);
+        ((DataArray)camDataStruct).addComponent("row", imgRow);        
+        DataRecord imgPixel = new DataRecordImpl(3);
+        imgPixel.addComponent("red", new CountImpl(DataType.BYTE));
+        imgPixel.addComponent("green", new CountImpl(DataType.BYTE));
+        imgPixel.addComponent("blue", new CountImpl(DataType.BYTE));
+        imgRow.addComponent("pixel", imgPixel);
     }
     
     
@@ -139,13 +138,12 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
     @Override
     public DataEncoding getRecommendedEncoding() throws SensorException
     {
-        BinaryEncoding dataEnc = new BinaryEncoding();
-        dataEnc.byteEncoding = ByteEncoding.RAW;
-        dataEnc.byteOrder = ByteOrder.BIG_ENDIAN;
-        dataEnc.componentEncodings = new BinaryOptions[3];
-        dataEnc.componentEncodings[0] = new BinaryComponent("row/pixel/red", DataType.BYTE);
-        dataEnc.componentEncodings[1] = new BinaryComponent("row/pixel/green", DataType.BYTE);
-        dataEnc.componentEncodings[2] = new BinaryComponent("row/pixel/blue", DataType.BYTE);
+        BinaryEncoding dataEnc = new BinaryEncodingImpl();
+        dataEnc.setByteEncoding(ByteEncoding.RAW);
+        dataEnc.setByteOrder(ByteOrder.BIG_ENDIAN);
+        dataEnc.addMemberAsComponent(new BinaryComponentImpl("row/pixel/red", DataType.BYTE));
+        dataEnc.addMemberAsComponent(new BinaryComponentImpl("row/pixel/green", DataType.BYTE));
+        dataEnc.addMemberAsComponent(new BinaryComponentImpl("row/pixel/blue", DataType.BYTE));
         return dataEnc;
     }
 

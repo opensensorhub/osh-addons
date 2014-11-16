@@ -1,6 +1,8 @@
 package org.sensorhub.test.impl.sensor.axis;
 
 import java.util.UUID;
+import net.opengis.sensorml.v20.AbstractProcess;
+import net.opengis.swe.v20.DataComponent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,13 +13,8 @@ import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.axis.AxisCameraConfig;
 import org.sensorhub.impl.sensor.axis.AxisCameraDriver;
-import org.vast.cdm.common.DataBlock;
-import org.vast.cdm.common.DataComponent;
-import org.vast.cdm.common.DataType;
-import org.vast.data.DataValue;
+import org.vast.sensorML.SMLUtils;
 import org.vast.sweCommon.SWECommonUtils;
-import org.vast.xml.DOMHelper;
-import org.w3c.dom.Element;
 import static org.junit.Assert.*;
 
 
@@ -47,9 +44,7 @@ public class TestAxisCameraDriver implements IEventListener
         for (ISensorDataInterface di: driver.getObservationOutputs().values())
         {
             DataComponent dataMsg = di.getRecordDescription();
-            DOMHelper dom = new DOMHelper();
-            Element elt = new SWECommonUtils().writeComponent(dom, dataMsg);
-            dom.serialize(elt, System.out, true);
+            new SWECommonUtils().writeComponent(System.out, dataMsg, false, true);
         }
     }
     
@@ -60,10 +55,16 @@ public class TestAxisCameraDriver implements IEventListener
         for (ISensorControlInterface ci: driver.getCommandInputs().values())
         {
             DataComponent commandMsg = ci.getCommandDescription();
-            DOMHelper dom = new DOMHelper();
-            Element elt = new SWECommonUtils().writeComponent(dom, commandMsg);
-            dom.serialize(elt, System.out, true);
+            new SWECommonUtils().writeComponent(System.out, commandMsg, false, true);
         }
+    }
+    
+    
+    @Test
+    public void testGetSensorDesc() throws Exception
+    {
+        AbstractProcess smlDesc = driver.getCurrentSensorDescription();
+        new SMLUtils().writeProcess(System.out, smlDesc, true);
     }
     
     

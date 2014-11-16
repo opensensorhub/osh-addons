@@ -25,12 +25,11 @@
 
 package org.sensorhub.ui;
 
-import org.vast.cdm.common.DataComponent;
-import org.vast.data.DataArray;
-import org.vast.data.DataChoice;
-import org.vast.data.DataGroup;
+import net.opengis.swe.v20.DataArray;
+import net.opengis.swe.v20.DataChoice;
+import net.opengis.swe.v20.DataComponent;
+import net.opengis.swe.v20.DataRecord;
 import org.vast.data.DataValue;
-import org.vast.sweCommon.SweConstants;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.FormLayout;
 import com.vaadin.ui.Label;
@@ -59,14 +58,14 @@ public class SWECommonFormBuilder
     
     protected Component buildWidget(DataComponent dataComponent)
     {
-        if (dataComponent instanceof DataGroup)
+        if (dataComponent instanceof DataRecord)
         {
-            DataGroup dataGroup = (DataGroup)dataComponent;
+            DataRecord dataRecord = (DataRecord)dataComponent;
             FormLayout layout = new FormLayout();
             
-            for (int i = 0; i < dataGroup.getComponentCount(); i++)
+            for (int i = 0; i < dataRecord.getComponentCount(); i++)
             {
-                DataComponent c = dataGroup.getComponent(i);
+                DataComponent c = dataRecord.getComponent(i);
                 Component w = buildWidget(c);
                 layout.addComponent(w);
             }
@@ -82,7 +81,7 @@ public class SWECommonFormBuilder
             DataArray dataArray = (DataArray)dataComponent;
             VerticalLayout layout = new VerticalLayout();
             layout.addComponent(new Label(getPrettyName(dataArray)));
-            layout.addComponent(buildWidget(dataArray.getArrayComponent()));
+            layout.addComponent(buildWidget(dataArray.getElementType()));
             return layout;
         }
         
@@ -102,7 +101,7 @@ public class SWECommonFormBuilder
     
     protected String getPrettyName(DataComponent dataComponent)
     {
-        String label = (String)dataComponent.getProperty(SweConstants.NAME);
+        String label = dataComponent.getLabel();
         if (label == null)
             label = dataComponent.getName();
         return label;
