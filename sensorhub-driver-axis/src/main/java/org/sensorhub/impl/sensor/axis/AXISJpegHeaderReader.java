@@ -1,26 +1,17 @@
-/***************************************************************
-Copyright (C) 2007 by 52 North Initiative for Geospatial Open 
-Source Software GmbH
+/***************************** BEGIN LICENSE BLOCK ***************************
 
-Contact: Andreas Wytzisk,
-52 North Initiative for Geospatial Open Source Software GmbH,
-Martin-Luther-King-Weg 24,
-48155 Muenster, Germany, info@52north.org
+The contents of this file are subject to the Mozilla Public License, v. 2.0.
+If a copy of the MPL was not distributed with this file, You can obtain one
+at http://mozilla.org/MPL/2.0/.
 
-This program is free software; you can redistribute and/or  modify 
-it under the terms of the GNU General Public License version 2 as 
-published by the Free Software Foundation.
-
-This program is distributed WITHOUT ANY WARRANTY; even without the 
-implied WARRANTY OF MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License 
-along with this program (see gnu-gpl v2.txt). If not, write to 
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
-Boston, MA 02111-1307, USA or visit the Free Software Foundation 
-web page, http://www.fsf.org.
- ***************************************************************/
+Software distributed under the License is distributed on an "AS IS" basis,
+WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+for the specific language governing rights and limitations under the License.
+ 
+The Initial Developer is Sensia Software LLC. Portions created by the Initial
+Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
+ 
+******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.sensor.axis;
 
