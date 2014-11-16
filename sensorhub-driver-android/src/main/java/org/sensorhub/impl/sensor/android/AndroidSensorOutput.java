@@ -26,14 +26,14 @@
 package org.sensorhub.impl.sensor.android;
 
 import java.util.List;
+import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
+import net.opengis.swe.v20.DataEncoding;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorException;
-import org.vast.cdm.common.AsciiEncoding;
-import org.vast.cdm.common.DataBlock;
-import org.vast.cdm.common.DataComponent;
-import org.vast.cdm.common.DataEncoding;
+import org.vast.data.TextEncodingImpl;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -111,7 +111,7 @@ public class AndroidSensorOutput implements ISensorDataInterface, SensorEventLis
     @Override
     public DataEncoding getRecommendedEncoding() throws SensorException
     {
-        return new AsciiEncoding("\n", ",");
+        return new TextEncodingImpl(",", "\n");
     }
 
     
