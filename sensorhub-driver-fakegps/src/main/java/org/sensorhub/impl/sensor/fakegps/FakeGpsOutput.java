@@ -19,19 +19,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
+import net.opengis.swe.v20.DataEncoding;
+import net.opengis.swe.v20.Quantity;
+import net.opengis.swe.v20.Time;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.vast.cdm.common.AsciiEncoding;
-import org.vast.cdm.common.DataBlock;
-import org.vast.cdm.common.DataComponent;
-import org.vast.cdm.common.DataEncoding;
-import org.vast.cdm.common.DataType;
-import org.vast.data.DataGroup;
-import org.vast.data.DataValue;
-import org.vast.sweCommon.SweConstants;
+import org.vast.data.DataRecordImpl;
+import org.vast.data.QuantityImpl;
+import org.vast.data.TextEncodingImpl;
+import org.vast.data.TimeImpl;
+import org.vast.sweCommon.SWEConstants;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
@@ -56,37 +58,36 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
 
     protected void init()
     {
-        DataValue c;
-
         // SWE Common data structure
-        posDataStruct = new DataGroup(3, "location");
-        posDataStruct.setProperty(SweConstants.DEF_URI, "http://sensorml.com/ont/swe/property/Location");
+        posDataStruct = new DataRecordImpl(3);
+        posDataStruct.setDefinition("http://sensorml.com/ont/swe/property/Location");
         
-        c = new DataValue("time", DataType.DOUBLE);
-        c.setProperty(SweConstants.UOM_URI, SweConstants.ISO_TIME_DEF);
-        c.setProperty(SweConstants.DEF_URI, SweConstants.DEF_SAMPLING_TIME);
-        posDataStruct.addComponent(c);
+        Time c1 = new TimeImpl();
+        c1.getUom().setHref(Time.ISO_TIME_UNIT);
+        c1.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
+        posDataStruct.addComponent("time", c1);
 
-        c = new DataValue("lat", DataType.DOUBLE);
-        c.setProperty(SweConstants.UOM_CODE, "deg");
-        c.setProperty(SweConstants.DEF_URI, "http://sensorml.com/ont/swe/property/Latitude");
-        c.setProperty(SweConstants.REF_FRAME, "http://www.opengis.net/def/crs/EPSG/0/4979");
-        c.setProperty(SweConstants.AXIS_CODE, "Lat");
-        posDataStruct.addComponent(c);
+        Quantity c;
+        c = new QuantityImpl();
+        c.getUom().setCode("deg");
+        c.setDefinition("http://sensorml.com/ont/swe/property/Latitude");
+        c.setReferenceFrame("http://www.opengis.net/def/crs/EPSG/0/4979");
+        c.setAxisID("Lat");
+        posDataStruct.addComponent("lat",c);
 
-        c = new DataValue("lon", DataType.DOUBLE);
-        c.setProperty(SweConstants.UOM_CODE, "deg");
-        c.setProperty(SweConstants.DEF_URI, "http://sensorml.com/ont/swe/property/Longitude");
-        c.setProperty(SweConstants.REF_FRAME, "http://www.opengis.net/def/crs/EPSG/0/4979");
-        c.setProperty(SweConstants.AXIS_CODE, "Long");
-        posDataStruct.addComponent(c);
+        c = new QuantityImpl();
+        c.getUom().setCode("deg");
+        c.setDefinition("http://sensorml.com/ont/swe/property/Longitude");
+        c.setReferenceFrame("http://www.opengis.net/def/crs/EPSG/0/4979");
+        c.setAxisID("Long");
+        posDataStruct.addComponent("lon", c);
 
-        c = new DataValue("alt", DataType.DOUBLE);
-        c.setProperty(SweConstants.UOM_CODE, "m");
-        c.setProperty(SweConstants.DEF_URI, "http://sensorml.com/ont/swe/property/Altitude");
-        c.setProperty(SweConstants.REF_FRAME, "http://www.opengis.net/def/crs/EPSG/0/4979");
-        c.setProperty(SweConstants.AXIS_CODE, "h");
-        posDataStruct.addComponent(c);        
+        c = new QuantityImpl();
+        c.getUom().setCode("m");
+        c.setDefinition("http://sensorml.com/ont/swe/property/Altitude");
+        c.setReferenceFrame("http://www.opengis.net/def/crs/EPSG/0/4979");
+        c.setAxisID("h");
+        posDataStruct.addComponent("alt", c);        
     }
 
 
@@ -258,7 +259,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     @Override
     public DataEncoding getRecommendedEncoding() throws SensorException
     {
-        return new AsciiEncoding("\n", ",");
+        return new TextEncodingImpl(",", "\n");
     }
 
 

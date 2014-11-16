@@ -1,17 +1,16 @@
 package org.sensorhub.impl.sensor.axis;
 
 import java.util.List;
-
+import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.common.CommandStatus;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorException;
-import org.vast.cdm.common.DataBlock;
-import org.vast.cdm.common.DataComponent;
-import org.vast.data.ConstraintList;
-import org.vast.data.DataGroup;
+import org.vast.data.DataRecordImpl;
 import org.vast.util.DateTime;
+
 
 public class AxisPtzControl implements ISensorControlInterface
 {
@@ -31,13 +30,11 @@ public class AxisPtzControl implements ISensorControlInterface
     protected void init()
     {
         // first check for taskable parameters (e.g. PTZ, zoom, etc.)
-    	
-    	
+    	    	
     	
     	
         // build command message structure from IP queries
-        this.commandData = new DataGroup(6, "camParams");
-        ConstraintList constraints;
+        this.commandData = new DataRecordImpl(6);
         
         
         

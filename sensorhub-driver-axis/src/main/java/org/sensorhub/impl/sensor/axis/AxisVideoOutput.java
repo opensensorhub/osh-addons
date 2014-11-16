@@ -11,14 +11,18 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Iterator;
 import java.util.List;
-
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import javax.media.Buffer;
-
+import net.opengis.swe.v20.DataArray;
+import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
+import net.opengis.swe.v20.DataEncoding;
+import net.opengis.swe.v20.DataRecord;
+import net.opengis.swe.v20.DataType;
+import net.opengis.swe.v20.Time;
 import net.sf.jipcam.axis.media.protocol.http.MjpegStream;
-
 import org.sensorhub.api.common.IEventHandler;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorDataInterface;
@@ -26,17 +30,12 @@ import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.common.BasicEventHandler;
-import org.vast.cdm.common.DataBlock;
-import org.vast.cdm.common.DataComponent;
-import org.vast.cdm.common.DataEncoding;
-import org.vast.cdm.common.DataType;
-import org.vast.data.DataArray;
+import org.vast.data.CountImpl;
+import org.vast.data.DataArrayImpl;
 import org.vast.data.DataBlockMixed;
-import org.vast.data.DataGroup;
-import org.vast.data.DataValue;
-import org.vast.sweCommon.SweConstants;
-
-import com.sun.media.util.ByteBuffer;
+import org.vast.data.DataRecordImpl;
+import org.vast.data.TimeImpl;
+import org.vast.sweCommon.SWEConstants;
 
 
 public class AxisVideoOutput implements ISensorDataInterface
@@ -64,27 +63,25 @@ public class AxisVideoOutput implements ISensorDataInterface
 			int[] imgSize = getImageSize();
 			
 			// build output structure
-			videoDataStruct = new DataGroup(2);
+			videoDataStruct = new DataRecordImpl(2);
 			
-			DataValue time = new DataValue("time", DataType.DOUBLE);
-			time.setProperty(SweConstants.UOM_URI, SweConstants.ISO_TIME_DEF);
-			time.setProperty(SweConstants.DEF_URI, SweConstants.DEF_SAMPLING_TIME);
-			videoDataStruct.addComponent(time);
+			Time time = new TimeImpl();
+			time.getUom().setHref(Time.ISO_TIME_UNIT);
+			time.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
+			videoDataStruct.addComponent("time", time);
 					
-			DataArray img = new DataArray(imgSize[1]);
-			img.setName("videoFrame");
-			img.setProperty(SweConstants.DEF_URI, "http://myonto/def/videoFrame");
-			videoDataStruct.addComponent(img);
+			DataArray img = new DataArrayImpl(imgSize[1]);
+			img.setDefinition("http://sensorml.com/ont/swe/property/VideoFrame");
+			videoDataStruct.addComponent("videoFrame", img);
 			
-			DataArray imgRow = new DataArray(imgSize[0]);
-			imgRow.setName("row");
-			img.addComponent(imgRow);
+			DataArray imgRow = new DataArrayImpl(imgSize[0]);
+			img.addComponent("row", imgRow);
 			
-			DataGroup imgPixel = new DataGroup(3, "pixel");
-			imgPixel.addComponent(new DataValue("red", DataType.BYTE));
-			imgPixel.addComponent(new DataValue("green", DataType.BYTE));
-			imgPixel.addComponent(new DataValue("blue", DataType.BYTE));
-			imgRow.addComponent(imgPixel);
+			DataRecord imgPixel = new DataRecordImpl(3);
+			imgPixel.addComponent("red", new CountImpl(DataType.BYTE));
+			imgPixel.addComponent("green", new CountImpl(DataType.BYTE));
+			imgPixel.addComponent("blue", new CountImpl(DataType.BYTE));
+			imgRow.addComponent("pixel", imgPixel);
 		}
 		catch (IOException e)
 		{

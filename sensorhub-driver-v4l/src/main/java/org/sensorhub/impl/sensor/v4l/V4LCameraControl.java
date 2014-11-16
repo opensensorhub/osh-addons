@@ -27,22 +27,22 @@ package org.sensorhub.impl.sensor.v4l;
 
 import java.util.List;
 import java.util.UUID;
+import net.opengis.swe.v20.AllowedTokens;
+import net.opengis.swe.v20.AllowedValues;
+import net.opengis.swe.v20.Category;
+import net.opengis.swe.v20.Count;
+import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
+import net.opengis.swe.v20.DataType;
+import net.opengis.swe.v20.Quantity;
 import org.sensorhub.api.common.CommandStatus;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.CommandStatus.StatusCode;
 import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorException;
-import org.vast.cdm.common.DataBlock;
-import org.vast.cdm.common.DataComponent;
-import org.vast.cdm.common.DataType;
-import org.vast.data.ConstraintList;
-import org.vast.data.DataGroup;
 import org.vast.data.DataValue;
-import org.vast.sweCommon.EnumNumberConstraint;
-import org.vast.sweCommon.EnumTokenConstraint;
-import org.vast.sweCommon.IntervalConstraint;
-import org.vast.sweCommon.SweConstants;
+import org.vast.data.SWEFactory;
 import org.vast.util.DateTime;
 import au.edu.jcu.v4l4j.FrameInterval;
 import au.edu.jcu.v4l4j.FrameInterval.DiscreteInterval;
@@ -78,40 +78,37 @@ public class V4LCameraControl implements ISensorControlInterface
     protected void init()
     {
         this.camParams = driver.camParams;
+        SWEFactory fac = new SWEFactory();
         
         // build command message structure from V4L info
-        this.commandData = new DataGroup(2, "camParams");
-        ConstraintList constraints;
+        this.commandData = fac.newDataRecord();
+        commandData.setUpdatable(true);
+        AllowedTokens tokenConstraint;
+        AllowedValues numConstraint;
         
         // choice of image format
+        Category formatVal = fac.newCategory();
+        tokenConstraint = fac.newAllowedTokens();
         List<ImageFormat> v4lImgFormats = driver.deviceInfo.getFormatList().getRGBEncodableFormats();//.getNativeFormats();
-        String[] formatList = new String[v4lImgFormats.size()];
         for (int i=0; i<v4lImgFormats.size(); i++)
-            formatList[i] = v4lImgFormats.get(i).getName();
+            tokenConstraint.addValue(v4lImgFormats.get(i).getName());
+        formatVal.setConstraint(tokenConstraint);
+        commandData.addComponent("imageFormat", formatVal);
         
-        DataValue formatVal = new DataValue("imageFormat", DataType.UTF_STRING);
-        constraints = new ConstraintList();
-        constraints.add(new EnumTokenConstraint(formatList));
-        formatVal.setConstraints(constraints);        
-        commandData.addComponent(formatVal);
-        
-        // choice of resolutions
+        // choice of resolutions (enum or range)
         ResolutionInfo v4lResInfo = v4lImgFormats.get(0).getResolutionInfo();
         if (v4lResInfo.getType() == ResolutionInfo.Type.DISCRETE)
         {
+            Category resVal = fac.newCategory();       
+            tokenConstraint = fac.newAllowedTokens();
             List<DiscreteResolution> v4lResList = v4lResInfo.getDiscreteResolutions();
-            String[] resList = new String[v4lResList.size()];
             for (int i=0; i<v4lResList.size(); i++)
             {
                 String resText = v4lResList.get(i).width + "x" + v4lResList.get(i).height; 
-                resList[i] = resText;
+                tokenConstraint.addValue(resText);
             }
-            
-            DataValue resVal = new DataValue("imageSize", DataType.UTF_STRING);
-            constraints = new ConstraintList();
-            constraints.add(new EnumTokenConstraint(resList));
-            resVal.setConstraints(constraints); 
-            commandData.addComponent(resVal);
+            resVal.setConstraint(tokenConstraint);
+            commandData.addComponent("imageSize", resVal);
         }
         else if (v4lResInfo.getType() == ResolutionInfo.Type.STEPWISE)
         {
@@ -120,20 +117,20 @@ public class V4LCameraControl implements ISensorControlInterface
             double minHeight = v4lResInfo.getStepwiseResolution().minHeight;
             double maxHeight = v4lResInfo.getStepwiseResolution().maxHeight;
             
-            DataValue widthVal = new DataValue("imageWidth", DataType.INT);
-            constraints = new ConstraintList();
-            constraints.add(new IntervalConstraint(minWidth, maxWidth));
-            widthVal.setConstraints(constraints); 
-            commandData.addComponent(widthVal);
+            Count widthVal = fac.newCount(DataType.INT);
+            numConstraint = fac.newAllowedValues();
+            numConstraint.addInterval(new double[] {minWidth, maxWidth});
+            widthVal.setConstraint(numConstraint);
+            commandData.addComponent("imageWidth", widthVal);
             
-            DataValue heightVal = new DataValue("imageHeight", DataType.INT);
-            constraints = new ConstraintList();
-            constraints.add(new IntervalConstraint(minHeight, maxHeight));
-            widthVal.setConstraints(constraints); 
-            commandData.addComponent(heightVal);
+            Count heightVal = fac.newCount(DataType.INT);
+            numConstraint = fac.newAllowedValues();
+            numConstraint.addInterval(new double[] {minHeight, maxHeight});
+            heightVal.setConstraint(numConstraint); 
+            commandData.addComponent("imageHeight", heightVal);
         }
         
-        // choice of frame rate
+        // choice of frame rate (enum or range)
         FrameInterval v4lFrameIntervals = null;
         if (v4lResInfo.getType() == ResolutionInfo.Type.DISCRETE)
             v4lFrameIntervals = v4lResInfo.getDiscreteResolutions().get(0).interval;
@@ -142,33 +139,27 @@ public class V4LCameraControl implements ISensorControlInterface
         
         if (v4lFrameIntervals != null)
         {
+            Quantity rateVal = fac.newQuantity(DataType.FLOAT);
+            rateVal.getUom().setCode("Hz");
+            numConstraint = fac.newAllowedValues();
+            
             if (v4lFrameIntervals.getType() == FrameInterval.Type.DISCRETE)
             {
                 List<DiscreteInterval> v4lIntervalList = v4lFrameIntervals.getDiscreteIntervals();
-                double[] rateList = new double[v4lIntervalList.size()];
                 for (int i=0; i<v4lIntervalList.size(); i++)
-                    rateList[i] = v4lIntervalList.get(i).denominator / v4lIntervalList.get(i).numerator;
-                
-                DataValue resVal = new DataValue("frameRate", DataType.INT);
-                constraints = new ConstraintList();
-                constraints.add(new EnumNumberConstraint(rateList));
-                resVal.setConstraints(constraints);
-                resVal.setProperty(SweConstants.UOM_CODE, "Hz");
-                commandData.addComponent(resVal);
+                    numConstraint.addValue(v4lIntervalList.get(i).denominator / v4lIntervalList.get(i).numerator);                
             }
             else if (v4lFrameIntervals.getType() == FrameInterval.Type.STEPWISE)
             {
                 DiscreteInterval minInterval = v4lFrameIntervals.getStepwiseInterval().minIntv;
                 DiscreteInterval maxInterval = v4lFrameIntervals.getStepwiseInterval().maxIntv;
                 double minRate = (double)minInterval.denominator / (double)minInterval.numerator;
-                double maxRate = (double)maxInterval.denominator / (double)maxInterval.numerator;
-                
-                DataValue widthVal = new DataValue("frameRate", DataType.FLOAT);
-                constraints = new ConstraintList();
-                constraints.add(new IntervalConstraint(minRate, maxRate));
-                widthVal.setConstraints(constraints); 
-                commandData.addComponent(widthVal);
+                double maxRate = (double)maxInterval.denominator / (double)maxInterval.numerator;                
+                numConstraint.addInterval(new double[] {minRate, maxRate});
             }
+            
+            rateVal.setConstraint(numConstraint);
+            commandData.addComponent("frameRate", rateVal);
         }
     }
     

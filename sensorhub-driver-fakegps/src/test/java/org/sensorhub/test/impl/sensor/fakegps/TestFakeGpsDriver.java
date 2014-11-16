@@ -27,6 +27,8 @@ package org.sensorhub.test.impl.sensor.fakegps;
 
 import java.io.IOException;
 import java.util.UUID;
+import net.opengis.sensorml.v20.AbstractProcess;
+import net.opengis.swe.v20.DataComponent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,12 +39,10 @@ import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.fakegps.FakeGpsConfig;
 import org.sensorhub.impl.sensor.fakegps.FakeGpsSensor;
-import org.vast.cdm.common.AsciiEncoding;
-import org.vast.cdm.common.DataComponent;
+import org.vast.data.TextEncodingImpl;
+import org.vast.sensorML.SMLUtils;
 import org.vast.sweCommon.AsciiDataWriter;
 import org.vast.sweCommon.SWECommonUtils;
-import org.vast.xml.DOMHelper;
-import org.w3c.dom.Element;
 import static org.junit.Assert.*;
 
 
@@ -73,10 +73,16 @@ public class TestFakeGpsDriver implements IEventListener
         for (ISensorDataInterface di: driver.getObservationOutputs().values())
         {
             DataComponent dataMsg = di.getRecordDescription();
-            DOMHelper dom = new DOMHelper();
-            Element elt = new SWECommonUtils().writeComponent(dom, dataMsg);
-            dom.serialize(elt, System.out, true);
+            new SWECommonUtils().writeComponent(System.out, dataMsg, false, true);
         }
+    }
+    
+    
+    @Test
+    public void testGetSensorDesc() throws Exception
+    {
+        AbstractProcess smlDesc = driver.getCurrentSensorDescription();
+        new SMLUtils().writeProcess(System.out, smlDesc, true);
     }
     
     
@@ -86,14 +92,14 @@ public class TestFakeGpsDriver implements IEventListener
         ISensorDataInterface gpsOutput = driver.getObservationOutputs().get("locationOutput");
         
         writer = new AsciiDataWriter();
-        writer.setDataEncoding(new AsciiEncoding("\n", ","));
+        writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
         writer.setDataComponents(gpsOutput.getRecordDescription());
         writer.setOutput(System.out);
         
         gpsOutput.registerListener(this);
         driver.start();
         
-        Thread.sleep(3000);
+        Thread.sleep(3000);        
     }
     
     
@@ -108,6 +114,7 @@ public class TestFakeGpsDriver implements IEventListener
             System.out.println("\nNew data received from sensor " + newDataEvent.getSensorId());
             writer.write(newDataEvent.getRecords()[0]);
             writer.flush();
+            System.out.println();
         }
         catch (IOException e1)
         {

@@ -10,11 +10,10 @@
 
 package org.sensorhub.impl.sensor.fakegps;
 
+import net.opengis.sensorml.v20.AbstractProcess;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.vast.sensorML.SMLProcess;
-import org.vast.sensorML.system.SMLSystem;
 
 
 /**
@@ -41,10 +40,10 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
     
     
     @Override
-    public SMLProcess getCurrentSensorDescription() throws SensorException
+    public AbstractProcess getCurrentSensorDescription() throws SensorException
     {
-        SMLSystem smlSys = new SMLSystem();
-        smlSys.setIdentifier("urn:test:sensors:fakegps");
+        AbstractProcess smlSys = super.getCurrentSensorDescription();
+        smlSys.setUniqueIdentifier("urn:test:sensors:fakegps");
         return smlSys;
     }
 
