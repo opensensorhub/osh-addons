@@ -96,7 +96,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     }
 
 
-    private void generateRandomTrajectory()
+    private boolean generateRandomTrajectory()
     {
         FakeGpsConfig config = getSensorInterface().getConfiguration();
         
@@ -136,10 +136,12 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             // decode polyline data
             decodePoly(encodedData);
             currentTrackPos = 0.0;
+            return true;
         }
         catch (IOException e)
         {
             e.printStackTrace();
+            return false;
         }
     }
 
@@ -147,8 +149,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     private void decodePoly(String encoded)
     {
         int index = 0, len = encoded.length();
-        int lat = 0, lng = 0;
-        trajPoints.clear();
+        int lat = 0, lng = 0;        
         
         while (index < len)
         {
@@ -185,7 +186,8 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     {
         if (trajPoints.isEmpty() || currentTrackPos >= trajPoints.size()-1)
         {
-            generateRandomTrajectory();
+            if (!generateRandomTrajectory())
+                return;
             //for (double[] p: trajPoints)
             //     System.out.println(Arrays.toString(p));
         }
