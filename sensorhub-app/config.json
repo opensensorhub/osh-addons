@@ -1,0 +1,86 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "name": "HTTP Server",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "httpPort": 8080,
+    "rootURL": "/sensorhub",
+    "docRoot": "/home/ubuntu/sensorhub/web"
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "name": "SOS Service",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "enabled": true,
+    "endPoint": "/sos",
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "dataProviders" : [
+       {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "Fake GPS",
+           "description": "Fake GPS sensor",
+           "uri": "urn:mysos:offering02",
+           "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72"
+       }
+    ],
+    "ogcCapabilitiesInfo": {
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": ["SensorHub", "Video", "GPS"],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumber": "+33 5 23 56 89 78",
+        "faxNumber": "+33 5 23 56 89 77",
+        "deliveryPoint": "12 rue Voltaire",
+        "city": "Toulouse",
+        "administrativeArea": null,
+        "postalCode": "30000",
+        "country": "France",
+        "email": "nospam@sensiasoft.com",
+        "website": null,
+        "hoursOfService": null,
+        "contactInstructions": null
+      }
+    }
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
+    "sensorML": null,
+    "autoActivate": true,
+    "enableHistory": false,
+    "hiddenIO": null,
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "name": "Fake GPS",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsSensor",
+    "enabled": true,
+    "centerLatitude": 34.7300,
+    "centerLongitude": -86.5850,
+    "areaSize": 0.1,
+    "vehicleSpeed": 200
+  },
+  {
+    "objClass": "org.sensorhub.api.persistence.StorageConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc0",
+    "name": "Database",
+    "moduleClass": "org.sensorhub.impl.persistence.InMemoryBasicStorage",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.api.sensor.SensorStorageConfig",
+    "id": "5cb05c9c-9e08-4cca-5691-ff4ff948bdc0",
+    "name": "Sensor Storage Helper",
+    "moduleClass": "org.sensorhub.impl.sensor.SensorStorageHelper",
+    "enabled": true,
+    "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc0",
+    "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72"
+  }
+]
