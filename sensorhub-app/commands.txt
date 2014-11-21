@@ -1,0 +1,2 @@
+mvn clean install
+mvn clean dependency:copy-dependencies
