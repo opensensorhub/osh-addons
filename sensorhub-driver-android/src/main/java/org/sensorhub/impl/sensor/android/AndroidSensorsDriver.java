@@ -41,8 +41,8 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
         List<Sensor> deviceSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
         for (Sensor sensor: deviceSensors)
         {
-            obsOutputs.put(sensor.getName(), new AndroidSensorOutput(sensorManager, sensor));
-            controlInputs.put(sensor.getName(), new AndroidSensorControl(sensorManager, sensor));
+            obsOutputs.put(sensor.getName(), new AndroidSensorOutput(this, sensorManager, sensor));
+            controlInputs.put(sensor.getName(), new AndroidSensorControl(this, sensorManager, sensor));
         }
     }
     
@@ -71,7 +71,7 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
     @Override
     public boolean isConnected()
     {
-        // TODO Auto-generated method stub
+        // TODO Check if Android sensors are active
         return false;
     }
     
