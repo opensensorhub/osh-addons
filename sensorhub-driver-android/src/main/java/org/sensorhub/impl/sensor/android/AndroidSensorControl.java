@@ -19,11 +19,8 @@ import java.util.List;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.common.CommandStatus;
-import org.sensorhub.api.common.IEventListener;
-import org.sensorhub.api.sensor.ISensorControlInterface;
-import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorException;
-import org.vast.util.DateTime;
+import org.sensorhub.impl.sensor.AbstractSensorControl;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 
@@ -37,54 +34,17 @@ import android.hardware.SensorManager;
  * @author Alexandre Robin <alex.robin@sensiasoftware.com>
  * @since Sep 6, 2013
  */
-public class AndroidSensorControl implements ISensorControlInterface
+public class AndroidSensorControl extends AbstractSensorControl<AndroidSensorsDriver>
 {
     SensorManager aSensorManager;
     Sensor androidSensor;
     
     
-    protected AndroidSensorControl(SensorManager aSensorManager, Sensor androidSensor)
+    protected AndroidSensorControl(AndroidSensorsDriver parentModule, SensorManager aSensorManager, Sensor androidSensor)
     {
+        super(parentModule);
         this.aSensorManager = aSensorManager;
         this.androidSensor = androidSensor;
-    }
-    
-    
-    protected void init()
-    {
-        
-    }
-    
-    
-    @Override
-    public void unregisterListener(IEventListener listener)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-
-    @Override
-    public boolean isAsyncExecSupported()
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-
-    @Override
-    public boolean isSchedulingSupported()
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-
-    @Override
-    public boolean isStatusHistorySupported()
-    {
-        // TODO Auto-generated method stub
-        return false;
     }
 
 
@@ -109,86 +69,6 @@ public class AndroidSensorControl implements ISensorControlInterface
     {
         // TODO Auto-generated method stub
         return null;
-    }
-
-
-    @Override
-    public CommandStatus sendCommand(DataBlock command) throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public CommandStatus sendCommandGroup(List<DataBlock> commands) throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public CommandStatus scheduleCommand(DataBlock command, DateTime execTime) throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public CommandStatus scheduleCommandGroup(List<DataBlock> commands, DateTime execTime) throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public CommandStatus cancelCommand(String commandID) throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public CommandStatus getCommandStatus(String commandID) throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public List<CommandStatus> getCommandStatusHistory(String commandID) throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public void registerListener(IEventListener listener)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-
-    @Override
-    public ISensorModule<?> getParentSensor()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public boolean isEnabled()
-    {
-        // TODO Auto-generated method stub
-        return false;
     }
 
 }
