@@ -22,7 +22,6 @@ import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.TimeZone;
 import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.Count;
@@ -32,13 +31,9 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Time;
-import org.sensorhub.api.common.IEventHandler;
-import org.sensorhub.api.common.IEventListener;
-import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.common.BasicEventHandler;
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.AllowedValuesImpl;
 import org.vast.data.BooleanImpl;
 import org.vast.data.CountImpl;
@@ -49,10 +44,8 @@ import org.vast.data.TimeImpl;
 import org.vast.sweCommon.SWEConstants;
 
 
-public class AxisSettingsOutput implements ISensorDataInterface
+public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
-    AxisCameraDriver driver;
-    IEventHandler eventHandler;
     DataComponent settingsDataStruct;
     DataBlock latestRecord;
     boolean polling;
@@ -67,8 +60,7 @@ public class AxisSettingsOutput implements ISensorDataInterface
 
     public AxisSettingsOutput(AxisCameraDriver driver)
     {
-        this.driver = driver;
-        this.eventHandler = new BasicEventHandler();
+        super(driver);
     }
 
 
@@ -76,7 +68,7 @@ public class AxisSettingsOutput implements ISensorDataInterface
     {
 
         df.setTimeZone(tz);
-        ipAddress = driver.getConfiguration().ipAddress;
+        ipAddress = parentSensor.getConfiguration().ipAddress;
 
         // TODO: Need to generalize this by first checking if PTZ supported
 
@@ -266,35 +258,7 @@ public class AxisSettingsOutput implements ISensorDataInterface
 
     }
 
-
-    @Override
-    public ISensorModule<?> getSensorInterface()
-    {
-        return driver;
-    }
-
-
-    @Override
-    public boolean isEnabled()
-    {
-        return true;
-    }
-
-
-    @Override
-    public boolean isStorageSupported()
-    {
-        return false;
-    }
-
-
-    @Override
-    public boolean isPushSupported()
-    {
-        return true;
-    }
-
-
+    
     @Override
     public double getAverageSamplingPeriod()
     {
@@ -322,58 +286,6 @@ public class AxisSettingsOutput implements ISensorDataInterface
     public DataBlock getLatestRecord() throws SensorException
     {
         return latestRecord;
-    }
-
-
-    @Override
-    public int getStorageCapacity() throws SensorException
-    {
-        return 0;
-    }
-
-
-    @Override
-    public int getNumberOfAvailableRecords() throws SensorException
-    {
-        return 1;
-    }
-
-
-    @Override
-    public List<DataBlock> getLatestRecords(int maxRecords, boolean clear) throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public List<DataBlock> getAllRecords(boolean clear) throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public int clearAllRecords() throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-
-    @Override
-    public void registerListener(IEventListener listener)
-    {
-        eventHandler.registerListener(listener);
-    }
-
-
-    @Override
-    public void unregisterListener(IEventListener listener)
-    {
-        eventHandler.unregisterListener(listener);
     }
 
 }

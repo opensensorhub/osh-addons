@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Iterator;
-import java.util.List;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
@@ -38,13 +37,10 @@ import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Time;
 import net.sf.jipcam.axis.media.protocol.http.MjpegStream;
-import org.sensorhub.api.common.IEventHandler;
-import org.sensorhub.api.common.IEventListener;
-import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.common.BasicEventHandler;
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.CountImpl;
 import org.vast.data.DataArrayImpl;
 import org.vast.data.DataBlockMixed;
@@ -53,11 +49,9 @@ import org.vast.data.TimeImpl;
 import org.vast.sweCommon.SWEConstants;
 
 
-public class AxisVideoOutput implements ISensorDataInterface
+public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
-	AxisCameraDriver driver;
-	IEventHandler eventHandler;
-    DataComponent videoDataStruct;
+	DataComponent videoDataStruct;
 	DataBlock latestRecord;
 	boolean reconnect;
 	boolean streaming;
@@ -65,7 +59,7 @@ public class AxisVideoOutput implements ISensorDataInterface
 	
 	public AxisVideoOutput(AxisCameraDriver driver)
     {
-    	this.driver = driver;
+    	super(driver);
         this.eventHandler = new BasicEventHandler();    	
     }
 	
@@ -108,7 +102,7 @@ public class AxisVideoOutput implements ISensorDataInterface
 	
 	protected int[] getImageSize() throws IOException
 	{
-		String ipAddress = driver.getConfiguration().ipAddress;
+		String ipAddress = parentSensor.getConfiguration().ipAddress;
 		URL getImgSizeUrl = new URL("http://" + ipAddress + "/axis-cgi/view/imagesize.cgi?camera=1");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(getImgSizeUrl.openStream()));
 		
@@ -133,7 +127,7 @@ public class AxisVideoOutput implements ISensorDataInterface
 	{
 		try
 		{
-			String ipAddress = driver.getConfiguration().ipAddress;
+			String ipAddress = parentSensor.getConfiguration().ipAddress;
 			final URL videoUrl = new URL("http://" + ipAddress + "/mjpg/video.mjpg");
 			reconnect = true;
 			
@@ -200,48 +194,11 @@ public class AxisVideoOutput implements ISensorDataInterface
 		}
     	catch (Exception e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
 	
-	@Override
-	public void registerListener(IEventListener listener)
-	{
-		eventHandler.registerListener(listener);
-	}
-
-	@Override
-	public void unregisterListener(IEventListener listener)
-	{
-		eventHandler.unregisterListener(listener);
-	}
-
-	@Override
-	public ISensorModule<?> getSensorInterface()
-	{
-		return driver;
-	}
-
-	@Override
-	public boolean isEnabled()
-	{
-		return true;
-	}
-
-	@Override
-	public boolean isStorageSupported()
-	{
-		return false;
-	}
-
-	@Override
-	public boolean isPushSupported()
-	{
-		return true;
-	}
-
 	@Override
 	public double getAverageSamplingPeriod()
 	{
@@ -264,38 +221,6 @@ public class AxisVideoOutput implements ISensorDataInterface
 	public DataBlock getLatestRecord() throws SensorException
 	{
 		return latestRecord;
-	}
-	
-	// storage is unsupported so the methods below are kept simple
-
-	@Override
-	public int getStorageCapacity() throws SensorException
-	{
-		return 0;
-	}
-
-	@Override
-	public int getNumberOfAvailableRecords() throws SensorException
-	{
-		return 0;
-	}
-
-	@Override
-	public List<DataBlock> getLatestRecords(int maxRecords, boolean clear) throws SensorException
-	{
-		return null;
-	}
-
-	@Override
-	public List<DataBlock> getAllRecords(boolean clear) throws SensorException
-	{
-		return null;
-	}
-
-	@Override
-	public int clearAllRecords() throws SensorException
-	{
-		return 0;
-	}
+	}	
 
 }
