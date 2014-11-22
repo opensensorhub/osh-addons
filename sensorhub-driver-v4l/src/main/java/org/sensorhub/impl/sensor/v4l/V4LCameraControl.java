@@ -16,7 +16,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.v4l;
 
 import java.util.List;
-import java.util.UUID;
 import net.opengis.swe.v20.AllowedTokens;
 import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.Category;
@@ -26,14 +25,11 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import org.sensorhub.api.common.CommandStatus;
-import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.CommandStatus.StatusCode;
-import org.sensorhub.api.sensor.ISensorControlInterface;
-import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.data.DataValue;
 import org.vast.data.SWEFactory;
-import org.vast.util.DateTime;
 import au.edu.jcu.v4l4j.FrameInterval;
 import au.edu.jcu.v4l4j.FrameInterval.DiscreteInterval;
 import au.edu.jcu.v4l4j.ImageFormat;
@@ -50,24 +46,21 @@ import au.edu.jcu.v4l4j.ResolutionInfo.DiscreteResolution;
  * @author Alexandre Robin <alex.robin@sensiasoftware.com>
  * @since Sep 5, 2013
  */
-public class V4LCameraControl implements ISensorControlInterface
+public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
 {
-    private static String ERROR_ASYNC = "Asynchronous commands are not supported by the V4LCamera driver";
-    
-    V4LCameraDriver driver;
     V4LCameraParams camParams;
     DataComponent commandData;
     
     
     protected V4LCameraControl(V4LCameraDriver driver)
     {
-        this.driver = driver;
+        super(driver);
     }
     
     
     protected void init()
     {
-        this.camParams = driver.camParams;
+        this.camParams = parentSensor.camParams;
         SWEFactory fac = new SWEFactory();
         
         // build command message structure from V4L info
@@ -79,7 +72,7 @@ public class V4LCameraControl implements ISensorControlInterface
         // choice of image format
         Category formatVal = fac.newCategory();
         tokenConstraint = fac.newAllowedTokens();
-        List<ImageFormat> v4lImgFormats = driver.deviceInfo.getFormatList().getRGBEncodableFormats();//.getNativeFormats();
+        List<ImageFormat> v4lImgFormats = parentSensor.deviceInfo.getFormatList().getRGBEncodableFormats();//.getNativeFormats();
         for (int i=0; i<v4lImgFormats.size(); i++)
             tokenConstraint.addValue(v4lImgFormats.get(i).getName());
         formatVal.setConstraint(tokenConstraint);
@@ -215,114 +208,12 @@ public class V4LCameraControl implements ISensorControlInterface
         camParams.frameRate = commandMsg.getComponent("frameRate").getData().getIntValue();
         
         // update driver with new params        
-        driver.updateParams(camParams);
+        parentSensor.updateParams(camParams);
         
         return cmdStatus;
     }
 
 
-    @Override
-    public CommandStatus execCommandGroup(List<DataBlock> commands) throws SensorException
-    {
-        CommandStatus groupStatus = new CommandStatus();
-        groupStatus.id = UUID.randomUUID().toString();
-        groupStatus.status = StatusCode.COMPLETED;
-        
-        // if any of the commands fail, return fail status with
-        // error message and don't process more commands
-        for (DataBlock cmd: commands)
-        {
-            CommandStatus cmdStatus = execCommand(cmd);
-            if (cmdStatus.status == StatusCode.REJECTED || cmdStatus.status == StatusCode.FAILED)
-            {
-                groupStatus.status = cmdStatus.status;
-                groupStatus.message = cmdStatus.message;
-                break;
-            }          
-        }
-        
-        return groupStatus;
-    }
-
-
-    @Override
-    public CommandStatus sendCommand(DataBlock command) throws SensorException
-    {
-        throw new SensorException(ERROR_ASYNC);
-    }
-
-
-    @Override
-    public CommandStatus sendCommandGroup(List<DataBlock> commands) throws SensorException
-    {
-        throw new SensorException(ERROR_ASYNC);
-    }
-
-
-    @Override
-    public CommandStatus scheduleCommand(DataBlock command, DateTime execTime) throws SensorException
-    {
-        throw new SensorException(ERROR_ASYNC);
-    }
-
-
-    @Override
-    public CommandStatus scheduleCommandGroup(List<DataBlock> commands, DateTime execTime) throws SensorException
-    {
-        throw new SensorException(ERROR_ASYNC);
-    }
-
-
-    @Override
-    public CommandStatus cancelCommand(String commandID) throws SensorException
-    {
-        throw new SensorException(ERROR_ASYNC);
-    }
-
-
-    @Override
-    public CommandStatus getCommandStatus(String commandID) throws SensorException
-    {
-        throw new SensorException(ERROR_ASYNC);
-    }
-
-
-    @Override
-    public List<CommandStatus> getCommandStatusHistory(String commandID) throws SensorException
-    {
-        throw new SensorException(ERROR_ASYNC);
-    }
-
-
-    @Override
-    public void registerListener(IEventListener listener)
-    {
-        // do nothing since we don't deal with async commands
-    }
-
-
-    @Override
-    public void unregisterListener(IEventListener listener)
-    {
-        // do nothing since we don't deal with async commands
-    }
-
-
-    @Override
-    public ISensorModule<?> getParentSensor()
-    {
-        return driver;
-    }
-
-
-    @Override
-    public boolean isEnabled()
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-    
-    
     public void stop()
     {
         
