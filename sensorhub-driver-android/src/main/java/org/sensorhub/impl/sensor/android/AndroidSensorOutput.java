@@ -15,14 +15,11 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.android;
 
-import java.util.List;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import org.sensorhub.api.common.IEventListener;
-import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.TextEncodingImpl;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -39,14 +36,15 @@ import android.hardware.SensorManager;
  * @author Alexandre Robin <alex.robin@sensiasoftware.com>
  * @since Sep 6, 2013
  */
-public class AndroidSensorOutput implements ISensorDataInterface, SensorEventListener
+public class AndroidSensorOutput extends AbstractSensorOutput<AndroidSensorsDriver> implements SensorEventListener
 {
     SensorManager aSensorManager;
     Sensor aSensor;
     
     
-    protected AndroidSensorOutput(SensorManager aSensorManager, Sensor aSensor)
+    protected AndroidSensorOutput(AndroidSensorsDriver parentModule, SensorManager aSensorManager, Sensor aSensor)
     {
+        super(parentModule);
         this.aSensorManager = aSensorManager;
         this.aSensor = aSensor;
     }
@@ -55,30 +53,6 @@ public class AndroidSensorOutput implements ISensorDataInterface, SensorEventLis
     protected void init()
     {
         aSensorManager.registerListener(this, aSensor, 10);
-    }
-    
-    
-    @Override
-    public boolean isEnabled()
-    {
-        // TODO Auto-generated method stub
-        return true;
-    }
-    
-    
-    @Override
-    public boolean isStorageSupported()
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-
-    @Override
-    public boolean isPushSupported()
-    {
-        // TODO Auto-generated method stub
-        return false;
     }
 
 
@@ -114,60 +88,6 @@ public class AndroidSensorOutput implements ISensorDataInterface, SensorEventLis
 
 
     @Override
-    public int getStorageCapacity() throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-
-    @Override
-    public int getNumberOfAvailableRecords() throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-
-    @Override
-    public List<DataBlock> getLatestRecords(int maxRecords, boolean clear) throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public List<DataBlock> getAllRecords(boolean clear) throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public int clearAllRecords() throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-
-    @Override
-    public void registerListener(IEventListener listener)
-    {
-        // TODO Auto-generated method stub
-    }
-    
-    
-    @Override
-    public void unregisterListener(IEventListener listener)
-    {
-        // TODO Auto-generated method stub
-    }
-
-
-    @Override
     public void onAccuracyChanged(Sensor sensor, int arg1)
     {
         // TODO Auto-generated method stub        
@@ -178,13 +98,5 @@ public class AndroidSensorOutput implements ISensorDataInterface, SensorEventLis
     public void onSensorChanged(SensorEvent e)
     {
         // TODO Auto-generated method stub        
-    }
-
-
-    @Override
-    public ISensorModule<?> getSensorInterface()
-    {
-        // TODO Auto-generated method stub
-        return null;
     }
 }
