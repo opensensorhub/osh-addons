@@ -21,7 +21,6 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.TimeZone;
 import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.Count;
@@ -183,14 +182,9 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
                             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
                             dataStruct.renewDataBlock();
 
-                            // get Time and assign to datablock (put it in UTC?)
-                            // should be a SWE Common function; may be a faster way
-                            //TimeZone tz = TimeZone.getTimeZone("UTC");
-                            //DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
-                            //df.setTimeZone(tz);
-
-                            // ALEX: should this be a String?
-                            dataStruct.getComponent("time").getData().setStringValue(df.format(new Date()));
+                            // set sampling time
+                            double time = System.currentTimeMillis() / 1000.;
+                            dataStruct.getComponent("time").getData().setDoubleValue(time);
 
                             String line;
                             while ((line = reader.readLine()) != null)
@@ -232,9 +226,8 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
                                 }
                             }
 
-                            latestRecord = dataStruct.getData();
-                            long time = System.currentTimeMillis();
-                            eventHandler.publishEvent(new SensorDataEvent(AxisSettingsOutput.this, time, settingsDataStruct, latestRecord));
+                            latestRecord = dataStruct.getData();                            
+                            eventHandler.publishEvent(new SensorDataEvent(time, AxisSettingsOutput.this, latestRecord));
 
                             // TODO use a timer; set for every 1 second
                             Thread.sleep(1000);
@@ -268,14 +261,14 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
 
 
     @Override
-    public DataComponent getRecordDescription() throws SensorException
+    public DataComponent getRecordDescription()
     {
         return settingsDataStruct;
     }
 
 
     @Override
-    public DataEncoding getRecommendedEncoding() throws SensorException
+    public DataEncoding getRecommendedEncoding()
     {
         // Token = "," Block = "\n"
         return new TextEncodingImpl(",", "\n");
@@ -286,6 +279,13 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
     public DataBlock getLatestRecord() throws SensorException
     {
         return latestRecord;
+    }
+
+
+    @Override
+    public double getLatestRecordTime()
+    {
+        return latestRecord.getDoubleValue(0); // first component is sampling time
     }
 
 }
