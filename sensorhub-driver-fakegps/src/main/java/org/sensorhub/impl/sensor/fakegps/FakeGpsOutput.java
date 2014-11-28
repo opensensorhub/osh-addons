@@ -32,7 +32,6 @@ import net.opengis.swe.v20.Time;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.DataRecordImpl;
 import org.vast.data.QuantityImpl;
@@ -203,19 +202,21 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         double dist = Math.sqrt(dLat*dLat + dLon*dLon);        
         
         // compute new position
-        long t = System.currentTimeMillis();
+        double time = System.currentTimeMillis() / 1000.;
         double lat = p0[0] + dLat*ratio;
         double lon = p0[1] + dLon*ratio;
         double alt = 193;
         
         // build and publish datablock
         DataBlock dataBlock = posDataStruct.createDataBlock();
-        dataBlock.setDoubleValue(0, t / 1000.0);
+        dataBlock.setDoubleValue(0, time);
         dataBlock.setDoubleValue(1, lat);
         dataBlock.setDoubleValue(2, lon);
         dataBlock.setDoubleValue(3, alt);
+        
+        // update latest record and send event
         latestRecord = dataBlock;
-        eventHandler.publishEvent(new SensorDataEvent(FakeGpsOutput.this, t, posDataStruct, dataBlock));
+        eventHandler.publishEvent(new SensorDataEvent(time, FakeGpsOutput.this, dataBlock));
         
         currentTrackPos += speed / dist;
     }
@@ -257,23 +258,30 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
 
 
     @Override
-    public DataComponent getRecordDescription() throws SensorException
+    public DataComponent getRecordDescription()
     {
         return posDataStruct;
     }
 
 
     @Override
-    public DataEncoding getRecommendedEncoding() throws SensorException
+    public DataEncoding getRecommendedEncoding()
     {
         return new TextEncodingImpl(",", "\n");
     }
 
 
     @Override
-    public DataBlock getLatestRecord() throws SensorException
+    public DataBlock getLatestRecord()
     {
         return latestRecord;
+    }
+    
+    
+    @Override
+    public double getLatestRecordTime()
+    {
+        return latestRecord.getDoubleValue(0);
     }
 
 }

@@ -54,6 +54,7 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
     RGBFrameGrabber frameGrabber;
     DataComponent camDataStruct;
     DataBlock latestRecord;
+    double latestRecordTime;
     
     
     protected V4LCameraOutput(V4LCameraDriver driver)
@@ -114,8 +115,12 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
         {
             DataBlock camData = camDataStruct.createDataBlock();
             ((DataBlockByte)camData).setUnderlyingObject(frame.getBytes());
+            
+            // update latest record and send event
             latestRecord = camData;
-            eventHandler.publishEvent(new SensorDataEvent(this, frame.getCaptureTime(), camDataStruct, camData));
+            latestRecordTime = frame.getCaptureTime() / 1000.;
+            eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, this, camData));
+            
             frame.recycle();
         }
         catch (Exception e)
@@ -126,7 +131,7 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
     
     
     @Override
-    public DataEncoding getRecommendedEncoding() throws SensorException
+    public DataEncoding getRecommendedEncoding()
     {
         BinaryEncoding dataEnc = new BinaryEncodingImpl();
         dataEnc.setByteEncoding(ByteEncoding.RAW);
@@ -166,6 +171,13 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
     }
     
     
+    @Override
+    public double getLatestRecordTime()
+    {
+        return latestRecordTime;
+    }
+    
+    
     protected void stop()
     {
         if (frameGrabber != null)
@@ -176,4 +188,5 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
             frameGrabber = null;
         }
     }
+
 }

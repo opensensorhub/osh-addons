@@ -166,17 +166,16 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 						        
 						        // The ImageTypeSpecifier object gives you access to more info such as 
 						        // bands, color model, etc.
-	//					        ImageTypeSpecifier imageType = reader.getRawImageType(0);
+						        //ImageTypeSpecifier imageType = reader.getRawImageType(0);
 						        
 						        BufferedImage rgbImage = reader.read(0);
-						        long timestamp = AXISJpegHeaderReader.getTimestamp(data);
+						        double timestamp = AXISJpegHeaderReader.getTimestamp(data) / 1000.;
 						        dataBlock.setDoubleValue(0, timestamp/1000.);
 						        byte[] byteData = ((DataBufferByte)rgbImage.getRaster().getDataBuffer()).getData();
 						        ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(byteData);
 								
 						        latestRecord = dataBlock;
-								long time = System.currentTimeMillis();
-								eventHandler.publishEvent(new SensorDataEvent(AxisVideoOutput.this, time, videoDataStruct, latestRecord));
+								eventHandler.publishEvent(new SensorDataEvent(timestamp, AxisVideoOutput.this, latestRecord));
 							}
 							
 							// wait 1s before trying to reconnect
@@ -206,13 +205,13 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	}
 
 	@Override
-	public DataComponent getRecordDescription() throws SensorException
+	public DataComponent getRecordDescription()
 	{
 		return videoDataStruct;
 	}
 
 	@Override
-	public DataEncoding getRecommendedEncoding() throws SensorException
+	public DataEncoding getRecommendedEncoding()
 	{
 		return null;
 	}
@@ -221,6 +220,12 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	public DataBlock getLatestRecord() throws SensorException
 	{
 		return latestRecord;
-	}	
+	}
+	
+	@Override
+    public double getLatestRecordTime()
+    {
+        return latestRecord.getDoubleValue(0);
+    }
 
 }

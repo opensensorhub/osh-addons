@@ -102,7 +102,7 @@ public class TestFakeGpsDriver implements IEventListener
         try
         {
             System.out.println("\nNew data received from sensor " + newDataEvent.getSensorId());
-            writer.write(newDataEvent.getRecords()[0]);
+            writer.write(newDataEvent.getRecord());
             writer.flush();
             System.out.println();
         }
