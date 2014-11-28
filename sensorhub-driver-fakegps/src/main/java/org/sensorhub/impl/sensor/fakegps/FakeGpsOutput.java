@@ -149,6 +149,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     {
         int index = 0, len = encoded.length();
         int lat = 0, lng = 0;        
+        trajPoints.clear();
         
         while (index < len)
         {
