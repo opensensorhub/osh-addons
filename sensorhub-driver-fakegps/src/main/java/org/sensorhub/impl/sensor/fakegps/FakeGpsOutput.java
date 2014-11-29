@@ -60,10 +60,18 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     }
 
 
+    @Override
+    public String getName()
+    {
+        return posDataStruct.getName();
+    }
+
+
     protected void init()
     {
         // SWE Common data structure
         posDataStruct = new DataRecordImpl(3);
+        posDataStruct.setName("gpsLocation");
         posDataStruct.setDefinition("http://sensorml.com/ont/swe/property/Location");
         
         Time c1 = new TimeImpl();

@@ -39,7 +39,7 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
     public FakeGpsSensor()
     {
         dataInterface = new FakeGpsOutput(this);
-        obsOutputs.put("locationOutput", dataInterface);
+        addOutput(dataInterface, false);
         dataInterface.init();
     }
     

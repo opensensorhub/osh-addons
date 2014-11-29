@@ -48,10 +48,10 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     public AxisCameraDriver()
     {
         videoDataInterface = new AxisVideoOutput(this);
-        obsOutputs.put("videoOutput", videoDataInterface);
+        addOutput(videoDataInterface, false);
 
         ptzDataInterface = new AxisSettingsOutput(this);
-        obsOutputs.put("ptzOutput", ptzDataInterface);
+        addOutput(ptzDataInterface, false);
     }
 
 

@@ -33,6 +33,13 @@ public class AxisVideoControl extends AbstractSensorControl<AxisCameraDriver>
 
 
     @Override
+    public String getName()
+    {
+        return "TODO";
+    }
+    
+    
+    @Override
     public DataComponent getCommandDescription()
     {
         // TODO Auto-generated method stub

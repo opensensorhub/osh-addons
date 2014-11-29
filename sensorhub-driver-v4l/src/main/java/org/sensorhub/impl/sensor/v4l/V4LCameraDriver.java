@@ -47,10 +47,10 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     public V4LCameraDriver()
     {
         this.dataInterface = new V4LCameraOutput(this);
-        obsOutputs.put("camOutput", dataInterface);
+        addOutput(dataInterface, false);
         
         this.controlInterface = new V4LCameraControl(this);
-        controlInputs.put("camParams", controlInterface);
+        addControlInput(controlInterface);
     }
 
 

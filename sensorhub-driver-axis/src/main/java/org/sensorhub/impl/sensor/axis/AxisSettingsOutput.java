@@ -63,6 +63,13 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
     }
 
 
+    @Override
+    public String getName()
+    {
+        return settingsDataStruct.getName();
+    }
+    
+    
     protected void init()
     {
 
@@ -106,7 +113,8 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
 
             // Build SWE Common Data structure
             settingsDataStruct = new DataRecordImpl(3);
-
+            settingsDataStruct.setName("ptzOutput");
+            
             Time t = new TimeImpl();
             t.getUom().setHref(Time.ISO_TIME_UNIT);
             t.setDefinition(SWEConstants.DEF_SAMPLING_TIME);

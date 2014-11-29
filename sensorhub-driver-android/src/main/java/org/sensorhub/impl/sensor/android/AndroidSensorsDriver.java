@@ -41,8 +41,8 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
         List<Sensor> deviceSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
         for (Sensor sensor: deviceSensors)
         {
-            obsOutputs.put(sensor.getName(), new AndroidSensorOutput(this, sensorManager, sensor));
-            controlInputs.put(sensor.getName(), new AndroidSensorControl(this, sensorManager, sensor));
+            addOutput(new AndroidSensorOutput(this, sensorManager, sensor), false);
+            addControlInput(new AndroidSensorControl(this, sensorManager, sensor));
         }
     }
     
