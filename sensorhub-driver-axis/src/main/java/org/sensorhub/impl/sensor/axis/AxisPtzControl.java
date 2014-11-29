@@ -34,6 +34,13 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
     }
     
     
+    @Override
+    public String getName()
+    {
+        return commandData.getName();
+    }
+    
+    
     protected void init()
     {
         // first check for taskable parameters (e.g. PTZ, zoom, etc.)
@@ -42,7 +49,7 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
     	
         // build command message structure from IP queries
         this.commandData = new DataRecordImpl(6);
-        
+        commandData.setName("ptzControl");
         
     }
 

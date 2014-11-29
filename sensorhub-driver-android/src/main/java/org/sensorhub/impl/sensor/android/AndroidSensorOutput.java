@@ -50,6 +50,13 @@ public class AndroidSensorOutput extends AbstractSensorOutput<AndroidSensorsDriv
     }
     
     
+    @Override
+    public String getName()
+    {
+        return aSensor.getName() + "_data";
+    }
+    
+    
     protected void init()
     {
         aSensorManager.registerListener(this, aSensor, 10);
