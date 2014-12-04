@@ -15,7 +15,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.axis;
 
-import net.opengis.sensorml.v20.AbstractProcess;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -56,11 +55,16 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 
 
     @Override
-    public AbstractProcess getCurrentSensorDescription() throws SensorException
+    protected void updateSensorDescription() throws SensorException
     {
-        // parent class reads SensorML from config is provided
-        // and then sets unique ID, outputs and controllable parameters
-        return super.getCurrentSensorDescription();
+        synchronized (sensorDescription)
+        {
+            // parent class reads SensorML from config if provided
+            // and then sets unique ID, outputs and control inputs
+            super.updateSensorDescription();
+            
+            // add more stuff in SensorML here
+        }
     }
 
 

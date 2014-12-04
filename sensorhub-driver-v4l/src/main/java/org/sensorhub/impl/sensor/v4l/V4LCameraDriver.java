@@ -15,7 +15,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.v4l;
 
-import net.opengis.sensorml.v20.AbstractProcess;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -113,11 +112,13 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     
     
     @Override
-    public AbstractProcess getCurrentSensorDescription() throws SensorException
+    protected void updateSensorDescription() throws SensorException
     {
-        AbstractProcess sensorDesc = super.getCurrentSensorDescription();
-        sensorDesc.setDescription("Video4Linux camera on port " + videoDevice.getDevicefile());
-        return sensorDesc;
+        synchronized (sensorDescription)
+        {
+            super.updateSensorDescription();
+            sensorDescription.setDescription("Video4Linux camera on port " + videoDevice.getDevicefile());
+        }
     }
 
 
