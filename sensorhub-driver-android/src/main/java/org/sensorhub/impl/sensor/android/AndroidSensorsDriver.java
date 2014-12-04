@@ -16,7 +16,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.android;
 
 import java.util.List;
-import net.opengis.sensorml.v20.AbstractProcess;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.api.sensor.SensorException;
@@ -62,9 +61,12 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
 
 
     @Override
-    public AbstractProcess getCurrentSensorDescription() throws SensorException
+    protected void updateSensorDescription() throws SensorException
     {
-        return super.getCurrentSensorDescription();
+        synchronized (sensorDescription)
+        {
+            super.updateSensorDescription();
+        }
     }
 
 
