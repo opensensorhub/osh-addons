@@ -15,7 +15,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fakegps;
 
-import net.opengis.sensorml.v20.AbstractProcess;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -45,11 +44,14 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
     
     
     @Override
-    public AbstractProcess getCurrentSensorDescription() throws SensorException
+    protected void updateSensorDescription() throws SensorException
     {
-        AbstractProcess smlSys = super.getCurrentSensorDescription();
-        smlSys.setUniqueIdentifier("urn:test:sensors:fakegps");
-        return smlSys;
+        synchronized (sensorDescription)
+        {
+            super.updateSensorDescription();
+            sensorDescription.setUniqueIdentifier("urn:test:sensors:fakegps");
+            sensorDescription.setDescription("Fake GPS sensor generating data along random itineraries obtained using Google Direction API");
+        }
     }
 
 
