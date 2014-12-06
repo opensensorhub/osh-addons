@@ -61,7 +61,7 @@ public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
     @Override
     public String getName()
     {
-        return commandData.getName();
+        return "camParams";
     }
     
     
@@ -72,7 +72,7 @@ public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
         
         // build command message structure from V4L info
         this.commandData = fac.newDataRecord();
-        commandData.setName("camParams");
+        commandData.setName(getName());
         commandData.setUpdatable(true);
         AllowedTokens tokenConstraint;
         AllowedValues numConstraint;
