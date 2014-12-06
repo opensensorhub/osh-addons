@@ -35,7 +35,7 @@ public class AxisVideoControl extends AbstractSensorControl<AxisCameraDriver>
     @Override
     public String getName()
     {
-        return "TODO";
+        return "videoControl";
     }
     
     

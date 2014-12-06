@@ -66,7 +66,7 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
     @Override
     public String getName()
     {
-        return camDataStruct.getName();
+        return "camOutput";
     }
     
     
@@ -97,7 +97,7 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
         
         // build output structure
         camDataStruct = new DataArrayImpl(camParams.imgHeight);
-        camDataStruct.setName("camOutput");
+        camDataStruct.setName(getName());
         camDataStruct.setDefinition("http://sensorml.com/ont/swe/property/VideoFrame");
         DataArray imgRow = new DataArrayImpl(camParams.imgWidth);
         ((DataArray)camDataStruct).addComponent("row", imgRow);        
