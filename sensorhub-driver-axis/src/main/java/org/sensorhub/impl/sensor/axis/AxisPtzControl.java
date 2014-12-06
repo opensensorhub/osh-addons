@@ -37,7 +37,7 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
     @Override
     public String getName()
     {
-        return commandData.getName();
+        return "ptzControl";
     }
     
     
@@ -49,7 +49,7 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
     	
         // build command message structure from IP queries
         this.commandData = new DataRecordImpl(6);
-        commandData.setName("ptzControl");
+        commandData.setName(getName());
         
     }
 

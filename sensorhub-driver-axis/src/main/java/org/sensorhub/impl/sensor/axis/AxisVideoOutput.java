@@ -67,7 +67,7 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	@Override
     public String getName()
     {
-        return videoDataStruct.getName();
+        return "videoOutput";
     }
     
     
@@ -80,7 +80,7 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 			
 			// build output structure
 			videoDataStruct = new DataRecordImpl(2);
-			videoDataStruct.setName("videoOutput");
+			videoDataStruct.setName(getName());
 			
 			Time time = new TimeImpl();
 			time.getUom().setHref(Time.ISO_TIME_UNIT);
