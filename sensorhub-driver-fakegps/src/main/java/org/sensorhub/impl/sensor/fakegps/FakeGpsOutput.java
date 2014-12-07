@@ -290,7 +290,10 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     @Override
     public double getLatestRecordTime()
     {
-        return latestRecord.getDoubleValue(0);
+        if (latestRecord != null)
+            return latestRecord.getDoubleValue(0);
+        
+        return Double.NaN;
     }
 
 }
