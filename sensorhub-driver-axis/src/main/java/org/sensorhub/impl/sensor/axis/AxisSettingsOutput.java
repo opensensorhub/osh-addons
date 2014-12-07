@@ -293,7 +293,10 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
     @Override
     public double getLatestRecordTime()
     {
-        return latestRecord.getDoubleValue(0); // first component is sampling time
+        if (latestRecord != null)
+            return latestRecord.getDoubleValue(0); // first component is sampling time
+        
+        return Double.NaN;
     }
 
 }

@@ -54,7 +54,7 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
     RGBFrameGrabber frameGrabber;
     DataComponent camDataStruct;
     DataBlock latestRecord;
-    double latestRecordTime;
+    double latestRecordTime = Double.NaN;
     
     
     protected V4LCameraOutput(V4LCameraDriver driver)
