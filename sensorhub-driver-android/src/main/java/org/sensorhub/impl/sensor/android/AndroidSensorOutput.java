@@ -98,7 +98,7 @@ public class AndroidSensorOutput extends AbstractSensorOutput<AndroidSensorsDriv
     public double getLatestRecordTime()
     {
         // TODO Auto-generated method stub
-        return 0;
+        return Double.NaN;
     }
 
 
