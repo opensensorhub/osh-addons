@@ -46,7 +46,8 @@ import org.vast.sweCommon.SWEConstants;
 /**
  * <p>
  * Implementation of sensor interface for generic Axis Cameras using IP
- * protocol
+ * protocol. This particular class provides output from the Pan-Tilt-Zoom
+ * (PTZ) capabilities.
  * </p>
  *
  * <p>
@@ -119,8 +120,9 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
                     maxZoom = Double.parseDouble(tokens[1]);
             }
 
-            // Build SWE Common Data structure
-            settingsDataStruct = new DataRecordImpl(3);
+            // **** Build SWE Common Data structure ****
+            // Settings output includes time, pan, tilt, zoom, brightness, autofocus setting
+            settingsDataStruct = new DataRecordImpl(6);
 
             Time t = new TimeImpl();
             t.getUom().setHref(Time.ISO_TIME_UNIT);
