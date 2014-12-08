@@ -25,7 +25,8 @@ import org.sensorhub.impl.sensor.AbstractSensorControl;
 /**
  * <p>
  * Implementation of sensor interface for generic Axis Cameras using IP
- * protocol
+ * protocol. This particular class provides control of the video
+ * camera itself.
  * </p>
  *
  * <p>

@@ -25,7 +25,8 @@ import org.vast.data.DataRecordImpl;
 /**
  * <p>
  * Implementation of sensor interface for generic Axis Cameras using IP
- * protocol
+ * protocol. This particular class provides control of the Pan-Tilt-Zoom
+ * (PTZ) capabilities.
  * </p>
  *
  * <p>

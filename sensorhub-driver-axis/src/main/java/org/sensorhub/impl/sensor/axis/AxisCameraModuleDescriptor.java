@@ -22,7 +22,8 @@ import org.sensorhub.api.module.ModuleConfig;
 /**
  * <p>
  * Implementation of sensor interface for generic Axis Cameras using IP
- * protocol
+ * protocol. This particular class provides a description of the Axis
+ * IP video camera module.
  * </p>
  *
  * <p>

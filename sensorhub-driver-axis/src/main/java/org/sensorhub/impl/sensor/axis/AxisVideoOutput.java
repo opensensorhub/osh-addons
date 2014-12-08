@@ -51,7 +51,8 @@ import org.vast.sweCommon.SWEConstants;
 /**
  * <p>
  * Implementation of sensor interface for generic Axis Cameras using IP
- * protocol
+ * protocol. This particular class provides output from the video
+ * camera capabilities.
  * </p>
  *
  * <p>
