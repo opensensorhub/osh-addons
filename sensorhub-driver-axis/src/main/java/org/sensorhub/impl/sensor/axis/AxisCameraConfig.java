@@ -20,7 +20,7 @@ import org.sensorhub.api.sensor.SensorConfig;
 /**
  * <p>
  * Implementation of sensor interface for generic Axis Cameras using IP
- * protocol
+ * protocol. This particular class stores configuration parameters.
  * </p>
  *
  * <p>

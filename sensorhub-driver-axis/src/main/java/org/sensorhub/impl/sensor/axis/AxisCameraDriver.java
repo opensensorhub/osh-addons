@@ -43,15 +43,25 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     AxisPtzControl ptzControlInterface;
 
 
-    /* *** here begins the specific sensor module stuff */
 
     public AxisCameraDriver()
     {
-        videoDataInterface = new AxisVideoOutput(this);
+    	// establish the sensor outputs and controllers (video and PTZ)
+    	
+    	// output sources
+        this.videoDataInterface = new AxisVideoOutput(this);
         obsOutputs.put("videoOutput", videoDataInterface);
 
-        ptzDataInterface = new AxisSettingsOutput(this);
+        this.ptzDataInterface = new AxisSettingsOutput(this);
         obsOutputs.put("ptzOutput", ptzDataInterface);
+        
+        // control sources
+        this.videoControlInterface = new AxisVideoControl(this);
+        controlInputs.put("videoControl", videoControlInterface);
+        
+        this.ptzControlInterface = new AxisPtzControl(this);
+        controlInputs.put("ptzControl", ptzControlInterface);
+
     }
 
 
