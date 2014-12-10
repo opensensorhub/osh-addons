@@ -50,6 +50,13 @@ public class AndroidSensorOutput extends AbstractSensorOutput<AndroidSensorsDriv
     }
     
     
+    @Override
+    public String getName()
+    {
+        return aSensor.getName() + "_data";
+    }
+    
+    
     protected void init()
     {
         aSensorManager.registerListener(this, aSensor, 10);
@@ -65,7 +72,7 @@ public class AndroidSensorOutput extends AbstractSensorOutput<AndroidSensorsDriv
 
 
     @Override
-    public DataComponent getRecordDescription() throws SensorException
+    public DataComponent getRecordDescription()
     {
         // TODO Auto-generated method stub
         return null;
@@ -73,7 +80,7 @@ public class AndroidSensorOutput extends AbstractSensorOutput<AndroidSensorsDriv
 
 
     @Override
-    public DataEncoding getRecommendedEncoding() throws SensorException
+    public DataEncoding getRecommendedEncoding()
     {
         return new TextEncodingImpl(",", "\n");
     }
@@ -84,6 +91,14 @@ public class AndroidSensorOutput extends AbstractSensorOutput<AndroidSensorsDriv
     {
         // TODO Auto-generated method stub
         return null;
+    }
+    
+    
+    @Override
+    public double getLatestRecordTime()
+    {
+        // TODO Auto-generated method stub
+        return Double.NaN;
     }
 
 
@@ -99,4 +114,5 @@ public class AndroidSensorOutput extends AbstractSensorOutput<AndroidSensorsDriv
     {
         // TODO Auto-generated method stub        
     }
+    
 }

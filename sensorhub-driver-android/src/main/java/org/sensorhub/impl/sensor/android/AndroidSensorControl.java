@@ -37,17 +37,24 @@ import android.hardware.SensorManager;
 public class AndroidSensorControl extends AbstractSensorControl<AndroidSensorsDriver>
 {
     SensorManager aSensorManager;
-    Sensor androidSensor;
+    Sensor aSensor;
     
     
-    protected AndroidSensorControl(AndroidSensorsDriver parentModule, SensorManager aSensorManager, Sensor androidSensor)
+    protected AndroidSensorControl(AndroidSensorsDriver parentModule, SensorManager aSensorManager, Sensor aSensor)
     {
         super(parentModule);
         this.aSensorManager = aSensorManager;
-        this.androidSensor = androidSensor;
+        this.aSensor = aSensor;
     }
 
 
+    @Override
+    public String getName()
+    {
+        return aSensor.getName() + "_control";
+    }
+    
+    
     @Override
     public DataComponent getCommandDescription()
     {
