@@ -58,7 +58,8 @@ public class TestAxisCameraDriver implements IEventListener
     public void init() throws Exception
     {
         config = new AxisCameraConfig();
-        config.ipAddress = "root:more4less@192.168.1.50";
+        //config.ipAddress = "root:more4less@192.168.1.50";
+        config.ipAddress = "192.168.1.50";
         config.id = UUID.randomUUID().toString();
         
         driver = new AxisCameraDriver();

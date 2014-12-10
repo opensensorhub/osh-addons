@@ -41,6 +41,7 @@ public class TestFakeGpsDriver implements IEventListener
     FakeGpsSensor driver;
     FakeGpsConfig config;
     AsciiDataWriter writer;
+    int sampleCount = 0;
 
         
     @Before
@@ -62,6 +63,7 @@ public class TestFakeGpsDriver implements IEventListener
     {
         for (ISensorDataInterface di: driver.getObservationOutputs().values())
         {
+            System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
             new SWECommonUtils().writeComponent(System.out, dataMsg, false, true);
         }
@@ -71,6 +73,7 @@ public class TestFakeGpsDriver implements IEventListener
     @Test
     public void testGetSensorDesc() throws Exception
     {
+        System.out.println();
         AbstractProcess smlDesc = driver.getCurrentSensorDescription();
         new SMLUtils().writeProcess(System.out, smlDesc, true);
     }
@@ -79,7 +82,8 @@ public class TestFakeGpsDriver implements IEventListener
     @Test
     public void testSendMeasurements() throws Exception
     {
-        ISensorDataInterface gpsOutput = driver.getObservationOutputs().get("locationOutput");
+        System.out.println();
+        ISensorDataInterface gpsOutput = driver.getObservationOutputs().get("gpsLocation");
         
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
@@ -89,7 +93,13 @@ public class TestFakeGpsDriver implements IEventListener
         gpsOutput.registerListener(this);
         driver.start();
         
-        Thread.sleep(3000);        
+        synchronized (this) 
+        {
+            while (sampleCount < 5)
+                wait();
+        }
+        
+        System.out.println();
     }
     
     
@@ -101,10 +111,11 @@ public class TestFakeGpsDriver implements IEventListener
         
         try
         {
-            System.out.println("\nNew data received from sensor " + newDataEvent.getSensorId());
+            //System.out.print("\nNew data received from sensor " + newDataEvent.getSensorId());
             writer.write(newDataEvent.getRecords()[0]);
             writer.flush();
-            System.out.println();
+            
+            sampleCount++;
         }
         catch (IOException e1)
         {

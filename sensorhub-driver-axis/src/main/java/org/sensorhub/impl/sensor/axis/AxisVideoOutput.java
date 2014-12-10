@@ -51,7 +51,7 @@ import org.vast.sweCommon.SWEConstants;
 /**
  * <p>
  * Implementation of sensor interface for generic Axis Cameras using IP
- * protocol. This particular class provides output from the video
+ * protocol. This particular class provides time-tagged video output from the video
  * camera capabilities.
  * </p>
  *
@@ -62,6 +62,8 @@ import org.vast.sweCommon.SWEConstants;
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since October 30, 2014
  */
+
+// TODO Need a separate class for outputting camera settings (e.g. imageSize, brightness, iris, IR, focus, imageRotation)
 
 public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
@@ -78,7 +80,14 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
     }
 	
 	
-	protected void init()
+	@Override
+    public String getName()
+    {
+        return "videoOutput";
+    }
+    
+    
+    protected void init()
     {
 		try
 		{
@@ -87,6 +96,7 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 			
 			// build output structure
 			videoDataStruct = new DataRecordImpl(2);
+			videoDataStruct.setName(getName());
 			
 			Time time = new TimeImpl();
 			time.getUom().setHref(Time.ISO_TIME_UNIT);
@@ -180,17 +190,16 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 						        
 						        // The ImageTypeSpecifier object gives you access to more info such as 
 						        // bands, color model, etc.
-	//					        ImageTypeSpecifier imageType = reader.getRawImageType(0);
+						        //ImageTypeSpecifier imageType = reader.getRawImageType(0);
 						        
 						        BufferedImage rgbImage = reader.read(0);
-						        long timestamp = AXISJpegHeaderReader.getTimestamp(data);
+						        double timestamp = AXISJpegHeaderReader.getTimestamp(data) / 1000.;
 						        dataBlock.setDoubleValue(0, timestamp/1000.);
 						        byte[] byteData = ((DataBufferByte)rgbImage.getRaster().getDataBuffer()).getData();
 						        ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(byteData);
 								
 						        latestRecord = dataBlock;
-								long time = System.currentTimeMillis();
-								eventHandler.publishEvent(new SensorDataEvent(AxisVideoOutput.this, time, videoDataStruct, latestRecord));
+								eventHandler.publishEvent(new SensorDataEvent(timestamp, AxisVideoOutput.this, latestRecord));
 							}
 							
 							// wait 1s before trying to reconnect
@@ -220,13 +229,13 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	}
 
 	@Override
-	public DataComponent getRecordDescription() throws SensorException
+	public DataComponent getRecordDescription()
 	{
 		return videoDataStruct;
 	}
 
 	@Override
-	public DataEncoding getRecommendedEncoding() throws SensorException
+	public DataEncoding getRecommendedEncoding()
 	{
 		return null;
 	}
@@ -235,6 +244,22 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	public DataBlock getLatestRecord() throws SensorException
 	{
 		return latestRecord;
-	}	
+	}
+	
+	@Override
+    public double getLatestRecordTime()
+    {
+        if (latestRecord != null)
+            return latestRecord.getDoubleValue(0);
+        
+        return Double.NaN;
+    }
+
+
+	public void stop()
+	{
+		// TODO Auto-generated method stub
+		
+	}
 
 }

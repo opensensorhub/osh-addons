@@ -15,10 +15,16 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.axis;
 
-import net.opengis.sensorml.v20.AbstractProcess;
-import org.sensorhub.api.common.SensorHubException;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+
 
 
 /**
@@ -37,73 +43,166 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 
 public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 {
-    AxisVideoOutput videoDataInterface;
+	private static final Log log = LogFactory.getLog(AxisCameraDriver.class);
+	
+	AxisVideoOutput videoDataInterface;
     AxisSettingsOutput ptzDataInterface;
     AxisVideoControl videoControlInterface;
     AxisPtzControl ptzControlInterface;
+    
+    String ipAddress;
 
 
 
     public AxisCameraDriver()
     {
-    	// establish the sensor outputs and controllers (video and PTZ)
     	
-    	// output sources
-        this.videoDataInterface = new AxisVideoOutput(this);
-        obsOutputs.put("videoOutput", videoDataInterface);
-
-        this.ptzDataInterface = new AxisSettingsOutput(this);
-        obsOutputs.put("ptzOutput", ptzDataInterface);
-        
-        // control sources
-        this.videoControlInterface = new AxisVideoControl(this);
-        controlInputs.put("videoControl", videoControlInterface);
-        
-        this.ptzControlInterface = new AxisPtzControl(this);
-        controlInputs.put("ptzControl", ptzControlInterface);
-
     }
+    
+    @Override
+    public void start() throws SensorException
+    {
+    	ipAddress = getConfiguration().ipAddress;
+    	
+    	// check first if connected
+    	if (isConnected()){
+    	
+	    	// establish the outputs and controllers (video and PTZ)   	
+	    	// add video output and controller
+	        this.videoDataInterface = new AxisVideoOutput(this);
+	        addOutput(videoDataInterface, false);
+	
+	        this.videoControlInterface = new AxisVideoControl(this);
+	        addControlInput(videoControlInterface);
+	        
+	        videoDataInterface.init();
+	        videoControlInterface.init();
 
+	        
+	        
+	        /** check if PTZ supported  **/
+	        try
+	        {
+	        
+		        URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=root.Properties.PTZ");
+		        InputStream is = optionsURL.openStream();
+		        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+		        
+		        boolean ptzSupported = false;
+		
+		        String line;
+		        while ((line = reader.readLine()) != null)
+		        {
+		            // parse response
+		            String[] tokens = line.split("=");
+		
+		            if (tokens[0].trim().equalsIgnoreCase("root.Properties.PTZ.PTZ"))
+		                ptzSupported = Boolean.parseBoolean(tokens[1]);    	
+		        }
+		        
+		        if (ptzSupported){
+		        	
+		        	// add PTZ output
+			        this.ptzDataInterface = new AxisSettingsOutput(this);
+			        addOutput(ptzDataInterface, false);
+			        ptzDataInterface.init();
+			        
+			        // add PTZ controller
+			        this.ptzControlInterface = new AxisPtzControl(this);
+			        addControlInput(ptzControlInterface);
+			        ptzControlInterface.init();
+		            	
+		        }
+
+
+	        }
+	        catch (Exception e)
+	        {
+	            e.printStackTrace();
+	        }
+    	}
+    	else
+    		log.error("connection not established at " + ipAddress);
+    }
+    
 
     @Override
-    public AbstractProcess getCurrentSensorDescription() throws SensorException
+    protected void updateSensorDescription() throws SensorException
     {
-        // parent class reads SensorML from config is provided
-        // and then sets unique ID, outputs and controllable parameters
-        return super.getCurrentSensorDescription();
+        synchronized (sensorDescription)
+        {
+        	// TODO get sensor info (camera model, serial no, etc.) camera and add to SensorML description
+        	// use http://192.168.1.50/axis-cgi/view/param.cgi?action=list&group= ... root.Brand.* and root.Properties.*
+        	
+            // parent class reads SensorML from config if provided
+            // and then sets unique ID, outputs and control inputs
+            super.updateSensorDescription();
+            
+            // add more stuff in SensorML here
+        }
     }
 
 
     @Override
     public boolean isConnected()
     {
-        // TODO Auto-generated method stub
-        return false;
+        try
+        {
+        	// try to open stream and check for AXIS Brand
+	        URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=root.Brand.Brand");
+		    InputStream is = optionsURL.openStream();
+	        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+	        
+		    String line = reader.readLine();
+		    
+		    // note: should return one line with root.Brand.Brand=AXIS
+		    if (line != null){
+		    	
+	            String[] tokens = line.split("=");
+	
+	            if ((tokens[0].trim().equalsIgnoreCase("root.Brand.Brand")) && (tokens[1].trim().equalsIgnoreCase("AXIS")))
+	                return true; 
+		    }
+		    return false;
+        }
+        catch (Exception e)
+        {
+            log.error("Failed to connect to the Axis Camera at " + ipAddress, e);
+            return false;
+        }
+   
     }
 
-
-    @Override
-    public void start() throws SensorHubException
-    {
-        ptzDataInterface.init();
-        videoDataInterface.init();
-
-        ptzDataInterface.startPolling();
-        videoDataInterface.startStream();
-    }
 
 
     @Override
     public void stop()
     {
-
+        if (ptzDataInterface != null)
+        	ptzDataInterface.stop();
+        
+        if (ptzControlInterface != null)
+        	ptzControlInterface.stop();
+        
+       if (videoDataInterface != null)
+        	videoDataInterface.stop();
+        
+       if (videoControlInterface != null)
+       		videoControlInterface.stop();
     }
 
 
     @Override
-    public void cleanup() throws SensorHubException
+    public void cleanup()
     {
 
     }
+    
+    @Override
+    public void finalize()
+    {
+        stop();
+    }
+
 
 }
