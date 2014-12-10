@@ -6,7 +6,7 @@
     <version>0.5</version>
   </parent>
   <artifactId>sensorhub-driver-fakegps</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.1</version>
   <name>Fake GPS Sensor Driver</name>
   <description>Fake GPS data obtained from Google Directions API</description>
   <dependencies>

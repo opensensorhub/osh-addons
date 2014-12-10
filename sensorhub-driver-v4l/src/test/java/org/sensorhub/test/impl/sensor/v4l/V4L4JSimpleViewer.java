@@ -59,7 +59,6 @@ public class V4L4JSimpleViewer extends WindowAdapter implements CaptureCallback{
 
         /**
          * Builds a WebcamViewer object
-         * @throws V4L4JException if any parameter if invalid
          */
         public V4L4JSimpleViewer(){
                 // Initialise video device and frame grabber
