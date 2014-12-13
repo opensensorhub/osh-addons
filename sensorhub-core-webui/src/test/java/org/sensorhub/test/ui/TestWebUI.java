@@ -18,22 +18,21 @@ package org.sensorhub.test.ui;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.api.persistence.StorageConfig;
 import org.sensorhub.api.processing.ProcessConfig;
 import org.sensorhub.api.sensor.SensorConfig;
-import org.sensorhub.api.service.ServiceConfig;
 import org.sensorhub.impl.SensorHub;
 import org.sensorhub.impl.module.DummyModule;
 import org.sensorhub.impl.module.InMemoryConfigDb;
 import org.sensorhub.impl.module.ModuleRegistry;
 import org.sensorhub.impl.service.HttpServer;
 import org.sensorhub.impl.service.HttpServerConfig;
-import org.sensorhub.ui.AdminUI;
-import com.vaadin.server.VaadinServlet;
+import org.sensorhub.ui.AdminUIConfig;
+import org.sensorhub.ui.AdminUIModule;
+import org.sensorhub.ui.CustomFormConfig;
+import org.sensorhub.ui.HttpServerConfigForm;
 
 
 public class TestWebUI
@@ -44,27 +43,15 @@ public class TestWebUI
         // instantiate module registry
         ModuleRegistry registry = new ModuleRegistry(setupConfig());
         SensorHub.createInstance(null, registry);
-        //registry.loadAllModules();
-        
-        // start HTTP server
-        HttpServer server = HttpServer.getInstance();
-        HttpServerConfig config = new HttpServerConfig();
-        server.init(config);
-        server.start();
+        registry.loadAllModules();
         
         // connect to servlet and check response
-        URL url = new URL("http://localhost:" + config.httpPort + config.rootURL + "/test");
+        HttpServerConfig httpConfig = HttpServer.getInstance().getConfiguration();
+        URL url = new URL("http://localhost:" + httpConfig.httpPort + httpConfig.servletsRootUrl + "/test");
         BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
         String resp = reader.readLine();
         System.out.println(resp);
         reader.close();
-        
-        // deploy Vaadin servlet
-        VaadinServlet vaadin = new VaadinServlet();
-        Map<String, String> initParams = new HashMap<String, String>();
-        initParams.put("UI", AdminUI.class.getCanonicalName());
-        initParams.put("productionMode", "true");
-        server.deployServlet("/*", vaadin, initParams);
     }
     
     
@@ -72,6 +59,22 @@ public class TestWebUI
     {
         InMemoryConfigDb configDB = new InMemoryConfigDb();
         
+        // HTTP server
+        HttpServerConfig httpConfig = new HttpServerConfig();
+        httpConfig.enabled = true;
+        httpConfig.moduleClass = HttpServer.class.getCanonicalName();
+        httpConfig.id = UUID.randomUUID().toString();
+        configDB.add(httpConfig);
+        
+        // Admin UI
+        AdminUIConfig adminConfig = new AdminUIConfig();
+        adminConfig.enabled = true;
+        adminConfig.moduleClass = AdminUIModule.class.getCanonicalName();
+        adminConfig.id = UUID.randomUUID().toString();
+        adminConfig.customForms.add(new CustomFormConfig(HttpServerConfig.class.getCanonicalName(), HttpServerConfigForm.class.getCanonicalName()));
+        configDB.add(adminConfig);
+        
+        // Dummy modules
         String[] moduleNames = new String[] {"SOS Service", "SPS Service", "Storage1", "Storage2", "Sensor1", "Sensor2"};
         
         for (String name: moduleNames)
@@ -79,7 +82,7 @@ public class TestWebUI
             ModuleConfig config;
             
             if (name.contains("Service"))
-                config = new ServiceConfig();
+                config = new TestServiceConfig();
             else if (name.contains("Storage"))
                 config = new StorageConfig();
             else if (name.contains("Process"))
