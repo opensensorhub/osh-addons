@@ -31,8 +31,8 @@ import org.sensorhub.impl.sensor.fakegps.FakeGpsConfig;
 import org.sensorhub.impl.sensor.fakegps.FakeGpsSensor;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
-import org.vast.sweCommon.AsciiDataWriter;
-import org.vast.sweCommon.SWECommonUtils;
+import org.vast.swe.AsciiDataWriter;
+import org.vast.swe.SWECommonUtils;
 import static org.junit.Assert.*;
 
 

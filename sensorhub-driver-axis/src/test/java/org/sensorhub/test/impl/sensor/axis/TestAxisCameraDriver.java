@@ -29,7 +29,7 @@ import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.axis.AxisCameraConfig;
 import org.sensorhub.impl.sensor.axis.AxisCameraDriver;
 import org.vast.sensorML.SMLUtils;
-import org.vast.sweCommon.SWECommonUtils;
+import org.vast.swe.SWECommonUtils;
 import static org.junit.Assert.*;
 
 

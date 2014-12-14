@@ -46,7 +46,7 @@ import org.vast.data.DataArrayImpl;
 import org.vast.data.DataBlockMixed;
 import org.vast.data.DataRecordImpl;
 import org.vast.data.TimeImpl;
-import org.vast.sweCommon.SWEConstants;
+import org.vast.swe.SWEConstants;
 
 
 public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
