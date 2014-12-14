@@ -40,7 +40,7 @@ import org.vast.data.DataRecordImpl;
 import org.vast.data.QuantityImpl;
 import org.vast.data.TextEncodingImpl;
 import org.vast.data.TimeImpl;
-import org.vast.sweCommon.SWEConstants;
+import org.vast.swe.SWEConstants;
 
 
 public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
