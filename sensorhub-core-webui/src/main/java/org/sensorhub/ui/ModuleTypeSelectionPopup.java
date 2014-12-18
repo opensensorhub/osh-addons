@@ -18,7 +18,7 @@ package org.sensorhub.ui;
 import java.util.HashMap;
 import java.util.Map;
 import org.sensorhub.api.module.IModuleProvider;
-import org.sensorhub.api.persistence.IDataStorage;
+import org.sensorhub.api.persistence.IBasicStorage;
 import org.sensorhub.impl.SensorHub;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
@@ -59,7 +59,7 @@ public class ModuleTypeSelectionPopup extends Window
                 configMap.put(id, configClass);
             }
         }
-        table.addItem(new Object[] {"PERST Storage", IDataStorage.class.getCanonicalName()}, null);
+        table.addItem(new Object[] {"PERST Storage", IBasicStorage.class.getCanonicalName()}, null);
         layout.addComponent(table);
         
         // add OK button
