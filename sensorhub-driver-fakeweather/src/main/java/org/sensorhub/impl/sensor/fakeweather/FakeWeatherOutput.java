@@ -101,8 +101,6 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         weatherData.addComponent("windSpeed", c);        
 }
 
-
-    
     
     private void sendMeasurement()
     {
