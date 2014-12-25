@@ -170,7 +170,8 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     @Override
     public double getAverageSamplingPeriod()
     {
-        return 1.0;
+    	// sample every 5 seconds
+        return 5.0;
     }
 
 
