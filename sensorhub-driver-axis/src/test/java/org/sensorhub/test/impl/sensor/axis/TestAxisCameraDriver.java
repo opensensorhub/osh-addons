@@ -8,7 +8,7 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-The Initial Developer is Sensia Software LLC. Portions created by the Initial
+The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
 Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
@@ -32,6 +32,20 @@ import org.vast.sensorML.SMLUtils;
 import org.vast.swe.SWECommonUtils;
 import static org.junit.Assert.*;
 
+/**
+ * <p>
+ * Implementation of sensor interface for generic Axis Cameras using IP
+ * protocol
+ * </p>
+ *
+ * <p>
+ * Copyright (c) 2014
+ * </p>
+ * 
+ * @author Mike Botts <mike.botts@botts-inc.com>
+ * @since October 30, 2014
+ */
+
 
 public class TestAxisCameraDriver implements IEventListener
 {
@@ -44,7 +58,8 @@ public class TestAxisCameraDriver implements IEventListener
     public void init() throws Exception
     {
         config = new AxisCameraConfig();
-        config.ipAddress = "root:more4less@192.168.1.50";
+        //config.ipAddress = "root:more4less@192.168.1.50";
+        config.ipAddress = "192.168.1.50";
         config.id = UUID.randomUUID().toString();
         
         driver = new AxisCameraDriver();
