@@ -1,0 +1,37 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.sensorhub</groupId>
+    <artifactId>sensorhub-all</artifactId>
+    <version>0.5</version>
+  </parent>
+  <artifactId>sensorhub-driver-weatherStation</artifactId>
+  <version>0.1</version>
+  <name>WeatherStation</name>
+  <description>Driver for weather station data- initially METAR-specific</description>
+    <organization>
+    <name>Botts Inc.</name>
+    <url>http://www.botts-inc.com/</url>
+  </organization>
+  <developers>
+    <developer>
+      <id>tony.cook</id>
+      <name>Tony Cook</name>
+      <email>nospam@mydomain.com</email>
+    </developer>
+  </developers>
+  <dependencies>
+  	<dependency>
+  		<groupId>org.sensorhub</groupId>
+  		<artifactId>sensorhub-core</artifactId>
+  		<type>bundle</type>
+  		<version>0.5</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>org.apache.httpcomponents</groupId>
+  		<artifactId>httpclient</artifactId>
+  		<version>4.3.6</version>
+  	</dependency>
+  </dependencies>
+  <groupId>org.sensorhub</groupId>
+</project>
