@@ -92,7 +92,7 @@ public class TestFakeWeatherDriver implements IEventListener
         
         synchronized (this) 
         {
-            while (sampleCount < 5)
+            while (sampleCount < 2)
                 wait();
         }
         

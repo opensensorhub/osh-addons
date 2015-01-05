@@ -151,7 +151,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
             }            
         };
         
-        timer.scheduleAtFixedRate(task, 0, 1000);        
+        timer.scheduleAtFixedRate(task, 0, (long)(getAverageSamplingPeriod()*1000));        
     }
 
 

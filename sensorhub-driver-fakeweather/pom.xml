@@ -6,8 +6,8 @@
     <version>0.5</version>
   </parent>
   <artifactId>sensorhub-driver-fakeweather</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <name>Fake Weather Station</name>
+  <version>0.1</version>
+  <name>SensorHub Fake Weather Station</name>
   <description>Generates random increases and decreases in temp, pressure, wind speed, and direction</description>
   <dependencies>
   	<dependency>
