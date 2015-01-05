@@ -117,7 +117,12 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            sensorDescription.setDescription("Video4Linux camera on port " + videoDevice.getDevicefile());
+            
+            if (AbstractSensorModule.DEFAULT_ID.equals(sensorDescription.getId()))
+                sensorDescription.setId("V4L_CAMERA");
+            
+            if (!sensorDescription.isSetDescription())
+                sensorDescription.setDescription("Video4Linux camera on port " + videoDevice.getDevicefile());
         }
     }
 
