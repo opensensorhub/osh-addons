@@ -49,6 +49,7 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
+            sensorDescription.setId("GPS_SENSOR");
             sensorDescription.setUniqueIdentifier("urn:test:sensors:fakegps");
             sensorDescription.setDescription("Fake GPS sensor generating data along random itineraries obtained using Google Direction API");
         }
