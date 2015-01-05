@@ -66,6 +66,7 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
+            sensorDescription.setId("ANDROID_SENSORS");
         }
     }
 
