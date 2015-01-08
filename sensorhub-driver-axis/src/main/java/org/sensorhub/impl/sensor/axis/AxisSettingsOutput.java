@@ -22,7 +22,6 @@ import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
-
 import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataBlock;
@@ -38,6 +37,7 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.SWEFactory;
 import org.vast.swe.SWEConstants;
 
+
 /**
  * <p>
  * Implementation of sensor interface for generic Axis Cameras using IP
@@ -52,8 +52,6 @@ import org.vast.swe.SWEConstants;
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since October 30, 2014
  */
-
-
 public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
     DataComponent settingsDataStruct;
@@ -85,8 +83,7 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
     
     
     protected void init()
-    {
-    	
+    {    	
         SWEFactory fac = new SWEFactory();
         textEncoding =  fac.newTextEncoding();
     	textEncoding.setBlockSeparator("\n");
