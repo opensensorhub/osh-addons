@@ -16,8 +16,10 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.test.impl.sensor.axis;
 
 import java.util.UUID;
+
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataComponent;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,8 +30,11 @@ import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.axis.AxisCameraConfig;
 import org.sensorhub.impl.sensor.axis.AxisCameraDriver;
+import org.sensorhub.impl.sensor.axis.AxisSettingsOutput;
+import org.sensorhub.impl.sensor.axis.AxisVideoOutput;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.SWECommonUtils;
+
 import static org.junit.Assert.*;
 
 /**
@@ -59,7 +64,8 @@ public class TestAxisCameraDriver implements IEventListener
     {
         config = new AxisCameraConfig();
         //config.ipAddress = "root:more4less@192.168.1.50";
-        config.ipAddress = "192.168.1.50";
+        //config.ipAddress = "192.168.1.50";
+        config.ipAddress = "192.168.1.60";
         config.id = UUID.randomUUID().toString();
         
         driver = new AxisCameraDriver();
@@ -102,7 +108,26 @@ public class TestAxisCameraDriver implements IEventListener
     public void testCaptureAtDefaultRes() throws Exception
     {
         // register listener on data interface
-        ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+        ISensorDataInterface di = driver.getObservationOutputs().get("videoOutput");
+        di.registerListener(this);
+        
+        // start capture and wait until we receive the first frame
+        synchronized (this)
+        {
+            this.wait();
+            driver.stop();
+        }
+        
+        //assertTrue(actualWidth == config.defaultParams.imgWidth);
+        //assertTrue(actualHeight == config.defaultParams.imgHeight);
+    }
+    
+    
+    @Test
+    public void testPTZSettingsOutput() throws Exception
+    {
+        // register listener on data interface
+        ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
         di.registerListener(this);
         
         // start capture and wait until we receive the first frame
@@ -191,13 +216,23 @@ public class TestAxisCameraDriver implements IEventListener
     {
         assertTrue(e instanceof SensorDataEvent);
         SensorDataEvent newDataEvent = (SensorDataEvent)e;
-        DataComponent camDataStruct = newDataEvent.getRecordDescription();
         
-        actualWidth = camDataStruct.getComponent(1).getComponentCount();
-        actualHeight = camDataStruct.getComponentCount();
-        
-        System.out.println("New data received from sensor " + newDataEvent.getSensorId());
-        System.out.println("Image is " + actualWidth + "x" + actualHeight);
+        if (newDataEvent.getSource().getClass().equals(AxisVideoOutput.class))
+        {
+	        DataComponent camDataStruct = newDataEvent.getRecordDescription();
+	        
+	        actualWidth = camDataStruct.getComponent(1).getComponentCount();
+	        actualHeight = camDataStruct.getComponentCount();
+	        
+	        System.out.println("New data received from sensor " + newDataEvent.getSensorId());
+	        System.out.println("Image is " + actualWidth + "x" + actualHeight);
+        }
+        else if (newDataEvent.getSource().getClass().equals(AxisSettingsOutput.class))
+        {
+        	DataComponent ptzParams = newDataEvent.getRecordDescription().copy();
+        	ptzParams.setData(newDataEvent.getRecords()[0]);
+        	System.out.println(ptzParams);
+        }
         
         synchronized (this) { this.notify(); }
     }
