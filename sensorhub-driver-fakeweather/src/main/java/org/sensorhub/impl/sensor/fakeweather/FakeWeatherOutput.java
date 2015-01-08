@@ -33,7 +33,7 @@ import org.vast.data.DataRecordImpl;
 import org.vast.data.QuantityImpl;
 import org.vast.data.TextEncodingImpl;
 import org.vast.data.TimeImpl;
-import org.vast.sweCommon.SWEConstants;
+import org.vast.swe.SWEConstants;
 
 
 public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
@@ -50,6 +50,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     double speed = 4.5;
     double direction = 60.5;
 
+    
     public FakeWeatherOutput(FakeWeatherSensor parentSensor)
     {
         super(parentSensor);
@@ -78,7 +79,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
 
         Quantity c;
         c = new QuantityImpl();
-        c.getUom().setCode("degC");
+        c.getUom().setCode("Cel");
         c.setDefinition("http://sensorml.com/ont/swe/property/AtmosphericTemperature");
         weatherData.addComponent("temperature",c);
 
@@ -98,31 +99,29 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         // TODO check if this is the best local coordinate frame and where it will be defined
         c.setReferenceFrame("http://sensorml.com/ont/swe/property/NED");
         c.setAxisID("down");       
-        weatherData.addComponent("windSpeed", c);        
+        weatherData.addComponent("windDirection", c);        
 }
 
     
     private void sendMeasurement()
-    {
-                
+    {                
         // generate new weather values
         double time = System.currentTimeMillis() / 1000.;
         
         // temperature; value will increase or decrease by less than 1.0 deg
-        temp += Math.random() - Math.random();
+        temp += 2.*Math.random() - 1.;
         
         // pressure; value will increase or decrease by less than 20 hPa
-        pressure += 20.0*Math.random() - 20.0*Math.random();
+        pressure += 20. * (2.*Math.random() - 1.);
         
         // wind speed; keep positive
-        speed += 20.0*Math.random() - 20.0*Math.random();
-        speed = speed<0.0?0.0:speed; 
+        speed += 2. * (2.*Math.random() - 1.);
+        speed = speed < 0.0 ? 0.0 : speed; 
         
         // wind direction; keep between 0 and 360 degrees
-        direction += 5.0*Math.random() - 5.0*Math.random();
-        direction = direction<0.0?direction+360.0:direction;
-        direction = direction>360.0?direction-360.0:direction;
-        
+        direction += 5. * (2.*Math.random() - 1.);
+        direction = direction < 0.0 ? direction+360.0 : direction;
+        direction = direction > 360.0 ? direction-360.0 : direction;        
         
         // build and publish datablock
         DataBlock dataBlock = weatherData.createDataBlock();
@@ -134,8 +133,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         
         // update latest record and send event
         latestRecord = dataBlock;
-        eventHandler.publishEvent(new SensorDataEvent(time, FakeWeatherOutput.this, dataBlock));
-        
+        eventHandler.publishEvent(new SensorDataEvent(time, FakeWeatherOutput.this, dataBlock));        
     }
 
 
@@ -153,7 +151,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
             }            
         };
         
-        timer.scheduleAtFixedRate(task, 0, 1000);        
+        timer.scheduleAtFixedRate(task, 0, (long)(getAverageSamplingPeriod()*1000));        
     }
 
 
