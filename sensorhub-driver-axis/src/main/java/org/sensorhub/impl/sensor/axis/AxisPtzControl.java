@@ -38,7 +38,7 @@ import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.data.DataChoiceImpl;
 import org.vast.data.SWEFactory;
-import org.vast.sweCommon.SWEConstants;
+import org.vast.swe.SWEConstants;
 
 /**
  * <p>
@@ -242,7 +242,7 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
         DataChoice commandMsg = (DataChoice) commandData.copy();
         commandMsg.setData(command);
               
-        DataComponent component = ((DataChoiceImpl) commandMsg).getSelectedComponent();
+        DataComponent component = ((DataChoiceImpl) commandMsg).getSelectedItem();
         String itemID = component.getName();
         String itemValue = component.getData().getStringValue();
         

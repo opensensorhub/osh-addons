@@ -139,6 +139,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
             super.updateSensorDescription();
             
             // add more stuff in SensorML here
+            sensorDescription.setId("AXIS_CAMERA_SENSOR");
         }
     }
 
