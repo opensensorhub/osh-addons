@@ -55,8 +55,7 @@ import static org.junit.Assert.*;
  * Copyright (c) 2014
  * </p>
  * 
- * @author Mike Botts <mike.botts@botts-inc.com>
- * @since October 30, 2014
+ * @author Alex Robin <alex.robin@sensiasoftware.com> * @since October 30, 2014
  */
 
 
@@ -77,8 +76,8 @@ public class TestAxisCameraDriver implements IEventListener
     {
         config = new AxisCameraConfig();
         //config.ipAddress = "root:more4less@192.168.1.50";
-        //config.ipAddress = "192.168.1.50";
-        config.ipAddress = "192.168.1.60";
+        config.ipAddress = "192.168.1.50";
+        //config.ipAddress = "192.168.1.60";
         config.id = UUID.randomUUID().toString();
         
         driver = new AxisCameraDriver();
@@ -138,6 +137,7 @@ public class TestAxisCameraDriver implements IEventListener
     	// register listener on data interface
         ISensorDataInterface di = driver.getObservationOutputs().get("videoOutput");
     	di.registerListener(this);
+    	
         
         // start capture and wait until we receive the first frame
         synchronized (this)
@@ -189,26 +189,100 @@ public class TestAxisCameraDriver implements IEventListener
         // start capture and send commands
         synchronized (this)
         {
-        	float pan = 0.0f;
+        	float pan = 190.0f;
+        	float tilt = 0.0f;
+        	int zoom = 0;
         	DataBlock commandData;
         	
-        	while (frameCount < MAX_FRAMES)
+        	// NOTE: uncomment one section at a time to test different parameters
+        	
+        	// test absolute pan
+//        	while (frameCount < MAX_FRAMES)  //
+//        	{
+//        		if (frameCount % 30 == 0)
+//        		{
+//        			((DataChoiceImpl)commandDesc).setSelectedItem("pan");
+//        			commandData = commandDesc.createDataBlock();
+//        			pan += 5.;
+//        			if (pan > 180.)
+//        				pan -= 360;
+//        			commandData.setFloatValue(1, pan);
+//        			ci.execCommand(commandData);
+//        		}                               
+//        		this.wait();
+//        	}
+        	
+        	// test absolute tilt
+//        	while (frameCount < MAX_FRAMES)
+//        	{
+//        		if (frameCount % 30 == 0)
+//        		{
+//        			((DataChoiceImpl)commandDesc).setSelectedItem("tilt");
+//        			commandData = commandDesc.createDataBlock();       			
+//        			tilt -= 2.;
+//        			if (tilt > 180.)
+//        				tilt -= 180.;
+//        			commandData.setFloatValue(1, tilt);
+//        			ci.execCommand(commandData);
+//        		}                               
+//        		this.wait();
+//        	}
+        	
+        	
+        	// test absolute zoom
+//        	while (frameCount < MAX_FRAMES)
+//        	{
+//        		if (frameCount % 30 == 0)
+//        		{
+//        			((DataChoiceImpl)commandDesc).setSelectedItem("zoom");
+//        			commandData = commandDesc.createDataBlock();       			
+//        			zoom += 100;
+//        			commandData.setFloatValue(1, zoom);
+//        			ci.execCommand(commandData);
+//        		}                                
+//        		this.wait();
+//        	}
+        	
+        	// test relative pan
+        	while (frameCount < MAX_FRAMES)  //
         	{
         		if (frameCount % 30 == 0)
         		{
-        			((DataChoiceImpl)commandDesc).setSelectedItem("pan");
+        			((DataChoiceImpl)commandDesc).setSelectedItem("rpan");
         			commandData = commandDesc.createDataBlock();
-        			pan += 5.;
-        			if (pan > 180.)
-        				pan -= 360;
-        			commandData.setFloatValue(1, pan);
+        			commandData.setFloatValue(1, 5.0f);
         			ci.execCommand(commandData);
-        		}                
-                
+        		}                               
         		this.wait();
         	}
-        	
-            driver.stop();
+       	
+        	// test relative tilt
+//        	while (frameCount < MAX_FRAMES)  //
+//        	{
+//        		if (frameCount % 30 == 0)
+//        		{
+//        			((DataChoiceImpl)commandDesc).setSelectedItem("rtilt");
+//        			commandData = commandDesc.createDataBlock();
+//        			commandData.setFloatValue(1, 5.0f);
+//        			ci.execCommand(commandData);
+//        		}                               
+//        		this.wait();
+//        	}
+
+        	// test relative zoom
+//        	while (frameCount < MAX_FRAMES)  //
+//        	{
+//        		if (frameCount % 30 == 0)
+//        		{
+//        			((DataChoiceImpl)commandDesc).setSelectedItem("rzoom");
+//        			commandData = commandDesc.createDataBlock();
+//        			commandData.setFloatValue(1, 100.0f);
+//        			ci.execCommand(commandData);
+//        		}                               
+//        		this.wait();
+//        	}
+
+        	driver.stop();
         }
     }
     
