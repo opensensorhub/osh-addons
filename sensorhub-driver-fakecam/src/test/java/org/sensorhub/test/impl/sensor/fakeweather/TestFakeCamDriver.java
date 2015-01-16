@@ -100,9 +100,6 @@ public class TestFakeCamDriver implements IEventListener
         SensorDataEvent newDataEvent = (SensorDataEvent)e;
         
         byte[] videoFrameData = (byte[])newDataEvent.getRecords()[0].getUnderlyingObject();
-        for (byte b: videoFrameData)
-            System.out.print((char)b);
-        System.out.println("\n\n");
         sampleCount++;
                 
         synchronized (this) { this.notify(); }
