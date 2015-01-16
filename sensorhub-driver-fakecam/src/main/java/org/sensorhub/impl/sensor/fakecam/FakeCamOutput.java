@@ -141,7 +141,7 @@ public class FakeCamOutput extends AbstractSensorOutput<FakeCamSensor>
                                 
                 if (currentBox instanceof MovieBox)
                 {
-                    System.out.println(((MovieBox) currentBox).getMovieHeaderBox());
+                    log.trace(((MovieBox) currentBox).getMovieHeaderBox().toString());
                 }
                 
                 if (currentBox instanceof MovieFragmentBox)
@@ -156,9 +156,9 @@ public class FakeCamOutput extends AbstractSensorOutput<FakeCamSensor>
                     ((MovieFragmentBox) currentBox).getTrackFragmentHeaderBoxes().get(0).setDefaultSampleDuration(4000);
                     ((MovieFragmentBox) currentBox).getTrackRunBoxes().get(0).setDataOffset(224-8);
                     
-                    System.out.println(((MovieFragmentBox) currentBox).getBoxes(MovieFragmentHeaderBox.class).get(0));
-                    System.out.println(((MovieFragmentBox) currentBox).getTrackFragmentHeaderBoxes().get(0));
-                    System.out.println(((MovieFragmentBox) currentBox).getTrackRunBoxes().get(0));
+                    log.trace(((MovieFragmentBox) currentBox).getBoxes(MovieFragmentHeaderBox.class).get(0).toString());
+                    log.trace(((MovieFragmentBox) currentBox).getTrackFragmentHeaderBoxes().get(0).toString());
+                    log.trace(((MovieFragmentBox) currentBox).getTrackRunBoxes().get(0).toString());
                     //for (Entry sample: ((MovieFragmentBox) currentBox).getTrackRunBoxes().get(0).getEntries())
                     //    System.out.println(sample);                    
                 }
@@ -166,13 +166,13 @@ public class FakeCamOutput extends AbstractSensorOutput<FakeCamSensor>
                 if (currentBox.getType().equals("moof"))
                 {
                     // TODO add time tag box (tfdt?)
-                    log.debug("Copying box " + currentBox.getType());
+                    log.trace("Copying box " + currentBox.getType());
                     currentBox.getBox(byteChannel);
                 }
                 
                 else if (currentBox.getType().equals("mdat"))
                 {
-                    log.debug("Copying box " + currentBox.getType());
+                    log.trace("Copying box " + currentBox.getType());
                     currentBox.getBox(byteChannel);
                     break;
                 }
