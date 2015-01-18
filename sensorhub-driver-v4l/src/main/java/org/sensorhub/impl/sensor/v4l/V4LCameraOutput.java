@@ -70,6 +70,7 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
     }
     
     
+    @Override
     protected void init() throws SensorException
     {
         V4LCameraParams camParams = parentSensor.camParams;
@@ -186,6 +187,7 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
     }
     
     
+    @Override
     protected void stop()
     {
         if (frameGrabber != null)
