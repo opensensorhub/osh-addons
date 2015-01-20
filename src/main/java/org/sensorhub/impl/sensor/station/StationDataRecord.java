@@ -4,6 +4,7 @@ public class StationDataRecord
 {
 	private Station station;	
 	private long timeUtc;
+	private String timeStringUtc;
 	private double lat;
 	private double lon;
 	private double elevation;
@@ -107,5 +108,11 @@ public class StationDataRecord
 	}
 	public void setVisibility(int visibility) {
 		this.visibility = visibility;
+	}
+	public String getTimeStringUtc() {
+		return timeStringUtc;
+	}
+	public void setTimeStringUtc(String timeStringUtc) {
+		this.timeStringUtc = timeStringUtc;
 	}
 }

@@ -34,9 +34,18 @@ public class StationDataPoller {
 		Station station = new Station();
 		station.setName(vals[0]);
 		rec.setStation(station);
-		rec.setTemperature(Double.parseDouble(vals[6]));
-		rec.setDewPoint(Double.parseDouble(vals[7]));
-		rec.setRelativeHumidity(Double.parseDouble(vals[8]));
+//		rec.setTimeUtc(timeUtc);
+		rec.setTimeStringUtc(vals[4].replace(" ",	"T")+ "Z");
+		rec.setTemperature(parseDouble(vals[6]));
+		rec.setDewPoint(parseDouble(vals[7]));
+		rec.setRelativeHumidity(parseDouble(vals[8]));
+		rec.setWindSpeed(parseDouble(vals[9]));
+		rec.setWindDirection(parseDouble(vals[10]));
+		rec.setWindGust(parseDouble(vals[18]));
+		rec.setMinDailyTemperature(parseDouble(vals[24]));
+		rec.setMaxDailyTemperature(parseDouble(vals[23]));
+		rec.setCloudCeiling((int)parseDouble(vals[25]));
+		rec.setVisibility((int)parseDouble(vals[26]));
 		return rec;
 	}
 
@@ -52,7 +61,7 @@ public class StationDataPoller {
 			.setParameter("format", "csv")
 			.setParameter("numHours", "2")
 			.setParameter("allData", "true")
-			.setParameter("stationid", "2477")
+			.setParameter("stationid", "3467")
 			.build();
 			HttpGet httpget = new HttpGet(uri);
 			System.out.println("executing request " + httpget.getURI());
@@ -72,16 +81,21 @@ public class StationDataPoller {
 				httpclient.close();
 			}
 		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (ClientProtocolException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
 		return null;
+	}
+	
+	public double parseDouble(String s) {
+		try {
+			return Double.parseDouble(s);
+		} catch (Exception e) {
+			return -999.9; // not crazy about this- what is better option from SWE perspecitve?
+		}
 	}
 	
 	public static void main(String[] args) {
