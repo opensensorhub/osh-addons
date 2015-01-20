@@ -8,7 +8,7 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-The Initial Developer is Sensia Software LLC. Portions created by the Initial
+The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
 Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
@@ -46,8 +46,24 @@ import org.vast.data.DataArrayImpl;
 import org.vast.data.DataBlockMixed;
 import org.vast.data.DataRecordImpl;
 import org.vast.data.TimeImpl;
-import org.vast.sweCommon.SWEConstants;
+import org.vast.swe.SWEConstants;
 
+/**
+ * <p>
+ * Implementation of sensor interface for generic Axis Cameras using IP
+ * protocol. This particular class provides time-tagged video output from the video
+ * camera capabilities.
+ * </p>
+ *
+ * <p>
+ * Copyright (c) 2014
+ * </p>
+ * 
+ * @author Mike Botts <mike.botts@botts-inc.com>
+ * @since October 30, 2014
+ */
+
+// TODO Need a separate class for outputting camera settings (e.g. imageSize, brightness, iris, IR, focus, imageRotation)
 
 public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
@@ -238,5 +254,12 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
         
         return Double.NaN;
     }
+
+
+	public void stop()
+	{
+		// TODO Auto-generated method stub
+		
+	}
 
 }

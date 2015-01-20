@@ -20,62 +20,82 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vast.data.TextEncodingImpl;
 import android.hardware.Sensor;
-import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
 
 /**
  * <p>
- * Implementation of data interface for Android sensors
+ * Abstract base for data interfaces connecting to Android sensor API
  * </p>
  *
- * <p>Copyright (c) 2013</p>
+ * <p>Copyright (c) 2015</p>
  * @author Alexandre Robin <alex.robin@sensiasoftware.com>
- * @since Sep 6, 2013
+ * @since Jan 18, 2015
  */
-public class AndroidSensorOutput extends AbstractSensorOutput<AndroidSensorsDriver> implements SensorEventListener
+public abstract class AndroidSensorOutput extends AbstractSensorOutput<AndroidSensorsDriver> implements IAndroidOutput, SensorEventListener
 {
-    SensorManager aSensorManager;
-    Sensor aSensor;
+    // keep logger name short because in LogCat it's max 23 chars
+    protected static final Logger log = LoggerFactory.getLogger(AndroidSensorOutput.class.getSimpleName());
+        
+    SensorManager sensorManager;
+    Sensor sensor;
+    String name;
+    boolean enabled;
+    DataBlock latestRecord;
+    DataComponent dataStruct;
+    int samplingPeriod;
+    long systemTimeOffset = -1L;
     
     
     protected AndroidSensorOutput(AndroidSensorsDriver parentModule, SensorManager aSensorManager, Sensor aSensor)
     {
         super(parentModule);
-        this.aSensorManager = aSensorManager;
-        this.aSensor = aSensor;
+        this.sensorManager = aSensorManager;
+        this.sensor = aSensor;
+        this.name = sensor.getName().replaceAll(" ", "_") + "_data";
+        log.debug("Using sensor " + sensor.getName());
     }
     
     
     @Override
     public String getName()
     {
-        return aSensor.getName() + "_data";
+        return name;
     }
     
     
-    protected void init()
+    @Override
+    public void init()
     {
-        aSensorManager.registerListener(this, aSensor, 10);
+        // max 100Hz events
+        samplingPeriod = Math.max(sensor.getMinDelay(), 100000);
+        sensorManager.registerListener(this, sensor, samplingPeriod);
+    }
+    
+    
+    @Override
+    public void stop()
+    {
+        sensorManager.unregisterListener(this);
     }
 
 
     @Override
     public double getAverageSamplingPeriod()
     {
-        // TODO Auto-generated method stub
-        return 0;
+        return samplingPeriod;
     }
 
 
     @Override
     public DataComponent getRecordDescription()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return dataStruct;
     }
 
 
@@ -89,30 +109,27 @@ public class AndroidSensorOutput extends AbstractSensorOutput<AndroidSensorsDriv
     @Override
     public DataBlock getLatestRecord() throws SensorException
     {
-        // TODO Auto-generated method stub
-        return null;
+        return latestRecord;
     }
     
     
     @Override
     public double getLatestRecordTime()
     {
-        // TODO Auto-generated method stub
+        if (latestRecord != null)
+            return latestRecord.getDoubleValue(0);
+        
         return Double.NaN;
     }
-
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int arg1)
-    {
-        // TODO Auto-generated method stub        
-    }
-
-
-    @Override
-    public void onSensorChanged(SensorEvent e)
-    {
-        // TODO Auto-generated method stub        
-    }
     
+    
+    protected final double getJulianTimeStamp(long sensorTimeStampNanos)
+    {
+        long sensorTimeMillis = sensorTimeStampNanos / 1000000;
+        
+        if (systemTimeOffset < 0)
+            systemTimeOffset = System.currentTimeMillis() - sensorTimeMillis;
+            
+        return (systemTimeOffset + sensorTimeMillis) / 1000.;
+    }
 }

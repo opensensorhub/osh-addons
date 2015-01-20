@@ -23,7 +23,6 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.Quantity;
-import net.opengis.swe.v20.Text;
 import net.opengis.swe.v20.Time;
 
 import org.sensorhub.api.sensor.SensorDataEvent;
@@ -33,9 +32,8 @@ import org.slf4j.LoggerFactory;
 import org.vast.data.DataRecordImpl;
 import org.vast.data.QuantityImpl;
 import org.vast.data.TextEncodingImpl;
-import org.vast.data.TextImpl;
 import org.vast.data.TimeImpl;
-import org.vast.sweCommon.SWEConstants;
+import org.vast.swe.SWEConstants;
 
 /**
  * 
@@ -51,13 +49,12 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
     DataBlock latestRecord;
     boolean sendData;
     Timer timer;
-    double currentTrackPos;
-    StationDataPoller dataPuller;
+    StationDataPoller dataPoller;
 
     public StationOutput(StationSensor parentSensor)
     {
         super(parentSensor);
-        dataPuller = new StationDataPoller(); 
+        dataPoller = new StationDataPoller(); 
     }
 
 
@@ -71,7 +68,7 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
     protected void init()
     {
         // SWE Common data structure
-        stationDataStruct = new DataRecordImpl(3);
+        stationDataStruct = new DataRecordImpl(11);
         stationDataStruct.setName(getName());
 //        stationDataStruct.setDefinition("http://sensorml.com/ont/swe/property/Location");
         
@@ -80,36 +77,12 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
         //Rainfaill last 3 hours (inches),Rainfaill last 6 hours (inches),Rainfaill last 24 hours (inches),Max Temperature last 24 hours (degreesF),Min Temperature last 24 hours (degreesF),
         //cloud Ceiling (feet),visibility (feet)
         
-        Text text = new TextImpl();
-        stationDataStruct.addComponent("stationName", new TextImpl());
-        
         Time c1 = new TimeImpl();
         c1.getUom().setHref(Time.ISO_TIME_UNIT);
         c1.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
         stationDataStruct.addComponent("time", c1);
 
         Quantity c;
-        c = new QuantityImpl();
-        c.getUom().setCode("deg");
-        c.setDefinition("http://sensorml.com/ont/swe/property/Latitude");
-        c.setReferenceFrame("http://www.opengis.net/def/crs/EPSG/0/4979");
-        c.setAxisID("Lat");
-        stationDataStruct.addComponent("lat",c);
-
-        c = new QuantityImpl();
-        c.getUom().setCode("deg");
-        c.setDefinition("http://sensorml.com/ont/swe/property/Longitude");
-        c.setReferenceFrame("http://www.opengis.net/def/crs/EPSG/0/4979");
-        c.setAxisID("Long");
-        stationDataStruct.addComponent("lon", c);
-
-        c = new QuantityImpl();
-        c.getUom().setCode("m");
-        c.setDefinition("http://sensorml.com/ont/swe/property/Elevation");
-        c.setReferenceFrame("http://www.opengis.net/def/crs/EPSG/0/4979");
-        c.setAxisID("h");
-        stationDataStruct.addComponent("alt", c);   
-      
         c = new QuantityImpl();
         c.getUom().setCode("degF");
         c.setDefinition("http://sensorml.com/ont/swe/property/Temperature");
@@ -137,17 +110,17 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
         
         c = new QuantityImpl();
         c.getUom().setCode("mi_i/h");
-        c.setDefinition("http://sensorml.com/ont/swe/property/WindSpeed"); 
+        c.setDefinition("http://sensorml.com/ont/swe/property/WindGust"); //  not there
         stationDataStruct.addComponent("windGust", c);  
         
         c = new QuantityImpl();
         c.getUom().setCode("degF");
-        c.setDefinition("http://sensorml.com/ont/swe/property/Temperature"); 
+        c.setDefinition("http://sensorml.com/ont/swe/property/minDailyTemperature"); //  not there
         stationDataStruct.addComponent("minDailyTempearture", c);  
         
         c = new QuantityImpl();
         c.getUom().setCode("degF");
-        c.setDefinition("http://sensorml.com/ont/swe/property/Temperature"); 
+        c.setDefinition("http://sensorml.com/ont/swe/property/maxDailyTemperature"); //  not there
         stationDataStruct.addComponent("maxDailyTemperature", c);  
         
         c = new QuantityImpl();
@@ -164,25 +137,22 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
 
     private void sendLatestRecord()
     {
-    	StationDataRecord rec = dataPuller.pullStationData();
+    	StationDataRecord rec = dataPoller.pullStationData();
     	
 //        // build and publish datablock
         DataBlock dataBlock = stationDataStruct.createDataBlock();
         Station stn = rec.getStation();
-        dataBlock.setStringValue(0, stn.getName()); 
-        dataBlock.setDoubleValue(1, stn.getLat()); 
-        dataBlock.setDoubleValue(2, stn.getLon()); 
-        dataBlock.setDoubleValue(3, stn.getElevation()); 
-        dataBlock.setDoubleValue(4, rec.getTemperature()); 
-        dataBlock.setDoubleValue(5, rec.getDewPoint()); 
-        dataBlock.setDoubleValue(6, rec.getRelativeHumidity()); 
-        dataBlock.setDoubleValue(7, rec.getWindSpeed()); 
-        dataBlock.setDoubleValue(8, rec.getWindDirection()); 
-        dataBlock.setDoubleValue(9, rec.getWindGust()); 
-        dataBlock.setDoubleValue(10, rec.getMinDailyTemperature()); 
-        dataBlock.setDoubleValue(11, rec.getMaxDailyTemperature()); 
-        dataBlock.setIntValue(12, rec.getCloudCeiling()); 
-        dataBlock.setIntValue(13, rec.getVisibility()); 
+        dataBlock.setDoubleValue(0, rec.getTimeUtc()); 
+        dataBlock.setDoubleValue(1, rec.getTemperature()); 
+        dataBlock.setDoubleValue(2, rec.getDewPoint()); 
+        dataBlock.setDoubleValue(3, rec.getRelativeHumidity()); 
+        dataBlock.setDoubleValue(4, rec.getWindSpeed()); 
+        dataBlock.setDoubleValue(5, rec.getWindDirection()); 
+        dataBlock.setDoubleValue(6, rec.getWindGust()); 
+        dataBlock.setDoubleValue(7, rec.getMinDailyTemperature()); 
+        dataBlock.setDoubleValue(8, rec.getMaxDailyTemperature()); 
+        dataBlock.setIntValue(9, rec.getCloudCeiling()); 
+        dataBlock.setIntValue(10, rec.getVisibility()); 
         
         eventHandler.publishEvent(new SensorDataEvent((double)rec.getTimeUtc(), StationOutput.this, dataBlock));
     }
@@ -202,7 +172,7 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
             }            
         };
         
-        timer.scheduleAtFixedRate(task, 0, TimeUnit.SECONDS.toMillis(10));        
+        timer.scheduleAtFixedRate(task, 0, TimeUnit.SECONDS.toMillis(30));        
     }
 
 
