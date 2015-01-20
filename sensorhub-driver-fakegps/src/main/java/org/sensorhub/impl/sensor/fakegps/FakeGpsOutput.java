@@ -37,7 +37,7 @@ import org.vast.data.DataRecordImpl;
 import org.vast.data.QuantityImpl;
 import org.vast.data.TextEncodingImpl;
 import org.vast.data.TimeImpl;
-import org.vast.sweCommon.SWEConstants;
+import org.vast.swe.SWEConstants;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
@@ -67,6 +67,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     }
 
 
+    @Override
     protected void init()
     {
         // SWE Common data structure
@@ -192,7 +193,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     
     private void sendMeasurement()
     {
-        if (trajPoints.isEmpty() || currentTrackPos >= trajPoints.size()-1)
+        if (trajPoints.isEmpty() || currentTrackPos >= trajPoints.size()-2)
         {
             if (!generateRandomTrajectory())
                 return;
@@ -245,7 +246,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             }            
         };
         
-        timer.scheduleAtFixedRate(task, 0, 1000);        
+        timer.scheduleAtFixedRate(task, 0, (long)(getAverageSamplingPeriod()*1000));        
     }
 
 
