@@ -70,7 +70,7 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
         // SWE Common data structure
         stationDataStruct = new DataRecordImpl(11);
         stationDataStruct.setName(getName());
-//        stationDataStruct.setDefinition("http://sensorml.com/ont/swe/property/Location");
+        stationDataStruct.setDefinition("http://sensorml.com/ont/swe/property/Weather/MetarStationRecord");
         
         // stationName,time,lat,lon,el,Temperature (degreesF),Dewpoint (degreesF),Relative Humididty (%),Wind Speed (mph),Wind Direction (degrees),
         //Air Pressure (inches HG),Precipitation (inches),Heat Index (degreesF),Wind Chill (degreesF), Wind Gust (mph),
@@ -142,7 +142,7 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
 //        // build and publish datablock
         DataBlock dataBlock = stationDataStruct.createDataBlock();
         Station stn = rec.getStation();
-        dataBlock.setDoubleValue(0, rec.getTimeUtc()); 
+        dataBlock.setStringValue(0, rec.getTimeStringUtc()); 
         dataBlock.setDoubleValue(1, rec.getTemperature()); 
         dataBlock.setDoubleValue(2, rec.getDewPoint()); 
         dataBlock.setDoubleValue(3, rec.getRelativeHumidity()); 
