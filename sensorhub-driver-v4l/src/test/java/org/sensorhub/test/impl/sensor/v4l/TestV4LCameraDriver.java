@@ -33,7 +33,7 @@ import org.sensorhub.impl.sensor.v4l.V4LCameraDriver;
 import org.sensorhub.impl.sensor.v4l.V4LCameraConfig;
 import org.vast.data.DataValue;
 import org.vast.sensorML.SMLUtils;
-import org.vast.sweCommon.SWECommonUtils;
+import org.vast.swe.SWECommonUtils;
 import static org.junit.Assert.*;
 
 
