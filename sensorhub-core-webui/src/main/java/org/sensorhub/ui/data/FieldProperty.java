@@ -25,7 +25,6 @@ public class FieldProperty extends AbstractProperty<Object>
 {
     Object instance;
     Field f;
-    boolean readOnly;
 
 
     public FieldProperty(Object instance, Field f)
@@ -70,20 +69,6 @@ public class FieldProperty extends AbstractProperty<Object>
     }
 
 
-    @Override
-    public boolean isReadOnly()
-    {
-        return readOnly;
-    }
-
-
-    @Override
-    public void setReadOnly(boolean newStatus)
-    {
-        this.readOnly = newStatus;
-    }
-
-
     private Class<?> convertPrimitiveType(Class<?> type)
     {
         // Gets the return type from get method
@@ -122,6 +107,7 @@ public class FieldProperty extends AbstractProperty<Object>
                 type = Long.class;
             }
         }
+        
         return type;
     }
     

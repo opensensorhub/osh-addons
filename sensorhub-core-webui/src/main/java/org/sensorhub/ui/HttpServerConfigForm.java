@@ -17,17 +17,12 @@ package org.sensorhub.ui;
 
 import com.vaadin.data.Property;
 import com.vaadin.data.Validator;
-import com.vaadin.data.Validator.InvalidValueException;
-import com.vaadin.data.fieldgroup.FieldGroup;
 import com.vaadin.server.Sizeable.Unit;
 import com.vaadin.ui.Field;
-import com.vaadin.ui.FormLayout;
-import com.vaadin.ui.TextField;
 
 
 public class HttpServerConfigForm extends GenericConfigFormBuilder
 {
-    private static final long serialVersionUID = -7803356484824238642L;
     
     
     @Override
