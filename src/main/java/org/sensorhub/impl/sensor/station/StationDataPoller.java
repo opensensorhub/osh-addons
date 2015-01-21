@@ -42,10 +42,10 @@ public class StationDataPoller {
 		rec.setWindSpeed(parseDouble(vals[9]));
 		rec.setWindDirection(parseDouble(vals[10]));
 		rec.setWindGust(parseDouble(vals[18]));
-		rec.setMinDailyTemperature(parseDouble(vals[24]));
-		rec.setMaxDailyTemperature(parseDouble(vals[23]));
-		rec.setCloudCeiling((int)parseDouble(vals[25]));
-		rec.setVisibility((int)parseDouble(vals[26]));
+		rec.setMinDailyTemperature(parseDouble(vals[22]));
+		rec.setMaxDailyTemperature(parseDouble(vals[21]));
+		rec.setCloudCeiling((int)parseDouble(vals[23]));
+		rec.setVisibility((int)parseDouble(vals[24]));
 		return rec;
 	}
 
