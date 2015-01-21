@@ -16,7 +16,12 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.ui;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.api.persistence.StorageConfig;
@@ -24,14 +29,14 @@ import org.sensorhub.api.processing.ProcessConfig;
 import org.sensorhub.api.sensor.SensorConfig;
 import org.sensorhub.api.service.ServiceConfig;
 import org.sensorhub.impl.SensorHub;
-import org.sensorhub.impl.service.HttpServerConfig;
+import org.sensorhub.impl.service.HttpServer;
+import org.sensorhub.ui.api.IModuleConfigFormBuilder;
 import org.sensorhub.ui.data.MyBeanItem;
 import org.sensorhub.ui.data.MyBeanItemContainer;
 import com.vaadin.annotations.Theme;
 import com.vaadin.data.Item;
 import com.vaadin.data.fieldgroup.FieldGroup;
 import com.vaadin.data.fieldgroup.FieldGroup.CommitException;
-import com.vaadin.data.util.BeanItem;
 import com.vaadin.event.Action;
 import com.vaadin.event.Action.Handler;
 import com.vaadin.event.ItemClickEvent;
@@ -47,29 +52,61 @@ import com.vaadin.ui.HorizontalSplitPanel;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.Table;
-import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Window.CloseEvent;
 import com.vaadin.ui.Window.CloseListener;
 
 
+//@Theme("reindeer")
 @Theme("runo")
-public class AdminUI extends UI
+public class AdminUI extends com.vaadin.ui.UI
 {
     private static final long serialVersionUID = 4069325051233125115L;
-    VerticalLayout configArea;
+    private static Action ADD_MODULE_ACTION = new Action("Add Module", new ClassResource("/icons/module_add.png"));
+    private static Action REMOVE_MODULE_ACTION = new Action("Remove Module", new ClassResource("/icons/module_delete.png"));
+    private static Action ENABLE_MODULE_ACTION = new Action("Enable", new ClassResource("/icons/enable.png"));
+    private static Action DISABLE_MODULE_ACTION = new Action("Disable", new ClassResource("/icons/disable.gif"));
+    private static Resource MODULE_SETTINGS_ICON = new ClassResource("/icons/brick.png");
     
-    public static Action ADD_MODULE_ACTION = new Action("Add Module", new ClassResource("/icons/module_add.png"));
-    public static Action REMOVE_MODULE_ACTION = new Action("Remove Module", new ClassResource("/icons/module_delete.png"));
-    public static Action ENABLE_MODULE_ACTION = new Action("Enable", new ClassResource("/icons/enable.png"));
-    public static Action DISABLE_MODULE_ACTION = new Action("Disable", new ClassResource("/icons/disable.gif"));
-    public static Resource MODULE_SETTINGS_ICON = new ClassResource("/icons/brick.png");
+    private static final Log log = LogFactory.getLog(AdminUI.class);
+    
+    VerticalLayout configArea;
+    AdminUIConfig uiConfig;
+    Map<String, IModuleConfigFormBuilder<ModuleConfig>> customForms = new HashMap<String, IModuleConfigFormBuilder<ModuleConfig>>();
     
     
     @Override
     protected void init(VaadinRequest request)
     {
+        // retrieve module config
+        try
+        {
+            Properties initParams = request.getService().getDeploymentConfiguration().getInitParameters();
+            String moduleID = initParams.getProperty(AdminUIModule.SERVLET_PARAM_MODULE_ID);
+            uiConfig = (AdminUIConfig)SensorHub.getInstance().getModuleRegistry().getModuleById(moduleID).getConfiguration();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Cannot get UI module configuration", e);
+        }
+        
+        // prepare custom form builders
+        for (CustomFormConfig customForm: uiConfig.customForms)
+        {
+            try
+            {
+                Class<?> className = Class.forName(customForm.formBuilderClass);
+                IModuleConfigFormBuilder<ModuleConfig> formBuilder = (IModuleConfigFormBuilder<ModuleConfig>)className.newInstance();
+                customForms.put(customForm.configClass, formBuilder);
+            }
+            catch (Exception e)
+            {
+                log.error("Error while instantiating form builder for config class " + customForm.configClass, e);
+            }
+        } 
+        
+        // init main panels
         HorizontalSplitPanel splitPanel = new HorizontalSplitPanel();
         splitPanel.setMinSplitPosition(300.0f, Unit.PIXELS);
         splitPanel.setMaxSplitPosition(80.0f, Unit.PERCENTAGE);
@@ -115,7 +152,8 @@ public class AdminUI extends UI
     {
         // add config objects to container
         MyBeanItemContainer<ModuleConfig> container = new MyBeanItemContainer<ModuleConfig>(ModuleConfig.class);
-        container.addBean(new HttpServerConfig());        
+        container.addBean(HttpServer.getInstance().getConfiguration());
+        container.addBean(uiConfig); 
         displayModuleList(layout, container, null);
     }
     
@@ -167,7 +205,7 @@ public class AdminUI extends UI
                                 
                 if (target != null)
                 {                    
-                    boolean enabled = ((BeanItem<ModuleConfig>)table.getItem(target)).getBean().enabled;
+                    boolean enabled = ((MyBeanItem<ModuleConfig>)table.getItem(target)).getBean().enabled;
                     if (enabled)
                         actions.add(DISABLE_MODULE_ACTION);
                     else
@@ -284,8 +322,11 @@ public class AdminUI extends UI
         configArea.removeAllComponents();
         
         //SplitPanel panel = new SplitPanel();
-        
-        IModuleConfigFormBuilder<ModuleConfig> configForm = new GenericConfigFormBuilder();
+        // find the best form builder for this module
+        String configClass = beanItem.getBean().getClass().getCanonicalName();
+        IModuleConfigFormBuilder<ModuleConfig> configForm = customForms.get(configClass);
+        if (configForm == null)
+            configForm = new GenericConfigFormBuilder();
                 
         // create panel with module name
         String moduleType = configForm.getTitle(beanItem.getBean());
