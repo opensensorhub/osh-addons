@@ -18,15 +18,20 @@ package org.sensorhub.ui;
 import java.util.ArrayList;
 import java.util.List;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.ui.api.IModuleConfigFormBuilder;
+import org.sensorhub.ui.data.ContainerProperty;
 import org.sensorhub.ui.data.FieldProperty;
 import com.vaadin.data.Property;
 import com.vaadin.data.fieldgroup.FieldGroup;
 import com.vaadin.server.Sizeable.Unit;
 import com.vaadin.ui.CheckBox;
+import com.vaadin.ui.Component;
 import com.vaadin.ui.Field;
 import com.vaadin.ui.FormLayout;
 import com.vaadin.ui.Label;
+import com.vaadin.ui.Table;
 import com.vaadin.ui.TextField;
+import com.vaadin.ui.themes.Runo;
 
 
 /**
@@ -46,7 +51,7 @@ public class GenericConfigFormBuilder implements IModuleConfigFormBuilder<Module
     List<Field<?>> labels = new ArrayList<Field<?>>();
     List<Field<?>> textBoxes = new ArrayList<Field<?>>();
     List<Field<?>> checkBoxes = new ArrayList<Field<?>>();
-    List<Field<?>> otherWidgets = new ArrayList<Field<?>>();
+    List<Component> otherWidgets = new ArrayList<Component>();
     
     
     public String getTitle(ModuleConfig config)
@@ -58,34 +63,73 @@ public class GenericConfigFormBuilder implements IModuleConfigFormBuilder<Module
     @Override
     public void buildForm(FormLayout form, FieldGroup fieldGroup)
     {
+        reset();
+        
         // add widget for each visible attribute
         for (Object propId: fieldGroup.getUnboundPropertyIds())
         {
-            Field<?> field = null;
-            try
+            Property<?> prop = fieldGroup.getItemDataSource().getItemProperty(propId);
+            
+            if (prop instanceof ContainerProperty)
             {
-                String label = ((FieldProperty)fieldGroup.getItemDataSource().getItemProperty(propId)).getLabel();
+                String label = ((ContainerProperty)prop).getLabel();
                 if (label == null)
                     label = getPrettyName((String)propId);
-                field = fieldGroup.buildAndBind(label, propId);
+                
+                /*Table table = new Table();
+                table.setCaption(label);
+                table.setSizeFull();
+                table.setPageLength(5);
+                table.setHeight(50, Unit.POINTS);
+                table.setSelectable(true);
+                table.setEditable(true);
+                table.setColumnReorderingAllowed(false);
+                table.setContainerDataSource(((ContainerProperty)prop).getValue());
+                table.setBuffered(true);
+                table.setStyleName(Runo.TABLE_SMALL);
+                otherWidgets.add(table);*/
+                
+                if (!((ContainerProperty)prop).getValue().getItemIds().isEmpty())
+                {
+                    Object firstItemId = ((ContainerProperty)prop).getValue().getItemIds().iterator().next();
+                    FormLayout subform = new FormLayout();
+                    subform.setCaption(label);
+                    FieldGroup newFieldGroup = new FieldGroup(((ContainerProperty)prop).getValue().getItem(firstItemId));
+                    new GenericConfigFormBuilder().buildForm(subform, newFieldGroup);
+                    otherWidgets.add(subform);
+                }
             }
-            catch (Exception e)
-            {
-                System.err.println("No UI generator for field " + propId);
-                continue;
-            }
-            
-            Property<?> prop = field.getPropertyDataSource();            
-            customizeField((String)propId, prop, field);
-            
-            if (field instanceof Label)
-                labels.add(field);
-            else if (field instanceof TextField)
-                textBoxes.add(field);
-            else if (field instanceof CheckBox)
-                checkBoxes.add(field);
             else
-                otherWidgets.add(field);
+            {
+                Field<?> field = null;
+                
+                try
+                {
+                    String label = null;
+                    if (prop instanceof FieldProperty)
+                        label = ((FieldProperty)prop).getLabel();
+                    if (label == null)
+                        label = getPrettyName((String)propId);
+                    field = fieldGroup.buildAndBind(label, propId);
+                }
+                catch (Exception e)
+                {
+                    System.err.println("No UI generator for field " + propId);
+                    continue;
+                }
+                
+                //Property<?> prop = field.getPropertyDataSource();            
+                customizeField((String)propId, prop, field);
+                
+                if (field instanceof Label)
+                    labels.add(field);
+                else if (field instanceof TextField)
+                    textBoxes.add(field);
+                else if (field instanceof CheckBox)
+                    checkBoxes.add(field);
+                else
+                    otherWidgets.add(field);
+            }
         }
         
         // add all widgets
@@ -95,7 +139,7 @@ public class GenericConfigFormBuilder implements IModuleConfigFormBuilder<Module
             form.addComponent(w);
         for (Field<?> w: checkBoxes)
             form.addComponent(w);
-        for (Field<?> w: otherWidgets)
+        for (Component w: otherWidgets)
             form.addComponent(w);
     }
     
@@ -118,7 +162,7 @@ public class GenericConfigFormBuilder implements IModuleConfigFormBuilder<Module
     
     protected String getPrettyName(String text)
     {
-        StringBuilder buf = new StringBuilder(text);
+        StringBuilder buf = new StringBuilder(text.substring(text.lastIndexOf('.')+1));
         for (int i=0; i<buf.length()-1; i++)
         {
             char c = buf.charAt(i);
@@ -137,5 +181,14 @@ public class GenericConfigFormBuilder implements IModuleConfigFormBuilder<Module
         }
         
         return buf.toString();
+    }
+    
+    
+    protected void reset()
+    {
+        labels.clear();
+        textBoxes.clear();
+        checkBoxes.clear();
+        otherWidgets.clear();
     }
 }

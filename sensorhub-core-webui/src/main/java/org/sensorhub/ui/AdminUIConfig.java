@@ -15,36 +15,22 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.ui;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.sensorhub.api.module.ModuleConfig;
-import com.vaadin.data.fieldgroup.FieldGroup;
-import com.vaadin.ui.FormLayout;
 
 
-/**
- * <p>
- * Interface for all form panel used to configure modules
- * </p>
- *
- * <p>Copyright (c) 2013</p>
- * @author Alexandre Robin <alex.robin@sensiasoftware.com>
- * @since Nov 11, 2013
- */
-public interface IModuleConfigFormBuilder<ConfigType extends ModuleConfig>
+public class AdminUIConfig extends ModuleConfig
 {
-    
-    /**
-     * Gets the title of the form
-     * @param config
-     * @return
-     */
-    public String getTitle(ModuleConfig config);
+    private static final long serialVersionUID = 2000598898056182847L;
     
     
-    /**
-     * Builds the whole form for a given config object.
-     * @param form
-     * @param config
-     */
-    public void buildForm(FormLayout form, FieldGroup fieldGroup);
+    public List<CustomFormConfig> customForms = new ArrayList<CustomFormConfig>();
     
+    
+    public AdminUIConfig()
+    {
+        this.name = "Admin UI";
+    }
+
 }

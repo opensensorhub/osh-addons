@@ -33,5 +33,6 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="/media/Data/Projects/Android/adt-bundle-linux-x86_64-20131030/sdk/platforms/android-21/android.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

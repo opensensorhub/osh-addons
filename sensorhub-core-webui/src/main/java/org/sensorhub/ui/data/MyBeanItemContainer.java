@@ -15,35 +15,102 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.ui.data;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import com.vaadin.data.util.BeanItem;
-import com.vaadin.data.util.BeanItemContainer;
-import com.vaadin.data.util.VaadinPropertyDescriptor;
+import com.vaadin.data.Property;
+import com.vaadin.data.util.AbstractInMemoryContainer;
 
 
 @SuppressWarnings("serial")
-public class MyBeanItemContainer<BT> extends BeanItemContainer<BT>
+public class MyBeanItemContainer<BeanType> extends AbstractInMemoryContainer<Object, Object, MyBeanItem<BeanType>>
 {
-
-    public MyBeanItemContainer(Class<? super BT> type) throws IllegalArgumentException
+    final Map<Object, MyBeanItem<BeanType>> itemIdToItem = new HashMap<Object, MyBeanItem<BeanType>>();
+    final MyBeanItem<BeanType> templateItem;
+    
+    
+    public MyBeanItemContainer(Class<BeanType> beanType) throws IllegalArgumentException
     {
-        super(type);
+        try
+        {
+            templateItem = new MyBeanItem<BeanType>(beanType.newInstance());
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    
+    public void addBean(BeanType bean)
+    {
+        this.internalAddItemAtEnd((Integer)bean.hashCode(), new MyBeanItem<BeanType>(bean), false);
+    }
+
+
+    @Override
+    public Collection<?> getContainerPropertyIds()
+    {
+        if (!itemIdToItem.isEmpty())
+            return itemIdToItem.values().iterator().next().getItemPropertyIds();
+       
+        if (templateItem != null)
+            return templateItem.getItemPropertyIds();
+            
+        return Collections.EMPTY_LIST;
+    }
+
+
+    @Override
+    public Property<?> getContainerProperty(Object itemId, Object propertyId)
+    {
+        return super.getItem(itemId).getItemProperty(propertyId);
+    }
+
+
+    @Override
+    public Class<?> getType(Object propertyId)
+    {
+        if (!itemIdToItem.isEmpty())
+            return itemIdToItem.values().iterator().next().getItemProperty(propertyId).getType();
+                    
+        if (templateItem != null)
+            return templateItem.getItemProperty(propertyId).getType();
         
-        // remove all properties added by super type
-        for (Object id: this.getContainerPropertyIds())
-            this.removeContainerProperty(id);
-        
-        // add our property ids
-        Map<String, VaadinPropertyDescriptor<BT>> pds = MyBeanItem.getPropertyDescriptors((Class<BT>)type);
-        for (VaadinPropertyDescriptor<BT> pd: pds.values())
-            addContainerProperty(pd.getName(), pd);
+        return null;
     }
 
     
     @Override
-    protected BeanItem<BT> createBeanItem(BT bean)
+    protected void registerNewItem(int position, Object itemId, MyBeanItem<BeanType> item)
     {
-        return bean == null ? null : new MyBeanItem<BT>(bean);
+        itemIdToItem.put(itemId, item);
+    }
+    
+    
+    @Override
+    protected MyBeanItem<BeanType> getUnfilteredItem(Object itemId)
+    {
+        return itemIdToItem.get(itemId);
+    }
+
+
+    @Override
+    public boolean removeItem(Object itemId) throws UnsupportedOperationException
+    {
+        boolean ret = super.internalRemoveItem(itemId);
+        itemIdToItem.remove(itemId);
+        return ret;
+    }
+
+
+    @Override
+    public boolean removeAllItems() throws UnsupportedOperationException
+    {
+        super.internalRemoveAllItems();
+        itemIdToItem.clear();
+        return true;
     }
     
 }
