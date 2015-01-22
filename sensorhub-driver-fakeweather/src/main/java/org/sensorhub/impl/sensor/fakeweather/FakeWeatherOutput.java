@@ -19,16 +19,13 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor;
 import org.sensorhub.api.sensor.SensorDataEvent;
-
 import java.util.Timer;
 import java.util.TimerTask;
-
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Time;
-
 import org.vast.data.DataRecordImpl;
 import org.vast.data.QuantityImpl;
 import org.vast.data.TextEncodingImpl;
@@ -64,6 +61,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     }
 
 
+    @Override
     protected void init()
     {
         // build SWE Common data structure
