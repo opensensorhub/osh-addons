@@ -67,7 +67,7 @@ public class AndroidGyroOutput extends AndroidSensorOutput implements SensorEven
         Vector vec = fac.newVector();        
         vec.setDefinition(ANG_RATE_DEF);
         ((Vector)vec).setReferenceFrame(ANG_RATE_CRS);
-        dataStruct.addComponent("accel", vec);
+        dataStruct.addComponent("omega", vec);
         
         Quantity c;
         c = fac.newQuantity(DataType.FLOAT);
