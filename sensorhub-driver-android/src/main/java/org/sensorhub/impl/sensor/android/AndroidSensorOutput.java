@@ -48,7 +48,7 @@ public abstract class AndroidSensorOutput extends AbstractSensorOutput<AndroidSe
     boolean enabled;
     DataBlock latestRecord;
     DataComponent dataStruct;
-    int samplingPeriod;
+    double samplingPeriod;
     long systemTimeOffset = -1L;
     
     
@@ -58,7 +58,6 @@ public abstract class AndroidSensorOutput extends AbstractSensorOutput<AndroidSe
         this.sensorManager = aSensorManager;
         this.sensor = aSensor;
         this.name = sensor.getName().replaceAll(" ", "_") + "_data";
-        log.debug("Using sensor " + sensor.getName());
     }
     
     
@@ -72,9 +71,10 @@ public abstract class AndroidSensorOutput extends AbstractSensorOutput<AndroidSe
     @Override
     public void init()
     {
-        // max 100Hz events
-        samplingPeriod = Math.max(sensor.getMinDelay(), 100000);
-        sensorManager.registerListener(this, sensor, samplingPeriod);
+        // max 10Hz events
+        int rateUs = Math.max(sensor.getMinDelay(), 100000);
+        samplingPeriod = rateUs / 1e6;
+        sensorManager.registerListener(this, sensor, rateUs);
     }
     
     
