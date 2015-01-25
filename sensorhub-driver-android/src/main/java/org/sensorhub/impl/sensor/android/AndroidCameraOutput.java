@@ -126,7 +126,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
             // TODO get closest values from camera characteristics
             imgWidth = 800;
             imgHeight = 600;
-            frameRate = 15;
+            frameRate = 10;
             
             // launch camera video recording
             camManager.openCamera(cameraId, new CameraDevice.StateCallback() {
@@ -156,10 +156,10 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
             }, backgroundHandler);
             
             // wait for camera to be opened
-            synchronized (camLock) { camLock.wait(); }            
+            synchronized (camLock) { camLock.wait(100L); } 
             
             if (camera == null)
-                throw new Exception();
+                throw new SensorException("Failed to open camera " + camera.getId());
             
             // create SWE Common data structure
             
@@ -255,7 +255,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                 
                 try
                 {
-                    builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                    builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_OFF);//.CONTROL_MODE_AUTO);
                     builder.set(CaptureRequest.SENSOR_FRAME_DURATION, (long)(1.0 / frameRate * 1e9));
                     CaptureRequest captureReq = builder.build();
                     log.debug("Capture request created");
@@ -310,7 +310,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                                     
                                     // send event
                                     latestRecord = newRecord;
-                                    eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AndroidCameraOutput.this, latestRecord));
+                                    //eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AndroidCameraOutput.this, latestRecord));
                                     
                                     // also mux to mp4 file for checking
                                     //buf.rewind();
@@ -352,6 +352,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
         {
             try { captureSession.stopRepeating(); }
             catch (CameraAccessException e) { }
+            captureSession.close();
             captureSession = null;
         }
         
@@ -391,7 +392,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
     @Override
     public double getAverageSamplingPeriod()
     {
-        return 1/15.;
+        return 1./ (double)frameRate;
     }
 
 
