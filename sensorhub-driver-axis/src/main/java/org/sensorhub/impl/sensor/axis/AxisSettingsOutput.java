@@ -16,12 +16,15 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.axis;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
+
 import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataBlock;
@@ -31,6 +34,7 @@ import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.TextEncoding;
 import net.opengis.swe.v20.Time;
+
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
@@ -52,7 +56,6 @@ import org.vast.swe.SWEConstants;
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since October 30, 2014
  */
-
 
 public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
@@ -107,10 +110,14 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
         {
         	         
 	        /** Need to set TimeZone  **/
+        	// getting the time zone should be done in driver class
+        	// just using computer time instead of camera time for now
         	// NOTE: SET TIMEZONE TO UTC ON CAMERA OR GET FROM LOCAL SYSTEM OR CONVERT
         	// NOTE: this particular command may have trouble without admin password
-            URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/admin/param.cgi?action=list&group=root.Time.TimeZone");
-            InputStream is = optionsURL.openStream();
+            /*URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/admin/param.cgi?action=list&group=root.Time.TimeZone");
+            HttpURLConnection connect = (HttpURLConnection)optionsURL.openConnection();
+            connect.addRequestProperty(key, value);
+            //InputStream is = optionsURL.openStream();
             BufferedReader limitReader = new BufferedReader(new InputStreamReader(is));
             
             String line;
@@ -122,17 +129,17 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
     	        // root.Time.TimeZone=GMT-6
                 if (tokens[0].trim().equalsIgnoreCase("root.Time.TimeZone"))
                 	df.setTimeZone(TimeZone.getTimeZone(tokens[1]));   	
-            }
+            }*/
 
 
             /** request PTZ Limits  **/
-            optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=PTZ.Limit");
-            is = optionsURL.openStream();
-            limitReader = new BufferedReader(new InputStreamReader(is));
+            URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=PTZ.Limit");
+            InputStream is = optionsURL.openStream();
+            BufferedReader limitReader = new BufferedReader(new InputStreamReader(is));
 
 
             // get limit values from IP stream
-
+            String line;
             while ((line = limitReader.readLine()) != null)
             {
                 // parse response
@@ -201,8 +208,8 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
         constraints = fac.newAllowedValues();
         constraints.addInterval(new double[] {1, maxZoom});
         c.setConstraint(constraints);
-        q.setLabel("Zoom Factor");
-        settingsDataStruct.addComponent("zoomFactor", q);
+        c.setLabel("Zoom Factor");
+        settingsDataStruct.addComponent("zoomFactor", c);
 
 //		  NOTE: current field angle is not returned by position request       
 //        c = fac.newCount();
@@ -248,10 +255,12 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
 
                     while (polling)
                     {
-                        // send http query
+                    	InputStream is = null;
+                    	
+                    	// send http query
                         try
                         {
-                            InputStream is = getSettingsUrl.openStream();
+                            is = getSettingsUrl.openStream();
                             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
                             dataStruct.renewDataBlock();
 
@@ -262,7 +271,6 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
                             String line;
                             while ((line = reader.readLine()) != null)
                             {
-
                                 // parse response
                                 String[] tokens = line.split("=");
 
@@ -275,13 +283,11 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
                                 {
                                     float val = Float.parseFloat(tokens[1]);
                                     dataStruct.getComponent("tilt").getData().setFloatValue(val);
-
                                 }
-                                else if (tokens[0].trim().equalsIgnoreCase("zoomFactor"))
+                                else if (tokens[0].trim().equalsIgnoreCase("zoom"))
                                 {
                                     int val = Integer.parseInt(tokens[1]);
-                                    dataStruct.getComponent("zoom").getData().setIntValue(val);
-
+                                    dataStruct.getComponent("zoomFactor").getData().setIntValue(val);
                                 }
                                 // NOTE: position doesn't return field angle !!!
 //                                else if (tokens[0].trim().equalsIgnoreCase("fieldAngle"))
@@ -311,11 +317,23 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
                             eventHandler.publishEvent(new SensorDataEvent(time, AxisSettingsOutput.this, latestRecord));
 
                             // TODO use a timer; set for every 1 second
-                            Thread.sleep(1000);
+                            Thread.sleep((long)(getAverageSamplingPeriod()*1000));
                         }
                         catch (Exception e)
                         {
                             e.printStackTrace();
+                        }
+                        finally
+                        {
+                        	// always close the stream even in case of error
+                        	try
+							{
+								if (is != null)
+									is.close();
+							}
+							catch (IOException e)
+							{
+							}
                         }
                     }
                     ;

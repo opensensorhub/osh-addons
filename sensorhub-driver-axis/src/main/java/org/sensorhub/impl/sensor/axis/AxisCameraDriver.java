@@ -97,7 +97,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 		            String[] tokens = line.split("=");
 		
 		            if (tokens[0].trim().equalsIgnoreCase("root.Properties.PTZ.PTZ"))
-		                ptzSupported = Boolean.parseBoolean(tokens[1]);    	
+		                ptzSupported = tokens[1].equalsIgnoreCase("yes");    	
 		        }
 		        
 		        if (ptzSupported){
