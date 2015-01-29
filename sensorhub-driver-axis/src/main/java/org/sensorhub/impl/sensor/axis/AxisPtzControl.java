@@ -251,6 +251,9 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
         // if (errorList != empty)  //then you have an error
         
         
+        
+        
+        
         try
         {
         	         

@@ -121,6 +121,8 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		startStream();
     }
 	
 	
@@ -193,8 +195,10 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 						        //ImageTypeSpecifier imageType = reader.getRawImageType(0);
 						        
 						        BufferedImage rgbImage = reader.read(0);
-						        double timestamp = AXISJpegHeaderReader.getTimestamp(data) / 1000.;
-						        dataBlock.setDoubleValue(0, timestamp/1000.);
+						        
+						        //double timestamp = AXISJpegHeaderReader.getTimestamp(data) / 1000.;
+						        double timestamp = System.currentTimeMillis() / 1000.;
+						        dataBlock.setDoubleValue(0, timestamp);
 						        byte[] byteData = ((DataBufferByte)rgbImage.getRaster().getDataBuffer()).getData();
 						        ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(byteData);
 								
