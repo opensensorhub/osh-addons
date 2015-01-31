@@ -36,10 +36,11 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.data.AbstractDataBlock;
-import org.vast.data.DataBlockCompressed;
 import org.vast.data.DataBlockMixed;
+import org.vast.data.DataComponentHelper;
 import org.vast.data.SWEFactory;
 import org.vast.swe.SWEConstants;
+import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -49,12 +50,10 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureRequest.Builder;
-import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
-import android.media.MediaCodec;
-import android.media.MediaCodecInfo;
-import android.media.MediaFormat;
-import android.media.MediaMuxer;
+import android.media.Image;
+import android.media.ImageReader;
+import android.media.ImageReader.OnImageAvailableListener;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.view.Surface;
@@ -79,8 +78,9 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
     CameraDevice camera;
     CameraCharacteristics camCharacteristics;
     CameraCaptureSession captureSession;
-    MediaCodec mCodec;
-    MediaMuxer mMuxer;
+    ImageReader imgEncoder;
+    //MediaCodec mCodec;
+    //MediaMuxer mMuxer;
     File videoFile;
     HandlerThread backgroundThread;
     Handler backgroundHandler;
@@ -126,7 +126,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
             // TODO get closest values from camera characteristics
             imgWidth = 800;
             imgHeight = 600;
-            frameRate = 10;
+            frameRate = 1;
             
             // launch camera video recording
             camManager.openCamera(cameraId, new CameraDevice.StateCallback() {
@@ -193,10 +193,16 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
             timeEnc.setRef("/" + time.getName());
             timeEnc.setCdmDataType(DataType.DOUBLE);
             dataEncoding.addMemberAsComponent(timeEnc);
-            BinaryBlock h264Enc = fac.newBinaryBlock();
-            h264Enc.setRef("/" + img.getName());
-            h264Enc.setCompression("H264");
-            dataEncoding.addMemberAsBlock(h264Enc);
+            //BinaryBlock compressedBlock = fac.newBinaryBlock();
+            //compressedBlock.setRef("/" + img.getName());
+            //compressedBlock.setCompression("H264");
+            BinaryBlock compressedBlock = fac.newBinaryBlock();
+            compressedBlock.setRef("/" + img.getName());
+            compressedBlock.setCompression("JPEG");
+            dataEncoding.addMemberAsBlock(compressedBlock);
+            
+            // resolve encoding so compressed blocks can be properly generated
+            DataComponentHelper.resolveComponentEncodings(dataStruct, dataEncoding);
             
             // start streaming video
             startCaptureSession(camera);
@@ -217,10 +223,10 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
         Surface codecInputSurface;
         
         // prepare H264 encoder
-        try
+        /*try
         {
-            mCodec = MediaCodec.createEncoderByType("video/avc"); //video/mp4v-es
-            MediaFormat mediaFormat = MediaFormat.createVideoFormat("video/avc", imgWidth, imgHeight);
+            /*mCodec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC); //video/mp4v-es
+            MediaFormat mediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, imgWidth, imgHeight);
             mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 2000000);
             mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, frameRate);
             mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
@@ -230,13 +236,27 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
             mCodec.start();
             log.debug("MediaCodec initialized");
             
-            //videoFile = new File(AndroidSensorsDriver.androidContext.getExternalFilesDir(null), "video.mp4");
+            videoFile = new File(AndroidSensorsDriver.androidContext.getExternalFilesDir(null), "video.mp4");
+            mMuxer = new MediaMuxer(videoFile.getAbsolutePath(), MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
             //int rotation = AndroidSensorsDriver.androidContext..getDefaultDisplay().getRotation();
-            //mMuxer.setOrientationHint(90);
+            mMuxer.setOrientationHint(90);
+            log.debug("MediaMuxer initialized");
         }
         catch (Exception e)
         {
             throw new SensorException("Error while initializing codec " + mCodec.getName(), e);
+        }*/
+        
+        /* prepare JPEG encoder */
+        try
+        {
+            imgEncoder = ImageReader.newInstance(imgWidth, imgHeight, ImageFormat.JPEG, 2);
+            codecInputSurface = imgEncoder.getSurface();
+            log.debug("ImageReader initialized");            
+        }
+        catch (Exception e)
+        {
+            throw new SensorException("Error while initializing JPEG image encoder", e);
         }
         
         final Builder builder = camera.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
@@ -246,7 +266,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
         outputs.add(codecInputSurface);
         
         // create capture session to codec buffer
-        final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
+        //final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
         camera.createCaptureSession(outputs, new CameraCaptureSession.StateCallback() {
             @Override
             public void onConfigured(CameraCaptureSession session)
@@ -255,37 +275,38 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                 
                 try
                 {
-                    builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_OFF);//.CONTROL_MODE_AUTO);
-                    builder.set(CaptureRequest.SENSOR_FRAME_DURATION, (long)(1.0 / frameRate * 1e9));
+                    //builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_OFF);
+                    builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                    builder.set(CaptureRequest.SENSOR_FRAME_DURATION, (long)(1e9 / frameRate));
                     CaptureRequest captureReq = builder.build();
                     log.debug("Capture request created");
                    
                     session.setRepeatingRequest(captureReq, new CameraCaptureSession.CaptureCallback()
                     {
-                        @Override
+                        /*@Override
                         public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request, long timestamp, long frameNumber)
                         {
                             log.debug("Capture started");
-                        }
+                        }*/
 
                         @Override
                         public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result)
                         {
                             log.debug("Image " + result.getFrameNumber() + " captured");
                             
-                            while (true) {
+                            /*while (true) {
                                 int bufferIndex = mCodec.dequeueOutputBuffer(mBufferInfo, 5000);
                                 
-                                /*if (bufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) 
+                                if (bufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) 
                                 {
                                     MediaFormat newFormat = mCodec.getOutputFormat();
                                     mMuxer.addTrack(newFormat);
                                     mMuxer.start();
                                 }
-                                else */
-                                if (bufferIndex >= 0)
+                                else if (bufferIndex >= 0)
                                 {
                                     ByteBuffer buf = mCodec.getOutputBuffer(bufferIndex);
+                                    System.out.println(mBufferInfo.flags);
                                     
                                     // generate new data record
                                     DataBlock newRecord;
@@ -302,7 +323,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                                     newRecord.setDoubleValue(0, latestRecordTime);
                                     
                                     // set encoded data
-                                    log.debug("Buffer size is " + mBufferInfo.size);
+                                    log.debug("Buffer size is " + mBufferInfo.size + "/" + buf.limit());
                                     AbstractDataBlock frameData = ((DataBlockMixed)newRecord).getUnderlyingObject()[1];
                                     byte[] frameBytes = new byte[buf.limit()];
                                     buf.get(frameBytes);
@@ -313,13 +334,13 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                                     //eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AndroidCameraOutput.this, latestRecord));
                                     
                                     // also mux to mp4 file for checking
-                                    //buf.rewind();
-                                    //mMuxer.writeSampleData(0, buf, mBufferInfo);
+                                    buf.rewind();
+                                    mMuxer.writeSampleData(0, buf, mBufferInfo);
                                     
                                     mCodec.releaseOutputBuffer(bufferIndex, false);
                                     break;
                                 }
-                            }
+                            }*/
                         }
                         
                         @Override
@@ -331,7 +352,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                 }
                 catch (Exception e)
                 {
-                    // TODO: handle exception
+                    log.error("Could not start repeating capture");  
                 }               
             }
 
@@ -341,7 +362,56 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                 log.error("Could not configure capture session");          
             }            
         }, backgroundHandler);
-
+        
+        
+        final Runnable sendImgRunnable = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                // retrieve imageReader buffer
+                Image img = imgEncoder.acquireLatestImage();
+                if (img == null)
+                    return;
+                ByteBuffer buf = img.getPlanes()[0].getBuffer();
+                
+                // generate new data record
+                DataBlock newRecord;
+                if (latestRecord == null)
+                    newRecord = dataStruct.createDataBlock();
+                else
+                    newRecord = latestRecord.renew();
+                
+                // set time stamp
+                double latestRecordTime = getJulianTimeStamp(img.getTimestamp());
+                newRecord.setDoubleValue(0, latestRecordTime);
+                
+                // set encoded data
+                //AbstractDataBlock frameData = (AbstractDataBlock)newRecord;
+                AbstractDataBlock frameData = ((DataBlockMixed)newRecord).getUnderlyingObject()[1];
+                byte[] frameBytes = new byte[buf.limit()];
+                buf.get(frameBytes);
+                frameData.setUnderlyingObject(frameBytes);
+                img.close();
+                
+                // send event
+                latestRecord = newRecord;
+                eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AndroidCameraOutput.this, latestRecord));                
+            }
+        };
+        
+        
+        imgEncoder.setOnImageAvailableListener(new OnImageAvailableListener()
+        {
+            @Override
+            public void onImageAvailable(ImageReader encoder)
+            {
+                log.debug("Image encoded");
+                //backgroundHandler.post(sendImgRunnable);
+                sendImgRunnable.run();
+            }
+            
+        }, backgroundHandler);
     }
     
     
@@ -362,7 +432,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
             camera = null;
         }
         
-        if (mCodec != null)
+        /*if (mCodec != null)
         {
             mCodec.signalEndOfInputStream();
             mCodec.stop();
@@ -375,7 +445,10 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
             mMuxer.stop();
             mMuxer.release();
             mMuxer = null;
-        }
+        }*/
+        
+        if (imgEncoder != null)
+            imgEncoder.close();
         
         if (backgroundThread != null)
         {
