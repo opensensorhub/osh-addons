@@ -15,7 +15,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.android;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -81,9 +80,11 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
     ImageReader imgEncoder;
     //MediaCodec mCodec;
     //MediaMuxer mMuxer;
-    File videoFile;
-    HandlerThread backgroundThread;
-    Handler backgroundHandler;
+    //File videoFile;
+    HandlerThread cameraThread;
+    Handler cameraHandler;
+    HandlerThread processThread;
+    Handler processHandler;
     int imgHeight, imgWidth, frameRate;
     
     String name;
@@ -115,9 +116,16 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
     public void init() throws SensorException
     {
         final Object camLock = new Object();
-        backgroundThread = new HandlerThread("CameraThread");
-        backgroundThread.start();
-        backgroundHandler = new Handler (backgroundThread.getLooper());
+        
+        // for camera setup and capture
+        cameraThread = new HandlerThread("CameraThread");
+        cameraThread.start();
+        cameraHandler = new Handler(cameraThread.getLooper());
+        
+        // for image compression and sending events
+        processThread = new HandlerThread("ProcessThread");
+        processThread.start();
+        processHandler = new Handler(processThread.getLooper());        
         
         try
         {
@@ -153,7 +161,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                     synchronized(camLock) { camLock.notify(); }                    
                 }
                 
-            }, backgroundHandler);
+            }, cameraHandler);
             
             // wait for camera to be opened
             synchronized (camLock) { camLock.wait(100L); } 
@@ -348,7 +356,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                         {
                             log.error("Video capture failed, error=" + failure.getReason());
                         }
-                    }, backgroundHandler);
+                    }, cameraHandler);
                 }
                 catch (Exception e)
                 {
@@ -361,7 +369,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
             {
                 log.error("Could not configure capture session");          
             }            
-        }, backgroundHandler);
+        }, cameraHandler);
         
         
         final Runnable sendImgRunnable = new Runnable()
@@ -411,7 +419,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                 sendImgRunnable.run();
             }
             
-        }, backgroundHandler);
+        }, processHandler);
     }
     
     
@@ -450,10 +458,16 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
         if (imgEncoder != null)
             imgEncoder.close();
         
-        if (backgroundThread != null)
+        if (cameraThread != null)
         {
-            backgroundThread.quitSafely();
-            backgroundThread = null;
+            cameraThread.quitSafely();
+            cameraThread = null;
+        }
+        
+        if (processThread != null)
+        {
+            processThread.quitSafely();
+            processThread = null;
         }
         
         // make sure created video file is visible
