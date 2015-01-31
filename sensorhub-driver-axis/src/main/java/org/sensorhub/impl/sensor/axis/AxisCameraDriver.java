@@ -152,7 +152,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
         	// try to open stream and check for AXIS Brand
 	        URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=root.Brand.Brand");
 		    URLConnection conn = optionsURL.openConnection();
-		    conn.setConnectTimeout(300);
+		    conn.setConnectTimeout(500);
 		    conn.connect();
 		    InputStream is = conn.getInputStream();
 	        BufferedReader reader = new BufferedReader(new InputStreamReader(is));

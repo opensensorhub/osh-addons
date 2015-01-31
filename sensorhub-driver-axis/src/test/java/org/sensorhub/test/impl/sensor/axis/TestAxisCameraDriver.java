@@ -8,7 +8,7 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
+The Initial Developer is Sensia Software LLC. Portions created by the Initial
 Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
@@ -16,16 +16,18 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.test.impl.sensor.axis;
 
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Iterator;
 import java.util.UUID;
-
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import javax.swing.JFrame;
-
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataBlock;
-import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +43,6 @@ import org.sensorhub.impl.sensor.axis.AxisVideoOutput;
 import org.vast.data.DataChoiceImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.SWECommonUtils;
-
 import static org.junit.Assert.*;
 
 
@@ -76,8 +77,9 @@ public class TestAxisCameraDriver implements IEventListener
     {
         config = new AxisCameraConfig();
         //config.ipAddress = "root:more4less@192.168.1.50";
-        config.ipAddress = "192.168.1.50";
+        //config.ipAddress = "192.168.1.50";
         //config.ipAddress = "192.168.1.60";
+        config.ipAddress = "bottsgeo.simple-url.com:81";
         config.id = UUID.randomUUID().toString();
         
         driver = new AxisCameraDriver();
@@ -264,7 +266,7 @@ public class TestAxisCameraDriver implements IEventListener
         	// test relative pan
         	while (frameCount < MAX_FRAMES)  //
         	{
-        		if (frameCount % 30 == 0)
+        		if (frameCount % 10 == 0)
         		{
         			((DataChoiceImpl)commandDesc).setSelectedItem("rpan");
         			commandData = commandDesc.createDataBlock();
@@ -320,13 +322,28 @@ public class TestAxisCameraDriver implements IEventListener
 	        actualWidth = camDataStruct.getComponent(1).getComponent(0).getComponentCount();
 	        dataBlockSize = newDataEvent.getRecords()[0].getAtomCount();
 	        		
-	        //System.out.println("New data received from sensor " + newDataEvent.getSensorId());
-	        //System.out.println("Image is " + actualWidth + "x" + actualHeight);
-	        
-	        byte[] srcArray = (byte[])camDataStruct.getComponent(1).getData().getUnderlyingObject();
+	        byte[] frameData = (byte[])camDataStruct.getComponent(1).getData().getUnderlyingObject();
+                        
+	        /*// use RGB data directly
 	        byte[] destArray = ((DataBufferByte)img.getRaster().getDataBuffer()).getData();
-	        System.arraycopy(srcArray, 0, destArray, 0, dataBlockSize-1);
-            videoWindow.getContentPane().getGraphics().drawImage(img, 0, 0, null);
+	        System.arraycopy(frameData, 0, destArray, 0, dataBlockSize-1);*/
+	        
+	        // uncompress JPEG data
+	        BufferedImage rgbImage;
+            try
+            {
+                InputStream imageStream = new ByteArrayInputStream(frameData);                               
+                ImageInputStream input = ImageIO.createImageInputStream(imageStream); 
+                Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
+                ImageReader reader = readers.next();
+                reader.setInput(input);
+                rgbImage = reader.read(0);
+                videoWindow.getContentPane().getGraphics().drawImage(rgbImage, 0, 0, null);
+            }
+            catch (IOException e1)
+            {
+                throw new RuntimeException(e1);
+            }
             
             frameCount++;
         }
