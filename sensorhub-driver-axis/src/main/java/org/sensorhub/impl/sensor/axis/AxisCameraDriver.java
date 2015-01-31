@@ -72,11 +72,11 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 	        this.videoDataInterface = new AxisVideoOutput(this);
 	        addOutput(videoDataInterface, false);
 	
-	        this.videoControlInterface = new AxisVideoControl(this);
-	        addControlInput(videoControlInterface);
+	        //this.videoControlInterface = new AxisVideoControl(this);
+	        //addControlInput(videoControlInterface);
 	        
 	        videoDataInterface.init();
-	        videoControlInterface.init();
+	        //videoControlInterface.init();
 
 	        
 	        
