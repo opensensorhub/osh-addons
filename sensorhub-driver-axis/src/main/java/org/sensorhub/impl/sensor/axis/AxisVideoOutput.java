@@ -189,24 +189,24 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 							
 							while (streaming)
 							{
-								DataBlock dataBlock;
-								
-								// create new data block
-								if (latestRecord == null)
-								    dataBlock = videoDataStruct.createDataBlock();
-								else
-								    dataBlock = latestRecord.renew();
-								    
-								//double timestamp = AXISJpegHeaderReader.getTimestamp(data) / 1000.;
-                                double timestamp = System.currentTimeMillis() / 1000.;
-                                dataBlock.setDoubleValue(0, timestamp);
-                                
-                                // extract next frame from MJPEG stream
+								// extract next frame from MJPEG stream
 								Buffer buf = new Buffer();
 						        buf.setData(new byte[]{});
 						        stream.read(buf);
 						        byte[] frameData = (byte[]) buf.getData();
 						        
+						        // create new data block
+						        DataBlock dataBlock;
+						        if (latestRecord == null)
+                                    dataBlock = videoDataStruct.createDataBlock();
+                                else
+                                    dataBlock = latestRecord.renew();
+                                
+						        //double timestamp = AXISJpegHeaderReader.getTimestamp(frameData) / 1000.;
+                                double timestamp = System.currentTimeMillis() / 1000.;
+                                dataBlock.setDoubleValue(0, timestamp);
+                                //System.out.println(new DateTimeFormat().formatIso(timestamp, 0));
+                                
 						        // uncompress to RGB bufferd image
 						        /*InputStream imageStream = new ByteArrayInputStream(frameData);						        
 						        ImageInputStream input = ImageIO.createImageInputStream(imageStream); 
