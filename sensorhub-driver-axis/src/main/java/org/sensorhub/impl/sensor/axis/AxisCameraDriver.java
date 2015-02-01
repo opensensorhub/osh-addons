@@ -76,9 +76,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 	        //addControlInput(videoControlInterface);
 	        
 	        videoDataInterface.init();
-	        //videoControlInterface.init();
-
-	        
+	        //videoControlInterface.init();	        
 	        
 	        /** check if PTZ supported  **/
 	        try
@@ -157,24 +155,21 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 		    InputStream is = conn.getInputStream();
 	        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 	        
-		    String line = reader.readLine();
-		    
-		    // note: should return one line with root.Brand.Brand=AXIS
-		    if (line != null){
-		    	
-	            String[] tokens = line.split("=");
-	
+	        // note: should return one line with root.Brand.Brand=AXIS
+            String line = reader.readLine();
+		    if (line != null)
+		    {
+		        String[] tokens = line.split("=");	
 	            if ((tokens[0].trim().equalsIgnoreCase("root.Brand.Brand")) && (tokens[1].trim().equalsIgnoreCase("AXIS")))
 	                return true; 
 		    }
+		    
 		    return false;
         }
         catch (Exception e)
         {
-            log.error("Failed to connect to the Axis Camera at " + ipAddress, e);
             return false;
-        }
-   
+        }   
     }
 
 
