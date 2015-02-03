@@ -40,6 +40,7 @@ import org.vast.data.DataComponentHelper;
 import org.vast.data.SWEFactory;
 import org.vast.swe.SWEConstants;
 import android.graphics.ImageFormat;
+import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -49,6 +50,7 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureRequest.Builder;
+import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
@@ -71,6 +73,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
 {
     // keep logger name short because in LogCat it's max 23 chars
     private static final Logger log = LoggerFactory.getLogger(AndroidCameraOutput.class.getSimpleName());
+    public static SurfaceTexture previewTexture;
     
     CameraManager camManager;
     String cameraId;
@@ -164,7 +167,11 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
             }, cameraHandler);
             
             // wait for camera to be opened
-            synchronized (camLock) { camLock.wait(100L); } 
+            synchronized (camLock)
+            {
+                if (camera == null)
+                    camLock.wait(100L);
+            } 
             
             if (camera == null)
                 throw new SensorException("Failed to open camera " + camera.getId());
@@ -268,14 +275,22 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
         }
         
         final Builder builder = camera.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+        ArrayList<Surface> surfaces = new ArrayList<Surface>(1);
+        
         builder.addTarget(codecInputSurface);
-                
-        ArrayList<Surface> outputs = new ArrayList<Surface>(1);
-        outputs.add(codecInputSurface);
+        surfaces.add(codecInputSurface);
+        
+        if (previewTexture != null)
+        {
+            previewTexture.setDefaultBufferSize(imgWidth, imgHeight);
+            Surface previewSurface = new Surface(previewTexture);
+            surfaces.add(previewSurface);
+            builder.addTarget(previewSurface);
+        }
         
         // create capture session to codec buffer
         //final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
-        camera.createCaptureSession(outputs, new CameraCaptureSession.StateCallback() {
+        camera.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
             @Override
             public void onConfigured(CameraCaptureSession session)
             {
@@ -283,9 +298,10 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                 
                 try
                 {
-                    //builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_OFF);
-                    builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-                    builder.set(CaptureRequest.SENSOR_FRAME_DURATION, (long)(1e9 / frameRate));
+                    //builder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_OFF);
+                    //builder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, 1000L);
+                    //builder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+                    //builder.set(CaptureRequest.SENSOR_FRAME_DURATION, (long)(1e9 / frameRate));
                     CaptureRequest captureReq = builder.build();
                     log.debug("Capture request created");
                    
@@ -301,6 +317,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                         public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result)
                         {
                             log.debug("Image " + result.getFrameNumber() + " captured");
+                            log.debug("Exp=" + result.get(CaptureResult.SENSOR_EXPOSURE_TIME));
                             
                             /*while (true) {
                                 int bufferIndex = mCodec.dequeueOutputBuffer(mBufferInfo, 5000);
