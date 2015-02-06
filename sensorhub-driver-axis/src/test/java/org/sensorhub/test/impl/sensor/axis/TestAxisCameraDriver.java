@@ -79,7 +79,7 @@ public class TestAxisCameraDriver implements IEventListener
         //config.ipAddress = "root:more4less@192.168.1.50";
         //config.ipAddress = "192.168.1.50";
         //config.ipAddress = "192.168.1.60";
-        config.ipAddress = "bottsgeo.simple-url.com:81";
+        config.ipAddress = "bottsgeo.simple-url.com:80";
         config.id = UUID.randomUUID().toString();
         
         driver = new AxisCameraDriver();
