@@ -89,6 +89,9 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
+        if (!driver.isConnected())
+            return;
+        
         for (ISensorDataInterface di: driver.getObservationOutputs().values())
         {
             DataComponent dataMsg = di.getRecordDescription();
@@ -100,6 +103,9 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testGetCommandDesc() throws Exception
     {
+        if (!driver.isConnected())
+            return;
+        
         for (ISensorControlInterface ci: driver.getCommandInputs().values())
         {
             DataComponent commandMsg = ci.getCommandDescription();
@@ -111,6 +117,9 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testGetSensorDesc() throws Exception
     {
+        if (!driver.isConnected())
+            return;
+        
         AbstractProcess smlDesc = driver.getCurrentSensorDescription();
         new SMLUtils().writeProcess(System.out, smlDesc, true);
     }
@@ -132,7 +141,10 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testVideoCapture() throws Exception
     {
-    	initWindow();
+        if (!driver.isConnected())
+            return;
+        
+        initWindow();
     	
     	// register listener on data interface
         ISensorDataInterface di = driver.getObservationOutputs().get("videoOutput");
@@ -156,6 +168,9 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testPTZSettingsOutput() throws Exception
     {
+        if (!driver.isConnected())
+            return;
+        
         // register listener on data interface
         ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
         di.registerListener(this);
@@ -174,7 +189,10 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testSendPTZCommand() throws Exception
     {
-    	initWindow();
+        if (!driver.isConnected())
+            return;
+        
+        initWindow();
     	
     	// register listeners
     	ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");

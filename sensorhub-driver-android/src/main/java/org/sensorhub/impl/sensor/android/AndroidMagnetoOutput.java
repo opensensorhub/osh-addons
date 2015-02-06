@@ -66,7 +66,7 @@ public class AndroidMagnetoOutput extends AndroidSensorOutput implements SensorE
         dataStruct.addComponent("time", c1);
 
         Vector vec = fac.newVector();        
-        vec.setDefinition(MAG_FIELD_UOM);
+        vec.setDefinition(MAG_FIELD_DEF);
         ((Vector)vec).setReferenceFrame(MAG_FIELD_CRS);
         dataStruct.addComponent("mag", vec);
         
