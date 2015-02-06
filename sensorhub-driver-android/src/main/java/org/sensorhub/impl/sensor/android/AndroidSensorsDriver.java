@@ -15,7 +15,9 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.android;
 
+import java.util.ArrayList;
 import java.util.List;
+import net.opengis.sensorml.v20.PhysicalComponent;
 import net.opengis.sensorml.v20.PhysicalSystem;
 import net.opengis.sensorml.v20.SpatialFrame;
 import net.opengis.sensorml.v20.impl.SpatialFrameImpl;
@@ -47,10 +49,14 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
     SensorManager sensorManager;
     LocationManager locationManager;
     CameraManager cameraManager;
+    SensorMLBuilder smlBuilder;
+    List<PhysicalComponent> smlComponents;
     
     
     public AndroidSensorsDriver()
     {
+        smlComponents = new ArrayList<PhysicalComponent>();
+        smlBuilder = new SensorMLBuilder();
     }
     
     
@@ -58,7 +64,7 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
     public void start() throws SensorException
     {
         // we call stop() to cleanup just in case we weren't properly stopped
-        stop();
+        stop();        
         
         // create data interfaces for sensors
         this.sensorManager = (SensorManager)androidContext.getSystemService(Context.SENSOR_SERVICE);
@@ -70,19 +76,23 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
             switch (sensor.getType())
             {
                 case Sensor.TYPE_ACCELEROMETER:
-                    addOutput(new AndroidAcceleroOutput(this, sensorManager, sensor), false);
+                    if (config.activateAccelerometer)
+                        useSensor(new AndroidAcceleroOutput(this, sensorManager, sensor), sensor);                        
                     break;
                     
                 case Sensor.TYPE_GYROSCOPE:
-                    addOutput(new AndroidGyroOutput(this, sensorManager, sensor), false);
+                    if (config.activateGyrometer)
+                        useSensor(new AndroidGyroOutput(this, sensorManager, sensor), sensor);
                     break;
                 
                 case Sensor.TYPE_MAGNETIC_FIELD:
-                    addOutput(new AndroidMagnetoOutput(this, sensorManager, sensor), false);
+                    if (config.activateMagnetometer)
+                        useSensor(new AndroidMagnetoOutput(this, sensorManager, sensor), sensor);
                     break;
                     
                 case Sensor.TYPE_ROTATION_VECTOR:
-                    addOutput(new AndroidOrientationOutput(this, sensorManager, sensor), false);
+                    if (config.activateOrientation)
+                        useSensor(new AndroidOrientationOutput(this, sensorManager, sensor), sensor);
                     break;
             }
         }
@@ -97,7 +107,11 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
             {
                 log.debug("Detected location provider " + provName);
                 LocationProvider locProvider = locationManager.getProvider(provName);
-                addOutput(new AndroidLocationOutput(this, locationManager, locProvider), false);
+                
+                // keep only GPS for now
+                if ( (locProvider.requiresSatellite() && config.activateGpsLocation) ||
+                     (locProvider.requiresNetwork() && config.activateNetworkLocation))
+                    useLocationProvider(new AndroidLocationOutput(this, locationManager, locProvider), locProvider);
             }
         }
         
@@ -112,8 +126,10 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
                 for (String cameraId: camIds)
                 {
                     log.debug("Detected camera " + cameraId);
-                    if (cameraManager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK)
-                        addOutput(new AndroidCameraOutput(this, cameraManager, cameraId), false);
+                    int camDir = cameraManager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.LENS_FACING);
+                    if ( (camDir == CameraCharacteristics.LENS_FACING_BACK && config.activateBackCamera) ||
+                         (camDir == CameraCharacteristics.LENS_FACING_FRONT && config.activateFrontCamera))
+                         useCamera(new AndroidCameraOutput(this, cameraManager, cameraId), cameraId);
                 }
             }
             catch (CameraAccessException e)
@@ -124,7 +140,34 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
         
         // init all outputs
         for (ISensorDataInterface o: this.getAllOutputs().values())
-            ((IAndroidOutput)o).init(); 
+            ((IAndroidOutput)o).init();
+        
+        // update sensorml description
+        updateSensorDescription();
+    }
+    
+    
+    protected void useSensor(ISensorDataInterface output, Sensor sensor)
+    {
+        addOutput(output, false);
+        smlComponents.add(smlBuilder.getComponentDescription(sensorManager, sensor));
+        log.info("Getting data from " + sensor.getName() + " sensor");
+    }
+    
+    
+    protected void useLocationProvider(ISensorDataInterface output, LocationProvider locProvider)
+    {
+        addOutput(output, false);
+        smlComponents.add(smlBuilder.getComponentDescription(locationManager, locProvider));
+        log.info("Getting data from " + locProvider.getName() + " location provider");
+    }
+    
+    
+    protected void useCamera(ISensorDataInterface output, String cameraId)
+    {
+        addOutput(output, false);
+        smlComponents.add(smlBuilder.getComponentDescription(cameraManager, cameraId));
+        log.info("Getting data from camera #" + cameraId);
     }
     
     
@@ -133,7 +176,7 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
     {
         // stop all outputs
         for (ISensorDataInterface o: this.getAllOutputs().values())
-            ((IAndroidOutput)o).stop();        
+            ((IAndroidOutput)o).stop();
         
         this.removeAllOutputs();
         this.removeAllControlInputs();
@@ -151,10 +194,19 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
             
             SpatialFrame localRefFrame = new SpatialFrameImpl();
             localRefFrame.setId("LOCAL_FRAME");
-            localRefFrame.addAxis("x", "");
-            localRefFrame.addAxis("y", "");
-            localRefFrame.addAxis("z", "");
+            localRefFrame.setOrigin("Center of the device screen");
+            localRefFrame.addAxis("x", "The X axis is in the plane of the screen and points to the right");
+            localRefFrame.addAxis("y", "The Y axis is in the plane of the screen and points up");
+            localRefFrame.addAxis("z", "The Z axis points towards the outside of the front face of the screen");
             ((PhysicalSystem)sensorDescription).addLocalReferenceFrame(localRefFrame);
+            
+            // add components
+            int index = 0;
+            for (PhysicalComponent comp: smlComponents)
+            {
+                String name = "sensor" + index++;
+                ((PhysicalSystem)sensorDescription).getComponents().addComponent(name, comp);
+            }
         }
     }
 
