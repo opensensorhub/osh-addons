@@ -137,8 +137,7 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
     @Override
     public double getAverageSamplingPeriod()
     {
-        // TODO Auto-generated method stub
-        return 0;
+        return 1.0;
     }
 
 
