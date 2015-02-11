@@ -107,17 +107,18 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         double time = System.currentTimeMillis() / 1000.;
         
         // temperature; value will increase or decrease by less than 1.0 deg
-        temp += 2.*Math.random() - 1.;
+        temp += 0.005 * (2.0 *Math.random() - 1.0);
         
         // pressure; value will increase or decrease by less than 20 hPa
-        pressure += 20. * (2.*Math.random() - 1.);
+        pressure += 20. * (2.0 * Math.random() - 1.0);
         
         // wind speed; keep positive
-        speed += 2. * (2.*Math.random() - 1.);
+        // vary value between +/- 10 m/s
+        speed += 10.0 * (2.0 * Math.random() - 1.0);
         speed = speed < 0.0 ? 0.0 : speed; 
         
         // wind direction; keep between 0 and 360 degrees
-        direction += 5. * (2.*Math.random() - 1.);
+        direction += 4.0 * (2.0 * Math.random() - 1.0);
         direction = direction < 0.0 ? direction+360.0 : direction;
         direction = direction > 360.0 ? direction-360.0 : direction;        
         
@@ -166,8 +167,8 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     @Override
     public double getAverageSamplingPeriod()
     {
-    	// sample every 5 seconds
-        return 5.0;
+    	// sample every 1 second
+        return 1.0;
     }
 
 
