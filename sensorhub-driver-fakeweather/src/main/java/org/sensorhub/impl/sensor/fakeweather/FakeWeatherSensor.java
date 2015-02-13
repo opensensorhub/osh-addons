@@ -28,7 +28,6 @@ import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
  * a simple example of a sensor driver.
  * </p>
  *
- * <p>Copyright (c) 2014 Botts Innovative research, Inc</p>
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since Dec 24, 2014
  */

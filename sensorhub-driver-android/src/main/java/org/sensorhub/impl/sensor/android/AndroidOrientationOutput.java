@@ -8,8 +8,7 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-The Initial Developer is Sensia Software LLC. Portions created by the Initial
-Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
+Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
@@ -21,7 +20,11 @@ import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Time;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorDataEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vast.data.SWEFactory;
+import org.vast.math.Quat4d;
+import org.vast.math.Vector3d;
 import org.vast.swe.SWEConstants;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -34,12 +37,14 @@ import android.hardware.SensorManager;
  * Implementation of data interface for Android rotation vector sensors
  * </p>
  *
- * <p>Copyright (c) 2015</p>
- * @author Alexandre Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Jan 18, 2015
  */
 public class AndroidOrientationOutput extends AndroidSensorOutput implements SensorEventListener
 {
+    // keep logger name short because in LogCat it's max 23 chars
+    private static final Logger log = LoggerFactory.getLogger(AndroidOrientationOutput.class.getSimpleName());
+    
     private static final String ORIENT_DEF = "http://sensorml.com/ont/swe/property/OrientationQuaternion";
     private static final String QUAT_DEF = "http://sensorml.com/ont/swe/property/QuaternionComponent";
     private static final String ORIENT_CRS = "http://www.opengis.net/def/crs/OGC/0/ENU";
@@ -70,7 +75,7 @@ public class AndroidOrientationOutput extends AndroidSensorOutput implements Sen
         vec.setDefinition(ORIENT_DEF);
         ((Vector)vec).setReferenceFrame(ORIENT_CRS);
         ((Vector)vec).setLocalFrame("#" + AndroidSensorsDriver.LOCAL_REF_FRAME);
-        dataStruct.addComponent("accel", vec);
+        dataStruct.addComponent("orient", vec);
         
         Quantity c;
         c = fac.newQuantity(DataType.FLOAT);
@@ -105,7 +110,7 @@ public class AndroidOrientationOutput extends AndroidSensorOutput implements Sen
     {     
     }
 
-
+    
     @Override
     public void onSensorChanged(SensorEvent e)
     {
@@ -118,7 +123,21 @@ public class AndroidOrientationOutput extends AndroidSensorOutput implements Sen
         dataBlock.setFloatValue(2, e.values[1]);
         dataBlock.setFloatValue(3, e.values[2]);
         dataBlock.setFloatValue(4, e.values[3]); 
-                
+        
+        // convert to euler angles
+        /*Quat4d q = new Quat4d();
+        q.x = e.values[0];
+        q.y = e.values[1];
+        q.z = e.values[2];
+        q.w = e.values[3];
+        Vector3d euler = q.getEulerAngles();
+        euler.scale(180./Math.PI);
+        double oldx = euler.x;
+        euler.x = euler.y;
+        euler.y = oldx;
+        euler.z = -euler.z;
+        log.debug(euler.toString());*/
+        
         // TODO since this sensor is high rate,we could package several records in a single event
         // update latest record and send event
         latestRecord = dataBlock;

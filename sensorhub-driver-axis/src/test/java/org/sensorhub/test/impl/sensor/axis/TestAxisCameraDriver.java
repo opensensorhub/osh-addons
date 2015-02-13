@@ -56,7 +56,7 @@ import static org.junit.Assert.*;
  * Copyright (c) 2014
  * </p>
  * 
- * @author Alex Robin <alex.robin@sensiasoftware.com> * @since October 30, 2014
+ * @author Alex Robin <alex.robin@sensiasoftware.com>
  */
 
 

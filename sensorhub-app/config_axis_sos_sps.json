@@ -19,7 +19,7 @@
     "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
     "name": "Fake GPS Sensor",
     "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsSensor",
-    "enabled": true,
+    "enabled": false,
     "sensorML": null,
     "autoActivate": true,
     "enableHistory": false,
@@ -40,6 +40,15 @@
     "enableHistory": false,
     "hiddenIO": null,
     "ipAddress": "bottsgeo.simple-url.com:81"
+  },
+  {
+    "objClass": "org.sensorhub.impl.client.sost.SOSTClientConfig",
+    "id": "8ac89c00-ade0-11e4-ab27-0800200c9a66",
+    "name": "SOS-T Client for Axis Cam",
+    "moduleClass": "org.sensorhub.impl.client.sost.SOSTClient",
+    "enabled": true,
+    "sosEndpointUrl": "http://botts-geo.com:8181/sensorhub/sos",
+    "sensorID": "d136b6ea-3951-4691-bf56-c84ec7d89d72"
   },
   {
     "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
@@ -112,6 +121,29 @@
            "uri": "urn:mysos:offering02",
            "sensorID": "d136b6ea-3951-4691-bf56-c84ec7d89d72"
        }
-    ]
+    ],
+    "ogcCapabilitiesInfo": {
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": ["SensorHub", "Video"],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumber": "+33 5 23 56 89 78",
+        "faxNumber": "+33 5 23 56 89 77",
+        "deliveryPoint": "12 rue Voltaire",
+        "city": "Toulouse",
+        "administrativeArea": null,
+        "postalCode": "30000",
+        "country": "France",
+        "email": "admin@sensiasoft.com",
+        "website": null,
+        "hoursOfService": null,
+        "contactInstructions": null
+      }
+    }
   }
 ]
