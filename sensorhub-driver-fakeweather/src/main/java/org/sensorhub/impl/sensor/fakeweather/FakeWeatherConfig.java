@@ -22,8 +22,9 @@ public class FakeWeatherConfig extends SensorConfig
     private static final long serialVersionUID = 2L;
     
     
-    public double centerLatitude; // in deg
+    public double centerLatitude = 34.8038; // in deg
     
-    public double centerLongitude; // in deg
+    public double centerLongitude = -86.7228; // in deg
     
+    public double centerAltitude = 0.000; // in meters
 }
