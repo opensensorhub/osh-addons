@@ -46,7 +46,6 @@ import com.coremedia.iso.boxes.Box;
 import com.coremedia.iso.boxes.MovieBox;
 import com.coremedia.iso.boxes.fragment.MovieFragmentBox;
 import com.coremedia.iso.boxes.fragment.MovieFragmentHeaderBox;
-import com.coremedia.iso.boxes.fragment.TrackRunBox.Entry;
 
 
 public class FakeCamOutput extends AbstractSensorOutput<FakeCamSensor>
