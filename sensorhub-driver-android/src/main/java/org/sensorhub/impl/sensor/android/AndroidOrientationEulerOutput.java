@@ -44,12 +44,16 @@ public class AndroidOrientationEulerOutput extends AndroidSensorOutput implement
     //private static final Logger log = LoggerFactory.getLogger(AndroidOrientationEulerOutput.class.getSimpleName());
     
     private static final String ORIENT_VEC_DEF = "http://sensorml.com/ont/swe/property/Orientation";
-    private static final String ORIENT_ELT_DEF = "http://sensorml.com/ont/swe/property/EulerAngle";
+    private static final String HEADING_DEF = "http://sensorml.com/ont/swe/property/AngleToNorth";
+    private static final String PITCH_DEF = "http://sensorml.com/ont/swe/property/Pitch";
+    private static final String ROLL_DEF = "http://sensorml.com/ont/swe/property/Roll";
     private static final String ORIENT_CRS = "http://www.opengis.net/def/crs/OGC/0/ENU";
     private static final String ORIENT_UOM = "deg";
     
     // for euler computation
     Quat4d q = new Quat4d();
+    Quat4d look = new Quat4d();
+    Vector3d euler = new Vector3d();
     
     
     protected AndroidOrientationEulerOutput(AndroidSensorsDriver parentModule, SensorManager aSensorManager, Sensor aSensor)
@@ -82,19 +86,19 @@ public class AndroidOrientationEulerOutput extends AndroidSensorOutput implement
         Quantity c;
         c = fac.newQuantity(DataType.FLOAT);
         c.getUom().setCode(ORIENT_UOM);
-        c.setDefinition(ORIENT_ELT_DEF);
+        c.setDefinition(HEADING_DEF);
         c.setAxisID("z");
         vec.addComponent("heading",c);
 
         c = fac.newQuantity(DataType.FLOAT);
         c.getUom().setCode(ORIENT_UOM);
-        c.setDefinition(ORIENT_ELT_DEF);
+        c.setDefinition(PITCH_DEF);
         c.setAxisID("y");
         vec.addComponent("pitch", c);
 
         c = fac.newQuantity(DataType.FLOAT);
         c.getUom().setCode(ORIENT_UOM);
-        c.setDefinition(ORIENT_ELT_DEF);
+        c.setDefinition(ROLL_DEF);
         c.setAxisID("x");
         vec.addComponent("roll", c);
         
@@ -113,24 +117,48 @@ public class AndroidOrientationEulerOutput extends AndroidSensorOutput implement
     {
         double sampleTime = getJulianTimeStamp(e.timestamp);
         
-        // convert to euler angles        
+        // convert to euler angles         
         q.x = e.values[0];
         q.y = e.values[1];
         q.z = e.values[2];
-        q.w = e.values[3];
-        Vector3d euler = q.getEulerAngles();
+        q.w =  e.values[3];
+        q.normalize();
+        
+        // Y direction in phone ref frame
+        look.x = 0;
+        look.y = 1;
+        look.z = 0;
+        look.w = 1;
+        
+        // rotate to ENU
+        look.mul(q, look);
+        look.mulInverse(q);
+                
+        double heading = 90. - Math.toDegrees(Math.atan2(look.y, look.x));        
+        double pitch = 0.0;//Math.toDegrees(Math.atan2(look.y, look.x)) - 90.;
+        double roll = 0.0;
+        
+        /*double sqw = q.w*q.w;
+        double sqx = q.x*q.x;
+        double sqy = q.y*q.y;
+        double sqz = q.z*q.z;
+        System.out.println(q0);
+        euler.z = Math.atan2(2.0 * (q.x*q.y + q.z*q.W), sqx - sqy - sqz + sqw);     // heading
+        euler.y = Math.atan2(2.0 * (q.y*q.z + q.x*q.w), -sqx - sqy + sqz + sqw);    // pitch
+        euler.x = Math.asin(-2.0 * (q.x*q.z - q.y*q.w));                            // roll
         euler.scale(180./Math.PI);
+        
         double oldx = euler.x; // convert to ENU
         euler.x = euler.y;
         euler.y = oldx;
-        euler.z = -euler.z;
+        euler.z = -euler.z;*/
         
         // build and populate datablock
         DataBlock dataBlock = dataStruct.createDataBlock();
         dataBlock.setDoubleValue(0, sampleTime);
-        dataBlock.setFloatValue(1, (float)euler.z);
-        dataBlock.setFloatValue(2, (float)euler.y);
-        dataBlock.setFloatValue(3, (float)euler.x);
+        dataBlock.setFloatValue(1, (float)heading);
+        dataBlock.setFloatValue(2, (float)pitch);
+        dataBlock.setFloatValue(3, (float)roll);
         
         // TODO since this sensor is high rate, we could package several records in a single event
         // update latest record and send event
