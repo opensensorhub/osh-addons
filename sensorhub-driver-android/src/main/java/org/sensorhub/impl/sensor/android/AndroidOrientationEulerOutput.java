@@ -59,6 +59,7 @@ public class AndroidOrientationEulerOutput extends AndroidSensorOutput implement
     protected AndroidOrientationEulerOutput(AndroidSensorsDriver parentModule, SensorManager aSensorManager, Sensor aSensor)
     {
         super(parentModule, aSensorManager, aSensor);
+        this.name = "euler_orientation_data";
     }
 
 
