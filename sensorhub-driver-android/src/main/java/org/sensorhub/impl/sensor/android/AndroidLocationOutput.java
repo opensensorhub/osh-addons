@@ -23,8 +23,6 @@ import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vast.data.SWEFactory;
 import org.vast.data.TextEncodingImpl;
 import org.vast.swe.SWEConstants;
@@ -46,10 +44,13 @@ import android.os.Bundle;
 public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDriver> implements IAndroidOutput, LocationListener
 {
     // keep logger name short because in LogCat it's max 23 chars
-    private static final Logger log = LoggerFactory.getLogger(AndroidLocationOutput.class.getSimpleName());
+    //private static final Logger log = LoggerFactory.getLogger(AndroidLocationOutput.class.getSimpleName());
             
     private static final String LOC_DEF = "http://sensorml.com/ont/swe/property/Location";
     private static final String LOC_CRS = "http://www.opengis.net/def/crs/EPSG/0/4979";
+    //private static final String TIME_REF = "http://www.opengis.net/def/trs/USNO/0/GPS";
+    private static final String TIME_REF = "http://www.opengis.net/def/trs/BIPM/0/UTC";
+    private static final long GPS_TO_UTC_OFFSET = -16000L;
     
     LocationManager locManager;
     LocationProvider locProvider;
@@ -86,6 +87,7 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
         Time c1 = fac.newTime();
         c1.getUom().setHref(Time.ISO_TIME_UNIT);
         c1.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
+        c1.setReferenceFrame(TIME_REF);
         posDataStruct.addComponent("time", c1);
 
         Vector vec = fac.newVector();        
@@ -178,7 +180,7 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
                   + location.getLongitude() + ", " +
                   + location.getAltitude()); */
         
-        double sampleTime = location.getTime() / 1000.0;
+        double sampleTime = (location.getTime() + GPS_TO_UTC_OFFSET) / 1000.0;
                 
         // build and populate datablock
         DataBlock dataBlock = posDataStruct.createDataBlock();

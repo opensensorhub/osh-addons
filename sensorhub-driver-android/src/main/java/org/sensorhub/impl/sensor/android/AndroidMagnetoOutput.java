@@ -61,6 +61,7 @@ public class AndroidMagnetoOutput extends AndroidSensorOutput implements SensorE
         Time c1 = fac.newTime();
         c1.getUom().setHref(Time.ISO_TIME_UNIT);
         c1.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
+        c1.setReferenceFrame(TIME_REF);
         dataStruct.addComponent("time", c1);
 
         Vector vec = fac.newVector();        

@@ -90,8 +90,10 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
                     break;
                     
                 case Sensor.TYPE_ROTATION_VECTOR:
-                    if (config.activateOrientation)
-                        useSensor(new AndroidOrientationOutput(this, sensorManager, sensor), sensor);
+                    if (config.activateOrientationQuat)
+                        useSensor(new AndroidOrientationQuatOutput(this, sensorManager, sensor), sensor);
+                    if (config.activateOrientationEuler)
+                        useSensor(new AndroidOrientationEulerOutput(this, sensorManager, sensor), sensor);
                     break;
             }
         }

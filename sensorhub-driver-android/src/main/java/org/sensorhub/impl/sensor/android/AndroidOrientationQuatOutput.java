@@ -20,11 +20,7 @@ import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Time;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vast.data.SWEFactory;
-import org.vast.math.Quat4d;
-import org.vast.math.Vector3d;
 import org.vast.swe.SWEConstants;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -40,10 +36,10 @@ import android.hardware.SensorManager;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Jan 18, 2015
  */
-public class AndroidOrientationOutput extends AndroidSensorOutput implements SensorEventListener
+public class AndroidOrientationQuatOutput extends AndroidSensorOutput implements SensorEventListener
 {
     // keep logger name short because in LogCat it's max 23 chars
-    private static final Logger log = LoggerFactory.getLogger(AndroidOrientationOutput.class.getSimpleName());
+    //private static final Logger log = LoggerFactory.getLogger(AndroidOrientationQuatOutput.class.getSimpleName());
     
     private static final String ORIENT_DEF = "http://sensorml.com/ont/swe/property/OrientationQuaternion";
     private static final String QUAT_DEF = "http://sensorml.com/ont/swe/property/QuaternionComponent";
@@ -51,7 +47,7 @@ public class AndroidOrientationOutput extends AndroidSensorOutput implements Sen
     private static final String ORIENT_UOM = "1";
     
     
-    protected AndroidOrientationOutput(AndroidSensorsDriver parentModule, SensorManager aSensorManager, Sensor aSensor)
+    protected AndroidOrientationQuatOutput(AndroidSensorsDriver parentModule, SensorManager aSensorManager, Sensor aSensor)
     {
         super(parentModule, aSensorManager, aSensor);
     }
@@ -69,6 +65,7 @@ public class AndroidOrientationOutput extends AndroidSensorOutput implements Sen
         Time c1 = fac.newTime();
         c1.getUom().setHref(Time.ISO_TIME_UNIT);
         c1.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
+        c1.setReferenceFrame(TIME_REF);
         dataStruct.addComponent("time", c1);
 
         Vector vec = fac.newVector();        
@@ -123,20 +120,6 @@ public class AndroidOrientationOutput extends AndroidSensorOutput implements Sen
         dataBlock.setFloatValue(2, e.values[1]);
         dataBlock.setFloatValue(3, e.values[2]);
         dataBlock.setFloatValue(4, e.values[3]); 
-        
-        // convert to euler angles
-        /*Quat4d q = new Quat4d();
-        q.x = e.values[0];
-        q.y = e.values[1];
-        q.z = e.values[2];
-        q.w = e.values[3];
-        Vector3d euler = q.getEulerAngles();
-        euler.scale(180./Math.PI);
-        double oldx = euler.x;
-        euler.x = euler.y;
-        euler.y = oldx;
-        euler.z = -euler.z;
-        log.debug(euler.toString());*/
         
         // TODO since this sensor is high rate,we could package several records in a single event
         // update latest record and send event

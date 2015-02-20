@@ -41,7 +41,8 @@ public abstract class AndroidSensorOutput extends AbstractSensorOutput<AndroidSe
 {
     // keep logger name short because in LogCat it's max 23 chars
     protected static final Logger log = LoggerFactory.getLogger(AndroidSensorOutput.class.getSimpleName());
-        
+    protected static final String TIME_REF = "http://www.opengis.net/def/trs/BIPM/0/UTC";
+    
     HandlerThread eventThread;
     SensorManager sensorManager;
     Sensor sensor;
