@@ -33,13 +33,16 @@ public class AndroidSensorsConfig extends SensorConfig
     public boolean activateAccelerometer = false;
     public boolean activateGyrometer = false;
     public boolean activateMagnetometer = false;
-    public boolean activateOrientation = true;
+    public boolean activateOrientationQuat = true;
+    public boolean activateOrientationEuler = true;
     public boolean activateGpsLocation = true;
     public boolean activateNetworkLocation = false;
     public boolean activateBackCamera = false;
     public boolean activateFrontCamera = false;
     
     
-    public String sosEndpoint = "http://192.168.0.10:8080/sensorhub/sos";
-
+    public AndroidSensorsConfig()
+    {
+        this.moduleClass = AndroidSensorsDriver.class.getCanonicalName();
+    }
 }
