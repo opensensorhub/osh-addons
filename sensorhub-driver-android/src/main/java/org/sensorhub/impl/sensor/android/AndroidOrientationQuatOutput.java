@@ -53,6 +53,7 @@ public class AndroidOrientationQuatOutput extends AndroidSensorOutput implements
     protected AndroidOrientationQuatOutput(AndroidSensorsDriver parentModule, SensorManager aSensorManager, Sensor aSensor)
     {
         super(parentModule, aSensorManager, aSensor);
+        this.name = "quat_orientation_data";
     }
 
 
