@@ -19,8 +19,6 @@ import org.sensorhub.api.sensor.SensorConfig;
 
 public class FakeCamConfig extends SensorConfig
 {
-    private static final long serialVersionUID = 1L;
-    
     
     public String videoFilePath; // path of file cotnaining video data to be streamed
 }
