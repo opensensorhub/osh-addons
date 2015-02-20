@@ -27,8 +27,6 @@ import org.sensorhub.api.sensor.SensorConfig;
  */
 public class V4LCameraConfig extends SensorConfig
 {
-    private static final long serialVersionUID = 8576796293927887843L;
-    
     
     /**
      * Name of video device to use
