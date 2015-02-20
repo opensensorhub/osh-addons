@@ -27,9 +27,7 @@ import org.sensorhub.api.sensor.SensorConfig;
  */
 public class AndroidSensorsConfig extends SensorConfig
 {
-    private static final long serialVersionUID = -8246835851102755538L;
-    
-    
+     
     public boolean activateAccelerometer = false;
     public boolean activateGyrometer = false;
     public boolean activateMagnetometer = false;
