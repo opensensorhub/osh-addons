@@ -45,11 +45,9 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureRequest.Builder;
-import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
@@ -71,6 +69,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
 {
     // keep logger name short because in LogCat it's max 23 chars
     private static final Logger log = LoggerFactory.getLogger(AndroidCameraOutput.class.getSimpleName());
+    protected static final String TIME_REF = "http://www.opengis.net/def/trs/BIPM/0/UTC";
     public static SurfaceTexture previewTexture;
     
     CameraManager camManager;
@@ -183,6 +182,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
             Time time = fac.newTime();
             time.getUom().setHref(Time.ISO_TIME_UNIT);
             time.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
+            time.setReferenceFrame(TIME_REF);
             dataStruct.addComponent("time", time);
                     
             DataArray img = fac.newDataArray(imgHeight);
@@ -200,7 +200,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
             
             // SWE Common encoding
             dataEncoding = fac.newBinaryEncoding();
-            dataEncoding.setByteEncoding(ByteEncoding.BASE_64);
+            dataEncoding.setByteEncoding(ByteEncoding.RAW);
             dataEncoding.setByteOrder(ByteOrder.BIG_ENDIAN);
             BinaryComponent timeEnc = fac.newBinaryComponent();
             timeEnc.setRef("/" + time.getName());
@@ -315,7 +315,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                         public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result)
                         {
                             log.debug("Image " + result.getFrameNumber() + " captured");
-                            log.debug("Exp=" + result.get(CaptureResult.SENSOR_EXPOSURE_TIME));
+                            //log.debug("Exp=" + result.get(CaptureResult.SENSOR_EXPOSURE_TIME));
                             
                             /*while (true) {
                                 int bufferIndex = mCodec.dequeueOutputBuffer(mBufferInfo, 5000);
