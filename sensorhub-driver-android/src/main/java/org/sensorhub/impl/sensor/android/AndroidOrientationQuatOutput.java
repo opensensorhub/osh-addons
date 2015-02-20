@@ -21,6 +21,7 @@ import net.opengis.swe.v20.Time;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.vast.data.SWEFactory;
+import org.vast.math.Quat4d;
 import org.vast.swe.SWEConstants;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -45,6 +46,8 @@ public class AndroidOrientationQuatOutput extends AndroidSensorOutput implements
     private static final String QUAT_DEF = "http://sensorml.com/ont/swe/property/QuaternionComponent";
     private static final String ORIENT_CRS = "http://www.opengis.net/def/crs/OGC/0/ENU";
     private static final String ORIENT_UOM = "1";
+    
+    Quat4d q = new Quat4d();
     
     
     protected AndroidOrientationQuatOutput(AndroidSensorsDriver parentModule, SensorManager aSensorManager, Sensor aSensor)
@@ -113,13 +116,20 @@ public class AndroidOrientationQuatOutput extends AndroidSensorOutput implements
     {
         double sampleTime = getJulianTimeStamp(e.timestamp);
         
+        // normalize quaternion
+        q.x = e.values[0];
+        q.y = e.values[1];
+        q.z = e.values[2];
+        q.w =  e.values[3];
+        q.normalize();
+        
         // build and populate datablock
         DataBlock dataBlock = dataStruct.createDataBlock();
         dataBlock.setDoubleValue(0, sampleTime);
-        dataBlock.setFloatValue(1, e.values[0]);
-        dataBlock.setFloatValue(2, e.values[1]);
-        dataBlock.setFloatValue(3, e.values[2]);
-        dataBlock.setFloatValue(4, e.values[3]); 
+        dataBlock.setFloatValue(1, (float)q.x);
+        dataBlock.setFloatValue(2, (float)q.y);
+        dataBlock.setFloatValue(3, (float)q.z);
+        dataBlock.setFloatValue(4, (float)q.w); 
         
         // TODO since this sensor is high rate,we could package several records in a single event
         // update latest record and send event
