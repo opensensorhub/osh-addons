@@ -31,8 +31,8 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.sensor.station.StationConfig;
-import org.sensorhub.impl.sensor.station.StationSensor;
+import org.sensorhub.impl.sensor.station.metar.MetarConfig;
+import org.sensorhub.impl.sensor.station.metar.MetarSensor;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.AsciiDataWriter;
@@ -41,8 +41,8 @@ import org.vast.swe.SWECommonUtils;
 
 public class TestWeatherStation implements IEventListener
 {
-    StationSensor driver;
-    StationConfig config;
+    MetarSensor driver;
+    MetarConfig config;
     AsciiDataWriter writer;
     int sampleCount = 0;
 
@@ -50,11 +50,11 @@ public class TestWeatherStation implements IEventListener
     @Before
     public void init() throws Exception
     {
-        config = new StationConfig();
+        config = new MetarConfig();
         config.id = UUID.randomUUID().toString();
         // ... 
         
-        driver = new StationSensor();
+        driver = new MetarSensor();
         driver.init(config);
     }
     
