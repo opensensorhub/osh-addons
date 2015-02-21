@@ -13,16 +13,18 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.station;
+package org.sensorhub.impl.sensor.station.metar;
 
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.impl.sensor.station.metar.MetarDataPoller;
 
 
-public class StationConfig extends SensorConfig
+public class MetarConfig extends SensorConfig
 {
     private static final long serialVersionUID = 1L;
     
-    //public Station station;
+//    public String dataServerUrl = "";
+    
     public double lat;
     public double lon;
     public double elevation;

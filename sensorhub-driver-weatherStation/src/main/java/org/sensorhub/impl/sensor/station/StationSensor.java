@@ -30,7 +30,7 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 public class StationSensor extends AbstractSensorModule<StationConfig>
 {
     StationOutput dataInterface;
-    
+//    StationDataPoller stationDataPoller;
     
     public StationSensor()
     {
