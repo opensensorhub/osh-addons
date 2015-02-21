@@ -96,7 +96,7 @@ public class TestV4LCameraDriver implements IEventListener
     @Test
     public void testGetSensorDesc() throws Exception
     {
-        AbstractProcess smlDesc = driver.getCurrentSensorDescription();
+        AbstractProcess smlDesc = driver.getCurrentDescription();
         new SMLUtils().writeProcess(System.out, smlDesc, true);
     }
     
