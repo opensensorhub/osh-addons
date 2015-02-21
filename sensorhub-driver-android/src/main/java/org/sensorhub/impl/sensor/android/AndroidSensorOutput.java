@@ -17,7 +17,6 @@ package org.sensorhub.impl.sensor.android;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,7 +119,7 @@ public abstract class AndroidSensorOutput extends AbstractSensorOutput<AndroidSe
 
     
     @Override
-    public DataBlock getLatestRecord() throws SensorException
+    public DataBlock getLatestRecord()
     {
         return latestRecord;
     }
