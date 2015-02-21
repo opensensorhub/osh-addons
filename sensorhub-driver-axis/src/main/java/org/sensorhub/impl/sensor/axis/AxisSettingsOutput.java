@@ -16,12 +16,15 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.axis;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
 import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataBlock;
@@ -53,12 +56,12 @@ import org.vast.swe.SWEConstants;
  * @since October 30, 2014
  */
 
-
 public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
     DataComponent settingsDataStruct;
     DataBlock latestRecord;
     boolean polling;
+    Timer timer;
 
     // Setup ISO Time Components
     
@@ -107,10 +110,14 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
         {
         	         
 	        /** Need to set TimeZone  **/
+        	// getting the time zone should be done in driver class
+        	// just using computer time instead of camera time for now
         	// NOTE: SET TIMEZONE TO UTC ON CAMERA OR GET FROM LOCAL SYSTEM OR CONVERT
         	// NOTE: this particular command may have trouble without admin password
-            URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/admin/param.cgi?action=list&group=root.Time.TimeZone");
-            InputStream is = optionsURL.openStream();
+            /*URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/admin/param.cgi?action=list&group=root.Time.TimeZone");
+            HttpURLConnection connect = (HttpURLConnection)optionsURL.openConnection();
+            connect.addRequestProperty(key, value);
+            //InputStream is = optionsURL.openStream();
             BufferedReader limitReader = new BufferedReader(new InputStreamReader(is));
             
             String line;
@@ -122,17 +129,17 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
     	        // root.Time.TimeZone=GMT-6
                 if (tokens[0].trim().equalsIgnoreCase("root.Time.TimeZone"))
                 	df.setTimeZone(TimeZone.getTimeZone(tokens[1]));   	
-            }
+            }*/
 
 
             /** request PTZ Limits  **/
-            optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=PTZ.Limit");
-            is = optionsURL.openStream();
-            limitReader = new BufferedReader(new InputStreamReader(is));
+            URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=PTZ.Limit");
+            InputStream is = optionsURL.openStream();
+            BufferedReader limitReader = new BufferedReader(new InputStreamReader(is));
 
 
             // get limit values from IP stream
-
+            String line;
             while ((line = limitReader.readLine()) != null)
             {
                 // parse response
@@ -201,8 +208,8 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
         constraints = fac.newAllowedValues();
         constraints.addInterval(new double[] {1, maxZoom});
         c.setConstraint(constraints);
-        q.setLabel("Zoom Factor");
-        settingsDataStruct.addComponent("zoomFactor", q);
+        c.setLabel("Zoom Factor");
+        settingsDataStruct.addComponent("zoomFactor", c);
 
 //		  NOTE: current field angle is not returned by position request       
 //        c = fac.newCount();
@@ -232,97 +239,103 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
 
     protected void startPolling()
     {
+        if (timer != null)
+            return;
+        timer = new Timer();
+        
         try
         {
             //String ipAddress = driver.getConfiguration().ipAddress;
             final URL getSettingsUrl = new URL("http://" + ipAddress + "/axis-cgi/com/ptz.cgi?query=position");
-            polling = true;
+            final DataComponent dataStruct = settingsDataStruct.copy();
+            dataStruct.assignNewDataBlock();
 
-            Thread t = new Thread(new Runnable()
+            TimerTask timerTask = new TimerTask()
             {
                 @Override
                 public void run()
                 {
-                    DataComponent dataStruct = settingsDataStruct.copy();
-                    dataStruct.assignNewDataBlock();
-
-                    while (polling)
+                    InputStream is = null;
+                    
+                    // send http query
+                    try
                     {
-                        // send http query
+                        is = getSettingsUrl.openStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                        dataStruct.renewDataBlock();
+
+                        // set sampling time
+                        double time = System.currentTimeMillis() / 1000.;
+                        dataStruct.getComponent("time").getData().setDoubleValue(time);
+
+                        String line;
+                        while ((line = reader.readLine()) != null)
+                        {
+                            // parse response
+                            String[] tokens = line.split("=");
+
+                            if (tokens[0].trim().equalsIgnoreCase("pan"))
+                            {
+                                float val = Float.parseFloat(tokens[1]);
+                                dataStruct.getComponent("pan").getData().setFloatValue(val);
+                            }
+                            else if (tokens[0].trim().equalsIgnoreCase("tilt"))
+                            {
+                                float val = Float.parseFloat(tokens[1]);
+                                dataStruct.getComponent("tilt").getData().setFloatValue(val);
+                            }
+                            else if (tokens[0].trim().equalsIgnoreCase("zoom"))
+                            {
+                                int val = Integer.parseInt(tokens[1]);
+                                dataStruct.getComponent("zoomFactor").getData().setIntValue(val);
+                            }
+                            // NOTE: position doesn't return field angle !!!
+//                            else if (tokens[0].trim().equalsIgnoreCase("fieldAngle"))
+//                            {
+//                                int val = Integer.parseInteger(tokens[1]);
+//                                dataStruct.getComponent("fieldAngle").getData().setIntValue(val);
+//
+//                            }
+                              // MOVE TO CAMERA SETTINGS?
+//                            else if (tokens[0].trim().equalsIgnoreCase("brightness"))
+//                            {
+//                                float val = Float.parseFloat(tokens[1]);
+//                                dataStruct.getComponent("brightnessFactor").getData().setFloatValue(val);
+//
+//                            }
+//                            else if (tokens[0].trim().equalsIgnoreCase("autofocus"))
+//                            {
+//                                if (tokens[1].trim().equalsIgnoreCase("on"))
+//                                    dataStruct.getComponent("autofocus").getData().setBooleanValue(true);
+//                                else
+//                                    dataStruct.getComponent("autofocus").getData().setBooleanValue(false);
+//
+//                            }
+                        }
+
+                        latestRecord = dataStruct.getData();                            
+                        eventHandler.publishEvent(new SensorDataEvent(time, AxisSettingsOutput.this, latestRecord));
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                    finally
+                    {
+                        // always close the stream even in case of error
                         try
                         {
-                            InputStream is = getSettingsUrl.openStream();
-                            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                            dataStruct.renewDataBlock();
-
-                            // set sampling time
-                            double time = System.currentTimeMillis() / 1000.;
-                            dataStruct.getComponent("time").getData().setDoubleValue(time);
-
-                            String line;
-                            while ((line = reader.readLine()) != null)
-                            {
-
-                                // parse response
-                                String[] tokens = line.split("=");
-
-                                if (tokens[0].trim().equalsIgnoreCase("pan"))
-                                {
-                                    float val = Float.parseFloat(tokens[1]);
-                                    dataStruct.getComponent("pan").getData().setFloatValue(val);
-                                }
-                                else if (tokens[0].trim().equalsIgnoreCase("tilt"))
-                                {
-                                    float val = Float.parseFloat(tokens[1]);
-                                    dataStruct.getComponent("tilt").getData().setFloatValue(val);
-
-                                }
-                                else if (tokens[0].trim().equalsIgnoreCase("zoomFactor"))
-                                {
-                                    int val = Integer.parseInt(tokens[1]);
-                                    dataStruct.getComponent("zoom").getData().setIntValue(val);
-
-                                }
-                                // NOTE: position doesn't return field angle !!!
-//                                else if (tokens[0].trim().equalsIgnoreCase("fieldAngle"))
-//                                {
-//                                    int val = Integer.parseInteger(tokens[1]);
-//                                    dataStruct.getComponent("fieldAngle").getData().setIntValue(val);
-//
-//                                }
-                                  // MOVE TO CAMERA SETTINGS?
-//                                else if (tokens[0].trim().equalsIgnoreCase("brightness"))
-//                                {
-//                                    float val = Float.parseFloat(tokens[1]);
-//                                    dataStruct.getComponent("brightnessFactor").getData().setFloatValue(val);
-//
-//                                }
-//                                else if (tokens[0].trim().equalsIgnoreCase("autofocus"))
-//                                {
-//                                    if (tokens[1].trim().equalsIgnoreCase("on"))
-//                                        dataStruct.getComponent("autofocus").getData().setBooleanValue(true);
-//                                    else
-//                                        dataStruct.getComponent("autofocus").getData().setBooleanValue(false);
-//
-//                                }
-                            }
-
-                            latestRecord = dataStruct.getData();                            
-                            eventHandler.publishEvent(new SensorDataEvent(time, AxisSettingsOutput.this, latestRecord));
-
-                            // TODO use a timer; set for every 1 second
-                            Thread.sleep(1000);
+                            if (is != null)
+                                is.close();
                         }
-                        catch (Exception e)
+                        catch (IOException e)
                         {
-                            e.printStackTrace();
                         }
                     }
-                    ;
                 }
-            });
+            };
 
-            t.start();
+            timer.scheduleAtFixedRate(timerTask, 0, (long)(getAverageSamplingPeriod()*1000));
         }
         catch (Exception e)
         {
@@ -336,7 +349,7 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
     @Override
     public double getAverageSamplingPeriod()
     {
-        // assuming 1 frame per second for PTZ settings
+        // generating 1 record per second for PTZ settings
         return 1.0;
     }
 
@@ -374,8 +387,11 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
 
 	public void stop()
 	{
-		// TODO Auto-generated method stub
-		
+	    if (timer != null)
+        {
+            timer.cancel();
+            timer = null;
+        }		
 	}
 
 }

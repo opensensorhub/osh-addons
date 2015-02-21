@@ -1,2 +1,2 @@
-mvn clean install
+#!/bin/sh
 mvn clean dependency:copy-dependencies

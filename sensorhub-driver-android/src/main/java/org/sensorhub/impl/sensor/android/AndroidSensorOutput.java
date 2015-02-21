@@ -8,8 +8,7 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-The Initial Developer is Sensia Software LLC. Portions created by the Initial
-Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
+Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
@@ -26,6 +25,8 @@ import org.vast.data.TextEncodingImpl;
 import android.hardware.Sensor;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Handler;
+import android.os.HandlerThread;
 
 
 /**
@@ -33,22 +34,23 @@ import android.hardware.SensorManager;
  * Abstract base for data interfaces connecting to Android sensor API
  * </p>
  *
- * <p>Copyright (c) 2015</p>
- * @author Alexandre Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Jan 18, 2015
  */
 public abstract class AndroidSensorOutput extends AbstractSensorOutput<AndroidSensorsDriver> implements IAndroidOutput, SensorEventListener
 {
     // keep logger name short because in LogCat it's max 23 chars
     protected static final Logger log = LoggerFactory.getLogger(AndroidSensorOutput.class.getSimpleName());
-        
+    protected static final String TIME_REF = "http://www.opengis.net/def/trs/BIPM/0/UTC";
+    
+    HandlerThread eventThread;
     SensorManager sensorManager;
     Sensor sensor;
     String name;
     boolean enabled;
     DataBlock latestRecord;
     DataComponent dataStruct;
-    int samplingPeriod;
+    double samplingPeriod;
     long systemTimeOffset = -1L;
     
     
@@ -58,7 +60,6 @@ public abstract class AndroidSensorOutput extends AbstractSensorOutput<AndroidSe
         this.sensorManager = aSensorManager;
         this.sensor = aSensor;
         this.name = sensor.getName().replaceAll(" ", "_") + "_data";
-        log.debug("Using sensor " + sensor.getName());
     }
     
     
@@ -72,9 +73,15 @@ public abstract class AndroidSensorOutput extends AbstractSensorOutput<AndroidSe
     @Override
     public void init()
     {
-        // max 100Hz events
-        samplingPeriod = Math.max(sensor.getMinDelay(), 100000);
-        sensorManager.registerListener(this, sensor, samplingPeriod);
+        // start event handling thread
+        eventThread = new HandlerThread("SensorThread");
+        eventThread.start();
+        Handler eventHandler = new Handler(eventThread.getLooper());
+        
+        // max 10Hz events
+        int rateUs = Math.max(sensor.getMinDelay(), 100000);
+        samplingPeriod = rateUs / 1e6;
+        sensorManager.registerListener(this, sensor, rateUs, eventHandler);
     }
     
     
@@ -82,6 +89,12 @@ public abstract class AndroidSensorOutput extends AbstractSensorOutput<AndroidSe
     public void stop()
     {
         sensorManager.unregisterListener(this);
+        
+        if (eventThread != null)
+        {
+            eventThread.quitSafely();
+            eventThread = null;
+        }
     }
 
 

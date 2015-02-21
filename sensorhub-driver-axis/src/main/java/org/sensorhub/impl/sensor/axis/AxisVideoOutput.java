@@ -15,20 +15,18 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.axis;
 
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.Iterator;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
+import java.nio.ByteOrder;
 import javax.media.Buffer;
+import net.opengis.swe.v20.BinaryBlock;
+import net.opengis.swe.v20.BinaryComponent;
+import net.opengis.swe.v20.BinaryEncoding;
+import net.opengis.swe.v20.ByteEncoding;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
@@ -42,11 +40,11 @@ import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.common.BasicEventHandler;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.CountImpl;
-import org.vast.data.DataArrayImpl;
 import org.vast.data.DataBlockMixed;
-import org.vast.data.DataRecordImpl;
-import org.vast.data.TimeImpl;
+import org.vast.data.DataComponentHelper;
+import org.vast.data.SWEFactory;
 import org.vast.swe.SWEConstants;
+
 
 /**
  * <p>
@@ -68,6 +66,7 @@ import org.vast.swe.SWEConstants;
 public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
 	DataComponent videoDataStruct;
+	BinaryEncoding videoEncoding;
 	DataBlock latestRecord;
 	boolean reconnect;
 	boolean streaming;
@@ -87,40 +86,59 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
     }
     
     
-    protected void init()
+    protected void init() throws SensorException
     {
 		try
 		{
 			// get image size from camera HTTP interface
 			int[] imgSize = getImageSize();
+			SWEFactory fac = new SWEFactory();
 			
 			// build output structure
-			videoDataStruct = new DataRecordImpl(2);
+			videoDataStruct = fac.newDataRecord(2);
 			videoDataStruct.setName(getName());
 			
-			Time time = new TimeImpl();
+			Time time = fac.newTime();
 			time.getUom().setHref(Time.ISO_TIME_UNIT);
 			time.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
 			videoDataStruct.addComponent("time", time);
 					
-			DataArray img = new DataArrayImpl(imgSize[1]);
+			DataArray img = fac.newDataArray(imgSize[1]);
 			img.setDefinition("http://sensorml.com/ont/swe/property/VideoFrame");
 			videoDataStruct.addComponent("videoFrame", img);
 			
-			DataArray imgRow = new DataArrayImpl(imgSize[0]);
+			DataArray imgRow = fac.newDataArray(imgSize[0]);
 			img.addComponent("row", imgRow);
 			
-			DataRecord imgPixel = new DataRecordImpl(3);
+			DataRecord imgPixel = fac.newDataRecord(3);
 			imgPixel.addComponent("red", new CountImpl(DataType.BYTE));
 			imgPixel.addComponent("green", new CountImpl(DataType.BYTE));
 			imgPixel.addComponent("blue", new CountImpl(DataType.BYTE));
 			imgRow.addComponent("pixel", imgPixel);
+			
+			// video encoding
+			videoEncoding = fac.newBinaryEncoding();
+			videoEncoding.setByteEncoding(ByteEncoding.RAW);
+			videoEncoding.setByteOrder(ByteOrder.BIG_ENDIAN);
+            BinaryComponent timeEnc = fac.newBinaryComponent();
+            timeEnc.setRef("/" + time.getName());
+            timeEnc.setCdmDataType(DataType.DOUBLE);
+            videoEncoding.addMemberAsComponent(timeEnc);
+            BinaryBlock compressedBlock = fac.newBinaryBlock();
+            compressedBlock.setRef("/" + img.getName());
+            compressedBlock.setCompression("JPEG");
+            videoEncoding.addMemberAsBlock(compressedBlock);
+            
+            // resolve encoding so compressed blocks can be properly generated
+            DataComponentHelper.resolveComponentEncodings(videoDataStruct, videoEncoding);
+			
 		}
-		catch (IOException e)
+		catch (Exception e)
 		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new SensorException("Error while initializing video output", e);
 		}
+		
+		startStream();
     }
 	
 	
@@ -171,16 +189,26 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 							
 							while (streaming)
 							{
-								DataBlock dataBlock = videoDataStruct.createDataBlock();
-								
+								// extract next frame from MJPEG stream
 								Buffer buf = new Buffer();
 						        buf.setData(new byte[]{});
-						        
 						        stream.read(buf);
+						        byte[] frameData = (byte[]) buf.getData();
 						        
-						        byte[] data = (byte[]) buf.getData();
-						        InputStream imageStream = new ByteArrayInputStream( data );
-						        
+						        // create new data block
+						        DataBlock dataBlock;
+						        if (latestRecord == null)
+                                    dataBlock = videoDataStruct.createDataBlock();
+                                else
+                                    dataBlock = latestRecord.renew();
+                                
+						        //double timestamp = AXISJpegHeaderReader.getTimestamp(frameData) / 1000.;
+                                double timestamp = System.currentTimeMillis() / 1000.;
+                                dataBlock.setDoubleValue(0, timestamp);
+                                //System.out.println(new DateTimeFormat().formatIso(timestamp, 0));
+                                
+						        // uncompress to RGB bufferd image
+						        /*InputStream imageStream = new ByteArrayInputStream(frameData);						        
 						        ImageInputStream input = ImageIO.createImageInputStream(imageStream); 
 						        Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
 						        ImageReader reader = readers.next();
@@ -193,10 +221,11 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 						        //ImageTypeSpecifier imageType = reader.getRawImageType(0);
 						        
 						        BufferedImage rgbImage = reader.read(0);
-						        double timestamp = AXISJpegHeaderReader.getTimestamp(data) / 1000.;
-						        dataBlock.setDoubleValue(0, timestamp/1000.);
 						        byte[] byteData = ((DataBufferByte)rgbImage.getRaster().getDataBuffer()).getData();
-						        ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(byteData);
+						        ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(byteData);*/
+						        
+						        // assign compressed data
+						        ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(frameData);
 								
 						        latestRecord = dataBlock;
 								eventHandler.publishEvent(new SensorDataEvent(timestamp, AxisVideoOutput.this, latestRecord));
@@ -237,7 +266,7 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	@Override
 	public DataEncoding getRecommendedEncoding()
 	{
-		return null;
+		return videoEncoding;
 	}
 
 	@Override
