@@ -513,7 +513,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
 
     
     @Override
-    public DataBlock getLatestRecord() throws SensorException
+    public DataBlock getLatestRecord()
     {
         return latestRecord;
     }

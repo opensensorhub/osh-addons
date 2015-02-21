@@ -270,7 +270,7 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	}
 
 	@Override
-	public DataBlock getLatestRecord() throws SensorException
+	public DataBlock getLatestRecord()
 	{
 		return latestRecord;
 	}
