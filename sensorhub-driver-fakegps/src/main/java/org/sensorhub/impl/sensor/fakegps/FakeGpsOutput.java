@@ -105,7 +105,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
 
     private boolean generateRandomTrajectory()
     {
-        FakeGpsConfig config = getParentSensor().getConfiguration();
+        FakeGpsConfig config = getParentModule().getConfiguration();
         
         // generate random start/end coordinates
         double startLat;
@@ -201,7 +201,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         }
         
         // convert speed from km/h to lat/lon deg/s
-        double speed = getParentSensor().getConfiguration().vehicleSpeed / 20000 * 180 / 3600;
+        double speed = getParentModule().getConfiguration().vehicleSpeed / 20000 * 180 / 3600;
         int trackIndex = (int)currentTrackPos;
         double ratio = currentTrackPos - trackIndex;
         double[] p0 = trajPoints.get(trackIndex);
