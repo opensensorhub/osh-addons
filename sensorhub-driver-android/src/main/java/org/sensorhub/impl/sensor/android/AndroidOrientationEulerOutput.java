@@ -14,6 +14,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.android;
 
+import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
@@ -85,21 +86,31 @@ public class AndroidOrientationEulerOutput extends AndroidSensorOutput implement
         dataStruct.addComponent("orient", vec);
         
         Quantity c;
+        AllowedValues constraint;
         c = fac.newQuantity(DataType.FLOAT);
         c.getUom().setCode(ORIENT_UOM);
         c.setDefinition(HEADING_DEF);
+        constraint = fac.newAllowedValues();
+        constraint.addInterval(new double[] {-180.0, 180.0});
+        c.setConstraint(constraint);
         c.setAxisID("z");
         vec.addComponent("heading",c);
 
         c = fac.newQuantity(DataType.FLOAT);
         c.getUom().setCode(ORIENT_UOM);
         c.setDefinition(PITCH_DEF);
+        constraint = fac.newAllowedValues();
+        constraint.addInterval(new double[] {-90.0, 90.0});
+        c.setConstraint(constraint);
         c.setAxisID("y");
         vec.addComponent("pitch", c);
 
         c = fac.newQuantity(DataType.FLOAT);
         c.getUom().setCode(ORIENT_UOM);
         c.setDefinition(ROLL_DEF);
+        constraint = fac.newAllowedValues();
+        constraint.addInterval(new double[] {-180.0, 180.0});
+        c.setConstraint(constraint);
         c.setAxisID("x");
         vec.addComponent("roll", c);
         
@@ -135,7 +146,9 @@ public class AndroidOrientationEulerOutput extends AndroidSensorOutput implement
         look.mul(q, look);
         look.mulInverse(q);
                 
-        double heading = 90. - Math.toDegrees(Math.atan2(look.y, look.x));        
+        double heading = 90. - Math.toDegrees(Math.atan2(look.y, look.x)); 
+        if (heading > 180.)
+            heading -= 360.;
         double pitch = 0.0;//Math.toDegrees(Math.atan2(look.y, look.x)) - 90.;
         double roll = 0.0;
         
