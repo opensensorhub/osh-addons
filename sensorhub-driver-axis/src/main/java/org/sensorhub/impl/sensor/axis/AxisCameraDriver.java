@@ -19,7 +19,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-
+import java.net.URLConnection;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.sensorhub.api.sensor.SensorException;
@@ -72,13 +72,11 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 	        this.videoDataInterface = new AxisVideoOutput(this);
 	        addOutput(videoDataInterface, false);
 	
-	        this.videoControlInterface = new AxisVideoControl(this);
-	        addControlInput(videoControlInterface);
+	        //this.videoControlInterface = new AxisVideoControl(this);
+	        //addControlInput(videoControlInterface);
 	        
 	        videoDataInterface.init();
-	        videoControlInterface.init();
-
-	        
+	        //videoControlInterface.init();	        
 	        
 	        /** check if PTZ supported  **/
 	        try
@@ -97,7 +95,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 		            String[] tokens = line.split("=");
 		
 		            if (tokens[0].trim().equalsIgnoreCase("root.Properties.PTZ.PTZ"))
-		                ptzSupported = Boolean.parseBoolean(tokens[1]);    	
+		                ptzSupported = tokens[1].equalsIgnoreCase("yes");    	
 		        }
 		        
 		        if (ptzSupported){
@@ -151,27 +149,27 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
         {
         	// try to open stream and check for AXIS Brand
 	        URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=root.Brand.Brand");
-		    InputStream is = optionsURL.openStream();
+		    URLConnection conn = optionsURL.openConnection();
+		    conn.setConnectTimeout(500);
+		    conn.connect();
+		    InputStream is = conn.getInputStream();
 	        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 	        
-		    String line = reader.readLine();
-		    
-		    // note: should return one line with root.Brand.Brand=AXIS
-		    if (line != null){
-		    	
-	            String[] tokens = line.split("=");
-	
+	        // note: should return one line with root.Brand.Brand=AXIS
+            String line = reader.readLine();
+		    if (line != null)
+		    {
+		        String[] tokens = line.split("=");	
 	            if ((tokens[0].trim().equalsIgnoreCase("root.Brand.Brand")) && (tokens[1].trim().equalsIgnoreCase("AXIS")))
 	                return true; 
 		    }
+		    
 		    return false;
         }
         catch (Exception e)
         {
-            log.error("Failed to connect to the Axis Camera at " + ipAddress, e);
             return false;
-        }
-   
+        }   
     }
 
 

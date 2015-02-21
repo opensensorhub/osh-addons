@@ -8,8 +8,7 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-The Initial Developer is Sensia Software LLC. Portions created by the Initial
-Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
+Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
@@ -24,8 +23,6 @@ import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vast.data.SWEFactory;
 import org.vast.data.TextEncodingImpl;
 import org.vast.swe.SWEConstants;
@@ -41,17 +38,19 @@ import android.os.Bundle;
  * Implementation of data interface for Android location providers
  * </p>
  *
- * <p>Copyright (c) 2015</p>
- * @author Alexandre Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Jan 18, 2015
  */
 public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDriver> implements IAndroidOutput, LocationListener
 {
     // keep logger name short because in LogCat it's max 23 chars
-    private static final Logger log = LoggerFactory.getLogger(AndroidLocationOutput.class.getSimpleName());
+    //private static final Logger log = LoggerFactory.getLogger(AndroidLocationOutput.class.getSimpleName());
             
     private static final String LOC_DEF = "http://sensorml.com/ont/swe/property/Location";
     private static final String LOC_CRS = "http://www.opengis.net/def/crs/EPSG/0/4979";
+    //private static final String TIME_REF = "http://www.opengis.net/def/trs/USNO/0/GPS";
+    private static final String TIME_REF = "http://www.opengis.net/def/trs/BIPM/0/UTC";
+    private static final long GPS_TO_UTC_OFFSET = -16000L;
     
     LocationManager locManager;
     LocationProvider locProvider;
@@ -88,6 +87,7 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
         Time c1 = fac.newTime();
         c1.getUom().setHref(Time.ISO_TIME_UNIT);
         c1.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
+        c1.setReferenceFrame(TIME_REF);
         posDataStruct.addComponent("time", c1);
 
         Vector vec = fac.newVector();        
@@ -137,8 +137,7 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
     @Override
     public double getAverageSamplingPeriod()
     {
-        // TODO Auto-generated method stub
-        return 0;
+        return 1.0;
     }
 
 
@@ -182,6 +181,7 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
                   + location.getAltitude()); */
         
         double sampleTime = location.getTime() / 1000.0;
+        double eventTime = System.currentTimeMillis() / 1000.0;
                 
         // build and populate datablock
         DataBlock dataBlock = posDataStruct.createDataBlock();
@@ -192,7 +192,7 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
                 
         // update latest record and send event
         latestRecord = dataBlock;
-        eventHandler.publishEvent(new SensorDataEvent(sampleTime, this, dataBlock));
+        eventHandler.publishEvent(new SensorDataEvent(eventTime, this, dataBlock));
     }
 
 

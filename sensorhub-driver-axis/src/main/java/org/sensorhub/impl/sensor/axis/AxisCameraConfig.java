@@ -17,25 +17,19 @@ package org.sensorhub.impl.sensor.axis;
 
 import org.sensorhub.api.sensor.SensorConfig;
 
+
 /**
  * <p>
  * Implementation of sensor interface for generic Axis Cameras using IP
  * protocol. This particular class stores configuration parameters.
  * </p>
- *
- * <p>
- * Copyright (c) 2014
- * </p>
  * 
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since October 30, 2014
  */
-
-
-
 public class AxisCameraConfig extends SensorConfig {
-
-	private static final long serialVersionUID = 5902668618197133068L;
 	
 	public String ipAddress = "192.168.1.50";
+	//public String ipAddress = "192.168.0.60";
+
 }
