@@ -13,7 +13,7 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.station;
+package org.sensorhub.impl.sensor.station.metar;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -27,7 +27,7 @@ import net.opengis.swe.v20.Time;
 
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.station.metar.MetarDataPoller;
+import org.sensorhub.impl.sensor.station.Station;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.data.DataRecordImpl;
@@ -40,20 +40,25 @@ import org.vast.swe.SWEConstants;
  * 
  * @author Tony Cook
  *
- *  ISSUES - we are pushing data here to the bus. How will that be controlled/timed
- *  		 
+ *  	DataPoller queries station service at POLLING_INTERVAL and checks for new record.  
+ *      If record time is greater than latestRecord.time, we update latestRecord and latestBlock
+ *      and send event to bus.  
+ *      POLLING_INTERVAL set artificially low until temporalFilter is fixed for this case:
+ *      	https://github.com/sensiasoft/sensorhub/wiki/Temporal-Filtering-in-SOS	 
  */
 
-public class StationOutput extends AbstractSensorOutput<StationSensor>
+public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends StationOutput
 {
-    private static final Logger log = LoggerFactory.getLogger(StationOutput.class);
-    DataComponent baseRecordStructure;
-    DataBlock latestRecord;
-    boolean sendData;
+    private static final Logger log = LoggerFactory.getLogger(MetarOutput.class);
+    DataComponent metarRecordStruct;
+    DataBlock latestBlock;
+    MetarDataRecord latestRecord;
+    MetarDataPoller metarPoller = new MetarDataPoller();
+    private static final long POLLING_INTERVAL_MS = 5;
+    private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toSeconds(20);
     protected Timer timer;
-    StationDataPoller dataPoller = new MetarDataPoller();  // how do I get an implementing class into here?
 
-    public StationOutput(StationSensor parentSensor)
+    public MetarOutput(MetarSensor parentSensor)
     {
         super(parentSensor);
     }
@@ -62,16 +67,16 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
     @Override
     public String getName()
     {
-        return "GenericWeatherStation";
+        return "MetarWeatherStation";
     }
 
 
     protected void init()
     {
         // SWE Common data structure
-        baseRecordStructure = new DataRecordImpl(7);
-        baseRecordStructure.setName(getName());
-        baseRecordStructure.setDefinition("http://sensorml.com/ont/swe/property/Weather/baseWeatherStationRecord");
+        metarRecordStruct = new DataRecordImpl(11);
+        metarRecordStruct.setName(getName());
+        metarRecordStruct.setDefinition("http://sensorml.com/ont/swe/property/Weather/MetarStationRecord");
         
         // stationName,time,lat,lon,el,Temperature (degreesF),Dewpoint (degreesF),Relative Humididty (%),Wind Speed (mph),Wind Direction (degrees),
         //Air Pressure (inches HG),Precipitation (inches),Heat Index (degreesF),Wind Chill (degreesF), Wind Gust (mph),
@@ -81,47 +86,65 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
         Time c1 = new TimeImpl();
         c1.getUom().setHref(Time.ISO_TIME_UNIT);
         c1.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
-        baseRecordStructure.addComponent("time", c1);
+        metarRecordStruct.addComponent("time", c1);
 
         Quantity c;
         c = new QuantityImpl();
         c.getUom().setCode("degF");
         c.setDefinition("http://sensorml.com/ont/swe/property/Temperature");
-        baseRecordStructure.addComponent("temperature", c);  
+        metarRecordStruct.addComponent("temperature", c);  
 
         c = new QuantityImpl();
         c.getUom().setCode("degF");
         c.setDefinition("http://sensorml.com/ont/swe/property/DewPoint"); //  does not resolve
-        baseRecordStructure.addComponent("dewpoint", c);  
+        metarRecordStruct.addComponent("dewpoint", c);  
 
         c = new QuantityImpl();
         c.getUom().setCode("degF");
         c.setDefinition("http://sensorml.com/ont/swe/property/HumidityValue"); 
-        baseRecordStructure.addComponent("relativeHumidity", c);  
+        metarRecordStruct.addComponent("relativeHumidity", c);  
         
         c = new QuantityImpl();
         c.getUom().setCode("mi_i/h");
         c.setDefinition("http://sensorml.com/ont/swe/property/WindSpeed"); 
-        baseRecordStructure.addComponent("windSpeed", c);  
+        metarRecordStruct.addComponent("windSpeed", c);  
         
         c = new QuantityImpl();
         c.getUom().setCode("deg");
         c.setDefinition("http://sensorml.com/ont/swe/property/WindDirectionAngle"); 
-        baseRecordStructure.addComponent("windDirection", c);  
-
+        metarRecordStruct.addComponent("windDirection", c);  
+        
         c = new QuantityImpl();
-        c.getUom().setCode("mb");
-        c.setDefinition("http://sensorml.com/ont/swe/property/atmosphericPressure"); 
-        baseRecordStructure.addComponent("pressure", c);  
+        c.getUom().setCode("mi_i/h");
+        c.setDefinition("http://sensorml.com/ont/swe/property/WindGust"); //  not there
+        metarRecordStruct.addComponent("windGust", c);  
+        
+        c = new QuantityImpl();
+        c.getUom().setCode("degF");
+        c.setDefinition("http://sensorml.com/ont/swe/property/minDailyTemperature"); //  not there
+        metarRecordStruct.addComponent("minDailyTempearture", c);  
+        
+        c = new QuantityImpl();
+        c.getUom().setCode("degF");
+        c.setDefinition("http://sensorml.com/ont/swe/property/maxDailyTemperature"); //  not there
+        metarRecordStruct.addComponent("maxDailyTemperature", c);  
+        
+        c = new QuantityImpl();
+        c.getUom().setCode("ft_i");
+        c.setDefinition("http://sensorml.com/ont/swe/property/TopCloudHeightDimension.html"); 
+        metarRecordStruct.addComponent("cloudCeiling", c);  
+        
+        c = new QuantityImpl();
+        c.getUom().setCode("ft_i");
+        c.setDefinition("http://sensorml.com/ont/swe/property/Visibility");   // does not resolve
+        metarRecordStruct.addComponent("visibility", c);  
     }
 
 
-    private void sendLatestRecord()
+    private DataBlock recordToBlock(MetarDataRecord rec)
     {
-    	StationDataRecord rec = dataPoller.pullStationData();
-    	
 //        // build and publish datablock
-        DataBlock dataBlock = baseRecordStructure.createDataBlock();
+        DataBlock dataBlock = metarRecordStruct.createDataBlock();
         Station stn = rec.getStation();
 //        dataBlock.setDoubleValue(0, rec.getTimeUtc()/1000.); 
         dataBlock.setDoubleValue(0, rec.getTimeUtc()); 
@@ -130,10 +153,15 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
         dataBlock.setDoubleValue(3, rec.getRelativeHumidity()); 
         dataBlock.setDoubleValue(4, rec.getWindSpeed()); 
         dataBlock.setDoubleValue(5, rec.getWindDirection()); 
-        dataBlock.setDoubleValue(6, rec.getPressure()); 
+        dataBlock.setDoubleValue(6, rec.getWindGust()); 
+        dataBlock.setDoubleValue(7, rec.getMinDailyTemperature()); 
+        dataBlock.setDoubleValue(8, rec.getMaxDailyTemperature()); 
+        dataBlock.setIntValue(9, rec.getCloudCeiling()); 
+        dataBlock.setIntValue(10, rec.getVisibility()); 
         
-        eventHandler.publishEvent(new SensorDataEvent((double)rec.getTimeUtc(), StationOutput.this, dataBlock));
-        latestRecord = dataBlock;
+        return dataBlock;
+        
+        //eventHandler.publishEvent(new SensorDataEvent((double)rec.getTimeUtc(), MetarOutput.this, dataBlock));
     }
 
 
@@ -147,11 +175,16 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
         TimerTask task = new TimerTask() {
             public void run()
             {
-            	sendLatestRecord();
+            	MetarDataRecord rec = metarPoller.pullStationData();
+            	if(latestRecord == null || rec.getTimeUtc() > latestRecord.getTimeUtc()) {
+            		latestRecord = rec;  
+            		latestBlock = recordToBlock(rec);
+            		eventHandler.publishEvent(new SensorDataEvent((double)rec.getTimeUtc(), MetarOutput.this, latestBlock));
+            	}
             }            
         };
         
-        timer.scheduleAtFixedRate(task, 0, TimeUnit.SECONDS.toMillis(3));        
+        timer.scheduleAtFixedRate(task, 0, TimeUnit.SECONDS.toMillis(POLLING_INTERVAL_MS));        
     }
 
 
@@ -168,14 +201,14 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
     @Override
     public double getAverageSamplingPeriod()
     {
-        return 30.0;
+        return AVERAGE_SAMPLING_PERIOD;
     }
 
 
     @Override 
     public DataComponent getRecordDescription()
     {
-        return baseRecordStructure;
+        return metarRecordStruct;
     }
 
 
@@ -189,15 +222,15 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
     @Override
     public DataBlock getLatestRecord()
     {
-        return latestRecord;
+        return latestBlock;
     }
     
     
     @Override
     public double getLatestRecordTime()
     {
-        if (latestRecord != null)
-            return latestRecord.getDoubleValue(0);
+        if (latestBlock != null)
+            return latestBlock.getDoubleValue(0);
         
         return Double.NaN;
     }
