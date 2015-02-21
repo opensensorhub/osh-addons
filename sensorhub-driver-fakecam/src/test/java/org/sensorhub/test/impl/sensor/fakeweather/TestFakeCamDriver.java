@@ -98,6 +98,7 @@ public class TestFakeCamDriver implements IEventListener
         assertTrue(e instanceof SensorDataEvent);
         SensorDataEvent newDataEvent = (SensorDataEvent)e;
         
+        @SuppressWarnings("unused")
         byte[] videoFrameData = (byte[])newDataEvent.getRecords()[0].getUnderlyingObject();
         sampleCount++;
                 

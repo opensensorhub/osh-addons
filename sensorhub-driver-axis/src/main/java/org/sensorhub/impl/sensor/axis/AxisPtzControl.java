@@ -22,7 +22,6 @@ import java.net.URL;
 
 import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.AllowedTokens;
-import net.opengis.swe.v20.Category;
 import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataChoice;
@@ -30,7 +29,6 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Text;
-import net.opengis.swe.v20.Time;
 
 import org.sensorhub.api.common.CommandStatus;
 import org.sensorhub.api.common.CommandStatus.StatusCode;
@@ -38,7 +36,6 @@ import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.data.DataChoiceImpl;
 import org.vast.data.SWEFactory;
-import org.vast.swe.SWEConstants;
 
 /**
  * <p>
