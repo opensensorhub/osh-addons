@@ -73,7 +73,7 @@ public class TestFakeGpsDriver implements IEventListener
     public void testGetSensorDesc() throws Exception
     {
         System.out.println();
-        AbstractProcess smlDesc = driver.getCurrentSensorDescription();
+        AbstractProcess smlDesc = driver.getCurrentDescription();
         new SMLUtils().writeProcess(System.out, smlDesc, true);
     }
     
