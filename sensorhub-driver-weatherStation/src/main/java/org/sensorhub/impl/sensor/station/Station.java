@@ -1,7 +1,5 @@
 package org.sensorhub.impl.sensor.station;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * <p>

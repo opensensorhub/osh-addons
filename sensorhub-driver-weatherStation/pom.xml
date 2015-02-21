@@ -9,7 +9,7 @@
   <version>0.1</version>
   <name>WeatherStation</name>
   <description>Driver for weather station data- initially METAR-specific</description>
-    <organization>
+  <organization>
     <name>Botts Inc.</name>
     <url>http://www.botts-inc.com/</url>
   </organization>
@@ -31,6 +31,11 @@
   		<groupId>org.apache.httpcomponents</groupId>
   		<artifactId>httpclient</artifactId>
   		<version>4.3.6</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>joda-time</groupId>
+  		<artifactId>joda-time</artifactId>
+  		<version>2.7</version>
   	</dependency>
   </dependencies>
   <groupId>org.sensorhub</groupId>

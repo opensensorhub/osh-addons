@@ -5,20 +5,15 @@ public class StationDataRecord
 	private Station station;	
 	private long timeUtc;
 	private String timeStringUtc;
-	private double lat;
-	private double lon;
-	private double elevation;
-	private double temperature;
-	private double dewPoint;
-	private double relativeHumidity;
-	private double windSpeed;
-	private double windDirection;
-	private double windGust;
-	private double minDailyTemperature;
-	private double maxDailyTemperature;
-	private int cloudCeiling;
-	private int visibility;
-	
+	private Double lat;
+	private Double lon;
+	private Double elevation;
+	private Double temperature;
+	private Double dewPoint;
+	private Double relativeHumidity;
+	private Double windSpeed;
+	private Double windDirection;
+	private Double pressure;
 	public Station getStation() {
 		return station;
 	}
@@ -31,88 +26,64 @@ public class StationDataRecord
 	public void setTimeUtc(long timeUtc) {
 		this.timeUtc = timeUtc;
 	}
-	public double getLat() {
-		return lat;
-	}
-	public void setLat(double lat) {
-		this.lat = lat;
-	}
-	public double getLon() {
-		return lon;
-	}
-	public void setLon(double lon) {
-		this.lon = lon;
-	}
-	public double getElevation() {
-		return elevation;
-	}
-	public void setElevation(double elevation) {
-		this.elevation = elevation;
-	}
-	public double getTemperature() {
-		return temperature;
-	}
-	public void setTemperature(double temperature) {
-		this.temperature = temperature;
-	}
-	public double getDewPoint() {
-		return dewPoint;
-	}
-	public void setDewPoint(double dewPoint) {
-		this.dewPoint = dewPoint;
-	}
-	public double getRelativeHumidity() {
-		return relativeHumidity;
-	}
-	public void setRelativeHumidity(double relativeHumidity) {
-		this.relativeHumidity = relativeHumidity;
-	}
-	public double getWindSpeed() {
-		return windSpeed;
-	}
-	public void setWindSpeed(double windSpeed) {
-		this.windSpeed = windSpeed;
-	}
-	public double getWindDirection() {
-		return windDirection;
-	}
-	public void setWindDirection(double windDirection) {
-		this.windDirection = windDirection;
-	}
-	public double getWindGust() {
-		return windGust;
-	}
-	public void setWindGust(double windGust) {
-		this.windGust = windGust;
-	}
-	public double getMinDailyTemperature() {
-		return minDailyTemperature;
-	}
-	public void setMinDailyTemperature(double minDailyTemperature) {
-		this.minDailyTemperature = minDailyTemperature;
-	}
-	public double getMaxDailyTemperature() {
-		return maxDailyTemperature;
-	}
-	public void setMaxDailyTemperature(double maxDailyTemperature) {
-		this.maxDailyTemperature = maxDailyTemperature;
-	}
-	public int getCloudCeiling() {
-		return cloudCeiling;
-	}
-	public void setCloudCeiling(int cloudCeiling) {
-		this.cloudCeiling = cloudCeiling;
-	}
-	public int getVisibility() {
-		return visibility;
-	}
-	public void setVisibility(int visibility) {
-		this.visibility = visibility;
-	}
 	public String getTimeStringUtc() {
 		return timeStringUtc;
 	}
 	public void setTimeStringUtc(String timeStringUtc) {
 		this.timeStringUtc = timeStringUtc;
+	}
+	public Double getLat() {
+		return lat;
+	}
+	public void setLat(Double lat) {
+		this.lat = lat;
+	}
+	public Double getLon() {
+		return lon;
+	}
+	public void setLon(Double lon) {
+		this.lon = lon;
+	}
+	public Double getElevation() {
+		return elevation;
+	}
+	public void setElevation(Double elevation) {
+		this.elevation = elevation;
+	}
+	public Double getTemperature() {
+		return temperature;
+	}
+	public void setTemperature(Double temperature) {
+		this.temperature = temperature;
+	}
+	public Double getDewPoint() {
+		return dewPoint;
+	}
+	public void setDewPoint(Double dewPoint) {
+		this.dewPoint = dewPoint;
+	}
+	public Double getRelativeHumidity() {
+		return relativeHumidity;
+	}
+	public void setRelativeHumidity(Double relativeHumidity) {
+		this.relativeHumidity = relativeHumidity;
+	}
+	public Double getWindSpeed() {
+		return windSpeed;
+	}
+	public void setWindSpeed(Double windSpeed) {
+		this.windSpeed = windSpeed;
+	}
+	public Double getWindDirection() {
+		return windDirection;
+	}
+	public void setWindDirection(Double windDirection) {
+		this.windDirection = windDirection;
+	}
+	public Double getPressure() {
+		return pressure;
+	}
+	public void setPressure(Double pressure) {
+		this.pressure = pressure;
 	}
 }
