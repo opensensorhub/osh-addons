@@ -180,7 +180,8 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
                   + location.getLongitude() + ", " +
                   + location.getAltitude()); */
         
-        double sampleTime = (location.getTime() + GPS_TO_UTC_OFFSET) / 1000.0;
+        double sampleTime = location.getTime() / 1000.0;
+        double eventTime = System.currentTimeMillis() / 1000.0;
                 
         // build and populate datablock
         DataBlock dataBlock = posDataStruct.createDataBlock();
@@ -191,7 +192,7 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
                 
         // update latest record and send event
         latestRecord = dataBlock;
-        eventHandler.publishEvent(new SensorDataEvent(sampleTime, this, dataBlock));
+        eventHandler.publishEvent(new SensorDataEvent(eventTime, this, dataBlock));
     }
 
 
