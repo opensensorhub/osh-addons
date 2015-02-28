@@ -14,6 +14,8 @@ public class StationDataRecord
 	private Double windSpeed;
 	private Double windDirection;
 	private Double pressure;
+	private Double hourlyPrecip; 
+	
 	public Station getStation() {
 		return station;
 	}
@@ -85,5 +87,11 @@ public class StationDataRecord
 	}
 	public void setPressure(Double pressure) {
 		this.pressure = pressure;
+	}
+	public Double getHourlyPrecip() {
+		return hourlyPrecip;
+	}
+	public void setHourlyPrecip(Double hourlyPrecip) {
+		this.hourlyPrecip = hourlyPrecip;
 	}
 }
