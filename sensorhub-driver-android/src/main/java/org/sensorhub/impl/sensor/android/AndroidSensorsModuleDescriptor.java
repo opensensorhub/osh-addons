@@ -41,7 +41,7 @@ public class AndroidSensorsModuleDescriptor implements IModuleProvider
     @Override
     public String getModuleDescription()
     {
-        return "Driver supporting any sensor discoverable through the standard Android API";
+        return "Driver supporting many sensors discoverable through Android APIs";
     }
 
 
