@@ -26,14 +26,14 @@ public class MetarModuleDescriptor implements IModuleProvider
     @Override
     public String getModuleName()
     {
-        return "Generic Weather Station";
+        return "Metar Weather Station";
     }
 
 
     @Override
     public String getModuleDescription()
     {
-        return "Sensor representing a weather station reporting a possible list of weather-related parameters";
+        return "Metar weather station with data provided by AnythingWweather web service";
     }
 
 

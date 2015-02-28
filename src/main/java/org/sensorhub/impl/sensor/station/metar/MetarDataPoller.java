@@ -47,10 +47,11 @@ public class MetarDataPoller implements StationDataPoller {
 		rec.setWindDirection(parseDouble(vals[10]));
 		rec.setPressure(parseDouble(vals[11]));
 		rec.setWindGust(parseDouble(vals[18]));
-		rec.setMinDailyTemperature(parseDouble(vals[22]));
-		rec.setMaxDailyTemperature(parseDouble(vals[21]));
 		rec.setCloudCeiling((int)parseDouble(vals[23]));
 		rec.setVisibility((int)parseDouble(vals[24]));
+		rec.setHourlyPrecip(parseDouble(vals[12]));
+		rec.setPresentWeather(vals[25]);
+		rec.setSkyConditions(vals[26]);
 		return rec;
 	}
 
@@ -61,8 +62,8 @@ public class MetarDataPoller implements StationDataPoller {
 			.setScheme("http")
 			.setHost(server)
 			.setPath(path)
-			.setParameter("clientId", "awInternal")
-			.setParameter("accessKey", "ZombifyMe")
+			.setParameter("clientId", "SensorHub")
+			.setParameter("accessKey", "mMHAkRZMtQfBmZvH")
 			.setParameter("format", "csv")
 			.setParameter("numHours", "2")
 			.setParameter("allData", "true")
