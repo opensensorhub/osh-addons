@@ -96,7 +96,7 @@ public class TestV4LCameraDriver implements IEventListener
     @Test
     public void testGetSensorDesc() throws Exception
     {
-        AbstractProcess smlDesc = driver.getCurrentSensorDescription();
+        AbstractProcess smlDesc = driver.getCurrentDescription();
         new SMLUtils().writeProcess(System.out, smlDesc, true);
     }
     
@@ -200,7 +200,7 @@ public class TestV4LCameraDriver implements IEventListener
         actualWidth = camDataStruct.getComponent(0).getComponentCount();
         actualHeight = camDataStruct.getComponentCount();
         
-        System.out.println("New data received from sensor " + newDataEvent.getSensorId());
+        System.out.println("New data received from sensor " + newDataEvent.getSensorID());
         System.out.println("Image is " + actualWidth + "x" + actualHeight);
         
         synchronized (this) { this.notify(); }

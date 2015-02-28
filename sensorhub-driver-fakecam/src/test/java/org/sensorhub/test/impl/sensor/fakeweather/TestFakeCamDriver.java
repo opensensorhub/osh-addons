@@ -67,7 +67,7 @@ public class TestFakeCamDriver implements IEventListener
     public void testGetSensorDesc() throws Exception
     {
         System.out.println();
-        AbstractProcess smlDesc = driver.getCurrentSensorDescription();
+        AbstractProcess smlDesc = driver.getCurrentDescription();
         new SMLUtils().writeProcess(System.out, smlDesc, true);
     }
     
@@ -98,6 +98,7 @@ public class TestFakeCamDriver implements IEventListener
         assertTrue(e instanceof SensorDataEvent);
         SensorDataEvent newDataEvent = (SensorDataEvent)e;
         
+        @SuppressWarnings("unused")
         byte[] videoFrameData = (byte[])newDataEvent.getRecords()[0].getUnderlyingObject();
         sampleCount++;
                 
