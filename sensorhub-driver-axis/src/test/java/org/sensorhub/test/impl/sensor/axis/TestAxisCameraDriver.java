@@ -122,7 +122,7 @@ public class TestAxisCameraDriver implements IEventListener
         if (!driver.isConnected())
             return;
         
-        AbstractProcess smlDesc = driver.getCurrentSensorDescription();
+        AbstractProcess smlDesc = driver.getCurrentDescription();
         new SMLUtils().writeProcess(System.out, smlDesc, true);
     }
     

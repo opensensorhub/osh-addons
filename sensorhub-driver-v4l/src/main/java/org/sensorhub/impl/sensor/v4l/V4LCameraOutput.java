@@ -151,13 +151,6 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
 
 
     @Override
-    public boolean isPushSupported()
-    {
-        return true;
-    }
-
-
-    @Override
     public double getAverageSamplingPeriod()
     {
         return parentSensor.camParams.frameRate;

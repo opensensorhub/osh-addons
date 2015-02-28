@@ -35,7 +35,6 @@ import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.TextEncoding;
 import net.opengis.swe.v20.Time;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.SWEFactory;
 import org.vast.swe.SWEConstants;
@@ -369,7 +368,7 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
 
 
     @Override
-    public DataBlock getLatestRecord() throws SensorException
+    public DataBlock getLatestRecord()
     {
         return latestRecord;
     }
