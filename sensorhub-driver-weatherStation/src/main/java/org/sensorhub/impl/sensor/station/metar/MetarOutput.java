@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.vast.data.DataRecordImpl;
 import org.vast.data.QuantityImpl;
 import org.vast.data.TextEncodingImpl;
+import org.vast.data.TextImpl;
 import org.vast.data.TimeImpl;
 import org.vast.swe.SWEConstants;
 
@@ -43,8 +44,6 @@ import org.vast.swe.SWEConstants;
  *  	DataPoller queries station service at POLLING_INTERVAL and checks for new record.  
  *      If record time is greater than latestRecord.time, we update latestRecord and latestBlock
  *      and send event to bus.  
- *      POLLING_INTERVAL set artificially low until temporalFilter is fixed for this case:
- *      	https://github.com/sensiasoft/sensorhub/wiki/Temporal-Filtering-in-SOS	 
  */
 
 public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends StationOutput
@@ -54,7 +53,7 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
     DataBlock latestBlock;
     MetarDataRecord latestRecord;
     MetarDataPoller metarPoller = new MetarDataPoller();
-    private static final long POLLING_INTERVAL_MS = 5;
+    private static final long POLLING_INTERVAL_SECONDS = 120;
     private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toSeconds(20);
     protected Timer timer;
 
@@ -74,14 +73,9 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
     protected void init()
     {
         // SWE Common data structure
-        metarRecordStruct = new DataRecordImpl(11);
+        metarRecordStruct = new DataRecordImpl(13);
         metarRecordStruct.setName(getName());
         metarRecordStruct.setDefinition("http://sensorml.com/ont/swe/property/Weather/MetarStationRecord");
-        
-        // stationName,time,lat,lon,el,Temperature (degreesF),Dewpoint (degreesF),Relative Humididty (%),Wind Speed (mph),Wind Direction (degrees),
-        //Air Pressure (inches HG),Precipitation (inches),Heat Index (degreesF),Wind Chill (degreesF), Wind Gust (mph),
-        //Rainfaill last 3 hours (inches),Rainfaill last 6 hours (inches),Rainfaill last 24 hours (inches),Max Temperature last 24 hours (degreesF),Min Temperature last 24 hours (degreesF),
-        //cloud Ceiling (feet),visibility (feet)
         
         Time c1 = new TimeImpl();
         c1.getUom().setHref(Time.ISO_TIME_UNIT);
@@ -105,6 +99,11 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
         metarRecordStruct.addComponent("relativeHumidity", c);  
         
         c = new QuantityImpl();
+        c.getUom().setCode("in_i'Hg");
+        c.setDefinition("http://sensorml.com/ont/swe/property/AirPressureValue.html"); 
+        metarRecordStruct.addComponent("pressure", c);  
+        
+        c = new QuantityImpl();
         c.getUom().setCode("mi_i/h");
         c.setDefinition("http://sensorml.com/ont/swe/property/WindSpeed"); 
         metarRecordStruct.addComponent("windSpeed", c);  
@@ -120,14 +119,9 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
         metarRecordStruct.addComponent("windGust", c);  
         
         c = new QuantityImpl();
-        c.getUom().setCode("degF");
-        c.setDefinition("http://sensorml.com/ont/swe/property/minDailyTemperature"); //  not there
-        metarRecordStruct.addComponent("minDailyTempearture", c);  
-        
-        c = new QuantityImpl();
-        c.getUom().setCode("degF");
-        c.setDefinition("http://sensorml.com/ont/swe/property/maxDailyTemperature"); //  not there
-        metarRecordStruct.addComponent("maxDailyTemperature", c);  
+        c.getUom().setCode("in");
+        c.setDefinition("http://sensorml.com/ont/swe/property/Precipitation.html"); 
+        metarRecordStruct.addComponent("hourlyPrecipitation", c);  
         
         c = new QuantityImpl();
         c.getUom().setCode("ft_i");
@@ -138,30 +132,36 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
         c.getUom().setCode("ft_i");
         c.setDefinition("http://sensorml.com/ont/swe/property/Visibility");   // does not resolve
         metarRecordStruct.addComponent("visibility", c);  
+        
+        TextImpl t = new TextImpl();  
+        t.setDefinition("http://sensorml.com/ont/swe/property/presentWeather");   // does not resolve
+        metarRecordStruct.addComponent("presentWeather", t); 
+        
+        t = new TextImpl();
+        t.setDefinition("http://sensorml.com/ont/swe/property/skyConditions");   // does not resolve
+        metarRecordStruct.addComponent("skyConditions", t); 
     }
 
 
     private DataBlock recordToBlock(MetarDataRecord rec)
     {
-//        // build and publish datablock
-        DataBlock dataBlock = metarRecordStruct.createDataBlock();
+    	DataBlock dataBlock = metarRecordStruct.createDataBlock();
         Station stn = rec.getStation();
-//        dataBlock.setDoubleValue(0, rec.getTimeUtc()/1000.); 
-        dataBlock.setDoubleValue(0, rec.getTimeUtc()); 
+        dataBlock.setDoubleValue(0, rec.getTimeUtc()/1000.); 
         dataBlock.setDoubleValue(1, rec.getTemperature()); 
         dataBlock.setDoubleValue(2, rec.getDewPoint()); 
         dataBlock.setDoubleValue(3, rec.getRelativeHumidity()); 
-        dataBlock.setDoubleValue(4, rec.getWindSpeed()); 
-        dataBlock.setDoubleValue(5, rec.getWindDirection()); 
-        dataBlock.setDoubleValue(6, rec.getWindGust()); 
-        dataBlock.setDoubleValue(7, rec.getMinDailyTemperature()); 
-        dataBlock.setDoubleValue(8, rec.getMaxDailyTemperature()); 
+        dataBlock.setDoubleValue(4, rec.getPressure()); 
+        dataBlock.setDoubleValue(5, rec.getWindSpeed()); 
+        dataBlock.setDoubleValue(6, rec.getWindDirection()); 
+        dataBlock.setDoubleValue(7, rec.getWindGust()); 
+        dataBlock.setDoubleValue(8, rec.getHourlyPrecip()); 
         dataBlock.setIntValue(9, rec.getCloudCeiling()); 
         dataBlock.setIntValue(10, rec.getVisibility()); 
+        dataBlock.setStringValue(11, rec.getPresentWeather()); 
+        dataBlock.setStringValue(12, rec.getSkyConditions()); 
         
         return dataBlock;
-        
-        //eventHandler.publishEvent(new SensorDataEvent((double)rec.getTimeUtc(), MetarOutput.this, dataBlock));
     }
 
 
@@ -184,7 +184,7 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
             }            
         };
         
-        timer.scheduleAtFixedRate(task, 0, TimeUnit.SECONDS.toMillis(POLLING_INTERVAL_MS));        
+        timer.scheduleAtFixedRate(task, 0, TimeUnit.SECONDS.toMillis(POLLING_INTERVAL_SECONDS));        
     }
 
 
