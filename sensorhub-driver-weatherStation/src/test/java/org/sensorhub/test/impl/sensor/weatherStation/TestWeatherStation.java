@@ -18,6 +18,7 @@ package org.sensorhub.test.impl.sensor.weatherStation;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.UUID;
 
 import net.opengis.sensorml.v20.AbstractProcess;
@@ -84,22 +85,17 @@ public class TestWeatherStation implements IEventListener
     public void testSendMeasurements() throws Exception
     {
         System.out.println();
-        ISensorDataInterface gpsOutput = driver.getObservationOutputs().get("gpsLocation");
+        Map<String, ? extends ISensorDataInterface> map = driver.getObservationOutputs();
+        System.err.println(map);
+        ISensorDataInterface metarOutput = driver.getObservationOutputs().get("MetarWeatherStation");
         
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
-        writer.setDataComponents(gpsOutput.getRecordDescription());
+        writer.setDataComponents(metarOutput.getRecordDescription());
         writer.setOutput(System.out);
         
-        gpsOutput.registerListener(this);
+        metarOutput.registerListener(this);
         driver.start();
-        
-        synchronized (this) 
-        {
-            while (sampleCount < 5)
-                wait();
-        }
-        
         System.out.println();
     }
     
