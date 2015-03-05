@@ -69,5 +69,10 @@
          <artifactId>sensorhub-webui-core</artifactId>
          <version>0.5</version>
       </dependency>
+      <dependency>
+         <groupId>org.sensorhub</groupId>
+         <artifactId>sensorhub-tools</artifactId>
+         <version>0.5</version>
+      </dependency>
    </dependencies>
 </project>
