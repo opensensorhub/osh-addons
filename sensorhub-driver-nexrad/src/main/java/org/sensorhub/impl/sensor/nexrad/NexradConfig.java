@@ -21,4 +21,5 @@ public class NexradConfig extends SensorConfig
 {
     public double centerLatitude; // in deg
     public double centerLongitude; // in deg
+    public double elevationMeters;
 }
