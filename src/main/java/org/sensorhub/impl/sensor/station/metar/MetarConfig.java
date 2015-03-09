@@ -27,5 +27,5 @@ public class MetarConfig extends SensorConfig
     
     public double lat;
     public double lon;
-    public double elevation;
+    public double elevationMeters;
 }
