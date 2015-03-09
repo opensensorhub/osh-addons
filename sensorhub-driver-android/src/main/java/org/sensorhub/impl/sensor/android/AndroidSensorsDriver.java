@@ -206,7 +206,7 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
             for (PhysicalComponent comp: smlComponents)
             {
                 String name = "sensor" + index++;
-                ((PhysicalSystem)sensorDescription).getComponents().addComponent(name, comp);
+                ((PhysicalSystem)sensorDescription).addComponent(name, comp);
             }
         }
     }
