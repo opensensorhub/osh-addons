@@ -17,25 +17,34 @@ package org.sensorhub.impl.sensor.nexrad;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
+import net.opengis.swe.v20.Quantity;
+import net.opengis.swe.v20.Time;
 
+import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vast.data.DataArrayImpl;
+import org.vast.data.DataRecordImpl;
+import org.vast.data.QuantityImpl;
+import org.vast.data.SWEFactory;
 import org.vast.data.TextEncodingImpl;
+import org.vast.data.TimeImpl;
+import org.vast.swe.SWEConstants;
 
 
 public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 {
     private static final Logger log = LoggerFactory.getLogger(NexradOutput.class);
-    DataComponent posDataStruct;
+    DataComponent nexradStruct;
     DataBlock latestRecord;
     boolean sendData;
     Timer timer;
-    double currentTrackPos;
-    
+    static int NUM_BINS = 720;  // this should be fixed at construction time as part of the config
 
     public NexradOutput(NexradSensor parentSensor)
     {
@@ -54,51 +63,55 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
     protected void init()
     {
         // SWE Common data structure
-//        posDataStruct = new DataRecordImpl(3);
-//        posDataStruct.setName(getName());
-//        posDataStruct.setDefinition("http://sensorml.com/ont/swe/property/Location");
-//        
-//        Time c1 = new TimeImpl();
-//        c1.getUom().setHref(Time.ISO_TIME_UNIT);
-//        c1.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
-//        posDataStruct.addComponent("time", c1);
-//
-//        Quantity c;
-//        c = new QuantityImpl();
-//        c.getUom().setCode("deg");
-//        c.setDefinition("http://sensorml.com/ont/swe/property/Latitude");
+        nexradStruct = new DataRecordImpl(3);
+        nexradStruct.setName(getName());
+        nexradStruct.setDefinition("http://sensorml.com/ont/swe/property/Location");
+    	
+    	//  Time,el,az,data[]
+        Time c1 = new TimeImpl();
+        c1.getUom().setHref(Time.ISO_TIME_UNIT);
+        c1.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
+        nexradStruct.addComponent("time", c1);
+
+        Quantity c;
+        c = new QuantityImpl();
+        c.getUom().setCode("deg");
+        c.setDefinition("http://sensorml.com/ont/swe/property/ElevationAngle");
 //        c.setReferenceFrame("http://www.opengis.net/def/crs/EPSG/0/4979");
-//        c.setAxisID("Lat");
-//        posDataStruct.addComponent("lat",c);
-//
-//        c = new QuantityImpl();
-//        c.getUom().setCode("deg");
-//        c.setDefinition("http://sensorml.com/ont/swe/property/Longitude");
+        nexradStruct.addComponent("elevation",c);
+
+        c = new QuantityImpl();
+        c.getUom().setCode("deg");
+        c.setDefinition("http://sensorml.com/ont/swe/property/AzimuthAngle");
 //        c.setReferenceFrame("http://www.opengis.net/def/crs/EPSG/0/4979");
-//        c.setAxisID("Long");
-//        posDataStruct.addComponent("lon", c);
-//
-//        c = new QuantityImpl();
-//        c.getUom().setCode("m");
-//        c.setDefinition("http://sensorml.com/ont/swe/property/Altitude");
-//        c.setReferenceFrame("http://www.opengis.net/def/crs/EPSG/0/4979");
-//        c.setAxisID("h");
-//        posDataStruct.addComponent("alt", c);        
+        nexradStruct.addComponent("azimuth",c);
+
+		SWEFactory fac = new SWEFactory();
+		
+        DataArray data = fac.newDataArray(NUM_BINS);
+//        data.getUom() - how to set units
+        data.setDefinition("http://sensorml.com/ont/swe/propertyx/values");  // does not exist- will be reflectivity,velocity,or spectrumWidth- choice here?
+        nexradStruct.addComponent("data", data);
     }
 
 
     private void sendMeasurement()
     {
         // build and publish datablock
-//        DataBlock dataBlock = posDataStruct.createDataBlock();
-//        dataBlock.setDoubleValue(0, time);
-//        dataBlock.setDoubleValue(1, lat);
-//        dataBlock.setDoubleValue(2, lon);
-//        dataBlock.setDoubleValue(3, alt);
-//        
+        DataBlock dataBlock = nexradStruct.createDataBlock();
+        double time = System.currentTimeMillis() / 1000.;
+        dataBlock.setDoubleValue(0, time);
+        dataBlock.setDoubleValue(1, 0.5);
+        dataBlock.setDoubleValue(2, 0.0);
+        //  
+        double [] bins = new double[NUM_BINS];
+        dataBlock.setUnderlyingObject(bins);
+        
+//        dataBlock.set
+        //        
 //        // update latest record and send event
 //        latestRecord = dataBlock;
-//        eventHandler.publishEvent(new SensorDataEvent(time, NexradOutput.this, dataBlock));
+        eventHandler.publishEvent(new SensorDataEvent(1, NexradOutput.this, dataBlock));
     }
 
 
@@ -140,7 +153,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
     @Override
     public DataComponent getRecordDescription()
     {
-        return posDataStruct;
+        return nexradStruct;
     }
 
 
