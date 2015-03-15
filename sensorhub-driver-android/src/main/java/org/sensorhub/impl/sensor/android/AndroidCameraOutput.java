@@ -35,9 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockMixed;
-import org.vast.data.DataComponentHelper;
 import org.vast.data.SWEFactory;
 import org.vast.swe.SWEConstants;
+import org.vast.swe.SWEHelper;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -215,7 +215,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
             dataEncoding.addMemberAsBlock(compressedBlock);
             
             // resolve encoding so compressed blocks can be properly generated
-            DataComponentHelper.resolveComponentEncodings(dataStruct, dataEncoding);
+            SWEHelper.assignBinaryEncoding(dataStruct, dataEncoding);
             
             // start streaming video
             startCaptureSession(camera);

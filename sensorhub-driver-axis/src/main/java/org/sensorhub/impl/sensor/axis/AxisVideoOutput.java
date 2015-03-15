@@ -41,9 +41,9 @@ import org.sensorhub.impl.common.BasicEventHandler;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.CountImpl;
 import org.vast.data.DataBlockMixed;
-import org.vast.data.DataComponentHelper;
 import org.vast.data.SWEFactory;
 import org.vast.swe.SWEConstants;
+import org.vast.swe.SWEHelper;
 
 
 /**
@@ -130,7 +130,7 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
             videoEncoding.addMemberAsBlock(compressedBlock);
             
             // resolve encoding so compressed blocks can be properly generated
-            DataComponentHelper.resolveComponentEncodings(videoDataStruct, videoEncoding);
+            SWEHelper.assignBinaryEncoding(videoDataStruct, videoEncoding);
 			
 		}
 		catch (Exception e)
