@@ -14,15 +14,8 @@
       <dependency>
          <groupId>org.sensorhub</groupId>
          <artifactId>sensorhub-core</artifactId>
+         <version>1.0</version>
+         <type>bundle</type>
       </dependency>
    </dependencies>
-   <dependencyManagement>
-      <dependencies>
-         <dependency>
-            <groupId>org.sensorhub</groupId>
-            <artifactId>sensorhub-core</artifactId>
-            <version>1.0</version>
-         </dependency>
-      </dependencies>
-   </dependencyManagement>
 </project>
