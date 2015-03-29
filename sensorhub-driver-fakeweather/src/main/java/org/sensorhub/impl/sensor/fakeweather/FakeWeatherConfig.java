@@ -17,6 +17,7 @@ package org.sensorhub.impl.sensor.fakeweather;
 
 import org.sensorhub.api.sensor.SensorConfig;
 
+
 public class FakeWeatherConfig extends SensorConfig
 {
         

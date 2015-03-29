@@ -19,44 +19,42 @@ import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
 
+
 public class FakeWeatherModuleDescriptor implements IModuleProvider
 {
+    @Override
+    public String getModuleName()
+    {
+        return "Fake Weather Sensor";
+    }
 
-	@Override
-	public String getModuleName()
-	{
-		// TODO Auto-generated method stub
-		return "Fake Weather Sensor";
-	}
+    @Override
+    public String getModuleDescription()
+    {
+        return "Fake weather station with randomly changing measurements";
+    }
 
-	@Override
-	public String getModuleDescription()
-	{
-		return "Fake weather station with randomly changing measurements";
-	}
+    @Override
+    public String getModuleVersion()
+    {
+        return "0.1";
+    }
 
-	@Override
-	public String getModuleVersion()
-	{
-		return "0.1";
-	}
+    @Override
+    public String getProviderName()
+    {
+        return "Botts Innovative Research Inc";
+    }
 
-	@Override
-	public String getProviderName()
-	{
-		return "Botts Innovative Research Inc";
-	}
+    @Override
+    public Class<? extends IModule<?>> getModuleClass()
+    {
+        return FakeWeatherSensor.class;
+    }
 
-	@Override
-	public Class<? extends IModule<?>> getModuleClass()
-	{
-		return FakeWeatherSensor.class;
-	}
-
-	@Override
-	public Class<? extends ModuleConfig> getModuleConfigClass()
-	{
-		return FakeWeatherConfig.class;
-	}
-
+    @Override
+    public Class<? extends ModuleConfig> getModuleConfigClass()
+    {
+        return FakeWeatherConfig.class;
+    }
 }
