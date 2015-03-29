@@ -3,7 +3,7 @@
    <parent>
       <groupId>org.sensorhub</groupId>
       <artifactId>sensorhub-all</artifactId>
-      <version>0.5</version>
+      <version>1.0</version>
       <relativePath>../sensorhub-all/pom.xml</relativePath>
    </parent>
    <artifactId>sensorhub-driver-v4l</artifactId>
@@ -14,7 +14,7 @@
       <dependency>
          <groupId>org.sensorhub</groupId>
          <artifactId>sensorhub-core</artifactId>
-         <version>0.5</version>
+         <version>1.0</version>
       </dependency>
       <dependency>
          <groupId>au.edu.jcu</groupId>
@@ -39,4 +39,5 @@
          </plugin>
       </plugins>
    </build>
+   <version>0.1</version>
 </project>
