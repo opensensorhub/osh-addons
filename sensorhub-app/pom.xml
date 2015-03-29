@@ -3,7 +3,7 @@
    <parent>
       <groupId>org.sensorhub</groupId>
       <artifactId>sensorhub-all</artifactId>
-      <version>0.5</version>
+      <version>1.0</version>
    </parent>
    <artifactId>sensorhub-app</artifactId>
    <name>Main SensorHub application</name>
@@ -22,25 +22,25 @@
       <dependency>
          <groupId>org.sensorhub</groupId>
          <artifactId>sensorhub-all</artifactId>
-         <version>0.5</version>
+         <version>1.0</version>
          <type>pom</type>
       </dependency>
       <dependency>
          <groupId>org.sensorhub</groupId>
          <artifactId>sensorhub-core</artifactId>
-         <version>0.5</version>
+         <version>1.0</version>
          <type>bundle</type>
       </dependency>
       <dependency>
          <groupId>org.sensorhub</groupId>
          <artifactId>sensorhub-service-swe</artifactId>
-         <version>0.5</version>
+         <version>1.0</version>
          <type>bundle</type>
       </dependency>
       <dependency>
          <groupId>org.sensorhub</groupId>
          <artifactId>sensorhub-storage-perst</artifactId>
-         <version>0.5</version>
+         <version>1.0</version>
          <type>bundle</type>
       </dependency>
       <dependency>
@@ -67,12 +67,12 @@
       <dependency>
          <groupId>org.sensorhub</groupId>
          <artifactId>sensorhub-webui-core</artifactId>
-         <version>0.5</version>
+         <version>1.0</version>
       </dependency>
       <dependency>
          <groupId>org.sensorhub</groupId>
          <artifactId>sensorhub-tools</artifactId>
-         <version>0.5</version>
+         <version>1.0</version>
       </dependency>
    </dependencies>
 </project>
