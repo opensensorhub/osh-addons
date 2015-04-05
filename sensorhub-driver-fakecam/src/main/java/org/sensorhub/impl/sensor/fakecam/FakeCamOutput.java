@@ -26,7 +26,6 @@ import net.opengis.swe.v20.BinaryBlock;
 import net.opengis.swe.v20.BinaryEncoding;
 import net.opengis.swe.v20.ByteEncoding;
 import net.opengis.swe.v20.DataArray;
-import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
@@ -53,8 +52,6 @@ public class FakeCamOutput extends AbstractSensorOutput<FakeCamSensor>
     private static final Logger log = LoggerFactory.getLogger(FakeCamOutput.class);
     DataComponent videoDataStruct;
     BinaryEncoding encoding;
-    DataBlock latestRecord;
-    double latestRecordTime = Double.NaN;
     boolean sendData;
     Timer timer;
     IsoFile mp4File;
@@ -193,7 +190,7 @@ public class FakeCamOutput extends AbstractSensorOutput<FakeCamSensor>
         
         // update latest record and send event
         latestRecord = dataBlock;
-        latestRecordTime = System.currentTimeMillis() / 1000.;
+        latestRecordTime = System.currentTimeMillis();
         eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FakeCamOutput.this, dataBlock));
     }
 
@@ -258,19 +255,4 @@ public class FakeCamOutput extends AbstractSensorOutput<FakeCamSensor>
     {
         return encoding;
     }
-
-
-    @Override
-    public DataBlock getLatestRecord()
-    {
-        return latestRecord;
-    }
-    
-    
-    @Override
-    public double getLatestRecordTime()
-    {
-        return latestRecordTime;
-    }
-
 }
