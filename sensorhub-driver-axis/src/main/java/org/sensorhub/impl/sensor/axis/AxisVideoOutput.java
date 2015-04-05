@@ -67,7 +67,6 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
 	DataComponent videoDataStruct;
 	BinaryEncoding videoEncoding;
-	DataBlock latestRecord;
 	boolean reconnect;
 	boolean streaming;
 	
@@ -228,7 +227,8 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 						        ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(frameData);
 								
 						        latestRecord = dataBlock;
-								eventHandler.publishEvent(new SensorDataEvent(timestamp, AxisVideoOutput.this, latestRecord));
+		                        latestRecordTime = System.currentTimeMillis();
+								eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AxisVideoOutput.this, latestRecord));
 							}
 							
 							// wait 1s before trying to reconnect
@@ -256,12 +256,14 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	{
 		return 1/30.;
 	}
+	
 
 	@Override
 	public DataComponent getRecordDescription()
 	{
 		return videoDataStruct;
 	}
+	
 
 	@Override
 	public DataEncoding getRecommendedEncoding()
@@ -269,26 +271,10 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 		return videoEncoding;
 	}
 
-	@Override
-	public DataBlock getLatestRecord()
-	{
-		return latestRecord;
-	}
-	
-	@Override
-    public double getLatestRecordTime()
-    {
-        if (latestRecord != null)
-            return latestRecord.getDoubleValue(0);
-        
-        return Double.NaN;
-    }
-
 
 	public void stop()
 	{
-		// TODO Auto-generated method stub
-		
+				
 	}
 
 }

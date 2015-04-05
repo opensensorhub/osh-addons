@@ -34,7 +34,6 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     //private static final Logger log = LoggerFactory.getLogger(FakeWeatherOutput.class);
     DataComponent weatherData;
     DataEncoding weatherEncoding;
-    DataBlock latestRecord;
     boolean sendData;
     Timer timer;
     
@@ -116,7 +115,8 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         
         // update latest record and send event
         latestRecord = dataBlock;
-        eventHandler.publishEvent(new SensorDataEvent(time, FakeWeatherOutput.this, dataBlock));        
+        latestRecordTime = System.currentTimeMillis();
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FakeWeatherOutput.this, dataBlock));        
     }
 
 
@@ -168,22 +168,4 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     {
         return weatherEncoding;
     }
-
-
-    @Override
-    public DataBlock getLatestRecord()
-    {
-        return latestRecord;
-    }
-    
-    
-    @Override
-    public double getLatestRecordTime()
-    {
-        if (latestRecord != null)
-            return latestRecord.getDoubleValue(0);
-        
-        return Double.NaN;
-    }
-
 }

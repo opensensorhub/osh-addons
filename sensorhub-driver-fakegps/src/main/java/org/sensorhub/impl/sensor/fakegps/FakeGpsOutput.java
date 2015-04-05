@@ -45,7 +45,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
 {
     private static final Logger log = LoggerFactory.getLogger(FakeGpsOutput.class);
     DataComponent posDataStruct;
-    DataBlock latestRecord;
+    DataEncoding posDataEncoding;
     List<double[]> trajPoints;
     boolean sendData;
     Timer timer;
@@ -99,7 +99,9 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         c.setDefinition("http://sensorml.com/ont/swe/property/Altitude");
         c.setReferenceFrame("http://www.opengis.net/def/crs/EPSG/0/4979");
         c.setAxisID("h");
-        posDataStruct.addComponent("alt", c);        
+        posDataStruct.addComponent("alt", c);
+        
+        posDataEncoding = new TextEncodingImpl(",", "\n");
     }
 
 
@@ -225,7 +227,8 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         
         // update latest record and send event
         latestRecord = dataBlock;
-        eventHandler.publishEvent(new SensorDataEvent(time, FakeGpsOutput.this, dataBlock));
+        latestRecordTime = System.currentTimeMillis();
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FakeGpsOutput.this, dataBlock));
         
         currentTrackPos += speed / dist;
     }
@@ -276,24 +279,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     @Override
     public DataEncoding getRecommendedEncoding()
     {
-        return new TextEncodingImpl(",", "\n");
-    }
-
-
-    @Override
-    public DataBlock getLatestRecord()
-    {
-        return latestRecord;
-    }
-    
-    
-    @Override
-    public double getLatestRecordTime()
-    {
-        if (latestRecord != null)
-            return latestRecord.getDoubleValue(0);
-        
-        return Double.NaN;
+        return posDataEncoding;
     }
 
 }

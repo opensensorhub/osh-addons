@@ -55,7 +55,6 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
     LocationProvider locProvider;
     String name;
     boolean enabled;
-    DataBlock latestRecord;
     DataComponent posDataStruct;
     
     
@@ -162,12 +161,9 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
     
     
     @Override
-    public double getLatestRecordTime()
+    public long getLatestRecordTime()
     {
-        if (latestRecord != null)
-            return latestRecord.getDoubleValue(0);
-        
-        return Double.NaN;
+        return latestRecordTime;
     }
 
 
@@ -180,7 +176,6 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
                   + location.getAltitude()); */
         
         double sampleTime = location.getTime() / 1000.0;
-        double eventTime = System.currentTimeMillis() / 1000.0;
                 
         // build and populate datablock
         DataBlock dataBlock = posDataStruct.createDataBlock();
@@ -191,7 +186,8 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
                 
         // update latest record and send event
         latestRecord = dataBlock;
-        eventHandler.publishEvent(new SensorDataEvent(eventTime, this, dataBlock));
+        latestRecordTime = System.currentTimeMillis();
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, this, dataBlock));
     }
 
 

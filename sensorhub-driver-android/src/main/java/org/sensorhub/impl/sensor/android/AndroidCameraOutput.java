@@ -88,8 +88,6 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
     int imgHeight, imgWidth, frameRate;
     
     String name;
-    boolean enabled;
-    DataBlock latestRecord;
     DataComponent dataStruct;
     BinaryEncoding dataEncoding;
     int samplingPeriod;
@@ -406,8 +404,8 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                     newRecord = latestRecord.renew();
                 
                 // set time stamp
-                double latestRecordTime = getJulianTimeStamp(img.getTimestamp());
-                newRecord.setDoubleValue(0, latestRecordTime);
+                double samplingTime = getJulianTimeStamp(img.getTimestamp());
+                newRecord.setDoubleValue(0, samplingTime);
                 
                 // set encoded data
                 //AbstractDataBlock frameData = (AbstractDataBlock)newRecord;
@@ -419,6 +417,7 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
                 
                 // send event
                 latestRecord = newRecord;
+                latestRecordTime = System.currentTimeMillis();
                 eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AndroidCameraOutput.this, latestRecord));                
             }
         };
@@ -520,12 +519,9 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
     
     
     @Override
-    public double getLatestRecordTime()
+    public long getLatestRecordTime()
     {
-        if (latestRecord != null)
-            return latestRecord.getDoubleValue(0);
-        
-        return Double.NaN;
+        return latestRecordTime;
     }
     
     

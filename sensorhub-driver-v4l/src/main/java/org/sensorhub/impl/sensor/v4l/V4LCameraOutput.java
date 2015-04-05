@@ -51,8 +51,6 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
 {
     RGBFrameGrabber frameGrabber;
     DataComponent camDataStruct;
-    DataBlock latestRecord;
-    double latestRecordTime = Double.NaN;
     
     
     protected V4LCameraOutput(V4LCameraDriver driver)
@@ -120,12 +118,13 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
     {
         try
         {
+            //double samplingTime = frame.getCaptureTime() / 1000.;
             DataBlock camData = camDataStruct.createDataBlock();
             ((DataBlockByte)camData).setUnderlyingObject(frame.getBytes());
             
             // update latest record and send event
             latestRecord = camData;
-            latestRecordTime = frame.getCaptureTime() / 1000.;
+            latestRecordTime = System.currentTimeMillis();
             eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, this, camData));
             
             frame.recycle();
@@ -161,20 +160,6 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
     public DataComponent getRecordDescription()
     {
         return camDataStruct;
-    }
-
-
-    @Override
-    public DataBlock getLatestRecord()
-    {
-        return latestRecord;
-    }
-    
-    
-    @Override
-    public double getLatestRecordTime()
-    {
-        return latestRecordTime;
     }
     
     
