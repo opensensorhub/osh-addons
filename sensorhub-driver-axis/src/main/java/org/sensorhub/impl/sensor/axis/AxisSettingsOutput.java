@@ -27,7 +27,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.Count;
-import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
@@ -58,7 +57,6 @@ import org.vast.swe.SWEConstants;
 public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
     DataComponent settingsDataStruct;
-    DataBlock latestRecord;
     boolean polling;
     Timer timer;
 
@@ -312,8 +310,9 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
 //                            }
                         }
 
-                        latestRecord = dataStruct.getData();                            
-                        eventHandler.publishEvent(new SensorDataEvent(time, AxisSettingsOutput.this, latestRecord));
+                        latestRecord = dataStruct.getData();
+                        latestRecordTime = System.currentTimeMillis();
+                        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AxisSettingsOutput.this, latestRecord));
                     }
                     catch (Exception e)
                     {
@@ -364,23 +363,6 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
     public DataEncoding getRecommendedEncoding()
     {
         return textEncoding;
-    }
-
-
-    @Override
-    public DataBlock getLatestRecord()
-    {
-        return latestRecord;
-    }
-
-
-    @Override
-    public double getLatestRecordTime()
-    {
-        if (latestRecord != null)
-            return latestRecord.getDoubleValue(0); // first component is sampling time
-        
-        return Double.NaN;
     }
 
 

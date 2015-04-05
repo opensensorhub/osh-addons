@@ -14,7 +14,6 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.android;
 
-import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
@@ -47,7 +46,6 @@ public abstract class AndroidSensorOutput extends AbstractSensorOutput<AndroidSe
     Sensor sensor;
     String name;
     boolean enabled;
-    DataBlock latestRecord;
     DataComponent dataStruct;
     double samplingPeriod;
     long systemTimeOffset = -1L;
@@ -115,23 +113,6 @@ public abstract class AndroidSensorOutput extends AbstractSensorOutput<AndroidSe
     public DataEncoding getRecommendedEncoding()
     {
         return new TextEncodingImpl(",", "\n");
-    }
-
-    
-    @Override
-    public DataBlock getLatestRecord()
-    {
-        return latestRecord;
-    }
-    
-    
-    @Override
-    public double getLatestRecordTime()
-    {
-        if (latestRecord != null)
-            return latestRecord.getDoubleValue(0);
-        
-        return Double.NaN;
     }
     
     

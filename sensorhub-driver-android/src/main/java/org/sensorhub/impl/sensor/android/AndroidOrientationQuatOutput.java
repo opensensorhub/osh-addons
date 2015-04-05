@@ -135,6 +135,7 @@ public class AndroidOrientationQuatOutput extends AndroidSensorOutput implements
         // TODO since this sensor is high rate,we could package several records in a single event
         // update latest record and send event
         latestRecord = dataBlock;
-        eventHandler.publishEvent(new SensorDataEvent(sampleTime, this, dataBlock)); 
+        latestRecordTime = System.currentTimeMillis();
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, this, dataBlock)); 
     }    
 }
