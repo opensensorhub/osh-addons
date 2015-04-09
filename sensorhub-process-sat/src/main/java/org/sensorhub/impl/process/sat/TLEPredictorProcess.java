@@ -37,7 +37,9 @@ public class TLEPredictorProcess extends AbstractStreamProcess<TLEPredictorProce
     protected SatelliteStateOutput realTimeStateOutput;
     
     double lastComputedPosTime = Double.NaN;
-    double outputPosPredictHorizon = 3 * 24 * 3600; // 3 days
+    double realTimeOutputPeriod = 1.0;
+    double predictOutputPeriod = 60.0;
+    double predictHorizon = 3 * 24 * 3600; // 3 days
     
     
     @Override
@@ -49,11 +51,11 @@ public class TLEPredictorProcess extends AbstractStreamProcess<TLEPredictorProce
         tleOutput = new TLEOutput(this);
         addOutput(tleOutput);
         
-        predictedStateOutput = new SatelliteStateOutput(this, "predictedState", tleOutput);
+        predictedStateOutput = new SatelliteStateOutput(this, "predictedState", tleOutput, predictOutputPeriod, predictHorizon);
         addOutput(predictedStateOutput);
         
         // real-time state output
-        realTimeStateOutput = new SatelliteStateOutput(this, "currentState", tleOutput);
+        realTimeStateOutput = new SatelliteStateOutput(this, "currentState", tleOutput, realTimeOutputPeriod, 0.0);
         addOutput(realTimeStateOutput);
     }
     
@@ -78,13 +80,8 @@ public class TLEPredictorProcess extends AbstractStreamProcess<TLEPredictorProce
         if (Double.isNaN(lastComputedPosTime))
         {
             realTimeStateOutput.start();
-            lastComputedPosTime = System.currentTimeMillis() / 1000.0;
+            predictedStateOutput.start();
         }
-        
-        double startTime = lastComputedPosTime;
-        double stopTime = startTime + outputPosPredictHorizon;
-        predictedStateOutput.computeAndOutputPredictedTrajectory(startTime, stopTime);
-        lastComputedPosTime = stopTime;
     }
     
     

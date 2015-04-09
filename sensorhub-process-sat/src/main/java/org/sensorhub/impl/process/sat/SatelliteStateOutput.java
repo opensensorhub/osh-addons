@@ -10,7 +10,9 @@
 
 package org.sensorhub.impl.process.sat;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import net.opengis.swe.v20.DataBlock;
@@ -52,16 +54,18 @@ public class SatelliteStateOutput implements IStreamingDataInterface
     Timer timer = new Timer();
     TimerTask posUpdateTask;
     OrbitPredictor orbitPredictor;
-    double realTimePosDt = 1.0;
-    double predictedPosDt = 600.0;
+    double outputPeriod = 1.0;
+    double predictHorizon = 0.0;
     
 
-    public SatelliteStateOutput(TLEPredictorProcess parentProcess, String name, TLEOutput tleOutput)
+    public SatelliteStateOutput(TLEPredictorProcess parentProcess, String name, TLEOutput tleOutput, double outputPeriod, double predictHorizon)
     {
         this.parentProcess = parentProcess;
         this.eventHandler = new BasicEventHandler();
         this.orbitPredictor = new TLEOrbitPredictor(tleOutput);
         this.name = name;
+        this.outputPeriod = outputPeriod;
+        this.predictHorizon = predictHorizon;
         
         // create output structure
         SWEHelper fac = new SWEHelper();
@@ -84,13 +88,19 @@ public class SatelliteStateOutput implements IStreamingDataInterface
             @Override
             public void run()
             {
-                computeAndOutputState(scheduledExecutionTime() / 1000.0);              
+                double posTime = scheduledExecutionTime() / 1000.0 + predictHorizon;
+                TLEPredictorProcess.log.trace("Computing position @ {}", posTime);
+                computeAndOutputState(posTime);              
             }            
         };
         
-        long outputDtInMillis = (long)(realTimePosDt * 1000L);
+        long outputDtInMillis = (long)(outputPeriod * 1000L);
         long firstTime = (System.currentTimeMillis() / outputDtInMillis + 1) * outputDtInMillis;
         timer.scheduleAtFixedRate(posUpdateTask, new Date(firstTime), outputDtInMillis); // every dT
+        
+        // batch compute start of predicted data
+        if (predictHorizon > 0.0)
+            batchComputePredictedTrajectory(firstTime / 1000.0 + predictHorizon);
     }
     
     
@@ -101,7 +111,7 @@ public class SatelliteStateOutput implements IStreamingDataInterface
     }
     
     
-    protected void computeAndOutputState(double time)
+    protected DataBlock computeState(double time)
     {
         MechanicalState state = orbitPredictor.getECFState(time);
         
@@ -115,17 +125,39 @@ public class SatelliteStateOutput implements IStreamingDataInterface
         stateData.setDoubleValue(5, state.linearVelocity.y);
         stateData.setDoubleValue(6, state.linearVelocity.z);
         
+        return stateData;
+    }
+    
+    
+    protected void computeAndOutputState(double time)
+    {
+        DataBlock stateData = computeState(time);
+        
         lastRecordTime = System.currentTimeMillis();
         lastRecord = stateData;
         eventHandler.publishEvent(new DataEvent(lastRecordTime, this, lastRecord));
     }
     
     
-    protected void computeAndOutputPredictedTrajectory(double startTime, double stopTime)
+    protected void batchComputePredictedTrajectory(double stopTime)
     {
-        startTime += predictedPosDt;
-        for (double time = startTime; time < stopTime; time += predictedPosDt)
-            computeAndOutputState(time);
+        long outputDtInMillis = (long)(outputPeriod * 1000L);
+        long firstTime = (System.currentTimeMillis() / outputDtInMillis + 1) * outputDtInMillis;
+        
+        double startTime = firstTime / 1000.0;
+        
+        TLEPredictorProcess.log.debug("Batch computing predicted measurements from {} to {}", startTime, stopTime);
+        int listSize = (int)((stopTime - startTime) / outputPeriod);
+        List<DataBlock> dataRecords = new ArrayList<DataBlock>(listSize);
+        for (double time = startTime; time < stopTime; time += outputPeriod)
+        {
+            DataBlock stateData = computeState(time);
+            dataRecords.add(stateData);            
+        }
+        
+        lastRecordTime = System.currentTimeMillis();
+        eventHandler.publishEvent(new DataEvent(lastRecordTime, this, dataRecords.toArray(new DataBlock[0])));
+        TLEPredictorProcess.log.debug("Done batch processing of predicted states");
     }
 
 
@@ -181,7 +213,7 @@ public class SatelliteStateOutput implements IStreamingDataInterface
     @Override
     public double getAverageSamplingPeriod()
     {
-        return realTimePosDt;
+        return outputPeriod;
     }
     
     
