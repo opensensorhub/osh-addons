@@ -38,7 +38,7 @@ public class TLEPredictorProcess extends AbstractStreamProcess<TLEPredictorProce
     
     double lastComputedPosTime = Double.NaN;
     double realTimeOutputPeriod = 1.0;
-    double predictOutputPeriod = 60.0;
+    double predictOutputPeriod = 10.0;
     double predictHorizon = 3 * 24 * 3600; // 3 days
     
     
