@@ -15,15 +15,12 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.test.impl.sensor.weatherStation;
 
-import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.*;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
-
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataComponent;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -87,7 +84,7 @@ public class TestWeatherStation implements IEventListener
         System.out.println();
         Map<String, ? extends ISensorDataInterface> map = driver.getObservationOutputs();
         System.err.println(map);
-        ISensorDataInterface metarOutput = driver.getObservationOutputs().get("MetarWeatherStation");
+        ISensorDataInterface metarOutput = driver.getObservationOutputs().get("metarWeather");
         
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
@@ -95,7 +92,17 @@ public class TestWeatherStation implements IEventListener
         writer.setOutput(System.out);
         
         metarOutput.registerListener(this);
-        driver.start();
+        driver.start();        
+        System.out.println();
+                
+        // wait at most 2s until we receive the first measurement
+        synchronized (this)
+        {
+            while (sampleCount < 1)
+                this.wait(2000L);
+        }
+        
+        assertEquals(1, sampleCount);           
         System.out.println();
     }
     

@@ -3,7 +3,7 @@ package org.sensorhub.impl.sensor.station.metar;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.station.StationConfig;
+
 
 public class MetarSensor extends AbstractSensorModule<MetarConfig> { //extends StationSensor {
 
@@ -21,8 +21,8 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> { //extends S
 		synchronized (sensorDescription)
 		{
 			super.updateSensorDescription();
-			sensorDescription.setUniqueIdentifier("urn:test:sensors:weather");
-			sensorDescription.setDescription("Generic weather station");
+			sensorDescription.setUniqueIdentifier("urn:test:sensors:weather:metar");
+			sensorDescription.setDescription("METAR weather station");
 		}
 	}
 

@@ -3,12 +3,12 @@
   <parent>
     <groupId>org.sensorhub</groupId>
     <artifactId>sensorhub-all</artifactId>
-    <version>0.5</version>
+    <version>1.0</version>
   </parent>
   <artifactId>sensorhub-driver-weatherStation</artifactId>
   <version>0.1</version>
-  <name>WeatherStation</name>
-  <description>Driver for weather station data- initially METAR-specific</description>
+  <name>METAR Weather Station Driver</name>
+  <description>Driver for weather station data - initially METAR-specific</description>
   <organization>
     <name>Botts Inc.</name>
     <url>http://www.botts-inc.com/</url>
@@ -25,7 +25,7 @@
   		<groupId>org.sensorhub</groupId>
   		<artifactId>sensorhub-core</artifactId>
   		<type>bundle</type>
-  		<version>0.5</version>
+  		<version>1.0</version>
   	</dependency>
   	<dependency>
   		<groupId>org.apache.httpcomponents</groupId>
@@ -38,5 +38,4 @@
   		<version>2.7</version>
   	</dependency>
   </dependencies>
-  <groupId>org.sensorhub</groupId>
 </project>
