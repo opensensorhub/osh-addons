@@ -4,6 +4,7 @@
     <groupId>org.sensorhub</groupId>
     <artifactId>sensorhub-all</artifactId>
     <version>1.0</version>
+    <relativePath>../sensorhub-all/pom.xml</relativePath>
   </parent>
   <artifactId>sensorhub-driver-axis</artifactId>
   <packaging>bundle</packaging>
