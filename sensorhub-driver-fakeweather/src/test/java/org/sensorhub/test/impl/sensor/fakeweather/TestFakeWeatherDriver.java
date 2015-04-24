@@ -32,7 +32,7 @@ import org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.AsciiDataWriter;
-import org.vast.swe.SWECommonUtils;
+import org.vast.swe.SWEUtils;
 import static org.junit.Assert.*;
 
 
@@ -62,7 +62,7 @@ public class TestFakeWeatherDriver implements IEventListener
         {
             System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
-            new SWECommonUtils().writeComponent(System.out, dataMsg, false, true);
+            new SWEUtils(SWEUtils.V2_0).writeComponent(System.out, dataMsg, false, true);
         }
     }
     
@@ -72,7 +72,7 @@ public class TestFakeWeatherDriver implements IEventListener
     {
         System.out.println();
         AbstractProcess smlDesc = driver.getCurrentDescription();
-        new SMLUtils().writeProcess(System.out, smlDesc, true);
+        new SMLUtils(SWEUtils.V2_0).writeProcess(System.out, smlDesc, true);
     }
     
     
@@ -101,7 +101,7 @@ public class TestFakeWeatherDriver implements IEventListener
     
     
     @Override
-    public void handleEvent(Event e)
+    public void handleEvent(Event<?> e)
     {
         assertTrue(e instanceof SensorDataEvent);
         SensorDataEvent newDataEvent = (SensorDataEvent)e;
