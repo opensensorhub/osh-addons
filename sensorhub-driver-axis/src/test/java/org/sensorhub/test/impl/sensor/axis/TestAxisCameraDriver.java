@@ -42,7 +42,7 @@ import org.sensorhub.impl.sensor.axis.AxisSettingsOutput;
 import org.sensorhub.impl.sensor.axis.AxisVideoOutput;
 import org.vast.data.DataChoiceImpl;
 import org.vast.sensorML.SMLUtils;
-import org.vast.swe.SWECommonUtils;
+import org.vast.swe.SWEUtils;
 import static org.junit.Assert.*;
 
 
@@ -97,7 +97,7 @@ public class TestAxisCameraDriver implements IEventListener
         for (ISensorDataInterface di: driver.getObservationOutputs().values())
         {
             DataComponent dataMsg = di.getRecordDescription();
-            new SWECommonUtils().writeComponent(System.out, dataMsg, false, true);
+            new SWEUtils(SWEUtils.V2_0).writeComponent(System.out, dataMsg, false, true);
         }
     }
     
@@ -111,7 +111,7 @@ public class TestAxisCameraDriver implements IEventListener
         for (ISensorControlInterface ci: driver.getCommandInputs().values())
         {
             DataComponent commandMsg = ci.getCommandDescription();
-            new SWECommonUtils().writeComponent(System.out, commandMsg, false, true);
+            new SWEUtils(SWEUtils.V2_0).writeComponent(System.out, commandMsg, false, true);
         }
     }
     
@@ -123,7 +123,7 @@ public class TestAxisCameraDriver implements IEventListener
             return;
         
         AbstractProcess smlDesc = driver.getCurrentDescription();
-        new SMLUtils().writeProcess(System.out, smlDesc, true);
+        new SMLUtils(SMLUtils.V2_0).writeProcess(System.out, smlDesc, true);
     }
     
     
