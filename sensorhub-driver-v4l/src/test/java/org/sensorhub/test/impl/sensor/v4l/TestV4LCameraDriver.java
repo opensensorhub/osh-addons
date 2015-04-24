@@ -32,7 +32,7 @@ import org.sensorhub.impl.sensor.v4l.V4LCameraDriver;
 import org.sensorhub.impl.sensor.v4l.V4LCameraConfig;
 import org.vast.data.DataValue;
 import org.vast.sensorML.SMLUtils;
-import org.vast.swe.SWECommonUtils;
+import org.vast.swe.SWEUtils;
 import static org.junit.Assert.*;
 
 
@@ -77,7 +77,7 @@ public class TestV4LCameraDriver implements IEventListener
         for (ISensorDataInterface di: driver.getObservationOutputs().values())
         {
             DataComponent dataMsg = di.getRecordDescription();
-            new SWECommonUtils().writeComponent(System.out, dataMsg, false, true);
+            new SWEUtils(SWEUtils.V2_0).writeComponent(System.out, dataMsg, false, true);
         }
     }
     
@@ -88,7 +88,7 @@ public class TestV4LCameraDriver implements IEventListener
         for (ISensorControlInterface ci: driver.getCommandInputs().values())
         {
             DataComponent commandMsg = ci.getCommandDescription();
-            new SWECommonUtils().writeComponent(System.out, commandMsg, false, true);
+            new SWEUtils(SWEUtils.V2_0).writeComponent(System.out, commandMsg, false, true);
         }
     }
     
@@ -97,7 +97,7 @@ public class TestV4LCameraDriver implements IEventListener
     public void testGetSensorDesc() throws Exception
     {
         AbstractProcess smlDesc = driver.getCurrentDescription();
-        new SMLUtils().writeProcess(System.out, smlDesc, true);
+        new SMLUtils(SMLUtils.V2_0).writeProcess(System.out, smlDesc, true);
     }
     
     
@@ -191,7 +191,7 @@ public class TestV4LCameraDriver implements IEventListener
     
     
     @Override
-    public void handleEvent(Event e)
+    public void handleEvent(Event<?> e)
     {
         assertTrue(e instanceof SensorDataEvent);
         SensorDataEvent newDataEvent = (SensorDataEvent)e;
