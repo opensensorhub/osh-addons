@@ -43,8 +43,7 @@ public interface OrbitPredictor
 {
     
     /**
-     * Gets the orbit cycle in days if any or NaN if none exists
-     * @return
+     * @return The orbit cycle in days if any or NaN if none exists
      */
     public double getCycleInDays();
     
@@ -52,7 +51,7 @@ public interface OrbitPredictor
 	/**
 	 * Gets the satellite ECI state at a given point in time
 	 * @param time in seconds past 01/01/1970 (unix time)
-	 * @return
+	 * @return Platform state in ECI frame
 	 */
 	public MechanicalState getECIState(double time);
 
@@ -60,7 +59,7 @@ public interface OrbitPredictor
 	/**
 	 * Gets the satellite ECF state at a given point in time
 	 * @param time in seconds past 01/01/1970 (unix time)
-	 * @return
+	 * @return Platform state in ECF frame
 	 */
 	public MechanicalState getECFState(double time);
 
@@ -70,7 +69,7 @@ public interface OrbitPredictor
 	 * @param startTime in seconds past 01/01/1970 (unix time)
 	 * @param stopTime in seconds past 01/01/1970 (unix time)
 	 * @param step step size in seconds
-	 * @return
+	 * @return Array of platform states in ECI frame
 	 */
 	public MechanicalState[] getECITrajectory(double startTime, double stopTime, double step);
 
@@ -80,8 +79,8 @@ public interface OrbitPredictor
 	 * @param startTime in seconds past 01/01/1970 (unix time)
 	 * @param stopTime in seconds past 01/01/1970 (unix time)
 	 * @param step step size in seconds
-	 * @return
-	 */
+	 * @return Array of platform states in ECF frame
+	 */ 
 	public MechanicalState[] getECFTrajectory(double startTime, double stopTime, double step);
 
 }

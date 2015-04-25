@@ -153,7 +153,7 @@ public class NadirPointing
     /**
      * Computes the ENU rotation matrix from position in ECEF
      * @param ecfPosition position in ECEF
-     * @return
+     * @return ENU to ECEF rotation matrix
      */
     public static Matrix3d getENURotationMatrix(Vector3d ecfPosition)
     {
@@ -165,7 +165,7 @@ public class NadirPointing
     /**
      * Computes the NED rotation matrix from position in ECEF
      * @param ecfPosition position in ECEF
-     * @return
+     * @return NED to ECEF rotation matrix
      */
     public static Matrix3d getNEDRotationMatrix(Vector3d ecfPosition)
     {

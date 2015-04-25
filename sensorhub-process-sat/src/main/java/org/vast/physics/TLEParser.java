@@ -92,8 +92,10 @@ public class TLEParser implements TLEProvider
 
     /**
      * Reads all TLEs for the given time range
-     * @param timeRange
+     * @param startTime 
+     * @param stopTime 
      * @return list of TLE objects
+     * @throws IOException 
      */
     public List<TLEInfo> readTLEList(double startTime, double stopTime) throws IOException
     {
@@ -111,7 +113,7 @@ public class TLEParser implements TLEProvider
     /**
      * Reads the next TLE
      * @param stopTime
-     * @return
+     * @return TLEInfo object
      * @throws IOException
      */
     public TLEInfo readNextTLE(double stopTime) throws IOException
@@ -131,7 +133,7 @@ public class TLEParser implements TLEProvider
     /**
      * Reads the closest TLE to the given time 
      * @param desiredTime
-     * @return
+     * @return TLEInfo object
      * @throws IOException
      */
     public TLEInfo getClosestTLE(double desiredTime) throws IOException
