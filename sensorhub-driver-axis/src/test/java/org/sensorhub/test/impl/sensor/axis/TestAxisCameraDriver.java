@@ -308,7 +308,7 @@ public class TestAxisCameraDriver implements IEventListener
     
     
     @Override
-    public void handleEvent(Event e)
+    public void handleEvent(Event<?> e)
     {
         assertTrue(e instanceof SensorDataEvent);
         SensorDataEvent newDataEvent = (SensorDataEvent)e;
