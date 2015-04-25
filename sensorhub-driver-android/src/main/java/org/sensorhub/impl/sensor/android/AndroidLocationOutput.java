@@ -49,7 +49,7 @@ public class AndroidLocationOutput extends AbstractSensorOutput<AndroidSensorsDr
     private static final String LOC_CRS = "http://www.opengis.net/def/crs/EPSG/0/4979";
     //private static final String TIME_REF = "http://www.opengis.net/def/trs/USNO/0/GPS";
     private static final String TIME_REF = "http://www.opengis.net/def/trs/BIPM/0/UTC";
-    private static final long GPS_TO_UTC_OFFSET = -16000L;
+    //private static final long GPS_TO_UTC_OFFSET = -16000L;
     
     LocationManager locManager;
     LocationProvider locProvider;
