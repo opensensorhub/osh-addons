@@ -195,7 +195,7 @@ public class TestV4LCameraDriver implements IEventListener
     {
         assertTrue(e instanceof SensorDataEvent);
         SensorDataEvent newDataEvent = (SensorDataEvent)e;
-        DataComponent camDataStruct = newDataEvent.getRecordDescription();
+        DataComponent camDataStruct = newDataEvent.getSource().getRecordDescription();
         
         actualWidth = camDataStruct.getComponent(0).getComponentCount();
         actualHeight = camDataStruct.getComponentCount();

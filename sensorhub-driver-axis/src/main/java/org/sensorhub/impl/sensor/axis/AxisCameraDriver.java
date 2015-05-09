@@ -125,7 +125,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     
 
     @Override
-    protected void updateSensorDescription() throws SensorException
+    protected void updateSensorDescription()
     {
         synchronized (sensorDescription)
         {

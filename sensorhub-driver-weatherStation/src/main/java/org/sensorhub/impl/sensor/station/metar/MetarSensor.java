@@ -1,22 +1,23 @@
 package org.sensorhub.impl.sensor.station.metar;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 
 
-public class MetarSensor extends AbstractSensorModule<MetarConfig> { //extends StationSensor {
-
+public class MetarSensor extends AbstractSensorModule<MetarConfig> //extends StationSensor
+{
 	MetarOutput metarInterface;
 
+	
 	public MetarSensor() {
 		metarInterface = new MetarOutput(this);
 		addOutput(metarInterface, false);
 		metarInterface.init();	
 	}
 
+	
 	@Override
-	protected void updateSensorDescription() throws SensorException
+	protected void updateSensorDescription()
 	{
 		synchronized (sensorDescription)
 		{

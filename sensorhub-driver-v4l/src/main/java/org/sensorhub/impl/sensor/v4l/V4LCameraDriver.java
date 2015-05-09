@@ -110,7 +110,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     
     
     @Override
-    protected void updateSensorDescription() throws SensorException
+    protected void updateSensorDescription()
     {
         synchronized (sensorDescription)
         {
