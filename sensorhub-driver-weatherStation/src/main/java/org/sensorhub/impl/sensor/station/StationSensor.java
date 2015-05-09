@@ -16,7 +16,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.station;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 
 
@@ -41,7 +40,7 @@ public class StationSensor extends AbstractSensorModule<StationConfig>
     
     
     @Override
-    protected void updateSensorDescription() throws SensorException
+    protected void updateSensorDescription()
     {
         synchronized (sensorDescription)
         {
