@@ -185,7 +185,7 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
 
 
     @Override
-    protected void updateSensorDescription() throws SensorException
+    protected void updateSensorDescription()
     {
         synchronized (sensorDescription)
         {
