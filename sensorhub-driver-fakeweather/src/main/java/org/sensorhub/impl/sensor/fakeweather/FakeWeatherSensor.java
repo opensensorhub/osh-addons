@@ -16,9 +16,9 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.fakeweather;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
+
 
 /**
  * <p>
@@ -31,8 +31,6 @@ import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since Dec 24, 2014
  */
-
-
 public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
 {
     FakeWeatherOutput dataInterface;
@@ -47,7 +45,7 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
     
     
     @Override
-    protected void updateSensorDescription() throws SensorException
+    protected void updateSensorDescription()
     {
         synchronized (sensorDescription)
         {

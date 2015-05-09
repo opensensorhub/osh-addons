@@ -15,7 +15,6 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.fakegps;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 
 
@@ -42,7 +41,7 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
     
     
     @Override
-    protected void updateSensorDescription() throws SensorException
+    protected void updateSensorDescription()
     {
         synchronized (sensorDescription)
         {
