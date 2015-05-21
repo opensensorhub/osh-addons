@@ -150,6 +150,9 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         catch (IOException e)
         {
             e.printStackTrace();
+            trajPoints.clear();
+            try { Thread.sleep(60000L); }
+            catch (InterruptedException e1) {}
             return false;
         }
     }
@@ -198,6 +201,13 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         {
             if (!generateRandomTrajectory())
                 return;
+            
+            // skip if generated traj is too small
+            if (trajPoints.size() < 2)
+            {
+                trajPoints.clear();
+                return;
+            }
             //for (double[] p: trajPoints)
             //     System.out.println(Arrays.toString(p));
         }
