@@ -90,7 +90,7 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
 
     private void sendLatestRecord()
     {
-    	StationDataRecord rec = dataPoller.pullStationData();
+    	StationDataRecord rec = dataPoller.pullStationData("3467");
     	
     	// build and publish datablock
         DataBlock dataBlock = baseRecordStructure.createDataBlock();
