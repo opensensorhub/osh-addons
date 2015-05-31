@@ -26,14 +26,14 @@ public class MetarModuleDescriptor implements IModuleProvider
     @Override
     public String getModuleName()
     {
-        return "Metar Weather Station";
+        return "Metar Weather Station Network";
     }
 
 
     @Override
     public String getModuleDescription()
     {
-        return "Metar weather station with data provided by AnythingWweather web service";
+        return "Metar weather station network with data provided by AnythingWweather web service";
     }
 
 
@@ -47,7 +47,7 @@ public class MetarModuleDescriptor implements IModuleProvider
     @Override
     public String getProviderName()
     {
-        return "Botts INC";
+        return "Botts Innovative Research Inc";
     }
 
 
