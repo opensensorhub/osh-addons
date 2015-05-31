@@ -15,17 +15,29 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.station.metar;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
-import org.sensorhub.impl.sensor.station.metar.MetarDataPoller;
 
 
+/**
+ * <p>
+ * Configuration parameters for Metar Station Network sensor module
+ * </p>
+ *
+ * @author Tony Cook
+ * @author Alexandre Robin <alex.robin@sensiasoftware.com>
+ * @since May 30, 2015
+ */
 public class MetarConfig extends SensorConfig
-{
-    private static final long serialVersionUID = 1L;
+{   
     
-//    public String dataServerUrl = "";
+    public String dataServerUrl = "http://webservices.anythingweather.com/CurrentObs/GetCurrentObs";
     
-    public double lat;
-    public double lon;
-    public double elevationMeters;
+    /**
+     * List of station IDs to get data for
+     */
+    @DisplayInfo(label="Station IDs", desc="List of station IDs to get data for")
+    public List<String> stationIDs = new ArrayList<String>();
 }

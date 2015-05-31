@@ -2,5 +2,5 @@ package org.sensorhub.impl.sensor.station;
 
 
 public interface StationDataPoller {
-	public StationDataRecord pullStationData();
+	public StationDataRecord pullStationData(String stationID);
 }

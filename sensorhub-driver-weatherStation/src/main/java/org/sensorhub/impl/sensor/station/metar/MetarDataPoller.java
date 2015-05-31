@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
-
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
@@ -15,6 +13,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.joda.time.DateTime;
 import org.sensorhub.impl.sensor.station.Station;
 import org.sensorhub.impl.sensor.station.StationDataPoller;
+
 
 public class MetarDataPoller implements StationDataPoller {
 	//    //StationName,City,State,ZipCode,MeasurementDateUTC,MeasurementDateLocal,Temperature (degreesF),Dewpoint (degreesF),Relative Humididty (%),Wind Speed (mph),Wind Direction (degrees),
@@ -28,9 +27,9 @@ public class MetarDataPoller implements StationDataPoller {
 	 * 
 	 * @return the last available data record
 	 */
-	public MetarDataRecord pullStationData() {
+	public MetarDataRecord pullStationData(String stationID) {
 		MetarDataRecord rec = new MetarDataRecord();
-		String csvData = pollServer();
+		String csvData = pollServer(stationID);
 		String [] lines = csvData.split("\\n");
 		//  first line is header- second is latest data record
 		String [] vals = lines[1].split(",");
@@ -55,7 +54,7 @@ public class MetarDataPoller implements StationDataPoller {
 		return rec;
 	}
 
-	private String pollServer() {
+	private String pollServer(String stationID) {
 		URI uri;
 		try {
 			uri = new URIBuilder()
@@ -65,12 +64,12 @@ public class MetarDataPoller implements StationDataPoller {
 			.setParameter("clientId", "SensorHub")
 			.setParameter("accessKey", "mMHAkRZMtQfBmZvH")
 			.setParameter("format", "csv")
-			.setParameter("numHours", "2")
+			.setParameter("numHours", "1")
 			.setParameter("allData", "true")
-			.setParameter("stationid", "3467")
+			.setParameter("stationid", stationID)
 			.build();
 			HttpGet httpget = new HttpGet(uri);
-			System.out.println("executing request " + httpget.getURI());
+			MetarSensor.log.debug("Executing request {}", httpget.getURI());
 			CloseableHttpClient httpclient = HttpClients.createDefault();
 			CloseableHttpResponse response = httpclient.execute(httpget);
 			try {
@@ -81,6 +80,7 @@ public class MetarDataPoller implements StationDataPoller {
 					result.append(line + "\n");
 				}
 
+				MetarSensor.log.debug("Result:\n{}", result);
 				return result.toString();
 			} finally {
 				response.close();
@@ -101,7 +101,7 @@ public class MetarDataPoller implements StationDataPoller {
 	}
 
 	public static void main(String[] args) {
-		MetarDataPoller poller = new MetarDataPoller();
-		poller.pullStationData();
+	    MetarDataPoller poller = new MetarDataPoller();
+		poller.pullStationData("3467");
 	}
 }
