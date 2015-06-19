@@ -28,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.hardware.Camera;
-import android.hardware.Camera.CameraInfo;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.hardware.camera2.CameraAccessException;
@@ -133,7 +131,7 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
     @SuppressWarnings("deprecation")
     protected void createCameraOutputs(Context androidContext) throws SensorException
     {
-        if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.LOLLIPOP)
+        if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.LOLLIPOP+2)
         {
             CameraManager cameraManager = (CameraManager)androidContext.getSystemService(Context.CAMERA_SERVICE);
             
@@ -158,15 +156,15 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
         }
         else
         {
-            for (int cameraId = 0; cameraId < Camera.getNumberOfCameras(); cameraId++)
+            for (int cameraId = 0; cameraId < android.hardware.Camera.getNumberOfCameras(); cameraId++)
             {
-                CameraInfo info = new CameraInfo();                    
-                Camera.getCameraInfo(cameraId, info);
-                if ( (info.facing == CameraInfo.CAMERA_FACING_BACK && config.activateBackCamera) ||
-                     (info.facing == CameraInfo.CAMERA_FACING_FRONT && config.activateFrontCamera))
-                   {
-                       useCamera(new AndroidCameraOutput(this, cameraId, config.camPreviewSurfaceHolder), cameraId);
-                   }
+                android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();                    
+                android.hardware.Camera.getCameraInfo(cameraId, info);
+                if ( (info.facing == android.hardware.Camera.CameraInfo.CAMERA_FACING_BACK && config.activateBackCamera) ||
+                     (info.facing == android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT && config.activateFrontCamera))
+                {
+                    useCamera(new AndroidCameraOutput(this, cameraId, config.camPreviewSurfaceHolder), cameraId);
+                }
             }
         }
     }
