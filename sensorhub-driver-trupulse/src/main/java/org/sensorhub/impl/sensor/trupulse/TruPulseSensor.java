@@ -88,4 +88,3 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
         return true;
     }
 }
-
