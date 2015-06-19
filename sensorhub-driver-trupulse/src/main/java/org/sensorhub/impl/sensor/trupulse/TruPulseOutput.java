@@ -110,7 +110,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
             val = tokens[0];
             if (!val.equals(MSG_PREFIX))
     		{
-                TruPulseSensor.log.warn("Message initial token does NOT equal expected string $PLTIT");
+                TruPulseSensor.log.warn("Message initial token does NOT equal expected string {}", MSG_PREFIX);
     			return;
     		}
     
@@ -203,6 +203,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
                 commProvider = parentSensor.getConfiguration().commSettings.getProvider();
                 commProvider.init(parentSensor.getConfiguration().commSettings);
                 msgReader = new BufferedReader(new InputStreamReader(commProvider.getInputStream()));
+                TruPulseSensor.log.info("Connected to TruPulse data stream");
             }        
         }
         catch (IOException e)
