@@ -47,7 +47,7 @@ public class AxisCameraModuleDescriptor implements IModuleProvider
 	@Override
 	public String getModuleDescription()
 	{
-		return "Supports access to video and tasking of Pan-Tilt-Zoom gimbal for any Axis video camera using IP protocol for commands and data";
+		return "Supports access to video and tasking of Pan-Tilt-Zoom gimbal for any Axis video camera using IP protocol";
 	}
 
 	@Override

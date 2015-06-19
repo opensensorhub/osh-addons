@@ -32,7 +32,7 @@ public class MetarDataPoller implements StationDataPoller {
 		String csvData = pollServer(stationID);
 		String [] lines = csvData.split("\\n");
 		//  first line is header- second is latest data record
-		String [] vals = lines[1].split(",");
+		String [] vals = (lines[1]+",END").split(",");
 		Station station = new Station();
 		station.setName(vals[0]);
 		rec.setStation(station);
@@ -49,8 +49,8 @@ public class MetarDataPoller implements StationDataPoller {
 		rec.setCloudCeiling((int)parseDouble(vals[23]));
 		rec.setVisibility((int)parseDouble(vals[24]));
 		rec.setHourlyPrecip(parseDouble(vals[12]));
-		rec.setPresentWeather(vals[25]);
-		rec.setSkyConditions(vals[26]);
+		rec.setPresentWeather(vals[25].trim());
+		rec.setSkyConditions(vals[26].trim());
 		return rec;
 	}
 

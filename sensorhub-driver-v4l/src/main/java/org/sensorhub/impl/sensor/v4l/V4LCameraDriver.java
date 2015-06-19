@@ -44,10 +44,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     public V4LCameraDriver()
     {
         this.dataInterface = new V4LCameraOutput(this);
-        addOutput(dataInterface, false);
-        
         this.controlInterface = new V4LCameraControl(this);
-        addControlInput(controlInterface);
     }
 
 
@@ -79,7 +76,9 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
         
         // init data and control interfaces
         dataInterface.init();
+        addOutput(dataInterface, false);
         controlInterface.init();
+        addControlInput(controlInterface);
     }
     
     
