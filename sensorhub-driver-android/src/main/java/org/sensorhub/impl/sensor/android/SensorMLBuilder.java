@@ -21,7 +21,6 @@ import org.vast.sensorML.SMLFactory;
 import net.opengis.sensorml.v20.PhysicalComponent;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
-import android.hardware.camera2.CameraManager;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 
@@ -53,7 +52,7 @@ public class SensorMLBuilder
     }
     
     
-    public PhysicalComponent getComponentDescription(CameraManager camManager, String cameraId)
+    public PhysicalComponent getComponentDescription(String cameraId)
     {
         PhysicalComponent comp = smlFac.newPhysicalComponent();
         comp.setId("CAM_" + formatId(cameraId));
@@ -93,6 +92,18 @@ public class SensorMLBuilder
             log.error("Cannot access camera " + cameraId);
         }*/
         
+        return comp;
+    }
+    
+    
+    /*
+     * Version to support older camera API on devices with SDK < 21
+     */
+    public PhysicalComponent getComponentDescription(int cameraId)
+    {
+        PhysicalComponent comp = smlFac.newPhysicalComponent();
+        comp.setId("CAM_" + cameraId);
+        comp.setName("Android Camera #" + cameraId);
         return comp;
     }
     
