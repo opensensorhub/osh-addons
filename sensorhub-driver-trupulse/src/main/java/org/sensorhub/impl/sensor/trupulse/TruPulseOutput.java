@@ -106,6 +106,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     	    String val, unit;
     	    
             // parse the data string
+    	    TruPulseSensor.log.debug("Message received: {}", line);
             String[] tokens = line.split(",");
             
             val = tokens[0];
