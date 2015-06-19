@@ -198,7 +198,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
         try
         {
             // init comm provider
-            if (commProvider != null)
+            if (commProvider == null)
             {
                 commProvider = parentSensor.getConfiguration().commSettings.getProvider();
                 commProvider.init(parentSensor.getConfiguration().commSettings);
