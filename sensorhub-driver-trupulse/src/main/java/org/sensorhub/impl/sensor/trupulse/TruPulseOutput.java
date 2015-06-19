@@ -93,11 +93,12 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     /* TODO: only using HV message; add support for HT and ML */
     private void pollAndSendMeasurement()
     {
-    	double hd = Double.NaN;
+    	long msgTime = System.currentTimeMillis();
+    	
+        double hd = Double.NaN;
     	double incl = Double.NaN;
     	double az = Double.NaN;
     	double sd = Double.NaN;
-    	double time = System.currentTimeMillis() / 1000.;
     	
     	try
     	{
@@ -164,15 +165,15 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     	else
     	    dataBlock = latestRecord.renew();
     	
-        dataBlock.setDoubleValue(0, time);
+        dataBlock.setDoubleValue(0, msgTime / 1000.);
         dataBlock.setDoubleValue(1, hd);
         dataBlock.setDoubleValue(2, sd);
-        dataBlock.setDoubleValue(3, incl);
         dataBlock.setDoubleValue(4, az);
+        dataBlock.setDoubleValue(3, incl);
         
         // update latest record and send event
         latestRecord = dataBlock;
-        latestRecordTime = System.currentTimeMillis();
+        latestRecordTime = msgTime;
         eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, TruPulseOutput.this, dataBlock));        
     }
     
