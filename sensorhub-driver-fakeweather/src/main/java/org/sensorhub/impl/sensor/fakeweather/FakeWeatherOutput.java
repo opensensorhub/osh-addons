@@ -66,6 +66,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     	weatherData = new DataRecordImpl(5);
         weatherData.setName(getName());
         weatherData.setDefinition("http://sensorml.com/ont/swe/property/Weather");
+        weatherData.setDescription("Weather measurements");
         
         // add time, temperature, pressure, wind speed and wind direction fields
         weatherData.addComponent("time", fac.newTimeStampIsoUTC());

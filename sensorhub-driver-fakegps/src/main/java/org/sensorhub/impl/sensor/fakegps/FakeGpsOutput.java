@@ -26,17 +26,13 @@ import java.util.TimerTask;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.Quantity;
-import net.opengis.swe.v20.Time;
+import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.vast.data.DataRecordImpl;
-import org.vast.data.QuantityImpl;
-import org.vast.data.TextEncodingImpl;
-import org.vast.data.TimeImpl;
 import org.vast.swe.SWEConstants;
+import org.vast.swe.SWEHelper;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
@@ -69,39 +65,20 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     @Override
     protected void init()
     {
+        SWEHelper fac = new SWEHelper();
+        
         // SWE Common data structure
-        posDataStruct = new DataRecordImpl(3);
+        posDataStruct = fac.newDataRecord(3);
         posDataStruct.setName(getName());
-        posDataStruct.setDefinition("http://sensorml.com/ont/swe/property/Location");
+                
+        posDataStruct.addComponent("time", fac.newTimeStampIsoGPS());
         
-        Time c1 = new TimeImpl();
-        c1.getUom().setHref(Time.ISO_TIME_UNIT);
-        c1.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
-        posDataStruct.addComponent("time", c1);
-
-        Quantity c;
-        c = new QuantityImpl();
-        c.getUom().setCode("deg");
-        c.setDefinition("http://sensorml.com/ont/swe/property/Latitude");
-        c.setReferenceFrame("http://www.opengis.net/def/crs/EPSG/0/4979");
-        c.setAxisID("Lat");
-        posDataStruct.addComponent("lat",c);
-
-        c = new QuantityImpl();
-        c.getUom().setCode("deg");
-        c.setDefinition("http://sensorml.com/ont/swe/property/Longitude");
-        c.setReferenceFrame("http://www.opengis.net/def/crs/EPSG/0/4979");
-        c.setAxisID("Long");
-        posDataStruct.addComponent("lon", c);
-
-        c = new QuantityImpl();
-        c.getUom().setCode("m");
-        c.setDefinition("http://sensorml.com/ont/swe/property/Altitude");
-        c.setReferenceFrame("http://www.opengis.net/def/crs/EPSG/0/4979");
-        c.setAxisID("h");
-        posDataStruct.addComponent("alt", c);
+        Vector locVector = fac.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
+        locVector.setLabel("Location");
+        locVector.setDescription("Location measured by GPS device");
+        posDataStruct.addComponent("location", locVector);
         
-        posDataEncoding = new TextEncodingImpl(",", "\n");
+        posDataEncoding = fac.newTextEncoding(",", "\n");
     }
 
 
