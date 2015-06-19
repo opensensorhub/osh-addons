@@ -15,6 +15,8 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.android;
 
 import org.sensorhub.api.sensor.SensorConfig;
+import android.content.Context;
+import android.view.SurfaceHolder;
 
 
 /**
@@ -26,8 +28,7 @@ import org.sensorhub.api.sensor.SensorConfig;
  * @since Sep 6, 2013
  */
 public class AndroidSensorsConfig extends SensorConfig
-{
-     
+{     
     public boolean activateAccelerometer = false;
     public boolean activateGyrometer = false;
     public boolean activateMagnetometer = false;
@@ -37,6 +38,9 @@ public class AndroidSensorsConfig extends SensorConfig
     public boolean activateNetworkLocation = false;
     public boolean activateBackCamera = false;
     public boolean activateFrontCamera = false;
+    
+    public transient Context androidContext;
+    public transient SurfaceHolder camPreviewSurfaceHolder;    
     
     
     public AndroidSensorsConfig()
