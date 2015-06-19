@@ -15,6 +15,8 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.trupulse;
 
+import java.io.IOException;
+import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.trupulse.TruPulseOutput;
@@ -37,6 +39,7 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
 {
     static final Logger log = LoggerFactory.getLogger(TruPulseSensor.class);
     
+    ICommProvider commProvider;
     TruPulseOutput dataInterface;
     
     
@@ -64,7 +67,22 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
     @Override
     public void start() throws SensorHubException
     {
-        dataInterface.start();        
+        // init comm provider
+        try
+        {
+            if (commProvider == null)
+            {
+                commProvider = config.commSettings.getProvider();
+                commProvider.init(config.commSettings);
+            }        
+        }
+        catch (IOException e)
+        {
+            commProvider = null;
+            log.error("Error while initializing communications ", e);
+        }
+        
+        dataInterface.start(commProvider);        
     }
     
 
@@ -72,6 +90,12 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
     public void stop() throws SensorHubException
     {
         dataInterface.stop();
+        
+        if (commProvider != null)
+        {
+            commProvider.close();
+            commProvider = null;
+        }
     }
     
 
@@ -85,6 +109,6 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
     @Override
     public boolean isConnected()
     {
-        return true;
+        return (commProvider != null);
     }
 }
