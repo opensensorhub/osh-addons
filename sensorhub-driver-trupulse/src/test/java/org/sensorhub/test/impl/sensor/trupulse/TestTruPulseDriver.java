@@ -15,7 +15,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.test.impl.sensor.trupulse;
 
-
 import java.io.IOException;
 import java.util.UUID;
 import net.opengis.sensorml.v20.AbstractProcess;
@@ -37,17 +36,10 @@ import org.vast.swe.SWEUtils;
 import static org.junit.Assert.*;
 
 
-
-
 public class TestTruPulseDriver implements IEventListener
-
 {
-    
-
-	TruPulseSensor driver;
-    
-	TruPulseConfig config;
-	
+    TruPulseSensor driver;
+    TruPulseConfig config;	
     AsciiDataWriter writer;
     int sampleCount = 0;
 
@@ -88,14 +80,14 @@ public class TestTruPulseDriver implements IEventListener
     public void testSendMeasurements() throws Exception
     {
         System.out.println();
-        ISensorDataInterface gpsOutput = driver.getObservationOutputs().get("laserData");
+        ISensorDataInterface output = driver.getObservationOutputs().get("laserData");
         
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
-        writer.setDataComponents(gpsOutput.getRecordDescription());
+        writer.setDataComponents(output.getRecordDescription());
         writer.setOutput(System.out);
         
-        gpsOutput.registerListener(this);
+        output.registerListener(this);
         driver.start();
         
         synchronized (this) 
@@ -118,8 +110,7 @@ public class TestTruPulseDriver implements IEventListener
         {
             //System.out.print("\nNew data received from sensor " + newDataEvent.getSensorId());
             writer.write(newDataEvent.getRecords()[0]);
-            writer.flush();
-            
+            writer.flush();            
             sampleCount++;
         }
         catch (IOException e1)
