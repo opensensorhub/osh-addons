@@ -28,6 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.hardware.Camera;
+import android.hardware.Camera.CameraInfo;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.hardware.camera2.CameraAccessException;
@@ -44,10 +46,8 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
     private static final Logger log = LoggerFactory.getLogger(AndroidSensorsDriver.class.getSimpleName());
     public static final String LOCAL_REF_FRAME = "LOCAL_FRAME";
     
-    public static Context androidContext;
     SensorManager sensorManager;
     LocationManager locationManager;
-    CameraManager cameraManager;
     SensorMLBuilder smlBuilder;
     List<PhysicalComponent> smlComponents;
     
@@ -64,6 +64,7 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
     {
         // we call stop() to cleanup just in case we weren't properly stopped
         stop();        
+        Context androidContext = config.androidContext;
         
         // create data interfaces for sensors
         this.sensorManager = (SensorManager)androidContext.getSystemService(Context.SENSOR_SERVICE);
@@ -118,8 +119,23 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
         
         // create data interfaces for cameras
         if (androidContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA))
+            createCameraOutputs(androidContext);
+        
+        // init all outputs
+        for (ISensorDataInterface o: this.getAllOutputs().values())
+            ((IAndroidOutput)o).init();
+        
+        // update sensorml description
+        updateSensorDescription();
+    }
+    
+    
+    @SuppressWarnings("deprecation")
+    protected void createCameraOutputs(Context androidContext) throws SensorException
+    {
+        if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.LOLLIPOP)
         {
-            this.cameraManager = (CameraManager)androidContext.getSystemService(Context.CAMERA_SERVICE);
+            CameraManager cameraManager = (CameraManager)androidContext.getSystemService(Context.CAMERA_SERVICE);
             
             try
             {
@@ -130,21 +146,29 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
                     int camDir = cameraManager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.LENS_FACING);
                     if ( (camDir == CameraCharacteristics.LENS_FACING_BACK && config.activateBackCamera) ||
                          (camDir == CameraCharacteristics.LENS_FACING_FRONT && config.activateFrontCamera))
-                         useCamera(new AndroidCameraOutput(this, cameraManager, cameraId), cameraId);
+                    {
+                        useCamera2(new AndroidCamera2Output(this, cameraManager, cameraId, config.camPreviewSurfaceHolder), cameraId);
+                    }
                 }
             }
             catch (CameraAccessException e)
             {
                 throw new SensorException("Error while accessing cameras", e);
-            }        
+            }
         }
-        
-        // init all outputs
-        for (ISensorDataInterface o: this.getAllOutputs().values())
-            ((IAndroidOutput)o).init();
-        
-        // update sensorml description
-        updateSensorDescription();
+        else
+        {
+            for (int cameraId = 0; cameraId < Camera.getNumberOfCameras(); cameraId++)
+            {
+                CameraInfo info = new CameraInfo();                    
+                Camera.getCameraInfo(cameraId, info);
+                if ( (info.facing == CameraInfo.CAMERA_FACING_BACK && config.activateBackCamera) ||
+                     (info.facing == CameraInfo.CAMERA_FACING_FRONT && config.activateFrontCamera))
+                   {
+                       useCamera(new AndroidCameraOutput(this, cameraId, config.camPreviewSurfaceHolder), cameraId);
+                   }
+            }
+        }
     }
     
     
@@ -164,10 +188,18 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
     }
     
     
-    protected void useCamera(ISensorDataInterface output, String cameraId)
+    protected void useCamera(ISensorDataInterface output, int cameraId)
     {
         addOutput(output, false);
-        smlComponents.add(smlBuilder.getComponentDescription(cameraManager, cameraId));
+        smlComponents.add(smlBuilder.getComponentDescription(cameraId));
+        log.info("Getting data from camera #" + cameraId);
+    }
+    
+    
+    protected void useCamera2(ISensorDataInterface output, String cameraId)
+    {
+        addOutput(output, false);
+        smlComponents.add(smlBuilder.getComponentDescription(cameraId));
         log.info("Getting data from camera #" + cameraId);
     }
     
