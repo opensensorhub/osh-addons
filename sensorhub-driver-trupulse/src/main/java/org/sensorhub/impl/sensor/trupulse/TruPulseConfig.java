@@ -24,4 +24,9 @@ public class TruPulseConfig extends SensorConfig
 	// comm settings
     public CommConfig commSettings;
 
+    
+    public TruPulseConfig()
+    {
+        this.moduleClass = TruPulseSensor.class.getCanonicalName();
+    }
 }
