@@ -58,7 +58,7 @@ import android.view.SurfaceHolder;
 public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriver> implements IAndroidOutput, Camera.PreviewCallback
 {
     // keep logger name short because in LogCat it's max 23 chars
-    private static final Logger log = LoggerFactory.getLogger(AndroidCameraOutput.class.getSimpleName());
+    static final Logger log = LoggerFactory.getLogger(AndroidCameraOutput.class.getSimpleName());
     protected static final String TIME_REF = "http://www.opengis.net/def/trs/BIPM/0/UTC";
     
     int cameraId;
@@ -116,10 +116,11 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
             imgBuf1 = new byte[bufSize];
             yuvImg1 = new YuvImage(imgBuf1, ImageFormat.NV21, imgWidth, imgHeight, null);
             imgBuf2 = new byte[bufSize];
-            yuvImg1 = new YuvImage(imgBuf2, ImageFormat.NV21, imgWidth, imgHeight, null);
+            yuvImg2 = new YuvImage(imgBuf2, ImageFormat.NV21, imgWidth, imgHeight, null);
             camera.addCallbackBuffer(imgBuf1);
             camera.addCallbackBuffer(imgBuf2);
             camera.setPreviewCallbackWithBuffer(this);
+            camera.setDisplayOrientation(90);
                         
             // create SWE Common data structure            
             SWEFactory fac = new SWEFactory();            
@@ -187,6 +188,9 @@ public class AndroidCameraOutput extends AbstractSensorOutput<AndroidSensorsDriv
         // compress as JPEG
         jpegBuf.reset();
         yuvImg.compressToJpeg(imgArea, 90, jpegBuf);
+        
+        // release buffer for next frame
+        camera.addCallbackBuffer(data);
         
         // generate new data record
         DataBlock newRecord;
