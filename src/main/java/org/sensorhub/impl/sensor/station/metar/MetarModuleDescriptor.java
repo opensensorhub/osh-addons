@@ -33,7 +33,7 @@ public class MetarModuleDescriptor implements IModuleProvider
     @Override
     public String getModuleDescription()
     {
-        return "Metar weather station network with data provided by AnythingWweather web service";
+        return "Metar weather station network with data provided by AnythingWeather web service";
     }
 
 
