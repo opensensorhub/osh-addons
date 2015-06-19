@@ -39,10 +39,8 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     
     DataComponent laserData;
     DataEncoding dataEncoding;
-    boolean sendData;
-    
-    ICommProvider commProvider;
     BufferedReader msgReader;
+    boolean sendData;
     
     
     public TruPulseOutput(TruPulseSensor parentSensor)
@@ -193,26 +191,20 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     }
 
 
-    protected void start()
+    protected void start(ICommProvider commProvider)
     {
         sendData = true;
         
+        // connect to data stream
         try
         {
-            // init comm provider
-            if (commProvider == null)
-            {
-                commProvider = parentSensor.getConfiguration().commSettings.getProvider();
-                commProvider.init(parentSensor.getConfiguration().commSettings);
-                msgReader = new BufferedReader(new InputStreamReader(commProvider.getInputStream()));
-                TruPulseSensor.log.info("Connected to TruPulse data stream");
-            }        
+            msgReader = new BufferedReader(new InputStreamReader(commProvider.getInputStream()));
+            TruPulseSensor.log.info("Connected to TruPulse data stream");
         }
         catch (IOException e)
         {
             throw new RuntimeException("Error while initializing communications ", e);
-        } 
-        
+        }
         // start main measurement thread
         Thread t = new Thread(new Runnable()
         {
@@ -232,12 +224,11 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     {
         sendData = false;
         
-        if (commProvider != null)
+        if (msgReader != null)
         {
             try { msgReader.close(); }
             catch (IOException e) { }
-            commProvider.close();
-            commProvider = null;
+            msgReader = null;
         }
     }
 
