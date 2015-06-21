@@ -39,8 +39,12 @@ public class AndroidSensorsConfig extends SensorConfig
     public boolean activateBackCamera = false;
     public boolean activateFrontCamera = false;
     
+    public String runName;
+    public String runDescription; 
+    
     public transient Context androidContext;
-    public transient SurfaceHolder camPreviewSurfaceHolder;    
+    public transient SurfaceHolder camPreviewSurfaceHolder;
+       
     
     
     public AndroidSensorsConfig()
