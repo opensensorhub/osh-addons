@@ -16,6 +16,8 @@ package org.sensorhub.impl.sensor.android;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.xml.namespace.QName;
+import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.sensorml.v20.PhysicalComponent;
 import net.opengis.sensorml.v20.PhysicalSystem;
 import net.opengis.sensorml.v20.SpatialFrame;
@@ -26,6 +28,8 @@ import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vast.ogc.gml.GenericFeatureImpl;
+import org.vast.sensorML.SMLStaxBindings;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
@@ -36,6 +40,7 @@ import android.hardware.camera2.CameraManager;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Build;
+import android.provider.Settings.Secure;
 
 
 public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsConfig>
@@ -220,8 +225,11 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            sensorDescription.setId("ANDROID_SENSORS");
-            sensorDescription.setUniqueIdentifier("urn:android:device:" + Build.SERIAL);
+            
+            String deviceID = Secure.getString(config.androidContext.getContentResolver(), Secure.ANDROID_ID);
+            sensorDescription.setId("ANDROID_SENSORS_" + Build.SERIAL);
+            sensorDescription.setUniqueIdentifier("urn:android:device:" + deviceID);
+            sensorDescription.setName(config.name);
             
             SpatialFrame localRefFrame = new SpatialFrameImpl();
             localRefFrame.setId("LOCAL_FRAME");
@@ -231,6 +239,11 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
             localRefFrame.addAxis("z", "The Z axis points towards the outside of the front face of the screen");
             ((PhysicalSystem)sensorDescription).addLocalReferenceFrame(localRefFrame);
             
+            // add FOI
+            AbstractFeature foi = getCurrentFeatureOfInterest();
+            if (foi != null)
+                sensorDescription.getFeaturesOfInterest().addFeature(foi); 
+            
             // add components
             int index = 0;
             for (PhysicalComponent comp: smlComponents)
@@ -239,6 +252,23 @@ public class AndroidSensorsDriver extends AbstractSensorModule<AndroidSensorsCon
                 ((PhysicalSystem)sensorDescription).addComponent(name, comp);
             }
         }
+    }
+    
+    
+    @Override
+    public AbstractFeature getCurrentFeatureOfInterest()
+    {
+        if (config.runName != null && config.runName.length() > 0)
+        {
+            AbstractFeature foi = new GenericFeatureImpl(new QName(SMLStaxBindings.NS_URI, "Feature", "sml"));
+            String uid = "urn:android:foi:" + config.runName.replaceAll("[ |']", "");
+            foi.setUniqueIdentifier(uid);
+            foi.setName(config.runName);
+            foi.setDescription(config.runDescription);
+            return foi;
+        }
+        
+        return null;
     }
 
 
