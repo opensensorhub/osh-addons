@@ -15,7 +15,6 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.fakegps;
 
 import java.io.BufferedInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -33,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
@@ -116,7 +116,11 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             JsonParser reader = new JsonParser();
             JsonElement root = reader.parse(new InputStreamReader(is));
             //System.out.println(root);
-            JsonElement polyline = root.getAsJsonObject().get("routes").getAsJsonArray().get(0).getAsJsonObject().get("overview_polyline");
+            JsonArray routes = root.getAsJsonObject().get("routes").getAsJsonArray();
+            if (routes.size() == 0)
+                throw new Exception("No route available");
+            
+            JsonElement polyline = routes.get(0).getAsJsonObject().get("overview_polyline");
             String encodedData = polyline.getAsJsonObject().get("points").getAsString();
             
             // decode polyline data
@@ -124,9 +128,9 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             currentTrackPos = 0.0;
             return true;
         }
-        catch (IOException e)
+        catch (Exception e)
         {
-            e.printStackTrace();
+            log.error("Error while retrieving Google directions", e);
             trajPoints.clear();
             try { Thread.sleep(60000L); }
             catch (InterruptedException e1) {}
