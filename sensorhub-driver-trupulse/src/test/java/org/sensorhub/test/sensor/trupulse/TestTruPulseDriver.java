@@ -13,7 +13,7 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.test.sensor.mti;
+package org.sensorhub.test.sensor.trupulse;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -27,10 +27,8 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.comm.RS232Config;
-import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider;
-import org.sensorhub.impl.sensor.mti.MtiConfig;
-import org.sensorhub.impl.sensor.mti.MtiSensor;
+import org.sensorhub.impl.sensor.trupulse.TruPulseConfig;
+import org.sensorhub.impl.sensor.trupulse.TruPulseSensor;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.AsciiDataWriter;
@@ -38,10 +36,10 @@ import org.vast.swe.SWEUtils;
 import static org.junit.Assert.*;
 
 
-public class TestMtiDriver implements IEventListener
+public class TestTruPulseDriver implements IEventListener
 {
-    MtiSensor driver;
-    MtiConfig config;	
+    TruPulseSensor driver;
+    TruPulseConfig config;	
     AsciiDataWriter writer;
     int sampleCount = 0;
 
@@ -49,16 +47,10 @@ public class TestMtiDriver implements IEventListener
     @Before
     public void init() throws Exception
     {
-        config = new MtiConfig();
+        config = new TruPulseConfig();
         config.id = UUID.randomUUID().toString();
         
-        RS232Config serialConf = new RS232Config();
-        serialConf.moduleClass = RxtxSerialCommProvider.class.getCanonicalName();
-        serialConf.portName = "/dev/ttyUSB0";
-        serialConf.baudRate = 115200;
-        config.commSettings = serialConf;        
-        
-        driver = new MtiSensor();
+        driver = new TruPulseSensor();
         driver.init(config);
     }
     
@@ -88,7 +80,7 @@ public class TestMtiDriver implements IEventListener
     public void testSendMeasurements() throws Exception
     {
         System.out.println();
-        ISensorDataInterface output = driver.getObservationOutputs().get("imuData");
+        ISensorDataInterface output = driver.getObservationOutputs().get("laserData");
         
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
@@ -100,7 +92,7 @@ public class TestMtiDriver implements IEventListener
         
         synchronized (this) 
         {
-            while (sampleCount < 20000)
+            while (sampleCount < 2)
                 wait();
         }
         

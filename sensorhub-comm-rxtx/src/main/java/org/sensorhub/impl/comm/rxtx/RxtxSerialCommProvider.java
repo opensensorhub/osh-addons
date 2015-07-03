@@ -23,9 +23,10 @@ import gnu.io.UnsupportedCommOperationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
+import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.comm.RS232Config;
+import org.sensorhub.impl.module.AbstractModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since July 2, 2015
  */
-public class RxtxSerialCommProvider implements ICommProvider
+public class RxtxSerialCommProvider extends AbstractModule<RS232Config> implements ICommProvider<RS232Config>
 {
     static final Logger log = LoggerFactory.getLogger(RxtxSerialCommProvider.class.getSimpleName());
     
@@ -52,13 +53,12 @@ public class RxtxSerialCommProvider implements ICommProvider
     }
     
     
-    public void init(CommConfig config) throws IOException
+    @Override
+    public void start() throws SensorHubException
     {
-        RS232Config serialConf = (RS232Config)config;
-        
         try
         {
-            CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier(serialConf.portName);
+            CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier(config.portName);
                 
             if (portIdentifier.isCurrentlyOwned())
             {
@@ -74,33 +74,37 @@ public class RxtxSerialCommProvider implements ICommProvider
                                         
                     // configure serial port
                     serialPort.setSerialPortParams(
-                            serialConf.baudRate,
-                            serialConf.dataBits,
-                            serialConf.stopBits,
+                            config.baudRate,
+                            config.dataBits,
+                            config.stopBits,
                             SerialPort.PARITY_NONE);
                     
                     is = serialPort.getInputStream();
                     os = serialPort.getOutputStream();
                     
-                    log.info("Connected to serial port {}", serialConf.portName);
+                    log.info("Connected to serial port {}", config.portName);
                 }
                 else
                 {
-                    log.error("Port {} is not a serial port", serialConf.portName);
+                    log.error("Port {} is not a serial port", config.portName);
                 }
             }
         }
         catch (NoSuchPortException e)
         {
-            throw new IOException("Invalid serial port " + serialConf.portName);
+            throw new SensorHubException("Invalid serial port " + config.portName);
         }
         catch (PortInUseException e)
         {
-            throw new IOException("Port " + serialConf.portName + " is currently in use");
+            throw new SensorHubException("Port " + config.portName + " is currently in use");
         }
         catch (UnsupportedCommOperationException e)
         {
-            throw new IOException("Invalid serial port configuration");
+            throw new SensorHubException("Invalid serial port configuration");
+        }
+        catch (IOException e)
+        {
+            throw new SensorHubException("Cannot connect to serial port " + config.portName);
         }
     }
     
@@ -116,12 +120,25 @@ public class RxtxSerialCommProvider implements ICommProvider
     public OutputStream getOutputStream() throws IOException
     {
         return os;
+    }    
+
+
+    @Override
+    public void stop() throws SensorHubException
+    {
+        if (serialPort != null)
+        {
+            serialPort.close();
+            serialPort = null;
+        }
+        
+        is = null;
+        os = null;
     }
 
 
     @Override
-    public void close()
-    {
-        serialPort.close();
+    public void cleanup() throws SensorHubException
+    {        
     }
 }

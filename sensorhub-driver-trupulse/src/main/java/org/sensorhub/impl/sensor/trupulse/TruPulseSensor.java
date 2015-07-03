@@ -15,7 +15,7 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.trupulse;
 
-import java.io.IOException;
+import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -39,18 +39,27 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
 {
     static final Logger log = LoggerFactory.getLogger(TruPulseSensor.class);
     
-    ICommProvider commProvider;
+    ICommProvider<? super CommConfig> commProvider;
     TruPulseOutput dataInterface;
     
     
     public TruPulseSensor()
+    {        
+    }
+    
+    
+    @Override
+    public void init(TruPulseConfig config) throws SensorHubException
     {
+        super.init(config);
+        
+        // init main data interface
         dataInterface = new TruPulseOutput(this);
         addOutput(dataInterface, false);
         dataInterface.init();
     }
-    
-    
+
+
     @Override
     protected void updateSensorDescription()
     {
@@ -67,33 +76,26 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
     @Override
     public void start() throws SensorHubException
     {
-        // init comm provider
-        try
+        if (commProvider == null)
         {
-            if (commProvider == null)
-            {
-                commProvider = config.commSettings.getProvider();
-                commProvider.init(config.commSettings);
-            }        
+            // start comm provider
+            commProvider = config.commSettings.getProvider();
+            commProvider.start();
+            
+            // start measurement stream
+            dataInterface.start(commProvider);
         }
-        catch (IOException e)
-        {
-            commProvider = null;
-            log.error("Error while initializing communications ", e);
-        }
-        
-        dataInterface.start(commProvider);        
     }
     
 
     @Override
     public void stop() throws SensorHubException
     {
-        dataInterface.stop();
-        
         if (commProvider != null)
         {
-            commProvider.close();
+            dataInterface.stop();
+            dataInterface = null;
+            commProvider.stop();
             commProvider = null;
         }
     }

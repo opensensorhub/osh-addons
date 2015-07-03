@@ -140,8 +140,8 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
     }
     
     
-    protected synchronized boolean decodeNextMessage() {
-        
+    protected synchronized boolean decodeNextMessage()
+    {
         try
         {
             // wait for sync
@@ -209,7 +209,7 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
     }
 
 
-    protected void start(ICommProvider commProvider)
+    protected void start(ICommProvider<?> commProvider)
     {
         sendData = true;
         

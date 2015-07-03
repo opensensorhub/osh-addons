@@ -6,7 +6,7 @@
     <version>1.0</version>
   </parent>
   <artifactId>sensorhub-driver-mti</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.1</version>
   <name>MTi IMU Sensor Driver</name>
   <description>SensorHub driver for MTi inertial sensing units</description>
   <dependencies>
@@ -19,7 +19,7 @@
      <dependency>
         <groupId>org.sensorhub</groupId>
         <artifactId>sensorhub-comm-rxtx</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.1</version>
         <scope>test</scope>
      </dependency>
   </dependencies>

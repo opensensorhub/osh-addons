@@ -17,6 +17,7 @@ package org.sensorhub.impl.sensor.mti;
 
 import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.impl.comm.RS232Config;
 
 
 public class MtiConfig extends SensorConfig
@@ -30,5 +31,11 @@ public class MtiConfig extends SensorConfig
     public MtiConfig()
     {
         this.moduleClass = MtiSensor.class.getCanonicalName();
+        
+        RS232Config serialConf = new RS232Config();
+        serialConf.moduleClass = "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider";
+        serialConf.portName = "/dev/ttyUSB0";
+        serialConf.baudRate = 115200;
+        this.commSettings = serialConf;
     }
 }

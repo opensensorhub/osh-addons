@@ -181,7 +181,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     {
         // feet to meters
         if (unit.equals("F"))
-            return val * FEET_TO_METERS;   
+            return val * FEET_TO_METERS;
         
         // yards to meters
         else if (unit.equals("Y"))
@@ -191,7 +191,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     }
 
 
-    protected void start(ICommProvider commProvider)
+    protected void start(ICommProvider<?> commProvider)
     {
         sendData = true;
         
@@ -205,6 +205,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
         {
             throw new RuntimeException("Error while initializing communications ", e);
         }
+        
         // start main measurement thread
         Thread t = new Thread(new Runnable()
         {

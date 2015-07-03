@@ -15,11 +15,11 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.mti;
 
-import java.io.IOException;
 import net.opengis.sensorml.v20.ClassifierList;
 import net.opengis.sensorml.v20.PhysicalSystem;
 import net.opengis.sensorml.v20.SpatialFrame;
 import net.opengis.sensorml.v20.Term;
+import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -41,9 +41,8 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
 {
     static final Logger log = LoggerFactory.getLogger(MtiSensor.class);
     protected final static String CRS_ID = "SENSOR_FRAME";
-    
-    
-    ICommProvider commProvider;
+        
+    ICommProvider<? super CommConfig> commProvider;
     MtiOutput dataInterface;
     
     
@@ -57,6 +56,17 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
     {
         super.init(config);
         
+        // init comm provider
+        if (commProvider == null)
+        {
+            if (config.commSettings == null)
+                throw new SensorHubException("No communication settings specified");
+            
+            commProvider = config.commSettings.getProvider();
+            commProvider.init(config.commSettings);
+        }
+        
+        // create main data interface
         dataInterface = new MtiOutput(this);
         addOutput(dataInterface, false);
         dataInterface.init();
@@ -104,21 +114,10 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
     @Override
     public void start() throws SensorHubException
     {
-        // init comm provider
-        try
+        if (commProvider != null)
         {
-            if (commProvider == null)
-            {
-                commProvider = config.commSettings.getProvider();
-                commProvider.init(config.commSettings);
-            }
-            
+            commProvider.start();
             dataInterface.start(commProvider);
-        }
-        catch (IOException e)
-        {
-            commProvider = null;
-            log.error("Error while initializing communications ", e);
         }
     }
     
@@ -126,11 +125,11 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
     @Override
     public void stop() throws SensorHubException
     {
-        dataInterface.stop();
-        
         if (commProvider != null)
         {
-            commProvider.close();
+            dataInterface.stop();
+            dataInterface = null;
+            commProvider.stop();
             commProvider = null;
         }
     }
