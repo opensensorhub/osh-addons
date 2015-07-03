@@ -29,10 +29,9 @@ public class V4LCameraConfig extends SensorConfig
 {
     
     /**
-     * Name of video device to use
-     * example: /dev/video0
+     * Name of video device to use (e.g. /dev/video0)
      */
-    public String deviceName;
+    public String deviceName = "/dev/video0";
     
     
     /**
