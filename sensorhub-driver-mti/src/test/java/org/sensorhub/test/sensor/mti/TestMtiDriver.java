@@ -53,7 +53,7 @@ public class TestMtiDriver implements IEventListener
         config.id = UUID.randomUUID().toString();
         
         RS232Config serialConf = new RS232Config();
-        serialConf.providerClass = RxtxSerialCommProvider.class.getCanonicalName();
+        serialConf.moduleClass = RxtxSerialCommProvider.class.getCanonicalName();
         serialConf.portName = "/dev/ttyUSB0";
         serialConf.baudRate = 115200;
         config.commSettings = serialConf;        
