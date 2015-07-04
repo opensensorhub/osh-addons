@@ -211,6 +211,9 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
 
     protected void start(ICommProvider<?> commProvider)
     {
+        if (sendData)
+            return;
+        
         sendData = true;
         
         // connect to data stream
@@ -262,6 +265,12 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
             try { dataIn.close(); }
             catch (IOException e) { }
             dataIn = null;
+        }
+        
+        if (tcpRepeater != null)
+        {
+            tcpRepeater.stop();
+            tcpRepeater = null;
         }
     }
 

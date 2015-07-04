@@ -47,6 +47,7 @@ public class TcpRepeater
                     catch (IOException e)
                     {
                         System.err.println("Cannot accept client connection");
+                        break;
                     }
                 }
             }
@@ -112,11 +113,11 @@ public class TcpRepeater
     {
         try
         {
+            started = false;
             server.close();
             for (Socket s: clientSockets)
                 s.close();
             clientSockets.clear();
-            started = false;    
         }
         catch (IOException e)
         {            
