@@ -47,24 +47,14 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
     
     
     public MtiSensor()
-    {        
+    {       
     }
-    
-    
+
+
     @Override
     public void init(MtiConfig config) throws SensorHubException
     {
         super.init(config);
-        
-        // init comm provider
-        if (commProvider == null)
-        {
-            if (config.commSettings == null)
-                throw new SensorHubException("No communication settings specified");
-            
-            commProvider = config.commSettings.getProvider();
-            commProvider.init(config.commSettings);
-        }
         
         // create main data interface
         dataInterface = new MtiOutput(this);
@@ -114,21 +104,38 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
     @Override
     public void start() throws SensorHubException
     {
-        if (commProvider != null)
+        // init comm provider
+        if (commProvider == null)
         {
-            commProvider.start();
-            dataInterface.start(commProvider);
+            // we need to recreate comm provider here because it can be changed by UI
+            // TODO do that in updateConfig
+            try
+            {
+                if (config.commSettings == null)
+                    throw new SensorHubException("No communication settings specified");
+                
+                commProvider = config.commSettings.getProvider();
+                commProvider.start();
+            }
+            catch (Exception e)
+            {
+                commProvider = null;
+                throw e;
+            }
         }
+        
+        dataInterface.start(commProvider);
     }
     
 
     @Override
     public void stop() throws SensorHubException
     {
+        if (dataInterface != null)
+            dataInterface.stop();
+                    
         if (commProvider != null)
         {
-            dataInterface.stop();
-            dataInterface = null;
             commProvider.stop();
             commProvider = null;
         }
