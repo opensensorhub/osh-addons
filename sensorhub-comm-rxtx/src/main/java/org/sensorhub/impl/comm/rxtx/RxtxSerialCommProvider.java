@@ -100,11 +100,15 @@ public class RxtxSerialCommProvider extends AbstractModule<RS232Config> implemen
         }
         catch (UnsupportedCommOperationException e)
         {
-            throw new SensorHubException("Invalid serial port configuration");
+            throw new SensorHubException("Invalid serial port configuration for " + config.portName);
         }
         catch (IOException e)
         {
             throw new SensorHubException("Cannot connect to serial port " + config.portName);
+        }
+        catch (UnsatisfiedLinkError e)
+        {
+            throw new SensorHubException("Cannot load RX/TX native library", e);
         }
     }
     
