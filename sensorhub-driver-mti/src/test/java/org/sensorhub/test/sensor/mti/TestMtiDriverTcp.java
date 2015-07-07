@@ -54,7 +54,7 @@ public class TestMtiDriverTcp implements IEventListener
         
         TCPConfig tcpConf = new TCPConfig();
         tcpConf.remoteHost = "localhost";
-        tcpConf.remotePort = 9998;
+        tcpConf.remotePort = 9999;
         config.commSettings = tcpConf;        
         
         driver = new MtiSensor();
