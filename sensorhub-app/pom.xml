@@ -67,6 +67,12 @@
       </dependency>
       <dependency>
          <groupId>org.sensorhub</groupId>
+         <artifactId>sensorhub-driver-mti</artifactId>
+         <version>0.1</version>
+         <type>bundle</type>
+      </dependency>
+      <dependency>
+         <groupId>org.sensorhub</groupId>
          <artifactId>sensorhub-webui-core</artifactId>
          <version>1.0</version>
       </dependency>
