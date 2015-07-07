@@ -4,6 +4,7 @@
     <groupId>org.sensorhub</groupId>
     <artifactId>sensorhub-all</artifactId>
     <version>1.0</version>
+    <relativePath>../sensorhub-all/pom.xml</relativePath>
   </parent>
   <artifactId>sensorhub-comm-rxtx</artifactId>
   <version>0.1</version>
