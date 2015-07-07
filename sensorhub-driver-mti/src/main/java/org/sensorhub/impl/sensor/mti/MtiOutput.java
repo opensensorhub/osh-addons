@@ -45,6 +45,7 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
     byte[] msgBytes = new byte[MSG_SIZE];
     ByteBuffer msgBuf = ByteBuffer.wrap(msgBytes);
     
+    int sampleCounter;
     float temp;
     float[] gyro = new float[3];
     float[] accel = new float[3];
@@ -151,6 +152,11 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
             
             // read message fully
             dataIn.readFully(msgBytes);
+            
+            sampleCounter++;
+            if (sampleCounter % 10 != 0)
+                return false;
+            
             if (tcpRepeater != null)
                 tcpRepeater.sendMessage(msgBytes);
                         
@@ -215,6 +221,7 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
             return;
         
         sendData = true;
+        sampleCounter = -1;
         
         // connect to data stream
         try
