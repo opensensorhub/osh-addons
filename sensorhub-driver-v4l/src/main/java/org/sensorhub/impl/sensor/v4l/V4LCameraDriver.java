@@ -51,10 +51,13 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     @Override
     public void updateConfig(V4LCameraConfig config) throws SensorHubException
     {
-        // cleanup previously used device and restart
+        // cleanup previously used device
         stop();
         init(config);
-        start();
+        
+        // restart if enabled
+        if (config.enabled)
+            start();
     }
     
     
