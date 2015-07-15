@@ -25,7 +25,6 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.Quantity;
-import org.vast.data.DataRecordImpl;
 import org.vast.swe.SWEHelper;
 
 
@@ -63,7 +62,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         SWEHelper fac = new SWEHelper();
         
         // build SWE Common record structure
-    	weatherData = new DataRecordImpl(5);
+    	weatherData = fac.newDataRecord(5);
         weatherData.setName(getName());
         weatherData.setDefinition("http://sensorml.com/ont/swe/property/Weather");
         weatherData.setDescription("Weather measurements");
@@ -82,7 +81,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
      
         // also generate encoding definition
         weatherEncoding = fac.newTextEncoding(",", "\n");
-}
+    }
 
     
     private void sendMeasurement()

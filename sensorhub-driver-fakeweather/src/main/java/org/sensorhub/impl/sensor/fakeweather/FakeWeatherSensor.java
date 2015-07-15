@@ -51,8 +51,8 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
         {
             super.updateSensorDescription();
             sensorDescription.setId("WEATHER_STATION");
-            sensorDescription.setUniqueIdentifier("urn:test:sensors:fakeweather");
-            sensorDescription.setDescription("Fake weather station generating randomly increasing and decreasing measurements");
+            sensorDescription.setUniqueIdentifier("urn:test:sensors:simweather:" + config.serialNumber);
+            sensorDescription.setDescription("Simulated weather station generating randomly increasing and decreasing measurements");
         }
     }
 
