@@ -76,25 +76,38 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
     @Override
     public void start() throws SensorHubException
     {
+        // init comm provider
         if (commProvider == null)
         {
-            // start comm provider
-            commProvider = config.commSettings.getProvider();
-            commProvider.start();
-            
-            // start measurement stream
-            dataInterface.start(commProvider);
+            try
+            {
+                if (config.commSettings == null)
+                    throw new SensorHubException("No communication settings specified");
+                
+                // start comm provider
+                commProvider = config.commSettings.getProvider();
+                commProvider.start();
+            }
+            catch (Exception e)
+            {
+                commProvider = null;
+                throw e;
+            }
         }
+        
+        // start measurement stream
+        dataInterface.start(commProvider);
     }
     
 
     @Override
     public void stop() throws SensorHubException
     {
+        if (dataInterface != null)
+            dataInterface.stop();
+                    
         if (commProvider != null)
         {
-            dataInterface.stop();
-            dataInterface = null;
             commProvider.stop();
             commProvider = null;
         }
