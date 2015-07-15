@@ -1,5 +1,4 @@
 /build/
 /target/
-/sensorhub-node.zip
-/sensorhub-binaries-v1.0-beta.zip
+/*.zip
 /target/
