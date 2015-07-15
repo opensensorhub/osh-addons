@@ -13,7 +13,7 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.test.impl.sensor.trupulse;
+package org.sensorhub.test.sensor.trupulse;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -36,7 +36,7 @@ import org.vast.swe.SWEUtils;
 import static org.junit.Assert.*;
 
 
-public class TestTruPulseDriver implements IEventListener
+public class TestGeolocProcess implements IEventListener
 {
     TruPulseSensor driver;
     TruPulseConfig config;	
