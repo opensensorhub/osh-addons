@@ -89,7 +89,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     
 
     /* TODO: only using HV message; add support for HT and ML */
-    private void pollAndSendMeasurement()
+    private synchronized void pollAndSendMeasurement()
     {
     	long msgTime = System.currentTimeMillis();
     	
@@ -100,57 +100,63 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     	
     	try
     	{
-    		String line = msgReader.readLine();
-    	    String val, unit;
-    	    
-            // parse the data string
-    	    TruPulseSensor.log.debug("Message received: {}", line);
-            String[] tokens = line.split(",");
-            
-            val = tokens[0];
-            if (!val.equals(MSG_PREFIX))
+    		boolean gotHvMsg = false;
+    	    while (!gotHvMsg)
     		{
-                TruPulseSensor.log.warn("Message initial token does NOT equal expected string {}", MSG_PREFIX);
-    			return;
+        	    String line = msgReader.readLine();
+        	    String val, unit;
+        	    
+                // parse the data string
+        	    TruPulseSensor.log.debug("Message received: {}", line);
+                String[] tokens = line.split(",");
+                
+                val = tokens[0];
+                if (!val.equals(MSG_PREFIX))
+        		{
+                    TruPulseSensor.log.warn("Message initial token does NOT equal expected string {}", MSG_PREFIX);
+        			continue;
+        		}
+        
+            	// check for desired message type HV
+                val = tokens[1];
+            	if (!val.equals(MSG_TYPE_HV))
+            	{
+            	    TruPulseSensor.log.warn("Unsupported message type {}", val);
+        			continue;
+        		}
+            	
+            	// get horizontal distance measure and check units (convert if not meters)
+            	val = tokens[2];
+            	unit = tokens[3];
+            	if (val.length() > 0 && unit.length() > 0)
+            	{
+                	hd = Double.parseDouble(val);
+                	hd = convert(hd, unit);
+            	}
+            	
+            	// get azimuth angle measure (units should be degrees)
+            	val = tokens[4];
+                unit = tokens[5];
+                if (val.length() > 0 && unit.length() > 0)
+                    az = Double.parseDouble(val);
+        
+            	// get inclination angle measure (units should be degrees)
+                val = tokens[6];
+                unit = tokens[7];
+                if (val.length() > 0 && unit.length() > 0)
+                    incl = Double.parseDouble(val);
+        
+            	// get slope distance measure and check units (should be meters)
+                val = tokens[8];
+                unit = tokens[9];
+                if (val.length() > 0 && unit.length() > 0)
+                {
+                    sd = Double.parseDouble(val);
+                    sd = convert(hd, unit);
+                }
+                
+                gotHvMsg = true;
     		}
-    
-        	// check for desired message type HV
-            val = tokens[1];
-        	if (!val.equals(MSG_TYPE_HV))
-        	{
-        	    TruPulseSensor.log.warn("Unsupported message type {}", val);
-    			return;
-    		}
-        	
-        	// get horizontal distance measure and check units (convert if not meters)
-        	val = tokens[2];
-        	unit = tokens[3];
-        	if (val.length() > 0 && unit.length() > 0)
-        	{
-            	hd = Double.parseDouble(val);
-            	hd = convert(hd, unit);
-        	}
-        	
-        	// get azimuth angle measure (units should be degrees)
-        	val = tokens[4];
-            unit = tokens[5];
-            if (val.length() > 0 && unit.length() > 0)
-                az = Double.parseDouble(val);
-    
-        	// get inclination angle measure (units should be degrees)
-            val = tokens[6];
-            unit = tokens[7];
-            if (val.length() > 0 && unit.length() > 0)
-                incl = Double.parseDouble(val);
-    
-        	// get slope distance measure and check units (should be meters)
-            val = tokens[8];
-            unit = tokens[9];
-            if (val.length() > 0 && unit.length() > 0)
-            {
-                sd = Double.parseDouble(val);
-                sd = convert(hd, unit);
-            }
     	}
     	catch(IOException e)
     	{
@@ -193,6 +199,9 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
 
     protected void start(ICommProvider<?> commProvider)
     {
+        if (sendData)
+            return;
+        
         sendData = true;
         
         // connect to data stream
@@ -221,7 +230,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     }
 
 
-    protected void stop()
+    protected synchronized void stop()
     {
         sendData = false;
         
