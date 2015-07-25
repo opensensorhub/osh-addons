@@ -29,4 +29,6 @@ public class FakeGpsConfig extends SensorConfig
     public double areaSize = 0.1; // in deg
     
     public double vehicleSpeed = 40; // km/h
+    
+    public boolean walkingMode = false;
 }

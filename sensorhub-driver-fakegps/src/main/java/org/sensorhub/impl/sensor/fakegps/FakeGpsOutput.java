@@ -108,7 +108,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         {
             // request directions using Google API
             URL dirRequest = new URL(config.googleApiUrl + "?origin=" + startLat + "," + startLong +
-                    "&destination=" + endLat + "," + endLong);
+                    "&destination=" + endLat + "," + endLong + ((config.walkingMode) ? "&mode=walking" : ""));
             log.debug("Google API request: " + dirRequest);
             InputStream is = new BufferedInputStream(dirRequest.openStream());
             
