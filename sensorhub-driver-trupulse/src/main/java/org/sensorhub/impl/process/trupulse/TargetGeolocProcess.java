@@ -24,6 +24,7 @@ import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.processing.AbstractStreamProcess;
 import org.sensorhub.impl.sensor.trupulse.TruPulseConfig;
+import org.sensorhub.impl.sensor.trupulse.TruPulseOutput;
 import org.sensorhub.impl.sensor.trupulse.TruPulseSensor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,7 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
     protected double[] lastSensorPosEcef = new double[3];
     
     protected DataRecord sensorLocInput;
-    protected DataRecord rangeMeasInput;    
+    protected DataComponent rangeMeasInput;    
     protected DataQueue sensorLocQueue;
     protected DataQueue rangeMeasQueue;
     
@@ -83,10 +84,9 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
         sensorLocInput.addField("loc", fac.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC));
         inputs.put(sensorLocInput.getName(), sensorLocInput);
         
-        rangeMeasInput = fac.newDataRecord();
-        rangeMeasInput.setName("rangeMeasurement");
-        rangeMeasInput.addField("time", fac.newTimeStampIsoUTC());
-        rangeMeasInput.addField("range", fac.newQuantity(SWEHelper.getPropertyUri("LineOfSightDistance"), "Laser Range Measurement", null, "m"));
+        TruPulseOutput sensorOutput = new TruPulseOutput(null);
+        sensorOutput.init();
+        rangeMeasInput = sensorOutput.getRecordDescription();
         inputs.put(rangeMeasInput.getName(), rangeMeasInput);
         
         // create outputs
@@ -113,33 +113,40 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
     @Override
     protected void process(DataEvent lastEvent) throws ProcessException
     {
-        if (sensorLocQueue.isDataAvailable())
+        try
         {
-            DataBlock dataBlk = lastEvent.getRecords()[0];
-            double lat = Math.toRadians(dataBlk.getDoubleValue(1));
-            double lon = Math.toRadians(dataBlk.getDoubleValue(2));
-            double alt = dataBlk.getDoubleValue(3);
-            MapProjection.LLAtoECF(lon, lat, alt, lastSensorPosEcef, null);
+            if (sensorLocQueue.isDataAvailable())
+            {
+                DataBlock dataBlk = sensorLocQueue.get();
+                double lat = Math.toRadians(dataBlk.getDoubleValue(1));
+                double lon = Math.toRadians(dataBlk.getDoubleValue(2));
+                double alt = dataBlk.getDoubleValue(3);
+                MapProjection.LLAtoECF(lon, lat, alt, lastSensorPosEcef, null);
+                log.debug("Last GPS pos = [{},{},{}]" , Math.toDegrees(lat), Math.toDegrees(lon), alt);
+            }
+            
+            else if (rangeMeasQueue.isDataAvailable())
+            {
+                DataBlock dataBlk = rangeMeasQueue.get();
+                double time = dataBlk.getDoubleValue(0);
+                double range = dataBlk.getDoubleValue(2);
+                double az = Math.toRadians(dataBlk.getDoubleValue(3));
+                double inc = Math.toRadians(dataBlk.getDoubleValue(4));
+                Vector3d los = new Vector3d(range, 0.0, 0.0);
+                los.rotateZ(az);
+                los.rotateY(inc);
+                
+                Vector3d ecefPos = new Vector3d(lastSensorPosEcef);
+                Matrix3d ecefNedRot = NadirPointing.getNEDRotationMatrix(ecefPos);
+                los.rotate(ecefNedRot);
+                los.add(ecefPos);
+                
+                double[] lla = MapProjection.ECFtoLLA(los.x, los.y, los.z, null, null);
+                targetLocOutput.sendLocation(time, Math.toDegrees(lla[1]), Math.toDegrees(lla[0]), lla[2]);
+            }
         }
-        
-        else if (rangeMeasQueue.isDataAvailable())
+        catch (InterruptedException e)
         {
-            DataBlock dataBlk = lastEvent.getRecords()[0];
-            double time = dataBlk.getDoubleValue(0);
-            double range = dataBlk.getDoubleValue(2);
-            double az = Math.toRadians(dataBlk.getDoubleValue(3));
-            double inc = Math.toRadians(dataBlk.getDoubleValue(4));
-            Vector3d los = new Vector3d(range, 0.0, 0.0);
-            los.rotateZ(az);
-            los.rotateY(inc);
-            
-            Vector3d ecefPos = new Vector3d(lastSensorPosEcef);
-            Matrix3d ecefNedRot = NadirPointing.getNEDRotationMatrix(ecefPos);
-            los.rotate(ecefNedRot);
-            los.add(ecefPos);
-            
-            double[] lla = MapProjection.ECFtoLLA(los.x, los.y, los.z, null, null);
-            targetLocOutput.sendLocation(time, Math.toDegrees(lla[1]), Math.toDegrees(lla[0]), lla[2]);
         }
     }
     
@@ -154,7 +161,7 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
     @Override
     public boolean isCompatibleDataSource(DataSourceConfig dataSource)
     {
-        return false;
+        return true;
     }
     
     

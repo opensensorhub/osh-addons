@@ -53,7 +53,7 @@ public class TargetGeolocOutput implements IStreamingDataInterface
         DataRecord rec = fac.newDataRecord();
         rec.setName(getName());
         rec.addField("time", fac.newTimeStampIsoUTC());
-        rec.addField("targetLocation", fac.newLocationVectorLLA(SWEHelper.getPropertyUri("TargetLocation")));
+        rec.addField("location", fac.newLocationVectorLLA(SWEHelper.getPropertyUri("TargetLocation")));
         this.outputDef = rec;
         
         this.outputEncoding = fac.newTextEncoding();
@@ -78,6 +78,7 @@ public class TargetGeolocOutput implements IStreamingDataInterface
         dataBlock.setDoubleValue(1, lat);
         dataBlock.setDoubleValue(2, lon);
         dataBlock.setDoubleValue(3, alt);
+        TargetGeolocProcess.log.debug("Target pos = [{},{},{}]" , lat, lon, alt);
             
         // update latest record and send event
         latestRecord = dataBlock;
@@ -96,7 +97,7 @@ public class TargetGeolocOutput implements IStreamingDataInterface
     @Override
     public String getName()
     {
-        return "tleData";
+        return "targetLocation";
     }
 
 

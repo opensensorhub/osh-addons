@@ -52,12 +52,12 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     @Override
     public String getName()
     {
-        return "laserData";
+        return "rangeData";
     }
 
 
     @Override
-    protected void init()
+    public void init()
     {
         SWEHelper fac = new SWEHelper();
         
@@ -89,7 +89,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     
 
     /* TODO: only using HV message; add support for HT and ML */
-    private synchronized void pollAndSendMeasurement()
+    private void pollAndSendMeasurement()
     {
     	long msgTime = System.currentTimeMillis();
     	
@@ -160,7 +160,9 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     	}
     	catch(IOException e)
     	{
-            TruPulseSensor.log.error("Unable to parse TruPulse message", e);
+           if (sendData)
+                TruPulseSensor.log.error("Unable to parse TruPulse message", e);
+            return;
         }    
          
         // create and populate datablock
@@ -173,8 +175,8 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
         dataBlock.setDoubleValue(0, msgTime / 1000.);
         dataBlock.setDoubleValue(1, hd);
         dataBlock.setDoubleValue(2, sd);
-        dataBlock.setDoubleValue(4, az);
-        dataBlock.setDoubleValue(3, incl);
+        dataBlock.setDoubleValue(3, az);
+        dataBlock.setDoubleValue(4, incl);
         
         // update latest record and send event
         latestRecord = dataBlock;
@@ -230,7 +232,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     }
 
 
-    protected synchronized void stop()
+    protected void stop()
     {
         sendData = false;
         
