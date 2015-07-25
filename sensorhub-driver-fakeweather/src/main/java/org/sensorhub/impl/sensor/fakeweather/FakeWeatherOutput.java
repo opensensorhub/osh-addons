@@ -33,7 +33,6 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     //private static final Logger log = LoggerFactory.getLogger(FakeWeatherOutput.class);
     DataComponent weatherData;
     DataEncoding weatherEncoding;
-    boolean sendData;
     Timer timer;
     
     // initialize then keep new values for each measurement
