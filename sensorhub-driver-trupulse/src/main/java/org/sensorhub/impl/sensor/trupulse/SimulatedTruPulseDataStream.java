@@ -95,7 +95,7 @@ public class SimulatedTruPulseDataStream extends AbstractModule<TCPConfig> imple
             }            
         };
         
-        timer.scheduleAtFixedRate(task, 0, 3000L);
+        timer.scheduleAtFixedRate(task, 0, 1000L);
     }
 
 
