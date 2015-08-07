@@ -132,13 +132,16 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
                 double range = dataBlk.getDoubleValue(2);
                 double az = Math.toRadians(dataBlk.getDoubleValue(3));
                 double inc = Math.toRadians(dataBlk.getDoubleValue(4));
-                Vector3d los = new Vector3d(range, 0.0, 0.0);
-                los.rotateZ(az);
-                los.rotateY(inc);
                 
+                // express LOS in ENU frame
+                Vector3d los = new Vector3d(0.0, range, 0.0);
+                los.rotateX(inc);
+                los.rotateZ(-az);
+                
+                // transform to ECEF frame
                 Vector3d ecefPos = new Vector3d(lastSensorPosEcef);
-                Matrix3d ecefNedRot = NadirPointing.getNEDRotationMatrix(ecefPos);
-                los.rotate(ecefNedRot);
+                Matrix3d ecefRot = NadirPointing.getENURotationMatrix(ecefPos);
+                los.rotate(ecefRot);
                 los.add(ecefPos);
                 
                 double[] lla = MapProjection.ECFtoLLA(los.x, los.y, los.z, null, null);
