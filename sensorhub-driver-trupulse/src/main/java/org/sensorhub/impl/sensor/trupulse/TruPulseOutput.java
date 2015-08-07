@@ -248,7 +248,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     @Override
     public double getAverageSamplingPeriod()
     {
-    	return 20.0;
+    	return 1200.0; // 20min
     }
 
 
