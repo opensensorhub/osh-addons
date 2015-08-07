@@ -25,14 +25,14 @@ public class FakeGpsModuleDescriptor implements IModuleProvider
     @Override
     public String getModuleName()
     {
-        return "Fake GPS Sensor";
+        return "Simulated GPS Sensor";
     }
 
 
     @Override
     public String getModuleDescription()
     {
-        return "Sensor outputing fake GPS sensor data generated from Google Directions results";
+        return "Sensor outputing simulated GPS sensor data generated from Google Directions results";
     }
 
 

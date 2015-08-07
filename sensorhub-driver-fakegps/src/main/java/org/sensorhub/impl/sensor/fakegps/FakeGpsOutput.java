@@ -86,13 +86,35 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     {
         FakeGpsConfig config = getParentModule().getConfiguration();
         
-        // generate random start/end coordinates
+        // used fixed start/end coordinates or generate random ones 
         double startLat;
         double startLong;
+        double endLat;
+        double endLong;
+        
         if (trajPoints.isEmpty())
         {
             startLat = config.centerLatitude + (Math.random()-0.5) * config.areaSize;
             startLong = config.centerLongitude + (Math.random()-0.5) * config.areaSize;
+            
+            // if fixed start and end locations not given, pick random values within area 
+            if (Double.isNaN(config.startLatitude) || Double.isNaN(config.startLongitude) ||
+                Double.isNaN(config.stopLatitude) || Double.isNaN(config.stopLongitude))
+            {
+                startLat = config.centerLatitude + (Math.random()-0.5) * config.areaSize;
+                startLong = config.centerLongitude + (Math.random()-0.5) * config.areaSize;
+                endLat = config.centerLatitude + (Math.random()-0.5) * config.areaSize;
+                endLong = config.centerLongitude + (Math.random()-0.5) * config.areaSize;
+            }
+            
+            // else use start/end locations provided in configuration
+            else
+            {
+                startLat = config.startLatitude;
+                startLong = config.startLongitude;
+                endLat = config.stopLatitude;
+                endLong = config.stopLongitude;
+            }
         }
         else
         {
@@ -100,9 +122,10 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             double[] lastPoint = trajPoints.get(trajPoints.size()-1);
             startLat = lastPoint[0];
             startLong = lastPoint[1];
+            endLat = config.centerLatitude + (Math.random()-0.5) * config.areaSize;
+            endLong = config.centerLongitude + (Math.random()-0.5) * config.areaSize;
         }        
-        double endLat = config.centerLatitude + (Math.random()-0.5) * config.areaSize;
-        double endLong = config.centerLongitude + (Math.random()-0.5) * config.areaSize;
+        
         
         try
         {
