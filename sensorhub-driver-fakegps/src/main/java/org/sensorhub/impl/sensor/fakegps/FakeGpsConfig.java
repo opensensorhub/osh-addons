@@ -22,10 +22,10 @@ public class FakeGpsConfig extends SensorConfig
     public String googleApiUrl = "http://maps.googleapis.com/maps/api/directions/json";
     
     // use these to add specific start and stop locations
-    public double startLatitude = Double.NaN;  // in degrees
-    public double startLongitude = Double.NaN;  // in degrees
-    public double stopLatitude = Double.NaN;  // in degrees
-    public double stopLongitude = Double.NaN;  // in degrees
+    public Double startLatitude = null;  // in degrees
+    public Double startLongitude = null;  // in degrees
+    public Double stopLatitude = null;  // in degrees
+    public Double stopLongitude = null;  // in degrees
     
     // otherwise use these to generate random start and stop locations
     public double centerLatitude = 34.7300; // in deg    

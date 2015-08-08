@@ -98,8 +98,8 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             startLong = config.centerLongitude + (Math.random()-0.5) * config.areaSize;
             
             // if fixed start and end locations not given, pick random values within area 
-            if (Double.isNaN(config.startLatitude) || Double.isNaN(config.startLongitude) ||
-                Double.isNaN(config.stopLatitude) || Double.isNaN(config.stopLongitude))
+            if (config.startLatitude == null || config.startLongitude == null ||
+                config.stopLatitude == null || config.stopLongitude == null)
             {
                 startLat = config.centerLatitude + (Math.random()-0.5) * config.areaSize;
                 startLong = config.centerLongitude + (Math.random()-0.5) * config.areaSize;
