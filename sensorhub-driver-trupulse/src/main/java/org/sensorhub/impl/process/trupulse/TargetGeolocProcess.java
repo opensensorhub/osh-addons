@@ -1,10 +1,14 @@
 /***************************** BEGIN LICENSE BLOCK ***************************
 
- The contents of this file are Copyright (C) 2014 Sensia Software LLC.
- All Rights Reserved.
+The contents of this file are subject to the Mozilla Public License, v. 2.0.
+If a copy of the MPL was not distributed with this file, You can obtain one
+at http://mozilla.org/MPL/2.0/.
+
+Software distributed under the License is distributed on an "AS IS" basis,
+WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+for the specific language governing rights and limitations under the License.
  
- Contributor(s): 
-    Alexandre Robin <alex.robin@sensiasoftware.com>
+Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
@@ -22,17 +26,16 @@ import org.sensorhub.api.processing.DataSourceConfig;
 import org.sensorhub.api.processing.ProcessException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.impl.process.geoloc.GeoTransforms;
+import org.sensorhub.impl.process.geoloc.NadirPointing;
 import org.sensorhub.impl.processing.AbstractStreamProcess;
 import org.sensorhub.impl.sensor.trupulse.TruPulseConfig;
 import org.sensorhub.impl.sensor.trupulse.TruPulseOutput;
 import org.sensorhub.impl.sensor.trupulse.TruPulseSensor;
+import org.sensorhub.vecmath.Mat3d;
+import org.sensorhub.vecmath.Vect3d;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.vast.data.DataBlockFloat;
-import org.vast.math.Matrix3d;
-import org.vast.math.Vector3d;
-import org.vast.physics.MapProjection;
-import org.vast.physics.NadirPointing;
 import org.vast.process.DataQueue;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
@@ -53,9 +56,14 @@ import org.vast.swe.SWEHelper;
 public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfig>
 {
     protected static final Logger log = LoggerFactory.getLogger(TargetGeolocProcess.class);
-        
+    
     protected TargetGeolocOutput targetLocOutput;
-    protected double[] lastSensorPosEcef = new double[3];
+    protected GeoTransforms geoConv = new GeoTransforms();
+    protected NadirPointing nadirPointing = new NadirPointing();
+    
+    protected Vect3d lastSensorPosEcef = new Vect3d();
+    protected Vect3d lla = new Vect3d();
+    protected Mat3d ecefRot = new Mat3d();
     
     protected DataRecord sensorLocInput;
     protected DataComponent rangeMeasInput;    
@@ -71,8 +79,9 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
         // initialize with fixed pos if set
         if (config.fixedPosLLA != null)
         {
-            double[] lla = config.fixedPosLLA;
-            MapProjection.LLAtoECF(Math.toRadians(lla[1]), Math.toRadians(lla[0]), lla[2], lastSensorPosEcef, null);
+            double[] pos = config.fixedPosLLA; // lat-lon-alt in degrees
+            lla.set(Math.toRadians(pos[1]), Math.toRadians(pos[0]), pos[2]);
+            geoConv.LLAtoECEF(lla, lastSensorPosEcef);
         }
         
         // create inputs
@@ -117,12 +126,18 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
         {
             if (sensorLocQueue.isDataAvailable())
             {
+                // data received is LLA in degrees
                 DataBlock dataBlk = sensorLocQueue.get();
-                double lat = Math.toRadians(dataBlk.getDoubleValue(1));
-                double lon = Math.toRadians(dataBlk.getDoubleValue(2));
+                double lat = dataBlk.getDoubleValue(1);
+                double lon = dataBlk.getDoubleValue(2);
                 double alt = dataBlk.getDoubleValue(3);
-                MapProjection.LLAtoECF(lon, lat, alt, lastSensorPosEcef, null);
-                log.debug("Last GPS pos = [{},{},{}]" , Math.toDegrees(lat), Math.toDegrees(lon), alt);
+                log.debug("Last GPS pos = [{},{},{}]" , lat, lon, alt);
+                
+                // convert to radians and then ECEF
+                lla.y = Math.toRadians(lat);
+                lla.x = Math.toRadians(lon);
+                lla.z = alt;
+                geoConv.LLAtoECEF(lla, lastSensorPosEcef);
             }
             
             else if (rangeMeasQueue.isDataAvailable())
@@ -134,18 +149,18 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
                 double inc = Math.toRadians(dataBlk.getDoubleValue(4));
                 
                 // express LOS in ENU frame
-                Vector3d los = new Vector3d(0.0, range, 0.0);
+                Vect3d los = new Vect3d(0.0, range, 0.0);
                 los.rotateX(inc);
                 los.rotateZ(-az);
                 
                 // transform to ECEF frame
-                Vector3d ecefPos = new Vector3d(lastSensorPosEcef);
-                Matrix3d ecefRot = NadirPointing.getENURotationMatrix(ecefPos);
+                nadirPointing.getRotationMatrixENUToECEF(lastSensorPosEcef, ecefRot);
                 los.rotate(ecefRot);
-                los.add(ecefPos);
+                los.add(lastSensorPosEcef);
                 
-                double[] lla = MapProjection.ECFtoLLA(los.x, los.y, los.z, null, null);
-                targetLocOutput.sendLocation(time, Math.toDegrees(lla[1]), Math.toDegrees(lla[0]), lla[2]);
+                // convert target location back to LLA
+                geoConv.ECEFtoLLA(los, lla);
+                targetLocOutput.sendLocation(time, Math.toDegrees(lla.y), Math.toDegrees(lla.x), lla.z);
             }
         }
         catch (InterruptedException e)
@@ -172,7 +187,7 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
     {
         TargetGeolocProcess p = new TargetGeolocProcess();
         TargetGeolocConfig processConf = new TargetGeolocConfig();
-        processConf.fixedPosLLA = new double[] {0.0, 0.0, 0.0};
+        processConf.fixedPosLLA = new double[] {45.0, 0.0, 0.0};
         p.init(processConf);
         p.sensorLocQueue = new DataQueue();
         p.rangeMeasQueue = new DataQueue();
@@ -191,21 +206,21 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
                 double lat = data.getDoubleValue(1);
                 double lon = data.getDoubleValue(2);
                 double alt = data.getDoubleValue(3);
-                System.out.println(lat + "," + lon + "," + alt);
+                System.out.println("Target Loc = " + lat + "," + lon + "," + alt);
             }
         };
         processOutput.registerListener(l);
         
         DataBlock dataBlk = outputDef.createDataBlock();
         long now = System.currentTimeMillis();
-        double range = 10.0;
+        double range = 1000.0;
         double az = 90.0;
-        double inc = 0.0;
+        double inc = 45.0;
         dataBlk.setDoubleValue(0, now / 1000.);
         dataBlk.setDoubleValue(2, range);
         dataBlk.setDoubleValue(3, az);
         dataBlk.setDoubleValue(4, inc);
-        p.rangeMeasQueue.add(new DataBlockFloat());
+        p.rangeMeasQueue.add(dataBlk);
         p.process(new SensorDataEvent(now, sensorOutput, dataBlk));
     }
 }
