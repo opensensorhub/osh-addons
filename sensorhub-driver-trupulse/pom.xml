@@ -11,10 +11,9 @@
   <description>Laser Range Finder with inclination and azimuth (angle from North)</description>
   <dependencies>
   	<dependency>
-  		<groupId>org.sensorhub</groupId>
-  		<artifactId>sensorhub-core</artifactId>
-  		<version>1.0</version>
-  		<type>bundle</type>
+  	   <groupId>org.sensorhub</groupId>
+  	   <artifactId>sensorhub-process-geoloc</artifactId>
+  	   <version>0.1-SNAPSHOT</version>
   	</dependency>
   </dependencies>
   <version>0.1</version>

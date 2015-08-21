@@ -21,9 +21,9 @@ import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Time;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.vecmath.Quat4d;
+import org.sensorhub.vecmath.Vect3d;
 import org.vast.data.SWEFactory;
-import org.vast.math.Quat4d;
-import org.vast.math.Vector3d;
 import org.vast.swe.SWEConstants;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -52,9 +52,9 @@ public class AndroidOrientationEulerOutput extends AndroidSensorOutput implement
     private static final String ORIENT_UOM = "deg";
     
     // for euler computation
-    Quat4d q = new Quat4d();
-    Quat4d look = new Quat4d();
-    Vector3d euler = new Vector3d();
+    Quat4d att = new Quat4d();
+    Vect3d look = new Vect3d();
+    Vect3d euler = new Vect3d();
     
     
     protected AndroidOrientationEulerOutput(AndroidSensorsDriver parentModule, SensorManager aSensorManager, Sensor aSensor)
@@ -129,22 +129,20 @@ public class AndroidOrientationEulerOutput extends AndroidSensorOutput implement
     {
         double sampleTime = getJulianTimeStamp(e.timestamp);
         
-        // convert to euler angles         
-        q.x = e.values[0];
-        q.y = e.values[1];
-        q.z = e.values[2];
-        q.w =  e.values[3];
-        q.normalize();
+        // convert to euler angles
+        att.x = e.values[0];
+        att.y = e.values[1];
+        att.z = e.values[2];
+        att.w =  e.values[3];
+        att.normalize();
         
         // Y direction in phone ref frame
         look.x = 0;
         look.y = 1;
         look.z = 0;
-        look.w = 1;
         
         // rotate to ENU
-        look.mul(q, look);
-        look.mulInverse(q);
+        att.rotate(look, look);
                 
         double heading = 90. - Math.toDegrees(Math.atan2(look.y, look.x)); 
         if (heading > 180.)
