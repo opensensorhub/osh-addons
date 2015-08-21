@@ -113,7 +113,7 @@ public class SatelliteStateOutput implements IStreamingDataInterface
     
     protected DataBlock computeState(double time)
     {
-        MechanicalState state = orbitPredictor.getECFState(time);
+        MechanicalState state = orbitPredictor.getECEFState(time);
         
         // send to output
         DataBlock stateData = (lastRecord == null) ? outputDef.createDataBlock() : lastRecord.renew();

@@ -24,7 +24,8 @@
 
 package org.vast.physics;
 
-import org.vast.math.*;
+import org.sensorhub.impl.process.geoloc.Ellipsoid;
+import org.sensorhub.vecmath.Vect3d;
 
 
 /**
@@ -54,15 +55,15 @@ public class SGP4Propagator
 	public SGP4Propagator()
 	{
 		// set default Datum
-		setDatum(new Datum());
+		setDatum(Ellipsoid.WGS84);
 	}
 
 
-	public void setDatum(Datum datum)
+	public void setDatum(Ellipsoid datum)
 	{
 		//this.datum = datum;
-		ae = datum.polarRadius / datum.equatorRadius;
-		re = datum.equatorRadius / 1000; // scale to km for sgp4
+		ae = datum.getPolarRadius() / datum.getEquatorRadius();
+		re = datum.getEquatorRadius() / 1000; // scale to km for sgp4
 	}
 
 
@@ -372,8 +373,8 @@ public class SGP4Propagator
 		vy = xmy * cosuk - sinnok * sinuk;
 		vz = sinik * cosuk;
 
-		Vector3d eciPosition = new Vector3d(rk * ux, rk * uy, rk * uz);
-		Vector3d eciVelocity = new Vector3d(rdotk * ux + rfdotk * vx, rdotk * uy + rfdotk * vy, rdotk * uz + rfdotk * vz);
+		Vect3d eciPosition = new Vect3d(rk * ux, rk * uy, rk * uz);
+		Vect3d eciVelocity = new Vect3d(rdotk * ux + rfdotk * vx, rdotk * uy + rfdotk * vy, rdotk * uz + rfdotk * vz);
 
 		double pole = re / ae * 1000; // scale back to meters
 		double timeFactor = pole * 1440.0 / 86400.;

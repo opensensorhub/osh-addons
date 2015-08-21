@@ -25,7 +25,7 @@
 
 package org.vast.physics;
 
-import org.vast.math.Vector3d;
+import org.sensorhub.vecmath.Vect3d;
 import org.vast.util.DateTimeFormat;
 
 
@@ -76,7 +76,7 @@ public class HelioSyncOrbitPredictor extends AbstractOrbitPredictor
 	 */
 	public MechanicalState getECIState(double time)
 	{
-		Vector3d ecfPos = new Vector3d(orbitRadius, 0.0, 0.0);
+		Vect3d ecfPos = new Vect3d(orbitRadius, 0.0, 0.0);
 		double dT = time - ascNodeTime;
 		
 		// pos on orbit plane
@@ -91,7 +91,7 @@ public class HelioSyncOrbitPredictor extends AbstractOrbitPredictor
 		MechanicalState state = new MechanicalState();
 		state.julianTime = time;
 		state.linearPosition = ecfPos;
-		state.linearVelocity = new Vector3d();
+		state.linearVelocity = new Vect3d();
 		
 		return state;
 	}

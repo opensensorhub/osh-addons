@@ -20,7 +20,8 @@
 
 package org.vast.physics;
 
-import org.vast.math.*;
+import org.sensorhub.impl.process.geoloc.Ellipsoid;
+import org.sensorhub.vecmath.Vect3d;
 
 
 /**
@@ -78,22 +79,23 @@ public class RayIntersectEllipsoid
 	}
 
 
-	public RayIntersectEllipsoid(Datum datum)
+	public RayIntersectEllipsoid(Ellipsoid datum)
 	{
-		R[0] = datum.equatorRadius;
-        R[1] = datum.equatorRadius;
-        R[2] = datum.polarRadius;
+		R[0] = datum.getEquatorRadius();
+        R[1] = datum.getEquatorRadius();
+        R[2] = datum.getPolarRadius();
+	}
+	
+
+	public RayIntersectEllipsoid(Ellipsoid datum, double metersAboveEllipsoid)
+	{
+		R[0] = datum.getEquatorRadius() + metersAboveEllipsoid;
+        R[1] = datum.getEquatorRadius() + metersAboveEllipsoid;
+        R[2] = datum.getPolarRadius() + metersAboveEllipsoid;
 	}
 
-	public RayIntersectEllipsoid(Datum datum, double metersAboveEllipsoid)
-	{
-		R[0] = datum.equatorRadius + metersAboveEllipsoid;
-        R[1] = datum.equatorRadius + metersAboveEllipsoid;
-        R[2] = datum.polarRadius + metersAboveEllipsoid;
-	}
 
-
-	public double[] getIntersection(Vector3d vertex, Vector3d direction)
+	public double[] getIntersection(Vect3d vertex, Vect3d direction)
 	{
 		foundFlag = true;
 

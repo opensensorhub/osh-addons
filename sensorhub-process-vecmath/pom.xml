@@ -6,21 +6,16 @@
     <version>1.0</version>
     <relativePath>../sensorhub-all/pom.xml</relativePath>
   </parent>
-  <artifactId>sensorhub-process-sat</artifactId>
+  <artifactId>sensorhub-process-vecmath</artifactId>
   <version>0.1-SNAPSHOT</version>
-  <name>Satellite Navigation Processing for SensorHub</name>
-  <description>Processing Algorithms for Satellite Navigation (TLEs, ephemeris, etc...)</description>
+  <name>Simple Vector Math Functions</name>
+  <description>Simple vector math functions for SensorHub processing</description>
   <dependencies>
      <dependency>
         <groupId>org.sensorhub</groupId>
         <artifactId>sensorhub-core</artifactId>
         <version>1.0</version>
         <type>bundle</type>
-     </dependency>
-     <dependency>
-        <groupId>org.sensorhub</groupId>
-        <artifactId>sensorhub-process-geoloc</artifactId>
-        <version>0.1-SNAPSHOT</version>
      </dependency>
   </dependencies>
 </project>

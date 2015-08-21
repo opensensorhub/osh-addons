@@ -20,16 +20,17 @@
 
 package org.vast.physics;
 
-import org.vast.math.*;
+import org.sensorhub.vecmath.Quat4d;
+import org.sensorhub.vecmath.Vect3d;
 
 
 public class MechanicalState
 {
     public double julianTime;
 
-    public Vector3d linearPosition;
-    public Vector3d linearVelocity;
-    public Vector3d linearAcceleration;
+    public Vect3d linearPosition;
+    public Vect3d linearVelocity;
+    public Vect3d linearAcceleration;
 
     public Quat4d angularPosition;
     public Quat4d angularVelocity;

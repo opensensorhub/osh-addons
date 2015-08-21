@@ -25,40 +25,34 @@
 
 package org.vast.physics;
 
+import org.sensorhub.impl.process.geoloc.GeoTransforms;
+
 
 public abstract class AbstractOrbitPredictor implements OrbitPredictor
 {
-
+    GeoTransforms geoConv;
+    
+    
 	public AbstractOrbitPredictor()
 	{
-		super();
+		this.geoConv = new GeoTransforms();
 	}
 	
+	
+	public abstract MechanicalState getECIState(double time);
+    	
 	
 	/* (non-Javadoc)
 	 * @see org.vast.physics.OrbitPredictor#getECFState(double)
 	 */
-	public MechanicalState getECFState(double time)
+	@Override
+    public MechanicalState getECEFState(double time)
 	{
 		MechanicalState state = getECIState(time);
-		double eciX = state.linearPosition.x;
-		double eciY = state.linearPosition.y;
-		double eciZ = state.linearPosition.z;
-		double eciVx = state.linearVelocity.x;
-		double eciVy = state.linearVelocity.y;
-		double eciVz = state.linearVelocity.z;
-		
-		// convert position
-		double[] ecf = MapProjection.ECItoECF(time, eciX, eciY, eciZ, false);
-		state.linearPosition.x = ecf[0];
-		state.linearPosition.y = ecf[1];
-		state.linearPosition.z = ecf[2];
 				
-		// convert velocity
-		double[] ecfVel = MapProjection.ECItoECF(time, eciVx, eciVy, eciVz, true);
-		state.linearVelocity.x = ecfVel[0];
-		state.linearVelocity.y = ecfVel[1];
-		state.linearVelocity.z = ecfVel[2];
+		// convert position & velocity to ECEF
+		geoConv.ECItoECEF(time, state.linearPosition, state.linearPosition, false);
+		geoConv.ECItoECEF(time, state.linearVelocity, state.linearVelocity, true);
 		
 		return state;
 	}
@@ -67,7 +61,8 @@ public abstract class AbstractOrbitPredictor implements OrbitPredictor
 	/* (non-Javadoc)
 	 * @see org.vast.physics.OrbitPredictor#getECITrajectory(double, double, double)
 	 */
-	public MechanicalState[] getECITrajectory(double startTime, double stopTime, double step)
+	@Override
+    public MechanicalState[] getECITrajectory(double startTime, double stopTime, double step)
 	{
 		int numPoints = (int) ((stopTime - startTime) / step);
 		MechanicalState[] trajectory = new MechanicalState[numPoints];
@@ -87,7 +82,8 @@ public abstract class AbstractOrbitPredictor implements OrbitPredictor
 	/* (non-Javadoc)
 	 * @see org.vast.physics.OrbitPredictor#getECFTrajectory(double, double, double)
 	 */
-	public MechanicalState[] getECFTrajectory(double startTime, double stopTime, double step)
+	@Override
+    public MechanicalState[] getECEFTrajectory(double startTime, double stopTime, double step)
 	{
 		int numPoints = (int) ((stopTime - startTime) / step) + 1;
 		MechanicalState[] trajectory = new MechanicalState[numPoints];
@@ -95,7 +91,7 @@ public abstract class AbstractOrbitPredictor implements OrbitPredictor
 		double time = startTime;
 		for (int p = 0; p < numPoints; p++)
 		{
-			MechanicalState state = getECFState(time);
+			MechanicalState state = getECEFState(time);
 			trajectory[p] = state;				
 			time += step;
 		}

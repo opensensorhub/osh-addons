@@ -57,11 +57,11 @@ public interface OrbitPredictor
 
 
 	/**
-	 * Gets the satellite ECF state at a given point in time
+	 * Gets the satellite ECEF state at a given point in time
 	 * @param time in seconds past 01/01/1970 (unix time)
 	 * @return Platform state in ECF frame
 	 */
-	public MechanicalState getECFState(double time);
+	public MechanicalState getECEFState(double time);
 
 
 	/**
@@ -75,12 +75,12 @@ public interface OrbitPredictor
 
 
 	/**
-	 * Gets the ECF trajectory ad an array of state object 
+	 * Gets the ECEF trajectory ad an array of state object 
 	 * @param startTime in seconds past 01/01/1970 (unix time)
 	 * @param stopTime in seconds past 01/01/1970 (unix time)
 	 * @param step step size in seconds
 	 * @return Array of platform states in ECF frame
 	 */ 
-	public MechanicalState[] getECFTrajectory(double startTime, double stopTime, double step);
+	public MechanicalState[] getECEFTrajectory(double startTime, double stopTime, double step);
 
 }
