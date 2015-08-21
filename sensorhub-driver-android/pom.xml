@@ -17,5 +17,10 @@
          <version>1.0</version>
          <type>bundle</type>
       </dependency>
+      <dependency>
+         <groupId>org.sensorhub</groupId>
+         <artifactId>sensorhub-process-vecmath</artifactId>
+         <version>0.1-SNAPSHOT</version>
+      </dependency>
    </dependencies>
 </project>
