@@ -144,6 +144,26 @@ public class Vect3d
     
     
     /**
+     * @return the uniform/inifinity norm of this vector
+     */
+    public final double normInf()
+    {
+        double tmp;
+        tmp = Math.max(Math.abs(x), Math.abs(y));
+        return Math.max(tmp, Math.abs(z));
+    }
+    
+    
+    /**
+     * @return the L1 norm of this vector
+     */
+    public final double normL1()
+    {
+        return Math.abs(x) + Math.abs(y) + Math.abs(z);
+    }
+    
+    
+    /**
      * Normalizes this vector in place
      * @return reference to this vector for chaining other operations
      */
@@ -169,6 +189,21 @@ public class Vect3d
         this.y = v.y * invNorm;
         this.z = v.z * invNorm;
         return this;
+    }
+    
+    
+    /**
+     * Computes this vector's euclidean norm and normalizes it in place
+     * @return the vector's norm before normalization
+     */
+    public final double normalizeAndGetNorm()
+    {
+        double norm = norm();
+        double invNorm = 1.0 / norm;
+        this.x *= invNorm;
+        this.y *= invNorm;
+        this.z *= invNorm;
+        return norm;
     }
     
     

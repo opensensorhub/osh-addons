@@ -35,5 +35,9 @@ public class CamPtzGeoPointingConfig extends StreamProcessConfig
     
     @DisplayInfo(desc="Camera reference orientation in ENU frame when camera is static (pitch, roll, yaw in deg)")
     public double[] fixedCameraRotENU;
+    
+    public String camSpsEndpointUrl;
+    
+    public String camSensorUID;
 
 }

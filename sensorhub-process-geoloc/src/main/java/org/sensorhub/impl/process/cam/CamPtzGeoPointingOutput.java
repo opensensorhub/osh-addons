@@ -15,16 +15,25 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.process.cam;
 
 import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.DataType;
 import org.sensorhub.api.common.IEventHandler;
 import org.sensorhub.api.common.IEventListener;
+import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.impl.common.BasicEventHandler;
+import org.vast.data.TextEncodingImpl;
+import org.vast.ows.OWSException;
+import org.vast.ows.sps.DescribeTaskingRequest;
+import org.vast.ows.sps.DescribeTaskingResponse;
+import org.vast.ows.sps.SPSUtils;
+import org.vast.ows.sps.SubmitRequest;
+import org.vast.swe.SWEData;
 import org.vast.swe.SWEHelper;
 
 
@@ -47,6 +56,10 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
     DataBlock latestRecord;
     double samplingPeriod = 10.0;
     
+    // SPS stuff for temporary HACK
+    SPSUtils utils = new SPSUtils();
+    DescribeTaskingResponse dtResp;
+    
 
     public CamPtzGeoPointingOutput(CamPtzGeoPointingProcess parentProcess)
     {
@@ -67,7 +80,28 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
     }
     
     
-    protected void sendLocation(double time, double lat, double lon, double alt)
+    protected void start() throws SensorHubException
+    {
+        // HACK: for now, connect to SPS directly from here
+        try
+        {
+            // connect to SPS server and retrieve tasking parameters
+            DescribeTaskingRequest dtReq = new DescribeTaskingRequest();
+            dtReq.setVersion("2.0");
+            dtReq.setPostServer(parentProcess.getConfiguration().camSpsEndpointUrl);
+            dtReq.setProcedureID(parentProcess.getConfiguration().camSensorUID);
+            utils.writeXMLQuery(System.out, dtReq);
+            dtResp = utils.sendRequest(dtReq, false);
+            utils.writeXMLResponse(System.out, dtResp);
+        }
+        catch (OWSException e)
+        {
+            throw new SensorHubException("Error while retrieving tasking message definition from SPS", e);
+        }
+    }
+    
+    
+    protected void sendPtz(double time, double pan, double tilt, double zoom)
     {
         // create and populate datablock
         DataBlock dataBlock;
@@ -82,15 +116,64 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
         }
         
         dataBlock.setDoubleValue(0, time);
-        dataBlock.setDoubleValue(1, lat);
-        dataBlock.setDoubleValue(2, lon);
-        dataBlock.setDoubleValue(3, alt);
-        CamPtzGeoPointingProcess.log.debug("Target pos = [{},{},{}]" , lat, lon, alt);
+        dataBlock.setDoubleValue(1, pan);
+        dataBlock.setDoubleValue(2, tilt);
+        dataBlock.setDoubleValue(3, zoom);
+        CamPtzGeoPointingProcess.log.debug("Computed PTZ = [{},{},{}]" , pan, tilt, zoom);
             
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();
         eventHandler.publishEvent(new DataEvent(latestRecordTime, this, dataBlock));
+        
+        try
+        {
+            SubmitRequest subReq;
+            
+            // HACK: for now, send tasking requests to SPS directly from here
+            SWEData taskParams = new SWEData();
+            taskParams.setElementType(dtResp.getTaskingParameters());
+            taskParams.setEncoding(new TextEncodingImpl());
+            DataChoice ptzParams = (DataChoice)dtResp.getTaskingParameters().copy();
+            taskParams.clearData();
+            
+            // generate pan command
+            ptzParams.renewDataBlock();
+            ptzParams.setSelectedItem("pan");
+            ptzParams.getComponent("pan").getData().setDoubleValue(-pan);
+            taskParams.addData(ptzParams.getData());
+            
+            // send request
+            subReq = new SubmitRequest();
+            subReq.setVersion("2.0");
+            subReq.setPostServer(parentProcess.getConfiguration().camSpsEndpointUrl);
+            subReq.setProcedureID(parentProcess.getConfiguration().camSensorUID);
+            subReq.setParameters(taskParams);
+            utils.writeXMLQuery(System.out, subReq);
+            utils.sendRequest(subReq, false);
+            
+            Thread.sleep(500L);
+            
+            // generate tilt command
+            taskParams.clearData();
+            ptzParams.renewDataBlock();
+            ptzParams.setSelectedItem("tilt");
+            ptzParams.getComponent("tilt").getData().setDoubleValue(tilt);
+            taskParams.addData(ptzParams.getData());
+            
+            // send request
+            subReq = new SubmitRequest();
+            subReq.setVersion("2.0");
+            subReq.setPostServer(parentProcess.getConfiguration().camSpsEndpointUrl);
+            subReq.setProcedureID(parentProcess.getConfiguration().camSensorUID);
+            subReq.setParameters(taskParams);
+            utils.writeXMLQuery(System.out, subReq);
+            utils.sendRequest(subReq, false);
+        }
+        catch (Exception e)
+        {
+            CamPtzGeoPointingProcess.log.error("Error while sending tasking request to SPS", e);
+        }
     }
 
 

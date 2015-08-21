@@ -14,6 +14,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.process.cam;
 
+import java.util.Arrays;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.common.SensorHubException;
@@ -45,12 +46,14 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
 {
     protected static final Logger log = LoggerFactory.getLogger(CamPtzGeoPointingProcess.class);
         
-    protected CamPtzGeoPointingOutput targetLocOutput;
+    protected CamPtzGeoPointingOutput camPtzOutput;
     protected GeoTransforms geoConv = new GeoTransforms();
     protected NadirPointing nadirPointing = new NadirPointing();
     
-    protected Vect3d lastCameraPosEcef = new Vect3d();
-    protected Vect3d lastCameraRotEnu = new Vect3d();
+    protected boolean lastCamPosSet = false;
+    protected boolean lastCamRotSet = false;
+    protected Vect3d lastCamPosEcef = new Vect3d();
+    protected Vect3d lastCamRotEnu = new Vect3d();
     protected Vect3d targetPosEcef = new Vect3d();
     protected Vect3d llaCam = new Vect3d();
     protected Vect3d llaTarget = new Vect3d();
@@ -73,17 +76,35 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
         if (config.fixedCameraPosLLA != null)
         {
             double[] pos = config.fixedCameraPosLLA; // lat,lon,alt in degrees
-            llaCam.set(Math.toRadians(pos[1]), Math.toRadians(pos[0]), pos[2]);
-            geoConv.LLAtoECEF(llaCam, lastCameraPosEcef);
+            
+            try
+            {
+                llaCam.set(Math.toRadians(pos[1]), Math.toRadians(pos[0]), pos[2]);
+                geoConv.LLAtoECEF(llaCam, lastCamPosEcef);
+                lastCamPosSet = true;
+            }
+            catch (Exception e)
+            {
+                throw new SensorHubException("Invalid camera position: " + Arrays.toString(pos));
+            }
         }
         
         // initializa with fixed orientation if set
         if (config.fixedCameraRotENU != null)
         {
             double[] rot = config.fixedCameraRotENU; // pitch,roll,yaw in degrees
-            lastCameraRotEnu.x = Math.toRadians(rot[0]);
-            lastCameraRotEnu.y = Math.toRadians(rot[1]);
-            lastCameraRotEnu.z = Math.toRadians(rot[2]);
+            
+            try
+            {
+                lastCamRotEnu.x = Math.toRadians(rot[0]);
+                lastCamRotEnu.y = Math.toRadians(rot[1]);
+                lastCamRotEnu.z = Math.toRadians(rot[2]);
+                lastCamRotSet = true;
+            }
+            catch (Exception e)
+            {
+                throw new SensorHubException("Invalid camera orientation: " + Arrays.toString(rot));
+            }
         }
         
         // create inputs
@@ -105,11 +126,11 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
         targetLocInput.setName("targetLocation");
         targetLocInput.addField("time", fac.newTimeStampIsoUTC());
         targetLocInput.addField("loc", fac.newLocationVectorLLA(SWEHelper.DEF_LOCATION));
-        inputs.put(cameraLocInput.getName(), cameraLocInput);
+        inputs.put(targetLocInput.getName(), targetLocInput);
         
         // create outputs
-        targetLocOutput = new CamPtzGeoPointingOutput(this);
-        addOutput(targetLocOutput);
+        camPtzOutput = new CamPtzGeoPointingOutput(this);
+        addOutput(camPtzOutput);
         
         super.init(config);
     }
@@ -132,11 +153,19 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
     
     
     @Override
+    public void start() throws SensorHubException
+    {
+        super.start();
+        camPtzOutput.start();
+    }
+    
+    
+    @Override
     protected void process(DataEvent lastEvent) throws ProcessException
     {
         try
         {
-            if (cameraLocQueue.isDataAvailable())
+            if (cameraLocQueue != null && cameraLocQueue.isDataAvailable())
             {
                 // data received is LLA in degrees
                 DataBlock dataBlk = cameraLocQueue.get();
@@ -149,10 +178,11 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
                 llaCam.y = Math.toRadians(lat);
                 llaCam.x = Math.toRadians(lon);
                 llaCam.z = alt;
-                geoConv.LLAtoECEF(llaCam, lastCameraPosEcef);
+                geoConv.LLAtoECEF(llaCam, lastCamPosEcef);
+                lastCamPosSet = true;
             }
             
-            else if (cameraRotQueue.isDataAvailable())
+            else if (cameraRotQueue != null && cameraRotQueue.isDataAvailable())
             {
                 // data received is euler angles in degrees
                 DataBlock dataBlk = cameraRotQueue.get();
@@ -162,15 +192,17 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
                 log.debug("Last camera rot = [{},{},{}]" , pitch, roll, yaw);
                 
                 // convert to radians
-                lastCameraRotEnu.x = Math.toRadians(pitch);
-                lastCameraRotEnu.y = Math.toRadians(roll);
-                lastCameraRotEnu.z = Math.toRadians(yaw);
+                lastCamRotEnu.x = Math.toRadians(pitch);
+                lastCamRotEnu.y = Math.toRadians(roll);
+                lastCamRotEnu.z = Math.toRadians(yaw);
+                lastCamRotSet = true;
             }
             
-            else if (targetLocQueue.isDataAvailable())
+            else if (lastCamPosSet && lastCamRotSet && targetLocQueue.isDataAvailable())
             {
                 // data received is LLA in degrees
                 DataBlock dataBlk = targetLocQueue.get();
+                double time = dataBlk.getDoubleValue(0);
                 double lat = dataBlk.getDoubleValue(1);
                 double lon = dataBlk.getDoubleValue(2);
                 double alt = dataBlk.getDoubleValue(3);
@@ -183,24 +215,26 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
                 geoConv.LLAtoECEF(llaTarget, targetPosEcef);
                 
                 // compute LOS from camera to target
-                Vect3d los = targetPosEcef.sub(lastCameraPosEcef);
+                Vect3d los = targetPosEcef.sub(lastCamPosEcef);
                 los.normalize();
                 
                 // transform LOS to ENU frame
-                nadirPointing.getRotationMatrixENUToECEF(lastCameraPosEcef, ecefRot);
+                nadirPointing.getRotationMatrixENUToECEF(lastCamPosEcef, ecefRot);
                 ecefRot.transpose();
                 los.rotate(ecefRot);
                 
                 // transform LOS to camera frame
-                los.rotateZ(lastCameraRotEnu.z);
-                los.rotateY(lastCameraRotEnu.y);
-                los.rotateX(lastCameraRotEnu.x);
+                los.rotateZ(-lastCamRotEnu.z);
+                //los.rotateY(lastCameraRotEnu.y);
+                //los.rotateX(lastCameraRotEnu.x);
                 
                 // compute PTZ values
-                
+                double pan = Math.toDegrees(Math.atan2(los.y, los.x));
+                double xyProj = Math.sqrt(los.x*los.x + los.y*los.y); 
+                double tilt = Math.toDegrees(Math.atan2(los.z, xyProj));
                 
                 // send to PTZ output
-                
+                camPtzOutput.sendPtz(time, pan, tilt, 1.0);
             }
         }
         catch (InterruptedException e)
@@ -220,47 +254,5 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
     public boolean isCompatibleDataSource(DataSourceConfig dataSource)
     {
         return true;
-    }
-    
-    
-    public static void main(String[] args) throws Exception
-    {
-        /*TargetGeolocProcess p = new TargetGeolocProcess();
-        TargetGeolocConfig processConf = new TargetGeolocConfig();
-        processConf.fixedPosLLA = new double[] {0.0, 0.0, 0.0};
-        p.init(processConf);
-        p.sensorLocQueue = new DataQueue();
-        p.rangeMeasQueue = new DataQueue();
-        
-        TruPulseSensor sensor = new TruPulseSensor();
-        TruPulseConfig sensorConf = new TruPulseConfig();
-        sensor.init(sensorConf);
-        ISensorDataInterface sensorOutput = sensor.getAllOutputs().values().iterator().next();
-        DataComponent outputDef = sensorOutput.getRecordDescription();
-                
-        IStreamingDataInterface processOutput = p.getAllOutputs().values().iterator().next();
-        IEventListener l = new IEventListener() {
-            public void handleEvent(Event<?> e)
-            {
-                DataBlock data = ((DataEvent)e).getRecords()[0];
-                double lat = data.getDoubleValue(1);
-                double lon = data.getDoubleValue(2);
-                double alt = data.getDoubleValue(3);
-                System.out.println(lat + "," + lon + "," + alt);
-            }
-        };
-        processOutput.registerListener(l);
-        
-        DataBlock dataBlk = outputDef.createDataBlock();
-        long now = System.currentTimeMillis();
-        double range = 10.0;
-        double az = 90.0;
-        double inc = 0.0;
-        dataBlk.setDoubleValue(0, now / 1000.);
-        dataBlk.setDoubleValue(2, range);
-        dataBlk.setDoubleValue(3, az);
-        dataBlk.setDoubleValue(4, inc);
-        p.rangeMeasQueue.add(new DataBlockFloat());
-        p.process(new SensorDataEvent(now, sensorOutput, dataBlk));*/
     }
 }
