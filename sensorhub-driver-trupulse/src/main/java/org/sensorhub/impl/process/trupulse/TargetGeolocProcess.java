@@ -14,6 +14,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.process.trupulse;
 
+import java.util.Arrays;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataRecord;
@@ -61,6 +62,7 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
     protected GeoTransforms geoConv = new GeoTransforms();
     protected NadirPointing nadirPointing = new NadirPointing();
     
+    protected boolean lastSensorPosSet = false;
     protected Vect3d lastSensorPosEcef = new Vect3d();
     protected Vect3d lla = new Vect3d();
     protected Mat3d ecefRot = new Mat3d();
@@ -80,8 +82,17 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
         if (config.fixedPosLLA != null)
         {
             double[] pos = config.fixedPosLLA; // lat-lon-alt in degrees
-            lla.set(Math.toRadians(pos[1]), Math.toRadians(pos[0]), pos[2]);
-            geoConv.LLAtoECEF(lla, lastSensorPosEcef);
+            
+            try
+            {
+                lla.set(Math.toRadians(pos[1]), Math.toRadians(pos[0]), pos[2]);
+                geoConv.LLAtoECEF(lla, lastSensorPosEcef);
+                lastSensorPosSet = true;
+            }
+            catch (Exception e)
+            {
+                throw new SensorHubException("Invalid sensor position: " + Arrays.toString(pos));
+            }
         }
         
         // create inputs
@@ -124,7 +135,7 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
     {
         try
         {
-            if (sensorLocQueue.isDataAvailable())
+            if (sensorLocQueue != null && sensorLocQueue.isDataAvailable())
             {
                 // data received is LLA in degrees
                 DataBlock dataBlk = sensorLocQueue.get();
@@ -138,20 +149,22 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
                 lla.x = Math.toRadians(lon);
                 lla.z = alt;
                 geoConv.LLAtoECEF(lla, lastSensorPosEcef);
+                lastSensorPosSet = true;
             }
             
-            else if (rangeMeasQueue.isDataAvailable())
+            else if (lastSensorPosSet && rangeMeasQueue.isDataAvailable())
             {
                 DataBlock dataBlk = rangeMeasQueue.get();
                 double time = dataBlk.getDoubleValue(0);
                 double range = dataBlk.getDoubleValue(2);
-                double az = Math.toRadians(dataBlk.getDoubleValue(3));
-                double inc = Math.toRadians(dataBlk.getDoubleValue(4));
+                double az = dataBlk.getDoubleValue(3);
+                double inc = dataBlk.getDoubleValue(4);
+                log.debug("TruPulse meas: range={}, az={}, inc={}" , range, az, inc);
                 
-                // express LOS in ENU frame
+                // express LOS in ENU frame                
                 Vect3d los = new Vect3d(0.0, range, 0.0);
-                los.rotateX(inc);
-                los.rotateZ(-az);
+                los.rotateX(Math.toRadians(inc));
+                los.rotateZ(Math.toRadians(-az));
                 
                 // transform to ECEF frame
                 nadirPointing.getRotationMatrixENUToECEF(lastSensorPosEcef, ecefRot);
