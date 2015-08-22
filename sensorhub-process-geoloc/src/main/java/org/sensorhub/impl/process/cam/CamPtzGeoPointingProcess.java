@@ -172,7 +172,7 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
                 double lat = dataBlk.getDoubleValue(1);
                 double lon = dataBlk.getDoubleValue(2);
                 double alt = dataBlk.getDoubleValue(3);
-                log.debug("Last camera pos = [{},{},{}]" , lat, lon, alt);
+                log.trace("Last camera pos = [{},{},{}]" , lat, lon, alt);
                 
                 // convert to radians and then ECEF
                 llaCam.y = Math.toRadians(lat);
@@ -189,7 +189,7 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
                 double pitch = dataBlk.getDoubleValue(1);
                 double roll = dataBlk.getDoubleValue(2);
                 double yaw = dataBlk.getDoubleValue(3);
-                log.debug("Last camera rot = [{},{},{}]" , pitch, roll, yaw);
+                log.trace("Last camera rot = [{},{},{}]" , pitch, roll, yaw);
                 
                 // convert to radians
                 lastCamRotEnu.x = Math.toRadians(pitch);
@@ -205,8 +205,8 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
                 double time = dataBlk.getDoubleValue(0);
                 double lat = dataBlk.getDoubleValue(1);
                 double lon = dataBlk.getDoubleValue(2);
-                double alt = dataBlk.getDoubleValue(3);
-                log.debug("Last target pos = [{},{},{}]" , lat, lon, alt);
+                double alt = dataBlk.getDoubleValue(3);                
+                log.debug("Target pos = [{},{},{}]" , lat, lon, alt);
                 
                 // convert to radians and then ECEF
                 llaTarget.y = Math.toRadians(lat);

@@ -67,7 +67,7 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
         this.eventHandler = new BasicEventHandler();
         
         // create output structure
-        SWEHelper fac = new SWEHelper();        
+        SWEHelper fac = new SWEHelper();
         DataRecord rec = fac.newDataRecord();
         rec.setName(getName());
         rec.addField("time", fac.newTimeStampIsoUTC());
@@ -119,7 +119,7 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
         dataBlock.setDoubleValue(1, pan);
         dataBlock.setDoubleValue(2, tilt);
         dataBlock.setDoubleValue(3, zoom);
-        CamPtzGeoPointingProcess.log.debug("Computed PTZ = [{},{},{}]" , pan, tilt, zoom);
+        CamPtzGeoPointingProcess.log.debug("Computed PTZ = [{},{},{}]", pan, tilt, zoom);
             
         // update latest record and send event
         latestRecord = dataBlock;
@@ -158,7 +158,7 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
             taskParams.clearData();
             ptzParams.renewDataBlock();
             ptzParams.setSelectedItem("tilt");
-            ptzParams.getComponent("tilt").getData().setDoubleValue(tilt);
+            ptzParams.getComponent("tilt").getData().setDoubleValue(Math.max(0.0, tilt));
             taskParams.addData(ptzParams.getData());
             
             // send request
