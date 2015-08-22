@@ -142,7 +142,7 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
                 double lat = dataBlk.getDoubleValue(1);
                 double lon = dataBlk.getDoubleValue(2);
                 double alt = dataBlk.getDoubleValue(3);
-                log.debug("Last GPS pos = [{},{},{}]" , lat, lon, alt);
+                log.trace("Last GPS pos = [{},{},{}]" , lat, lon, alt);
                 
                 // convert to radians and then ECEF
                 lla.y = Math.toRadians(lat);
@@ -160,6 +160,8 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
                 double az = dataBlk.getDoubleValue(3);
                 double inc = dataBlk.getDoubleValue(4);
                 log.debug("TruPulse meas: range={}, az={}, inc={}" , range, az, inc);
+                if (Double.isNaN(range))
+                    return;
                 
                 // express LOS in ENU frame                
                 Vect3d los = new Vect3d(0.0, range, 0.0);
