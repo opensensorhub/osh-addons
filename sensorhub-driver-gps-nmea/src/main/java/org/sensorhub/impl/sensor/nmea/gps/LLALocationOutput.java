@@ -99,7 +99,7 @@ public class LLALocationOutput extends NMEAGpsOutput
             // skip if position fix not available
             if (tokens[6].charAt(0) == '0')
             {
-                NMEAGpsSensor.log.debug("No position fix");
+                NMEAGpsSensor.log.debug("GGA: No position fix");
                 return;
             }
             
@@ -123,7 +123,10 @@ public class LLALocationOutput extends NMEAGpsOutput
             
             // skip if data is marked as invalid
             if (tokens[2].charAt(0) != 'A')
+            {
+                NMEAGpsSensor.log.debug("RMC: Invalid Data");
                 return;
+            }
             
             String utcTimeToken = tokens[1];
             double fixTime = toJulianTime(utcTimeToken, tokens[9]);
@@ -147,7 +150,10 @@ public class LLALocationOutput extends NMEAGpsOutput
             
             // skip if data is marked as invalid
             if (tokens[6].charAt(0) != 'A')
+            {
+                NMEAGpsSensor.log.debug("GLL: Invalid Data");
                 return;
+            }
             
             // skip if location was already processed for this fix time
             String utcTimeToken = tokens[5];
@@ -263,14 +269,5 @@ public class LLALocationOutput extends NMEAGpsOutput
     protected double toEllipsoidalHeight(String mslAlt, String geoidSep)
     {
         return Double.parseDouble(mslAlt) + Double.parseDouble(geoidSep);
-    }
-    
-    
-    protected final DataBlock getNewDataBlock()
-    {
-        if (latestRecord == null)
-            return dataStruct.createDataBlock();
-        else
-            return latestRecord.renew();
     }
 }

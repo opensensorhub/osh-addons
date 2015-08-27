@@ -45,12 +45,13 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
     public static final String RMC_MSG = "RMC";
     public static final String VTG_MSG = "VTG";
     public static final String ZDA_MSG = "ZDA";
+    public static final String HDG_MSG = "HDG";
     
     ICommProvider<? super CommConfig> commProvider;
     BufferedReader reader;
     volatile boolean started;
     
-    double lastFixUtcTime;
+    double lastFixUtcTime = Double.NaN;
     
     
     public NMEAGpsSensor()
@@ -71,6 +72,12 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             dataInterface.init();
         }
         
+        if (config.activeSentences.contains(GSA_MSG))
+        {
+            GPSQualityOutput dataInterface = new GPSQualityOutput(this);
+            addOutput(dataInterface, false);
+            dataInterface.init();
+        }
     }
     
     
@@ -146,11 +153,14 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             // read next message
             String msg = reader.readLine();
             long msgTime = System.currentTimeMillis();
-            NMEAGpsSensor.log.debug("Received message: {}", msg);
+            log.debug("Received message: {}", msg);
             
             // discard messages not starting with $ or with wrong checksum
             if (msg.charAt(0) != '$' || !validateChecksum(msg))
+            {
+                log.debug("Skipping invalid message");
                 return;
+            }
             
             // extract NMEA message type (remove $TalkerID prefix)
             int firstSep = msg.indexOf(',');
