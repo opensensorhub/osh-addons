@@ -9,7 +9,7 @@
   <artifactId>sensorhub-driver-mti</artifactId>
   <version>0.1</version>
   <name>MTi IMU Sensor Driver</name>
-  <description>SensorHub driver for MTi inertial sensing units</description>
+  <description>Sensor driver for MTi inertial sensing units</description>
   <dependencies>
      <dependency>
         <groupId>org.sensorhub</groupId>
