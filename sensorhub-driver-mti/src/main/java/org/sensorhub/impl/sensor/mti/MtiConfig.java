@@ -15,17 +15,17 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.mti;
 
 import org.sensorhub.api.comm.CommConfig;
+import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 import org.sensorhub.impl.comm.RS232Config;
 
 
 public class MtiConfig extends SensorConfig
 {
-	// comm settings
+    
+    @DisplayInfo(label="Communication Settings", desc="Settings for selected communication port")
     public CommConfig commSettings;
     
-    public int tcpRepeaterPort = 9999;
-
     
     public MtiConfig()
     {
