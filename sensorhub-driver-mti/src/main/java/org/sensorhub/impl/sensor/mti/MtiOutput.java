@@ -52,8 +52,6 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
     float[] mag = new float[3];
     float[] quat = new float[4];
     
-    TcpRepeater tcpRepeater;
-    
     
     public MtiOutput(MtiSensor parentSensor)
     {
@@ -156,9 +154,6 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
             sampleCounter++;
             if (sampleCounter % decimFactor != 0)
                 return false;
-            
-            if (tcpRepeater != null)
-                tcpRepeater.sendMessage(msgBytes);
                         
             // validate checksum
             int checksum = 0;
@@ -246,20 +241,6 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
             }
         });
         t.start();
-        
-        // start TCP repeater
-        int tcpPort = parentSensor.getConfiguration().tcpRepeaterPort; 
-        if (tcpPort > 0)
-        {
-            try
-            {
-                tcpRepeater = new TcpRepeater(tcpPort);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException("Error while launching TCP repeater", e);
-            }
-        }
     }
 
 
@@ -272,12 +253,6 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
             try { dataIn.close(); }
             catch (IOException e) { }
             dataIn = null;
-        }
-        
-        if (tcpRepeater != null)
-        {
-            tcpRepeater.stop();
-            tcpRepeater = null;
         }
     }
 
