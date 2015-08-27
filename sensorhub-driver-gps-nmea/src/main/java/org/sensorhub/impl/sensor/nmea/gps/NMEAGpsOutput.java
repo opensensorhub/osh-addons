@@ -31,6 +31,8 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
  */
 public abstract class NMEAGpsOutput extends AbstractSensorOutput<NMEAGpsSensor>
 {
+    protected static final String NMEA_SEP_REGEX = ",|\\*";
+    
     protected DataComponent dataStruct;
     protected DataEncoding dataEncoding;
     protected double samplingPeriod;
@@ -79,6 +81,15 @@ public abstract class NMEAGpsOutput extends AbstractSensorOutput<NMEAGpsSensor>
             samplingPeriod = (msgTime - lastMsgTime) / 1000.;
         
         lastMsgTime = msgTime;
+    }
+    
+    
+    protected final DataBlock getNewDataBlock()
+    {
+        if (latestRecord == null)
+            return dataStruct.createDataBlock();
+        else
+            return latestRecord.renew();
     }
     
     

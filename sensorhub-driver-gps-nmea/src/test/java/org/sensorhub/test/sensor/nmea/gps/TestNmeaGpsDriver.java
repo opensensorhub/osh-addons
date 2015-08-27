@@ -51,7 +51,7 @@ public class TestNmeaGpsDriver implements IEventListener
     {
         config = new NMEAGpsConfig();
         config.id = UUID.randomUUID().toString();
-        config.activeSentences = Arrays.asList("GGA", "RMC");
+        config.activeSentences = Arrays.asList("GGA", "RMC", "GSA");
         
         RS232Config serialConf = new RS232Config();
         serialConf.moduleClass = "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider";
@@ -92,14 +92,17 @@ public class TestNmeaGpsDriver implements IEventListener
     public void testSendMeasurements() throws Exception
     {
         System.out.println();
-        ISensorDataInterface gpsOutput = driver.getObservationOutputs().get("gpsLocation");
-        
+                
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
-        writer.setDataComponents(gpsOutput.getRecordDescription());
         writer.setOutput(System.out);
         
-        gpsOutput.registerListener(this);
+        ISensorDataInterface locOutput = driver.getObservationOutputs().get("gpsLocation");
+        locOutput.registerListener(this);
+        
+        ISensorDataInterface qualOutput = driver.getObservationOutputs().get("gpsQuality");
+        qualOutput.registerListener(this);
+        
         driver.start();
         
         synchronized (this) 
@@ -121,6 +124,8 @@ public class TestNmeaGpsDriver implements IEventListener
         try
         {
             //System.out.print("\nNew data received from sensor " + newDataEvent.getSensorId());
+            writer.setDataComponents(newDataEvent.getRecordDescription());
+            writer.reset();
             writer.write(newDataEvent.getRecords()[0]);
             writer.flush();
             
