@@ -71,14 +71,46 @@ public class RxtxSerialCommProvider extends AbstractModule<RS232Config> implemen
                 if (commPort instanceof SerialPort)
                 {
                     serialPort = (SerialPort) commPort;
+                    
+                    // get parity code
+                    int parity;                    
+                    if (config.parity == null)
+                    {
+                        parity = SerialPort.PARITY_NONE;
+                    }
+                    else
+                    {
+                        switch (config.parity)
+                        {
+                            case PARITY_EVEN:
+                                parity = SerialPort.PARITY_EVEN;
+                                break;
+                                
+                            case PARITY_ODD:
+                                parity = SerialPort.PARITY_ODD;
+                                break;
+                                
+                            case PARITY_MARK:
+                                parity = SerialPort.PARITY_MARK;
+                                break;
+                                
+                            case PARITY_SPACE:
+                                parity = SerialPort.PARITY_SPACE;
+                                break;
+                                
+                            default:
+                                parity = SerialPort.PARITY_NONE;
+                        }
+                    }
                                         
                     // configure serial port
                     serialPort.setSerialPortParams(
                             config.baudRate,
                             config.dataBits,
                             config.stopBits,
-                            SerialPort.PARITY_NONE);
+                            parity);
                     
+                    // obtain input/output streams
                     is = serialPort.getInputStream();
                     os = serialPort.getOutputStream();
                     
