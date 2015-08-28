@@ -54,11 +54,11 @@ public class GPSQualityOutput extends NMEAGpsOutput
         dataStruct = fac.newDataRecord(3);
         dataStruct.setName(getName());
         dataStruct.addComponent("time", fac.newTimeStampIsoUTC());
-        dataStruct.addComponent("numSats", fac.newCount(SWEHelper.getPropertyUri("GPS/FixNumSats"), "Number of Satellites", "Number of satellites used in the position fix"));
-        dataStruct.addComponent("hdop", fac.newQuantity(SWEHelper.getPropertyUri("GPS/HDOP"), "HDOP", null, "1", DataType.FLOAT));
-        dataStruct.addComponent("vdop", fac.newQuantity(SWEHelper.getPropertyUri("GPS/VDOP"), "VDOP", null, "1", DataType.FLOAT));
-        dataStruct.addComponent("herr", fac.newQuantity(SWEHelper.getPropertyUri("GPS/HPrecision"), "Horizontal Precision", null, "m", DataType.FLOAT));
-        dataStruct.addComponent("verr", fac.newQuantity(SWEHelper.getPropertyUri("GPS/VPrecision"), "Vertical Precision", null, "m", DataType.FLOAT));
+        dataStruct.addComponent("numSats", fac.newCount(SWEHelper.getPropertyUri("GNSS/FixNumSats"), "Number of Satellites", "Number of satellites used in the position fix"));
+        dataStruct.addComponent("hdop", fac.newQuantity(SWEHelper.getPropertyUri("GNSS/HDOP"), "HDOP", null, "1", DataType.FLOAT));
+        dataStruct.addComponent("vdop", fac.newQuantity(SWEHelper.getPropertyUri("GNSS/VDOP"), "VDOP", null, "1", DataType.FLOAT));
+        dataStruct.addComponent("herr", fac.newQuantity(SWEHelper.getPropertyUri("GNSS/HPrecision"), "Horizontal Precision", null, "m", DataType.FLOAT));
+        dataStruct.addComponent("verr", fac.newQuantity(SWEHelper.getPropertyUri("GNSS/VPrecision"), "Vertical Precision", null, "m", DataType.FLOAT));
         
         dataEncoding = fac.newTextEncoding(",", "\n");
     }
@@ -74,7 +74,7 @@ public class GPSQualityOutput extends NMEAGpsOutput
             String[] tokens = msg.split(NMEA_SEP_REGEX);
                         
             // skip if position fix not available
-            if (tokens[1].charAt(0) == '1' || Double.isNaN(parentSensor.lastFixUtcTime))
+            if (tokens[1].charAt(0) != 'A' || Double.isNaN(parentSensor.lastFixUtcTime))
             {
                 NMEAGpsSensor.log.debug("GSA: No position fix");
                 return;
