@@ -38,7 +38,7 @@ import org.vast.swe.SWEUtils;
 import static org.junit.Assert.*;
 
 
-public class TestMtiDriver implements IEventListener
+public class TestMtiDriverRxtx implements IEventListener
 {
     MtiSensor driver;
     MtiConfig config;	
