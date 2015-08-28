@@ -18,6 +18,7 @@ import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
@@ -45,7 +46,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
     public static final String RMC_MSG = "RMC";
     public static final String VTG_MSG = "VTG";
     public static final String ZDA_MSG = "ZDA";
-    public static final String HDG_MSG = "HDG";
+    public static final String HDT_MSG = "HDT";
     
     ICommProvider<? super CommConfig> commProvider;
     BufferedReader reader;
@@ -65,7 +66,8 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
         super.init(config);
         
         // create outputs depending on selected sentences
-        if (config.activeSentences.contains(GLL_MSG) || config.activeSentences.contains(GGA_MSG))
+        if (config.activeSentences.contains(GLL_MSG) ||
+            config.activeSentences.contains(GGA_MSG))
         {
             LLALocationOutput dataInterface = new LLALocationOutput(this);
             addOutput(dataInterface, false);
@@ -75,6 +77,14 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
         if (config.activeSentences.contains(GSA_MSG))
         {
             GPSQualityOutput dataInterface = new GPSQualityOutput(this);
+            addOutput(dataInterface, false);
+            dataInterface.init();
+        }
+        
+        if (config.activeSentences.contains(VTG_MSG) ||
+            config.activeSentences.contains(HDT_MSG))
+        {
+            NEDVelocityOutput dataInterface = new NEDVelocityOutput(this);
             addOutput(dataInterface, false);
             dataInterface.init();
         }
@@ -121,8 +131,8 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
         // connect to data stream
         try
         {
-            reader = new BufferedReader(new InputStreamReader(commProvider.getInputStream()));
-            NMEAGpsSensor.log.info("Connected to NMEA data stream");
+            reader = new BufferedReader(new InputStreamReader(commProvider.getInputStream(), StandardCharsets.US_ASCII));
+            NMEAGpsSensor.log.debug("Connected to NMEA data stream");
         }
         catch (IOException e)
         {
@@ -153,6 +163,11 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             // read next message
             String msg = reader.readLine();
             long msgTime = System.currentTimeMillis();
+            
+            // if null, it's EOF
+            if (msg == null)
+                return;            
+            
             log.debug("Received message: {}", msg);
             
             // discard messages not starting with $ or with wrong checksum
@@ -200,12 +215,12 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             // compute our own checksum
             int checkSum = 0;
             for (int i = 1; i < checkSumIndex; i++)
-                checkSum ^= (byte)msg.charAt(i);
+                checkSum ^= (byte)(msg.charAt(i) & 0xFF);
                         
             // warn and return false if not equal
             if (checkSum != msgCheckSum)
             {
-                log.warn("Wrong message checksum: {}", msg);
+                log.warn("Wrong checksum {} for message: {}", checkSum, msg);
                 return false;
             }
         }

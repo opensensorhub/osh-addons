@@ -94,7 +94,7 @@ public class LLALocationOutput extends NMEAGpsOutput
         // process different message types
         if (msgID.equals(NMEAGpsSensor.GGA_MSG))
         {
-            String[] tokens = msg.split(",");
+            String[] tokens = msg.split(NMEA_SEP_REGEX);
                         
             // skip if position fix not available
             if (tokens[6].charAt(0) == '0')
@@ -119,7 +119,7 @@ public class LLALocationOutput extends NMEAGpsOutput
         
         else if (msgID.equals(NMEAGpsSensor.RMC_MSG))
         {
-            String[] tokens = msg.split(",");
+            String[] tokens = msg.split(NMEA_SEP_REGEX);
             
             // skip if data is marked as invalid
             if (tokens[2].charAt(0) != 'A')
@@ -146,7 +146,7 @@ public class LLALocationOutput extends NMEAGpsOutput
         
         else if (msgID.equals(NMEAGpsSensor.GLL_MSG))
         {
-            String[] tokens = msg.split(",");
+            String[] tokens = msg.split(NMEA_SEP_REGEX);
             
             // skip if data is marked as invalid
             if (tokens[6].charAt(0) != 'A')
@@ -171,7 +171,7 @@ public class LLALocationOutput extends NMEAGpsOutput
         
         else if (msgID.equals(NMEAGpsSensor.ZDA_MSG))
         {
-            String[] tokens = msg.split(",");
+            String[] tokens = msg.split(NMEA_SEP_REGEX);
             
             // UTC date
             cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(tokens[2]));
