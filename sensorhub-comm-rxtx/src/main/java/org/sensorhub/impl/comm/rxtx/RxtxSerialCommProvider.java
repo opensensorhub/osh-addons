@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RxtxSerialCommProvider extends AbstractModule<RS232Config> implements ICommProvider<RS232Config>
 {
-    static final Logger log = LoggerFactory.getLogger(RxtxSerialCommProvider.class.getSimpleName());
+    static final Logger log = LoggerFactory.getLogger(RxtxSerialCommProvider.class);
     
     SerialPort serialPort;
     InputStream is;
