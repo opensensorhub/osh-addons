@@ -23,5 +23,25 @@
         <version>0.1</version>
         <scope>test</scope>
      </dependency>
+     <dependency>
+        <groupId>org.sensorhub</groupId>
+        <artifactId>sensorhub-comm-dio</artifactId>
+        <version>0.1</version>
+        <scope>test</scope>
+     </dependency>
   </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>**/TestNmeaGpsDriverDio.java</exclude>
+            <exclude>**/TestNmeaGpsDriverRxtx.java</exclude>            
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

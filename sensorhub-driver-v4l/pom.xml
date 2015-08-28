@@ -9,6 +9,7 @@
    <artifactId>sensorhub-driver-v4l</artifactId>
    <name>SensorHub V4L Driver</name>
    <description>Example driver for Video4Linux compatible cameras</description>
+   <version>0.1</version>
    <packaging>bundle</packaging>
    <dependencies>
       <dependency>
@@ -30,14 +31,16 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-               <forkMode>once</forkMode>
+               <!--<forkMode>once</forkMode>
                <environmentVariables>
                   <LD_LIBRARY_PATH>${project.basedir}/lib</LD_LIBRARY_PATH>
                </environmentVariables>
-               <argLine>-Djava.library.path=${project.basedir}/lib</argLine>
+               <argLine>-Djava.library.path=${project.basedir}/lib</argLine>-->
+               <excludes>
+                  <exclude>**/TestV4LCameraDriver.java</exclude>        
+               </excludes>
             </configuration>
          </plugin>
       </plugins>
    </build>
-   <version>0.1</version>
 </project>
