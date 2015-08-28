@@ -38,7 +38,7 @@ import org.vast.swe.SWEUtils;
 import static org.junit.Assert.*;
 
 
-public class TestNmeaGpsDriver implements IEventListener
+public class TestNmeaGpsDriverDio implements IEventListener
 {
     NMEAGpsSensor driver;
     NMEAGpsConfig config;
@@ -54,12 +54,15 @@ public class TestNmeaGpsDriver implements IEventListener
         config.activeSentences = Arrays.asList("GGA", "RMC", "GSA");
         
         RS232Config serialConf = new RS232Config();
-        serialConf.moduleClass = "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider";
-        serialConf.portName = "/dev/ttyUSB0";
+        //serialConf.moduleClass = "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider";
+        //serialConf.portName = "/dev/ttyUSB0";
+        serialConf.moduleClass = "org.sensorhub.impl.comm.dio.JdkDioSerialCommProvider";
+        serialConf.portName = "ttyAMA0";
         serialConf.baudRate = 9600;
         serialConf.dataBits = 8;
         serialConf.stopBits = 1;
         serialConf.parity = Parity.PARITY_NONE;
+        serialConf.receiveTimeout = 100;
         config.commSettings = serialConf;
         
         driver = new NMEAGpsSensor();
@@ -107,7 +110,7 @@ public class TestNmeaGpsDriver implements IEventListener
         
         synchronized (this) 
         {
-            while (sampleCount < 5)
+            while (sampleCount < 50)
                 wait();
         }
         

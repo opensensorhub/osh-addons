@@ -35,4 +35,17 @@
       <email>mike.botts@botts-inc.com</email>
     </developer>
   </developers>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>**/TestAxisCameraDriver.java</exclude>        
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

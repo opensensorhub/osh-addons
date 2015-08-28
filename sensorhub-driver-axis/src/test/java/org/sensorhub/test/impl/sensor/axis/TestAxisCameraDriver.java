@@ -91,9 +91,6 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        if (!driver.isConnected())
-            return;
-        
         for (ISensorDataInterface di: driver.getObservationOutputs().values())
         {
             DataComponent dataMsg = di.getRecordDescription();
@@ -105,9 +102,6 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testGetCommandDesc() throws Exception
     {
-        if (!driver.isConnected())
-            return;
-        
         for (ISensorControlInterface ci: driver.getCommandInputs().values())
         {
             DataComponent commandMsg = ci.getCommandDescription();
@@ -119,9 +113,6 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testGetSensorDesc() throws Exception
     {
-        if (!driver.isConnected())
-            return;
-        
         AbstractProcess smlDesc = driver.getCurrentDescription();
         new SMLUtils(SMLUtils.V2_0).writeProcess(System.out, smlDesc, true);
     }
@@ -143,9 +134,6 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testVideoCapture() throws Exception
     {
-        if (!driver.isConnected())
-            return;
-        
         initWindow();
     	
     	// register listener on data interface
@@ -170,9 +158,6 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testPTZSettingsOutput() throws Exception
     {
-        if (!driver.isConnected())
-            return;
-        
         // register listener on data interface
         ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
         di.registerListener(this);
@@ -191,9 +176,6 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testSendPTZCommand() throws Exception
     {
-        if (!driver.isConnected())
-            return;
-        
         initWindow();
     	
     	// register listeners
