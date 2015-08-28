@@ -1,0 +1,37 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.sensorhub</groupId>
+    <artifactId>sensorhub-all</artifactId>
+    <version>1.0</version>
+    <relativePath>../sensorhub-all/pom.xml</relativePath>
+  </parent>
+  <artifactId>sensorhub-comm-dio</artifactId>
+  <version>0.1</version>
+  <name>Device I/O Communication Provider</name>
+  <description>Direct device communication provided by JDK Device I/O library</description>
+  <repositories>
+     <repository>
+         <id>kura_addons</id>
+         <name>Kura Addons Maven Repository</name>
+         <url>https://raw.github.com/eurotech/kura_addons/mvn-repo/</url>
+         <snapshots>
+             <enabled>true</enabled>
+             <updatePolicy>always</updatePolicy>
+         </snapshots>
+     </repository>
+  </repositories>
+  <dependencies>
+     <dependency>
+        <groupId>org.sensorhub</groupId>
+        <artifactId>sensorhub-core</artifactId>
+        <version>1.0</version>
+        <type>bundle</type>
+     </dependency>
+     <dependency>
+         <groupId>jdk</groupId>
+         <artifactId>jdk.dio</artifactId>
+         <version>1.0.1</version>
+      </dependency>
+  </dependencies>
+</project>
