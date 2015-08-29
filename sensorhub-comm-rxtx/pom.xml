@@ -8,7 +8,7 @@
   </parent>
   <artifactId>sensorhub-comm-rxtx</artifactId>
   <version>0.1</version>
-  <name>Serial Communication Provider</name>
+  <name>RXTX Serial Communication Provider</name>
   <description>Serial communication provider based on the RXTX library</description>
   <dependencies>
      <dependency>

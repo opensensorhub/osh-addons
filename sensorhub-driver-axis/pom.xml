@@ -8,7 +8,7 @@
   </parent>
   <artifactId>sensorhub-driver-axis</artifactId>
   <packaging>bundle</packaging>
-  <name>Axis Camera Driver</name>
+  <name>Axis Camera Sensor Driver</name>
   <description>Driver for Axis network video camera using IP protocol</description>
   <version>0.1</version>
   <dependencies>

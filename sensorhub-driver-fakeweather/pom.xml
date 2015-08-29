@@ -7,7 +7,7 @@
     <relativePath>../sensorhub-all/pom.xml</relativePath>
   </parent>
   <artifactId>sensorhub-driver-fakeweather</artifactId>
-  <name>SensorHub Fake Weather Station</name>
+  <name>SensorHub Simulated Weather Station</name>
   <description>Generates random increases and decreases in temp, pressure, wind speed, and direction</description>
   <dependencies>
   	<dependency>

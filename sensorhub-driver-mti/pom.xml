@@ -8,8 +8,8 @@
   </parent>
   <artifactId>sensorhub-driver-mti</artifactId>
   <version>0.1</version>
-  <name>MTi IMU Sensor Driver</name>
-  <description>Sensor driver for MTi inertial sensing units</description>
+  <name>XSense MTi IMU Sensor Driver</name>
+  <description>Sensor driver for XSense MTi inertial measurement units</description>
   <dependencies>
      <dependency>
         <groupId>org.sensorhub</groupId>
