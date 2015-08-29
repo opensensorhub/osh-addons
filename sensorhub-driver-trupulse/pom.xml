@@ -7,8 +7,8 @@
     <relativePath>../sensorhub-all/pom.xml</relativePath>
   </parent>
   <artifactId>sensorhub-driver-trupulse</artifactId>
-  <name>SensorHub TruPulse 360R</name>
-  <description>Laser Range Finder with inclination and azimuth (angle from North)</description>
+  <name>TruPulse Range Finder Sensor Driver</name>
+  <description>Driver for TruPulse 360R Laser Range Finder with inclination and azimuth (angle from North)</description>
   <dependencies>
   	<dependency>
   	   <groupId>org.sensorhub</groupId>
