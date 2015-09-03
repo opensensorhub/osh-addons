@@ -25,4 +25,5 @@
          <systemPath>${project.basedir}/lib/RXTXcomm.jar</systemPath>
       </dependency>
   </dependencies>
+  <packaging>bundle</packaging>
 </project>
