@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>edu.jcu</groupId>
+  <artifactId>v4l4j</artifactId>
+  <version>0.9.1</version>
+  <versioning>
+    <versions>
+      <version>0.9.1</version>
+    </versions>
+    <lastUpdated>20150903233646</lastUpdated>
+  </versioning>
+</metadata>
