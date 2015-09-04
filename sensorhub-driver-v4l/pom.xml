@@ -11,18 +11,23 @@
    <description>Driver for Video4Linux compatible cameras</description>
    <version>0.1</version>
    <packaging>bundle</packaging>
+   <repositories>
+      <repository>
+         <id>in-project</id>
+         <name>In-Project Repo</name>
+         <url>file://${project.basedir}/libs</url>
+      </repository>
+   </repositories>
    <dependencies>
       <dependency>
          <groupId>org.sensorhub</groupId>
          <artifactId>sensorhub-core</artifactId>
-         <version>1.0</version>
+         <version>${project.parent.version}</version>
       </dependency>
       <dependency>
-         <groupId>au.edu.jcu</groupId>
+         <groupId>edu.jcu</groupId>
          <artifactId>v4l4j</artifactId>
          <version>0.9.1</version>
-         <scope>system</scope>
-         <systemPath>${project.basedir}/lib/v4l4j.jar</systemPath>
       </dependency>
    </dependencies>
    <build>
@@ -39,6 +44,15 @@
                <excludes>
                   <exclude>**/TestV4LCameraDriver.java</exclude>        
                </excludes>
+            </configuration>
+         </plugin>
+         <plugin>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>maven-bundle-plugin</artifactId>
+            <configuration>
+               <instructions>
+                  <Embed-Dependency combine.self="override">v4l4j</Embed-Dependency>
+               </instructions>
             </configuration>
          </plugin>
       </plugins>
