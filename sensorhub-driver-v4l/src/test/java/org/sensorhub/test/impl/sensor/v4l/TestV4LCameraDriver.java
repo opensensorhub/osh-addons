@@ -14,7 +14,6 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.test.impl.sensor.v4l;
 
-import java.io.File;
 import java.util.UUID;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataBlock;
@@ -43,19 +42,13 @@ public class TestV4LCameraDriver implements IEventListener
     int actualWidth, actualHeight;
     
     
-    static
-    {
-        System.load(new File(new File("."), "/lib/libvideo.so.0").getAbsolutePath());
-        System.load(new File(new File("."), "/lib/libv4l4j.so").getAbsolutePath());        
-    }    
-    
-    
     @Before
     public void init() throws Exception
     {
         config = new V4LCameraConfig();
         config.deviceName = "/dev/video0";
         config.id = UUID.randomUUID().toString();
+        config.enabled = true;
         
         driver = new V4LCameraDriver();
         driver.init(config);
