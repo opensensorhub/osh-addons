@@ -38,7 +38,7 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
     
     DataComponent imuData;
     DataEncoding dataEncoding;
-    boolean sendData;
+    boolean started;
     
     DataInputStream dataIn;
     byte[] msgBytes = new byte[MSG_SIZE];
@@ -139,7 +139,7 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
     }
     
     
-    protected synchronized boolean decodeNextMessage()
+    protected boolean decodeNextMessage()
     {
         try
         {
@@ -198,12 +198,12 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
         }
         catch (EOFException e)
         {
-            stop();
+            started = false;
         }
         catch (IOException e)
         {
             MtiSensor.log.error("Error while decoding IMU stream. Stopping", e);
-            stop();
+            started = false;
         }
         
         return true;
@@ -212,10 +212,10 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
 
     protected void start(ICommProvider<?> commProvider)
     {
-        if (sendData)
+        if (started)
             return;
         
-        sendData = true;
+        started = true;
         sampleCounter = -1;
         
         // connect to data stream
@@ -234,25 +234,26 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
         {
             public void run()
             {
-                while (sendData)
+                while (started)
                 {
                     pollAndSendMeasurement();
-                }
+                }                
+
+                dataIn = null;
             }
         });
         t.start();
     }
 
 
-    protected synchronized void stop()
+    protected void stop()
     {
-        sendData = false;
+        started = false;
         
         if (dataIn != null)
         {
             try { dataIn.close(); }
             catch (IOException e) { }
-            dataIn = null;
         }
     }
 
