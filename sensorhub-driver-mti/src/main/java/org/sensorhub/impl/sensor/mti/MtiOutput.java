@@ -18,7 +18,6 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import java.io.DataInputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import net.opengis.swe.v20.DataBlock;
@@ -196,14 +195,13 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
             quat[2] = msgBuf.getFloat();
             quat[3] = msgBuf.getFloat();
         }
-        catch (EOFException e)
-        {
-            started = false;
-        }
         catch (IOException e)
         {
-            MtiSensor.log.error("Error while decoding IMU stream. Stopping", e);
+            // log error except when stopping voluntarily
+            if (started)
+                MtiSensor.log.error("Error while decoding IMU stream. Stopping", e);
             started = false;
+            return false;
         }
         
         return true;
