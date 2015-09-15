@@ -16,7 +16,7 @@ public class AVLModuleDescriptor implements IModuleProvider
 	@Override
 	public String getModuleDescription()
 	{
-		return "Automotive Vehicle Location providing location and status based on Intergraph's 911 System";
+		return "Automatic Vehicle Location providing location and status based on Intergraph's 911 System";
 	}
 
 	@Override
