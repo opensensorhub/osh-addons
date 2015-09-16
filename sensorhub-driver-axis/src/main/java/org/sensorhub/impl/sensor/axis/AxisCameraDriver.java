@@ -20,10 +20,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 
@@ -43,7 +43,7 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 
 public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 {
-	private static final Log log = LogFactory.getLog(AxisCameraDriver.class);
+	private static final Logger log = LoggerFactory.getLogger(AxisCameraDriver.class);
 	
 	AxisVideoOutput videoDataInterface;
     AxisSettingsOutput ptzDataInterface;
