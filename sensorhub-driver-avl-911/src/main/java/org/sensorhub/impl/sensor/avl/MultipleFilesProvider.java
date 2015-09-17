@@ -53,6 +53,7 @@ public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderC
 {
     WatchService watcher;
     BlockingDeque<File> files;
+    InputStream multiFileInputStream;
     boolean started, init;
 
 
@@ -65,40 +66,63 @@ public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderC
     @Override
     public InputStream getInputStream() throws IOException
     {
-        // use a filter input stream so we can change behavior on EOF
-        // here we keep blocking on read until a new file is added
-        return new FilterInputStream(nextFile()) {
+        if (multiFileInputStream == null)
+        {        
+            // use a filter input stream so we can change behavior on EOF
+            // here we keep blocking on read until a new file is added
+            multiFileInputStream = new FilterInputStream(nextFile()) {
+    
+                Thread readThread;
+                
+                @Override
+                public int read() throws IOException
+                {
+                    initDelay();
+                    readThread = Thread.currentThread();
+                    
+                    int b = super.read();
+                    if (b < 0)
+                    {
+                        this.in = nextFile();
+                        if (this.in == null)
+                            return -1;
+                        return super.read();
+                    }
+                    
+                    return b;
+                }
+                
+                @Override
+                public int read(byte[] b, int off, int len) throws IOException
+                {
+                    initDelay();
+                    readThread = Thread.currentThread();
+                    
+                    int count = super.read(b, off, len);
+                    if (count < 0)
+                    {
+                        this.in = nextFile();
+                        if (this.in == null)
+                            return -1;
+                        return super.read(b, off, len);
+                    }
+                    
+                    return count;
+                }
 
-            @Override
-            public int read() throws IOException
-            {
-                initDelay();
-                
-                int b = super.read();
-                if (b < 0)
+                @Override
+                public void close() throws IOException
                 {
-                    this.in = nextFile();
-                    return super.read();
-                }
-                
-                return b;
-            }
-            
-            @Override
-            public int read(byte[] b, int off, int len) throws IOException
-            {
-                initDelay();
-                
-                int count = super.read(b, off, len);
-                if (count < 0)
-                {
-                    this.in = nextFile();
-                    return super.read(b, off, len);
-                }
-                
-                return count;
-            }            
-        };
+                    if (in != null)
+                    {
+                        super.close();
+                        readThread.interrupt();
+                    }
+                }            
+            };
+        }
+        
+        return multiFileInputStream;
     }
     
     
@@ -228,12 +252,12 @@ public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderC
             if (watcher != null)
                 watcher.close();
             
+            multiFileInputStream.close();
             files.clear();
         }
         catch (IOException e)
         {
         }
-
     }
 
 

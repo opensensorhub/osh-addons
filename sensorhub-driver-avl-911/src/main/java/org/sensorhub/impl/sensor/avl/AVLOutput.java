@@ -202,7 +202,7 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver>
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AVLOutput.this, dataBlock));
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, vehID, AVLOutput.this, dataBlock));
     }
 
 

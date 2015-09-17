@@ -52,7 +52,6 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
 	static final String VEHICLE_UID_PREFIX = SENSOR_UID_PREFIX + "vehicle:";
     
     Set<String> foiIDs;
-    Set<String> vehicleIDs;
     Map<String, AbstractFeature> vehicleFois;
     	
 	ICommProvider<? super CommConfig> commProvider;
@@ -71,7 +70,6 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
         
         // create foi maps
         this.foiIDs = new LinkedHashSet<String>();
-        this.vehicleIDs = new LinkedHashSet<String>();
         this.vehicleFois = new LinkedHashMap<String, AbstractFeature>();
         
         // init main data interface
@@ -124,14 +122,14 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
     @Override
     public void stop() throws SensorHubException
     {
-        if (dataInterface != null)
-            dataInterface.stop();
-                    
         if (commProvider != null)
         {
             commProvider.stop();
             commProvider = null;
         }
+        
+        if (dataInterface != null)
+            dataInterface.stop();
     }
     
 
@@ -151,7 +149,7 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
     
     void addFoi(double recordTime, String vehicleID)
     {
-        if (!vehicleIDs.contains(vehicleID))
+        if (!vehicleFois.containsKey(vehicleID))
         {
             String name = vehicleID;
             String uid = VEHICLE_UID_PREFIX + vehicleID;
@@ -174,12 +172,11 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
             
             // update maps
             foiIDs.add(uid);
-            vehicleIDs.add(vehicleID);
-            vehicleFois.put(uid, foi);
+            vehicleFois.put(vehicleID, foi);
             
             // send event
             long now = System.currentTimeMillis();
-            eventHandler.publishEvent(new FoiEvent(now, this, foi, recordTime));
+            eventHandler.publishEvent(new FoiEvent(now, vehicleID, this, foi, recordTime));
             
             log.debug("New vehicle added as FOI: {}", uid);
         }
