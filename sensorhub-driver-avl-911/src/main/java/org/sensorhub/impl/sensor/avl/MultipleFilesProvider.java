@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystems;
+import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,6 +33,7 @@ import static java.nio.file.StandardWatchEventKinds.*;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.EnumSet;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import org.sensorhub.api.comm.ICommProvider;
@@ -173,7 +175,7 @@ public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderC
         // scan folder for files (not recursively)
         try
         {
-            Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
+            Files.walkFileTree(dir, EnumSet.noneOf(FileVisitOption.class), 1, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path f, BasicFileAttributes att) throws IOException
                 {
