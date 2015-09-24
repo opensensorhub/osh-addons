@@ -37,7 +37,16 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
     
     
     public FakeWeatherSensor()
+    {        
+    }
+    
+    
+    @Override
+    public void init(FakeWeatherConfig config) throws SensorHubException
     {
+        super.init(config);
+        
+        // init main data interface
         dataInterface = new FakeWeatherOutput(this);
         addOutput(dataInterface, false);
         dataInterface.init();

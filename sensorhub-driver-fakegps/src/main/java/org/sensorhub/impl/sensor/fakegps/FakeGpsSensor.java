@@ -34,6 +34,15 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
     
     public FakeGpsSensor()
     {
+    }
+    
+    
+    @Override
+    public void init(FakeGpsConfig config) throws SensorHubException
+    {
+        super.init(config);
+        
+        // init main data interface
         dataInterface = new FakeGpsOutput(this);
         addOutput(dataInterface, false);
         dataInterface.init();

@@ -37,7 +37,6 @@ import net.opengis.swe.v20.Time;
 import net.sf.jipcam.axis.media.protocol.http.MjpegStream;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.common.BasicEventHandler;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.CountImpl;
 import org.vast.data.DataBlockMixed;
@@ -73,15 +72,7 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	
 	public AxisVideoOutput(AxisCameraDriver driver)
     {
-    	super(driver);
-        this.eventHandler = new BasicEventHandler();    	
-    }
-	
-	
-	@Override
-    public String getName()
-    {
-        return "videoOutput";
+    	super("videoOutput", driver);   	
     }
     
     

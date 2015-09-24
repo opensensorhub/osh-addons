@@ -43,6 +43,15 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     
     public V4LCameraDriver()
     {
+        
+    }
+    
+    
+    @Override
+    public void init(V4LCameraConfig config) throws SensorHubException
+    {
+        super.init(config);
+        
         this.dataInterface = new V4LCameraOutput(this);
         this.controlInterface = new V4LCameraControl(this);
     }
