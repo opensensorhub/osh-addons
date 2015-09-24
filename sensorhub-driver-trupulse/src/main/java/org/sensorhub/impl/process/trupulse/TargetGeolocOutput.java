@@ -23,7 +23,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.module.IModule;
-import org.sensorhub.impl.common.BasicEventHandler;
+import org.sensorhub.impl.common.EventBus;
 import org.vast.swe.SWEHelper;
 
 
@@ -50,7 +50,6 @@ public class TargetGeolocOutput implements IStreamingDataInterface
     public TargetGeolocOutput(TargetGeolocProcess parentProcess)
     {
         this.parentProcess = parentProcess;
-        this.eventHandler = new BasicEventHandler();
         
         // create output structure
         SWEHelper fac = new SWEHelper();        
@@ -58,9 +57,13 @@ public class TargetGeolocOutput implements IStreamingDataInterface
         rec.setName(getName());
         rec.addField("time", fac.newTimeStampIsoUTC());
         rec.addField("location", fac.newLocationVectorLLA(SWEHelper.getPropertyUri("TargetLocation")));
-        this.outputDef = rec;
-        
+        this.outputDef = rec;        
         this.outputEncoding = fac.newTextEncoding();
+        
+        // obtain an event handler for this output
+        String moduleID = parentProcess.getLocalID();
+        String topic = getName();
+        this.eventHandler = EventBus.getInstance().registerProducer(moduleID, topic);
     }
     
     
