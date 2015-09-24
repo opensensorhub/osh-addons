@@ -22,7 +22,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.module.IModule;
-import org.sensorhub.impl.common.BasicEventHandler;
+import org.sensorhub.impl.common.EventBus;
 import org.vast.physics.TLEInfo;
 import org.vast.physics.TLEProvider;
 import org.vast.swe.SWEHelper;
@@ -55,7 +55,6 @@ public class TLEOutput implements IStreamingDataInterface, TLEProvider
     public TLEOutput(TLEPredictorProcess parentProcess)
     {
         this.parentProcess = parentProcess;
-        this.eventHandler = new BasicEventHandler();
         
         // create output structure
         SWEHelper fac = new SWEHelper();        
@@ -72,9 +71,13 @@ public class TLEOutput implements IStreamingDataInterface, TLEProvider
         rec.addField("meanAnomaly", fac.newQuantity(SWEHelper.getPropertyUri("TLEMeanAnomaly"), "Mean Anomaly", null, "deg", DataType.DOUBLE));
         rec.addField("meanMotion", fac.newQuantity(SWEHelper.getPropertyUri("TLEMeanMotion"), "Mean Motion", null, "deg/s", DataType.DOUBLE));
         rec.addField("revNumber", fac.newCount(SWEHelper.getPropertyUri("TLERevNumber"), "Revolution Number", null));
-        this.outputDef = rec;
-        
+        this.outputDef = rec;        
         this.outputEncoding = fac.newTextEncoding();
+        
+        // obtain an event handler for this output
+        String moduleID = parentProcess.getLocalID();
+        String topic = getName();
+        this.eventHandler = EventBus.getInstance().registerProducer(moduleID, topic);
     }
     
     

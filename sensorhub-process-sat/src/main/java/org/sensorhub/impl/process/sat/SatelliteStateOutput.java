@@ -24,7 +24,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.module.IModule;
-import org.sensorhub.impl.common.BasicEventHandler;
+import org.sensorhub.impl.common.EventBus;
 import org.vast.physics.MechanicalState;
 import org.vast.physics.OrbitPredictor;
 import org.vast.physics.TLEOrbitPredictor;
@@ -61,7 +61,6 @@ public class SatelliteStateOutput implements IStreamingDataInterface
     public SatelliteStateOutput(TLEPredictorProcess parentProcess, String name, TLEOutput tleOutput, double outputPeriod, double predictHorizon)
     {
         this.parentProcess = parentProcess;
-        this.eventHandler = new BasicEventHandler();
         this.orbitPredictor = new TLEOrbitPredictor(tleOutput);
         this.name = name;
         this.outputPeriod = outputPeriod;
@@ -76,8 +75,12 @@ public class SatelliteStateOutput implements IStreamingDataInterface
         rec.addField("position", fac.newLocationVectorECEF(SWEConstants.DEF_PLATFORM_LOC));
         rec.addField("velocity", fac.newVelocityVectorECEF(SWEConstants.DEF_PLATFORM_LOC.replace("Location", "Velocity"), "m/s"));
         this.outputDef = rec;
-        
         this.outputEncoding = fac.newTextEncoding();
+        
+        // obtain an event handler for this output
+        String moduleID = parentProcess.getLocalID();
+        String topic = getName();
+        this.eventHandler = EventBus.getInstance().registerProducer(moduleID, topic);
     }
     
     

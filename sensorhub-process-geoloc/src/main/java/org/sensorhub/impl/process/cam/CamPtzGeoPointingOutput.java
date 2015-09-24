@@ -26,7 +26,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.module.IModule;
-import org.sensorhub.impl.common.BasicEventHandler;
+import org.sensorhub.impl.common.EventBus;
 import org.vast.data.TextEncodingImpl;
 import org.vast.ows.OWSException;
 import org.vast.ows.sps.DescribeTaskingRequest;
@@ -64,7 +64,6 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
     public CamPtzGeoPointingOutput(CamPtzGeoPointingProcess parentProcess)
     {
         this.parentProcess = parentProcess;
-        this.eventHandler = new BasicEventHandler();
         
         // create output structure
         SWEHelper fac = new SWEHelper();
@@ -74,9 +73,13 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
         rec.addField("pan", fac.newQuantity(SWEHelper.getPropertyUri("Pan"), "Pan", null, "deg", DataType.FLOAT));
         rec.addField("tilt", fac.newQuantity(SWEHelper.getPropertyUri("Tilt"), "Tilt", null, "deg", DataType.FLOAT));
         rec.addField("zoom", fac.newCount(SWEHelper.getPropertyUri("AxisZoomFactor"), "Zoom Factor", null, DataType.SHORT));
-        this.outputDef = rec;
-        
+        this.outputDef = rec;        
         this.outputEncoding = fac.newTextEncoding();
+        
+        // obtain an event handler for this output
+        String moduleID = parentProcess.getLocalID();
+        String topic = getName();
+        this.eventHandler = EventBus.getInstance().registerProducer(moduleID, topic);
     }
     
     
