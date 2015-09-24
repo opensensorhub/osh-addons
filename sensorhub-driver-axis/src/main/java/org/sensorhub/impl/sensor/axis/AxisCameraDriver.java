@@ -53,11 +53,10 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     String ipAddress;
 
 
-
     public AxisCameraDriver()
-    {
-    	
+    {	
     }
+    
     
     @Override
     public void start() throws SensorException

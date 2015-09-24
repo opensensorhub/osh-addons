@@ -32,7 +32,15 @@ public class StationSensor extends AbstractSensorModule<StationConfig>
 //    StationDataPoller stationDataPoller;
     
     public StationSensor()
+    {   
+    }
+    
+    
+    @Override
+    public void init(StationConfig config) throws SensorHubException
     {
+        super.init(config);
+        
         dataInterface = new StationOutput(this);
         addOutput(dataInterface, false);
         dataInterface.init();

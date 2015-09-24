@@ -34,6 +34,15 @@ public class FakeCamSensor extends AbstractSensorModule<FakeCamConfig>
     
     public FakeCamSensor()
     {
+        
+    }
+    
+    
+    @Override
+    public void init(FakeCamConfig config) throws SensorHubException
+    {
+        super.init(config);
+        
         dataInterface = new FakeCamOutput(this);
         addOutput(dataInterface, false);
         dataInterface.init();
