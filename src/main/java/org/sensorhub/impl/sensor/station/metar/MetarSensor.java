@@ -36,11 +36,18 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 	    this.foiIDs = new LinkedHashSet<String>();
 	    this.stationFois = new LinkedHashMap<String, PhysicalSystem>();
 	    this.stationDesc = new LinkedHashMap<String, PhysicalSystem>();
-	    this.metarInterface = new MetarOutput(this);
-	    
-		addOutput(metarInterface, false);
-		metarInterface.init();
 	}
+	
+	
+	@Override
+	public void init(MetarConfig config) throws SensorHubException
+    {
+        super.init(config);
+        
+        this.metarInterface = new MetarOutput(this);        
+        addOutput(metarInterface, false);
+        metarInterface.init();        
+    }
 
 	
 	@Override
