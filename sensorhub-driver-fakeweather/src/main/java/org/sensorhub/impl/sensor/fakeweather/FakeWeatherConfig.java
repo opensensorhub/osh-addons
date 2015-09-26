@@ -22,9 +22,9 @@ public class FakeWeatherConfig extends SensorConfig
 {
     public String serialNumber = "0123456879";
     
-    public double centerLatitude = 34.8038; // in deg
+    public double stationLat = 34.8038; // in deg
     
-    public double centerLongitude = -86.7228; // in deg
+    public double stationLon = -86.7228; // in deg
     
-    public double centerAltitude = 0.000; // in meters
+    public double stationAlt = 0.000; // in meters
 }
