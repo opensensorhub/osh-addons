@@ -15,14 +15,13 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fakeweather;
 
-import javax.xml.namespace.QName;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.Point;
 import net.opengis.gml.v32.impl.GMLFactory;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
-import org.vast.ogc.gml.GenericFeatureImpl;
+import org.vast.ogc.om.SamplingPoint;
 import org.vast.swe.SWEHelper;
 
 
@@ -42,7 +41,7 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
     private static final String UID_PREFIX = "urn:test:sensors:simweather:";
     
     FakeWeatherOutput dataInterface;
-    AbstractFeature foi;
+    SamplingPoint foi;
     
     
     public FakeWeatherSensor()
@@ -62,13 +61,13 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
         
         // create FoI
         GMLFactory gml = new GMLFactory();
-        foi = new GenericFeatureImpl(new QName("", ""));
+        foi = new SamplingPoint();
         foi.setUniqueIdentifier(UID_PREFIX + config.serialNumber + ":foi");
         foi.setName("Weather Station Location");
         Point p = gml.newPoint();
         p.setSrsName(SWEHelper.REF_FRAME_4979);
         p.setPos(new double[] {config.stationLat, config.stationLon, config.stationAlt});
-        foi.setLocation(p);
+        foi.setShape(p);
     }
     
     
