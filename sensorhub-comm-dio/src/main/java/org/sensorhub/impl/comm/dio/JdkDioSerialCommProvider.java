@@ -97,7 +97,17 @@ public class JdkDioSerialCommProvider extends AbstractModule<RS232Config> implem
             
             // open UART
             uart = DeviceManager.<UART>open(uartConf);
-            uart.setReceiveTimeout(config.receiveTimeout);
+            
+            // set read thresholds
+            if (config.receiveTimeout >= 0)
+                uart.setReceiveTimeout(config.receiveTimeout);
+            else
+                uart.setReceiveTimeout(Integer.MAX_VALUE);
+            
+            if (config.receiveThreshold >= 0)
+                uart.setReceiveTriggerLevel(config.receiveThreshold);
+            else
+                uart.setReceiveTriggerLevel(0);
             
             // obtain input/output streams
             is = Channels.newInputStream(uart);
