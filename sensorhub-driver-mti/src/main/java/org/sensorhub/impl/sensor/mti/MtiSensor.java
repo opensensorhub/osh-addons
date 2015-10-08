@@ -21,7 +21,6 @@ import net.opengis.sensorml.v20.Term;
 import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.comm.RS232Config;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,9 +115,6 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
                 
                 commProvider = config.commSettings.getProvider();
                 commProvider.start();
-                
-                if (config.commSettings instanceof RS232Config)
-                    dataInterface.decimFactor = 10;
             }
             catch (Exception e)
             {
@@ -127,6 +123,8 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
             }
         }
         
+        if (config.decimFactor > 0)
+            dataInterface.decimFactor = config.decimFactor;
         dataInterface.start(commProvider);
     }
     
