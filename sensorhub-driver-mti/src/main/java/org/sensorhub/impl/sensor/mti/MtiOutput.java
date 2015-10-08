@@ -221,6 +221,15 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
         {
             dataIn = new DataInputStream(commProvider.getInputStream());
             MtiSensor.log.info("Connected to IMU data stream");
+            
+            // remove old data from input buffers
+            int counter = 0;
+            while (dataIn.available() > MSG_SIZE)
+            {
+                dataIn.read();
+                counter++;
+            }
+            MtiSensor.log.debug("{} bytes flushed from input buffers", counter);
         }
         catch (IOException e)
         {

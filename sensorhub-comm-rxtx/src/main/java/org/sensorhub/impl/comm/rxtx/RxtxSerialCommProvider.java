@@ -110,6 +110,17 @@ public class RxtxSerialCommProvider extends AbstractModule<RS232Config> implemen
                             config.stopBits,
                             parity);
                     
+                    // set read thresholds
+                    if (config.receiveTimeout >= 0)
+                        serialPort.enableReceiveTimeout(config.receiveTimeout);
+                    else
+                        serialPort.disableReceiveTimeout();
+                    
+                    if (config.receiveThreshold >= 0)
+                        serialPort.enableReceiveThreshold(config.receiveThreshold);
+                    else
+                        serialPort.disableReceiveThreshold();
+                        
                     // obtain input/output streams
                     is = serialPort.getInputStream();
                     os = serialPort.getOutputStream();

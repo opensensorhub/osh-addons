@@ -56,7 +56,8 @@ public class TestMtiDriverRxtx implements IEventListener
         serialConf.moduleClass = RxtxSerialCommProvider.class.getCanonicalName();
         serialConf.portName = "/dev/ttyUSB0";
         serialConf.baudRate = 115200;
-        config.commSettings = serialConf;        
+        serialConf.receiveThreshold = 32;
+        config.commSettings = serialConf;
         
         driver = new MtiSensor();
         driver.init(config);
