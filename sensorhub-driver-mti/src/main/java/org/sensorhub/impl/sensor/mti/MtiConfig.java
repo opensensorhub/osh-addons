@@ -26,6 +26,9 @@ public class MtiConfig extends SensorConfig
     @DisplayInfo(label="Communication Settings", desc="Settings for selected communication port")
     public CommConfig commSettings;
     
+    @DisplayInfo(label="Decimation Factor", desc="Decimation factor of attitude measurements")
+    public int decimFactor = 10;
+    
     
     public MtiConfig()
     {
