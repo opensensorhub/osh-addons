@@ -9,7 +9,7 @@
    <artifactId>sensorhub-driver-v4l</artifactId>
    <name>Video4Linux Sensor Driver</name>
    <description>Driver for Video4Linux compatible cameras</description>
-   <version>0.1</version>
+   <version>0.1-SNAPSHOT</version>
    <packaging>bundle</packaging>
    <repositories>
       <repository>

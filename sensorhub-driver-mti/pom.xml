@@ -7,7 +7,7 @@
     <relativePath>../sensorhub-all/pom.xml</relativePath>
   </parent>
   <artifactId>sensorhub-driver-mti</artifactId>
-  <version>0.1</version>
+  <version>0.1-SNAPSHOT</version>
   <name>XSense MTi IMU Sensor Driver</name>
   <description>Sensor driver for XSense MTi inertial measurement units</description>
   <dependencies>
@@ -20,7 +20,7 @@
      <dependency>
         <groupId>org.sensorhub</groupId>
         <artifactId>sensorhub-comm-rxtx</artifactId>
-        <version>0.1</version>
+        <version>0.1-SNAPSHOT</version>
         <scope>test</scope>
      </dependency>
   </dependencies>
