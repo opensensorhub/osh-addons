@@ -59,6 +59,20 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
         addOutput(dataInterface, false);
         dataInterface.init();
         
+        generateFoi();
+    }
+    
+    
+    @Override
+    public void updateConfig(FakeWeatherConfig config) throws SensorHubException
+    {
+        super.updateConfig(config);
+        generateFoi();
+    }
+    
+    
+    protected void generateFoi()
+    {
         // create FoI
         GMLFactory gml = new GMLFactory();
         foi = new SamplingPoint();
@@ -69,8 +83,8 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
         p.setPos(new double[] {config.stationLat, config.stationLon, config.stationAlt});
         foi.setShape(p);
     }
-    
-    
+
+
     @Override
     public AbstractFeature getCurrentFeatureOfInterest()
     {
