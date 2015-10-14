@@ -7,14 +7,14 @@
     <relativePath>../sensorhub-all/pom.xml</relativePath>
   </parent>
   <artifactId>sensorhub-driver-fakecam</artifactId>
-  <version>0.1</version>
+  <version>0.1-SNAPSHOT</version>
   <name>SensorHub Fake Camera Sensor Driver</name>
   <description>Fake camera simulating live video feed using a video file as source data</description>
   <dependencies>
      <dependency>
         <groupId>org.sensorhub</groupId>
         <artifactId>sensorhub-core</artifactId>
-        <version>1.0</version>
+        <version>${project.parent.version}</version>
         <type>bundle</type>
      </dependency>
      <dependency>

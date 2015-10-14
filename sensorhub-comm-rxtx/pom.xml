@@ -8,7 +8,7 @@
    </parent>
    <artifactId>sensorhub-comm-rxtx</artifactId>
    <packaging>bundle</packaging>
-   <version>0.1</version>
+   <version>0.1-SNAPSHOT</version>
    <name>RXTX Serial Communication Provider</name>
    <description>Serial communication provider based on the RXTX library</description>
    <repositories>
@@ -22,7 +22,7 @@
       <dependency>
          <groupId>org.sensorhub</groupId>
          <artifactId>sensorhub-core</artifactId>
-         <version>1.0</version>
+         <version>${project.parent.version}</version>
          <type>bundle</type>
       </dependency>
       <dependency>

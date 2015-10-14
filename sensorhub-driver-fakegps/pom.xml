@@ -7,14 +7,14 @@
     <relativePath>../sensorhub-all/pom.xml</relativePath>
   </parent>
   <artifactId>sensorhub-driver-fakegps</artifactId>
-  <version>0.1</version>
+  <version>0.1-SNAPSHOT</version>
   <name>SensorHub Simulated GPS Sensor Driver</name>
   <description>Simulated GPS data obtained from Google Directions API</description>
   <dependencies>
      <dependency>
         <groupId>org.sensorhub</groupId>
         <artifactId>sensorhub-core</artifactId>
-        <version>1.0</version>
+        <version>${project.parent.version}</version>
         <type>bundle</type>
      </dependency>
   </dependencies>
