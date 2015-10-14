@@ -14,7 +14,7 @@
       <dependency>
          <groupId>org.sensorhub</groupId>
          <artifactId>sensorhub-core</artifactId>
-         <version>1.0</version>
+         <version>${project.parent.version}</version>
          <type>bundle</type>
       </dependency>
       <dependency>
@@ -23,4 +23,5 @@
          <version>0.1-SNAPSHOT</version>
       </dependency>
    </dependencies>
+   <version>0.1-SNAPSHOT</version>
 </project>
