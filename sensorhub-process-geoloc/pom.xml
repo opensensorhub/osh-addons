@@ -14,18 +14,18 @@
      <dependency>
         <groupId>org.sensorhub</groupId>
         <artifactId>sensorhub-core</artifactId>
-        <version>1.0</version>
+        <version>${project.parent.version}</version>
         <type>bundle</type>
+     </dependency>
+     <dependency>
+        <groupId>org.vast.opengis</groupId>
+        <artifactId>ows-framework-bindings</artifactId>
+        <version>${project.parent.version}</version>
      </dependency>
      <dependency>
         <groupId>org.sensorhub</groupId>
         <artifactId>sensorhub-process-vecmath</artifactId>
         <version>0.1-SNAPSHOT</version>
-     </dependency>
-     <dependency>
-        <groupId>org.vast.opengis</groupId>
-        <artifactId>ows-framework-bindings</artifactId>
-        <version>1.0</version>
      </dependency>
   </dependencies>
 </project>
