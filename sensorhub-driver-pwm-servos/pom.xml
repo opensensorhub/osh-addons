@@ -7,20 +7,20 @@
     <relativePath>../sensorhub-all/pom.xml</relativePath>
   </parent>
   <artifactId>sensorhub-driver-pwm-servos</artifactId>
-  <version>0.1</version>
+  <version>0.1-SNAPSHOT</version>
   <name>PCA9685 PWM Servos Driver</name>
   <description>Driver for Adafruit PCA9685 16-channels PWM servo board</description>
   <dependencies>
      <dependency>
         <groupId>org.sensorhub</groupId>
         <artifactId>sensorhub-core</artifactId>
-        <version>1.0</version>
+        <version>${project.parent.version}</version>
         <type>bundle</type>
      </dependency>
      <dependency>
         <groupId>org.sensorhub</groupId>
         <artifactId>sensorhub-comm-dio</artifactId>
-        <version>0.1</version>
+        <version>0.1-SNAPSHOT</version>
      </dependency>
   </dependencies>
   <build>

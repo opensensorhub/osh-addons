@@ -7,7 +7,7 @@
     <relativePath>../sensorhub-all/pom.xml</relativePath>
   </parent>
   <artifactId>sensorhub-driver-weatherStation</artifactId>
-  <version>0.1</version>
+  <version>0.1-SNAPSHOT</version>
   <name>METAR Weather Sensor Network Driver</name>
   <description>Driver for weather station networks - initially METAR-specific</description>
   <organization>
@@ -26,7 +26,7 @@
   		<groupId>org.sensorhub</groupId>
   		<artifactId>sensorhub-core</artifactId>
   		<type>bundle</type>
-  		<version>1.0</version>
+  		<version>${project.parent.version}</version>
   	</dependency>
   	<dependency>
   		<groupId>org.apache.httpcomponents</groupId>

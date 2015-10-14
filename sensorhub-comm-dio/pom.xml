@@ -7,7 +7,7 @@
     <relativePath>../sensorhub-all/pom.xml</relativePath>
   </parent>
   <artifactId>sensorhub-comm-dio</artifactId>
-  <version>0.1</version>
+  <version>0.1-SNAPSHOT</version>
   <name>Device I/O Communication Provider</name>
   <description>Direct device communication provided by JDK Device I/O library</description>
   <repositories>
@@ -25,7 +25,7 @@
      <dependency>
         <groupId>org.sensorhub</groupId>
         <artifactId>sensorhub-core</artifactId>
-        <version>1.0</version>
+        <version>${project.parent.version}</version>
         <type>bundle</type>
      </dependency>
      <dependency>
