@@ -12,7 +12,7 @@
    <scm>
       <url>https://github.com/opensensorhub/sensor-drivers/tree/master</url>
       <connection>scm:git:https://github.com/opensensorhub/sensor-drivers.git</connection>
-      <developerConnection>scm:git:https://github.com/sensiasoft/sensorhub.git</developerConnection>
+      <developerConnection>scm:git:https://github.com/opensensorhub/sensor-drivers.git</developerConnection>
       <tag>HEAD</tag>
    </scm>
    <issueManagement>
