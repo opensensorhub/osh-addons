@@ -2,14 +2,14 @@
    <modelVersion>4.0.0</modelVersion>
    <parent>
       <groupId>org.sensorhub</groupId>
-      <artifactId>sensorhub-all</artifactId>
+      <artifactId>sensorhub-driver-base</artifactId>
       <version>1.0</version>
-      <relativePath>../sensorhub-all/pom.xml</relativePath>
+      <relativePath>../sensorhub-driver-base/pom.xml</relativePath>
    </parent>
    <artifactId>sensorhub-driver-v4l</artifactId>
+   <version>0.1-SNAPSHOT</version>
    <name>Video4Linux Sensor Driver</name>
    <description>Driver for Video4Linux compatible cameras</description>
-   <version>0.1-SNAPSHOT</version>
    <packaging>bundle</packaging>
    <repositories>
       <repository>
@@ -36,13 +36,9 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-               <!--<forkMode>once</forkMode>
-               <environmentVariables>
-                  <LD_LIBRARY_PATH>${project.basedir}/lib</LD_LIBRARY_PATH>
-               </environmentVariables>
-               <argLine>-Djava.library.path=${project.basedir}/lib</argLine>-->
+               <!--<forkMode>once</forkMode> <environmentVariables> <LD_LIBRARY_PATH>${project.basedir}/lib</LD_LIBRARY_PATH> </environmentVariables> <argLine>-Djava.library.path=${project.basedir}/lib</argLine> -->
                <excludes>
-                  <exclude>**/TestV4LCameraDriver.java</exclude>        
+                  <exclude>**/TestV4LCameraDriver.java</exclude>
                </excludes>
             </configuration>
          </plugin>
