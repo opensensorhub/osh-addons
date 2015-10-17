@@ -1,26 +1,26 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.sensorhub</groupId>
-    <artifactId>sensorhub-all</artifactId>
-    <version>1.0</version>
-    <relativePath>../sensorhub-all/pom.xml</relativePath>
-  </parent>
-  <artifactId>sensorhub-driver-fakecam</artifactId>
-  <version>0.1-SNAPSHOT</version>
-  <name>SensorHub Fake Camera Sensor Driver</name>
-  <description>Fake camera simulating live video feed using a video file as source data</description>
-  <dependencies>
-     <dependency>
-        <groupId>org.sensorhub</groupId>
-        <artifactId>sensorhub-core</artifactId>
-        <version>${project.parent.version}</version>
-        <type>bundle</type>
-     </dependency>
-     <dependency>
-        <groupId>com.googlecode.mp4parser</groupId> 
-        <artifactId>isoparser</artifactId> 
-        <version>1.0.5.4</version> 
+   <modelVersion>4.0.0</modelVersion>
+   <parent>
+      <groupId>org.sensorhub</groupId>
+      <artifactId>sensorhub-driver-base</artifactId>
+      <version>1.0</version>
+      <relativePath>../sensorhub-driver-base/pom.xml</relativePath>
+   </parent>
+   <artifactId>sensorhub-driver-fakecam</artifactId>
+   <version>0.1-SNAPSHOT</version>
+   <name>SensorHub Fake Camera Sensor Driver</name>
+   <description>Fake camera simulating live video feed using a video file as source data</description>
+   <dependencies>
+      <dependency>
+         <groupId>org.sensorhub</groupId>
+         <artifactId>sensorhub-core</artifactId>
+         <version>${project.parent.version}</version>
+         <type>bundle</type>
       </dependency>
-  </dependencies>
+      <dependency>
+         <groupId>com.googlecode.mp4parser</groupId>
+         <artifactId>isoparser</artifactId>
+         <version>1.0.5.4</version>
+      </dependency>
+   </dependencies>
 </project>

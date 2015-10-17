@@ -49,7 +49,7 @@ public class TestAvlDriverFromFile implements IEventListener
         config.agencyName = "MyAgency";
         
         MultipleFilesProviderConfig filesConf = new MultipleFilesProviderConfig();
-        filesConf.dataFolder = "/media/Data/Projects/Workspace_OGC/sensorhub/sensorhub-driver-avl-911/src/test/resources";
+        filesConf.dataFolder = "src/test/resources";
         config.commSettings = filesConf;
         
         driver = new AVLDriver();
