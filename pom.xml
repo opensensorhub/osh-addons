@@ -1,55 +1,55 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.sensorhub</groupId>
-    <artifactId>sensorhub-all</artifactId>
-    <version>1.0</version>
-    <relativePath>../sensorhub-all/pom.xml</relativePath>
-  </parent>
-  <artifactId>sensorhub-driver-weatherStation</artifactId>
-  <version>0.1-SNAPSHOT</version>
-  <name>METAR Weather Sensor Network Driver</name>
-  <description>Driver for weather station networks - initially METAR-specific</description>
-  <organization>
-    <name>Botts Inc.</name>
-    <url>http://www.botts-inc.com/</url>
-  </organization>
-  <developers>
-    <developer>
-      <id>tony.cook</id>
-      <name>Tony Cook</name>
-      <email>nospam@mydomain.com</email>
-    </developer>
-  </developers>
-  <dependencies>
-  	<dependency>
-  		<groupId>org.sensorhub</groupId>
-  		<artifactId>sensorhub-core</artifactId>
-  		<type>bundle</type>
-  		<version>${project.parent.version}</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>org.apache.httpcomponents</groupId>
-  		<artifactId>httpclient</artifactId>
-  		<version>4.3.6</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>joda-time</groupId>
-  		<artifactId>joda-time</artifactId>
-  		<version>2.7</version>
-  	</dependency>
-  </dependencies>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>**/TestWeatherStation.java</exclude>        
-          </excludes>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+   <modelVersion>4.0.0</modelVersion>
+   <parent>
+      <groupId>org.sensorhub</groupId>
+      <artifactId>sensorhub-driver-base</artifactId>
+      <version>1.0</version>
+      <relativePath>../sensorhub-driver-base/pom.xml</relativePath>
+   </parent>
+   <artifactId>sensorhub-driver-weatherStation</artifactId>
+   <version>0.1-SNAPSHOT</version>
+   <name>METAR Weather Sensor Network Driver</name>
+   <description>Driver for weather station networks - initially METAR-specific</description>
+   <organization>
+      <name>Botts Inc.</name>
+      <url>http://www.botts-inc.com/</url>
+   </organization>
+   <developers>
+      <developer>
+         <id>tony.cook</id>
+         <name>Tony Cook</name>
+         <email>nospam@mydomain.com</email>
+      </developer>
+   </developers>
+   <dependencies>
+      <dependency>
+         <groupId>org.sensorhub</groupId>
+         <artifactId>sensorhub-core</artifactId>
+         <type>bundle</type>
+         <version>${project.parent.version}</version>
+      </dependency>
+      <dependency>
+         <groupId>org.apache.httpcomponents</groupId>
+         <artifactId>httpclient</artifactId>
+         <version>4.3.6</version>
+      </dependency>
+      <dependency>
+         <groupId>joda-time</groupId>
+         <artifactId>joda-time</artifactId>
+         <version>2.7</version>
+      </dependency>
+   </dependencies>
+   <build>
+      <plugins>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+               <excludes>
+                  <exclude>**/TestWeatherStation.java</exclude>
+               </excludes>
+            </configuration>
+         </plugin>
+      </plugins>
+   </build>
 </project>
