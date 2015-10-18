@@ -73,6 +73,7 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver>
         // SWE Common data structure
         dataStruct = fac.newDataRecord(7);
         dataStruct.setName(getName());
+        dataStruct.setDefinition(SWEHelper.getPropertyUri("AVLData"));
 
         // time
         dataStruct.addComponent("time", fac.newTimeStampIsoUTC());
@@ -82,7 +83,7 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver>
 
         // Unit and Vehicle ID (often the same)
         dataStruct.addComponent("unit-id", fac.newCategory(SWEHelper.getPropertyUri("Unit-ID"), "Unit ID", "Mobile Unit ID", null));
-        dataStruct.addComponent("veh-id", fac.newCategory(SWEHelper.getPropertyUri("vehicle-ID"), "Vehicle ID", "Mobile Vehicle Identification", null));
+        dataStruct.addComponent("veh-id", fac.newCategory(SWEHelper.getPropertyUri("Vehicle-ID"), "Vehicle ID", "Mobile Vehicle Identification", null));
 
         // location (latitude-longitude)	        
         Vector locVector = fac.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC);
@@ -91,7 +92,7 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver>
         dataStruct.addComponent("location", locVector);
 
         // status constraints: (AQ - at-station; ER - enroute; AR - arrived?, OS - out-of-service, AK - completed-returning)
-        Category status = fac.newCategory(SWEHelper.getPropertyUri("VehicleStatus"), "Unit Status", "Unit-Vehicle Status (AQ, OS, AK, ER, AR)", null);
+        Category status = fac.newCategory(SWEHelper.getPropertyUri("Vehicle-Status"), "Unit Status", "Unit-Vehicle Status (AQ, OS, AK, ER, AR)", null);
         AllowedTokens constraints = fac.newAllowedTokens();
         constraints.addValue("AQ");
         constraints.addValue("ER");
