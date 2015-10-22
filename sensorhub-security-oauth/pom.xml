@@ -1,0 +1,26 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+   <modelVersion>4.0.0</modelVersion>
+   <parent>
+      <groupId>org.sensorhub</groupId>
+      <artifactId>sensorhub-all</artifactId>
+      <version>1.0</version>
+      <relativePath>../sensorhub-all/pom.xml</relativePath>
+   </parent>
+   <artifactId>sensorhub-security-oauth</artifactId>
+   <version>0.1-SNAPSHOT</version>
+   <name>OAuth2 base authentication for SensorHub</name>
+   <description>Provides federated authentication through OAuth2 providers such as Google, Twitter, etc.</description>
+   <dependencies>
+      <dependency>
+         <groupId>org.sensorhub</groupId>
+         <artifactId>sensorhub-core</artifactId>
+         <version>${project.parent.version}</version>
+         <type>bundle</type>
+      </dependency>
+      <dependency>
+         <groupId>org.apache.oltu.oauth2</groupId>
+         <artifactId>org.apache.oltu.oauth2.client</artifactId>
+         <version>1.0.1</version>
+      </dependency>
+   </dependencies>
+</project>
