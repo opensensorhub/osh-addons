@@ -85,7 +85,7 @@ public class PlumeReader
 					//  one header line per source
 					inline = reader.readLine();
 					if(inline == null || inline.trim().length() == 0) {
-						System.err.println("EOF reached");
+						//System.err.println("EOF reached");
 						eof = true;
 						break;
 					}
@@ -105,12 +105,11 @@ public class PlumeReader
 						double lat  = Double.parseDouble(vals[1]);
 						double alt = Double.parseDouble(vals[2]);	
 						points1d[j] = lat;
-						points1d[j] = lon;
-						points1d[j] = alt;
+						points1d[j+1] = lon;
+						points1d[j+2] = alt;
 					}
 					if(i == 0 && numParticles > 0) {
-//						PlumeStep step = new PlumeStep(timeMod, numParticles, points1d);
-						PlumeStep step = new PlumeStep(timeMod, numParticles*3, points1d);
+						PlumeStep step = new PlumeStep(timeMod, numParticles, points1d);
 						plume.addStep(step);
 					}
 				}

@@ -1,4 +1,3 @@
-package org.sensorhub.impl.sensor.plume;
 /***************************** BEGIN LICENSE BLOCK ***************************
 
 The contents of this file are subject to the Mozilla Public License, v. 2.0.
@@ -13,9 +12,14 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
+package org.sensorhub.impl.sensor.plume;
+
+import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
+
 
 public class PlumeConfig extends SensorConfig
 {    
-	public static String plumePath = "C:/Data/sensorhub/plume/ppdm_ind_ms_v2/run/PARTICLE.OUT_p0"; // not sure why this isn't getting loaded from config file
+	@DisplayInfo(desc="Path to plume data file")
+    public String dataPath;
 }

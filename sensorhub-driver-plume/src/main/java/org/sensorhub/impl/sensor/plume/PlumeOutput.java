@@ -15,7 +15,6 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.plume;
 
 import java.io.File;
-import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -98,13 +97,15 @@ public class PlumeOutput extends AbstractSensorOutput<PlumeSensor>
 
 		// time
 		plumeStep.addComponent("time",  fac.newTimeStampIsoUTC());
-		// numParticles
+		
+		// number of particles
 		Count numPoints = fac.newCount();
 		numPoints.setId("NUM_POINTS");
-		plumeStep.addComponent("num_pos", numPoints);   
+		plumeStep.addComponent("num_pos", numPoints);
+		
 		// and the actual particle data
 		DataArray ptArr = fac.newDataArray();
-		ptArr.setElementType("point", fac.newLocationVectorLLA(""));
+		ptArr.setElementType("point", fac.newLocationVectorLLA(null));
 		ptArr.setElementCount(numPoints);
 		plumeStep.addComponent("points", ptArr);
 
@@ -118,28 +119,33 @@ public class PlumeOutput extends AbstractSensorOutput<PlumeSensor>
 
 	protected void start()
 	{
-		File pfile = new File(PlumeConfig.plumePath);
-		try {
+		File pfile = new File(parentSensor.getConfiguration().dataPath);
+		
+		try
+		{
 			Plume plume = PlumeReader.read(pfile);
 			List<PlumeStep> steps = plume.getSteps();
 			SWEFactory fac = new SWEFactory();
 			SWEUtils utils = new SWEUtils(SWEUtils.V2_0);
 
-			for(PlumeStep step: steps) {
+			for(PlumeStep step: steps)
+			{
 				DataBlock dataBlock = null;
 				DataArray ptArr = (DataArray)plumeStep.getComponent(2);
-				ptArr.updateSize(step.getNumParticles()*3);
+				ptArr.updateSize(step.getNumParticles());
 				dataBlock = plumeStep.createDataBlock();
 
 				dataBlock.setDoubleValue(0, step.getTime());
-				dataBlock.setIntValue(1, step.getNumParticles()*3);
+				dataBlock.setIntValue(1, step.getNumParticles());
 				((DataBlockMixed)dataBlock).getUnderlyingObject()[2].setUnderlyingObject(step.points1d);
+				
 				latestRecord = dataBlock;
 				latestRecordTime = (long)step.getTime() * 1000;
 				eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, PlumeSensor.PLUME_UID, PlumeOutput.this, latestRecord));
-				System.err.println(step.getNumParticles()*3);
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e)
+		{
 			e.printStackTrace();
 		}
 	}
