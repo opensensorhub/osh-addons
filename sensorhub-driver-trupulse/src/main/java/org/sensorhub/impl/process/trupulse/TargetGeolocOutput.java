@@ -22,7 +22,6 @@ import org.sensorhub.api.common.IEventHandler;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IStreamingDataInterface;
-import org.sensorhub.api.module.IModule;
 import org.sensorhub.impl.common.EventBus;
 import org.vast.swe.SWEHelper;
 
@@ -95,7 +94,7 @@ public class TargetGeolocOutput implements IStreamingDataInterface
 
 
     @Override
-    public IModule<?> getParentModule()
+    public TargetGeolocProcess getParentModule()
     {
         return parentProcess;
     }
