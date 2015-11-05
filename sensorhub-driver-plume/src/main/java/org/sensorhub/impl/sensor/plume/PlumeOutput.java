@@ -15,25 +15,19 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.plume;
 
 import java.io.File;
-
-import java.io.IOException;
 import java.util.List;
-
 import net.opengis.swe.v20.BinaryEncoding;
 import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.data.DataBlockMixed;
-import org.vast.data.SWEFactory;
 import org.vast.swe.SWEHelper;
-import org.vast.swe.SWEUtils;
 
 
 /**
@@ -119,35 +113,44 @@ public class PlumeOutput extends AbstractSensorOutput<PlumeSensor>
 
 	protected void start()
 	{
-		File pfile = new File(parentSensor.getConfiguration().dataPath);
+		final File pfile = new File(parentSensor.getConfiguration().dataPath);
 		
-		try
+		Thread t = new Thread()
 		{
-			Plume plume = PlumeReader.read(pfile);
-			List<PlumeStep> steps = plume.getSteps();
-			SWEFactory fac = new SWEFactory();
-			SWEUtils utils = new SWEUtils(SWEUtils.V2_0);
-
-			for(PlumeStep step: steps)
-			{
-				DataBlock dataBlock = null;
-				DataArray ptArr = (DataArray)plumeStep.getComponent(2);
-				ptArr.updateSize(step.getNumParticles());
-				dataBlock = plumeStep.createDataBlock();
-
-				dataBlock.setDoubleValue(0, step.getTime());
-				dataBlock.setIntValue(1, step.getNumParticles());
-				((DataBlockMixed)dataBlock).getUnderlyingObject()[2].setUnderlyingObject(step.points1d);
-				
-				latestRecord = dataBlock;
-				latestRecordTime = (long)step.getTime() * 1000;
-				eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, PlumeSensor.PLUME_UID, PlumeOutput.this, latestRecord));
-			}
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
+		    public void run()
+		    {
+		        try
+        		{
+		            // initial delay so storage has time to start to receive data
+	                Thread.sleep(1000);
+		            
+		            Plume plume = PlumeReader.read(pfile);
+        			List<PlumeStep> steps = plume.getSteps();
+        
+        			for(PlumeStep step: steps)
+        			{
+        				DataBlock dataBlock = null;
+        				DataArray ptArr = (DataArray)plumeStep.getComponent(2);
+        				ptArr.updateSize(step.getNumParticles());
+        				dataBlock = plumeStep.createDataBlock();
+        
+        				dataBlock.setDoubleValue(0, step.getTime());
+        				dataBlock.setIntValue(1, step.getNumParticles());
+        				((DataBlockMixed)dataBlock).getUnderlyingObject()[2].setUnderlyingObject(step.points1d);
+        				
+        				latestRecord = dataBlock;
+        				latestRecordTime = (long)step.getTime() * 1000;
+        				eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, PlumeSensor.PLUME_UID, PlumeOutput.this, latestRecord));
+        			}
+        		}
+        		catch (Exception e)
+        		{
+        			e.printStackTrace();
+        		}
+		    }
+		};
+		
+		t.start();
 	}
 
 
