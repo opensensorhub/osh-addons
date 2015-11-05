@@ -6,9 +6,8 @@
     <version>1.0</version>
     <relativePath>../sensorhub-all/pom.xml</relativePath>
   </parent>
-  <groupId>org.sensorhub</groupId>
   <artifactId>sensorhub-driver-plume</artifactId>
-  <version>0.1</version>
+  <version>0.1-SNAPSHOT</version>
   <name>PlumeDriver</name>
   <description>SensorHub driver for tasking and serving data output by the Lagrangian Plume moderl developed at University of Alabama in Huntsville </description>
     <organization>
