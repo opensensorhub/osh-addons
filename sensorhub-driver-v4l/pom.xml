@@ -2,9 +2,9 @@
    <modelVersion>4.0.0</modelVersion>
    <parent>
       <groupId>org.sensorhub</groupId>
-      <artifactId>sensorhub-driver-base</artifactId>
+      <artifactId>sensorhub-driver-all</artifactId>
       <version>1.1-SNAPSHOT</version>
-      <relativePath>../sensorhub-driver-base/pom.xml</relativePath>
+      <relativePath>../sensorhub-driver-all/pom.xml</relativePath>
    </parent>
    <artifactId>sensorhub-driver-v4l</artifactId>
    <version>0.1-SNAPSHOT</version>
