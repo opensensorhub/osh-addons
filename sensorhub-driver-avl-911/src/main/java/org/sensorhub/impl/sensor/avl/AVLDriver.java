@@ -48,8 +48,7 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
 {
 	static final Logger log = LoggerFactory.getLogger(AVLDriver.class);
 
-	static final String SENSOR_UID_PREFIX = "urn:osh:sensors:avl:911:";
-	static final String VEHICLE_UID_PREFIX = SENSOR_UID_PREFIX + "vehicle:";
+	static final String SENSOR_UID_PREFIX = "urn:osh:sensors:avl:";
     
     Set<String> foiIDs;
     Map<String, AbstractFeature> vehicleFois;
@@ -85,9 +84,9 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            sensorDescription.setId("AVL-911");
-            sensorDescription.setUniqueIdentifier(SENSOR_UID_PREFIX + "fleet");
-            sensorDescription.setDescription("AVL data for emergency vehicle location and status");
+            sensorDescription.setId("AVL-" + config.fleetID);
+            sensorDescription.setUniqueIdentifier(SENSOR_UID_PREFIX + config.fleetID);
+            sensorDescription.setDescription("AVL data for " + config.agencyName);
         }
     }
 	
@@ -122,12 +121,14 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
     @Override
     public void stop() throws SensorHubException
     {
+        // stop comm provider
         if (commProvider != null)
         {
             commProvider.stop();
             commProvider = null;
         }
         
+        // stop output interface
         if (dataInterface != null)
             dataInterface.stop();
     }
@@ -152,7 +153,7 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
         if (!vehicleFois.containsKey(vehicleID))
         {
             String name = vehicleID;
-            String uid = VEHICLE_UID_PREFIX + vehicleID;
+            String uid = SENSOR_UID_PREFIX + config.fleetID + ':' + vehicleID;
             String description = "Vehicle " + vehicleID + " from " + config.agencyName;
             
             SMLHelper smlFac = new SMLHelper();

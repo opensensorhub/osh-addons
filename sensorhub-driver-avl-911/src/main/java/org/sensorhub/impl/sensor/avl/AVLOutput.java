@@ -211,7 +211,6 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver>
     {
         if (sendData)
             return;
-
         sendData = true;
 
         // connect to data stream
@@ -231,16 +230,14 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver>
             public void run()
             {
                 while (sendData)
-                {
                     pollAndSendMeasurement();
-                }
             }
         });
         t.start();
     }
 
 
-    protected void stop()
+    protected synchronized void stop()
     {
         sendData = false;
 
