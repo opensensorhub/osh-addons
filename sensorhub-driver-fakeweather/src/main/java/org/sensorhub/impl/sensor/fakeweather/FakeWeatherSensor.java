@@ -22,7 +22,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
 import org.vast.ogc.om.SamplingPoint;
-import org.vast.swe.SWEHelper;
+import org.vast.swe.SWEConstants;
 
 
 /**
@@ -79,7 +79,7 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
         foi.setUniqueIdentifier(UID_PREFIX + config.serialNumber + ":foi");
         foi.setName("Weather Station Location");
         Point p = gml.newPoint();
-        p.setSrsName(SWEHelper.REF_FRAME_4979);
+        p.setSrsName(SWEConstants.REF_FRAME_4979);
         p.setPos(new double[] {config.stationLat, config.stationLon, config.stationAlt});
         foi.setShape(p);
     }
