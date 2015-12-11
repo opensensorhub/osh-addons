@@ -16,6 +16,7 @@ package org.sensorhub.impl.sensor.nmea.gps;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.Quantity;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 
 
@@ -60,7 +61,7 @@ public class NEDVelocityOutput extends NMEAGpsOutput
         dataStruct.addComponent("time", fac.newTimeStampIsoUTC());
         
         Quantity heading = fac.newQuantity(SWEHelper.getPropertyUri("TrackHeading"), "Track Heading", "Track heading relative to true north", "deg");
-        heading.setReferenceFrame(SWEHelper.REF_FRAME_NED);
+        heading.setReferenceFrame(SWEConstants.REF_FRAME_NED);
         heading.setAxisID("z");
         dataStruct.addComponent("heading", heading);
         
