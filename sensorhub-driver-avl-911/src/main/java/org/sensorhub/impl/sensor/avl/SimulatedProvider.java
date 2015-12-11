@@ -335,7 +335,8 @@ public class SimulatedProvider extends AbstractModule<SimulatedProviderConfig> i
         {
             started = false;
             timer.shutdown();
-            timer.awaitTermination(100L, TimeUnit.MILLISECONDS);            
+            timer.awaitTermination(100L, TimeUnit.MILLISECONDS);
+            timer = null;
         }
         catch (Exception e)
         {
