@@ -23,7 +23,7 @@ import org.sensorhub.api.sensor.SensorConfig;
 
 public class MavlinkConfig extends SensorConfig
 {
-    public enum MavlinkMsg
+    public enum MsgTypes
     {
         GLOBAL_POSITION,
         GPS_RAW_INT,
@@ -35,19 +35,23 @@ public class MavlinkConfig extends SensorConfig
         GIMBAL_REPORT
     }    
     
-    public enum MavlinkCmd
+    public enum CmdTypes
     {
         MOUNT_CONFIGURE,
         MOUNT_CONTROL,
         NAV_WAYPOINT,
         NAV_RETURN_TO_LAUNCH,
     }
+    
+    
+    @DisplayInfo(label="Vehicle ID", desc="ID of vehicle sending the MAVLink stream (e.g. serial number)")
+    public String vehicleID;
         
     @DisplayInfo(desc="MAVLink messages to expose through this sensor interface")
-    public List<MavlinkMsg> activeMessages = new ArrayList<MavlinkMsg>(3);
+    public List<MsgTypes> activeMessages = new ArrayList<MsgTypes>(3);
     
     @DisplayInfo(desc="MAVLink commands to expose through this sensor interface")
-    public List<MavlinkCmd> activeCommands = new ArrayList<MavlinkCmd>(3);
+    public List<CmdTypes> activeCommands = new ArrayList<CmdTypes>(3);
     
     @DisplayInfo(desc="Communication settings to access MAVLink data")
     public CommConfig commSettings;

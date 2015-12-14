@@ -26,8 +26,8 @@ import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorEvent;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.mavlink.MavlinkConfig.MavlinkCmd;
-import org.sensorhub.impl.sensor.mavlink.MavlinkConfig.MavlinkMsg;
+import org.sensorhub.impl.sensor.mavlink.MavlinkConfig.CmdTypes;
+import org.sensorhub.impl.sensor.mavlink.MavlinkConfig.MsgTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.MAVLink.MAVLinkPacket;
@@ -46,13 +46,13 @@ import com.MAVLink.common.msg_heartbeat;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Dec 12, 2015
  */
-public class MavlinkSystem extends AbstractSensorModule<MavlinkConfig>
+public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
 {
-    static final Logger log = LoggerFactory.getLogger(MavlinkSystem.class);
+    static final Logger log = LoggerFactory.getLogger(MavlinkDriver.class);
     
     protected static final String BODY_FRAME = "BODY_FRAME";
     protected static final String GIMBAL_FRAME = "GIMBAL_FRAME";
-    protected static final long MAX_MSG_PERIOD = 5000L;
+    protected static final long MAX_MSG_PERIOD = 10000L;
     
     ICommProvider<? super CommConfig> commProvider;
     Timer watchDogTimer;
@@ -71,29 +71,36 @@ public class MavlinkSystem extends AbstractSensorModule<MavlinkConfig>
         super.init(config);
         
         // create outputs depending on selected sentences
-        if (config.activeMessages.contains(MavlinkMsg.GLOBAL_POSITION))
+        if (config.activeMessages.contains(MsgTypes.GLOBAL_POSITION))
         {
             GlobalPositionOutput dataInterface = new GlobalPositionOutput(this);
             addOutput(dataInterface, false);
             dataInterface.init();
         }
         
-        if (config.activeMessages.contains(MavlinkMsg.ATTITUDE))
+        if (config.activeMessages.contains(MsgTypes.ATTITUDE))
         {
             AttitudeEulerOutput dataInterface = new AttitudeEulerOutput(this);
             addOutput(dataInterface, false);
             dataInterface.init();
         }
         
-        if (config.activeMessages.contains(MavlinkMsg.ATTITUDE_QUATERNION))
+        if (config.activeMessages.contains(MsgTypes.ATTITUDE_QUATERNION))
         {
             AttitudeQuatOutput dataInterface = new AttitudeQuatOutput(this);
             addOutput(dataInterface, false);
             dataInterface.init();
         }
         
+        if (config.activeMessages.contains(MsgTypes.GIMBAL_REPORT))
+        {
+            GimbalEulerOutput dataInterface = new GimbalEulerOutput(this);
+            addOutput(dataInterface, false);
+            dataInterface.init();
+        }
+        
         // create control inputs depending on selected commands
-        if (config.activeCommands.contains(MavlinkCmd.MOUNT_CONTROL))
+        if (config.activeCommands.contains(CmdTypes.MOUNT_CONTROL))
         {
             ISensorControlInterface controlInterface = null;
             this.addControlInput(controlInterface);
@@ -107,8 +114,12 @@ public class MavlinkSystem extends AbstractSensorModule<MavlinkConfig>
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            sensorDescription.setId("GPS_SENSOR");
-            sensorDescription.setDescription("NMEA 0183 Compatible GNSS Receiver");
+            
+            if (AbstractSensorModule.DEFAULT_ID.equals(sensorDescription.getId()))
+                sensorDescription.setId("MAVLINK_SYSTEM");
+            
+            if (config.vehicleID != null)
+                sensorDescription.setUniqueIdentifier("urn:osh:sensor:mavlink:" + config.vehicleID);
         }
     }
 
@@ -144,7 +155,6 @@ public class MavlinkSystem extends AbstractSensorModule<MavlinkConfig>
             mavlinkParser = new Parser();
             msgIn = new BufferedInputStream(commProvider.getInputStream());
             cmdOut = commProvider.getOutputStream();
-            MavlinkSystem.log.debug("Connected to MAVLink data stream");
             
             // send heartbeat
             msg_heartbeat hb = new msg_heartbeat();
@@ -185,24 +195,24 @@ public class MavlinkSystem extends AbstractSensorModule<MavlinkConfig>
                             if (connected)
                             {
                                 connected = false;
-                                SensorEvent e = new SensorEvent(now, MavlinkSystem.this, SensorEvent.Type.DISCONNECTED);
-                                log.info("Remote MAVLink system disconnected");
+                                SensorEvent e = new SensorEvent(now, MavlinkDriver.this, SensorEvent.Type.DISCONNECTED);
+                                log.info("Disconnected from remote MAVLink system");
                                 eventHandler.publishEvent(e);
                             }
                         }
-                        else
+                        
+                        // send heartbeat
+                        try
                         {
-                            if (!connected)
-                            {
-                                connected = true;
-                                SensorEvent e = new SensorEvent(now, MavlinkSystem.this, SensorEvent.Type.CONNECTED);
-                                log.info("Remote MAVLink system connected");
-                                eventHandler.publishEvent(e);
-                            }
+                            msg_heartbeat hb = new msg_heartbeat();
+                            sendCommand(hb.pack());
+                        }
+                        catch (IOException e)
+                        {
                         }
                     }
                 }, 
-                0L, MAX_MSG_PERIOD 
+                0L, Math.min(MAX_MSG_PERIOD, 1000L) 
         );
     }
     
@@ -222,13 +232,22 @@ public class MavlinkSystem extends AbstractSensorModule<MavlinkConfig>
             // if null, it's EOF
             if (packet == null)
                 return;
-
+            
             // time tag message receipt
             lastMsgTime = System.currentTimeMillis();
             
+            // send connection event
+            if (!connected)
+            {
+                connected = true;
+                SensorEvent e = new SensorEvent(lastMsgTime, MavlinkDriver.this, SensorEvent.Type.CONNECTED);
+                log.info("Connected to remote MAVLink system");
+                eventHandler.publishEvent(e);
+            }
+            
             // unpack and log message
             MAVLinkMessage msg = packet.unpack();
-            log.debug("Received message {} from {}:{}", msg, msg.sysid, msg.compid);
+            log.trace("Received message {} from {}:{}", msg, msg.sysid, msg.compid);
             
             // special case for system time message
             /*if (msg instanceof msg_system_time)
@@ -254,7 +273,9 @@ public class MavlinkSystem extends AbstractSensorModule<MavlinkConfig>
     
     protected double getUtcTimeFromBootMillis(long timeFromBootMs)
     {
-        return ((double)System.currentTimeMillis()) / 1000.;
+        // just use receiving time stamp for now
+        // TODO use sender time stamp for better relative timing accuracy
+        return ((double)lastMsgTime) / 1000.;
     }
     
     
@@ -264,6 +285,7 @@ public class MavlinkSystem extends AbstractSensorModule<MavlinkConfig>
         byte[] cmdData = pkt.encodePacket();
         cmdOut.write(cmdData);
         cmdOut.flush();
+        log.trace("MAVLink command sent: " + pkt.msgid);
     }
 
 

@@ -53,7 +53,7 @@ public class MavlinkModuleDescriptor implements IModuleProvider
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return MavlinkSystem.class;
+        return MavlinkDriver.class;
     }
 
 

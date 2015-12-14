@@ -29,8 +29,8 @@ import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.comm.UDPConfig;
 import org.sensorhub.impl.sensor.mavlink.MavlinkConfig;
-import org.sensorhub.impl.sensor.mavlink.MavlinkConfig.MavlinkMsg;
-import org.sensorhub.impl.sensor.mavlink.MavlinkSystem;
+import org.sensorhub.impl.sensor.mavlink.MavlinkConfig.MsgTypes;
+import org.sensorhub.impl.sensor.mavlink.MavlinkDriver;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.AsciiDataWriter;
@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
 
 public class TestMavlinkDriverSolo implements IEventListener
 {
-    MavlinkSystem driver;
+    MavlinkDriver driver;
     MavlinkConfig config;
     AsciiDataWriter writer;
     int sampleCount = 0;
@@ -52,8 +52,9 @@ public class TestMavlinkDriverSolo implements IEventListener
         config = new MavlinkConfig();
         config.id = UUID.randomUUID().toString();
         config.activeMessages = Arrays.asList(
-                MavlinkMsg.ATTITUDE,
-                MavlinkMsg.GLOBAL_POSITION);
+                MsgTypes.GLOBAL_POSITION,
+                MsgTypes.ATTITUDE,
+                MsgTypes.GIMBAL_REPORT);
         
         UDPConfig udpConf = new UDPConfig();
         udpConf.localPort = 14550;
@@ -61,7 +62,7 @@ public class TestMavlinkDriverSolo implements IEventListener
         udpConf.remotePort = 14560;
         config.commSettings = udpConf;
         
-        driver = new MavlinkSystem();
+        driver = new MavlinkDriver();
         driver.init(config);
     }
     
@@ -102,11 +103,14 @@ public class TestMavlinkDriverSolo implements IEventListener
         ISensorDataInterface locOutput = driver.getObservationOutputs().get("platformLoc");
         locOutput.registerListener(this);
         
+        ISensorDataInterface gimbalOutput = driver.getObservationOutputs().get("gimbalAtt");
+        gimbalOutput.registerListener(this);
+        
         driver.start();
         
         synchronized (this) 
         {
-            while (sampleCount < 10)
+            while (sampleCount < 3000)
                 wait();
         }
         

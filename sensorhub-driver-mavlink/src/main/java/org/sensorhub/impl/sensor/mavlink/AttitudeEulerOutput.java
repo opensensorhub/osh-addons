@@ -36,7 +36,7 @@ import com.MAVLink.common.msg_attitude;
 public class AttitudeEulerOutput extends MavlinkOutput
 {
     
-    public AttitudeEulerOutput(MavlinkSystem parentSensor)
+    public AttitudeEulerOutput(MavlinkDriver parentSensor)
     {
         super(parentSensor);
         this.samplingPeriod = 0.1; // default to 10Hz on startup        
@@ -64,7 +64,7 @@ public class AttitudeEulerOutput extends MavlinkOutput
         
         // attitude quaternion
         Vector att = fac.newEulerOrientationNED(SWEConstants.DEF_PLATFORM_ORIENT);
-        att.setLocalFrame("#" + MavlinkSystem.BODY_FRAME);
+        att.setLocalFrame("#" + MavlinkDriver.BODY_FRAME);
         att.setDataType(DataType.FLOAT);
         dataStruct.addComponent("attitude", att);
         
@@ -75,10 +75,6 @@ public class AttitudeEulerOutput extends MavlinkOutput
     
     protected void handleMessage(long msgTime, MAVLinkMessage m)
     {
-        // skip old messages being resent
-        if (msgTime < lastMsgTime)
-            return;
-        
         DataBlock dataBlock = null;
                 
         // process different message types
@@ -93,7 +89,7 @@ public class AttitudeEulerOutput extends MavlinkOutput
             dataBlock.setFloatValue(2, (float)Math.toDegrees(msg.pitch));
             dataBlock.setFloatValue(3, (float)Math.toDegrees(msg.roll));
             
-            updateSamplingPeriod(msg.time_boot_ms);
+            updateSamplingPeriod(msgTime);//msg.time_boot_ms);
         }        
         
         if (dataBlock != null)

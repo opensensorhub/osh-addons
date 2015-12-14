@@ -37,7 +37,7 @@ public class AttitudeQuatOutput extends MavlinkOutput
     private static final String ORIENT_DEF = "http://sensorml.com/ont/swe/property/OrientationQuaternion";
     
     
-    public AttitudeQuatOutput(MavlinkSystem parentSensor)
+    public AttitudeQuatOutput(MavlinkDriver parentSensor)
     {
         super(parentSensor);
         this.samplingPeriod = 0.1; // default to 10Hz on startup        
@@ -65,7 +65,7 @@ public class AttitudeQuatOutput extends MavlinkOutput
         
         // attitude quaternion
         Vector att = fac.newQuatOrientationNED(ORIENT_DEF);
-        att.setLocalFrame("#" + MavlinkSystem.BODY_FRAME);
+        att.setLocalFrame("#" + MavlinkDriver.BODY_FRAME);
         att.setDataType(DataType.FLOAT);
         dataStruct.addComponent("attitude", att);
         
@@ -76,17 +76,13 @@ public class AttitudeQuatOutput extends MavlinkOutput
     
     protected void handleMessage(long msgTime, MAVLinkMessage m)
     {
-        // skip old messages being resent
-        if (msgTime < lastMsgTime)
-            return;
-        
         DataBlock dataBlock = null;
                 
         // process different message types
         if (m instanceof msg_attitude_quaternion)
         {
             msg_attitude_quaternion msg = (msg_attitude_quaternion)m;
-            
+
             // populate datablock
             dataBlock = getNewDataBlock();
             dataBlock.setDoubleValue(0, parentSensor.getUtcTimeFromBootMillis(msg.time_boot_ms));
@@ -95,7 +91,7 @@ public class AttitudeQuatOutput extends MavlinkOutput
             dataBlock.setFloatValue(3, msg.q3);
             dataBlock.setFloatValue(4, msg.q4);
             
-            updateSamplingPeriod(msg.time_boot_ms);
+            updateSamplingPeriod(msgTime);//msg.time_boot_ms);
         }        
         
         if (dataBlock != null)

@@ -30,7 +30,7 @@ import com.MAVLink.Messages.MAVLinkMessage;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Dec 10, 2015
  */
-public abstract class MavlinkOutput extends AbstractSensorOutput<MavlinkSystem>
+public abstract class MavlinkOutput extends AbstractSensorOutput<MavlinkDriver>
 {
     protected DataComponent dataStruct;
     protected DataEncoding dataEncoding;
@@ -38,7 +38,7 @@ public abstract class MavlinkOutput extends AbstractSensorOutput<MavlinkSystem>
     protected long lastMsgTime = Long.MIN_VALUE;
     
 
-    public MavlinkOutput(MavlinkSystem parentSensor)
+    public MavlinkOutput(MavlinkDriver parentSensor)
     {
         super(parentSensor);
     }
