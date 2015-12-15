@@ -13,7 +13,7 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.test.sensor.mti;
+package org.sensorhub.test.sensor.vectornav;
 
 import java.io.IOException;
 import java.util.UUID;
