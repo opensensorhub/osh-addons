@@ -12,7 +12,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.process.cam;
+package org.sensorhub.process.cam;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.processing.StreamProcessConfig;

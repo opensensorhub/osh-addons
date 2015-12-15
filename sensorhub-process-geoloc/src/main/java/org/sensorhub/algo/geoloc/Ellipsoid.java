@@ -12,14 +12,17 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.process.geoloc;
+package org.sensorhub.algo.geoloc;
 
-import org.sensorhub.vecmath.Vect3d;
+import org.sensorhub.algo.vecmath.Vect3d;
 
 
 /**
  * <p>
  * Ellipsoid (i.e. Datum) used for coordinate transformations.
+ * </p>
+ * <p>
+ * <b>This class is immutable and thus thread-safe</b>
  * </p>
  *
  * @author Alexandre Robin <alex.robin@sensiasoftware.com>
@@ -52,12 +55,6 @@ public class Ellipsoid
     public double getPolarRadius()
     {
         return polarRadius;
-    }
-
-
-    public void setPolarRadius(double polarRadius)
-    {
-        this.polarRadius = polarRadius;
     }
 
 

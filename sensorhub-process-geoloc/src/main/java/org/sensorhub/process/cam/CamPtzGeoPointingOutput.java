@@ -12,7 +12,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.process.cam;
+package org.sensorhub.process.cam;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataChoice;
@@ -24,8 +24,8 @@ import org.sensorhub.api.common.IEventHandler;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.api.data.IDataProducerModule;
 import org.sensorhub.api.data.IStreamingDataInterface;
-import org.sensorhub.api.module.IModule;
 import org.sensorhub.impl.common.EventBus;
 import org.vast.data.TextEncodingImpl;
 import org.vast.ows.OWSException;
@@ -181,7 +181,7 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
 
 
     @Override
-    public IModule<?> getParentModule()
+    public IDataProducerModule<?> getParentModule()
     {
         return parentProcess;
     }

@@ -12,15 +12,18 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.process.geoloc;
+package org.sensorhub.algo.geoloc;
 
-import org.sensorhub.vecmath.Mat3d;
-import org.sensorhub.vecmath.Vect3d;
+import org.sensorhub.algo.vecmath.Mat3d;
+import org.sensorhub.algo.vecmath.Vect3d;
 
 
 /**
  * <p>
  * Routines to compute geocentric pointing orientation at a given ECEF location 
+ * </p>
+ * <p>
+ * <b>This class is NOT thread-safe</b>
  * </p>
  *
  * @author Alexandre Robin <alex.robin@sensiasoftware.com>

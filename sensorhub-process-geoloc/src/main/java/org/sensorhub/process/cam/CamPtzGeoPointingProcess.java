@@ -12,20 +12,20 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.process.cam;
+package org.sensorhub.process.cam;
 
 import java.util.Arrays;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataRecord;
+import org.sensorhub.algo.geoloc.GeoTransforms;
+import org.sensorhub.algo.geoloc.NadirPointing;
+import org.sensorhub.algo.vecmath.Mat3d;
+import org.sensorhub.algo.vecmath.Vect3d;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.processing.DataSourceConfig;
 import org.sensorhub.api.processing.ProcessException;
-import org.sensorhub.impl.process.geoloc.GeoTransforms;
-import org.sensorhub.impl.process.geoloc.NadirPointing;
 import org.sensorhub.impl.processing.AbstractStreamProcess;
-import org.sensorhub.vecmath.Mat3d;
-import org.sensorhub.vecmath.Vect3d;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.process.DataQueue;
@@ -119,13 +119,13 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
         cameraRotInput = fac.newDataRecord();
         cameraRotInput.setName("camRotation");
         cameraRotInput.addField("time", fac.newTimeStampIsoUTC());
-        cameraRotInput.addField("rot", fac.newEulerOrientationENU(SWEHelper.DEF_ORIENTATION));
+        cameraRotInput.addField("rot", fac.newEulerOrientationENU(SWEConstants.DEF_ORIENTATION));
         inputs.put(cameraRotInput.getName(), cameraRotInput);
         
         targetLocInput = fac.newDataRecord();
         targetLocInput.setName("targetLocation");
         targetLocInput.addField("time", fac.newTimeStampIsoUTC());
-        targetLocInput.addField("loc", fac.newLocationVectorLLA(SWEHelper.DEF_LOCATION));
+        targetLocInput.addField("loc", fac.newLocationVectorLLA(SWEConstants.DEF_LOCATION));
         inputs.put(targetLocInput.getName(), targetLocInput);
         
         // create outputs
