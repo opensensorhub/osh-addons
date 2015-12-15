@@ -5,10 +5,10 @@
     <artifactId>sensorhub-process-all</artifactId>
     <version>1.1-SNAPSHOT</version>
   </parent>
-  <artifactId>sensorhub-process-vecmath</artifactId>
+  <artifactId>sensorhub-process-basicmath</artifactId>
   <version>0.1-SNAPSHOT</version>
-  <name>Simple Vector Math Functions</name>
-  <description>Simple vector math functions for SensorHub processing</description>
+  <name>Simple Math Functions</name>
+  <description>Simple math functions for SensorHub processing</description>
   <dependencies>
      <dependency>
         <groupId>org.sensorhub</groupId>

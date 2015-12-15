@@ -12,7 +12,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.vecmath;
+package org.sensorhub.algo.vecmath;
 
 import java.io.Serializable;
 
@@ -32,7 +32,7 @@ public class Quat4d implements Serializable
     public double x;
     public double y;
     public double z;
-    public double w; // scalar component
+    public double s; // scalar component
     
 
     /**
@@ -56,7 +56,7 @@ public class Quat4d implements Serializable
         this.x = qx;
         this.y = qy;
         this.z = qz;
-        this.w = q0;
+        this.s = q0;
     }
 
 
@@ -79,7 +79,7 @@ public class Quat4d implements Serializable
         this.x = v.x;
         this.y = v.y;
         this.z = v.z;
-        this.w = 1.0;
+        this.s = 1.0;
     }
 
 
@@ -118,7 +118,7 @@ public class Quat4d implements Serializable
         this.x = qx;
         this.y = qy;
         this.z = qz;
-        this.w = q0;
+        this.s = q0;
         return this;
     }
     
@@ -133,7 +133,7 @@ public class Quat4d implements Serializable
         this.x = q.x;
         this.y = q.y;
         this.z = q.z;
-        this.w = q.w;
+        this.s = q.s;
         return this;
     }
     
@@ -145,7 +145,7 @@ public class Quat4d implements Serializable
     public final Quat4d setToIdentity()
     {
         this.x = this.y = this.z = 0.0;
-        this.w = 1.0;
+        this.s = 1.0;
         return this;
     }
     
@@ -156,7 +156,7 @@ public class Quat4d implements Serializable
      */
     public final Quat4d setToZero()
     {
-        this.x = this.y = this.z = this.w = 0.0;
+        this.x = this.y = this.z = this.s = 0.0;
         return this;
     }
     
@@ -168,7 +168,7 @@ public class Quat4d implements Serializable
      */
     public final Quat4d setFromArrayWithScalarFirst(final double[] q)
     {
-        this.w = q[0];
+        this.s = q[0];
         this.x = q[1];
         this.y = q[2];
         this.z = q[3];
@@ -186,7 +186,7 @@ public class Quat4d implements Serializable
         this.x = q[0];
         this.y = q[1];
         this.z = q[2];
-        this.w = q[3];
+        this.s = q[3];
         return this;
     }
     
@@ -203,7 +203,7 @@ public class Quat4d implements Serializable
         this.x = axis.x * sin;
         this.y = axis.y * sin;
         this.z = axis.z * sin;
-        this.w = Math.cos(angle / 2);
+        this.s = Math.cos(angle / 2);
         return this;
     }
     
@@ -220,7 +220,7 @@ public class Quat4d implements Serializable
         this.x = axis[0] * sin;
         this.y = axis[1] * sin;
         this.z = axis[2] * sin;
-        this.w = Math.cos(angle / 2);
+        this.s = Math.cos(angle / 2);
         return this;
     }
     
@@ -230,7 +230,7 @@ public class Quat4d implements Serializable
      */
     public final Quat4d copy()
     {
-        return new Quat4d(x, y, z, w);
+        return new Quat4d(x, y, z, s);
     }
     
     
@@ -239,7 +239,7 @@ public class Quat4d implements Serializable
      */
     public final boolean isNull()
     {
-        if (x == 0 && y == 0 && z == 0 && w == 0)
+        if (x == 0 && y == 0 && z == 0 && s == 0)
             return true;
 
         return false;
@@ -269,7 +269,7 @@ public class Quat4d implements Serializable
         this.x = -q.x;
         this.y = -q.y;
         this.z = -q.z;
-        this.w = q.w;
+        this.s = q.s;
         return this;
     }
 
@@ -292,7 +292,7 @@ public class Quat4d implements Serializable
      */
     public final Quat4d normalize(final Quat4d q)
     {
-        double norm = (q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+        double norm = (q.x * q.x + q.y * q.y + q.z * q.z + q.s * q.s);
 
         if (norm > 0.0)
         {
@@ -300,14 +300,14 @@ public class Quat4d implements Serializable
             this.x = norm * q.x;
             this.y = norm * q.y;
             this.z = norm * q.z;
-            this.w = norm * q.w;
+            this.s = norm * q.s;
         }
         else
         {
             this.x = 0.0;
             this.y = 0.0;
             this.z = 0.0;
-            this.w = 0.0;
+            this.s = 0.0;
         }
         
         return this;
@@ -322,11 +322,11 @@ public class Quat4d implements Serializable
     public final Quat4d mul(final Quat4d q)
     {
         double x, y, w;
-        w = this.w * q.w - this.x * q.x - this.y * q.y - this.z * q.z;
-        x = this.w * q.x + this.x * q.w + this.y * q.z - this.z * q.y;
-        y = this.w * q.y - this.x * q.z + this.y * q.w + this.z * q.x;
-        this.z = this.w * q.z + this.x * q.y - this.y * q.x + this.z * q.w;
-        this.w = w;
+        w = this.s * q.s - this.x * q.x - this.y * q.y - this.z * q.z;
+        x = this.s * q.x + this.x * q.s + this.y * q.z - this.z * q.y;
+        y = this.s * q.y - this.x * q.z + this.y * q.s + this.z * q.x;
+        this.z = this.s * q.z + this.x * q.y - this.y * q.x + this.z * q.s;
+        this.s = w;
         this.x = x;
         this.y = y;
         return this;
@@ -342,10 +342,10 @@ public class Quat4d implements Serializable
      */
     public final Quat4d mulQQ(final Quat4d q1, final Quat4d q2)
     {
-        this.w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
-        this.x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
-        this.y = q1.w * q2.y - q1.x * q2.z + q1.y * q2.w + q1.z * q2.x;
-        this.z = q1.w * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.w;
+        this.s = q1.s * q2.s - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
+        this.x = q1.s * q2.x + q1.x * q2.s + q1.y * q2.z - q1.z * q2.y;
+        this.y = q1.s * q2.y - q1.x * q2.z + q1.y * q2.s + q1.z * q2.x;
+        this.z = q1.s * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.s;
         return this;
     }
     
@@ -359,10 +359,10 @@ public class Quat4d implements Serializable
      */
     public final Quat4d mulQQtilde(final Quat4d q1, final Quat4d q2)
     {
-        this.w = q1.w * q2.w + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z;
-        this.x = q1.x * q2.w - q1.w * q2.x - q1.y * q2.z + q1.z * q2.y;
-        this.y = q1.y * q2.w - q1.w * q2.y + q1.x * q2.z - q1.z * q2.x;
-        this.z = q1.z * q2.w - q1.w * q2.z - q1.x * q2.y + q1.y * q2.x;
+        this.s = q1.s * q2.s + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z;
+        this.x = q1.x * q2.s - q1.s * q2.x - q1.y * q2.z + q1.z * q2.y;
+        this.y = q1.y * q2.s - q1.s * q2.y + q1.x * q2.z - q1.z * q2.x;
+        this.z = q1.z * q2.s - q1.s * q2.z - q1.x * q2.y + q1.y * q2.x;
         return this;
     }
     
@@ -374,7 +374,7 @@ public class Quat4d implements Serializable
      * @param v the vector to rotate
      * @param res vector to store result into (must not be null)
      */
-    public final void rotate(final Vect3d v, Vect3d res)
+    public final void rotate(final Vect3d v, final Vect3d res)
     {
         mulQVQtilde(v, res);
     }
@@ -386,7 +386,7 @@ public class Quat4d implements Serializable
      * @param v the vector to transform
      * @param res vector to store result into (must not be null)
      */
-    public final void mulQVQtilde(final Vect3d v, Vect3d res)
+    public final void mulQVQtilde(final Vect3d v, final Vect3d res)
     {
         double twoxx = 2.0 * this.x * this.x;
         double twoyy = 2.0 * this.y * this.y;
@@ -395,9 +395,9 @@ public class Quat4d implements Serializable
         double xy = this.x * this.y;
         double yz = this.y * this.z;
         double xz = this.x * this.z;
-        double wx = this.w * this.x;
-        double wy = this.w * this.y;
-        double wz = this.w * this.z;
+        double wx = this.s * this.x;
+        double wy = this.s * this.y;
+        double wz = this.s * this.z;
         
         double x = v.x * (1.0 - twoyy - twozz) +
                    v.y * (2.0 * (xy - wz)) +
@@ -423,7 +423,7 @@ public class Quat4d implements Serializable
      * @param v the vector to transform
      * @param res vector to store result into (must not be null)
      */
-    public final void mulQtildeVQ(final Vect3d v, Vect3d res)
+    public final void mulQtildeVQ(final Vect3d v, final Vect3d res)
     {
         double twoxx = 2.0 * this.x * this.x;
         double twoyy = 2.0 * this.y * this.y;
@@ -432,9 +432,9 @@ public class Quat4d implements Serializable
         double xy = this.x * this.y;
         double yz = this.y * this.z;
         double xz = this.x * this.z;
-        double wx = this.w * this.x;
-        double wy = this.w * this.y;
-        double wz = this.w * this.z;
+        double wx = this.s * this.x;
+        double wy = this.s * this.y;
+        double wz = this.s * this.z;
         
         double x = v.x * (1.0 - twoyy - twozz) +
                    v.y * (2.0 * (xy + wz)) +
@@ -472,15 +472,15 @@ public class Quat4d implements Serializable
      * Quaternion must first be normalized
      * @param euler vector object to store computed Euler angles (must not be null)
      */
-    public final void toEulerAngles(Vect3d euler)
+    public final void toEulerAngles(final Vect3d euler)
     {
-        double sqw = w * w;
+        double sqs = s * s;
         double sqx = x * x;
         double sqy = y * y;
         double sqz = z * z;
-        euler.z = Math.atan2(2.0 * (x * y + z * w), sqx - sqy - sqz + sqw); // heading
-        euler.y = Math.atan2(2.0 * (y * z + x * w), -sqx - sqy + sqz + sqw); // pitch
-        euler.x = Math.asin(-2.0 * (x * z - y * w)); // roll
+        euler.z = Math.atan2(2.0 * (x * y + z * s), sqx - sqy - sqz + sqs); // heading
+        euler.y = Math.atan2(2.0 * (y * z + x * s), -sqx - sqy + sqz + sqs); // pitch
+        euler.x = Math.asin(-2.0 * (x * z - y * s)); // roll
     }
     
     
@@ -500,7 +500,7 @@ public class Quat4d implements Serializable
      * Computes rotation matrix producing a rotation equivalent to this quaternion.
      * @param m 3x3 matrix to store the result into (cannot be null)
      */
-    public final void toRotationMatrix(Mat3d m)
+    public final void toRotationMatrix(final Mat3d m)
     {
         double twoxx = 2.0 * this.x * this.x;
         double twoyy = 2.0 * this.y * this.y;
@@ -509,9 +509,9 @@ public class Quat4d implements Serializable
         double xy = this.x * this.y;
         double yz = this.y * this.z;
         double xz = this.x * this.z;
-        double wx = this.w * this.x;
-        double wy = this.w * this.y;
-        double wz = this.w * this.z;
+        double wx = this.s * this.x;
+        double wy = this.s * this.y;
+        double wz = this.s * this.z;
         
         m.m00 = (1.0 - twoyy - twozz);
         m.m10 = (2.0 * (xy + wz));
@@ -534,7 +534,7 @@ public class Quat4d implements Serializable
             return false;
         
         Quat4d q = (Quat4d)o;        
-        if (q.x == this.x && q.y == this.y && q.z == this.z && q.w == this.w)
+        if (q.x == this.x && q.y == this.y && q.z == this.z && q.s == this.s)
             return true;
         
         return false;
@@ -550,10 +550,10 @@ public class Quat4d implements Serializable
      *  @param alpha the alpha interpolation parameter
      * @param res quaternion to store result into (must not be null)
      */
-    public final static void interpolate(Quat4d q1, Quat4d q2, double alpha, Quat4d res)
+    public final static void interpolate(final Quat4d q1, final Quat4d q2, final double alpha, final Quat4d res)
     {
         double dot, s1, s2, om, sinom;
-        dot = q2.x * q1.x + q2.y * q1.y + q2.z * q1.z + q2.w * q1.w;
+        dot = q2.x * q1.x + q2.y * q1.y + q2.z * q1.z + q2.s * q1.s;
 
         if (dot < 0)
         {
@@ -561,7 +561,7 @@ public class Quat4d implements Serializable
             q1.x = -q1.x;
             q1.y = -q1.y;
             q1.z = -q1.z;
-            q1.w = -q1.w;
+            q1.s = -q1.s;
             dot = -dot;
         }
 
@@ -578,10 +578,26 @@ public class Quat4d implements Serializable
             s2 = alpha;
         }
         
-        res.w = s1 * q1.w + s2 * q2.w;
+        res.s = s1 * q1.s + s2 * q2.s;
         res.x = s1 * q1.x + s2 * q2.x;
         res.y = s1 * q1.y + s2 * q2.y;
         res.z = s1 * q1.z + s2 * q2.z;
     }
 
+    
+    @Override
+    public String toString()
+    {
+        StringBuilder buf = new StringBuilder();
+        buf.append("[s=")
+           .append(s)
+           .append(", v=")
+           .append(x)
+           .append(',')
+           .append(y)
+           .append(',')
+           .append(z)
+           .append(']');
+        return buf.toString();
+    }
 }

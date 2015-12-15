@@ -12,12 +12,12 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.test.vecmath;
+package org.sensorhub.test.algo.vecmath;
 
 import static org.junit.Assert.*;
 import org.junit.Test;
-import org.sensorhub.vecmath.Quat4d;
-import org.sensorhub.vecmath.Vect3d;
+import org.sensorhub.algo.vecmath.Quat4d;
+import org.sensorhub.algo.vecmath.Vect3d;
 
 
 public class TestVect3d

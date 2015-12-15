@@ -12,7 +12,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.vecmath;
+package org.sensorhub.algo.vecmath;
 
 
 /**
@@ -354,14 +354,37 @@ public class Vect3d
     
     
     /**
+     * Transforms this vector using 3x3 matrix
+     * @param m 3x3 matrix (e.g. rotation matrix)
+     * @return reference to this vector for chaining other operations
+     */
+    public final Vect3d transform(final Mat3d m)
+    {
+        m.mul(this, this);
+        return this;
+    }
+    
+    
+    /**
+     * Transforms this vector using 4x4 matrix
+     * @param m 4x4 matrix (e.g. homogeneous matrix)
+     * @return reference to this vector for chaining other operations
+     */
+    public final Vect3d transform(final Mat4d m)
+    {
+        m.mul(this, this);
+        return this;
+    }
+    
+    
+    /**
      * Rotates this vector using 3x3 matrix
-     * @param m Matrix4x4
+     * @param m 3x3 rotation matrix
      * @return reference to this vector for chaining other operations
      */
     public final Vect3d rotate(final Mat3d m)
     {
-        m.mul(this, this);
-        return this;
+        return transform(m);
     }
     
     
@@ -452,5 +475,20 @@ public class Vect3d
             return true;
         
         return false;
+    }
+    
+    
+    @Override
+    public String toString()
+    {
+        StringBuilder buf = new StringBuilder();
+        buf.append('[')
+           .append(x)
+           .append(',')
+           .append(y)
+           .append(',')
+           .append(z)
+           .append(']');
+        return buf.toString();
     }
 }
