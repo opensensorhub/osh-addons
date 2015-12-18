@@ -86,7 +86,7 @@ public class GlobalPositionOutput extends MavlinkOutput
             dataBlock.setDoubleValue(0, parentSensor.getUtcTimeFromBootMillis(msg.time_boot_ms));
             dataBlock.setDoubleValue(1, ((double)msg.lat) / 1e7);
             dataBlock.setDoubleValue(2, ((double)msg.lon) / 1e7);
-            dataBlock.setDoubleValue(3, ((double)msg.alt) / 1e7);
+            dataBlock.setDoubleValue(3, ((double)msg.alt) / 1e3);
             
             updateSamplingPeriod(msgTime);//msg.time_boot_ms);
         }        
