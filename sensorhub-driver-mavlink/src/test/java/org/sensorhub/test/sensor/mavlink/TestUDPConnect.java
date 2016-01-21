@@ -21,22 +21,9 @@ import java.net.InetAddress;
 import com.MAVLink.MAVLinkPacket;
 import com.MAVLink.Parser;
 import com.MAVLink.Messages.MAVLinkMessage;
-import com.MAVLink.ardupilotmega.msg_gimbal_report;
-import com.MAVLink.ardupilotmega.msg_mount_configure;
-import com.MAVLink.ardupilotmega.msg_mount_control;
-import com.MAVLink.ardupilotmega.msg_mount_status;
-import com.MAVLink.common.msg_command_ack;
-import com.MAVLink.common.msg_command_int;
-import com.MAVLink.common.msg_command_long;
-import com.MAVLink.common.msg_param_set;
-import com.MAVLink.common.msg_set_mode;
-import com.MAVLink.common.msg_statustext;
-import com.MAVLink.enums.MAV_CMD;
-import com.MAVLink.enums.MAV_CMD_ACK;
-import com.MAVLink.enums.MAV_COMPONENT;
-import com.MAVLink.enums.MAV_MODE;
-import com.MAVLink.enums.MAV_MOUNT_MODE;
-import com.MAVLink.enums.MAV_PARAM_TYPE;
+import com.MAVLink.ardupilotmega.*;
+import com.MAVLink.common.*;
+import com.MAVLink.enums.*;
 
 public class TestUDPConnect
 {
@@ -68,7 +55,7 @@ public class TestUDPConnect
                         for (int i=0; i<length; i++)
                             System.out.print(String.format("%02x", receiveData[i] & 0xFF));
                         System.out.println();*/
-                        System.out.println(receivePacket.getAddress() + ":" + receivePacket.getPort());
+                        //System.out.println(receivePacket.getAddress() + ":" + receivePacket.getPort());
                         
                         MAVLinkPacket packet = null;
                         for (int i=0; i<length; i++)
@@ -77,12 +64,23 @@ public class TestUDPConnect
                         if (packet != null)
                         {
                             MAVLinkMessage msg = packet.unpack();
-                            /*if (msg instanceof msg_mount_status ||
-                                msg instanceof msg_command_ack)
-                                System.out.println(msg);*/
+                            
+                            //if (msg instanceof msg_command_ack)
+                                //System.out.println(receivePacket.getAddress() + ": " + msg);
+                            System.out.println(msg);
 
-                            if (msg instanceof msg_gimbal_report)
-                                System.out.println(((msg_gimbal_report) msg).joint_el*180/Math.PI);
+//                            if (msg instanceof msg_gimbal_report)
+//                                System.out.println(((msg_gimbal_report) msg).joint_el*180/Math.PI);
+                            
+//                            if (msg instanceof msg_global_position_int)
+//                                System.out.println(msg);
+                            
+//                            if (msg instanceof msg_attitude)
+//                                System.out.println(msg);
+//                            
+//                            if (msg instanceof msg_param_value)
+//                                System.out.println(((msg_param_value) msg).getParam_Id() + ": " + ((msg_param_value) msg).param_value);
+                            
                             //System.out.println("sysid = " + msg.sysid);
                             //System.out.println(msg.compid);
                             //if (msg instanceof msg_statustext)
@@ -98,16 +96,16 @@ public class TestUDPConnect
         };
         t.start();
         
-//        System.err.println("Disabling pre-arm checks");
-//        msg_param_set setParam = new msg_param_set();
-//        setParam.target_system = 1;
-//        setParam.target_component = 1;
-//        setParam.setParam_Id("ARMING_CHECK");
-//        setParam.param_type = MAV_PARAM_TYPE.MAV_PARAM_TYPE_REAL32;
-//        setParam.param_value = 0;
-//        sendCommand(setParam.pack());        
-//        Thread.sleep(1000);        
-//        
+        System.err.println("Disabling pre-arm checks");
+        msg_param_set setParam = new msg_param_set();
+        setParam.target_system = 1;
+        setParam.target_component = 1;
+        setParam.setParam_Id("ARMING_CHECK");
+        setParam.param_type = MAV_PARAM_TYPE.MAV_PARAM_TYPE_REAL32;
+        setParam.param_value = 0;
+        sendCommand(setParam.pack());        
+        Thread.sleep(1000);        
+        
 //        System.err.println("Arming system");
 //        msg_command_long cmd = new msg_command_long();
 //        cmd.target_system = 1;
@@ -116,18 +114,50 @@ public class TestUDPConnect
 //        cmd.param1 = 1;
 //        sendCommand(cmd.pack());        
 //        Thread.sleep(5000);
+
         
-//        cmd.command = MAV_CMD.MAV_CMD_PREFLIGHT_CALIBRATION;
-//        cmd.param3 = 1;
-//        sendCommand(cmd.pack());        
-//        Thread.sleep(1000);
+        // set telemetry update rate
+        System.err.println("Changing telemetry rate");
+        setParam = new msg_param_set();
+        setParam.target_system = 1;
+        setParam.target_component = 1;
+        setParam.param_type = MAV_PARAM_TYPE.MAV_PARAM_TYPE_REAL32;
         
-//        cmd.command = MAV_CMD.MAV_CMD_DO_CHANGE_SPEED;
-//        cmd.param2 = -1;
-//        cmd.param3 = 25;
-//        sendCommand(cmd.pack());
-//        Thread.sleep(1000);
+        setParam.setParam_Id("SR1_RAW_SENS");
+        setParam.param_value = 0;
+        sendCommand(setParam.pack());
         
+        setParam.setParam_Id("SR1_EXT_STAT");
+        setParam.param_value = 0;
+        sendCommand(setParam.pack());
+        
+        setParam.setParam_Id("SR1_RC_CHAN");
+        setParam.param_value = 0;
+        sendCommand(setParam.pack());
+        
+        setParam.setParam_Id("SR1_RAW_CTRL");
+        setParam.param_value = 0;
+        sendCommand(setParam.pack());
+        
+        setParam.setParam_Id("SR1_EXTRA2");
+        setParam.param_value = 0;
+        sendCommand(setParam.pack());
+        
+        setParam.setParam_Id("SR1_EXTRA3");
+        setParam.param_value = 10;
+        sendCommand(setParam.pack());
+        
+        setParam.setParam_Id("SR1_POSITION");
+        setParam.param_value = 10;
+        sendCommand(setParam.pack());
+        
+        setParam.setParam_Id("SR1_EXTRA1");
+        setParam.param_value = 10;
+        sendCommand(setParam.pack());
+        
+        
+        
+        Thread.sleep(1000);
         
         System.err.println("Gimbal Config");
         msg_mount_configure confGimbal = new msg_mount_configure();

@@ -34,6 +34,8 @@ import com.MAVLink.MAVLinkPacket;
 import com.MAVLink.Parser;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.common.msg_heartbeat;
+import com.MAVLink.common.msg_param_set;
+import com.MAVLink.enums.MAV_PARAM_TYPE;
 
 
 /**
@@ -165,6 +167,16 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
             throw new RuntimeException("Error while initializing communications ", e);
         }
         
+        // set ardupilot parameters
+        try
+        {         
+            setTelemetryRates();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Error while setting UAV parameters ", e);
+        }
+        
         // start main measurement thread
         Thread t = new Thread(new Runnable()
         {
@@ -180,6 +192,50 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
         
         // start connection watchdog
         startWatchDogTimer();
+    }
+    
+    
+    private void setTelemetryRates() throws IOException
+    {
+        // set telemetry update rate
+        log.debug("Setting telemetry rate");
+        msg_param_set setParam = new msg_param_set();
+        setParam.target_system = 1;
+        setParam.target_component = 1;
+        setParam.param_type = MAV_PARAM_TYPE.MAV_PARAM_TYPE_REAL32;
+        
+        setParam.setParam_Id("SR1_RAW_SENS");
+        setParam.param_value = 0;
+        sendCommand(setParam.pack());
+        
+        setParam.setParam_Id("SR1_EXT_STAT");
+        setParam.param_value = 0;
+        sendCommand(setParam.pack());
+        
+        setParam.setParam_Id("SR1_RC_CHAN");
+        setParam.param_value = 0;
+        sendCommand(setParam.pack());
+        
+        setParam.setParam_Id("SR1_RAW_CTRL");
+        setParam.param_value = 0;
+        sendCommand(setParam.pack());
+        
+        setParam.setParam_Id("SR1_EXTRA2");
+        setParam.param_value = 0;
+        sendCommand(setParam.pack());
+        
+        setParam.setParam_Id("SR1_EXTRA3");
+        setParam.param_value = 10;
+        sendCommand(setParam.pack());
+        
+        setParam.setParam_Id("SR1_POSITION");
+        setParam.param_value = 10;
+        sendCommand(setParam.pack());
+        
+        setParam.setParam_Id("SR1_EXTRA1");
+        setParam.param_value = 10;
+        sendCommand(setParam.pack());
+        
     }
     
     
