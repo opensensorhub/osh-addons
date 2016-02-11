@@ -215,6 +215,27 @@ public class IpCommNetwork extends AbstractModule<IpNetworkConfig> implements IC
 
 
     @Override
+    public void init(IpNetworkConfig config) throws SensorHubException
+    {
+        super.init(config);
+        
+        // use first interface by default if none is specified
+        if (config.networkInterface == null)
+        {
+            try
+            {
+                Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+                if (nets.hasMoreElements())
+                    config.networkInterface = nets.nextElement().getName();
+            }
+            catch (SocketException e)
+            {
+            }
+        }
+    }
+
+
+    @Override
     public Collection<INetworkInfo> getAvailableNetworks()
     {
         ArrayList<INetworkInfo> ipNetworks = new ArrayList<INetworkInfo>();
