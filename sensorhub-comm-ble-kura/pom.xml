@@ -1,0 +1,42 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+   <modelVersion>4.0.0</modelVersion>
+   <parent>
+      <groupId>org.sensorhub</groupId>
+      <artifactId>sensorhub-driver-all</artifactId>
+      <version>1.1-SNAPSHOT</version>
+      <relativePath>../sensorhub-driver-all/pom.xml</relativePath>
+   </parent>
+   <artifactId>sensorhub-comm-ble-kura</artifactId>
+   <version>0.1-SNAPSHOT</version>
+   <name>Bluetooth LE Comm Driver (Kura)</name>
+   <description>Bluetooth Smart (Low Energy) driver based on Kura library</description>
+   <repositories>
+     <repository>
+         <id>kura_releases</id>
+         <name>Kura Releases Maven Repository</name>
+         <url>https://repo.eclipse.org/content/repositories/kura-releases/</url>
+         <snapshots>
+             <enabled>true</enabled>
+             <updatePolicy>always</updatePolicy>
+         </snapshots>
+     </repository>
+  </repositories>
+  <dependencies>
+      <dependency>
+         <groupId>org.sensorhub</groupId>
+         <artifactId>sensorhub-core</artifactId>
+         <version>${project.parent.version}</version>
+         <type>bundle</type>
+      </dependency>
+      <dependency>
+         <groupId>org.eclipse.kura</groupId>
+         <artifactId>org.eclipse.kura.api</artifactId>
+         <version>1.0.6</version>
+      </dependency>
+      <dependency>
+         <groupId>org.eclipse.kura</groupId>
+         <artifactId>org.eclipse.kura.linux.bluetooth</artifactId>
+         <version>1.0.2</version>
+      </dependency>
+   </dependencies>
+</project>
