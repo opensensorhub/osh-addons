@@ -1,0 +1,3 @@
+org.sensorhub.impl.comm.ble.BleDbusNetworkProvider
+org.sensorhub.impl.comm.ble.BleDbusGattCommProvider
+org.sensorhub.impl.comm.ble.BleDbusAdvCommProvider

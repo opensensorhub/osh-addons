@@ -20,19 +20,19 @@ import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.ModuleConfig;
 
 
-public class KuraBleNetworkProvider implements INetworkProvider
+public class BleDbusNetworkProvider implements INetworkProvider
 {
     
     @Override
     public String getModuleName()
     {
-        return "Bluetooth LE Network (Kura)";
+        return "Bluetooth LE Network (D-Bus)";
     }
 
     @Override
     public String getModuleDescription()
     {
-        return "Bluetooth LE network service based on Kura library";
+        return "Bluetooth LE network service based on BlueZ d-Bus API";
     }
 
     @Override
@@ -50,7 +50,7 @@ public class KuraBleNetworkProvider implements INetworkProvider
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return KuraBleCommNetwork.class;
+        return BleDbusCommNetwork.class;
     }
 
     @Override
