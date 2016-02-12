@@ -26,13 +26,13 @@ public class KuraBleNetworkProvider implements INetworkProvider
     @Override
     public String getModuleName()
     {
-        return "Bluetooth LE Network";
+        return "Bluetooth LE Network (Kura)";
     }
 
     @Override
     public String getModuleDescription()
     {
-        return "Bluetooth LE network service based on Kura library, using BlueZ on Linux";
+        return "Bluetooth LE network service based on Kura library";
     }
 
     @Override
