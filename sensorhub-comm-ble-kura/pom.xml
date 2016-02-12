@@ -8,8 +8,8 @@
    </parent>
    <artifactId>sensorhub-comm-ble-kura</artifactId>
    <version>0.1-SNAPSHOT</version>
-   <name>Bluetooth Smart Comm Provider</name>
-   <description>Bluetooth Smart (Low Energy) driver based on Kura implementation</description>
+   <name>Bluetooth LE Comm Driver (Kura)</name>
+   <description>Bluetooth Smart (Low Energy) driver based on Kura library</description>
    <repositories>
      <repository>
          <id>kura_releases</id>
