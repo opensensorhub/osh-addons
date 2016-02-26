@@ -32,7 +32,7 @@ public class BleDbusNetworkProvider implements INetworkProvider
     @Override
     public String getModuleDescription()
     {
-        return "Bluetooth LE network service based on BlueZ d-Bus API";
+        return "Bluetooth LE network service based on BlueZ D-Bus API";
     }
 
     @Override
@@ -50,7 +50,7 @@ public class BleDbusNetworkProvider implements INetworkProvider
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return BleDbusCommNetwork.class;
+        return BleDbusCommNetworkV5.class;
     }
 
     @Override

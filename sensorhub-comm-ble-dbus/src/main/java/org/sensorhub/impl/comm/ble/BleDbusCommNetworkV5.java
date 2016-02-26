@@ -16,13 +16,18 @@ package org.sensorhub.impl.comm.ble;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
-import org.bluez4.Adapter;
-import org.bluez4.Manager;
-import org.bluez4.Adapter.DeviceFound;
+import java.util.Map;
+import java.util.Map.Entry;
+import org.bluez.Adapter1;
+import org.bluez.Device1;
+import org.freedesktop.DBus.Properties;
 import org.freedesktop.dbus.DBusConnection;
 import org.freedesktop.dbus.DBusSigHandler;
+import org.freedesktop.dbus.ObjectManager;
+import org.freedesktop.dbus.ObjectManager.InterfacesAdded;
 import org.freedesktop.dbus.Path;
+import org.freedesktop.dbus.Properties.PropertiesChanged;
+import org.freedesktop.dbus.Variant;
 import org.freedesktop.dbus.exceptions.DBusException;
 import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.IDeviceInfo;
@@ -32,7 +37,6 @@ import org.sensorhub.api.comm.IDeviceScanCallback;
 import org.sensorhub.api.comm.IDeviceScanner;
 import org.sensorhub.api.comm.INetworkInfo;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.comm.BluetoothConfig;
 import org.sensorhub.impl.module.AbstractModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,25 +44,31 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>
- * Implementation of Bluetooth LE network service based on BlueZ 4.X library.
+ * Implementation of Bluetooth LE network service based on BlueZ 5.X library.
  * This uses the DBus java implementation so it will only work on Linux.
+ * Linux 
  * </p>
  *
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Feb 11, 2016
  */
-public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> implements ICommNetwork<BluetoothNetworkConfig>
+public class BleDbusCommNetworkV5 extends AbstractModule<BluetoothNetworkConfig> implements ICommNetwork<BluetoothNetworkConfig>
 {
-    private static final Logger log = LoggerFactory.getLogger(BleDbusCommNetwork.class); 
+    private static final Logger log = LoggerFactory.getLogger(BleDbusCommNetworkV5.class);
+    private final static String DBUS_BLUEZ = "org.bluez";
     
     DBusConnection dbus;
-    Manager manager;
-    Adapter btAdapter;
+    ObjectManager manager;
+    Adapter1 btAdapter;
+    Properties btAdapterProps;
     BleDeviceScanner bleScanner;
     
     
     class BleDeviceScanner implements IDeviceScanner
     {
+        DBusSigHandler<InterfacesAdded> scanHandler1;
+        DBusSigHandler<PropertiesChanged> scanHandler2;
+        
         @Override
         public void startScan(IDeviceScanCallback callback)
         {
@@ -74,14 +84,38 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
                 
                 try
                 {
-                    dbus.addSigHandler(Adapter.DeviceFound.class, new DBusSigHandler<DeviceFound>() {
+                    // listen for new connected devices
+                    dbus.addSigHandler(InterfacesAdded.class, scanHandler1 = new DBusSigHandler<InterfacesAdded>() {
                         @Override
-                        public void handle(final DeviceFound devFound)
+                        public void handle(final InterfacesAdded event)
                         {
-                            final BluetoothConfig btConfig = new BluetoothConfig();
-                            btConfig.deviceAddress = devFound.address;
-                            //for (String key: devFound.values.keySet())
-                            //    System.out.println(key);
+                            if (!(event.object instanceof Device1))
+                                return;
+                            
+                            Variant<?> val;
+                            Map<String, Variant<?>> props = event.interfaces.get(Device1.class.getCanonicalName());
+                            final String address = props.get("Address").getValue().toString();
+                            
+                            final String name;
+                            val = props.get("Name");
+                            if (val != null)
+                                name = val.getValue().toString();
+                            else
+                                name = null;
+                            
+                            final String type;
+                            val = props.get("Class");
+                            if (val != null)
+                                type = val.getValue().toString();
+                            else
+                                type = null;
+                            
+                            final String rssi;
+                            val = props.get("RSSI");
+                            if (val != null)
+                                rssi = val.getValue().toString();
+                            else
+                                rssi = null;
                             
                             // create device info
                             IDeviceInfo devInfo = new IDeviceInfo() {
@@ -89,37 +123,46 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
                                 @Override
                                 public String getName()
                                 {
-                                    return (String)devFound.values.get("Name").getValue();
+                                    return name;
                                 }
 
                                 @Override
                                 public String getType()
                                 {
-                                    return devFound.values.get("Class").getValue().toString();
+                                    return type;
                                 }
 
                                 @Override
                                 public String getAddress()
                                 {
-                                    return btConfig.deviceAddress;
+                                    return address;
                                 }
 
                                 @Override
                                 public String getSignalLevel()
                                 {
-                                    return devFound.values.get("RSSI").getValue().toString();
+                                    return rssi;
                                 }
 
                                 @Override
                                 public CommConfig getCommConfig()
                                 {
-                                    return btConfig;
+                                    return null;
                                 }
                                 
                             };
                             
                             callback.onDeviceFound(devInfo);                        
                         }
+                    });
+                    
+                    // listen for changes in already connected devices
+                    dbus.addSigHandler(PropertiesChanged.class, scanHandler2 = new DBusSigHandler<PropertiesChanged>() {
+                        @Override
+                        public void handle(PropertiesChanged event)
+                        {
+                            System.out.println(event.changedProps);                            
+                        }                        
                     });
                     
                     btAdapter.StartDiscovery();
@@ -135,15 +178,36 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
         @Override
         public synchronized void stopScan()
         {
-            log.debug("Stopping Bluetooth LE scan");
             if (isScanning())
-                btAdapter.StopDiscovery();   
+            {
+                log.debug("Stopping Bluetooth LE scan");
+                btAdapter.StopDiscovery();
+            }
+            
+            try
+            {
+                if (scanHandler1 != null)
+                {
+                    dbus.removeSigHandler(InterfacesAdded.class, scanHandler1);
+                    scanHandler1 = null;
+                }
+                
+                if (scanHandler2 != null)
+                {
+                    dbus.removeSigHandler(PropertiesChanged.class, scanHandler2);
+                    scanHandler2 = null;
+                }
+            }
+            catch (DBusException e)
+            {
+                e.printStackTrace();
+            }
         }
 
         @Override
         public boolean isScanning()
         {
-            return (boolean)btAdapter.GetProperties().get("Discovering").getValue();
+            return btAdapterProps.Get(Adapter1.class.getCanonicalName(), "Discovering");
         }     
     }
     
@@ -158,41 +222,47 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
             
             ArrayList<INetworkInfo> btNets = new ArrayList<INetworkInfo>();
             
-            List<Path> adapters = (List<Path>)manager.GetProperties().get("Adapters").getValue();
-            for (Path objPath: adapters)
+            Map<Path, Map<String, Map<String,Variant<?>>>> adapters = manager.GetManagedObjects();
+            for (Entry<Path, Map<String, Map<String,Variant<?>>>> objPath: adapters.entrySet())
             {
-                String path = objPath.getPath();
-                Adapter bt = dbus.getRemoteObject("org.bluez", path, Adapter.class);
-                final String address = (String)bt.GetProperties().get("Address").getValue();
-                final String name = path.substring(path.lastIndexOf('/')+1);
+                String path = objPath.getKey().getPath();
                 
-                netInfo = new INetworkInfo() {
-                    @Override
-                    public String getInterfaceName()
-                    {
-                        return name;
+                for (Entry<String, Map<String,Variant<?>>> obj: objPath.getValue().entrySet())
+                {
+                    if (obj.getKey().equals(Adapter1.class.getCanonicalName()))
+                    {                    
+                        final String address = (String)obj.getValue().get("Address").getValue();
+                        final String name = path.substring(path.lastIndexOf('/')+1);
+                        
+                        netInfo = new INetworkInfo() {
+                            @Override
+                            public String getInterfaceName()
+                            {
+                                return name;
+                            }
+            
+                            @Override
+                            public NetworkType getNetworkType()
+                            {
+                                return NetworkType.BLUETOOTH;
+                            }
+            
+                            @Override
+                            public String getHardwareAddress()
+                            {
+                                return address;
+                            }
+            
+                            @Override
+                            public String getLogicalAddress()
+                            {
+                                return null;
+                            }            
+                        };
+                        
+                        btNets.add(netInfo);
                     }
-    
-                    @Override
-                    public NetworkType getNetworkType()
-                    {
-                        return NetworkType.BLUETOOTH;
-                    }
-    
-                    @Override
-                    public String getHardwareAddress()
-                    {
-                        return address;
-                    }
-    
-                    @Override
-                    public String getLogicalAddress()
-                    {
-                        return null;
-                    }            
-                };
-                
-                btNets.add(netInfo);
+                }
             }
             
             return btNets;
@@ -220,11 +290,9 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
             
             if (btAdapter == null)
             {
-                Path objPath = (Path)manager.FindAdapter(config.deviceName);
-                btAdapter = dbus.getRemoteObject("org.bluez", objPath.getPath(), Adapter.class);
+                btAdapter = dbus.getRemoteObject(DBUS_BLUEZ, "/org/bluez/"+config.deviceName, Adapter1.class);
+                btAdapterProps = dbus.getRemoteObject(DBUS_BLUEZ, "/org/bluez/"+config.deviceName, Properties.class);
             }
-            //btAdapter = dbus.getRemoteObject("org.bluez", adapterObjPath, Adapter.class);
-            
             // will only be possible with bluez 5
             /*if (config.advertisementName != null)
             {
@@ -240,7 +308,7 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
     }
     
     
-    protected void initBlueZDbus() throws SensorHubException
+    protected synchronized void initBlueZDbus() throws SensorHubException
     {
         try
         {
@@ -248,7 +316,7 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
                 dbus = DBusConnection.getConnection(DBusConnection.SYSTEM);
             
             if (manager == null)
-                manager = dbus.getRemoteObject("org.bluez", "/", Manager.class);
+                manager = dbus.getRemoteObject(DBUS_BLUEZ, "/", ObjectManager.class);
         }
         catch (DBusException e)
         {
