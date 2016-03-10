@@ -30,4 +30,10 @@ public class NMEAGpsConfig extends SensorConfig
     
     @DisplayInfo(label="Active NMEA Messages", desc="List of NMEA sentences to provide as outputs")
     public List<String> activeSentences = Arrays.asList("GGA");
+    
+    
+    public NMEAGpsConfig()
+    {
+        this.moduleClass = NMEAGpsSensor.class.getCanonicalName();
+    }
 }
