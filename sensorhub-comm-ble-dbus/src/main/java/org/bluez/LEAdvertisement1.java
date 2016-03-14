@@ -25,10 +25,10 @@ import org.freedesktop.dbus.DBusInterface;
  * All UUIDs are 128-bit versions in the API, and 16 or 32-bit
  * versions of the same UUID will be used in the advertising data as appropriate.
  * </p>
- * 
+ * <br/>
  * <p>
- * <b>Service:</b> org.bluez
- * <b>Interface:</b> org.bluez.LEAdvertisement1
+ * <b>Service:</b> org.bluez<br/>
+ * <b>Interface:</b> org.bluez.LEAdvertisement1<br/>
  * <b>Object path:</b> freely definable
  * </p>
  *
@@ -37,8 +37,7 @@ import org.freedesktop.dbus.DBusInterface;
  */
 public interface LEAdvertisement1 extends DBusInterface
 {
-    
-    
+       
     
     /**
      * This method gets called when the service daemon

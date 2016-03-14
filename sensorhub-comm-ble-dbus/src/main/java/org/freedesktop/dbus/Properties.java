@@ -24,11 +24,13 @@ public interface Properties extends DBusInterface
 {
     public class PropertiesChanged extends DBusSignal
     {
+        public final String interfaceName;
         public final Map<String,Variant<?>> changedProps;
         public final List<String> invalidatedProps;
         public PropertiesChanged(String path, String interface_name, Map<String,Variant<?>> changed_properties, List<String> invalidated_properties) throws DBusException
         {
            super(path, changed_properties, invalidated_properties);
+           this.interfaceName = interface_name;
            this.changedProps = changed_properties;
            this.invalidatedProps = invalidated_properties;
         }
@@ -40,7 +42,7 @@ public interface Properties extends DBusInterface
      * @param property_name The name of the property.
      * @return The value of the property (may be any valid DBus type).
      */
-    public <A> A Get (String interface_name, String property_name);
+    public <A> A Get(String interface_name, String property_name);
     
     /**
      * Set the value for the given property.
@@ -48,12 +50,12 @@ public interface Properties extends DBusInterface
      * @param property_name The name of the property.
      * @param value The new value of the property (may be any valid DBus type).
      */
-    public <A> void Set (String interface_name, String property_name, A value);
+    public <A> void Set(String interface_name, String property_name, A value);
     
     /**
      * Get all properties and values.
      * @param interface_name The interface the properties is associated with.
      * @return The properties mapped to their values.
      */
-    public Map<String, Variant<?>> GetAll (String interface_name);
+    public Map<String, Variant<?>> GetAll(String interface_name);
 }

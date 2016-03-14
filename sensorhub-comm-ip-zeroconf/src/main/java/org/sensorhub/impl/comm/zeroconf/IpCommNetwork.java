@@ -34,7 +34,6 @@ import javax.jmdns.ServiceTypeListener;
 import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.IDeviceInfo;
 import org.sensorhub.api.comm.ICommNetwork;
-import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.comm.IDeviceScanCallback;
 import org.sensorhub.api.comm.IDeviceScanner;
 import org.sensorhub.api.comm.INetworkInfo;
@@ -298,14 +297,6 @@ public class IpCommNetwork extends AbstractModule<IpNetworkConfig> implements IC
         }
         
         return ipNetworks;
-    }
-
-
-    @Override
-    public ICommProvider<?> newCommProvider(CommConfig config)
-    {
-        // TODO Auto-generated method stub
-        return null;
     }
 
 

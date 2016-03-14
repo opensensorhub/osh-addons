@@ -25,7 +25,7 @@ import org.freedesktop.dbus.Variant;
  * Data which should be broadcast to devices.  Advertisement Data elements must
  * follow the API for LE Advertisement Data described above.
  * </p>
- *
+ * <br/>
  * <p>
  * <b>Service:</b> org.bluez<br/>
  * <b>Interface:</b> org.bluez.LEAdvertisingManager1 [Experimental]<br/>

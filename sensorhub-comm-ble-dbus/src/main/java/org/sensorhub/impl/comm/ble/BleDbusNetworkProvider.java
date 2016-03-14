@@ -50,7 +50,7 @@ public class BleDbusNetworkProvider implements INetworkProvider
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return BleDbusCommNetworkV5.class;
+        return BleDbusCommNetwork.class;
     }
 
     @Override
