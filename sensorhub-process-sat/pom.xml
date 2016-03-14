@@ -2,13 +2,13 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.sensorhub</groupId>
-    <artifactId>sensorhub-all</artifactId>
-    <version>1.0</version>
-    <relativePath>../sensorhub-all/pom.xml</relativePath>
+    <artifactId>sensorhub-process-all</artifactId>
+    <version>1.1-SNAPSHOT</version>
+    <relativePath>../sensorhub-process-all/pom.xml</relativePath>
   </parent>
   <artifactId>sensorhub-process-sat</artifactId>
   <version>0.1-SNAPSHOT</version>
-  <name>Satellite Navigation Processing for SensorHub</name>
+  <name>Satellite Navigation Processing</name>
   <description>Processing Algorithms for Satellite Navigation (TLEs, ephemeris, etc...)</description>
   <dependencies>
      <dependency>
