@@ -32,11 +32,5 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="/usr/share/java/dbus.jar"/>
-	<classpathentry kind="lib" path="/usr/share/java/dbus-2.8.jar"/>
-	<classpathentry kind="lib" path="/usr/share/java/dbus-bin.jar"/>
-	<classpathentry kind="lib" path="/usr/share/java/dbus-bin-2.8.jar"/>
-	<classpathentry kind="lib" path="/usr/share/java/unix.jar"/>
-	<classpathentry kind="lib" path="/usr/share/java/unix-0.5.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
