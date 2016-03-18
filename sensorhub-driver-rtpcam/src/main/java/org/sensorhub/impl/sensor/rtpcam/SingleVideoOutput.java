@@ -16,6 +16,7 @@ package org.sensorhub.impl.sensor.rtpcam;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -48,11 +49,12 @@ import org.vast.swe.SWEHelper;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Dec 12, 2015
  */
-public class SingleVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implements RtpH264Callback
+public class SingleVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implements RTPH264Callback
 {
     DataComponent dataStruct;
     BinaryEncoding dataEncoding;
-    RtpH264Receiver rtpThread;
+    RTSPClient rtspClient;
+    RTPH264Receiver rtpThread;
     
     FileOutputStream fos;
     FileChannel fch;
@@ -140,8 +142,34 @@ public class SingleVideoOutput extends AbstractSensorOutput<RTPCameraDriver> imp
         firstFrameReceived = false;
         
         // start RTP receiving thread
-        rtpThread = new RtpH264Receiver(config.remoteHost, config.remoteRtspPort, config.localUdpPort, this);
+        rtpThread = new RTPH264Receiver(config.remoteHost, config.remoteRtspPort, config.localUdpPort, this);
         rtpThread.start();
+        
+        // connect to RTSP server
+        try
+        {
+            rtspClient = new RTSPClient(
+                    config.remoteHost,
+                    config.remoteRtspPort,
+                    config.videoPath,
+                    config.rtspLogin,
+                    config.rtspPasswd,
+                    config.localUdpPort);
+            try
+            {
+                rtspClient.describe();
+                rtspClient.setup();
+                rtspClient.play();
+            }
+            catch (SocketTimeoutException e)
+            {
+                RTPCameraDriver.log.warn("RTSP server not responding but video stream may still be playing OK");
+            }            
+        }
+        catch (IOException e)
+        {
+            RTPCameraDriver.log.error("Error while playing video stream from RTSP server", e);
+        }
     }
 
 
@@ -171,6 +199,15 @@ public class SingleVideoOutput extends AbstractSensorOutput<RTPCameraDriver> imp
     {
         if (rtpThread != null)
             rtpThread.interrupt();
+        
+        try
+        {
+            if (rtspClient != null)
+                rtspClient.teardown();
+        }
+        catch (IOException e)
+        {
+        }
     }
 
 
