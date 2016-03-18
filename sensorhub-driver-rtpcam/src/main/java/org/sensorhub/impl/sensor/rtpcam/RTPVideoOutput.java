@@ -49,7 +49,7 @@ import org.vast.swe.SWEHelper;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Dec 12, 2015
  */
-public class SingleVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implements RTPH264Callback
+public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implements RTPH264Callback
 {
     DataComponent dataStruct;
     BinaryEncoding dataEncoding;
@@ -62,7 +62,7 @@ public class SingleVideoOutput extends AbstractSensorOutput<RTPCameraDriver> imp
     boolean firstFrameReceived;
     
     
-    protected SingleVideoOutput(RTPCameraDriver driver)
+    protected RTPVideoOutput(RTPCameraDriver driver)
     {
         super(driver);
     }
@@ -76,7 +76,7 @@ public class SingleVideoOutput extends AbstractSensorOutput<RTPCameraDriver> imp
     
     
     @Override
-    protected void init() throws SensorException
+    public void init() throws SensorException
     {
         RTPCameraConfig config = parentSensor.getConfiguration();
         
@@ -119,7 +119,7 @@ public class SingleVideoOutput extends AbstractSensorOutput<RTPCameraDriver> imp
     }
     
     
-    protected void start()
+    public void start()
     {
         RTPCameraConfig config = parentSensor.getConfiguration();
         
@@ -195,7 +195,7 @@ public class SingleVideoOutput extends AbstractSensorOutput<RTPCameraDriver> imp
     
     
     @Override
-    protected void stop()
+    public void stop()
     {
         if (rtpThread != null)
             rtpThread.interrupt();
@@ -259,7 +259,7 @@ public class SingleVideoOutput extends AbstractSensorOutput<RTPCameraDriver> imp
                     // send event
                     latestRecord = newRecord;
                     latestRecordTime = System.currentTimeMillis();
-                    eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, SingleVideoOutput.this, latestRecord));
+                    eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, RTPVideoOutput.this, latestRecord));
                 }
             });                
         }
