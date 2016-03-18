@@ -17,7 +17,7 @@ package org.sensorhub.impl.sensor.rtpcam;
 import java.nio.ByteBuffer;
 
 
-public interface RtpH264Callback
+public interface RTPH264Callback
 {
     public void onFrame(long timeStamp, ByteBuffer frameData, boolean packetLost);
     
