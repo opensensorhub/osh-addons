@@ -7,7 +7,7 @@
   </appender>
   <logger name="org.eclipse.jetty" level="warn"/>
   <logger name="org.sensorhub" level="debug"/>
-  <logger name="org.sensorhub.impl.sensor.rtpcam" level="trace"/>
+  <logger name="org.sensorhub.impl.sensor.rtpcam" level="debug"/>
   <root level="INFO">          
     <appender-ref ref="STDOUT" />
   </root>    

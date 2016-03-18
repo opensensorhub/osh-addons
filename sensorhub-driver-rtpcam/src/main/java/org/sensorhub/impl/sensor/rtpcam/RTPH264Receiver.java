@@ -32,9 +32,9 @@ import org.slf4j.LoggerFactory;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Dec 14, 2015
  */
-public class RtpH264Receiver extends Thread
+public class RTPH264Receiver extends Thread
 {
-    static final Logger log = LoggerFactory.getLogger(RtpH264Receiver.class);
+    static final Logger log = LoggerFactory.getLogger(RTPH264Receiver.class);
     static final int MAX_DATAGRAM_SIZE = 64*1024;
     static final int MAX_FRAME_SIZE = 1024*1024;
     static final byte[] NAL_UNIT_MARKER = new byte[] {0x0, 0x0, 0x0, 0x1};
@@ -47,10 +47,10 @@ public class RtpH264Receiver extends Thread
     Socket rtspSocket;
     DatagramSocket rtpSocket;
     volatile boolean started;
-    RtpH264Callback callback;
+    RTPH264Callback callback;
     
     
-    public RtpH264Receiver(String remoteHost, int remotePort, int localPort, RtpH264Callback callback)
+    public RTPH264Receiver(String remoteHost, int remotePort, int localPort, RTPH264Callback callback)
     {
         this.remoteHost = remoteHost;
         this.remotePort = remotePort;

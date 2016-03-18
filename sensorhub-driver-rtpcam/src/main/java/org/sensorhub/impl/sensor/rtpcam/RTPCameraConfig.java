@@ -37,6 +37,15 @@ public class RTPCameraConfig extends SensorConfig
     @DisplayInfo(label="Remote RTSP Port", desc="Remote TCP port where RTSP commands are sent")
     public int remoteRtspPort;
     
+    @DisplayInfo(label="Video Path", desc="Video path to request from RTSP server")
+    public String videoPath;
+    
+    @DisplayInfo(label="RTSP User Name", desc="RTSP server user name")
+    public String rtspLogin;
+    
+    @DisplayInfo(label="RTSP Password", desc="RTSP server password")
+    public String rtspPasswd;
+    
     @DisplayInfo(label="Local UDP Port", desc="Local UDP port where to listen for RTP packets")
     public int localUdpPort;
     
