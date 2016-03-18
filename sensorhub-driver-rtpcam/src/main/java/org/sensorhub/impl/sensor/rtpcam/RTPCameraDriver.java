@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
 {
     static final Logger log = LoggerFactory.getLogger(RTPCameraDriver.class);
-    SingleVideoOutput dataInterface;
+    RTPVideoOutput dataInterface;
     
     
     public RTPCameraDriver()
@@ -44,7 +44,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     public void init(RTPCameraConfig config) throws SensorHubException
     {
         super.init(config);        
-        this.dataInterface = new SingleVideoOutput(this);
+        this.dataInterface = new RTPVideoOutput(this);
         this.dataInterface.init();
         addOutput(dataInterface, false);
     }
