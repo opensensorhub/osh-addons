@@ -16,8 +16,6 @@ package org.sensorhub.impl.sensor.rtpcam;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,18 +40,16 @@ public class RTPH264Receiver extends Thread
     static final int FU4_PACKET_TYPE = 28;
     
     String remoteHost;
-    int remotePort;
     int localPort;
-    Socket rtspSocket;
     DatagramSocket rtpSocket;
     volatile boolean started;
     RTPH264Callback callback;
     
     
-    public RTPH264Receiver(String remoteHost, int remotePort, int localPort, RTPH264Callback callback)
+    public RTPH264Receiver(String remoteHost, int localPort, RTPH264Callback callback)
     {
+        super(RTPH264Receiver.class.getSimpleName());
         this.remoteHost = remoteHost;
-        this.remotePort = remotePort;
         this.localPort = localPort;
         this.callback = callback;
     }
@@ -63,9 +59,6 @@ public class RTPH264Receiver extends Thread
     {
         try
         {
-            // connect to RTSP port to start video stream
-            rtspSocket = new Socket(InetAddress.getByName(remoteHost), remotePort);
-            
             // bind UDP port for receiving RTP packets
             rtpSocket = new DatagramSocket(localPort);
             rtpSocket.setReuseAddress(true);
@@ -136,7 +129,7 @@ public class RTPH264Receiver extends Thread
                                 if (!discardNAL)
                                 {
                                     dataBuf.flip();
-                                    callback.onFrame(rtpPacket.getTimeStamp() & 0xFFFFFFFF, dataBuf, discardNAL);
+                                    callback.onFrame(rtpPacket.getTimeStamp() & 0xFFFFFFFF, rtpPacket.getSequenceNumber(), dataBuf, discardNAL);
                                     
                                     // copy buffer
                                     final ByteBuffer newBuf = ByteBuffer.allocate(dataBuf.limit());
