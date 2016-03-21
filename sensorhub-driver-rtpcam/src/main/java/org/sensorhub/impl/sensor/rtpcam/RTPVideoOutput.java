@@ -143,7 +143,6 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
         firstFrameReceived = false;
         
         // setup stream with RTSP server
-        boolean useRtsp = true;
         try
         {
             rtspClient = new RTSPClient(
@@ -161,7 +160,7 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
             catch (SocketTimeoutException e)
             {
                 RTPCameraDriver.log.warn("RTSP server not responding but video stream may still be playing OK");
-                useRtsp = false;
+                rtspClient = null;
             }          
         
             // start RTP receiving thread
@@ -169,14 +168,14 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
             rtpThread.start();
             
             // play stream with RTSP if server responded to SETUP
-            if (useRtsp)
+            if (rtspClient != null)
             {
                 // start RTCP sending thread
-                rtcpThread = new RTCPSender(config.remoteHost, config.localUdpPort+1, rtspClient.getRemoteRtcpPort(), 200);
+                rtcpThread = new RTCPSender(config.remoteHost, config.localUdpPort+1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
                 rtcpThread.start();
                 
                 // send PLAY request
-                rtspClient.sendPlay();          
+                rtspClient.sendPlay();
             }
         }
         catch (IOException e)
@@ -231,8 +230,9 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
     @Override
     public void onFrame(long timeStamp, int seqNum, ByteBuffer frameBuf, boolean packetLost)
     {
-        rtcpThread.setStats(seqNum);
-        
+        if (rtcpThread != null)
+            rtcpThread.setStats(seqNum);
+                
         if (!packetLost)
         {
             final byte[] frameBytes = new byte[frameBuf.limit()];

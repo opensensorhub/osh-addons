@@ -41,6 +41,8 @@ public class RTCPSender extends TimerTask
     int reportingPeriod;
     DatagramSocket rtcpSocket;
     Timer timer;
+    RTSPClient rtspClient;
+    long lastRtspReq = 0;
     
     // stats variables
     int highSeqNb;
@@ -51,11 +53,12 @@ public class RTCPSender extends TimerTask
     float lastFractionLost; // last fraction lost
     
     
-    public RTCPSender(String remoteHost, int localRtcpPort, int remoteRtcpPort, int reportingPeriod)
+    public RTCPSender(String remoteHost, int localRtcpPort, int remoteRtcpPort, int reportingPeriod, RTSPClient rtspClient)
     {
         this.remoteRtcpHost = remoteHost;
         this.localRtcpPort = localRtcpPort;
         this.reportingPeriod = reportingPeriod;
+        this.rtspClient = rtspClient;
     }
     
     
@@ -83,6 +86,11 @@ public class RTCPSender extends TimerTask
     {
         if (timer != null)
             timer.cancel();
+
+        synchronized (rtcpSocket)
+        {
+            rtcpSocket.close();
+        }
     }
     
     
@@ -101,26 +109,36 @@ public class RTCPSender extends TimerTask
     
     protected void sendReport()
     {
-        // calculate the stats for this period
-//        numPktsExpected = statHighSeqNum - lastHighSeqNb;
-//        numPktsLost = statCumLost - lastCumLost;
-//        lastFractionLost = numPktsExpected == 0 ? 0f : (float)numPktsLost / numPktsExpected;
-//        lastHighSeqNb = statHighSeqNb;
-//        lastCumLost = statCumLost;
+        // compute stats for this period
+        //numPktsExpected = statHighSeqNum - lastHighSeqNb;
+        //numPktsLost = statCumLost - lastCumLost;
+        //lastFractionLost = randomGenerator.nextInt(10)/10.0f;
+        //lastHighSeqNb = highSeqNb;
+        //lastFractionLost = numPktsExpected == 0 ? 0f : (float)numPktsLost / numPktsExpected;
+        //lastCumLost = statCumLost;
 
-        //To test lost feedback on lost packets
-        // lastFractionLost = randomGenerator.nextInt(10)/10.0f;
-
-        RTCPpacket rtcp_packet = new RTCPpacket(0, 0, highSeqNb);//lastFractionLost, statCumLost, statHighSeqNb);
-        int packet_length = rtcp_packet.getlength();
-        byte[] packet_bits = new byte[packet_length];
-        rtcp_packet.getpacket(packet_bits);
+        RTCPpacket rtcp_packet = new RTCPpacket(0, 0, highSeqNb);//lastFractionLost, statCumLost, highSeqNb);
+        int packetLength = rtcp_packet.getLength();
+        byte[] packetBits = new byte[packetLength];
+        rtcp_packet.getpacket(packetBits);
 
         try
         {
-            DatagramPacket dp = new DatagramPacket(packet_bits, packet_length, remoteIp, localRtcpPort);
-            rtcpSocket.send(dp);
-            log.trace("Sent RTCP report at seq number {}", highSeqNb);
+            // send RTCP report packet
+            synchronized (rtcpSocket)
+            {
+                DatagramPacket dp = new DatagramPacket(packetBits, packetLength, remoteIp, localRtcpPort);
+                rtcpSocket.send(dp);
+                log.trace("Sent RTCP report at seq number {}", highSeqNb);
+            }
+            
+            // also send GET_PARAMETER once in a while to keep RTSP connection alive
+            long now = System.currentTimeMillis();
+            if (now - lastRtspReq > 10000)
+            {
+                rtspClient.sendGetParameter();
+                lastRtspReq = now;
+            }
         }
         catch (IOException e)
         {
