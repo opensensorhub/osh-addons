@@ -76,10 +76,13 @@ public class RTPH264Receiver extends Thread
             
             while (started)
             {
-                rtpSocket.receive(receivePacket);
-                int length = receivePacket.getLength();
+                synchronized (rtpSocket)
+                {
+                    rtpSocket.receive(receivePacket);                    
+                }
                     
                 // create an RTPpacket object from the UDP payload
+                int length = receivePacket.getLength();
                 RTPPacket rtpPacket = new RTPPacket(receiveData, length);
                 if (log.isTraceEnabled())
                 {
@@ -183,5 +186,10 @@ public class RTPH264Receiver extends Thread
     {
         started = false;
         super.interrupt();
+        
+        synchronized (rtpSocket)
+        {
+            rtpSocket.close();                    
+        }
     }
 }

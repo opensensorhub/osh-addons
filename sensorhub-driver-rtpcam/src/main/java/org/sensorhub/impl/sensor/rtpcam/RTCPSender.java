@@ -142,7 +142,7 @@ public class RTCPSender extends TimerTask
         }
         catch (IOException e)
         {
-            log.error("Error while sending RTCP packet" + e);
+            log.error("Error while sending RTCP packet", e);
         }
     }
 }

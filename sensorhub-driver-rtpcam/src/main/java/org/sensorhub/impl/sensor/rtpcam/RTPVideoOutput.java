@@ -170,12 +170,12 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
             // play stream with RTSP if server responded to SETUP
             if (rtspClient != null)
             {
+                // send PLAY request
+                rtspClient.sendPlay();
+                
                 // start RTCP sending thread
                 rtcpThread = new RTCPSender(config.remoteHost, config.localUdpPort+1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
                 rtcpThread.start();
-                
-                // send PLAY request
-                rtspClient.sendPlay();
             }
         }
         catch (IOException e)
