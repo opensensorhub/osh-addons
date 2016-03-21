@@ -134,7 +134,7 @@ public class RTSPClient
         rtspSeqNb++;
         
         //Use the RTSPBufferedWriter to write to the RTSP socket
-        log.debug("Sending " + request_type + " Request");
+        log.trace("Sending " + request_type + " Request");
         
         //write the request line:
         String control = "";
