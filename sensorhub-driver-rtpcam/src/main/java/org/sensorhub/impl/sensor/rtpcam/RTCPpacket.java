@@ -142,7 +142,7 @@ class RTCPpacket
     //--------------------------
     //getlength: return the total length of the RTCP packet
     //--------------------------
-    public int getlength() {
+    public int getLength() {
         return (BODY_SIZE + HEADER_SIZE);
     }
 

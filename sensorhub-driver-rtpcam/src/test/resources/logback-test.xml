@@ -8,6 +8,7 @@
   <logger name="org.eclipse.jetty" level="warn"/>
   <logger name="org.sensorhub" level="debug"/>
   <logger name="org.sensorhub.impl.sensor.rtpcam" level="debug"/>
+  <logger name="org.sensorhub.impl.sensor.rtpcam.RTCPSender" level="trace"/>
   <root level="INFO">          
     <appender-ref ref="STDOUT" />
   </root>    
