@@ -51,7 +51,7 @@ public class TestRTPCameraDriverDahua implements IEventListener
         config.remoteRtspPort = 554;
         config.videoPath = "/cam/realmonitor?channel=1&subtype=0";
         config.rtspLogin = "admin";
-        config.rtspPasswd = "passwd";
+        config.rtspPasswd = "op3nsaysam3";
         config.localUdpPort = 5600;
         config.backupFile = "/home/alex/test-dahua.h264";
         
@@ -91,7 +91,7 @@ public class TestRTPCameraDriverDahua implements IEventListener
         
         synchronized (this) 
         {
-            while (sampleCount < 200)
+            while (sampleCount < 20000)
                 wait();
         }
         

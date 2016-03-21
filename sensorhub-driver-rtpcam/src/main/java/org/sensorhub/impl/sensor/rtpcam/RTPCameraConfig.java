@@ -31,7 +31,7 @@ public class RTPCameraConfig extends SensorConfig
     @DisplayInfo(label="Camera ID", desc="Camera ID to be appended to UID prefix")
     public String cameraID;
     
-    @DisplayInfo(desc="Remote host (IP address or host name) where RTSP commands are sent")
+    @DisplayInfo(desc="Remote host (camera IP address or host name) where RTSP commands are sent")
     public String remoteHost;
     
     @DisplayInfo(label="Remote RTSP Port", desc="Remote TCP port where RTSP commands are sent")
