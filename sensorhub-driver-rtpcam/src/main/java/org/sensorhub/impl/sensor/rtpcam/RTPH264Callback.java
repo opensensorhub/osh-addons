@@ -19,7 +19,7 @@ import java.nio.ByteBuffer;
 
 public interface RTPH264Callback
 {
-    public void onFrame(long timeStamp, ByteBuffer frameData, boolean packetLost);
+    public void onFrame(long timeStamp, int seqNum, ByteBuffer frameData, boolean packetLost);
     
     public void onError(Throwable e);
 }
