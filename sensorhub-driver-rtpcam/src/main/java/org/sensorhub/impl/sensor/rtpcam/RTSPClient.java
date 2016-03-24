@@ -58,6 +58,7 @@ public class RTSPClient
     int remoteRtpPort;
     int remoteRtcpPort;
     String controlParam;
+    String codecString;
     String paramSets;
     
     
@@ -235,6 +236,10 @@ public class RTSPClient
                     controlParam = line.substring(line.indexOf(':')+1);
                     log.debug("> Control Param: {}", controlParam);
                 }
+                else if (line.startsWith("a=rtpmap"))
+                {
+                    codecString = line.substring(line.indexOf(':')+1);                    
+                }
                 else if (line.startsWith("a=fmtp:96"))
                 {
                     for (String token: line.split("; "))
@@ -246,7 +251,7 @@ public class RTSPClient
                             break;
                         }
                     }
-                }
+                }                       
             }
             catch (Exception e)
             {
@@ -314,6 +319,12 @@ public class RTSPClient
     public int getRemoteRtcpPort()
     {
         return remoteRtcpPort;
+    }
+    
+    
+    public String getCodecString()
+    {
+        return codecString;
     }
     
     

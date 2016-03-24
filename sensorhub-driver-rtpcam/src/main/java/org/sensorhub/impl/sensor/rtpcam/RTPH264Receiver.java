@@ -42,6 +42,10 @@ public class RTPH264Receiver extends Thread
     static final byte[] NAL_UNIT_MARKER = new byte[] {0x0, 0x0, 0x0, 0x1};
     static final int SINGLE_NALU_PACKET_TYPE = 23;
     static final int FU4_PACKET_TYPE = 28;
+    static final int NALU_DELTAFRAME = 1;
+    static final int NALU_KEYFRAME = 5;
+    static final int NALU_SPS = 7;
+    static final int NALU_PPS = 8;
     
     String remoteHost;
     int localPort;
@@ -153,7 +157,7 @@ public class RTPH264Receiver extends Thread
                         if (injectParamSets && startNalUnit)
                         {
                             // inject SPS and PPS before key frame
-                            if (nalUnitType == 5)
+                            if (nalUnitType == NALU_KEYFRAME)
                             {
                                 log.trace("Injecting SPS and PPS NAL units");
                                 dataBuf.put(NAL_UNIT_MARKER);
@@ -202,7 +206,7 @@ public class RTPH264Receiver extends Thread
                         }
                     }
                     
-                    // case of single NAL unit directly as payload (for SPS and PPS)
+                    // case of single NAL unit directly as payload (for SPS, PPS and other packets)
                     else if (packetType <= SINGLE_NALU_PACKET_TYPE)
                     {
                         int nalUnitType = packetType;
@@ -211,15 +215,10 @@ public class RTPH264Receiver extends Thread
                         dataBuf.put(NAL_UNIT_MARKER);
                         dataBuf.put(payload, 0, payload_length);
                         
-                        StringBuilder buf = new StringBuilder();
-                        for (int i=0; i<payload_length; i++)
-                            buf.append(String.format("%02X ", payload[i]));
-                        log.trace(buf.toString());
-                        
                         // mark when SPS and PPS are received
-                        if (nalUnitType == 7)
+                        if (nalUnitType == NALU_SPS)
                             spsReceived = true;
-                        else if (nalUnitType == 8)
+                        else if (nalUnitType == NALU_PPS)
                             ppsReceived = true;
                     }
                 }
