@@ -187,7 +187,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         try
         {
         	         
-         	// if gotoPresetPosition, the act on that with
+         	// if gotoserverpresetname, act on that with
         	// http://192.168.0.201/cgi-bin/ptz.cgi?action=start&channel=0&code=GotoPreset&arg1=0&arg2=<presetNumber>&arg3=0
 
         	// if (itemID.equalsIgnoreCase("gotoPresetPosition")) ..... ;	 

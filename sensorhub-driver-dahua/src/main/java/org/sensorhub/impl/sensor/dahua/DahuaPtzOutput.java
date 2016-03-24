@@ -188,8 +188,8 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
                     dataStruct.getComponent("tilt").getData().setDoubleValue(tilt);
                     
                     // convert zoom to between 1.0 to 100.0
-                    //dataStruct.getComponent("zoomFactor").getData().setDoubleValue(zoom * 100.0 /maxZoom);
-                    dataStruct.getComponent("zoomFactor").getData().setDoubleValue(zoom);
+                    dataStruct.getComponent("zoomFactor").getData().setDoubleValue(zoom * 100.0 /maxZoom);
+                    //dataStruct.getComponent("zoomFactor").getData().setDoubleValue(zoom);
 
                     latestRecord = dataStruct.getData();
                     latestRecordTime = System.currentTimeMillis();
