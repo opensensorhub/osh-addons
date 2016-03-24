@@ -33,7 +33,7 @@ import org.vast.util.DateTimeFormat;
 import static org.junit.Assert.*;
 
 
-public class TestRTPCameraDriverDahua implements IEventListener
+public class TestRTPCameraDriverAxis implements IEventListener
 {
     RTPCameraDriver driver;
     RTPCameraConfig config;
@@ -46,14 +46,14 @@ public class TestRTPCameraDriverDahua implements IEventListener
     {
         config = new RTPCameraConfig();
         config.id = UUID.randomUUID().toString();
-        config.cameraID = "dahua:001";
-        config.remoteHost = "192.168.0.201";
+        config.cameraID = "axis:001";
+        config.remoteHost = "192.168.0.24";
         config.remoteRtspPort = 554;
-        config.videoPath = "/cam/realmonitor?channel=1&subtype=0";
-        config.rtspLogin = "admin";
-        config.rtspPasswd = "op3nsaysam3";
-        config.localUdpPort = 5600;
-        config.backupFile = "/home/alex/test-dahua.h264";
+        config.videoPath = "/axis-media/media.amp?videocodec=h264";
+        config.rtspLogin = null;
+        config.rtspPasswd = null;
+        config.localUdpPort = 20000;
+        config.backupFile = "/home/alex/test-axis.h264";
         
         driver = new RTPCameraDriver();
         driver.init(config);

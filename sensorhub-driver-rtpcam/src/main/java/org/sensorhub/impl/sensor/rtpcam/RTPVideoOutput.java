@@ -55,6 +55,7 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
     BinaryEncoding dataEncoding;
     RTSPClient rtspClient;
     RTPH264Receiver rtpThread;
+    RTCPSender rtcpThread;
     
     FileOutputStream fos;
     FileChannel fch;
@@ -114,12 +115,12 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
         }
         catch (CDMException e)
         {
-            throw new RuntimeException("Invalid output definition", e);
+            throw new SensorException("Invalid output definition", e);
         }
     }
     
     
-    public void start()
+    public void start() throws SensorException
     {
         RTPCameraConfig config = parentSensor.getConfiguration();
         
@@ -141,11 +142,7 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
         executor = Executors.newSingleThreadExecutor();
         firstFrameReceived = false;
         
-        // start RTP receiving thread
-        rtpThread = new RTPH264Receiver(config.remoteHost, config.remoteRtspPort, config.localUdpPort, this);
-        rtpThread.start();
-        
-        // connect to RTSP server
+        // setup stream with RTSP server
         try
         {
             rtspClient = new RTSPClient(
@@ -157,19 +154,43 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
                     config.localUdpPort);
             try
             {
-                rtspClient.describe();
-                rtspClient.setup();
-                rtspClient.play();
+                rtspClient.sendDescribe();
+                rtspClient.sendSetup();
+                
+                // check that we support the codec used
+                String codec = rtspClient.getCodecString();
+                if (codec == null || !codec.contains("H264"))
+                    throw new IOException("Unsupported codec: " + codec);
             }
             catch (SocketTimeoutException e)
             {
                 RTPCameraDriver.log.warn("RTSP server not responding but video stream may still be playing OK");
-            }            
+                rtspClient = null;
+            }          
+        
+            // start RTP receiving thread
+            rtpThread = new RTPH264Receiver(config.remoteHost, config.localUdpPort, this);            
+            // transfer parameter sets if we received them via RTSP
+            if (rtspClient != null && rtspClient.getParameterSets() != null)
+                rtpThread.setParameterSets(rtspClient.getParameterSets());
+            rtpThread.start();
+            
+            // play stream with RTSP if server responded to SETUP
+            if (rtspClient != null)
+            {
+                // send PLAY request
+                rtspClient.sendPlay();
+                
+                // start RTCP sending thread
+                rtcpThread = new RTCPSender(config.remoteHost, config.localUdpPort+1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
+                rtcpThread.start();
+            }
         }
         catch (IOException e)
         {
-            RTPCameraDriver.log.error("Error while playing video stream from RTSP server", e);
-        }
+            config.enabled = false;
+            throw new SensorException("Error while starting playback from RTP server", e);            
+        } 
     }
 
 
@@ -200,6 +221,9 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
         if (rtpThread != null)
             rtpThread.interrupt();
         
+        if (rtcpThread != null)
+            rtcpThread.stop();
+        
         try
         {
             if (rtspClient != null)
@@ -212,8 +236,11 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
 
 
     @Override
-    public void onFrame(long timeStamp, ByteBuffer frameBuf, boolean packetLost)
+    public void onFrame(long timeStamp, int seqNum, ByteBuffer frameBuf, boolean packetLost)
     {
+        if (rtcpThread != null)
+            rtcpThread.setStats(seqNum);
+                
         if (!packetLost)
         {
             final byte[] frameBytes = new byte[frameBuf.limit()];

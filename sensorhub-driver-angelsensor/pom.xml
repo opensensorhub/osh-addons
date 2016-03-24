@@ -6,21 +6,27 @@
       <version>1.1-SNAPSHOT</version>
       <relativePath>../sensorhub-driver-all/pom.xml</relativePath>
    </parent>
-   <artifactId>sensorhub-driver-rtpcam</artifactId>
+   <artifactId>sensorhub-driver-angelsensor</artifactId>
    <version>0.1-SNAPSHOT</version>
-   <name>RTP Camera Driver</name>
-   <description>Driver for RTP/RTSP compatible cameras</description>
-   <packaging>bundle</packaging>
+   <name>Angel Sensor Driver</name>
+   <description>Sensor driver for Angel Sensor wrist band</description>
    <dependencies>
       <dependency>
          <groupId>org.sensorhub</groupId>
          <artifactId>sensorhub-core</artifactId>
          <version>${project.parent.version}</version>
+         <type>bundle</type>
       </dependency>
       <dependency>
-          <groupId>org.jcodec</groupId>
-          <artifactId>jcodec-javase</artifactId>
-          <version>0.1.9</version>
+         <groupId>org.sensorhub</groupId>
+         <artifactId>sensorhub-comm-ble</artifactId>
+         <version>0.1-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+         <groupId>org.sensorhub</groupId>
+         <artifactId>sensorhub-comm-ble-dbus</artifactId>
+         <version>0.1-SNAPSHOT</version>
+         <scope>test</scope>
       </dependency>
    </dependencies>
    <build>
@@ -30,9 +36,7 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
                <excludes>
-                  <exclude>**/TestRTPCameraDriverSolo.java</exclude>
-                  <exclude>**/TestRTPCameraDriverDahua.java</exclude>
-                  <exclude>**/TestRTPCameraDriverAxis.java</exclude>
+                  <exclude>**/TestAngelSensorDriverBleDbus.java</exclude>
                </excludes>
             </configuration>
          </plugin>
