@@ -164,7 +164,10 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
             }          
         
             // start RTP receiving thread
-            rtpThread = new RTPH264Receiver(config.remoteHost, config.localUdpPort, this);
+            rtpThread = new RTPH264Receiver(config.remoteHost, config.localUdpPort, this);            
+            // transfer parameter sets if we received them via RTSP
+            if (rtspClient != null && rtspClient.getParameterSets() != null)
+                rtpThread.setParameterSets(rtspClient.getParameterSets());
             rtpThread.start();
             
             // play stream with RTSP if server responded to SETUP
