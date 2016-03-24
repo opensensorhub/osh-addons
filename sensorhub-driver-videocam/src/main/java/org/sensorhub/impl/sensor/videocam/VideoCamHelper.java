@@ -231,8 +231,8 @@ public class VideoCamHelper extends SWEHelper
     	   presetNames.addValue(position);
        
        preset.setConstraint(presetNames);
-       //commandData.addItem("gotoserverpresetname",preset);  // this was set to an Axis specific name
-       commandData.addItem("gotoPresetPosition",preset);
+       commandData.addItem("gotoserverpresetname",preset);  // this is set to an Axis specific name
+       //commandData.addItem("gotoPresetPosition",preset);
 
        return commandData;
     	

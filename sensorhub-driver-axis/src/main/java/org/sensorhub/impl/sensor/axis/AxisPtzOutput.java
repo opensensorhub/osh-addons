@@ -46,15 +46,12 @@ import org.vast.swe.SWEConstants;
  * (PTZ) capabilities.
  * </p>
  *
- * <p>
- * Copyright (c) 2014
- * </p>
  * 
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since October 30, 2014
  */
 
-public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
+public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
     DataComponent settingsDataStruct;
     boolean polling;
@@ -71,7 +68,7 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
     TextEncoding textEncoding;
     
 
-    public AxisSettingsOutput(AxisCameraDriver driver)
+    public AxisPtzOutput(AxisCameraDriver driver)
     {
         super(driver);
     }
@@ -312,7 +309,7 @@ public class AxisSettingsOutput extends AbstractSensorOutput<AxisCameraDriver>
 
                         latestRecord = dataStruct.getData();
                         latestRecordTime = System.currentTimeMillis();
-                        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AxisSettingsOutput.this, latestRecord));
+                        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AxisPtzOutput.this, latestRecord));
                     }
                     catch (Exception e)
                     {

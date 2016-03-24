@@ -38,7 +38,7 @@ import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.axis.AxisCameraConfig;
 import org.sensorhub.impl.sensor.axis.AxisCameraDriver;
-import org.sensorhub.impl.sensor.axis.AxisSettingsOutput;
+import org.sensorhub.impl.sensor.axis.AxisPtzOutput;
 import org.sensorhub.impl.sensor.axis.AxisVideoOutput;
 import org.vast.data.DataChoiceImpl;
 import org.vast.sensorML.SMLUtils;
@@ -329,7 +329,7 @@ public class TestAxisCameraDriver implements IEventListener
             
             frameCount++;
         }
-        else if (newDataEvent.getSource().getClass().equals(AxisSettingsOutput.class))
+        else if (newDataEvent.getSource().getClass().equals(AxisPtzOutput.class))
         {
         	DataComponent ptzParams = newDataEvent.getRecordDescription().copy();
         	ptzParams.setData(newDataEvent.getRecords()[0]);
