@@ -12,14 +12,24 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.rtpcam;
+package org.sensorhub.impl.sensor.angel;
 
-import java.nio.ByteBuffer;
+import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.sensor.SensorConfig;
 
 
-public interface RTPH264Callback
-{
-    public void onFrame(long timeStamp, int seqNum, ByteBuffer frameData, boolean packetLost);
+public class AngelSensorConfig extends SensorConfig
+{    
+    @DisplayInfo(label="Bluetooth Network", desc="Local ID of Bluetooth LE network to use")
+    public String networkID;
     
-    public void onError(Throwable e);
+    
+    @DisplayInfo(label="Bluetooth Address", desc="Address of device in Bluetooth LE network ")
+    public String btAddress;
+           
+    
+    public AngelSensorConfig()
+    {
+        this.moduleClass = AngelSensor.class.getCanonicalName();
+    }
 }

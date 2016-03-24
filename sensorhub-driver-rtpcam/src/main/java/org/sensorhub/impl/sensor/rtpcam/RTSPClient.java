@@ -17,20 +17,26 @@ package org.sensorhub.impl.sensor.rtpcam;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
+import java.io.CharArrayReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vast.swe.Base64Encoder;
 
 
 public class RTSPClient 
 {
+    static final Logger log = LoggerFactory.getLogger(RTSPClient.class);
+    
     private final static String REQ_DESCRIBE = "DESCRIBE";
     private final static String REQ_SETUP = "SETUP";
     private final static String REQ_PLAY = "PLAY";
     //private final static String REQ_PAUSE = "PAUSE";
+    private final static String REQ_GET_PARAMETER = "GET_PARAMETER";
     private final static String REQ_TEARDOWN = "TEARDOWN";   
     final static String CRLF = "\r\n";
     final static int INIT = 0;
@@ -44,9 +50,16 @@ public class RTSPClient
     Socket rtspSocket;
     BufferedReader rtspResponseReader;
     BufferedWriter rtspRequestWriter;
-    int rtspSeqNb = 0; // RTSP sequence number within the session
+    int rtspSeqNb = 0;          // RTSP sequence number within the session
     String rtspSessionID = "0"; // ID of the RTSP session (given by the RTSP Server)
-    int rtpRcvPort = 25000; // port where the client will receive the RTP packets
+    int rtpRcvPort;             // port where the client will receive the RTP packets
+    
+    // info obtained from RTSP server
+    int remoteRtpPort;
+    int remoteRtcpPort;
+    String controlParam;
+    String codecString;
+    String paramSets;
     
     
     public RTSPClient(String serverHost, int serverPort, String videoPath, String login, String passwd, int rtpRcvPort) throws IOException
@@ -57,7 +70,7 @@ public class RTSPClient
         
         InetAddress rtspServerIP = InetAddress.getByName(serverHost);
         this.rtspSocket = new Socket(rtspServerIP, serverPort);
-        rtspSocket.setSoTimeout(1000);
+        rtspSocket.setSoTimeout(5000);
         
         this.rtspResponseReader = new BufferedReader(new InputStreamReader(rtspSocket.getInputStream()));
         this.rtspRequestWriter = new BufferedWriter(new OutputStreamWriter(rtspSocket.getOutputStream()));
@@ -67,24 +80,31 @@ public class RTSPClient
     }
 
     
-    public void describe() throws IOException
+    public void sendDescribe() throws IOException
     {
-        send_RTSP_request(REQ_DESCRIBE);
-        parse_server_response();
+        sendRequest(REQ_DESCRIBE);
+        parseResponse(REQ_DESCRIBE);
     }
     
     
-    public void setup() throws IOException
+    public void sendSetup() throws IOException
     {
-        send_RTSP_request(REQ_SETUP);
-        parse_server_response();
+        sendRequest(REQ_SETUP);
+        parseResponse(REQ_SETUP);
     }
     
     
-    public void play() throws IOException
+    public void sendPlay() throws IOException
     {
-        send_RTSP_request(REQ_PLAY);
-        parse_server_response();
+        sendRequest(REQ_PLAY);
+        parseResponse(REQ_PLAY);
+    }
+    
+    
+    public void sendGetParameter() throws IOException
+    {
+        sendRequest(REQ_GET_PARAMETER);
+        parseResponse(REQ_GET_PARAMETER);
     }
     
     
@@ -92,8 +112,8 @@ public class RTSPClient
     {
         try
         {
-            send_RTSP_request(REQ_TEARDOWN);
-            parse_server_response();
+            sendRequest(REQ_TEARDOWN);
+            parseResponse(REQ_TEARDOWN);
         }
         finally
         {
@@ -102,38 +122,45 @@ public class RTSPClient
         }        
     }
     
-
-    private void send_RTSP_request(String request_type) throws IOException
+    
+    private void sendRequest(String request_type) throws IOException
     {
+        log.trace("Sending " + request_type + " Request");
         rtspSeqNb++;
         
-        //Use the RTSPBufferedWriter to write to the RTSP socket
-        RTPCameraDriver.log.debug("Sending " + request_type + " Request");
-        
-        //write the request line:
-        String control = "";
+        // write the request line:
+        rtspRequestWriter.write(request_type + " ");
         if (request_type == REQ_SETUP)
-            control = "/trackID=0";
-        rtspRequestWriter.write(request_type + " " + videoUrl + control + " RTSP/1.0" + CRLF);
+        {
+            if (controlParam.startsWith("rtsp://"))
+                rtspRequestWriter.write(controlParam);
+            else
+                rtspRequestWriter.write(videoUrl + "/" + controlParam);            
+        }
+        else
+        {
+            rtspRequestWriter.write(videoUrl);
+        }
+        rtspRequestWriter.write(" RTSP/1.0" + CRLF);
 
-        //write the CSeq line: 
+        // write the CSeq line: 
         rtspRequestWriter.write("CSeq: " + rtspSeqNb + CRLF);
         addAuth();
         
-        //check if request_type is equal to "SETUP" and in this case write the 
-        //Transport: line advertising to the server the port used to receive 
-        //the RTP packets RTP_RCV_PORT
+        // depending on request type
         if (request_type == REQ_SETUP) {
-            rtspRequestWriter.write("Transport: RTP/AVP;unicast;client_port=" + rtpRcvPort + CRLF);
+            int rtcpPort = rtpRcvPort+1;
+            rtspRequestWriter.write("Transport: RTP/AVP;unicast;client_port=" + rtpRcvPort + "-" + rtcpPort + CRLF);
         }
         else if (request_type == REQ_DESCRIBE) {
             rtspRequestWriter.write("Accept: application/sdp" + CRLF);
         }
         else {
-            //otherwise, write the Session line from the RTSPid field
+            // otherwise, write the Session ID
             rtspRequestWriter.write("Session: " + rtspSessionID + CRLF);
         }
         
+        // end header and flush
         rtspRequestWriter.write(CRLF);
         rtspRequestWriter.flush();
     }
@@ -153,26 +180,156 @@ public class RTSPClient
     }
     
     
-    // Parse Server Response
-    private void parse_server_response() throws IOException
+    private void parseResponse(String reqType) throws IOException
     {
-        int respCode = 0;
-
+        String line = rtspResponseReader.readLine();
+        
+        // read response code
+        int respCode = Integer.parseInt(line.split(" ")[1]);
+        if (respCode != 200)
+            throw new IOException("RTSP Server Error: " + respCode);
+        
+        // parse response according to request type
+        if (reqType == REQ_DESCRIBE)
+            parseDescribeResp();        
+        else if (reqType == REQ_SETUP)
+            parseSetupResp();        
+        else
+            printResponse();
+    }
+    
+    
+    private void parseDescribeResp() throws IOException
+    {
+        int contentLength = 0;
+        BufferedReader reader = rtspResponseReader;
+        
+        // read header, then content
+        String line;
+        while ((line = reader.readLine()) != null)
+        {
+            // detect end of header
+            if (line.length() == 0)
+            {
+                char[] cbuf = new char[contentLength];
+                rtspResponseReader.read(cbuf);
+                reader = new BufferedReader(new CharArrayReader(cbuf));
+                continue;
+            }
+            
+            log.trace("> {}", line);
+            
+            try
+            {
+                String[] tokens = line.split(":");
+                String key = tokens[0];
+                
+                // header stuff
+                if (key.equalsIgnoreCase("Content-Length"))
+                {
+                    contentLength = Integer.parseInt(tokens[1].trim());
+                }
+                
+                // SDP content stuff
+                else if (line.startsWith("a=control:"))
+                {
+                    controlParam = line.substring(line.indexOf(':')+1);
+                    log.debug("> Control Param: {}", controlParam);
+                }
+                else if (line.startsWith("a=rtpmap"))
+                {
+                    codecString = line.substring(line.indexOf(':')+1);                    
+                }
+                else if (line.startsWith("a=fmtp:96"))
+                {
+                    for (String token: line.split("; "))
+                    {
+                        if (token.startsWith("sprop-parameter-sets"))
+                        {
+                            paramSets = token.substring(token.indexOf('=')+1).trim();
+                            log.debug("> Parameter Sets: {}", paramSets);
+                            break;
+                        }
+                    }
+                }                       
+            }
+            catch (Exception e)
+            {
+                throw new IOException("Invalid DESCRIBE response", e);
+            }
+        }
+    }
+    
+    
+    private void parseSetupResp() throws IOException
+    {
         String line;
         while ((line = rtspResponseReader.readLine()) != null)
         {
-            if (line.startsWith("RTSP/"))
-                respCode = Integer.parseInt(line.split(" ")[1]);
-            else if (line.startsWith("Session"))
-                rtspSessionID = line.split(" |;")[1];
-            
             if (line.length() == 0)
                 break;
             else
-                RTPCameraDriver.log.trace(line);
+                log.trace("> {}", line);
+            
+            try
+            {
+                if (line.startsWith("Session:"))
+                {
+                    rtspSessionID = line.split(" |;")[1];
+                    log.debug("> Session ID: {}", rtspSessionID);
+                }
+                
+                else if (line.startsWith("Transport:"))
+                {
+                    int serverPortIdx = line.indexOf("server_port=") + 12;
+                    String serverPortString = line.substring(serverPortIdx, line.indexOf(';', serverPortIdx));
+                    String[] ports = serverPortString.split("-");
+                    remoteRtpPort = Integer.parseInt(ports[0]);
+                    remoteRtcpPort = Integer.parseInt(ports[1]);
+                    log.debug("> Server ports: RTP {}, RTCP {}", remoteRtpPort, remoteRtcpPort);
+                }
+            }
+            catch (Exception e)
+            {
+                throw new IOException("Invalid SETUP response", e);
+            }
         }
-      
-        if (respCode != 200)
-            throw new IOException("RTSP Server Error: " + respCode);
+    }
+    
+    
+    private void printResponse() throws IOException
+    {
+        String line;
+        while ((line = rtspResponseReader.readLine()) != null)
+        {
+            if (line.length() == 0)
+                break;
+            else
+                log.trace("> {}", line);
+        }
+    }
+    
+    
+    public int getRemoteRtpPort()
+    {
+        return remoteRtpPort;
+    }
+    
+    
+    public int getRemoteRtcpPort()
+    {
+        return remoteRtcpPort;
+    }
+    
+    
+    public String getCodecString()
+    {
+        return codecString;
+    }
+    
+    
+    public String getParameterSets()
+    {
+        return paramSets;
     }
 }

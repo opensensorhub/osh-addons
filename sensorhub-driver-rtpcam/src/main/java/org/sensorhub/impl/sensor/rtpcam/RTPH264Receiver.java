@@ -14,13 +14,15 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.rtpcam;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vast.swe.Base64Decoder;
 
 
 /**
@@ -40,22 +42,60 @@ public class RTPH264Receiver extends Thread
     static final byte[] NAL_UNIT_MARKER = new byte[] {0x0, 0x0, 0x0, 0x1};
     static final int SINGLE_NALU_PACKET_TYPE = 23;
     static final int FU4_PACKET_TYPE = 28;
+    static final int NALU_DELTAFRAME = 1;
+    static final int NALU_KEYFRAME = 5;
+    static final int NALU_SPS = 7;
+    static final int NALU_PPS = 8;
     
     String remoteHost;
-    int remotePort;
     int localPort;
-    Socket rtspSocket;
     DatagramSocket rtpSocket;
-    volatile boolean started;
+    volatile boolean started;    
     RTPH264Callback callback;
+    boolean spsReceived = false;
+    boolean ppsReceived = false;
+    boolean injectParamSets = false;
+    byte[] sps, pps;
     
     
-    public RTPH264Receiver(String remoteHost, int remotePort, int localPort, RTPH264Callback callback)
+    public RTPH264Receiver(String remoteHost, int localPort, RTPH264Callback callback)
     {
+        super(RTPH264Receiver.class.getSimpleName());
         this.remoteHost = remoteHost;
-        this.remotePort = remotePort;
         this.localPort = localPort;
         this.callback = callback;
+    }
+    
+    
+    public void setParameterSets(String paramSetsSDP)
+    {
+        try
+        {
+            // string contains SPS then PPS separated by comma
+            String[] params = paramSetsSDP.split(",");
+            String sps = params[0];
+            String pps = params[1];        
+        
+            // decode base64 parameter sets
+            this.sps = decodeBase64(sps);
+            this.pps = decodeBase64(pps);
+            this.injectParamSets = true;
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Invalid H264 parameter sets", e);
+        }
+    }
+    
+    
+    private byte[] decodeBase64(String s) throws IOException
+    {
+        byte[] res = new byte[s.length()*3/4];
+        InputStream is = new ByteArrayInputStream(s.getBytes());
+        Base64Decoder decoder = new Base64Decoder(is);
+        decoder.read(res);
+        decoder.close();
+        return res;
     }
     
     
@@ -63,9 +103,6 @@ public class RTPH264Receiver extends Thread
     {
         try
         {
-            // connect to RTSP port to start video stream
-            rtspSocket = new Socket(InetAddress.getByName(remoteHost), remotePort);
-            
             // bind UDP port for receiving RTP packets
             rtpSocket = new DatagramSocket(localPort);
             rtpSocket.setReuseAddress(true);
@@ -76,17 +113,18 @@ public class RTPH264Receiver extends Thread
             final byte[] payload = new byte[MAX_DATAGRAM_SIZE];            
             final ByteBuffer dataBuf = ByteBuffer.allocate(MAX_FRAME_SIZE);
             
-            boolean hasSps = false;
-            boolean hasPps = false;
             boolean discardNAL = false;
             int lastSeqNum = 0;
             
             while (started)
             {
-                rtpSocket.receive(receivePacket);
-                int length = receivePacket.getLength();
+                synchronized (rtpSocket)
+                {
+                    rtpSocket.receive(receivePacket);                    
+                }
                     
                 // create an RTPpacket object from the UDP payload
+                int length = receivePacket.getLength();
                 RTPPacket rtpPacket = new RTPPacket(receiveData, length);
                 if (log.isTraceEnabled())
                 {
@@ -113,12 +151,28 @@ public class RTPH264Receiver extends Thread
                     // case of fragmented packet (FU-4)
                     if (packetType == FU4_PACKET_TYPE)
                     {
-                        if (hasSps && hasPps)
+                        int nalUnitType = payload[1] & 0x1F;
+                        boolean startNalUnit = (payload[1] & 0x80) != 0;
+                        
+                        if (injectParamSets && startNalUnit)
                         {
-                            int nalUnitType = payload[1] & 0x1F;
-                            
+                            // inject SPS and PPS before key frame
+                            if (nalUnitType == NALU_KEYFRAME)
+                            {
+                                log.trace("Injecting SPS and PPS NAL units");
+                                dataBuf.put(NAL_UNIT_MARKER);
+                                dataBuf.put(sps);
+                                dataBuf.put(NAL_UNIT_MARKER);
+                                dataBuf.put(pps);
+                                spsReceived = true;
+                                ppsReceived = true;
+                            }
+                        }
+                        
+                        if (spsReceived && ppsReceived)
+                        {
                             // if start of NAL unit
-                            if ((payload[1] & 0x80) != 0) 
+                            if (startNalUnit) 
                             {
                                 log.trace("FU-4: Start NAL unit, type = {}", nalUnitType);
                                 dataBuf.put(NAL_UNIT_MARKER);
@@ -136,7 +190,7 @@ public class RTPH264Receiver extends Thread
                                 if (!discardNAL)
                                 {
                                     dataBuf.flip();
-                                    callback.onFrame(rtpPacket.getTimeStamp() & 0xFFFFFFFF, dataBuf, discardNAL);
+                                    callback.onFrame(rtpPacket.getTimeStamp() & 0xFFFFFFFF, rtpPacket.getSequenceNumber(), dataBuf, discardNAL);
                                     
                                     // copy buffer
                                     final ByteBuffer newBuf = ByteBuffer.allocate(dataBuf.limit());
@@ -152,7 +206,7 @@ public class RTPH264Receiver extends Thread
                         }
                     }
                     
-                    // case of single NAL unit directly as payload (for SPS and PPS)
+                    // case of single NAL unit directly as payload (for SPS, PPS and other packets)
                     else if (packetType <= SINGLE_NALU_PACKET_TYPE)
                     {
                         int nalUnitType = packetType;
@@ -162,10 +216,10 @@ public class RTPH264Receiver extends Thread
                         dataBuf.put(payload, 0, payload_length);
                         
                         // mark when SPS and PPS are received
-                        if (nalUnitType == 7)
-                            hasSps = true;
-                        else if (nalUnitType == 8)
-                            hasPps = true;
+                        if (nalUnitType == NALU_SPS)
+                            spsReceived = true;
+                        else if (nalUnitType == NALU_PPS)
+                            ppsReceived = true;
                     }
                 }
             }
@@ -190,5 +244,10 @@ public class RTPH264Receiver extends Thread
     {
         started = false;
         super.interrupt();
+        
+        synchronized (rtpSocket)
+        {
+            rtpSocket.close();                    
+        }
     }
 }
