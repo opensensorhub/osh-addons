@@ -31,6 +31,8 @@
             <configuration>
                <excludes>
                   <exclude>**/TestRTPCameraDriverSolo.java</exclude>
+                  <exclude>**/TestRTPCameraDriverDahua.java</exclude>
+                  <exclude>**/TestRTPCameraDriverAxis.java</exclude>
                </excludes>
             </configuration>
          </plugin>
