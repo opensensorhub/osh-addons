@@ -46,7 +46,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 	private static final Logger log = LoggerFactory.getLogger(AxisCameraDriver.class);
 	
 	AxisVideoOutput videoDataInterface;
-    AxisSettingsOutput ptzDataInterface;
+    AxisPtzOutput ptzDataInterface;
     AxisVideoControl videoControlInterface;
     AxisPtzControl ptzControlInterface;
     
@@ -100,7 +100,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 		        if (ptzSupported){
 		        	
 		        	// add PTZ output
-			        this.ptzDataInterface = new AxisSettingsOutput(this);
+			        this.ptzDataInterface = new AxisPtzOutput(this);
 			        addOutput(ptzDataInterface, false);
 			        ptzDataInterface.init();
 			        
