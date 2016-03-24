@@ -120,7 +120,7 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
     }
     
     
-    public void start()
+    public void start() throws SensorException
     {
         RTPCameraConfig config = parentSensor.getConfiguration();
         
@@ -156,6 +156,11 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
             {
                 rtspClient.sendDescribe();
                 rtspClient.sendSetup();
+                
+                // check that we support the codec used
+                String codec = rtspClient.getCodecString();
+                if (codec == null || !codec.contains("H264"))
+                    throw new IOException("Unsupported codec: " + codec);
             }
             catch (SocketTimeoutException e)
             {
@@ -183,8 +188,8 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
         }
         catch (IOException e)
         {
-            RTPCameraDriver.log.error("Error while starting playback from RTP server", e);
             config.enabled = false;
+            throw new SensorException("Error while starting playback from RTP server", e);            
         } 
     }
 
