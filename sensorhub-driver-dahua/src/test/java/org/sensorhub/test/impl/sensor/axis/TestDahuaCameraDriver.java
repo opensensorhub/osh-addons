@@ -56,7 +56,7 @@ import static org.junit.Assert.*;
 
 public class TestDahuaCameraDriver implements IEventListener
 {
-    final static int MAX_FRAMES = 30;
+    final static int MAX_FRAMES = 600;
 	DahuaCameraDriver driver;
     DahuaCameraConfig config;
     int actualWidth, actualHeight;
@@ -247,7 +247,7 @@ public class TestDahuaCameraDriver implements IEventListener
         	// test relative pan
         	while (frameCount < MAX_FRAMES)  //
         	{
-        		if (frameCount % 10 == 0)
+        		if (frameCount % 30 == 0)
         		{
         			((DataChoiceImpl)commandDesc).setSelectedItem("rpan");
         			commandData = commandDesc.createDataBlock();
