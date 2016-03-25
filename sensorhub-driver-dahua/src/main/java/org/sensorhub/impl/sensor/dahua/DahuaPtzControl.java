@@ -158,6 +158,24 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         VideoCamHelper videoHelper = new VideoCamHelper();
         commandData = videoHelper.getPtzTaskParameters(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom, presetList);
         
+        // reset to Pan=0, Tilt=0, Zoom=0
+        try
+        {
+            DataBlock initCmd;
+            commandData.setSelectedItem(0);
+            initCmd = commandData.createDataBlock();
+            execCommand(initCmd);
+            commandData.setSelectedItem(1);
+            initCmd = commandData.createDataBlock();
+            execCommand(initCmd);
+            commandData.setSelectedItem(2);
+            initCmd = commandData.createDataBlock();
+            execCommand(initCmd);
+        }
+        catch (SensorException e)
+        {
+            e.printStackTrace();
+        }
     }
 
 
