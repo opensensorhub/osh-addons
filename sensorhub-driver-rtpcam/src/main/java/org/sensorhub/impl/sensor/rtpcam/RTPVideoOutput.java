@@ -32,9 +32,12 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Time;
+import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
+import org.sensorhub.impl.sensor.videocam.NetworkConfig;
 import org.vast.cdm.common.CDMException;
 import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockMixed;
@@ -49,8 +52,12 @@ import org.vast.swe.SWEHelper;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Dec 12, 2015
  */
-public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implements RTPH264Callback
+public class RTPVideoOutput extends AbstractSensorOutput<ISensorModule<?>> implements RTPH264Callback
 {
+    BasicVideoConfig videoConfig;
+    NetworkConfig netConfig;
+    RTSPConfig rtspConfig;
+    
     DataComponent dataStruct;
     BinaryEncoding dataEncoding;
     RTSPClient rtspClient;
@@ -63,24 +70,25 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
     boolean firstFrameReceived;
     
     
-    protected RTPVideoOutput(RTPCameraDriver driver)
+    protected RTPVideoOutput(ISensorModule<?> driver, BasicVideoConfig videoConfig, NetworkConfig netConfig, RTSPConfig rtspConfig)
     {
         super(driver);
+        this.videoConfig = videoConfig;
+        this.netConfig = netConfig;
+        this.rtspConfig = rtspConfig;
     }
     
     
     @Override
     public String getName()
     {
-        return "camOutput";
+        return "videoOutput";
     }
     
     
     @Override
     public void init() throws SensorException
     {
-        RTPCameraConfig config = parentSensor.getConfiguration();
-        
         // create SWE Common data structure
         SWEHelper fac = new SWEHelper();
         dataStruct = fac.newDataRecord(2);
@@ -91,7 +99,9 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
         dataStruct.addComponent("time", time);
         
         // video frame
-        DataArray img = fac.newRgbImage(config.frameWidth, config.frameHeight, DataType.BYTE);
+        int width = videoConfig.resolution.getWidth();
+        int height = videoConfig.resolution.getHeight();
+        DataArray img = fac.newRgbImage(width, height, DataType.BYTE);
         img.setDefinition("http://sensorml.com/ont/swe/property/VideoFrame");
         dataStruct.addComponent("videoFrame", img);
         
@@ -122,14 +132,12 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
     
     public void start() throws SensorException
     {
-        RTPCameraConfig config = parentSensor.getConfiguration();
-        
         // open backup file
         try
         {
-            if (config.backupFile != null)
+            if (videoConfig.backupFile != null)
             {
-                fos = new FileOutputStream(config.backupFile);
+                fos = new FileOutputStream(videoConfig.backupFile);
                 fch = fos.getChannel();
             }
         }
@@ -146,14 +154,15 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
         try
         {
             rtspClient = new RTSPClient(
-                    config.remoteHost,
-                    config.remoteRtspPort,
-                    config.videoPath,
-                    config.rtspLogin,
-                    config.rtspPasswd,
-                    config.localUdpPort);
+                    netConfig.remoteHost,
+                    rtspConfig.rtspPort,
+                    rtspConfig.videoPath,
+                    netConfig.user,
+                    netConfig.password,
+                    rtspConfig.localUdpPort);
             try
             {
+                rtspClient.sendOptions();
                 rtspClient.sendDescribe();
                 rtspClient.sendSetup();
                 
@@ -169,7 +178,7 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
             }          
         
             // start RTP receiving thread
-            rtpThread = new RTPH264Receiver(config.remoteHost, config.localUdpPort, this);            
+            rtpThread = new RTPH264Receiver(netConfig.remoteHost, rtspConfig.localUdpPort, this);            
             // transfer parameter sets if we received them via RTSP
             if (rtspClient != null && rtspClient.getParameterSets() != null)
                 rtpThread.setParameterSets(rtspClient.getParameterSets());
@@ -182,13 +191,12 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
                 rtspClient.sendPlay();
                 
                 // start RTCP sending thread
-                rtcpThread = new RTCPSender(config.remoteHost, config.localUdpPort+1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
+                rtcpThread = new RTCPSender(netConfig.remoteHost, rtspConfig.localUdpPort+1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
                 rtcpThread.start();
             }
         }
         catch (IOException e)
         {
-            config.enabled = false;
             throw new SensorException("Error while starting playback from RTP server", e);            
         } 
     }
@@ -197,7 +205,7 @@ public class RTPVideoOutput extends AbstractSensorOutput<RTPCameraDriver> implem
     @Override
     public double getAverageSamplingPeriod()
     {
-        return 1.0 / parentSensor.getConfiguration().frameRate;
+        return 1.0 / videoConfig.frameRate;
     }
 
 

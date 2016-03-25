@@ -8,42 +8,34 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
+Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.sensor.videocam;
 
 import org.sensorhub.api.config.DisplayInfo;
-import org.sensorhub.api.sensor.SensorConfig;
 
 
 /**
  * <p>
- * generic configuration class for the video cameras
+ * Generic configuration class for IP video cameras
  * </p>
  *
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since March 2016
  */
-public class VideoCamConfig
-{    
-    
-    @DisplayInfo(desc="Remote host (camera IP address or host name) where camera commands are sent")
-    public String remoteHost;
-        
-    @DisplayInfo(desc="Width of video frames in pixels")
-    public int frameWidth;
-    
-    @DisplayInfo(desc="Height of video frames in pixels")
-    public int frameHeight;
+public class BasicVideoConfig
+{           
+    @DisplayInfo(desc="Resolution of video frames in pixels")
+    public VideoResolution resolution;
     
     @DisplayInfo(desc="Frame rate in Hz")
     public int frameRate;
     
-    @DisplayInfo(desc="Set to true if video is grayscale, false is RGB")
+    @DisplayInfo(desc="Set to true to get grayscale video, false for RGB")
     public boolean grayscale = false;
     
-    //@DisplayInfo(desc="Set frame dimension in pixels")
-    
+    @DisplayInfo(desc="Path to local file to backup raw video stream")
+    public String backupFile = null;
  }

@@ -16,6 +16,9 @@ package org.sensorhub.impl.sensor.rtpcam;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
+import org.sensorhub.impl.sensor.videocam.NetworkConfig;
+import org.sensorhub.impl.sensor.videocam.VideoResolution;
 
 
 /**
@@ -31,37 +34,47 @@ public class RTPCameraConfig extends SensorConfig
     @DisplayInfo(label="Camera ID", desc="Camera ID to be appended to UID prefix")
     public String cameraID;
     
-    @DisplayInfo(desc="Remote host (camera IP address or host name) where RTSP commands are sent")
-    public String remoteHost;
+    @DisplayInfo(label="Video", desc="Video settings")
+    public BasicVideoConfig video = new BasicVideoConfig();
     
-    @DisplayInfo(label="Remote RTSP Port", desc="Remote TCP port where RTSP commands are sent")
-    public int remoteRtspPort;
+    @DisplayInfo(label="Network", desc="Network configuration")
+    public NetworkConfig net = new NetworkConfig();
     
-    @DisplayInfo(label="Video Path", desc="Video path to request from RTSP server")
-    public String videoPath;
+    @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration")
+    public RTSPConfig rtsp = new RTSPConfig();
     
-    @DisplayInfo(label="RTSP User Name", desc="RTSP server user name")
-    public String rtspLogin;
     
-    @DisplayInfo(label="RTSP Password", desc="RTSP server password")
-    public String rtspPasswd;
+    public enum Resolution implements VideoResolution
+    {
+        SD_640_480("SD", 640, 480),
+        SD_704_480("SD", 704, 480),
+        SD_720_480("SD", 720, 480),
+        SD_576("SD", 720, 576),
+        D1("D1", 704, 480),
+        DVD_480("DVD", 720, 480),
+        DVD_576("DVD", 720, 576),
+        HD_720P("HD", 1280, 720),
+        HD_1080P("Full HD", 1920, 1080),
+        UHD_4K("Ultra HD", 3840, 2160);
+        
+        private String text;
+        private int width, height;
+        
+        private Resolution(String text, int width, int height)
+        {
+            this.text = text;
+            this.width = width;
+            this.height = height;
+        }
+        
+        public int getWidth() { return width; };
+        public int getHeight() { return height; };
+        public String toString() { return text + " (" + width + "x" + height + ")"; }
+    };
     
-    @DisplayInfo(label="Local UDP Port", desc="Local UDP port where to listen for RTP packets")
-    public int localUdpPort;
     
-    @DisplayInfo(desc="Width of video frames in pixels")
-    public int frameWidth;
-    
-    @DisplayInfo(desc="Height of video frames in pixels")
-    public int frameHeight;
-    
-    @DisplayInfo(desc="Frame rate in Hz")
-    public int frameRate;
-    
-    @DisplayInfo(desc="Set to true if video is grayscale, false is RGB")
-    public boolean grayscale = false;
-    
-    @DisplayInfo(desc="Path to local file to backup raw H264 stream")
-    public String backupFile = null;
-
+    public RTPCameraConfig()
+    {
+        video.resolution = Resolution.HD_720P;
+    }
 }
