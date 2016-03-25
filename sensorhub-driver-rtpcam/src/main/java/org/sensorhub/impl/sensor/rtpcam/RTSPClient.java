@@ -23,15 +23,19 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.swe.Base64Encoder;
+import sun.net.www.protocol.http.*;
 
 
 public class RTSPClient 
 {
     static final Logger log = LoggerFactory.getLogger(RTSPClient.class);
     
+    private final static String REQ_OPTIONS = "OPTIONS";
     private final static String REQ_DESCRIBE = "DESCRIBE";
     private final static String REQ_SETUP = "SETUP";
     private final static String REQ_PLAY = "PLAY";
@@ -64,13 +68,13 @@ public class RTSPClient
     
     public RTSPClient(String serverHost, int serverPort, String videoPath, String login, String passwd, int rtpRcvPort) throws IOException
     {
-        this.videoUrl = "rtsp://" + serverHost + ":" + serverPort + ((videoPath != null) ? videoPath : "");
+        this.videoUrl = "rtsp://" + serverHost + ":" + serverPort + ((videoPath != null) ? videoPath : "");        
         this.userName = login;
         this.passwd = passwd;
         
         InetAddress rtspServerIP = InetAddress.getByName(serverHost);
         this.rtspSocket = new Socket(rtspServerIP, serverPort);
-        rtspSocket.setSoTimeout(5000);
+        rtspSocket.setSoTimeout(2000);
         
         this.rtspResponseReader = new BufferedReader(new InputStreamReader(rtspSocket.getInputStream()));
         this.rtspRequestWriter = new BufferedWriter(new OutputStreamWriter(rtspSocket.getOutputStream()));
@@ -79,6 +83,13 @@ public class RTSPClient
         this.state = INIT;
     }
 
+    
+    public void sendOptions() throws IOException
+    {
+        sendRequest(REQ_OPTIONS);
+        parseResponse(REQ_OPTIONS);
+    }
+    
     
     public void sendDescribe() throws IOException
     {
@@ -125,7 +136,7 @@ public class RTSPClient
     
     private void sendRequest(String request_type) throws IOException
     {
-        log.trace("Sending " + request_type + " Request");
+        log.trace("Sending " + request_type + " Request to " + videoUrl);
         rtspSeqNb++;
         
         // write the request line:
@@ -145,7 +156,7 @@ public class RTSPClient
 
         // write the CSeq line: 
         rtspRequestWriter.write("CSeq: " + rtspSeqNb + CRLF);
-        addAuth();
+        addBasicAuth();
         
         // depending on request type
         if (request_type == REQ_SETUP) {
@@ -166,7 +177,7 @@ public class RTSPClient
     }
     
     
-    private void addAuth() throws IOException
+    private void addBasicAuth() throws IOException
     {
         if (userName != null && passwd != null)
         {
@@ -180,6 +191,33 @@ public class RTSPClient
     }
     
     
+    private void addDigestAuth(String realm, String nonce, String method, String digestUri) throws IOException
+    {
+        /*if (userName != null && passwd != null)
+        {
+            try
+            {
+                MessageDigest md5 = MessageDigest.getInstance("MD5");
+                String ha1Text = userName + ":" + realm + ":" + passwd;
+                md5.update(ha1Text.getBytes());
+                byte[] ha1 = md5.digest();
+                
+                String ha2Text = method + ":" + disgestUri;
+                String creds = userName + ":" + passwd;
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                Base64Encoder encoder = new Base64Encoder(baos);
+                encoder.write(creds.getBytes());
+                encoder.close();
+                rtspRequestWriter.write("Authorization: Basic " + new String(baos.toByteArray()) + CRLF);
+            }
+            catch (NoSuchAlgorithmException e)
+            {
+                e.printStackTrace();
+            }
+        }*/
+    }
+    
+    
     private void parseResponse(String reqType) throws IOException
     {
         String line = rtspResponseReader.readLine();
@@ -187,7 +225,7 @@ public class RTSPClient
         // read response code
         int respCode = Integer.parseInt(line.split(" ")[1]);
         if (respCode != 200)
-            throw new IOException("RTSP Server Error: " + respCode);
+            throw new IOException("RTSP Server Error: " + line);
         
         // parse response according to request type
         if (reqType == REQ_DESCRIBE)

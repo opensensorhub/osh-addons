@@ -47,10 +47,11 @@ public class TestRTPCameraDriverSolo implements IEventListener
         config = new RTPCameraConfig();
         config.id = UUID.randomUUID().toString();
         config.cameraID = "solo:12345";
-        config.remoteHost = "10.1.1.1";
-        config.remoteRtspPort = 5502;
-        config.localUdpPort = 5600;
-        config.backupFile = "/home/alex/test.h264";
+        config.video.backupFile = "/home/alex/test-solo.h264";
+        config.net.remoteHost = "10.1.1.1";
+        config.rtsp.rtspPort = 5502;
+        config.rtsp.videoPath = "/cam/realmonitor?channel=1&subtype=0";        
+        config.rtsp.localUdpPort = 5600;
         
         driver = new RTPCameraDriver();
         driver.init(config);
@@ -81,7 +82,7 @@ public class TestRTPCameraDriverSolo implements IEventListener
     @Test
     public void testSendMeasurements() throws Exception
     {        
-        ISensorDataInterface camOutput = driver.getObservationOutputs().get("camOutput");
+        ISensorDataInterface camOutput = driver.getObservationOutputs().get("videoOutput");
         camOutput.registerListener(this);
         
         driver.start();

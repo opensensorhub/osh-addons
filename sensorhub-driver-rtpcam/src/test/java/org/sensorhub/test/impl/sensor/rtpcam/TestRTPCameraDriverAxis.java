@@ -47,13 +47,13 @@ public class TestRTPCameraDriverAxis implements IEventListener
         config = new RTPCameraConfig();
         config.id = UUID.randomUUID().toString();
         config.cameraID = "axis:001";
-        config.remoteHost = "192.168.0.24";
-        config.remoteRtspPort = 554;
-        config.videoPath = "/axis-media/media.amp?videocodec=h264";
-        config.rtspLogin = null;
-        config.rtspPasswd = null;
-        config.localUdpPort = 20000;
-        config.backupFile = "/home/alex/test-axis.h264";
+        config.video.backupFile = "/home/alex/test-axis.h264";
+        config.net.remoteHost = "192.168.0.24";
+        //config.net.user = "admin";
+        //config.net.password = "op3nsaysam3";
+        config.rtsp.rtspPort = 554;
+        config.rtsp.videoPath = "/axis-media/media.amp?videocodec=h264";        
+        config.rtsp.localUdpPort = 20000;
         
         driver = new RTPCameraDriver();
         driver.init(config);
@@ -84,7 +84,7 @@ public class TestRTPCameraDriverAxis implements IEventListener
     @Test
     public void testSendMeasurements() throws Exception
     {        
-        ISensorDataInterface camOutput = driver.getObservationOutputs().get("camOutput");
+        ISensorDataInterface camOutput = driver.getObservationOutputs().get("videoOutput");
         camOutput.registerListener(this);
         
         driver.start();
