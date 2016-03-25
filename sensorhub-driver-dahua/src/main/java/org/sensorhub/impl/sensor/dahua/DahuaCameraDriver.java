@@ -18,18 +18,13 @@ package org.sensorhub.impl.sensor.dahua;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.net.URLConnection;
-
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.rtpcam.RTPCameraConfig;
-import org.sensorhub.impl.sensor.rtpcam.RTPCameraDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 
 /**
@@ -41,8 +36,7 @@ import org.slf4j.LoggerFactory;
   * @author Mike Botts <mike.botts@botts-inc.com>
  * @since March 2016
  */
-
-public class DahuaCameraDriver extends RTPCameraDriver
+public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
 {
 	private static final Logger log = LoggerFactory.getLogger(DahuaCameraDriver.class);
 	
@@ -51,8 +45,6 @@ public class DahuaCameraDriver extends RTPCameraDriver
     DahuaVideoControl videoControlInterface;
     DahuaPtzControl ptzControlInterface;
     
-    DahuaCameraConfig config;
-    
     String ipAddress;
     String serialNumber;
     String modelNumber;
@@ -60,54 +52,35 @@ public class DahuaCameraDriver extends RTPCameraDriver
 
     public DahuaCameraDriver()
     {	
-    	Authenticator auth = new Authenticator()
-    	{
-            @Override
-			protected PasswordAuthentication getPasswordAuthentication()
-			{
-				if (this.getRequestingHost().equals(config.remoteHost))
-					return new PasswordAuthentication("admin", "op3nsaysam3".toCharArray());
-				
-				return super.getPasswordAuthentication();
-			}
-    	};
-    	
-    	Authenticator.setDefault(auth);
-    }
-    
-    @Override
-    public void init(RTPCameraConfig config){
-    	this.config = (DahuaCameraConfig) config;
     }
     
     
     @Override
     public void start() throws SensorException
     {
-    	ipAddress = getConfiguration().remoteHost;
-    	
+    	ipAddress = getConfiguration().net.remoteHost;
+    	    	
     	// check first if connected
-    	if (isConnected()){
-    	
-	    	// establish the outputs and controllers (video and PTZ)   	
-	    	// add video output and controller
+    	if (isConnected())
+    	{
+    		// establish the outputs and controllers (video and PTZ)   	
+	    	// video output
 	        this.videoDataInterface = new DahuaVideoOutput(this);
-	        addOutput(videoDataInterface, false);
-	
-	        //this.videoControlInterface = new DahuaVideoControl(this);
-	        //addControlInput(videoControlInterface);
-	        
 	        videoDataInterface.init();
-	        //videoControlInterface.init();	  
-	        
+	        addOutput(videoDataInterface, false);	        
 	        videoDataInterface.start();
 	        
-	        /** check if PTZ supported  **/
+	        // video controller
+	        //this.videoControlInterface = new DahuaVideoControl(this);
+	        //videoControlInterface.init();
+	        //addControlInput(videoControlInterface);
+	        	        
+	        // check if PTZ supported
 	        boolean ptzSupported = false;	        
 	        try
 	        {
-   
-		        URL optionsURL = new URL("http://" + ipAddress + "/cgi-bin/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
+	            setAuth();
+	            URL optionsURL = new URL("http://" + ipAddress + "/cgi-bin/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
 		        InputStream is = optionsURL.openStream();
 		        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 		        
@@ -121,8 +94,8 @@ public class DahuaCameraDriver extends RTPCameraDriver
 		                ptzSupported = tokens[1].equalsIgnoreCase("true");    	
 		        }
 		        
-		        if (ptzSupported){
-		        	
+		        if (ptzSupported)
+		        {		        	
 		        	// add PTZ output
 			        this.ptzDataInterface = new DahuaPtzOutput(this);
 			        addOutput(ptzDataInterface, false);
@@ -131,11 +104,8 @@ public class DahuaCameraDriver extends RTPCameraDriver
 			        // add PTZ controller
 			        this.ptzControlInterface = new DahuaPtzControl(this);
 			        addControlInput(ptzControlInterface);
-			        ptzControlInterface.init();
-		            	
+			        ptzControlInterface.init();		            	
 		        }
-
-
 	        }
 	        catch (Exception e)
 	        {
@@ -143,15 +113,12 @@ public class DahuaCameraDriver extends RTPCameraDriver
 	        }
     	}
     	else
+    	{
     		log.error("connection not established at " + ipAddress);
+    		config.enabled = false;
+    	}
     }
     
-
-    @Override
-	public RTPCameraConfig getConfiguration()
-	{
-		return this.config;
-	}
 
 	@Override
     protected void updateSensorDescription()
@@ -162,8 +129,10 @@ public class DahuaCameraDriver extends RTPCameraDriver
             // and then sets unique ID, outputs and control inputs
             super.updateSensorDescription();
             
-            // add more stuff in SensorML here
-            sensorDescription.setId("DAHUA_" + modelNumber + "_" + serialNumber);
+            // set identifiers in SensorML
+            if (AbstractSensorModule.DEFAULT_ID.equals(sensorDescription.getId()))
+                sensorDescription.setId("DAHUA_CAM_" + serialNumber);
+            sensorDescription.setUniqueIdentifier("urn:dahua:cam:" + modelNumber + ":" + serialNumber);
         }
     }
 
@@ -171,16 +140,18 @@ public class DahuaCameraDriver extends RTPCameraDriver
     @Override
     public boolean isConnected()
     {
-    	boolean connected = false;
-        try
+    	try
         {
-        	// try to open stream and check for Dahua Info
-	        URL optionsURL = new URL("http://" + ipAddress + "/cgi-bin/magicBox.cgi?action=getSystemInfo");
-		    URLConnection conn = optionsURL.openConnection();
+    	    boolean connected = false;
+    	    
+    	    // try to open stream and check for Dahua Info
+    	    setAuth();
+    	    URL optionsURL = new URL("http://" + ipAddress + "/cgi-bin/magicBox.cgi?action=getSystemInfo");
+	        URLConnection conn = optionsURL.openConnection();
 		    conn.setConnectTimeout(500);
 		    conn.connect();
 		    InputStream is = conn.getInputStream();
-	        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+	        BufferedReader reader = new BufferedReader(new InputStreamReader(is));	        
 	        
 	        // note: should return three lines with serialNumber, deviceType (model number), and hardwareVersion
             String line;
@@ -193,15 +164,23 @@ public class DahuaCameraDriver extends RTPCameraDriver
                 }
                 else if (tokens[0].trim().equalsIgnoreCase("deviceType"))
                     modelNumber = tokens[1];
-	          }
+	        }
+            
+            return connected;
         }
         catch (Exception e)
         {
             return false;
         }
-        return connected;
     }
 
+    
+    private void setAuth()
+    {
+        ClientAuth.getInstance().setUser(config.net.user);
+        if (config.net.password != null)
+            ClientAuth.getInstance().setPassword(config.net.password.toCharArray());
+    }
 
 
     @Override

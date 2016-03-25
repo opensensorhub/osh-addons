@@ -15,7 +15,6 @@ Developer are Copyright (C) 2016 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.dahua;
 
-import org.sensorhub.impl.sensor.rtpcam.RTPCameraDriver;
 import org.sensorhub.impl.sensor.rtpcam.RTPVideoOutput;
 
 
@@ -29,20 +28,16 @@ import org.sensorhub.impl.sensor.rtpcam.RTPVideoOutput;
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since March 2016
  */
-
-// TODO Need a separate class for outputting camera settings (e.g. imageSize, brightness, iris, IR, focus, imageRotation)
-
 public class DahuaVideoOutput extends RTPVideoOutput
 {
-
-	protected DahuaVideoOutput(RTPCameraDriver driver)
+    // TODO Need a separate class for outputting camera settings (e.g. imageSize, brightness, iris, IR, focus, imageRotation)
+    
+    
+	protected DahuaVideoOutput(DahuaCameraDriver driver)
 	{
-		super(driver);
+		super(driver,
+		      driver.getConfiguration().video,
+		      driver.getConfiguration().net,
+		      driver.getConfiguration().rtsp);
 	}
-	
-	
-
-	
-
-
 }

@@ -96,7 +96,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
     protected void init()
     {
     	        
-        ipAddress = parentSensor.getConfiguration().remoteHost;
+        ipAddress = parentSensor.getConfiguration().net.remoteHost;
         
         // get PTZ limits
         try

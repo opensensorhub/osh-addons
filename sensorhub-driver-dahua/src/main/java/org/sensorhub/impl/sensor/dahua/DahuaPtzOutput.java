@@ -16,7 +16,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.dahua;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -25,20 +24,11 @@ import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import net.opengis.swe.v20.AllowedValues;
-import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.DataType;
-import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.TextEncoding;
-import net.opengis.swe.v20.Time;
-
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.vast.data.SWEFactory;
-import org.vast.swe.SWEConstants;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 
 
@@ -52,7 +42,6 @@ import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
   * @author Mike Botts <mike.botts@botts-inc.com>
  * @since March 2016
  */
-
 public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
 {
     DataComponent settingsDataStruct;
@@ -113,7 +102,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
     	textEncoding.setBlockSeparator("\n");
     	textEncoding.setTokenSeparator(",");
 
-        ipAddress = parentSensor.getConfiguration().remoteHost;    
+        ipAddress = parentSensor.getConfiguration().net.remoteHost;    
         
         try
         {

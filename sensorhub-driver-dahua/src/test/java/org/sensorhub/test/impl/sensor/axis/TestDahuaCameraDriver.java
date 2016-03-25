@@ -16,21 +16,11 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.test.impl.sensor.axis;
 
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Iterator;
 import java.util.UUID;
-
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
 import javax.swing.JFrame;
-
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,6 +29,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.dahua.DahuaCameraConfig;
 import org.sensorhub.impl.sensor.dahua.DahuaCameraDriver;
 import org.sensorhub.impl.sensor.dahua.DahuaPtzOutput;
@@ -46,7 +37,6 @@ import org.sensorhub.impl.sensor.dahua.DahuaVideoOutput;
 import org.vast.data.DataChoiceImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.SWEUtils;
-
 import static org.junit.Assert.*;
 
 
@@ -66,7 +56,7 @@ import static org.junit.Assert.*;
 
 public class TestDahuaCameraDriver implements IEventListener
 {
-    final static int MAX_FRAMES = 3000;
+    final static int MAX_FRAMES = 30;
 	DahuaCameraDriver driver;
     DahuaCameraConfig config;
     int actualWidth, actualHeight;
@@ -76,16 +66,27 @@ public class TestDahuaCameraDriver implements IEventListener
     int frameCount;
     
     
+    static
+    {
+        ClientAuth.createInstance("osh-keystore.dat");
+    }
+    
+    
     @Before
     public void init() throws Exception
     {
         config = new DahuaCameraConfig();
-        config.remoteHost = "192.168.0.201";
         config.id = UUID.randomUUID().toString();
+        
+        config.net.remoteHost = "192.168.0.201";
+        config.net.user = "admin";
+        config.net.password = "op3nsaysam3";        
         
         driver = new DahuaCameraDriver();
         driver.init(config);
         driver.start();
+        
+        assertTrue("Camera is not connected", driver.isConnected());            
     }
     
     
@@ -135,12 +136,11 @@ public class TestDahuaCameraDriver implements IEventListener
     @Test
     public void testVideoCapture() throws Exception
     {
-        initWindow();
+        //initWindow();
     	
     	// register listener on data interface
         ISensorDataInterface di = driver.getObservationOutputs().get("videoOutput");
-    	di.registerListener(this);
-    	
+    	di.registerListener(this);    	
         
         // start capture and wait until we receive the first frame
         synchronized (this)
@@ -163,21 +163,19 @@ public class TestDahuaCameraDriver implements IEventListener
         ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
         di.registerListener(this);
         
-        // start capture and wait until we receive the first frame
+        // start capture and wait until we receive the first record
         synchronized (this)
         {
             this.wait();
             driver.stop();
         }
-        
-        
     }
     
     
     @Test
     public void testSendPTZCommand() throws Exception
     {
-        initWindow();
+        //initWindow();
     	
     	// register listeners
     	ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
@@ -311,7 +309,7 @@ public class TestDahuaCameraDriver implements IEventListener
 	        byte[] destArray = ((DataBufferByte)img.getRaster().getDataBuffer()).getData();
 	        System.arraycopy(frameData, 0, destArray, 0, dataBlockSize-1);*/
 	        
-	        // uncompress JPEG data
+	        /*// uncompress JPEG data
 	        BufferedImage rgbImage;
             try
             {
@@ -326,7 +324,7 @@ public class TestDahuaCameraDriver implements IEventListener
             catch (IOException e1)
             {
                 throw new RuntimeException(e1);
-            }
+            }*/
             
             frameCount++;
         }
