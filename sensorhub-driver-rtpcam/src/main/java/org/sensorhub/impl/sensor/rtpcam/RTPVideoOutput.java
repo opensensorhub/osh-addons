@@ -36,6 +36,7 @@ import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.sensor.rtpcam.RTSPClient.StreamInfo;
 import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
 import org.sensorhub.impl.sensor.videocam.NetworkConfig;
 import org.vast.cdm.common.CDMException;
@@ -164,31 +165,48 @@ public class RTPVideoOutput extends AbstractSensorOutput<ISensorModule<?>> imple
             {
                 rtspClient.sendOptions();
                 rtspClient.sendDescribe();
-                rtspClient.sendSetup();
-                
-                // check that we support the codec used
-                String codec = rtspClient.getCodecString();
-                if (codec == null || !codec.contains("H264"))
-                    throw new IOException("Unsupported codec: " + codec);
+                rtspClient.sendSetup();   
             }
             catch (SocketTimeoutException e)
             {
+                // for solo that doesn't have any RTSP server
                 RTPCameraDriver.log.warn("RTSP server not responding but video stream may still be playing OK");
                 rtspClient = null;
-            }          
+            }
+            
+            // look for H264 stream
+            StreamInfo h264Stream = null;
+            int streamIndex = 0;
+            int i = 0;
+            if (rtspClient != null)
+            {
+                for (StreamInfo stream: rtspClient.getMediaStreams())
+                {
+                    if (stream.codecString.contains("H264"))
+                    {
+                        h264Stream = stream;
+                        streamIndex = i;                        
+                    }
+                    
+                    i++;
+                }
+                
+                if (h264Stream == null)
+                    throw new IOException("No stream with supported codec found");
+            }
         
             // start RTP receiving thread
             rtpThread = new RTPH264Receiver(netConfig.remoteHost, rtspConfig.localUdpPort, this);            
             // transfer parameter sets if we received them via RTSP
-            if (rtspClient != null && rtspClient.getParameterSets() != null)
-                rtpThread.setParameterSets(rtspClient.getParameterSets());
+            if (rtspClient != null && h264Stream.paramSets != null)
+                rtpThread.setParameterSets(h264Stream.paramSets);
             rtpThread.start();
             
             // play stream with RTSP if server responded to SETUP
             if (rtspClient != null)
             {
                 // send PLAY request
-                rtspClient.sendPlay();
+                rtspClient.sendPlay(streamIndex);
                 
                 // start RTCP sending thread
                 rtcpThread = new RTCPSender(netConfig.remoteHost, rtspConfig.localUdpPort+1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);

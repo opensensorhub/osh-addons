@@ -131,18 +131,26 @@ public class RTCPSender extends TimerTask
                 rtcpSocket.send(dp);
                 log.trace("Sent RTCP report at seq number {}", highSeqNb);
             }
-            
-            // also send GET_PARAMETER once in a while to keep RTSP connection alive
+        }
+        catch (IOException e)
+        {
+            log.error("Error while sending RTCP packet", e);
+        }
+        
+        try
+        {
+            // also send a request to keep RTSP connection alive
             long now = System.currentTimeMillis();
             if (now - lastRtspReq > 10000)
             {
-                rtspClient.sendGetParameter();
+                //rtspClient.sendGetParameter();
+                rtspClient.sendOptions();
                 lastRtspReq = now;
             }
         }
         catch (IOException e)
         {
-            log.error("Error while sending RTCP packet", e);
+            log.error("Error while sending RTSP keep-alive request", e);
         }
     }
 }
