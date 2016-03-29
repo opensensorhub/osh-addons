@@ -115,7 +115,6 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     	else
     	{
     		log.error("connection not established at " + ipAddress);
-    		config.enabled = false;
     	}
     }
     
