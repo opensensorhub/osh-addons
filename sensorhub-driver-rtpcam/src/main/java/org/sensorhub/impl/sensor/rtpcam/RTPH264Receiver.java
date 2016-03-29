@@ -42,6 +42,10 @@ public class RTPH264Receiver extends Thread
     static final byte[] NAL_UNIT_MARKER = new byte[] {0x0, 0x0, 0x0, 0x1};
     static final int SINGLE_NALU_PACKET_TYPE = 23;
     static final int FU4_PACKET_TYPE = 28;
+    static final int STAPA_PACKET_TYPE = 24;
+    static final int STAPB_PACKET_TYPE = 25;
+    static final int MTAP16_PACKET_TYPE = 26;
+    static final int MTAP24_PACKET_TYPE = 27;
     static final int NALU_DELTAFRAME = 1;
     static final int NALU_KEYFRAME = 5;
     static final int NALU_SPS = 7;
@@ -179,7 +183,7 @@ public class RTPH264Receiver extends Thread
                                 dataBuf.put((byte)((payload[0] & 0xE0) + nalUnitType));
                             }
                             
-                            // copy NAL payload
+                            // copy NAL fragment
                             dataBuf.put(payload, 2, payload_length-2);
                                     
                             // if end of NAL unit
@@ -206,7 +210,34 @@ public class RTPH264Receiver extends Thread
                         }
                     }
                     
-                    // case of single NAL unit directly as payload (for SPS, PPS and other packets)
+                    // single time aggregation units
+                    else if (packetType == STAPA_PACKET_TYPE)
+                    {
+                        int index = 1;
+                        while (index+1 < payload_length)
+                        {
+                            int nalSize = ((payload[index] & 0xFF) << 8) | (payload[index+1] & 0xFF);
+                            if (nalSize == 0)
+                                break;
+                            
+                            index += 2;
+                            int nalUnitType = payload[index] & 0x1F;
+                            log.trace("STAP NAL unit, type = " + nalUnitType);
+                            
+                            // write nal unit to buffer with a marker
+                            dataBuf.put(NAL_UNIT_MARKER);
+                            dataBuf.put(payload, index, nalSize);                            
+                            index += nalSize;
+                            
+                            // mark when SPS and PPS are received
+                            if (nalUnitType == NALU_SPS)
+                                spsReceived = true;
+                            else if (nalUnitType == NALU_PPS)
+                                ppsReceived = true;
+                        }
+                    }
+                    
+                    // case of single NAL unit directly as payload
                     else if (packetType <= SINGLE_NALU_PACKET_TYPE)
                     {
                         int nalUnitType = packetType;

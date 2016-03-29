@@ -25,10 +25,11 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.swe.Base64Encoder;
-import sun.net.www.protocol.http.*;
 
 
 public class RTSPClient 
@@ -57,13 +58,25 @@ public class RTSPClient
     int rtspSeqNb = 0;          // RTSP sequence number within the session
     String rtspSessionID = "0"; // ID of the RTSP session (given by the RTSP Server)
     int rtpRcvPort;             // port where the client will receive the RTP packets
+    int streamIndex;
     
     // info obtained from RTSP server
     int remoteRtpPort;
     int remoteRtcpPort;
-    String controlParam;
-    String codecString;
-    String paramSets;
+    ArrayList<StreamInfo> mediaStreams;
+    
+    
+    public class StreamInfo
+    {
+        String controlArg;
+        String codecString;
+        String paramSets;
+        
+        public String toString()
+        {
+            return controlArg + " (" + codecString + ")";
+        }
+    }
     
     
     public RTSPClient(String serverHost, int serverPort, String videoPath, String login, String passwd, int rtpRcvPort) throws IOException
@@ -81,6 +94,8 @@ public class RTSPClient
 
         this.rtpRcvPort = rtpRcvPort;
         this.state = INIT;
+        
+        this.mediaStreams = new ArrayList<StreamInfo>();
     }
 
     
@@ -105,8 +120,10 @@ public class RTSPClient
     }
     
     
-    public void sendPlay() throws IOException
+    public void sendPlay(int streamIndex) throws IOException
     {
+        this.streamIndex = streamIndex;
+        log.info("Playing Stream " + mediaStreams.get(streamIndex));
         sendRequest(REQ_PLAY);
         parseResponse(REQ_PLAY);
     }
@@ -143,10 +160,11 @@ public class RTSPClient
         rtspRequestWriter.write(request_type + " ");
         if (request_type == REQ_SETUP)
         {
-            if (controlParam.startsWith("rtsp://"))
-                rtspRequestWriter.write(controlParam);
+            String controlArg = mediaStreams.get(streamIndex).controlArg;
+            if (controlArg.startsWith("rtsp://"))
+                rtspRequestWriter.write(controlArg);
             else
-                rtspRequestWriter.write(videoUrl + "/" + controlParam);            
+                rtspRequestWriter.write(videoUrl + "/" + controlArg);            
         }
         else
         {
@@ -231,7 +249,7 @@ public class RTSPClient
         if (reqType == REQ_DESCRIBE)
             parseDescribeResp();        
         else if (reqType == REQ_SETUP)
-            parseSetupResp();        
+            parseSetupResp();
         else
             printResponse();
     }
@@ -269,27 +287,40 @@ public class RTSPClient
                 }
                 
                 // SDP content stuff
-                else if (line.startsWith("a=control:"))
+                else if (line.startsWith("m="))
                 {
-                    controlParam = line.substring(line.indexOf(':')+1);
-                    log.debug("> Control Param: {}", controlParam);
+                    // add new media stream
+                    mediaStreams.add(new StreamInfo());
                 }
-                else if (line.startsWith("a=rtpmap"))
+                else if (line.startsWith("a="))
                 {
-                    codecString = line.substring(line.indexOf(':')+1);                    
-                }
-                else if (line.startsWith("a=fmtp:96"))
-                {
-                    for (String token: line.split("; "))
+                    // get current stream index and ignore session level a= lines
+                    int streamIndex = mediaStreams.size() - 1;
+                    if (streamIndex < 0)
+                        continue;
+                    
+                    StreamInfo stream = mediaStreams.get(streamIndex);
+                    
+                    if (line.startsWith("a=control:"))
                     {
-                        if (token.startsWith("sprop-parameter-sets"))
+                        stream.controlArg = line.substring(line.indexOf(':')+1);
+                    }
+                    else if (line.startsWith("a=rtpmap"))
+                    {
+                        stream.codecString = line.substring(line.indexOf(':')+1);                    
+                    }
+                    else if (line.startsWith("a=fmtp:96"))
+                    {
+                        for (String token: line.split("; "))
                         {
-                            paramSets = token.substring(token.indexOf('=')+1).trim();
-                            log.debug("> Parameter Sets: {}", paramSets);
-                            break;
+                            if (token.startsWith("sprop-parameter-sets"))
+                            {
+                                stream.paramSets = token.substring(token.indexOf('=')+1).trim();
+                                break;
+                            }
                         }
                     }
-                }                       
+                }
             }
             catch (Exception e)
             {
@@ -360,14 +391,8 @@ public class RTSPClient
     }
     
     
-    public String getCodecString()
+    public Collection<StreamInfo> getMediaStreams()
     {
-        return codecString;
-    }
-    
-    
-    public String getParameterSets()
-    {
-        return paramSets;
+        return mediaStreams;
     }
 }
