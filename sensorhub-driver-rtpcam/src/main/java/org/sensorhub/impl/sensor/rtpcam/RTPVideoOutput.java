@@ -35,10 +35,10 @@ import net.opengis.swe.v20.Time;
 import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.impl.comm.URLConfig;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.rtpcam.RTSPClient.StreamInfo;
 import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
-import org.sensorhub.impl.sensor.videocam.NetworkConfig;
 import org.vast.cdm.common.CDMException;
 import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockMixed;
@@ -56,7 +56,7 @@ import org.vast.swe.SWEHelper;
 public class RTPVideoOutput extends AbstractSensorOutput<ISensorModule<?>> implements RTPH264Callback
 {
     BasicVideoConfig videoConfig;
-    NetworkConfig netConfig;
+    URLConfig netConfig;
     RTSPConfig rtspConfig;
     
     DataComponent dataStruct;
@@ -71,7 +71,7 @@ public class RTPVideoOutput extends AbstractSensorOutput<ISensorModule<?>> imple
     boolean firstFrameReceived;
     
     
-    protected RTPVideoOutput(ISensorModule<?> driver, BasicVideoConfig videoConfig, NetworkConfig netConfig, RTSPConfig rtspConfig)
+    protected RTPVideoOutput(ISensorModule<?> driver, BasicVideoConfig videoConfig, URLConfig netConfig, RTSPConfig rtspConfig)
     {
         super(driver);
         this.videoConfig = videoConfig;

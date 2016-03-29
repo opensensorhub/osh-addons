@@ -16,8 +16,8 @@ package org.sensorhub.impl.sensor.rtpcam;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.impl.comm.URLConfig;
 import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
-import org.sensorhub.impl.sensor.videocam.NetworkConfig;
 import org.sensorhub.impl.sensor.videocam.VideoResolution;
 
 
@@ -38,7 +38,7 @@ public class RTPCameraConfig extends SensorConfig
     public BasicVideoConfig video = new BasicVideoConfig();
     
     @DisplayInfo(label="Network", desc="Network configuration")
-    public NetworkConfig net = new NetworkConfig();
+    public URLConfig net = new URLConfig();
     
     @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration")
     public RTSPConfig rtsp = new RTSPConfig();
