@@ -100,8 +100,8 @@ public class RTPVideoOutput extends AbstractSensorOutput<ISensorModule<?>> imple
         dataStruct.addComponent("time", time);
         
         // video frame
-        int width = videoConfig.resolution.getWidth();
-        int height = videoConfig.resolution.getHeight();
+        int width = videoConfig.getResolution().getWidth();
+        int height = videoConfig.getResolution().getHeight();
         DataArray img = fac.newRgbImage(width, height, DataType.BYTE);
         img.setDefinition("http://sensorml.com/ont/swe/property/VideoFrame");
         dataStruct.addComponent("videoFrame", img);
