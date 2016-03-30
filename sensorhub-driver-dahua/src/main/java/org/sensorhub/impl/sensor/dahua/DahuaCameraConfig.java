@@ -34,7 +34,7 @@ import org.sensorhub.impl.sensor.videocam.VideoResolution;
 public class DahuaCameraConfig extends SensorConfig
 {	
     @DisplayInfo(label="Video", desc="Video settings")
-    public BasicVideoConfig video = new BasicVideoConfig();
+    public VideoConfig video = new VideoConfig();
     
     @DisplayInfo(label="Network", desc="Network configuration")
     public URLConfig net = new URLConfig();
@@ -46,16 +46,41 @@ public class DahuaCameraConfig extends SensorConfig
     // ALSO, use flip=yes/no to flip image if necessary	
 	
 
-    public enum Resolution implements VideoResolution
+    public class VideoConfig extends BasicVideoConfig
+    {
+        @DisplayInfo(desc="Resolution of video frames in pixels")
+        public ResolutionEnum resolution;        
+               
+        public VideoResolution getResolution()
+        {
+            return resolution;
+        }
+    }
+    
+    
+    public enum ResolutionEnum implements VideoResolution
     {
         D1("D1", 704, 480),
         HD_720P("HD", 1280, 720),
         HD_1080P("Full HD", 1920, 1080);
         
+        /*
+        SD_640_480("SD", 640, 480),
+        SD_704_480("SD", 704, 480),
+        SD_720_480("SD", 720, 480),
+        SD_576("SD", 720, 576),
+        D1("D1", 704, 480),
+        DVD_480("DVD", 720, 480),
+        DVD_576("DVD", 720, 576),
+        HD_720P("HD", 1280, 720),
+        HD_1080P("Full HD", 1920, 1080),
+        UHD_4K("Ultra HD", 3840, 2160);
+        */
+        
         private String text;
         private int width, height;
         
-        private Resolution(String text, int width, int height)
+        private ResolutionEnum(String text, int width, int height)
         {
             this.text = text;
             this.width = width;
@@ -71,7 +96,7 @@ public class DahuaCameraConfig extends SensorConfig
     public DahuaCameraConfig()
     {
         // default params for Dahua
-        video.resolution = Resolution.HD_720P;
+        video.resolution = ResolutionEnum.HD_720P;
         rtsp.rtspPort = 554;
         rtsp.videoPath = "/cam/realmonitor?channel=1&subtype=0";
         rtsp.localUdpPort = 20000;

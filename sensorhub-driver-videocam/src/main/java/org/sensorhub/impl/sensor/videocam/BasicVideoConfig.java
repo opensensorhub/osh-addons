@@ -25,11 +25,8 @@ import org.sensorhub.api.config.DisplayInfo;
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since March 2016
  */
-public class BasicVideoConfig
+public abstract class BasicVideoConfig
 {           
-    @DisplayInfo(desc="Resolution of video frames in pixels")
-    public VideoResolution resolution;
-    
     @DisplayInfo(desc="Frame rate in Hz")
     public int frameRate;
     
@@ -38,4 +35,8 @@ public class BasicVideoConfig
     
     @DisplayInfo(desc="Path to local file to backup raw video stream")
     public String backupFile = null;
+    
+    
+    public abstract VideoResolution getResolution();
+
  }

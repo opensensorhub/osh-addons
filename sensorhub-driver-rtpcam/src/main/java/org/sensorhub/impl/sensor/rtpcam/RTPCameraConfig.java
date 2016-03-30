@@ -35,7 +35,7 @@ public class RTPCameraConfig extends SensorConfig
     public String cameraID;
     
     @DisplayInfo(label="Video", desc="Video settings")
-    public BasicVideoConfig video = new BasicVideoConfig();
+    public VideoConfig video = new VideoConfig();
     
     @DisplayInfo(label="Network", desc="Network configuration")
     public URLConfig net = new URLConfig();
@@ -44,37 +44,28 @@ public class RTPCameraConfig extends SensorConfig
     public RTSPConfig rtsp = new RTSPConfig();
     
     
-    public enum Resolution implements VideoResolution
+    public class VideoConfig extends BasicVideoConfig
     {
-        SD_640_480("SD", 640, 480),
-        SD_704_480("SD", 704, 480),
-        SD_720_480("SD", 720, 480),
-        SD_576("SD", 720, 576),
-        D1("D1", 704, 480),
-        DVD_480("DVD", 720, 480),
-        DVD_576("DVD", 720, 576),
-        HD_720P("HD", 1280, 720),
-        HD_1080P("Full HD", 1920, 1080),
-        UHD_4K("Ultra HD", 3840, 2160);
+        @DisplayInfo(desc="Frame width in pixels")
+        public int frameWidth;
         
-        private String text;
-        private int width, height;
+        @DisplayInfo(desc="Frame height in pixels")
+        public int frameHeight;
         
-        private Resolution(String text, int width, int height)
+        public VideoResolution getResolution()
         {
-            this.text = text;
-            this.width = width;
-            this.height = height;
+            return new VideoResolution()
+            {
+                public int getWidth() { return frameWidth; };
+                public int getHeight() { return frameHeight; };
+            };
         }
-        
-        public int getWidth() { return width; };
-        public int getHeight() { return height; };
-        public String toString() { return text + " (" + width + "x" + height + ")"; }
-    };
+    }
     
     
     public RTPCameraConfig()
     {
-        video.resolution = Resolution.HD_720P;
+        video.frameWidth = 1280;
+        video.frameHeight = 720;
     }
 }
