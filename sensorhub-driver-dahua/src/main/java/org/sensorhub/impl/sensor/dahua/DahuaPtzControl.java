@@ -19,26 +19,19 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.LinkedList;
-import java.util.List;
-
-import net.opengis.swe.v20.AllowedValues;
-import net.opengis.swe.v20.AllowedTokens;
-import net.opengis.swe.v20.Count;
+import java.util.Collection;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
-import net.opengis.swe.v20.DataType;
-import net.opengis.swe.v20.Quantity;
-import net.opengis.swe.v20.Text;
-
 import org.sensorhub.api.common.CommandStatus;
 import org.sensorhub.api.common.CommandStatus.StatusCode;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
+import org.sensorhub.impl.sensor.videocam.ptz.PtzPreset;
+import org.sensorhub.impl.sensor.videocam.ptz.PtzPresetsHandler;
 import org.vast.data.DataChoiceImpl;
-import org.vast.data.SWEFactory;
+
 
 /**
  * <p>
@@ -47,16 +40,9 @@ import org.vast.data.SWEFactory;
  * (PTZ) capabilities.
  * </p>
  *
- * <p>
- * Copyright (c) 2016
- * </p>
- * 
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since March 2016
  */
-
-
-
 public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
 {
 	DataChoice commandData; 
@@ -76,6 +62,8 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
     double pan = 0.0;
     double tilt = 0.0;
     double zoom = 1.0;
+    
+    PtzPresetsHandler presetsHandler;
 
     
     
@@ -95,8 +83,9 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
     
     protected void init()
     {
-    	        
-        ipAddress = parentSensor.getConfiguration().net.remoteHost;
+        DahuaCameraConfig config = parentSensor.getConfiguration();
+        presetsHandler = new PtzPresetsHandler(config.ptz);
+        ipAddress = config.net.remoteHost;
         
         // get PTZ limits
         try
@@ -129,33 +118,9 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
 	        e.printStackTrace();
 	    }
 
-
-        // get preset Position Names
-        // Unfortunately Dahua IP API v1.0 doesn't support getting preset position names so we'll keep the list empty until we find a way
-
-        List<String> presetList = new LinkedList<>();
-        
-//        try
-//        {    	         
-//            URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=root.PTZ.Preset.P0.Position.*.Name");
-//            InputStream is = optionsURL.openStream();
-//            BufferedReader bReader = new BufferedReader(new InputStreamReader(is));
-//
-//            String line;           
-//            while ((line = bReader.readLine()) != null)
-//            {
-//                String[] tokens = line.split("=");
-//                presetList.add(tokens[1]);
-//            }
-//	    }
-//	    catch (Exception e)
-//	    {
-//	        e.printStackTrace();
-//	    }
-
-        
-        // get the SWE Common Data structure for the tasking parameters
+        // build SWE data structure for the tasking parameters
         VideoCamHelper videoHelper = new VideoCamHelper();
+        Collection<String> presetList = presetsHandler.getPresetNames();
         commandData = videoHelper.getPtzTaskParameters(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom, presetList);
         
         // reset to Pan=0, Tilt=0, Zoom=0
@@ -181,8 +146,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
 
     @Override
     public DataComponent getCommandDescription()
-    {
-    
+    {    
         return commandData;
     }
 
@@ -196,7 +160,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
               
         DataComponent component = ((DataChoiceImpl) commandMsg).getSelectedItem();
         String itemID = component.getName();
-        String itemValue = component.getData().getStringValue();
+        DataBlock data = component.getData();
         
         // NOTE: you can use validate() method in DataComponent
         // component.validateData(errorList);  // give it a list so it can store the errors
@@ -204,42 +168,40 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
               
         try
         {
-        	         
-         	// if gotoserverpresetname, act on that with
-        	// http://192.168.0.201/cgi-bin/ptz.cgi?action=start&channel=0&code=GotoPreset&arg1=0&arg2=<presetNumber>&arg3=0
-
-        	// if (itemID.equalsIgnoreCase("gotoPresetPosition")) ..... ;	 
-        	// figure out preset number based on name (itemValue) and then
-            // URL optionsURL = new URL("http://" + ipAddress + "/cgi-bin/ptz.cgi?action=start&channel=0&code=GotoPreset&arg1=0&0arg2="
-        	//	   + presetNumber + "&arg3=0"
-            // InputStream is = optionsURL.openStream();
-        	// is.close();
+        	// if gotoserverpresetname, act on that with
+        	if (itemID.equals(VideoCamHelper.TASKING_PTZPRESET))
+        	{
+        	    PtzPreset preset = presetsHandler.getPreset(data.getStringValue());
+        	    setPan(preset.pan);
+        	    setTilt(preset.tilt);
+        	    setZoom(preset.zoom);
+        	}
         	
+        	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PAN))
+        	    setPan(data.getDoubleValue());
+        	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_TILT))
+        	    setTilt(data.getDoubleValue());
+        	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_ZOOM))
+        	    setZoom(data.getDoubleValue());
+        	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RPAN))
+        	    setPan(data.getDoubleValue() + pan);
+        	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RTILT))
+        	    setTilt(data.getDoubleValue() + tilt);
+        	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RTILT))
+        	    setZoom(data.getDoubleValue() + zoom);
         	
-        	// for absolute or relative pan-tilt-zoom use:
-        	// http://192.168.0.201/cgi-bin/ptz.cgi?action=start&channel=0&code=PositionABS&arg1=0&arg2=0&arg3=0
-        	
-        	if (itemID.equalsIgnoreCase("pan")) setPan(Double.parseDouble(itemValue));
-        	else if (itemID.equalsIgnoreCase("tilt")) setTilt(Double.parseDouble(itemValue));
-        	else if (itemID.equalsIgnoreCase("zoom")) setZoom(Double.parseDouble(itemValue));
-        	else if (itemID.equalsIgnoreCase("rpan")) setPan(Double.parseDouble(itemValue) + pan);
-        	else if (itemID.equalsIgnoreCase("rtilt")) setTilt(Double.parseDouble(itemValue) + tilt);
-        	else if (itemID.equalsIgnoreCase("rzoom")) setZoom(Double.parseDouble(itemValue) + zoom);
-        	
+        	// send request to absolute pan/tilt/zoom position
             URL optionsURL = new URL("http://" + ipAddress + 
             		"/cgi-bin/ptz.cgi?action=start&channel=0&code=PositionABS&arg1=" + pan + "&arg2=" + tilt + "&arg3=" + zoom);
-            InputStream is = optionsURL.openStream();
-       	         
+                   	         
             // add BufferReader and read first line; if "Error", read second line and log error
+            InputStream is = optionsURL.openStream();
             is.close();
-
 	    }
 	    catch (Exception e)
 	    {
-	    	
-	        throw new SensorException("Error connecting to Dahua PTZ control", e);
-	    }
-        
+	    	throw new SensorException("Error connecting to Dahua PTZ control", e);
+	    }        
        
         CommandStatus cmdStatus = new CommandStatus();
         cmdStatus.status = StatusCode.COMPLETED;    
@@ -247,17 +209,20 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         return cmdStatus;
     }
     
+    
     // set pan and notify DahuaPtzOutput
     public void setPan(double value){
     	pan = value;
     	driver.ptzDataInterface.setPan(value);
     }
+    
 
     // set tilt and notify DahuaPtzOutput
     public void setTilt(double value){
     	tilt = value;
     	driver.ptzDataInterface.setTilt(value);
     }
+    
 
     // set zoom and notify DahuaPtzOutput
     public void setZoom(double value){
@@ -268,8 +233,6 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
 
 	public void stop()
 	{
-		// TODO Auto-generated method stub
 		
 	}
-
 }
