@@ -25,6 +25,7 @@ import org.vast.process.SMLException;
 import org.vast.sensorML.ExecutableProcessImpl;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 
 /**
@@ -50,7 +51,7 @@ public class RayIntersectSphere_Process extends ExecutableProcessImpl
 
     public RayIntersectSphere_Process()
     {
-        GeolocHelper sweHelper = new GeolocHelper();
+        GeoPosHelper sweHelper = new GeoPosHelper();
         
         //// INPUTS ////
         // ray origin in reference frame

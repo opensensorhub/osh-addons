@@ -29,6 +29,7 @@ import net.opengis.swe.v20.Vector;
 import org.sensorhub.algo.vecmath.Mat4d;
 import org.vast.process.SMLException;
 import org.vast.sensorML.ExecutableProcessImpl;
+import org.vast.swe.helper.VectorHelper;
 
 
 /**
@@ -53,10 +54,10 @@ public class Pos2Mat4_Process extends ExecutableProcessImpl
     
     public Pos2Mat4_Process()
     {
-        VecMathHelper sweHelper = new VecMathHelper();
+        VectorHelper vecHelper = new VectorHelper();
         
         // create location input
-        Vector tData = sweHelper.newLocationVectorECEF(null);
+        Vector tData = vecHelper.newLocationVectorXYZ(null, null, "m");
         tData.setReferenceFrame(null);
         tData.setReferenceFrame(null);
         inputData.add("location", tData);
@@ -65,7 +66,7 @@ public class Pos2Mat4_Process extends ExecutableProcessImpl
         tzData = (Quantity)tData.getComponent(2);
         
         // create euler input
-        Vector eulerData = sweHelper.newEulerAngles();
+        Vector eulerData = vecHelper.newEulerAngles();
         eulerData.setReferenceFrame(null);
         inputData.add("orientation", eulerData);
         r1Data = (Quantity)eulerData.getComponent(0);
@@ -73,12 +74,12 @@ public class Pos2Mat4_Process extends ExecutableProcessImpl
         r3Data = (Quantity)eulerData.getComponent(2);
         
         // create matrix output
-        outputMatrix = sweHelper.newMatrix(4, 4);
+        outputMatrix = vecHelper.newMatrix(4, 4);
         outputData.add("posMatrix", outputMatrix);
         
         // create rot order param
-        orderParam = sweHelper.newText();
-        AllowedTokens values = sweHelper.newAllowedTokens();
+        orderParam = vecHelper.newText();
+        AllowedTokens values = vecHelper.newAllowedTokens();
         values.addValue("XYZ");
         values.addValue("YZX");
         values.addValue("ZXY");

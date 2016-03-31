@@ -21,7 +21,7 @@ import org.sensorhub.algo.geoloc.GeoTransforms;
 import org.sensorhub.algo.vecmath.Vect3d;
 import org.vast.process.SMLException;
 import org.vast.sensorML.ExecutableProcessImpl;
-import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 
 /**
@@ -41,7 +41,7 @@ public class LLAToECEF_Process extends ExecutableProcessImpl
     
     public LLAToECEF_Process()
     {
-        SWEHelper sweHelper = new SWEHelper();
+        GeoPosHelper sweHelper = new GeoPosHelper();
         
         // create LLA input
         llaLoc = sweHelper.newLocationVectorLLA(null);

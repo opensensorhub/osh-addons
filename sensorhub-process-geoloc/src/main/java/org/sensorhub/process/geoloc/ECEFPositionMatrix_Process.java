@@ -28,6 +28,7 @@ import org.sensorhub.process.vecmath.VecMathHelper;
 import org.vast.process.SMLException;
 import org.vast.sensorML.ExecutableProcessImpl;
 import org.vast.swe.SWEConstants;
+import org.vast.swe.helper.GeoPosHelper;
 
 
 /**
@@ -55,40 +56,40 @@ public class ECEFPositionMatrix_Process extends ExecutableProcessImpl
 
     public ECEFPositionMatrix_Process()
     {
-        GeolocHelper sweHelper = new GeolocHelper();
+        GeoPosHelper geoHelper = new GeoPosHelper();
         
         //// INPUTS ////
         // location in earth ref frame (ECEF by default)
-        platformLoc = sweHelper.newLocationVectorECEF(null);
+        platformLoc = geoHelper.newLocationVectorECEF(null);
         platformLoc.setDescription("Platform location in geodetic reference frame");
         inputData.add("platformLoc", platformLoc);
         isLatLon = false;
         
         // attitude in local ref frame (ENU by default)
-        platformAtt = sweHelper.newQuatOrientationENU(null);
+        platformAtt = geoHelper.newQuatOrientationENU(null);
         platformAtt.setDescription("Platform attitude in local reference frame");
         inputData.add("platformAtt", platformAtt);
         isEnu = true;
         
         //// PARAMETERS ////
         // mounting location
-        mountLoc = sweHelper.newLocationVectorXYZ(null, SWEConstants.NIL_UNKNOWN, "m");
+        mountLoc = geoHelper.newLocationVectorXYZ(null, SWEConstants.NIL_UNKNOWN, "m");
         mountLoc.setDescription("Device location in platform reference frame");
         mountLoc.assignNewDataBlock();
         paramData.add("mountLoc", mountLoc);
         
         // mounting orientation 
-        mountOrient = sweHelper.newQuatOrientation(null, SWEConstants.NIL_UNKNOWN);
+        mountOrient = geoHelper.newQuatOrientation(null, SWEConstants.NIL_UNKNOWN);
         mountOrient.setDescription("Device orientation in platform reference frame");
         mountOrient.assignNewDataBlock();
         mountOrient.getData().setDoubleValue(0, 1.0); // set to identity
         paramData.add("mountOrient", mountOrient);
         
         //// OUTPUTS ////
-        rotMatrix = sweHelper.newMatrix(3, 3);
+        rotMatrix = geoHelper.newMatrix(3, 3);
         outputData.add("rotMatrix", rotMatrix);
         
-        posMatrix = sweHelper.newMatrix(4, 4);
+        posMatrix = geoHelper.newMatrix(4, 4);
         outputData.add("posMatrix", posMatrix);
     }
 

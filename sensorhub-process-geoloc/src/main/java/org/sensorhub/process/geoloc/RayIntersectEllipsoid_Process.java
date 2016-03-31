@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.vast.process.SMLException;
 import org.vast.sensorML.ExecutableProcessImpl;
 import org.vast.swe.SWEConstants;
+import org.vast.swe.helper.GeoPosHelper;
 
 
 /**
@@ -52,7 +53,7 @@ public class RayIntersectEllipsoid_Process extends ExecutableProcessImpl
 
     public RayIntersectEllipsoid_Process()
     {
-        GeolocHelper sweHelper = new GeolocHelper();
+        GeoPosHelper sweHelper = new GeoPosHelper();
         
         //// INPUTS ////
         // ray origin in reference frame (ECEF by default)

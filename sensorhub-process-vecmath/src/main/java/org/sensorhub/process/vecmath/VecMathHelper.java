@@ -66,6 +66,28 @@ public class VecMathHelper extends SWEHelper
     }
     
     
+    /**
+     * Creates a 3D location vector in an ortho-normal frame with X/Y/Z axes
+     * @param def semantic definition of velocity vector (if null, {@link SWEConstants#DEF_LOCATION} is used)
+     * @param refFrame reference frame within which the vector is expressed
+     * @param uomCode unit of distance to use on all 3 axes
+     * @return the new Vector component object
+     */
+    public Vector newLocationVectorXYZ(String def, String refFrame, String uomCode)
+    {
+        if (def == null)
+            def = SWEConstants.DEF_LOCATION;
+        
+        return newVector(
+                def,
+                refFrame,
+                new String[] {"x", "y", "z"},
+                new String[] {"X Pos", "Y Pos", "Z Pos"},
+                new String[] {uomCode, uomCode, uomCode},
+                new String[] {"X", "Y", "Z"});
+    }
+    
+    
     public Vector newEulerAngles()
     {
         return newVector(
