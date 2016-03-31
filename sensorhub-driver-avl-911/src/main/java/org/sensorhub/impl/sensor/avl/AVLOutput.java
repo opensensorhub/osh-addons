@@ -31,9 +31,9 @@ import net.opengis.swe.v20.Category;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 
 public class AVLOutput extends AbstractSensorOutput<AVLDriver>
