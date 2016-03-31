@@ -134,7 +134,8 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	
 	protected int[] getImageSize() throws IOException
 	{
-		String ipAddress = parentSensor.getConfiguration().ipAddress;
+    	String ipAddress = parentSensor.getConfiguration().net.remoteHost;		
+		
 		URL getImgSizeUrl = new URL("http://" + ipAddress + "/axis-cgi/view/imagesize.cgi?camera=1");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(getImgSizeUrl.openStream()));
 		
@@ -159,8 +160,9 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	{
 		try
 		{
-			String ipAddress = parentSensor.getConfiguration().ipAddress;
-			final URL videoUrl = new URL("http://" + ipAddress + "/mjpg/video.mjpg");
+	    	String ipAddress = parentSensor.getConfiguration().net.remoteHost;		
+
+	    	final URL videoUrl = new URL("http://" + ipAddress + "/mjpg/video.mjpg");
 			reconnect = true;
 			
 			Thread t = new Thread(new Runnable()

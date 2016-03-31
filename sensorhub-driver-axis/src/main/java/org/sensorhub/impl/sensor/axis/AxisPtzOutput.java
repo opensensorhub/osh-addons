@@ -25,18 +25,16 @@ import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
-import net.opengis.swe.v20.AllowedValues;
-import net.opengis.swe.v20.Count;
+
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.DataType;
-import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.TextEncoding;
-import net.opengis.swe.v20.Time;
+
 import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.vast.data.SWEFactory;
-import org.vast.swe.SWEConstants;
 
 
 /**
@@ -56,6 +54,9 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
     DataComponent settingsDataStruct;
     boolean polling;
     Timer timer;
+    VideoCamHelper videoHelper;
+    
+    AxisCameraConfig config;
 
     // Setup ISO Time Components
     
@@ -80,24 +81,35 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
         return "ptzOutput";
     }
     
+    private void setAuth()
+    {
+        ClientAuth.getInstance().setUser(config.net.user);
+        if (config.net.password != null)
+            ClientAuth.getInstance().setPassword(config.net.password.toCharArray());
+    }
+  
     
     protected void init()
     {    	
-        SWEFactory fac = new SWEFactory();
+        videoHelper = new VideoCamHelper();
+    	
+    	SWEFactory fac = new SWEFactory();
         textEncoding =  fac.newTextEncoding();
     	textEncoding.setBlockSeparator("\n");
     	textEncoding.setTokenSeparator(",");
 
-        ipAddress = parentSensor.getConfiguration().ipAddress;
+    	config = parentSensor.getConfiguration();
+    	ipAddress = config.net.remoteHost;
 
         // set default values
         double minPan = -180.0;
         double maxPan = 180.0;
         double minTilt = -180.0;
         double maxTilt = 0.0;
+        double minZoom = 1.0;
         double maxZoom = 13333;
-//        double minFieldAngle = 44;
-//        double maxFieldAngle = 516;
+        double minFieldAngle = 44;
+        double maxFieldAngle = 516;
 
         
         try
@@ -125,6 +137,7 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
                 	df.setTimeZone(TimeZone.getTimeZone(tokens[1]));   	
             }*/
 
+        	setAuth();
 
             /** request PTZ Limits  **/
             URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=PTZ.Limit");
@@ -149,10 +162,10 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
                     maxTilt = Double.parseDouble(tokens[1]);
                 else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MaxZoom"))
                     maxZoom = Double.parseDouble(tokens[1]);
-//                else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MinFieldAngle"))
-//                    minFieldAngle = Double.parseDouble(tokens[1]);
-//                else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MaxFieldAngle"))
-//                    maxFieldAngle = Double.parseDouble(tokens[1]);
+                else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MinFieldAngle"))
+                    minFieldAngle = Double.parseDouble(tokens[1]);
+                else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MaxFieldAngle"))
+                    maxFieldAngle = Double.parseDouble(tokens[1]);
             }
             
         }
@@ -162,67 +175,8 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
         }
 
         // Build SWE Common Data structure
-        // Settings output includes time, pan, tilt, zoom, field angle
-        // NOTE: move brightness, autofocus to camera settings
+        settingsDataStruct = videoHelper.getPtzOutput(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom);
 
-        settingsDataStruct = fac.newDataRecord(4);
-        settingsDataStruct.setName(getName());
-
-        // time needs to be in UTC !!!
-        // either set camera and convert
-        
-        Time t = fac.newTime();
-        t.getUom().setHref(Time.ISO_TIME_UNIT);
-        t.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
-        t.setLabel("Time");
-        settingsDataStruct.addComponent("time", t);
-
-        AllowedValues constraints;
-        
-        Quantity q = fac.newQuantity(DataType.FLOAT);
-        q.getUom().setCode("deg");
-        q.setDefinition("http://sensorml.com/ont/swe/property/Pan");
-        constraints = fac.newAllowedValues();
-        constraints.addInterval(new double[] {minPan, maxPan});
-        q.setConstraint(constraints);
-        q.setLabel("Pan");
-        settingsDataStruct.addComponent("pan", q);
-
-        q = fac.newQuantity(DataType.FLOAT);
-        q.getUom().setCode("deg");
-        q.setDefinition("http://sensorml.com/ont/swe/property/Tilt");
-        constraints = fac.newAllowedValues();
-        constraints.addInterval(new double[] {minTilt, maxTilt});
-        q.setConstraint(constraints);
-        q.setLabel("Tilt");
-        settingsDataStruct.addComponent("tilt", q);
-
-        Count c = fac.newCount();
-        c.setDefinition("http://sensorml.com/ont/swe/property/AxisZoomFactor");
-        constraints = fac.newAllowedValues();
-        constraints.addInterval(new double[] {1, maxZoom});
-        c.setConstraint(constraints);
-        c.setLabel("Zoom Factor");
-        settingsDataStruct.addComponent("zoomFactor", c);
-
-//		  NOTE: current field angle is not returned by position request       
-//        c = fac.newCount();
-//        c.setDefinition("http://sensorml.com/ont/swe/property/CameraFieldAngle");
-//        constraints = fac.newAllowedValues();
-//        constraints.addInterval(new int[] {minFieldAngle, maxFieldAngle});
-//        c.setConstraint(constraints);
-//        q.setLabel("Field Angle");
-//        settingsDataStruct.addComponent("fieldAngle", q);
-
-//		  MOVE THESE TO CAMERA SETTINGS      
-//        c = fac.newCount();
-//        c.setDefinition("http://sensorml.com/ont/swe/property/AxisBrightnessFactor");
-//        settingsDataStruct.addComponent("brightnessFactor", c);
-//
-//        net.opengis.swe.v20.Boolean b = fac.newBoolean();
-//        b.setDefinition("http://sensorml.com/ont/swe/property/AutoFocusEnabled");
-//        q.setLabel("Autofocus");
-//        settingsDataStruct.addComponent("autofocus", b);
 
         // start the thread (probably best not to start in init but in driver start() method.) ????
         startPolling();
@@ -288,21 +242,6 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
 //                            {
 //                                int val = Integer.parseInteger(tokens[1]);
 //                                dataStruct.getComponent("fieldAngle").getData().setIntValue(val);
-//
-//                            }
-                              // MOVE TO CAMERA SETTINGS?
-//                            else if (tokens[0].trim().equalsIgnoreCase("brightness"))
-//                            {
-//                                float val = Float.parseFloat(tokens[1]);
-//                                dataStruct.getComponent("brightnessFactor").getData().setFloatValue(val);
-//
-//                            }
-//                            else if (tokens[0].trim().equalsIgnoreCase("autofocus"))
-//                            {
-//                                if (tokens[1].trim().equalsIgnoreCase("on"))
-//                                    dataStruct.getComponent("autofocus").getData().setBooleanValue(true);
-//                                else
-//                                    dataStruct.getComponent("autofocus").getData().setBooleanValue(false);
 //
 //                            }
                         }

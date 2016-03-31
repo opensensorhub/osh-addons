@@ -19,6 +19,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.Collection;
 
 import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.AllowedTokens;
@@ -33,7 +34,11 @@ import net.opengis.swe.v20.Text;
 import org.sensorhub.api.common.CommandStatus;
 import org.sensorhub.api.common.CommandStatus.StatusCode;
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
+import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
+import org.sensorhub.impl.sensor.videocam.ptz.PtzPreset;
+import org.sensorhub.impl.sensor.videocam.ptz.PtzPresetsHandler;
 import org.vast.data.DataChoiceImpl;
 import org.vast.data.SWEFactory;
 
@@ -57,6 +62,9 @@ import org.vast.data.SWEFactory;
 public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
 {
 	DataChoice commandData; 
+	AxisCameraDriver driver;
+	
+	AxisCameraConfig config;
 		
 	String ipAddress;
 
@@ -65,13 +73,16 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
     double maxPan = 180.0;
     double minTilt = -180.0;
     double maxTilt = 0.0;
+    double minZoom = 1.0;
     double maxZoom = 9999;
 
+    PtzPresetsHandler presetsHandler;
     
     
     protected AxisPtzControl(AxisCameraDriver driver)
     {
         super(driver);
+        this.driver = driver;
     }
     
     
@@ -84,31 +95,22 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
     
     protected void init()
     {
+    	config = parentSensor.getConfiguration();
+    	presetsHandler = new PtzPresetsHandler(config.ptz);
     	
-        ipAddress = parentSensor.getConfiguration().ipAddress;
-
-        // NOTE: command are individual and supported using DataChoice
-   	
-        // build command message structure
-        // PTZ Command Options will consist of DataChoice with items:
-        // pan, tilt, zoom, relPan, relTilt, relZoom, presetPos (?)
-
-        
-        SWEFactory fac = new SWEFactory();
-        this.commandData = fac.newDataChoice();
-        
-         this.commandData.setName(getName());
-        
+    	ipAddress = config.net.remoteHost;
+         
         // get PTZ limits
         try
-        {    	         
+        {    	  
+        	setAuth();
+        	
             URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=PTZ.Limit");
             InputStream is = optionsURL.openStream();
             BufferedReader bReader = new BufferedReader(new InputStreamReader(is));
 
             // get limit values from IP stream
             String line;
-
             while ((line = bReader.readLine()) != null)
             {
                 // parse response
@@ -132,96 +134,20 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
 	    }
 
 
-        AllowedValues constraints;
-        
-        // Pan
-        Quantity q = fac.newQuantity(DataType.FLOAT);
-        q.getUom().setCode("deg");
-        q.setDefinition("http://sensorml.com/ont/swe/property/Pan");
-        constraints = fac.newAllowedValues();
-        constraints.addInterval(new double[] {minPan, maxPan});
-        q.setConstraint(constraints);
-        q.setLabel("Pan");
-        commandData.addItem("pan",q);
-
-        // Tilt
-        q = fac.newQuantity(DataType.FLOAT);
-        q.getUom().setCode("deg");
-        q.setDefinition("http://sensorml.com/ont/swe/property/Tilt");
-        constraints = fac.newAllowedValues();
-        constraints.addInterval(new double[] {minTilt, maxTilt});
-        q.setConstraint(constraints);
-        q.setLabel("Tilt");
-        commandData.addItem("tilt", q);
-
-        // Zoom Factor
-        Count c = fac.newCount();
-        c.setDefinition("http://sensorml.com/ont/swe/property/AxisZoomFactor");
-        constraints = fac.newAllowedValues();
-        constraints.addInterval(new double[] {1, maxZoom});
-        c.setConstraint(constraints);
-        c.setLabel("Zoom Factor");
-        commandData.addItem("zoom", c);
-         
-        // Relative Pan
-        q = fac.newQuantity(DataType.FLOAT);
-        q.getUom().setCode("deg");
-        q.setDefinition("http://sensorml.com/ont/swe/property/relativePan");
-        //constraints = fac.newAllowedValues();
-        //constraints.addInterval(new double[] {minPan, maxPan});
-        //relPan.setConstraint(constraints);
-        q.setLabel("Relative Pan");
-        commandData.addItem("rpan", q);
-
-        // Relative Tilt
-        q = fac.newQuantity(DataType.FLOAT);
-        q.getUom().setCode("deg");
-        q.setDefinition("http://sensorml.com/ont/swe/property/relativeTilt");
-        //constraints = fac.newAllowedValues();
-        //constraints.addInterval(new double[] {minTilt, maxTilt});
-        //relTilt.setConstraint(constraints);
-        q.setLabel("Relative Tilt");
-        commandData.addItem("rtilt", q);
-
-        // Relative Zoom
-        c = fac.newCount();
-        c.setDefinition("http://sensorml.com/ont/swe/property/relativeAxisZoomFactor");
-        //constraints = fac.newAllowedValues();
-        //constraints.addInterval(new double[] {0, maxZoom});
-        //relZoom.setConstraint(constraints);
-        c.setLabel("Relative Zoom Factor");
-        commandData.addItem("rzoom", c);
-
-        // PTZ preset positions
-        Text preset = fac.newText();
-        preset.setDefinition("http://sensorml.com/ont/swe/property/cameraPresetPositionName");
-        preset.setLabel("Preset Camera Position");
-        AllowedTokens presetNames = fac.newAllowedTokens();               
-        // get preset position names from camera
-        // e.g. root.PTZ.Preset.P0.Position.P1.Name=back door
-        try
-        {    	         
-            URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=root.PTZ.Preset.P0.Position.*.Name");
-            InputStream is = optionsURL.openStream();
-            BufferedReader bReader = new BufferedReader(new InputStreamReader(is));
-
-            String line;
-            
-            while ((line = bReader.readLine()) != null)
-            {
-                String[] tokens = line.split("=");
-                presetNames.addValue(tokens[1]);
-            }
-	    }
-	    catch (Exception e)
-	    {
-	        e.printStackTrace();
-	    }
-        
-        preset.setConstraint(presetNames);
-        commandData.addItem("gotoserverpresetname",preset);
-        
+        // build SWE data structure for the tasking parameters
+        VideoCamHelper videoHelper = new VideoCamHelper();
+        Collection<String> presetList = presetsHandler.getPresetNames();
+        commandData = videoHelper.getPtzTaskParameters(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom, presetList);
+      
     }
+    
+    private void setAuth()
+    {
+        ClientAuth.getInstance().setUser(config.net.user);
+        if (config.net.password != null)
+            ClientAuth.getInstance().setPassword(config.net.password.toCharArray());
+    }
+
 
 
     @Override
@@ -235,35 +161,66 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
     @Override
     public CommandStatus execCommand(DataBlock command) throws SensorException
     {
+    	
         // associate command data to msg structure definition
         DataChoice commandMsg = (DataChoice) commandData.copy();
         commandMsg.setData(command);
               
         DataComponent component = ((DataChoiceImpl) commandMsg).getSelectedItem();
         String itemID = component.getName();
-        String itemValue = component.getData().getStringValue();
-        
+        DataBlock data = component.getData();
+        String itemValue = data.getStringValue();
+          
         // NOTE: you can use validate() method in DataComponent
         // component.validateData(errorList);  // give it a list so it can store the errors
         // if (errorList != empty)  //then you have an error
-        
-        
-        
-        
-        
+          
         try
         {
-        	         
-            // set parameter value on camera 
-            // NOTE: the item IDs are labeled the same as the Axis parameters so just use those in the command
+        	setAuth(); 
         	
-            URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/com/ptz.cgi?" + itemID + "=" + itemValue);
-            InputStream is = optionsURL.openStream();
-            
-            
-            // add BufferReader and read first line; if "Error", read second line and log error
-            is.close();
+            // set parameter value on camera 
+            // NOTE: except for "presets", the item IDs are labeled the same as the Axis parameters so just use those in the command
+        	if (itemID.equals(VideoCamHelper.TASKING_PTZPRESET))
+        	{
+        	    PtzPreset preset = presetsHandler.getPreset(data.getStringValue());
+        	    
+                // pan
+        	    URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/com/ptz.cgi?pan=" + preset.pan);
+                InputStream is = optionsURL.openStream();
+                is.close();
 
+                // tilt
+         	    optionsURL = new URL("http://" + ipAddress + "/axis-cgi/com/ptz.cgi?tilt=" + preset.tilt);
+                is = optionsURL.openStream();
+                is.close();
+                
+                // zoom
+         	    optionsURL = new URL("http://" + ipAddress + "/axis-cgi/com/ptz.cgi?zoom=" + preset.zoom);
+                is = optionsURL.openStream();
+                is.close();
+        	}
+        	else
+        	{
+        		String cmd = " ";
+        		if (itemID.equals(VideoCamHelper.TASKING_PAN)) 
+        			cmd = "pan";
+        		else if (itemID.equals(VideoCamHelper.TASKING_RPAN)) 
+        			cmd = "rpan";
+        		else if (itemID.equals(VideoCamHelper.TASKING_TILT)) 
+        			cmd = "tilt";
+        		else if (itemID.equals(VideoCamHelper.TASKING_RTILT)) 
+        			cmd = "rtilt";
+        		else if (itemID.equals(VideoCamHelper.TASKING_ZOOM)) 
+        			cmd = "zoom";
+        		else if (itemID.equals(VideoCamHelper.TASKING_RZOOM)) 
+        			cmd = "rzoom";
+        			      			
+                URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/com/ptz.cgi?" + cmd + "=" + itemValue);
+                InputStream is = optionsURL.openStream();
+                is.close();       		
+        	}
+        	
 	    }
 	    catch (Exception e)
 	    {

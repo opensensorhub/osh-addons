@@ -132,6 +132,8 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
             if (AbstractSensorModule.DEFAULT_ID.equals(sensorDescription.getId()))
                 sensorDescription.setId("DAHUA_CAM_" + serialNumber);
             sensorDescription.setUniqueIdentifier("urn:dahua:cam:" + modelNumber + ":" + serialNumber);
+            
+            // use sensorDescription to add identifiers (manufacturer + serialNumber + model number)
         }
     }
 

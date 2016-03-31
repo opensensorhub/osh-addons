@@ -22,6 +22,7 @@ import org.sensorhub.impl.sensor.rtpcam.RTSPConfig;
 import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
 import org.sensorhub.impl.sensor.videocam.VideoResolution;
 import org.sensorhub.impl.sensor.videocam.ptz.PtzConfig;
+import org.sensorhub.impl.sensor.videocam.ptz.PtzPreset;
 
 
 /**
@@ -104,5 +105,12 @@ public class DahuaCameraConfig extends SensorConfig
         rtsp.rtspPort = 554;
         rtsp.videoPath = "/cam/realmonitor?channel=1&subtype=0";
         rtsp.localUdpPort = 20000;
+        
+//        PtzPreset home = new PtzPreset();
+//        home.name = "Home";
+//        home.pan = 0;
+//        home.tilt = 0;
+//        home.zoom = 0;
+//        ptz.presets.add(home);
     }
 }

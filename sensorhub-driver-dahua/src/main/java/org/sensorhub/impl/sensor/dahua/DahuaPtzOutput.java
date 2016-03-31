@@ -88,12 +88,12 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
     {    	
 
         // set default PTZ min-max values
-        double minPan = -180.0;
-        double maxPan = 180.0;
-        double minTilt = -180.0;
-        double maxTilt = 0.0;
+        double minPan = 0.0;
+        double maxPan = 360.0;
+        double minTilt = 0.0;
+        double maxTilt = 90.0;
         double minZoom = 1.0;
-        //double maxZoom = 100.0;
+        double maxZoom = 100.0;  // optical zoom for small PTZ (4x) camera
 
     	
     	videoHelper = new VideoCamHelper();

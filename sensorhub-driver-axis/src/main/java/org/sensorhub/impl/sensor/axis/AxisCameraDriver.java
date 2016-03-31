@@ -20,11 +20,17 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
+
+import net.opengis.sensorml.v20.IdentifierList;
+import net.opengis.sensorml.v20.Term;
+
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.vast.sensorML.SMLFactory;
+import org.vast.swe.SWEHelper;
 
 
 /**
@@ -51,6 +57,12 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     AxisPtzControl ptzControlInterface;
     
     String ipAddress;
+    String serialNumber = " ";
+    String modelNumber = " ";
+    String longName = " ";
+    String shortName = " ";
+
+    boolean ptzSupported = false;
 
 
     public AxisCameraDriver()
@@ -61,7 +73,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     @Override
     public void start() throws SensorException
     {
-    	ipAddress = getConfiguration().ipAddress;
+    	ipAddress = getConfiguration().net.remoteHost;
     	
     	// check first if connected
     	if (isConnected()){
@@ -69,57 +81,29 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 	    	// establish the outputs and controllers (video and PTZ)   	
 	    	// add video output and controller
 	        this.videoDataInterface = new AxisVideoOutput(this);
+	        videoDataInterface.init();
 	        addOutput(videoDataInterface, false);
 	
 	        //this.videoControlInterface = new AxisVideoControl(this);
-	        //addControlInput(videoControlInterface);
-	        
-	        videoDataInterface.init();
+	        //addControlInput(videoControlInterface);	        
 	        //videoControlInterface.init();	        
 	        
-	        /** check if PTZ supported  **/
-	        try
-	        {
-	        
-		        URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=root.Properties.PTZ");
-		        InputStream is = optionsURL.openStream();
-		        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+	        if (ptzSupported){
+	        	
+	        	// add PTZ output
+		        this.ptzDataInterface = new AxisPtzOutput(this);
+		        addOutput(ptzDataInterface, false);
+		        ptzDataInterface.init();
 		        
-		        boolean ptzSupported = false;
-		
-		        String line;
-		        while ((line = reader.readLine()) != null)
-		        {
-		            // parse response
-		            String[] tokens = line.split("=");
-		
-		            if (tokens[0].trim().equalsIgnoreCase("root.Properties.PTZ.PTZ"))
-		                ptzSupported = tokens[1].equalsIgnoreCase("yes");    	
-		        }
-		        
-		        if (ptzSupported){
-		        	
-		        	// add PTZ output
-			        this.ptzDataInterface = new AxisPtzOutput(this);
-			        addOutput(ptzDataInterface, false);
-			        ptzDataInterface.init();
-			        
-			        // add PTZ controller
-			        this.ptzControlInterface = new AxisPtzControl(this);
-			        addControlInput(ptzControlInterface);
-			        ptzControlInterface.init();
-		            	
-		        }
-
-
-	        }
-	        catch (Exception e)
-	        {
-	            e.printStackTrace();
+		        // add PTZ controller
+		        this.ptzControlInterface = new AxisPtzControl(this);
+		        addControlInput(ptzControlInterface);
+		        ptzControlInterface.init();
+	            	
 	        }
     	}
     	else
-    		log.error("connection not established at " + ipAddress);
+    		log.error("Axis Camera: connection not established at " + ipAddress);
     }
     
 
@@ -128,15 +112,55 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     {
         synchronized (sensorDescription)
         {
-        	// TODO get sensor info (camera model, serial no, etc.) camera and add to SensorML description
-        	// use http://192.168.1.50/axis-cgi/view/param.cgi?action=list&group= ... root.Brand.* and root.Properties.*
-        	
             // parent class reads SensorML from config if provided
             // and then sets unique ID, outputs and control inputs
             super.updateSensorDescription();
+                        
+            // TODO add SensorML Identifiers like serial number and manufacturer and long name
+            SMLFactory smlFac = new SMLFactory();
             
-            // add more stuff in SensorML here
-            sensorDescription.setId("AXIS_CAMERA_SENSOR");
+
+            sensorDescription.setId("AXIS_CAMERA_" + serialNumber);
+            sensorDescription.setUniqueIdentifier("urn:axis:cam:" + serialNumber);
+            sensorDescription.setDescription("Axis Video Camera");
+          
+            IdentifierList identifierList = smlFac.newIdentifierList();
+            sensorDescription.addIdentification(identifierList);
+            
+            Term term;
+            
+            term = smlFac.newTerm();
+            term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
+            term.setLabel("Manufacturer Name");
+            term.setValue("Axis");
+            identifierList.addIdentifier2(term);
+            
+            term = smlFac.newTerm();
+            term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
+            term.setLabel("Model Number");
+            term.setValue(modelNumber);
+            identifierList.addIdentifier2(term);
+            
+            term = smlFac.newTerm();
+            term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
+            term.setLabel("Serial Number");
+            term.setValue(serialNumber);
+            identifierList.addIdentifier2(term);
+           
+            
+            term = smlFac.newTerm();
+            term.setDefinition(SWEHelper.getPropertyUri("LongName"));
+            term.setLabel("Long Name");
+            term.setValue(longName);
+            identifierList.addIdentifier2(term);
+
+            
+            term = smlFac.newTerm();
+            term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
+            term.setLabel("Short Name");
+            term.setValue(shortName);
+            identifierList.addIdentifier2(term);
+            
         }
     }
 
@@ -146,31 +170,56 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     {
         try
         {
-        	// try to open stream and check for AXIS Brand
-	        URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=root.Brand.Brand");
+        	boolean connected = false;
+        	
+        	setAuth();
+        	
+        	// try to open stream and check for Axis Brand
+	        URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list");
 		    URLConnection conn = optionsURL.openConnection();
 		    conn.setConnectTimeout(500);
 		    conn.connect();
 		    InputStream is = conn.getInputStream();
 	        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 	        
-	        // note: should return one line with root.Brand.Brand=AXIS
-            String line = reader.readLine();
-		    if (line != null)
+            String line ;
+		    while ((line = reader.readLine()) != null)
 		    {
 		        String[] tokens = line.split("=");	
 	            if ((tokens[0].trim().equalsIgnoreCase("root.Brand.Brand")) && (tokens[1].trim().equalsIgnoreCase("AXIS")))
-	                return true; 
+	                connected = true; 
+	            else if (tokens[0].trim().equalsIgnoreCase("root.Properties.PTZ.PTZ"))
+	            {
+	            	if (tokens[1].trim().equalsIgnoreCase("yes"))
+	            		ptzSupported = true;
+	            	else
+	            		ptzSupported = false;
+	            }
+	            else if (tokens[0].trim().equalsIgnoreCase("root.Brand.ProductFullName"))
+	                longName = tokens[1];
+	            else if (tokens[0].trim().equalsIgnoreCase("root.Brand.ProductShortName"))
+	                shortName = tokens[1];
+	            else if (tokens[0].trim().equalsIgnoreCase("root.Brand.ProdNbr"))
+	                modelNumber = tokens[1];
+	            else if (tokens[0].trim().equalsIgnoreCase("root.Properties.System.SerialNumber"))
+	                serialNumber = tokens[1];
 		    }
 		    
-		    return false;
+		    return connected;
         }
         catch (Exception e)
         {
             return false;
         }   
     }
+    
 
+    private void setAuth()
+    {
+        ClientAuth.getInstance().setUser(config.net.user);
+        if (config.net.password != null)
+            ClientAuth.getInstance().setPassword(config.net.password.toCharArray());
+    }
 
 
     @Override
