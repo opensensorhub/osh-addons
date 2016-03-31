@@ -30,8 +30,8 @@ import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEConstants;
-import org.vast.swe.SWEHelper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -65,7 +65,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     @Override
     protected void init()
     {
-        SWEHelper fac = new SWEHelper();
+        GeoPosHelper fac = new GeoPosHelper();
         
         // SWE Common data structure
         posDataStruct = fac.newDataRecord(3);

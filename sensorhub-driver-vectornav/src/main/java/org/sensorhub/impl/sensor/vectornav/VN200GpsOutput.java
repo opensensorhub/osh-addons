@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorDataEvent;
+import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEHelper;
 
 
@@ -36,7 +37,7 @@ public class VN200GpsOutput extends VN200AbstractOutput
     @Override
     protected void init()
     {
-        SWEHelper fac = new SWEHelper();
+        GeoPosHelper fac = new GeoPosHelper();
         
         // build SWE Common record structure
         dataStruct = fac.newDataRecord(2);
@@ -48,8 +49,7 @@ public class VN200GpsOutput extends VN200AbstractOutput
         dataStruct.addComponent("time", fac.newTimeStampIsoUTC());
         
         // fused attiude measurement
-        Vector vect = fac.newLocationVectorLLA(
-                SWEHelper.getPropertyUri("SensorLocation"));
+        Vector vect = fac.newLocationVectorLLA(SWEHelper.getPropertyUri("SensorLocation"));
         vect.setLocalFrame(localRefFrame);
         dataStruct.addComponent("location", vect);
      

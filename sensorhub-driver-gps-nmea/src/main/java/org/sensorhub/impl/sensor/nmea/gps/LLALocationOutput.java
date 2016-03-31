@@ -19,8 +19,8 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.Vector;
+import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEConstants;
-import org.vast.swe.SWEHelper;
 import org.vast.util.DateTimeFormat;
 
 
@@ -66,7 +66,7 @@ public class LLALocationOutput extends NMEAGpsOutput
     @Override
     protected void init()
     {
-        SWEHelper fac = new SWEHelper();
+        GeoPosHelper fac = new GeoPosHelper();
         
         // SWE Common data structure
         dataStruct = fac.newDataRecord(3);
