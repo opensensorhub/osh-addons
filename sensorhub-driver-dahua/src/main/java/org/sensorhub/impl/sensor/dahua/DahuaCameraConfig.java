@@ -21,6 +21,7 @@ import org.sensorhub.impl.comm.URLConfig;
 import org.sensorhub.impl.sensor.rtpcam.RTSPConfig;
 import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
 import org.sensorhub.impl.sensor.videocam.VideoResolution;
+import org.sensorhub.impl.sensor.videocam.ptz.PtzConfig;
 
 
 /**
@@ -41,6 +42,9 @@ public class DahuaCameraConfig extends SensorConfig
     
     @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration")
     public RTSPConfig rtsp = new RTSPConfig();
+    
+    @DisplayInfo(label="PTZ", desc="Pan-Tilt-Zoom configuration")
+    public PtzConfig ptz = new PtzConfig();
     
 	// TODO: Set variable for mounting (top up, top down, top sideways) or better set mounting angles relative to NED/ENU
     // ALSO, use flip=yes/no to flip image if necessary	
