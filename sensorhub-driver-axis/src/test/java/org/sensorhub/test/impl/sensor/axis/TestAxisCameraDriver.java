@@ -21,13 +21,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.UUID;
+
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import javax.swing.JFrame;
+
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,6 +39,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.axis.AxisCameraConfig;
 import org.sensorhub.impl.sensor.axis.AxisCameraDriver;
 import org.sensorhub.impl.sensor.axis.AxisPtzOutput;
@@ -43,6 +47,7 @@ import org.sensorhub.impl.sensor.axis.AxisVideoOutput;
 import org.vast.data.DataChoiceImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.SWEUtils;
+
 import static org.junit.Assert.*;
 
 
@@ -70,18 +75,24 @@ public class TestAxisCameraDriver implements IEventListener
     JFrame videoWindow;
     BufferedImage img;
     int frameCount;
+   
+    static
+    {
+        ClientAuth.createInstance("osh-keystore.dat");
+    }
     
     
     @Before
     public void init() throws Exception
     {
         config = new AxisCameraConfig();
-        //config.ipAddress = "root:more4less@192.168.1.50";
-        //config.ipAddress = "192.168.1.50";
-        //config.ipAddress = "192.168.1.60";
-        config.ipAddress = "bottsgeo.simple-url.com:80";
+        config.net.remoteHost = "192.168.0.24:8080";
+        //config.net.remoteHost = "bottsgeo.simple-url.com:80";
         config.id = UUID.randomUUID().toString();
-        
+
+        config.net.user = "root";
+        config.net.password = "do|die";        
+
         driver = new AxisCameraDriver();
         driver.init(config);
         driver.start();
