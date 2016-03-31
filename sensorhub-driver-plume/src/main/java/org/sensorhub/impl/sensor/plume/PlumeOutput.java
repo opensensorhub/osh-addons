@@ -27,6 +27,7 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.data.DataBlockMixed;
+import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEHelper;
 
 
@@ -72,7 +73,7 @@ public class PlumeOutput extends AbstractSensorOutput<PlumeSensor>
     		- x10,y10,z10
     		- x11,y11,z11
 		 */
-		SWEHelper fac = new SWEHelper();
+		GeoPosHelper fac = new GeoPosHelper();
 		//        plumeStruct = new DataRecordImpl(2);
 		//        plumeStruct.setName(getName());
 		//        plumeStruct.setDefinition("http://sensorml.com/ont/swe/property/LagrangianPlumeModel");

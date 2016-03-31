@@ -19,7 +19,7 @@ import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorException;
 import org.vast.data.TextEncodingImpl;
-import org.vast.swe.SWEHelper;
+import org.vast.swe.GeoPosHelper;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.common.msg_attitude_quaternion;
 
@@ -54,7 +54,7 @@ public class AttitudeQuatOutput extends MavlinkOutput
     @Override
     protected void init() throws SensorException
     {
-        SWEHelper fac = new SWEHelper();
+        GeoPosHelper fac = new GeoPosHelper();
         
         // create output structure
         dataStruct = fac.newDataRecord(2);

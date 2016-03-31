@@ -23,6 +23,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.impl.common.EventBus;
+import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEHelper;
 
 
@@ -51,7 +52,7 @@ public class TargetGeolocOutput implements IStreamingDataInterface
         this.parentProcess = parentProcess;
         
         // create output structure
-        SWEHelper fac = new SWEHelper();        
+        GeoPosHelper fac = new GeoPosHelper();        
         DataRecord rec = fac.newDataRecord();
         rec.setName(getName());
         rec.addField("time", fac.newTimeStampIsoUTC());
