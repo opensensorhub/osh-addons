@@ -23,8 +23,8 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.impl.common.EventBus;
-import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 
 /**
