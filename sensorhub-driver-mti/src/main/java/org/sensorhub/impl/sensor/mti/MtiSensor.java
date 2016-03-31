@@ -14,7 +14,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.mti;
 
-import net.opengis.sensorml.v20.ClassifierList;
+import net.opengis.sensorml.v20.IdentifierList;
 import net.opengis.sensorml.v20.PhysicalSystem;
 import net.opengis.sensorml.v20.SpatialFrame;
 import net.opengis.sensorml.v20.Term;
@@ -73,21 +73,21 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
             sensorDescription.setId("XSens_MTi");
             sensorDescription.setDescription("XSens MTi Inertial Motion Unit");
             
-            ClassifierList classif = smlFac.newClassifierList();
-            sensorDescription.getClassificationList().add(classif);
+            IdentifierList identifiers = smlFac.newIdentifierList();
+            sensorDescription.getIdentificationList().add(identifiers);
             Term term;
             
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
             term.setLabel("Manufacturer Name");
             term.setValue("XSens");
-            classif.addClassifier(term);
+            identifiers.addIdentifier2(term);
             
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
             term.setLabel("Model Number");
             term.setValue("MTi 28A53G35");
-            classif.addClassifier(term);
+            identifiers.addIdentifier2(term);
             
             SpatialFrame localRefFrame = smlFac.newSpatialFrame();
             localRefFrame.setId(CRS_ID);
