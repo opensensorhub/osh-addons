@@ -20,6 +20,7 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorDataEvent;
+import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEHelper;
 
 
@@ -37,7 +38,7 @@ public class VN200QuatOutput extends VN200AbstractOutput
     @Override
     protected void init()
     {
-        SWEHelper fac = new SWEHelper();
+        GeoPosHelper fac = new GeoPosHelper();
         
         // build SWE Common record structure
         dataStruct = fac.newDataRecord(2);
@@ -49,8 +50,7 @@ public class VN200QuatOutput extends VN200AbstractOutput
         dataStruct.addComponent("time", fac.newTimeStampIsoUTC());
         
         // fused attiude measurement
-        Vector quat = fac.newQuatOrientationNED(
-                SWEHelper.getPropertyUri("Orientation"));
+        Vector quat = fac.newQuatOrientationNED(SWEHelper.getPropertyUri("Orientation"));
         quat.setLocalFrame(localRefFrame);
         quat.setDataType(DataType.FLOAT);
         dataStruct.addComponent("attitude", quat);
