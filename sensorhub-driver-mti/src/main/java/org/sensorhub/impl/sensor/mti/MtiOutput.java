@@ -25,7 +25,9 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Vector;
+import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.GeoPosHelper.ImuFields;
 
 
 public class MtiOutput extends AbstractSensorOutput<MtiSensor>
@@ -68,32 +70,12 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
     @Override
     protected void init()
     {
-        SWEHelper fac = new SWEHelper();
-        
         // build SWE Common record structure
-        imuData = fac.newDataRecord(4);
-        imuData.setName(getName());
-        imuData.setDefinition("http://sensorml.com/ont/swe/property/ImuData");
+        GeoPosHelper fac = new GeoPosHelper();
+        String localFrame = parentSensor.getCurrentDescription().getUniqueIdentifier() + "#" + MtiSensor.CRS_ID;
         
-        String localRefFrame = parentSensor.getCurrentDescription().getUniqueIdentifier() + "#" + MtiSensor.CRS_ID;
-                        
-        // time stamp
-        imuData.addComponent("time", fac.newTimeStampIsoUTC());
-        
-        // raw inertial measurements
-        Vector angRate = fac.newAngularVelocityVector(
-                SWEHelper.getPropertyUri("AngularRate"),
-                localRefFrame,
-                "deg/s");
-        angRate.setDataType(DataType.FLOAT);
-        imuData.addComponent("angRate", angRate);
-        
-        Vector accel = fac.newAccelerationVector(
-                SWEHelper.getPropertyUri("Acceleration"),
-                localRefFrame,
-                "m/s2");
-        accel.setDataType(DataType.FLOAT);
-        imuData.addComponent("accel", accel);
+        // generic IMU data
+        imuData = fac.newImuOutput(getName(), localFrame, ImuFields.GYRO, ImuFields.ACCEL);
         
         // integrated measurements
         Vector quat = fac.newQuatOrientationENU(
@@ -106,7 +88,6 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
     }
     
 
-    /* TODO: only using HV message; add support for HT and ML */
     private void pollAndSendMeasurement()
     {
     	long msgTime = System.currentTimeMillis();

@@ -4,28 +4,23 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-//import gnu.io.*;
-
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEHelper;
-
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Vector;
 
+
 public class AHRSOutput extends AbstractSensorOutput<AHRSSensor> 
 {
     protected final static byte PREAMBLE = (byte)0xFA;
-    private final static byte BUS_ID = (byte)0xFF;
-    private final static byte MSG_ID = (byte)0xCE; // 206
     private final static int MSG_SIZE = 1024; 
     
-//    DataComponent imuData;
     DataComponent ahrsData;
     DataEncoding dataEncoding;
     boolean started; 
@@ -60,7 +55,7 @@ public class AHRSOutput extends AbstractSensorOutput<AHRSSensor>
     @Override
     protected void init()
     {
-    	SWEHelper fac = new SWEHelper();
+    	GeoPosHelper fac = new GeoPosHelper();
     	
     	// build SWE Common record structure
     	ahrsData = fac.newDataRecord(2);

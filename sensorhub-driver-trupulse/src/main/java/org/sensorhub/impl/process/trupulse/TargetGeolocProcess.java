@@ -38,8 +38,8 @@ import org.sensorhub.impl.sensor.trupulse.TruPulseSensor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.process.DataQueue;
+import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEConstants;
-import org.vast.swe.SWEHelper;
 
 
 /**
@@ -96,7 +96,7 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
         }
         
         // create inputs
-        SWEHelper fac = new SWEHelper();   
+        GeoPosHelper fac = new GeoPosHelper();   
         
         sensorLocInput = fac.newDataRecord();
         sensorLocInput.setName("sensorLocation");
