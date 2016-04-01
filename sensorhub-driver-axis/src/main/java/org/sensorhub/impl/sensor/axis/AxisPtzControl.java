@@ -185,21 +185,25 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
         	{
         	    PtzPreset preset = presetsHandler.getPreset(data.getStringValue());
         	    
-                // pan
-        	    URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/com/ptz.cgi?pan=" + preset.pan);
+                // pan + tilt + zoom (supported since v2 at least)
+        	    URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/com/ptz.cgi?pan=" + preset.pan
+        	    		+ "&tilt=" + preset.tilt + "&zoom=" + preset.zoom);
+                InputStream is = optionsURL.openStream();
+                is.close();
+       	    
+        	}
+        	
+        	// Act on full PTZ Position
+        	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PTZ_POS))
+        	{
+
+        	    URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/com/ptz.cgi?pan=" + data.getStringValue(0)
+        	    		+ "&tilt=" + data.getStringValue(1) + "&zoom=" + data.getStringValue(2));
                 InputStream is = optionsURL.openStream();
                 is.close();
 
-                // tilt
-         	    optionsURL = new URL("http://" + ipAddress + "/axis-cgi/com/ptz.cgi?tilt=" + preset.tilt);
-                is = optionsURL.openStream();
-                is.close();
-                
-                // zoom
-         	    optionsURL = new URL("http://" + ipAddress + "/axis-cgi/com/ptz.cgi?zoom=" + preset.zoom);
-                is = optionsURL.openStream();
-                is.close();
         	}
+     	
         	else
         	{
         		String cmd = " ";
