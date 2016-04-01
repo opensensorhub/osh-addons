@@ -47,6 +47,8 @@ public class VideoCamHelper extends SWEHelper
     public static final String TASKING_RTILT = "rtilt";
     public static final String TASKING_RZOOM = "rzoom";
     public static final String TASKING_PTZPRESET = "preset";
+    public static final String TASKING_PTZ_POS = "ptzPos";
+
 
     // system info	
     String cameraBrand = " ";
@@ -160,36 +162,36 @@ public class VideoCamHelper extends SWEHelper
         AllowedValues constraints;
 
         // Pan
-        Quantity q = newQuantity(DataType.FLOAT);
-        q.getUom().setCode("deg");
-        q.setDefinition("http://sensorml.com/ont/swe/property/Pan");
+        Quantity pan = newQuantity(DataType.FLOAT);
+        pan.getUom().setCode("deg");
+        pan.setDefinition("http://sensorml.com/ont/swe/property/Pan");
         constraints = newAllowedValues();
         constraints.addInterval(new double[] { minPan, maxPan });
-        q.setConstraint(constraints);
-        q.setLabel("Pan");
-        commandData.addItem(TASKING_PAN, q);
+        pan.setConstraint(constraints);
+        pan.setLabel("Pan");
+        commandData.addItem(TASKING_PAN, pan);
 
         // Tilt
-        q = newQuantity(DataType.FLOAT);
-        q.getUom().setCode("deg");
-        q.setDefinition("http://sensorml.com/ont/swe/property/Tilt");
+        Quantity tilt = newQuantity(DataType.FLOAT);
+        tilt.getUom().setCode("deg");
+        tilt.setDefinition("http://sensorml.com/ont/swe/property/Tilt");
         constraints = newAllowedValues();
         constraints.addInterval(new double[] { minTilt, maxTilt });
-        q.setConstraint(constraints);
-        q.setLabel("Tilt");
-        commandData.addItem(TASKING_TILT, q);
+        tilt.setConstraint(constraints);
+        tilt.setLabel("Tilt");
+        commandData.addItem(TASKING_TILT, tilt);
 
         // Zoom Factor
-        Count c = newCount();
-        c.setDefinition("http://sensorml.com/ont/swe/property/AxisZoomFactor");
+        Count zoom = newCount();
+        zoom.setDefinition("http://sensorml.com/ont/swe/property/AxisZoomFactor");
         constraints = newAllowedValues();
         constraints.addInterval(new double[] { minZoom, maxZoom });
-        c.setConstraint(constraints);
-        c.setLabel("Zoom Factor");
-        commandData.addItem(TASKING_ZOOM, c);
+        zoom.setConstraint(constraints);
+        zoom.setLabel("Zoom Factor");
+        commandData.addItem(TASKING_ZOOM, zoom);
 
         // Relative Pan
-        q = newQuantity(DataType.FLOAT);
+        Quantity q = newQuantity(DataType.FLOAT);
         q.getUom().setCode("deg");
         q.setDefinition("http://sensorml.com/ont/swe/property/relativePan");
         //constraints = fac.newAllowedValues();
@@ -209,7 +211,7 @@ public class VideoCamHelper extends SWEHelper
         commandData.addItem(TASKING_RTILT, q);
 
         // Relative Zoom
-        c = newCount();
+        Count c = newCount();
         c.setDefinition("http://sensorml.com/ont/swe/property/relativeAxisZoomFactor");
         //constraints = fac.newAllowedValues();
         //constraints.addInterval(new double[] {0, maxZoom});
@@ -226,6 +228,16 @@ public class VideoCamHelper extends SWEHelper
             presetTokens.addValue(position);
         preset.setConstraint(presetTokens);
         commandData.addItem(TASKING_PTZPRESET, preset);
+        
+        // PTZ Position (supports pan, tilt, and zoom simultaneously
+        DataRecord ptzPos = newDataRecord(3);
+        ptzPos.setName("ptzPosition");
+        ptzPos.setDefinition("http://sensorml.com/ont/swe/property/ptzPosition");
+        ptzPos.setLabel("Absolute PTZ Position");
+        ptzPos.addComponent("pan", pan.copy());
+        ptzPos.addComponent("tilt", tilt.copy());
+        ptzPos.addComponent("zoom", zoom.copy());
+        commandData.addItem(TASKING_PTZ_POS, ptzPos);       
 
         return commandData;
 

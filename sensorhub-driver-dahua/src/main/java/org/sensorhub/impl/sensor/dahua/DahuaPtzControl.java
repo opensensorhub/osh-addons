@@ -168,7 +168,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
               
         try
         {
-        	// if gotoserverpresetname, act on that with
+        	// if preset position, act on that with
         	if (itemID.equals(VideoCamHelper.TASKING_PTZPRESET))
         	{
         	    PtzPreset preset = presetsHandler.getPreset(data.getStringValue());
@@ -189,6 +189,13 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         	    setTilt(data.getDoubleValue() + tilt);
         	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RTILT))
         	    setZoom(data.getDoubleValue() + zoom);
+        	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PTZ_POS))
+        	{
+        		// Set all components of PTZ
+        	    setPan(data.getDoubleValue(0));
+        	    setTilt(data.getDoubleValue(1));
+        	    setZoom(data.getDoubleValue(2));    		
+        	}
         	
         	// send request to absolute pan/tilt/zoom position
             URL optionsURL = new URL("http://" + ipAddress + 
