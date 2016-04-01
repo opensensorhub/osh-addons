@@ -25,9 +25,9 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Vector;
-import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEHelper;
-import org.vast.swe.GeoPosHelper.ImuFields;
+import org.vast.swe.helper.GeoPosHelper;
+import org.vast.swe.helper.GeoPosHelper.ImuFields;
 
 
 public class MtiOutput extends AbstractSensorOutput<MtiSensor>

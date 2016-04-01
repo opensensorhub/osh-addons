@@ -19,8 +19,8 @@ import java.nio.ByteBuffer;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 
 public class VN200GpsOutput extends VN200AbstractOutput

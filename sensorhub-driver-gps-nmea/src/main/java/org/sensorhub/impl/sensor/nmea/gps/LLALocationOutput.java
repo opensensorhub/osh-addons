@@ -19,8 +19,8 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.Vector;
-import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEConstants;
+import org.vast.swe.helper.GeoPosHelper;
 import org.vast.util.DateTimeFormat;
 
 
