@@ -32,5 +32,7 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="/usr/share/java/unix-0.5.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/hexdump-0.2.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

@@ -17,8 +17,8 @@ import org.sensorhub.api.comm.IDeviceScanCallback;
 import org.sensorhub.api.comm.IDeviceScanner;
 import org.sensorhub.api.comm.ble.GattCallback;
 import org.sensorhub.api.comm.ble.IGattClient;
-import org.sensorhub.impl.comm.ble.BleDbusCommNetwork;
-import org.sensorhub.impl.comm.ble.BluetoothNetworkConfig;
+import org.sensorhub.impl.comm.ble.dbus.BleDbusCommNetwork;
+import org.sensorhub.impl.comm.ble.dbus.BluetoothNetworkConfig;
 
 
 public class TestBleDbusCommNetwork

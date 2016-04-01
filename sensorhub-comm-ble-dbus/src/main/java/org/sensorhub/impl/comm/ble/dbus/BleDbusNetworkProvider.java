@@ -12,7 +12,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.comm.ble;
+package org.sensorhub.impl.comm.ble.dbus;
 
 import org.sensorhub.api.comm.ICommNetwork.NetworkType;
 import org.sensorhub.api.comm.INetworkProvider;

@@ -14,7 +14,7 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.api.comm.ble;
 
-import java.util.List;
+import java.util.Collection;
 
 
 /**
@@ -31,7 +31,7 @@ public interface IGattClient
     public static final int GATT_SUCCESS = 0;
     public static final int GATT_FAILURE = 257;
     public static final int GATT_READ_NOT_PERMITTED = 2;
-    public static final int GATT_WRITE_NOT_PERMITTED = 3;
+    public static final int GATT_WRITE_NOT_PERMITTED = 3;    
     
     
     /**
@@ -66,7 +66,7 @@ public interface IGattClient
      * completed for the given device.
      * @return the list of GATT services offered by the remote device
      */
-    List<IGattService> getServices();
+    Collection<IGattService> getServices();
         
     
     /**
