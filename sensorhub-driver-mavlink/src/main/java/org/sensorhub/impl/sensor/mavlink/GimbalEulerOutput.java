@@ -19,8 +19,8 @@ import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorException;
 import org.vast.data.TextEncodingImpl;
-import org.vast.swe.GeoPosHelper;
 import org.vast.swe.SWEConstants;
+import org.vast.swe.helper.GeoPosHelper;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.ardupilotmega.msg_gimbal_report;
 
