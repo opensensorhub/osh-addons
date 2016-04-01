@@ -55,27 +55,7 @@ public class VideoCamHelper extends SWEHelper
     String cameraModel = " ";
     String serialNumber = " ";
 
-
-    // Pan-Tilt-Zoom Properties (output and tasking parameters) //
-
-    //	boolean ptzEnabled = false;
-    //	
-    //    double minPan = -180.0;
-    //    double maxPan = 180.0;
-    //    //double pan = 0.0;
-    //    double panSpeed = 1.0;
-    //    
-    //    double minTilt = 0.0;
-    //    double maxTilt = 90.0;
-    //    //double tilt = 0.0;
-    //    double tiltSpeed = 1.0;
-    //    
-    //    double minZoom = 0.0;
-    //    double maxZoom = 0.0;
-    //    //double zoom = 0.0;
-    //    double zoomSpeed = 1.0;
-
-    //   Camera Settings   //
+    //   TODO add Camera Settings   //
 
     // InfraRed
     //    boolean irEnabled = false;  // Can you set camera to IR mode
@@ -105,10 +85,40 @@ public class VideoCamHelper extends SWEHelper
     //    double videoFPS;    // Frames per Second
     //    String videoCompression;  // e.g. MPEG4, MPEG2, MPEG1, MJPG, H263, H264
     //  
+    
+    
+    public Quantity getPanComponent(double min, double max)
+    {
+        Quantity q = this.newQuantity(getPropertyUri("Pan"), "Pan", "Gimbal rotation (usually horizontal)", "deg", DataType.FLOAT);
+        AllowedValues constraints = newAllowedValues();
+        constraints.addInterval(new double[] { min, max });
+        q.setConstraint(constraints);
+        return q;
+    }
+    
+    
+    public Quantity getTiltComponent(double min, double max)
+    {
+        Quantity q = this.newQuantity(getPropertyUri("Tilt"), "Tilt", "Gimbal rotation (usually up-down)", "deg", DataType.FLOAT);
+        AllowedValues constraints = newAllowedValues();
+        constraints.addInterval(new double[] { min, max });
+        q.setConstraint(constraints);
+        return q;
+    }
+    
+    
+    public Quantity getZoomComponent(double min, double max)
+    {
+        Quantity q = this.newQuantity(getPropertyUri("ZoomFactor"), "Zoom Factor", "Camera specific zoom factor", "1", DataType.FLOAT);
+        AllowedValues constraints = newAllowedValues();
+        constraints.addInterval(new double[] { min, max });
+        q.setConstraint(constraints);
+        return q;
+    }
+    
 
     public DataRecord getPtzOutput(String name, double minPan, double maxPan, double minTilt, double maxTilt, double minZoom, double maxZoom)
     {
-
         // Build SWE Common Data structure for PTZ Output values
         // Settings output includes time, pan, tilt, zoom
 
@@ -120,30 +130,10 @@ public class VideoCamHelper extends SWEHelper
         Time t = this.newTimeStampIsoUTC();
         settingsDataStruct.addComponent("time", t);
 
-        AllowedValues constraints;
-
         // TODO: set localReferenceFrame for Z to be the pan axis into camera, 
-        Quantity q = this.newQuantity("http://sensorml.com/ont/swe/property/Pan", "Pan", "Gimbal rotation (usually horizontal)", "deg", DataType.FLOAT);
-        constraints = newAllowedValues();
-        constraints.addInterval(new double[] { minPan, maxPan });
-        q.setConstraint(constraints);
-        settingsDataStruct.addComponent("pan", q);
-
-        q = this.newQuantity("http://sensorml.com/ont/swe/property/Tilt", "Tilt", "Gimbal rotation (usually up-down)", "deg", DataType.FLOAT);
-        q.getUom().setCode("deg");
-        q.setDefinition("http://sensorml.com/ont/swe/property/Tilt");
-        constraints = newAllowedValues();
-        constraints.addInterval(new double[] { minTilt, maxTilt });
-        q.setConstraint(constraints);
-        q.setLabel("Tilt");
-        settingsDataStruct.addComponent("tilt", q);
-
-        // NOTE: zoom factor range needs to be converted between 1-100 in driver
-        q = this.newQuantity("http://sensorml.com/ont/swe/property/ZoomFactor", "Zoom Factor", "Percentage of zoom between 1 and 100 percent", "%", DataType.FLOAT);
-        constraints = newAllowedValues();
-        constraints.addInterval(new double[] { minZoom, maxZoom });
-        q.setConstraint(constraints);
-        settingsDataStruct.addComponent("zoomFactor", q);
+        settingsDataStruct.addComponent("pan", getPanComponent(minPan, maxPan));
+        settingsDataStruct.addComponent("tilt", getTiltComponent(minTilt, maxTilt));
+        settingsDataStruct.addComponent("zoomFactor", getTiltComponent(minZoom, maxZoom));
 
         return settingsDataStruct;
     }
@@ -159,69 +149,37 @@ public class VideoCamHelper extends SWEHelper
         DataChoice commandData = this.newDataChoice();
         commandData.setName(name);
 
-        AllowedValues constraints;
-
-        // Pan
-        Quantity pan = newQuantity(DataType.FLOAT);
-        pan.getUom().setCode("deg");
-        pan.setDefinition("http://sensorml.com/ont/swe/property/Pan");
-        constraints = newAllowedValues();
-        constraints.addInterval(new double[] { minPan, maxPan });
-        pan.setConstraint(constraints);
-        pan.setLabel("Pan");
+        // Pan, Tilt, Zoom
+        Quantity pan = getPanComponent(minPan, maxPan);
         commandData.addItem(TASKING_PAN, pan);
-
-        // Tilt
-        Quantity tilt = newQuantity(DataType.FLOAT);
-        tilt.getUom().setCode("deg");
-        tilt.setDefinition("http://sensorml.com/ont/swe/property/Tilt");
-        constraints = newAllowedValues();
-        constraints.addInterval(new double[] { minTilt, maxTilt });
-        tilt.setConstraint(constraints);
-        tilt.setLabel("Tilt");
+        Quantity tilt = getTiltComponent(minTilt, maxTilt);
         commandData.addItem(TASKING_TILT, tilt);
-
-        // Zoom Factor
-        Count zoom = newCount();
-        zoom.setDefinition("http://sensorml.com/ont/swe/property/AxisZoomFactor");
-        constraints = newAllowedValues();
-        constraints.addInterval(new double[] { minZoom, maxZoom });
-        zoom.setConstraint(constraints);
-        zoom.setLabel("Zoom Factor");
+        Quantity zoom = getTiltComponent(minZoom, maxZoom);
         commandData.addItem(TASKING_ZOOM, zoom);
-
+        
         // Relative Pan
         Quantity q = newQuantity(DataType.FLOAT);
         q.getUom().setCode("deg");
-        q.setDefinition("http://sensorml.com/ont/swe/property/relativePan");
-        //constraints = fac.newAllowedValues();
-        //constraints.addInterval(new double[] {minPan, maxPan});
-        //relPan.setConstraint(constraints);
+        q.setDefinition(getPropertyUri("RelativePan"));
         q.setLabel("Relative Pan");
         commandData.addItem(TASKING_RPAN, q);
 
         // Relative Tilt
         q = newQuantity(DataType.FLOAT);
         q.getUom().setCode("deg");
-        q.setDefinition("http://sensorml.com/ont/swe/property/relativeTilt");
-        //constraints = fac.newAllowedValues();
-        //constraints.addInterval(new double[] {minTilt, maxTilt});
-        //relTilt.setConstraint(constraints);
+        q.setDefinition(getPropertyUri("RelativeTilt"));
         q.setLabel("Relative Tilt");
         commandData.addItem(TASKING_RTILT, q);
 
         // Relative Zoom
         Count c = newCount();
-        c.setDefinition("http://sensorml.com/ont/swe/property/relativeAxisZoomFactor");
-        //constraints = fac.newAllowedValues();
-        //constraints.addInterval(new double[] {0, maxZoom});
-        //relZoom.setConstraint(constraints);
+        c.setDefinition(getPropertyUri("RelativeZoomFactor"));
         c.setLabel("Relative Zoom Factor");
         commandData.addItem(TASKING_RZOOM, c);
 
-        // PTZ preset positions
+        // PTZ Preset Positions
         Text preset = newText();
-        preset.setDefinition("http://sensorml.com/ont/swe/property/cameraPresetPositionName");
+        preset.setDefinition(getPropertyUri("CameraPresetPositionName"));
         preset.setLabel("Preset Camera Position");
         AllowedTokens presetTokens = newAllowedTokens();
         for (String position : presetNames)
@@ -232,7 +190,7 @@ public class VideoCamHelper extends SWEHelper
         // PTZ Position (supports pan, tilt, and zoom simultaneously
         DataRecord ptzPos = newDataRecord(3);
         ptzPos.setName("ptzPosition");
-        ptzPos.setDefinition("http://sensorml.com/ont/swe/property/ptzPosition");
+        ptzPos.setDefinition(getPropertyUri("PtzPosition"));
         ptzPos.setLabel("Absolute PTZ Position");
         ptzPos.addComponent("pan", pan.copy());
         ptzPos.addComponent("tilt", tilt.copy());
