@@ -17,12 +17,11 @@ package org.sensorhub.impl.sensor.dahua;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
-import org.sensorhub.impl.comm.URLConfig;
+import org.sensorhub.impl.comm.HTTPConfig;
 import org.sensorhub.impl.sensor.rtpcam.RTSPConfig;
 import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
 import org.sensorhub.impl.sensor.videocam.VideoResolution;
 import org.sensorhub.impl.sensor.videocam.ptz.PtzConfig;
-import org.sensorhub.impl.sensor.videocam.ptz.PtzPreset;
 
 
 /**
@@ -39,7 +38,7 @@ public class DahuaCameraConfig extends SensorConfig
     public VideoConfig video = new VideoConfig();
     
     @DisplayInfo(label="Network", desc="Network configuration")
-    public URLConfig net = new URLConfig();
+    public HTTPConfig net = new HTTPConfig();
     
     @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration")
     public RTSPConfig rtsp = new RTSPConfig();
