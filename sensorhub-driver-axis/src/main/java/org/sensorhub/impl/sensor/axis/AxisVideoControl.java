@@ -28,10 +28,6 @@ import org.sensorhub.impl.sensor.AbstractSensorControl;
  * protocol. This particular class provides control of the video
  * camera itself.
  * </p>
- *
- * <p>
- * Copyright (c) 2014
- * </p>
  * 
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since October 30, 2014

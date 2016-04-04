@@ -51,9 +51,10 @@ import org.vast.swe.SWEHelper;
  * </p>
  *
  * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @param <SensorType> Type of parent sensor
  * @since Dec 12, 2015
  */
-public class RTPVideoOutput extends AbstractSensorOutput<ISensorModule<?>> implements RTPH264Callback
+public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends AbstractSensorOutput<SensorType> implements RTPH264Callback
 {
     BasicVideoConfig videoConfig;
     TCPConfig netConfig;
@@ -71,13 +72,13 @@ public class RTPVideoOutput extends AbstractSensorOutput<ISensorModule<?>> imple
     boolean firstFrameReceived;
     
     
-    public RTPVideoOutput(ISensorModule<?> driver, BasicVideoConfig videoConfig, TCPConfig netConfig, RTSPConfig rtspConfig)
+    public RTPVideoOutput(SensorType driver, BasicVideoConfig videoConfig, TCPConfig netConfig, RTSPConfig rtspConfig)
     {
         this(driver, "videoOutput", videoConfig, netConfig, rtspConfig);
     }
     
     
-    public RTPVideoOutput(ISensorModule<?> driver, String name, BasicVideoConfig videoConfig, TCPConfig netConfig, RTSPConfig rtspConfig)
+    public RTPVideoOutput(SensorType driver, String name, BasicVideoConfig videoConfig, TCPConfig netConfig, RTSPConfig rtspConfig)
     {
         super(driver);
         this.name = name;

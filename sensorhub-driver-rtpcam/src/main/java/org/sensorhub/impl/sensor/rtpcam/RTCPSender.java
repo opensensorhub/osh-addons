@@ -150,7 +150,7 @@ public class RTCPSender extends TimerTask
         }
         catch (IOException e)
         {
-            log.error("Error while sending RTSP keep-alive request", e);
+            log.trace("Error while sending RTSP keep-alive request", e);
         }
     }
 }

@@ -17,9 +17,7 @@ package org.sensorhub.impl.sensor.axis;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
-import org.sensorhub.impl.comm.URLConfig;
-import org.sensorhub.impl.sensor.axis.AxisCameraConfig.ResolutionEnum;
-import org.sensorhub.impl.sensor.axis.AxisCameraConfig.VideoConfig;
+import org.sensorhub.impl.comm.HTTPConfig;
 import org.sensorhub.impl.sensor.rtpcam.RTSPConfig;
 import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
 import org.sensorhub.impl.sensor.videocam.VideoResolution;
@@ -41,13 +39,20 @@ public class AxisCameraConfig extends SensorConfig {
     public VideoConfig video = new VideoConfig();
     
     @DisplayInfo(label="Network", desc="Network configuration")
-    public URLConfig net = new URLConfig();
+    public HTTPConfig net = new HTTPConfig();
     
     @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration")
     public RTSPConfig rtsp = new RTSPConfig();
     
     @DisplayInfo(label="PTZ", desc="Pan-Tilt-Zoom configuration")
     public PtzConfig ptz = new PtzConfig();
+    
+    @DisplayInfo(label="Enable H264", desc="Enable H264 encoded video output (accessible through RTSP)")
+    public boolean enableH264;
+    
+    @DisplayInfo(label="Enable MJPEG", desc="Enable MJPEG encoded video output (accessible through HTTP)")
+    public boolean enableMJPEG;
+    
     
 	// TODO: Set variable for mounting (top up, top down, top sideways) or better set mounting angles relative to NED/ENU
     // ALSO, use flip=yes/no to flip image if necessary	
@@ -75,21 +80,8 @@ public class AxisCameraConfig extends SensorConfig {
         D1_NTSC("D1", 720, 480),
         D1_PAL("D1", 720, 576),
         HD_720P("HD", 1280, 720),
-        HD_1080("HD", 1280, 1024),
-        HD_1080full("Full HD", 1920, 1080);
-        
-        /*
-        SD_640_480("SD", 640, 480),
-        SD_704_480("SD", 704, 480),
-        SD_720_480("SD", 720, 480),
-        SD_576("SD", 720, 576),
-        D1("D1", 704, 480),
-        DVD_480("DVD", 720, 480),
-        DVD_576("DVD", 720, 576),
-        HD_720P("HD", 1280, 720),
-        HD_1080P("Full HD", 1920, 1080),
-        UHD_4K("Ultra HD", 3840, 2160);
-        */
+        SXGA("HD", 1280, 1024),
+        HD_1080P("Full HD", 1920, 1080);
         
         private String text;
         private int width, height;
@@ -115,8 +107,4 @@ public class AxisCameraConfig extends SensorConfig {
         rtsp.videoPath = "/axis-media/media.amp?videocodec=h264";        
         rtsp.localUdpPort = 20100;
     }
-
-	
-		
-		
 }

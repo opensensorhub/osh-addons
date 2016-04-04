@@ -25,13 +25,10 @@ import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.TextEncoding;
-
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.vast.data.SWEFactory;
@@ -52,21 +49,14 @@ import org.vast.data.SWEFactory;
 public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
     DataComponent settingsDataStruct;
+    TextEncoding textEncoding;
     boolean polling;
     Timer timer;
     VideoCamHelper videoHelper;
-    
-    AxisCameraConfig config;
 
-    // Setup ISO Time Components
-    
     // Set default timezone to GMT; check TZ in init below
     TimeZone tz = TimeZone.getTimeZone("UTC");
     DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
-
-    String ipAddress;
-    
-    TextEncoding textEncoding;
     
 
     public AxisPtzOutput(AxisCameraDriver driver)
@@ -80,13 +70,6 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
     {
         return "ptzOutput";
     }
-    
-    private void setAuth()
-    {
-        ClientAuth.getInstance().setUser(config.net.user);
-        if (config.net.password != null)
-            ClientAuth.getInstance().setPassword(config.net.password.toCharArray());
-    }
   
     
     protected void init()
@@ -98,9 +81,6 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
     	textEncoding.setBlockSeparator("\n");
     	textEncoding.setTokenSeparator(",");
 
-    	config = parentSensor.getConfiguration();
-    	ipAddress = config.net.remoteHost;
-
         // set default values
         double minPan = -180.0;
         double maxPan = 180.0;
@@ -108,8 +88,8 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
         double maxTilt = 0.0;
         double minZoom = 1.0;
         double maxZoom = 13333;
-        double minFieldAngle = 44;
-        double maxFieldAngle = 516;
+        double minFieldAngle = 4.4;
+        double maxFieldAngle = 51.6;
 
         
         try
@@ -135,15 +115,12 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
     	        // root.Time.TimeZone=GMT-6
                 if (tokens[0].trim().equalsIgnoreCase("root.Time.TimeZone"))
                 	df.setTimeZone(TimeZone.getTimeZone(tokens[1]));   	
-            }*/
-
-        	setAuth();
+            }*/        	
 
             /** request PTZ Limits  **/
-            URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list&group=PTZ.Limit");
+            URL optionsURL = new URL("http://" + parentSensor.getHostName() + "/axis-cgi/view/param.cgi?action=list&group=PTZ.Limit");
             InputStream is = optionsURL.openStream();
             BufferedReader limitReader = new BufferedReader(new InputStreamReader(is));
-
 
             // get limit values from IP stream
             String line;
@@ -177,11 +154,8 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
         // Build SWE Common Data structure
         settingsDataStruct = videoHelper.getPtzOutput(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom);
 
-
         // start the thread (probably best not to start in init but in driver start() method.) ????
         startPolling();
-
-
     }
 
 
@@ -194,7 +168,7 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
         try
         {
             //String ipAddress = driver.getConfiguration().ipAddress;
-            final URL getSettingsUrl = new URL("http://" + ipAddress + "/axis-cgi/com/ptz.cgi?query=position");
+            final URL getSettingsUrl = new URL("http://" + parentSensor.getHostName() + "/axis-cgi/com/ptz.cgi?query=position");
             final DataComponent dataStruct = settingsDataStruct.copy();
             dataStruct.assignNewDataBlock();
 

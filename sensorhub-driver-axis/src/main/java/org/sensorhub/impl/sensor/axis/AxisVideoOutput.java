@@ -51,28 +51,21 @@ import org.vast.swe.SWEHelper;
  * protocol. This particular class provides time-tagged video output from the video
  * camera capabilities.
  * </p>
- *
- * <p>
- * Copyright (c) 2014
- * </p>
  * 
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since October 30, 2014
  */
-
-// TODO Need a separate class for outputting camera settings (e.g. imageSize, brightness, iris, IR, focus, imageRotation)
-
 public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
-	DataComponent videoDataStruct;
+    DataComponent videoDataStruct;
 	BinaryEncoding videoEncoding;
 	boolean reconnect;
 	boolean streaming;
 	
 	
-	public AxisVideoOutput(AxisCameraDriver driver)
+	public AxisVideoOutput(AxisCameraDriver driver, String name)
     {
-    	super("videoOutput", driver);   	
+    	super(name, driver);
     }
     
     
@@ -134,9 +127,7 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	
 	protected int[] getImageSize() throws IOException
 	{
-    	String ipAddress = parentSensor.getConfiguration().net.remoteHost;		
-		
-		URL getImgSizeUrl = new URL("http://" + ipAddress + "/axis-cgi/view/imagesize.cgi?camera=1");
+    	URL getImgSizeUrl = new URL("http://" + parentSensor.getHostName() + "/axis-cgi/view/imagesize.cgi?camera=1");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(getImgSizeUrl.openStream()));
 		
 		int imgSize[] = new int[2];
@@ -160,9 +151,7 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	{
 		try
 		{
-	    	String ipAddress = parentSensor.getConfiguration().net.remoteHost;		
-
-	    	final URL videoUrl = new URL("http://" + ipAddress + "/mjpg/video.mjpg");
+		    final URL videoUrl = new URL("http://" + parentSensor.getHostName() + "/mjpg/video.mjpg");
 			reconnect = true;
 			
 			Thread t = new Thread(new Runnable()

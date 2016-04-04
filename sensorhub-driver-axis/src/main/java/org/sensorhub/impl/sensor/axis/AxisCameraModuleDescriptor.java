@@ -25,16 +25,10 @@ import org.sensorhub.api.module.ModuleConfig;
  * protocol. This particular class provides a description of the Axis
  * IP video camera module.
  * </p>
- *
- * <p>
- * Copyright (c) 2014
- * </p>
  * 
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since October 30, 2014
  */
-
-
 public class AxisCameraModuleDescriptor implements IModuleProvider
 {
 

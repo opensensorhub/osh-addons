@@ -20,13 +20,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
-
 import net.opengis.sensorml.v20.IdentifierList;
 import net.opengis.sensorml.v20.Term;
-
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.rtpcam.RTPVideoOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.sensorML.SMLFactory;
@@ -38,29 +37,25 @@ import org.vast.swe.SWEHelper;
  * Implementation of sensor interface for generic Axis Cameras using IP
  * protocol
  * </p>
- *
- * <p>
- * Copyright (c) 2014
- * </p>
  * 
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since October 30, 2014
  */
-
 public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 {
 	private static final Logger log = LoggerFactory.getLogger(AxisCameraDriver.class);
 	
-	AxisVideoOutput videoDataInterface;
-    AxisPtzOutput ptzDataInterface;
+	AxisVideoOutput mjpegVideoOutput;
+	RTPVideoOutput<AxisCameraDriver> h264VideoOutput;
+    AxisPtzOutput ptzPosOutput;
     AxisVideoControl videoControlInterface;
     AxisPtzControl ptzControlInterface;
     
-    String ipAddress;
-    String serialNumber = " ";
-    String modelNumber = " ";
-    String longName = " ";
-    String shortName = " ";
+    String hostName;
+    String serialNumber;
+    String modelNumber;
+    String longName;
+    String shortName;
 
     boolean ptzSupported = false;
 
@@ -73,37 +68,53 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     @Override
     public void start() throws SensorException
     {
-    	ipAddress = getConfiguration().net.remoteHost;
-    	
-    	// check first if connected
-    	if (isConnected()){
-    	
-	    	// establish the outputs and controllers (video and PTZ)   	
-	    	// add video output and controller
-	        this.videoDataInterface = new AxisVideoOutput(this);
-	        videoDataInterface.init();
-	        addOutput(videoDataInterface, false);
-	
+        hostName = config.net.remoteHost + ":" + config.net.remotePort;
+        
+        // check first if connected
+    	if (isConnected())
+    	{    	
+	    	String videoOutName = "videoOutput";
+	    	int videoOutNum = 1;
+	    	
+    	    // add MJPEG video output
+    	    if (config.enableMJPEG)
+    	    {
+    	        String outputName = videoOutName + videoOutNum++;
+    	        mjpegVideoOutput = new AxisVideoOutput(this, outputName);
+    	        mjpegVideoOutput.init();
+    	        addOutput(mjpegVideoOutput, false);
+    	    }
+    	    
+    	    // add H264 video output
+            if (config.enableH264)
+            {
+                String outputName = videoOutName + videoOutNum++;
+                h264VideoOutput = new RTPVideoOutput<AxisCameraDriver>(this, outputName, config.video, config.net, config.rtsp);
+                h264VideoOutput.init();
+                h264VideoOutput.start();
+                addOutput(h264VideoOutput, false);
+            }
+    	    
+            // add video settings controller
 	        //this.videoControlInterface = new AxisVideoControl(this);
 	        //addControlInput(videoControlInterface);	        
 	        //videoControlInterface.init();	        
 	        
-	        if (ptzSupported){
-	        	
+	        if (ptzSupported)
+	        {
 	        	// add PTZ output
-		        this.ptzDataInterface = new AxisPtzOutput(this);
-		        addOutput(ptzDataInterface, false);
-		        ptzDataInterface.init();
+		        this.ptzPosOutput = new AxisPtzOutput(this);
+		        addOutput(ptzPosOutput, false);
+		        ptzPosOutput.init();
 		        
 		        // add PTZ controller
 		        this.ptzControlInterface = new AxisPtzControl(this);
 		        addControlInput(ptzControlInterface);
-		        ptzControlInterface.init();
-	            	
+		        ptzControlInterface.init();	            	
 	        }
     	}
     	else
-    		log.error("Axis Camera: connection not established at " + ipAddress);
+    		log.error("Axis Camera: connection not established at " + hostName);
     }
     
 
@@ -116,9 +127,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
             // and then sets unique ID, outputs and control inputs
             super.updateSensorDescription();
                         
-            // TODO add SensorML Identifiers like serial number and manufacturer and long name
-            SMLFactory smlFac = new SMLFactory();
-            
+            SMLFactory smlFac = new SMLFactory();            
 
             sensorDescription.setId("AXIS_CAMERA_" + serialNumber);
             sensorDescription.setUniqueIdentifier("urn:axis:cam:" + serialNumber);
@@ -127,40 +136,48 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
             IdentifierList identifierList = smlFac.newIdentifierList();
             sensorDescription.addIdentification(identifierList);
             
-            Term term;
-            
+            Term term;            
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
             term.setLabel("Manufacturer Name");
             term.setValue("Axis");
             identifierList.addIdentifier2(term);
             
-            term = smlFac.newTerm();
-            term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
-            term.setLabel("Model Number");
-            term.setValue(modelNumber);
-            identifierList.addIdentifier2(term);
+            if (modelNumber != null)
+            {
+                term = smlFac.newTerm();
+                term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
+                term.setLabel("Model Number");
+                term.setValue(modelNumber);
+                identifierList.addIdentifier2(term);
+            }
             
-            term = smlFac.newTerm();
-            term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
-            term.setLabel("Serial Number");
-            term.setValue(serialNumber);
-            identifierList.addIdentifier2(term);
-           
+            if (serialNumber != null)
+            {
+                term = smlFac.newTerm();
+                term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
+                term.setLabel("Serial Number");
+                term.setValue(serialNumber);
+                identifierList.addIdentifier2(term);
+            }
             
-            term = smlFac.newTerm();
-            term.setDefinition(SWEHelper.getPropertyUri("LongName"));
-            term.setLabel("Long Name");
-            term.setValue(longName);
-            identifierList.addIdentifier2(term);
-
+            if (longName != null)
+            {
+                term = smlFac.newTerm();
+                term.setDefinition(SWEHelper.getPropertyUri("LongName"));
+                term.setLabel("Long Name");
+                term.setValue(longName);
+                identifierList.addIdentifier2(term);
+            }
             
-            term = smlFac.newTerm();
-            term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
-            term.setLabel("Short Name");
-            term.setValue(shortName);
-            identifierList.addIdentifier2(term);
-            
+            if (shortName != null)
+            {
+                term = smlFac.newTerm();
+                term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
+                term.setLabel("Short Name");
+                term.setValue(shortName);
+                identifierList.addIdentifier2(term);
+            }
         }
     }
 
@@ -172,16 +189,15 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
         {
         	boolean connected = false;
         	
-        	setAuth();
-        	
-        	// try to open stream and check for Axis Brand
-	        URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/view/param.cgi?action=list");
+        	// try to open http stream
+        	URL optionsURL = new URL("http://" + getHostName() + "/axis-cgi/view/param.cgi?action=list");
 		    URLConnection conn = optionsURL.openConnection();
 		    conn.setConnectTimeout(500);
 		    conn.connect();
 		    InputStream is = conn.getInputStream();
 	        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 	        
+	        // parse response to extract identifiers
             String line ;
 		    while ((line = reader.readLine()) != null)
 		    {
@@ -195,9 +211,9 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 	            	else
 	            		ptzSupported = false;
 	            }
-	            else if (tokens[0].trim().equalsIgnoreCase("root.Brand.ProductFullName"))
+	            else if (tokens[0].trim().equalsIgnoreCase("root.Brand.ProdFullName"))
 	                longName = tokens[1];
-	            else if (tokens[0].trim().equalsIgnoreCase("root.Brand.ProductShortName"))
+	            else if (tokens[0].trim().equalsIgnoreCase("root.Brand.ProdShortName"))
 	                shortName = tokens[1];
 	            else if (tokens[0].trim().equalsIgnoreCase("root.Brand.ProdNbr"))
 	                modelNumber = tokens[1];
@@ -209,12 +225,13 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
         }
         catch (Exception e)
         {
+            log.warn("Cannot connect to host " + hostName, e);
             return false;
         }   
     }
     
 
-    private void setAuth()
+    protected void setAuth()
     {
         ClientAuth.getInstance().setUser(config.net.user);
         if (config.net.password != null)
@@ -225,14 +242,14 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     @Override
     public void stop()
     {
-        if (ptzDataInterface != null)
-        	ptzDataInterface.stop();
+        if (ptzPosOutput != null)
+        	ptzPosOutput.stop();
         
         if (ptzControlInterface != null)
         	ptzControlInterface.stop();
         
-       if (videoDataInterface != null)
-        	videoDataInterface.stop();
+       if (mjpegVideoOutput != null)
+        	mjpegVideoOutput.stop();
         
        if (videoControlInterface != null)
        		videoControlInterface.stop();
@@ -242,7 +259,13 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     @Override
     public void cleanup()
     {
-
+    }
+    
+    
+    protected String getHostName()
+    {
+        setAuth();
+        return hostName;
     }
     
     @Override
@@ -250,6 +273,4 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     {
         stop();
     }
-
-
 }
