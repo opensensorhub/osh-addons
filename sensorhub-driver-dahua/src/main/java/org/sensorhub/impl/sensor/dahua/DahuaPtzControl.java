@@ -16,6 +16,7 @@ Developer are Copyright (C) 2016 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.dahua;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -45,10 +46,7 @@ import org.vast.data.DataChoiceImpl;
  */
 public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
 {
-	DataChoice commandData; 
-	DahuaCameraDriver driver;
-		
-	String ipAddress;
+	DataChoice commandData;
 
     // define and set default values
     double minPan = 0.0;
@@ -61,16 +59,13 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
     // Since Dahua doesn't allow you to retrieve current PTZ positions, save the last state here and push to the output module
     double pan = 0.0;
     double tilt = 0.0;
-    double zoom = 1.0;
-    
+    double zoom = 1.0;    
     PtzPresetsHandler presetsHandler;
-
     
     
     protected DahuaPtzControl(DahuaCameraDriver driver)
     {
         super(driver);
-        this.driver = driver;
     }
     
     
@@ -81,16 +76,15 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
     }
     
     
-    protected void init()
+    protected void init() throws SensorException
     {
         DahuaCameraConfig config = parentSensor.getConfiguration();
         presetsHandler = new PtzPresetsHandler(config.ptz);
-        ipAddress = config.net.remoteHost;
         
         // get PTZ limits
         try
         {    	         
-            URL optionsURL = new URL("http://" + ipAddress + "/cgi-bin/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
+            URL optionsURL = new URL("http://" + parentSensor.getHostName() + "/cgi-bin/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
             InputStream is = optionsURL.openStream();
             BufferedReader bReader = new BufferedReader(new InputStreamReader(is));
 
@@ -113,7 +107,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
                 //    maxZoom = Double.parseDouble(tokens[1]);
             }
 	    }
-	    catch (Exception e)
+	    catch (IOException e)
 	    {
 	        e.printStackTrace();
 	    }
@@ -141,6 +135,27 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         {
             e.printStackTrace();
         }
+    }
+    
+    
+    protected void start() throws SensorException
+    {
+        // reset to Pan=0, Tilt=0, Zoom=0
+        DataBlock initCmd;
+        commandData.setSelectedItem(0);
+        initCmd = commandData.createDataBlock();
+        execCommand(initCmd);
+        commandData.setSelectedItem(1);
+        initCmd = commandData.createDataBlock();
+        execCommand(initCmd);
+        commandData.setSelectedItem(2);
+        initCmd = commandData.createDataBlock();
+        execCommand(initCmd);
+    }
+    
+    
+    protected void stop()
+    {       
     }
 
 
@@ -198,7 +213,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         	}
         	
         	// send request to absolute pan/tilt/zoom position
-            URL optionsURL = new URL("http://" + ipAddress + 
+            URL optionsURL = new URL("http://" + parentSensor.getHostName() + 
             		"/cgi-bin/ptz.cgi?action=start&channel=0&code=PositionABS&arg1=" + pan + "&arg2=" + tilt + "&arg3=" + zoom);
                    	         
             // add BufferReader and read first line; if "Error", read second line and log error
@@ -218,28 +233,25 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
     
     
     // set pan and notify DahuaPtzOutput
-    public void setPan(double value){
+    public void setPan(double value)
+    {
     	pan = value;
-    	driver.ptzDataInterface.setPan(value);
+    	parentSensor.ptzDataInterface.setPan(value);
     }
     
 
     // set tilt and notify DahuaPtzOutput
-    public void setTilt(double value){
+    public void setTilt(double value)
+    {
     	tilt = value;
-    	driver.ptzDataInterface.setTilt(value);
+    	parentSensor.ptzDataInterface.setTilt(value);
     }
     
 
     // set zoom and notify DahuaPtzOutput
-    public void setZoom(double value){
+    public void setZoom(double value)
+    {
     	zoom = value;
-    	driver.ptzDataInterface.setZoom(value);
+    	parentSensor.ptzDataInterface.setZoom(value);
     }
-
-
-	public void stop()
-	{
-		
-	}
 }

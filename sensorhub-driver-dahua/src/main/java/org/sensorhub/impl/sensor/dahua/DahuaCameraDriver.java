@@ -16,15 +16,15 @@ Developer are Copyright (C) 2016 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.dahua;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
+import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -38,14 +38,15 @@ import org.slf4j.LoggerFactory;
  */
 public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
 {
-	private static final Logger log = LoggerFactory.getLogger(DahuaCameraDriver.class);
-	
 	DahuaVideoOutput videoDataInterface;
     DahuaPtzOutput ptzDataInterface;
     DahuaVideoControl videoControlInterface;
     DahuaPtzControl ptzControlInterface;
     
-    String ipAddress;
+    long connectionRetryPeriod = 2000L;
+    
+    boolean ptzSupported = false;
+    String hostName;
     String serialNumber;
     String modelNumber;
 
@@ -56,65 +57,84 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     
     
     @Override
+    public void init(DahuaCameraConfig config) throws SensorHubException
+    {
+        super.init(config);
+        hostName = config.net.remoteHost + ":" + config.net.remotePort;
+        boolean done = false;
+        
+        // check first if connected
+        while (waitForConnection(connectionRetryPeriod, config.connectTimeout) && !done)
+        {
+            notifyConnectionStatus(true);
+            
+            // establish the outputs and controllers (video and PTZ)
+            // video output
+            this.videoDataInterface = new DahuaVideoOutput(this);
+            videoDataInterface.init();
+            addOutput(videoDataInterface, false);
+            
+            // video controller
+            //this.videoControlInterface = new DahuaVideoControl(this);
+            //videoControlInterface.init();
+            //addControlInput(videoControlInterface);
+                        
+            // check if PTZ supported
+            try
+            {
+                setAuth();
+                URL optionsURL = new URL("http://" + hostName + "/cgi-bin/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
+                InputStream is = optionsURL.openStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                
+                String line;
+                while ((line = reader.readLine()) != null)
+                {
+                    // parse response
+                    String[] tokens = line.split("=");
+        
+                    if (tokens[0].trim().equalsIgnoreCase("caps.SupportPTZCoordinates"))
+                        ptzSupported = tokens[1].equalsIgnoreCase("true");      
+                }
+                
+                if (ptzSupported)
+                {                   
+                    // add PTZ output
+                    this.ptzDataInterface = new DahuaPtzOutput(this);
+                    addOutput(ptzDataInterface, false);
+                    ptzDataInterface.init();
+                    
+                    // add PTZ controller
+                    this.ptzControlInterface = new DahuaPtzControl(this);
+                    addControlInput(ptzControlInterface);
+                    ptzControlInterface.init();                     
+                }
+                
+                done = true;
+            }
+            catch (IOException e)
+            {
+                getLogger().warn("Error while reading metadata from sensor", e);
+            }
+        }
+    }    
+    
+    
+    @Override
     public void start() throws SensorException
     {
-    	ipAddress = getConfiguration().net.remoteHost;
-    	    	
-    	// check first if connected
-    	if (isConnected())
+        // check first if connected
+    	if (waitForConnection(connectionRetryPeriod, config.connectTimeout))
     	{
-    		// establish the outputs and controllers (video and PTZ)   	
-	    	// video output
-	        this.videoDataInterface = new DahuaVideoOutput(this);
-	        videoDataInterface.init();
-	        addOutput(videoDataInterface, false);	        
-	        videoDataInterface.start();
-	        
-	        // video controller
-	        //this.videoControlInterface = new DahuaVideoControl(this);
-	        //videoControlInterface.init();
-	        //addControlInput(videoControlInterface);
-	        	        
-	        // check if PTZ supported
-	        boolean ptzSupported = false;	        
-	        try
-	        {
-	            setAuth();
-	            URL optionsURL = new URL("http://" + ipAddress + "/cgi-bin/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
-		        InputStream is = optionsURL.openStream();
-		        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-		        
-		        String line;
-		        while ((line = reader.readLine()) != null)
-		        {
-		            // parse response
-		            String[] tokens = line.split("=");
-		
-		            if (tokens[0].trim().equalsIgnoreCase("caps.SupportPTZCoordinates"))
-		                ptzSupported = tokens[1].equalsIgnoreCase("true");    	
-		        }
-		        
-		        if (ptzSupported)
-		        {		        	
-		        	// add PTZ output
-			        this.ptzDataInterface = new DahuaPtzOutput(this);
-			        addOutput(ptzDataInterface, false);
-			        ptzDataInterface.init();
-			        
-			        // add PTZ controller
-			        this.ptzControlInterface = new DahuaPtzControl(this);
-			        addControlInput(ptzControlInterface);
-			        ptzControlInterface.init();		            	
-		        }
-	        }
-	        catch (Exception e)
-	        {
-	            e.printStackTrace();
-	        }
-    	}
-    	else
-    	{
-    		log.error("connection not established at " + ipAddress);
+    	    // start video output
+            videoDataInterface.start();
+            
+            // if PTZ supported
+            if (ptzSupported)
+            {
+                ptzDataInterface.start();
+                ptzControlInterface.start();
+            }
     	}
     }
     
@@ -147,12 +167,12 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     	    
     	    // try to open stream and check for Dahua Info
     	    setAuth();
-    	    URL optionsURL = new URL("http://" + ipAddress + "/cgi-bin/magicBox.cgi?action=getSystemInfo");
+    	    URL optionsURL = new URL("http://" + hostName + "/cgi-bin/magicBox.cgi?action=getSystemInfo");
 	        URLConnection conn = optionsURL.openConnection();
 		    conn.setConnectTimeout(500);
 		    conn.connect();
 		    InputStream is = conn.getInputStream();
-	        BufferedReader reader = new BufferedReader(new InputStreamReader(is));	        
+	        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 	        
 	        // note: should return three lines with serialNumber, deviceType (model number), and hardwareVersion
             String line;
@@ -169,21 +189,20 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
             
             return connected;
         }
-        catch (Exception e)
+        catch (IOException e)
         {
             return false;
         }
     }
-
     
-    private void setAuth()
+    
+    @Override
+    protected void restartOnDisconnect()
     {
-        ClientAuth.getInstance().setUser(config.net.user);
-        if (config.net.password != null)
-            ClientAuth.getInstance().setPassword(config.net.password.toCharArray());
+        super.restartOnDisconnect();
     }
 
-
+    
     @Override
     public void stop()
     {
@@ -204,14 +223,20 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     @Override
     public void cleanup()
     {
-
     }
     
-    @Override
-    public void finalize()
+
+    private void setAuth()
     {
-        stop();
+        ClientAuth.getInstance().setUser(config.net.user);
+        if (config.net.password != null)
+            ClientAuth.getInstance().setPassword(config.net.password.toCharArray());
     }
 
 
+    protected String getHostName()
+    {
+        setAuth();
+        return hostName;
+    }    
 }

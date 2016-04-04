@@ -101,6 +101,8 @@ public class DahuaCameraConfig extends SensorConfig
     {
         // default params for Dahua
         video.resolution = ResolutionEnum.HD_720P;
+        video.frameRate = 30;
+        
         rtsp.rtspPort = 554;
         rtsp.videoPath = "/cam/realmonitor?channel=1&subtype=0";
         rtsp.localUdpPort = 20000;
