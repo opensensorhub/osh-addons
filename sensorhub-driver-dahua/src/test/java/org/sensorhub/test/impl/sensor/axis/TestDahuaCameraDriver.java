@@ -114,7 +114,7 @@ public class TestDahuaCameraDriver implements IEventListener
     }
     
     
-    private void initWindow() throws Exception
+    /*private void initWindow() throws Exception
     {
     	// prepare frame and buffered image
     	ISensorDataInterface di = driver.getObservationOutputs().get("videoOutput");
@@ -124,7 +124,7 @@ public class TestDahuaCameraDriver implements IEventListener
         videoWindow.setSize(width, height);
         videoWindow.setVisible(true);
         img = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
-    }
+    }*/
     
     
     @Test

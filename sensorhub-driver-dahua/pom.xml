@@ -71,7 +71,7 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
                <excludes>
-                  <exclude>**/TestAxisCameraDriver.java</exclude>
+                  <exclude>**/TestDahuaCameraDriver.java</exclude>
                </excludes>
             </configuration>
          </plugin>
