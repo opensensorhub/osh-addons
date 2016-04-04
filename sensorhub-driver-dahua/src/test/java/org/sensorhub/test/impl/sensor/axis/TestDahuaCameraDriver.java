@@ -45,15 +45,9 @@ import static org.junit.Assert.*;
  * Implementation of sensor interface for generic Axis Cameras using IP
  * protocol
  * </p>
- *
- * <p>
- * Copyright (c) 2014
- * </p>
  * 
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  */
-
-
 public class TestDahuaCameraDriver implements IEventListener
 {
     final static int MAX_FRAMES = 600;
@@ -80,13 +74,13 @@ public class TestDahuaCameraDriver implements IEventListener
         
         config.net.remoteHost = "192.168.0.201";
         config.net.user = "admin";
-        config.net.password = "op3nsaysam3";        
+        config.net.password = "op3nsaysam3";
         
         driver = new DahuaCameraDriver();
         driver.init(config);
         driver.start();
         
-        assertTrue("Camera is not connected", driver.isConnected());            
+        assertTrue("Camera is not connected", driver.isConnected());        
     }
     
     
@@ -149,10 +143,6 @@ public class TestDahuaCameraDriver implements IEventListener
             	this.wait();
             driver.stop();
         }
-        
-        assertEquals("Wrong image width", 704, actualWidth);
-        assertEquals("Wrong image height", 480, actualHeight);
-        assertEquals("Wrong data size", 704*480*3 + 1, dataBlockSize); // size of datablock is image+timestamp
     }
     
     
@@ -304,7 +294,8 @@ public class TestDahuaCameraDriver implements IEventListener
 	        dataBlockSize = newDataEvent.getRecords()[0].getAtomCount();
 	        		
 	        byte[] frameData = (byte[])camDataStruct.getComponent(1).getData().getUnderlyingObject();
-                        
+	        System.out.println("Received Frame, Timestamp=" + newDataEvent.getRecords()[0].getDoubleValue(0));
+	        
 	        /*// use RGB data directly
 	        byte[] destArray = ((DataBufferByte)img.getRaster().getDataBuffer()).getData();
 	        System.arraycopy(frameData, 0, destArray, 0, dataBlockSize-1);*/
