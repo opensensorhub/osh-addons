@@ -133,7 +133,7 @@ public class VideoCamHelper extends SWEHelper
         // TODO: set localReferenceFrame for Z to be the pan axis into camera, 
         settingsDataStruct.addComponent("pan", getPanComponent(minPan, maxPan));
         settingsDataStruct.addComponent("tilt", getTiltComponent(minTilt, maxTilt));
-        settingsDataStruct.addComponent("zoomFactor", getTiltComponent(minZoom, maxZoom));
+        settingsDataStruct.addComponent("zoomFactor", getZoomComponent(minZoom, maxZoom));
 
         return settingsDataStruct;
     }
@@ -154,7 +154,7 @@ public class VideoCamHelper extends SWEHelper
         commandData.addItem(TASKING_PAN, pan);
         Quantity tilt = getTiltComponent(minTilt, maxTilt);
         commandData.addItem(TASKING_TILT, tilt);
-        Quantity zoom = getTiltComponent(minZoom, maxZoom);
+        Quantity zoom = getZoomComponent(minZoom, maxZoom);
         commandData.addItem(TASKING_ZOOM, zoom);
         
         // Relative Pan
