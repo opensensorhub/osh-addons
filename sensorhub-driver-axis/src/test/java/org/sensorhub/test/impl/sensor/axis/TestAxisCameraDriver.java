@@ -67,7 +67,7 @@ import static org.junit.Assert.*;
 
 public class TestAxisCameraDriver implements IEventListener
 {
-    final static int MAX_FRAMES = 3000;
+    final static int MAX_FRAMES = 300;
 	AxisCameraDriver driver;
     AxisCameraConfig config;
     int actualWidth, actualHeight;
@@ -86,12 +86,19 @@ public class TestAxisCameraDriver implements IEventListener
     public void init() throws Exception
     {
         config = new AxisCameraConfig();
-        config.net.remoteHost = "192.168.0.24:8080";
-        //config.net.remoteHost = "bottsgeo.simple-url.com:80";
+        //config.net.remoteHost = "192.168.0.24";
+        //config.net.remotePort = 8080;
+        //config.net.remoteHost = "bottsgeo.simple-url.com";
+        //config.net.remotePort = 80;
+        config.net.remoteHost = "192.168.0.203";
+        config.net.remotePort = 80;
         config.id = UUID.randomUUID().toString();
 
         config.net.user = "root";
-        config.net.password = "do|die";        
+        //config.net.password = "do|die";
+        config.net.password = "mike";
+        
+        config.enableMJPEG = true;
 
         driver = new AxisCameraDriver();
         driver.init(config);
@@ -132,7 +139,7 @@ public class TestAxisCameraDriver implements IEventListener
     private void initWindow() throws Exception
     {
     	// prepare frame and buffered image
-    	ISensorDataInterface di = driver.getObservationOutputs().get("videoOutput");
+    	ISensorDataInterface di = driver.getObservationOutputs().get("videoOutput1");
         int height = di.getRecordDescription().getComponent(1).getComponentCount();
         int width = di.getRecordDescription().getComponent(1).getComponent(0).getComponentCount();
         videoWindow = new JFrame("Video");
@@ -148,7 +155,7 @@ public class TestAxisCameraDriver implements IEventListener
         initWindow();
     	
     	// register listener on data interface
-        ISensorDataInterface di = driver.getObservationOutputs().get("videoOutput");
+        ISensorDataInterface di = driver.getObservationOutputs().get("videoOutput1");
     	di.registerListener(this);
     	
         
@@ -179,8 +186,6 @@ public class TestAxisCameraDriver implements IEventListener
             this.wait();
             driver.stop();
         }
-        
-        
     }
     
     
@@ -192,7 +197,7 @@ public class TestAxisCameraDriver implements IEventListener
     	// register listeners
     	ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
         di.registerListener(this);
-        ISensorDataInterface di2 = driver.getObservationOutputs().get("videoOutput");
+        ISensorDataInterface di2 = driver.getObservationOutputs().get("videoOutput1");
         di2.registerListener(this);
         
         // get ptz control interface
@@ -294,8 +299,6 @@ public class TestAxisCameraDriver implements IEventListener
 //        		}                               
 //        		this.wait();
 //        	}
-
-        	driver.stop();
         }
     }
     
@@ -354,6 +357,10 @@ public class TestAxisCameraDriver implements IEventListener
     @After
     public void cleanup()
     {
-        driver.stop();
+        if (videoWindow != null)
+            videoWindow.dispose();
+        
+        if (driver != null)
+            driver.stop();
     }
 }
