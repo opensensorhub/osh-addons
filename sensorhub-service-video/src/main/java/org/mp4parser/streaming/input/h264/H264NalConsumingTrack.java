@@ -26,7 +26,7 @@ import java.util.logging.Logger;
 
 public abstract class H264NalConsumingTrack extends AbstractH264Track {
     private static final Logger LOG = Logger.getLogger(H264NalConsumingTrack.class.getName());
-    int max_dec_frame_buffering = 16;
+    int max_dec_frame_buffering = 0;//16;
     List<StreamingSample> decFrameBuffer = new ArrayList<StreamingSample>();
     List<StreamingSample> decFrameBuffer2 = new ArrayList<StreamingSample>();
     LinkedHashMap<Integer, ByteBuffer> spsIdToSpsBytes = new LinkedHashMap<Integer, ByteBuffer>();
@@ -126,7 +126,7 @@ public abstract class H264NalConsumingTrack extends AbstractH264Track {
                 return;
 
             case H264NalUnitTypes.SEQ_PARAMETER_SET_EXT:
-                throw new IOException("Sequence parameter set extension is not yet handled. Needs TLC.");
+                LOG.warning("Sequence parameter set extension is not yet handled. Needs TLC.");
 
             default:
                 //  buffered.add(nal);
