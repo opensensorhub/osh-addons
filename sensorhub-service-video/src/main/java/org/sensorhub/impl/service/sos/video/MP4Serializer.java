@@ -15,6 +15,7 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sos.video;
 
 import java.io.BufferedOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -110,6 +111,11 @@ public class MP4Serializer implements ISOSCustomSerializer
                         nals.limit(nals.capacity());
                     }
                 }
+            }
+            catch (EOFException e)
+            {
+                // this happens if output stream is closed by client
+                // we stop silently in that case
             }
             catch (Exception e)
             {
