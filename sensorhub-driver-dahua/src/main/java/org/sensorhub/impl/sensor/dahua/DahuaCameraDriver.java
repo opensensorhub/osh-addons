@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -45,6 +44,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     
     long connectionRetryPeriod = 2000L;
     
+    boolean doInit = true;
     boolean ptzSupported = false;
     String hostName;
     String serialNumber;
@@ -55,78 +55,69 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     {	
     }
     
-    
+        
     @Override
-    public void init(DahuaCameraConfig config) throws SensorHubException
+    public void start() throws SensorException
     {
-        super.init(config);
         hostName = config.net.remoteHost + ":" + config.net.remotePort;
         boolean done = false;
         
         // check first if connected
         while (waitForConnection(connectionRetryPeriod, config.connectTimeout) && !done)
         {
-            notifyConnectionStatus(true);
-            
-            // establish the outputs and controllers (video and PTZ)
-            // video output
-            this.videoDataInterface = new DahuaVideoOutput(this);
-            videoDataInterface.init();
-            addOutput(videoDataInterface, false);
-            
-            // video controller
-            //this.videoControlInterface = new DahuaVideoControl(this);
-            //videoControlInterface.init();
-            //addControlInput(videoControlInterface);
+            // create output only the first time it is started
+            if (doInit)
+            {
+                // video output
+                videoDataInterface = new DahuaVideoOutput(this);
+                videoDataInterface.init();
+                addOutput(videoDataInterface, false);
                         
-            // check if PTZ supported
-            try
-            {
-                setAuth();
-                URL optionsURL = new URL("http://" + hostName + "/cgi-bin/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
-                InputStream is = optionsURL.openStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                
-                String line;
-                while ((line = reader.readLine()) != null)
+                // video controller
+                //this.videoControlInterface = new DahuaVideoControl(this);
+                //videoControlInterface.init();
+                //addControlInput(videoControlInterface);
+                            
+                // check if PTZ supported
+                try
                 {
-                    // parse response
-                    String[] tokens = line.split("=");
-        
-                    if (tokens[0].trim().equalsIgnoreCase("caps.SupportPTZCoordinates"))
-                        ptzSupported = tokens[1].equalsIgnoreCase("true");      
-                }
-                
-                if (ptzSupported)
-                {                   
-                    // add PTZ output
-                    this.ptzDataInterface = new DahuaPtzOutput(this);
-                    addOutput(ptzDataInterface, false);
-                    ptzDataInterface.init();
+                    URL optionsURL = new URL("http://" + getHostName() + "/cgi-bin/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
+                    InputStream is = optionsURL.openStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(is));
                     
-                    // add PTZ controller
-                    this.ptzControlInterface = new DahuaPtzControl(this);
-                    addControlInput(ptzControlInterface);
-                    ptzControlInterface.init();                     
+                    String line;
+                    while ((line = reader.readLine()) != null)
+                    {
+                        // parse response
+                        String[] tokens = line.split("=");
+            
+                        if (tokens[0].trim().equalsIgnoreCase("caps.SupportPTZCoordinates"))
+                            ptzSupported = tokens[1].equalsIgnoreCase("true");      
+                    }
+                    
+                    if (ptzSupported)
+                    {                   
+                        // add PTZ output
+                        this.ptzDataInterface = new DahuaPtzOutput(this);
+                        addOutput(ptzDataInterface, false);
+                        ptzDataInterface.init();
+                        
+                        // add PTZ controller
+                        this.ptzControlInterface = new DahuaPtzControl(this);
+                        addControlInput(ptzControlInterface);
+                        ptzControlInterface.init();                     
+                    }
+                    
+                    done = true;
+                    doInit = false;
                 }
-                
-                done = true;
+                catch (IOException e)
+                {
+                    getLogger().warn("Error while reading metadata from sensor", e);
+                }
             }
-            catch (IOException e)
-            {
-                getLogger().warn("Error while reading metadata from sensor", e);
-            }
-        }
-    }    
-    
-    
-    @Override
-    public void start() throws SensorException
-    {
-        // check first if connected
-    	if (waitForConnection(connectionRetryPeriod, config.connectTimeout))
-    	{
-    	    // start video output
+            
+            // start video output
             videoDataInterface.start();
             
             // if PTZ supported
@@ -135,7 +126,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
                 ptzDataInterface.start();
                 ptzControlInterface.start();
             }
-    	}
+        }
     }
     
 
