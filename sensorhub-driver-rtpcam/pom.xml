@@ -38,6 +38,8 @@
                   <exclude>**/TestRTPCameraDriverSolo.java</exclude>
                   <exclude>**/TestRTPCameraDriverDahua.java</exclude>
                   <exclude>**/TestRTPCameraDriverAxis.java</exclude>
+                  <exclude>**/TestRTPCameraDriverFoscam.java</exclude>
+                  <exclude>**/TestRTPCameraDriverVirbXE.java</exclude>
                </excludes>
             </configuration>
          </plugin>
