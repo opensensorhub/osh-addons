@@ -130,7 +130,7 @@ public class MP4Serializer implements ISOSCustomSerializer
         
         // adapt swe common data as H264 streaming track
         H264DBtrack source = new H264DBtrack();
-        source.setTimescale(25);
+        source.setTimescale(30);
         source.setFrametick(1);
         
         // start streaming and encoding on the fly
