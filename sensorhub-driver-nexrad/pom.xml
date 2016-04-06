@@ -1,0 +1,57 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.sensorhub</groupId>
+		<artifactId>sensorhub-driver-base</artifactId>
+		<version>1.1-SNAPSHOT</version>
+		<relativePath>../sensorhub-driver-base/pom.xml</relativePath>
+	</parent>
+	<artifactId>sensorhub-driver-nexrad</artifactId>
+	<version>0.1</version>
+	<name>Nexrad driver</name>
+	<description>Driver for Nexrad radar, supporting both Level II and Level III products</description>
+	<organization>
+		<name>Botts Inc.</name>
+		<url>http://www.botts-inc.com/</url>
+	</organization>
+	<developers>
+		<developer>
+			<id>tony.cook</id>
+			<name>Tony Cook</name>
+			<email>nospam@mydomain.com</email>
+		</developer>
+	</developers>
+	<repositories>
+		<repository>
+			<id>unidata-releases</id>
+			<name>UNIDATA Releases</name>
+			<url>https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/</url>
+		</repository>
+	</repositories>
+	<dependencies>
+		<dependency>
+			<groupId>org.sensorhub</groupId>
+			<artifactId>sensorhub-core</artifactId>
+			<version>1.0</version>
+			<type>bundle</type>
+		</dependency>
+		<dependency>
+			<groupId>edu.ucar</groupId>
+			<artifactId>cdm</artifactId>
+			<version>4.5.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-jdk14</artifactId>
+			<version>1.7.5</version>
+		</dependency>
+		<dependency>
+			<groupId>nexradTest</groupId>
+			<artifactId>nexrad-test</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+			<scope>runtime</scope>
+		</dependency>
+	</dependencies>
+	<groupId>org.sensorhub</groupId>
+</project>
