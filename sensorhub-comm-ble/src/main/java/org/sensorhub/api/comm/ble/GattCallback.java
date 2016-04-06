@@ -40,7 +40,7 @@ public abstract class GattCallback
     /**
      * Callback triggered when disconnected from the remote GATT server 
      * @param gatt 
-     * @param status 
+     * @param status
      */
     public void onDisconnected(IGattClient gatt, int status)
     {        

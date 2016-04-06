@@ -18,7 +18,11 @@ import org.freedesktop.dbus.DBusInterface;
  */
 public interface Device1 extends DBusInterface
 {
+    public final static String IFACE_NAME = Device1.class.getCanonicalName();
+    
+    
     // Properties
+    
     /**
      * string Address [readonly]<br/>
      * 

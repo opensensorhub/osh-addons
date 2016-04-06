@@ -36,7 +36,6 @@ public interface IBleNetwork<ConfigType extends NetworkConfig> extends ICommNetw
      * to be notified when the connection is ready to be used.
      * @param address Address of device to connect to
      * @param callback Callback to received client events
-     * @return the GATT client
      */
-    IGattClient connectGatt(String address, GattCallback callback);
+    void connectGatt(String address, GattCallback callback);
 }

@@ -14,7 +14,7 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.api.comm.ble;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.UUID;
 
 
@@ -45,7 +45,7 @@ public interface IGattService
     /**
      * @return The list of characteristics for this service.
      */
-    public List<IGattCharacteristic> getCharacteristics();
+    public Collection<IGattCharacteristic> getCharacteristics();
     
     
     /**

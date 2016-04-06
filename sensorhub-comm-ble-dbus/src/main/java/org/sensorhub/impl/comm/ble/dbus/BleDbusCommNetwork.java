@@ -12,17 +12,18 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.comm.ble;
+package org.sensorhub.impl.comm.ble.dbus;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 import org.bluez.Adapter1;
 import org.bluez.Device1;
-import org.freedesktop.DBus;
 import org.freedesktop.DBus.Error.UnknownObject;
 import org.freedesktop.dbus.DBusConnection;
 import org.freedesktop.dbus.DBusSigHandler;
@@ -35,7 +36,6 @@ import org.freedesktop.dbus.Variant;
 import org.freedesktop.dbus.exceptions.DBusException;
 import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.IDeviceInfo;
-import org.sensorhub.api.comm.ICommNetwork;
 import org.sensorhub.api.comm.IDeviceScanCallback;
 import org.sensorhub.api.comm.IDeviceScanner;
 import org.sensorhub.api.comm.INetworkInfo;
@@ -65,8 +65,9 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
     protected final static String DBUS_BLUEZ_PATH = "/org/bluez/";
     protected final static Pattern DBUS_BLUEZ_DEV_REGEX = Pattern.compile(DBUS_BLUEZ_PATH + ".*/dev(_[0-9a-fA-F]{2}){6}");
     
+    ExecutorService exec = Executors.newSingleThreadExecutor();
     DBusConnection dbus;
-    ObjectManager manager;
+    ObjectManager objManager;
     Adapter1 btAdapter;
     Properties btAdapterProps;
     BleDeviceScanner bleScanner;
@@ -109,7 +110,13 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
                                 if (props != null)
                                 {
                                     log.debug("New device found {}: {}", event.objPath, props);
-                                    sendDeviceInfo(event.objPath, props, callback);
+                                    
+                                    // store objPath -> address mapping  
+                                    String address = (String)props.get(Device1.ADDRESS).getValue();
+                                    devAddressToObjPaths.put(address, event.objPath);
+                                    
+                                    if (callback != null)
+                                        sendDeviceInfo(event.objPath, props, callback);
                                 }
                             }
                             catch (Exception e)
@@ -134,7 +141,7 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
                                 
                                 Properties propIface = dbus.getRemoteObject(DBUS_BLUEZ, objPath, Properties.class);
                                 Map<String, Variant<?>> props = propIface.GetAll(Device1.class.getCanonicalName());
-                                if (!props.isEmpty()) // some props are empty at end of scan
+                                if (callback != null && !props.isEmpty()) // some props are empty at end of scan
                                     sendDeviceInfo(objPath, props, callback);
                             }
                             catch (UnknownObject e)
@@ -271,7 +278,7 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
             
             ArrayList<INetworkInfo> btNets = new ArrayList<INetworkInfo>();
             
-            Map<Path, Map<String, Map<String,Variant<?>>>> adapters = manager.GetManagedObjects();
+            Map<Path, Map<String, Map<String,Variant<?>>>> adapters = objManager.GetManagedObjects();
             for (Entry<Path, Map<String, Map<String,Variant<?>>>> objPath: adapters.entrySet())
             {
                 String path = objPath.getKey().getPath();
@@ -323,18 +330,51 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
     }
 
 
+    public void listKnownDevices(String adapterObjPath)
+    {
+        try
+        {
+            Map<Path, Map<String, Map<String,Variant<?>>>> adapters = objManager.GetManagedObjects();
+            for (Entry<Path, Map<String, Map<String,Variant<?>>>> objPath: adapters.entrySet())
+            {
+                String path = objPath.getKey().getPath();
+                
+                for (Entry<String, Map<String,Variant<?>>> obj: objPath.getValue().entrySet())
+                {
+                    if (obj.getKey().equals(Device1.class.getCanonicalName()))
+                    {
+                        String address = (String)obj.getValue().get("Address").getValue();
+                        devAddressToObjPaths.put(address, path);
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Error while retrieving Bluetooth devices", e);
+        }
+    }
+    
+    
     @Override
     public void start() throws SensorHubException
     {
         try
         {
             initBlueZDbus();
+            String adapterObjPath = DBUS_BLUEZ_PATH + config.deviceName;
             
             if (btAdapter == null)
             {
-                btAdapter = dbus.getRemoteObject(DBUS_BLUEZ, "/org/bluez/"+config.deviceName, Adapter1.class);
-                btAdapterProps = dbus.getRemoteObject(DBUS_BLUEZ, "/org/bluez/"+config.deviceName, Properties.class);
+                btAdapter = dbus.getRemoteObject(DBUS_BLUEZ, adapterObjPath, Adapter1.class);
+                btAdapterProps = dbus.getRemoteObject(DBUS_BLUEZ, adapterObjPath, Properties.class);
             }
+            
+            // unregister all GATT profiles
+            
+            
+            listKnownDevices(adapterObjPath);
+            
             // will only be possible with bluez 5
             /*if (config.advertisementName != null)
             {
@@ -357,8 +397,8 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
             if (dbus == null)
                 dbus = DBusConnection.getConnection(DBusConnection.SYSTEM);
             
-            if (manager == null)
-                manager = dbus.getRemoteObject(DBUS_BLUEZ, "/", ObjectManager.class);
+            if (objManager == null)
+                objManager = dbus.getRemoteObject(DBUS_BLUEZ, "/", ObjectManager.class);
         }
         catch (DBusException e)
         {
@@ -377,7 +417,7 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
         
         dbus.disconnect();
         dbus = null;
-        manager = null;        
+        objManager = null;        
     }
 
 
@@ -413,13 +453,42 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
 
 
     @Override
-    public IGattClient connectGatt(String address, GattCallback callback)
+    public void connectGatt(final String address, final GattCallback callback)
     {
-        // find object path for device address
-        String objPath = devAddressToObjPaths.get(address);
-        BleDbusGattClient client = new BleDbusGattClient(dbus, objPath, callback);
-        client.connect();
-        return client;
+        Runnable connectRunnable = new Runnable()
+        {
+            public void run()
+            {
+                // find object path for device address
+                String objPath = devAddressToObjPaths.get(address);
+                
+                // discover device if needed
+                if (objPath == null)
+                {
+                    getDeviceScanner().startScan(null);
+                    try { Thread.sleep(5000); }
+                    catch (InterruptedException e) { }
+                    getDeviceScanner().stopScan();
+                    objPath = devAddressToObjPaths.get(address);
+                }
+                
+                // if object path is still null, device was not found
+                if (objPath == null)
+                {
+                    log.error("No device with address {} can be found on the network", address);
+                    callback.onConnected(null, IGattClient.GATT_FAILURE);
+                    return;
+                }
+                
+                // create and connect GATT client
+                GattClientImpl client = new GattClientImpl(dbus, objManager, objPath, callback);
+                log.info("Connecting to BT device " + address + "...");
+                client.connect();
+            }        
+        };
+        
+        // connect asynchronously
+        exec.execute(connectRunnable);
     }   
     
     

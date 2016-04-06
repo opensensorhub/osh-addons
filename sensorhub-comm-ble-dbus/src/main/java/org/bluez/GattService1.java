@@ -33,6 +33,9 @@ import org.freedesktop.dbus.DBusInterface;
  */
 public interface GattService1 extends DBusInterface
 {
+    public final static String IFACE_NAME = GattService1.class.getCanonicalName();
+    
+    
     // Properties    
     
     /**
