@@ -20,10 +20,8 @@ import org.sensorhub.api.sensor.SensorDataEvent;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -33,13 +31,24 @@ import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 
+/**
+ * <p>
+ * Implementation of the absolute orientation quaternion output
+ * </p>
+ *
+ * @author Alex Robin
+ * @since Apr 7, 2016
+ */
 public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
 {
-    protected final static byte START_BYTE = (byte)0xAA;
-    protected final static byte ACK_BYTE = (byte)0xBB;
-    protected final static byte DATA_READ = (byte)0x01;
-    protected final static byte BNO055_QUATERNION_DATA_W_LSB_ADDR = (byte)0x20;
-    private final static int QUAT_SIZE = 8; 
+    private final static byte[] READ_QUAT_CMD =
+    {
+        Bno055Constants.START_BYTE,
+        Bno055Constants.DATA_READ,
+        Bno055Constants.QUAT_DATA_W_LSB_ADDR,
+        0x08
+    };
+    
     
     DataComponent imuData;
     DataEncoding dataEncoding;
@@ -80,7 +89,7 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
         imuData.setName(getName());
         imuData.setDefinition("http://sensorml.com/ont/swe/property/ImuData");
         
-        String localRefFrame = parentSensor.getCurrentDescription().getUniqueIdentifier() + "#" + Bno055Sensor.CRS_ID;
+        String localFrame = parentSensor.getCurrentDescription().getUniqueIdentifier() + "#" + Bno055Sensor.CRS_ID;
                         
         // time stamp
         imuData.addComponent("time", fac.newTimeStampIsoUTC());
@@ -105,6 +114,7 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
         Vector quat = fac.newQuatOrientationENU(
                 SWEHelper.getPropertyUri("Orientation"));
         quat.setDataType(DataType.FLOAT);
+        quat.setLocalFrame(localFrame);
         imuData.addComponent("attitude", quat);
      
         // also generate encoding definition as text block
@@ -118,22 +128,34 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
     	long msgTime = System.currentTimeMillis();
     	
         // decode message
-    	try {
-			dataOut.writeByte(START_BYTE);
-			dataOut.writeByte(DATA_READ);
-			dataOut.writeByte(BNO055_QUATERNION_DATA_W_LSB_ADDR);
-			dataOut.writeByte(QUAT_SIZE);
-			dataOut.flush();
-			int FIRST_READ_BYTE = dataIn.read();
-			if (FIRST_READ_BYTE != ACK_BYTE)
-				throw new IOException ("Error while requesting quaternion");
+    	try
+    	{
+    	    dataOut.write(READ_QUAT_CMD);
+    	    dataOut.flush();
+    	    
+			int firstByte = dataIn.read();
 			
+			// skip measurement if there is a bus error
+			if (firstByte == (Bno055Constants.ERR_BYTE & 0xFF))
+			{
+			    dataIn.read();
+			    return;
+			}
+			
+			// other type of error??
+			if (firstByte != (Bno055Constants.ACK_BYTE & 0xFF))
+				throw new IOException(String.format("Register Read Error: %02X", firstByte));
+			
+			// skip length
+			dataIn.read();
+			
+			// read 4 quaternion components
 			for (int i=0; i<4; i++)
-				quat[i] = dataIn.readShort();
+				quat[i] = (float)(dataIn.readShort() / 32768.);
 			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (IOException e)
+    	{
+			parentSensor.getLogger().error("Error while reading attitude quaternion", e);
 		}
          
         // create and populate datablock
@@ -168,7 +190,7 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
         {
             dataIn = new DataInputStream(commProvider.getInputStream());
             dataOut = new DataOutputStream(commProvider.getOutputStream());
-            Bno055Sensor.log.info("Connected to IMU data stream");
+            parentSensor.getLogger().info("Connected to IMU data stream");
         }
         catch (IOException e)
         {
