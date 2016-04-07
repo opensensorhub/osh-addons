@@ -71,7 +71,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
         init(config);
         
         // restart if enabled
-        if (config.enabled)
+        if (config.autoStart)
             start();
     }
     
