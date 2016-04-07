@@ -54,9 +54,11 @@ public class TestBno055DriverRxtx implements IEventListener
         
         RS232Config serialConf = new RS232Config();
         serialConf.moduleClass = RxtxSerialCommProvider.class.getCanonicalName();
-        serialConf.portName = "/dev/tty.usbserial";
+        //serialConf.portName = "/dev/tty.usbserial";
+        serialConf.portName = "/dev/ttyUSB0";
         serialConf.baudRate = 115200;
-        serialConf.receiveThreshold = 32;
+        //serialConf.receiveThreshold = 1;
+        //serialConf.receiveTimeout = 30;
         config.commSettings = serialConf;
         
         driver = new Bno055Sensor();

@@ -14,6 +14,9 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.bno055;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import net.opengis.sensorml.v20.ClassifierList;
 import net.opengis.sensorml.v20.PhysicalSystem;
 import net.opengis.sensorml.v20.SpatialFrame;
@@ -22,8 +25,6 @@ import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vast.sensorML.SMLFactory;
 import org.vast.swe.SWEHelper;
 
@@ -38,7 +39,6 @@ import org.vast.swe.SWEHelper;
  */
 public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
 {
-    static final Logger log = LoggerFactory.getLogger(Bno055Sensor.class);
     protected final static String CRS_ID = "SENSOR_FRAME";
         
     ICommProvider<? super CommConfig> commProvider;
@@ -106,26 +106,75 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
         // init comm provider
         if (commProvider == null)
         {
+            if (config.commSettings == null)
+                throw new SensorHubException("No communication settings specified");
+            commProvider = config.commSettings.getProvider();
+            commProvider.start();
+            
             // we need to recreate comm provider here because it can be changed by UI
             // TODO do that in updateConfig
             try
-            {
-                if (config.commSettings == null)
-                    throw new SensorHubException("No communication settings specified");
-                
-                commProvider = config.commSettings.getProvider();
-                commProvider.start();
+            {   
+                // send init commands
+                setOperationMode(Bno055Constants.OPERATION_MODE_CONFIG);
+                Thread.sleep(650);
+                setPowerMode(Bno055Constants.POWER_MODE_NORMAL);
+                setTriggerMode((byte)0);
+                setOperationMode(Bno055Constants.OPERATION_MODE_NDOF);
             }
             catch (Exception e)
             {
                 commProvider = null;
-                throw e;
+                throw new SensorHubException("Error sending init commands", e);
             }
         }
         
         if (config.decimFactor > 0)
             dataInterface.decimFactor = config.decimFactor;
         dataInterface.start(commProvider);
+    }
+    
+    
+    protected void setPowerMode(byte mode) throws IOException
+    {
+        setMode(Bno055Constants.POWER_MODE_ADDR, mode);
+    }
+    
+    
+    protected void setTriggerMode(byte mode) throws IOException
+    {
+        setMode(Bno055Constants.SYS_TRIGGER_ADDR, mode);
+    }
+    
+    
+    protected void setOperationMode(byte mode) throws IOException
+    {
+        setMode(Bno055Constants.OPERATION_MODE_ADDR, mode);
+    }
+    
+    
+    protected void setMode(byte address, byte mode) throws IOException
+    {
+        // build command
+        byte[] setModeCmd = new byte[] {
+            Bno055Constants.START_BYTE,
+            Bno055Constants.DATA_WRITE,
+            address,
+            1,
+            mode
+        };
+        
+        // write command to serial port
+        OutputStream os = commProvider.getOutputStream();
+        os.write(setModeCmd);
+        os.flush();
+        
+        // check ACK
+        InputStream is = commProvider.getInputStream();
+        int b0 = is.read();
+        int b1 = is.read();
+        if (b0 != (0xEE & 0xFF) && b1 != 1)
+            throw new IOException("Register Write Error");
     }
     
 
