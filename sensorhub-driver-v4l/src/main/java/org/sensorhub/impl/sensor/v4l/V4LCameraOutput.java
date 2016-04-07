@@ -119,13 +119,17 @@ public class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> imple
         try
         {
             //double samplingTime = frame.getCaptureTime() / 1000.;
-            DataBlock camData = camDataStruct.createDataBlock();
-            ((DataBlockByte)camData).setUnderlyingObject(frame.getBytes());
+            DataBlock dataBlock;
+            if (latestRecord == null)
+                dataBlock = camDataStruct.createDataBlock();
+            else
+                dataBlock = latestRecord.renew();
+            ((DataBlockByte)dataBlock).setUnderlyingObject(frame.getBytes());
             
             // update latest record and send event
-            latestRecord = camData;
+            latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
-            eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, this, camData));
+            eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, this, dataBlock));
             
             frame.recycle();
         }
