@@ -48,7 +48,7 @@ public class TestV4LCameraDriver implements IEventListener
         config = new V4LCameraConfig();
         config.deviceName = "/dev/video0";
         config.id = UUID.randomUUID().toString();
-        config.enabled = true;
+        config.autoStart = true;
         
         driver = new V4LCameraDriver();
         driver.init(config);
