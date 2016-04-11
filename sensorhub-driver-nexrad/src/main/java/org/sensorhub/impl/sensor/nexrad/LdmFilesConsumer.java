@@ -29,7 +29,7 @@ public class LdmFilesConsumer implements Runnable {
 
 	public void init() {
 		while (queue.size() < START_SIZE) {
-			System.err.println(queue.size());
+//			System.err.println(queue.size());
 			try {
 				Thread.sleep(1000L);
 			} catch (InterruptedException e) {
