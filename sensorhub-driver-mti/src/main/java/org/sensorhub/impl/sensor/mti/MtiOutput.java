@@ -72,7 +72,7 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
     {
         // build SWE Common record structure
         GeoPosHelper fac = new GeoPosHelper();
-        String localFrame = parentSensor.getCurrentDescription().getUniqueIdentifier() + "#" + MtiSensor.CRS_ID;
+        String localFrame = parentSensor.getUniqueIdentifier() + "#" + MtiSensor.CRS_ID;
         
         // generic IMU data
         imuData = fac.newImuOutput(getName(), localFrame, ImuFields.GYRO, ImuFields.ACCEL);

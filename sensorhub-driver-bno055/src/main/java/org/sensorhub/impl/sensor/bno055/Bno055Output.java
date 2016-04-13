@@ -89,7 +89,7 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
         imuData.setName(getName());
         imuData.setDefinition("http://sensorml.com/ont/swe/property/ImuData");
         
-        String localFrame = parentSensor.getCurrentDescription().getUniqueIdentifier() + "#" + Bno055Sensor.CRS_ID;
+        String localFrame = parentSensor.getUniqueIdentifier() + "#" + Bno055Sensor.CRS_ID;
                         
         // time stamp
         imuData.addComponent("time", fac.newTimeStampIsoUTC());
