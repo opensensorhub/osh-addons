@@ -272,7 +272,7 @@ public class TestDahuaCameraDriver implements IEventListener
 //        		{
 //        			((DataChoiceImpl)commandDesc).setSelectedItem("rzoom");
 //        			commandData = commandDesc.createDataBlock();
-//        			commandData.setFloatValue(1, 100.0f);
+//        			commandData.setFloatValue(1, 10.0f);
 //        			ci.execCommand(commandData);
 //        		}                               
 //        		this.wait();
