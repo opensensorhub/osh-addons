@@ -25,9 +25,11 @@ import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
+
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.TextEncoding;
+
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
@@ -49,16 +51,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
     DataComponent settingsDataStruct;
     TextEncoding textEncoding;
     Timer timer;
-
-    // since Dahua doesn't allow you to retrieve current PTZ positions, save the
-    // last state here and receive updates from the controller module
-    double pan = 0.0;
-    double tilt = 0.0;
-    double zoom = 1.0;
-    
-    // maxZoom is used in scaling calculation so put as class variable
-    double maxZoom = 100.0;  
-    
+        
     // set default timezone to GMT; check TZ in init below
     TimeZone tz = TimeZone.getTimeZone("UTC");
     DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");    
@@ -85,7 +78,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
         double minTilt = 0.0;
         double maxTilt = 90.0;
         double minZoom = 1.0;
-        double maxZoom = 100.0;  // optical zoom for small PTZ (4x) camera
+        double maxZoom = 10000.0;  // can't retrieve zoom range for Dahua; set high
     	
         // figure out pan and tilt ranges
         try
@@ -132,41 +125,90 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
     {
         if (timer != null)
             return;
-        
-        // NOTE: can't currently get PTZ position from Dahua API
-    	// so we maintain ptz state in the driver class
 
-        final DataComponent dataStruct = settingsDataStruct.copy();
-        dataStruct.assignNewDataBlock();
+        try{
+        	
+	        final URL getSettingsUrl = new URL("http://" + parentSensor.getHostName() + "/cgi-bin/ptz.cgi?action=getStatus");
+	        
+	        final DataComponent dataStruct = settingsDataStruct.copy();
+	        dataStruct.assignNewDataBlock();
+	
+	        TimerTask timerTask = new TimerTask()
+	        {
+	            @Override
+	            public void run()
+	            {
+	            	
+                    InputStream is = null;
+                    
+                    // send http query
+                    try
+                    {
+                        is = getSettingsUrl.openStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                        dataStruct.renewDataBlock();
 
-        TimerTask timerTask = new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                dataStruct.renewDataBlock();
+                        // set sampling time
+                        double time = System.currentTimeMillis() / 1000.;
+                        dataStruct.getComponent("time").getData().setDoubleValue(time);
 
-                // set sampling time
-                double time = System.currentTimeMillis() / 1000.;
-                dataStruct.getComponent("time").getData().setDoubleValue(time);                
-                
-                // Set PTZ data using current state provided by DahuaPtzController
-                dataStruct.getComponent("pan").getData().setDoubleValue(pan);
-                dataStruct.getComponent("tilt").getData().setDoubleValue(tilt);
-                
-                // convert zoom to between 1.0 to 100.0
-                dataStruct.getComponent("zoomFactor").getData().setDoubleValue(zoom * 100.0 /maxZoom);
-                //dataStruct.getComponent("zoomFactor").getData().setDoubleValue(zoom);
+                        String line;
+                        while ((line = reader.readLine()) != null)
+                        {
+                            // parse response
+                            String[] tokens = line.split("=");
 
-                latestRecord = dataStruct.getData();
-                latestRecordTime = System.currentTimeMillis();
-                eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, DahuaPtzOutput.this, latestRecord));
-            }
-        };
+                            if (tokens[0].trim().equalsIgnoreCase("status.Postion[0]"))
+                            {
+                                float val = Float.parseFloat(tokens[1]);
+                                dataStruct.getComponent("pan").getData().setFloatValue(val);
+                            }
+                            else if (tokens[0].trim().equalsIgnoreCase("status.Postion[1]"))
+                            {
+                                float val = Float.parseFloat(tokens[1]);
+                                dataStruct.getComponent("tilt").getData().setFloatValue(val);
+                            }
+                            else if (tokens[0].trim().equalsIgnoreCase("status.Postion[2]"))
+                            {
+                                float val = Float.parseFloat(tokens[1]);
+                                dataStruct.getComponent("zoomFactor").getData().setFloatValue(val);
+                            }
+                        }
+ 	
+		                latestRecord = dataStruct.getData();
+		                latestRecordTime = System.currentTimeMillis();
+		                eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, DahuaPtzOutput.this, latestRecord));
+ 
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                    finally
+                    {
+                        // always close the stream even in case of error
+                        try
+                        {
+                            if (is != null)
+                                is.close();
+                        }
+                        catch (IOException e)
+                        {
+                        }
+                    }
 
-        timer = new Timer();
-        timer.scheduleAtFixedRate(timerTask, 0, (long)(getAverageSamplingPeriod()*1000));
-    }
+                }
+	        };
+	
+	        timer = new Timer();
+	        timer.scheduleAtFixedRate(timerTask, 0, (long)(getAverageSamplingPeriod()*1000));
+	    }
+	    catch (Exception e)
+	    {
+	        // TODO Auto-generated catch block
+	        e.printStackTrace();
+	    }
+  }
 
     
     @Override
@@ -200,22 +242,4 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
         }		
 	}
 	
-	
-	public void setPan(double value)
-	{
-		pan = value;
-	}
-
-	
-	public void setTilt(double value)
-	{
-		tilt = value;
-	}
-	
-
-	public void setZoom(double value)
-	{
-		zoom = value;
-	}
-
 }
