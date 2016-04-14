@@ -2,12 +2,8 @@ package org.sensorhub.impl.sensor.nexrad;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -17,10 +13,7 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.concurrent.PriorityBlockingQueue;
 
-import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.aws.nexrad.LdmLevel2Reader;
-import org.sensorhub.impl.module.AbstractModule;
 
 /**
  * <p>
@@ -33,7 +26,7 @@ import org.sensorhub.impl.module.AbstractModule;
  * @author T
  * @date Mar 29, 2016
  */
-public class LdmFilesProvider { // extends AbstractModule<LdmFilesProviderConfig> { //implements ICommProvider<LdmFilesProviderConfig> {
+public class LdmFilesProvider {
 
 	WatchService watcher;
 	PriorityBlockingQueue<String> files;
@@ -119,23 +112,13 @@ public class LdmFilesProvider { // extends AbstractModule<LdmFilesProviderConfig
 	{
 		try
 		{
-			//            File nextFile = files.takeFirst();
 			String nextFile = consumer.nextFile();
-			//			System.err.println("Next data file: " + nextFile);
 			return Paths.get(dataFolder.toString(), nextFile);
 		}
 		catch (InterruptedException e)
 		{
 			return null;
 		}
-	}
-
-	public static void main(String[] args) throws SensorHubException, InterruptedException {
-		LdmFilesProvider prov = new LdmFilesProvider("C:/Data/sensorhub/Level2/test/KARX");
-		prov.start();
-		//		Thread.sleep(10000L);
-		//		LdmFilesConsumer consumer = new LdmFilesConsumer(prov.files);
-		//		consumer.run();
 	}
 
 }

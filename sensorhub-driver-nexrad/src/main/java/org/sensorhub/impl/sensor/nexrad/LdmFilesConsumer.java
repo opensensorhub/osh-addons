@@ -1,11 +1,11 @@
 package org.sensorhub.impl.sensor.nexrad;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
-import org.sensorhub.api.common.SensorHubException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Title: LdmFilesConsumer.java</p>
@@ -14,8 +14,9 @@ import org.sensorhub.api.common.SensorHubException;
  * @author T
  * @date Mar 29, 2016
  */
-public class LdmFilesConsumer implements Runnable {
+public class LdmFilesConsumer { //implements Runnable {
 
+	Logger logger = LoggerFactory.getLogger(LdmFilesConsumer.class);
 	PriorityBlockingQueue<String> queue;
 	int vol, chunk;
 	char type;
@@ -29,63 +30,11 @@ public class LdmFilesConsumer implements Runnable {
 
 	public void init() {
 		while (queue.size() < START_SIZE) {
-//			System.err.println(queue.size());
 			try {
 				Thread.sleep(1000L);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-		}
-	}
-
-	public void run() {
-		init();
-		dump(queue);
-
-		while (true) {
-			try {
-				if(first) {
-					String f = queue.take();
-					String [] sarr = f.split("_");
-					vol = Integer.parseInt(sarr[1]);
-					int dashIdx = f.lastIndexOf('-');
-					assert (dashIdx > 10);
-					String s = f.substring(dashIdx - 3, dashIdx);
-					chunk = Integer.parseInt(s);
-					type = f.charAt(f.length() - 1);
-					first = false;
-					continue;
-				}
-
-				String f = queue.peek();
-				if(f == null)
-					continue;
-				System.err.println("Peek that: " + f);
-				String [] sarr = f.split("_");
-				int v = Integer.parseInt(sarr[1]);
-				int dashIdx = f.lastIndexOf('-');
-				assert (dashIdx > 10);
-				String s = f.substring(dashIdx - 3, dashIdx);
-				int c = Integer.parseInt(s);
-				char t = f.charAt(f.length() - 1);
-				if (isNext(v,c,t)) {
-					f = queue.take();
-					System.err.println("Take that: " + f + "   QueuSize = " + queue.size());
-				} else if(queue.size() > SIZE_LIMIT) {
-					f = queue.take(); 
-					System.err.println("Force take: " + f + "   QueuSize = " + queue.size());
-					chunk = c;
-					vol = v;
-					type = t;
-				}
-				dump(queue);					
-				Thread.sleep(1000L);
-
-
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-
 		}
 	}
 
@@ -98,9 +47,6 @@ public class LdmFilesConsumer implements Runnable {
 	}
 
 	boolean isNext(int v, int c, char t) {
-		//	System.err.println(volNum + ":" + chunkNum);
-		//	System.err.println(newVolNum + ":" + newChunkNum);
-
 		boolean isNext;
 		if(type == 'E') {
 			isNext = (v == vol + 1) && (c == 1);
@@ -112,7 +58,7 @@ public class LdmFilesConsumer implements Runnable {
 			chunk = c;
 			type = t;
 		}
-		System.err.println(isNext + ": " + v +"," + c + "," + t);
+		//System.err.println(isNext + ": " + v +"," + c + "," + t);
 		return isNext;
 	}
 
@@ -145,11 +91,11 @@ public class LdmFilesConsumer implements Runnable {
 			char t = f.charAt(f.length() - 1);
 			if (isNext(v,c,t)) {
 				f = queue.take();
-//				System.err.println("Take that: " + f + "   QueuSize = " + queue.size());
+				logger.debug("Take that: {}" + f);
 				return f;
 			} else if(queue.size() > SIZE_LIMIT) {
 				f = queue.take(); 
-//				System.err.println("Force take: " + f + "   QueuSize = " + queue.size());
+				logger.debug("Force take: {}" + f);
 				chunk = c;
 				vol = v;
 				type = t;
