@@ -1,9 +1,5 @@
 package org.sensorhub.impl.sensor.nexrad;
 
-import java.io.InputStream;
-import java.nio.file.WatchService;
-import java.util.concurrent.PriorityBlockingQueue;
-
 import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.config.DisplayInfo;
 
@@ -17,8 +13,7 @@ import org.sensorhub.api.config.DisplayInfo;
 public class LdmFilesProviderConfig extends CommConfig {
 	
 	@DisplayInfo(desc="Folder for real-time incoming Nexrad LDM-formatted chunks")
-	public String dataFolder; // = "C:/Data/sensorhub/Level2/test/KARX";
-
+	public String dataFolder; 
 
 	public LdmFilesProviderConfig()
 	{
