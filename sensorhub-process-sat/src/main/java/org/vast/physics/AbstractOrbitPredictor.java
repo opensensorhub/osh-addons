@@ -25,7 +25,7 @@
 
 package org.vast.physics;
 
-import org.sensorhub.impl.process.geoloc.GeoTransforms;
+import org.sensorhub.algo.geoloc.GeoTransforms;
 
 
 public abstract class AbstractOrbitPredictor implements OrbitPredictor

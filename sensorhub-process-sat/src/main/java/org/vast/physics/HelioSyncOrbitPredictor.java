@@ -25,7 +25,7 @@
 
 package org.vast.physics;
 
-import org.sensorhub.vecmath.Vect3d;
+import org.sensorhub.algo.vecmath.Vect3d;
 import org.vast.util.DateTimeFormat;
 
 

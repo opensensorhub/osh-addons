@@ -22,14 +22,14 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.common.IEventHandler;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.api.data.IDataProducerModule;
 import org.sensorhub.api.data.IStreamingDataInterface;
-import org.sensorhub.api.module.IModule;
 import org.sensorhub.impl.common.EventBus;
 import org.vast.physics.MechanicalState;
 import org.vast.physics.OrbitPredictor;
 import org.vast.physics.TLEOrbitPredictor;
 import org.vast.swe.SWEConstants;
-import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 
 /**
@@ -67,7 +67,7 @@ public class SatelliteStateOutput implements IStreamingDataInterface
         this.predictHorizon = predictHorizon;
         
         // create output structure
-        SWEHelper fac = new SWEHelper();
+        GeoPosHelper fac = new GeoPosHelper();
         DataRecord rec = fac.newDataRecord();
         rec.setName(getName());
         rec.setDefinition(SWEConstants.DEF_PLATFORM_LOC.replace("Location", "State"));
@@ -165,7 +165,7 @@ public class SatelliteStateOutput implements IStreamingDataInterface
 
 
     @Override
-    public IModule<?> getParentModule()
+    public IDataProducerModule<?> getParentModule()
     {
         return parentProcess;
     }

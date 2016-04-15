@@ -20,8 +20,8 @@ import net.opengis.swe.v20.DataType;
 import org.sensorhub.api.common.IEventHandler;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.api.data.IDataProducerModule;
 import org.sensorhub.api.data.IStreamingDataInterface;
-import org.sensorhub.api.module.IModule;
 import org.sensorhub.impl.common.EventBus;
 import org.vast.physics.TLEInfo;
 import org.vast.physics.TLEProvider;
@@ -154,7 +154,7 @@ public class TLEOutput implements IStreamingDataInterface, TLEProvider
 
 
     @Override
-    public IModule<?> getParentModule()
+    public IDataProducerModule<?> getParentModule()
     {
         return parentProcess;
     }

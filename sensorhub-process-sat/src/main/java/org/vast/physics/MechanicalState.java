@@ -20,8 +20,8 @@
 
 package org.vast.physics;
 
-import org.sensorhub.vecmath.Quat4d;
-import org.sensorhub.vecmath.Vect3d;
+import org.sensorhub.algo.vecmath.Quat4d;
+import org.sensorhub.algo.vecmath.Vect3d;
 
 
 public class MechanicalState

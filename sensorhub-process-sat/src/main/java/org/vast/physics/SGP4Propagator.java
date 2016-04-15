@@ -24,8 +24,8 @@
 
 package org.vast.physics;
 
-import org.sensorhub.impl.process.geoloc.Ellipsoid;
-import org.sensorhub.vecmath.Vect3d;
+import org.sensorhub.algo.geoloc.Ellipsoid;
+import org.sensorhub.algo.vecmath.Vect3d;
 
 
 /**
