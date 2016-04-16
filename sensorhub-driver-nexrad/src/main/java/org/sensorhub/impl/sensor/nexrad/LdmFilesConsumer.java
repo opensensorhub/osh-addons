@@ -27,6 +27,7 @@ public class LdmFilesConsumer { //implements Runnable {
 	public LdmFilesConsumer(PriorityBlockingQueue<String> queue) {
 		this.queue = queue;
 	}
+	
 
 	public void init() {
 		while (queue.size() < START_SIZE) {

@@ -33,20 +33,20 @@ public class LdmFilesProvider {
 	InputStream multiFileInputStream;
 	boolean started, init;
 	private LdmFilesConsumer consumer;
-	private Path dataFolder;
+	private Path siteFolder;
 
-	public LdmFilesProvider(String dataFolder) {
+	public LdmFilesProvider(Path dataFolder) {
 		files = new PriorityBlockingQueue<>();
 		consumer = new LdmFilesConsumer(files);
-		this.dataFolder = Paths.get(dataFolder);
+		this.siteFolder = dataFolder;
 	}
 
 	public void start() throws SensorHubException {
 		// register dir watcher
 		try {
 			this.watcher = FileSystems.getDefault().newWatchService();
-			dataFolder.register(watcher, ENTRY_CREATE);
-			System.err.println("Provider folder: " + dataFolder.toString());
+			siteFolder.register(watcher, ENTRY_CREATE);
+			System.err.println("Provider folder: " + siteFolder.toString());
 		} catch (IOException e) {
 			throw new SensorHubException(
 					"Error while registering watcher on LDM Nexrad files directory", e);
@@ -113,7 +113,7 @@ public class LdmFilesProvider {
 		try
 		{
 			String nextFile = consumer.nextFile();
-			return Paths.get(dataFolder.toString(), nextFile);
+			return Paths.get(siteFolder.toString(), nextFile);
 		}
 		catch (InterruptedException e)
 		{
