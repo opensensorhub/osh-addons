@@ -36,19 +36,21 @@
 			<version>1.0</version>
 			<type>bundle</type>
 		</dependency>
+		<!-- 
 		<dependency>
 			<groupId>edu.ucar</groupId>
 			<artifactId>cdm</artifactId>
 			<version>4.5.2</version>
 		</dependency>
+		 -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-jdk14</artifactId>
 			<version>1.7.5</version>
 		</dependency>
 		<dependency>
-			<groupId>nexradTest</groupId>
-			<artifactId>nexrad-test</artifactId>
+			<groupId>org.sensorhub</groupId>
+			<artifactId>sensorhub-aws</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 			<scope>runtime</scope>
 		</dependency>

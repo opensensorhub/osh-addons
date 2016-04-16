@@ -94,7 +94,7 @@ public class LdmFilesProvider {
 			if (watcher != null)
 				watcher.close();
 
-			multiFileInputStream.close();
+			//multiFileInputStream.close();
 			files.clear();
 		} catch (IOException e) {
 		}
