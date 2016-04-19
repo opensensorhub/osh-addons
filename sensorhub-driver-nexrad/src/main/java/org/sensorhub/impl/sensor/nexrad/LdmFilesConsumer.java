@@ -22,7 +22,7 @@ public class LdmFilesConsumer { //implements Runnable {
 	char type;
 	boolean first = true;
 	static final int START_SIZE = 3;
-	static final int SIZE_LIMIT = 5;
+	static final int SIZE_LIMIT = 3;
 
 	public LdmFilesConsumer(PriorityBlockingQueue<String> queue) {
 		this.queue = queue;
