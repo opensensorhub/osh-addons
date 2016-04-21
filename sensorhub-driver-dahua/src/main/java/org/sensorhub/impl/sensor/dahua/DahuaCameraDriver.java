@@ -35,7 +35,7 @@ import org.vast.swe.SWEHelper;
 /**
  * <p>
  * Implementation of sensor interface for generic Dahua Cameras using IP
- * protocol Based on Dahua v1.0 Drivers.
+ * protocol Based on Dahua v1.23 API.
  * </p>
  *
   * @author Mike Botts <mike.botts@botts-inc.com>
