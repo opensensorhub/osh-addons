@@ -301,7 +301,8 @@ public class FragmentedMp4Writer extends DefaultBoxes implements SampleSink {
         long ts = nextSampleStartTime.get(streamingTrack);
         long cfst = nextFragmentCreateStartTime.get(streamingTrack);
 
-        if ((ts > cfst + 3 * streamingTrack.getTimescale())) {
+        //if ((ts > cfst + 3 * streamingTrack.getTimescale())) {
+        if ((ts > cfst + 1 * streamingTrack.getTimescale())) {
             // mininum fragment length == 3 seconds
             SampleFlagsSampleExtension sfExt = next.getSampleExtension(SampleFlagsSampleExtension.class);
             if (true) {//sfExt == null || sfExt.isSyncSample()) {
@@ -613,5 +614,9 @@ public class FragmentedMp4Writer extends DefaultBoxes implements SampleSink {
     public class FragmentContainer {
         Box[] fragmentContent;
         long duration;
+    }
+    
+    public void setCreationTime(long creationTime) {
+        this.creationTime = new Date(creationTime);
     }
 }

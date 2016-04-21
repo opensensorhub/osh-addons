@@ -34,6 +34,7 @@ import org.vast.ows.OWSRequest;
 public class MP4Serializer implements ISOSCustomSerializer
 {
     public static String MP4_MIME_TYPE = "video/mp4";
+    OutputStream os;
     
     
     class H264DBtrack extends H264NalConsumingTrack
@@ -46,11 +47,20 @@ public class MP4Serializer implements ISOSCustomSerializer
             {
                 //OutputStream os = new FileOutputStream("/home/alex/testsos.h264");
                 //WritableByteChannel ch = Channels.newChannel(os);
-                
+                boolean hasTime = false;
                 boolean hasSps = false;
                 boolean hasPps = false;
                 while ((nextRecord = dataProvider.getNextResultRecord()) != null)
                 {
+                    // set creation time as first record time
+                    if (!hasTime)
+                    {
+                        double samplingTime = nextRecord.getDoubleValue(0);
+                        ((FragmentedMp4Writer)sampleSink).setCreationTime((long)(samplingTime * 1000.)); 
+                        hasTime = true;
+                    }
+                    
+                    // get H264 frame data
                     DataBlock frameBlk = ((DataBlockMixed)nextRecord).getUnderlyingObject()[1];
                     byte[] frameData = (byte[])frameBlk.getUnderlyingObject();
                     ByteBuffer nals = ByteBuffer.wrap(frameData);
@@ -99,6 +109,9 @@ public class MP4Serializer implements ISOSCustomSerializer
                             //nals.position(nals.position()+4);
                             this.consumeNal(nals.slice());
                             
+                            // flush to make sure encoded frame is sent right away
+                            os.flush();
+                            
                             // to remember we already sent SPS and PPS
                             if (nalUnitType == 7)
                                 hasSps = true;
@@ -128,7 +141,7 @@ public class MP4Serializer implements ISOSCustomSerializer
     @Override
     public void write(ISOSDataProvider dataProvider, OWSRequest request) throws IOException
     {
-        OutputStream os = new BufferedOutputStream(request.getResponseStream());
+        os = new BufferedOutputStream(request.getResponseStream());
         
         // set MIME type for MP4 format
         if (request.getHttpResponse() != null)
@@ -141,7 +154,7 @@ public class MP4Serializer implements ISOSCustomSerializer
         
         // start streaming and encoding on the fly
         //os = new FileOutputStream("/home/alex/testsos.mp4");
-        FragmentedMp4Writer mp4Muxer = new FragmentedMp4Writer(Arrays.<StreamingTrack>asList(source), Channels.newChannel(os));
+        FragmentedMp4Writer mp4Muxer = new FragmentedMp4Writer(Arrays.<StreamingTrack>asList(source), Channels.newChannel(os));        
         //StandardMp4Writer mp4Muxer = new StandardMp4Writer(Arrays.<StreamingTrack>asList(source), Channels.newChannel(os));
         source.start(dataProvider);
         mp4Muxer.close();
