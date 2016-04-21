@@ -1,0 +1,53 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+   <modelVersion>4.0.0</modelVersion>
+   <parent>
+      <groupId>org.sensorhub</groupId>
+      <artifactId>sensorhub-driver-all</artifactId>
+      <version>1.1-SNAPSHOT</version>
+      <relativePath>../sensorhub-driver-all/pom.xml</relativePath>
+   </parent>
+   <artifactId>sensorhub-driver-virb-xe</artifactId>
+   <version>0.1-SNAPSHOT</version>
+   <name>Gamin IRB-XE Camera-GPS</name>
+   <description>Driver for Garmin VIRB-XE camera which includes GPS and orientation sensors</description>
+   <dependencies>
+      <dependency>
+         <groupId>org.sensorhub</groupId>
+         <artifactId>sensorhub-core</artifactId>
+         <version>${project.parent.version}</version>
+         <type>bundle</type>
+      </dependency>
+      <dependency>
+      	<groupId>org.sensorhub</groupId>
+      	<artifactId>sensorhub-driver-videocam</artifactId>
+      	<version>0.1-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+      	<groupId>org.sensorhub</groupId>
+      	<artifactId>sensorhub-driver-rtpcam</artifactId>
+      	<version>0.1-SNAPSHOT</version>
+      	<type>bundle</type>
+      </dependency>
+      <dependency>
+      	<groupId>net.sf.jipcam</groupId>
+      	<artifactId>jipcam</artifactId>
+      	<version>0.9.1</version>
+      </dependency>
+   </dependencies>
+   <build>
+      <plugins>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+               <excludes>
+                  <exclude>**/TestBno055DriverRxtx.java</exclude>
+               </excludes>
+            </configuration>
+         </plugin>
+      </plugins>
+   </build>
+   <organization>
+   	<name>Botts Innovative Research Inc</name>
+   </organization>
+</project>
