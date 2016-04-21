@@ -66,10 +66,9 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     public void start() throws SensorException
     {
         hostName = config.net.remoteHost + ":" + config.net.remotePort;
-        boolean done = false;
         
         // check first if connected
-        while (waitForConnection(connectionRetryPeriod, config.connectTimeout) && !done)
+        if (waitForConnection(connectionRetryPeriod, config.connectTimeout))
         {
             // create output only the first time it is started
             if (doInit)
@@ -114,12 +113,11 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
                         ptzControlInterface.init();                     
                     }
                     
-                    done = true;
                     doInit = false;
                 }
                 catch (IOException e)
                 {
-                    getLogger().warn("Error while reading metadata from sensor", e);
+                    throw new SensorException("Error while reading metadata from sensor", e);
                 }
             }
             
