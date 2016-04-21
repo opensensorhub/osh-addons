@@ -17,7 +17,9 @@ package org.sensorhub.impl.sensor.v4l;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.slf4j.Logger;
 import au.edu.jcu.v4l4j.DeviceInfo;
+import au.edu.jcu.v4l4j.ImageFormat;
 import au.edu.jcu.v4l4j.VideoDevice;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 
@@ -43,9 +45,17 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     
     static
     {
-        // preload libvideo so it is extracted from JAR
-        System.loadLibrary("video");
+        try
+        {
+            // preload libvideo so it is extracted from JAR
+            System.loadLibrary("video");
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
+    
     
     public V4LCameraDriver()
     {
@@ -58,7 +68,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     {
         super.init(config);
         
-        this.dataInterface = new V4LCameraOutput(this);
+        this.dataInterface = new V4LCameraOutputRGB(this);
         this.controlInterface = new V4LCameraControl(this);
     }
 
@@ -92,9 +102,19 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
             throw new SensorException("Cannot initialize video device " + config.deviceName, e);
         }
         
-        // init data and control interfaces
+        // init vide outputs
+        for (ImageFormat fmt: deviceInfo.getFormatList().getNativeFormats())
+        {
+            if ("MJPEG".equals(fmt.getName()))
+            {
+                getLogger().debug("Creating MJPEG output");
+                dataInterface = new V4LCameraOutputMJPEG(this, fmt);
+            }
+        }
         dataInterface.init();
         addOutput(dataInterface, false);
+        
+        // init control interfacess
         controlInterface.init();
         addControlInput(controlInterface);
     }
@@ -169,5 +189,11 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     public void finalize()
     {
         stop();
+    }
+    
+    
+    protected Logger getLogger()
+    {
+        return super.getLogger();
     }
 }

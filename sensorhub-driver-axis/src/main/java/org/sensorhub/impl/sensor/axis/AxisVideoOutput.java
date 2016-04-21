@@ -21,28 +21,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.nio.ByteOrder;
 import javax.media.Buffer;
-import net.opengis.swe.v20.BinaryBlock;
-import net.opengis.swe.v20.BinaryComponent;
-import net.opengis.swe.v20.BinaryEncoding;
-import net.opengis.swe.v20.ByteEncoding;
-import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.DataRecord;
-import net.opengis.swe.v20.DataType;
-import net.opengis.swe.v20.Time;
+import net.opengis.swe.v20.DataStream;
 import net.sf.jipcam.axis.media.protocol.http.MjpegStream;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.vast.data.CountImpl;
+import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.vast.data.DataBlockMixed;
-import org.vast.data.SWEFactory;
-import org.vast.swe.SWEConstants;
-import org.vast.swe.SWEHelper;
 
 
 /**
@@ -58,7 +47,7 @@ import org.vast.swe.SWEHelper;
 public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 {
     DataComponent videoDataStruct;
-	BinaryEncoding videoEncoding;
+	DataEncoding videoEncoding;
 	boolean reconnect;
 	boolean streaming;
 	
@@ -75,46 +64,12 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 		{
 			// get image size from camera HTTP interface
 			int[] imgSize = getImageSize();
-			SWEFactory fac = new SWEFactory();
+			VideoCamHelper fac = new VideoCamHelper();
 			
 			// build output structure
-			videoDataStruct = fac.newDataRecord(2);
-			videoDataStruct.setName(getName());
-			
-			Time time = fac.newTime();
-			time.getUom().setHref(Time.ISO_TIME_UNIT);
-			time.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
-			videoDataStruct.addComponent("time", time);
-					
-			DataArray img = fac.newDataArray(imgSize[1]);
-			img.setDefinition("http://sensorml.com/ont/swe/property/VideoFrame");
-			videoDataStruct.addComponent("videoFrame", img);
-			
-			DataArray imgRow = fac.newDataArray(imgSize[0]);
-			img.addComponent("row", imgRow);
-			
-			DataRecord imgPixel = fac.newDataRecord(3);
-			imgPixel.addComponent("red", new CountImpl(DataType.BYTE));
-			imgPixel.addComponent("green", new CountImpl(DataType.BYTE));
-			imgPixel.addComponent("blue", new CountImpl(DataType.BYTE));
-			imgRow.addComponent("pixel", imgPixel);
-			
-			// video encoding
-			videoEncoding = fac.newBinaryEncoding();
-			videoEncoding.setByteEncoding(ByteEncoding.RAW);
-			videoEncoding.setByteOrder(ByteOrder.BIG_ENDIAN);
-            BinaryComponent timeEnc = fac.newBinaryComponent();
-            timeEnc.setRef("/" + time.getName());
-            timeEnc.setCdmDataType(DataType.DOUBLE);
-            videoEncoding.addMemberAsComponent(timeEnc);
-            BinaryBlock compressedBlock = fac.newBinaryBlock();
-            compressedBlock.setRef("/" + img.getName());
-            compressedBlock.setCompression("JPEG");
-            videoEncoding.addMemberAsBlock(compressedBlock);
-            
-            // resolve encoding so compressed blocks can be properly generated
-            SWEHelper.assignBinaryEncoding(videoDataStruct, videoEncoding);
-			
+			DataStream videoStream = fac.newVideoOutputMJPEG(getName(), imgSize[0], imgSize[1]);
+			videoDataStruct = videoStream.getElementType();
+			videoEncoding = videoStream.getEncoding();
 		}
 		catch (Exception e)
 		{

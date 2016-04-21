@@ -114,7 +114,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
 
         // generate output structure and encoding
         VideoCamHelper videoHelper = new VideoCamHelper();        
-        settingsDataStruct = videoHelper.getPtzOutput(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom);        
+        settingsDataStruct = videoHelper.newPtzOutput(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom);        
         textEncoding = videoHelper.newTextEncoding();
         textEncoding.setBlockSeparator("\n");
         textEncoding.setTokenSeparator(",");
