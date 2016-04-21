@@ -18,20 +18,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import net.opengis.swe.v20.BinaryBlock;
-import net.opengis.swe.v20.BinaryComponent;
-import net.opengis.swe.v20.BinaryEncoding;
-import net.opengis.swe.v20.ByteEncoding;
-import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.DataType;
-import net.opengis.swe.v20.Time;
+import net.opengis.swe.v20.DataStream;
 import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
@@ -39,10 +32,9 @@ import org.sensorhub.impl.comm.TCPConfig;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.rtpcam.RTSPClient.StreamInfo;
 import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
-import org.vast.cdm.common.CDMException;
+import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockMixed;
-import org.vast.swe.SWEHelper;
 
 
 /**
@@ -61,7 +53,7 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
     RTSPConfig rtspConfig;
     
     DataComponent dataStruct;
-    BinaryEncoding dataEncoding;
+    DataEncoding dataEncoding;
     RTSPClient rtspClient;
     RTPH264Receiver rtpThread;
     RTCPSender rtcpThread;
@@ -98,44 +90,15 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
     @Override
     public void init() throws SensorException
     {
-        // create SWE Common data structure
-        SWEHelper fac = new SWEHelper();
-        dataStruct = fac.newDataRecord(2);
-        dataStruct.setName(getName());
-        
-        // time stamp
-        Time time = fac.newTimeStampIsoUTC();
-        dataStruct.addComponent("time", time);
-        
-        // video frame
+        // video frame size
         int width = videoConfig.getResolution().getWidth();
         int height = videoConfig.getResolution().getHeight();
-        DataArray img = fac.newRgbImage(width, height, DataType.BYTE);
-        img.setDefinition("http://sensorml.com/ont/swe/property/VideoFrame");
-        dataStruct.addComponent("videoFrame", img);
         
-        // SWE Common encoding
-        dataEncoding = fac.newBinaryEncoding();
-        dataEncoding.setByteEncoding(ByteEncoding.RAW);
-        dataEncoding.setByteOrder(ByteOrder.BIG_ENDIAN);
-        BinaryComponent timeEnc = fac.newBinaryComponent();
-        timeEnc.setRef("/" + time.getName());
-        timeEnc.setCdmDataType(DataType.DOUBLE);
-        dataEncoding.addMemberAsComponent(timeEnc);
-        BinaryBlock compressedBlock = fac.newBinaryBlock();
-        compressedBlock.setRef("/" + img.getName());
-        compressedBlock.setCompression("H264");
-        dataEncoding.addMemberAsBlock(compressedBlock);
-        
-        // resolve encoding so compressed blocks can be properly generated
-        try
-        {
-            SWEHelper.assignBinaryEncoding(dataStruct, dataEncoding);
-        }
-        catch (CDMException e)
-        {
-            throw new SensorException("Invalid output definition", e);
-        }
+        // create SWE Common data structure
+        VideoCamHelper fac = new VideoCamHelper();        
+        DataStream videoStream = fac.newVideoOutputH264(getName(), width, height);
+        this.dataStruct = videoStream.getElementType();
+        this.dataEncoding = videoStream.getEncoding();
     }
     
     
