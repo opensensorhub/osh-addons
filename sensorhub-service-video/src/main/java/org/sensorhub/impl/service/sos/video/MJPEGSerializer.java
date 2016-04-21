@@ -15,6 +15,7 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sos.video;
 
 import java.io.BufferedOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import net.opengis.swe.v20.DataBlock;
@@ -60,6 +61,11 @@ public class MJPEGSerializer implements ISOSCustomSerializer
                 os.write(frameData);
                 os.flush();
             }
+        }
+        catch (EOFException e)
+        {
+            // this happens if output stream is closed by client
+            // we stop silently in that case
         }
         catch (Exception e)
         {
