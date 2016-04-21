@@ -2,6 +2,8 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>sensorhub-driver-videocam</artifactId>
   <version>0.1-SNAPSHOT</version>
+  <name>VideoCam Helper</name>
+  <description>Helper classes for video camera drivers</description>
   <dependencies>
   	<dependency>
   		<groupId>org.sensorhub</groupId>

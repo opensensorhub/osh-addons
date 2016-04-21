@@ -27,18 +27,10 @@ import org.sensorhub.api.sensor.SensorConfig;
  */
 public class V4LCameraConfig extends SensorConfig
 {
-    
     /**
      * Name of video device to use (e.g. /dev/video0)
      */
     public String deviceName = "/dev/video0";
-    
-    
-    /**
-     * Maximum number of frames that can be kept in storage
-     * (These last N frames will be stored in memory)
-     */
-    public int frameStorageCapacity;
     
     
     /**

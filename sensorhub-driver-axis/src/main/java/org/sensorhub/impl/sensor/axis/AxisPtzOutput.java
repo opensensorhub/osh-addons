@@ -88,8 +88,8 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
         double maxTilt = 0.0;
         double minZoom = 1.0;
         double maxZoom = 13333;
-        double minFieldAngle = 4.4;
-        double maxFieldAngle = 51.6;
+        //double minFieldAngle = 4.4;
+        //double maxFieldAngle = 51.6;
 
         
         try
@@ -139,10 +139,10 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
                     maxTilt = Double.parseDouble(tokens[1]);
                 else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MaxZoom"))
                     maxZoom = Double.parseDouble(tokens[1]);
-                else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MinFieldAngle"))
-                    minFieldAngle = Double.parseDouble(tokens[1]);
-                else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MaxFieldAngle"))
-                    maxFieldAngle = Double.parseDouble(tokens[1]);
+//                else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MinFieldAngle"))
+//                    minFieldAngle = Double.parseDouble(tokens[1]);
+//                else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MaxFieldAngle"))
+//                    maxFieldAngle = Double.parseDouble(tokens[1]);
             }
             
         }
@@ -152,7 +152,7 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
         }
 
         // Build SWE Common Data structure
-        settingsDataStruct = videoHelper.getPtzOutput(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom);
+        settingsDataStruct = videoHelper.newPtzOutput(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom);
 
         // start the thread (probably best not to start in init but in driver start() method.) ????
         startPolling();
