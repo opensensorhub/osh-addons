@@ -15,16 +15,24 @@ Developer are Copyright (C) 2016 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.videocam;
 
+import java.nio.ByteOrder;
 import java.util.Collection;
 import net.opengis.swe.v20.AllowedTokens;
 import net.opengis.swe.v20.AllowedValues;
+import net.opengis.swe.v20.BinaryBlock;
+import net.opengis.swe.v20.BinaryComponent;
+import net.opengis.swe.v20.BinaryEncoding;
+import net.opengis.swe.v20.ByteEncoding;
 import net.opengis.swe.v20.Count;
+import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataRecord;
+import net.opengis.swe.v20.DataStream;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Text;
 import net.opengis.swe.v20.Time;
+import org.vast.cdm.common.CDMException;
 import org.vast.swe.SWEHelper;
 
 
@@ -39,6 +47,8 @@ import org.vast.swe.SWEHelper;
  */
 public class VideoCamHelper extends SWEHelper
 {
+    public static final String DEF_VIDEOFRAME = getPropertyUri("VideoFrame");
+    
     // PTZ tasking commands
     public static final String TASKING_PAN = "pan";
     public static final String TASKING_TILT = "tilt";
@@ -53,8 +63,9 @@ public class VideoCamHelper extends SWEHelper
     // system info	
     String cameraBrand = " ";
     String cameraModel = " ";
-    String serialNumber = " ";
-
+    String serialNumber = " ";   
+    
+    
     //   TODO add Camera Settings   //
 
     // InfraRed
@@ -117,7 +128,7 @@ public class VideoCamHelper extends SWEHelper
     }
     
 
-    public DataRecord getPtzOutput(String name, double minPan, double maxPan, double minTilt, double maxTilt, double minZoom, double maxZoom)
+    public DataRecord newPtzOutput(String name, double minPan, double maxPan, double minTilt, double maxTilt, double minZoom, double maxZoom)
     {
         // Build SWE Common Data structure for PTZ Output values
         // Settings output includes time, pan, tilt, zoom
@@ -198,6 +209,63 @@ public class VideoCamHelper extends SWEHelper
         commandData.addItem(TASKING_PTZ_POS, ptzPos);       
 
         return commandData;
-
+    }
+    
+    
+    public DataRecord newVideoOutputRGB(String name, int width, int height)
+    {
+        Time timeStamp = newTimeStampIsoUTC();        
+        DataArray imgArr = newRgbImage(width, height, DataType.BYTE);
+        imgArr.setName("img");        
+        
+        DataRecord dataStruct = wrapWithTimeStamp(timeStamp, imgArr);
+        dataStruct.setName(name);
+        dataStruct.setDefinition(DEF_VIDEOFRAME);
+        
+        return dataStruct;
+    }
+    
+    
+    public DataStream newVideoOutputCODEC(String name, int width, int height, String codec)
+    {
+        DataRecord dataStruct = newVideoOutputRGB(name, width, height);
+        
+        // MJPEG encoding
+        BinaryEncoding dataEnc = newBinaryEncoding();
+        dataEnc.setByteEncoding(ByteEncoding.RAW);
+        dataEnc.setByteOrder(ByteOrder.BIG_ENDIAN);
+        
+        BinaryComponent timeEnc = newBinaryComponent();
+        timeEnc.setRef("/" + dataStruct.getComponent(0).getName());
+        timeEnc.setCdmDataType(DataType.DOUBLE);
+        dataEnc.addMemberAsComponent(timeEnc);
+        
+        BinaryBlock compressedBlock = newBinaryBlock();
+        compressedBlock.setRef("/" + dataStruct.getComponent(1).getName());
+        compressedBlock.setCompression(codec);
+        dataEnc.addMemberAsBlock(compressedBlock);
+        
+        try
+        {
+            SWEHelper.assignBinaryEncoding(dataStruct, dataEnc);
+        }
+        catch (CDMException e)
+        {
+            throw new RuntimeException("Invalid binary encoding configuration", e);
+        };
+        
+        return newDataStream(dataStruct, dataEnc);
+    }
+    
+    
+    public DataStream newVideoOutputMJPEG(String name, int width, int height)
+    {
+        return newVideoOutputCODEC(name, width, height, "JPEG");
+    }
+    
+    
+    public DataStream newVideoOutputH264(String name, int width, int height)
+    {
+        return newVideoOutputCODEC(name, width, height, "H264");
     }
 }
