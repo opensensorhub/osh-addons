@@ -29,8 +29,10 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.virbxe.VirbXeConfig;
 import org.sensorhub.impl.sensor.virbxe.VirbXeDriver;
+import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.AsciiDataWriter;
 import org.vast.swe.SWEUtils;
@@ -49,11 +51,17 @@ public class TestVirbXeDriver implements IEventListener
     @Before
     public void init() throws Exception
     {
-        config = new VirbXeConfig();
+    	ClientAuth.createInstance(" ");
+    	
+    	config = new VirbXeConfig();
         config.id = UUID.randomUUID().toString();
-                
+        config.net.remoteHost = "192.168.0.22";
+                        
         driver = new VirbXeDriver();
         driver.init(config);
+        
+        driver.start();
+       
     }
     
     
@@ -79,27 +87,57 @@ public class TestVirbXeDriver implements IEventListener
     
     
     @Test
-//    public void testSendMeasurements() throws Exception
-//    {
-//        System.out.println();
-//        ISensorDataInterface output = driver.getObservationOutputs().get("imuData");
-//        
-//        writer = new AsciiDataWriter();
-//        writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
-//        writer.setDataComponents(output.getRecordDescription());
-//        writer.setOutput(System.out);
-//        
-//        output.registerListener(this);
-//        driver.start();
-//        
-//        synchronized (this) 
-//        {
-//            while (sampleCount < 20000)
-//                wait();
-//        }
-//        
-//        System.out.println();
-//    }
+    public void testSendNavMeasurements() throws Exception
+    {
+        System.out.println();
+        ISensorDataInterface output = driver.getObservationOutputs().get("navData");
+        
+        writer = new AsciiDataWriter();
+        writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
+        writer.setDataComponents(output.getRecordDescription());
+        writer.setOutput(System.out);
+        
+        output.registerListener(this);
+        driver.start();
+        
+        synchronized (this) 
+        {
+            while (sampleCount < 10)
+                wait();
+        }
+        
+        System.out.println();
+    }
+    
+    @Test
+    public void testSendHealthMeasurements() throws Exception
+    {
+        System.out.println();
+        ISensorDataInterface output = driver.getObservationOutputs().get("healthSensors");
+        
+        if (output == null)
+        		System.out.println ("healthSensors is null");
+        else
+        {
+        
+	        writer = new AsciiDataWriter();
+	        writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
+	        writer.setDataComponents(output.getRecordDescription());
+	        writer.setOutput(System.out);
+	        
+	        output.registerListener(this);
+	        driver.start();
+	        
+	        synchronized (this) 
+	        {
+	            while (sampleCount < 10)
+	                wait();
+	        }
+	        
+        }
+        
+        System.out.println();
+    }
     
     
     @Override

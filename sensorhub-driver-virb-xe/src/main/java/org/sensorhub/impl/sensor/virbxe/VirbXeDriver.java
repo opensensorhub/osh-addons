@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.List;
 
 import net.opengis.sensorml.v20.IdentifierList;
 import net.opengis.sensorml.v20.PhysicalSystem;
@@ -51,11 +52,13 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     // Navigation Data output
     VirbXeNavOutput navDataInterface;
     
+    // Health Data Output
+    VirbXeAntOutput healthDataInterface;
+    
     // Video Data Output
 	//VirbXeOutput videoDataInterface;
 	
     String hostName;
-    VirbXeConfig config;
     
     String serialNumber = " ";
     String firmware = " ";
@@ -74,19 +77,18 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     public void init(VirbXeConfig config) throws SensorHubException
     {
         super.init(config);
-
-        
+       
     }
     
     @Override
     public void start() throws SensorHubException
     {
-        hostName = config.net.remoteHost + "/virb";  
+        hostName = "http://" + config.net.remoteHost + "/virb";  
         boolean done = false;
         
         
         // check first if connected
-        while (waitForConnection(connectionRetryPeriod, config.connectTimeout) && !done)
+        while (!done && waitForConnection(connectionRetryPeriod, config.connectTimeout))
         {
             // create output only the first time it is started
             if (doInit)
@@ -102,14 +104,24 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
                 navDataInterface.init();
                 addOutput(navDataInterface, false);
                 
-                done = true;
-                doInit = false;
+                // create health data interface
+                healthDataInterface = new VirbXeAntOutput(this);
+                healthDataInterface.init();
+                if (healthDataInterface.hasSensors())
+                	addOutput(healthDataInterface, false);
+                
+               doInit = false;
             }
             
             // TODO uncomment when videoDataInterface ready
 //            videoDataInterface.start();
             navDataInterface.start();
             
+            if (healthDataInterface.hasSensors())
+            	healthDataInterface.start();
+                       
+            done = true;
+           
         }
     }
     
@@ -190,17 +202,19 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     	// request JSON response, parse, and assign values
      	String json = sendCommand("{\"command\":\"deviceInfo\"}");
      	
+     	System.out.println (json + "\n");
+     	
     	if (json.equalsIgnoreCase("0"))
     		return false;
   		
     	// Returns an array with one component
     	// serialize the DeviceInfo JSON Object
     	Gson gson = new Gson(); 	
-      	DeviceInfo[] info = gson.fromJson(json, DeviceInfo[].class);
+      	DeviceInfoArray info = gson.fromJson(json, DeviceInfoArray.class);
     	  		
-    	modelNumber = info[0].model;
-    	serialNumber = info[0].deviceId;
-    	firmware = info[0].firmware;
+    	modelNumber = info.deviceInfo[0].model;
+    	serialNumber = info.deviceInfo[0].deviceId;
+    	firmware = info.deviceInfo[0].firmware;
     	
     	// set GPS on and set Units to metric
     	//String response = 
@@ -209,7 +223,7 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     	sendCommand("{\"command\":\"updateFeature\",\"feature\": \"units\" ,\"value\": \"Metric\" }");
 
     	
-        return (true);
+        return true;
     }
     
     // send Post command
@@ -264,6 +278,10 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     	String deviceId;
     	  	
     }
+   
+   private class DeviceInfoArray{
+	   DeviceInfo[] deviceInfo;
+   }
 
     
     @Override

@@ -82,7 +82,12 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
         return "healthSensors";
     }
 
-
+    public boolean hasSensors()
+    {
+    	return healthSensorSupported;
+    }
+    
+    
     @Override
     protected void init() 
     {
@@ -110,8 +115,9 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
                 	return;   //unsuccessful connection to Garmin
       		
         	Gson gson = new Gson(); 	
-          	SensorData[] sensors = gson.fromJson(json, SensorData[].class);
-          	
+          	SensorDataArray sensorArray = gson.fromJson(json, SensorDataArray.class);      	
+          	SensorData[] sensors = sensorArray.sensors;
+         	
           	for (int i=0; i < sensors.length; i++)
           	{
           		if ((sensors[i].type).equalsIgnoreCase("LOCAL"))
@@ -125,7 +131,7 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
 	                		"Heart Rate", 
 	                		"The rate of heartbeat", 
 	                		"{hb}/min", DataType.FLOAT);
-	                 healthData.addComponent("heartrate", heartRate);
+	                 healthData.addComponent("heartRate", heartRate);
                  
           		}
           		else if ((sensors[i].name).equalsIgnoreCase("Cadence"))
@@ -219,8 +225,10 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
 
 	                	// serialize the DeviceInfo JSON result object
 	                	Gson gson = new Gson(); 	
-	                  	SensorData[] sensors = gson.fromJson(json, SensorData[].class);
-	
+	                  	SensorDataArray sensorArray = gson.fromJson(json, SensorDataArray.class);
+	                  	SensorData[] sensors = sensorArray.sensors;
+	                  	
+	                  	
 	                  	// TODO general this by setting all values to double and Caps for field names
 	                  	for (int i=0; i < sensors.length; i++)
 	                  	{
@@ -277,16 +285,18 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
 	                  			                  			                  		
 	                  	}
 	                  	
-		                latestRecord = data;
-		                latestRecordTime = System.currentTimeMillis();
-		                eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, VirbXeAntOutput.this, latestRecord));	 	                  		
-	                                  	           	              	
+	                    latestRecord = data;
+	                    latestRecordTime = System.currentTimeMillis();
+	                    eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, VirbXeAntOutput.this, latestRecord));	 	                  		
+	                  	
 	                }
 	                catch (Exception e)
 	                {
 	                    e.printStackTrace();
 	                }
 	            }
+	            
+                              	           	              	
 	        };
 
 	        timer = new Timer();
@@ -352,6 +362,10 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
 //    	String data_type;
     	String data;  	
      }
+    
+    private class SensorDataArray{
+    	SensorData[] sensors;
+    }
     
 
     protected void stop()
