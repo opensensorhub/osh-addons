@@ -152,7 +152,6 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                try
 	                {
 	                	
-	                	// request JSON response, parse, and assign values
 	                 	String json = getSensorData();
 	                 	
 	//                	if (json.equalsIgnoreCase("0"))
@@ -178,57 +177,101 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                  		}
 	                  		else if ((sensors[i].name).equalsIgnoreCase("Latitude"))
 	                        {
-	                            double val = Double.parseDouble(sensors[i].data);
+	                  			double val;
+	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
+	                  				 val = Double.NaN;
+	                  			else	
+	                  				 val = Double.parseDouble(sensors[i].data);
 	                            data.setDoubleValue(1, val);
 	                        }
 	                  		else if ((sensors[i].name).equalsIgnoreCase("Longitude"))
 	                        {
-	                            double val = Double.parseDouble(sensors[i].data);
+	                  			double val;
+	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
+	                  				 val = Double.NaN;
+	                  			else	
+	                  				 val = Double.parseDouble(sensors[i].data);
 	                            data.setDoubleValue(2, val);
 	                        }
 	                  		else if ((sensors[i].name).equalsIgnoreCase("Altitude"))
 	                        {
-	                            double val = Double.parseDouble(sensors[i].data);
+	                  			double val;
+	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
+	                  				 val = Double.NaN;
+	                  			else	
+	                  				 val = Double.parseDouble(sensors[i].data);
 	                            data.setDoubleValue(3, val);
 	                        }
 	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalGyroX"))
 	                        {
-	                            float val = Float.parseFloat(sensors[i].data);
+	                  			float val;
+	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
+	                  				 val = Float.NaN;
+	                  			else	
+	                  				 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(4, val);
 	                        }
 	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalGyroY"))
 	                        {
-	                            float val = Float.parseFloat(sensors[i].data);
+	                  			float val;
+	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
+	                  				 val = Float.NaN;
+	                  			else	
+	                            	 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(5, val);
 	                        }
 	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalGyroY"))
 	                        {
-	                            float val = Float.parseFloat(sensors[i].data);
+	                  			float val;
+	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
+	                  				 val = Float.NaN;
+	                  			else	
+	                            	 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(6, val);
 	                        }
 	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalGyroZ"))
 	                        {
-	                            float val = Float.parseFloat(sensors[i].data);
+	                  			float val;
+	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
+	                  				 val = Float.NaN;
+	                  			else	
+	                            	 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(7, val);
 	                        }
 	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelX"))
 	                        {
-	                            float val = Float.parseFloat(sensors[i].data);
+	                  			float val;
+	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
+	                  				 val = Float.NaN;
+	                  			else	
+	                            	 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(8, val);
 	                        }
 	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelY"))
 	                        {
-	                            float val = Float.parseFloat(sensors[i].data);
+	                  			float val;
+	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
+	                  				 val = Float.NaN;
+	                  			else	
+	                            	 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(9, val);
 	                        }
 	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelZ"))
 	                        {
-	                            float val = Float.parseFloat(sensors[i].data);
+	                  			float val;
+	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
+	                  				 val = Float.NaN;
+	                  			else	
+	                            	 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(10, val);
 	                        }
 	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelG"))
 	                        {
-	                            float val = Float.parseFloat(sensors[i].data);
+	                  			float val;
+	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
+	                  				 val = Float.NaN;
+	                  			else	
+	                            	 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(11, val);
 	                        }
 	                			                  		
