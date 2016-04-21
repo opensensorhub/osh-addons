@@ -87,7 +87,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
         
         // Common data record for all vectors
         // build SWE Common record structure
-        navData = fac.newDataRecord(5);
+        navData = fac.newDataRecord();
         navData.setName(getName());
         navData.setDefinition("http://sensorml.com/ont/swe/property/stateVectors");
         
@@ -135,10 +135,8 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
             return;
         
         try
-        {
-        	          
+        {       	          
           final DataBlock data = navBlock.renew();
-
 	    	
 	      TimerTask timerTask = new TimerTask()
 	      {
@@ -163,8 +161,8 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 
 	                	// serialize the DeviceInfo JSON result object
 	                	Gson gson = new Gson(); 	
-	                  	SensorData[] sensors = gson.fromJson(json, SensorData[].class);
-	
+	                  	SensorDataArray sensorArray = gson.fromJson(json, SensorDataArray.class);	
+	                  	SensorData[] sensors = sensorArray.sensors;
 	                  	
 	                  	//  Identify each array component and assign to correct block index
 	                  	
@@ -220,7 +218,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                            	 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(5, val);
 	                        }
-	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalGyroY"))
+	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalGyroZ"))
 	                        {
 	                  			float val;
 	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
@@ -229,7 +227,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                            	 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(6, val);
 	                        }
-	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalGyroZ"))
+	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelX"))
 	                        {
 	                  			float val;
 	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
@@ -238,7 +236,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                            	 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(7, val);
 	                        }
-	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelX"))
+	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelY"))
 	                        {
 	                  			float val;
 	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
@@ -247,7 +245,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                            	 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(8, val);
 	                        }
-	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelY"))
+	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelZ"))
 	                        {
 	                  			float val;
 	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
@@ -256,7 +254,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                            	 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(9, val);
 	                        }
-	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelZ"))
+	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelG"))
 	                        {
 	                  			float val;
 	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
@@ -265,21 +263,12 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                            	 val = Float.parseFloat(sensors[i].data);
 	                            data.setFloatValue(10, val);
 	                        }
-	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelG"))
-	                        {
-	                  			float val;
-	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
-	                  				 val = Float.NaN;
-	                  			else	
-	                            	 val = Float.parseFloat(sensors[i].data);
-	                            data.setFloatValue(11, val);
-	                        }
 	                			                  		
-			                latestRecord = data;
-			                latestRecordTime = System.currentTimeMillis();
-			                eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, VirbXeNavOutput.this, latestRecord));
-	 	                  		
 	                  	}                	           	              	
+		                latestRecord = data;
+		                latestRecordTime = System.currentTimeMillis();
+		                eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, VirbXeNavOutput.this, latestRecord));
+ 	                  		
 	                }
 	                catch (Exception e)
 	                {
@@ -365,6 +354,10 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 //    	String data_type;
     	String data;  	
      }
+    
+    private class SensorDataArray{
+    	SensorData[] sensors;
+    }
     
 
     protected void stop()
