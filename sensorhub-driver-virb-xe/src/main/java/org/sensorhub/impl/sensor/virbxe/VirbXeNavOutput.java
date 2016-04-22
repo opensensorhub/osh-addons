@@ -16,8 +16,6 @@ package org.sensorhub.impl.sensor.virbxe;
 
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.api.sensor.SensorException;
-
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -30,7 +28,6 @@ import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -38,11 +35,8 @@ import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.TextEncoding;
 import net.opengis.swe.v20.Vector;
-
 import org.vast.swe.SWEConstants;
-import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
-
 import com.google.gson.Gson;
 
 
@@ -80,7 +74,6 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
     }
 
 
-    @Override
     protected void init() 
     {
         GeoPosHelper fac = new GeoPosHelper();
@@ -104,21 +97,17 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
         String localFrame = parentSensor.getUniqueIdentifier() + "#" + VirbXeDriver.CRS_ID;
 
         // raw gyro inertial measurements
-        Vector angRate = fac.newAngularVelocityVector(
-                SWEHelper.getPropertyUri("AngularRate"),
-                localFrame, "deg/s");
+        Vector angRate = fac.newAngularVelocityVector(null, localFrame, "deg/s");
         angRate.setDataType(DataType.FLOAT);
         navData.addComponent("gyro", angRate);
 
         // Acceleration
-        Vector accel = fac.newAccelerationVector(
-                SWEHelper.getPropertyUri("Acceleration"),
-                localFrame, "m/s2");
+        Vector accel = fac.newAccelerationVector(null, localFrame, "m/s2");
         accel.setDataType(DataType.FLOAT);
         navData.addComponent("accel", accel);
       
         // Acceleration Magnitude 
-        Quantity accelMag = fac.newQuantity(SWEConstants.DEF_ACCELERATION_MAG, 
+        Quantity accelMag = fac.newQuantity(GeoPosHelper.DEF_ACCELERATION_MAG, 
         		"Acceleration Magnitude", 
         		"Magnitude of the acceleration Vector", 
         		"m/s2", DataType.FLOAT);
@@ -306,7 +295,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
     	
     	try
     	{
-            final URL urlVirb = new URL(parentSensor.getHostName() + "/virb");  
+            final URL urlVirb = new URL(parentSensor.getHostUrl() + "/virb");  
     		
     		HttpURLConnection con = (HttpURLConnection) urlVirb.openConnection();    		
     		con.setRequestMethod("POST");

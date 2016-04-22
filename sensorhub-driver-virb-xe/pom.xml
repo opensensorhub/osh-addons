@@ -41,7 +41,7 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
                <excludes>
-                  <exclude>**/TestBno055DriverRxtx.java</exclude>
+                  <exclude>**/TestVirbXeDriver.java</exclude>
                </excludes>
             </configuration>
          </plugin>
