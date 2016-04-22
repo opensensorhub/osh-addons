@@ -35,7 +35,6 @@ public class VN200QuatOutput extends VN200AbstractOutput
     }
 
 
-    @Override
     protected void init()
     {
         GeoPosHelper fac = new GeoPosHelper();

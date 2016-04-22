@@ -45,7 +45,6 @@ public class GPSQualityOutput extends NMEAGpsOutput
     }
 
     
-    @Override
     protected void init()
     {
         SWEHelper fac = new SWEHelper();

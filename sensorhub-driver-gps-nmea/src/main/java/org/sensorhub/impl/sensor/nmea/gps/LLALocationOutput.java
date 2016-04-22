@@ -63,7 +63,6 @@ public class LLALocationOutput extends NMEAGpsOutput
     }
 
     
-    @Override
     protected void init()
     {
         GeoPosHelper fac = new GeoPosHelper();

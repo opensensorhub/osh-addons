@@ -56,7 +56,6 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     }
 
 
-    @Override
     public void init()
     {
         SWEHelper fac = new SWEHelper();
