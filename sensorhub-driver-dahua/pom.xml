@@ -63,6 +63,13 @@
       	<artifactId>sensorhub-driver-videocam</artifactId>
       	<version>0.1-SNAPSHOT</version>
       </dependency>
+      <dependency>
+         <groupId>org.sensorhub</groupId>
+         <artifactId>sensorhub-driver-videocam</artifactId>
+         <version>0.1-SNAPSHOT</version>
+         <type>test-jar</type>
+         <scope>test</scope>
+      </dependency>
    </dependencies>
    <build>
       <plugins>

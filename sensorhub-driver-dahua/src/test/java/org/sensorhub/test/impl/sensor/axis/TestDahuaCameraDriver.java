@@ -34,6 +34,7 @@ import org.sensorhub.impl.sensor.dahua.DahuaCameraConfig;
 import org.sensorhub.impl.sensor.dahua.DahuaCameraDriver;
 import org.sensorhub.impl.sensor.dahua.DahuaPtzOutput;
 import org.sensorhub.impl.sensor.dahua.DahuaVideoOutput;
+import org.sensorhub.test.sensor.videocam.VideoTestHelper;
 import org.vast.data.DataChoiceImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.SWEUtils;
@@ -58,6 +59,7 @@ public class TestDahuaCameraDriver implements IEventListener
     JFrame videoWindow;
     BufferedImage img;
     int frameCount;
+    VideoTestHelper videoTestHelper = new VideoTestHelper();
     
     
     static
@@ -135,12 +137,12 @@ public class TestDahuaCameraDriver implements IEventListener
     @Test
     public void testVideoCapture() throws Exception
     {
-        //initWindow();
-    	
-    	// register listener on data interface
+        // register listener on data interface
         ISensorDataInterface di = driver.getObservationOutputs().get("video");
-    	di.registerListener(this);    	
-        
+        assertTrue("No video output", di != null);
+        di.registerListener(this);    	
+    	//videoTestHelper.initWindow(di);
+    	
         // start capture and wait until we receive the first frame
         synchronized (this)
         {
@@ -156,6 +158,7 @@ public class TestDahuaCameraDriver implements IEventListener
     {
         // register listener on data interface
         ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
+        assertTrue("No ptz output", di != null);
         di.registerListener(this);
         
         // start capture and wait until we receive the first record
@@ -170,13 +173,14 @@ public class TestDahuaCameraDriver implements IEventListener
     @Test
     public void testSendPTZCommand() throws Exception
     {
-        //initWindow();
-    	
-    	// register listeners
+        // register listeners
     	ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
+    	assertTrue("No ptz output", di != null);
         di.registerListener(this);
         ISensorDataInterface di2 = driver.getObservationOutputs().get("video");
+        assertTrue("No video output", di2 != null);
         di2.registerListener(this);
+        //videoTestHelper.initWindow(di2);
         
         // get ptz control interface
         ISensorControlInterface ci = driver.getCommandInputs().get("ptzControl");
@@ -291,37 +295,8 @@ public class TestDahuaCameraDriver implements IEventListener
         
         if (newDataEvent.getSource().getClass().equals(DahuaVideoOutput.class))
         {
-	        DataComponent camDataStruct = newDataEvent.getRecordDescription().copy();
-	        camDataStruct.setData(newDataEvent.getRecords()[0]);
-	        
-	        actualHeight = camDataStruct.getComponent(1).getComponentCount();
-	        actualWidth = camDataStruct.getComponent(1).getComponent(0).getComponentCount();
-	        dataBlockSize = newDataEvent.getRecords()[0].getAtomCount();
-	        		
-	        byte[] frameData = (byte[])camDataStruct.getComponent(1).getData().getUnderlyingObject();
 	        System.out.println("Received Frame, Timestamp=" + newDataEvent.getRecords()[0].getDoubleValue(0));
-	        
-	        /*// use RGB data directly
-	        byte[] destArray = ((DataBufferByte)img.getRaster().getDataBuffer()).getData();
-	        System.arraycopy(frameData, 0, destArray, 0, dataBlockSize-1);*/
-	        
-	        /*// uncompress JPEG data
-	        BufferedImage rgbImage;
-            try
-            {
-                InputStream imageStream = new ByteArrayInputStream(frameData);                               
-                ImageInputStream input = ImageIO.createImageInputStream(imageStream); 
-                Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
-                ImageReader reader = readers.next();
-                reader.setInput(input);
-                rgbImage = reader.read(0);
-                videoWindow.getContentPane().getGraphics().drawImage(rgbImage, 0, 0, null);
-            }
-            catch (IOException e1)
-            {
-                throw new RuntimeException(e1);
-            }*/
-            
+	        videoTestHelper.renderFrameH264(newDataEvent.getRecords()[0]);            
             frameCount++;
         }
         else if (newDataEvent.getSource().getClass().equals(DahuaPtzOutput.class))
@@ -338,6 +313,7 @@ public class TestDahuaCameraDriver implements IEventListener
     @After
     public void cleanup()
     {
+        videoTestHelper.dispose();
         driver.stop();
     }
 }
