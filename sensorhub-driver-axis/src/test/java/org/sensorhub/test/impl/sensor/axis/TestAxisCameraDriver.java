@@ -139,7 +139,7 @@ public class TestAxisCameraDriver implements IEventListener
     private void initWindow() throws Exception
     {
     	// prepare frame and buffered image
-    	ISensorDataInterface di = driver.getObservationOutputs().get("videoOutput1");
+    	ISensorDataInterface di = driver.getObservationOutputs().get("video1");
         int height = di.getRecordDescription().getComponent(1).getComponentCount();
         int width = di.getRecordDescription().getComponent(1).getComponent(0).getComponentCount();
         videoWindow = new JFrame("Video");
@@ -155,7 +155,7 @@ public class TestAxisCameraDriver implements IEventListener
         initWindow();
     	
     	// register listener on data interface
-        ISensorDataInterface di = driver.getObservationOutputs().get("videoOutput1");
+        ISensorDataInterface di = driver.getObservationOutputs().get("video1");
     	di.registerListener(this);
     	
         
