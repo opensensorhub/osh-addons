@@ -50,7 +50,6 @@ public class AttitudeEulerOutput extends MavlinkOutput
     }
     
     
-    @Override
     protected void init() throws SensorException
     {
         GeoPosHelper fac = new GeoPosHelper();

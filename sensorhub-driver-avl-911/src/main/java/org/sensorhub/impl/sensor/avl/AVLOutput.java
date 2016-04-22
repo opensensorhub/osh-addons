@@ -66,7 +66,6 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver>
     }
 
 
-    @Override
     protected void init()
     {
         GeoPosHelper fac = new GeoPosHelper();

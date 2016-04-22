@@ -62,7 +62,6 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     }
 
 
-    @Override
     protected void init()
     {
         GeoPosHelper fac = new GeoPosHelper();

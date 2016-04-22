@@ -73,7 +73,6 @@ public class FakeCamOutput extends AbstractSensorOutput<FakeCamSensor>
     }
 
 
-    @Override
     protected void init()
     {
         int[] imgSize = getVideoSize();

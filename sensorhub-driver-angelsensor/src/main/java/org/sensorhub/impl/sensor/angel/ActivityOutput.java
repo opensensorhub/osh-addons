@@ -39,7 +39,6 @@ public class ActivityOutput extends AbstractSensorOutput<AngelSensor>
     }
 
 
-    @Override
     protected void init()
     {
         SWEHelper fac = new SWEHelper();

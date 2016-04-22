@@ -58,7 +58,7 @@ public class TestAngelSensorDriverBleDbus implements IEventListener
         netConf.id = "BLE";
         netConf.moduleClass = BleDbusCommNetwork.class.getCanonicalName();
         netConf.deviceName = "hci0";
-        netConf.enabled = true;
+        netConf.autoStart = true;
         reg.loadModule(netConf);
         
         config = new AngelSensorConfig();
@@ -66,7 +66,7 @@ public class TestAngelSensorDriverBleDbus implements IEventListener
         config.networkID = netConf.id;
         //config.btAddress = "00:07:80:79:04:AF";
         config.btAddress = "00:07:80:03:0E:0A";
-        config.enabled = true;
+        config.autoStart = true;
         driver = (AngelSensor)reg.loadModule(config);
     }
     
