@@ -15,22 +15,10 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.test.impl.sensor.axis;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Iterator;
 import java.util.UUID;
-
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
-import javax.swing.JFrame;
-
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,10 +32,10 @@ import org.sensorhub.impl.sensor.axis.AxisCameraConfig;
 import org.sensorhub.impl.sensor.axis.AxisCameraDriver;
 import org.sensorhub.impl.sensor.axis.AxisPtzOutput;
 import org.sensorhub.impl.sensor.axis.AxisVideoOutput;
+import org.sensorhub.test.sensor.videocam.VideoTestHelper;
 import org.vast.data.DataChoiceImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.SWEUtils;
-
 import static org.junit.Assert.*;
 
 
@@ -72,10 +60,10 @@ public class TestAxisCameraDriver implements IEventListener
     AxisCameraConfig config;
     int actualWidth, actualHeight;
     int dataBlockSize;
-    JFrame videoWindow;
-    BufferedImage img;
     int frameCount;
-   
+    VideoTestHelper videoTestHelper = new VideoTestHelper();
+    
+    
     static
     {
         ClientAuth.createInstance("osh-keystore.dat");
@@ -136,28 +124,14 @@ public class TestAxisCameraDriver implements IEventListener
     }
     
     
-    private void initWindow() throws Exception
-    {
-    	// prepare frame and buffered image
-    	ISensorDataInterface di = driver.getObservationOutputs().get("video1");
-        int height = di.getRecordDescription().getComponent(1).getComponentCount();
-        int width = di.getRecordDescription().getComponent(1).getComponent(0).getComponentCount();
-        videoWindow = new JFrame("Video");
-        videoWindow.setSize(width, height);
-        videoWindow.setVisible(true);
-        img = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
-    }
-    
-    
     @Test
     public void testVideoCapture() throws Exception
     {
-        initWindow();
-    	
-    	// register listener on data interface
+        // register listener on data interface
         ISensorDataInterface di = driver.getObservationOutputs().get("video1");
+        assertTrue("No video output", di != null);
     	di.registerListener(this);
-    	
+    	videoTestHelper.initWindow(di);
         
         // start capture and wait until we receive the first frame
         synchronized (this)
@@ -178,8 +152,9 @@ public class TestAxisCameraDriver implements IEventListener
     {
         // register listener on data interface
         ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
+        assertTrue("No ptz output", di != null);
         di.registerListener(this);
-        
+                
         // start capture and wait until we receive the first frame
         synchronized (this)
         {
@@ -192,13 +167,12 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testSendPTZCommand() throws Exception
     {
-        initWindow();
-    	
-    	// register listeners
+        // register listeners
     	ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
         di.registerListener(this);
-        ISensorDataInterface di2 = driver.getObservationOutputs().get("videoOutput1");
+        ISensorDataInterface di2 = driver.getObservationOutputs().get("video1");
         di2.registerListener(this);
+        videoTestHelper.initWindow(di2);
         
         // get ptz control interface
         ISensorControlInterface ci = driver.getCommandInputs().get("ptzControl");
@@ -311,36 +285,7 @@ public class TestAxisCameraDriver implements IEventListener
         
         if (newDataEvent.getSource().getClass().equals(AxisVideoOutput.class))
         {
-	        DataComponent camDataStruct = newDataEvent.getRecordDescription().copy();
-	        camDataStruct.setData(newDataEvent.getRecords()[0]);
-	        
-	        actualHeight = camDataStruct.getComponent(1).getComponentCount();
-	        actualWidth = camDataStruct.getComponent(1).getComponent(0).getComponentCount();
-	        dataBlockSize = newDataEvent.getRecords()[0].getAtomCount();
-	        		
-	        byte[] frameData = (byte[])camDataStruct.getComponent(1).getData().getUnderlyingObject();
-                        
-	        /*// use RGB data directly
-	        byte[] destArray = ((DataBufferByte)img.getRaster().getDataBuffer()).getData();
-	        System.arraycopy(frameData, 0, destArray, 0, dataBlockSize-1);*/
-	        
-	        // uncompress JPEG data
-	        BufferedImage rgbImage;
-            try
-            {
-                InputStream imageStream = new ByteArrayInputStream(frameData);                               
-                ImageInputStream input = ImageIO.createImageInputStream(imageStream); 
-                Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
-                ImageReader reader = readers.next();
-                reader.setInput(input);
-                rgbImage = reader.read(0);
-                videoWindow.getContentPane().getGraphics().drawImage(rgbImage, 0, 0, null);
-            }
-            catch (IOException e1)
-            {
-                throw new RuntimeException(e1);
-            }
-            
+	        videoTestHelper.renderFrameJPEG(newDataEvent.getRecords()[0]);
             frameCount++;
         }
         else if (newDataEvent.getSource().getClass().equals(AxisPtzOutput.class))
@@ -357,8 +302,7 @@ public class TestAxisCameraDriver implements IEventListener
     @After
     public void cleanup()
     {
-        if (videoWindow != null)
-            videoWindow.dispose();
+        videoTestHelper.dispose();
         
         if (driver != null)
             driver.stop();
