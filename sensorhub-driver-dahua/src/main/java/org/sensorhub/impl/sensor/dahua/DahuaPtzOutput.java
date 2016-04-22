@@ -83,7 +83,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
         // figure out pan and tilt ranges
         try
         {
-            URL optionsURL = new URL("http://" + parentSensor.getHostName() + "/cgi-bin/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
+            URL optionsURL = new URL(parentSensor.getHostUrl() + "/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
         	InputStream is = optionsURL.openStream();
         	BufferedReader bReader = new BufferedReader(new InputStreamReader(is));
 
@@ -128,7 +128,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
 
         try{
         	
-	        final URL getSettingsUrl = new URL("http://" + parentSensor.getHostName() + "/cgi-bin/ptz.cgi?action=getStatus");
+	        final URL getSettingsUrl = new URL(parentSensor.getHostUrl() + "/ptz.cgi?action=getStatus");
 	        
 	        final DataComponent dataStruct = settingsDataStruct.copy();
 	        dataStruct.assignNewDataBlock();
@@ -240,6 +240,5 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
             timer.cancel();
             timer = null;
         }		
-	}
-	
+	}	
 }

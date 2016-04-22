@@ -52,7 +52,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     
     boolean doInit = true;
     boolean ptzSupported = false;
-    String hostName;
+    String hostUrl;
     String serialNumber;
     String modelNumber;
 
@@ -65,7 +65,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     @Override
     public void start() throws SensorException
     {
-        hostName = config.net.remoteHost + ":" + config.net.remotePort;
+        hostUrl = "http://" + config.net.remoteHost + ":" + config.net.remotePort + "/cgi-bin";
         
         // check first if connected
         if (waitForConnection(connectionRetryPeriod, config.connectTimeout))
@@ -86,7 +86,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
                 // check if PTZ supported
                 try
                 {
-                    URL optionsURL = new URL("http://" + getHostName() + "/cgi-bin/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
+                    URL optionsURL = new URL(getHostUrl() + "/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
                     InputStream is = optionsURL.openStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(is));
                     
@@ -178,19 +178,19 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
                 identifierList.addIdentifier2(term);
             }
             
-            	// Long Name
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("LongName"));
-                term.setLabel("Long Name");
-                term.setValue("Dahua Video Camera " + modelNumber + ": " + serialNumber);
-                identifierList.addIdentifier2(term);
-            
-	            // Short Name
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
-                term.setLabel("Short Name");
-                term.setValue("Dahua: " + serialNumber);
-                identifierList.addIdentifier2(term);
+            // Long Name
+            term = smlFac.newTerm();
+            term.setDefinition(SWEHelper.getPropertyUri("LongName"));
+            term.setLabel("Long Name");
+            term.setValue("Dahua Video Camera " + modelNumber + ": " + serialNumber);
+            identifierList.addIdentifier2(term);
+
+            // Short Name
+            term = smlFac.newTerm();
+            term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
+            term.setLabel("Short Name");
+            term.setValue("Dahua: " + serialNumber);
+            identifierList.addIdentifier2(term);
         }
     }
 
@@ -203,11 +203,12 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     	    boolean connected = false;
     	    
     	    // try to open stream and check for Dahua Info
-    	    setAuth();
-    	    URL optionsURL = new URL("http://" + hostName + "/cgi-bin/magicBox.cgi?action=getSystemInfo");
+    	    URL optionsURL = new URL(getHostUrl() + "/magicBox.cgi?action=getSystemInfo");
 	        URLConnection conn = optionsURL.openConnection();
 		    conn.setConnectTimeout(500);
 		    conn.connect();
+		    
+		    // read response
 		    InputStream is = conn.getInputStream();
 	        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 	        
@@ -216,7 +217,8 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
             while ((line = reader.readLine()) != null)
             {
 		        String[] tokens = line.split("=");	
-                if (tokens[0].trim().equalsIgnoreCase("serialNumber")){
+                if (tokens[0].trim().equalsIgnoreCase("serialNumber"))
+                {
                     serialNumber = tokens[1];
                     connected = true; 
                 }
@@ -271,9 +273,9 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     }
 
 
-    protected String getHostName()
+    protected String getHostUrl()
     {
         setAuth();
-        return hostName;
+        return hostUrl;
     }    
 }

@@ -87,7 +87,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         // get PTZ limits
         try
         {    	         
-            URL optionsURL = new URL("http://" + parentSensor.getHostName() + "/cgi-bin/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
+            URL optionsURL = new URL(parentSensor.getHostUrl() + "/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
             InputStream is = optionsURL.openStream();
             BufferedReader bReader = new BufferedReader(new InputStreamReader(is));
 
@@ -119,25 +119,6 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         VideoCamHelper videoHelper = new VideoCamHelper();
         Collection<String> presetList = presetsHandler.getPresetNames();
         commandData = videoHelper.getPtzTaskParameters(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom, presetList);
-        
-        // reset to Pan=0, Tilt=0, Zoom=0
-        try
-        {
-            DataBlock initCmd;
-            commandData.setSelectedItem(0);
-            initCmd = commandData.createDataBlock();
-            execCommand(initCmd);
-            commandData.setSelectedItem(1);
-            initCmd = commandData.createDataBlock();
-            execCommand(initCmd);
-            commandData.setSelectedItem(2);
-            initCmd = commandData.createDataBlock();
-            execCommand(initCmd);
-        }
-        catch (SensorException e)
-        {
-            e.printStackTrace();
-        }
     }
     
     
@@ -145,13 +126,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
     {
         // reset to Pan=0, Tilt=0, Zoom=0
         DataBlock initCmd;
-        commandData.setSelectedItem(0);
-        initCmd = commandData.createDataBlock();
-        execCommand(initCmd);
-        commandData.setSelectedItem(1);
-        initCmd = commandData.createDataBlock();
-        execCommand(initCmd);
-        commandData.setSelectedItem(2);
+        commandData.setSelectedItem(7);
         initCmd = commandData.createDataBlock();
         execCommand(initCmd);
     }
@@ -211,7 +186,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         		// get current pan, tilt, zoom values from camera
                 try
                 {
-                    URL optionsURL = new URL("http://" + parentSensor.getHostName() + "/cgi-bin/ptz.cgi?action=getStatus");
+                    URL optionsURL = new URL(parentSensor.getHostUrl() + "/ptz.cgi?action=getStatus");
                 	InputStream is = optionsURL.openStream();
                 	BufferedReader bReader = new BufferedReader(new InputStreamReader(is));
 
@@ -250,12 +225,11 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
                 	throw new SensorException("", e);
                 }       		
        		
-        	}
-        		
+        	}        		
         	       	
         	// send request to absolute pan/tilt/zoom positions
-            URL optionsURL = new URL("http://" + parentSensor.getHostName() + 
-            		"/cgi-bin/ptz.cgi?action=start&channel=0&code=PositionABS&arg1=" + pan + "&arg2=" + tilt + "&arg3=" + zoom);
+            URL optionsURL = new URL(parentSensor.getHostUrl() + 
+            		"/ptz.cgi?action=start&channel=0&code=PositionABS&arg1=" + pan + "&arg2=" + tilt + "&arg3=" + zoom);
                    	         
             // add BufferReader and read first line; if "Error", read second line and log error
             InputStream is = optionsURL.openStream();
