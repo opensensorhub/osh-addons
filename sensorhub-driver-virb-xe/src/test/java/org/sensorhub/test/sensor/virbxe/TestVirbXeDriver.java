@@ -17,26 +17,23 @@ package org.sensorhub.test.sensor.virbxe;
 
 import java.io.IOException;
 import java.util.UUID;
-
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataComponent;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.virbxe.VirbXeConfig;
 import org.sensorhub.impl.sensor.virbxe.VirbXeDriver;
+import org.sensorhub.impl.sensor.virbxe.VirbXeVideoOutput;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.AsciiDataWriter;
 import org.vast.swe.SWEUtils;
-
 import static org.junit.Assert.*;
 
 
@@ -59,15 +56,14 @@ public class TestVirbXeDriver implements IEventListener
                         
         driver = new VirbXeDriver();
         driver.init(config);
-        
-        driver.start();
-       
     }
     
     
     @Test
     public void testGetOutputDesc() throws Exception
     {
+        driver.start();
+        
         for (ISensorDataInterface di: driver.getObservationOutputs().values())
         {
             System.out.println();
@@ -80,6 +76,8 @@ public class TestVirbXeDriver implements IEventListener
     @Test
     public void testGetSensorDesc() throws Exception
     {
+        driver.start();
+        
         System.out.println();
         AbstractProcess smlDesc = driver.getCurrentDescription();
         new SMLUtils(SWEUtils.V2_0).writeProcess(System.out, smlDesc, true);
@@ -90,15 +88,16 @@ public class TestVirbXeDriver implements IEventListener
     public void testSendNavMeasurements() throws Exception
     {
         System.out.println();
+        
+        driver.start();
         ISensorDataInterface output = driver.getObservationOutputs().get("navData");
+        assertTrue("No nav output", (output != null));
+        output.registerListener(this);
         
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
         writer.setDataComponents(output.getRecordDescription());
         writer.setOutput(System.out);
-        
-        output.registerListener(this);
-        driver.start();
         
         synchronized (this) 
         {
@@ -109,31 +108,51 @@ public class TestVirbXeDriver implements IEventListener
         System.out.println();
     }
     
+    
     @Test
     public void testSendHealthMeasurements() throws Exception
     {
         System.out.println();
+        
+        driver.start();
         ISensorDataInterface output = driver.getObservationOutputs().get("healthSensors");
+        assertTrue("No healthSensors output", (output != null));
+        output.registerListener(this);
         
-        if (output == null)
-        		System.out.println ("healthSensors is null");
-        else
+        writer = new AsciiDataWriter();
+        writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
+        writer.setDataComponents(output.getRecordDescription());
+        writer.setOutput(System.out);
+        
+        synchronized (this) 
         {
+            while (sampleCount < 10)
+                wait();
+        }
         
-	        writer = new AsciiDataWriter();
-	        writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
-	        writer.setDataComponents(output.getRecordDescription());
-	        writer.setOutput(System.out);
-	        
-	        output.registerListener(this);
-	        driver.start();
-	        
-	        synchronized (this) 
-	        {
-	            while (sampleCount < 10)
-	                wait();
-	        }
-	        
+        System.out.println();
+    }
+    
+    
+    @Test
+    public void testSendVideoMeasurements() throws Exception
+    {
+        System.out.println();
+        
+        driver.start();
+        ISensorDataInterface output = driver.getObservationOutputs().get("video");
+        assertTrue("No video output", (output != null));
+        output.registerListener(this);
+        
+        writer = new AsciiDataWriter();
+        writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
+        writer.setDataComponents(output.getRecordDescription());
+        writer.setOutput(System.out);
+        
+        synchronized (this) 
+        {
+            while (sampleCount < 10)
+                wait();
         }
         
         System.out.println();
@@ -147,11 +166,19 @@ public class TestVirbXeDriver implements IEventListener
         SensorDataEvent newDataEvent = (SensorDataEvent)e;
         
         try
-        {
-            //System.out.print("\nNew data received from sensor " + newDataEvent.getSensorId());
-            writer.write(newDataEvent.getRecords()[0]);
-            writer.flush();            
-            sampleCount++;
+        {            
+            if (e.getSource() instanceof VirbXeVideoOutput)
+            {
+                System.out.println("Received Frame, Timestamp=" + newDataEvent.getRecords()[0].getDoubleValue(0));
+                sampleCount++;
+            }
+            else
+            {
+                //System.out.print("\nNew data received from sensor " + newDataEvent.getSensorId());
+                writer.write(newDataEvent.getRecords()[0]);
+                writer.flush();            
+                sampleCount++;
+            }
         }
         catch (IOException e1)
         {
@@ -168,8 +195,9 @@ public class TestVirbXeDriver implements IEventListener
         try
         {
             driver.stop();
+            Thread.sleep(500); // sleep 500ms before next test or camera doesn't accept next connection
         }
-        catch (SensorHubException e)
+        catch (Exception e)
         {
             e.printStackTrace();
         }

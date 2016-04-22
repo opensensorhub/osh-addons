@@ -20,20 +20,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.List;
-
 import net.opengis.sensorml.v20.IdentifierList;
 import net.opengis.sensorml.v20.PhysicalSystem;
 import net.opengis.sensorml.v20.SpatialFrame;
 import net.opengis.sensorml.v20.Term;
-
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.vast.sensorML.SMLFactory;
 import org.vast.swe.SWEHelper;
-
 import com.google.gson.Gson;
 
 
@@ -56,10 +51,9 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     VirbXeAntOutput healthDataInterface;
     
     // Video Data Output
-	//VirbXeOutput videoDataInterface;
+    VirbXeVideoOutput videoDataInterface;
 	
-    String hostName;
-    
+    String hostUrl;    
     String serialNumber = " ";
     String firmware = " ";
     String modelNumber = " ";
@@ -71,33 +65,23 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     public VirbXeDriver()
     {       
     }
-
-
-    @Override
-    public void init(VirbXeConfig config) throws SensorHubException
-    {
-        super.init(config);
-       
-    }
+    
     
     @Override
     public void start() throws SensorHubException
     {
-        hostName = "http://" + config.net.remoteHost + "/virb";  
-        boolean done = false;
-        
+        hostUrl = "http://" + config.net.remoteHost + ":" + config.net.remotePort + "/virb";        
         
         // check first if connected
-        while (!done && waitForConnection(connectionRetryPeriod, config.connectTimeout))
+        if (waitForConnection(connectionRetryPeriod, config.connectTimeout))
         {
             // create output only the first time it is started
             if (doInit)
             {
-            	// TODO uncomment when videoDataInterface ready
-                // video output
-//                videoDataInterface = new DahuaVideoOutput(this);
-//                videoDataInterface.init();
-//                addOutput(videoDataInterface, false);
+            	// video output
+                videoDataInterface = new VirbXeVideoOutput(this);
+                videoDataInterface.init();
+                addOutput(videoDataInterface, false);
         
                 // create navigation data interface
                 navDataInterface = new VirbXeNavOutput(this);
@@ -109,22 +93,19 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
                 healthDataInterface.init();
                 if (healthDataInterface.hasSensors())
                 	addOutput(healthDataInterface, false);
+                else
+                    healthDataInterface = null; // set to null if no sensors are connected
                 
                doInit = false;
             }
             
-            // TODO uncomment when videoDataInterface ready
-//            videoDataInterface.start();
-            navDataInterface.start();
-            
-            if (healthDataInterface.hasSensors())
+            // start output threads
+            videoDataInterface.start();
+            navDataInterface.start();            
+            if (healthDataInterface != null)
             	healthDataInterface.start();
-                       
-            done = true;
-           
         }
     }
-    
 
 
     @Override
@@ -137,8 +118,7 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
             SMLFactory smlFac = new SMLFactory();
             sensorDescription.setId("Garmin_VIRB_XE_" + serialNumber);
             sensorDescription.setUniqueIdentifier("urn:garmin:cam:" + serialNumber);
-            sensorDescription.setDescription("Garmin VIRB-XE camera with GPS and Orientation" );
-            
+            sensorDescription.setDescription("Garmin VIRB-XE camera with GPS and Orientation" );            
             
             IdentifierList ident = smlFac.newIdentifierList();
             sensorDescription.getIdentificationList().add(ident);
@@ -172,16 +152,15 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("LongName"));
             term.setLabel("Long Name");
-            term.setValue("Garmin VIRB Video Camera " + modelNumber + ": " + serialNumber);
+            term.setValue("Garmin " + modelNumber + " Video Camera");
             ident.addIdentifier2(term);
         
             // Short Name
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
             term.setLabel("Short Name");
-            term.setValue("Garmin VIRB: " + serialNumber);
+            term.setValue("Garmin " + modelNumber);
             ident.addIdentifier2(term);
-
             
             // TODO check this frame
             SpatialFrame localRefFrame = smlFac.newSpatialFrame();
@@ -201,9 +180,7 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     	// Check connection to VIRB and get DeviceInfo
     	// request JSON response, parse, and assign values
      	String json = sendCommand("{\"command\":\"deviceInfo\"}");
-     	
-     	System.out.println (json + "\n");
-     	
+     	getLogger().trace(json);
     	if (json.equalsIgnoreCase("0"))
     		return false;
   		
@@ -221,10 +198,10 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     	sendCommand("{\"command\":\"updateFeature\",\"feature\": \"gps\" ,\"value\": \"on\" }");
     	//String response = 
     	sendCommand("{\"command\":\"updateFeature\",\"feature\": \"units\" ,\"value\": \"Metric\" }");
-
     	
         return true;
     }
+    
     
     // send Post command
     public String sendCommand(String command){
@@ -233,7 +210,7 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     	
     	try
     	{
-    		URL obj = new URL(hostName);
+    		URL obj = new URL(getHostUrl());
     		HttpURLConnection con = (HttpURLConnection) obj.openConnection();    		
     		con.setRequestMethod("POST");
  
@@ -268,20 +245,20 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     }
    
     
-   // Class to serialize JSON response
-   private class DeviceInfo{
-    	
+    // Class to serialize JSON response
+    static private class DeviceInfo
+    {    	
     	String model;
     	String firmware;
     	//String type;
     	//String partNumber;
-    	String deviceId;
-    	  	
+    	String deviceId;    	  	
     }
    
-   private class DeviceInfoArray{
+    static private class DeviceInfoArray
+    {
 	   DeviceInfo[] deviceInfo;
-   }
+    }
 
     
     @Override
@@ -294,12 +271,14 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     @Override
     public void stop() throws SensorHubException
     {
+        if (videoDataInterface != null)
+            videoDataInterface.stop();
+        
         if (navDataInterface != null)
             navDataInterface.stop();
         
-//        if (videoDataInterface != null)
-//        	videoDataInterface.stop();
-                          
+        if (healthDataInterface != null)
+            healthDataInterface.stop();                    
     }
     
 
@@ -318,10 +297,10 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     }
 
 
-    protected String getHostName()
+    protected String getHostUrl()
     {
         setAuth();
-        return hostName;
+        return hostUrl;
     } 
     
  }

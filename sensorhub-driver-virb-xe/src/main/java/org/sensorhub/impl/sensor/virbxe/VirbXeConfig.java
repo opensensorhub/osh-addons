@@ -18,35 +18,22 @@ import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 import org.sensorhub.impl.comm.HTTPConfig;
 import org.sensorhub.impl.sensor.rtpcam.RTSPConfig;
-import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
-import org.sensorhub.impl.sensor.videocam.VideoResolution;
 
 
 public class VirbXeConfig extends SensorConfig
-{
-
-//    @DisplayInfo(label="Video", desc="Video settings")
-//    public VideoConfig video = new VideoConfig();
-        
+{        
     @DisplayInfo(label="Network", desc="Network configuration")
     public HTTPConfig net = new HTTPConfig();
     
     @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration")
     public RTSPConfig rtsp = new RTSPConfig();
     
-//    @DisplayInfo(label="Enable H264", desc="Enable H264 encoded video output (accessible through RTSP)")
-//    public boolean enableH264;
     
-    
-//    public class VideoConfig extends BasicVideoConfig
-//    {
-//        @DisplayInfo(desc="Resolution of video frames in pixels")
-//        public ResolutionEnum resolution;        
-//               
-//        public VideoResolution getResolution()
-//        {
-//            return resolution;
-//        }
-//    }
+    public VirbXeConfig()
+    {
+        rtsp.rtspPort = 554;
+        rtsp.videoPath = "/livePreviewStream";
+        rtsp.localUdpPort = 20200;
+    }
       
 }

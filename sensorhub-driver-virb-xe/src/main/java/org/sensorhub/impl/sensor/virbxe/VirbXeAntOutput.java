@@ -16,12 +16,9 @@ package org.sensorhub.impl.sensor.virbxe;
 
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.api.sensor.SensorException;
-
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -30,20 +27,13 @@ import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.TextEncoding;
-import net.opengis.swe.v20.Vector;
-
-import org.vast.swe.SWEConstants;
-import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
-
 import com.google.gson.Gson;
 
 
@@ -56,8 +46,7 @@ import com.google.gson.Gson;
  * @since April 14, 2016
  */
 public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
-{
-    
+{    
     DataComponent healthData;
     DataBlock healthBlock;
     TextEncoding textEncoding;
@@ -81,6 +70,7 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
     {
         return "healthSensors";
     }
+    
 
     public boolean hasSensors()
     {
@@ -88,10 +78,8 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
     }
     
     
-    @Override
     protected void init() 
-    {
-    	
+    {    	
         GeoPosHelper fac = new GeoPosHelper();
         
         // Common data record for all vectors
@@ -192,13 +180,8 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
     
     protected void start()
     {
-
     	if (timer != null)
             return;
-    	
-    	//don't start if there are no health sensors as determined in init()
-    	if (!healthSensorSupported)	
-    		return;
         
         try
         {        	          
@@ -316,7 +299,7 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
     	
     	try
     	{
-            final URL urlVirb = new URL(parentSensor.getHostName() + "/virb");  
+            final URL urlVirb = new URL(parentSensor.getHostUrl() + "/virb");  
     		
     		HttpURLConnection con = (HttpURLConnection) urlVirb.openConnection();    		
     		con.setRequestMethod("POST");
