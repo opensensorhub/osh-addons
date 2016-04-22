@@ -167,8 +167,10 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
           		}
            		        		
           		if (healthSensorSupported)
-          			healthBlock = healthData.createDataBlock();
+          		    healthBlock = healthData.createDataBlock();
         		
+          		// encoding
+          		textEncoding = fac.newTextEncoding(",", "\n");
           	}                	           	              	
         }
         catch (Exception e)

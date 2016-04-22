@@ -49,11 +49,10 @@ import com.google.gson.Gson;
  * @since April 14, 2016
  */
 public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
-{
-    
+{    
     DataComponent navData;
     DataBlock navBlock;
-    TextEncoding textEncoding;
+    TextEncoding navEncoding;
     Timer timer;
     
     // set default timezone to GMT; check TZ in init below
@@ -111,16 +110,18 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
         		"Acceleration Magnitude", 
         		"Magnitude of the acceleration Vector", 
         		"m/s2", DataType.FLOAT);
-         navData.addComponent("accelMag", accelMag);
+        navData.addComponent("accelMag", accelMag);
          
-         navBlock = navData.createDataBlock();
+        navBlock = navData.createDataBlock();
         
+        // encoding
+        navEncoding = fac.newTextEncoding(",", "\n");
     }
+    
     
     protected void start()
     {
-
-    	if (timer != null)
+        if (timer != null)
             return;
         
         try
@@ -131,14 +132,12 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	      {
 	            @Override
 	            public void run()
-	            {
-	            	
+	            {	            	
 	                InputStream is = null;
 	                
 	                // send post query
 	                try
-	                {
-	                	
+	                {	                	
 	                 	String json = getSensorData();
 	                 	
 	//                	if (json.equalsIgnoreCase("0"))
@@ -153,8 +152,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                  	SensorDataArray sensorArray = gson.fromJson(json, SensorDataArray.class);	
 	                  	SensorData[] sensors = sensorArray.sensors;
 	                  	
-	                  	//  Identify each array component and assign to correct block index
-	                  	
+	                  	//  Identify each array component and assign to correct block index	                  	
 	                  	for (int i=0; i < sensors.length; i++)
 	                  	{
 	                  		// check for no data
@@ -222,7 +220,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
 	                  				 val = Float.NaN;
 	                  			else	
-	                            	 val = Float.parseFloat(sensors[i].data);
+	                            	 val = (float)(Float.parseFloat(sensors[i].data) * 9.81);
 	                            data.setFloatValue(7, val);
 	                        }
 	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelY"))
@@ -231,7 +229,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
 	                  				 val = Float.NaN;
 	                  			else	
-	                            	 val = Float.parseFloat(sensors[i].data);
+	                            	 val = (float)(Float.parseFloat(sensors[i].data) * 9.81);
 	                            data.setFloatValue(8, val);
 	                        }
 	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelZ"))
@@ -240,7 +238,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
 	                  				 val = Float.NaN;
 	                  			else	
-	                            	 val = Float.parseFloat(sensors[i].data);
+	                            	 val = (float)(Float.parseFloat(sensors[i].data) * 9.81);
 	                            data.setFloatValue(9, val);
 	                        }
 	                  		else if ((sensors[i].name).equalsIgnoreCase("InternalAccelG"))
@@ -249,15 +247,14 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                  			if ((sensors[i].has_data).equalsIgnoreCase("0"))
 	                  				 val = Float.NaN;
 	                  			else	
-	                            	 val = Float.parseFloat(sensors[i].data);
+	                            	 val = (float)(Float.parseFloat(sensors[i].data) * 9.81);
 	                            data.setFloatValue(10, val);
-	                        }
-	                			                  		
-	                  	}                	           	              	
+	                        }	                			                  		
+	                  	}
+	                  	
 		                latestRecord = data;
 		                latestRecordTime = System.currentTimeMillis();
-		                eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, VirbXeNavOutput.this, latestRecord));
- 	                  		
+		                eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, VirbXeNavOutput.this, latestRecord)); 	                  		
 	                }
 	                catch (Exception e)
 	                {
@@ -376,6 +373,6 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
     @Override
     public DataEncoding getRecommendedEncoding()
     {
-        return textEncoding;
+        return navEncoding;
     }
 }
