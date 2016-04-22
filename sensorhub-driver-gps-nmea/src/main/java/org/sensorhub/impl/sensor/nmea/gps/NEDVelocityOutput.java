@@ -48,7 +48,6 @@ public class NEDVelocityOutput extends NMEAGpsOutput
     }
 
     
-    @Override
     protected void init()
     {
         SWEHelper fac = new SWEHelper();
