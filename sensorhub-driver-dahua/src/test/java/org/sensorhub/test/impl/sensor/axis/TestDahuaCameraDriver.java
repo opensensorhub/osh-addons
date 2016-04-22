@@ -138,7 +138,7 @@ public class TestDahuaCameraDriver implements IEventListener
         //initWindow();
     	
     	// register listener on data interface
-        ISensorDataInterface di = driver.getObservationOutputs().get("videoOutput");
+        ISensorDataInterface di = driver.getObservationOutputs().get("video");
     	di.registerListener(this);    	
         
         // start capture and wait until we receive the first frame
@@ -175,7 +175,7 @@ public class TestDahuaCameraDriver implements IEventListener
     	// register listeners
     	ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
         di.registerListener(this);
-        ISensorDataInterface di2 = driver.getObservationOutputs().get("videoOutput");
+        ISensorDataInterface di2 = driver.getObservationOutputs().get("video");
         di2.registerListener(this);
         
         // get ptz control interface

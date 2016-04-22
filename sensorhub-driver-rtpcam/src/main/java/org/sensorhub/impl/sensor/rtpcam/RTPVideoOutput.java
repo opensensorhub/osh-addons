@@ -66,7 +66,7 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
     
     public RTPVideoOutput(SensorType driver, BasicVideoConfig videoConfig, TCPConfig netConfig, RTSPConfig rtspConfig)
     {
-        this(driver, "videoOutput", videoConfig, netConfig, rtspConfig);
+        this(driver, "video", videoConfig, netConfig, rtspConfig);
     }
     
     

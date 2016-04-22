@@ -48,7 +48,7 @@ public class TestRTPCameraDriverVirbXE implements IEventListener
         config.id = UUID.randomUUID().toString();
         config.cameraID = "virb:001";
         config.video.backupFile = "/home/alex/test-virb.h264";
-        config.net.remoteHost = "192.168.0.17";
+        config.net.remoteHost = "192.168.0.22";
         //config.net.user = "admin";
         //config.net.password = "op3nsaysam3";
         config.rtsp.rtspPort = 554;
@@ -95,7 +95,7 @@ public class TestRTPCameraDriverVirbXE implements IEventListener
     @Test
     public void testSendMeasurements() throws Exception
     {        
-        ISensorDataInterface camOutput = driver.getObservationOutputs().get("videoOutput");
+        ISensorDataInterface camOutput = driver.getObservationOutputs().get("video");
         camOutput.registerListener(this);
         
         driver.start();

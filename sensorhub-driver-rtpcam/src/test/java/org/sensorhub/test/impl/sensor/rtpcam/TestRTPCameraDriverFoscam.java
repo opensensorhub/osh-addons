@@ -84,7 +84,7 @@ public class TestRTPCameraDriverFoscam implements IEventListener
     @Test
     public void testSendMeasurements() throws Exception
     {        
-        ISensorDataInterface camOutput = driver.getObservationOutputs().get("videoOutput");
+        ISensorDataInterface camOutput = driver.getObservationOutputs().get("video");
         camOutput.registerListener(this);
         
         driver.start();

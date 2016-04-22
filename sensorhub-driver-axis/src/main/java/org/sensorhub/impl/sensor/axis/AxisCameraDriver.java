@@ -73,7 +73,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
         // check first if connected
     	if (isConnected())
     	{    	
-	    	String videoOutName = "videoOutput";
+	    	String videoOutName = "video";
 	    	int videoOutNum = 1;
 	    	
     	    // add MJPEG video output
