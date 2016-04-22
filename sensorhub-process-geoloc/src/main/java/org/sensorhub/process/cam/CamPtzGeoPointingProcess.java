@@ -119,13 +119,13 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
         cameraRotInput = fac.newDataRecord();
         cameraRotInput.setName("camRotation");
         cameraRotInput.addField("time", fac.newTimeStampIsoUTC());
-        cameraRotInput.addField("rot", fac.newEulerOrientationENU(SWEConstants.DEF_ORIENTATION));
+        cameraRotInput.addField("rot", fac.newEulerOrientationENU(null));
         inputs.put(cameraRotInput.getName(), cameraRotInput);
         
         targetLocInput = fac.newDataRecord();
         targetLocInput.setName("targetLocation");
         targetLocInput.addField("time", fac.newTimeStampIsoUTC());
-        targetLocInput.addField("loc", fac.newLocationVectorLLA(SWEConstants.DEF_LOCATION));
+        targetLocInput.addField("loc", fac.newLocationVectorLLA(null));
         inputs.put(targetLocInput.getName(), targetLocInput);
         
         // create outputs
