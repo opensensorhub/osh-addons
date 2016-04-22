@@ -52,7 +52,6 @@ public class AHRSOutput extends AbstractSensorOutput<AHRSSensor>
     	return "ahrsData";
     }
    
-    @Override
     protected void init()
     {
     	GeoPosHelper fac = new GeoPosHelper();

@@ -39,7 +39,6 @@ public class DeviceStatusOutput extends AbstractSensorOutput<AngelSensor>
     }
 
 
-    @Override
     protected void init()
     {
         SWEHelper fac = new SWEHelper();

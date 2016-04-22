@@ -67,7 +67,6 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
     }
 
 
-    @Override
     protected void init()
     {
         // build SWE Common record structure

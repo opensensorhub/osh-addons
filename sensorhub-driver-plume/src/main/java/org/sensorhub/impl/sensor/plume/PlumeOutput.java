@@ -58,7 +58,6 @@ public class PlumeOutput extends AbstractSensorOutput<PlumeSensor>
 	}
 
 
-	@Override
 	protected void init()
 	{
 		/**

@@ -55,7 +55,6 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     }
 
 
-    @Override
     protected void init()
     {
         SWEHelper fac = new SWEHelper();
