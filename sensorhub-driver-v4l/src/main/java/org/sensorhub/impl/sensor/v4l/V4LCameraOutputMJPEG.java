@@ -79,6 +79,11 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
             camParams.frameRate = frameGrabber.getFrameInterval().denominator / frameGrabber.getFrameInterval().numerator;
             camParams.imgFormat = frameGrabber.getImageFormat().getName();
             
+            // create SWE output structure
+            VideoCamHelper fac = new VideoCamHelper();
+            dataStream = fac.newVideoOutputMJPEG(getName(), camParams.imgWidth, camParams.imgHeight);
+            
+            // start capture
             if (camParams.doCapture)
             {
                 parentSensor.getLogger().debug("Starting V4L capture");
@@ -91,9 +96,6 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
         {
             throw new SensorException("Error while initializing frame grabber", e);
         }
-        
-        VideoCamHelper fac = new VideoCamHelper();
-        dataStream = fac.newVideoOutputMJPEG(getName(), camParams.imgWidth, camParams.imgHeight);
     }
     
     
