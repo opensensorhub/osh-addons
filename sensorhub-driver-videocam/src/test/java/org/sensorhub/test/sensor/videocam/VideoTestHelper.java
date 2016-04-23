@@ -60,6 +60,9 @@ public class VideoTestHelper
     
     public void renderFrameJPEG(DataBlock data)
     {
+        if (videoWindow == null)
+            return;
+        
         DataBlock frameBlock = ((DataBlockMixed)data).getUnderlyingObject()[1];
         byte[] frameData = (byte[])frameBlock.getUnderlyingObject();
         

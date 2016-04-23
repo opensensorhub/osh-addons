@@ -15,19 +15,14 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.v4l;
 
 import net.opengis.swe.v20.DataBlock;
-import net.opengis.swe.v20.DataComponent;
-import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.DataStream;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.vast.data.DataBlockMixed;
 import au.edu.jcu.v4l4j.CaptureCallback;
-import au.edu.jcu.v4l4j.FrameGrabber;
 import au.edu.jcu.v4l4j.ImageFormat;
 import au.edu.jcu.v4l4j.V4L4JConstants;
 import au.edu.jcu.v4l4j.VideoFrame;
-import au.edu.jcu.v4l4j.exceptions.StateException;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 
 
@@ -42,8 +37,6 @@ import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCallback
 {
     ImageFormat imgFormat;
-    FrameGrabber frameGrabber;
-    DataStream dataStream;
     
     
     protected V4LCameraOutputMJPEG(V4LCameraDriver driver, ImageFormat imgFormat)
@@ -56,7 +49,7 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
     @Override
     public String getName()
     {
-        return "camOutput";
+        return "camOutput_MJPEG";
     }
     
     
@@ -70,7 +63,7 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
         {
             frameGrabber = parentSensor.videoDevice.getRawFrameGrabber(camParams.imgWidth, camParams.imgHeight, 0, V4L4JConstants.STANDARD_WEBCAM, imgFormat);
             //frameGrabber = parentSensor.videoDevice.getJPEGFrameGrabber(camParams.imgWidth, camParams.imgHeight, 0, V4L4JConstants.STANDARD_WEBCAM, 80);
-            frameGrabber.setFrameInterval(1, camParams.frameRate);
+            //frameGrabber.setFrameInterval(1, camParams.frameRate);
             parentSensor.getLogger().debug("V4L frame grabber created");
             
             // adjust params to what was actually set up by V4L
@@ -121,7 +114,9 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
             dataBlock.setDoubleValue(getJulianTimeStamp(frame.getCaptureTime()));
             
             // either compressed or RGB data
-            ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(frame.getBytes()); // .clone()
+            byte[] frameData = new byte[frame.getFrameLength()];
+            System.arraycopy(frame.getBytes(), 0, frameData, 0, frameData.length);
+            ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(frameData);
             
             // update latest record and send event
             latestRecord = dataBlock;
@@ -135,51 +130,4 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
             e.printStackTrace();
         }    
     }
-    
-    
-    @Override
-    public DataEncoding getRecommendedEncoding()
-    {
-        return dataStream.getEncoding();
-    }
-
-
-    @Override
-    public double getAverageSamplingPeriod()
-    {
-        return parentSensor.camParams.frameRate;
-    }
-
-
-    @Override
-    public DataComponent getRecordDescription()
-    {
-        return dataStream.getElementType();
-    }
-    
-    
-    @Override
-    protected void stop()
-    {
-        if (frameGrabber != null)
-        {
-            if (parentSensor.camParams.doCapture)
-            {
-                parentSensor.getLogger().debug("Stopping V4L capture");
-                frameGrabber.stopCapture();
-                parentSensor.getLogger().debug("V4L capture stopped");
-            }
-            
-            parentSensor.videoDevice.releaseFrameGrabber();
-            parentSensor.videoDevice.releaseControlList();
-            
-            try { parentSensor.videoDevice.release(); }
-            catch (StateException e) { /*in some case device is already released*/ }
-            
-            parentSensor.getLogger().debug("V4L device released");
-            
-            frameGrabber = null;
-        }
-    }
-
 }

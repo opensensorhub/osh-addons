@@ -212,7 +212,7 @@ public class VideoCamHelper extends SWEHelper
     }
     
     
-    public DataRecord newVideoOutputRGB(String name, int width, int height)
+    public DataRecord newVideoFrameRGB(String name, int width, int height)
     {
         Time timeStamp = newTimeStampIsoUTC();        
         DataArray imgArr = newRgbImage(width, height, DataType.BYTE);
@@ -226,9 +226,17 @@ public class VideoCamHelper extends SWEHelper
     }
     
     
+    public DataStream newVideoOutputRGB(String name, int width, int height)
+    {
+        DataRecord dataStruct = newVideoFrameRGB(name, width, height);
+        BinaryEncoding dataEnc = SWEHelper.getDefaultBinaryEncoding(dataStruct);        
+        return newDataStream(dataStruct, dataEnc);
+    }
+    
+    
     public DataStream newVideoOutputCODEC(String name, int width, int height, String codec)
     {
-        DataRecord dataStruct = newVideoOutputRGB(name, width, height);
+        DataRecord dataStruct = newVideoFrameRGB(name, width, height);
         
         // MJPEG encoding
         BinaryEncoding dataEnc = newBinaryEncoding();

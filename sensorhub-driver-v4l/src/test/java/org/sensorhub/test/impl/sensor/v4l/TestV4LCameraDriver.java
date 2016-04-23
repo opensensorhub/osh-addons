@@ -14,16 +14,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.test.impl.sensor.v4l;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Iterator;
 import java.util.UUID;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
-import javax.swing.JFrame;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
@@ -39,6 +30,7 @@ import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.v4l.V4LCameraDriver;
 import org.sensorhub.impl.sensor.v4l.V4LCameraConfig;
+import org.sensorhub.test.sensor.videocam.VideoTestHelper;
 import org.vast.data.DataValue;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.SWEUtils;
@@ -47,13 +39,12 @@ import static org.junit.Assert.*;
 
 public class TestV4LCameraDriver implements IEventListener
 {
-    final static int MAX_FRAMES = 300;
+    final static int MAX_FRAMES = 100;
     V4LCameraDriver driver;
     V4LCameraConfig config;
     int actualWidth, actualHeight;
-    JFrame videoWindow;
-    BufferedImage img;
     int frameCount;
+    VideoTestHelper videoTestHelper = new VideoTestHelper();
     
     
     @Before
@@ -111,27 +102,14 @@ public class TestV4LCameraDriver implements IEventListener
     }
     
     
-    private void initWindow() throws Exception
-    {
-        // prepare frame and buffered image
-        ISensorDataInterface di = driver.getObservationOutputs().get("camOutput");
-        int height = di.getRecordDescription().getComponent(1).getComponentCount();
-        int width = di.getRecordDescription().getComponent(1).getComponent(0).getComponentCount();
-        videoWindow = new JFrame("Video");
-        videoWindow.setSize(width, height);
-        videoWindow.setVisible(true);
-        img = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
-    }
-    
-    
     @Test
     public void testCaptureAtDefaultRes() throws Exception
     {
-        initWindow();
-        
         // register listener on data interface
         ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+        assertTrue("No video output", di != null);
         di.registerListener(this);
+        videoTestHelper.initWindow(di);
         startCapture();
         
         // start capture and wait until we receive the first frame
@@ -139,7 +117,6 @@ public class TestV4LCameraDriver implements IEventListener
         {
             while (frameCount < MAX_FRAMES)
                 this.wait();
-            driver.stop();
         }
         
         assertTrue(actualWidth == config.defaultParams.imgWidth);
@@ -226,33 +203,10 @@ public class TestV4LCameraDriver implements IEventListener
         actualWidth = camDataStruct.getComponent(1).getComponent(0).getComponentCount();
         actualHeight = camDataStruct.getComponent(1).getComponentCount();
         
-        System.out.println("New data received from sensor " + newDataEvent.getSensorID());
+        System.out.println("New frame received");
         System.out.println("Image is " + actualWidth + "x" + actualHeight);
         
-        camDataStruct.setData(newDataEvent.getRecords()[0]);
-        byte[] frameData = (byte[])camDataStruct.getComponent(1).getData().getUnderlyingObject();
-        
-        /*// use RGB data directly
-        byte[] destArray = ((DataBufferByte)img.getRaster().getDataBuffer()).getData();
-        System.arraycopy(frameData, 0, destArray, 0, dataBlockSize-1);*/
-        
-        // uncompress JPEG data
-        BufferedImage rgbImage;
-        try
-        {
-            InputStream imageStream = new ByteArrayInputStream(frameData);                               
-            ImageInputStream input = ImageIO.createImageInputStream(imageStream); 
-            Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
-            ImageReader reader = readers.next();
-            reader.setInput(input);
-            rgbImage = reader.read(0);
-            videoWindow.getContentPane().getGraphics().drawImage(rgbImage, 0, 0, null);
-        }
-        catch (IOException e1)
-        {
-            throw new RuntimeException(e1);
-        }
-        
+        videoTestHelper.renderFrameJPEG(newDataEvent.getRecords()[0]);
         frameCount++;
         
         synchronized (this) { this.notify(); }
@@ -262,8 +216,7 @@ public class TestV4LCameraDriver implements IEventListener
     @After
     public void cleanup()
     {
-        if (videoWindow != null)
-            videoWindow.dispose();
+        videoTestHelper.dispose();
         
         if (driver != null)
             driver.stop();
