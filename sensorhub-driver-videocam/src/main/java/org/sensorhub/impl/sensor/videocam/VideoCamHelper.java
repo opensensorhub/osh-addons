@@ -216,7 +216,7 @@ public class VideoCamHelper extends SWEHelper
     {
         Time timeStamp = newTimeStampIsoUTC();        
         DataArray imgArr = newRgbImage(width, height, DataType.BYTE);
-        imgArr.setName("img");        
+        imgArr.setName("img");
         
         DataRecord dataStruct = wrapWithTimeStamp(timeStamp, imgArr);
         dataStruct.setName(name);

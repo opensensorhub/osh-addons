@@ -81,6 +81,19 @@ public class V4LCameraOutputRGB extends V4LCameraOutput implements CaptureCallba
             camParams.frameRate = frameGrabber.getFrameInterval().denominator / frameGrabber.getFrameInterval().numerator;
             camParams.imgFormat = frameGrabber.getImageFormat().getName();
             
+            // build output structure
+            camDataStruct = new DataArrayImpl(camParams.imgHeight);
+            camDataStruct.setName(getName());
+            camDataStruct.setDefinition("http://sensorml.com/ont/swe/property/VideoFrame");
+            DataArray imgRow = new DataArrayImpl(camParams.imgWidth);
+            ((DataArray)camDataStruct).addComponent("row", imgRow);        
+            DataRecord imgPixel = new DataRecordImpl(3);
+            imgPixel.addComponent("red", new CountImpl(DataType.BYTE));
+            imgPixel.addComponent("green", new CountImpl(DataType.BYTE));
+            imgPixel.addComponent("blue", new CountImpl(DataType.BYTE));
+            imgRow.addComponent("pixel", imgPixel);
+            
+            // start capture
             frameGrabber.setCaptureCallback(this);
             if (camParams.doCapture)
                 frameGrabber.startCapture();
@@ -88,19 +101,7 @@ public class V4LCameraOutputRGB extends V4LCameraOutput implements CaptureCallba
         catch (V4L4JException e)
         {
             throw new SensorException("Error while initializing frame grabber", e);
-        }
-        
-        // build output structure
-        camDataStruct = new DataArrayImpl(camParams.imgHeight);
-        camDataStruct.setName(getName());
-        camDataStruct.setDefinition("http://sensorml.com/ont/swe/property/VideoFrame");
-        DataArray imgRow = new DataArrayImpl(camParams.imgWidth);
-        ((DataArray)camDataStruct).addComponent("row", imgRow);        
-        DataRecord imgPixel = new DataRecordImpl(3);
-        imgPixel.addComponent("red", new CountImpl(DataType.BYTE));
-        imgPixel.addComponent("green", new CountImpl(DataType.BYTE));
-        imgPixel.addComponent("blue", new CountImpl(DataType.BYTE));
-        imgRow.addComponent("pixel", imgPixel);
+        }        
     }
 
 
