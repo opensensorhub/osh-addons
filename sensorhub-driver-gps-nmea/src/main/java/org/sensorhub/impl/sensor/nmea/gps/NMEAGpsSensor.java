@@ -156,6 +156,8 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
                 {
                     pollAndSendMeasurement();
                 }
+                
+                reader = null;
             }
         });
         
@@ -164,7 +166,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
     }
     
     
-    private synchronized void pollAndSendMeasurement()
+    private void pollAndSendMeasurement()
     {
         try
         {
@@ -246,7 +248,6 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
         {
             try { reader.close(); }
             catch (IOException e) { }
-            reader = null;
         }
         
         if (commProvider != null)
