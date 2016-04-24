@@ -17,6 +17,7 @@ package org.sensorhub.impl.sensor.bno055;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import net.opengis.sensorml.v20.ClassifierList;
 import net.opengis.sensorml.v20.PhysicalSystem;
 import net.opengis.sensorml.v20.SpatialFrame;
@@ -24,9 +25,12 @@ import net.opengis.sensorml.v20.Term;
 import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.module.IModuleStateManager;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.vast.sensorML.SMLFactory;
+import org.vast.swe.DataInputStreamLI;
+import org.vast.swe.DataOutputStreamLI;
 import org.vast.swe.SWEHelper;
 
 
@@ -41,9 +45,13 @@ import org.vast.swe.SWEHelper;
 public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
 {
     protected final static String CRS_ID = "SENSOR_FRAME";
-        
+    protected final static String STATE_CALIB_DATA = "calib_data";
+    
     ICommProvider<? super CommConfig> commProvider;
+    DataInputStreamLI dataIn;
+    DataOutputStreamLI dataOut;
     Bno055Output dataInterface;
+    byte[] calibData;
     
     
     public Bno055Sensor()
@@ -70,10 +78,24 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
         {
             super.updateSensorDescription();
             
-            SMLFactory smlFac = new SMLFactory();
-            sensorDescription.setId("Bosch_BNO055");
-            sensorDescription.setDescription("Bosch BNO055 Absolute Orientation Sensor");
+            // identifiers: use serial number from config or first characters of local ID
+            String sensorID = config.serialNumber;
+            if (sensorID == null)
+            {
+                int endIndex = Math.min(config.id.length(), 8);
+                sensorID = config.id.substring(0, endIndex);
+            }
             
+            if (AbstractSensorModule.DEFAULT_ID.equals(sensorDescription.getId()))
+                sensorDescription.setId("BOSCH_BNO055_" + sensorID.toUpperCase());
+                                        
+            if (sensorDescription.getUniqueIdentifier().endsWith(config.id))
+                sensorDescription.setUniqueIdentifier("urn:bosch:bno055:" + sensorID);
+                        
+            if (!sensorDescription.isSetDescription())
+                sensorDescription.setDescription("Bosch BNO055 absolute orientation sensor");
+            
+            SMLFactory smlFac = new SMLFactory();
             ClassifierList classif = smlFac.newClassifierList();
             sensorDescription.getClassificationList().add(classif);
             Term term;
@@ -93,9 +115,9 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
             SpatialFrame localRefFrame = smlFac.newSpatialFrame();
             localRefFrame.setId(CRS_ID);
             localRefFrame.setOrigin("Position of Accelerometers (as marked on the plastic box of the device)");
-            localRefFrame.addAxis("X", "The X axis is in the plane of the aluminum mounting plate, parallel to the serial connector (as marked on the plastic box of the device)");
-            localRefFrame.addAxis("Y", "The Y axis is in the plane of the aluminum mounting plate, orthogonal to the serial connector (as marked on the plastic box of the device)");
-            localRefFrame.addAxis("Z", "The Z axis is orthogonal to the aluminum mounting plate, so that the frame is direct (as marked on the plastic box of the device)");
+            localRefFrame.addAxis("X", "The X axis is in the plane of the circuit board");
+            localRefFrame.addAxis("Y", "The Y axis is in the plane of the circuit board");
+            localRefFrame.addAxis("Z", "The Z axis is orthogonal to circuit board, pointing outward from the component face");
             ((PhysicalSystem)sensorDescription).addLocalReferenceFrame(localRefFrame);
         }
     }
@@ -107,19 +129,31 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
         // init comm provider
         if (commProvider == null)
         {
+            // we need to recreate comm provider here because it can be changed by UI
             if (config.commSettings == null)
                 throw new SensorHubException("No communication settings specified");
             commProvider = config.commSettings.getProvider();
             commProvider.start();
-            
-            // we need to recreate comm provider here because it can be changed by UI
-            // TODO do that in updateConfig
+
+            // connect to comm data streams
             try
             {   
-                // send init commands
+                dataIn = new DataInputStreamLI(commProvider.getInputStream());
+                dataOut = new DataOutputStreamLI(commProvider.getOutputStream());
+                getLogger().info("Connected to IMU data stream");
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException("Error while initializing communications ", e);
+            }
+            
+            // send init commands
+            try
+            {
                 setOperationMode(Bno055Constants.OPERATION_MODE_CONFIG);
                 Thread.sleep(650);
                 setPowerMode(Bno055Constants.POWER_MODE_NORMAL);
+                readCalibration(); // read calibration from sensor
                 setTriggerMode((byte)0);
                 setOperationMode(Bno055Constants.OPERATION_MODE_NDOF);
             }
@@ -176,15 +210,119 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
         int b1 = is.read();
         if (b0 != (0xEE & 0xFF) && b1 != 1)
             throw new IOException("Register Write Error");
+        
+        // wait 30ms for mode switch to complete
+        try { Thread.sleep(30); }
+        catch (InterruptedException e) { }
+    }
+    
+    
+    protected void loadCalibration() throws IOException
+    {
+        
+    }
+    
+    
+    /* read calibration from sensor */
+    protected void readCalibration()
+    {
+        try
+        {
+            // build command
+            byte[] readCalibCmd =
+            {
+                Bno055Constants.START_BYTE,
+                Bno055Constants.DATA_READ,
+                Bno055Constants.CALIB_ADDR,
+                Bno055Constants.CALIB_SIZE
+            };
+            
+            sendReadCommand(readCalibCmd);
+            
+            // skip length byte and read 22 bytes
+            dataIn.read();
+            calibData = new byte[22];
+            dataIn.read(calibData);
+            
+            getLogger().info("Calibration data is {}", Arrays.toString(calibData));
+        }
+        catch (Exception e)
+        {
+            getLogger().error("Cannot read calibration data from sensor", e);
+        }
+    }
+    
+    
+    protected void sendReadCommand(byte[] readCmd) throws IOException
+    {
+        dataOut.write(readCmd);
+        dataOut.flush();
+        
+        int firstByte = dataIn.read();
+        
+        // skip measurement if there is a bus error
+        if (firstByte == (Bno055Constants.ERR_BYTE & 0xFF))
+        {
+            dataIn.readByte();
+            return;
+        }
+        
+        // other type of error??
+        if (firstByte != (Bno055Constants.ACK_BYTE & 0xFF))
+            throw new IOException(String.format("Register Read Error: %02X", firstByte));
     }
     
 
     @Override
+    public void loadState(IModuleStateManager loader) throws SensorHubException
+    {
+        super.loadState(loader);
+        
+        try
+        {
+            InputStream is = loader.getAsInputStream(STATE_CALIB_DATA);
+            if (is != null)
+            {
+                calibData = new byte[22];
+                is.read(calibData);
+            }
+        }
+        catch (Exception e)
+        {
+            getLogger().error("Cannot load calibration data", e);
+        }        
+    }
+
+
+    @Override
+    public void saveState(IModuleStateManager saver) throws SensorHubException
+    {
+        super.saveState(saver);        
+        
+        if (calibData != null)
+        {
+            try
+            {
+                OutputStream os = saver.getOutputStream(STATE_CALIB_DATA);
+                os.write(calibData);
+                os.flush();
+            }
+            catch (IOException e)
+            {
+                getLogger().error("Cannot save calibration data", e);
+            }
+        }
+    }
+
+
+    @Override
     public void stop() throws SensorHubException
     {
+        readCalibration();
+        
         if (dataInterface != null)
             dataInterface.stop();
-                    
+                        
         if (commProvider != null)
         {
             commProvider.stop();
@@ -195,8 +333,7 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
 
     @Override
     public void cleanup() throws SensorHubException
-    {
-       
+    {       
     }
     
     
