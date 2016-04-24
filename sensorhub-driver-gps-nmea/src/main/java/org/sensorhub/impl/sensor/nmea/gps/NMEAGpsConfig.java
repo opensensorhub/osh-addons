@@ -24,8 +24,8 @@ import org.sensorhub.api.sensor.SensorConfig;
 public class NMEAGpsConfig extends SensorConfig
 {    
     
-    @DisplayInfo(label="Sensor Unique ID", desc="Suffix to use to generate unique identifier URI (e.g. serial number)")
-    public String sensorID = null;
+    @DisplayInfo(desc="Sensor serial number (used as suffix to generate unique identifier URI)")
+    public String serialNumber = null;
     
     
     @DisplayInfo(label="Communication Settings", desc="Settings for selected communication port")
