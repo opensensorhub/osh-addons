@@ -23,6 +23,7 @@ import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,8 +98,10 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            sensorDescription.setId("GPS_SENSOR");
-            sensorDescription.setDescription("NMEA 0183 Compatible GNSS Receiver");
+            sensorDescription.setId("GPS_SENSOR_" + config.sensorID);
+            sensorDescription.setUniqueIdentifier("urn:osh:nmea:gps:" + config.sensorID);
+            if (!sensorDescription.isSetDescription())
+                sensorDescription.setDescription("NMEA 0183 Compatible GNSS Receiver");
         }
     }
 
@@ -107,7 +110,11 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
     public void start() throws SensorHubException
     {
         if (started)
-            return;        
+            return;
+        
+        // check that sensor ID is set
+        if (config.sensorID == null)
+            throw new SensorException("The sensor ID must be set");
                 
         // init comm provider
         if (commProvider == null)
