@@ -98,15 +98,22 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
         {
             super.updateSensorDescription();
            
-            if (!sensorDescription.isSetIdentifier())
+            // identifiers: use serial number from config or first characters of local ID
+            String sensorID = config.serialNumber;
+            if (sensorID == null)
             {
-                String sensorID = (config.serialNumber != null) ? config.serialNumber : getLocalID();
-                sensorDescription.setId("GPS_SENSOR_" + sensorID);
-                sensorDescription.setUniqueIdentifier("urn:osh:nmea:gps:" + sensorID);
-            }
-            
+                int endIndex = Math.min(config.id.length(), 8);
+                sensorID = config.id.substring(0, endIndex);
+            }    
+               
+            if (AbstractSensorModule.DEFAULT_ID.equals(sensorDescription.getId()))
+                sensorDescription.setId("GPS_SENSOR_" + sensorID.toUpperCase());
+                
+            if (sensorDescription.getUniqueIdentifier().endsWith(config.id))
+                sensorDescription.setUniqueIdentifier("urn:osh:nmea-gps:" + sensorID);
+                        
             if (!sensorDescription.isSetDescription())
-                sensorDescription.setDescription("NMEA 0183 Compatible GNSS Receiver");
+                sensorDescription.setDescription("NMEA 0183 compatible GNSS receiver");
         }
     }
 

@@ -153,8 +153,19 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
         {
             super.updateSensorDescription();
             
+            // identifiers: use serial number from config or first characters of local ID
+            String sensorID = config.serialNumber;
+            if (sensorID == null)
+            {
+                int endIndex = Math.min(config.id.length(), 8);
+                sensorID = config.id.substring(0, endIndex);
+            }
+            
             if (AbstractSensorModule.DEFAULT_ID.equals(sensorDescription.getId()))
-                sensorDescription.setId("V4L_CAMERA");
+                sensorDescription.setId("V4L_CAMERA_" + sensorID.toUpperCase());
+            
+            if (sensorDescription.getUniqueIdentifier().endsWith(config.id))
+                sensorDescription.setUniqueIdentifier("urn:osh:v4l-cam:" + sensorID);
             
             if (!sensorDescription.isSetDescription())
                 sensorDescription.setDescription("Video4Linux camera on port " + videoDevice.getDevicefile());
