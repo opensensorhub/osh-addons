@@ -55,7 +55,7 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
     
     
     public Bno055Sensor()
-    {       
+    {
     }
 
 
@@ -63,6 +63,16 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
     public void init(Bno055Config config) throws SensorHubException
     {
         super.init(config);
+        
+        // generate identifiers: use serial number from config or first characters of local ID
+        String sensorID = config.serialNumber;
+        if (sensorID == null)
+        {
+            int endIndex = Math.min(config.id.length(), 8);
+            sensorID = config.id.substring(0, endIndex);
+        }
+        this.uniqueID = "urn:bosch:bno055:" + sensorID;
+        this.xmlID = "BOSCH_BNO055_" + sensorID.toUpperCase();
         
         // create main data interface
         dataInterface = new Bno055Output(this);
@@ -78,20 +88,6 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
         {
             super.updateSensorDescription();
             
-            // identifiers: use serial number from config or first characters of local ID
-            String sensorID = config.serialNumber;
-            if (sensorID == null)
-            {
-                int endIndex = Math.min(config.id.length(), 8);
-                sensorID = config.id.substring(0, endIndex);
-            }
-            
-            if (AbstractSensorModule.DEFAULT_ID.equals(sensorDescription.getId()))
-                sensorDescription.setId("BOSCH_BNO055_" + sensorID.toUpperCase());
-                                        
-            if (sensorDescription.getUniqueIdentifier().endsWith(config.id))
-                sensorDescription.setUniqueIdentifier("urn:bosch:bno055:" + sensorID);
-                        
             if (!sensorDescription.isSetDescription())
                 sensorDescription.setDescription("Bosch BNO055 absolute orientation sensor");
             
@@ -153,12 +149,14 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
                 setOperationMode(Bno055Constants.OPERATION_MODE_CONFIG);
                 Thread.sleep(650);
                 setPowerMode(Bno055Constants.POWER_MODE_NORMAL);
-                readCalibration(); // read calibration from sensor
+                //readCalibration(); // read calibration from sensor
+                //Thread.sleep(10);
                 setTriggerMode((byte)0);
                 setOperationMode(Bno055Constants.OPERATION_MODE_NDOF);
             }
             catch (Exception e)
             {
+                commProvider.stop();
                 commProvider = null;
                 throw new SensorHubException("Error sending init commands", e);
             }
@@ -318,13 +316,12 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
     @Override
     public void stop() throws SensorHubException
     {
-        readCalibration();
-        
         if (dataInterface != null)
             dataInterface.stop();
                         
         if (commProvider != null)
         {
+            readCalibration();
             commProvider.stop();
             commProvider = null;
         }

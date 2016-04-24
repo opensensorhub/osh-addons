@@ -69,6 +69,8 @@ public class TestBno055DriverRxtx implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
+        assertEquals("Wrong number of sensor outputs", 1, driver.getObservationOutputs().size());
+        
         for (ISensorDataInterface di: driver.getObservationOutputs().values())
         {
             System.out.println();
@@ -83,6 +85,8 @@ public class TestBno055DriverRxtx implements IEventListener
     {
         System.out.println();
         AbstractProcess smlDesc = driver.getCurrentDescription();
+        assertEquals("Wrong number of sensor outputs in SML", 1, smlDesc.getOutputList().size());
+        
         new SMLUtils(SWEUtils.V2_0).writeProcess(System.out, smlDesc, true);
     }
     
