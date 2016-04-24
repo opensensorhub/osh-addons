@@ -17,8 +17,6 @@ package org.sensorhub.impl.sensor.bno055;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -27,6 +25,8 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Vector;
+import org.vast.swe.DataInputStreamLI;
+import org.vast.swe.DataOutputStreamLI;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
@@ -49,13 +49,14 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
         0x08
     };
     
+    private final static double QUAT_SCALE = 1<<14;
+    
     
     DataComponent imuData;
     DataEncoding dataEncoding;
     Timer timer;
-    
-    DataInputStream dataIn;
-    DataOutputStream dataOut;
+    DataInputStreamLI dataIn;
+    DataOutputStreamLI dataOut;
     
     int decimFactor = 1;
     int sampleCounter;
@@ -79,7 +80,6 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
     }
 
 
-    @Override
     protected void init()
     {
         GeoPosHelper fac = new GeoPosHelper();
@@ -130,28 +130,14 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
         // decode message
     	try
     	{
-    	    dataOut.write(READ_QUAT_CMD);
-    	    dataOut.flush();
-    	    
-			int firstByte = dataIn.read();
-			
-			// skip measurement if there is a bus error
-			if (firstByte == (Bno055Constants.ERR_BYTE & 0xFF))
-			{
-			    dataIn.read();
-			    return;
-			}
-			
-			// other type of error??
-			if (firstByte != (Bno055Constants.ACK_BYTE & 0xFF))
-				throw new IOException(String.format("Register Read Error: %02X", firstByte));
+    	    parentSensor.sendReadCommand(READ_QUAT_CMD);
 			
 			// skip length
-			dataIn.read();
+			dataIn.readByte();
 			
 			// read 4 quaternion components
 			for (int i=0; i<4; i++)
-				quat[i] = (float)(dataIn.readShort() / 32768.);
+				quat[i] = (float)(dataIn.readShort() / QUAT_SCALE);
 			
 		} catch (IOException e)
     	{
@@ -184,18 +170,8 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
     protected void start(ICommProvider<?> commProvider)
     {
         sampleCounter = -1;
-        
-        // connect to data stream
-        try
-        {
-            dataIn = new DataInputStream(commProvider.getInputStream());
-            dataOut = new DataOutputStream(commProvider.getOutputStream());
-            parentSensor.getLogger().info("Connected to IMU data stream");
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException("Error while initializing communications ", e);
-        }
+        dataIn = parentSensor.dataIn;
+        dataOut = parentSensor.dataOut;        
         
         // start main measurement thread
         TimerTask t = new TimerTask()
@@ -207,7 +183,7 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
         };
         
         timer = new Timer();
-        timer.schedule(t, 0, 100);
+        timer.schedule(t, 0, (long)(getAverageSamplingPeriod()*1000));
     }
 
 

@@ -23,8 +23,13 @@ import org.sensorhub.impl.comm.RS232Config;
 public class Bno055Config extends SensorConfig
 {
     
+    @DisplayInfo(desc="Sensor serial number (used as suffix to generate unique identifier URI)")
+    public String serialNumber = null;
+    
+    
     @DisplayInfo(label="Communication Settings", desc="Settings for selected communication port")
     public CommConfig commSettings;
+    
     
     @DisplayInfo(label="Decimation Factor", desc="Decimation factor of attitude measurements")
     public int decimFactor = 10;
@@ -36,7 +41,7 @@ public class Bno055Config extends SensorConfig
         
         RS232Config serialConf = new RS232Config();
         serialConf.moduleClass = "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider";
-        serialConf.portName = "/dev/tty.usbserial";
+        serialConf.portName = "/dev/ttyS0";
         serialConf.baudRate = 115200;
         this.commSettings = serialConf;
     }
