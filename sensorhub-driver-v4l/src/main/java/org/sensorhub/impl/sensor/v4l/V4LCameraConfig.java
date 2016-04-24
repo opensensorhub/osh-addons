@@ -14,6 +14,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.v4l;
 
+import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
 
@@ -27,16 +28,16 @@ import org.sensorhub.api.sensor.SensorConfig;
  */
 public class V4LCameraConfig extends SensorConfig
 {
-    /**
-     * Name of video device to use (e.g. /dev/video0)
-     */
+
+    @DisplayInfo(desc="Camera serial number (used as suffix to generate unique identifier URI)")
+    public String serialNumber = null;
+    
+    
+    @DisplayInfo(desc="Name of video device to use (e.g. /dev/video0)")
     public String deviceName = "/dev/video0";
     
     
-    /**
-     * Default camera params to use on startup
-     * These can then be changed with the control interface
-     */
+    @DisplayInfo(desc="Default camera params to use on startup. These can then be changed with the control interface")
     public V4LCameraParams defaultParams = new V4LCameraParams();
 
 }
