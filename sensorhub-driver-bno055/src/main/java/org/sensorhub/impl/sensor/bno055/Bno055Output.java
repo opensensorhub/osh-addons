@@ -27,7 +27,6 @@ import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Vector;
 import org.vast.swe.DataInputStreamLI;
 import org.vast.swe.DataOutputStreamLI;
-import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 
@@ -111,8 +110,7 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
         
         // integrated measurements
         //fac.newEulerOrientationENU(def)
-        Vector quat = fac.newQuatOrientationENU(
-                SWEHelper.getPropertyUri("Orientation"));
+        Vector quat = fac.newQuatOrientationENU(null);
         quat.setDataType(DataType.FLOAT);
         quat.setLocalFrame(localFrame);
         imuData.addComponent("attitude", quat);
