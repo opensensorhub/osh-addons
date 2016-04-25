@@ -128,7 +128,16 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
         // decode message
     	try
     	{
-    	    parentSensor.sendReadCommand(READ_QUAT_CMD);
+    	    try
+            {
+                parentSensor.sendReadCommand(READ_QUAT_CMD);
+            }
+            catch (IOException e)
+            {
+                // skip measurement if there is a bus error
+                dataIn.readByte();
+                return;
+            }
 			
 			// skip length
 			dataIn.readByte();
@@ -198,7 +207,7 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
     @Override
     public double getAverageSamplingPeriod()
     {
-    	return 0.01;
+    	return 0.1;
     }
 
 

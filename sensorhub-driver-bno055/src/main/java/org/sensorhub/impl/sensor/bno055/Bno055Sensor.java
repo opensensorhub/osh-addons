@@ -256,16 +256,8 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
         dataOut.write(readCmd);
         dataOut.flush();
         
+        // check for error
         int firstByte = dataIn.read();
-        
-        // skip measurement if there is a bus error
-        if (firstByte == (Bno055Constants.ERR_BYTE & 0xFF))
-        {
-            dataIn.readByte();
-            return;
-        }
-        
-        // other type of error??
         if (firstByte != (Bno055Constants.ACK_BYTE & 0xFF))
             throw new IOException(String.format("Register Read Error: %02X", firstByte));
     }
