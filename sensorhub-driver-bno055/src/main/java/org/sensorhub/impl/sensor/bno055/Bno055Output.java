@@ -142,8 +142,9 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
 			// skip length
 			dataIn.readByte();
 			
-			// read 4 quaternion components
-			for (int i=0; i<4; i++)
+			// read 4 quaternion components (scalar first)
+			quat[3] = (float)(dataIn.readShort() / QUAT_SCALE);
+			for (int i=0; i<3; i++)
 				quat[i] = (float)(dataIn.readShort() / QUAT_SCALE);
 			
 		} catch (IOException e)

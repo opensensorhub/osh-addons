@@ -25,7 +25,6 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Vector;
-import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 import org.vast.swe.helper.GeoPosHelper.ImuFields;
 
@@ -77,8 +76,7 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
         imuData = fac.newImuOutput(getName(), localFrame, ImuFields.GYRO, ImuFields.ACCEL);
         
         // integrated measurements
-        Vector quat = fac.newQuatOrientationENU(
-                SWEHelper.getPropertyUri("Orientation"));
+        Vector quat = fac.newQuatOrientationENU(null);
         quat.setDataType(DataType.FLOAT);
         imuData.addComponent("attitude", quat);
      
@@ -170,10 +168,10 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
             mag[0] = msgBuf.getFloat();
             mag[1] = msgBuf.getFloat();
             mag[2] = msgBuf.getFloat();
+            quat[3] = msgBuf.getFloat(); // scalar is first
             quat[0] = msgBuf.getFloat();
             quat[1] = msgBuf.getFloat();
             quat[2] = msgBuf.getFloat();
-            quat[3] = msgBuf.getFloat();
         }
         catch (IOException e)
         {
