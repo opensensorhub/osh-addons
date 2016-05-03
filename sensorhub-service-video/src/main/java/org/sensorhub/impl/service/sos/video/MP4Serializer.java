@@ -17,6 +17,7 @@ package org.sensorhub.impl.service.sos.video;
 import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.util.Arrays;
@@ -37,7 +38,7 @@ public class MP4Serializer implements ISOSCustomSerializer
     
     class H264DBtrack extends H264NalConsumingTrack
     {
-        public void start(ISOSDataProvider dataProvider) throws IOException
+        public void start(ISOSDataProvider dataProvider, OutputStream os) throws IOException
         {
             // write each record in output stream
             DataBlock nextRecord;
@@ -118,6 +119,9 @@ public class MP4Serializer implements ISOSCustomSerializer
                         nals.position(nals.limit());
                         nals.limit(nals.capacity());
                     }
+                    
+                    // flush output to make sure encoded frame is sent right away
+                    os.flush();
                 }
             }
             catch (EOFException e)
@@ -136,7 +140,7 @@ public class MP4Serializer implements ISOSCustomSerializer
     @Override
     public void write(ISOSDataProvider dataProvider, OWSRequest request) throws IOException
     {
-        BufferedOutputStream os = new BufferedOutputStream(request.getResponseStream(), 1024);
+        BufferedOutputStream os = new BufferedOutputStream(request.getResponseStream());
         
         // set MIME type for MP4 format
         if (request.getHttpResponse() != null)
@@ -151,7 +155,7 @@ public class MP4Serializer implements ISOSCustomSerializer
         //os = new FileOutputStream("/home/alex/testsos.mp4");
         FragmentedMp4Writer mp4Muxer = new FragmentedMp4Writer(Arrays.<StreamingTrack>asList(source), Channels.newChannel(os));        
         //StandardMp4Writer mp4Muxer = new StandardMp4Writer(Arrays.<StreamingTrack>asList(source), Channels.newChannel(os));
-        source.start(dataProvider);
+        source.start(dataProvider, os);
         mp4Muxer.close();
 
     }
