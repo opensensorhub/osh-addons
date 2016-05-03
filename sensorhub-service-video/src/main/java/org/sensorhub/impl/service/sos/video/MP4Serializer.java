@@ -17,7 +17,6 @@ package org.sensorhub.impl.service.sos.video;
 import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.util.Arrays;
@@ -34,8 +33,7 @@ import org.vast.ows.OWSRequest;
 public class MP4Serializer implements ISOSCustomSerializer
 {
     public static String MP4_MIME_TYPE = "video/mp4";
-    OutputStream os;
-    
+        
     
     class H264DBtrack extends H264NalConsumingTrack
     {
@@ -109,9 +107,6 @@ public class MP4Serializer implements ISOSCustomSerializer
                             //nals.position(nals.position()+4);
                             this.consumeNal(nals.slice());
                             
-                            // flush to make sure encoded frame is sent right away
-                            os.flush();
-                            
                             // to remember we already sent SPS and PPS
                             if (nalUnitType == 7)
                                 hasSps = true;
@@ -141,7 +136,7 @@ public class MP4Serializer implements ISOSCustomSerializer
     @Override
     public void write(ISOSDataProvider dataProvider, OWSRequest request) throws IOException
     {
-        os = new BufferedOutputStream(request.getResponseStream());
+        BufferedOutputStream os = new BufferedOutputStream(request.getResponseStream(), 1024);
         
         // set MIME type for MP4 format
         if (request.getHttpResponse() != null)
