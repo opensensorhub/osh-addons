@@ -174,7 +174,7 @@ public class LLALocationOutput extends NMEAGpsOutput
             
             // UTC date
             cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(tokens[2]));
-            cal.set(Calendar.MONTH, Integer.parseInt(tokens[3]));
+            cal.set(Calendar.MONTH, Integer.parseInt(tokens[3])-1);
             cal.set(Calendar.YEAR, Integer.parseInt(tokens[4]));
             
             // UTC time
@@ -218,7 +218,7 @@ public class LLALocationOutput extends NMEAGpsOutput
     {
         // UTC date
         cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(utcDate.substring(0, 2)));
-        cal.set(Calendar.MONTH, Integer.parseInt(utcDate.substring(2, 4)));
+        cal.set(Calendar.MONTH, Integer.parseInt(utcDate.substring(2, 4))-1);
         cal.set(Calendar.YEAR, 2000 + Integer.parseInt(utcDate.substring(4, 6)));
         
         // UTC time
