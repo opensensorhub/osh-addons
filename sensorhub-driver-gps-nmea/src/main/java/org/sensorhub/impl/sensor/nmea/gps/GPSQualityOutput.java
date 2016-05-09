@@ -73,7 +73,7 @@ public class GPSQualityOutput extends NMEAGpsOutput
             String[] tokens = msg.split(NMEA_SEP_REGEX);
                         
             // skip if position fix not available
-            if (tokens[1].charAt(0) != 'A' || Double.isNaN(parentSensor.lastFixUtcTime))
+            if (tokens[2].charAt(0) == '1' || Double.isNaN(parentSensor.lastFixUtcTime))
             {
                 NMEAGpsSensor.log.debug("GSA: No position fix");
                 return;

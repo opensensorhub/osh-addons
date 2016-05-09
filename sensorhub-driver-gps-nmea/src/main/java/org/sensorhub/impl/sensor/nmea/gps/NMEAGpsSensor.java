@@ -171,10 +171,12 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
     
     private void pollAndSendMeasurement()
     {
+        String msg = null;
+        
         try
         {
             // read next message
-            String msg = reader.readLine();
+            msg = reader.readLine();
             long msgTime = System.currentTimeMillis();
             
             // if null, it's EOF
@@ -210,6 +212,10 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
         catch (IOException e)
         {
             throw new RuntimeException("Error while parsing NMEA stream", e);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Error while parsing NMEA message: " + msg, e);
         }
     }
     
