@@ -87,7 +87,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
         if (config.activeSentences.contains(GSA_MSG))
         {
             GPSQualityOutput dataInterface = new GPSQualityOutput(this);
-            addOutput(dataInterface, false);
+            addOutput(dataInterface, true);
             dataInterface.init();
         }
         
