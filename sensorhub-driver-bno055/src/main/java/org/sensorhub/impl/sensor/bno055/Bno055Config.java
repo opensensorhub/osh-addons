@@ -31,10 +31,6 @@ public class Bno055Config extends SensorConfig
     public CommConfig commSettings;
     
     
-    @DisplayInfo(label="Decimation Factor", desc="Decimation factor of attitude measurements")
-    public int decimFactor = 10;
-    
-    
     public Bno055Config()
     {
         this.moduleClass = Bno055Sensor.class.getCanonicalName();

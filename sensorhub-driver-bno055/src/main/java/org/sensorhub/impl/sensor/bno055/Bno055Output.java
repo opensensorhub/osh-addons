@@ -18,6 +18,7 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Timer;
 import java.util.TimerTask;
 import net.opengis.swe.v20.DataBlock;
@@ -126,31 +127,20 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
     	long msgTime = System.currentTimeMillis();
     	
         // decode message
-    	try
-    	{
-    	    try
-            {
-                parentSensor.sendReadCommand(READ_QUAT_CMD);
-            }
-            catch (IOException e)
-            {
-                // skip measurement if there is a bus error
-                dataIn.readByte();
-                return;
-            }
-			
-			// skip length
-			dataIn.readByte();
-			
-			// read 4 quaternion components (scalar first)
-			quat[3] = (float)(dataIn.readShort() / QUAT_SCALE);
-			for (int i=0; i<3; i++)
-				quat[i] = (float)(dataIn.readShort() / QUAT_SCALE);
-			
-		} catch (IOException e)
-    	{
-			parentSensor.getLogger().error("Error while reading attitude quaternion", e);
-		}
+	    try
+        {
+            ByteBuffer resp = parentSensor.sendReadCommand(READ_QUAT_CMD);
+            
+            // read 4 quaternion components (scalar first)
+            quat[3] = (float)(resp.getShort() / QUAT_SCALE);
+            for (int i=0; i<3; i++)
+                quat[i] = (float)(resp.getShort() / QUAT_SCALE);
+        }
+        catch (IOException e)
+        {
+            // skip measurement if there is a bus error
+            return;
+        }
          
         // create and populate datablock
     	DataBlock dataBlock;
