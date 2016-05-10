@@ -81,6 +81,7 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
             {
                 parentSensor.getLogger().debug("Starting V4L capture");
                 frameGrabber.setCaptureCallback(this);
+                processingFrame = false;
                 frameGrabber.startCapture();
                 parentSensor.getLogger().debug("V4L capture started");
             }            
@@ -104,6 +105,14 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
     {
         try
         {
+            // skip frame if we're lagging behind
+            if (processingFrame)
+            {
+                parentSensor.getLogger().debug("Frame skipped @ " + frame.getCaptureTime());
+                return;
+            }
+            
+            processingFrame = true;
             DataBlock dataBlock;
             if (latestRecord == null)
                 dataBlock = dataStream.getElementType().createDataBlock();
@@ -128,6 +137,10 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
         catch (Exception e)
         {
             e.printStackTrace();
-        }    
+        }
+        finally
+        {
+            processingFrame = false;
+        }
     }
 }

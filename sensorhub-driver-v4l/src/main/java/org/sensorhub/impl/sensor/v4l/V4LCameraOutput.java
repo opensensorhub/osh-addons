@@ -35,6 +35,7 @@ public abstract class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriv
     DataStream dataStream;
     FrameGrabber frameGrabber;
     long systemTimeOffset = -1L;
+    boolean processingFrame;
     
     
     public V4LCameraOutput(V4LCameraDriver parentSensor)
