@@ -49,6 +49,7 @@ public class Bno055Constants
     public final static byte QUAT_DATA_W_LSB_ADDR = 0x20;
     public final static byte QUAT_SIZE = 0x08;
     
+    public final static byte CALIB_STAT_ADDR = 0x35;
     public final static byte CALIB_ADDR = 0x55;
     public final static byte CALIB_SIZE = 22;
 }

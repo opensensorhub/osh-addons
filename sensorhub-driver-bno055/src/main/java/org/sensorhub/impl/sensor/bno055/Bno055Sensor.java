@@ -17,7 +17,11 @@ package org.sensorhub.impl.sensor.bno055;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.Timer;
+import java.util.TimerTask;
 import net.opengis.sensorml.v20.ClassifierList;
 import net.opengis.sensorml.v20.PhysicalSystem;
 import net.opengis.sensorml.v20.SpatialFrame;
@@ -45,13 +49,32 @@ import org.vast.swe.SWEHelper;
 public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
 {
     protected final static String CRS_ID = "SENSOR_FRAME";
-    protected final static String STATE_CALIB_DATA = "calib_data";
+    
+    private final static String STATE_CALIB_DATA = "calib_data";
+    
+    private final static byte[] READ_CALIB_STAT_CMD =
+    {
+        Bno055Constants.START_BYTE,
+        Bno055Constants.DATA_READ,
+        Bno055Constants.CALIB_STAT_ADDR,
+        1
+    };
+    
+    private final static byte[] READ_CALIB_DATA_CMD =
+    {
+        Bno055Constants.START_BYTE,
+        Bno055Constants.DATA_READ,
+        Bno055Constants.CALIB_ADDR,
+        Bno055Constants.CALIB_SIZE
+    };
+    
     
     ICommProvider<? super CommConfig> commProvider;
     DataInputStreamLI dataIn;
     DataOutputStreamLI dataOut;
     Bno055Output dataInterface;
     byte[] calibData;
+    Timer calibTimer;
     
     
     public Bno055Sensor()
@@ -136,6 +159,11 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
             {   
                 dataIn = new DataInputStreamLI(commProvider.getInputStream());
                 dataOut = new DataOutputStreamLI(commProvider.getOutputStream());
+                                
+                // flush serial port
+                while (dataIn.available() > 0)
+                    dataIn.read();
+                
                 getLogger().info("Connected to IMU data stream");
             }
             catch (IOException e)
@@ -147,11 +175,14 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
             try
             {
                 setOperationMode(Bno055Constants.OPERATION_MODE_CONFIG);
-                Thread.sleep(650);
+                
                 setPowerMode(Bno055Constants.POWER_MODE_NORMAL);
-                //readCalibration(); // read calibration from sensor
-                //Thread.sleep(10);
                 setTriggerMode((byte)0);
+                
+                // load saved calibration coefs
+                if (calibData != null)
+                    loadCalibration();
+                
                 setOperationMode(Bno055Constants.OPERATION_MODE_NDOF);
             }
             catch (Exception e)
@@ -160,10 +191,23 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
                 commProvider = null;
                 throw new SensorHubException("Error sending init commands", e);
             }
+            
+            // monitor calibration status
+            if (getLogger().isTraceEnabled())
+            {
+                calibTimer = new Timer();
+                calibTimer.schedule(new TimerTask()
+                {
+                    public void run()
+                    {
+                        boolean calibOk = showCalibStatus();
+                        if (calibOk)
+                            cancel();
+                    }
+                }, 20L, 500L);
+            }
         }
         
-        if (config.decimFactor > 0)
-            dataInterface.decimFactor = config.decimFactor;
         dataInterface.start(commProvider);
     }
     
@@ -183,6 +227,8 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
     protected void setOperationMode(byte mode) throws IOException
     {
         setMode(Bno055Constants.OPERATION_MODE_ADDR, mode);
+        try { Thread.sleep(50); }
+        catch (InterruptedException e) { }
     }
     
     
@@ -197,52 +243,76 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
             mode
         };
         
-        // write command to serial port
-        OutputStream os = commProvider.getOutputStream();
-        os.write(setModeCmd);
-        os.flush();
+        sendWriteCommand(setModeCmd);
         
-        // check ACK
-        InputStream is = commProvider.getInputStream();
-        int b0 = is.read();
-        int b1 = is.read();
-        if (b0 != (0xEE & 0xFF) && b1 != 1)
-            throw new IOException("Register Write Error");
-        
-        // wait 30ms for mode switch to complete
-        try { Thread.sleep(30); }
+        // wait 50ms for mode switch to complete
+        try { Thread.sleep(50); }
         catch (InterruptedException e) { }
     }
     
     
-    protected void loadCalibration() throws IOException
+    protected boolean showCalibStatus()
     {
+        try
+        {
+            ByteBuffer resp = sendReadCommand(READ_CALIB_STAT_CMD);
+            
+            // read calib status byte
+            byte calStatus = resp.get();
+            int sys = (calStatus >> 6) & 0x03;
+            int gyro = (calStatus >> 4) & 0x03;
+            int accel = (calStatus >> 2) & 0x03;
+            int mag = calStatus & 0x03;
+            
+            getLogger().trace("Calib Status: sys={}, gyro={}, accel={}, mag={}", sys, gyro, accel, mag);
+            
+            if (sys == 3 && gyro == 3 && accel == 3 && mag == 3)
+                return true;
+        }
+        catch (IOException e)
+        {            
+        }
         
+        return false;
     }
     
     
-    /* read calibration from sensor */
+    /* load calibration data to sensor */
+    protected void loadCalibration() throws Exception
+    {
+        try
+        {
+            if (calibData.length != Bno055Constants.CALIB_SIZE)
+                throw new IOException("Calibration data must be " + Bno055Constants.CALIB_SIZE + " bytes");
+            
+            // build command
+            byte[] setCalCmd = new byte[4 + Bno055Constants.CALIB_SIZE];
+            setCalCmd[0] = Bno055Constants.START_BYTE;
+            setCalCmd[1] = Bno055Constants.DATA_WRITE;
+            setCalCmd[2] = Bno055Constants.CALIB_ADDR;
+            setCalCmd[3] = Bno055Constants.CALIB_SIZE;
+            System.arraycopy(calibData, 0, setCalCmd, 4, Bno055Constants.CALIB_SIZE);
+            
+            sendWriteCommand(setCalCmd);            
+            getLogger().debug("Loaded calibration data: {}", Arrays.toString(calibData));
+        }
+        catch (IOException e)
+        {
+            throw new SensorHubException("Error loading calibration table", e);
+        }
+    }
+    
+    
+    /* read calibration data from sensor */
     protected void readCalibration()
     {
         try
         {
-            // build command
-            byte[] readCalibCmd =
-            {
-                Bno055Constants.START_BYTE,
-                Bno055Constants.DATA_READ,
-                Bno055Constants.CALIB_ADDR,
-                Bno055Constants.CALIB_SIZE
-            };
+            setOperationMode(Bno055Constants.OPERATION_MODE_CONFIG);
             
-            sendReadCommand(readCalibCmd);
-            
-            // skip length byte and read 22 bytes
-            dataIn.read();
-            calibData = new byte[22];
-            dataIn.read(calibData);
-            
-            getLogger().info("Calibration data is {}", Arrays.toString(calibData));
+            ByteBuffer resp = sendReadCommand(READ_CALIB_DATA_CMD);
+            calibData = resp.array();          
+            getLogger().debug("Read calibration data: {}", Arrays.toString(calibData));
         }
         catch (Exception e)
         {
@@ -251,15 +321,51 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
     }
     
     
-    protected void sendReadCommand(byte[] readCmd) throws IOException
+    protected synchronized ByteBuffer sendReadCommand(byte[] readCmd) throws IOException
     {
         dataOut.write(readCmd);
         dataOut.flush();
         
         // check for error
-        int firstByte = dataIn.read();
-        if (firstByte != (Bno055Constants.ACK_BYTE & 0xFF))
-            throw new IOException(String.format("Register Read Error: %02X", firstByte));
+        int b0 = dataIn.read();
+        if (b0 != (Bno055Constants.ACK_BYTE & 0xFF))
+            throw new IOException(String.format("Register Read Error: %02X", dataIn.read()));
+        
+        // read response
+        int length = dataIn.read();
+        byte[] response = new byte[length];
+        dataIn.readFully(response);
+        ByteBuffer buf = ByteBuffer.wrap(response);
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        return buf;
+    }
+    
+    
+    protected synchronized void sendWriteCommand(byte[] writeCmd) throws IOException
+    {
+        int nAttempts = 0;
+        int maxAttempts = 5;
+        while (nAttempts < maxAttempts)
+        {
+            nAttempts++;
+            
+            // write command to serial port
+            dataOut.write(writeCmd);
+            dataOut.flush();
+            
+            // check ACK
+            int b0 = dataIn.read();
+            int b1 = dataIn.read();
+            if (b0 != (0xEE & 0xFF) || b1 != 0x01)
+            {
+                String msg = String.format("Register Write Error: 0x%02X 0x%02X (%d)", b0, b1, nAttempts);
+                if (b1 != 0x07 || nAttempts >= maxAttempts)
+                    throw new IOException(msg);
+                getLogger().warn(msg);
+            }
+            else
+                return;
+        }
     }
     
 
@@ -274,12 +380,15 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
             if (is != null)
             {
                 calibData = new byte[22];
-                is.read(calibData);
+                int nBytes = is.read(calibData);
+                if (nBytes != Bno055Constants.CALIB_SIZE)
+                    throw new IOException("Calibration data must be " + Bno055Constants.CALIB_SIZE + " bytes");
             }
         }
-        catch (Exception e)
+        catch (Exception e) 
         {
             getLogger().error("Cannot load calibration data", e);
+            calibData = null;
         }        
     }
 
@@ -289,7 +398,7 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
     {
         super.saveState(saver);        
         
-        if (calibData != null)
+        if (calibData != null && calibData.length == Bno055Constants.CALIB_SIZE)
         {
             try
             {
@@ -308,6 +417,9 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
     @Override
     public void stop() throws SensorHubException
     {
+        if (calibTimer != null)
+            calibTimer.cancel();
+        
         if (dataInterface != null)
             dataInterface.stop();
                         
