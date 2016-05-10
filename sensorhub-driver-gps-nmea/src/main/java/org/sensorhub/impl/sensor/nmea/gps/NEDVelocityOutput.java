@@ -16,6 +16,7 @@ package org.sensorhub.impl.sensor.nmea.gps;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.Quantity;
+import org.slf4j.Logger;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 
@@ -33,11 +34,14 @@ public class NEDVelocityOutput extends NMEAGpsOutput
 {
     private static final double KMH_TO_MS = 1000./3600.;
     
+    Logger log;
+    
     
     public NEDVelocityOutput(NMEAGpsSensor parentSensor)
     {
         super(parentSensor);
         this.samplingPeriod = 1.0; // default to 1Hz on startup
+        this.log = parentSensor.getLogger();
     }
     
     
@@ -82,7 +86,7 @@ public class NEDVelocityOutput extends NMEAGpsOutput
             // skip if position fix not available
             if (Double.isNaN(parentSensor.lastFixUtcTime))
             {
-                NMEAGpsSensor.log.debug("VTG: No position fix");
+                log.debug("VTG: No position fix");
                 return;
             }
             
@@ -100,7 +104,7 @@ public class NEDVelocityOutput extends NMEAGpsOutput
             // skip if position fix not available
             if (Double.isNaN(parentSensor.lastFixUtcTime))
             {
-                NMEAGpsSensor.log.debug("HDT: No position fix");
+                log.debug("HDT: No position fix");
                 return;
             }
             
