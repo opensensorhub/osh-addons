@@ -159,11 +159,6 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
             {   
                 dataIn = new DataInputStreamLI(commProvider.getInputStream());
                 dataOut = new DataOutputStreamLI(commProvider.getOutputStream());
-                                
-                // flush serial port
-                while (dataIn.available() > 0)
-                    dataIn.read();
-                
                 getLogger().info("Connected to IMU data stream");
             }
             catch (IOException e)
@@ -174,6 +169,8 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
             // send init commands
             try
             {
+                reset();
+                
                 setOperationMode(Bno055Constants.OPERATION_MODE_CONFIG);
                 
                 setPowerMode(Bno055Constants.POWER_MODE_NORMAL);
@@ -212,6 +209,23 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
     }
     
     
+    protected void reset() throws IOException
+    {
+        byte[] resetCmd = new byte[] {
+            Bno055Constants.START_BYTE,
+            Bno055Constants.DATA_WRITE,
+            Bno055Constants.SYS_TRIGGER_ADDR,
+            1,
+            0x20
+        };
+        
+        sendWriteCommand(resetCmd, false);
+        
+        try { Thread.sleep(650); }
+        catch (InterruptedException e) { }
+    }
+    
+    
     protected void setPowerMode(byte mode) throws IOException
     {
         setMode(Bno055Constants.POWER_MODE_ADDR, mode);
@@ -247,7 +261,7 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
             mode
         };
         
-        sendWriteCommand(setModeCmd);
+        sendWriteCommand(setModeCmd, true);
         
         // wait for mode switch to complete
         try { Thread.sleep(30); }
@@ -297,7 +311,7 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
             setCalCmd[3] = Bno055Constants.CALIB_SIZE;
             System.arraycopy(calibData, 0, setCalCmd, 4, Bno055Constants.CALIB_SIZE);
             
-            sendWriteCommand(setCalCmd);            
+            sendWriteCommand(setCalCmd, true);            
             getLogger().debug("Loaded calibration data: {}", Arrays.toString(calibData));
         }
         catch (IOException e)
@@ -327,6 +341,10 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
     
     protected synchronized ByteBuffer sendReadCommand(byte[] readCmd) throws IOException
     {
+        // flush any pending received data to get into a clean state
+        while (dataIn.available() > 0)
+            dataIn.read();
+        
         dataOut.write(readCmd);
         dataOut.flush();
         
@@ -345,7 +363,7 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
     }
     
     
-    protected synchronized void sendWriteCommand(byte[] writeCmd) throws IOException
+    protected synchronized void sendWriteCommand(byte[] writeCmd, boolean checkAck) throws IOException
     {
         int nAttempts = 0;
         int maxAttempts = 5;
@@ -353,22 +371,31 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
         {
             nAttempts++;
             
+            // flush any pending received data to get into a clean state
+            while (dataIn.available() > 0)
+                dataIn.read();
+            
             // write command to serial port
             dataOut.write(writeCmd);
             dataOut.flush();
             
             // check ACK
-            int b0 = dataIn.read();
-            int b1 = dataIn.read();
-            if (b0 != (0xEE & 0xFF) || b1 != 0x01)
+            if (checkAck)
             {
-                String msg = String.format("Register Write Error: 0x%02X 0x%02X (%d)", b0, b1, nAttempts);
-                if (b1 != 0x07 || nAttempts >= maxAttempts)
-                    throw new IOException(msg);
-                getLogger().warn(msg);
+                int b0 = dataIn.read();
+                int b1 = dataIn.read();
+                
+                if (b0 != (0xEE & 0xFF) || b1 != 0x01)
+                {
+                    String msg = String.format("Register Write Error: 0x%02X 0x%02X (%d)", b0, b1, nAttempts);
+                    if (b1 != 0x07 || nAttempts >= maxAttempts)
+                        throw new IOException(msg);
+                    getLogger().warn(msg);
+                    continue;
+                }
             }
-            else
-                return;
+            
+            return;
         }
     }
     
