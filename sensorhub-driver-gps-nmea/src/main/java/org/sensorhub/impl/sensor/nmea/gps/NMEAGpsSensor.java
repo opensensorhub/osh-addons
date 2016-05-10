@@ -25,7 +25,6 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -38,8 +37,6 @@ import org.slf4j.LoggerFactory;
  */
 public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
 {
-    static final Logger log = LoggerFactory.getLogger(NMEAGpsSensor.class);
-    
     public static final String GLL_MSG = "GLL";
     public static final String GGA_MSG = "GGA";
     public static final String GSA_MSG = "GSA";
@@ -143,7 +140,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
         try
         {
             reader = new BufferedReader(new InputStreamReader(commProvider.getInputStream(), StandardCharsets.US_ASCII));
-            NMEAGpsSensor.log.debug("Connected to NMEA data stream");
+            getLogger().debug("Connected to NMEA data stream");
         }
         catch (IOException e)
         {
@@ -183,12 +180,12 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             if (msg == null)
                 return;            
             
-            log.debug("Received message: {}", msg);
+            getLogger().debug("Received message: {}", msg);
             
             // discard messages not starting with $ or with wrong checksum
             if (msg.charAt(0) != '$' || !validateChecksum(msg))
             {
-                log.debug("Skipping invalid message");
+                getLogger().debug("Skipping invalid message");
                 return;
             }
             
@@ -239,7 +236,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             // warn and return false if not equal
             if (checkSum != msgCheckSum)
             {
-                log.warn("Wrong checksum {} for message: {}", checkSum, msg);
+                getLogger().warn("Wrong checksum {} for message: {}", checkSum, msg);
                 return false;
             }
         }
@@ -278,5 +275,12 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
     public boolean isConnected()
     {
         return (commProvider != null);
+    }
+
+
+    @Override
+    protected Logger getLogger()
+    {
+        return super.getLogger();
     }
 }
