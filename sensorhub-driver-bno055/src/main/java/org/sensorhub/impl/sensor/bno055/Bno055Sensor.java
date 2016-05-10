@@ -234,6 +234,10 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
     
     protected void setMode(byte address, byte mode) throws IOException
     {
+        // wait for previous command to complete
+        try { Thread.sleep(30); }
+        catch (InterruptedException e) { }
+        
         // build command
         byte[] setModeCmd = new byte[] {
             Bno055Constants.START_BYTE,
@@ -245,8 +249,8 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
         
         sendWriteCommand(setModeCmd);
         
-        // wait 50ms for mode switch to complete
-        try { Thread.sleep(50); }
+        // wait for mode switch to complete
+        try { Thread.sleep(30); }
         catch (InterruptedException e) { }
     }
     
