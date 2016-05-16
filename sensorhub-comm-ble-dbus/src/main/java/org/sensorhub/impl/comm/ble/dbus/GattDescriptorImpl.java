@@ -14,12 +14,13 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.comm.ble.dbus;
 
+import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.freedesktop.dbus.DBusConnection;
 import org.freedesktop.dbus.Properties;
 import org.freedesktop.dbus.exceptions.DBusException;
-import org.sensorhub.api.comm.ble.IGattCharacteristic;
 import org.sensorhub.api.comm.ble.IGattDescriptor;
+import org.sensorhub.api.comm.ble.IGattField;
 
 
 /**
@@ -32,7 +33,7 @@ import org.sensorhub.api.comm.ble.IGattDescriptor;
  */
 public class GattDescriptorImpl implements IGattDescriptor
 {
-    IGattCharacteristic characteristic;
+    IGattField characteristic;
     DBusConnection dbus;
     String descObjPath;
     //GattCharacteristic1 gattDesc;
@@ -42,7 +43,7 @@ public class GattDescriptorImpl implements IGattDescriptor
     UUID uuid;
     
     
-    GattDescriptorImpl(IGattCharacteristic parent, DBusConnection dbus, String descObjPath) throws DBusException
+    GattDescriptorImpl(IGattField parent, DBusConnection dbus, String descObjPath) throws DBusException
     {
         this.characteristic = parent;
         this.dbus = dbus;
@@ -51,9 +52,41 @@ public class GattDescriptorImpl implements IGattDescriptor
     
     
     @Override
-    public IGattCharacteristic getCharacteristic()
+    public IGattField getCharacteristic()
     {
         return characteristic;
+    }
+
+
+    @Override
+    public UUID getType()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+
+    @Override
+    public int getPermissions()
+    {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+
+    @Override
+    public ByteBuffer getValue()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+
+    @Override
+    public boolean setValue(ByteBuffer value)
+    {
+        // TODO Auto-generated method stub
+        return false;
     }
 
 }

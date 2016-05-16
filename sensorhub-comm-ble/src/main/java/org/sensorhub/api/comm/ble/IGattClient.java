@@ -66,7 +66,7 @@ public interface IGattClient
      * completed for the given device.
      * @return the list of GATT services offered by the remote device
      */
-    Collection<IGattService> getServices();
+    Collection<? extends IGattService> getServices();
         
     
     /**
@@ -77,16 +77,6 @@ public interface IGattClient
      * @return true, if the read operation was initiated successfully
      */
     boolean readCharacteristic(IGattCharacteristic characteristic);
-    
-    
-    /**
-     * Reads the value of a descriptor from the associated remote device.<br/>
-     * This is an asynchronous operation. The result of the read operation
-     * is reported by the {@link GattCallback#onDescriptorRead} callback.
-     * @param descriptor
-     * @return true, if the read operation was initiated successfully
-     */
-    boolean readDescriptor(IGattDescriptor descriptor);
     
     
     /**
@@ -109,6 +99,16 @@ public interface IGattClient
      * @return true, if the write operation was initiated successfully
      */
     boolean writeCharacteristic(IGattCharacteristic characteristic);
+    
+    
+    /**
+     * Reads the value of a descriptor from the associated remote device.<br/>
+     * This is an asynchronous operation. The result of the read operation
+     * is reported by the {@link GattCallback#onDescriptorRead} callback.
+     * @param descriptor
+     * @return true, if the read operation was initiated successfully
+     */
+    boolean readDescriptor(IGattDescriptor descriptor);
     
     
     /**

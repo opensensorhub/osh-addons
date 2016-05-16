@@ -64,7 +64,7 @@ public abstract class GattCallback
      * @param gatt
      * @param characteristic
      */
-    public void onCharacteristicChanged(IGattClient gatt, IGattCharacteristic characteristic)
+    public void onCharacteristicChanged(IGattClient gatt, IGattField characteristic)
     {        
     }
     
@@ -75,7 +75,7 @@ public abstract class GattCallback
      * @param characteristic
      * @param status
      */
-    public void onCharacteristicRead(IGattClient gatt, IGattCharacteristic characteristic, int status)
+    public void onCharacteristicRead(IGattClient gatt, IGattField characteristic, int status)
     {        
     }
     
@@ -86,7 +86,7 @@ public abstract class GattCallback
      * @param characteristic
      * @param status
      */
-    public void onCharacteristicWrite(IGattClient gatt, IGattCharacteristic characteristic, int status)
+    public void onCharacteristicWrite(IGattClient gatt, IGattField characteristic, int status)
     {        
     }
     

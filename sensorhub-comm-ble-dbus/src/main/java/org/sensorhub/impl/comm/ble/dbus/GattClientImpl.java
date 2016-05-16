@@ -21,6 +21,7 @@ import java.util.Map.Entry;
 import org.bluez.Device1;
 import org.bluez.GattCharacteristic1;
 import org.bluez.GattService1;
+import org.bluez.HeartRate1;
 import org.freedesktop.dbus.DBusConnection;
 import org.freedesktop.dbus.DBusSigHandler;
 import org.freedesktop.dbus.ObjectManager;
@@ -189,7 +190,12 @@ public class GattClientImpl implements IGattClient
                 
                 for (Entry<String, Map<String,Variant<?>>> obj: objPath.getValue().entrySet())
                 {
-                    if (obj.getKey().equals(GattService1.class.getCanonicalName()))
+                    if (obj.getKey().equals(HeartRate1.class.getCanonicalName()))
+                    {
+                        services.put(devObjPath, new HeartRateServiceImpl(dbus, devObjPath));
+                    }
+                    
+                    else if (obj.getKey().equals(GattService1.class.getCanonicalName()))
                     {
                         Variant<?> charList = obj.getValue().get(GattService1.PROP_CHARACTERISTICS);
                         GattServiceImpl s = new GattServiceImpl(dbus, path, charList);
@@ -199,7 +205,6 @@ public class GattClientImpl implements IGattClient
             }
             
             // add profiles if any
-            services.put(devObjPath, new HeartRateServiceImpl(dbus, devObjPath));
             
             if (!services.isEmpty())
                 servicesDiscovered = true;
@@ -263,14 +268,6 @@ public class GattClientImpl implements IGattClient
 
 
     @Override
-    public boolean readDescriptor(IGattDescriptor descriptor)
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-
-    @Override
     public boolean setCharacteristicNotification(IGattCharacteristic characteristic, boolean enable)
     {
         // special case for heart rate measurement
@@ -300,6 +297,14 @@ public class GattClientImpl implements IGattClient
 
     @Override
     public boolean writeCharacteristic(IGattCharacteristic characteristic)
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+
+    @Override
+    public boolean readDescriptor(IGattDescriptor descriptor)
     {
         // TODO Auto-generated method stub
         return false;

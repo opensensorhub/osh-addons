@@ -14,7 +14,6 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.api.comm.ble;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
 
@@ -28,40 +27,18 @@ import java.util.UUID;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Feb 28, 2016
  */
-public interface IGattCharacteristic
+public interface IGattCharacteristic extends IGattField
 {
-    public static final int PERMISSION_READ = 1;
-    public static final int PERMISSION_READ_ENCRYPTED = 2;
-    public static final int PERMISSION_READ_ENCRYPTED_MITM = 4;
-    public static final int PERMISSION_WRITE = 16;
-    public static final int PERMISSION_WRITE_ENCRYPTED = 32;
-    public static final int PERMISSION_WRITE_ENCRYPTED_MITM = 64;
-    public static final int PERMISSION_WRITE_SIGNED = 128;
-    public static final int PERMISSION_WRITE_SIGNED_MITM = 256;
-    
-    public static final int PROPERTY_BROADCAST = 1;
-    public static final int PROPERTY_READ = 2;
-    public static final int PROPERTY_WRITE_NO_ACK = 4;
-    public static final int PROPERTY_WRITE_WITH_ACK = 8;    
-    public static final int PROPERTY_NOTIFY = 16;
-    public static final int PROPERTY_INDICATE = 32;
-    public static final int PROPERTY_SIGNED_WRITE = 64;
-    public static final int PROPERTY_EXTENDED_PROPS = 128;
-    
-    
     /**
      * @return the service this characteristic belongs to.
      */
     IGattService getService();
     
     
-    int getHandle();
-    
-    
     /**
-     * @return the UUID identifying the type of this characteristic
+     * @return the local ID of the characteristic (handle)
      */
-    UUID getType();
+    int getHandle();
     
     
     /**
@@ -72,35 +49,8 @@ public interface IGattCharacteristic
     
     
     /**
-     * Gets the bit mask of permission flags for this characteristic.
-     * @return the permissions for this characteristic.
-     */
-    int getPermissions();
-    
-    
-    /**
      * @return the list of descriptors for this characteristic.
      */
-    Map<UUID, IGattDescriptor> getDescriptors();
-    
-    
-    /**
-     * Gets the cached value of the characteristic.<br/>
-     * This value is updated as a result of a read operation or if a
-     * characteristic update notification has been received.
-     * @return the stored value for this characteristic
-     */
-    ByteBuffer getValue();
-    
-    
-    /**
-     * Sets the cached value of this characteristic.<br/>
-     * This function only modifies the locally stored cached value of this
-     * characteristic. To send the value to the remote device, call
-     * writeCharacteristic().
-     * @param value
-     * @return true if the locally stored value has been set.
-     */
-    boolean setValue(ByteBuffer value);
+    Map<UUID, ? extends IGattDescriptor> getDescriptors();
     
 }

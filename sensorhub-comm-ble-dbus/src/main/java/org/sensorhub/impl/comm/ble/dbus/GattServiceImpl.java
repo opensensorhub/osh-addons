@@ -26,6 +26,7 @@ import org.freedesktop.dbus.Properties;
 import org.freedesktop.dbus.Variant;
 import org.freedesktop.dbus.exceptions.DBusException;
 import org.sensorhub.api.comm.ble.IGattCharacteristic;
+import org.sensorhub.api.comm.ble.IGattField;
 import org.sensorhub.api.comm.ble.IGattService;
 
 
@@ -108,7 +109,7 @@ public class GattServiceImpl implements IGattService
     }
     
     
-    protected IGattCharacteristic getCharacteristic(String objPath)
+    protected IGattField getCharacteristic(String objPath)
     {
         return characteristics.get(objPath);
     }

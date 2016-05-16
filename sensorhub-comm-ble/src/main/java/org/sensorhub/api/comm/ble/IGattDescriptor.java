@@ -24,15 +24,12 @@ package org.sensorhub.api.comm.ble;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Feb 28, 2016
  */
-public interface IGattDescriptor
+public interface IGattDescriptor extends IGattField
 {
         
-
-    
-    
     /**
      * @return the characteristic this descriptor belongs to.
      */
-    public IGattCharacteristic getCharacteristic();
+    public IGattField getCharacteristic();
     
 }

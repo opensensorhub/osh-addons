@@ -45,7 +45,7 @@ public interface IGattService
     /**
      * @return The list of characteristics for this service.
      */
-    public Collection<IGattCharacteristic> getCharacteristics();
+    public Collection<? extends IGattCharacteristic> getCharacteristics();
     
     
     /**
