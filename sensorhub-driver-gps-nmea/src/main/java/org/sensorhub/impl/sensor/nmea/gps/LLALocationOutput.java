@@ -19,7 +19,6 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.Vector;
-import org.slf4j.Logger;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.helper.GeoPosHelper;
 import org.vast.util.DateTimeFormat;
@@ -45,7 +44,6 @@ public class LLALocationOutput extends NMEAGpsOutput
     double lastFixUtcDateTime = Double.NaN;
     double lastFixUtcTimeValue = Double.NaN;
     GregorianCalendar cal;
-    Logger log;
     
     
     public LLALocationOutput(NMEAGpsSensor parentSensor)
@@ -55,8 +53,6 @@ public class LLALocationOutput extends NMEAGpsOutput
         
         this.cal = new GregorianCalendar();
         cal.setTimeZone(TimeZone.getTimeZone("UTC"));
-        
-        this.log = parentSensor.getLogger();
     }
     
     
