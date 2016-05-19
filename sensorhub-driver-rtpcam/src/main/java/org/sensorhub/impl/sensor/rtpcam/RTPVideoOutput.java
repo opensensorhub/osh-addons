@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -74,9 +75,15 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
     {
         super(driver);
         this.name = name;
+        updateConfig(videoConfig, netConfig, rtspConfig);
+    }
+    
+    
+    public void updateConfig(BasicVideoConfig videoConfig, TCPConfig netConfig, RTSPConfig rtspConfig)
+    {
         this.videoConfig = videoConfig;
         this.netConfig = netConfig;
-        this.rtspConfig = rtspConfig;
+        this.rtspConfig = rtspConfig;        
     }
     
     
@@ -114,16 +121,16 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
         }
         catch (IOException e)
         {
-            RTPCameraDriver.log.error("Error while opening backup file", e);
+            log.error("Error while opening backup file", e);
         }
         
         // start payload process executor
         executor = Executors.newSingleThreadExecutor();
         firstFrameReceived = false;
         
-        // setup stream with RTSP server
         try
         {
+            // setup stream with RTSP server
             rtspClient = new RTSPClient(
                     netConfig.remoteHost,
                     rtspConfig.rtspPort,
@@ -131,25 +138,29 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
                     netConfig.user,
                     netConfig.password,
                     rtspConfig.localUdpPort);
+            
             try
             {
                 rtspClient.sendOptions();
                 rtspClient.sendDescribe();
-                rtspClient.sendSetup();   
+                rtspClient.sendSetup();
+                log.info("Connected to RTSP server");
             }
             catch (SocketTimeoutException e)
             {
-                // for solo that doesn't have any RTSP server
-                RTPCameraDriver.log.warn("RTSP server not responding but video stream may still be playing OK");
-                rtspClient = null;
+                // some cameras don't have a real RTSP server (i.e. 3DR Solo UAV)
+                // for Solo UAV, we need to maintain a TCP connection so keep the RTSP client alive
+                log.warn("RTSP server not responding but video stream may still be playing OK");
             }
             
-            // look for H264 stream
+            // start RTP/H264 receiving thread
+            rtpThread = new RTPH264Receiver(netConfig.remoteHost, rtspConfig.localUdpPort, this);
             StreamInfo h264Stream = null;
             int streamIndex = 0;
             int i = 0;
-            if (rtspClient != null)
+            if (rtspClient.isConnected())
             {
+                // look for H264 stream
                 for (StreamInfo stream: rtspClient.getMediaStreams())
                 {
                     if (stream.codecString.contains("H264"))
@@ -162,30 +173,29 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
                 }
                 
                 if (h264Stream == null)
-                    throw new IOException("No stream with supported codec found");
-            }
-        
-            // start RTP receiving thread
-            rtpThread = new RTPH264Receiver(netConfig.remoteHost, rtspConfig.localUdpPort, this);            
-            // transfer parameter sets if we received them via RTSP
-            if (rtspClient != null && h264Stream.paramSets != null)
-                rtpThread.setParameterSets(h264Stream.paramSets);
+                    throw new IOException("No stream with H264 codec found");
+                
+                // set initial parameter sets if we received them via RTSP
+                if (h264Stream.paramSets != null)
+                    rtpThread.setParameterSets(h264Stream.paramSets);
+            }  
             rtpThread.start();
             
             // play stream with RTSP if server responded to SETUP
-            if (rtspClient != null)
+            if (rtspClient.isConnected())
             {
                 // send PLAY request
                 rtspClient.sendPlay(streamIndex);
                 
                 // start RTCP sending thread
+                // some cameras need that to maintain the stream
                 rtcpThread = new RTCPSender(netConfig.remoteHost, rtspConfig.localUdpPort+1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
                 rtcpThread.start();
             }
         }
         catch (IOException e)
         {
-            throw new SensorException("Error while starting playback from RTP server", e);            
+            throw new SensorException("Cannot connect to RTP stream", e);            
         } 
     }
 
@@ -215,18 +225,47 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
     public void stop()
     {
         if (rtpThread != null)
+        {
             rtpThread.interrupt();
+            rtpThread = null;
+            log.info("Disconnected from H264 RTP stream");
+        }
         
         if (rtcpThread != null)
+        {
             rtcpThread.stop();
+            rtcpThread = null;
+        }
         
         try
         {
             if (rtspClient != null)
-                rtspClient.teardown();
+            {
+                if (rtspClient.isConnected())
+                {
+                    rtspClient.teardown();
+                    log.info("Disconnected from RTSP server");
+                }
+                rtspClient = null;
+            }
         }
         catch (IOException e)
         {
+        }
+        
+        if (executor != null)
+        {
+            try
+            {
+                executor.shutdownNow();
+                executor.awaitTermination(10000L, TimeUnit.SECONDS);
+                if (fch != null)
+                    fch.close();
+            }
+            catch (Exception e)
+            {
+                log.error("Error when shutting down frame listener thread", e);
+            }            
         }
     }
 
@@ -247,7 +286,7 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
                 {            
                     if (!firstFrameReceived)
                     {
-                        RTPCameraDriver.log.info("Connected to H264 RTP stream");
+                        log.info("Connected to H264 RTP stream");
                         firstFrameReceived = true;
                     }
                     
@@ -260,7 +299,8 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
                         }
                         catch (IOException e)
                         {
-                            RTPCameraDriver.log.error("Error while writing to backup file", e);
+                            log.error("Error while writing to backup file", e);
+                            fch = null;
                         }
                     }
                     
