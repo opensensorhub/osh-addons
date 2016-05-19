@@ -16,7 +16,6 @@ package org.sensorhub.impl.sensor.nmea.gps;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataType;
-import org.slf4j.Logger;
 import org.vast.swe.SWEHelper;
 
 
@@ -30,14 +29,11 @@ import org.vast.swe.SWEHelper;
  */
 public class GPSQualityOutput extends NMEAGpsOutput
 {
-    Logger log;
-    
-    
+        
     public GPSQualityOutput(NMEAGpsSensor parentSensor)
     {
         super(parentSensor);
         this.samplingPeriod = 1.0; // default to 1Hz on startup
-        this.log = parentSensor.getLogger();
     }
     
     
