@@ -15,6 +15,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.angel;
 
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 import java.util.UUID;
 import net.opengis.sensorml.v20.ClassifierList;
 import net.opengis.sensorml.v20.Term;
@@ -23,6 +24,7 @@ import org.sensorhub.api.comm.ble.GattCallback;
 import org.sensorhub.api.comm.ble.IBleNetwork;
 import org.sensorhub.api.comm.ble.IGattCharacteristic;
 import org.sensorhub.api.comm.ble.IGattClient;
+import org.sensorhub.api.comm.ble.IGattField;
 import org.sensorhub.api.comm.ble.IGattService;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorEvent;
@@ -43,26 +45,27 @@ import org.vast.swe.SWEHelper;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Mar 12, 2016
  */
-public class AngelSensor extends AbstractSensorModule<AngelSensorConfig> 
+public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
 {
     static final Logger log = LoggerFactory.getLogger(AngelSensor.class);
-    
+
     private final static int DEVICE_INFO_SERVICE = 0x180A;
     private final static int MANUFACTURER_NAME = 0x2A29;
     private final static int MODEL_NUMBER = 0x2A24;
-    private final static int SERIAL_NUMBER = 0x2A25;    
-    //private final static int SERIAL_NUMBER = 0x2A25;
-    
+    private final static int SERIAL_NUMBER = 0x2A25;
+
     private final static int BATTERY_SERVICE = 0x180F;
     private final static int BATTERY_LEVEL = 0x2A19;
-    
+
     private final static int HEART_RATE_SERVICE = 0x180D;
     private final static int HEART_RATE_MEAS = 0x2A37;
-    
+
+    private final static int HEALTH_TEMP_SERVICE = 0x1809;
+    private final static int HEALTH_TEMP_MEAS = 0x2A1C;
+
     private final static String BLOOD_OXY_SERVICE = "902dcf38-ccc0-4902-b22c-70cab5ee5df2";
     private final static String BLOOD_OXY = "b269c33f-df6b-4c32-801d-1b963190bc71";
-    
-    
+
     WeakReference<IBleNetwork<?>> bleNetRef;
     AngelSensorCallback gattCallback;
     IGattClient gattClient;
@@ -72,15 +75,16 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
     IGattCharacteristic batteryLevel;
     IGattCharacteristic bodyLocation;
     IGattCharacteristic heartRate;
+    IGattCharacteristic bodyTemp;
     IGattCharacteristic bloodOxygen;
-    
+
     HealthMetricsOutput healthOutput;
     ActivityOutput activityOutput;
     DeviceStatusOutput statusOutput;
-    
-    
+
+
     public AngelSensor()
-    {       
+    {
     }
 
 
@@ -88,16 +92,16 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
     public void init(AngelSensorConfig config) throws SensorHubException
     {
         super.init(config);
-        
+
         // create output interfaces
         healthOutput = new HealthMetricsOutput(this);
         addOutput(healthOutput, false);
         healthOutput.init();
-        
+
         activityOutput = new ActivityOutput(this);
         addOutput(activityOutput, false);
         activityOutput.init();
-        
+
         statusOutput = new DeviceStatusOutput(this);
         addOutput(statusOutput, true);
         statusOutput.init();
@@ -110,27 +114,27 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            
+
             SMLFactory smlFac = new SMLFactory();
             sensorDescription.setId("ANGEL_SENSOR");
             sensorDescription.setDescription("Angel Sensor health monitoring wrist band");
-            
+
             ClassifierList classif = smlFac.newClassifierList();
             sensorDescription.getClassificationList().add(classif);
             Term term;
-            
+
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
             term.setLabel("Manufacturer Name");
             term.setValue("Seraphim Sense Ltd.");
             classif.addClassifier(term);
-            
+
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
             term.setLabel("Model Number");
             term.setValue("Angel Sensor M1");
             classif.addClassifier(term);
-            
+
             // retrieve BLE device info
         }
     }
@@ -144,71 +148,73 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
         {
             ModuleRegistry reg = SensorHub.getInstance().getModuleRegistry();
             bleNetRef = (WeakReference<IBleNetwork<?>>) reg.getModuleRef(config.networkID);
-            
+
             // connect to sensor
             gattCallback = new AngelSensorCallback();
             bleNetRef.get().connectGatt(config.btAddress, gattCallback);
         }
-        
+
         healthOutput.start();
         activityOutput.start();
         statusOutput.start();
     }
-    
+
 
     @Override
     public void stop() throws SensorHubException
     {
+        if (gattClient != null)
+            gattClient.close();
+
         if (healthOutput != null)
             healthOutput.stop();
-        
+
         if (activityOutput != null)
             activityOutput.stop();
-        
+
         if (statusOutput != null)
             statusOutput.stop();
     }
-    
+
 
     @Override
     public void cleanup() throws SensorHubException
-    {       
+    {
     }
-    
-    
+
+
     @Override
     public boolean isConnected()
     {
         return (gattClient != null);
     }
-    
-    
+
+
     protected IGattCharacteristic findCharacteristic(IGattClient gatt, int serviceID, int charID)
     {
         UUID serviceUUID = BleUtils.getUUID(serviceID);
         UUID charUUID = BleUtils.getUUID(charID);
         return findCharacteristic(gatt, serviceUUID, charUUID);
     }
-    
-    
+
+
     protected IGattCharacteristic findCharacteristic(IGattClient gatt, UUID serviceUUID, UUID charUUID)
     {
-        for (IGattService s: gatt.getServices())
+        for (IGattService s : gatt.getServices())
         {
             if (s.getType().equals(serviceUUID))
             {
-                for (IGattCharacteristic c: s.getCharacteristics())
+                for (IGattCharacteristic c : s.getCharacteristics())
                 {
                     if (c.getType().equals(charUUID))
                         return c;
                 }
             }
         }
-        
+
         return null;
     }
-    
-    
+
     /*
      * Callback for receiving all BLE events
      */
@@ -220,22 +226,23 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
             if (status == IGattClient.GATT_SUCCESS)
             {
                 AngelSensor.this.gattClient = gatt;
-                AngelSensor.this.eventHandler.publishEvent(
-                        new SensorEvent(System.currentTimeMillis(), AngelSensor.this, SensorEvent.Type.CONNECTED));
+                AngelSensor.this.eventHandler.publishEvent(new SensorEvent(System.currentTimeMillis(), AngelSensor.this, SensorEvent.Type.CONNECTED));
                 log.info("Angel Sensor connected ({})", config.btAddress);
                 gatt.discoverServices();
             }
         }
 
+
         @Override
         public void onDisconnected(IGattClient gatt, int status)
         {
             AngelSensor.this.gattClient = null;
-            log.info("Angel Sensor disconnected ({})", config.btAddress);            
+            log.info("Angel Sensor disconnected ({})", config.btAddress);
         }
 
+
         @Override
-        public void onServicesDiscovered(IGattClient gatt, int status)
+        public void onServicesDiscovered(final IGattClient gatt, int status)
         {
             // lookup manufacturer info
             manufacturerName = findCharacteristic(gatt, DEVICE_INFO_SERVICE, MANUFACTURER_NAME);
@@ -244,31 +251,52 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
             gatt.readCharacteristic(manufacturerName);
             gatt.readCharacteristic(modelNumber);
             gatt.readCharacteristic(serialNumber);
-            
+
             // subscribe to measurement properties
             batteryLevel = findCharacteristic(gatt, BATTERY_SERVICE, BATTERY_LEVEL);
-            gatt.setCharacteristicNotification(batteryLevel, true);            
+            gatt.setCharacteristicNotification(batteryLevel, true);
             heartRate = findCharacteristic(gatt, HEART_RATE_SERVICE, HEART_RATE_MEAS);
-            gatt.setCharacteristicNotification(heartRate, true);            
+            gatt.setCharacteristicNotification(heartRate, true);
+            bodyTemp = findCharacteristic(gatt, HEALTH_TEMP_SERVICE, HEALTH_TEMP_MEAS);
+            gatt.setCharacteristicNotification(bodyTemp, true);
             bloodOxygen = findCharacteristic(gatt, UUID.fromString(BLOOD_OXY_SERVICE), UUID.fromString(BLOOD_OXY));
+            gatt.readCharacteristic(bloodOxygen);
             gatt.setCharacteristicNotification(bloodOxygen, true);
         }
 
+
         @Override
-        public void onCharacteristicChanged(IGattClient gatt, IGattCharacteristic characteristic)
+        public void onCharacteristicChanged(IGattClient gatt, IGattField characteristic)
         {
             if (characteristic == batteryLevel)
                 log.debug("Battery Level: {}%", characteristic.getValue().get());
             else if (characteristic == heartRate)
-                log.debug("Heart Rate: {} BPM", characteristic.getValue().getInt());
+            {
+                ByteBuffer data = characteristic.getValue();
+                log.debug("Flags: {}", Integer.toBinaryString(data.get())); // flags
+                log.debug("Heart Rate: {} BPM", data.get() & 0xFF);
+            }
+            else if (characteristic == bodyTemp)
+            {
+                ByteBuffer data = characteristic.getValue();
+                log.debug("Flags: {}", Integer.toBinaryString(data.get())); // flags                
+                log.debug("Body Temp: {} °C", BleUtils.readHealthFloat32(data));
+            }
             else if (characteristic == bloodOxygen)
-                log.debug("Blood Oxygen: {}%", characteristic.getValue().getFloat());
+            {
+                ByteBuffer data = characteristic.getValue();
+                log.debug("Blood Oxygen: {}%", BleUtils.readHealthFloat32(data));
+            }
         }
 
+
         @Override
-        public void onCharacteristicRead(IGattClient gatt, IGattCharacteristic characteristic, int status)
+        public void onCharacteristicRead(IGattClient gatt, IGattField characteristic, int status)
         {
-            log.debug("Characteristic Read: {}", new String(characteristic.getValue().array()));
+            if (characteristic == batteryLevel)
+                log.debug("Characteristic Read: {}", (int) characteristic.getValue().get());
+            else
+                log.debug("Characteristic Read: {}", new String(characteristic.getValue().array()));
         }
     }
 }
