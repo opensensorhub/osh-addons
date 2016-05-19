@@ -8,7 +8,7 @@
    </parent>
    <artifactId>sensorhub-driver-virb-xe</artifactId>
    <version>0.1-SNAPSHOT</version>
-   <name>Gamin IRB-XE Camera-GPS</name>
+   <name>Gamin VIRB-XE Camera-GPS</name>
    <description>Driver for Garmin VIRB-XE camera which includes GPS and orientation sensors</description>
    <dependencies>
       <dependency>
