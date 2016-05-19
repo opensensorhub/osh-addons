@@ -31,7 +31,6 @@ import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModuleStateManager;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.slf4j.Logger;
 import org.vast.sensorML.SMLFactory;
 import org.vast.swe.DataInputStreamLI;
 import org.vast.swe.DataOutputStreamLI;
@@ -473,11 +472,5 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
     public boolean isConnected()
     {
         return (commProvider != null); // TODO also send ID command to check that sensor is really there
-    }
-    
-    
-    protected Logger getLogger()
-    {
-        return super.getLogger();
     }
 }

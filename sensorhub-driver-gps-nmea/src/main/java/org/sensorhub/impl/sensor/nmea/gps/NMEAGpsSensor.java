@@ -24,7 +24,6 @@ import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.slf4j.Logger;
 
 
 /**
@@ -275,12 +274,5 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
     public boolean isConnected()
     {
         return (commProvider != null);
-    }
-
-
-    @Override
-    protected Logger getLogger()
-    {
-        return super.getLogger();
     }
 }
