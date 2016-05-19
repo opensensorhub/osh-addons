@@ -17,7 +17,6 @@ package org.sensorhub.impl.sensor.v4l;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.slf4j.Logger;
 import au.edu.jcu.v4l4j.DeviceInfo;
 import au.edu.jcu.v4l4j.ImageFormat;
 import au.edu.jcu.v4l4j.VideoDevice;
@@ -197,11 +196,5 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     public void finalize()
     {
         stop();
-    }
-    
-    
-    protected Logger getLogger()
-    {
-        return super.getLogger();
     }
 }
