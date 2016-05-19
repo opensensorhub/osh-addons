@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -48,7 +49,7 @@ public class RTSPClient
     final static int READY = 1;
     final static int PLAYING = 2;
     
-    int state;
+    boolean connected;
     String videoUrl;
     String userName;
     String passwd;
@@ -86,16 +87,22 @@ public class RTSPClient
         this.passwd = passwd;
         
         InetAddress rtspServerIP = InetAddress.getByName(serverHost);
-        this.rtspSocket = new Socket(rtspServerIP, serverPort);
-        rtspSocket.setSoTimeout(2000);
+        this.rtspSocket = new Socket();
+        rtspSocket.connect(new InetSocketAddress(rtspServerIP, serverPort), 10000);
+        rtspSocket.setSoTimeout(2000); // read timeout
         
         this.rtspResponseReader = new BufferedReader(new InputStreamReader(rtspSocket.getInputStream()));
         this.rtspRequestWriter = new BufferedWriter(new OutputStreamWriter(rtspSocket.getOutputStream()));
 
         this.rtpRcvPort = rtpRcvPort;
-        this.state = INIT;
         
         this.mediaStreams = new ArrayList<StreamInfo>();
+    }
+    
+    
+    public boolean isConnected()
+    {
+        return connected;
     }
 
     
@@ -238,12 +245,20 @@ public class RTSPClient
     
     private void parseResponse(String reqType) throws IOException
     {
-        String line = rtspResponseReader.readLine();
-        
-        // read response code
-        int respCode = Integer.parseInt(line.split(" ")[1]);
-        if (respCode != 200)
-            throw new IOException("RTSP Server Error: " + line);
+        try
+        {
+            String line = rtspResponseReader.readLine();
+            
+            // read response code
+            int respCode = Integer.parseInt(line.split(" ")[1]);
+            if (respCode != 200)
+                throw new IOException("RTSP Server Error: " + line);
+        }
+        catch (NumberFormatException e)
+        {
+            connected = false;
+            throw e;
+        }
         
         // parse response according to request type
         if (reqType == REQ_DESCRIBE)

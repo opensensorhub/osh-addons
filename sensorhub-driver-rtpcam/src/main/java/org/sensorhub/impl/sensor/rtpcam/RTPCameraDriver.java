@@ -17,8 +17,6 @@ package org.sensorhub.impl.sensor.rtpcam;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -31,7 +29,6 @@ import org.slf4j.LoggerFactory;
  */
 public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
 {
-    static final Logger log = LoggerFactory.getLogger(RTPCameraDriver.class);
     RTPVideoOutput<RTPCameraDriver> dataInterface;
     
     
@@ -53,6 +50,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     @Override
     public synchronized void start() throws SensorException
     {
+        dataInterface.updateConfig(config.video, config.net, config.rtsp);
         dataInterface.start();
     }
     
@@ -93,12 +91,5 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     @Override
     public void cleanup()
     {        
-    }
-    
-    
-    @Override
-    public void finalize()
-    {
-        stop();
     }
 }

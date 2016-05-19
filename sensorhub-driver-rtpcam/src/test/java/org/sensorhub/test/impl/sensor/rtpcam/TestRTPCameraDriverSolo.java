@@ -50,7 +50,7 @@ public class TestRTPCameraDriverSolo implements IEventListener
         config.video.backupFile = "/home/alex/test-solo.h264";
         config.net.remoteHost = "10.1.1.1";
         config.rtsp.rtspPort = 5502;
-        config.rtsp.videoPath = "/cam/realmonitor?channel=1&subtype=0";        
+        config.rtsp.videoPath = "";        
         config.rtsp.localUdpPort = 5600;
         
         driver = new RTPCameraDriver();
@@ -89,7 +89,7 @@ public class TestRTPCameraDriverSolo implements IEventListener
         
         synchronized (this) 
         {
-            while (sampleCount < 200)
+            while (sampleCount < 500)
                 wait();
         }
         
