@@ -47,7 +47,7 @@ public class VirbXeVideoOutput extends RTPVideoOutput<VirbXeDriver>
             return new VideoResolution()
             {
                 public int getWidth() { return 704; }
-                public int getHeight() { return 418; }        
+                public int getHeight() { return 418; }
             };
         }
     }

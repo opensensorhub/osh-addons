@@ -296,6 +296,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
     		
     		HttpURLConnection con = (HttpURLConnection) urlVirb.openConnection();    		
     		con.setRequestMethod("POST");
+    		con.setConnectTimeout(5000);
  
     		String urlParameters = "{\"command\":\"sensors\"}";
     		

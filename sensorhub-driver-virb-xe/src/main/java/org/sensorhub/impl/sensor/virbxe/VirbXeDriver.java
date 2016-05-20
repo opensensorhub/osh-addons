@@ -177,69 +177,67 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     @Override
     public boolean isConnected()
     {
-    	// Check connection to VIRB and get DeviceInfo
-    	// request JSON response, parse, and assign values
-     	String json = sendCommand("{\"command\":\"deviceInfo\"}");
-     	getLogger().trace(json);
-    	if (json.equalsIgnoreCase("0"))
-    		return false;
-  		
-    	// Returns an array with one component
-    	// serialize the DeviceInfo JSON Object
-    	Gson gson = new Gson(); 	
-      	DeviceInfoArray info = gson.fromJson(json, DeviceInfoArray.class);
-    	  		
-    	modelNumber = info.deviceInfo[0].model;
-    	serialNumber = info.deviceInfo[0].deviceId;
-    	firmware = info.deviceInfo[0].firmware;
-    	
-    	// set GPS on and set Units to metric
-    	//String response = 
-    	sendCommand("{\"command\":\"updateFeature\",\"feature\": \"gps\" ,\"value\": \"on\" }");
-    	//String response = 
-    	sendCommand("{\"command\":\"updateFeature\",\"feature\": \"units\" ,\"value\": \"Metric\" }");
-    	
-        return true;
+    	try
+        {
+            // Check connection to VIRB and get DeviceInfo
+            // request JSON response, parse, and assign values
+            String json = sendCommand("{\"command\":\"deviceInfo\"}");
+            getLogger().trace(json);
+            if (json.equalsIgnoreCase("0"))
+            	return false;
+            
+            // Returns an array with one component
+            // serialize the DeviceInfo JSON Object
+            Gson gson = new Gson(); 	
+            DeviceInfoArray info = gson.fromJson(json, DeviceInfoArray.class);
+              		
+            modelNumber = info.deviceInfo[0].model;
+            serialNumber = info.deviceInfo[0].deviceId;
+            firmware = info.deviceInfo[0].firmware;
+            
+            // set GPS on and set Units to metric
+            //String response = 
+            sendCommand("{\"command\":\"updateFeature\",\"feature\": \"gps\" ,\"value\": \"on\" }");
+            //String response = 
+            sendCommand("{\"command\":\"updateFeature\",\"feature\": \"units\" ,\"value\": \"Metric\" }");
+            
+            return true;
+        }
+        catch (IOException e)
+        {
+            return false;
+        }
     }
     
     
     // send Post command
-    public String sendCommand(String command){
-    	
-    	StringBuffer response = null;
-    	
-    	try
-    	{
-    		URL obj = new URL(getHostUrl());
-    		HttpURLConnection con = (HttpURLConnection) obj.openConnection();    		
-    		con.setRequestMethod("POST");
- 
-    		con.setDoOutput(true);
-    		DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-    		wr.writeBytes(command);
-    		wr.flush();
-    		wr.close();
+    public String sendCommand(String command) throws IOException
+    {
+    	URL obj = new URL(getHostUrl());
+        HttpURLConnection con = (HttpURLConnection) obj.openConnection();           
+        con.setRequestMethod("POST");
+        con.setConnectTimeout(5000);
 
-    		// check response code for an error
-    		String responseCode = Integer.toString(con.getResponseCode());
-    		if ((responseCode.equalsIgnoreCase("-1")) || (responseCode.equalsIgnoreCase("401")))
-    			return "0";
-     		
-    		BufferedReader in = new BufferedReader(
-    		        new InputStreamReader(con.getInputStream()));
-    		String inputLine;
-    		response = new StringBuffer();
+        con.setDoOutput(true);
+        DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+        wr.writeBytes(command);
+        wr.flush();
+        wr.close();
 
-    		while ((inputLine = in.readLine()) != null) {
-    			response.append(inputLine);
-    		}
-    		in.close();
-    		     		
-    	}
-    	catch (IOException e)
-    	{  		
-    		 e.printStackTrace();
-    	}
+        // check response code for an error
+        String responseCode = Integer.toString(con.getResponseCode());
+        if ((responseCode.equalsIgnoreCase("-1")) || (responseCode.equalsIgnoreCase("401")))
+            return "0";
+        
+        // read JSON response
+        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        StringBuffer response = new StringBuffer();
+        String inputLine;
+        
+        while ((inputLine = in.readLine()) != null)
+            response.append(inputLine);
+        
+        in.close();
     	
     	return response.toString();
     }
