@@ -122,10 +122,7 @@ public class RTPH264Receiver extends Thread
             
             while (started)
             {
-                synchronized (rtpSocket)
-                {
-                    rtpSocket.receive(receivePacket);                    
-                }
+                rtpSocket.receive(receivePacket);
                     
                 // create an RTPpacket object from the UDP payload
                 int length = receivePacket.getLength();
@@ -257,7 +254,8 @@ public class RTPH264Receiver extends Thread
         }
         catch (Throwable e)
         {
-            log.error("Error while demuxing H264 RTP stream", e);
+            if (started)
+                log.error("Error while demuxing H264 RTP stream", e);
         }
     }
     
@@ -275,10 +273,6 @@ public class RTPH264Receiver extends Thread
     {
         started = false;
         super.interrupt();
-        
-        synchronized (rtpSocket)
-        {
-            rtpSocket.close();                    
-        }
+        rtpSocket.close();
     }
 }
