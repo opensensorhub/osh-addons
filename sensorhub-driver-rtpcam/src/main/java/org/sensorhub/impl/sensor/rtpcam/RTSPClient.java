@@ -88,7 +88,7 @@ public class RTSPClient
         
         InetAddress rtspServerIP = InetAddress.getByName(serverHost);
         this.rtspSocket = new Socket();
-        rtspSocket.connect(new InetSocketAddress(rtspServerIP, serverPort), 10000);
+        rtspSocket.connect(new InetSocketAddress(rtspServerIP, serverPort), 5000);
         rtspSocket.setSoTimeout(5000); // read timeout
         
         this.rtspResponseReader = new BufferedReader(new InputStreamReader(rtspSocket.getInputStream()));
