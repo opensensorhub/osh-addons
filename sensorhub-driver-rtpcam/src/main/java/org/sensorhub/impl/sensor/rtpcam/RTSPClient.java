@@ -24,8 +24,6 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.slf4j.Logger;
@@ -216,9 +214,9 @@ public class RTSPClient
     }
     
     
-    private void addDigestAuth(String realm, String nonce, String method, String digestUri) throws IOException
+    /*private void addDigestAuth(String realm, String nonce, String method, String digestUri) throws IOException
     {
-        /*if (userName != null && passwd != null)
+        if (userName != null && passwd != null)
         {
             try
             {
@@ -239,8 +237,8 @@ public class RTSPClient
             {
                 e.printStackTrace();
             }
-        }*/
-    }
+        }
+    }*/
     
     
     private void parseResponse(String reqType) throws IOException
@@ -253,20 +251,22 @@ public class RTSPClient
             int respCode = Integer.parseInt(line.split(" ")[1]);
             if (respCode != 200)
                 throw new IOException("RTSP Server Error: " + line);
+                
+            // parse response according to request type
+            if (reqType == REQ_DESCRIBE)
+                parseDescribeResp();        
+            else if (reqType == REQ_SETUP)
+                parseSetupResp();
+            else
+                printResponse();
         }
-        catch (NumberFormatException e)
+        catch (NumberFormatException | IOException e)
         {
             connected = false;
             throw e;
         }
         
-        // parse response according to request type
-        if (reqType == REQ_DESCRIBE)
-            parseDescribeResp();        
-        else if (reqType == REQ_SETUP)
-            parseSetupResp();
-        else
-            printResponse();
+        connected = true;
     }
     
     
