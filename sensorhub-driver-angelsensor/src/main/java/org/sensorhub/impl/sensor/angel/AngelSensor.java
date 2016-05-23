@@ -63,8 +63,8 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
     private final static int HEALTH_TEMP_SERVICE = 0x1809;
     private final static int HEALTH_TEMP_MEAS = 0x2A1C;
 
-    private final static String BLOOD_OXY_SERVICE = "902dcf38-ccc0-4902-b22c-70cab5ee5df2";
-    private final static String BLOOD_OXY = "b269c33f-df6b-4c32-801d-1b963190bc71";
+    //private final static String BLOOD_OXY_SERVICE = "902dcf38-ccc0-4902-b22c-70cab5ee5df2";
+    //private final static String BLOOD_OXY = "b269c33f-df6b-4c32-801d-1b963190bc71";
 
     WeakReference<IBleNetwork<?>> bleNetRef;
     AngelSensorCallback gattCallback;
@@ -79,10 +79,10 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
     IGattCharacteristic bloodOxygen;
 
     HealthMetricsOutput healthOutput;
-    ActivityOutput activityOutput;
+    //ActivityOutput activityOutput;
     DeviceStatusOutput statusOutput;
-
-
+    
+    
     public AngelSensor()
     {
     }
@@ -92,15 +92,17 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
     public void init(AngelSensorConfig config) throws SensorHubException
     {
         super.init(config);
+        this.uniqueID = "urn:osh:angelsensor:" + config.btAddress;
+        this.xmlID = "ANGELSENSOR_" + config.btAddress.replace(':', '_');
 
         // create output interfaces
         healthOutput = new HealthMetricsOutput(this);
         addOutput(healthOutput, false);
         healthOutput.init();
 
-        activityOutput = new ActivityOutput(this);
+        /*activityOutput = new ActivityOutput(this);
         addOutput(activityOutput, false);
-        activityOutput.init();
+        activityOutput.init();*/
 
         statusOutput = new DeviceStatusOutput(this);
         addOutput(statusOutput, true);
@@ -153,10 +155,6 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
             gattCallback = new AngelSensorCallback();
             bleNetRef.get().connectGatt(config.btAddress, gattCallback);
         }
-
-        healthOutput.start();
-        activityOutput.start();
-        statusOutput.start();
     }
 
 
@@ -165,15 +163,6 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
     {
         if (gattClient != null)
             gattClient.close();
-
-        if (healthOutput != null)
-            healthOutput.stop();
-
-        if (activityOutput != null)
-            activityOutput.stop();
-
-        if (statusOutput != null)
-            statusOutput.stop();
     }
 
 
@@ -259,9 +248,8 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
             gatt.setCharacteristicNotification(heartRate, true);
             bodyTemp = findCharacteristic(gatt, HEALTH_TEMP_SERVICE, HEALTH_TEMP_MEAS);
             gatt.setCharacteristicNotification(bodyTemp, true);
-            bloodOxygen = findCharacteristic(gatt, UUID.fromString(BLOOD_OXY_SERVICE), UUID.fromString(BLOOD_OXY));
-            gatt.readCharacteristic(bloodOxygen);
-            gatt.setCharacteristicNotification(bloodOxygen, true);
+            //bloodOxygen = findCharacteristic(gatt, UUID.fromString(BLOOD_OXY_SERVICE), UUID.fromString(BLOOD_OXY));
+            //gatt.setCharacteristicNotification(bloodOxygen, true);
         }
 
 
@@ -269,24 +257,35 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
         public void onCharacteristicChanged(IGattClient gatt, IGattField characteristic)
         {
             if (characteristic == batteryLevel)
-                log.debug("Battery Level: {}%", characteristic.getValue().get());
+            {
+                int val = characteristic.getValue().get();
+                log.debug("Battery Level: {}%", val);
+                statusOutput.newBatLevel(val);
+            }
+            
             else if (characteristic == heartRate)
             {
                 ByteBuffer data = characteristic.getValue();
                 log.debug("Flags: {}", Integer.toBinaryString(data.get())); // flags
-                log.debug("Heart Rate: {} BPM", data.get() & 0xFF);
+                int val = data.get() & 0xFF;
+                log.debug("Heart Rate: {} BPM", val);
+                healthOutput.newHeartRate(val);
             }
+            
             else if (characteristic == bodyTemp)
             {
                 ByteBuffer data = characteristic.getValue();
-                log.debug("Flags: {}", Integer.toBinaryString(data.get())); // flags                
-                log.debug("Body Temp: {} °C", BleUtils.readHealthFloat32(data));
+                log.debug("Flags: {}", Integer.toBinaryString(data.get())); // flags
+                float val = BleUtils.readHealthFloat32(data);
+                log.debug("Body Temp: {} °C", val);
+                healthOutput.newBodyTemp(val);
             }
-            else if (characteristic == bloodOxygen)
+            
+            /*else if (characteristic == bloodOxygen)
             {
                 ByteBuffer data = characteristic.getValue();
                 log.debug("Blood Oxygen: {}%", BleUtils.readHealthFloat32(data));
-            }
+            }*/
         }
 
 

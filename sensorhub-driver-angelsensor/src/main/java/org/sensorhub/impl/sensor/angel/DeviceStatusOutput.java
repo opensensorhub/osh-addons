@@ -14,7 +14,9 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.angel;
 
+import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import org.vast.swe.SWEHelper;
@@ -24,6 +26,9 @@ public class DeviceStatusOutput extends AbstractSensorOutput<AngelSensor>
 {
     DataComponent dataStruct;
     DataEncoding dataEnc;
+    
+    float lastBatLevel;
+    float lastTxLevel;
     
     
     public DeviceStatusOutput(AngelSensor parentSensor)
@@ -57,24 +62,46 @@ public class DeviceStatusOutput extends AbstractSensorOutput<AngelSensor>
         // also generate encoding definition as text block
         dataEnc = fac.newTextEncoding(",", "\n");        
     }
-       
 
-    protected void start()
+
+    protected void newBatLevel(float val)
     {
-        
+        this.lastBatLevel = val;
+        sendData();
     }
-
-
-    protected void stop()
+    
+    
+    protected void newTxLevel(float val)
     {
-        
+        this.lastTxLevel = val;
+        sendData();
     }
-
-
+    
+    
+    protected void sendData()
+    {
+        DataBlock data;
+        if (latestRecord == null)
+            data = dataStruct.createDataBlock();
+        else
+            data = latestRecord.renew();
+        
+        long timeStamp = System.currentTimeMillis();
+        data.setDoubleValue(0, timeStamp / 1000.);
+        data.setFloatValue(1, lastBatLevel);
+        data.setFloatValue(2, lastTxLevel);
+        
+        // update latest record and send event
+        latestRecord = data;
+        latestRecordTime = timeStamp;
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, this, data));
+    }
+    
+    
     @Override
     public double getAverageSamplingPeriod()
     {
-    	return 1.0;
+    	return 5.0;
     }
 
 
