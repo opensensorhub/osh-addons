@@ -205,7 +205,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     	    // try to open stream and check for Dahua Info
     	    URL optionsURL = new URL(getHostUrl() + "/magicBox.cgi?action=getSystemInfo");
 	        URLConnection conn = optionsURL.openConnection();
-		    conn.setConnectTimeout(500);
+		    conn.setConnectTimeout(5000);
 		    conn.connect();
 		    
 		    // read response
