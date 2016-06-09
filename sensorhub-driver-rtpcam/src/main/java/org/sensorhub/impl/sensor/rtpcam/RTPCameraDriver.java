@@ -58,7 +58,8 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     @Override
     public synchronized void stop()
     {
-        dataInterface.stop();
+        if (dataInterface != null)
+            dataInterface.stop();
     }
     
     
