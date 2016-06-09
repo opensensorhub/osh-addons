@@ -52,7 +52,7 @@ public class TestVirbXeDriver implements IEventListener
     	
     	config = new VirbXeConfig();
         config.id = UUID.randomUUID().toString();
-        config.net.remoteHost = "192.168.0.22";
+        config.http.remoteHost = "192.168.0.22";
                         
         driver = new VirbXeDriver();
         driver.init(config);

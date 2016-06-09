@@ -41,7 +41,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     public void init(RTPCameraConfig config) throws SensorHubException
     {
         super.init(config);        
-        this.dataInterface = new RTPVideoOutput<RTPCameraDriver>(this, config.video, config.net, config.rtsp);
+        this.dataInterface = new RTPVideoOutput<RTPCameraDriver>(this, config.video, config.rtsp);
         this.dataInterface.init();
         addOutput(dataInterface, false);
     }
@@ -50,7 +50,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     @Override
     public synchronized void start() throws SensorException
     {
-        dataInterface.updateConfig(config.video, config.net, config.rtsp);
+        dataInterface.updateConfig(config.video, config.rtsp);
         dataInterface.start();
     }
     

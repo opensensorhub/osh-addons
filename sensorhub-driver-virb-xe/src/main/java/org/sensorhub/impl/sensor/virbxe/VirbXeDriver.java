@@ -68,9 +68,26 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     
     
     @Override
+    public void setConfiguration(VirbXeConfig config)
+    {
+        // use same config for HTTP and RTSP by default
+        if (config.rtsp.localAddress == null)
+            config.rtsp.localAddress = config.http.localAddress;
+        if (config.rtsp.remoteHost == null)
+            config.rtsp.remoteHost = config.http.remoteHost;
+        if (config.rtsp.user == null)
+            config.rtsp.user = config.http.user;
+        if (config.rtsp.password == null)
+            config.rtsp.password = config.http.password;
+        
+        super.setConfiguration(config);
+    };
+    
+    
+    @Override
     public void start() throws SensorHubException
     {
-        hostUrl = "http://" + config.net.remoteHost + ":" + config.net.remotePort + "/virb";        
+        hostUrl = "http://" + config.http.remoteHost + ":" + config.http.remotePort + "/virb";
         
         // check first if connected
         if (waitForConnection(connectionRetryPeriod, config.connectTimeout))
@@ -289,9 +306,9 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     
     private void setAuth()
     {
-        ClientAuth.getInstance().setUser(config.net.user);
-        if (config.net.password != null)
-            ClientAuth.getInstance().setPassword(config.net.password.toCharArray());
+        ClientAuth.getInstance().setUser(config.http.user);
+        if (config.http.password != null)
+            ClientAuth.getInstance().setPassword(config.http.password.toCharArray());
     }
 
 

@@ -29,7 +29,6 @@ import net.opengis.swe.v20.DataStream;
 import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.comm.TCPConfig;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.rtpcam.RTSPClient.StreamInfo;
 import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
@@ -50,7 +49,6 @@ import org.vast.data.DataBlockMixed;
 public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends AbstractSensorOutput<SensorType> implements RTPH264Callback
 {
     BasicVideoConfig videoConfig;
-    TCPConfig netConfig;
     RTSPConfig rtspConfig;
     
     DataComponent dataStruct;
@@ -65,24 +63,23 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
     boolean firstFrameReceived;
     
     
-    public RTPVideoOutput(SensorType driver, BasicVideoConfig videoConfig, TCPConfig netConfig, RTSPConfig rtspConfig)
+    public RTPVideoOutput(SensorType driver, BasicVideoConfig videoConfig, RTSPConfig rtspConfig)
     {
-        this(driver, "video", videoConfig, netConfig, rtspConfig);
+        this(driver, "video", videoConfig, rtspConfig);
     }
     
     
-    public RTPVideoOutput(SensorType driver, String name, BasicVideoConfig videoConfig, TCPConfig netConfig, RTSPConfig rtspConfig)
+    public RTPVideoOutput(SensorType driver, String name, BasicVideoConfig videoConfig, RTSPConfig rtspConfig)
     {
         super(driver);
         this.name = name;
-        updateConfig(videoConfig, netConfig, rtspConfig);
+        updateConfig(videoConfig, rtspConfig);
     }
     
     
-    public void updateConfig(BasicVideoConfig videoConfig, TCPConfig netConfig, RTSPConfig rtspConfig)
+    public void updateConfig(BasicVideoConfig videoConfig, RTSPConfig rtspConfig)
     {
         this.videoConfig = videoConfig;
-        this.netConfig = netConfig;
         this.rtspConfig = rtspConfig;        
     }
     
@@ -132,11 +129,11 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
         {
             // setup stream with RTSP server
             rtspClient = new RTSPClient(
-                    netConfig.remoteHost,
-                    rtspConfig.rtspPort,
+                    rtspConfig.remoteHost,
+                    rtspConfig.remotePort,
                     rtspConfig.videoPath,
-                    netConfig.user,
-                    netConfig.password,
+                    rtspConfig.user,
+                    rtspConfig.password,
                     rtspConfig.localUdpPort);
             
             try
@@ -154,7 +151,7 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
             }
             
             // start RTP/H264 receiving thread
-            rtpThread = new RTPH264Receiver(netConfig.remoteHost, rtspConfig.localUdpPort, this);
+            rtpThread = new RTPH264Receiver(rtspConfig.remoteHost, rtspConfig.localUdpPort, this);
             StreamInfo h264Stream = null;
             int streamIndex = 0;
             int i = 0;
@@ -189,7 +186,7 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
                 
                 // start RTCP sending thread
                 // some cameras need that to maintain the stream
-                rtcpThread = new RTCPSender(netConfig.remoteHost, rtspConfig.localUdpPort+1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
+                rtcpThread = new RTCPSender(rtspConfig.remoteHost, rtspConfig.localUdpPort+1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
                 rtcpThread.start();
             }
         }

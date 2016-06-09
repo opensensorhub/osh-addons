@@ -22,16 +22,16 @@ import org.sensorhub.impl.sensor.rtpcam.RTSPConfig;
 
 public class VirbXeConfig extends SensorConfig
 {        
-    @DisplayInfo(label="Network", desc="Network configuration")
-    public HTTPConfig net = new HTTPConfig();
+    @DisplayInfo(label="HTTP", desc="HTTP configuration")
+    public HTTPConfig http = new HTTPConfig();
     
-    @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration")
+    @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration (Remote host is obtained from HTTP config)")
     public RTSPConfig rtsp = new RTSPConfig();
     
     
     public VirbXeConfig()
     {
-        rtsp.rtspPort = 554;
+        rtsp.remotePort = 554;
         rtsp.videoPath = "/livePreviewStream";
         rtsp.localUdpPort = 20200;
     }

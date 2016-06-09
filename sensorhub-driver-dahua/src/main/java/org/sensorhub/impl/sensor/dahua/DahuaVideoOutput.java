@@ -41,7 +41,6 @@ public class DahuaVideoOutput extends RTPVideoOutput<DahuaCameraDriver>
 	{
 		super(driver,
 		      driver.getConfiguration().video,
-		      driver.getConfiguration().net,
 		      driver.getConfiguration().rtsp);
 	}
 	

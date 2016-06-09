@@ -21,10 +21,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
-
 import net.opengis.sensorml.v20.IdentifierList;
 import net.opengis.sensorml.v20.Term;
-
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -63,9 +61,26 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     
         
     @Override
+    public void setConfiguration(DahuaCameraConfig config)
+    {
+        // use same config for HTTP and RTSP by default
+        if (config.rtsp.localAddress == null)
+            config.rtsp.localAddress = config.http.localAddress;
+        if (config.rtsp.remoteHost == null)
+            config.rtsp.remoteHost = config.http.remoteHost;
+        if (config.rtsp.user == null)
+            config.rtsp.user = config.http.user;
+        if (config.rtsp.password == null)
+            config.rtsp.password = config.http.password;
+        
+        super.setConfiguration(config);
+    };
+    
+    
+    @Override
     public void start() throws SensorException
     {
-        hostUrl = "http://" + config.net.remoteHost + ":" + config.net.remotePort + "/cgi-bin";
+        hostUrl = "http://" + config.http.remoteHost + ":" + config.http.remotePort + "/cgi-bin";
         
         // check first if connected
         if (waitForConnection(connectionRetryPeriod, config.connectTimeout))
@@ -267,9 +282,9 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
 
     private void setAuth()
     {
-        ClientAuth.getInstance().setUser(config.net.user);
-        if (config.net.password != null)
-            ClientAuth.getInstance().setPassword(config.net.password.toCharArray());
+        ClientAuth.getInstance().setUser(config.http.user);
+        if (config.http.password != null)
+            ClientAuth.getInstance().setPassword(config.http.password.toCharArray());
     }
 
 
