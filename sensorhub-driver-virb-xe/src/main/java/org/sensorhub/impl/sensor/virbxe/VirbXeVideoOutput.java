@@ -57,7 +57,6 @@ public class VirbXeVideoOutput extends RTPVideoOutput<VirbXeDriver>
 	{
 		super(driver,
 		      new VirbVideoConfig(),
-		      driver.getConfiguration().net,
 		      driver.getConfiguration().rtsp);
 	}
 	

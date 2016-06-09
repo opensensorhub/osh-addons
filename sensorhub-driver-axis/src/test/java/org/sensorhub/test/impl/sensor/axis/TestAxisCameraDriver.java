@@ -78,13 +78,13 @@ public class TestAxisCameraDriver implements IEventListener
         //config.net.remotePort = 8080;
         //config.net.remoteHost = "bottsgeo.simple-url.com";
         //config.net.remotePort = 80;
-        config.net.remoteHost = "192.168.0.203";
-        config.net.remotePort = 80;
+        config.http.remoteHost = "192.168.0.203";
+        config.http.remotePort = 80;
         config.id = UUID.randomUUID().toString();
 
-        config.net.user = "root";
+        config.http.user = "root";
         //config.net.password = "do|die";
-        config.net.password = "mike";
+        config.http.password = "mike";
         
         config.enableMJPEG = true;
 

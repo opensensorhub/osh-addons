@@ -48,10 +48,10 @@ public class TestRTPCameraDriverAxis implements IEventListener
         config.id = UUID.randomUUID().toString();
         config.cameraID = "axis:001";
         config.video.backupFile = "/home/alex/test-axis.h264";
-        config.net.remoteHost = "192.168.0.24";
-        //config.net.user = "admin";
-        //config.net.password = "op3nsaysam3";
-        config.rtsp.rtspPort = 554;
+        config.rtsp.remoteHost = "192.168.0.24";
+        //config.rtsp.user = "admin";
+        //config.rtsp.password = "op3nsaysam3";
+        config.rtsp.remotePort = 554;
         config.rtsp.videoPath = "/axis-media/media.amp?videocodec=h264";        
         config.rtsp.localUdpPort = 20000;
         

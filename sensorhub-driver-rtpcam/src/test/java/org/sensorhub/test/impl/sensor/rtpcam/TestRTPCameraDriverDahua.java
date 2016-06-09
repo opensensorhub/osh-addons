@@ -48,10 +48,10 @@ public class TestRTPCameraDriverDahua implements IEventListener
         config.id = UUID.randomUUID().toString();
         config.cameraID = "dahua:001";
         config.video.backupFile = "/home/alex/test-dahua.h264";
-        config.net.remoteHost = "192.168.0.201";
-        config.net.user = "admin";
-        config.net.password = "op3nsaysam3";
-        config.rtsp.rtspPort = 554;
+        config.rtsp.remoteHost = "192.168.0.201";
+        config.rtsp.user = "admin";
+        config.rtsp.password = "op3nsaysam3";
+        config.rtsp.remotePort = 554;
         config.rtsp.videoPath = "/cam/realmonitor?channel=1&subtype=0";        
         config.rtsp.localUdpPort = 5600;
         

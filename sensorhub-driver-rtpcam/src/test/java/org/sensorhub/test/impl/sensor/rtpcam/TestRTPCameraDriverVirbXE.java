@@ -48,10 +48,10 @@ public class TestRTPCameraDriverVirbXE implements IEventListener
         config.id = UUID.randomUUID().toString();
         config.cameraID = "virb:001";
         config.video.backupFile = "/home/alex/test-virb.h264";
-        config.net.remoteHost = "192.168.0.22";
-        //config.net.user = "admin";
-        //config.net.password = "op3nsaysam3";
-        config.rtsp.rtspPort = 554;
+        config.rtsp.remoteHost = "192.168.0.22";
+        //config.rtsp.user = "admin";
+        //config.rtsp.password = "op3nsaysam3";
+        config.rtsp.remotePort = 554;
         config.rtsp.videoPath = "/livePreviewStream";        
         config.rtsp.localUdpPort = 20000;
         

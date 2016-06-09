@@ -48,8 +48,8 @@ public class TestRTPCameraDriverSolo implements IEventListener
         config.id = UUID.randomUUID().toString();
         config.cameraID = "solo:12345";
         config.video.backupFile = "/home/alex/test-solo.h264";
-        config.net.remoteHost = "10.1.1.1";
-        config.rtsp.rtspPort = 5502;
+        config.rtsp.remoteHost = "10.1.1.1";
+        config.rtsp.remotePort = 5502;
         config.rtsp.videoPath = "";        
         config.rtsp.localUdpPort = 5600;
         

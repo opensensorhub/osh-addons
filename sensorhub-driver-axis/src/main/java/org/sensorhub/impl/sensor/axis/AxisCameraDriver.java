@@ -66,9 +66,26 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     
     
     @Override
+    public void setConfiguration(AxisCameraConfig config)
+    {
+        // use same config for HTTP and RTSP by default
+        if (config.rtsp.localAddress == null)
+            config.rtsp.localAddress = config.http.localAddress;
+        if (config.rtsp.remoteHost == null)
+            config.rtsp.remoteHost = config.http.remoteHost;
+        if (config.rtsp.user == null)
+            config.rtsp.user = config.http.user;
+        if (config.rtsp.password == null)
+            config.rtsp.password = config.http.password;
+        
+        super.setConfiguration(config);
+    };
+    
+    
+    @Override
     public void start() throws SensorException
     {
-        hostName = config.net.remoteHost + ":" + config.net.remotePort;
+        hostName = config.http.remoteHost + ":" + config.http.remotePort;
         
         // check first if connected
     	if (isConnected())
@@ -89,7 +106,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
             if (config.enableH264)
             {
                 String outputName = videoOutName + videoOutNum++;
-                h264VideoOutput = new RTPVideoOutput<AxisCameraDriver>(this, outputName, config.video, config.net, config.rtsp);
+                h264VideoOutput = new RTPVideoOutput<AxisCameraDriver>(this, outputName, config.video, config.rtsp);
                 h264VideoOutput.init();
                 h264VideoOutput.start();
                 addOutput(h264VideoOutput, false);
@@ -233,9 +250,9 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
 
     protected void setAuth()
     {
-        ClientAuth.getInstance().setUser(config.net.user);
-        if (config.net.password != null)
-            ClientAuth.getInstance().setPassword(config.net.password.toCharArray());
+        ClientAuth.getInstance().setUser(config.http.user);
+        if (config.http.password != null)
+            ClientAuth.getInstance().setPassword(config.http.password.toCharArray());
     }
 
 

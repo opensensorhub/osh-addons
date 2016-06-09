@@ -15,6 +15,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.rtpcam;
 
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.impl.comm.TCPConfig;
 
 
 /**
@@ -25,14 +26,18 @@ import org.sensorhub.api.config.DisplayInfo;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Dec 12, 2015
  */
-public class RTSPConfig
+public class RTSPConfig extends TCPConfig
 {    
-    @DisplayInfo(label="Remote RTSP Port", desc="Remote TCP port where RTSP commands are sent")
-    public int rtspPort;
     
     @DisplayInfo(label="RTSP Video Path", desc="Video path to request from RTSP server")
     public String videoPath;
     
     @DisplayInfo(label="Local UDP Port", desc="Local UDP port for receiving RTP packets")
     public int localUdpPort;
+    
+    
+    public RTSPConfig()
+    {
+        this.remotePort = 554;
+    }
 }

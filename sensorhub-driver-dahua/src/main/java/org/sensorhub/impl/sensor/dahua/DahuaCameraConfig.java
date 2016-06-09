@@ -37,10 +37,10 @@ public class DahuaCameraConfig extends SensorConfig
     @DisplayInfo(label="Video", desc="Video settings")
     public VideoConfig video = new VideoConfig();
     
-    @DisplayInfo(label="Network", desc="Network configuration")
-    public HTTPConfig net = new HTTPConfig();
+    @DisplayInfo(label="HTTP", desc="HTTP configuration")
+    public HTTPConfig http = new HTTPConfig();
     
-    @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration")
+    @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration (Remote host is obtained from HTTP configuration)")
     public RTSPConfig rtsp = new RTSPConfig();
     
     @DisplayInfo(label="PTZ", desc="Pan-Tilt-Zoom configuration")
@@ -103,7 +103,7 @@ public class DahuaCameraConfig extends SensorConfig
         video.resolution = ResolutionEnum.HD_720P;
         video.frameRate = 30;
         
-        rtsp.rtspPort = 554;
+        rtsp.remotePort = 554;
         rtsp.videoPath = "/cam/realmonitor?channel=1&subtype=0";
         rtsp.localUdpPort = 20000;
         
