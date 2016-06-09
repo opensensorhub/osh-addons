@@ -28,8 +28,6 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.helper.GeoPosHelper;
 import com.google.gson.JsonArray;
@@ -39,7 +37,6 @@ import com.google.gson.JsonParser;
 
 public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
 {
-    private static final Logger log = LoggerFactory.getLogger(FakeGpsOutput.class);
     DataComponent posDataStruct;
     DataEncoding posDataEncoding;
     List<double[]> trajPoints;
@@ -148,11 +145,12 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             // decode polyline data
             decodePoly(encodedData);
             currentTrackPos = 0.0;
+            parentSensor.clearError();
             return true;
         }
         catch (Exception e)
         {
-            log.error("Error while retrieving Google directions", e);
+            parentSensor.reportError("Error while retrieving Google directions", e);
             trajPoints.clear();
             try { Thread.sleep(60000L); }
             catch (InterruptedException e1) {}
@@ -272,6 +270,8 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             timer.cancel();
             timer = null;
         }
+        
+        trajPoints.clear();
     }
 
 
