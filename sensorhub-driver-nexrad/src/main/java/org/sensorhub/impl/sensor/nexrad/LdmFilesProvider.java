@@ -13,6 +13,7 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import org.codehaus.plexus.util.FileUtils;
 import org.sensorhub.api.common.SensorHubException;
 
 /**
@@ -39,6 +40,8 @@ public class LdmFilesProvider {
 		files = new PriorityBlockingQueue<>();
 		consumer = new LdmFilesConsumer(files);
 		this.siteFolder = dataFolder;
+		//  Make sure the target folder exists
+		FileUtils.mkdir(this.siteFolder.toString());
 	}
 
 	public void start() throws SensorHubException {
