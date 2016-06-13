@@ -29,7 +29,6 @@ import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.SensorHub;
 import org.sensorhub.impl.comm.ble.dbus.BleDbusCommNetwork;
 import org.sensorhub.impl.comm.ble.dbus.BluetoothNetworkConfig;
-import org.sensorhub.impl.module.InMemoryConfigDb;
 import org.sensorhub.impl.module.ModuleRegistry;
 import org.sensorhub.impl.sensor.angel.AngelSensorConfig;
 import org.sensorhub.impl.sensor.angel.AngelSensor;
@@ -51,8 +50,7 @@ public class TestAngelSensorDriverBleDbus implements IEventListener
     @Before
     public void init() throws Exception
     {
-        ModuleRegistry reg = new ModuleRegistry(new InMemoryConfigDb());
-        SensorHub.createInstance(null, reg);
+        ModuleRegistry reg = SensorHub.getInstance().getModuleRegistry();
 
         BluetoothNetworkConfig netConf = new BluetoothNetworkConfig();
         netConf.id = "BLE";
