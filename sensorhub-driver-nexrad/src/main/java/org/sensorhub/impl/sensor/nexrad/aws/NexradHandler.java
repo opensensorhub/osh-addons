@@ -1,4 +1,4 @@
-package org.sensorhub.aws.nexrad;
+package org.sensorhub.impl.sensor.nexrad.aws;
 
 
 import com.amazonaws.services.lambda.runtime.Context;

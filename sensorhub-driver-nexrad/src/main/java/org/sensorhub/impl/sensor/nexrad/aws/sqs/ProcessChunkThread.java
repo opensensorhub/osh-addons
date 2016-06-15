@@ -1,4 +1,4 @@
-package org.sensorhub.aws.sqs;
+package org.sensorhub.impl.sensor.nexrad.aws.sqs;
 
 import java.io.IOException;
 

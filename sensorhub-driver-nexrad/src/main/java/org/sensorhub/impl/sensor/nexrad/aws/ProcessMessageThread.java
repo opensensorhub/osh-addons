@@ -1,10 +1,10 @@
-package org.sensorhub.aws.nexrad;
+package org.sensorhub.impl.sensor.nexrad.aws;
 
 import java.util.List;
 
-import org.sensorhub.aws.sqs.AwsSqsService;
-import org.sensorhub.aws.sqs.ChunkHandler;
-import org.sensorhub.aws.sqs.ProcessChunkThread;
+import org.sensorhub.impl.sensor.nexrad.aws.sqs.AwsSqsService;
+import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkHandler;
+import org.sensorhub.impl.sensor.nexrad.aws.sqs.ProcessChunkThread;
 
 import com.amazonaws.services.sqs.model.Message;
 

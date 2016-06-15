@@ -1,11 +1,11 @@
-package org.sensorhub.aws.nexrad;
+package org.sensorhub.impl.sensor.nexrad.aws;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.sensorhub.aws.sqs.AwsSqsService;
-import org.sensorhub.aws.sqs.QueueFactory;
+import org.sensorhub.impl.sensor.nexrad.aws.sqs.AwsSqsService;
+import org.sensorhub.impl.sensor.nexrad.aws.sqs.QueueFactory;
 
 /**
  * <p>Title: NexradSqsService.java</p>

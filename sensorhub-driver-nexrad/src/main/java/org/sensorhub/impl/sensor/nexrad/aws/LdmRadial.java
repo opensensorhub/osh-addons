@@ -1,4 +1,4 @@
-package org.sensorhub.aws.nexrad;
+package org.sensorhub.impl.sensor.nexrad.aws;
 
 import java.util.ArrayList;
 import java.util.List;

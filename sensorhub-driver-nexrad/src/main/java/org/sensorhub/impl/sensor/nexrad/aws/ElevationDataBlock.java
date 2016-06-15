@@ -1,4 +1,4 @@
-package org.sensorhub.aws.nexrad;
+package org.sensorhub.impl.sensor.nexrad.aws;
 
 /**
  * <p>Title: ElevationDataBlock.java</p>

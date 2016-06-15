@@ -1,4 +1,4 @@
-package org.sensorhub.aws.nexrad;
+package org.sensorhub.impl.sensor.nexrad.aws;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
@@ -7,7 +7,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.sensorhub.aws.sqs.ChunkHandler;
+import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkHandler;
 
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
