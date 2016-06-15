@@ -187,23 +187,21 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
         
         try
         {        	          
-          final DataBlock data = healthBlock.renew();
-	    	
-	      TimerTask timerTask = new TimerTask()
+          TimerTask timerTask = new TimerTask()
 	      {
 	            @Override
 	            public void run()
 	            {	            	
 	                try
-	                {
-	                	
-//	                 	String json = getSensorData( "{\"command\":\"sensors\",\"names\":[\"HeartRate\"]}"  );
-	                	
+	                {	
 	                 	String json = getSensorData( "{\"command\":\"sensors\"}"  );
 	                 	
 	//                	if (json.equalsIgnoreCase("0"))
 	//                		return false;
-	              		
+	                 	
+	                 	// get new data block
+                        DataBlock data = healthBlock.renew();
+	                 	
 	                    // set sampling time
 	                    double time = System.currentTimeMillis() / 1000.;
 	                    data.setDoubleValue(0, time);	                 	
@@ -211,13 +209,11 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
 	                	// serialize the DeviceInfo JSON result object
 	                	Gson gson = new Gson(); 	
 	                  	SensorDataArray sensorArray = gson.fromJson(json, SensorDataArray.class);
-	                  	SensorData[] sensors = sensorArray.sensors;
-	                  	
+	                  	SensorData[] sensors = sensorArray.sensors;	                  	
 	                  	
 	                  	// TODO general this by setting all values to double and Caps for field names
 	                  	for (int i=0; i < sensors.length; i++)
-	                  	{
-	                  		
+	                  	{	                  		
 	                  		// skip if a navigation sensor
 	                  		if ((sensors[i].type).equalsIgnoreCase("LOCAL"))
 	                  			continue;
@@ -277,11 +273,9 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
 	                }
 	                catch (Exception e)
 	                {
-	                    e.printStackTrace();
+	                    parentSensor.getLogger().error("Cannot get ANT sensor data", e);
 	                }
-	            }
-	            
-                              	           	              	
+	            }         	           	              	
 	        };
 
 	        timer = new Timer();
@@ -295,51 +289,49 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
         
     }
     
-    public String getSensorData(String command){
-    	 
+    public String getSensorData(String command) throws IOException
+    {
     	StringBuffer response = null;
+    	BufferedReader in = null;
     	
     	try
-    	{
+        {
             final URL urlVirb = new URL(parentSensor.getHostUrl() + "/virb");  
-    		
-    		HttpURLConnection con = (HttpURLConnection) urlVirb.openConnection();    		
-    		con.setRequestMethod("POST");
+            
+            HttpURLConnection con = (HttpURLConnection) urlVirb.openConnection();    		
+            con.setRequestMethod("POST");
  
-    		con.setDoOutput(true);
-    		DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-    		wr.writeBytes(command);
-    		wr.flush();
-    		wr.close();
+            	con.setDoOutput(true);
+            	DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+            	wr.writeBytes(command);
+            	wr.flush();
+            	wr.close();
 
-    		// check response code for an error
-    		String responseCode = Integer.toString(con.getResponseCode());
-    		if ((responseCode.equalsIgnoreCase("-1")) || (responseCode.equalsIgnoreCase("401")))
-    			return "0";
-     		
-    		BufferedReader in = new BufferedReader(
-    		        new InputStreamReader(con.getInputStream()));
-    		String inputLine;
-    		response = new StringBuffer();
-
-    		while ((inputLine = in.readLine()) != null) {
-    			response.append(inputLine);
-    		}
-    		in.close();
-    		     		
-    	}
-    	catch (IOException e)
-    	{  		
-    		 e.printStackTrace();
-    	}
-    	
-    	return response.toString();
+            	// check response code for an error
+            String responseCode = Integer.toString(con.getResponseCode());
+            if ((responseCode.equalsIgnoreCase("-1")) || (responseCode.equalsIgnoreCase("401")))
+            	return "0";
+            
+            // read response line by line to string buffer
+            in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            response = new StringBuffer();
+            while ((inputLine = in.readLine()) != null)
+            	response.append(inputLine);
+            
+            return response.toString();
+        }
+        finally
+        {       
+            if (in != null)
+                in.close();
+        }
     }
     
 
     // Class to serialize JSON response for "sensors"
-    private class SensorData{
-     	
+    private class SensorData
+    {     	
     	String name;
     	String type;
     	String has_data;
@@ -348,7 +340,8 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
     	String data;  	
      }
     
-    private class SensorDataArray{
+    private class SensorDataArray
+    {
     	SensorData[] sensors;
     }
     
