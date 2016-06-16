@@ -19,7 +19,6 @@ import org.sensorhub.api.sensor.SensorDataEvent;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -126,15 +125,11 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
         
         try
         {       	          
-          final DataBlock data = navBlock.renew();
-	    	
-	      TimerTask timerTask = new TimerTask()
+          TimerTask timerTask = new TimerTask()
 	      {
 	            @Override
 	            public void run()
 	            {	            	
-	                InputStream is = null;
-	                
 	                // send post query
 	                try
 	                {	                	
@@ -143,6 +138,9 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	//                	if (json.equalsIgnoreCase("0"))
 	//                		return false;
 	              		
+	                 	// get new data block
+	                 	DataBlock data = navBlock.renew();
+	                 	
 	                    // set sampling time
 	                    double time = System.currentTimeMillis() / 1000.;
 	                    data.setDoubleValue(0, time);	                 	
@@ -258,19 +256,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                }
 	                catch (Exception e)
 	                {
-	                    e.printStackTrace();
-	                }
-	                finally
-	                {
-	                    // always close the stream even in case of error
-	                    try
-	                    {
-	                        if (is != null)
-	                            is.close();
-	                    }
-	                    catch (IOException e)
-	                    {
-	                    }
+	                    parentSensor.getLogger().error("Cannot get navigation data", e);
 	                }	
 	            }
 	        };
@@ -286,9 +272,10 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
         
     }
     
-    public String getSensorData(){
-    	 
+    public String getSensorData() throws IOException
+    {
     	StringBuffer response = null;
+    	BufferedReader in = null;
     	
     	try
     	{
@@ -311,29 +298,26 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
     		if ((responseCode.equalsIgnoreCase("-1")) || (responseCode.equalsIgnoreCase("401")))
     			return "0";
      		
-    		BufferedReader in = new BufferedReader(
-    		        new InputStreamReader(con.getInputStream()));
+    		// read response line by line to string buffer
+    		in = new BufferedReader(new InputStreamReader(con.getInputStream()));
     		String inputLine;
-    		response = new StringBuffer();
-
-    		while ((inputLine = in.readLine()) != null) {
+    		response = new StringBuffer();    		
+    		while ((inputLine = in.readLine()) != null)
     			response.append(inputLine);
-    		}
-    		in.close();
-    		     		
+    		
+    		return response.toString();	
     	}
-    	catch (IOException e)
+    	finally
     	{  		
-    		 e.printStackTrace();
+    	    if (in != null)
+    	        in.close();
     	}
-    	
-    	return response.toString();
     }
     
 
     // Class to serialize JSON response for "sensors"
-    private class SensorData{
-     	
+    private class SensorData
+    {     	
     	String name;
 //    	String type;
     	String has_data;
@@ -342,7 +326,8 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
     	String data;  	
      }
     
-    private class SensorDataArray{
+    private class SensorDataArray
+    {
     	SensorData[] sensors;
     }
     
