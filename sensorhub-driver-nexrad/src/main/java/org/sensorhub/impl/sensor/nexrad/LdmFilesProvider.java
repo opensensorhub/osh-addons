@@ -50,7 +50,6 @@ public class LdmFilesProvider {
 		try {
 			this.watcher = FileSystems.getDefault().newWatchService();
 			siteFolder.register(watcher, ENTRY_CREATE);
-			System.err.println("Provider folder: " + siteFolder.toString());
 		} catch (IOException e) {
 			throw new SensorHubException(
 					"Error while registering watcher on LDM Nexrad files directory", e);
