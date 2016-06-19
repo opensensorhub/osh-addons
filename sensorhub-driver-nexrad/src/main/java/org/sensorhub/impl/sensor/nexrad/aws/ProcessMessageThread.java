@@ -42,7 +42,7 @@ public class ProcessMessageThread implements Runnable {
 			String site = path.substring(0, 4);
 //				System.err.println(site);
 			if(sitesToKeep.size() == 0 || sitesToKeep.contains(site)) {
-				System.err.println("**** " + path);
+//				System.err.println("**** " + path);
 				ProcessChunkThread t = new ProcessChunkThread(new LdmLevel2FileWriter(),path);
 				t.run();
 			}

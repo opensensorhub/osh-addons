@@ -49,6 +49,7 @@ public class AwsSqsService {
 		sqs.deleteMessage(new DeleteMessageRequest(queueUrl, msg.getReceiptHandle()));
 	}
 	
+	// Don't think we will need to call this
 	public void shutdown() {
 		sqs.shutdown();
 	}
