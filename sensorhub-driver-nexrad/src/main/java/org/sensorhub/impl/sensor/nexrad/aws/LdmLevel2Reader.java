@@ -418,7 +418,7 @@ public class LdmLevel2Reader {
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		LdmLevel2Reader reader = new LdmLevel2Reader();
-		String p = "C:/Data/sensorhub/Level2/test/KLBB/KLBB_94_20160419-183429-035-I";
+		String p = "C:/Data/sensorhub/Level2/test/KHTX/KHTX_64_20160620-204453-010-I";
 		List<LdmRadial> rads = reader.read(new File(p));
 		for(LdmRadial r: rads)
 			System.err.println(rads.size());

@@ -1,11 +1,9 @@
 package org.sensorhub.impl.sensor.nexrad.aws;
 
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
@@ -46,6 +44,16 @@ public class AwsNexradUtil {
 	public static final String REALTIME_AWS_NEXRAD_URL = "http://unidata-nexrad-level2-chunks.s3.amazonaws.com/";
 	public static final String dataBucketStr = "noaa-nexrad-level2";
 
+	public static long toJulianTime(long daysSince70, long msSinceMidnight) {
+//		return TimeUnit.DAYS.toMillis(daysSince70) + msSinceMidnight;
+		return TimeUnit.DAYS.toMillis(daysSince70 - 1) + msSinceMidnight;
+		
+	}
+	
+	public static void main(String[] args) {
+		System.err.println(toJulianTime(16973L, 0));
+	}
+	
 	public static String getChunkPath(String message) {
 		//  Find instance of "key":
 		int keyIdx = message.indexOf("key\\\"");
@@ -71,7 +79,7 @@ public class AwsNexradUtil {
 	}
 	
 	
-	public static void main(String[] args) throws IOException, InterruptedException {
+	public static void main_(String[] args) throws IOException, InterruptedException {
 		AWSCredentials credentials = null;
 		try {
 			credentials = new ProfileCredentialsProvider().getCredentials();

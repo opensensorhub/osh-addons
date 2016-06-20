@@ -16,9 +16,5 @@ public class LdmRadial
 	public DataHeader dataHeader;
 	public VolumeDataBlock volumeDataBlock;
 	public List<MomentDataBlock> momentData = new ArrayList<>();
-	
-	public long toJulianTime(long daysSince70, long msSinceMidnight) {
-		return TimeUnit.DAYS.toMillis(daysSince70) + msSinceMidnight;
-		
-	}
+
 }
