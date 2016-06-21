@@ -60,9 +60,10 @@ public class QueueFactory
 	
 	public static String createAndSubscribeQueue(String topicArn, String queueName)  {
 		// Create a queue
-		System.out.println("Creating a new SQS queue called " + queueName);
 		CreateQueueRequest createQueueRequest = new CreateQueueRequest(queueName);
 		String myQueueUrl = sqs.createQueue(createQueueRequest).getQueueUrl();
+		System.out.println("Creating a new SQS queue called " + queueName);
+		// TODO - error check that queue was actually created
 		Topics.subscribeQueue(sns, sqs, topicArn, myQueueUrl);
 		return myQueueUrl;
 	}
