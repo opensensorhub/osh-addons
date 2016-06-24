@@ -17,15 +17,18 @@ import org.sensorhub.impl.sensor.nexrad.aws.sqs.QueueFactory;
 public class NexradSqsService
 {
 	// allow to be configurable
-	static final int NUM_THREADS = 10;  // allow config- test numThreads vs. sites that are being listened to
+	private int numThreads = 4;  // config can and usually should override this
 	static final String topicArn = "arn:aws:sns:us-east-1:684042711724:NewNEXRADLevel2Object";
 	private String queueName;
 	private List<String> sites;
 	private AwsSqsService sqsService;
 	private ExecutorService execService;
+	private String outputPath;
 	
-	public NexradSqsService(List<String> sites) {
+	public NexradSqsService(List<String> sites, String outputPath, int numThreads) {
 		this.sites = sites;
+		this.numThreads = numThreads;
+		this.outputPath = outputPath;
 		queueName = "NexradQueue_SensorHub";
 	}
 	
@@ -33,11 +36,11 @@ public class NexradSqsService
 		
 		String queueUrl  = QueueFactory.createAndSubscribeQueue(topicArn, queueName);
 		
-		execService = Executors.newFixedThreadPool(NUM_THREADS);
+		execService = Executors.newFixedThreadPool(numThreads);
 		sqsService = new AwsSqsService(queueUrl);
 
-		for(int i=0; i<NUM_THREADS; i++) {
-			execService.execute(new ProcessMessageThread(sqsService, sites));
+		for(int i=0; i<numThreads; i++) {
+			execService.execute(new ProcessMessageThread(sqsService, sites, outputPath));
 		}
 
 //		execService.shutdown();

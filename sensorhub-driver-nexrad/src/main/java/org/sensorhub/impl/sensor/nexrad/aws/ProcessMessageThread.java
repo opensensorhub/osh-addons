@@ -19,10 +19,12 @@ public class ProcessMessageThread implements Runnable {
 
 	private AwsSqsService sqsService;
 	List<String> sitesToKeep;
+	private String outputPath;
 	
-	public ProcessMessageThread(AwsSqsService sqsService, List<String> sites) {
+	public ProcessMessageThread(AwsSqsService sqsService, List<String> sites, String outputPath) {
 		this.sqsService = sqsService;
 		this.sitesToKeep = sites;
+		this.outputPath = outputPath;
 	}
 	
 	@Override
@@ -37,13 +39,13 @@ public class ProcessMessageThread implements Runnable {
 	private void processMessages(List<Message> messages) {
 		for(Message msg: messages) {
 			String body = msg.getBody();
-			String path = AwsNexradUtil.getChunkPath(body);
+			String chunkPath = AwsNexradUtil.getChunkPath(body);
 			String time = AwsNexradUtil.getEventTime(body);
-			String site = path.substring(0, 4);
+			String site = chunkPath.substring(0, 4);
 //				System.err.println(site);
 			if(sitesToKeep.size() == 0 || sitesToKeep.contains(site)) {
 //				System.err.println("**** " + path);
-				ProcessChunkThread t = new ProcessChunkThread(new LdmLevel2FileWriter(),path);
+				ProcessChunkThread t = new ProcessChunkThread(new LdmLevel2FileWriter(outputPath), chunkPath);
 				t.run();
 			}
 			

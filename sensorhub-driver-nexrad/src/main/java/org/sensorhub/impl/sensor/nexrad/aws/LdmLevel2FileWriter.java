@@ -1,5 +1,6 @@
 package org.sensorhub.impl.sensor.nexrad.aws;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -21,15 +22,19 @@ import com.google.common.io.Files;
  * @date Mar 28, 2016
  */
 public class LdmLevel2FileWriter implements ChunkHandler {
-	private static final String LEVEL2_PATH = "C:/Data/sensorhub/Level2/test";
+	private String level2Path ;
 	private static final int BUFFER_SIZE = 8192;
 
+	public LdmLevel2FileWriter(String outputPath) {
+		this.level2Path = outputPath;
+	}
+	
 	@Override
 	public void handleChunk(S3Object s3object) throws IOException {
 		String key = s3object.getKey();
 		String name = key.replaceAll("/", "_");
 		String site = key.substring(0, 4);
-		Path sitePath = Paths.get(LEVEL2_PATH, site);
+		Path sitePath = Paths.get(level2Path, site);
 		boolean ok = sitePath.toFile().mkdirs();
 		Path outPath = Paths.get(sitePath.toString(), name);
 
@@ -38,15 +43,15 @@ public class LdmLevel2FileWriter implements ChunkHandler {
 		}
 	}
 
-	public void dumpChunkToFile(InputStream is, Path pout) throws IOException {
+	public void dumpChunkToFile(InputStream s3is, Path pout) throws IOException {
+		BufferedInputStream is = new BufferedInputStream(s3is, BUFFER_SIZE);
 		Path ptmp = Paths.get(pout.toString() + ".tmp");
-		try(FileOutputStream os = new FileOutputStream(ptmp.toFile())) {
-			int cnt = 0;
+		try(BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(ptmp.toFile()))) {
+			byte [] b = new byte[BUFFER_SIZE];
 			while(true) {
-				int b = is.read();
-				if(b == -1)  break;
-				os.write(b);
-				cnt++;
+				int numBytes = is.read(b);
+				if(numBytes == -1)  break;
+				os.write(b,0, numBytes);
 			}
 		}
 		Files.move(ptmp.toFile(), pout.toFile());
