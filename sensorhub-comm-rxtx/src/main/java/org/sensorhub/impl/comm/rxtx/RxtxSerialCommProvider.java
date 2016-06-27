@@ -25,7 +25,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.comm.RS232Config;
+import org.sensorhub.impl.comm.UARTConfig;
 import org.sensorhub.impl.module.AbstractModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since July 2, 2015
  */
-public class RxtxSerialCommProvider extends AbstractModule<RS232Config> implements ICommProvider<RS232Config>
+public class RxtxSerialCommProvider extends AbstractModule<RxtxSerialCommProviderConfig> implements ICommProvider<RxtxSerialCommProviderConfig>
 {
     static final Logger log = LoggerFactory.getLogger(RxtxSerialCommProvider.class);
     
@@ -56,6 +56,8 @@ public class RxtxSerialCommProvider extends AbstractModule<RS232Config> implemen
     @Override
     public void start() throws SensorHubException
     {
+        UARTConfig config = this.config.protocol;
+        
         try
         {
             CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier(config.portName);

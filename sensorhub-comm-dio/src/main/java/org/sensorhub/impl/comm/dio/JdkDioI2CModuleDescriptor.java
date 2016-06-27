@@ -17,7 +17,6 @@ package org.sensorhub.impl.comm.dio;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
-import org.sensorhub.impl.comm.I2CConfig;
 
 
 public class JdkDioI2CModuleDescriptor implements IModuleProvider
@@ -56,6 +55,6 @@ public class JdkDioI2CModuleDescriptor implements IModuleProvider
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return I2CConfig.class;
+        return JdkDioI2CCommProviderConfig.class;
     }
 }

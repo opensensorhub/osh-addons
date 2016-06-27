@@ -17,7 +17,6 @@ package org.sensorhub.impl.comm.rxtx;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
-import org.sensorhub.impl.comm.RS232Config;
 
 
 public class RxtxModuleDescriptor implements IModuleProvider
@@ -55,6 +54,6 @@ public class RxtxModuleDescriptor implements IModuleProvider
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return RS232Config.class;
+        return RxtxSerialCommProviderConfig.class;
     }
 }

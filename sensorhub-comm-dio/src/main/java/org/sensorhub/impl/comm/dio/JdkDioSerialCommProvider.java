@@ -26,7 +26,6 @@ import jdk.dio.uart.UART;
 import jdk.dio.uart.UARTConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.comm.RS232Config;
 import org.sensorhub.impl.module.AbstractModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Aug 27, 2015
  */
-public class JdkDioSerialCommProvider extends AbstractModule<RS232Config> implements ICommProvider<RS232Config>
+public class JdkDioSerialCommProvider extends AbstractModule<JdkDioSerialCommProviderConfig> implements ICommProvider<JdkDioSerialCommProviderConfig>
 {
     static final Logger log = LoggerFactory.getLogger(JdkDioSerialCommProvider.class);
     
@@ -57,6 +56,8 @@ public class JdkDioSerialCommProvider extends AbstractModule<RS232Config> implem
     @Override
     public void start() throws SensorHubException
     {
+        org.sensorhub.impl.comm.UARTConfig config = this.config.protocol;
+        
         try
         {
             // figure out constant for parity setting

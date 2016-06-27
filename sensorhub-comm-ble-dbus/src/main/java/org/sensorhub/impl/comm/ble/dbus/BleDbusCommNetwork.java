@@ -34,7 +34,7 @@ import org.freedesktop.dbus.Properties;
 import org.freedesktop.dbus.Properties.PropertiesChanged;
 import org.freedesktop.dbus.Variant;
 import org.freedesktop.dbus.exceptions.DBusException;
-import org.sensorhub.api.comm.CommConfig;
+import org.sensorhub.api.comm.ICommConfig;
 import org.sensorhub.api.comm.IDeviceInfo;
 import org.sensorhub.api.comm.IDeviceScanCallback;
 import org.sensorhub.api.comm.IDeviceScanner;
@@ -256,7 +256,7 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
             }
 
             @Override
-            public CommConfig getCommConfig()
+            public ICommConfig getCommConfig()
             {
                 return null;
             }
@@ -431,7 +431,14 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
     @Override
     public NetworkType getNetworkType()
     {
-        return NetworkType.BLUETOOTH;
+        return NetworkType.BLUETOOTH_LE;
+    }
+    
+    
+    @Override
+    public boolean isOfType(NetworkType type)
+    {
+        return (type == getNetworkType());
     }
     
     

@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Aug 29, 2015
  */
-public class JdkDioI2CCommProvider extends AbstractModule<I2CConfig> implements ICommProvider<I2CConfig>
+public class JdkDioI2CCommProvider extends AbstractModule<JdkDioI2CCommProviderConfig> implements ICommProvider<JdkDioI2CCommProviderConfig>
 {
     static final Logger log = LoggerFactory.getLogger(JdkDioI2CCommProvider.class);
     
@@ -59,6 +59,9 @@ public class JdkDioI2CCommProvider extends AbstractModule<I2CConfig> implements 
     @Override
     public void start() throws SensorHubException
     {        
+        I2CConfig config = this.config.protocol;
+        String deviceString = String.format("I2C device (Bus %d, Addr %H)", config.busNumber, config.deviceAddress);
+        
         try
         {
             I2CDeviceConfig i2cConf = new I2CDeviceConfig(
@@ -74,34 +77,28 @@ public class JdkDioI2CCommProvider extends AbstractModule<I2CConfig> implements 
             is = Channels.newInputStream(i2c);
             os = Channels.newOutputStream(i2c);
             
-            log.info("Connected to {}", getDeviceString());
+            log.info("Connected to {}", deviceString);
         }
         catch (InvalidDeviceConfigException e)
         {
-            throw new SensorHubException("Invalid configuration for " + getDeviceString(), e);
+            throw new SensorHubException("Invalid configuration for " + deviceString, e);
         }
         catch (DeviceNotFoundException e)
         {
-            throw new SensorHubException("Unknown " + getDeviceString(), e);
+            throw new SensorHubException("Unknown " + deviceString, e);
         }
         catch (UnavailableDeviceException e)
         {
-            throw new SensorHubException(getDeviceString() + " is currently in use", e);
+            throw new SensorHubException(deviceString + " is currently in use", e);
         }
         catch (IOException e)
         {
-            throw new SensorHubException("Cannot connect to " + getDeviceString(), e);
+            throw new SensorHubException("Cannot connect to " + deviceString, e);
         }
         catch (UnsatisfiedLinkError e)
         {
             throw new SensorHubException("Cannot load Device I/O native library", e);
         }
-    }
-    
-    
-    private final String getDeviceString()
-    {
-        return "I2C device " + Integer.toHexString(config.deviceAddress) + "@" + config.busNumber;
     }
     
     

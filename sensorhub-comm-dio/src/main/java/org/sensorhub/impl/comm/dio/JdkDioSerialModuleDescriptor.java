@@ -17,7 +17,6 @@ package org.sensorhub.impl.comm.dio;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
-import org.sensorhub.impl.comm.RS232Config;
 
 
 public class JdkDioSerialModuleDescriptor implements IModuleProvider
@@ -56,6 +55,6 @@ public class JdkDioSerialModuleDescriptor implements IModuleProvider
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return RS232Config.class;
+        return JdkDioSerialCommProviderConfig.class;
     }
 }

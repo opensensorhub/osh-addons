@@ -29,9 +29,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceEvent;
+import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
 import javax.jmdns.ServiceTypeListener;
-import org.sensorhub.api.comm.CommConfig;
+import org.sensorhub.api.comm.ICommConfig;
 import org.sensorhub.api.comm.IDeviceInfo;
 import org.sensorhub.api.comm.ICommNetwork;
 import org.sensorhub.api.comm.IDeviceScanCallback;
@@ -78,22 +79,25 @@ public class IpCommNetwork extends AbstractModule<IpNetworkConfig> implements IC
         @Override
         public synchronized void startScan(final IDeviceScanCallback callback, String idRegex)
         {
+            this.scanning = true;
+            
             try
             {
-                this.scanning = true;
-                
                 jmdns.addServiceTypeListener(sTypeListener = new ServiceTypeListener() {
                     @Override
                     public void serviceTypeAdded(ServiceEvent ev)
                     {
-                        log.debug("Service Type Added: " + ev.getType());                      
+                        log.debug("Service Type Added: " + ev.getType());                
                         ServiceListener srvListener = new ServiceListener()
                         {
                             @Override
                             public void serviceAdded(ServiceEvent ev)
                             {
                                 log.debug("Service Added: " + ev.getName() + "." + ev.getType());
-                                jmdns.requestServiceInfo(ev.getType(), ev.getName());
+                                
+                                ServiceInfo svcInfo = jmdns.getServiceInfo(ev.getType(), ev.getName(), 1);
+                                if (svcInfo != null)
+                                    notifyServiceInfo(svcInfo, callback);
                             }
 
                             @Override
@@ -109,76 +113,10 @@ public class IpCommNetwork extends AbstractModule<IpNetworkConfig> implements IC
                                         ", Address=" + ev.getInfo().getInetAddresses()[0],
                                         ", Port=" + ev.getInfo().getPort());
                                 
-                                // use IPV6 only if no IPV4 is found
-                                InetAddress ipAdd = null;
-                                Inet4Address[] ipv4List = ev.getInfo().getInet4Addresses();
-                                InetAddress[] ipList = ev.getInfo().getInetAddresses();
-                                if (ipv4List.length > 0)
-                                    ipAdd = ipv4List[0];
-                                else if (ipList.length > 0)
-                                    ipAdd = ipList[0];
-                                final String ip = (ipAdd != null) ? ipAdd.getHostAddress() : "NONE";
-                                
-                                String type = ev.getType();
-                                int port = ev.getInfo().getPort();
-                                
-                                // build comm config
-                                final CommConfig commConfig;
-                                if (type.contains("_tcp."))
-                                {
-                                    TCPConfig tcpConfig = new TCPConfig();
-                                    tcpConfig.remoteHost = ip;
-                                    tcpConfig.remotePort = port;
-                                    commConfig = tcpConfig;
-                                }
-                                else if (type.contains("_udp."))
-                                {
-                                    UDPConfig tcpConfig = new UDPConfig();
-                                    tcpConfig.remoteHost = ip;
-                                    tcpConfig.remotePort = port;
-                                    commConfig = tcpConfig;
-                                }
-                                else
-                                    commConfig = null;
-                                
-                                // create device info
-                                IDeviceInfo devConfig = new IDeviceInfo() {
-
-                                    @Override
-                                    public String getName()
-                                    {
-                                        return ev.getName();
-                                    }
-
-                                    @Override
-                                    public String getType()
-                                    {
-                                        return ev.getType();
-                                    }
-
-                                    @Override
-                                    public String getAddress()
-                                    {
-                                        return ip;
-                                    }
-
-                                    @Override
-                                    public String getSignalLevel()
-                                    {
-                                        return null;
-                                    }
-
-                                    @Override
-                                    public CommConfig getCommConfig()
-                                    {
-                                        return commConfig;
-                                    }                                    
-                                };
-                                
-                                callback.onDeviceFound(devConfig);
+                                notifyServiceInfo(ev.getInfo(), callback);
                             }                            
                         };
-                
+                        
                         srvListeners.put(ev.getType(), srvListener);
                         jmdns.addServiceListener(ev.getType(), srvListener);
                     }
@@ -192,7 +130,84 @@ public class IpCommNetwork extends AbstractModule<IpNetworkConfig> implements IC
             catch (IOException e)
             {
                 callback.onScanError(e);
-            }            
+            }     
+        }
+        
+        protected void notifyServiceInfo(final ServiceInfo svcInfo, IDeviceScanCallback callback)
+        {
+            // use IPV6 only if no IPV4 is found
+            InetAddress ipAdd = null;
+            Inet4Address[] ipv4List = svcInfo.getInet4Addresses();
+            InetAddress[] ipList = svcInfo.getInetAddresses();
+            if (ipv4List.length > 0)
+                ipAdd = ipv4List[0];
+            else if (ipList.length > 0)
+                ipAdd = ipList[0];
+            final String ip = (ipAdd != null) ? ipAdd.getHostAddress() : "NONE";
+            
+            // remove last dot from server name
+            String server = svcInfo.getServer();
+            if (server.endsWith("."))
+                server = server.substring(0, server.length()-1);
+            final String hostName = server;
+            
+            final String type = svcInfo.getType();
+            int port = svcInfo.getPort();
+            
+            // build comm config
+            final ICommConfig commConfig;
+            if (type.contains("_tcp."))
+            {
+                TCPConfig tcpConfig = new TCPConfig();
+                tcpConfig.remoteHost = ip;
+                tcpConfig.remotePort = port;
+                commConfig = tcpConfig;
+            }
+            else if (type.contains("_udp."))
+            {
+                UDPConfig tcpConfig = new UDPConfig();
+                tcpConfig.remoteHost = ip;
+                tcpConfig.remotePort = port;
+                commConfig = tcpConfig;
+            }
+            else
+                commConfig = null;
+            
+            // create device info
+            IDeviceInfo devInfo = new IDeviceInfo() {
+
+                @Override
+                public String getName()
+                {
+                    return hostName;
+                }
+
+                @Override
+                public String getType()
+                {
+                    return type;
+                }
+
+                @Override
+                public String getAddress()
+                {
+                    return ip;
+                }
+
+                @Override
+                public String getSignalLevel()
+                {
+                    return null;
+                }
+
+                @Override
+                public ICommConfig getCommConfig()
+                {
+                    return commConfig;
+                }                                    
+            };
+            
+            callback.onDeviceFound(devInfo);
         }
 
         @Override
@@ -203,6 +218,9 @@ public class IpCommNetwork extends AbstractModule<IpNetworkConfig> implements IC
             
             for (Entry<String, ServiceListener> entry: srvListeners.entrySet())
                 jmdns.removeServiceListener(entry.getKey(), entry.getValue());
+            
+            this.scanning = false;
+            log.debug("Scan stopped");
         }
 
         @Override
@@ -359,7 +377,10 @@ public class IpCommNetwork extends AbstractModule<IpNetworkConfig> implements IC
     @Override
     public NetworkType getNetworkType()
     {
-        return getNetworkType(netInterface);
+        if (netInterface == null)
+            return NetworkType.IP;
+        else
+            return getNetworkType(netInterface);
     }
     
     
@@ -367,12 +388,22 @@ public class IpCommNetwork extends AbstractModule<IpNetworkConfig> implements IC
     {
         String name = netInt.getName();
         
-        if (name.startsWith("eth"))
+        if (name.startsWith("eth") || name.startsWith("en"))
             return NetworkType.ETHERNET;
-        else if (name.startsWith("wlan"))
+        else if (name.startsWith("wlan") || name.startsWith("wl"))
             return NetworkType.WIFI;
         
         return NetworkType.IP;
+    }
+    
+    
+    @Override
+    public boolean isOfType(NetworkType type)
+    {
+        if (type == NetworkType.IP)
+            return true;
+        
+        return (type == getNetworkType());
     }
     
     

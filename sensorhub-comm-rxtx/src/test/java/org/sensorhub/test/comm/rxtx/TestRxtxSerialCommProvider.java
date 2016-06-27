@@ -17,8 +17,8 @@ package org.sensorhub.test.comm.rxtx;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.junit.Test;
-import org.sensorhub.impl.comm.RS232Config;
 import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider;
+import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig;
 
 
 public class TestRxtxSerialCommProvider
@@ -27,15 +27,13 @@ public class TestRxtxSerialCommProvider
     @Test
     public void testEchoAscii() throws Exception
     {
-        RS232Config serialConfig = new RS232Config();
-        serialConfig.baudRate = 115200;
-        serialConfig.portName = "/dev/ttyUSB0";
-        serialConfig.receiveThreshold = 0;
-        
-        
+        RxtxSerialCommProviderConfig config = new RxtxSerialCommProviderConfig();
+        config.protocol.baudRate = 115200;
+        config.protocol.portName = "/dev/ttyUSB0";
+        config.protocol.receiveThreshold = 0;        
         
         RxtxSerialCommProvider serialComm = new RxtxSerialCommProvider();
-        serialComm.init(serialConfig);
+        serialComm.init(config);
         serialComm.start();
         
         OutputStream os = serialComm.getOutputStream();
@@ -62,13 +60,13 @@ public class TestRxtxSerialCommProvider
     @Test
     public void testEchoBinary() throws Exception
     {
-        RS232Config serialConfig = new RS232Config();
-        serialConfig.baudRate = 115200;
-        serialConfig.portName = "/dev/ttyUSB0";
-        serialConfig.receiveThreshold = 0;        
+        RxtxSerialCommProviderConfig config = new RxtxSerialCommProviderConfig();
+        config.protocol.baudRate = 115200;
+        config.protocol.portName = "/dev/ttyUSB0";
+        config.protocol.receiveThreshold = 0;        
         
         RxtxSerialCommProvider serialComm = new RxtxSerialCommProvider();
-        serialComm.init(serialConfig);
+        serialComm.init(config);
         serialComm.start();
         
         OutputStream os = serialComm.getOutputStream();
