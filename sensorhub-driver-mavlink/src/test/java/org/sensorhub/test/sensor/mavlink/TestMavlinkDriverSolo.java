@@ -27,7 +27,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.comm.UDPConfig;
+import org.sensorhub.impl.comm.UDPCommProviderConfig;
 import org.sensorhub.impl.sensor.mavlink.MavlinkConfig;
 import org.sensorhub.impl.sensor.mavlink.MavlinkConfig.MsgTypes;
 import org.sensorhub.impl.sensor.mavlink.MavlinkDriver;
@@ -56,10 +56,10 @@ public class TestMavlinkDriverSolo implements IEventListener
                 MsgTypes.ATTITUDE,
                 MsgTypes.GIMBAL_REPORT);
         
-        UDPConfig udpConf = new UDPConfig();
-        udpConf.localPort = 14550;
-        udpConf.remoteHost = "10.1.1.10";
-        udpConf.remotePort = 14560;
+        UDPCommProviderConfig udpConf = new UDPCommProviderConfig();
+        udpConf.protocol.localPort = 14550;
+        udpConf.protocol.remoteHost = "10.1.1.10";
+        udpConf.protocol.remotePort = 14560;
         config.commSettings = udpConf;
         
         driver = new MavlinkDriver();

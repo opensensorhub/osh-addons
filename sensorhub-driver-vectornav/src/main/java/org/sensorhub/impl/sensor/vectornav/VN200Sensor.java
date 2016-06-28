@@ -23,7 +23,6 @@ import net.opengis.sensorml.v20.ClassifierList;
 import net.opengis.sensorml.v20.PhysicalSystem;
 import net.opengis.sensorml.v20.SpatialFrame;
 import net.opengis.sensorml.v20.Term;
-import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -49,7 +48,7 @@ public class VN200Sensor extends AbstractSensorModule<VN200Config>
     protected final static byte SYNC = (byte)0xFA;
     protected final static double BASE_FREQ = 800.0;
     
-    ICommProvider<? super CommConfig> commProvider;
+    ICommProvider<?> commProvider;
     VN200QuatOutput quatOutput;
     VN200GpsOutput gpsOutput;
     

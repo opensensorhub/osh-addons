@@ -14,17 +14,16 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.mti;
 
-import org.sensorhub.api.comm.CommConfig;
+import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
-import org.sensorhub.impl.comm.RS232Config;
 
 
 public class MtiConfig extends SensorConfig
 {
     
-    @DisplayInfo(label="Communication Settings", desc="Settings for selected communication port")
-    public CommConfig commSettings;
+    @DisplayInfo(desc="Communication settings to connect to IMU data stream")
+    public CommProviderConfig<?> commSettings;
     
     @DisplayInfo(label="Decimation Factor", desc="Decimation factor of attitude measurements")
     public int decimFactor = 10;
@@ -33,11 +32,5 @@ public class MtiConfig extends SensorConfig
     public MtiConfig()
     {
         this.moduleClass = MtiSensor.class.getCanonicalName();
-        
-        RS232Config serialConf = new RS232Config();
-        serialConf.moduleClass = "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider";
-        serialConf.portName = "/dev/ttyUSB0";
-        serialConf.baudRate = 115200;
-        this.commSettings = serialConf;
     }
 }

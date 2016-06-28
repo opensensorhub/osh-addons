@@ -14,11 +14,11 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.avl;
 
-import org.sensorhub.api.comm.CommConfig;
+import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 
 
-public class MultipleFilesProviderConfig extends CommConfig
+public class MultipleFilesProviderConfig extends CommProviderConfig<Object>
 {
     
     @DisplayInfo(desc="Folder where AVL data files are stored")

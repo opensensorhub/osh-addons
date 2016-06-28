@@ -72,7 +72,8 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
     @Override
     public void stop() throws SensorHubException
     {
-        dataInterface.stop();
+        if (dataInterface != null)
+            dataInterface.stop();
     }
     
 

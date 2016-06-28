@@ -23,7 +23,6 @@ import java.util.Set;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
-import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.FoiEvent;
@@ -53,7 +52,7 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
     Set<String> foiIDs;
     Map<String, AbstractFeature> vehicleFois;
     	
-	ICommProvider<? super CommConfig> commProvider;
+	ICommProvider<?> commProvider;
     AVLOutput dataInterface;
 	
     

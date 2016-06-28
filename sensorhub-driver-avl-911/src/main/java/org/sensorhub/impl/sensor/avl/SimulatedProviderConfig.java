@@ -16,10 +16,11 @@ package org.sensorhub.impl.sensor.avl;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.sensorhub.api.comm.CommConfig;
+import org.sensorhub.api.comm.CommProviderConfig;
 
 
-public class SimulatedProviderConfig extends CommConfig
+@SuppressWarnings("rawtypes")
+public class SimulatedProviderConfig extends CommProviderConfig
 {
     public String googleApiUrl = "http://maps.googleapis.com/maps/api/directions/json";
     
@@ -32,7 +33,8 @@ public class SimulatedProviderConfig extends CommConfig
     // otherwise use these to generate random start and stop locations
     public double centerLat = 34.7300; // in deg    
     public double centerLon = -86.5850; // in deg
-    public double areaSize = 0.1; // in deg    
+    public double areaSize = 0.1; // in deg
+    
     
     public SimulatedProviderConfig()
     {

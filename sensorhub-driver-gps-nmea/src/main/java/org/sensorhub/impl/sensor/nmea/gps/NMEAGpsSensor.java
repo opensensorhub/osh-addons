@@ -19,7 +19,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
@@ -44,7 +43,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
     public static final String ZDA_MSG = "ZDA";
     public static final String HDT_MSG = "HDT";
     
-    ICommProvider<? super CommConfig> commProvider;
+    ICommProvider<?> commProvider;
     BufferedReader reader;
     volatile boolean started;
     
@@ -122,7 +121,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             // we need to recreate comm provider here because it can be changed by UI
             try
             {
-                if (config.commSettings == null)
+                if (config.commSettings.protocol == null)
                     throw new SensorHubException("No communication settings specified");
                 
                 commProvider = config.commSettings.getProvider();

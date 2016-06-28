@@ -14,6 +14,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.actuator.pca9685;
 
+import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 import org.sensorhub.impl.comm.I2CConfig;
@@ -22,7 +23,7 @@ import org.sensorhub.impl.comm.I2CConfig;
 public class PwmServosConfig extends SensorConfig
 {    
     
-    @DisplayInfo(label="I2C Settings", desc="I2C device settings")
-    public I2CConfig commSettings;
+    @DisplayInfo(desc="I2C communication settings to connect to servos")
+    public CommProviderConfig<I2CConfig> commSettings;
 
 }

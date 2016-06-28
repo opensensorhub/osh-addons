@@ -27,8 +27,8 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.comm.RS232Config;
-import org.sensorhub.impl.comm.RS232Config.Parity;
+import org.sensorhub.impl.comm.UARTConfig.Parity;
+import org.sensorhub.impl.comm.dio.JdkDioSerialCommProviderConfig;
 import org.sensorhub.impl.sensor.nmea.gps.NMEAGpsConfig;
 import org.sensorhub.impl.sensor.nmea.gps.NMEAGpsSensor;
 import org.vast.data.TextEncodingImpl;
@@ -53,17 +53,15 @@ public class TestNmeaGpsDriverDio implements IEventListener
         config.id = UUID.randomUUID().toString();
         config.activeSentences = Arrays.asList("GGA", "RMC", "GSA");
         
-        RS232Config serialConf = new RS232Config();
-        //serialConf.moduleClass = "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider";
-        //serialConf.portName = "/dev/ttyUSB0";
-        serialConf.moduleClass = "org.sensorhub.impl.comm.dio.JdkDioSerialCommProvider";
-        serialConf.portName = "ttyAMA0";
-        serialConf.baudRate = 9600;
-        serialConf.dataBits = 8;
-        serialConf.stopBits = 1;
-        serialConf.parity = Parity.PARITY_NONE;
-        serialConf.receiveTimeout = 100;
-        config.commSettings = serialConf;
+        JdkDioSerialCommProviderConfig providerConf = new JdkDioSerialCommProviderConfig();
+        providerConf.moduleClass = "org.sensorhub.impl.comm.dio.JdkDioSerialCommProvider";
+        providerConf.protocol.portName = "ttyAMA0";
+        providerConf.protocol.baudRate = 9600;
+        providerConf.protocol.dataBits = 8;
+        providerConf.protocol.stopBits = 1;
+        providerConf.protocol.parity = Parity.PARITY_NONE;
+        providerConf.protocol.receiveTimeout = 100;
+        config.commSettings = providerConf;
         
         driver = new NMEAGpsSensor();
         driver.init(config);

@@ -27,8 +27,8 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.comm.RS232Config;
-import org.sensorhub.impl.comm.RS232Config.Parity;
+import org.sensorhub.impl.comm.UARTConfig.Parity;
+import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig;
 import org.sensorhub.impl.sensor.nmea.gps.NMEAGpsConfig;
 import org.sensorhub.impl.sensor.nmea.gps.NMEAGpsSensor;
 import org.vast.data.TextEncodingImpl;
@@ -53,15 +53,15 @@ public class TestNmeaGpsDriverRxtx implements IEventListener
         config.id = UUID.randomUUID().toString();
         config.activeSentences = Arrays.asList("GGA", "RMC", "GSA");
         
-        RS232Config serialConf = new RS232Config();
-        serialConf.moduleClass = "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider";
-        serialConf.portName = "/dev/ttyUSB0";
-        serialConf.baudRate = 9600;
-        serialConf.dataBits = 8;
-        serialConf.stopBits = 1;
-        serialConf.parity = Parity.PARITY_NONE;
-        serialConf.receiveTimeout = 100;
-        config.commSettings = serialConf;
+        RxtxSerialCommProviderConfig providerConf = new RxtxSerialCommProviderConfig();
+        providerConf.moduleClass = "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider";
+        providerConf.protocol.portName = "/dev/ttyUSB0";
+        providerConf.protocol.baudRate = 9600;
+        providerConf.protocol.dataBits = 8;
+        providerConf.protocol.stopBits = 1;
+        providerConf.protocol.parity = Parity.PARITY_NONE;
+        providerConf.protocol.receiveTimeout = 100;
+        config.commSettings = providerConf;
         
         driver = new NMEAGpsSensor();
         driver.init(config);

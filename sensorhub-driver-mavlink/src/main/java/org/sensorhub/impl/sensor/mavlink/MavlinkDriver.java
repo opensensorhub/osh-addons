@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Timer;
-import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorControlInterface;
@@ -56,7 +55,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
     protected static final String GIMBAL_FRAME = "GIMBAL_FRAME";
     protected static final long MAX_MSG_PERIOD = 10000L;
     
-    ICommProvider<? super CommConfig> commProvider;
+    ICommProvider<?> commProvider;
     Timer watchDogTimer;
     volatile boolean started;
     boolean connected;

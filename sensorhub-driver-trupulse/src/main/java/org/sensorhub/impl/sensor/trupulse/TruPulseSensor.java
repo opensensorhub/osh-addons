@@ -15,7 +15,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.trupulse;
 
-import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -39,7 +38,7 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
 {
     static final Logger log = LoggerFactory.getLogger(TruPulseSensor.class);
     
-    ICommProvider<? super CommConfig> commProvider;
+    ICommProvider<?> commProvider;
     TruPulseOutput dataInterface;
     
     

@@ -16,7 +16,7 @@ package org.sensorhub.impl.sensor.nmea.gps;
 
 import java.util.Arrays;
 import java.util.List;
-import org.sensorhub.api.comm.CommConfig;
+import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
@@ -28,8 +28,8 @@ public class NMEAGpsConfig extends SensorConfig
     public String serialNumber = null;
     
     
-    @DisplayInfo(label="Communication Settings", desc="Settings for selected communication port")
-    public CommConfig commSettings;
+    @DisplayInfo(desc="Communication settings to connect to NMEA GPS data stream")
+    public CommProviderConfig<?> commSettings;
     
     
     @DisplayInfo(label="Active NMEA Messages", desc="List of NMEA sentences to provide as outputs")

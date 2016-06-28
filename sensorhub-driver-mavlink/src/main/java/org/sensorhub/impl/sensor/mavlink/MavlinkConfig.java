@@ -16,7 +16,7 @@ package org.sensorhub.impl.sensor.mavlink;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.sensorhub.api.comm.CommConfig;
+import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
@@ -53,6 +53,6 @@ public class MavlinkConfig extends SensorConfig
     @DisplayInfo(desc="MAVLink commands to expose through this sensor interface")
     public List<CmdTypes> activeCommands = new ArrayList<CmdTypes>(3);
     
-    @DisplayInfo(desc="Communication settings to access MAVLink data")
-    public CommConfig commSettings;
+    @DisplayInfo(desc="Communication settings to connect to MAVLink data stream")
+    public CommProviderConfig<?> commSettings;
 }
