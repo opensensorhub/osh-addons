@@ -15,14 +15,15 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.trupulse;
 
-import org.sensorhub.api.comm.CommConfig;
+import org.sensorhub.api.comm.CommProviderConfig;
+import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
 
 public class TruPulseConfig extends SensorConfig
 {
-	// comm settings
-    public CommConfig commSettings;
+    @DisplayInfo(desc="Communication settings to connect to range finder data stream")
+    public CommProviderConfig<?> commSettings;
 
     
     public TruPulseConfig()

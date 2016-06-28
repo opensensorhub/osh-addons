@@ -1,7 +1,6 @@
 
 package org.sensorhub.impl.sensor.ahrs;
 
-import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -9,21 +8,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.sensorML.SMLFactory;
 import org.vast.swe.SWEHelper;
-import org.sensorhub.impl.comm.RS232Config;
-
-//import gnu.io.*;
-
 import net.opengis.sensorml.v20.ClassifierList;
 import net.opengis.sensorml.v20.PhysicalSystem;
 import net.opengis.sensorml.v20.SpatialFrame;
 import net.opengis.sensorml.v20.Term;
+
 
 public class AHRSSensor extends AbstractSensorModule<AHRSConfig> 
 {
     static final Logger log = LoggerFactory.getLogger(AHRSSensor.class);
     protected final static String CRS_ID = "SENSOR_FRAME";
         
-    ICommProvider<? super CommConfig> commProvider;
+    ICommProvider<?> commProvider;
     AHRSOutput dataInterface;
 
     public AHRSSensor()
@@ -104,9 +100,6 @@ public class AHRSSensor extends AbstractSensorModule<AHRSConfig>
 
               commProvider = config.commSettings.getProvider();
               commProvider.start();
-              
-              if (config.commSettings instanceof RS232Config)
-                  dataInterface.decimFactor = 10;
           }
           catch (Exception e)
           {

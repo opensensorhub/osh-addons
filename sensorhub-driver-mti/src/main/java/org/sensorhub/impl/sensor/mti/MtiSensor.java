@@ -18,7 +18,6 @@ import net.opengis.sensorml.v20.IdentifierList;
 import net.opengis.sensorml.v20.PhysicalSystem;
 import net.opengis.sensorml.v20.SpatialFrame;
 import net.opengis.sensorml.v20.Term;
-import org.sensorhub.api.comm.CommConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -41,7 +40,7 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
     static final Logger log = LoggerFactory.getLogger(MtiSensor.class);
     protected final static String CRS_ID = "SENSOR_FRAME";
         
-    ICommProvider<? super CommConfig> commProvider;
+    ICommProvider<?> commProvider;
     MtiOutput dataInterface;
     
     

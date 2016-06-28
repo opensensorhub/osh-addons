@@ -27,8 +27,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.comm.RS232Config;
-import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider;
+import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig;
 import org.sensorhub.impl.sensor.mti.MtiConfig;
 import org.sensorhub.impl.sensor.mti.MtiSensor;
 import org.vast.data.TextEncodingImpl;
@@ -52,11 +51,10 @@ public class TestMtiDriverRxtx implements IEventListener
         config = new MtiConfig();
         config.id = UUID.randomUUID().toString();
         
-        RS232Config serialConf = new RS232Config();
-        serialConf.moduleClass = RxtxSerialCommProvider.class.getCanonicalName();
-        serialConf.portName = "/dev/ttyUSB0";
-        serialConf.baudRate = 115200;
-        serialConf.receiveThreshold = 32;
+        RxtxSerialCommProviderConfig serialConf = new RxtxSerialCommProviderConfig();
+        serialConf.protocol.portName = "/dev/ttyUSB0";
+        serialConf.protocol.baudRate = 115200;
+        serialConf.protocol.receiveThreshold = 32;
         config.commSettings = serialConf;
         
         driver = new MtiSensor();

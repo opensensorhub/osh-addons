@@ -27,8 +27,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.comm.RS232Config;
-import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider;
+import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig;
 import org.sensorhub.impl.sensor.bno055.Bno055Config;
 import org.sensorhub.impl.sensor.bno055.Bno055Sensor;
 import org.vast.data.TextEncodingImpl;
@@ -52,11 +51,10 @@ public class TestBno055DriverRxtx implements IEventListener
         config = new Bno055Config();
         config.id = UUID.randomUUID().toString();
         
-        RS232Config serialConf = new RS232Config();
-        serialConf.moduleClass = RxtxSerialCommProvider.class.getCanonicalName();
+        RxtxSerialCommProviderConfig serialConf = new RxtxSerialCommProviderConfig();
         //serialConf.portName = "/dev/tty.usbserial";
-        serialConf.portName = "/dev/ttyUSB0";
-        serialConf.baudRate = 115200;
+        serialConf.protocol.portName = "/dev/ttyUSB0";
+        serialConf.protocol.baudRate = 115200;
         //serialConf.receiveThreshold = 1;
         //serialConf.receiveTimeout = 30;
         config.commSettings = serialConf;

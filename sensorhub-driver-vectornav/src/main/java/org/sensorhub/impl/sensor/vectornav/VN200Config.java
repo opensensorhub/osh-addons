@@ -14,17 +14,16 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.vectornav;
 
-import org.sensorhub.api.comm.CommConfig;
+import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
-import org.sensorhub.impl.comm.RS232Config;
 
 
 public class VN200Config extends SensorConfig
 {
     
-    @DisplayInfo(label="Communication Settings", desc="Settings for selected communication port")
-    public CommConfig commSettings;
+    @DisplayInfo(desc="Communication settings to connect to IMU data stream")
+    public CommProviderConfig<?> commSettings;
     
     
     @DisplayInfo(label="Attitude Sampling Rate", desc="Desired attitude sampling rate divider from the base 800Hz frequency (e.g. 8 to get output at 100Hz)")
@@ -38,11 +37,5 @@ public class VN200Config extends SensorConfig
     public VN200Config()
     {
         this.moduleClass = VN200Sensor.class.getCanonicalName();
-        
-        RS232Config serialConf = new RS232Config();
-        serialConf.moduleClass = "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider";
-        serialConf.portName = "/dev/ttyUSB0";
-        serialConf.baudRate = 115200;
-        this.commSettings = serialConf;
     }
 }

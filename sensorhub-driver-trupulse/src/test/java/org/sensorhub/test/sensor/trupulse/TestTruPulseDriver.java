@@ -22,13 +22,12 @@ import net.opengis.swe.v20.DataComponent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.comm.TCPConfig;
-import org.sensorhub.impl.sensor.trupulse.SimulatedTruPulseDataStream;
 import org.sensorhub.impl.sensor.trupulse.TruPulseConfig;
 import org.sensorhub.impl.sensor.trupulse.TruPulseSensor;
 import org.vast.data.TextEncodingImpl;
@@ -46,13 +45,14 @@ public class TestTruPulseDriver implements IEventListener
     int sampleCount = 0;
 
         
+    @SuppressWarnings("rawtypes")
     @Before
     public void init() throws Exception
     {
         config = new TruPulseConfig();
         config.id = UUID.randomUUID().toString();
-        config.commSettings = new TCPConfig();
-        config.commSettings.moduleClass = SimulatedTruPulseDataStream.class.getCanonicalName();
+        config.commSettings = new CommProviderConfig();
+        config.commSettings.moduleClass = SimulatedDataStream.class.getCanonicalName();
                 
         driver = new TruPulseSensor();
         driver.init(config);

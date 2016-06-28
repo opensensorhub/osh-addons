@@ -27,8 +27,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.comm.RS232Config;
-import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider;
+import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig;
 import org.sensorhub.impl.sensor.vectornav.VN200Config;
 import org.sensorhub.impl.sensor.vectornav.VN200Sensor;
 import org.vast.data.TextEncodingImpl;
@@ -52,10 +51,9 @@ public class TestVN200DriverRxtx implements IEventListener
         config = new VN200Config();
         config.id = UUID.randomUUID().toString();
         
-        RS232Config serialConf = new RS232Config();
-        serialConf.moduleClass = RxtxSerialCommProvider.class.getCanonicalName();
-        serialConf.portName = "/dev/ttyUSB0";
-        serialConf.baudRate = 115200;
+        RxtxSerialCommProviderConfig serialConf = new RxtxSerialCommProviderConfig();
+        serialConf.protocol.portName = "/dev/ttyUSB0";
+        serialConf.protocol.baudRate = 115200;
         config.commSettings = serialConf;        
         
         driver = new VN200Sensor();
