@@ -12,7 +12,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.trupulse;
+package org.sensorhub.test.sensor.trupulse;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,13 +24,13 @@ import java.io.Writer;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
+import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.comm.TCPConfig;
 import org.sensorhub.impl.module.AbstractModule;
 
 
-public class SimulatedTruPulseDataStream extends AbstractModule<TCPConfig> implements ICommProvider<TCPConfig>
+public class SimulatedDataStream extends AbstractModule<CommProviderConfig<?>> implements ICommProvider<CommProviderConfig<?>>
 {
     PipedInputStream is;
     Writer writer;    
