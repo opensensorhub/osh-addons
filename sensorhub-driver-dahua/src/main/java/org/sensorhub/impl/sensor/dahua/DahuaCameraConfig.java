@@ -18,10 +18,12 @@ package org.sensorhub.impl.sensor.dahua;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 import org.sensorhub.impl.comm.HTTPConfig;
+import org.sensorhub.impl.comm.RobustIPConnectionConfig;
 import org.sensorhub.impl.sensor.rtpcam.RTSPConfig;
 import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
 import org.sensorhub.impl.sensor.videocam.VideoResolution;
 import org.sensorhub.impl.sensor.videocam.ptz.PtzConfig;
+import org.sensorhub.impl.sensor.videocam.ptz.PtzPreset;
 
 
 /**
@@ -34,14 +36,17 @@ import org.sensorhub.impl.sensor.videocam.ptz.PtzConfig;
  */
 public class DahuaCameraConfig extends SensorConfig
 {	
-    @DisplayInfo(label="Video", desc="Video settings")
-    public VideoConfig video = new VideoConfig();
-    
     @DisplayInfo(label="HTTP", desc="HTTP configuration")
     public HTTPConfig http = new HTTPConfig();
     
     @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration (Remote host is obtained from HTTP configuration)")
     public RTSPConfig rtsp = new RTSPConfig();
+    
+    @DisplayInfo(label="Connection Options")
+    public RobustIPConnectionConfig connection = new RobustIPConnectionConfig();
+    
+    @DisplayInfo(label="Video", desc="Video settings")
+    public VideoConfig video = new VideoConfig();
     
     @DisplayInfo(label="PTZ", desc="Pan-Tilt-Zoom configuration")
     public PtzConfig ptz = new PtzConfig();
@@ -107,11 +112,11 @@ public class DahuaCameraConfig extends SensorConfig
         rtsp.videoPath = "/cam/realmonitor?channel=1&subtype=0";
         rtsp.localUdpPort = 20000;
         
-//        PtzPreset home = new PtzPreset();
-//        home.name = "Home";
-//        home.pan = 0;
-//        home.tilt = 0;
-//        home.zoom = 0;
-//        ptz.presets.add(home);
+        PtzPreset home = new PtzPreset();
+        home.name = "Home";
+        home.pan = 0;
+        home.tilt = 0;
+        home.zoom = 0;
+        ptz.presets.add(home);
     }
 }
