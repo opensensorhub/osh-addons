@@ -73,7 +73,7 @@ public class TestDahuaCameraDriver implements IEventListener
     {
         config = new DahuaCameraConfig();
         config.id = UUID.randomUUID().toString();
-        config.connectTimeout = 10000;
+        config.connection.connectTimeout = 10000;
         
         config.http.remoteHost = "192.168.0.201";
         config.http.user = "admin";

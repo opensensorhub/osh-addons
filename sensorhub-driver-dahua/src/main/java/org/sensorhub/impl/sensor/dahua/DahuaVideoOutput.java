@@ -62,7 +62,7 @@ public class DahuaVideoOutput extends RTPVideoOutput<DahuaCameraDriver>
             {
                 if (lastFrameTime < System.currentTimeMillis() - maxFramePeriod)
                 {
-                    parentSensor.restartOnDisconnect();
+                    parentSensor.connection.reconnect();
                     cancel();
                 }
             }
