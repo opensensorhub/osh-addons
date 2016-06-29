@@ -265,19 +265,19 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
         conn.setDoOutput(true);
         conn.connect();
         
-        // check response code for an error
-        if (conn.getResponseCode() > 202)
-            throw new IOException("Received HTTP error code " + conn.getResponseCode());
-
-        // read JSON response
         StringBuffer response = null;
         try
         {
+            // send request
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()));
             out.write(command);
-            out.flush();
             out.close();
+        
+            // check response code for an error
+            if (conn.getResponseCode() > 202)
+                throw new IOException("Received HTTP error code " + conn.getResponseCode());
             
+            // read response
             BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             response = new StringBuffer();
             String inputLine;            
