@@ -121,7 +121,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             // we need to recreate comm provider here because it can be changed by UI
             try
             {
-                if (config.commSettings.protocol == null)
+                if (config.commSettings == null)
                     throw new SensorHubException("No communication settings specified");
                 
                 commProvider = config.commSettings.getProvider();
