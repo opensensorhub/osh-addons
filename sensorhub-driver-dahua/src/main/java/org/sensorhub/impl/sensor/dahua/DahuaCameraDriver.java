@@ -50,7 +50,6 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     DahuaVideoControl videoControlInterface;
     DahuaPtzControl ptzControlInterface;
     
-    boolean doInit = true;
     boolean ptzSupported = false;
     String hostUrl;
     String serialNumber;
@@ -163,13 +162,24 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
         //videoControlInterface.init();
         //addControlInput(videoControlInterface);
                     
-        // check if PTZ supported
+        // check if PTZ supported        
+        HttpURLConnection conn = null;
         try
         {
             URL optionsURL = new URL(getHostUrl() + "/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
-            InputStream is = optionsURL.openStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-            
+            conn = (HttpURLConnection)optionsURL.openConnection();
+            conn.setConnectTimeout(config.connection.connectTimeout);
+            conn.setReadTimeout(config.connection.connectTimeout);
+            conn.connect();
+        }
+        catch (IOException e)
+        {
+            throw new SensorException("Cannot connect to camera PTZ service", e);
+        }
+        
+        try
+        {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             String line;
             while ((line = reader.readLine()) != null)
             {
@@ -192,12 +202,10 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
                 addControlInput(ptzControlInterface);
                 ptzControlInterface.init();                     
             }
-            
-            doInit = false;
         }
         catch (IOException e)
         {
-            throw new SensorException("Error while reading metadata from sensor", e);
+            throw new SensorException("Cannot read PTZ metadata", e);
         }
     }
     
