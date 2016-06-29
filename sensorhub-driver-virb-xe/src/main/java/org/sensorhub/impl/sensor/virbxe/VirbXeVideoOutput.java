@@ -76,7 +76,7 @@ public class VirbXeVideoOutput extends RTPVideoOutput<VirbXeDriver>
             {
                 if (lastFrameTime < System.currentTimeMillis() - maxFramePeriod)
                 {
-                    parentSensor.restartOnDisconnect();
+                    parentSensor.connection.reconnect();
                     cancel();
                 }
             }
