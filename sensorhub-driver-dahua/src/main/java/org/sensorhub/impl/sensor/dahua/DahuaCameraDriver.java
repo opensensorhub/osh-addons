@@ -25,10 +25,11 @@ import net.opengis.sensorml.v20.IdentifierList;
 import net.opengis.sensorml.v20.Term;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.comm.RobustIPConnection;
+import org.sensorhub.impl.comm.RobustHTTPConnection;
 import org.sensorhub.impl.module.RobustConnection;
 import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.rtpcam.RTSPClient;
 import org.vast.sensorML.SMLFactory;
 import org.vast.swe.SWEHelper;
 
@@ -57,12 +58,12 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
 
 
     public DahuaCameraDriver()
-    {	
+    {        
     }
     
-        
+    
     @Override
-    public void setConfiguration(DahuaCameraConfig config)
+    public void setConfiguration(final DahuaCameraConfig config)
     {
         super.setConfiguration(config);
         
@@ -78,44 +79,24 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
         
         // compute full host URL
         hostUrl = "http://" + config.http.remoteHost + ":" + config.http.remotePort + "/cgi-bin";
-    };
-    
-    
-    @Override
-    public void init() throws SensorHubException
-    {
+        
         // create connection handler
-        this.connection = new RobustIPConnection(this, config.connection, "Dahua Camera")
+        this.connection = new RobustHTTPConnection(this, config.connection, "Dahua Camera")
         {
             public boolean tryConnect() throws Exception
             {
-                if (!tryConnect(config.http.remoteHost, config.http.remotePort))
+                // check we can reach the HTTP server
+                // and access the system info URL
+                HttpURLConnection conn = tryConnectGET(getHostUrl() + "/magicBox.cgi?action=getSystemInfo");
+                if (conn == null)
                     return false;
                 
-                HttpURLConnection conn = null;
+                // read response
+                BufferedReader reader = null;
                 try
                 {
-                    // try to open stream and check for Dahua Info
-                    URL optionsURL = new URL(getHostUrl() + "/magicBox.cgi?action=getSystemInfo");
-                    conn = (HttpURLConnection)optionsURL.openConnection();
-                    conn.setConnectTimeout(config.connection.connectTimeout);
-                    conn.setReadTimeout(config.connection.connectTimeout);
-                    conn.connect();
-                }
-                catch (IOException e)
-                {
-                    reportError("Cannot connect to camera HTTP server", e, true);
-                    return false;
-                }
-                
-                try
-                {
-                    if (conn.getResponseCode() > 202)
-                        throw new IOException("Received HTTP error code " + conn.getResponseCode());
-                    
-                    // read response
                     InputStream is = conn.getInputStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                    reader = new BufferedReader(new InputStreamReader(is));
                     
                     // note: should return three lines with serialNumber, deviceType (model number), and hardwareVersion
                     String line;
@@ -127,21 +108,50 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
                         else if (tokens[0].trim().equalsIgnoreCase("deviceType"))
                             modelNumber = tokens[1];
                     }
-                    
-                    if (serialNumber == null)
-                        throw new IOException("Cannot read camera serial number");
-                    
-                    return true;
                 }
                 catch (IOException e)
                 {
                     reportError("Cannot read camera information", e, true);
                     return false;
                 }
+                finally
+                {
+                    if (reader != null)
+                        reader.close();
+                }         
+                
+                // check that we actually read a serial number
+                if (serialNumber == null || serialNumber.trim().isEmpty())
+                    throw new IOException("Cannot read camera serial number");
+                
+                // check connection to RTSP server
+                try
+                {
+                    RTSPClient rtspClient = new RTSPClient(
+                            config.rtsp.remoteHost,
+                            config.rtsp.remotePort,
+                            config.rtsp.videoPath,
+                            config.rtsp.user,
+                            config.rtsp.password,
+                            config.rtsp.localUdpPort);
+                    rtspClient.sendOptions();
+                }
+                catch (IOException e)
+                {
+                    reportError("Cannot connect to RTSP server", e, true);
+                    return false;
+                }                
+                
+                return true;                
             }
         };
-        
-        // TODO we could check if output description are in cache, in which case
+    };
+    
+    
+    @Override
+    public void init() throws SensorHubException
+    {
+        // TODO we could check if basic metadata is in cache, in which case
         // it's not necessary to connect to camera at this point
         
         // wait for valid connection to camera
@@ -157,12 +167,19 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
         videoDataInterface.init();
         addOutput(videoDataInterface, false);
                 
-        // video controller
+        // video control
         //this.videoControlInterface = new DahuaVideoControl(this);
         //videoControlInterface.init();
         //addControlInput(videoControlInterface);
                     
-        // check if PTZ supported        
+        // PTZ control and status
+        createPtzInterfaces();
+    }
+    
+    
+    protected void createPtzInterfaces() throws SensorException
+    {
+        // connect to PTZ URL
         HttpURLConnection conn = null;
         try
         {
@@ -177,13 +194,14 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
             throw new SensorException("Cannot connect to camera PTZ service", e);
         }
         
+        // parse response
+        BufferedReader reader = null;
         try
         {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             String line;
             while ((line = reader.readLine()) != null)
             {
-                // parse response
                 String[] tokens = line.split("=");
     
                 if (tokens[0].trim().equalsIgnoreCase("caps.SupportPTZCoordinates"))
@@ -206,6 +224,17 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
         catch (IOException e)
         {
             throw new SensorException("Cannot read PTZ metadata", e);
+        }
+        finally
+        {
+            try
+            {
+                if (reader != null)
+                    reader.close();
+            }
+            catch (IOException e)
+            {
+            }
         }
     }
     
@@ -275,14 +304,14 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("LongName"));
             term.setLabel("Long Name");
-            term.setValue("Dahua Video Camera " + modelNumber + ": " + serialNumber);
+            term.setValue("Dahua " + modelNumber + " Video Camera #" + serialNumber);
             identifierList.addIdentifier2(term);
 
             // Short Name
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
             term.setLabel("Short Name");
-            term.setValue("Dahua: " + serialNumber);
+            term.setValue("Dahua Cam " + modelNumber);
             identifierList.addIdentifier2(term);
         }
     }
@@ -291,13 +320,19 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     @Override
     public boolean isConnected()
     {
-    	return connection.isConnected();
+    	if (connection == null)
+    	    return false;
+    	
+        return connection.isConnected();
     }
 
     
     @Override
     public void stop()
     {
+        if (connection != null)
+            connection.cancel();
+        
         if (ptzDataInterface != null)
         	ptzDataInterface.stop();
         
