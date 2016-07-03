@@ -260,10 +260,15 @@ public class RTSPClient
             else
                 printResponse();
         }
-        catch (NumberFormatException | IOException e)
+        catch (IOException e)
         {
             connected = false;
             throw e;
+        }
+        catch (Exception e)
+        {
+            connected = false;
+            throw new IOException("Invalid " + reqType + " response", e);
         }
         
         connected = true;
