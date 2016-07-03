@@ -221,6 +221,7 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
     @Override
     public void stop()
     {
+        // stop RTP receiver thread
         if (rtpThread != null)
         {
             rtpThread.interrupt();
@@ -228,28 +229,30 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
             log.info("Disconnected from H264 RTP stream");
         }
         
+        // stop RTCP keep alive thread
         if (rtcpThread != null)
         {
             rtcpThread.stop();
             rtcpThread = null;
         }
         
+        // disconnect from RTSP server
         try
         {
             if (rtspClient != null)
             {
                 if (rtspClient.isConnected())
-                {
                     rtspClient.teardown();
-                    log.info("Disconnected from RTSP server");
-                }
                 rtspClient = null;
             }
         }
         catch (IOException e)
         {
+            log.error("Error while disconnecting from RTSP server", e);
         }
+        log.info("Disconnected from RTSP server");
         
+        // stop frame processor (async executor)
         if (executor != null)
         {
             try
