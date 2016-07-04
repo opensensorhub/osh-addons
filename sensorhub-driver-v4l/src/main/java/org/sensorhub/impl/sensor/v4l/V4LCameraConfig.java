@@ -15,7 +15,10 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.v4l;
 
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.sensor.PositionConfig;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.api.sensor.PositionConfig.EulerOrientation;
+import org.sensorhub.api.sensor.PositionConfig.LLALocation;
 
 
 /**
@@ -39,5 +42,22 @@ public class V4LCameraConfig extends SensorConfig
     
     @DisplayInfo(desc="Default camera params to use on startup. These can then be changed with the control interface")
     public V4LCameraParams defaultParams = new V4LCameraParams();
+    
+    
+    public PositionConfig position = new PositionConfig();
+    
+    
+    @Override
+    public LLALocation getLocation()
+    {
+        return position.location;
+    }
+    
+    
+    @Override
+    public EulerOrientation getOrientation()
+    {
+        return position.orientation;
+    }
 
 }

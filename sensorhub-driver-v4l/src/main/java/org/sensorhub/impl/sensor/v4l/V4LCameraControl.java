@@ -78,7 +78,7 @@ public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
         // choice of image format
         Category formatVal = fac.newCategory();
         tokenConstraint = fac.newAllowedTokens();
-        List<ImageFormat> v4lImgFormats = parentSensor.deviceInfo.getFormatList().getRGBEncodableFormats();//.getNativeFormats();
+        List<ImageFormat> v4lImgFormats = parentSensor.deviceInfo.getFormatList().getNativeFormats();
         for (int i=0; i<v4lImgFormats.size(); i++)
             tokenConstraint.addValue(v4lImgFormats.get(i).getName());
         formatVal.setConstraint(tokenConstraint);
@@ -122,7 +122,7 @@ public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
         // choice of frame rate (enum or range)
         FrameInterval v4lFrameIntervals = null;
         if (v4lResInfo.getType() == ResolutionInfo.Type.DISCRETE)
-            v4lFrameIntervals = v4lResInfo.getDiscreteResolutions().get(0).interval;
+            v4lFrameIntervals = v4lResInfo.getDiscreteResolutions().get(0).getFrameInterval();
         else if (v4lResInfo.getType() == ResolutionInfo.Type.STEPWISE)
             v4lFrameIntervals = v4lResInfo.getStepwiseResolution().getMinResFrameInterval();
         

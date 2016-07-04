@@ -56,8 +56,9 @@ public class TestV4LCameraDriver implements IEventListener
         config.autoStart = true;
         
         driver = new V4LCameraDriver();
-        driver.init(config);
-        driver.start();
+        driver.setConfiguration(config);
+        driver.requestInit();
+        driver.requestStart();
     }
     
     
@@ -203,7 +204,7 @@ public class TestV4LCameraDriver implements IEventListener
         actualWidth = camDataStruct.getComponent(1).getComponent(0).getComponentCount();
         actualHeight = camDataStruct.getComponent(1).getComponentCount();
         
-        System.out.println("New frame received");
+        System.out.format("New frame received @ %d\n", e.getTimeStamp());
         System.out.println("Image is " + actualWidth + "x" + actualHeight);
         
         videoTestHelper.renderFrameJPEG(newDataEvent.getRecords()[0]);
