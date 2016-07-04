@@ -37,6 +37,7 @@ import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCallback
 {
     ImageFormat imgFormat;
+    boolean firstFrame;
     
     
     protected V4LCameraOutputMJPEG(V4LCameraDriver driver, ImageFormat imgFormat)
@@ -82,6 +83,7 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
                 parentSensor.getLogger().debug("Starting V4L capture");
                 frameGrabber.setCaptureCallback(this);
                 processingFrame = false;
+                firstFrame = true;
                 frameGrabber.startCapture();
                 parentSensor.getLogger().debug("V4L capture started");
             }            
@@ -105,6 +107,14 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
     {
         try
         {
+            // discard first frame because capture time is wrong
+            if (firstFrame)
+            {
+                frame.recycle();
+                firstFrame = false;
+                return;
+            }
+            
             // skip frame if we're lagging behind
             if (processingFrame)
             {
