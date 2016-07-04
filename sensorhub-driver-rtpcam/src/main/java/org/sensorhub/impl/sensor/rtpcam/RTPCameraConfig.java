@@ -15,7 +15,9 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.rtpcam;
 
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.impl.comm.RobustIPConnectionConfig;
 import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
 import org.sensorhub.impl.sensor.videocam.VideoResolution;
 
@@ -30,14 +32,18 @@ import org.sensorhub.impl.sensor.videocam.VideoResolution;
  */
 public class RTPCameraConfig extends SensorConfig
 {    
+    @Required
     @DisplayInfo(label="Camera ID", desc="Camera ID to be appended to UID prefix")
     public String cameraID;
     
-    @DisplayInfo(label="Video", desc="Video settings")
-    public VideoConfig video = new VideoConfig();
-    
     @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration")
     public RTSPConfig rtsp = new RTSPConfig();
+    
+    @DisplayInfo(label="Connection Options")
+    public RobustIPConnectionConfig connection = new RobustIPConnectionConfig();
+    
+    @DisplayInfo(label="Video", desc="Video settings")
+    public VideoConfig video = new VideoConfig();
     
     
     public class VideoConfig extends BasicVideoConfig

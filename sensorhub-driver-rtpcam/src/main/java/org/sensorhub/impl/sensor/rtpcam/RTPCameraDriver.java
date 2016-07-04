@@ -15,7 +15,8 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.rtpcam;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.impl.comm.RobustIPConnection;
+import org.sensorhub.impl.module.RobustConnection;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 
 
@@ -29,6 +30,7 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
  */
 public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
 {
+    RobustConnection connection;
     RTPVideoOutput<RTPCameraDriver> dataInterface;
     
     
@@ -38,9 +40,29 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     
     
     @Override
-    public void init(RTPCameraConfig config) throws SensorHubException
+    public void setConfiguration(final RTPCameraConfig config)
     {
-        super.init(config);        
+        super.setConfiguration(config);
+        
+        this.connection = new RobustIPConnection(this, config.connection, "RTP Camera")
+        {
+            public boolean tryConnect() throws Exception
+            {
+                // just check host is reachable on specified RTSP port
+                return tryConnectTCP(config.rtsp.remoteHost, config.rtsp.remotePort);
+            }
+        };
+    }
+    
+    
+    @Override
+    public void init() throws SensorHubException
+    {
+        // generate identifiers
+        this.uniqueID = "urn:osh:sensor:rtpcam:" + config.cameraID;
+        this.xmlID = "RTP_CAM_" + config.cameraID;
+        
+        // create video output
         this.dataInterface = new RTPVideoOutput<RTPCameraDriver>(this, config.video, config.rtsp);
         this.dataInterface.init();
         addOutput(dataInterface, false);
@@ -48,8 +70,11 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     
     
     @Override
-    public synchronized void start() throws SensorException
+    public synchronized void start() throws SensorHubException
     {
+        // wait for valid connection to camera
+        connection.waitForConnection();
+        
         dataInterface.updateConfig(config.video, config.rtsp);
         dataInterface.start();
     }
@@ -58,6 +83,9 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     @Override
     public synchronized void stop()
     {
+        if (connection != null)
+            connection.cancel();
+        
         if (dataInterface != null)
             dataInterface.stop();
     }
