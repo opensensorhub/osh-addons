@@ -27,7 +27,6 @@ import org.sensorhub.api.comm.ble.IGattClient;
 import org.sensorhub.api.comm.ble.IGattField;
 import org.sensorhub.api.comm.ble.IGattService;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.SensorEvent;
 import org.sensorhub.impl.SensorHub;
 import org.sensorhub.impl.module.ModuleRegistry;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -215,8 +214,7 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
             if (status == IGattClient.GATT_SUCCESS)
             {
                 AngelSensor.this.gattClient = gatt;
-                AngelSensor.this.eventHandler.publishEvent(new SensorEvent(System.currentTimeMillis(), AngelSensor.this, SensorEvent.Type.CONNECTED));
-                log.info("Angel Sensor connected ({})", config.btAddress);
+                notifyConnectionStatus(true, "Angel Sensor (" + config.btAddress + ")");
                 gatt.discoverServices();
             }
         }
@@ -226,7 +224,7 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
         public void onDisconnected(IGattClient gatt, int status)
         {
             AngelSensor.this.gattClient = null;
-            log.info("Angel Sensor disconnected ({})", config.btAddress);
+            notifyConnectionStatus(false, "Angel Sensor (" + config.btAddress + ")");
         }
 
 
