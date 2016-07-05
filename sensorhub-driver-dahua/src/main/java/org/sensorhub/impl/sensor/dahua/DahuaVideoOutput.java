@@ -20,6 +20,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.rtpcam.RTPVideoOutput;
+import org.sensorhub.impl.sensor.videocam.VideoResolution;
 
 
 /**
@@ -39,21 +40,24 @@ public class DahuaVideoOutput extends RTPVideoOutput<DahuaCameraDriver>
     
 	protected DahuaVideoOutput(DahuaCameraDriver driver)
 	{
-		super(driver,
-		      driver.getConfiguration().video,
-		      driver.getConfiguration().rtsp);
+		super(driver);
 	}
+    
+
+    public void init() throws SensorException
+    {
+        VideoResolution res = parentSensor.getConfiguration().video.getResolution();
+        super.init(res.getWidth(), res.getHeight());
+    }
 	
 
-    @Override
     public void start() throws SensorException
     {
-        super.start();
-        
         DahuaCameraConfig config = parentSensor.getConfiguration();
-        final long maxFramePeriod = 10000 / config.video.frameRate;
-        
+        super.start(config.video, config.rtsp);
+                
         // start watchdog thread to detect disconnections
+        final long maxFramePeriod = 10000 / config.video.frameRate;
         lastFrameTime = Long.MAX_VALUE;
         TimerTask checkFrameTask = new TimerTask()
         {

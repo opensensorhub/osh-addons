@@ -73,7 +73,7 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
             config.rtsp.user = config.http.user;
         if (config.rtsp.password == null)
             config.rtsp.password = config.http.password;
-                    
+        
         // compute full host URL
         hostUrl = "http://" + config.http.remoteHost + ":" + config.http.remotePort + "/virb";
         
