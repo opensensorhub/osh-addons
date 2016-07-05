@@ -106,9 +106,9 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
             if (config.enableH264)
             {
                 String outputName = videoOutName + videoOutNum++;
-                h264VideoOutput = new RTPVideoOutput<AxisCameraDriver>(this, outputName, config.video, config.rtsp);
-                h264VideoOutput.init();
-                h264VideoOutput.start();
+                h264VideoOutput = new RTPVideoOutput<AxisCameraDriver>(this, outputName);
+                h264VideoOutput.init(config.video.resolution.getWidth(), config.video.resolution.getHeight());
+                h264VideoOutput.start(config.video, config.rtsp);
                 addOutput(h264VideoOutput, false);
             }
     	    

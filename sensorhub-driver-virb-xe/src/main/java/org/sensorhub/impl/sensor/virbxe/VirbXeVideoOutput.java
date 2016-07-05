@@ -37,6 +37,7 @@ public class VirbXeVideoOutput extends RTPVideoOutput<VirbXeDriver>
 {
     volatile long lastFrameTime;
     Timer watchdog;
+    VirbVideoConfig fixedVideoConfig = new VirbVideoConfig();
     
     
     // fixed config for Virb
@@ -55,16 +56,21 @@ public class VirbXeVideoOutput extends RTPVideoOutput<VirbXeDriver>
     
 	protected VirbXeVideoOutput(VirbXeDriver driver)
 	{
-		super(driver,
-		      new VirbVideoConfig(),
-		      driver.getConfiguration().rtsp);
+		super(driver);
 	}
 	
 
-    @Override
+	public void init() throws SensorException
+	{
+	    VideoResolution res = fixedVideoConfig.getResolution();
+	    super.init(res.getWidth(), res.getHeight());
+	}
+	
+	
     public void start() throws SensorException
     {
-        super.start();
+        VirbXeConfig config = parentSensor.getConfiguration();
+        super.start(fixedVideoConfig, config.rtsp);
         
         // start watchdog thread to detect disconnections
         final long maxFramePeriod = 10000 / 30;

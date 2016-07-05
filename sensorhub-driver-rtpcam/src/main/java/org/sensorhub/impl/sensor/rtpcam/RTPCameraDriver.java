@@ -59,12 +59,15 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     public void init() throws SensorHubException
     {
         // generate identifiers
-        this.uniqueID = "urn:osh:sensor:rtpcam:" + config.cameraID;
-        this.xmlID = "RTP_CAM_" + config.cameraID;
+        if (config.cameraID != null)
+        {
+            this.uniqueID = "urn:osh:sensor:rtpcam:" + config.cameraID;
+            this.xmlID = "RTP_CAM_" + config.cameraID;
+        }
         
         // create video output
-        this.dataInterface = new RTPVideoOutput<RTPCameraDriver>(this, config.video, config.rtsp);
-        this.dataInterface.init();
+        this.dataInterface = new RTPVideoOutput<RTPCameraDriver>(this);
+        this.dataInterface.init(config.video.frameWidth, config.video.frameHeight);
         addOutput(dataInterface, false);
     }
     
@@ -75,8 +78,8 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
         // wait for valid connection to camera
         connection.waitForConnection();
         
-        dataInterface.updateConfig(config.video, config.rtsp);
-        dataInterface.start();
+        // start video stream
+        dataInterface.start(config.video, config.rtsp);
     }
     
     
