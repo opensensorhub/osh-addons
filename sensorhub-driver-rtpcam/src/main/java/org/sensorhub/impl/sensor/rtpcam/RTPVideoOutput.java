@@ -14,6 +14,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.rtpcam;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -63,24 +64,16 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
     boolean firstFrameReceived;
     
     
-    public RTPVideoOutput(SensorType driver, BasicVideoConfig videoConfig, RTSPConfig rtspConfig)
+    public RTPVideoOutput(SensorType driver)
     {
-        this(driver, "video", videoConfig, rtspConfig);
+        this(driver, "video");
     }
     
     
-    public RTPVideoOutput(SensorType driver, String name, BasicVideoConfig videoConfig, RTSPConfig rtspConfig)
+    public RTPVideoOutput(SensorType driver, String name)
     {
         super(driver);
         this.name = name;
-        updateConfig(videoConfig, rtspConfig);
-    }
-    
-    
-    public void updateConfig(BasicVideoConfig videoConfig, RTSPConfig rtspConfig)
-    {
-        this.videoConfig = videoConfig;
-        this.rtspConfig = rtspConfig;        
     }
     
     
@@ -91,29 +84,30 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
     }
     
     
-    public void init() throws SensorException
+    public void init(int imgWidth, int imgHeight) throws SensorException
     {
-        // video frame size
-        int width = videoConfig.getResolution().getWidth();
-        int height = videoConfig.getResolution().getHeight();
-        
         // create SWE Common data structure
         VideoCamHelper fac = new VideoCamHelper();        
-        DataStream videoStream = fac.newVideoOutputH264(getName(), width, height);
+        DataStream videoStream = fac.newVideoOutputH264(getName(), imgWidth, imgHeight);
         this.dataStruct = videoStream.getElementType();
         this.dataEncoding = videoStream.getEncoding();
     }
     
     
-    public void start() throws SensorException
+    public void start(BasicVideoConfig videoConfig, RTSPConfig rtspConfig) throws SensorException
     {
+        this.videoConfig = videoConfig;
+        this.rtspConfig = rtspConfig;
+        
         // open backup file
         try
         {
             if (videoConfig.backupFile != null)
             {
-                fos = new FileOutputStream(videoConfig.backupFile);
+                File h264File = new File(videoConfig.backupFile);
+                fos = new FileOutputStream(h264File);
                 fch = fos.getChannel();
+                log.info("Writing raw H264 data to " + h264File.getAbsolutePath());
             }
         }
         catch (IOException e)
