@@ -16,7 +16,10 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.dahua;
 
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.sensor.PositionConfig;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.api.sensor.PositionConfig.EulerOrientation;
+import org.sensorhub.api.sensor.PositionConfig.LLALocation;
 import org.sensorhub.impl.comm.HTTPConfig;
 import org.sensorhub.impl.comm.RobustIPConnectionConfig;
 import org.sensorhub.impl.sensor.rtpcam.RTSPConfig;
@@ -51,9 +54,9 @@ public class DahuaCameraConfig extends SensorConfig
     @DisplayInfo(label="PTZ", desc="Pan-Tilt-Zoom configuration")
     public PtzConfig ptz = new PtzConfig();
     
-	// TODO: Set variable for mounting (top up, top down, top sideways) or better set mounting angles relative to NED/ENU
-    // ALSO, use flip=yes/no to flip image if necessary	
-	
+    @DisplayInfo(desc="Camera geographic position")
+    public PositionConfig position = new PositionConfig();
+    
 
     public class VideoConfig extends BasicVideoConfig
     {
@@ -118,5 +121,19 @@ public class DahuaCameraConfig extends SensorConfig
         home.tilt = 0;
         home.zoom = 0;
         ptz.presets.add(home);
+    }
+    
+    
+    @Override
+    public LLALocation getLocation()
+    {
+        return position.location;
+    }
+    
+    
+    @Override
+    public EulerOrientation getOrientation()
+    {
+        return position.orientation;
     }
 }

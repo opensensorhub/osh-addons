@@ -16,7 +16,10 @@ package org.sensorhub.impl.sensor.rtpcam;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
+import org.sensorhub.api.sensor.PositionConfig;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.api.sensor.PositionConfig.EulerOrientation;
+import org.sensorhub.api.sensor.PositionConfig.LLALocation;
 import org.sensorhub.impl.comm.RobustIPConnectionConfig;
 import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
 import org.sensorhub.impl.sensor.videocam.VideoResolution;
@@ -45,6 +48,9 @@ public class RTPCameraConfig extends SensorConfig
     @DisplayInfo(label="Video", desc="Video settings")
     public VideoConfig video = new VideoConfig();
     
+    @DisplayInfo(desc="Camera geographic position")
+    public PositionConfig position = new PositionConfig();
+    
     
     public class VideoConfig extends BasicVideoConfig
     {
@@ -69,5 +75,19 @@ public class RTPCameraConfig extends SensorConfig
     {
         video.frameWidth = 1280;
         video.frameHeight = 720;
+    }
+    
+    
+    @Override
+    public LLALocation getLocation()
+    {
+        return position.location;
+    }
+    
+    
+    @Override
+    public EulerOrientation getOrientation()
+    {
+        return position.orientation;
     }
 }
