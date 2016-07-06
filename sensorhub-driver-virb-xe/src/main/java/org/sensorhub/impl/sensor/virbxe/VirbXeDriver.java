@@ -76,6 +76,17 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
         
         // compute full host URL
         hostUrl = "http://" + config.http.remoteHost + ":" + config.http.remotePort + "/virb";
+    };
+    
+    
+    @Override
+    public void init() throws SensorHubException
+    {
+        // reset internal state in case init() was already called
+        super.init();
+        videoDataInterface = null;
+        navDataInterface = null;
+        healthDataInterface = null;
         
         // create connection handler
         this.connection = new RobustHTTPConnection(this, config.connection, "VIRB Camera")
@@ -130,12 +141,7 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
                 return true;
             }
         };
-    };
-    
-    
-    @Override
-    public void init() throws SensorHubException
-    {
+        
         // TODO we could check if camera info is in cache, in which case
         // it's not necessary to connect to camera at this point
         

@@ -75,14 +75,12 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 		{
 			throw new SensorException("Error while initializing video output", e);
 		}
-		
-		startStream();
     }
 	
 	
 	protected int[] getImageSize() throws IOException
 	{
-    	URL getImgSizeUrl = new URL("http://" + parentSensor.getHostName() + "/axis-cgi/view/imagesize.cgi?camera=1");
+    	URL getImgSizeUrl = new URL(parentSensor.getHostUrl() + "/view/imagesize.cgi?camera=1");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(getImgSizeUrl.openStream()));
 		
 		int imgSize[] = new int[2];
@@ -102,80 +100,76 @@ public class AxisVideoOutput extends AbstractSensorOutput<AxisCameraDriver>
 	}
 	
 	
-	protected void startStream()
+	protected void start()
 	{
 		try
 		{
-		    final URL videoUrl = new URL("http://" + parentSensor.getHostName() + "/mjpg/video.mjpg");
-			reconnect = true;
-			
+		    final URL videoUrl = new URL(parentSensor.getHostUrl().replace("axis-cgi", "mjpg/video.mjpg"));
+						
 			Thread t = new Thread(new Runnable()
 	    	{
 				@Override
 				public void run()
 				{
-					while (reconnect)
-					{
-						// send http query
-						try
-						{
-							InputStream is = new BufferedInputStream(videoUrl.openStream());
-							MjpegStream stream = new MjpegStream(is, null);
-							streaming = true;
-							
-							while (streaming)
-							{
-								// extract next frame from MJPEG stream
-								Buffer buf = new Buffer();
-						        buf.setData(new byte[]{});
-						        stream.read(buf);
-						        byte[] frameData = (byte[]) buf.getData();
-						        
-						        // create new data block
-						        DataBlock dataBlock;
-						        if (latestRecord == null)
-                                    dataBlock = videoDataStruct.createDataBlock();
-                                else
-                                    dataBlock = latestRecord.renew();
-                                
-						        //double timestamp = AXISJpegHeaderReader.getTimestamp(frameData) / 1000.;
-                                double timestamp = System.currentTimeMillis() / 1000.;
-                                dataBlock.setDoubleValue(0, timestamp);
-                                //System.out.println(new DateTimeFormat().formatIso(timestamp, 0));
-                                
-						        // uncompress to RGB bufferd image
-						        /*InputStream imageStream = new ByteArrayInputStream(frameData);						        
-						        ImageInputStream input = ImageIO.createImageInputStream(imageStream); 
-						        Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
-						        ImageReader reader = readers.next();
-						        reader.setInput(input);
-						        //int width = reader.getWidth(0);
-						        //int height = reader.getHeight(0);
-						        
-						        // The ImageTypeSpecifier object gives you access to more info such as 
-						        // bands, color model, etc.
-						        //ImageTypeSpecifier imageType = reader.getRawImageType(0);
-						        
-						        BufferedImage rgbImage = reader.read(0);
-						        byte[] byteData = ((DataBufferByte)rgbImage.getRaster().getDataBuffer()).getData();
-						        ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(byteData);*/
-						        
-						        // assign compressed data
-						        ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(frameData);
-								
-						        latestRecord = dataBlock;
-		                        latestRecordTime = System.currentTimeMillis();
-								eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AxisVideoOutput.this, latestRecord));
-							}
-							
-							// wait 1s before trying to reconnect
-							Thread.sleep(1000);
-						}
-						catch (Exception e)
-						{
-							e.printStackTrace();
-						}
-					};
+				 // send http query
+                    try
+                    {
+                        InputStream is = new BufferedInputStream(videoUrl.openStream());
+                        MjpegStream stream = new MjpegStream(is, null);
+                        streaming = true;
+                        
+                        while (streaming)
+                        {
+                            // extract next frame from MJPEG stream
+                            Buffer buf = new Buffer();
+                            buf.setData(new byte[]{});
+                            stream.read(buf);
+                            byte[] frameData = (byte[]) buf.getData();
+                            
+                            // create new data block
+                            DataBlock dataBlock;
+                            if (latestRecord == null)
+                                dataBlock = videoDataStruct.createDataBlock();
+                            else
+                                dataBlock = latestRecord.renew();
+                            
+                            //double timestamp = AXISJpegHeaderReader.getTimestamp(frameData) / 1000.;
+                            double timestamp = System.currentTimeMillis() / 1000.;
+                            dataBlock.setDoubleValue(0, timestamp);
+                            //System.out.println(new DateTimeFormat().formatIso(timestamp, 0));
+                            
+                            // uncompress to RGB bufferd image
+                            /*InputStream imageStream = new ByteArrayInputStream(frameData);                                
+                            ImageInputStream input = ImageIO.createImageInputStream(imageStream); 
+                            Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
+                            ImageReader reader = readers.next();
+                            reader.setInput(input);
+                            //int width = reader.getWidth(0);
+                            //int height = reader.getHeight(0);
+                            
+                            // The ImageTypeSpecifier object gives you access to more info such as 
+                            // bands, color model, etc.
+                            //ImageTypeSpecifier imageType = reader.getRawImageType(0);
+                            
+                            BufferedImage rgbImage = reader.read(0);
+                            byte[] byteData = ((DataBufferByte)rgbImage.getRaster().getDataBuffer()).getData();
+                            ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(byteData);*/
+                            
+                            // assign compressed data
+                            ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(frameData);
+                            
+                            latestRecord = dataBlock;
+                            latestRecordTime = System.currentTimeMillis();
+                            eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AxisVideoOutput.this, latestRecord));
+                        }
+                        
+                        // wait 1s before trying to reconnect
+                        Thread.sleep(1000);
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
 	 			}    		
 	    	});
 			
