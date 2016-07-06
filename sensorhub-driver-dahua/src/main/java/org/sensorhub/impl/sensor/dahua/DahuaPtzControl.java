@@ -155,10 +155,11 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         String itemID = component.getName();
         DataBlock data = component.getData();
         
-        // initialize
-        double pan = 0;
-        double tilt = 0;
-        double zoom = 0;
+        // refresh PTZ status
+        parentSensor.ptzDataInterface.requestPtzStatus();
+        double pan = parentSensor.ptzDataInterface.pan;
+        double tilt = parentSensor.ptzDataInterface.tilt;
+        double zoom = parentSensor.ptzDataInterface.zoom;
         
         // NOTE: you can use validate() method in DataComponent
         // component.validateData(errorList);  // give it a list so it can store the errors
@@ -166,7 +167,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
               
         try
         {
-        	// if preset position, act on that with
+        	// preset position
         	if (itemID.equals(VideoCamHelper.TASKING_PTZPRESET))
         	{
         	    PtzPreset preset = presetsHandler.getPreset(data.getStringValue());
@@ -174,57 +175,30 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         	    tilt = preset.tilt;
         	    zoom = preset.zoom;
         	}
+        	
+        	// all 3 ptz components together
         	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PTZ_POS))
         	{
-        		// Set all components of PTZ
-        	    pan = data.getDoubleValue(0);
+        		pan = data.getDoubleValue(0);
         	    tilt = data.getDoubleValue(1);
         	    zoom = data.getDoubleValue(2);    		
         	}
+        	
+        	// individual component command
         	else 
         	{
-        		// get current pan, tilt, zoom values from camera
-                try
-                {
-                    URL optionsURL = new URL(parentSensor.getHostUrl() + "/ptz.cgi?action=getStatus");
-                	InputStream is = optionsURL.openStream();
-                	BufferedReader bReader = new BufferedReader(new InputStreamReader(is));
-
-                	String line;
-                	while ((line = bReader.readLine()) != null)
-                	{
-                		// parse response
-                		String[] tokens = line.split("=");
-
-                		// note "position" is misspelled as "postion" in response
-                		if (tokens[0].trim().equalsIgnoreCase("status.Postion[0]"))
-                			pan = Double.parseDouble(tokens[1]);
-                		else if (tokens[0].trim().equalsIgnoreCase("status.Postion[1]"))
-                			tilt = Double.parseDouble(tokens[1]);
-                		else if (tokens[0].trim().equalsIgnoreCase("status.Postion[2]"))
-                			zoom = Double.parseDouble(tokens[1]);
-                		
-                		
-                    	if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PAN))
-                    	    pan = data.getDoubleValue();
-                    	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_TILT))
-                    	    tilt = data.getDoubleValue();
-                    	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_ZOOM))
-                    	    zoom = data.getDoubleValue();
-                    	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RPAN))
-                    	    pan = data.getDoubleValue() + pan;
-                    	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RTILT))
-                    	    tilt = data.getDoubleValue() + tilt;
-                    	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RZOOM))
-                    		zoom = data.getDoubleValue() + zoom;
-
-                	}
-                }
-                catch (IOException e)
-                {
-                	throw new SensorException("", e);
-                }       		
-       		
+        	    if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PAN))
+                    pan = data.getDoubleValue();
+                else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_TILT))
+                    tilt = data.getDoubleValue();
+                else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_ZOOM))
+                    zoom = data.getDoubleValue(); 
+                else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RPAN))
+                    pan = data.getDoubleValue() + pan;
+                else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RTILT))
+                    tilt = data.getDoubleValue() + tilt;
+                else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RZOOM))
+                    zoom = data.getDoubleValue() + zoom;
         	}        		
         	       	
         	// send request to absolute pan/tilt/zoom positions
@@ -234,6 +208,9 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
             // add BufferReader and read first line; if "Error", read second line and log error
             InputStream is = optionsURL.openStream();
             is.close();
+            
+            // wait because camera cannot handle successive commands if they come too fast
+            Thread.sleep(1000);
 	    }
 	    catch (Exception e)
 	    {
@@ -245,28 +222,4 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         
         return cmdStatus;
     }
-    
-    
-    // set pan and notify DahuaPtzOutput
-//    public void setPan(double value)
-//    {
-//    	pan = value;
-//    	parentSensor.ptzDataInterface.setPan(value);
-//    }
-//    
-
-    // set tilt and notify DahuaPtzOutput
-//    public void setTilt(double value)
-//    {
-//    	tilt = value;
-//    	parentSensor.ptzDataInterface.setTilt(value);
-//    }
-    
-
-    // set zoom and notify DahuaPtzOutput
-//    public void setZoom(double value)
-//    {
-//    	zoom = value;
-//    	parentSensor.ptzDataInterface.setZoom(value);
-//    }
 }
