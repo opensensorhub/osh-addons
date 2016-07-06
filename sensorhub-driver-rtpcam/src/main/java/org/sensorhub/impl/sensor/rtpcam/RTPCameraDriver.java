@@ -40,10 +40,13 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     
     
     @Override
-    public void setConfiguration(final RTPCameraConfig config)
+    public void init() throws SensorHubException
     {
-        super.setConfiguration(config);
+        // reset internal state in case init() was already called
+        super.init();
+        dataInterface = null;
         
+        // create connection handler
         this.connection = new RobustIPConnection(this, config.connection, "RTP Camera")
         {
             public boolean tryConnect() throws Exception
@@ -52,12 +55,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
                 return tryConnectTCP(config.rtsp.remoteHost, config.rtsp.remotePort);
             }
         };
-    }
-    
-    
-    @Override
-    public void init() throws SensorHubException
-    {
+        
         // generate identifiers
         if (config.cameraID != null)
         {

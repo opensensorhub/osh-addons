@@ -57,7 +57,7 @@ public class TestV4LCameraDriver implements IEventListener
         
         driver = new V4LCameraDriver();
         driver.setConfiguration(config);
-        driver.requestInit();
+        driver.requestInit(false);
         driver.requestStart();
     }
     

@@ -58,12 +58,12 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
 
 
     public DahuaCameraDriver()
-    {        
+    {
     }
     
     
     @Override
-    public void setConfiguration(final DahuaCameraConfig config)
+    public void setConfiguration(DahuaCameraConfig config)
     {
         super.setConfiguration(config);
         
@@ -79,9 +79,21 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
         
         // compute full host URL
         hostUrl = "http://" + config.http.remoteHost + ":" + config.http.remotePort + "/cgi-bin";
+    };
+    
+    
+    @Override
+    public void init() throws SensorHubException
+    {
+        // reset internal state in case init() was already called
+        super.init();
+        videoDataInterface = null;
+        ptzDataInterface = null;
+        ptzControlInterface = null;
+        ptzSupported = false;
         
         // create connection handler
-        this.connection = new RobustHTTPConnection(this, config.connection, "Dahua Camera")
+        connection = new RobustHTTPConnection(this, config.connection, "Dahua Camera")
         {
             public boolean tryConnect() throws Exception
             {
@@ -145,12 +157,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
                 return true;                
             }
         };
-    };
-    
-    
-    @Override
-    public void init() throws SensorHubException
-    {
+        
         // TODO we could check if basic metadata is in cache, in which case
         // it's not necessary to connect to camera at this point
         

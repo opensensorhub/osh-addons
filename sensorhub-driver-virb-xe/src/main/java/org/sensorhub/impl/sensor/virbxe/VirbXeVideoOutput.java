@@ -73,7 +73,7 @@ public class VirbXeVideoOutput extends RTPVideoOutput<VirbXeDriver>
         super.start(fixedVideoConfig, config.rtsp);
         
         // start watchdog thread to detect disconnections
-        final long maxFramePeriod = 10000 / 30;
+        final long maxFramePeriod = 1000;
         lastFrameTime = Long.MAX_VALUE;
         TimerTask checkFrameTask = new TimerTask()
         {
@@ -82,6 +82,7 @@ public class VirbXeVideoOutput extends RTPVideoOutput<VirbXeDriver>
             {
                 if (lastFrameTime < System.currentTimeMillis() - maxFramePeriod)
                 {
+                    parentSensor.getLogger().warn("No frame received in more than {}ms. Reconnecting...", maxFramePeriod);
                     parentSensor.connection.reconnect();
                     cancel();
                 }

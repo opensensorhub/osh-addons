@@ -118,7 +118,7 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
             }*/        	
 
             /** request PTZ Limits  **/
-            URL optionsURL = new URL("http://" + parentSensor.getHostName() + "/axis-cgi/view/param.cgi?action=list&group=PTZ.Limit");
+            URL optionsURL = new URL(parentSensor.getHostUrl() + "/view/param.cgi?action=list&group=PTZ.Limit");
             InputStream is = optionsURL.openStream();
             BufferedReader limitReader = new BufferedReader(new InputStreamReader(is));
 
@@ -152,23 +152,20 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
         }
 
         // Build SWE Common Data structure
-        settingsDataStruct = videoHelper.newPtzOutput(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom);
-
-        // start the thread (probably best not to start in init but in driver start() method.) ????
-        startPolling();
+        settingsDataStruct = videoHelper.newPtzOutput(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom);   
     }
-
-
-    protected void startPolling()
+    
+    
+    protected void start()
     {
         if (timer != null)
             return;
         timer = new Timer();
-        
+
+        // start the timer thread
         try
         {
-            //String ipAddress = driver.getConfiguration().ipAddress;
-            final URL getSettingsUrl = new URL("http://" + parentSensor.getHostName() + "/axis-cgi/com/ptz.cgi?query=position");
+            final URL getSettingsUrl = new URL(parentSensor.getHostUrl() + "/view/param.cgi?query=position");
             final DataComponent dataStruct = settingsDataStruct.copy();
             dataStruct.assignNewDataBlock();
 
