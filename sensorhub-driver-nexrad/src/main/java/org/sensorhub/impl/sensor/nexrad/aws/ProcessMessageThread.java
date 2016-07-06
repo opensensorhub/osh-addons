@@ -3,9 +3,11 @@ package org.sensorhub.impl.sensor.nexrad.aws;
 import java.util.List;
 
 import org.sensorhub.impl.sensor.nexrad.aws.sqs.AwsSqsService;
-import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkHandler;
 import org.sensorhub.impl.sensor.nexrad.aws.sqs.ProcessChunkThread;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.Message;
 
 /**
@@ -20,9 +22,11 @@ public class ProcessMessageThread implements Runnable {
 	private AwsSqsService sqsService;
 	List<String> sitesToKeep;
 	private String outputPath;
+	private AmazonS3Client s3client;
 	
-	public ProcessMessageThread(AwsSqsService sqsService, List<String> sites, String outputPath) {
+	public ProcessMessageThread(AwsSqsService sqsService, AmazonS3Client client, List<String> sites, String outputPath) {
 		this.sqsService = sqsService;
+		this.s3client = client;
 		this.sitesToKeep = sites;
 		this.outputPath = outputPath;
 	}
@@ -45,7 +49,7 @@ public class ProcessMessageThread implements Runnable {
 //				System.err.println(site);
 			if(sitesToKeep.size() == 0 || sitesToKeep.contains(site)) {
 //				System.err.println("**** " + path);
-				ProcessChunkThread t = new ProcessChunkThread(new LdmLevel2FileWriter(outputPath), chunkPath);
+				ProcessChunkThread t = new ProcessChunkThread(s3client, new LdmLevel2FileWriter(outputPath), chunkPath);
 				t.run();
 			}
 			

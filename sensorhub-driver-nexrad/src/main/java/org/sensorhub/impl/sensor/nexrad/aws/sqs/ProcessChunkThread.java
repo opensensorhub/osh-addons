@@ -26,22 +26,10 @@ public class ProcessChunkThread implements Runnable {
 	private AmazonS3Client s3client;
 	private ChunkHandler chunkHandler;
 	
-	public ProcessChunkThread(ChunkHandler handler, String path) {
+	public ProcessChunkThread(AmazonS3Client client, ChunkHandler handler, String path) {
+		this.s3client = client;
 		this.path = path;
 		this.chunkHandler = handler;
-		AWSCredentials credentials = null;
-
-		try {
-			credentials = new ProfileCredentialsProvider().getCredentials();
-		} catch (Exception e) {
-			throw new AmazonClientException(
-					"Cannot load the credentials from the credential profiles file. " +
-							"Please make sure that your credentials file is at the correct " +
-							"location (~/.aws/credentials), and is in valid format.",
-							e);
-		}
-
-		s3client = new AmazonS3Client(credentials);
 	}
 
 	@Override

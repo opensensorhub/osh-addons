@@ -28,13 +28,15 @@ public class AwsSqsService {
 	private String queueUrl; 
 	
 	public AwsSqsService(String queueUrl) {
+		this.queueUrl = queueUrl;
+
+		//  create sqs client
 		credentials = new ProfileCredentialsProvider().getCredentials();
 		sqs = new AmazonSQSClient(credentials);
 		Region usEast1 = Region.getRegion(Regions.US_EAST_1);
 		Region usWest2 = Region.getRegion(Regions.US_WEST_2);
-		sqs.setRegion(usWest2);
+		sqs.setRegion(usEast1);
 		sqs.setEndpoint("sdb.amazonaws.com");
-		this.queueUrl = queueUrl;
 	}
 	
 	
@@ -52,5 +54,10 @@ public class AwsSqsService {
 	// Don't think we will need to call this
 	public void shutdown() {
 		sqs.shutdown();
+	}
+
+	//  Should only create these once and hand them out as needed 
+	public AWSCredentials getCredentials() {
+		return credentials;
 	}
 }
