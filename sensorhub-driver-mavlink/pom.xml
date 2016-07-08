@@ -32,6 +32,7 @@
             <configuration>
                <excludes>
                   <exclude>**/TestMavlinkDriverSolo.java</exclude>
+                  <exclude>**/TestMavlinkDriverSITL.java</exclude>
                </excludes>
             </configuration>
          </plugin>
