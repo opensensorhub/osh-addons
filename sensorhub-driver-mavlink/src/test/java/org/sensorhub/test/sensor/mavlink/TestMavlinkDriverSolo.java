@@ -15,7 +15,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.test.sensor.mavlink;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.UUID;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataComponent;
@@ -51,7 +51,7 @@ public class TestMavlinkDriverSolo implements IEventListener
     {
         config = new MavlinkConfig();
         config.id = UUID.randomUUID().toString();
-        config.activeMessages = Arrays.asList(
+        config.activeMessages = EnumSet.of(
                 MsgTypes.GLOBAL_POSITION,
                 MsgTypes.ATTITUDE,
                 MsgTypes.GIMBAL_REPORT);

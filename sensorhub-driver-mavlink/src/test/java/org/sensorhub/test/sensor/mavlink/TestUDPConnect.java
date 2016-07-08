@@ -32,7 +32,7 @@ public class TestUDPConnect
     
     public static void main(String[] args) throws Exception
     {
-        socket = new DatagramSocket(14550);
+        socket = new DatagramSocket(14551);
         //socket.setReuseAddress(true);
         
         final byte[] receiveData = new byte[300];
@@ -67,7 +67,8 @@ public class TestUDPConnect
                             
                             //if (msg instanceof msg_command_ack)
                                 //System.out.println(receivePacket.getAddress() + ": " + msg);
-                            System.out.println(msg);
+                            System.out.println(msg + " (" + msg.getClass() + ")");
+                            System.out.println(receivePacket.getAddress() + ":" + receivePacket.getPort());
 
 //                            if (msg instanceof msg_gimbal_report)
 //                                System.out.println(((msg_gimbal_report) msg).joint_el*180/Math.PI);
@@ -106,16 +107,16 @@ public class TestUDPConnect
         sendCommand(setParam.pack());        
         Thread.sleep(1000);        
         
-//        System.err.println("Arming system");
-//        msg_command_long cmd = new msg_command_long();
-//        cmd.target_system = 1;
-//        cmd.target_component = 1;
-//        cmd.command = MAV_CMD.MAV_CMD_COMPONENT_ARM_DISARM; // working but need gps fix and other prearm checks
-//        cmd.param1 = 1;
-//        sendCommand(cmd.pack());        
-//        Thread.sleep(5000);
-
+        System.err.println("Arming system");
+        msg_command_long cmd = new msg_command_long();
+        cmd.target_system = 1;
+        cmd.target_component = 1;
+        cmd.command = MAV_CMD.MAV_CMD_COMPONENT_ARM_DISARM; // working but need gps fix and other prearm checks
+        cmd.param1 = 1;
+        sendCommand(cmd.pack());        
+        Thread.sleep(5000);
         
+        /*
         // set telemetry update rate
         System.err.println("Changing telemetry rate");
         setParam = new msg_param_set();
@@ -188,7 +189,7 @@ public class TestUDPConnect
         setGimbal.input_a = -1000;
         setGimbal.input_c = 0;
         sendCommand(setGimbal.pack());        
-        Thread.sleep(1000);
+        Thread.sleep(1000);*/
     }
     
     
