@@ -145,7 +145,8 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
                             config.rtsp.videoPath,
                             config.rtsp.user,
                             config.rtsp.password,
-                            config.rtsp.localUdpPort);
+                            config.rtsp.localUdpPort,
+                            config.connection.connectTimeout);
                     rtspClient.sendOptions();
                 }
                 catch (IOException e)

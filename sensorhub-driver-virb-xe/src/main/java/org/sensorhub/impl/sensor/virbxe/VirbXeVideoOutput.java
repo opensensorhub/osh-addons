@@ -70,7 +70,7 @@ public class VirbXeVideoOutput extends RTPVideoOutput<VirbXeDriver>
     public void start() throws SensorException
     {
         VirbXeConfig config = parentSensor.getConfiguration();
-        super.start(fixedVideoConfig, config.rtsp);
+        super.start(fixedVideoConfig, config.rtsp, config.connection.connectTimeout);
         
         // start watchdog thread to detect disconnections
         final long maxFramePeriod = 1000;

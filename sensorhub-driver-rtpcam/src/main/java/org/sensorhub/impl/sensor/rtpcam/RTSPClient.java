@@ -78,7 +78,7 @@ public class RTSPClient
     }
     
     
-    public RTSPClient(String serverHost, int serverPort, String videoPath, String login, String passwd, int rtpRcvPort) throws IOException
+    public RTSPClient(String serverHost, int serverPort, String videoPath, String login, String passwd, int rtpRcvPort, int timeout) throws IOException
     {
         this.videoUrl = "rtsp://" + serverHost + ":" + serverPort + ((videoPath != null) ? videoPath : "");        
         this.userName = login;
@@ -86,8 +86,8 @@ public class RTSPClient
         
         InetAddress rtspServerIP = InetAddress.getByName(serverHost);
         this.rtspSocket = new Socket();
-        rtspSocket.connect(new InetSocketAddress(rtspServerIP, serverPort), 5000);
-        rtspSocket.setSoTimeout(5000); // read timeout
+        rtspSocket.connect(new InetSocketAddress(rtspServerIP, serverPort), timeout);
+        rtspSocket.setSoTimeout(timeout); // read timeout
         
         this.rtspResponseReader = new BufferedReader(new InputStreamReader(rtspSocket.getInputStream()));
         this.rtspRequestWriter = new BufferedWriter(new OutputStreamWriter(rtspSocket.getOutputStream()));

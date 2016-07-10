@@ -119,7 +119,7 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
                 if (serialNumber == null || serialNumber.trim().isEmpty())
                     throw new IOException("Cannot read camera serial number");
                 
-                // check connection to RTSP server
+                // also check connection to RTSP server
                 try
                 {
                     RTSPClient rtspClient = new RTSPClient(
@@ -128,7 +128,8 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
                             config.rtsp.videoPath,
                             config.rtsp.user,
                             config.rtsp.password,
-                            config.rtsp.localUdpPort);
+                            config.rtsp.localUdpPort,
+                            config.connection.connectTimeout);
                     rtspClient.sendOptions();
                     rtspClient.sendDescribe();
                 }

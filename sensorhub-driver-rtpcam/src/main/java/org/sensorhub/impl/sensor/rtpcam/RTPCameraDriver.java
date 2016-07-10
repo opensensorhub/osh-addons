@@ -77,7 +77,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
         connection.waitForConnection();
         
         // start video stream
-        dataInterface.start(config.video, config.rtsp);
+        dataInterface.start(config.video, config.rtsp, config.connection.connectTimeout);
     }
     
     
