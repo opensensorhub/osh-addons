@@ -47,7 +47,7 @@ public class QueueFactory
 	public static void main(String[] args) {
 		listQueues();
 		
-		deleteQueue("https://sqs.us-west-2.amazonaws.com/384286541835/NexradQueue_SensorHub");
+		deleteQueue("https://sqs.us-west-2.amazonaws.com/384286541835/NexradQueue_SensorHub_001");
 	}
 	
 	public static void listQueues() {
@@ -62,7 +62,7 @@ public class QueueFactory
 		// Create a queue
 		CreateQueueRequest createQueueRequest = new CreateQueueRequest(queueName);
 		String myQueueUrl = sqs.createQueue(createQueueRequest).getQueueUrl();
-		System.out.println("Creating a new SQS queue called " + queueName);
+		System.out.println("I am Creating a new SQS queue called " + queueName);
 		// TODO - error check that queue was actually created
 		Topics.subscribeQueue(sns, sqs, topicArn, myQueueUrl);
 		return myQueueUrl;

@@ -34,11 +34,11 @@ public class NexradSqsService
 	private AmazonS3Client s3client;
 
 
-	public NexradSqsService(List<String> sites, String outputPath, int numThreads) {
+	public NexradSqsService(String queueName, List<String> sites, String outputPath, int numThreads) {
 		this.sites = sites;
 		this.numThreads = numThreads;
 		this.outputPath = outputPath;
-		queueName = "NexradQueue_SensorHub";
+		this.queueName = queueName;
 		
 		createS3Client();
 	}

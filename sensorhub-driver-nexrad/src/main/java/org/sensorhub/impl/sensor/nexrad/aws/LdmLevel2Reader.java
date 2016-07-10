@@ -138,8 +138,8 @@ public class LdmLevel2Reader {
 					ldmRadial.volumeDataBlock = readVolumeDataBlock(bzis);
 					readElevationDataBlock(bzis);
 					readRadialDataBlock(bzis);
+					// 
 					for(int i=0; i<ldmRadial.dataHeader.dataBlockCount - 3; i++) {
-
 						MomentDataBlock momentBlock = readMomentDataBlock(bzis);
 						ldmRadial.momentData.add(momentBlock);
 					}
@@ -418,10 +418,10 @@ public class LdmLevel2Reader {
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		LdmLevel2Reader reader = new LdmLevel2Reader();
-		String p = "C:/Data/sensorhub/Level2/test/KHTX/KHTX_64_20160620-204453-010-I";
+		String p = "C:/Users/tcook/root/sensorHub/doppler/issues/KHTX_229_20160708-213126-043-I";
 		List<LdmRadial> rads = reader.read(new File(p));
-		for(LdmRadial r: rads)
-			System.err.println(rads.size());
+//		for(LdmRadial r: rads)
+//			System.err.println(rads.size());
 
 	}
 }
