@@ -22,7 +22,7 @@ public class LdmFilesConsumer { //implements Runnable {
 	char type;
 	boolean first = true;
 	static final int START_SIZE = 3;
-	static final int SIZE_LIMIT = 8;
+	static final int SIZE_LIMIT = 12;
 
 	public LdmFilesConsumer(PriorityBlockingQueue<String> queue) {
 		this.queue = queue;
@@ -42,8 +42,9 @@ public class LdmFilesConsumer { //implements Runnable {
 	void dump(BlockingQueue queue) {
 		String [] sarr = (String[]) queue.toArray(new String [] {});
 		Arrays.sort(sarr);
+		logger.debug("QUEUE: ");
 		for (String st: sarr)
-			System.err.println(st);
+			logger.debug("\t" + st);
 
 	}
 
@@ -92,11 +93,11 @@ public class LdmFilesConsumer { //implements Runnable {
 			char t = f.charAt(f.length() - 1);
 			if (isNext(v,c,t)) {
 				f = queue.take();
-				logger.debug("Take that: {}" + f);
+				logger.debug("Take that: {}" , f);
 				return f;
 			} else if(queue.size() > SIZE_LIMIT) {
 				f = queue.take(); 
-				logger.debug("Force take: {}" + f);
+				logger.debug("Force take: {}" , f);
 				chunk = c;
 				vol = v;
 				type = t;

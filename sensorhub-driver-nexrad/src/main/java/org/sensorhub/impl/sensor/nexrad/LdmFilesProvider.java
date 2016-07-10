@@ -21,7 +21,7 @@ import org.sensorhub.api.common.SensorHubException;
  * Title: LdmFilesProvider.java
  * </p>
  * <p>
- * Description:
+ * Description: Watch a directory for incoming LDM files.  Block pon 
  * </p>
  *
  * @author T
@@ -41,7 +41,6 @@ public class LdmFilesProvider {
 		consumer = new LdmFilesConsumer(files);
 		this.siteFolder = dataFolder;
 		//  Make sure the target folder exists
-//		FileUtils.mkdir(this.siteFolder.toString());
 		FileUtils.forceMkdir(this.siteFolder.toFile());
 	}
 
