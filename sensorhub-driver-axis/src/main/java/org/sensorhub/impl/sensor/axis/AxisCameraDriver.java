@@ -163,7 +163,8 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
                                 config.rtsp.videoPath,
                                 config.rtsp.user,
                                 config.rtsp.password,
-                                config.rtsp.localUdpPort);
+                                config.rtsp.localUdpPort,
+                                config.connection.connectTimeout);
                         rtspClient.sendOptions();
                     }
                     catch (IOException e)
@@ -206,7 +207,6 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
             String outputName = videoOutName + videoOutNum++;
             h264VideoOutput = new RTPVideoOutput<AxisCameraDriver>(this, outputName);
             h264VideoOutput.init(config.video.resolution.getWidth(), config.video.resolution.getHeight());
-            h264VideoOutput.start(config.video, config.rtsp);
             addOutput(h264VideoOutput, false);
         }
         
@@ -241,7 +241,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
             mjpegVideoOutput.start();
         
         if (h264VideoOutput != null)
-            h264VideoOutput.start(config.video, config.rtsp);
+            h264VideoOutput.start(config.video, config.rtsp, config.connection.connectTimeout);
         
         // if PTZ supported
         if (ptzSupported)

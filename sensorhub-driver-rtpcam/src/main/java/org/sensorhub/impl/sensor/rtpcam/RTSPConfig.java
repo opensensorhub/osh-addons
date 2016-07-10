@@ -35,6 +35,9 @@ public class RTSPConfig extends TCPConfig
     @DisplayInfo(label="Local UDP Port", desc="Local UDP port for receiving RTP packets")
     public int localUdpPort;
     
+    @DisplayInfo(desc="Only connect to RTSP port without initiating RTSP session")
+    public boolean onlyConnectRtsp;
+    
     
     public RTSPConfig()
     {

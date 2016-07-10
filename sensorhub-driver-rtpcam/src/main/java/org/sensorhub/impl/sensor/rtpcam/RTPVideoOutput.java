@@ -17,7 +17,6 @@ package org.sensorhub.impl.sensor.rtpcam;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.ExecutorService;
@@ -94,7 +93,7 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
     }
     
     
-    public void start(BasicVideoConfig videoConfig, RTSPConfig rtspConfig) throws SensorException
+    public void start(BasicVideoConfig videoConfig, RTSPConfig rtspConfig, int timeout) throws SensorException
     {
         this.videoConfig = videoConfig;
         this.rtspConfig = rtspConfig;
@@ -128,20 +127,17 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
                     rtspConfig.videoPath,
                     rtspConfig.user,
                     rtspConfig.password,
-                    rtspConfig.localUdpPort);
+                    rtspConfig.localUdpPort,
+                    timeout);
             
-            try
+            // some cameras don't have a real RTSP server (i.e. 3DR Solo UAV)
+            // in this case we just need to maintain a TCP connection so keep the RTSP client alive
+            if (!rtspConfig.onlyConnectRtsp)
             {
                 rtspClient.sendOptions();
                 rtspClient.sendDescribe();
                 rtspClient.sendSetup();
                 log.info("Connected to RTSP server");
-            }
-            catch (SocketTimeoutException e)
-            {
-                // some cameras don't have a real RTSP server (i.e. 3DR Solo UAV)
-                // for Solo UAV, we need to maintain a TCP connection so keep the RTSP client alive
-                log.warn("RTSP server not responding but video stream may still be playing OK");
             }
             
             // start RTP/H264 receiving thread

@@ -54,7 +54,7 @@ public class DahuaVideoOutput extends RTPVideoOutput<DahuaCameraDriver>
     public void start() throws SensorException
     {
         DahuaCameraConfig config = parentSensor.getConfiguration();
-        super.start(config.video, config.rtsp);
+        super.start(config.video, config.rtsp, config.connection.connectTimeout);
                 
         // start watchdog thread to detect disconnections
         final long maxFramePeriod = 10000 / config.video.frameRate;
