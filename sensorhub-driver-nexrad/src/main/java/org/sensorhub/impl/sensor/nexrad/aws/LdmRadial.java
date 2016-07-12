@@ -1,8 +1,7 @@
 package org.sensorhub.impl.sensor.nexrad.aws;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * <p>Title: LdmRadisl.java</p>
@@ -15,6 +14,6 @@ public class LdmRadial
 {	
 	public DataHeader dataHeader;
 	public VolumeDataBlock volumeDataBlock;
-	public List<MomentDataBlock> momentData = new ArrayList<>();
+	public Map<String, MomentDataBlock> momentData = new HashMap<>();
 
 }
