@@ -70,17 +70,24 @@ public class TestMavlinkDriverSITL implements IEventListener
                 CmdTypes.RTL,
                 CmdTypes.LAND);
 
-        /*// TCP conf to connect directly to SITL
-        TCPCommProviderConfig tcpConf = new TCPCommProviderConfig();
+        // TCP conf to connect directly to SITL
+        /*TCPCommProviderConfig tcpConf = new TCPCommProviderConfig();
         tcpConf.protocol.remoteHost = "localhost";
         tcpConf.protocol.remotePort = 5760;
         config.commSettings = tcpConf;*/
         
         // UDP conf to connect through MAVProxy
-        UDPCommProviderConfig udpConf = new UDPCommProviderConfig();
+        /*UDPCommProviderConfig udpConf = new UDPCommProviderConfig();
         udpConf.protocol.remoteHost = "localhost";
         udpConf.protocol.remotePort = UDPConfig.PORT_AUTO;
         udpConf.protocol.localPort = 14551;
+        config.commSettings = udpConf;*/
+        
+        // UDP conf to connect to SOLO
+        UDPCommProviderConfig udpConf = new UDPCommProviderConfig();
+        udpConf.protocol.remoteHost = "10.1.1.10";
+        udpConf.protocol.remotePort = 14560;
+        udpConf.protocol.localPort = 14550;
         config.commSettings = udpConf;
         
         driver = new MavlinkDriver();

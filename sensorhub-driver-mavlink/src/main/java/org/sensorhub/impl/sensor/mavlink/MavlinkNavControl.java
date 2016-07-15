@@ -165,6 +165,7 @@ public class MavlinkNavControl extends MavlinkControlInput
             // switch on command type
             msg_command_long cmd;
             CmdTypes cmdType = CmdTypes.valueOf(cmdName);
+            
             switch (cmdType)
             {
                 case TAKEOFF:
@@ -172,7 +173,8 @@ public class MavlinkNavControl extends MavlinkControlInput
                     cmd.target_system = 1;
                     cmd.target_component = MAV_COMPONENT.MAV_COMP_ID_SYSTEM_CONTROL;
                     cmd.command = MAV_CMD.MAV_CMD_NAV_TAKEOFF;
-                    cmd.param7 = command.getFloatValue(1); // alt (m)
+                    cmd.param7 = Math.min(10, command.getFloatValue(1)); // alt (m), max to 10m
+                    parentSensor.getLogger().info("Sending {} command: {}", cmdType,cmd.command);
                     parentSensor.sendCommand(cmd.pack());   
                     break;
                     
@@ -184,9 +186,10 @@ public class MavlinkNavControl extends MavlinkControlInput
                     llacmd.type_mask = 0x1F8;
                     llacmd.lat_int = (int)(command.getFloatValue(1)*1e7); // lat (deg)
                     llacmd.lon_int = (int)(command.getFloatValue(2)*1e7); // lon (deg)
-                    llacmd.alt = command.getFloatValue(3); // alt (m)
+                    llacmd.alt = 5;//command.getFloatValue(3); // alt (m)
                     llacmd.yaw = (float)(command.getDoubleValue(4)/180.*Math.PI); // yaw (deg)
-                    parentSensor.sendCommand(llacmd.pack());   
+                    parentSensor.getLogger().info("Sending {} command: {}", cmdType, llacmd.msgid);
+                    parentSensor.sendCommand(llacmd.pack());
                     break;
                     
                 case GOTO_ENU:
@@ -199,6 +202,7 @@ public class MavlinkNavControl extends MavlinkControlInput
                     enucmd.y = command.getFloatValue(1); // y_NED = x_ENU (m)
                     enucmd.z = -command.getFloatValue(3); // z_NED = -z_ENU (m)
                     enucmd.yaw = (float)(command.getDoubleValue(4)/180.*Math.PI); // yaw (deg)
+                    parentSensor.getLogger().info("Sending {} command: {}", cmdType, enucmd.msgid);
                     parentSensor.sendCommand(enucmd.pack());   
                     break;
                     
@@ -211,6 +215,7 @@ public class MavlinkNavControl extends MavlinkControlInput
                     velcmd.vx = command.getFloatValue(2); // vx_NED = vy_ENU (m/s)
                     velcmd.vy = command.getFloatValue(1); // vy_NED = vx_ENU (m/s)
                     velcmd.vz = -command.getFloatValue(3); // vz_NED = -vz_ENU (m/s)
+                    parentSensor.getLogger().info("Sending {} command: {}", cmdType, velcmd.msgid);
                     parentSensor.sendCommand(velcmd.pack());   
                     break;
                     
@@ -222,6 +227,7 @@ public class MavlinkNavControl extends MavlinkControlInput
                     cmd.param1 = command.getFloatValue(1); // yaw (deg)
                     cmd.param2 = command.getFloatValue(2); // yaw rate (deg/s)
                     cmd.param4 = 0;
+                    parentSensor.getLogger().info("Sending {} command: {}", cmdType,cmd.command);
                     parentSensor.sendCommand(cmd.pack());  
                     break;
                     
@@ -233,6 +239,7 @@ public class MavlinkNavControl extends MavlinkControlInput
                     cmd.param5 = (float)(command.getFloatValue(1)*1e7); // lat (deg)
                     cmd.param6 = (float)(command.getFloatValue(2)*1e7); // lon (deg)
                     cmd.param7 = command.getFloatValue(3); // alt (m)
+                    parentSensor.getLogger().info("Sending {} command: {}", cmdType,cmd.command);
                     parentSensor.sendCommand(cmd.pack());   
                     break;
                     
@@ -247,6 +254,7 @@ public class MavlinkNavControl extends MavlinkControlInput
                     cmd.param5 = (float)(command.getFloatValue(1)*1e7); // lat (deg)
                     cmd.param6 = (float)(command.getFloatValue(2)*1e7); // lon (deg)
                     cmd.param7 = command.getFloatValue(3); // alt (m)
+                    parentSensor.getLogger().info("Sending {} command: {}", cmdType,cmd.command);
                     parentSensor.sendCommand(cmd.pack());   
                     break;
                     
@@ -255,7 +263,8 @@ public class MavlinkNavControl extends MavlinkControlInput
                     cmd.target_system = 1;
                     cmd.target_component = MAV_COMPONENT.MAV_COMP_ID_SYSTEM_CONTROL;
                     cmd.command = MAV_CMD.MAV_CMD_NAV_RETURN_TO_LAUNCH;
-                    parentSensor.sendCommand(cmd.pack());   
+                    parentSensor.getLogger().info("Sending {} command: {}", cmdType,cmd.command);
+                    parentSensor.sendCommand(cmd.pack());
                     break;
                     
                 case LAND:
@@ -265,6 +274,7 @@ public class MavlinkNavControl extends MavlinkControlInput
                     cmd.command = MAV_CMD.MAV_CMD_NAV_LAND;
                     cmd.param5 = (float)(command.getDoubleValue(1)*1e7); // lat (deg)
                     cmd.param6 = (float)(command.getDoubleValue(2)*1e7); // lon (deg)
+                    parentSensor.getLogger().info("Sending {} command: {}", cmdType,cmd.command);
                     parentSensor.sendCommand(cmd.pack());   
                     break;
                     

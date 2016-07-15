@@ -32,7 +32,7 @@ public class TestUDPConnect
     
     public static void main(String[] args) throws Exception
     {
-        socket = new DatagramSocket(14551);
+        socket = new DatagramSocket(14550);
         //socket.setReuseAddress(true);
         
         final byte[] receiveData = new byte[300];

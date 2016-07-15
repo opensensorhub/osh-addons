@@ -117,6 +117,7 @@ public class MavlinkCameraControl extends MavlinkControlInput
             
             // switch on command type
             CmdTypes cmdType = CmdTypes.valueOf(cmdName);
+            parentSensor.getLogger().info("Sending {} command", cmdType);
             switch (cmdType)
             {
                 case MOUNT_CONTROL:
@@ -135,8 +136,8 @@ public class MavlinkCameraControl extends MavlinkControlInput
                     cmd.target_system = 1;
                     cmd.target_component = 1;
                     cmd.command = MAV_CMD.MAV_CMD_DO_SET_ROI;
-                    cmd.param5 = command.getFloatValue(1); // lat (deg)
-                    cmd.param6 = command.getFloatValue(2); // lon (deg)
+                    cmd.param5 = (float)(command.getFloatValue(1)*1e7); // lat (deg)
+                    cmd.param6 = (float)(command.getFloatValue(2)*1e7); // lon (deg)
                     cmd.param7 = command.getFloatValue(3); // alt (deg)
                     parentSensor.sendCommand(cmd.pack());
                     break;

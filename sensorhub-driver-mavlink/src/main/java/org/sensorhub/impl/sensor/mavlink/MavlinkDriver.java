@@ -28,9 +28,11 @@ import org.sensorhub.impl.sensor.mavlink.MavlinkConfig.MsgTypes;
 import com.MAVLink.MAVLinkPacket;
 import com.MAVLink.Parser;
 import com.MAVLink.Messages.MAVLinkMessage;
+import com.MAVLink.common.msg_command_ack;
 import com.MAVLink.common.msg_command_long;
 import com.MAVLink.common.msg_heartbeat;
 import com.MAVLink.common.msg_param_set;
+import com.MAVLink.common.msg_position_target_global_int;
 import com.MAVLink.common.msg_set_mode;
 import com.MAVLink.enums.MAV_CMD;
 import com.MAVLink.enums.MAV_MODE_FLAG;
@@ -194,7 +196,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
             getLogger().info("Switching to GUIDED mode");
             setMode(CopterModes.GUIDED.ordinal());
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             throw new RuntimeException("Error while setting UAV parameters ", e);
         }
@@ -281,13 +283,16 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
     }
     
     
-    protected synchronized void sendCommand(MAVLinkPacket pkt) throws IOException
+    protected void sendCommand(MAVLinkPacket pkt) throws IOException
     {
-        pkt.generateCRC();
-        byte[] cmdData = pkt.encodePacket();
-        cmdOut.write(cmdData);
-        cmdOut.flush();
-        getLogger().trace("MAVLink command sent: " + pkt.msgid);
+        synchronized (cmdOut)
+        {
+            pkt.generateCRC();
+            byte[] cmdData = pkt.encodePacket();
+            cmdOut.write(cmdData);
+            cmdOut.flush();
+            getLogger().trace("MAVLink command sent: " + pkt.msgid);
+        }
     }
     
     
@@ -351,7 +356,10 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
             
             // unpack and log message
             MAVLinkMessage msg = packet.unpack();
-            getLogger().trace("Received message {} ({}) from {}:{}", msg, msg.getClass().getName(), msg.sysid, msg.compid);
+            if (msg instanceof msg_command_ack || msg instanceof msg_position_target_global_int)
+                getLogger().info("Received {}", msg);
+            else
+                getLogger().trace("Received message {} ({}) from {}:{}", msg, msg.getClass().getName(), msg.sysid, msg.compid);
             
             // special case for system time message
             /*if (msg instanceof msg_system_time)
