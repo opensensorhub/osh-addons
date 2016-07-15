@@ -192,6 +192,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
         try
         {         
             setTelemetryRates();
+            setGeofenceParams();
             setDefaultNavParams();
             getLogger().info("Switching to GUIDED mode");
             setMode(CopterModes.GUIDED.ordinal());
@@ -239,6 +240,17 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
         setParam("WPNAV_RADIUS", 100);
         setParam("CIRCLE_RADIUS", 2000);
         setParam("CIRCLE_RATE", 5);
+    }
+    
+    
+    private void setGeofenceParams() throws IOException
+    {
+        getLogger().info("Setting Geofencing Parameters");
+        setParam("FENCE_TYPE", 3);
+        setParam("FENCE_ALT_MAX", config.maxAltitude);
+        setParam("FENCE_RADIUS", config.maxTravelDistance);
+        setParam("FENCE_MARGIN", 2f);
+        setParam("FENCE_ENABLE", 1);
     }
     
     

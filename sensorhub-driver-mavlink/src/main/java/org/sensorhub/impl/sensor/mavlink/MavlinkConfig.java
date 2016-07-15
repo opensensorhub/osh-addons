@@ -53,6 +53,12 @@ public class MavlinkConfig extends SensorConfig
     
     @DisplayInfo(label="Vehicle ID", desc="ID of vehicle sending the MAVLink stream (e.g. serial number)")
     public String vehicleID;
+    
+    @DisplayInfo(desc="Maximum travel distance allowed from take-off point in meters (used to setup geofence)")
+    public float maxTravelDistance = 150f;
+    
+    @DisplayInfo(desc="Maximum altitude allowed in meters (used to setup geofence)")
+    public float maxAltitude = 50f;
         
     @DisplayInfo(desc="MAVLink messages to expose through this sensor interface")
     public EnumSet<MsgTypes> activeMessages = EnumSet.noneOf(MsgTypes.class);
