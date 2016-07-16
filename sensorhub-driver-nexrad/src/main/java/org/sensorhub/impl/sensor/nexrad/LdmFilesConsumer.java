@@ -64,6 +64,7 @@ public class LdmFilesConsumer { //implements Runnable {
 		return isNext;
 	}
 
+	// If a force take, need to ensure that any previous chunks that come in later are not added to the queue
 	public String nextFile() throws InterruptedException {
 		boolean nextFile = false;
 		while(!nextFile) {
