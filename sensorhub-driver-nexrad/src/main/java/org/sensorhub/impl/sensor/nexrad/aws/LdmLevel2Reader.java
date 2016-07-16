@@ -124,7 +124,7 @@ public class LdmLevel2Reader
 					// 
 					for(int i=0; i<ldmRadial.dataHeader.dataBlockCount - 3; i++) {
 						MomentDataBlock momentBlock = readMomentDataBlock(bzis);
-//						System.err.println(momentBlock.blockName + ": " + momentBlock.numGates + ": " + momentBlock.bdata.length);
+//						System.err.println(momentBlock.blockName + ": " + momentBlock.numGates + ": " + momentBlock.rangeToCenterOfFirstGate + ": "  +momentBlock.rangeSampleInterval );
 						ldmRadial.momentData.put(momentBlock.blockName, momentBlock);
 					}
 					ldmRadials.add(ldmRadial);
@@ -387,8 +387,8 @@ public class LdmLevel2Reader
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		LdmLevel2Reader reader = new LdmLevel2Reader();
-		//		String p = "C:/Users/tcook/root/sensorHub/doppler/issues/KHTX_229_20160708-213126-043-I";
-		String p = "C:/Users/tcook/root/sensorHub/doppler/issues/KHTX_570_20160712-182557-040-E";
+		String p = "C:/Users/tcook/root/sensorHub/doppler/issues/KHTX_229_20160708-213126-043-I";
+		//String p = "C:/Users/tcook/root/sensorHub/doppler/issues/KHTX_570_20160712-182557-040-E";
 		List<LdmRadial> rads = reader.read(new File(p));
 		//		for(LdmRadial r: rads)
 		//			System.err.println(rads.size());
