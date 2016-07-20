@@ -2,14 +2,13 @@
    <modelVersion>4.0.0</modelVersion>
    <parent>
       <groupId>org.sensorhub</groupId>
-      <artifactId>sensorhub-driver-all</artifactId>
+      <artifactId>sensorhub-all</artifactId>
       <version>1.1-SNAPSHOT</version>
-      <relativePath>../sensorhub-driver-all/pom.xml</relativePath>
    </parent>
-   <artifactId>sensorhub-driver-weatherStation</artifactId>
+   <artifactId>sensorhub-driver-metar</artifactId>
    <version>0.1-SNAPSHOT</version>
    <name>METAR Weather Sensor Network Driver</name>
-   <description>Driver for weather station networks - initially METAR-specific</description>
+   <description>Driver for METAR weather station network</description>
    <organization>
       <name>Botts Inc.</name>
       <url>http://www.botts-inc.com/</url>
