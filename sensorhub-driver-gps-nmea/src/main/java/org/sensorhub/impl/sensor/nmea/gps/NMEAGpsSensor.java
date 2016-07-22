@@ -68,7 +68,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             sensorID = config.id.substring(0, endIndex);
         } 
         this.xmlID = "GPS_SENSOR_" + sensorID.toUpperCase();
-        this.uniqueID = "urn:osh:nmea-gps:" + sensorID;
+        this.uniqueID = "urn:osh:sensor:nmea-gps:" + sensorID;
         
         // create outputs depending on selected sentences
         if (config.activeSentences.contains(GLL_MSG) ||
