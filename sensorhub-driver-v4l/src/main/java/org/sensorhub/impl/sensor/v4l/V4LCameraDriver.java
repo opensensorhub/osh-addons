@@ -75,7 +75,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
             sensorID = config.id.substring(0, endIndex);
         }
         this.xmlID = "V4L_CAMERA_" + sensorID.toUpperCase();
-        this.uniqueID = "urn:osh:v4l-cam:" + sensorID;
+        this.uniqueID = "urn:osh:sensor:v4l-cam:" + sensorID;
         
         // create data and control interfaces
         this.dataInterface = new V4LCameraOutputRGB(this);
