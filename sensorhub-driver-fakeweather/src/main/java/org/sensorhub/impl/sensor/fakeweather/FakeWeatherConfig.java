@@ -15,16 +15,35 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fakeweather;
 
+import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.config.DisplayInfo.Required;
+import org.sensorhub.api.sensor.PositionConfig.LLALocation;
 import org.sensorhub.api.sensor.SensorConfig;
 
 
 public class FakeWeatherConfig extends SensorConfig
 {
+    
+    @Required
+    @DisplayInfo(desc="Serial number of the station used to generate its unique ID")
     public String serialNumber = "0123456879";
     
-    public double stationLat = 34.8038; // in deg
     
-    public double stationLon = -86.7228; // in deg
+    @DisplayInfo(desc="Station Location")
+    public LLALocation location = new LLALocation();
     
-    public double stationAlt = 0.000; // in meters
+    
+    public FakeWeatherConfig()
+    {
+        location.lat = 34.8038;        
+        location.lon = -86.7228;      
+        location.alt = 0.000;
+    }
+    
+    
+    @Override
+    public LLALocation getLocation()
+    {
+        return location;
+    }
 }

@@ -15,14 +15,9 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fakeweather;
 
-import net.opengis.gml.v32.AbstractFeature;
-import net.opengis.gml.v32.Point;
-import net.opengis.gml.v32.impl.GMLFactory;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
-import org.vast.ogc.om.SamplingPoint;
-import org.vast.swe.SWEConstants;
 
 
 /**
@@ -38,10 +33,9 @@ import org.vast.swe.SWEConstants;
  */
 public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
 {
-    private static final String UID_PREFIX = "urn:test:sensors:simweather:";
+    private static final String UID_PREFIX = "urn:osh:sensor:simweather:";
     
     FakeWeatherOutput dataInterface;
-    SamplingPoint foi;
     
     
     public FakeWeatherSensor()
@@ -50,45 +44,21 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
     
     
     @Override
-    public void init(FakeWeatherConfig config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
+        
+        // generate identifiers
+        if (config.serialNumber != null)
+        {
+            this.uniqueID = UID_PREFIX + config.serialNumber;
+            this.xmlID = "WEATHER_STATION_" + config.serialNumber.toUpperCase();
+        }
         
         // init main data interface
         dataInterface = new FakeWeatherOutput(this);
         addOutput(dataInterface, false);
         dataInterface.init();
-        
-        generateFoi();
-    }
-    
-    
-    @Override
-    public void updateConfig(FakeWeatherConfig config) throws SensorHubException
-    {
-        super.updateConfig(config);
-        generateFoi();
-    }
-    
-    
-    protected void generateFoi()
-    {
-        // create FoI
-        GMLFactory gml = new GMLFactory();
-        foi = new SamplingPoint();
-        foi.setUniqueIdentifier(UID_PREFIX + config.serialNumber + ":foi");
-        foi.setName("Weather Station Location");
-        Point p = gml.newPoint();
-        p.setSrsName(SWEConstants.REF_FRAME_4979);
-        p.setPos(new double[] {config.stationLat, config.stationLon, config.stationAlt});
-        foi.setShape(p);
-    }
-
-
-    @Override
-    public AbstractFeature getCurrentFeatureOfInterest()
-    {
-        return foi;
     }
 
 
@@ -98,9 +68,9 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            sensorDescription.setId("WEATHER_STATION");
-            sensorDescription.setUniqueIdentifier(UID_PREFIX + config.serialNumber);
-            sensorDescription.setDescription("Simulated weather station generating randomly increasing and decreasing measurements");
+            
+            if (!sensorDescription.isSetDescription())
+                sensorDescription.setDescription("Simulated weather station generating realistic pseudo-random measurements");
         }
     }
 

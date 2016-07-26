@@ -19,6 +19,7 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor;
 import org.sensorhub.api.sensor.SensorDataEvent;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import net.opengis.swe.v20.DataBlock;
@@ -34,12 +35,19 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     DataComponent weatherData;
     DataEncoding weatherEncoding;
     Timer timer;
+    Random rand = new Random();
+    
+    // reference values around which actual values vary
+    double tempRef = 20.0;
+    double pressRef = 1013.0;
+    double windSpeedRef = 5.0;
+    double directionRef = 0.0;
     
     // initialize then keep new values for each measurement
-    double temp = 26.0;
-    double pressure = 1013.0;
-    double speed = 4.5;
-    double direction = 60.5;
+    double temp = tempRef;
+    double press = pressRef;
+    double windSpeed = windSpeedRef;
+    double windDir = directionRef;
 
     
     public FakeWeatherOutput(FakeWeatherSensor parentSensor)
@@ -87,34 +95,45 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         // generate new weather values
         double time = System.currentTimeMillis() / 1000.;
         
-        // temperature; value will increase or decrease by less than 1.0 deg
-        temp += 0.005 * (2.0 *Math.random() - 1.0);
+        // temperature; value will increase or decrease by less than 0.1 deg
+        //temp += 0.005 * (2.0 *Math.random() - 1.0);
+        temp += variation(temp, tempRef, -0.001, 0.1);
         
         // pressure; value will increase or decrease by less than 20 hPa
-        pressure += 20. * (2.0 * Math.random() - 1.0);
+        //pressure += 20. * (2.0 * Math.random() - 1.0);
+        press += variation(press, pressRef, -0.001, 0.1);
         
         // wind speed; keep positive
         // vary value between +/- 10 m/s
-        speed += 10.0 * (2.0 * Math.random() - 1.0);
-        speed = speed < 0.0 ? 0.0 : speed; 
+        //speed += 10.0 * (2.0 * Math.random() - 1.0);
+        windSpeed += variation(windSpeed, windSpeedRef, -0.001, 0.1);
+        windSpeed = windSpeed < 0.0 ? 0.0 : windSpeed; 
         
         // wind direction; keep between 0 and 360 degrees
-        direction += 4.0 * (2.0 * Math.random() - 1.0);
-        direction = direction < 0.0 ? direction+360.0 : direction;
-        direction = direction > 360.0 ? direction-360.0 : direction;        
+        windDir += 1.0 * (2.0 * Math.random() - 1.0);
+        windDir = windDir < 0.0 ? windDir+360.0 : windDir;
+        windDir = windDir > 360.0 ? windDir-360.0 : windDir;
+        
+        parentSensor.getLogger().trace(String.format("temp=%5.2f, press=%4.2f, wind speed=%5.2f, wind dir=%3.1f", temp, press, windSpeed, windDir));
         
         // build and publish datablock
         DataBlock dataBlock = weatherData.createDataBlock();
         dataBlock.setDoubleValue(0, time);
         dataBlock.setDoubleValue(1, temp);
-        dataBlock.setDoubleValue(2, pressure);
-        dataBlock.setDoubleValue(3, speed);
-        dataBlock.setDoubleValue(4, direction);
+        dataBlock.setDoubleValue(2, press);
+        dataBlock.setDoubleValue(3, windSpeed);
+        dataBlock.setDoubleValue(4, windDir);
         
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();
         eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FakeWeatherOutput.this, dataBlock));        
+    }
+    
+    
+    private double variation(double val, double ref, double dampingCoef, double noiseSigma)
+    {
+        return -dampingCoef*(val - ref) + noiseSigma*rand.nextGaussian();
     }
 
 
