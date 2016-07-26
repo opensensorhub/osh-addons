@@ -47,7 +47,7 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
 {
 	static final Logger log = LoggerFactory.getLogger(AVLDriver.class);
 
-	static final String SENSOR_UID_PREFIX = "urn:osh:sensors:avl:";
+	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:avl:";
     
     Set<String> foiIDs;
     Map<String, AbstractFeature> vehicleFois;
@@ -62,9 +62,13 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
     
     
     @Override
-    public void init(AVLConfig config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
+        
+        // generate IDs
+        generateUniqueID(SENSOR_UID_PREFIX, config.fleetID);
+        generateXmlID("AVL_", config.fleetID);            
         
         // create foi maps
         this.foiIDs = new LinkedHashSet<String>();
@@ -83,8 +87,6 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            sensorDescription.setId("AVL-" + config.fleetID);
-            sensorDescription.setUniqueIdentifier(SENSOR_UID_PREFIX + config.fleetID);
             sensorDescription.setDescription("AVL data for " + config.agencyName);
         }
     }

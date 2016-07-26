@@ -38,9 +38,13 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
     
     
     @Override
-    public void init(FakeGpsConfig config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
+        
+        // generate IDs
+        generateUniqueID("urn:osh:sensor:simgps:", null);
+        generateXmlID("GPS_SENSOR_", null);
         
         // init main data interface
         dataInterface = new FakeGpsOutput(this);
@@ -55,8 +59,6 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            sensorDescription.setId("GPS_SENSOR");
-            sensorDescription.setUniqueIdentifier("urn:test:sensors:fakegps");
             sensorDescription.setDescription("Simulated GPS sensor generating data along random itineraries obtained using Google Direction API");
         }
     }

@@ -33,8 +33,6 @@ import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
  */
 public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
 {
-    private static final String UID_PREFIX = "urn:osh:sensor:simweather:";
-    
     FakeWeatherOutput dataInterface;
     
     
@@ -49,11 +47,8 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
         super.init();
         
         // generate identifiers
-        if (config.serialNumber != null)
-        {
-            this.uniqueID = UID_PREFIX + config.serialNumber;
-            this.xmlID = "WEATHER_STATION_" + config.serialNumber.toUpperCase();
-        }
+        generateUniqueID("urn:osh:sensor:simweather:", config.serialNumber);
+        generateXmlID("WEATHER_STATION_", config.serialNumber);
         
         // init main data interface
         dataInterface = new FakeWeatherOutput(this);

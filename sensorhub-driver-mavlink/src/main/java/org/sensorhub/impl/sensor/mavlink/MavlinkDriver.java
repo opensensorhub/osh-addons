@@ -91,11 +91,8 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
     public void init() throws SensorHubException
     {
         // generate identifiers
-        if (config.vehicleID != null)
-        {
-            this.uniqueID = "urn:osh:sensor:mavlink:" + config.vehicleID;
-            this.xmlID = "MAVLINK_SYSTEM_" + config.vehicleID;
-        }
+        generateUniqueID("urn:osh:sensor:mavlink:", config.vehicleID);
+        generateXmlID("MAVLINK_SYSTEM_", config.vehicleID);
         
         // create outputs depending on selected sentences
         if (config.activeMessages.contains(MsgTypes.GLOBAL_POSITION))

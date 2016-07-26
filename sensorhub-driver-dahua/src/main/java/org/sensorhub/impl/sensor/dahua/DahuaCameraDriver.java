@@ -166,8 +166,8 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
         connection.waitForConnection();
         
         // generate identifiers
-        this.uniqueID = "urn:dahua:cam:" + serialNumber;
-        this.xmlID = "DAHUA_CAM_" + serialNumber.toUpperCase();
+        generateUniqueID("urn:dahua:cam:", serialNumber);
+        generateXmlID("DAHUA_CAM_", serialNumber);
         
         // create I/O objects
         // video output

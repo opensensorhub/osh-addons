@@ -44,9 +44,13 @@ public class PwmServoActuators extends AbstractSensorModule<PwmServosConfig>
     
     
     @Override
-    public void init(PwmServosConfig config) throws SensorHubException
+    public void init() throws SensorHubException
     {
         super.init(config);
+        
+        // generate IDs
+        generateUniqueID("urn:osh:actuator:servos:", null);
+        generateXmlID("PWM_SERVOS_", null);      
         
         // create control inputs
     }
@@ -58,7 +62,6 @@ public class PwmServoActuators extends AbstractSensorModule<PwmServosConfig>
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            sensorDescription.setId("RPI_SERVOS");
             sensorDescription.setDescription("Adafruit PCA9685 16-channels PWM servo board");
         }
     }

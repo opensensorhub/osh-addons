@@ -18,12 +18,14 @@ import java.util.Arrays;
 import java.util.List;
 import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.sensor.SensorConfig;
 
 
 public class NMEAGpsConfig extends SensorConfig
 {    
     
+    @Required
     @DisplayInfo(desc="Sensor serial number (used as suffix to generate unique identifier URI)")
     public String serialNumber = null;
     

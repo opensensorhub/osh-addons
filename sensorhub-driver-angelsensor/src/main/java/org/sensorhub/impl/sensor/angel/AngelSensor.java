@@ -88,11 +88,13 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
 
 
     @Override
-    public void init(AngelSensorConfig config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
-        this.uniqueID = "urn:osh:angelsensor:" + config.btAddress;
-        this.xmlID = "ANGELSENSOR_" + config.btAddress.replace(':', '_');
+        super.init();
+        
+        // generate IDs
+        generateUniqueID("urn:osh:angelsensor:", config.btAddress);
+        generateXmlID("ANGEL_SENSOR_", config.btAddress);
 
         // create output interfaces
         healthOutput = new HealthMetricsOutput(this);

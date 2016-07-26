@@ -28,31 +28,35 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 public class PlumeSensor extends AbstractSensorModule<PlumeConfig>
 {
     PlumeOutput dataInterface;
-    static final String PLUME_UID = "urn:test:sensors:model:plume";
-    
+
+
     public PlumeSensor()
     {
     }
-    
+
+
     @Override
-	public void init(PlumeConfig config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
         
-        this.dataInterface = new PlumeOutput(this);        
+        // generate IDs
+        generateUniqueID("urn:osh:model:plume:", null);
+        generateXmlID("PLUME_MODEL_", null);
+
+        this.dataInterface = new PlumeOutput(this);
         addOutput(dataInterface, false);
-        dataInterface.init();        
+        dataInterface.init();
     }
-    
+
+
     @Override
     protected void updateSensorDescription()
     {
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            sensorDescription.setId("PLUME_MODEL");
-            sensorDescription.setUniqueIdentifier(PLUME_UID);
-            sensorDescription.setDescription("Sensor representing output from Lagrangian Plume Model");
+            sensorDescription.setDescription("Lagrangian Plume Model");
         }
     }
 
@@ -60,24 +64,24 @@ public class PlumeSensor extends AbstractSensorModule<PlumeConfig>
     @Override
     public void start() throws SensorHubException
     {
-        dataInterface.start();        
+        dataInterface.start();
     }
-    
+
 
     @Override
     public void stop() throws SensorHubException
     {
         dataInterface.stop();
     }
-    
+
 
     @Override
     public void cleanup() throws SensorHubException
     {
-       
+
     }
-    
-    
+
+
     @Override
     public boolean isConnected()
     {

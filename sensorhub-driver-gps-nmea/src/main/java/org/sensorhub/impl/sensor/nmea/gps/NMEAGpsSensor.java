@@ -56,19 +56,13 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
     
     
     @Override
-    public void init(NMEAGpsConfig config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
         
         // generate identifiers: use serial number from config or first characters of local ID
-        String sensorID = config.serialNumber;
-        if (sensorID == null)
-        {
-            int endIndex = Math.min(config.id.length(), 8);
-            sensorID = config.id.substring(0, endIndex);
-        } 
-        this.xmlID = "GPS_SENSOR_" + sensorID.toUpperCase();
-        this.uniqueID = "urn:osh:sensor:nmea-gps:" + sensorID;
+        generateUniqueID("urn:osh:sensor:nmea-gps:", config.serialNumber);
+        generateXmlID("GPS_SENSOR_", config.serialNumber);
         
         // create outputs depending on selected sentences
         if (config.activeSentences.contains(GLL_MSG) ||

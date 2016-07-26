@@ -81,19 +81,13 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
 
 
     @Override
-    public void init(Bno055Config config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
         
         // generate identifiers: use serial number from config or first characters of local ID
-        String sensorID = config.serialNumber;
-        if (sensorID == null)
-        {
-            int endIndex = Math.min(config.id.length(), 8);
-            sensorID = config.id.substring(0, endIndex);
-        }
-        this.uniqueID = "urn:bosch:bno055:" + sensorID;
-        this.xmlID = "BOSCH_BNO055_" + sensorID.toUpperCase();
+        generateUniqueID("urn:bosch:bno055:", config.serialNumber);
+        generateXmlID("BOSCH_BNO055_", config.serialNumber);
         
         // create main data interface
         dataInterface = new Bno055Output(this);

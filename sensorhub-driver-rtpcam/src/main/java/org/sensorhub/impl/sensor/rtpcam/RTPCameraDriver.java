@@ -46,6 +46,10 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
         super.init();
         dataInterface = null;
         
+        // generate identifiers
+        generateUniqueID("urn:osh:sensor:rtpcam:", config.cameraID);
+        generateXmlID("RTP_CAM_", config.cameraID);
+        
         // create connection handler
         this.connection = new RobustIPConnection(this, config.connection, "RTP Camera")
         {
@@ -55,13 +59,6 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
                 return tryConnectTCP(config.rtsp.remoteHost, config.rtsp.remotePort);
             }
         };
-        
-        // generate identifiers
-        if (config.cameraID != null)
-        {
-            this.uniqueID = "urn:osh:sensor:rtpcam:" + config.cameraID;
-            this.xmlID = "RTP_CAM_" + config.cameraID;
-        }
         
         // create video output
         this.dataInterface = new RTPVideoOutput<RTPCameraDriver>(this);

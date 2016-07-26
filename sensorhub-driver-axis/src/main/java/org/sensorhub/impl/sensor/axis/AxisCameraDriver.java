@@ -185,8 +185,8 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
         connection.waitForConnection();
         
         // generate identifiers
-        this.xmlID = "AXIS_CAMERA_" + serialNumber;
-        this.uniqueID = "urn:axis:cam:" + serialNumber;
+        generateUniqueID("urn:axis:cam:", serialNumber);
+        generateXmlID("AXIS_CAM_", serialNumber);
         
         // create I/O objects
         String videoOutName = "video";

@@ -24,8 +24,6 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
@@ -40,7 +38,6 @@ import org.vast.swe.helper.GeoPosHelper;
  */
 public class PlumeOutput extends AbstractSensorOutput<PlumeSensor>
 {
-	private static final Logger log = LoggerFactory.getLogger(PlumeOutput.class);
 	DataComponent plumeStep;
 	BinaryEncoding encoding;
 
@@ -140,7 +137,7 @@ public class PlumeOutput extends AbstractSensorOutput<PlumeSensor>
         				
         				latestRecord = dataBlock;
         				latestRecordTime = (long)step.getTime() * 1000;
-        				eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, PlumeSensor.PLUME_UID, PlumeOutput.this, latestRecord));
+        				eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, PlumeOutput.this, latestRecord));
         			}
         		}
         		catch (Exception e)
