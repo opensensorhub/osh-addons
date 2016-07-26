@@ -32,14 +32,18 @@ public class StationSensor extends AbstractSensorModule<StationConfig>
 //    StationDataPoller stationDataPoller;
     
     public StationSensor()
-    {   
+    {
     }
     
     
     @Override
-    public void init(StationConfig config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
+        
+        // generate IDs
+        this.uniqueID = "urn:osh:sensor:metar:network";
+        this.xmlID = "METAR_NETWORK";
         
         dataInterface = new StationOutput(this);
         addOutput(dataInterface, false);
@@ -53,7 +57,6 @@ public class StationSensor extends AbstractSensorModule<StationConfig>
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            sensorDescription.setUniqueIdentifier("urn:test:sensors:weather");
             sensorDescription.setDescription("Generic weather station");
         }
     }

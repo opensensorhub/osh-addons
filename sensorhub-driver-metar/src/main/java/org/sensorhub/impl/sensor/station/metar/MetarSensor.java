@@ -22,8 +22,8 @@ import org.vast.sensorML.SMLHelper;
 public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IMultiSourceDataProducer //extends StationSensor
 {
     static final Logger log = LoggerFactory.getLogger(MetarSensor.class);
-    static final String SENSOR_UID_PREFIX = "urn:test:sensors:weather:metar:";
-    static final String STATION_UID_PREFIX = SENSOR_UID_PREFIX + "station";
+    static final String SENSOR_UID_PREFIX = "urn:osh:sensor:metar:";
+    static final String STATION_UID_PREFIX = SENSOR_UID_PREFIX + "station:";
     
     Set<String> foiIDs;
     Map<String, PhysicalSystem> stationFois;
@@ -40,9 +40,13 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 	
 	
 	@Override
-	public void init(MetarConfig config) throws SensorHubException
+	public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
+        
+        // generate IDs
+        this.uniqueID = SENSOR_UID_PREFIX + "network";
+        this.xmlID = "METAR_NETWORK";
         
         this.metarInterface = new MetarOutput(this);        
         addOutput(metarInterface, false);
@@ -56,7 +60,6 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 		synchronized (sensorDescription)
 		{
 			super.updateSensorDescription();
-			sensorDescription.setUniqueIdentifier(SENSOR_UID_PREFIX + "network");
 			sensorDescription.setDescription("METAR weather station network");
 			
 			// append href to all stations composing the network
