@@ -259,7 +259,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             }            
         };
         
-        timer.scheduleAtFixedRate(task, 0, (long)(getAverageSamplingPeriod()*1000));        
+        timer.schedule(task, 0, (long)(getAverageSamplingPeriod()*1000));        
     }
 
 
