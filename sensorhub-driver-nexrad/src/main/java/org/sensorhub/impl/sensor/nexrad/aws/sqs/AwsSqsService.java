@@ -1,5 +1,6 @@
 package org.sensorhub.impl.sensor.nexrad.aws.sqs;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.amazonaws.auth.AWSCredentials;
@@ -8,6 +9,10 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.model.BatchResultErrorEntry;
+import com.amazonaws.services.sqs.model.DeleteMessageBatchRequest;
+import com.amazonaws.services.sqs.model.DeleteMessageBatchRequestEntry;
+import com.amazonaws.services.sqs.model.DeleteMessageBatchResult;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
@@ -33,6 +38,9 @@ public class AwsSqsService {
 		//  create sqs client
 		credentials = new ProfileCredentialsProvider().getCredentials();
 		sqs = new AmazonSQSClient(credentials);
+//		AmazonSQSAsync sqsAsync = new AmazonSQSAsyncClient (credentials ) ;
+//		sqs  = new AmazonSQSBufferedAsyncClient(sqsAsync);
+		
 		Region usEast1 = Region.getRegion(Regions.US_EAST_1);
 		Region usWest2 = Region.getRegion(Regions.US_WEST_2);
 		sqs.setRegion(usEast1);
@@ -49,6 +57,21 @@ public class AwsSqsService {
 	
 	public void deleteMessage(Message msg) {
 		sqs.deleteMessage(new DeleteMessageRequest(queueUrl, msg.getReceiptHandle()));
+	}
+	
+	public void deleteMessages(List<Message> messages) {
+		if(messages.size() == 0)
+			return;
+		List<DeleteMessageBatchRequestEntry> entries = new ArrayList<>();
+		for(Message message : messages){
+			DeleteMessageBatchRequestEntry entry = new DeleteMessageBatchRequestEntry(message.getMessageId(), message.getReceiptHandle());
+			entries.add(entry);
+		}
+		DeleteMessageBatchResult result = sqs.deleteMessageBatch(new DeleteMessageBatchRequest(queueUrl, entries));
+		List<BatchResultErrorEntry> failed = result.getFailed();
+		for(BatchResultErrorEntry entry: failed) {
+			System.err.println("Failed to delete: " + entry.getId() + " : " + entry.getCode());
+		}
 	}
 	
 	// Don't think we will need to call this

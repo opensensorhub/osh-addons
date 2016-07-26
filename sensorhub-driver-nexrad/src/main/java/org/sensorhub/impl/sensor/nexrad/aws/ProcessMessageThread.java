@@ -44,7 +44,7 @@ public class ProcessMessageThread implements Runnable {
 		for(Message msg: messages) {
 			String body = msg.getBody();
 			String chunkPath = AwsNexradUtil.getChunkPath(body);
-			String time = AwsNexradUtil.getEventTime(body);
+//			String time = AwsNexradUtil.getEventTime(body);
 			String site = chunkPath.substring(0, 4);
 //				System.err.println(site);
 			if(sitesToKeep.size() == 0 || sitesToKeep.contains(site)) {
@@ -53,9 +53,10 @@ public class ProcessMessageThread implements Runnable {
 				t.run();
 			}
 			
-			sqsService.deleteMessage(msg);
+//			sqsService.deleteMessage(msg);
 			
 		}
+		sqsService.deleteMessages(messages);
 	}
 	
 	public void addSite(String site) {

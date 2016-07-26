@@ -2,6 +2,8 @@ package org.sensorhub.impl.sensor.nexrad.aws;
 
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -20,6 +22,12 @@ import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.DeleteQueueRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 
 /**
  * <p>Title: AwsNexradUtil.java</p>
@@ -45,15 +53,11 @@ public class AwsNexradUtil {
 	public static final String dataBucketStr = "noaa-nexrad-level2";
 
 	public static long toJulianTime(long daysSince70, long msSinceMidnight) {
-//		return TimeUnit.DAYS.toMillis(daysSince70) + msSinceMidnight;
+		//		return TimeUnit.DAYS.toMillis(daysSince70) + msSinceMidnight;
 		return TimeUnit.DAYS.toMillis(daysSince70 - 1) + msSinceMidnight;
-		
+
 	}
-	
-	public static void main(String[] args) {
-		System.err.println(toJulianTime(16973L, 0));
-	}
-	
+
 	public static String getChunkPath(String message) {
 		//  Find instance of "key":
 		int keyIdx = message.indexOf("key\\\"");
@@ -62,10 +66,43 @@ public class AwsNexradUtil {
 		s = s.substring(startIdx + 5);
 		int stopIdx = s.indexOf("\\\"");
 		s = s.substring(0, stopIdx);
-		
+
 		return s;
 	}
-	
+
+	public static String getChunkPathJson(String message) {
+		//  Find instance of "key":
+		Gson gson = new Gson();
+
+		NexradMessage msg = gson.fromJson(message, NexradMessage.class); 
+		String s = msg.Message.replaceAll("\\\\","");
+		JsonParser parser = new JsonParser();
+		JsonObject jobject = (JsonObject) parser.parse(s);
+		JsonArray jarray =  jobject.getAsJsonArray("Records");
+
+		jobject = jarray.get(0).getAsJsonObject();
+		jobject = jobject.getAsJsonObject("s3");
+		jobject = jobject.getAsJsonObject("object");
+		JsonPrimitive prim = jobject.getAsJsonPrimitive("key");
+		String key = prim.getAsString();
+		return key;
+
+	}
+
+	class Records {
+		String eventVersion;
+		S3 s3;
+
+		class S3 {
+			String s3SchemaVersion;
+			S3Object object;
+
+			class S3Object {
+				String key;
+			}
+		}
+	}
+
 	public static String getEventTime(String message) {
 		//  Find instance of "key":
 		int keyIdx = message.indexOf("Time\\\"");
@@ -74,11 +111,27 @@ public class AwsNexradUtil {
 		s = s.substring(startIdx + 5);
 		int stopIdx = s.indexOf("\\\"");
 		s = s.substring(0, stopIdx);
-		
+
 		return s;
 	}
-	
-	
+
+
+	public static void main(String[] args) throws Exception {
+
+		String s = new String(Files.readAllBytes(Paths.get("C:/Users/tcook/root/sensorHub/doppler/awsMessage.json")));
+
+		long t1 = System.currentTimeMillis();
+		for(int i=0; i<10000; i++) {
+//			String key = getChunkPathIndexOf(s);
+			String key = getChunkPath(s);
+			if (i%1000==0)
+				System.err.println(i);
+		}
+
+		long t2 = System.currentTimeMillis();
+		System.err.println(t2 - t1);
+	}
+
 	public static void main_(String[] args) throws IOException, InterruptedException {
 		AWSCredentials credentials = null;
 		try {
@@ -97,16 +150,16 @@ public class AwsNexradUtil {
 		sqs.setRegion(usWest2);
 
 		try {
-//			ListQueuesResult r = sqs.listQueues();
-//			System.err.println(r.toString());
-//			GetQueueAttributesRequest qar = new GetQueueAttributesRequest(queueUrl);
+			//			ListQueuesResult r = sqs.listQueues();
+			//			System.err.println(r.toString());
+			//			GetQueueAttributesRequest qar = new GetQueueAttributesRequest(queueUrl);
 			// Create a queue
 			System.out.println("Creating a new SQS queue.\n");
 			CreateQueueRequest createQueueRequest = new CreateQueueRequest("NexradQueueTest");
 			String myQueueUrl = sqs.createQueue(createQueueRequest).getQueueUrl();
 			//			sqs.
 			String topicArn = "arn:aws:sns:us-east-1:684042711724:NewNEXRADLevel2Object";
-//			String topicArn = "arn:aws:sns:us-east-1:811054952067:NewNEXRADLevel2Archive";
+			//			String topicArn = "arn:aws:sns:us-east-1:811054952067:NewNEXRADLevel2Archive";
 			Topics.subscribeQueue(sns, sqs, topicArn, myQueueUrl);
 
 			// Receive messages
@@ -117,30 +170,30 @@ public class AwsNexradUtil {
 						withWaitTimeSeconds(0).withMaxNumberOfMessages(10);
 				List<Message> messages = sqs.receiveMessage(receiveMessageRequest).getMessages();
 				for (Message message : messages) {
-//					System.out.println("  Message");
-//					System.out.println("    MessageId:     " + message.getMessageId());
-//					System.out.println("    ReceiptHandle: " + message.getReceiptHandle());
-//					System.out.println("    MD5OfBody:     " + message.getMD5OfBody());
-//					System.out.println("    Body:          " + message.getBody());
+					//					System.out.println("  Message");
+					//					System.out.println("    MessageId:     " + message.getMessageId());
+					//					System.out.println("    ReceiptHandle: " + message.getReceiptHandle());
+					//					System.out.println("    MD5OfBody:     " + message.getMD5OfBody());
+					//					System.out.println("    Body:          " + message.getBody());
 					String body = message.getBody();
 					String path = getChunkPath(body);
 					String time = getEventTime(body);
-//					if(path.contains("KLGX"))
+					//					if(path.contains("KLGX"))
 					System.err.println(path);
 					//					for (Entry<String, String> entry : message.getAttributes().entrySet()) {
-//						System.out.println("  Attribute");
-//						System.out.println("    Name:  " + entry.getKey());
-//						System.out.println("    Value: " + entry.getValue());
-//					}
-//					MessageAttributeValue val = message.getMessageAttributes().get("key");
-//					System.err.println(val.getStringValue());
+					//						System.out.println("  Attribute");
+					//						System.out.println("    Name:  " + entry.getKey());
+					//						System.out.println("    Value: " + entry.getValue());
+					//					}
+					//					MessageAttributeValue val = message.getMessageAttributes().get("key");
+					//					System.err.println(val.getStringValue());
 					// delete message
 					sqs.deleteMessage(new DeleteMessageRequest(myQueueUrl, message.getReceiptHandle()));
 				}
 				System.out.println("NumMsgs = " + messages.size());
-			
-//				Thread.sleep(100L);
-				
+
+				//				Thread.sleep(100L);
+
 			}
 			//  destory queue 
 			if (sqs != null && myQueueUrl != null) {
