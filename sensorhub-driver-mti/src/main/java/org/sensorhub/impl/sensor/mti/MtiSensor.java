@@ -50,10 +50,14 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
 
 
     @Override
-    public void init(MtiConfig config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
         
+        // generate IDs
+        generateUniqueID("urn:xsens:imu:mti:", null);
+        generateXmlID("XSENS_IMU_", null);
+                
         // create main data interface
         dataInterface = new MtiOutput(this);
         addOutput(dataInterface, false);
@@ -69,7 +73,6 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
             super.updateSensorDescription();
             
             SMLFactory smlFac = new SMLFactory();
-            sensorDescription.setId("XSens_MTi");
             sensorDescription.setDescription("XSens MTi Inertial Motion Unit");
             
             IdentifierList identifiers = smlFac.newIdentifierList();

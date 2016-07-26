@@ -63,9 +63,13 @@ public class VN200Sensor extends AbstractSensorModule<VN200Config>
 
 
     @Override
-    public void init(VN200Config config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
+        
+        // generate IDs
+        generateUniqueID("urn:vectornav:imu:", null);
+        generateXmlID("VNAV_INS_", null);
         
         // create data interfaces
         quatOutput = new VN200QuatOutput(this, config.attSamplingFactor / BASE_FREQ);
@@ -86,7 +90,6 @@ public class VN200Sensor extends AbstractSensorModule<VN200Config>
             super.updateSensorDescription();
             
             SMLFactory smlFac = new SMLFactory();
-            sensorDescription.setId("VNAV_INS");
             sensorDescription.setDescription("VectorNav VN200 GPS Aided Inertial Navigation System");
             
             ClassifierList classif = smlFac.newClassifierList();

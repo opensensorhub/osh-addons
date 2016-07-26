@@ -48,9 +48,13 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
     
     
     @Override
-    public void init(TruPulseConfig config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
+        
+        // generate identifiers: use serial number from config or first characters of local ID
+        generateUniqueID("urn:lasertech:trupulse360:", config.serialNumber);
+        generateXmlID("TRUPULSE_", config.serialNumber);
         
         // init main data interface
         dataInterface = new TruPulseOutput(this);
@@ -65,8 +69,6 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            sensorDescription.setId("TruPulse");
-            sensorDescription.setUniqueIdentifier("urn:test:sensors:trupulse360");
             sensorDescription.setDescription("Laser RangeFinder for determining distance, inclination, and azimuth");
         }
     }
