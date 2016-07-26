@@ -67,15 +67,9 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     {
         super.init();
         
-        // generate identifiers: use serial number from config or first characters of local ID
-        String sensorID = config.serialNumber;
-        if (sensorID == null)
-        {
-            int endIndex = Math.min(config.id.length(), 8);
-            sensorID = config.id.substring(0, endIndex);
-        }
-        this.xmlID = "V4L_CAMERA_" + sensorID.toUpperCase();
-        this.uniqueID = "urn:osh:sensor:v4l-cam:" + sensorID;
+        // generate IDs
+        generateUniqueID("urn:osh:sensor:v4l-cam:", config.serialNumber);
+        generateXmlID("V4L_CAMERA_", config.serialNumber);
         
         // create data and control interfaces
         this.dataInterface = new V4LCameraOutputRGB(this);

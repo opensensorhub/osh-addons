@@ -14,11 +14,17 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fakecam;
 
+import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.sensor.SensorConfig;
 
 
 public class FakeCamConfig extends SensorConfig
 {
+    @Required
+    public String cameraID = "cam0";
     
-    public String videoFilePath; // path of file cotnaining video data to be streamed
+    @Required
+    @DisplayInfo(desc="Path of file containing video data to be streamed")
+    public String videoFilePath;
 }

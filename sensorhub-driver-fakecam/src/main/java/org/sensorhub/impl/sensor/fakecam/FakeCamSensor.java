@@ -39,10 +39,15 @@ public class FakeCamSensor extends AbstractSensorModule<FakeCamConfig>
     
     
     @Override
-    public void init(FakeCamConfig config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
         
+        // generate IDs
+        generateUniqueID("urn:osh:sensor:simcam:", config.cameraID);
+        generateXmlID("VIDEO_CAM_", config.cameraID);       
+        
+        // create output
         dataInterface = new FakeCamOutput(this);
         addOutput(dataInterface, false);
         dataInterface.init();
@@ -55,8 +60,6 @@ public class FakeCamSensor extends AbstractSensorModule<FakeCamConfig>
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            sensorDescription.setId("VIDEO_CAM");
-            sensorDescription.setUniqueIdentifier("urn:test:sensors:fakecam");
             sensorDescription.setDescription("Fake camera sensor generating data read from a static video file");
         }
     }
