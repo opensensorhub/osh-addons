@@ -232,9 +232,9 @@ public class IpCommNetwork extends AbstractModule<IpNetworkConfig> implements IC
 
 
     @Override
-    public void init(IpNetworkConfig config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
         
         // use first interface by default if none is specified
         if (config.networkInterface == null)
