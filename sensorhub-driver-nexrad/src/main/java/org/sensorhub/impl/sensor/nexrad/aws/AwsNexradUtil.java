@@ -24,7 +24,6 @@ import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
@@ -87,6 +86,11 @@ public class AwsNexradUtil {
 		String key = prim.getAsString();
 		return key;
 
+	}
+	
+	class NexradMessage {
+		String Message;
+		String Type;
 	}
 
 	class Records {
