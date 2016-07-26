@@ -63,9 +63,9 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     
     
     @Override
-    public void init(V4LCameraConfig config) throws SensorHubException
+    public void init() throws SensorHubException
     {
-        super.init(config);
+        super.init();
         
         // generate identifiers: use serial number from config or first characters of local ID
         String sensorID = config.serialNumber;
