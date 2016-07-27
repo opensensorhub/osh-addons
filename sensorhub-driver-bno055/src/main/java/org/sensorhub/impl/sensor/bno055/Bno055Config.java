@@ -17,7 +17,6 @@ package org.sensorhub.impl.sensor.bno055;
 import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
-import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig;
 
 
 public class Bno055Config extends SensorConfig
@@ -34,11 +33,5 @@ public class Bno055Config extends SensorConfig
     public Bno055Config()
     {
         this.moduleClass = Bno055Sensor.class.getCanonicalName();
-        
-        // default serial port settings
-        RxtxSerialCommProviderConfig serialConf = new RxtxSerialCommProviderConfig();
-        serialConf.protocol.portName = "/dev/ttyUSB0";
-        serialConf.protocol.baudRate = 115200;
-        this.commSettings = serialConf;
     }
 }
