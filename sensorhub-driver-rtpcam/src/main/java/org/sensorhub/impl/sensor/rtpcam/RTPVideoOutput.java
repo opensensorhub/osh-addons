@@ -233,6 +233,8 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
             {
                 if (rtspClient.isConnected())
                     rtspClient.teardown();
+                else
+                    rtspClient.close(); // just close the socket
                 rtspClient = null;
             }
         }
