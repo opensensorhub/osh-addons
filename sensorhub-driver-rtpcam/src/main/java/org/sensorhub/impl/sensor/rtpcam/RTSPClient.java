@@ -415,4 +415,11 @@ public class RTSPClient
     {
         return mediaStreams;
     }
+    
+    
+    public void close() throws IOException
+    {
+        if (rtspSocket != null && rtspSocket.isConnected())
+            rtspSocket.close();
+    }
 }
