@@ -50,9 +50,15 @@ public class AwsSqsService {
 	
 	public List<Message> receiveMessages() {
 		ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(queueUrl).
-				withWaitTimeSeconds(0).withMaxNumberOfMessages(10);
-		List<Message> messages = sqs.receiveMessage(receiveMessageRequest).getMessages();
-		return messages;
+				withMaxNumberOfMessages(10); //withWaitTimeSeconds(1).
+		try {
+			List<Message> messages = sqs.receiveMessage(receiveMessageRequest).getMessages();
+			return messages;
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new ArrayList<Message>();
+		}
 	}
 	
 	public void deleteMessage(Message msg) {

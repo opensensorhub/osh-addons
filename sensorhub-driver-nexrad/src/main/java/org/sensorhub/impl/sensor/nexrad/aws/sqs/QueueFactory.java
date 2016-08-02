@@ -47,7 +47,7 @@ public class QueueFactory
 	public static void main(String[] args) {
 		listQueues();
 		
-		deleteQueue("https://sqs.us-west-2.amazonaws.com/384286541835/NexradQueue_SensorHub_029");
+		deleteQueue("https://sqs.us-west-2.amazonaws.com/384286541835/NexradQueue_SensorHub_00011");
 	}
 	
 	public static void listQueues() {

@@ -1,9 +1,13 @@
 package org.sensorhub.impl.sensor.nexrad.aws;
 
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -13,6 +17,10 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.util.Topics;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -49,10 +57,11 @@ import com.google.gson.JsonPrimitive;
 public class AwsNexradUtil {
 	public static final String AWS_NEXRAD_URL = "http://noaa-nexrad-level2.s3.amazonaws.com/";
 	public static final String REALTIME_AWS_NEXRAD_URL = "http://unidata-nexrad-level2-chunks.s3.amazonaws.com/";
-	public static final String dataBucketStr = "noaa-nexrad-level2";
+//	public static final String BUCKET_NAME = "noaa-nexrad-level2";
+	public static final String BUCKET_NAME = "unidata-nexrad-level2-chunks";
+
 
 	public static long toJulianTime(long daysSince70, long msSinceMidnight) {
-		//		return TimeUnit.DAYS.toMillis(daysSince70) + msSinceMidnight;
 		return TimeUnit.DAYS.toMillis(daysSince70 - 1) + msSinceMidnight;
 
 	}
@@ -88,6 +97,23 @@ public class AwsNexradUtil {
 
 	}
 	
+	public static S3Object getChunk(AmazonS3Client s3client, String bucketName, String chunkPath) {
+		return s3client.getObject(new GetObjectRequest(bucketName, chunkPath));
+	}
+	
+	public static void dumpChunkToFile(S3Object chunk, Path pout) throws IOException {
+		S3ObjectInputStream s3is = chunk.getObjectContent();
+		BufferedInputStream is = new BufferedInputStream(s3is, 8192);
+		try(BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(pout.toFile()))) {
+			byte [] b = new byte[8192];
+			while(true) {
+				int numBytes = is.read(b);
+				if(numBytes == -1)  break;
+				os.write(b,0, numBytes);
+			}
+		}
+	}
+	
 	class NexradMessage {
 		String Message;
 		String Type;
@@ -119,21 +145,13 @@ public class AwsNexradUtil {
 		return s;
 	}
 
+	
 
 	public static void main(String[] args) throws Exception {
-
-		String s = new String(Files.readAllBytes(Paths.get("C:/Users/tcook/root/sensorHub/doppler/awsMessage.json")));
-
-		long t1 = System.currentTimeMillis();
-		for(int i=0; i<10000; i++) {
-//			String key = getChunkPathIndexOf(s);
-			String key = getChunkPath(s);
-			if (i%1000==0)
-				System.err.println(i);
-		}
-
-		long t2 = System.currentTimeMillis();
-		System.err.println(t2 - t1);
+		List<String> sites = new ArrayList<>();
+		sites.add("KEWX");
+		NexradSqsService nexradSqs = new NexradSqsService("NexradQueueTemp", sites);
+		nexradSqs.start();
 	}
 
 	public static void main_(String[] args) throws IOException, InterruptedException {

@@ -1,5 +1,6 @@
 package org.sensorhub.impl.sensor.nexrad.aws;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,8 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 
 /**
  * <p>Title: LdmLevel2Reader.java</p>
@@ -23,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * @author T
  * @date Mar 9, 2016
  */
-public class LdmLevel2Reader 
+public class LdmLevel2Reader implements ChunkHandler
 {
 	byte [] b2 = new byte[2];
 	byte [] b4 = new byte[4];
@@ -55,9 +60,10 @@ public class LdmLevel2Reader
 
 	private InputStream getInputStream(File f) throws FileNotFoundException {
 		int tries = 0;
-		while(tries++ < 5) {
+		while(tries++ < 10) {
 			try {
-				InputStream is = new FileInputStream(f);
+				InputStream is = new BufferedInputStream(new FileInputStream(f));
+//				InputStream is = (new FileInputStream(f));
 				return is;
 			} catch (FileNotFoundException e) {
 				try {
@@ -393,5 +399,32 @@ public class LdmLevel2Reader
 		//		for(LdmRadial r: rads)
 		//			System.err.println(rads.size());
 
+	}
+
+	//  TODO Remove after testing
+	public List<LdmRadial> read(String key, InputStream is) throws FileNotFoundException, IOException {
+			if(key.endsWith("S")) {
+				VolumeHeader hdr = readVolumeHeader(is);
+				System.err.println(hdr);
+				readMetadataRecord(is);
+			} else if (key.endsWith("I")) {
+				List<LdmRadial> radials = readMessage31(is);
+				return radials;
+
+			} else if (key.endsWith("E")) {
+				List<LdmRadial> radials = readMessage31(is);
+				return radials;
+			}
+
+		return null;
+	}
+	
+	//  TODO Remove after testing
+	@Override
+	public void handleChunk(S3Object s3object) throws IOException {
+		String key = s3object.getKey();
+		try(S3ObjectInputStream is = s3object.getObjectContent()) {
+			List<LdmRadial> radials = read(key, is);
+		}
 	}
 }
