@@ -25,7 +25,45 @@ public class VaisalaWeatherOutput extends AbstractSensorOutput<VaisalaWeatherSen
     BufferedReader reader;
     BufferedWriter writer;
     volatile boolean started;
-	
+    String token = null;
+    int cnt;
+    
+    VaisalaWeatherSensor flags = new VaisalaWeatherSensor();
+    /********************* Wind Measurement Flags ********************/
+    boolean DnFlag = flags.getDn(); // Direction Minimum
+    boolean DmFlag = flags.getDm(); // Direction Average
+    boolean DxFlag = flags.getDx(); // Direction Maximum
+    boolean SnFlag = flags.getSn(); // Speed Minimum
+    boolean SmFlag = flags.getSm(); // Speed Average
+    boolean SxFlag = flags.getSx(); // Speed Maximum
+    /*****************************************************************/
+    
+    /********************* PTU Measurement Flags *********************/
+    boolean PaFlag = flags.getPa(); // Air Pressure
+    boolean TaFlag = flags.getTa(); // Air Temperature
+    boolean TpFlag = flags.getTp(); // Internal Temperature
+    boolean UaFlag = flags.getUa(); // Air Humidity
+    /*****************************************************************/
+    
+    /******************* Precip Measurement Flags ********************/
+    boolean RcFlag = flags.getRc(); // Rain Amount
+    boolean RdFlag = flags.getRd(); // Rain Duration
+    boolean RiFlag = flags.getRi(); // Rain Intensity
+    boolean HcFlag = flags.getHc(); // Hail Amount
+    boolean HdFlag = flags.getHd(); // Hail Duration
+    boolean HiFlag = flags.getHi(); // Hail Intensity
+    boolean RpFlag = flags.getRp(); // Rain Peak
+    boolean HpFlag = flags.getHp(); // Hail Peak
+    /*****************************************************************/
+    
+    /***************** Supervisor Measurement Flags ******************/
+    boolean ThFlag = flags.getTh(); // Heating Temperature
+    boolean VhFlag = flags.getVh(); // Heating Voltage
+    boolean VsFlag = flags.getVs(); // Supply Voltage
+    boolean VrFlag = flags.getVr(); // Reference Voltage
+    boolean IdFlag = flags.getId(); // Information Field
+    /*****************************************************************/
+    
     public VaisalaWeatherOutput(VaisalaWeatherSensor parentSensor)
     {
         super(parentSensor);
@@ -127,17 +165,20 @@ public class VaisalaWeatherOutput extends AbstractSensorOutput<VaisalaWeatherSen
             
             /*********************************** Build and Publish dataBlock ****************************************/
             DataBlock dataBlock = weatherData.createDataBlock();
-            int cnt = 0;
+            cnt = 0;
             while(st.hasMoreTokens())
             {
-            	// Check Message Type for Composite Type Identifier (0R0)
-            	String temp = st.nextToken();
-            	if (cnt == 0 && !"0R0".equals(temp))
+            	// Get next token
+            	token = st.nextToken();
+            	
+            	// Compare last two characters of first token to expected message type indicator
+            	// In this case, the expected indicator is of type aR0
+            	if (cnt == 0 && !token.substring(token.length()-2, token.length()).equals("R0"))
             	{
-            		System.err.println("Message type = " + temp + ", Looking for type 0R0");
+            		System.err.println("Message type = " + token + ", Looking for type aR0");
             		return;
             	}
-                dataBlock.setDoubleValue(cnt, Double.parseDouble(temp.replaceAll("[^0-9.]", "")));
+                dataBlock.setDoubleValue(cnt, Double.parseDouble(token.replaceAll("[^0-9.]", "")));
                 cnt ++;
             }
             
