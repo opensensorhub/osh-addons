@@ -28,7 +28,7 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
  * @author T
  * @date Mar 9, 2016
  */
-public class LdmLevel2Reader implements ChunkHandler
+public class LdmLevel2Reader 
 {
 	byte [] b2 = new byte[2];
 	byte [] b4 = new byte[4];
@@ -417,14 +417,5 @@ public class LdmLevel2Reader implements ChunkHandler
 			}
 
 		return null;
-	}
-	
-	//  TODO Remove after testing
-	@Override
-	public void handleChunk(S3Object s3object) throws IOException {
-		String key = s3object.getKey();
-		try(S3ObjectInputStream is = s3object.getObjectContent()) {
-			List<LdmRadial> radials = read(key, is);
-		}
 	}
 }

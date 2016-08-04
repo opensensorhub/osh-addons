@@ -26,32 +26,23 @@ import com.amazonaws.services.s3.model.S3Object;
  */
 public class NexradSqsService
 {
-	// allow to be configurable
 	private int numThreads = 4;  // config can and usually should override this
 	static final String topicArn = "arn:aws:sns:us-east-1:684042711724:NewNEXRADLevel2Object";
 	private String queueName;
 	private List<String> sites;
 	private AwsSqsService sqsService;
 	private ExecutorService execService;
-	ChunkPathQueue chunkQueue;  // local queue of filenames on disk
-	//	private String outputPath;
+	ChunkPathQueue chunkQueue;  // local queue of filenames on disk- NexradSensor creates and passes this in- a bit clumsy so revisit later
 
-	//  S3 Client needs to be created only once- doing it here for now
+	//  S3 Client needs to be created only once
 	private AmazonS3Client s3client;
 
 
 	public NexradSqsService(String queueName, List<String> sites) throws IOException {
 		this.sites = sites;
-//		this.numThreads = numThreads;
-		//		this.outputPath = outputPath;
 		this.queueName = queueName;
 
 		createS3Client();
-//		try {
-//			chunkQueue = new ChunkPathQueue(Paths.get(outputPath, sites.get(0)));
-//		} catch (IOException e) {
-//			throw e;
-//		}
 	}
 
 	private void createS3Client() {
@@ -68,6 +59,7 @@ public class NexradSqsService
 	}
 
 	public void start() {
+		assert chunkQueue != null;
 		String queueUrl  = QueueFactory.createAndSubscribeQueue(topicArn, queueName);
 
 		execService = Executors.newFixedThreadPool(numThreads);
@@ -83,16 +75,8 @@ public class NexradSqsService
 		QueueFactory.deleteQueue(queueName);
 	}
 
-	public static void dumpChunkToFile(S3Object chunk, Path pout) throws IOException {
-		AwsNexradUtil.dumpChunkToFile(chunk, pout);
-	}
-	
 	public AmazonS3Client getS3client() {
 		return s3client;
-	}
-
-	public ChunkPathQueue getChunkQueue() {
-		return chunkQueue;
 	}
 
 	public void setNumThreads(int numThreads) {
