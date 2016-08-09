@@ -26,7 +26,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IDataProducerModule;
 import org.sensorhub.api.data.IStreamingDataInterface;
-import org.sensorhub.impl.common.EventBus;
+import org.sensorhub.impl.SensorHub;
 import org.vast.data.TextEncodingImpl;
 import org.vast.ows.OWSException;
 import org.vast.ows.sps.DescribeTaskingRequest;
@@ -79,7 +79,7 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
         // obtain an event handler for this output
         String moduleID = parentProcess.getLocalID();
         String topic = getName();
-        this.eventHandler = EventBus.getInstance().registerProducer(moduleID, topic);
+        this.eventHandler = SensorHub.getInstance().getEventBus().registerProducer(moduleID, topic);
     }
     
     

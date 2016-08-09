@@ -24,7 +24,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IDataProducerModule;
 import org.sensorhub.api.data.IStreamingDataInterface;
-import org.sensorhub.impl.common.EventBus;
+import org.sensorhub.impl.SensorHub;
 import org.vast.physics.MechanicalState;
 import org.vast.physics.OrbitPredictor;
 import org.vast.physics.TLEOrbitPredictor;
@@ -80,7 +80,7 @@ public class SatelliteStateOutput implements IStreamingDataInterface
         // obtain an event handler for this output
         String moduleID = parentProcess.getLocalID();
         String topic = getName();
-        this.eventHandler = EventBus.getInstance().registerProducer(moduleID, topic);
+        this.eventHandler = SensorHub.getInstance().getEventBus().registerProducer(moduleID, topic);
     }
     
     

@@ -22,7 +22,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IDataProducerModule;
 import org.sensorhub.api.data.IStreamingDataInterface;
-import org.sensorhub.impl.common.EventBus;
+import org.sensorhub.impl.SensorHub;
 import org.vast.physics.TLEInfo;
 import org.vast.physics.TLEProvider;
 import org.vast.swe.SWEHelper;
@@ -77,7 +77,7 @@ public class TLEOutput implements IStreamingDataInterface, TLEProvider
         // obtain an event handler for this output
         String moduleID = parentProcess.getLocalID();
         String topic = getName();
-        this.eventHandler = EventBus.getInstance().registerProducer(moduleID, topic);
+        this.eventHandler = SensorHub.getInstance().getEventBus().registerProducer(moduleID, topic);
     }
     
     
