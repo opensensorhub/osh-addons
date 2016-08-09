@@ -191,8 +191,12 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
             setTelemetryRates();
             setGeofenceParams();
             setDefaultNavParams();
-            getLogger().info("Switching to GUIDED mode");
-            setMode(CopterModes.GUIDED.ordinal());
+            
+            if (!config.activeCommands.isEmpty())
+            {
+                getLogger().info("Switching to GUIDED mode");
+                setMode(CopterModes.GUIDED.ordinal());
+            }
         }
         catch (Exception e)
         {
