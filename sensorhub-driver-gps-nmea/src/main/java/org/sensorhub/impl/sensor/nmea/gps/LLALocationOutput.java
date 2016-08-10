@@ -124,7 +124,7 @@ public class LLALocationOutput extends NMEAGpsOutput
             // skip if data is marked as invalid
             if (tokens[2].charAt(0) != 'A')
             {
-                log.debug("RMC: Invalid Data");
+                log.debug("RMC: No position fix");
                 return;
             }
             

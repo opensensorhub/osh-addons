@@ -19,6 +19,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
@@ -47,6 +48,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
     BufferedReader reader;
     volatile boolean started;
     
+    HashSet<String> activeMessages = new HashSet<String>();
     double lastFixUtcTime = Double.NaN;
     
     
@@ -87,6 +89,8 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             addOutput(dataInterface, false);
             dataInterface.init();
         }
+        
+        this.activeMessages.addAll(config.activeSentences);
     }
     
     
@@ -177,7 +181,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             // discard messages not starting with $ or with wrong checksum
             if (msg.charAt(0) != '$' || !validateChecksum(msg))
             {
-                getLogger().warn("Skipping invalid message");
+                getLogger().warn("Skipping invalid message: {}", msg);
                 return;
             }
             
@@ -186,10 +190,13 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             String msgID = msg.substring(3, firstSep);
             
             // let each registered output handle this message
-            for (ISensorDataInterface output: this.getAllOutputs().values())
+            if (activeMessages.contains(msgID))
             {
-                NMEAGpsOutput nmeaOut = (NMEAGpsOutput)output;
-                nmeaOut.handleMessage(msgTime, msgID, msg);
+                for (ISensorDataInterface output: this.getAllOutputs().values())
+                {
+                    NMEAGpsOutput nmeaOut = (NMEAGpsOutput)output;
+                    nmeaOut.handleMessage(msgTime, msgID, msg);
+                }
             }
         }
         catch (EOFException e)
