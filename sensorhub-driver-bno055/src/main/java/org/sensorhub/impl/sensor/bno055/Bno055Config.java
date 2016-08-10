@@ -16,12 +16,14 @@ package org.sensorhub.impl.sensor.bno055;
 
 import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.sensor.SensorConfig;
 
 
 public class Bno055Config extends SensorConfig
 {
     
+    @Required
     @DisplayInfo(desc="Sensor serial number (used as suffix to generate unique identifier URI)")
     public String serialNumber = null;
     
