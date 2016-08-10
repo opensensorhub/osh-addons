@@ -86,9 +86,10 @@ public class LLALocationOutput extends NMEAGpsOutput
         DataBlock dataBlock = null;
                 
         // init with system date if no GNSS message has been received for a while
+        // this is needed to properly compute unix time of messages that contain only the time of day
         double now = System.currentTimeMillis() / 1000.;
-        if (Double.isNaN(lastFixUtcDateTime) || (now - lastFixUtcDateTime) > 3600.0)
-            setLastFixUtcDateTime(now - 3600.);
+        if (Double.isNaN(lastFixUtcDateTime) || (now - lastFixUtcDateTime) > 600.0)
+            lastFixUtcDateTime = now;
         
         // process different message types
         if (msgID.equals(NMEAGpsSensor.GGA_MSG))
@@ -127,44 +128,17 @@ public class LLALocationOutput extends NMEAGpsOutput
                 return;
             }
             
-            String utcTimeToken = tokens[1];
-            double fixTime = toJulianTime(utcTimeToken, tokens[9]);
-            
             // skip if location was already processed
+            String utcTimeToken = tokens[1];
             double utcTime = Double.parseDouble(utcTimeToken);
             if (utcTime == lastFixUtcTimeValue)
                 return;
             
             // populate datablock
             dataBlock = getNewDataBlock();
-            dataBlock.setDoubleValue(0, fixTime);
+            dataBlock.setDoubleValue(0, toJulianTime(utcTimeToken, tokens[9]));
             dataBlock.setDoubleValue(1, toDecimalDegrees(tokens[3], tokens[4], false)); // lat
             dataBlock.setDoubleValue(2, toDecimalDegrees(tokens[5], tokens[6], true)); // lon 
-            dataBlock.setDoubleValue(3, Double.NaN); // alt
-        }
-        
-        else if (msgID.equals(NMEAGpsSensor.GLL_MSG))
-        {
-            String[] tokens = msg.split(NMEA_SEP_REGEX);
-            
-            // skip if data is marked as invalid
-            if (tokens[6].charAt(0) != 'A')
-            {
-                log.debug("GLL: Invalid Data");
-                return;
-            }
-            
-            // skip if location was already processed for this fix time
-            String utcTimeToken = tokens[5];
-            double utcTime = Double.parseDouble(utcTimeToken);
-            if (utcTime == lastFixUtcTimeValue)
-                return;
-            
-            // populate datablock
-            dataBlock = getNewDataBlock();
-            dataBlock.setDoubleValue(0, toJulianTime(utcTimeToken));
-            dataBlock.setDoubleValue(1, toDecimalDegrees(tokens[1], tokens[2], false)); // lat
-            dataBlock.setDoubleValue(2, toDecimalDegrees(tokens[3], tokens[4], true)); // lon
             dataBlock.setDoubleValue(3, Double.NaN); // alt
         }
         
@@ -258,8 +232,8 @@ public class LLALocationOutput extends NMEAGpsOutput
         // log date of first fix or all
         if (Double.isNaN(lastFixUtcDateTime))
             log.info("First GPS Fix on {}", new DateTimeFormat().formatIso(fixDateTime, 0));
-        else if (log.isDebugEnabled())
-            log.debug("GPS Fix on {}", new DateTimeFormat().formatIso(fixDateTime, 0));
+        else if (log.isTraceEnabled())
+            log.trace("GPS Fix on {}", new DateTimeFormat().formatIso(fixDateTime, 0));
         
         lastFixUtcDateTime = fixDateTime;
         parentSensor.lastFixUtcTime = lastFixUtcDateTime;

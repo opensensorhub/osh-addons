@@ -132,7 +132,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
         try
         {
             reader = new BufferedReader(new InputStreamReader(commProvider.getInputStream(), StandardCharsets.US_ASCII));
-            getLogger().debug("Connected to NMEA data stream");
+            getLogger().info("Connected to NMEA data stream");
         }
         catch (IOException e)
         {
@@ -172,12 +172,12 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             if (msg == null)
                 return;            
             
-            getLogger().debug("Received message: {}", msg);
+            getLogger().trace("Received message: {}", msg);
             
             // discard messages not starting with $ or with wrong checksum
             if (msg.charAt(0) != '$' || !validateChecksum(msg))
             {
-                getLogger().debug("Skipping invalid message");
+                getLogger().warn("Skipping invalid message");
                 return;
             }
             
