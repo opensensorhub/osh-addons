@@ -95,12 +95,8 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
         synchronized (sensorDescription)
         {
             super.updateSensorDescription();
-            
-            if (AbstractSensorModule.DEFAULT_ID.equals(sensorDescription.getId()))
-                sensorDescription.setId("RTP_CAM_" + config.cameraID);
-            
-            if (config.cameraID != null)
-                sensorDescription.setUniqueIdentifier("urn:osh:sensor:rtpcam:" + config.cameraID);
+            if (!sensorDescription.isSetDescription())
+                sensorDescription.setDescription("RTP Network Camera");
         }
     }
 
