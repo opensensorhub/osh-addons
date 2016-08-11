@@ -57,7 +57,7 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 	@Override
 	protected void updateSensorDescription()
 	{
-		synchronized (sensorDescription)
+		synchronized (sensorDescLock)
 		{
 			super.updateSensorDescription();
 			sensorDescription.setDescription("METAR weather station network");

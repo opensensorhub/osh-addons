@@ -54,7 +54,7 @@ public class StationSensor extends AbstractSensorModule<StationConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
             sensorDescription.setDescription("Generic weather station");
