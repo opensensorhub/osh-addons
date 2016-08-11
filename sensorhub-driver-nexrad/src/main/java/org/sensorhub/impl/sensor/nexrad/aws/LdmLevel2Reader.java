@@ -396,8 +396,8 @@ public class LdmLevel2Reader
 		String p = "C:/Users/tcook/root/sensorHub/doppler/issues/KHTX_229_20160708-213126-043-I";
 		//String p = "C:/Users/tcook/root/sensorHub/doppler/issues/KHTX_570_20160712-182557-040-E";
 		List<LdmRadial> rads = reader.read(new File(p));
-		//		for(LdmRadial r: rads)
-		//			System.err.println(rads.size());
+				for(LdmRadial r: rads)
+					System.err.println(r.dataHeader.elevationAngle + ":" + r.dataHeader.azimuthAngle);
 
 	}
 
