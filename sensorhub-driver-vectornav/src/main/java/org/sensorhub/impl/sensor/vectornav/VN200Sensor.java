@@ -85,7 +85,7 @@ public class VN200Sensor extends AbstractSensorModule<VN200Config>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
             

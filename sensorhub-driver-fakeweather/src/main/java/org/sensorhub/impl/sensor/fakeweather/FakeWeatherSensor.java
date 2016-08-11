@@ -60,7 +60,7 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
             

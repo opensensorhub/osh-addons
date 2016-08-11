@@ -66,7 +66,7 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
             sensorDescription.setDescription("Laser RangeFinder for determining distance, inclination, and azimuth");

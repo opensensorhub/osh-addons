@@ -59,7 +59,7 @@ public class PwmServoActuators extends AbstractSensorModule<PwmServosConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
             sensorDescription.setDescription("Adafruit PCA9685 16-channels PWM servo board");

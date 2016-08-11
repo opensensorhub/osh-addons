@@ -84,7 +84,7 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
             sensorDescription.setDescription("AVL data for " + config.agencyName);

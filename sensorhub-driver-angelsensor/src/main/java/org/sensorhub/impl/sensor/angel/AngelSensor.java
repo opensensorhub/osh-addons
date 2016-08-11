@@ -114,7 +114,7 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
 

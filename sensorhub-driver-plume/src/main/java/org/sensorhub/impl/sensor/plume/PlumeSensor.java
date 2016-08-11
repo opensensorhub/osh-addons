@@ -53,7 +53,7 @@ public class PlumeSensor extends AbstractSensorModule<PlumeConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
             sensorDescription.setDescription("Lagrangian Plume Model");

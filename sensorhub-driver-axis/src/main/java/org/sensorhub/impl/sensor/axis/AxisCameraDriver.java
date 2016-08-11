@@ -255,7 +255,7 @@ public class AxisCameraDriver extends AbstractSensorModule<AxisCameraConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             // parent class reads SensorML from config if provided
             // and then sets unique ID, outputs and control inputs

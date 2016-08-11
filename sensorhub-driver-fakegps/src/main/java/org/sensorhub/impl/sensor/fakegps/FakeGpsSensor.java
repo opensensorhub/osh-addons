@@ -56,7 +56,7 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
             sensorDescription.setDescription("Simulated GPS sensor generating data along random itineraries obtained using Google Direction API");
