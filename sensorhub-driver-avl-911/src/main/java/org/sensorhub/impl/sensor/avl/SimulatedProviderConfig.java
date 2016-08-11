@@ -19,8 +19,7 @@ import java.util.List;
 import org.sensorhub.api.comm.CommProviderConfig;
 
 
-@SuppressWarnings("rawtypes")
-public class SimulatedProviderConfig extends CommProviderConfig
+public class SimulatedProviderConfig extends CommProviderConfig<Object>
 {
     public String googleApiUrl = "http://maps.googleapis.com/maps/api/directions/json";
     
