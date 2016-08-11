@@ -47,7 +47,7 @@ public class AHRSSensor extends AbstractSensorModule<AHRSConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
 

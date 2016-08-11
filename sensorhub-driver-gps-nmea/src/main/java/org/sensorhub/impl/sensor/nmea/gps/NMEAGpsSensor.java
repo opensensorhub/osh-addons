@@ -97,7 +97,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
            

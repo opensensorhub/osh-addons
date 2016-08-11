@@ -99,7 +99,7 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
             
