@@ -57,7 +57,7 @@ public class FakeCamSensor extends AbstractSensorModule<FakeCamConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
             sensorDescription.setDescription("Fake camera sensor generating data read from a static video file");

@@ -140,7 +140,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
             

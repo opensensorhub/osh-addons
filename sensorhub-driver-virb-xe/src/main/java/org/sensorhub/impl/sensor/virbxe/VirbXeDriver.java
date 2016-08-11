@@ -202,7 +202,7 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
             

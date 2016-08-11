@@ -268,7 +268,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
 	@Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             // parent class reads SensorML from config if provided
             // and then sets unique ID, outputs and control inputs

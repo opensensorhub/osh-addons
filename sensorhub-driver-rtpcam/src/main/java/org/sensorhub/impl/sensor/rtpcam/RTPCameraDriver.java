@@ -92,7 +92,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     @Override
     protected void updateSensorDescription()
     {
-        synchronized (sensorDescription)
+        synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
             if (!sensorDescription.isSetDescription())
