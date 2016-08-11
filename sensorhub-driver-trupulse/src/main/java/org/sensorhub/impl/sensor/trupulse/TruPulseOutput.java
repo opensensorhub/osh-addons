@@ -90,19 +90,19 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     /* TODO: only using HV message; add support for HT and ML */
     private void pollAndSendMeasurement()
     {
-    	long msgTime = System.currentTimeMillis();
-    	
-        double hd = Double.NaN;
+    	double hd = Double.NaN;
     	double incl = Double.NaN;
     	double az = Double.NaN;
     	double sd = Double.NaN;
     	
     	try
     	{
-    		boolean gotHvMsg = false;
+    	    long msgTime = 0;
+    	    boolean gotHvMsg = false;
     	    while (!gotHvMsg)
     		{
         	    String line = msgReader.readLine();
+        	    msgTime = System.currentTimeMillis();
         	    String val, unit;
         	    
                 // parse the data string
@@ -156,31 +156,30 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
                 
                 gotHvMsg = true;
     		}
+    	    
+    	    // create and populate datablock
+            DataBlock dataBlock;
+            if (latestRecord == null)
+                dataBlock = laserData.createDataBlock();
+            else
+                dataBlock = latestRecord.renew();
+            
+            dataBlock.setDoubleValue(0, msgTime / 1000.);
+            dataBlock.setDoubleValue(1, hd);
+            dataBlock.setDoubleValue(2, sd);
+            dataBlock.setDoubleValue(3, az);
+            dataBlock.setDoubleValue(4, incl);
+            
+            // update latest record and send event
+            latestRecord = dataBlock;
+            latestRecordTime = System.currentTimeMillis();
+            eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, TruPulseOutput.this, dataBlock)); 
     	}
     	catch(IOException e)
     	{
            if (sendData)
                 TruPulseSensor.log.error("Unable to parse TruPulse message", e);
-            return;
-        }    
-         
-        // create and populate datablock
-    	DataBlock dataBlock;
-    	if (latestRecord == null)
-    	    dataBlock = laserData.createDataBlock();
-    	else
-    	    dataBlock = latestRecord.renew();
-    	
-        dataBlock.setDoubleValue(0, msgTime / 1000.);
-        dataBlock.setDoubleValue(1, hd);
-        dataBlock.setDoubleValue(2, sd);
-        dataBlock.setDoubleValue(3, az);
-        dataBlock.setDoubleValue(4, incl);
-        
-        // update latest record and send event
-        latestRecord = dataBlock;
-        latestRecordTime = msgTime;
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, TruPulseOutput.this, dataBlock));        
+        }     
     }
     
     
