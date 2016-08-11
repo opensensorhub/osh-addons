@@ -136,7 +136,7 @@ public class PlumeOutput extends AbstractSensorOutput<PlumeSensor>
         				((DataBlockMixed)dataBlock).getUnderlyingObject()[2].setUnderlyingObject(step.points1d);
         				
         				latestRecord = dataBlock;
-        				latestRecordTime = (long)step.getTime() * 1000;
+        				latestRecordTime = System.currentTimeMillis();
         				eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, PlumeOutput.this, latestRecord));
         			}
         		}
