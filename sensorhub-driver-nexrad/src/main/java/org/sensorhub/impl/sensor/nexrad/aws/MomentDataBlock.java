@@ -30,7 +30,7 @@ public class MomentDataBlock {
 			data = new float[numGates];
 
 			for(int i=0; i<numGates; i++) {
-				data[i] = (bdata[i] - offset) / scale;
+				data[i] = ((bdata[i] & 0xFF) - offset) / scale;
 			}
 		}
 
