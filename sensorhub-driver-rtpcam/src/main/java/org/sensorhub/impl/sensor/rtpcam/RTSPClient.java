@@ -24,8 +24,11 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collection;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.swe.Base64Encoder;
@@ -47,10 +50,12 @@ public class RTSPClient
     final static int READY = 1;
     final static int PLAYING = 2;
     
+    boolean needAuth;
     boolean connected;
     String videoUrl;
     String userName;
     String passwd;
+    String authHeader;
     Socket rtspSocket;
     BufferedReader rtspResponseReader;
     BufferedWriter rtspRequestWriter;
@@ -58,6 +63,10 @@ public class RTSPClient
     String rtspSessionID = "0"; // ID of the RTSP session (given by the RTSP Server)
     int rtpRcvPort;             // port where the client will receive the RTP packets
     int streamIndex;
+    
+    // digest auth
+    String digestRealm;
+    String digestNonce;
     
     // info obtained from RTSP server
     int remoteRtpPort;
@@ -106,22 +115,19 @@ public class RTSPClient
     
     public void sendOptions() throws IOException
     {
-        sendRequest(REQ_OPTIONS);
-        parseResponse(REQ_OPTIONS);
+        sendRequestAndParseResponse(REQ_OPTIONS);
     }
     
     
     public void sendDescribe() throws IOException
     {
-        sendRequest(REQ_DESCRIBE);
-        parseResponse(REQ_DESCRIBE);
+        sendRequestAndParseResponse(REQ_DESCRIBE);
     }
     
     
     public void sendSetup() throws IOException
     {
-        sendRequest(REQ_SETUP);
-        parseResponse(REQ_SETUP);
+        sendRequestAndParseResponse(REQ_SETUP);
     }
     
     
@@ -129,15 +135,13 @@ public class RTSPClient
     {
         this.streamIndex = streamIndex;
         log.info("Playing Stream " + mediaStreams.get(streamIndex));
-        sendRequest(REQ_PLAY);
-        parseResponse(REQ_PLAY);
+        sendRequestAndParseResponse(REQ_PLAY);
     }
     
     
     public void sendGetParameter() throws IOException
     {
-        sendRequest(REQ_GET_PARAMETER);
-        parseResponse(REQ_GET_PARAMETER);
+        sendRequestAndParseResponse(REQ_GET_PARAMETER);
     }
     
     
@@ -145,8 +149,7 @@ public class RTSPClient
     {
         try
         {
-            sendRequest(REQ_TEARDOWN);
-            parseResponse(REQ_TEARDOWN);
+            sendRequestAndParseResponse(REQ_TEARDOWN);
         }
         finally
         {
@@ -156,37 +159,51 @@ public class RTSPClient
     }
     
     
-    private void sendRequest(String request_type) throws IOException
+    private void sendRequestAndParseResponse(String requestType) throws IOException
     {
-        log.trace("Sending " + request_type + " Request to " + videoUrl);
+        boolean initAuth = needAuth;
+        sendRequest(requestType);
+        parseResponse(requestType);
+        
+        // retry once with auth
+        if (!initAuth && needAuth)
+        {
+            sendRequest(requestType);
+            parseResponse(requestType);
+        }
+    }        
+    
+    
+    private void sendRequest(String requestType) throws IOException
+    {
+        log.trace("Sending " + requestType + " Request to " + videoUrl);
         rtspSeqNb++;
         
         // write the request line:
-        rtspRequestWriter.write(request_type + " ");
-        if (request_type == REQ_SETUP)
+        rtspRequestWriter.write(requestType + " ");
+        String requestUrl = videoUrl;
+        if (requestType == REQ_SETUP)
         {
             String controlArg = mediaStreams.get(streamIndex).controlArg;
             if (controlArg.startsWith("rtsp://"))
-                rtspRequestWriter.write(controlArg);
+                requestUrl = controlArg;
             else
-                rtspRequestWriter.write(videoUrl + "/" + controlArg);            
+                requestUrl = videoUrl + "/" + controlArg;            
         }
-        else
-        {
-            rtspRequestWriter.write(videoUrl);
-        }
-        rtspRequestWriter.write(" RTSP/1.0" + CRLF);
+        rtspRequestWriter.write(requestUrl + " RTSP/1.0" + CRLF);
 
         // write the CSeq line: 
         rtspRequestWriter.write("CSeq: " + rtspSeqNb + CRLF);
-        addBasicAuth();
+        
+        // add authenticate header if required
+        addAuth(requestType, requestUrl);
         
         // depending on request type
-        if (request_type == REQ_SETUP) {
+        if (requestType == REQ_SETUP) {
             int rtcpPort = rtpRcvPort+1;
             rtspRequestWriter.write("Transport: RTP/AVP;unicast;client_port=" + rtpRcvPort + "-" + rtcpPort + CRLF);
         }
-        else if (request_type == REQ_DESCRIBE) {
+        else if (requestType == REQ_DESCRIBE) {
             rtspRequestWriter.write("Accept: application/sdp" + CRLF);
         }
         else {
@@ -200,62 +217,111 @@ public class RTSPClient
     }
     
     
-    private void addBasicAuth() throws IOException
+    private void addAuth(String requestType, String requestUrl) throws IOException
     {
-        if (userName != null && passwd != null)
+        if (needAuth && userName != null && passwd != null)
         {
-            String creds = userName + ":" + passwd;
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Base64Encoder encoder = new Base64Encoder(baos);
-            encoder.write(creds.getBytes());
-            encoder.close();
-            rtspRequestWriter.write("Authorization: Basic " + new String(baos.toByteArray()) + CRLF);
+            if (digestRealm == null)
+                addBasicAuth();
+            else
+                addDigestAuth(requestType, requestUrl);                
         }
     }
     
     
-    /*private void addDigestAuth(String realm, String nonce, String method, String digestUri) throws IOException
+    private void addBasicAuth() throws IOException
     {
-        if (userName != null && passwd != null)
+        String creds = userName + ":" + passwd;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Base64Encoder encoder = new Base64Encoder(baos);
+        encoder.write(creds.getBytes());
+        encoder.close();
+        rtspRequestWriter.write("Authorization: Basic " + new String(baos.toByteArray()) + CRLF);
+    }
+    
+    
+    private void addDigestAuth(String method, String digestUri) throws IOException
+    {
+        try
         {
-            try
-            {
-                MessageDigest md5 = MessageDigest.getInstance("MD5");
-                String ha1Text = userName + ":" + realm + ":" + passwd;
-                md5.update(ha1Text.getBytes());
-                byte[] ha1 = md5.digest();
-                
-                String ha2Text = method + ":" + disgestUri;
-                String creds = userName + ":" + passwd;
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                Base64Encoder encoder = new Base64Encoder(baos);
-                encoder.write(creds.getBytes());
-                encoder.close();
-                rtspRequestWriter.write("Authorization: Basic " + new String(baos.toByteArray()) + CRLF);
-            }
-            catch (NoSuchAlgorithmException e)
-            {
-                e.printStackTrace();
-            }
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] ha1;
+            
+            // calc A1 digest
+            md.update(userName.getBytes(StandardCharsets.ISO_8859_1));
+            md.update((byte) ':');
+            md.update(digestRealm.getBytes(StandardCharsets.ISO_8859_1));
+            md.update((byte) ':');
+            md.update(passwd.getBytes(StandardCharsets.ISO_8859_1));
+            ha1 = md.digest();
+            
+            // calc A2 digest
+            md.reset();
+            md.update(method.getBytes(StandardCharsets.ISO_8859_1));
+            md.update((byte) ':');
+            md.update(digestUri.getBytes(StandardCharsets.ISO_8859_1));
+            byte[] ha2 = md.digest();
+
+            // calc response
+            md.update(TypeUtil.toString(ha1, 16).getBytes(StandardCharsets.ISO_8859_1));
+            md.update((byte) ':');
+            md.update(digestNonce.getBytes(StandardCharsets.ISO_8859_1));
+            md.update((byte) ':');                
+            // TODO add support for more secure version of digest auth
+            //md.update(nc.getBytes(StandardCharsets.ISO_8859_1));
+            //md.update((byte) ':');
+            //md.update(cnonce.getBytes(StandardCharsets.ISO_8859_1));
+            //md.update((byte) ':');
+            //md.update(qop.getBytes(StandardCharsets.ISO_8859_1));
+            //md.update((byte) ':');                
+            md.update(TypeUtil.toString(ha2, 16).getBytes(StandardCharsets.ISO_8859_1));
+            String response = TypeUtil.toString(md.digest(), 16);
+            
+            log.trace("username=\"{}\", realm=\"{}\", nonce=\"{}\", uri=\"{}\", response=\"{}\"",
+                      userName, digestRealm, digestNonce, digestUri, response);
+            
+            // write authentication header
+            rtspRequestWriter.write("Authorization: Digest");
+            rtspRequestWriter.write(" username=\"" + userName + "\"");
+            rtspRequestWriter.write(", realm=\"" + digestRealm + "\"");
+            rtspRequestWriter.write(", nonce=\"" + digestNonce + "\"");
+            rtspRequestWriter.write(", uri=\"" + digestUri + "\"");
+            rtspRequestWriter.write(", response=\"" + response + "\"");
+            rtspRequestWriter.write(CRLF);
+            
         }
-    }*/
+        catch (Exception e)
+        {
+            log.error("Cannot generate Digest Auth header", e);
+        }
+    }
     
     
-    private void parseResponse(String reqType) throws IOException
+    private void parseResponse(String requestType) throws IOException
     {
         try
         {
             String line = rtspResponseReader.readLine();
+            log.trace("> {}", line);
             
             // read response code
             int respCode = Integer.parseInt(line.split(" ")[1]);
+            
+            // detect authentication request
+            if (respCode == 401 && !needAuth && parseAuthType())
+                return;
+            
+            // other errors
             if (respCode != 200)
+            {
+                printResponse();
                 throw new IOException("RTSP Server Error: " + line);
-                
+            }
+            
             // parse response according to request type
-            if (reqType == REQ_DESCRIBE)
+            if (requestType == REQ_DESCRIBE)
                 parseDescribeResp();        
-            else if (reqType == REQ_SETUP)
+            else if (requestType == REQ_SETUP)
                 parseSetupResp();
             else
                 printResponse();
@@ -268,10 +334,51 @@ public class RTSPClient
         catch (Exception e)
         {
             connected = false;
-            throw new IOException("Invalid " + reqType + " response", e);
+            throw new IOException("Invalid " + requestType + " response", e);
         }
         
         connected = true;
+    }
+    
+    
+    private boolean parseAuthType() throws IOException
+    {
+        String line;
+        while ((line = rtspResponseReader.readLine()) != null)
+        {
+            if (line.length() == 0)
+                break;
+            else
+                log.trace("> {}", line);
+            
+            if (line.startsWith("WWW-Authenticate:"))
+            {
+                if (line.contains("Digest"))
+                {
+                    int begin, end;
+                    
+                    begin = line.indexOf("realm=");
+                    begin = line.indexOf('"', begin)+1;
+                    end = line.indexOf('"', begin);
+                    digestRealm = line.substring(begin, end);
+                    
+                    begin = line.indexOf("nonce=");
+                    begin = line.indexOf('"', begin)+1;
+                    end = line.indexOf('"', begin);
+                    digestNonce = line.substring(begin, end);
+                }
+                else if (line.contains("Basic"))
+                {
+                    // nothing to do here
+                }
+                else
+                    throw new IOException("Unsupported Authentication Method");
+                
+                needAuth = true;
+            }
+        }
+        
+        return needAuth;
     }
     
     
@@ -365,7 +472,7 @@ public class RTSPClient
                 if (line.startsWith("Session:"))
                 {
                     rtspSessionID = line.split(" |;")[1];
-                    log.debug("> Session ID: {}", rtspSessionID);
+                    log.trace(">> Session ID: {}", rtspSessionID);
                 }
                 
                 else if (line.startsWith("Transport:"))
@@ -375,7 +482,7 @@ public class RTSPClient
                     String[] ports = serverPortString.split("-");
                     remoteRtpPort = Integer.parseInt(ports[0]);
                     remoteRtcpPort = Integer.parseInt(ports[1]);
-                    log.debug("> Server ports: RTP {}, RTCP {}", remoteRtpPort, remoteRtcpPort);
+                    log.trace(">> Server ports: RTP {}, RTCP {}", remoteRtpPort, remoteRtcpPort);
                 }
             }
             catch (Exception e)
@@ -422,4 +529,5 @@ public class RTSPClient
         if (rtspSocket != null && rtspSocket.isConnected())
             rtspSocket.close();
     }
+    
 }
