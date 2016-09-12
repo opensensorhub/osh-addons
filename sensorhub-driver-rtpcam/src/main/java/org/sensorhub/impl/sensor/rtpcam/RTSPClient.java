@@ -471,17 +471,18 @@ public class RTSPClient
             {
                 if (line.startsWith("Session:"))
                 {
-                    rtspSessionID = line.split(" |;")[1];
-                    log.trace(">> Session ID: {}", rtspSessionID);
+                    rtspSessionID = line.split(":|;")[1];
+                    log.trace(">> Session ID: {}", rtspSessionID.trim());
                 }
                 
                 else if (line.startsWith("Transport:"))
                 {
                     int serverPortIdx = line.indexOf("server_port=") + 12;
-                    String serverPortString = line.substring(serverPortIdx, line.indexOf(';', serverPortIdx));
+                    int endServerPortIdx = line.indexOf(';', serverPortIdx);
+                    String serverPortString = endServerPortIdx < 0 ? line.substring(serverPortIdx) : line.substring(serverPortIdx, endServerPortIdx);
                     String[] ports = serverPortString.split("-");
-                    remoteRtpPort = Integer.parseInt(ports[0]);
-                    remoteRtcpPort = Integer.parseInt(ports[1]);
+                    remoteRtpPort = Integer.parseInt(ports[0].trim());
+                    remoteRtcpPort = Integer.parseInt(ports[1].trim());
                     log.trace(">> Server ports: RTP {}, RTCP {}", remoteRtpPort, remoteRtcpPort);
                 }
             }
