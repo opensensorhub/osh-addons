@@ -150,7 +150,7 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
                 // look for H264 stream
                 for (StreamInfo stream: rtspClient.getMediaStreams())
                 {
-                    if (stream.codecString.contains("H264"))
+                    if (stream.codecString != null && stream.codecString.contains("H264"))
                     {
                         h264Stream = stream;
                         streamIndex = i;                        
