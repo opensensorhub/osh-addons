@@ -85,10 +85,10 @@ public class AttitudeQuatOutput extends MavlinkOutput
             // populate datablock
             dataBlock = getNewDataBlock();
             dataBlock.setDoubleValue(0, parentSensor.getUtcTimeFromBootMillis(msg.time_boot_ms));
-            dataBlock.setFloatValue(1, msg.q1);
-            dataBlock.setFloatValue(2, msg.q2);
-            dataBlock.setFloatValue(3, msg.q3);
-            dataBlock.setFloatValue(4, msg.q4);
+            dataBlock.setFloatValue(1, msg.q2);
+            dataBlock.setFloatValue(2, msg.q3);
+            dataBlock.setFloatValue(3, msg.q4);
+            dataBlock.setFloatValue(4, msg.q1);            
             
             updateSamplingPeriod(msgTime);//msg.time_boot_ms);
         }        
