@@ -8,7 +8,7 @@
 		<relativePath>../sensorhub-driver-all/pom.xml</relativePath>
 	</parent>
 	<artifactId>sensorhub-driver-nexrad</artifactId>
-	<version>0.1</version>
+	<version>0.1-SNAPSHOT</version>
 	<name>Nexrad driver</name>
 	<description>Driver for Nexrad radar, supporting both Level II and Level III products</description>
 	<organization>
@@ -22,6 +22,13 @@
 			<email>nospam@mydomain.com</email>
 		</developer>
 	</developers>
+	<repositories>
+		<repository>
+			<id>unidata-releases</id>
+			<name>Unidata Releases</name>
+			<url>https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/</url>
+		</repository>
+	</repositories>
 	<dependencies>
 		<dependency>
 			<groupId>org.sensorhub</groupId>
@@ -39,16 +46,16 @@
 			<artifactId>aws-java-sdk-sqs</artifactId>
 			<version>1.10.50</version>
 		</dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-sns</artifactId>
-            <version>1.10.50</version>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-s3</artifactId>
-            <version>1.10.50</version>
-        </dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-sns</artifactId>
+			<version>1.10.50</version>
+		</dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-s3</artifactId>
+			<version>1.10.50</version>
+		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-compress</artifactId>
@@ -69,5 +76,20 @@
 			<artifactId>guava</artifactId>
 			<version>19.0</version>
 		</dependency>
+
+		<!-- UCAR NetCDF dependencies -->
+		<dependency>
+			<groupId>edu.ucar</groupId>
+			<artifactId>cdm</artifactId>
+			<version>4.6.6</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-jdk14</artifactId>
+			<version>1.7.21</version>
+			<scope>runtime</scope>
+		</dependency>
+
 	</dependencies>
 </project>
