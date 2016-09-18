@@ -10,7 +10,7 @@ package org.sensorhub.impl.sensor.nexrad.aws;
 public class DataHeader {
 	public String siteId;
 	public int msSinceMidnight;
-	public short daysSince1970;
+	public short daysSince1970;  // in java, max short is 32,767- so this format needs to be updated by about 2050
 	public short azimuthNum;
 	public float azimuthAngle;
 	public int compression;

@@ -59,9 +59,10 @@ public class AwsNexradUtil {
 		return s3;
 	}
 
+	//  Need to figure out why realtime format value of daysSince70 seems to be one day too many
 	public static long toJulianTime(long daysSince70, long msSinceMidnight) {
-		return TimeUnit.DAYS.toMillis(daysSince70 - 1) + msSinceMidnight;
-
+//		return TimeUnit.DAYS.toMillis(daysSince70 - 1) + msSinceMidnight;
+		return TimeUnit.DAYS.toMillis(daysSince70) + msSinceMidnight;
 	}
 
 	public static String getChunkPath(String message) {

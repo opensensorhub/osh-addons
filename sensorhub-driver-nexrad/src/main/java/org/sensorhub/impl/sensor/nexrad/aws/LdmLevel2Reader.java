@@ -185,6 +185,7 @@ public class LdmLevel2Reader implements RadialProvider
 
 		ok = is.read(b2);
 		hdr.daysSince1970 = java.nio.ByteBuffer.wrap(b2).getShort();
+		hdr.daysSince1970 += 1; // ?? Not sure why I need to do this, or if it is true for all cases
 
 		ok = is.read(b2);
 		hdr.azimuthNum = java.nio.ByteBuffer.wrap(b2).getShort();
