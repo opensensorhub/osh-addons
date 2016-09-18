@@ -9,7 +9,7 @@ package org.sensorhub.impl.sensor.nexrad.aws;
  */
 public class MomentDataBlock {
 	public char blockType ;  // always 'D'
-	public String blockName;  // REF,VEL, etc..
+	public String blockName;  // REF,VEL, SW< etc
 	public short numGates;
 	public short rangeToCenterOfFirstGate;
 	public short rangeSampleInterval;
@@ -21,10 +21,15 @@ public class MomentDataBlock {
 	public float offset;  //  offset to convert from integer to fp
 	byte [] bdata;  // NOTE that for diffPhase, this will be short [] 
 	short [] sdata;  
+	private float [] data;  //  Convert raw data scaled data:  F = (N - Offset)/scale
+
+	public MomentDataBlock() {
+	}
 	
-	private float [] data;  //  F = (N - Offset)/scale
-
-
+	public MomentDataBlock(String name) {
+		blockName = name;
+	}
+	
 	public float [] getData() {
 		if(data == null) {
 			data = new float[numGates];
@@ -36,9 +41,15 @@ public class MomentDataBlock {
 
 		return data;
 	}
-	
-	 public static short byte2short(byte[] data)
-	 {
-	    return (short)((data[0]<<8) | (data[1]));
-	 }
+
+	// So UcarReader can set data as float []
+	public void setData(float [] data) {
+		this.data = data;
+	}
+
+
+	public static short byte2short(byte[] data)
+	{
+		return (short)((data[0]<<8) | (data[1]));
+	}
 }

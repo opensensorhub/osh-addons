@@ -14,12 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkHandler;
+import org.sensorhub.impl.sensor.nexrad.RadialProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
 
 /**
  * <p>Title: LdmLevel2Reader.java</p>
@@ -28,7 +25,7 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
  * @author T
  * @date Mar 9, 2016
  */
-public class LdmLevel2Reader 
+public class LdmLevel2Reader implements RadialProvider 
 {
 	byte [] b2 = new byte[2];
 	byte [] b4 = new byte[4];
@@ -391,9 +388,26 @@ public class LdmLevel2Reader
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see org.sensorhub.impl.sensor.nexrad.RadialProvider#getNextRadial()
+	 */
+	@Override
+	public LdmRadial getNextRadial() {
+		return null;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.sensorhub.impl.sensor.nexrad.RadialProvider#getNextRadials()
+	 */
+	@Override
+	public List<LdmRadial> getNextRadials() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		LdmLevel2Reader reader = new LdmLevel2Reader();
-		String p = "C:/Users/tcook/root/sensorHub/doppler/issues/KHTX_229_20160708-213126-043-I";
+		String p = "C:/Data/sensorhub/Level2/archive/KBMX/kbmxTest-S";
 		//String p = "C:/Users/tcook/root/sensorHub/doppler/issues/KHTX_570_20160712-182557-040-E";
 		List<LdmRadial> rads = reader.read(new File(p));
 				for(LdmRadial r: rads)
@@ -401,21 +415,5 @@ public class LdmLevel2Reader
 
 	}
 
-	//  TODO Remove after testing
-	public List<LdmRadial> read(String key, InputStream is) throws FileNotFoundException, IOException {
-			if(key.endsWith("S")) {
-				VolumeHeader hdr = readVolumeHeader(is);
-				System.err.println(hdr);
-				readMetadataRecord(is);
-			} else if (key.endsWith("I")) {
-				List<LdmRadial> radials = readMessage31(is);
-				return radials;
 
-			} else if (key.endsWith("E")) {
-				List<LdmRadial> radials = readMessage31(is);
-				return radials;
-			}
-
-		return null;
-	}
 }

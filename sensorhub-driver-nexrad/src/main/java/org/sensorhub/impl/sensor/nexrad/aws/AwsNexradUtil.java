@@ -3,33 +3,24 @@ package org.sensorhub.impl.sensor.nexrad.aws;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.services.sns.AmazonSNSClient;
-import com.amazonaws.services.sns.util.Topics;
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.AmazonSQSClient;
-import com.amazonaws.services.sqs.model.CreateQueueRequest;
-import com.amazonaws.services.sqs.model.DeleteMessageRequest;
-import com.amazonaws.services.sqs.model.DeleteQueueRequest;
-import com.amazonaws.services.sqs.model.Message;
-import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -52,14 +43,21 @@ import com.google.gson.JsonPrimitive;
 		<HHMMSS> is the time of the volume scan
 		<CHUNKNUM> is the chunk number
 		<CHUNKTYPE> is the chunk type
+
+		https://noaa-nexrad-level2.s3.amazonaws.com/2016/09/02/KABR/KABR20160902_230405_V06
  * 
  */
 public class AwsNexradUtil {
 	public static final String AWS_NEXRAD_URL = "http://noaa-nexrad-level2.s3.amazonaws.com/";
 	public static final String REALTIME_AWS_NEXRAD_URL = "http://unidata-nexrad-level2-chunks.s3.amazonaws.com/";
-//	public static final String BUCKET_NAME = "noaa-nexrad-level2";
+	public static final String ARCHIVE_BUCKET_NAME = "noaa-nexrad-level2";
 	public static final String BUCKET_NAME = "unidata-nexrad-level2-chunks";
 
+	public static AmazonS3Client createS3Client() {
+		AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+		AmazonS3Client s3 = new AmazonS3Client(credentials);
+		return s3;
+	}
 
 	public static long toJulianTime(long daysSince70, long msSinceMidnight) {
 		return TimeUnit.DAYS.toMillis(daysSince70 - 1) + msSinceMidnight;
@@ -96,11 +94,11 @@ public class AwsNexradUtil {
 		return key;
 
 	}
-	
+
 	public static S3Object getChunk(AmazonS3Client s3client, String bucketName, String chunkPath) {
 		return s3client.getObject(new GetObjectRequest(bucketName, chunkPath));
 	}
-	
+
 	public static void dumpChunkToFile(S3Object chunk, Path pout) throws IOException {
 		S3ObjectInputStream s3is = chunk.getObjectContent();
 		BufferedInputStream is = new BufferedInputStream(s3is, 8192);
@@ -113,7 +111,7 @@ public class AwsNexradUtil {
 			}
 		}
 	}
-	
+
 	class NexradMessage {
 		String Message;
 		String Type;
@@ -145,97 +143,77 @@ public class AwsNexradUtil {
 		return s;
 	}
 
-	
+	public static List<S3ObjectSummary> listFiles(AmazonS3Client s3, String site, String date) {
+		return listFiles(s3, site, date + "_00", date + "_24");
+	}
+
+	public static List<S3ObjectSummary> listFiles(AmazonS3Client s3, String site, String startTime, String stopTime) {
+		//  create sqs client
+		String startSlash = startTime.substring(0,4) + "/" + startTime.substring(4,6) + "/" + startTime.substring(6,8);
+		String startPrefix = startSlash + "/" + site + "/" + site + startTime.substring(0,8);
+		String startTimeCompare = startSlash + "/" + site + "/" + site + startTime;
+		String stopTimeCompare = startSlash + "/" + site + "/" + site + stopTime;
+		//  Get all listings for entire day
+		ObjectListing listing = s3.listObjects( ARCHIVE_BUCKET_NAME, startPrefix);
+		List<S3ObjectSummary> summaries = listing.getObjectSummaries();
+		while (listing.isTruncated()) {
+			System.err.println("something");
+			listing = s3.listNextBatchOfObjects (listing);
+			summaries.addAll (listing.getObjectSummaries());
+		}
+
+		//  Now filter based on start and stopTime
+		List<S3ObjectSummary> matches = new ArrayList<>();
+		for(S3ObjectSummary s: summaries) {
+			if(s.getKey().compareTo(startTimeCompare) >= 0  && s.getKey().compareTo(stopTimeCompare) <= 0) 
+				matches.add(s);
+		}
+
+		return matches;
+	}
+
+	public static String gunzipFile(String compressedFile, String decompressedFile) throws IOException {
+		byte[] buffer = new byte[8096];
+		try {
+			FileInputStream fileIn = new FileInputStream(compressedFile);
+			GZIPInputStream gZIPInputStream = new GZIPInputStream(fileIn);
+			FileOutputStream fileOutputStream = new FileOutputStream(decompressedFile);
+			int bytes_read;
+			while ((bytes_read = gZIPInputStream.read(buffer)) > 0) {
+				fileOutputStream.write(buffer, 0, bytes_read);
+			}
+			gZIPInputStream.close();
+			fileOutputStream.close();
+			return decompressedFile;
+		} catch (IOException ex) {
+			throw new IOException(ex);
+		}
+	}
+
 
 	public static void main(String[] args) throws Exception {
-		List<String> sites = new ArrayList<>();
-		sites.add("KEWX");
-		NexradSqsService nexradSqs = new NexradSqsService("NexradQueueTemp", sites);
-		nexradSqs.start();
-	}
-
-	public static void main_(String[] args) throws IOException, InterruptedException {
-		AWSCredentials credentials = null;
-		try {
-			credentials = new ProfileCredentialsProvider().getCredentials();
-		} catch (Exception e) {
-			throw new AmazonClientException(
-					"Cannot load the credentials from the credential profiles file. " +
-							"Please make sure that your credentials file is at the correct " +
-							"location (~/.aws/credentials), and is in valid format.",
-							e);
+		AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+		AmazonS3Client s3 = new AmazonS3Client(credentials);
+		//		List<S3ObjectSummary> matches = listFiles(s3, "KEWX", "20160901");
+//		List<S3ObjectSummary> matches = listFiles(s3, "KEWX", "20160901_121314", "20160901_131314");
+		List<S3ObjectSummary> matches = listFiles(s3, "KHTX", "20110427_1800", "20110427_2200");
+		for(S3ObjectSummary s: matches) {
+			System.err.println(s.getKey());
+			S3Object obj = getChunk(s3, ARCHIVE_BUCKET_NAME, s.getKey());
+			int lastSlash = s.getKey().lastIndexOf("/");
+			assert lastSlash != -1;
+			String filename = s.getKey().substring(lastSlash + 1);
+			Path pout = Paths.get("C:/Data/sensorhub/Level2/archive/KHTX");
+			Path fout = Paths.get(pout.toString(), filename);
+			String gzFilename;
+			AwsNexradUtil.dumpChunkToFile(obj, fout);
+			gunzipFile(fout.toString(), fout.toString() + ".88d");
 		}
 
-		AmazonSQS sqs = new AmazonSQSClient(credentials);
-		AmazonSNSClient sns = new AmazonSNSClient(credentials);
-		Region usWest2 = Region.getRegion(Regions.US_WEST_2);
-		sqs.setRegion(usWest2);
 
-		try {
-			//			ListQueuesResult r = sqs.listQueues();
-			//			System.err.println(r.toString());
-			//			GetQueueAttributesRequest qar = new GetQueueAttributesRequest(queueUrl);
-			// Create a queue
-			System.out.println("Creating a new SQS queue.\n");
-			CreateQueueRequest createQueueRequest = new CreateQueueRequest("NexradQueueTest");
-			String myQueueUrl = sqs.createQueue(createQueueRequest).getQueueUrl();
-			//			sqs.
-			String topicArn = "arn:aws:sns:us-east-1:684042711724:NewNEXRADLevel2Object";
-			//			String topicArn = "arn:aws:sns:us-east-1:811054952067:NewNEXRADLevel2Archive";
-			Topics.subscribeQueue(sns, sqs, topicArn, myQueueUrl);
+		//		S3ObjectInputStream is - obj.get
 
-			// Receive messages
-			System.out.println("Receiving messages from MyQueue.\n");
-			int cnt = 0;
-			while(cnt++ < 1000) {
-				ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(myQueueUrl).
-						withWaitTimeSeconds(0).withMaxNumberOfMessages(10);
-				List<Message> messages = sqs.receiveMessage(receiveMessageRequest).getMessages();
-				for (Message message : messages) {
-					//					System.out.println("  Message");
-					//					System.out.println("    MessageId:     " + message.getMessageId());
-					//					System.out.println("    ReceiptHandle: " + message.getReceiptHandle());
-					//					System.out.println("    MD5OfBody:     " + message.getMD5OfBody());
-					//					System.out.println("    Body:          " + message.getBody());
-					String body = message.getBody();
-					String path = getChunkPath(body);
-					String time = getEventTime(body);
-					//					if(path.contains("KLGX"))
-					System.err.println(path);
-					//					for (Entry<String, String> entry : message.getAttributes().entrySet()) {
-					//						System.out.println("  Attribute");
-					//						System.out.println("    Name:  " + entry.getKey());
-					//						System.out.println("    Value: " + entry.getValue());
-					//					}
-					//					MessageAttributeValue val = message.getMessageAttributes().get("key");
-					//					System.err.println(val.getStringValue());
-					// delete message
-					sqs.deleteMessage(new DeleteMessageRequest(myQueueUrl, message.getReceiptHandle()));
-				}
-				System.out.println("NumMsgs = " + messages.size());
-
-				//				Thread.sleep(100L);
-
-			}
-			//  destory queue 
-			if (sqs != null && myQueueUrl != null) {
-				sqs.deleteQueue(new DeleteQueueRequest(myQueueUrl));
-				System.out.println("Deleted the queue.");
-				sqs.shutdown();
-			}
-		} catch (AmazonServiceException ase) {
-			System.out.println("Caught an AmazonServiceException, which means your request made it " +
-					"to Amazon SQS, but was rejected with an error response for some reason.");
-			System.out.println("Error Message:    " + ase.getMessage());
-			System.out.println("HTTP Status Code: " + ase.getStatusCode());
-			System.out.println("AWS Error Code:   " + ase.getErrorCode());
-			System.out.println("Error Type:       " + ase.getErrorType());
-			System.out.println("Request ID:       " + ase.getRequestId());
-		} catch (AmazonClientException ace) {
-			System.out.println("Caught an AmazonClientException, which means the client encountered " +
-					"a serious internal problem while trying to communicate with SQS, such as not " +
-					"being able to access the network.");
-			System.out.println("Error Message: " + ace.getMessage());
-		}
+		//		listFiles(s3, "KEWX", "20160901_00", "20160901_24");
 	}
+
 }

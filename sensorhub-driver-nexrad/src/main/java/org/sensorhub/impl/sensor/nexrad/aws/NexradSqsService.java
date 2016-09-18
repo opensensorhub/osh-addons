@@ -47,8 +47,7 @@ public class NexradSqsService
 
 	private void createS3Client() {
 		try {
-			AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
-			s3client = new AmazonS3Client(credentials);
+			s3client = AwsNexradUtil.createS3Client();
 		} catch (Exception e) {
 			throw new AmazonClientException(
 					"Cannot load the credentials from the credential profiles file. " +
