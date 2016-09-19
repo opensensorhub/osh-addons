@@ -7,7 +7,7 @@
 		<version>1.1-SNAPSHOT</version>
 		<relativePath>../../osh-core/sensorhub-all</relativePath>
 	</parent>
-	<artifactId>sensorhub-driver-vaisala</artifactId>
+	<artifactId>sensorhub-driver-gamma</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Model2070Gamma</name>
 	<description>Model 2070 Gamma Detector Module</description>
