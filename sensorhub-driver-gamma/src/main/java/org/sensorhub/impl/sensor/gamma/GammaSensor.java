@@ -19,14 +19,8 @@ public class GammaSensor extends AbstractSensorModule<GammaConfig>
     ICommProvider<?> commProvider;
     BufferedReader dataIn;
     GammaOutput gammaOut;
-    String inputLine = null;
-    String deviceAddress = null;
     String[] msgToken = null;
     volatile boolean started;
-    int cnt;
-    public final static char CR = (char) 0x0D;
-    public final static char LF = (char) 0x0A;
-    public final static String CRLF = "" + CR + LF;
     
     public GammaSensor()
     {        
