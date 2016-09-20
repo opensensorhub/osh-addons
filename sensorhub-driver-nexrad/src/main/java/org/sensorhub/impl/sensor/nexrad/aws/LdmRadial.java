@@ -19,5 +19,4 @@ public class LdmRadial //implements RadialProvider
 	public VolumeDataBlock volumeDataBlock;
 	public long timeMsUtc;  // compute using daysSince70 and msSince midnight from dataHeader, but I am not really using it
 	public Map<String, MomentDataBlock> momentData = new HashMap<>();
-	public MomentDataBlock momentDataBlock;
 }
