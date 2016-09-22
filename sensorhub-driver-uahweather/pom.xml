@@ -10,7 +10,7 @@
 	<artifactId>sensorhub-driver-uahweather</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>UAHWeatherStation</name>
-	<description>Driver for UAH home weather station - Arduino sensor collection feeding data to Raspberry Pi</description>
+	<description>Driver for UAH home weather station</description>
 	<organization>
 		<name>Botts Innovative Research, Inc.</name>
 	</organization>
