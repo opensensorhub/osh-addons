@@ -15,14 +15,21 @@ import org.sensorhub.impl.sensor.station.Station;
 import org.sensorhub.impl.sensor.station.StationDataPoller;
 
 
-public class MetarDataPoller implements StationDataPoller {
+public class MetarDataPoller {
 	//    //StationName,City,State,ZipCode,MeasurementDateUTC,MeasurementDateLocal,Temperature (degreesF),Dewpoint (degreesF),Relative Humididty (%),Wind Speed (mph),Wind Direction (degrees),
 	//Air Pressure (inches HG),Precipitation (inches),Heat Index (degreesF),Wind Chill (degreesF),Heating Degree Days,Cooling Degree Days,Wind Gust (mph),
 	//Rainfaill last 3 hours (inches),Rainfaill last 6 hours (inches),Rainfaill last 24 hours (inches),Max Temperature last 24 hours (degreesF),Min Temperature last 24 hours (degreesF),
 	//cloud Ceiling (feet),visibility (feet),PresentWeather,SkyConditions
-	private static final String server = "webservices.anythingweather.com";
-	private static final String path = "/CurrentObs/GetCurrentObs";
+//	private static final String server = "webservices.anythingweather.com";
+//	private static final String path = "/CurrentObs/GetCurrentObs";
+	private final String server;
+	private final String path;
 
+	public MetarDataPoller(String server, String path) {
+		this.server = server;
+		this.path = path;
+	}
+	
 	/**
 	 * 
 	 * @return the last available data record
@@ -66,7 +73,7 @@ public class MetarDataPoller implements StationDataPoller {
 			.setParameter("format", "csv")
 			.setParameter("numHours", "1")
 			.setParameter("allData", "true")
-			.setParameter("stationid", stationID)
+			.setParameter("stationName", stationID)
 			.build();
 			HttpGet httpget = new HttpGet(uri);
 			MetarSensor.log.debug("Executing request {}", httpget.getURI());
@@ -101,7 +108,7 @@ public class MetarDataPoller implements StationDataPoller {
 	}
 
 	public static void main(String[] args) {
-	    MetarDataPoller poller = new MetarDataPoller();
-		poller.pullStationData("3467");
+	    MetarDataPoller poller = new MetarDataPoller("66.37.155.91:8080","/currentObs/GetCurrentObs");
+		poller.pullStationData("KBOS");
 	}
 }
