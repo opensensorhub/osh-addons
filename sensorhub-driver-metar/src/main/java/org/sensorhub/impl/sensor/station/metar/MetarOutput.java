@@ -44,10 +44,9 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
     
     DataRecord metarRecordStruct;
     DataEncoding metarRecordEncoding;
-    MetarDataPoller metarPoller = new MetarDataPoller();
     Timer timer;
     Map<String, Long> latestUpdateTimes;
-    
+    MetarDataPoller metarPoller; // constructing in config now  
 
     public MetarOutput(MetarSensor parentSensor)
     {
@@ -116,11 +115,14 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
     }
 
 
-    protected void start()
+    protected void start(MetarDataPoller poller)
     {
-        if (timer != null)
+    	this.metarPoller = poller;
+    	
+    	if (timer != null)
             return;
         timer = new Timer();
+        
         
         // start main measurement generation thread
         TimerTask task = new TimerTask()

@@ -10,11 +10,25 @@ package org.sensorhub.impl.sensor.station;
  */
 
 public class Station {
+	private String id;
 	private String name;
 	private double lat;
 	private double lon;
 	private double elevation;
+	private String stationType;  // Metar, CWOP, etc. May create an enum for this
 	
+	public final String getId() {
+		return id;
+	}
+	public final void setId(String id) {
+		this.id = id;
+	}
+	public final String getStationType() {
+		return stationType;
+	}
+	public final void setStationType(String stationType) {
+		this.stationType = stationType;
+	}
 	public String getName() {
 		return name;
 	}

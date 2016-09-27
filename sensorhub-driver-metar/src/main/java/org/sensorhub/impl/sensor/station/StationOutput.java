@@ -45,7 +45,7 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
     DataBlock latestRecord;
     boolean sendData;
     protected Timer timer;
-    StationDataPoller dataPoller = new MetarDataPoller();  // how do I get an implementing class into here?
+    StationDataPoller dataPoller; // = new MetarDataPoller();  // how do I get an implementing class into here?
 
     
     public StationOutput(StationSensor parentSensor)

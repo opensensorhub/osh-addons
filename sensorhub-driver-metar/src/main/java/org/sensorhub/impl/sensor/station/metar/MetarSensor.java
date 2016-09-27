@@ -1,22 +1,26 @@
 package org.sensorhub.impl.sensor.station.metar;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.data.IMultiSourceDataProducer;
+import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.station.Station;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.vast.sensorML.SMLHelper;
+
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.Point;
 import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
-import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.IMultiSourceDataProducer;
-import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.vast.sensorML.SMLHelper;
 
 
 public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IMultiSourceDataProducer //extends StationSensor
@@ -29,7 +33,7 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
     Map<String, PhysicalSystem> stationFois;
     Map<String, PhysicalSystem> stationDesc;
     MetarOutput metarInterface;
-    
+    MetarDataPoller metarPoller;
 	
 	public MetarSensor()
 	{
@@ -51,6 +55,9 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
         this.metarInterface = new MetarOutput(this);        
         addOutput(metarInterface, false);
         metarInterface.init();        
+
+        // Construct poller
+        metarPoller = new MetarDataPoller(config.serverUrl, config.serverPath);
     }
 
 	
@@ -79,24 +86,28 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 	    SMLHelper smlFac = new SMLHelper();
 	    GMLFactory gmlFac = new GMLFactory(true);
 	    
+	    MetarStationMap map = null;
+	    try {
+			map = MetarStationMap.getInstance();
+		} catch (IOException e) {
+			throw new SensorHubException("IO Exception trying to load metarStationMap");
+		}
 	    // generate station FOIs and full descriptions
 	    for (String stationID: config.stationIDs)
         {
-	        // TODO fetch station info (name, location, etc.)
-	        
 	        String uid = STATION_UID_PREFIX + stationID;
-	        String name = "K***";
-	        String description = "METAR weather station #" + stationID;
+	        String description = "METAR weather station: " + stationID;
 	        
 	        // generate small SensorML for FOI (in this case the system is the FOI)
+	        Station station = map.getStation(stationID);
 	        PhysicalSystem foi = smlFac.newPhysicalSystem();
 	        foi.setId(stationID);
 	        foi.setUniqueIdentifier(uid);
-	        foi.setName(name);
+	        foi.setName(station.getName());
 	        foi.setDescription(description);
+
 	        Point stationLoc = gmlFac.newPoint();
-	        double coord = Double.parseDouble(stationID) / 100.0;
-	        stationLoc.setPos(new double[] {coord, coord/2.0, 0.0});
+	        stationLoc.setPos(new double[] {station.getLat(), station.getLon(), station.getElevation()});
 	        foi.setLocation(stationLoc);
 	        stationFois.put(uid, foi);
 	        foiIDs.add(uid);
@@ -105,12 +116,12 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 	        PhysicalSystem sensorDesc = smlFac.newPhysicalSystem();
 	        sensorDesc.setId("STATION_" + stationID);
 	        sensorDesc.setUniqueIdentifier(uid);
-            sensorDesc.setName(name);
+            sensorDesc.setName(station.getName());
             sensorDesc.setDescription(description);
             stationDesc.put(uid, sensorDesc);
         }
 	    
-	    metarInterface.start();        
+	    metarInterface.start(metarPoller);        
 	}
 
 
