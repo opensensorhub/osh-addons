@@ -117,12 +117,6 @@ public class SimWeatherStationOutput extends AbstractSensorOutput<SimWeatherStat
     	dataBlock.setDoubleValue(2, temp);
     	dataBlock.setDoubleValue(3, humid);
     	dataBlock.setDoubleValue(4, windSpeed);
-    	
-//    	dataBlock.setDoubleValue(1, Math.round(press*100.0)/100.0);
-//    	dataBlock.setDoubleValue(2, Math.round(temp*100)/100);
-//    	dataBlock.setDoubleValue(3, Math.round(humid*100)/100);
-//    	dataBlock.setDoubleValue(4, Math.round(windSpeed*100)/100);
-    	
     	dataBlock.setDoubleValue(5, windDir);
     	dataBlock.setDoubleValue(6, rain);
     	

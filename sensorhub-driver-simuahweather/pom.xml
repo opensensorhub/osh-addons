@@ -7,10 +7,10 @@
 		<version>1.1-SNAPSHOT</version>
 		<relativePath>../../osh-core/sensorhub-all</relativePath>
 	</parent>
-	<artifactId>sensorhub-driver-uahweather</artifactId>
+	<artifactId>sensorhub-driver-simweatherstation</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>UAHWeatherStation</name>
-	<description>Driver for UAH home weather station</description>
+	<name>SimWeatherStation</name>
+	<description>Driver for simulated home weather station</description>
 	<organization>
 		<name>Botts Innovative Research, Inc.</name>
 	</organization>
