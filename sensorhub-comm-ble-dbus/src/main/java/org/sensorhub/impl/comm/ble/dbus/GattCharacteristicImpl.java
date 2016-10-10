@@ -108,7 +108,7 @@ public class GattCharacteristicImpl implements IGattCharacteristic
     @Override
     public int getPermissions()
     {
-        String[] perm = gattCharProps.Get(GattCharacteristic1.IFACE_NAME, GattCharacteristic1.PROP_FLAGS);
+        //String[] perm = gattCharProps.Get(GattCharacteristic1.IFACE_NAME, GattCharacteristic1.PROP_FLAGS);
         // TODO convert string to integer code
         return 0;
     }
