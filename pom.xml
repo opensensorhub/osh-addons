@@ -3,21 +3,21 @@
    <parent>
       <groupId>org.sensorhub</groupId>
       <artifactId>sensorhub-all</artifactId>
-      <version>1.1-SNAPSHOT</version>
+      <version>1.1-beta1</version>
    </parent>
-   <artifactId>sensorhub-driver-all</artifactId>
-   <name>SensorHub Drivers Base POM</name>
+   <artifactId>osh-sensors-base</artifactId>
+   <name>OSH Sensors Base POM</name>
    <packaging>pom</packaging>
    <organization/>
    <scm>
-      <url>https://github.com/opensensorhub/sensor-drivers/tree/master</url>
-      <connection>scm:git:https://github.com/opensensorhub/sensor-drivers.git</connection>
-      <developerConnection>scm:git:https://github.com/opensensorhub/sensor-drivers.git</developerConnection>
+      <url>https://github.com/opensensorhub/osh-sensors</url>
+      <connection>scm:git:git://github.com/opensensorhub/osh-sensors.git</connection>
+      <developerConnection>scm:git:git@github.com:opensensorhub/osh-sensors.git</developerConnection>
       <tag>HEAD</tag>
    </scm>
    <issueManagement>
-      <url>https://github.com/opensensorhub/sensor-drivers/issues</url>
-      <system>GitHub</system>
+      <url>https://github.com/opensensorhub/osh-sensors/issues</url>
+      <system>GitHub Issues</system>
    </issueManagement>
    <repositories>
       <repository>

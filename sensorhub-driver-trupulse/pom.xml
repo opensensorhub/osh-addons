@@ -2,13 +2,16 @@
    <modelVersion>4.0.0</modelVersion>
    <parent>
       <groupId>org.sensorhub</groupId>
-      <artifactId>sensorhub-driver-all</artifactId>
-      <version>1.1-SNAPSHOT</version>
-      <relativePath>../sensorhub-driver-all/pom.xml</relativePath>
+      <artifactId>osh-sensors-base</artifactId>
+      <version>1.1-beta1</version>
    </parent>
    <artifactId>sensorhub-driver-trupulse</artifactId>
    <name>TruPulse Range Finder Sensor Driver</name>
    <description>Driver for TruPulse 360R Laser Range Finder with inclination and azimuth (angle from North)</description>
+   <organization>
+      <name>Sensia Software LLC</name>
+      <url>http://www.sensiasoftware.com</url>
+   </organization>
    <dependencies>
       <dependency>
          <groupId>org.sensorhub</groupId>
