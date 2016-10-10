@@ -2,14 +2,17 @@
    <modelVersion>4.0.0</modelVersion>
    <parent>
       <groupId>org.sensorhub</groupId>
-      <artifactId>sensorhub-driver-all</artifactId>
-      <version>1.1-SNAPSHOT</version>
-      <relativePath>../sensorhub-driver-all/pom.xml</relativePath>
+      <artifactId>osh-sensors-base</artifactId>
+      <version>1.1-beta1</version>
    </parent>
    <artifactId>sensorhub-driver-rtpcam</artifactId>
    <version>0.1-SNAPSHOT</version>
    <name>RTP Camera Driver</name>
    <description>Driver for RTP/RTSP compatible cameras</description>
+   <organization>
+      <name>Sensia Software LLC</name>
+      <url>http://www.sensiasoftware.com</url>
+   </organization>
    <packaging>bundle</packaging>
    <dependencies>
       <dependency>

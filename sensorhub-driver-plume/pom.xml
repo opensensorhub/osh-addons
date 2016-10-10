@@ -2,16 +2,16 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.sensorhub</groupId>
-    <artifactId>sensorhub-driver-all</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <artifactId>osh-sensors-base</artifactId>
+    <version>1.1-beta1</version>
   </parent>
   <artifactId>sensorhub-driver-plume</artifactId>
   <version>0.1-SNAPSHOT</version>
   <name>PlumeDriver</name>
   <description>SensorHub driver for tasking and serving data output by the Lagrangian Plume moderl developed at University of Alabama in Huntsville </description>
     <organization>
-    <name>Botts Inc.</name>
-    <url>http://</url>
+    <name>Botts Innovative Research Inc.</name>
+    <url>http://www.botts-inc.com</url>
   </organization>
   <licenses>
     <license>
