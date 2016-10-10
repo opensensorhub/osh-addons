@@ -2,13 +2,17 @@
    <modelVersion>4.0.0</modelVersion>
    <parent>
       <groupId>org.sensorhub</groupId>
-      <artifactId>sensorhub-all</artifactId>
-      <version>1.1-SNAPSHOT</version>
+      <artifactId>osh-security-base</artifactId>
+      <version>1.1-beta1</version>
    </parent>
    <artifactId>sensorhub-security-oauth</artifactId>
    <version>0.1-SNAPSHOT</version>
    <name>OAuth2 base authentication for SensorHub</name>
    <description>Provides federated authentication through OAuth2 providers such as Google, Twitter, etc.</description>
+   <organization>
+      <name>Sensia Software LLC</name>
+      <url>http://www.sensiasoftware.com</url>
+   </organization>
    <dependencies>
       <dependency>
          <groupId>org.sensorhub</groupId>
