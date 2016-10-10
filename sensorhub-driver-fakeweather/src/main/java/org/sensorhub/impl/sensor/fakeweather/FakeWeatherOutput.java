@@ -97,16 +97,16 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         
         // temperature; value will increase or decrease by less than 0.1 deg
         //temp += 0.005 * (2.0 *Math.random() - 1.0);
-        temp += variation(temp, tempRef, -0.001, 0.1);
+        temp += variation(temp, tempRef, 0.001, 0.1);
         
         // pressure; value will increase or decrease by less than 20 hPa
         //pressure += 20. * (2.0 * Math.random() - 1.0);
-        press += variation(press, pressRef, -0.001, 0.1);
+        press += variation(press, pressRef, 0.001, 0.1);
         
         // wind speed; keep positive
         // vary value between +/- 10 m/s
         //speed += 10.0 * (2.0 * Math.random() - 1.0);
-        windSpeed += variation(windSpeed, windSpeedRef, -0.001, 0.1);
+        windSpeed += variation(windSpeed, windSpeedRef, 0.001, 0.1);
         windSpeed = windSpeed < 0.0 ? 0.0 : windSpeed; 
         
         // wind direction; keep between 0 and 360 degrees
