@@ -2,9 +2,8 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.sensorhub</groupId>
-    <artifactId>sensorhub-all</artifactId>
-    <version>1.1-SNAPSHOT</version>
-    <relativePath>../../osh-core/sensorhub-all</relativePath>
+    <artifactId>osh-sensors-weather-base</artifactId>
+    <version>1.1-beta1</version>
   </parent>
   <artifactId>sensorhub-driver-simweatherstation</artifactId>
   <version>0.0.1-SNAPSHOT</version>
@@ -12,6 +11,7 @@
   <description>Driver for simulated home weather station</description>
   <organization>
   	<name>Botts Innovative Research, Inc.</name>
+  	<url>http://www.botts-inc.com</url>
   </organization>
   <dependencies>
   	<dependency>
