@@ -14,7 +14,7 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.commrelay;
 
-import org.sensorhub.api.comm.CommConfig;
+import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.service.ServiceConfig;
 
@@ -30,10 +30,10 @@ import org.sensorhub.api.service.ServiceConfig;
 public class CommRelayConfig extends ServiceConfig
 {
     @DisplayInfo(desc="Communication settings for the incoming stream")
-    public CommConfig incomingCommSettings;
+    public CommProviderConfig<?> incomingCommSettings;
     
     @DisplayInfo(desc="Communication settings for the outgoing stream")
-    public CommConfig outgoingCommSettings;
+    public CommProviderConfig<?> outgoingCommSettings;
     
     public int bufferSize = 8092;
 }
