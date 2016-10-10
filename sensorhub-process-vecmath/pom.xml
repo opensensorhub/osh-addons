@@ -2,14 +2,17 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.sensorhub</groupId>
-    <artifactId>sensorhub-process-all</artifactId>
-    <version>1.1-SNAPSHOT</version>
-    <relativePath>../sensorhub-process-all/pom.xml</relativePath>
+    <artifactId>osh-processing-base</artifactId>
+    <version>1.1-beta1</version>
   </parent>
   <artifactId>sensorhub-process-vecmath</artifactId>
   <version>0.1-SNAPSHOT</version>
   <name>Simple Vector Math Functions</name>
   <description>Simple vector math functions for SensorHub processing</description>
+  <organization>
+     <name>Sensia Software LLC</name>
+     <url>http://www.sensiasoftware.com</url>
+  </organization>
   <dependencies>
      <dependency>
         <groupId>org.sensorhub</groupId>
