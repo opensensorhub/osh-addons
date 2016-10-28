@@ -47,11 +47,11 @@ public class TestRTPCameraDriverFoscam implements IEventListener
         config = new RTPCameraConfig();
         config.id = UUID.randomUUID().toString();
         config.cameraID = "foscam:001";
-        config.video.backupFile = "/home/alex/test-foscam.h264";
-        config.rtsp.remoteHost = "192.168.0.21";
-        config.rtsp.user = "admin";
-        config.rtsp.password = "op3nsaysam3";
-        config.rtsp.remotePort = 80;
+        config.video.backupFile = "/home/butler/foscam/test-foscam.h264";
+        config.rtsp.remoteHost = "192.168.0.34";
+        config.rtsp.user = "osh";
+        config.rtsp.password = "osh";
+        config.rtsp.remotePort = 88;
         config.rtsp.videoPath = "/videoMain";        
         config.rtsp.localUdpPort = 5600;
         

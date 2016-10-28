@@ -2,8 +2,8 @@
    <modelVersion>4.0.0</modelVersion>
    <parent>
       <groupId>org.sensorhub</groupId>
-      <artifactId>sensorhub-driver-all</artifactId>
-      <version>1.1-SNAPSHOT</version>
+      <artifactId>sensorhub-all</artifactId>
+      <version>1.1-beta1</version>
       <relativePath>../sensorhub-driver-all/pom.xml</relativePath>
    </parent>
    <artifactId>sensorhub-driver-foscam</artifactId>
@@ -23,12 +23,6 @@
       </developer>
    </developers>
    <dependencies>
-      <dependency>
-         <groupId>org.sensorhub</groupId>
-         <artifactId>sensorhub-core</artifactId>
-         <version>${project.parent.version}</version>
-         <type>bundle</type>
-      </dependency>
       <dependency>
          <groupId>net.sf.jipcam</groupId>
          <artifactId>jipcam</artifactId>
@@ -69,6 +63,12 @@
          <version>0.1-SNAPSHOT</version>
          <type>test-jar</type>
          <scope>test</scope>
+      </dependency>
+      <dependency>
+      	<groupId>org.sensorhub</groupId>
+      	<artifactId>sensorhub-core</artifactId>
+      	<version>1.1-SNAPSHOT</version>
+      	<type>bundle</type>
       </dependency>
    </dependencies>
    <build>
