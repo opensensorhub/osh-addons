@@ -14,6 +14,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.nmea.gps;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.sensorhub.api.comm.CommProviderConfig;
@@ -35,11 +36,12 @@ public class NMEAGpsConfig extends SensorConfig
     
     
     @DisplayInfo(label="Active NMEA Messages", desc="List of NMEA sentences to provide as outputs")
-    public List<String> activeSentences = Arrays.asList("GGA");
+    public List<String> activeSentences = new ArrayList<String>();
     
     
     public NMEAGpsConfig()
     {
         this.moduleClass = NMEAGpsSensor.class.getCanonicalName();
+        this.activeSentences.add("GGA");
     }
 }
