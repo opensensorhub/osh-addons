@@ -4,7 +4,8 @@
 	<parent>
 		<groupId>org.sensorhub</groupId>
 		<artifactId>osh-sensors-weather-base</artifactId>
-		<version>1.1-beta1</version>
+		<version>1.1.0</version>
+		<relativePath>..</relativePath>
 	</parent>
 	<artifactId>sensorhub-driver-nexrad</artifactId>
 	<version>0.1-SNAPSHOT</version>
@@ -32,7 +33,7 @@
 		<dependency>
 			<groupId>org.sensorhub</groupId>
 			<artifactId>sensorhub-core</artifactId>
-			<version>1.1-beta1</version>
+			<version>1.1.0</version>
 			<type>bundle</type>
 		</dependency>
 		<dependency>
