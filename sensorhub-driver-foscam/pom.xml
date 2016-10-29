@@ -3,8 +3,8 @@
    <parent>
       <groupId>org.sensorhub</groupId>
       <artifactId>sensorhub-all</artifactId>
-      <version>1.1-beta1</version>
-      <relativePath>../sensorhub-driver-all/pom.xml</relativePath>
+      <version>1.1.0</version>
+      <relativePath>..</relativePath>
    </parent>
    <artifactId>sensorhub-driver-foscam</artifactId>
    <packaging>bundle</packaging>
