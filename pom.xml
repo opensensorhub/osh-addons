@@ -10,7 +10,7 @@
    <packaging>pom</packaging>
    <organization/>
    <scm>
-      <url>https://github.com/opensensorhub/osh-sensors</url>
+      <url>https://github.com/opensensorhub/osh-sensors/tree/master</url>
       <connection>scm:git:git://github.com/opensensorhub/osh-sensors.git</connection>
       <developerConnection>scm:git:git@github.com:opensensorhub/osh-sensors.git</developerConnection>
       <tag>HEAD</tag>
