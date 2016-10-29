@@ -4,8 +4,8 @@
 	<parent>
 		<groupId>org.sensorhub</groupId>
 		<artifactId>sensorhub-all</artifactId>
-		<version>1.1-SNAPSHOT</version>
-		<relativePath>../../osh-core/sensorhub-all</relativePath>
+		<version>1.1.0</version>
+		<relativePath>..</relativePath>
 	</parent>
 	<artifactId>sensorhub-driver-gamma</artifactId>
 	<version>0.0.1-SNAPSHOT</version>

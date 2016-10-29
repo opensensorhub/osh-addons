@@ -3,7 +3,8 @@
    <parent>
       <groupId>org.sensorhub</groupId>
       <artifactId>osh-sensors-base</artifactId>
-      <version>1.1-beta1</version>
+      <version>1.1.0</version>
+      <relativePath>..</relativePath>
    </parent>
    <artifactId>sensorhub-driver-dahua</artifactId>
    <packaging>bundle</packaging>
