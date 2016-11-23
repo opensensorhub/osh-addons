@@ -106,7 +106,7 @@ public class GattClientImpl implements IGattClient
                     // connection status
                     if (event.changedProps.containsKey(Device1.CONNECTED))
                     {
-                        boolean connected = (boolean)event.changedProps.get(Device1.CONNECTED).getValue();
+                        boolean connected = (Boolean)event.changedProps.get(Device1.CONNECTED).getValue();
                         if (connected)
                         {
                             listKnownServices(devObjPath);
