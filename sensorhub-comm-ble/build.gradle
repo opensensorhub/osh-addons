@@ -1,3 +1,2 @@
 description = 'Bluetooth LE Comm API'
 ext.details = 'Common API for Bluetooth LE implementations (e.g. GATT support)'
-version = '1.1.0'
