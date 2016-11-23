@@ -1,0 +1,33 @@
+description = 'VectorNav INS Sensor'
+ext.details = 'Driver for VectorNav Inertial Navigation Systems'
+version = '0.1-SNAPSHOT'
+
+dependencies {
+  testCompile 'org.sensorhub:sensorhub-comm-rxtx:' + oshCoreVersion
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+test {
+  exclude '**/TestVN200DriverRxtx.class'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.fakegps.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com' 
+    }
+  }
+}

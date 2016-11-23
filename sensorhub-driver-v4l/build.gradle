@@ -1,0 +1,35 @@
+description = 'Video4Linux Cameras'
+ext.details = 'Driver for Video4Linux compatible cameras'
+version = '1.0-SNAPSHOT'
+
+dependencies {
+  compile project(':sensorhub-driver-rtpcam')
+  compile 'edu.jcu:v4l4j:0.9.1'
+  testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+test {
+  exclude '**/TestV4LCameraDriver.class'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.v4l.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com' 
+    }
+  }
+}

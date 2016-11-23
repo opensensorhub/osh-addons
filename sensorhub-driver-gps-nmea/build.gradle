@@ -1,0 +1,35 @@
+description = 'NMEA GPS Sensor'
+ext.details = 'Driver for GNSS sensors compatible with NMEA 0183 standard'
+version = '1.0.0'
+
+dependencies {
+  testCompile 'org.sensorhub:sensorhub-comm-rxtx:' + oshCoreVersion
+  testCompile 'org.sensorhub:sensorhub-comm-dio:' + oshCoreVersion
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+test {
+  exclude '**/TestNmeaGpsDriverDio.class'
+  exclude '**/TestNmeaGpsDriverRxtx.class'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.fakegps.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com' 
+    }
+  }
+}

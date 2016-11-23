@@ -1,0 +1,39 @@
+description = 'Axis Cameras'
+ext.details = 'Driver for Axis network video cameras using IP protocol'
+version = '1.0.0'
+
+dependencies {
+  compile project(':sensorhub-driver-rtpcam')
+  compile('net.sf.jipcam:jipcam:0.9.1') {
+    exclude group: 'servlet-api', module: 'javax.servlet'
+    exclude group: 'commons-cli', module: 'commons-cli'
+    exclude group: 'commons-httpclient', module: 'commons-httpclient'
+  }
+  testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+test {
+  exclude '**/TestAxisCameraDriver.class'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.axis.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'mikebotts'
+      name 'Mike Botts'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'http://www.botts-inc.com' 
+    }
+  }
+}

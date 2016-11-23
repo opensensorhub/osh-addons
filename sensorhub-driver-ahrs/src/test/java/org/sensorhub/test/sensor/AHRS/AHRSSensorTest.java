@@ -5,9 +5,6 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.ahrs.AHRSConfig;
 import org.sensorhub.impl.sensor.ahrs.AHRSSensor;
 
-import gnu.io.SerialPort;
-
-//import gnu.io.SerialPort;
 
 public class AHRSSensorTest 
 {
@@ -15,8 +12,6 @@ public class AHRSSensorTest
 	{
 		// Create serial object 
 		AHRSConfig mcfg = new AHRSConfig();
-
-		SerialPort serialPort;
 		
 		// Create instance of AHRSSensor class
 		AHRSSensor ahrs = new AHRSSensor();
