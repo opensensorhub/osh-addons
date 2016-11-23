@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>sensorhub-security-oauth</name>
-	<comment>Project sensorhub-security-oauth created by Buildship.</comment>
+	<name>osh-security</name>
+	<comment>Project osh-security created by Buildship.</comment>
 	<projects>
 	</projects>
 	<buildSpec>
