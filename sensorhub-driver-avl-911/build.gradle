@@ -1,0 +1,23 @@
+description = 'AVL 911 Sensor'
+ext.details = 'Driver for Automotive Vehicle Location mobile data'
+version = '1.0-SNAPSHOT'
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.avl.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'mikebotts'
+      name 'Mike Botts'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'http://www.botts-inc.com' 
+    }
+  }
+}
