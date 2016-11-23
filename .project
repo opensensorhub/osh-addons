@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>sensorhub-service-video</name>
-	<comment>Project sensorhub-service-video created by Buildship.</comment>
+	<name>osh-services</name>
+	<comment>Project osh-services created by Buildship.</comment>
 	<projects>
 	</projects>
 	<buildSpec>
