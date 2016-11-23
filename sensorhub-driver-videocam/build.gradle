@@ -1,0 +1,16 @@
+description = 'VideoCam Driver Helper'
+ext.details = 'Helper classes for video camera drivers'
+version = '1.0.0'
+
+task packageTests(type: Jar) {
+  from sourceSets.test.output
+  classifier = 'tests'
+}
+
+configurations {
+  testArtifacts
+}
+
+artifacts {
+  testArtifacts packageTests
+}
