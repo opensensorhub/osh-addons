@@ -6,5 +6,6 @@ repositories {
 }
 
 dependencies {
+  compile project(':sensorhub-core')
   compile 'jdk:jdk.dio:1.0.1'
 }
