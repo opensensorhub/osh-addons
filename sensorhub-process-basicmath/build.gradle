@@ -2,6 +2,10 @@ description = 'Simple Math Functions'
 ext.details = 'Simple math functions and processing blocks'
 version = '1.0.0'
 
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+}
+  
 // add info to OSGi manifest
 jar {
   manifest {
