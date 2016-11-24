@@ -2,6 +2,10 @@ description = 'Simulated Weather Sensor'
 ext.details = 'Demo sensor outputing weather data generated using exponentially correlated random variables'
 version = '1.0.0'
 
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+}
+  
 // add info to OSGi manifest
 jar {
   manifest {

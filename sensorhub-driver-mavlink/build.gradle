@@ -3,6 +3,7 @@ ext.details = 'Driver for MAVLink compatible UAV and robots'
 version = '1.0.0'
 
 dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   testCompile 'org.sensorhub:sensorhub-comm-rxtx:' + oshCoreVersion
 }
 

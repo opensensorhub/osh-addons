@@ -3,6 +3,7 @@ ext.details = 'Driver for VectorNav Inertial Navigation Systems'
 version = '0.1-SNAPSHOT'
 
 dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   testCompile 'org.sensorhub:sensorhub-comm-rxtx:' + oshCoreVersion
 }
 

@@ -3,10 +3,6 @@ version = oshCoreVersion
 
 
 subprojects {
-  dependencies {
-    compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  }
-
   // add project dependency to proper configuration depending on version
   // this is used to build different zip distributions
   afterEvaluate { p ->

@@ -2,6 +2,10 @@ description = 'Simulated GPS Sensor'
 ext.details = 'Demo sensor outputing simulated GPS data obtained using Google Directions API'
 version = '1.0.0'
 
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+}
+
 // add info to OSGi manifest
 jar {
   manifest {

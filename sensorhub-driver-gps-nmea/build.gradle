@@ -3,6 +3,7 @@ ext.details = 'Driver for GNSS sensors compatible with NMEA 0183 standard'
 version = '1.0.0'
 
 dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   testCompile 'org.sensorhub:sensorhub-comm-rxtx:' + oshCoreVersion
   testCompile 'org.sensorhub:sensorhub-comm-dio:' + oshCoreVersion
 }
