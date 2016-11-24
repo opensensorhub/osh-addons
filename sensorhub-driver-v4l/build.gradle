@@ -3,6 +3,7 @@ ext.details = 'Driver for Video4Linux compatible cameras'
 version = '1.0-SNAPSHOT'
 
 dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   compile project(':sensorhub-driver-rtpcam')
   compile 'edu.jcu:v4l4j:0.9.1'
   testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')

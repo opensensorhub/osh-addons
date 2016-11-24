@@ -3,6 +3,7 @@ ext.details = 'Driver for Axis network video cameras using IP protocol'
 version = '1.0.0'
 
 dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   compile project(':sensorhub-driver-rtpcam')
   compile('net.sf.jipcam:jipcam:0.9.1') {
     exclude group: 'servlet-api', module: 'javax.servlet'
