@@ -2,5 +2,5 @@ description = 'ZeroConf IP Network'
 ext.details = 'ZeroConf IP network adapter based on JmDNS'
 
 dependencies{
-  compile project(':sensorhub-core')
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
 }

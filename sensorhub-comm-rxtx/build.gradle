@@ -2,7 +2,7 @@ description = 'RXTX Serial Comm Provider'
 ext.details = 'Serial communication provider based on RXTX library'
 
 dependencies {
-  compile project(':sensorhub-core')
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   embedded files('libs/gnu/io/rxtx/2.2-pre1/rxtx-2.2-pre1.jar')
 }
 

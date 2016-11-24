@@ -2,5 +2,5 @@ description = 'Bluetooth LE Comm API'
 ext.details = 'Common API for Bluetooth LE implementations (e.g. GATT support)'
 
 dependencies {
-  compile project(':sensorhub-core')
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion  
 }
