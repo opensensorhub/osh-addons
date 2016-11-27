@@ -1,8 +1,10 @@
 description = 'Device I/O Comm Providers'
 ext.details = 'Direct device communication using JDK Device I/O library (UART, I2C, SPI, GPIO)'
 
-repositories {
-  maven { url "https://raw.github.com/eurotech/kura_addons/mvn-repo" }
+rootProject.allprojects {
+  repositories {
+    maven { url "https://raw.github.com/eurotech/kura_addons/mvn-repo" }
+  }
 }
 
 dependencies {
