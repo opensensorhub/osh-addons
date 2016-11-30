@@ -1,0 +1,28 @@
+description = 'Satellite Navigation Processing'
+ext.details = 'Algorithms used for satellite navigation (TLEs, ephemeris, etc...)'
+version = '1.0.0'
+
+dependencies {
+  compile project(':sensorhub-process-geoloc')
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Activator', 'org.sensorhub.process.geoloc.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com' 
+    }
+  }
+}
+
