@@ -1,4 +1,4 @@
-apply from: gradle.oshCoreDir + '/buildSrc/common.gradle'
+apply from: gradle.oshCoreDir + '/common.gradle'
 version = oshCoreVersion
 
 
