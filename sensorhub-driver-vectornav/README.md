@@ -1,2 +1,3 @@
-### VectorNav IMU
-OSH adaptor for VectorNav Inertial Navigation Unit (INU) sensors providing rotations about a East-North-Up reference frame. Communication is through a serial interface.
+### VectorNav INS
+
+Sensor adaptor for VectorNav Inertial Navigation System VN200 (fused IMU + GPS). Communication is through a serial interface.
