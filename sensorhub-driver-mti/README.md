@@ -1,2 +1,3 @@
 ### XSens MTi Inertial Measurement Unit (IMU)
-OSH adaptor for the XSens MTi IMU sensor providing rotations about a East-North-Up reference frame. Communication is through a serial interface.
+
+Sensor adaptor for the XSens MTi IMU providing raw measurements of acceleration, angular velocity and magnetic field direction, as well as fused absolute orientation. Communication is through a serial interface.

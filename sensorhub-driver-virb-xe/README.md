@@ -1,2 +1,7 @@
-### XSens MTi Inertial Measurement Unit (IMU)
-OSH adaptor for the XSens MTi IMU sensor providing rotations about a East-North-Up reference frame. Communication is through a serial interface.
+### Virb XE Video Camera 
+
+OSH adaptor for the Virb XE video camera.
+
+This driver depends on the following modules at runtime:
+  * sensorhub-driver-rtpcam
+  * sensorhub-driver-videocam
