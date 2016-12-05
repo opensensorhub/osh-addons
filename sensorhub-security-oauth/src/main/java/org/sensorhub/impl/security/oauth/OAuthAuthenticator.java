@@ -16,6 +16,7 @@ package org.sensorhub.impl.security.oauth;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.UUID;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -28,6 +29,7 @@ import org.apache.oltu.oauth2.client.request.OAuthClientRequest;
 import org.apache.oltu.oauth2.client.response.OAuthAuthzResponse;
 import org.apache.oltu.oauth2.client.response.OAuthJSONAccessTokenResponse;
 import org.apache.oltu.oauth2.client.response.OAuthResourceResponse;
+import org.apache.oltu.oauth2.common.OAuth;
 import org.apache.oltu.oauth2.common.OAuth.HttpMethod;
 import org.apache.oltu.oauth2.common.OAuthProviderType;
 import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
@@ -40,17 +42,32 @@ import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
+import org.slf4j.Logger;
 import com.google.gson.stream.JsonReader;
 
 
-public class OAuthAuthenticator extends LoginAuthenticator// implements Authenticator
+public class OAuthAuthenticator extends LoginAuthenticator
 {
+    private static final String GOOGLE_TOKEN_ENDPOINT = OAuthProviderType.GOOGLE.getTokenEndpoint();
+    private static final String GOOGLE_AUTHZ_ENDPOINT = OAuthProviderType.GOOGLE.getAuthzEndpoint();
+    private static final String GOOGLE_USERINFO_ENDPOINT = "https://www.googleapis.com/oauth2/v1/userinfo";
     private static final String GOOGLE_CLIENT_ID = "756042811191-k5q4tc6usq8dtkjpquq4ue78eq5mtru7.apps.googleusercontent.com";
     private static final String GOOGLE_CLIENT_SECRET = "7bIXZed1WZmDu9v5my-SYEYD";
     private static final String GOOGLE_SCOPE = "https://www.googleapis.com/auth/userinfo.profile";
     private static final String AUTH_METHOD_OAUTH2 = "OAUTH2";
+    
+    private Logger log;
+    private OAuthClientConfig config;
+    private String generatedState;
+    
 
-
+    public OAuthAuthenticator(OAuthClientConfig config, Logger log)
+    {
+        this.log = log;
+        this.config = config;
+    }
+    
+    
     @Override
     public String getAuthMethod()
     {
@@ -93,32 +110,36 @@ public class OAuthAuthenticator extends LoginAuthenticator// implements Authenti
             }
             
             // if calling back from provider with oauth code
-            if (request.getParameter("code") != null)
+            if (generatedState != null && request.getParameter(OAuth.OAUTH_CODE) != null)
             {
                 try
                 {
                     // first request temporary access token
                     OAuthAuthzResponse oar = OAuthAuthzResponse.oauthCodeAuthzResponse(request);
                     String code = oar.getCode();
-                    System.out.println("Code: " + code);
+                    log.debug("OAuth Code = " + code);
+                    
+                    // check state parameter
+                    if (!generatedState.equals(oar.getState()))
+                        throw OAuthProblemException.error("Invalid state parameter");
 
-                    OAuthClientRequest authRequest = OAuthClientRequest.tokenProvider(OAuthProviderType.GOOGLE).setCode(code).setClientId(GOOGLE_CLIENT_ID).setClientSecret(GOOGLE_CLIENT_SECRET)
+                    OAuthClientRequest authRequest = OAuthClientRequest.tokenLocation(config.tokenEndpoint).setCode(code).setClientId(config.clientID).setClientSecret(config.clientSecret)
                             .setRedirectURI(redirectUrl).setGrantType(GrantType.AUTHORIZATION_CODE).buildBodyMessage();
+                    authRequest.addHeader("Accept", "application/json");
 
                     OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
                     OAuthJSONAccessTokenResponse oAuthResponse = oAuthClient.accessToken(authRequest, HttpMethod.POST);
 
                     // read access token and store in session
                     String accessToken = oAuthResponse.getAccessToken();
-                    long expiresIn = oAuthResponse.getExpiresIn();
-                    System.out.println("Token: " + accessToken + ", Expires in " + expiresIn);
+                    log.debug("OAuth Token = " + accessToken);
 
                     // request user info
-                    OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest("https://www.googleapis.com/oauth2/v1/userinfo").setAccessToken(accessToken).buildQueryMessage();
+                    OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint).setAccessToken(accessToken).buildQueryMessage();
                     OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, HttpMethod.GET, OAuthResourceResponse.class);
 
                     // parse user info
-                    System.out.println("UserInfo: " + resourceResponse.getBody());
+                    log.debug("UserInfo = " + resourceResponse.getBody());
                     JsonReader jsonReader = new JsonReader(new StringReader(resourceResponse.getBody()));
                     String userId = parseUserInfoJson(jsonReader);
                     
@@ -137,7 +158,7 @@ public class OAuthAuthenticator extends LoginAuthenticator// implements Authenti
                 catch (OAuthProblemException | OAuthSystemException e)
                 {
                     e.printStackTrace();
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
                     return Authentication.SEND_FAILURE;
                 }
             }
@@ -148,8 +169,9 @@ public class OAuthAuthenticator extends LoginAuthenticator// implements Authenti
                 try
                 {
                     // generate request to auth provider
-                    OAuthClientRequest authRequest = OAuthClientRequest.authorizationProvider(OAuthProviderType.GOOGLE).setClientId(GOOGLE_CLIENT_ID).setRedirectURI(redirectUrl)
-                            .setResponseType("code").setScope(GOOGLE_SCOPE).buildQueryMessage();
+                    this.generatedState = UUID.randomUUID().toString();
+                    OAuthClientRequest authRequest = OAuthClientRequest.authorizationLocation(config.authzEndpoint).setClientId(config.clientID).setRedirectURI(redirectUrl)
+                            .setResponseType(OAuth.OAUTH_CODE).setScope(config.authzScope).setState(generatedState).buildQueryMessage();
 
                     // send as redirect
                     String loginUrl = authRequest.getLocationUri();
@@ -159,7 +181,7 @@ public class OAuthAuthenticator extends LoginAuthenticator// implements Authenti
                 catch (OAuthSystemException e)
                 {
                     e.printStackTrace();
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
                     return Authentication.SEND_FAILURE;
                 }
             }
@@ -180,7 +202,7 @@ public class OAuthAuthenticator extends LoginAuthenticator// implements Authenti
         while (reader.hasNext())
         {
             String name = reader.nextName();
-            if (name.equals("id"))
+            if (name.equals("id") || name.equals("user_id"))
                 userId = reader.nextString();
             else
                 reader.skipValue();
@@ -189,5 +211,4 @@ public class OAuthAuthenticator extends LoginAuthenticator// implements Authenti
         
         return userId;
     }
-
 }
