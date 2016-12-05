@@ -1,7 +1,14 @@
 description = 'Bluetooth LE Comm Network (D-Bus)'
 ext.details = 'Bluetooth Smart (Low Energy) network adapter based on D-Bus (Linux only)'
 
+def thisProjectDir = projectDir
+rootProject.allprojects {
+  repositories {
+    maven { url "file:///$thisProjectDir/libs" }
+  }
+}
+
 dependencies {
   compile project(':sensorhub-comm-ble')
-  embedded files('libs/org/freedesktop/dbus/2.8/dbus-2.8.jar')
+  embedded 'org.freedesktop:dbus:2.8'
 }
