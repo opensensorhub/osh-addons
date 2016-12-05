@@ -2,10 +2,17 @@ description = 'Video4Linux Cameras'
 ext.details = 'Driver for Video4Linux compatible cameras'
 version = '1.0-SNAPSHOT'
 
+def thisProjectDir = projectDir
+rootProject.allprojects {
+  repositories {
+    maven { url "file:///$thisProjectDir/libs" }
+  }
+}
+
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   compile project(':sensorhub-driver-videocam')
-  embedded files('libs/edu/jcu/v4l4j/0.9.1/v4l4j-0.9.1.jar')
+  embedded 'edu.jcu:v4l4j:0.9.1'
   testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
 }
 
