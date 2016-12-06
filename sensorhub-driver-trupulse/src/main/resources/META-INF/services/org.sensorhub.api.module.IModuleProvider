@@ -1,2 +1,2 @@
-org.sensorhub.impl.sensor.trupulse.TruPulseModuleDescriptor
-org.sensorhub.impl.process.trupulse.TargetGeolocModuleDescriptor
+org.sensorhub.impl.sensor.trupulse.TruPulseDescriptor
+org.sensorhub.impl.process.trupulse.TargetGeolocDescriptor
