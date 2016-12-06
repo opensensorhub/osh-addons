@@ -12,55 +12,37 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.nmea.gps;
+package org.sensorhub.impl.sensor.v4l;
 
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class NMEAGpsModuleDescriptor implements IModuleProvider
+/**
+ * <p>
+ * Descriptor of V4L driver module for automatic discovery
+ * by the ModuleRegistry
+ * </p>
+ *
+ * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @since Sep 7, 2013
+ */
+public class V4LCameraDescriptor extends JarModuleProvider implements IModuleProvider
 {
-
-    @Override
-    public String getModuleName()
-    {
-        return "NMEA GPS Sensor";
-    }
-
-
-    @Override
-    public String getModuleDescription()
-    {
-        return "Sensor driver for NMEA 0183 compatible GPS sensors";
-    }
-
-
-    @Override
-    public String getModuleVersion()
-    {
-        return "0.1";
-    }
-
-
-    @Override
-    public String getProviderName()
-    {
-        return "Sensia Software LLC";
-    }
-
 
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return NMEAGpsSensor.class;
+        return V4LCameraDriver.class;
     }
 
 
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return NMEAGpsConfig.class;
+        return V4LCameraConfig.class;
     }
 
 }

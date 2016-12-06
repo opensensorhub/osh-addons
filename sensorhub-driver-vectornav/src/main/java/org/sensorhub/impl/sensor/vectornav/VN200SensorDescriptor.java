@@ -17,40 +17,18 @@ package org.sensorhub.impl.sensor.vectornav;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class VN200ModuleDescriptor implements IModuleProvider
+public class VN200SensorDescriptor extends JarModuleProvider implements IModuleProvider
 {
-    @Override
-    public String getModuleName()
-    {
-        return "VectorNav VN200 GPS/INS";
-    }
-
-    @Override
-    public String getModuleDescription()
-    {
-        return "Driver for VN200 GPS aided Inertial Navigation System from VectorNav";
-    }
-
-    @Override
-    public String getModuleVersion()
-    {
-        return "0.1";
-    }
-
-    @Override
-    public String getProviderName()
-    {
-        return "Sensia Software LLC";
-    }
-
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
         return VN200Sensor.class;
     }
 
+    
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {

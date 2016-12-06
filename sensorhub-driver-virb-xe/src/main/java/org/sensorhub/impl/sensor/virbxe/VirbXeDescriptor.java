@@ -12,48 +12,26 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.bno055;
+package org.sensorhub.impl.sensor.virbxe;
 
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class Bno055ModuleDescriptor implements IModuleProvider
+public class VirbXeDescriptor extends JarModuleProvider implements IModuleProvider
 {
-    @Override
-    public String getModuleName()
-    {
-        return "BNO055 Absolute Orientation Sensor";
-    }
-
-    @Override
-    public String getModuleDescription()
-    {
-        return "Driver for BNO055 Absolute Orientation Sensor built by Bosch";
-    }
-
-    @Override
-    public String getModuleVersion()
-    {
-        return "0.1";
-    }
-
-    @Override
-    public String getProviderName()
-    {
-        return "Botts Innovative Research Inc.";
-    }
-
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return Bno055Sensor.class;
+        return VirbXeDriver.class;
     }
 
+    
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return Bno055Config.class;
+        return VirbXeConfig.class;
     }
 }
