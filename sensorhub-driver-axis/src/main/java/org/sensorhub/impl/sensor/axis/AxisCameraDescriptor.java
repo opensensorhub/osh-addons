@@ -18,43 +18,11 @@ package org.sensorhub.impl.sensor.axis;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
-/**
- * <p>
- * Implementation of sensor interface for generic Axis Cameras using IP
- * protocol. This particular class provides a description of the Axis
- * IP video camera module.
- * </p>
- * 
- * @author Mike Botts <mike.botts@botts-inc.com>
- * @since October 30, 2014
- */
-public class AxisCameraModuleDescriptor implements IModuleProvider
+
+public class AxisCameraDescriptor extends JarModuleProvider implements IModuleProvider
 {
-
-	@Override
-	public String getModuleName()
-	{
-		return "Axis IP Video Camera";
-	}
-
-	@Override
-	public String getModuleDescription()
-	{
-		return "Supports access to video and tasking of Pan-Tilt-Zoom gimbal for any Axis video camera using IP protocol";
-	}
-
-	@Override
-	public String getModuleVersion()
-	{
-		return "0.1";
-	}
-
-	@Override
-	public String getProviderName()
-	{
-		return "Botts Innovative Research Inc.";
-	}
 
 	@Override
 	public Class<? extends IModule<?>> getModuleClass()
@@ -62,6 +30,7 @@ public class AxisCameraModuleDescriptor implements IModuleProvider
 		return AxisCameraDriver.class;	
 	}
 
+	
 	@Override
 	public Class<? extends ModuleConfig> getModuleConfigClass()
 	{

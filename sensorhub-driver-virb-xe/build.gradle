@@ -1,5 +1,5 @@
 description = 'Garmin VIRB-XE Camera'
-ext.details = 'Driver for Garmin VIRB-XE camera which includes GPS and orientation sensors'
+ext.details = 'Driver for Garmin VIRB-XE camera which includes GPS, orientation and ANT+ external sensors'
 version = '1.0.0'
 
 dependencies {

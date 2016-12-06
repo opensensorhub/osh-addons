@@ -12,64 +12,26 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.v4l;
+package org.sensorhub.impl.sensor.fakecam;
 
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 
-/**
- * <p>
- * Descriptor of V4L driver module for automatic discovery
- * by the ModuleRegistry
- * </p>
- *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
- * @since Sep 7, 2013
- */
-public class V4LCameraModuleDescriptor implements IModuleProvider
+public class FakeCamDescriptor extends JarModuleProvider implements IModuleProvider
 {
-
-    @Override
-    public String getModuleName()
-    {
-        return "Video4Linux Camera Driver";
-    }
-    
-    
-    @Override
-    public String getModuleDescription()
-    {
-        return "Driver supporting any V4L2 compatible camera on Linux (not supported on Windows platform)";
-    }
-
-
-    @Override
-    public String getModuleVersion()
-    {
-        return "0.5";
-    }
-
-
-    @Override
-    public String getProviderName()
-    {
-        return "Sensia Software LLC";
-    }
-
-
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return V4LCameraDriver.class;
+        return FakeCamSensor.class;
     }
 
 
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return V4LCameraConfig.class;
+        return FakeCamConfig.class;
     }
-
 }

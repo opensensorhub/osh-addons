@@ -1,4 +1,4 @@
-description = 'RTP Camera Driver'
+description = 'RTSP/RTP Camera Driver'
 ext.details = 'Sensor driver for IP cameras streaming H264 video through RTSP/RTP'
 version = '1.0.0'
 

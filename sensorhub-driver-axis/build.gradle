@@ -1,5 +1,5 @@
-description = 'Axis Cameras'
-ext.details = 'Driver for Axis network video cameras using IP protocol'
+description = 'Axis Video Camera'
+ext.details = 'Driver for IP video cameras from Axis (with PTZ tasking support)'
 version = '1.0.0'
 
 dependencies {
