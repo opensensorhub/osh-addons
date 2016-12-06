@@ -1,5 +1,5 @@
-description = 'VectorNav INS Sensor'
-ext.details = 'Driver for VectorNav Inertial Navigation Systems'
+description = 'VectorNav VN200 GPS/INS'
+ext.details = 'Driver for VectorNav VN200 Inertial Navigation Systems'
 version = '0.1-SNAPSHOT'
 
 dependencies {

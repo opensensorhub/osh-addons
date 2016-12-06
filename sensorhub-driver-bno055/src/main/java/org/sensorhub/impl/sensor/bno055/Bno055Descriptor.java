@@ -12,48 +12,26 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.virbxe;
+package org.sensorhub.impl.sensor.bno055;
 
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class VirbXeModuleDescriptor implements IModuleProvider
+public class Bno055Descriptor extends JarModuleProvider implements IModuleProvider
 {
-    @Override
-    public String getModuleName()
-    {
-        return "Garmin VIRB XE Camera";
-    }
-
-    @Override
-    public String getModuleDescription()
-    {
-        return "Driver for Garmin VIRB XE camera, GPS, Orientation, and ANT+ sensors";
-    }
-
-    @Override
-    public String getModuleVersion()
-    {
-        return "0.1";
-    }
-
-    @Override
-    public String getProviderName()
-    {
-        return "Botts Innovative Research Inc.";
-    }
-
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return VirbXeDriver.class;
+        return Bno055Sensor.class;
     }
 
+    
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return VirbXeConfig.class;
+        return Bno055Config.class;
     }
 }

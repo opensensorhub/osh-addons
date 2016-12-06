@@ -17,40 +17,11 @@ package org.sensorhub.impl.sensor.plume;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 
-
-public class PlumeModuleDescriptor implements IModuleProvider
+public class PlumeDescriptor extends JarModuleProvider implements IModuleProvider
 {
-
-    @Override
-    public String getModuleName()
-    {
-        return "PlumeModel";
-    }
-
-
-    @Override
-    public String getModuleDescription()
-    {
-        return "SensorHub driver for tasking and serving data output by the Lagrangian Plume moderl developed at University of Alabama in Huntsville ";
-    }
-
-
-    @Override
-    public String getModuleVersion()
-    {
-        return "0.1";
-    }
-
-
-    @Override
-    public String getProviderName()
-    {
-        return "Botts Inc.";
-    }
-
-
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
@@ -63,5 +34,4 @@ public class PlumeModuleDescriptor implements IModuleProvider
     {
         return PlumeConfig.class;
     }
-
 }

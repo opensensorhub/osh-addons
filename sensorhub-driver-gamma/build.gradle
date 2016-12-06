@@ -1,5 +1,5 @@
 description = 'Gamma Sensor'
-ext.details = 'Driver for gamma sensor model 2070'
+ext.details = 'Driver for gamma sensor model 2070 by Health Physics Instruments'
 version = '0.1-SNAPSHOT'
 
 dependencies {

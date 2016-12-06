@@ -12,55 +12,28 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.rtpcam;
+package org.sensorhub.impl.sensor.fakegps;
 
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class RTPCameraModuleDescriptor implements IModuleProvider
+public class FakeGpsDescriptor extends JarModuleProvider implements IModuleProvider
 {
-
-    @Override
-    public String getModuleName()
-    {
-        return "RTP/RTSP Camera Driver";
-    }
-    
-    
-    @Override
-    public String getModuleDescription()
-    {
-        return "Driver for RTP/RTSP cameras";
-    }
-
-
-    @Override
-    public String getModuleVersion()
-    {
-        return "0.1";
-    }
-
-
-    @Override
-    public String getProviderName()
-    {
-        return "Sensia Software LLC";
-    }
-
 
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return RTPCameraDriver.class;
+        return FakeGpsSensor.class;
     }
 
 
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return RTPCameraConfig.class;
+        return FakeGpsConfig.class;
     }
 
 }

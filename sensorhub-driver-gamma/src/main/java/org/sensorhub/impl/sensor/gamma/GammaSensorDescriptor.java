@@ -1,5 +1,4 @@
-
-package org.sensorhub.impl.sensor.ahrs;
+package org.sensorhub.impl.sensor.gamma;
 
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
@@ -7,18 +6,18 @@ import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class AHRSModuleDescriptor extends JarModuleProvider implements IModuleProvider 
+public class GammaSensorDescriptor extends JarModuleProvider implements IModuleProvider
 {
 	@Override
 	public Class<? extends IModule<?>> getModuleClass()
 	{
-		return AHRSSensor.class;
+		return GammaSensor.class;
 	}
 	
-
+	
 	@Override
 	public Class<? extends ModuleConfig> getModuleConfigClass()
 	{
-		return AHRSConfig.class;
+		return GammaConfig.class;
 	}
 }

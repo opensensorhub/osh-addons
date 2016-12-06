@@ -17,39 +17,11 @@ package org.sensorhub.impl.sensor.fakecam;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class FakeCamModuleDescriptor implements IModuleProvider
+public class FakeCamDescriptor extends JarModuleProvider implements IModuleProvider
 {
-
-    @Override
-    public String getModuleName()
-    {
-        return "Fake Camera Sensor";
-    }
-
-
-    @Override
-    public String getModuleDescription()
-    {
-        return "Sensor outputing fake video data generated from a video file";
-    }
-
-
-    @Override
-    public String getModuleVersion()
-    {
-        return "0.1";
-    }
-
-
-    @Override
-    public String getProviderName()
-    {
-        return "Sensia Software LLC";
-    }
-
-
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
@@ -62,5 +34,4 @@ public class FakeCamModuleDescriptor implements IModuleProvider
     {
         return FakeCamConfig.class;
     }
-
 }

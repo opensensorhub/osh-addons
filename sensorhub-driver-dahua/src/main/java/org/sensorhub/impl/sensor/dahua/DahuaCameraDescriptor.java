@@ -18,49 +18,11 @@ package org.sensorhub.impl.sensor.dahua;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
-
-/**
- * <p>
- * Implementation of sensor interface for generic Dahua Cameras using IP
- * protocol. This particular class provides a description of the Dahua
- * IP video camera module.
- * </p>
- *
- * <p>
- * Copyright (c) 2016
- * </p>
- * 
- * @author Mike Botts <mike.botts@botts-inc.com>
- * @since March 2016
- */
+import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class DahuaCameraModuleDescriptor implements IModuleProvider
+public class DahuaCameraDescriptor extends JarModuleProvider implements IModuleProvider
 {
-
-	@Override
-	public String getModuleName()
-	{
-		return "Dahua IP Video Camera";
-	}
-
-	@Override
-	public String getModuleDescription()
-	{
-		return "Supports access to video and tasking of Pan-Tilt-Zoom gimbal for any Dahua video camera using IP protocol";
-	}
-
-	@Override
-	public String getModuleVersion()
-	{
-		return "0.1";
-	}
-
-	@Override
-	public String getProviderName()
-	{
-		return "Botts Innovative Research Inc.";
-	}
 
 	@Override
 	public Class<? extends IModule<?>> getModuleClass()
@@ -68,6 +30,7 @@ public class DahuaCameraModuleDescriptor implements IModuleProvider
 		return DahuaCameraDriver.class;	
 	}
 
+	
 	@Override
 	public Class<? extends ModuleConfig> getModuleConfigClass()
 	{

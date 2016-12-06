@@ -1,5 +1,5 @@
 description = 'Simulated Weather Sensor'
-ext.details = 'Demo sensor outputing weather data generated using exponentially correlated random variables'
+ext.details = 'Demo sensor outputting pseudo random weather measurements'
 version = '1.0.0'
 
 dependencies {

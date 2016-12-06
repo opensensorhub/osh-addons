@@ -18,6 +18,6 @@ public class AVLConfig extends SensorConfig
 	
     @Required
     @DisplayInfo(desc="Communication settings to connect to AVL data")
-    public CommProviderConfig<?> commSettings;
+    public CommProviderConfig<?> commSettings = new MultipleFilesProviderConfig();
     
 }

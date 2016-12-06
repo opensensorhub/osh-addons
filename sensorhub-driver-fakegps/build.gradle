@@ -1,5 +1,5 @@
 description = 'Simulated GPS Sensor'
-ext.details = 'Demo sensor outputing simulated GPS data obtained using Google Directions API'
+ext.details = 'Demo sensor outputting simulated GPS data obtained using Google Directions API'
 version = '1.0.0'
 
 dependencies {

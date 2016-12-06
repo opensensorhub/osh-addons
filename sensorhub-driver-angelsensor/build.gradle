@@ -1,5 +1,5 @@
 description = 'Angel Sensor'
-ext.details = 'Driver for Angel Sensor wrist band'
+ext.details = 'Driver for Angel Sensor BLE wrist band'
 version = '0.1-SNAPSHOT'
 
 dependencies {

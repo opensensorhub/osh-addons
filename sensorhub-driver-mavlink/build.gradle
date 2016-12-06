@@ -1,4 +1,4 @@
-description = 'MAVLink Systems'
+description = 'MAVLink System'
 ext.details = 'Driver for MAVLink compatible UAV and robots'
 version = '1.0.0'
 

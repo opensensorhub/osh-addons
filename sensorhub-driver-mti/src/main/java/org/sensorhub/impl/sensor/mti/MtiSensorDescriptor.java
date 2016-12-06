@@ -17,39 +17,17 @@ package org.sensorhub.impl.sensor.mti;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class MtiModuleDescriptor implements IModuleProvider
+public class MtiSensorDescriptor extends JarModuleProvider implements IModuleProvider
 {
-    @Override
-    public String getModuleName()
-    {
-        return "XSens MTi Inertial Motion Unit";
-    }
-
-    @Override
-    public String getModuleDescription()
-    {
-        return "Driver for MTi Inertial Motion Unit built by XSens";
-    }
-
-    @Override
-    public String getModuleVersion()
-    {
-        return "0.1";
-    }
-
-    @Override
-    public String getProviderName()
-    {
-        return "Sensia Software LLC";
-    }
-
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
         return MtiSensor.class;
     }
+    
 
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()

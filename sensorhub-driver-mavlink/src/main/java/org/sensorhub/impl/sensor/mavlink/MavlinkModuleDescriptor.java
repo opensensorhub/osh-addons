@@ -17,39 +17,11 @@ package org.sensorhub.impl.sensor.mavlink;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class MavlinkModuleDescriptor implements IModuleProvider
+public class MavlinkModuleDescriptor extends JarModuleProvider implements IModuleProvider
 {
-
-    @Override
-    public String getModuleName()
-    {
-        return "MAVLink System";
-    }
-
-
-    @Override
-    public String getModuleDescription()
-    {
-        return "Driver for MAVLink enabled system";
-    }
-
-
-    @Override
-    public String getModuleVersion()
-    {
-        return "0.1";
-    }
-
-
-    @Override
-    public String getProviderName()
-    {
-        return "Sensia Software LLC";
-    }
-
-
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
@@ -62,5 +34,4 @@ public class MavlinkModuleDescriptor implements IModuleProvider
     {
         return MavlinkConfig.class;
     }
-
 }
