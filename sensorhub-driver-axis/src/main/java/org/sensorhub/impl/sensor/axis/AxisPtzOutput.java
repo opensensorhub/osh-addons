@@ -17,6 +17,7 @@ package org.sensorhub.impl.sensor.axis;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -28,6 +29,7 @@ import java.util.TimerTask;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.TextEncoding;
+import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
@@ -57,11 +59,22 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
     // Set default timezone to GMT; check TZ in init below
     TimeZone tz = TimeZone.getTimeZone("UTC");
     DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
-    
+    URL optionsURL = null;
+    URL ptzURL = null;
 
     public AxisPtzOutput(AxisCameraDriver driver)
     {
         super(driver);
+        
+        try {
+
+            optionsURL = new URL(parentSensor.getHostUrl() + driver.VAPIX_QUERY_PARAMS_LIST_GROUP_PTZ);
+            ptzURL = new URL(parentSensor.getHostUrl() + driver.VAPIX_QUERY_PTZ_PATH);
+
+        } catch (MalformedURLException e) {
+           
+            e.printStackTrace();
+        }
     }
 
 
@@ -88,37 +101,11 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
         double maxTilt = 0.0;
         double minZoom = 1.0;
         double maxZoom = 13333;
-        //double minFieldAngle = 4.4;
-        //double maxFieldAngle = 51.6;
-
         
         try
         {
-        	         
-	        /** Need to set TimeZone  **/
-        	// getting the time zone should be done in driver class
-        	// just using computer time instead of camera time for now
-        	// NOTE: SET TIMEZONE TO UTC ON CAMERA OR GET FROM LOCAL SYSTEM OR CONVERT
-        	// NOTE: this particular command may have trouble without admin password
-            /*URL optionsURL = new URL("http://" + ipAddress + "/axis-cgi/admin/param.cgi?action=list&group=root.Time.TimeZone");
-            HttpURLConnection connect = (HttpURLConnection)optionsURL.openConnection();
-            connect.addRequestProperty(key, value);
-            //InputStream is = optionsURL.openStream();
-            BufferedReader limitReader = new BufferedReader(new InputStreamReader(is));
-            
-            String line;
-            while ((line = limitReader.readLine()) != null)
-            {
-                // parse response
-                String[] tokens = line.split("=");
-
-    	        // root.Time.TimeZone=GMT-6
-                if (tokens[0].trim().equalsIgnoreCase("root.Time.TimeZone"))
-                	df.setTimeZone(TimeZone.getTimeZone(tokens[1]));   	
-            }*/        	
 
             /** request PTZ Limits  **/
-            URL optionsURL = new URL(parentSensor.getHostUrl() + "/view/param.cgi?action=list&group=PTZ.Limit");
             InputStream is = optionsURL.openStream();
             BufferedReader limitReader = new BufferedReader(new InputStreamReader(is));
 
@@ -139,10 +126,6 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
                     maxTilt = Double.parseDouble(tokens[1]);
                 else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MaxZoom"))
                     maxZoom = Double.parseDouble(tokens[1]);
-//                else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MinFieldAngle"))
-//                    minFieldAngle = Double.parseDouble(tokens[1]);
-//                else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MaxFieldAngle"))
-//                    maxFieldAngle = Double.parseDouble(tokens[1]);
             }
             
         }
@@ -165,7 +148,7 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
         // start the timer thread
         try
         {
-            final URL getSettingsUrl = new URL(parentSensor.getHostUrl() + "/view/param.cgi?query=position");
+         
             final DataComponent dataStruct = settingsDataStruct.copy();
             dataStruct.assignNewDataBlock();
 
@@ -179,7 +162,7 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
                     // send http query
                     try
                     {
-                        is = getSettingsUrl.openStream();
+                        is = ptzURL.openStream();
                         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
                         dataStruct.renewDataBlock();
 
@@ -188,38 +171,39 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
                         dataStruct.getComponent("time").getData().setDoubleValue(time);
 
                         String line;
+
+                        short lines = 0;
+                        final byte totalReads = 3;
+
                         while ((line = reader.readLine()) != null)
                         {
                             // parse response
                             String[] tokens = line.split("=");
-
                             if (tokens[0].trim().equalsIgnoreCase("pan"))
                             {
-                                float val = Float.parseFloat(tokens[1]);
-                                dataStruct.getComponent("pan").getData().setFloatValue(val);
+                                dataStruct.getComponent("pan").getData().setFloatValue(Float.parseFloat(tokens[1]));
+                                lines++;
                             }
                             else if (tokens[0].trim().equalsIgnoreCase("tilt"))
                             {
-                                float val = Float.parseFloat(tokens[1]);
-                                dataStruct.getComponent("tilt").getData().setFloatValue(val);
+                                dataStruct.getComponent("tilt").getData().setFloatValue(Float.parseFloat(tokens[1]));
+                                lines++;
                             }
                             else if (tokens[0].trim().equalsIgnoreCase("zoom"))
                             {
-                                int val = Integer.parseInt(tokens[1]);
-                                dataStruct.getComponent("zoomFactor").getData().setIntValue(val);
-                            }
-                            // NOTE: position doesn't return field angle !!!
-//                            else if (tokens[0].trim().equalsIgnoreCase("fieldAngle"))
-//                            {
-//                                int val = Integer.parseInteger(tokens[1]);
-//                                dataStruct.getComponent("fieldAngle").getData().setIntValue(val);
-//
-//                            }
+                                dataStruct.getComponent("zoomFactor").getData().setIntValue(Integer.parseInt(tokens[1]));
+                                lines++;
+                            } 
+                            
                         }
 
-                        latestRecord = dataStruct.getData();
-                        latestRecordTime = System.currentTimeMillis();
-                        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AxisPtzOutput.this, latestRecord));
+                        if (lines == totalReads) {
+                            latestRecord = dataStruct.getData();
+                            latestRecordTime = System.currentTimeMillis();
+                            eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AxisPtzOutput.this, latestRecord));
+                        } else {
+                            throw new SensorException("Invalid sensor data from AXIS camera. AXIS url: " + ptzURL.toString());
+                        }
                     }
                     catch (Exception e)
                     {
