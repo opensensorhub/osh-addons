@@ -62,7 +62,7 @@ public class AxisCameraConfig extends SensorConfig {
     
     @DisplayInfo(label="Enable MJPEG", desc="Enable MJPEG encoded video output (accessible through HTTP)")
     public boolean enableMJPEG;
-    
+
     
 	// TODO: Set variable for mounting (top up, top down, top sideways) or better set mounting angles relative to NED/ENU
     // ALSO, use flip=yes/no to flip image if necessary	
@@ -114,7 +114,7 @@ public class AxisCameraConfig extends SensorConfig {
         // default params for Axis
         video.resolution = ResolutionEnum._4CIF;
         rtsp.remotePort = 554;
-        rtsp.videoPath = "/axis-media/media.amp?videocodec=h264";        
+        rtsp.videoPath = AxisCameraDriver.DEFAULT_RTSP_VIDEO_PATH;        
         rtsp.localUdpPort = 20100;
     }
     
