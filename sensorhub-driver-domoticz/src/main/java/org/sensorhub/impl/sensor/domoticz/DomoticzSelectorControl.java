@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.zwavedom;
+package org.sensorhub.impl.sensor.domoticz;
 
 import java.io.InputStream;
 import java.net.URL;
@@ -16,11 +16,11 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.Text;
 
 
-public class ZWaveDomLightControl extends AbstractSensorControl<ZWaveDomDriver>
+public class ZWaveDomLightControl extends AbstractSensorControl<DomoticzDriver>
 {
 	DataChoice commandData;
 
-	public ZWaveDomLightControl(ZWaveDomDriver driver)
+	public ZWaveDomLightControl(DomoticzDriver driver)
 	{
 		super(driver);
 	}
