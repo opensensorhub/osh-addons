@@ -15,13 +15,17 @@ import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.domoticz.DomoticzDriver.ValidDevice;
 import org.sensorhub.impl.sensor.domoticz.DomoticzHandler.DomoticzResponse;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
+import net.opengis.swe.v20.Text;
+import net.opengis.swe.v20.Vector;
 
 public class DomoticzSelectorOutput extends AbstractSensorOutput<DomoticzDriver>
 {
@@ -44,38 +48,48 @@ public class DomoticzSelectorOutput extends AbstractSensorOutput<DomoticzDriver>
     {
     	System.out.println("Adding Selector SWE Template");
     	
-    	SWEHelper sweHelp = new SWEHelper();
-    	selectorComp = sweHelp.newDataRecord(4);
+    	SWEHelper sweHelpSelector = new SWEHelper();
+    	DomoticzSWEHelper sweDomSelector = new DomoticzSWEHelper();
+    	
+    	selectorComp = sweHelpSelector.newDataRecord(9);
     	selectorComp.setName(getName());
     	selectorComp.setDefinition("http://sensorml.com/ont/swe/property/Selector");
 
-    	Quantity idx = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/SensorID", 
-        		"Sensor ID", 
-        		"ID of Sensor", 
-        		null, DataType.ASCII_STRING);
-    	selectorComp.addComponent("idx", idx);
-    	
-    	selectorComp.addComponent("time", sweHelp.newTimeStampIsoUTC());
-		
-		Quantity battery = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/BatteryLevel", 
-        		"Battery Level", 
-        		"Battery Level of Switch", 
-        		"%", DataType.INT);
-		selectorComp.addComponent("batteryLevel", battery);
-		
-		Quantity level = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/SetLevel", 
-        		"Set Level", 
-        		"Level of Selector Switch", 
-        		"%", DataType.INT);
-		selectorComp.addComponent("setLevel", level);
+    	selectorComp.addComponent("idx", sweDomSelector.getIdxSWE()); // dataRecord(0)
+    	selectorComp.addComponent("name", sweDomSelector.getNameSWE()); // dataRecord(1)
+    	selectorComp.addComponent("time", sweHelpSelector.newTimeStampIsoUTC()); // dataRecord(2)
+    	selectorComp.addComponent("switchState", sweDomSelector.getSwitchStateSWE()); // dataRecord(3)
+    	selectorComp.addComponent("setLevel", sweDomSelector.getSetLevelSWE()); // dataRecord(4)
+    	selectorComp.addComponent("latLonAlt", sweDomSelector.getLocVecSWE()); // dataRecord(5, 6, 7)
+    	selectorComp.addComponent("locationDesc", sweDomSelector.getLocDescSWE()); // dataRecord(8)
 
     	// also generate encoding definition
-    	selectorEncoding = sweHelp.newTextEncoding(",", "\n");
+    	selectorEncoding = sweHelpSelector.newTextEncoding(",", "\n");
     }
     
-    protected void postSelectorData(ValidDevice validSelector)
+    protected void postSelectorData(DomoticzResponse domSelectorData, ValidDevice validSelector)
     {
     	System.out.println("posting Selector data for idx " + validSelector.getValidIdx());
+    	
+    	double time = System.currentTimeMillis() / 1000.;
+    	String locDesc = (validSelector.getValidLocDesc().isEmpty()) ? "undeclared" : validSelector.getValidLocDesc();
+
+    	// build and publish databook
+    	DataBlock dataBlock = selectorComp.createDataBlock();
+    	dataBlock.setStringValue(0, domSelectorData.getResult()[0].getIdx());
+    	dataBlock.setStringValue(1, domSelectorData.getResult()[0].getName());
+    	dataBlock.setDoubleValue(2, time);
+    	dataBlock.setStringValue(3, domSelectorData.getResult()[0].getStatus());
+    	dataBlock.setIntValue(4, domSelectorData.getResult()[0].getLevel());
+    	dataBlock.setDoubleValue(5, validSelector.getValidLocationLLA().getLat());
+    	dataBlock.setDoubleValue(6, validSelector.getValidLocationLLA().getLon());
+    	dataBlock.setDoubleValue(7, validSelector.getValidLocationLLA().getAlt());
+    	dataBlock.setStringValue(8, locDesc);
+    	
+        // update latest record and send event
+        latestRecord = dataBlock;
+        latestRecordTime = System.currentTimeMillis();
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, DomoticzSelectorOutput.this, dataBlock)); 
     }
     
     protected void start()

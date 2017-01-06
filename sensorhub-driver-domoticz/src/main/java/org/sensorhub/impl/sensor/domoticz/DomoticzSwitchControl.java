@@ -29,7 +29,7 @@ public class DomoticzSwitchControl extends AbstractSensorControl<DomoticzDriver>
 	@Override
 	public String getName()
 	{
-		return "selectorControl";
+		return "switchControl";
 	}
 
 	
@@ -52,11 +52,6 @@ public class DomoticzSwitchControl extends AbstractSensorControl<DomoticzDriver>
         		"Toggle", 
         		"Toggle switch");
 		commandData.addItem("toggle", toggle);
-		
-		Text dim = sweHelp.newText("http://sensorml.com/ont/swe/property/dim", 
-        		"Dim", 
-        		"Value for dimmable light");
-		commandData.addItem("dim", dim);
 	}
 	
 	
@@ -77,7 +72,6 @@ public class DomoticzSwitchControl extends AbstractSensorControl<DomoticzDriver>
     	// associate command data to msg structure definition
         DataChoice commandMsg = (DataChoice) commandData.copy();
         commandMsg.setData(command);
-        
         DataComponent component = ((DataChoiceImpl) commandMsg).getSelectedItem();
         String indexName = component.getName();
         String cmd = "";
@@ -88,8 +82,6 @@ public class DomoticzSwitchControl extends AbstractSensorControl<DomoticzDriver>
         	cmd = "Off";
         else if (indexName.equalsIgnoreCase("toggle"))
         	cmd = "Toggle";
-
-        // Need to add case for dim
         
         DataBlock data = component.getData();
         
@@ -98,7 +90,7 @@ public class DomoticzSwitchControl extends AbstractSensorControl<DomoticzDriver>
         // send request
         try
         {
-        	System.out.println("Setting Sensor " + idx + " " + cmd);
+        	System.out.println("Setting Switch " + idx + " " + cmd);
 			URL optionsURL = new URL(parentSensor.getHostURL() + 
 					"type=command&param=switchlight&idx=" + idx + "&switchcmd=" + cmd);
 			InputStream is = optionsURL.openStream();

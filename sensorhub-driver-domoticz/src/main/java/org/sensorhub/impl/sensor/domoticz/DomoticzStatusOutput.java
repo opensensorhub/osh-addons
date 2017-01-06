@@ -75,25 +75,8 @@ public class DomoticzStatusOutput extends AbstractSensorOutput<DomoticzDriver>
     	
     	int batt = (domStatusData.getResult()[0].getBatteryLevel() != 255) ? domStatusData.getResult()[0].getBatteryLevel():-1;
     	double time = System.currentTimeMillis() / 1000.;
-    	double lat = Double.NaN;
-    	double lon = Double.NaN;
-    	double alt = Double.NaN;
     	String locDesc = (validStatus.getValidLocDesc().isEmpty()) ? "undeclared" : validStatus.getValidLocDesc();
 
-    	if (validStatus.getValidLatLonAlt().length == 3)
-    	{
-    		lat = validStatus.getValidLatLonAlt()[0];
-    		lon = validStatus.getValidLatLonAlt()[1];
-    		alt = validStatus.getValidLatLonAlt()[2];
-    	}
-    	else if (validStatus.getValidLatLonAlt().length == 2)
-    	{
-    		lat = validStatus.getValidLatLonAlt()[0];
-    		lon = validStatus.getValidLatLonAlt()[1];
-    	}
-    	else
-    		System.out.println("Lat Lon Alt input for temp device idx " + validStatus.getValidIdx() + " is invalid");
-    	
     	// build and publish databook
     	DataBlock dataBlock = statusComp.createDataBlock();
     	dataBlock.setStringValue(0, domStatusData.getResult()[0].getIdx());
@@ -103,9 +86,9 @@ public class DomoticzStatusOutput extends AbstractSensorOutput<DomoticzDriver>
     	dataBlock.setIntValue(4, validStatus.getValidType()); // Subtype given by user
     	dataBlock.setIntValue(5, batt);
     	dataBlock.setStringValue(6, domStatusData.getResult()[0].getData());
-    	dataBlock.setDoubleValue(7, lat);
-    	dataBlock.setDoubleValue(8, lon);
-    	dataBlock.setDoubleValue(9, alt);
+    	dataBlock.setDoubleValue(7, validStatus.getValidLocationLLA().getLat());
+    	dataBlock.setDoubleValue(8, validStatus.getValidLocationLLA().getLon());
+    	dataBlock.setDoubleValue(9, validStatus.getValidLocationLLA().getAlt());
     	dataBlock.setStringValue(10, locDesc);
     	
         // update latest record and send event

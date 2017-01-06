@@ -15,13 +15,17 @@ import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.domoticz.DomoticzDriver.ValidDevice;
 import org.sensorhub.impl.sensor.domoticz.DomoticzHandler.DomoticzResponse;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
+import net.opengis.swe.v20.Text;
+import net.opengis.swe.v20.Vector;
 
 public class DomoticzTempHumOutput extends AbstractSensorOutput<DomoticzDriver>
 {
@@ -44,44 +48,48 @@ public class DomoticzTempHumOutput extends AbstractSensorOutput<DomoticzDriver>
     {
     	System.out.println("Adding Temp/Hum SWE Template");
     	
-    	SWEHelper sweHelp = new SWEHelper();
-    	tempHumComp = sweHelp.newDataRecord(5);
-    	tempHumComp.setName(getName());
-    	tempHumComp.setDefinition("http://sensorml.com/ont/swe/property/Environment");
-
-    	Quantity idx = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/SensorID", 
-        		"Sensor ID", 
-        		"ID of Sensor", 
-        		null, DataType.ASCII_STRING);
-    	tempHumComp.addComponent("idx", idx);
+    	SWEHelper sweHelpTempHum = new SWEHelper();
+    	DomoticzSWEHelper sweDomTempHum = new DomoticzSWEHelper();
     	
-    	tempHumComp.addComponent("time", sweHelp.newTimeStampIsoUTC());
-		
-		Quantity battery = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/BatteryLevel", 
-        		"Battery Level", 
-        		"Battery Level of Switch", 
-        		"%", DataType.INT);
-		tempHumComp.addComponent("batteryLevel", battery);
-		
-		Quantity temp = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/Temperature", 
-        		"Air Temperature", 
-        		"Temperature of Air", 
-        		null, DataType.DOUBLE);
-		tempHumComp.addComponent("temperature", temp);
-		
-		Quantity relhum = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/RelativeHumidity", 
-        		"Relative Humidity", 
-        		"Relative Humidity", 
-        		null, DataType.INT);
-		tempHumComp.addComponent("relhumidity", relhum);
+    	tempHumComp = sweHelpTempHum.newDataRecord(9);
+    	tempHumComp.setName(getName());
+    	tempHumComp.setDefinition("http://sensorml.com/ont/swe/property/TempHum");
+
+    	tempHumComp.addComponent("idx", sweDomTempHum.getIdxSWE()); // dataRecord(0)
+    	tempHumComp.addComponent("name", sweDomTempHum.getNameSWE()); // dataRecord(1)
+    	tempHumComp.addComponent("time", sweHelpTempHum.newTimeStampIsoUTC()); // dataRecord(2)
+    	tempHumComp.addComponent("temperature", sweDomTempHum.getTempSWE()); // dataRecord(3)
+    	tempHumComp.addComponent("relativeHumidity", sweDomTempHum.getRelHumSWE()); // dataRecord(4)
+    	tempHumComp.addComponent("latLonAlt", sweDomTempHum.getLocVecSWE()); // dataRecord(5, 6, 7)
+    	tempHumComp.addComponent("locationDesc", sweDomTempHum.getLocDescSWE()); // dataRecord(8)
 
     	// also generate encoding definition
-    	tempHumEncoding = sweHelp.newTextEncoding(",", "\n");
+    	tempHumEncoding = sweHelpTempHum.newTextEncoding(",", "\n");
     }
     
-    protected void postTempHumData(ValidDevice validTempHum)
+    protected void postTempHumData(DomoticzResponse domTempHumData, ValidDevice validTempHum)
     {
     	System.out.println("posting Temp/Hum data for idx " + validTempHum.getValidIdx());
+    	
+    	double time = System.currentTimeMillis() / 1000.;
+    	String locDesc = (validTempHum.getValidLocDesc().isEmpty()) ? "undeclared" : validTempHum.getValidLocDesc();
+
+    	// build and publish databook
+    	DataBlock dataBlock = tempHumComp.createDataBlock();
+    	dataBlock.setStringValue(0, domTempHumData.getResult()[0].getIdx());
+    	dataBlock.setStringValue(1, domTempHumData.getResult()[0].getName());
+    	dataBlock.setDoubleValue(2, time);
+    	dataBlock.setDoubleValue(3, domTempHumData.getResult()[0].getTemp());
+    	dataBlock.setDoubleValue(4, domTempHumData.getResult()[0].getHumidity());
+    	dataBlock.setDoubleValue(5, validTempHum.getValidLocationLLA().getLat());
+    	dataBlock.setDoubleValue(6, validTempHum.getValidLocationLLA().getLon());
+    	dataBlock.setDoubleValue(7, validTempHum.getValidLocationLLA().getAlt());
+    	dataBlock.setStringValue(8, locDesc);
+    	
+        // update latest record and send event
+        latestRecord = dataBlock;
+        latestRecordTime = System.currentTimeMillis();
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, DomoticzTempHumOutput.this, dataBlock));
     }
     
     protected void start()

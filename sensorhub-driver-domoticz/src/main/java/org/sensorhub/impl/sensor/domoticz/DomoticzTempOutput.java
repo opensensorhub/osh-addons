@@ -48,78 +48,41 @@ public class DomoticzTempOutput extends AbstractSensorOutput<DomoticzDriver>
     {
     	System.out.println("Adding Temp SWE Template");
     	
-    	SWEHelper sweHelp = new SWEHelper();
-    	GeoPosHelper posHelp = new GeoPosHelper();
+    	SWEHelper sweHelpTemp = new SWEHelper();
+    	DomoticzSWEHelper sweDomTemp = new DomoticzSWEHelper();
     	
-    	tempComp = sweHelp.newDataRecord(8);
+    	tempComp = sweHelpTemp.newDataRecord(8);
     	tempComp.setName(getName());
-    	tempComp.setDefinition("http://sensorml.com/ont/swe/property/Environment");
-
-    	Quantity idx = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/SensorID", 
-        		"Sensor ID", 
-        		"ID of Sensor", 
-        		null, DataType.ASCII_STRING);
-		tempComp.addComponent("idx", idx);
+    	tempComp.setDefinition("http://sensorml.com/ont/swe/property/Temp");
     	
-		tempComp.addComponent("time", sweHelp.newTimeStampIsoUTC());
-		
-		Quantity battery = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/BatteryLevel", 
-        		"Battery Level", 
-        		"Battery Level of Switch", 
-        		"%", DataType.INT);
-		tempComp.addComponent("batteryLevel", battery);
-		
-		Quantity temp = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/Temperature", 
-        		"Air Temperature", 
-        		"Temperature of Air", 
-        		null, DataType.DOUBLE);
-		tempComp.addComponent("temperature", temp);
-		
-		Vector locVector = posHelp.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
-        locVector.setLabel("Location");
-        locVector.setDescription("Location LLA input by user");
-        tempComp.addComponent("latLonAlt", locVector);
-        
-        Text locDesc = sweHelp.newText("http://sensorml.com/ont/swe/property/Location",
-        		"Sensor Location", "Sensor Location Description");
-        tempComp.addComponent("locationDesc", locDesc);
+    	tempComp.addComponent("idx", sweDomTemp.getIdxSWE()); // dataRecord(0)
+    	tempComp.addComponent("name", sweDomTemp.getNameSWE()); // dataRecord(1)
+    	tempComp.addComponent("time", sweHelpTemp.newTimeStampIsoUTC()); // dataRecord(2)
+    	tempComp.addComponent("temperature", sweDomTemp.getTempSWE()); // dataRecord(3)
+    	tempComp.addComponent("latLonAlt", sweDomTemp.getLocVecSWE()); // dataRecord(4, 5, 6)
+    	tempComp.addComponent("locationDesc", sweDomTemp.getLocDescSWE()); // dataRecord(7)
 
     	// also generate encoding definition
-    	tempEncoding = sweHelp.newTextEncoding(",", "\n");
+    	tempEncoding = sweHelpTemp.newTextEncoding(",", "\n");
     }
     
     protected void postTempData(DomoticzResponse domTempData, ValidDevice validTemp)
     {
-    	double time = System.currentTimeMillis() / 1000.;
-    	double lat = Double.NaN;
-    	double lon = Double.NaN;
-    	double alt = Double.NaN;
-    	int batt = (domTempData.getResult()[0].getBatteryLevel() != 255) ? domTempData.getResult()[0].getBatteryLevel():-1;
     	System.out.println("posting Temp data for idx " + domTempData.getResult()[0].getIdx());
-    	if (validTemp.getValidLatLonAlt().length == 3)
-    	{
-    		lat = validTemp.getValidLatLonAlt()[0];
-    		lon = validTemp.getValidLatLonAlt()[1];
-    		alt = validTemp.getValidLatLonAlt()[2];
-    	}
-    	else if (validTemp.getValidLatLonAlt().length == 2)
-    	{
-    		lat = validTemp.getValidLatLonAlt()[0];
-    		lon = validTemp.getValidLatLonAlt()[1];
-    	}
-    	else
-    		System.out.println("Lat Lon Alt input for temp device idx" + validTemp.getValidIdx() + "is invalid");
     	
+    	double time = System.currentTimeMillis() / 1000.;
+    	String locDesc = (validTemp.getValidLocDesc().isEmpty()) ? "undeclared" : validTemp.getValidLocDesc();
+
     	// build and publish databook
     	DataBlock dataBlock = tempComp.createDataBlock();
     	dataBlock.setStringValue(0, domTempData.getResult()[0].getIdx());
-    	dataBlock.setDoubleValue(1, time);
-    	dataBlock.setIntValue(2, batt);
+    	dataBlock.setStringValue(1, domTempData.getResult()[0].getName());
+    	dataBlock.setDoubleValue(2, time);
     	dataBlock.setDoubleValue(3, domTempData.getResult()[0].getTemp());
-    	dataBlock.setDoubleValue(4, lat);
-    	dataBlock.setDoubleValue(5, lon);
-    	dataBlock.setDoubleValue(6, alt);
-    	dataBlock.setStringValue(7, validTemp.getValidLocDesc());
+    	dataBlock.setDoubleValue(4, validTemp.getValidLocationLLA().getLat());
+    	dataBlock.setDoubleValue(5, validTemp.getValidLocationLLA().getLon());
+    	dataBlock.setDoubleValue(6, validTemp.getValidLocationLLA().getAlt());
+    	dataBlock.setStringValue(7, locDesc);
     	
         // update latest record and send event
         latestRecord = dataBlock;

@@ -29,9 +29,9 @@ import net.opengis.swe.v20.Vector;
 
 public class DomoticzMotionOutput extends AbstractSensorOutput<DomoticzDriver>
 {
-	DataComponent tempComp;
-	DataEncoding tempEncoding;
-	DataBlock tempBlock;
+	DataComponent motionComp;
+	DataEncoding motionEncoding;
+	DataBlock motionBlock;
 	
 	public DomoticzMotionOutput(DomoticzDriver parentSensor) {
 		super(parentSensor);
@@ -40,65 +40,57 @@ public class DomoticzMotionOutput extends AbstractSensorOutput<DomoticzDriver>
 	@Override
     public String getName()
     {
-        return "DomoticzTempData";
+        return "DomoticzMotionData";
     }
 
 
     protected void init() throws IOException
     {
-    	System.out.println("Adding Temp SWE Template");
+    	System.out.println("Adding Motion SWE Template");
     	
-    	SWEHelper sweHelpTemp = new SWEHelper();
-    	DomoticzSWEHelper sweDomTemp = new DomoticzSWEHelper();
+    	SWEHelper sweHelpMotion = new SWEHelper();
+    	DomoticzSWEHelper sweDomMotion = new DomoticzSWEHelper();
     	
-    	tempComp = sweHelpTemp.newDataRecord(8);
-    	tempComp.setName(getName());
-    	tempComp.setDefinition("http://sensorml.com/ont/swe/property/Temp");
+    	motionComp = sweHelpMotion.newDataRecord(8);
+    	motionComp.setName(getName());
+    	motionComp.setDefinition("http://sensorml.com/ont/swe/property/Motion");
     	
-    	tempComp.addComponent("idx", sweDomTemp.getIdxSWE()); // dataRecord(0)
-    	tempComp.addComponent("name", sweDomTemp.getNameSWE()); // dataRecord(1)
-    	tempComp.addComponent("time", sweHelpTemp.newTimeStampIsoUTC()); // dataRecord(2)
-    	tempComp.addComponent("temperature", sweDomTemp.getTempSWE()); // dataRecord(3)
-    	tempComp.addComponent("latLonAlt", sweDomTemp.getLocVecSWE()); // dataRecord(4, 5, 6)
-    	tempComp.addComponent("locationDesc", sweDomTemp.getLocDescSWE()); // dataRecord(7)
+    	motionComp.addComponent("idx", sweDomMotion.getIdxSWE()); // dataRecord(0)
+    	motionComp.addComponent("name", sweDomMotion.getNameSWE()); // dataRecord(1)
+    	motionComp.addComponent("time", sweHelpMotion.newTimeStampIsoUTC()); // dataRecord(2)
+    	motionComp.addComponent("motionStatus", sweDomMotion.getMotionStatusSWE()); // dataRecord(3)
+    	motionComp.addComponent("latLonAlt", sweDomMotion.getLocVecSWE()); // dataRecord(4, 5, 6)
+    	motionComp.addComponent("locationDesc", sweDomMotion.getLocDescSWE()); // dataRecord(7)
 
     	// also generate encoding definition
-    	tempEncoding = sweHelpTemp.newTextEncoding(",", "\n");
+    	motionEncoding = sweHelpMotion.newTextEncoding(",", "\n");
     }
     
-    protected void postTempData(DomoticzResponse domTempData, ValidDevice validTemp)
+    protected void postMotionData(DomoticzResponse domMotionData, ValidDevice validMotion)
     {
-    	System.out.println("posting Temp data for idx " + domTempData.getResult()[0].getIdx());
+    	System.out.println("posting Motion data for idx " + domMotionData.getResult()[0].getIdx());
     	
     	double time = System.currentTimeMillis() / 1000.;
-    	double lat = Double.NaN;
-    	double lon = Double.NaN;
-    	double alt = Double.NaN;
-    	String locDesc = (validTemp.getValidLocDesc().isEmpty()) ? "undeclared" : validTemp.getValidLocDesc();
-
-    	if (validTemp.getValidLatLonAlt().length == 3)
-    	{
-    		lat = validTemp.getValidLatLonAlt()[0];
-    		lon = validTemp.getValidLatLonAlt()[1];
-    		alt = validTemp.getValidLatLonAlt()[2];
-    	}
-    	else if (validTemp.getValidLatLonAlt().length == 2)
-    	{
-    		lat = validTemp.getValidLatLonAlt()[0];
-    		lon = validTemp.getValidLatLonAlt()[1];
-    	}
-    	else
-    		System.out.println("Lat Lon Alt input for temp device idx " + validTemp.getValidIdx() + " is invalid");
     	
+    	String motionStatus;
+    	if (domMotionData.getResult()[0].getStatus().equalsIgnoreCase("On"))
+    		motionStatus = "Motion!";
+    	else if (domMotionData.getResult()[0].getStatus().equalsIgnoreCase("Off"))
+    		motionStatus = "No Motion";
+    	else
+    		motionStatus = "Unknown Status";
+
+    	String locDesc = (validMotion.getValidLocDesc().isEmpty()) ? "undeclared" : validMotion.getValidLocDesc();
+
     	// build and publish databook
-    	DataBlock dataBlock = tempComp.createDataBlock();
-    	dataBlock.setStringValue(0, domTempData.getResult()[0].getIdx());
-    	dataBlock.setStringValue(1, domTempData.getResult()[0].getName());
+    	DataBlock dataBlock = motionComp.createDataBlock();
+    	dataBlock.setStringValue(0, domMotionData.getResult()[0].getIdx());
+    	dataBlock.setStringValue(1, domMotionData.getResult()[0].getName());
     	dataBlock.setDoubleValue(2, time);
-    	dataBlock.setDoubleValue(3, domTempData.getResult()[0].getTemp());
-    	dataBlock.setDoubleValue(4, lat);
-    	dataBlock.setDoubleValue(5, lon);
-    	dataBlock.setDoubleValue(6, alt);
+    	dataBlock.setStringValue(3, motionStatus);
+    	dataBlock.setDoubleValue(4, validMotion.getValidLocationLLA().getLat());
+    	dataBlock.setDoubleValue(5, validMotion.getValidLocationLLA().getLon());
+    	dataBlock.setDoubleValue(6, validMotion.getValidLocationLLA().getAlt());
     	dataBlock.setStringValue(7, locDesc);
     	
         // update latest record and send event
@@ -118,12 +110,12 @@ public class DomoticzMotionOutput extends AbstractSensorOutput<DomoticzDriver>
     
 	@Override
 	public DataComponent getRecordDescription() {
-		return tempComp;
+		return motionComp;
 	}
 
 	@Override
 	public DataEncoding getRecommendedEncoding() {
-		return tempEncoding;
+		return motionEncoding;
 	}
 
 	@Override

@@ -15,13 +15,17 @@ import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.domoticz.DomoticzDriver.ValidDevice;
 import org.sensorhub.impl.sensor.domoticz.DomoticzHandler.DomoticzResponse;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
+import net.opengis.swe.v20.Text;
+import net.opengis.swe.v20.Vector;
 
 public class DomoticzLumOutput extends AbstractSensorOutput<DomoticzDriver>
 {
@@ -42,40 +46,48 @@ public class DomoticzLumOutput extends AbstractSensorOutput<DomoticzDriver>
 
     protected void init() throws IOException
     {
-    	System.out.println("Adding Lum SWE Template");
+    	System.out.println("Adding Illuminance SWE Template");
     	
-    	SWEHelper sweHelp = new SWEHelper();
-    	lumComp = sweHelp.newDataRecord(4);
+    	SWEHelper sweHelpLum = new SWEHelper();
+    	DomoticzSWEHelper sweDomLum = new DomoticzSWEHelper();
+    	
+    	lumComp = sweHelpLum.newDataRecord(8);
     	lumComp.setName(getName());
-    	lumComp.setDefinition("http://sensorml.com/ont/swe/property/Environment");
-
-    	Quantity idx = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/SensorID", 
-        		"Sensor ID", 
-        		"ID of Sensor", 
-        		null, DataType.ASCII_STRING);
-		lumComp.addComponent("idx", idx);
+    	lumComp.setDefinition("http://sensorml.com/ont/swe/property/Illuminance");
     	
-		lumComp.addComponent("time", sweHelp.newTimeStampIsoUTC());
+    	lumComp.addComponent("idx", sweDomLum.getIdxSWE()); // dataRecord(0)
+    	lumComp.addComponent("name", sweDomLum.getNameSWE()); // dataRecord(1)
+    	lumComp.addComponent("time", sweHelpLum.newTimeStampIsoUTC()); // dataRecord(2)
+    	lumComp.addComponent("lux", sweDomLum.getLumSWE()); // dataRecord(3)
+    	lumComp.addComponent("latLonAlt", sweDomLum.getLocVecSWE()); // dataRecord(4, 5, 6)
+    	lumComp.addComponent("locationDesc", sweDomLum.getLocDescSWE()); // dataRecord(7)
 		
-		Quantity battery = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/BatteryLevel", 
-        		"Battery Level", 
-        		"Battery Level of Switch", 
-        		"%", DataType.INT);
-		lumComp.addComponent("batteryLevel", battery);
-		
-		Quantity lux = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/Illuminance", 
-        		"Illuminance", 
-        		"Luminance Flux per Area", 
-        		null, DataType.INT);
-		lumComp.addComponent("lux", lux);
-    	
     	// also generate encoding definition
-    	lumEncoding = sweHelp.newTextEncoding(",", "\n");
+    	lumEncoding = sweHelpLum.newTextEncoding(",", "\n");
     }
     
-    protected void postLumData(ValidDevice validLum)
+    protected void postLumData(DomoticzResponse domLumData, ValidDevice validLum)
     {
     	System.out.println("posting Luminance data for idx " + validLum.getValidIdx());
+    	
+    	double time = System.currentTimeMillis() / 1000.;
+    	String locDesc = (validLum.getValidLocDesc().isEmpty()) ? "undeclared" : validLum.getValidLocDesc();
+
+    	// build and publish databook
+    	DataBlock dataBlock = lumComp.createDataBlock();
+    	dataBlock.setStringValue(0, domLumData.getResult()[0].getIdx());
+    	dataBlock.setStringValue(1, domLumData.getResult()[0].getName());
+    	dataBlock.setDoubleValue(2, time);
+    	dataBlock.setIntValue(3, Integer.parseInt(domLumData.getResult()[0].getData().replaceAll("\\s", "").replaceAll("Lux", "")));
+    	dataBlock.setDoubleValue(4, validLum.getValidLocationLLA().getLat());
+    	dataBlock.setDoubleValue(5, validLum.getValidLocationLLA().getLon());
+    	dataBlock.setDoubleValue(6, validLum.getValidLocationLLA().getAlt());
+    	dataBlock.setStringValue(7, locDesc);
+    	
+        // update latest record and send event
+        latestRecord = dataBlock;
+        latestRecordTime = System.currentTimeMillis();
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, DomoticzLumOutput.this, dataBlock));
     }
     
     protected void start()

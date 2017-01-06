@@ -10,17 +10,19 @@ import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.data.DataChoiceImpl;
 import org.vast.swe.SWEHelper;
 
+import net.opengis.swe.v20.Count;
+import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.Text;
 
 
-public class ZWaveDomLightControl extends AbstractSensorControl<DomoticzDriver>
+public class DomoticzSelectorControl extends AbstractSensorControl<DomoticzDriver>
 {
 	DataChoice commandData;
 
-	public ZWaveDomLightControl(DomoticzDriver driver)
+	public DomoticzSelectorControl(DomoticzDriver driver)
 	{
 		super(driver);
 	}
@@ -29,34 +31,35 @@ public class ZWaveDomLightControl extends AbstractSensorControl<DomoticzDriver>
 	@Override
 	public String getName()
 	{
-		return "lightControl";
+		return "selectorControl";
 	}
 
 	
 	protected void init()
 	{
-		SWEHelper swe = new SWEHelper();
-		commandData = swe.newDataChoice();
+		SWEHelper sweHelp = new SWEHelper();
+		commandData = sweHelp.newDataChoice();
 		commandData.setName(getName());
-		Text turnOn = swe.newText("http://sensorml.com/ont/swe/property/turnOn", 
+
+		Text turnOn = sweHelp.newText("http://sensorml.com/ont/swe/property/turnOn", 
         		"On", 
         		"Set switch On");
 		commandData.addItem("setOn", turnOn);
 		
-		Text turnOff = swe.newText("http://sensorml.com/ont/swe/property/turnOff", 
+		Text turnOff = sweHelp.newText("http://sensorml.com/ont/swe/property/turnOff", 
         		"Off", 
         		"Set switch Off");
 		commandData.addItem("setOff", turnOff);
 		
-		Text toggle = swe.newText("http://sensorml.com/ont/swe/property/toggle", 
+		Text toggle = sweHelp.newText("http://sensorml.com/ont/swe/property/toggle", 
         		"Toggle", 
         		"Toggle switch");
 		commandData.addItem("toggle", toggle);
 		
-		Text dim = swe.newText("http://sensorml.com/ont/swe/property/dim", 
-        		"Dim", 
-        		"Value for dimmable light");
-		commandData.addItem("dim", dim);
+		Text setLevel = sweHelp.newText("http://sensorml.com/ont/swe/property/setLevel", 
+        		"Level Selector", 
+        		"Value for selector switch");
+		commandData.addItem("setLevel", setLevel);
 	}
 	
 	
@@ -76,11 +79,18 @@ public class ZWaveDomLightControl extends AbstractSensorControl<DomoticzDriver>
     	
     	// associate command data to msg structure definition
         DataChoice commandMsg = (DataChoice) commandData.copy();
-        commandMsg.setData(command);
-        
+        commandMsg.setData(command); System.out.println("commandMsg = " + commandMsg);
         DataComponent component = ((DataChoiceImpl) commandMsg).getSelectedItem();
+        
         String indexName = component.getName();
         String cmd = "";
+        String cmdLevel = "0";
+        
+        DataBlock data = component.getData();
+        String[] cmdText = data.getStringValue(0).split(",");
+        String idx = cmdText[0].trim();
+        if (cmdText.length == 2)
+        	cmdLevel = cmdText[1].trim();
         
         if (indexName.equalsIgnoreCase("setOn"))
         	cmd = "On";
@@ -88,12 +98,8 @@ public class ZWaveDomLightControl extends AbstractSensorControl<DomoticzDriver>
         	cmd = "Off";
         else if (indexName.equalsIgnoreCase("toggle"))
         	cmd = "Toggle";
-
-        // Need to add case for dim
-        
-        DataBlock data = component.getData();
-        
-        String idx = data.getStringValue();
+        else if (indexName.equalsIgnoreCase("setLevel"))
+        	cmd = "Set%20Level&level=" + cmdLevel;
     	
         // send request
         try

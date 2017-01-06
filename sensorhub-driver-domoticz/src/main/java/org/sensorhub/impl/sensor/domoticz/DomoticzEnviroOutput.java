@@ -29,9 +29,9 @@ import net.opengis.swe.v20.Vector;
 
 public class DomoticzEnviroOutput extends AbstractSensorOutput<DomoticzDriver>
 {
-	DataComponent statusComp;
-	DataEncoding statusEncoding;
-	DataBlock statusBlock;
+	DataComponent enviroComp;
+	DataEncoding enviroEncoding;
+	DataBlock enviroBlock;
 	
 	public DomoticzEnviroOutput(DomoticzDriver parentSensor) {
 		super(parentSensor);
@@ -40,73 +40,51 @@ public class DomoticzEnviroOutput extends AbstractSensorOutput<DomoticzDriver>
 	@Override
     public String getName()
     {
-        return "DomoticzStatusData";
+        return "DomoticzEnviroData";
     }
 
 
     protected void init() throws IOException
     {
-    	System.out.println("Adding Status SWE Template");
+    	System.out.println("Adding Enviro SWE Template");
     	
-    	SWEHelper sweHelpStatus = new SWEHelper();
-    	DomoticzSWEHelper sweDomStatus = new DomoticzSWEHelper();
+    	SWEHelper sweHelpEnviro = new SWEHelper();
+    	DomoticzSWEHelper sweDomEnviro = new DomoticzSWEHelper();
     	
-    	statusComp = sweHelpStatus.newDataRecord(11);
-    	statusComp.setName(getName());
-    	statusComp.setDefinition("http://sensorml.com/ont/swe/property/DomoticzStatus");
+    	enviroComp = sweHelpEnviro.newDataRecord(9);
+    	enviroComp.setName(getName());
+    	enviroComp.setDefinition("http://sensorml.com/ont/swe/property/Environment");
     	
-    	statusComp.addComponent("idx", sweDomStatus.getIdxSWE()); // dataRecord(0)
-    	statusComp.addComponent("name", sweDomStatus.getNameSWE()); // dataRecord(1)
-    	statusComp.addComponent("time", sweHelpStatus.newTimeStampIsoUTC()); // dataRecord(2)
-    	statusComp.addComponent("sensorType", sweDomStatus.getSensorTypeSWE()); // dataRecord(3)
-    	statusComp.addComponent("sensorSubtype", sweDomStatus.getSensorSubTypeSWE()); // dataRecord(4)
-    	statusComp.addComponent("batteryLevel", sweDomStatus.getBatteryLevelSWE()); // dataRecord(5)
-    	statusComp.addComponent("data", sweDomStatus.getDataSWE()); // dataRecord(6)
-    	statusComp.addComponent("latLonAlt", sweDomStatus.getLocVecSWE()); // dataRecord(7, 9, 9)
-    	statusComp.addComponent("locationDesc", sweDomStatus.getLocDescSWE()); // dataRecord(10)
+    	enviroComp.addComponent("idx", sweDomEnviro.getIdxSWE()); // dataRecord(0)
+    	enviroComp.addComponent("name", sweDomEnviro.getNameSWE()); // dataRecord(1)
+    	enviroComp.addComponent("time", sweHelpEnviro.newTimeStampIsoUTC()); // dataRecord(2)
+    	enviroComp.addComponent("sensorSubtype", sweDomEnviro.getSensorSubTypeSWE()); // dataRecord(3)
+    	enviroComp.addComponent("enviroData", sweDomEnviro.getEnviroDataSWE()); // dataRecord(4)
+    	enviroComp.addComponent("latLonAlt", sweDomEnviro.getLocVecSWE()); // dataRecord(5, 6, 7)
+    	enviroComp.addComponent("locationDesc", sweDomEnviro.getLocDescSWE()); // dataRecord(8)
 
     	// also generate encoding definition
-    	statusEncoding = sweHelpStatus.newTextEncoding(",", "\n");
+    	enviroEncoding = sweHelpEnviro.newTextEncoding(",", "\n");
     }
     
-    protected void postStatusData(DomoticzResponse domStatusData, ValidDevice validStatus)
+    protected void postEnviroData(DomoticzResponse domEnviroData, ValidDevice validEnviro)
     {
-    	System.out.println("posting Status data for idx " + domStatusData.getResult()[0].getIdx());
+    	System.out.println("posting Enviro data for idx " + domEnviroData.getResult()[0].getIdx());
     	
-    	int batt = (domStatusData.getResult()[0].getBatteryLevel() != 255) ? domStatusData.getResult()[0].getBatteryLevel():-1;
     	double time = System.currentTimeMillis() / 1000.;
-    	double lat = Double.NaN;
-    	double lon = Double.NaN;
-    	double alt = Double.NaN;
-    	String locDesc = (validStatus.getValidLocDesc().isEmpty()) ? "undeclared" : validStatus.getValidLocDesc();
+    	String locDesc = (validEnviro.getValidLocDesc().isEmpty()) ? "undeclared" : validEnviro.getValidLocDesc();
 
-    	if (validStatus.getValidLatLonAlt().length == 3)
-    	{
-    		lat = validStatus.getValidLatLonAlt()[0];
-    		lon = validStatus.getValidLatLonAlt()[1];
-    		alt = validStatus.getValidLatLonAlt()[2];
-    	}
-    	else if (validStatus.getValidLatLonAlt().length == 2)
-    	{
-    		lat = validStatus.getValidLatLonAlt()[0];
-    		lon = validStatus.getValidLatLonAlt()[1];
-    	}
-    	else
-    		System.out.println("Lat Lon Alt input for temp device idx " + validStatus.getValidIdx() + " is invalid");
-    	
     	// build and publish databook
-    	DataBlock dataBlock = statusComp.createDataBlock();
-    	dataBlock.setStringValue(0, domStatusData.getResult()[0].getIdx());
-    	dataBlock.setStringValue(1, domStatusData.getResult()[0].getName());
+    	DataBlock dataBlock = enviroComp.createDataBlock();
+    	dataBlock.setStringValue(0, domEnviroData.getResult()[0].getIdx());
+    	dataBlock.setStringValue(1, domEnviroData.getResult()[0].getName());
     	dataBlock.setDoubleValue(2, time);
-    	dataBlock.setStringValue(3, domStatusData.getResult()[0].getType()); // Type given by domoticz
-    	dataBlock.setIntValue(4, validStatus.getValidType()); // Subtype given by user
-    	dataBlock.setIntValue(5, batt);
-    	dataBlock.setStringValue(6, domStatusData.getResult()[0].getData());
-    	dataBlock.setDoubleValue(7, lat);
-    	dataBlock.setDoubleValue(8, lon);
-    	dataBlock.setDoubleValue(9, alt);
-    	dataBlock.setStringValue(10, locDesc);
+    	dataBlock.setIntValue(3, validEnviro.getValidType()); // Subtype given by user
+    	dataBlock.setStringValue(4, domEnviroData.getResult()[0].getData());
+    	dataBlock.setDoubleValue(5, validEnviro.getValidLocationLLA().getLat());
+    	dataBlock.setDoubleValue(6, validEnviro.getValidLocationLLA().getLon());
+    	dataBlock.setDoubleValue(7, validEnviro.getValidLocationLLA().getAlt());
+    	dataBlock.setStringValue(8, locDesc);
     	
         // update latest record and send event
         latestRecord = dataBlock;
@@ -125,12 +103,12 @@ public class DomoticzEnviroOutput extends AbstractSensorOutput<DomoticzDriver>
     
 	@Override
 	public DataComponent getRecordDescription() {
-		return statusComp;
+		return enviroComp;
 	}
 
 	@Override
 	public DataEncoding getRecommendedEncoding() {
-		return statusEncoding;
+		return enviroEncoding;
 	}
 
 	@Override

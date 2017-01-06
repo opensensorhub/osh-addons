@@ -26,6 +26,16 @@ public class DomoticzSWEHelper
         return idx;
 	}
 	
+	public Text getNameSWE()
+	{
+    	SWEHelper sweHelpName = new SWEHelper();
+
+    	Text name = sweHelpName.newText("http://sensorml.com/ont/swe/property/SensorName", 
+        		"Sensor Name", "Name of Sensor from Domoticz");
+        
+        return name;
+	}
+	
 	public Quantity getBatteryLevelSWE()
 	{
 		SWEHelper sweHelpBatt = new SWEHelper();
@@ -36,6 +46,30 @@ public class DomoticzSWEHelper
         		"%", DataType.INT);
 		
 		return battery;
+	}
+	
+	public Quantity getDataSWE()
+	{
+		SWEHelper sweHelpData = new SWEHelper();
+		
+        Quantity data = sweHelpData.newQuantity("http://sensorml.com/ont/swe/property/Data",
+        		"Current Data", 
+        		"Current data value offered by sensor", 
+        		null, DataType.ASCII_STRING);
+        
+        return data;
+	}
+	
+	public Quantity getEnviroDataSWE()
+	{
+		SWEHelper sweHelpEnviroData = new SWEHelper();
+		
+        Quantity enviroData = sweHelpEnviroData.newQuantity("http://sensorml.com/ont/swe/property/EnvironmentData",
+        		"Environment Data", 
+        		"Current data value offered by environmental sensor", 
+        		null, DataType.ASCII_STRING);
+        
+        return enviroData;
 	}
 	
 	public Quantity getTempSWE()
@@ -98,6 +132,18 @@ public class DomoticzSWEHelper
 		return state;
 	}
 	
+	public Quantity getMotionStatusSWE()
+	{
+		SWEHelper sweHelpMotion = new SWEHelper();
+		
+		Quantity motion = sweHelpMotion.newQuantity("http://sensorml.com/ont/swe/property/MotionStatus", 
+        		"Motion Status", 
+        		"Status of Motion Switch", 
+        		null, DataType.ASCII_STRING);
+		
+		return motion;
+	}
+	
 	public Quantity getSetLevelSWE()
 	{
 		SWEHelper sweHelpSetLevel = new SWEHelper();
@@ -129,6 +175,38 @@ public class DomoticzSWEHelper
         		"Location Description", "Sensor Location Description");
         
         return locDesc;
+	}
+	
+	public Text getSensorTypeSWE()
+	{
+		SWEHelper sweHelpSensorType = new SWEHelper();
+		
+        Text type = sweHelpSensorType.newText("http://sensorml.com/ont/csm/property/SENSOR_TYPE",
+        		"Sensor Type", "Type of Sensor given by Domoticz");
+        
+        return type;
+	}
+	
+	public Quantity getSensorSubTypeSWE()
+	{
+		SWEHelper sweHelpSensorSubType = new SWEHelper();
+		
+        Quantity subtype = sweHelpSensorSubType.newQuantity("http://sensorml.com/ont/csm/property/SENSOR_TYPE",
+        		"Sensor Subtype", 
+        		"Subtype of Sensor input by User", 
+        		null, DataType.INT);
+        
+        return subtype;
+	}
+	
+	public Text getAlertMsgSWE()
+	{
+		SWEHelper sweHelpAlert = new SWEHelper();
+		
+        Text alert = sweHelpAlert.newText("http://sensorml.com/ont/csm/property/AlertMessage",
+        		"Alert Message", "Alert Message for Domoticz device");
+        
+        return alert;
 	}
 	
 	// Continue

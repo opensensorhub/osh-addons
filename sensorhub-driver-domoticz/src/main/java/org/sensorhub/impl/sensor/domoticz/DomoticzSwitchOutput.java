@@ -15,13 +15,17 @@ import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.domoticz.DomoticzDriver.ValidDevice;
 import org.sensorhub.impl.sensor.domoticz.DomoticzHandler.DomoticzResponse;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
+import net.opengis.swe.v20.Text;
+import net.opengis.swe.v20.Vector;
 
 public class DomoticzSwitchOutput extends AbstractSensorOutput<DomoticzDriver>
 {
@@ -44,38 +48,46 @@ public class DomoticzSwitchOutput extends AbstractSensorOutput<DomoticzDriver>
     {
     	System.out.println("Adding Switch SWE Template");
     	
-    	SWEHelper sweHelp = new SWEHelper();
-    	switchComp = sweHelp.newDataRecord(4);
+    	SWEHelper sweHelpSwitch = new SWEHelper();
+    	DomoticzSWEHelper sweDomSwitch = new DomoticzSWEHelper();
+    	
+    	switchComp = sweHelpSwitch.newDataRecord(8);
     	switchComp.setName(getName());
     	switchComp.setDefinition("http://sensorml.com/ont/swe/property/Switch");
-
-    	Quantity idx = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/SensorID", 
-        		"Sensor ID", 
-        		"ID of Sensor", 
-        		null, DataType.ASCII_STRING);
-    	switchComp.addComponent("idx", idx);
     	
-    	switchComp.addComponent("time", sweHelp.newTimeStampIsoUTC());
-		
-		Quantity battery = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/BatteryLevel", 
-        		"Battery Level", 
-        		"Battery Level of Switch", 
-        		"%", DataType.INT);
-		switchComp.addComponent("batteryLevel", battery);
-		
-		Quantity state = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/SwitchState", 
-        		"Switch Status", 
-        		"Status of Switch", 
-        		null, DataType.ASCII_STRING);
-		switchComp.addComponent("switchState", state);
+    	switchComp.addComponent("idx", sweDomSwitch.getIdxSWE()); // dataRecord(0)
+    	switchComp.addComponent("name", sweDomSwitch.getNameSWE()); // dataRecord(1)
+    	switchComp.addComponent("time", sweHelpSwitch.newTimeStampIsoUTC()); // dataRecord(2)
+    	switchComp.addComponent("switchState", sweDomSwitch.getSwitchStateSWE()); // dataRecord(3)
+    	switchComp.addComponent("latLonAlt", sweDomSwitch.getLocVecSWE()); // dataRecord(4, 5, 6)
+    	switchComp.addComponent("locationDesc", sweDomSwitch.getLocDescSWE()); // dataRecord(7)
 
     	// also generate encoding definition
-    	switchEncoding = sweHelp.newTextEncoding(",", "\n");
+    	switchEncoding = sweHelpSwitch.newTextEncoding(",", "\n");
     }
     
-    protected void postSwitchData(ValidDevice validSwitch)
+    protected void postSwitchData(DomoticzResponse domSwitchData, ValidDevice validSwitch)
     {
     	System.out.println("posting Switch data for idx " + validSwitch.getValidIdx());
+    	
+    	double time = System.currentTimeMillis() / 1000.;
+    	String locDesc = (validSwitch.getValidLocDesc().isEmpty()) ? "undeclared" : validSwitch.getValidLocDesc();
+
+    	// build and publish databook
+    	DataBlock dataBlock = switchComp.createDataBlock();
+    	dataBlock.setStringValue(0, domSwitchData.getResult()[0].getIdx());
+    	dataBlock.setStringValue(1, domSwitchData.getResult()[0].getName());
+    	dataBlock.setDoubleValue(2, time);
+    	dataBlock.setStringValue(3, domSwitchData.getResult()[0].getStatus());
+    	dataBlock.setDoubleValue(4, validSwitch.getValidLocationLLA().getLat());
+    	dataBlock.setDoubleValue(5, validSwitch.getValidLocationLLA().getLon());
+    	dataBlock.setDoubleValue(6, validSwitch.getValidLocationLLA().getAlt());
+    	dataBlock.setStringValue(7, locDesc);
+    	
+        // update latest record and send event
+        latestRecord = dataBlock;
+        latestRecordTime = System.currentTimeMillis();
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, DomoticzSwitchOutput.this, dataBlock));
     }
     
     protected void start()

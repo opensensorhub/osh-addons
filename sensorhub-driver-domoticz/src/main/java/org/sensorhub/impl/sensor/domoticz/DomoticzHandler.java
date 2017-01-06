@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.zwavedom;
+package org.sensorhub.impl.sensor.domoticz;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -6,16 +6,17 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import org.sensorhub.api.common.SensorHubException;
+
 import com.google.gson.Gson;
 
-public class ZWaveDomHandler
+public class DomoticzHandler
 {	
-	public LightInfoArray getLightFromJSON(String jsonURLfromDriver) throws SensorHubException
+	public DomoticzResponse getFromJSON(String jsonURLfromDriver) throws SensorHubException
 	{
 		String jsonL = null;
 		try
 		{
-			jsonL = getZWaveDevices(jsonURLfromDriver);
+			jsonL = getDomDevices(jsonURLfromDriver);
 		}
 		catch (IOException e)
 		{
@@ -23,62 +24,11 @@ public class ZWaveDomHandler
 		}
 		
 		Gson gsonL = new Gson();
-		LightInfoArray infoLight = gsonL.fromJson(jsonL, LightInfoArray.class);
-		return infoLight;
+		DomoticzResponse infoHAB = gsonL.fromJson(jsonL, DomoticzResponse.class);
+		return infoHAB;
 	}
 	
-	public WeatherInfoArray getWeatherFromJSON(String jsonURLfromDriver) throws SensorHubException
-	{
-		String jsonW = null;
-		try
-		{
-			jsonW = getZWaveDevices(jsonURLfromDriver);
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-		
-		Gson gson = new Gson();
-		WeatherInfoArray infoWeather = gson.fromJson(jsonW, WeatherInfoArray.class);
-		return infoWeather;
-	}
-	
-	public TempInfoArray getTempFromJSON(String jsonURLfromDriver) throws SensorHubException
-	{
-		String jsonT = null;
-		try
-		{
-			jsonT = getZWaveDevices(jsonURLfromDriver);
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-		
-		Gson gson = new Gson();
-		TempInfoArray infoTemp = gson.fromJson(jsonT, TempInfoArray.class);
-		return infoTemp;
-	}
-	
-	public UtilityInfoArray getUtilityFromJSON(String jsonURLfromDriver) throws SensorHubException
-	{
-		String jsonT = null;
-		try
-		{
-			jsonT = getZWaveDevices(jsonURLfromDriver);
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-		
-		Gson gson = new Gson();
-		UtilityInfoArray infoUtil = gson.fromJson(jsonT, UtilityInfoArray.class);
-		return infoUtil;
-	}
-	
-	public String getZWaveDevices(String jsonURL)  throws IOException
+	public String getDomDevices(String jsonURL)  throws IOException
 	{
     	URL urlGetDevices = new URL(jsonURL);
     	System.out.println("Issuing request: " + urlGetDevices);
@@ -109,214 +59,239 @@ public class ZWaveDomHandler
 	}
     
     // Class to serialize JSON response
-    static public class LightInfo
+    static public class DomoticzResponse
     {
-    	String AddjMulti;
-    	String AddjMulti2;
-    	String AddjValue;
-    	String AddjValue2;
-    	String BatteryLevel;
-    	String CustomImage;
+    	int ActTime;
+    	Result[] result;
+    	String status;
+    	String title;
+    	
+    	// Setter & Getter for ActTime
+    	public void setActTime(int actTime)
+    	{
+    		this.ActTime = actTime;
+    	}
+    	
+    	public int getActTime()
+    	{
+    		return ActTime;
+    	}
+    	
+    	// Setter & Getter for result
+    	public void setResult(Result[] result)
+    	{
+    		this.result = result;
+    	}
+    	
+    	public Result[] getResult()
+    	{
+    		return result;
+    	}
+    	
+    	// Setter & Getter for Status
+    	public void setStatus(String status)
+    	{
+    		this.status = status;
+    	}
+    	
+    	public String getStatus()
+    	{
+    		return status;
+    	}
+    	
+    	// Setter & Getter for Title
+    	public void setTitle(String title)
+    	{
+    		this.title = title;
+    	}
+    	
+    	public String getTitle()
+    	{
+    		return title;
+    	}
+    }
+    
+    static public class Result
+    {
+//    	double AddjMulti;
+//    	double AddjMulti2;
+//    	double AddjValue;
+//    	double AddjValue2;
+    	int BatteryLevel;
+//    	int CustomImage;
     	String Data;
-    	String Description;
-    	String Favorite;
-    	String HardwareID;
-    	String HardwareName;
-    	String HardwareType;
-    	String HardwareTypeVal;
-    	String HaveDimmer;
-    	String HaveGroupCmd;
-    	String HaveTimeout;
-    	String ID;
-    	String Image;
-    	String IsSubDevice;
+//    	String Description;
+//    	int Favorite;
+//    	int HardwareID;
+//    	String HardwareName;
+//    	String HardwareType;
+//    	int HardwareTypeVal;
+    	boolean HaveDimmer;
+//    	boolean HaveGroupCmd;
+//    	boolean HaveTimeout;
+    	int Humidity = Integer.MIN_VALUE;
+//    	String ID;
+//    	String Image;
+//    	boolean IsSubDevice;
     	String LastUpdate;
-    	String Level;
-    	String LevelInt;
-    	String MaxDimLevel;
+    	int Level = Integer.MIN_VALUE;
+//    	int LevelInt;
+//    	int MaxDimLevel;
     	String Name;
-    	String Notifications;
-    	String PlanID;
-    	String[] PlanIDs;
-    	String Protected;
-    	String ShowNotifications;
-    	String SignalLevel;
-    	String Status;
-    	String StrParam1;
-    	String StrParam2;
-    	String SubType;
-    	String SwitchType;
-    	String SwitchTypeVal;
-    	String Timers;
+//    	String Notifications;
+//    	String PlanID;
+//    	String[] PlanIDs;
+//    	boolean Protected;
+//    	boolean ShowNotifications;
+//    	String SignalLevel;
+    	String Status = null;
+//    	String StrParam1;
+//    	String StrParam2;
+//    	String SubType;
+    	double Temp = Double.NaN;
+//    	String SwitchType;
+//    	String SwitchTypeVal;
+//    	String Timers;
     	String Type;
-    	String TypeImg;
-    	String Unit;
-    	String Used;
-    	String UsedByCamera;
-    	String XOffset;
-    	String YOffset;
+//    	String TypeImg;
+    	String UVI = null;
+//    	int Unit;
+//    	int Used;
+//    	boolean UsedByCamera;
+//    	String XOffset;
+//    	String YOffset;
     	String idx;
-    }
-    
-    static public class LightInfoArray
-    {
-    	LightInfo[] result;
-    }
-   
-  // Class to serialize JSON response
-    static public class WeatherInfo
-    {    	
-    	String AddjMulti;
-	  	String AddjMulti2;
-	  	String AddjValue;
-	  	String AddjValue2;
-	  	String Barometer;
-	  	String BatteryLevel;
-	  	String Chill;
-	  	String CustomImage;
-	  	String Data;
-	  	String Description;
-	  	String DewPoint;
-	  	String Direction;
-	  	String DirectionStr;
-	  	String Gust;
-	  	String Favorite;
-	  	String Forecast;
-	  	String ForecastStr;
-	  	String forecast_url;
-	  	String HardwareID;
-	  	String HardwareName;
-	  	String HardwareType;
-	  	String HardwareTypeVal;
-	  	String HaveTimeout;
-	  	String Humidity;
-	  	String HumidityStatus;
-	  	String ID;
-	  	String LastUpdate;
-	  	String Name;
-	  	String Notifications;
-	  	String PlanID;
-	  	String[] PlanIDs;
-	  	String Protected;
-	  	String Rain;
-	  	String RainRate;
-	  	String ShowNotifications;
-	  	String SignalLevel;
-	  	String Speed;
-	  	String SubType;
-	  	String Temp;
-	  	String Timers;
-	  	String Type;
-	  	String TypeImg;
-	  	String Unit;
-	  	String Used;
-	  	String UVI;
-	  	String Visibility;
-	  	String XOffset;
-	  	String YOffset;
-	  	String idx;
-	}
-    
-    static public class WeatherInfoArray
-    {
-    	WeatherInfo[] result;
-    }
-    
-    // Class to serialize JSON response
-    static public class TempInfo
-    {    	
-    	String AddjMulti;
-    	String AddjMulti2;
-    	String AddjValue;
-    	String AddjValue2;
-    	String Barometer;
-    	String BatteryLevel;
-    	String Chill;
-    	String CustomImage;
-    	String Data;
-    	String Description;
-    	String DewPoint;
-    	String Direction;
-    	String DirectionStr;
-    	String Gust;
-    	String Favorite;
-    	String Forecast;
-    	String ForecastStr;
-    	String forecast_url;
-    	String HardwareID;
-    	String HardwareName;
-    	String HardwareType;
-    	String HardwareTypeVal;
-    	String HaveTimeout;
-    	String Humidity;
-    	String HumidityStatus;
-    	String ID;
-    	String LastUpdate;
-    	String Name;
-    	String Notifications;
-    	String PlanID;
-    	String[] PlanIDs;
-    	String Protected;
-    	String ShowNotifications;
-    	String SignalLevel;
-    	String Speed;
-    	String SubType;
-    	String Temp;
-    	String Timers;
-    	String Type;
-    	String TypeImg;
-    	String Unit;
-    	String Used;
-    	String XOffset;
-    	String YOffset;
-    	String idx;  	  	
-    }
-      
-    static public class TempInfoArray
-    {
-    	TempInfo[] result;
-    }
-    
-    // Class to serialize JSON response
-    static public class UtilityInfo
-    {    	
-		String AddjMulti;
-		String AddjMulti2;
-		String AddjValue;
-		String AddjValue2;
-		String BatteryLevel;
-		String CustomImage;
-		String Data;
-		String Description;
-		String Favorite;
-		String HardwareID;
-		String HardwareName;
-		String HardwareType;
-		String HardwareTypeVal;
-		String HaveTimeout;
-		String ID;
-		String Image;
-		String LastUpdate;
-		String Name;
-		String Notifications;
-		String PlanID;
-		String[] PlanIDs;
-		String Protected;
-		String ShowNotifications;
-		String SignalLevel;
-		String SubType;
-		String Timers;
-		String Type;
-		String TypeImg;
-		String Unit;
-		String Used;
-		String XOffset;
-		String YOffset;
-		String idx;  	    	
-    }
-      
-    static public class UtilityInfoArray
-    {
-    	UtilityInfo[] result;
+    	
+    	// Setter & Getter for Battery Level
+    	public void setBatteryLevel(int batteryLevel)
+    	{
+    		this.BatteryLevel = batteryLevel;
+    	}
+    	
+    	public int getBatteryLevel()
+    	{
+    		return BatteryLevel;
+    	}
+    	
+    	// Setter & Getter for Data
+    	public void setData(String data)
+    	{
+    		this.Data = data;
+    	}
+    	
+    	public String getData()
+    	{
+    		return Data;
+    	}
+    	
+    	// Setter & Getter for Have Dimmer
+    	public void setHaveDimmer(boolean haveDimmer)
+    	{
+    		this.HaveDimmer = haveDimmer;
+    	}
+    	
+    	public boolean getHaveDimmer()
+    	{
+    		return HaveDimmer;
+    	}
+    	
+    	// Setter & Getter for Humidity
+    	public void setHumidity(int humidity)
+    	{
+    		this.Humidity = humidity;
+    	}
+    	
+    	public int getHumidity()
+    	{
+    		return Humidity;
+    	}
+    	
+    	// Setter & Getter for Last Update
+    	public void setLastUpdate(String lastUpdate)
+    	{
+    		this.LastUpdate = lastUpdate;
+    	}
+    	
+    	public String getLastUpdate()
+    	{
+    		return LastUpdate;
+    	}
+    	
+    	// Setter & Getter for Level
+    	public void setLevel(int level)
+    	{
+    		this.Level = level;
+    	}
+    	
+    	public int getLevel()
+    	{
+    		return Level;
+    	}
+    	
+    	// Setter & Getter for Name
+    	public void setName(String name)
+    	{
+    		this.Name = name;
+    	}
+    	
+    	public String getName()
+    	{
+    		return Name;
+    	}
+    	
+    	// Setter & Getter for Status
+    	public void setStatus(String status)
+    	{
+    		this.Status = status;
+    	}
+    	
+    	public String getStatus()
+    	{
+    		return Status;
+    	}
+    	
+    	// Setter & Getter for Temp
+    	public void setTemp(double temp)
+    	{
+    		this.Temp = temp;
+    	}
+    	
+    	public double getTemp()
+    	{
+    		return Temp;
+    	}
+    	
+    	// Setter & Getter for UVI
+    	public void setUVI(String uvi)
+    	{
+    		this.UVI = uvi;
+    	}
+    	
+    	public String getUVI()
+    	{
+    		return UVI;
+    	}
+    	
+    	// Setter & Getter for idx
+    	public void setIdx(String idx)
+    	{
+    		this.idx = idx;
+    	}
+    	
+    	public String getIdx()
+    	{
+    		return idx;
+    	}
+    	
+    	// Setter & Getter for Type
+    	public void setType(String type)
+    	{
+    		this.Type = type;
+    	}
+    	
+    	public String getType()
+    	{
+    		return Type;
+    	}
     }
 }

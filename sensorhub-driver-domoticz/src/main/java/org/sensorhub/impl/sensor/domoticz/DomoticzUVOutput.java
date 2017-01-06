@@ -15,13 +15,17 @@ import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.domoticz.DomoticzDriver.ValidDevice;
 import org.sensorhub.impl.sensor.domoticz.DomoticzHandler.DomoticzResponse;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
+import net.opengis.swe.v20.Text;
+import net.opengis.swe.v20.Vector;
 
 public class DomoticzUVOutput extends AbstractSensorOutput<DomoticzDriver>
 {
@@ -36,7 +40,7 @@ public class DomoticzUVOutput extends AbstractSensorOutput<DomoticzDriver>
 	@Override
     public String getName()
     {
-        return "DomoticzUVData";
+        return "DomoticzUltravioletData";
     }
 
 
@@ -44,39 +48,45 @@ public class DomoticzUVOutput extends AbstractSensorOutput<DomoticzDriver>
     {
     	System.out.println("Adding UV SWE Template");
     	
-    	SWEHelper sweHelp = new SWEHelper();
-    	uvComp = sweHelp.newDataRecord(4);
+    	SWEHelper sweHelpUV = new SWEHelper();
+    	DomoticzSWEHelper sweDomUV = new DomoticzSWEHelper();
+    	
+    	uvComp = sweHelpUV.newDataRecord(8);
     	uvComp.setName(getName());
-    	uvComp.setDefinition("http://sensorml.com/ont/swe/property/Environment");
+    	uvComp.setDefinition("http://sensorml.com/ont/swe/property/Ultraviolet");
 
-    	Quantity idx = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/SensorID", 
-        		"Sensor ID", 
-        		"ID of Sensor", 
-        		null, DataType.ASCII_STRING);
-		uvComp.addComponent("idx", idx);
-    	
-		uvComp.addComponent("time", sweHelp.newTimeStampIsoUTC());
-		
-		Quantity battery = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/BatteryLevel", 
-        		"Battery Level", 
-        		"Battery Level of Switch", 
-        		"%", DataType.INT);
-		uvComp.addComponent("batteryLevel", battery);
-		
-		Quantity uvi = sweHelp.newQuantity("http://sensorml.com/ont/swe/property/UVI", 
-        		"UV Index", 
-        		"Index of Ultraviolet Radiation", 
-        		null, DataType.DOUBLE);
-		uvComp.addComponent("uvi", uvi);
-    	
-    	// also generate encoding definition
-    	uvEncoding = sweHelp.newTextEncoding(",", "\n");
+    	uvComp.addComponent("idx", sweDomUV.getIdxSWE()); // dataRecord(0)
+    	uvComp.addComponent("name", sweDomUV.getNameSWE()); // dataRecord(1)
+    	uvComp.addComponent("time", sweHelpUV.newTimeStampIsoUTC()); // dataRecord(2)
+    	uvComp.addComponent("ultravioletIndex", sweDomUV.getUVISWE()); // dataRecord(3)
+    	uvComp.addComponent("latLonAlt", sweDomUV.getLocVecSWE()); // dataRecord(4, 5, 6)
+    	uvComp.addComponent("locationDesc", sweDomUV.getLocDescSWE()); // dataRecord(7)
     }
     
     
-    protected void postUVData(ValidDevice validUV)
+    protected void postUVData(DomoticzResponse domUVData, ValidDevice validUV)
     {
     	System.out.println("posting UV data for idx " + validUV.getValidIdx());
+    	
+    	double time = System.currentTimeMillis() / 1000.;
+    	double uvi = Double.parseDouble(domUVData.getResult()[0].getUVI());
+    	String locDesc = (validUV.getValidLocDesc().isEmpty()) ? "undeclared" : validUV.getValidLocDesc();
+
+    	// build and publish databook
+    	DataBlock dataBlock = uvComp.createDataBlock();
+    	dataBlock.setStringValue(0, domUVData.getResult()[0].getIdx());
+    	dataBlock.setStringValue(1, domUVData.getResult()[0].getName());
+    	dataBlock.setDoubleValue(2, time);
+    	dataBlock.setDoubleValue(3, uvi);
+    	dataBlock.setDoubleValue(4, validUV.getValidLocationLLA().getLat());
+    	dataBlock.setDoubleValue(5, validUV.getValidLocationLLA().getLon());
+    	dataBlock.setDoubleValue(6, validUV.getValidLocationLLA().getAlt());
+    	dataBlock.setStringValue(7, locDesc);
+    	
+        // update latest record and send event
+        latestRecord = dataBlock;
+        latestRecordTime = System.currentTimeMillis();
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, DomoticzUVOutput.this, dataBlock)); 
     }
     
     
