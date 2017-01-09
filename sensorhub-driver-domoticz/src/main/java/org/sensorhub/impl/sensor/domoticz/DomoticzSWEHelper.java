@@ -1,11 +1,9 @@
 package org.sensorhub.impl.sensor.domoticz;
 
-import org.sensorhub.api.common.SensorHubException;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
-import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Text;

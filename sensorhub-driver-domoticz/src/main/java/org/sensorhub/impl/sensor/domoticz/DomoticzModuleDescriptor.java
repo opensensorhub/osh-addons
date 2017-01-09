@@ -1,10 +1,10 @@
-package org.sensorhub.impl.sensor.zwavedom;
+package org.sensorhub.impl.sensor.domoticz;
 
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
 
-public class ZWaveDomModuleDescriptor implements IModuleProvider
+public class DomoticzModuleDescriptor implements IModuleProvider
 {
     @Override
     public String getModuleName()
@@ -33,12 +33,12 @@ public class ZWaveDomModuleDescriptor implements IModuleProvider
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return ZWaveDomDriver.class;
+        return DomoticzDriver.class;
     }
 
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return ZWaveDomConfig.class;
+        return DomoticzConfig.class;
     }
 }

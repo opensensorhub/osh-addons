@@ -1,4 +1,4 @@
-package org.sensorhub.test.impl.sensor.zwavedom;
+package org.sensorhub.test.impl.sensor.domoticz;
 
 
 import java.awt.image.BufferedImage;
@@ -20,8 +20,8 @@ import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.security.ClientAuth;
-import org.sensorhub.impl.sensor.zwavedom.ZWaveDomConfig;
-import org.sensorhub.impl.sensor.zwavedom.ZWaveDomDriver;
+import org.sensorhub.impl.sensor.domoticz.DomoticzConfig;
+import org.sensorhub.impl.sensor.domoticz.DomoticzDriver;
 import org.vast.data.DataChoiceImpl;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
@@ -40,23 +40,22 @@ import static org.junit.Assert.*;
  * 
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  */
-public class TestZWaveDomDriver implements IEventListener
+public class TestDomoticzDriver implements IEventListener
 {
-	ZWaveDomDriver driver;
-	ZWaveDomConfig config;
+	DomoticzDriver driver;
+	DomoticzConfig config;
 	AsciiDataWriter writer;
 	int sampleCount = 0;
     
     @Before
     public void init() throws Exception
     {
-        config = new ZWaveDomConfig();
+        config = new DomoticzConfig();
         config.id = UUID.randomUUID().toString();
 
-        driver = new ZWaveDomDriver();
+        driver = new DomoticzDriver();
         driver.init(config);
     }
-    
     
     @Test
     public void testGetOutputDesc() throws Exception
@@ -79,51 +78,80 @@ public class TestZWaveDomDriver implements IEventListener
     }
     
     
-//    @Test
-//    public void testSendMeasurements() throws Exception
-//    {
-//        System.out.println();
-//        
-//        driver.start();
-//        Thread.sleep(20000);
-//        driver.stop();
-//        
-//        System.out.println();
-//        System.out.println("testSendMeasurements done");
-//    }
-    
     @Test
-    public void testSendCommand() throws Exception
-    {  
-        // get control interface
-        ISensorControlInterface ci = driver.getCommandInputs().get("lightControl");
-        DataComponent commandDesc = ci.getCommandDescription().copy();
+    public void testPostData() throws Exception
+    {
+        System.out.println();
+        
+        ISensorDataInterface dataOutput = driver.getObservationOutputs().get("DomoticzTempData");
 
-    	DataBlock commandData;
-    	String switchID = "7";
-    	//String setStatus = "setOff";
-    	String setStatus = "toggle";
-    	//*******************************
-        //*  Need to add case for dim   *
-        //*******************************
-    	
-    	int cnt = 0;
-    	while (cnt<6)
-    	{
+        writer = new AsciiDataWriter();
+        writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
+        writer.setDataComponents(dataOutput.getRecordDescription());
+        writer.setOutput(System.out);
+        dataOutput.registerListener(this);
+        
+        driver.start();
+        
+        synchronized (this) 
+        {
+            while (sampleCount < 2)
+                wait();
+        }
+        
+        System.out.println();
+        System.out.println("Done posting data");
+    }
+    
+//    @Test
+//    public void testSwitchOrSelectorCommand() throws Exception
+//    {  
+//        // get control interface
+//        ISensorControlInterface ci = driver.getCommandInputs().get("selectorControl");
+//        DataComponent commandDesc = ci.getCommandDescription().copy();
+//    	DataBlock commandData;
+//    	
+//    	
+//    	String switchID = "8";
+//    	String setStatus = "setOn";
+//    	//String setStatus = "setOff";
+//    	//String setStatus = "toggle";
+//    	
+//    	
+//    	int cnt = 0;
+//    	while (cnt<6)
+//    	{
 //	    	if (cnt%2 == 0)
 //	    		setStatus = "setOn";
 //	    	else
 //	    		setStatus = "setOff";
-	    	
-	    	// test switch
-	    	((DataChoiceImpl)commandDesc).setSelectedItem(setStatus);
-	    	commandData = commandDesc.createDataBlock();
-	    	commandData.setStringValue(1, switchID);
-	    	ci.execCommand(commandData);
-	    	cnt ++;
-	    	Thread.sleep(5000);
-    	}
-    }
+//	    	
+//	    	// test switch
+//	    	((DataChoiceImpl)commandDesc).setSelectedItem(setStatus);
+//	    	commandData = commandDesc.createDataBlock();
+//	    	commandData.setStringValue(1, switchID);
+//	    	ci.execCommand(commandData);
+//	    	cnt ++;
+//	    	Thread.sleep(5000);
+//    	}
+    	
+//    	String setStatus = "setLevel";
+//    	String switchID = "8,0";
+//    	int cnt = 0;
+//    	int level = 0;
+//    	while (cnt<6)
+//    	{
+//	    	// test selector
+//	    	((DataChoiceImpl)commandDesc).setSelectedItem(setStatus);
+//	    	commandData = commandDesc.createDataBlock();
+//	    	commandData.setStringValue(1, switchID);
+//	    	ci.execCommand(commandData);
+//	    	cnt ++;
+//	    	level += 20;
+//	    	switchID = "8," + Integer.toString(level);
+//	    	Thread.sleep(5000);
+//    	}
+//    }
     
     
     @Override

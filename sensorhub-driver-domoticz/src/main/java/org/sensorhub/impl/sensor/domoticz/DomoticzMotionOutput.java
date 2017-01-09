@@ -1,31 +1,14 @@
 package org.sensorhub.impl.sensor.domoticz;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.domoticz.DomoticzDriver.ValidDevice;
 import org.sensorhub.impl.sensor.domoticz.DomoticzHandler.DomoticzResponse;
-import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
-import org.vast.swe.helper.GeoPosHelper;
-
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.DataType;
-import net.opengis.swe.v20.Quantity;
-import net.opengis.swe.v20.Text;
-import net.opengis.swe.v20.Vector;
 
 public class DomoticzMotionOutput extends AbstractSensorOutput<DomoticzDriver>
 {
@@ -46,7 +29,7 @@ public class DomoticzMotionOutput extends AbstractSensorOutput<DomoticzDriver>
 
     protected void init() throws IOException
     {
-    	System.out.println("Adding Motion SWE Template");
+//    	System.out.println("Adding Motion SWE Template");
     	
     	SWEHelper sweHelpMotion = new SWEHelper();
     	DomoticzSWEHelper sweDomMotion = new DomoticzSWEHelper();
@@ -68,7 +51,7 @@ public class DomoticzMotionOutput extends AbstractSensorOutput<DomoticzDriver>
     
     protected void postMotionData(DomoticzResponse domMotionData, ValidDevice validMotion)
     {
-    	System.out.println("posting Motion data for idx " + domMotionData.getResult()[0].getIdx());
+//    	System.out.println("posting Motion data for idx " + domMotionData.getResult()[0].getIdx());
     	
     	double time = System.currentTimeMillis() / 1000.;
     	
