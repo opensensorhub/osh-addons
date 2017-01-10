@@ -206,9 +206,11 @@ public class RTSPClient
         else if (requestType == REQ_DESCRIBE) {
             rtspRequestWriter.write("Accept: application/sdp" + CRLF);
         }
-        else {
-            // otherwise, write the Session ID
-            rtspRequestWriter.write("Session: " + rtspSessionID + CRLF);
+        else { 
+            if (rtspSessionID != "0") {
+                rtspRequestWriter.write("Session: " + rtspSessionID + CRLF);
+                log.trace("rtpsSessionId " + rtspSessionID);
+            }
         }
         
         // end header and flush
@@ -438,7 +440,7 @@ public class RTSPClient
                     }
                     else if (line.startsWith("a=fmtp:96"))
                     {
-                        for (String token: line.split("; "))
+                        for (String token: line.split(";"))
                         {
                             if (token.startsWith("sprop-parameter-sets"))
                             {

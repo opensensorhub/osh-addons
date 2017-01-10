@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Collection;
+import java.net.MalformedURLException;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
@@ -56,11 +57,19 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
     double maxZoom = 9999;
 
     PtzPresetsHandler presetsHandler;
-    
+    URL optionsURL = null;
     
     protected AxisPtzControl(AxisCameraDriver driver)
     {
         super(driver);
+        
+        try {
+            optionsURL = new URL(parentSensor.getHostUrl() + driver.VAPIX_QUERY_PARAMS_LIST_GROUP_PTZ);
+        
+        } catch (MalformedURLException e) {
+           
+            e.printStackTrace();
+        }
     }
     
     
@@ -79,7 +88,6 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
         // get PTZ limits
         try
         {    	  
-            URL optionsURL = new URL(parentSensor.getHostUrl() + "/view/param.cgi?action=list&group=PTZ.Limit");
             InputStream is = optionsURL.openStream();
             BufferedReader bReader = new BufferedReader(new InputStreamReader(is));
 
@@ -145,7 +153,7 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
         	    PtzPreset preset = presetsHandler.getPreset(data.getStringValue());
         	    
                 // pan + tilt + zoom (supported since v2 at least)
-        	    URL optionsURL = new URL(parentSensor.getHostUrl() + "/com/ptz.cgi?pan=" + preset.pan
+        	    optionsURL = new URL(parentSensor.getHostUrl() + "/com/ptz.cgi?pan=" + preset.pan
         	    		+ "&tilt=" + preset.tilt + "&zoom=" + preset.zoom);
                 InputStream is = optionsURL.openStream();
                 is.close();
@@ -156,7 +164,7 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
         	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PTZ_POS))
         	{
 
-        	    URL optionsURL = new URL(parentSensor.getHostUrl() + "/com/ptz.cgi?pan=" + data.getStringValue(0)
+        	    optionsURL = new URL(parentSensor.getHostUrl() + "/com/ptz.cgi?pan=" + data.getStringValue(0)
         	    		+ "&tilt=" + data.getStringValue(1) + "&zoom=" + data.getStringValue(2));
                 InputStream is = optionsURL.openStream();
                 is.close();
@@ -179,7 +187,7 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
         		else if (itemID.equals(VideoCamHelper.TASKING_RZOOM)) 
         			cmd = "rzoom";
         			      			
-                URL optionsURL = new URL(parentSensor.getHostUrl() + "/com/ptz.cgi?" + cmd + "=" + itemValue);
+                optionsURL = new URL(parentSensor.getHostUrl() + "/com/ptz.cgi?" + cmd + "=" + itemValue);
                 InputStream is = optionsURL.openStream();
                 is.close();       		
         	}
