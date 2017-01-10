@@ -1,4 +1,4 @@
-package org.sensorhub.test.impl.sensor.zwavedom;
+package org.sensorhub.test.impl.sensor.domoticz;
 
 
 import java.awt.image.BufferedImage;
@@ -20,8 +20,8 @@ import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.security.ClientAuth;
-import org.sensorhub.impl.sensor.zwavedom.ZWaveDomConfig;
-import org.sensorhub.impl.sensor.zwavedom.ZWaveDomDriver;
+import org.sensorhub.impl.sensor.domoticz.DomoticzConfig;
+import org.sensorhub.impl.sensor.domoticz.DomoticzDriver;
 import org.vast.data.DataChoiceImpl;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
@@ -40,20 +40,20 @@ import static org.junit.Assert.*;
  * 
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  */
-public class TestZWaveDomDriver implements IEventListener
+public class TestDomoticzDriver implements IEventListener
 {
-	ZWaveDomDriver driver;
-	ZWaveDomConfig config;
+	DomoticzDriver driver;
+	DomoticzConfig config;
 	AsciiDataWriter writer;
 	int sampleCount = 0;
     
     @Before
     public void init() throws Exception
     {
-        config = new ZWaveDomConfig();
+        config = new DomoticzConfig();
         config.id = UUID.randomUUID().toString();
 
-        driver = new ZWaveDomDriver();
+        driver = new DomoticzDriver();
         driver.init(config);
     }
     
