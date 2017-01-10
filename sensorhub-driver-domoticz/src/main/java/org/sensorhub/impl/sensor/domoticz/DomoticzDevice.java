@@ -8,6 +8,10 @@ public class DomoticzDevice
 	private String locDesc;
 	private boolean provideAlert;
 
+	public DomoticzDevice()
+	{	    
+	}
+	
 	public DomoticzDevice(String deviceIdx, int deviceType, LocationLLA locationLLA, String locDesc, boolean provideAlert)
 	{
 		this.deviceIdx = deviceIdx;

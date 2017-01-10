@@ -27,7 +27,7 @@ public class DomoticzConfig extends SensorConfig
     @DisplayInfo(label="HTTP", desc="HTTP configuration")
     public HTTPConfig http = new HTTPConfig();
     
-    @DisplayInfo(desc="geographic position of z-wave controller")
+    @DisplayInfo(desc="Geographic position of z-wave controller")
     public PositionConfig position = new PositionConfig();
     
     @DisplayInfo(label="Connection Options")
