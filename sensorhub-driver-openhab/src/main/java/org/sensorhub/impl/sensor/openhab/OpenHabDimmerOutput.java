@@ -41,7 +41,7 @@ public class OpenHabDimmerOutput extends AbstractSensorOutput<OpenHabDriver>
     	dimmerComp.addComponent("name", sweHabDimmer.getNameSWE()); // dataRecord(0)
     	dimmerComp.addComponent("time", sweHelpDimmer.newTimeStampIsoUTC()); // dataRecord(1)
     	dimmerComp.addComponent("setLevel", sweHabDimmer.getSetLevelSWE()); // dataRecord(2)
-    	dimmerComp.addComponent("latLonAlt", sweHabDimmer.getLocVecSWE()); // dataRecord(3, 4, 5)
+    	dimmerComp.addComponent("locationLLA", sweHabDimmer.getLocVecSWE()); // dataRecord(3, 4, 5)
     	dimmerComp.addComponent("locationDesc", sweHabDimmer.getLocDescSWE()); // dataRecord(6)
 
     	// also generate encoding definition

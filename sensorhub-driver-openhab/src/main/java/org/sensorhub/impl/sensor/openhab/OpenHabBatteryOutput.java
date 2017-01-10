@@ -41,7 +41,7 @@ public class OpenHabBatteryOutput extends AbstractSensorOutput<OpenHabDriver>
     	battComp.addComponent("name", sweHabBatt.getNameSWE()); // dataRecord(0)
     	battComp.addComponent("time", sweHelpBatt.newTimeStampIsoUTC()); // dataRecord(1)
     	battComp.addComponent("batteryLevel", sweHabBatt.getBatteryLevelSWE()); // dataRecord(2)
-    	battComp.addComponent("latLonAlt", sweHabBatt.getLocVecSWE()); // dataRecord(3, 4, 5)
+    	battComp.addComponent("locationLLA", sweHabBatt.getLocVecSWE()); // dataRecord(3, 4, 5)
     	battComp.addComponent("locationDesc", sweHabBatt.getLocDescSWE()); // dataRecord(6)
 		
     	// also generate encoding definition

@@ -293,22 +293,6 @@ public class OpenHabDriver extends AbstractSensorModule<OpenHabConfig>
     		catch (IOException e) { e.printStackTrace(); }
     		addOutput(habEnviroOut, false);
     	}
-	  
-//	  if (!Collections.disjoint(valPtlMotionIdx, config.getMotionIdx()))
-//	  {
-//		  habMotionOut = new OpenHabMotionOutput(this);
-//		  try { habMotionOut.init(); }
-//		  catch (IOException e) { e.printStackTrace(); }
-//		  addOutput(habMotionOut, false);
-//	  }
-//	  
-//	  if (valAlert.contains(true))
-//	  {
-//		  habAlertOut = new OpenHabAlertOutput(this);
-//		  try { habAlertOut.init(); }
-//		  catch (IOException e) { e.printStackTrace(); }
-//		  addOutput(habAlertOut, false);
-//	  }
 
     	if (isSensorBinary.contains(true))
     	{
