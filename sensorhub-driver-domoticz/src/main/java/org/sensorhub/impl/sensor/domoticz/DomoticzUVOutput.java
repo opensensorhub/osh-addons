@@ -1,31 +1,14 @@
 package org.sensorhub.impl.sensor.domoticz;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.domoticz.DomoticzDriver.ValidDevice;
 import org.sensorhub.impl.sensor.domoticz.DomoticzHandler.DomoticzResponse;
-import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
-import org.vast.swe.helper.GeoPosHelper;
-
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.DataType;
-import net.opengis.swe.v20.Quantity;
-import net.opengis.swe.v20.Text;
-import net.opengis.swe.v20.Vector;
 
 public class DomoticzUVOutput extends AbstractSensorOutput<DomoticzDriver>
 {
@@ -44,9 +27,11 @@ public class DomoticzUVOutput extends AbstractSensorOutput<DomoticzDriver>
     }
 
 
+	// Ultraviolet output results in a 500 error when requesting the
+	// sensorhub/sos observed property...haven't figured out why
     protected void init() throws IOException
     {
-    	System.out.println("Adding UV SWE Template");
+//    	System.out.println("Adding UV SWE Template");
     	
     	SWEHelper sweHelpUV = new SWEHelper();
     	DomoticzSWEHelper sweDomUV = new DomoticzSWEHelper();
@@ -66,7 +51,7 @@ public class DomoticzUVOutput extends AbstractSensorOutput<DomoticzDriver>
     
     protected void postUVData(DomoticzResponse domUVData, ValidDevice validUV)
     {
-    	System.out.println("posting UV data for idx " + validUV.getValidIdx());
+//    	System.out.println("posting UV data for idx " + validUV.getValidIdx());
     	
     	double time = System.currentTimeMillis() / 1000.;
     	double uvi = Double.parseDouble(domUVData.getResult()[0].getUVI());

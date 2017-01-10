@@ -1,8 +1,8 @@
-package org.sensorhub.impl.sensor.domoticz;
+package org.sensorhub.impl.sensor.openhab;
 
-import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
-
 import org.sensorhub.api.common.CommandStatus;
 import org.sensorhub.api.common.CommandStatus.StatusCode;
 import org.sensorhub.api.sensor.SensorException;
@@ -16,11 +16,11 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.Text;
 
 
-public class DomoticzSelectorControl extends AbstractSensorControl<DomoticzDriver>
+public class OpenHabDimmerControl extends AbstractSensorControl<OpenHabDriver>
 {
 	DataChoice commandData;
 
-	public DomoticzSelectorControl(DomoticzDriver driver)
+	public OpenHabDimmerControl(OpenHabDriver driver)
 	{
 		super(driver);
 	}
@@ -29,34 +29,31 @@ public class DomoticzSelectorControl extends AbstractSensorControl<DomoticzDrive
 	@Override
 	public String getName()
 	{
-		return "selectorControl";
+		return "dimmerControl";
 	}
 
 	
 	protected void init()
 	{
+//		System.out.println("Adding Dimmer Control SWE Template");
+		
 		SWEHelper sweHelp = new SWEHelper();
 		commandData = sweHelp.newDataChoice();
 		commandData.setName(getName());
 
 		Text turnOn = sweHelp.newText("http://sensorml.com/ont/swe/property/turnOn", 
         		"On", 
-        		"Set switch On");
+        		"Turn Dimmer on to 100%");
 		commandData.addItem("setOn", turnOn);
 		
 		Text turnOff = sweHelp.newText("http://sensorml.com/ont/swe/property/turnOff", 
         		"Off", 
-        		"Set switch Off");
+        		"Turn Dimmer Off");
 		commandData.addItem("setOff", turnOff);
-		
-		Text toggle = sweHelp.newText("http://sensorml.com/ont/swe/property/toggle", 
-        		"Toggle", 
-        		"Toggle switch");
-		commandData.addItem("toggle", toggle);
 		
 		Text setLevel = sweHelp.newText("http://sensorml.com/ont/swe/property/setLevel", 
         		"Level Selector", 
-        		"Value for selector switch");
+        		"Value for dimmer switch");
 		commandData.addItem("setLevel", setLevel);
 	}
 	
@@ -77,36 +74,47 @@ public class DomoticzSelectorControl extends AbstractSensorControl<DomoticzDrive
     	
     	// associate command data to msg structure definition
         DataChoice commandMsg = (DataChoice) commandData.copy();
-        commandMsg.setData(command); System.out.println("commandMsg = " + commandMsg);
+        commandMsg.setData(command);
         DataComponent component = ((DataChoiceImpl) commandMsg).getSelectedItem();
         
         String indexName = component.getName();
         String cmd = "";
-        String cmdLevel = "0";
+        String dimmerVal = "0";
         
         DataBlock data = component.getData();
         String[] cmdText = data.getStringValue(0).split(",");
-        String idx = cmdText[0].trim();
+        String name = cmdText[0].trim();
         if (cmdText.length == 2)
-        	cmdLevel = cmdText[1].trim();
+        	dimmerVal = cmdText[1].trim();
         
         if (indexName.equalsIgnoreCase("setOn"))
-        	cmd = "On";
+        	cmd = "ON";
         else if (indexName.equalsIgnoreCase("setOff"))
-        	cmd = "Off";
-        else if (indexName.equalsIgnoreCase("toggle"))
-        	cmd = "Toggle";
+        	cmd = "OFF";
         else if (indexName.equalsIgnoreCase("setLevel"))
-        	cmd = "Set%20Level&level=" + cmdLevel;
+        	cmd = dimmerVal;
     	
-        // send request
+        
+        // make http post
         try
         {
-        	System.out.println("Setting Sensor " + idx + " " + cmd);
 			URL optionsURL = new URL(parentSensor.getHostURL() + 
-					"type=command&param=switchlight&idx=" + idx + "&switchcmd=" + cmd);
-			InputStream is = optionsURL.openStream();
-            is.close();
+					"/items/" + name);
+			HttpURLConnection conn = (HttpURLConnection) optionsURL.openConnection();
+			conn.setDoOutput(true);
+			conn.addRequestProperty("Content-Type", "text/plain");
+			conn.addRequestProperty("Accept", "application/json");
+			conn.setRequestMethod("POST");
+			conn.connect();
+			
+			byte[] outputBytes = cmd.getBytes("UTF-8");
+			OutputStream os = conn.getOutputStream();
+			
+			System.out.println("trying request " + optionsURL + " with " + cmd);
+			os.write(outputBytes);
+			conn.getResponseCode();
+			os.flush();
+			os.close();
 		}
         catch (Exception e)
         {

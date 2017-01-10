@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.domoticz;
+package org.sensorhub.impl.sensor.openhab;
 
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
@@ -9,27 +9,14 @@ import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Text;
 import net.opengis.swe.v20.Vector;
 
-public class DomoticzSWEHelper
+public class OpenHabSWEHelper
 {
-	
-	public Quantity getIdxSWE()
-	{
-    	SWEHelper sweHelpIdx = new SWEHelper();
-
-    	Quantity idx = sweHelpIdx.newQuantity("http://sensorml.com/ont/swe/property/SensorID", 
-        		"Sensor ID", 
-        		"ID of Sensor", 
-        		null, DataType.ASCII_STRING);
-        
-        return idx;
-	}
-	
 	public Text getNameSWE()
 	{
     	SWEHelper sweHelpName = new SWEHelper();
 
     	Text name = sweHelpName.newText("http://sensorml.com/ont/swe/property/SensorName", 
-        		"Sensor Name", "Name of Sensor from Domoticz");
+        		"Sensor Name", "Name of Sensor from OpenHAB");
         
         return name;
 	}
@@ -40,22 +27,22 @@ public class DomoticzSWEHelper
 		
 		Quantity battery = sweHelpBatt.newQuantity("http://sensorml.com/ont/swe/property/BatteryLevel", 
         		"Battery Level", 
-        		"Battery Level of Switch", 
+        		"Battery Level of 'Thing'", 
         		"%", DataType.INT);
 		
 		return battery;
 	}
 	
-	public Quantity getDataSWE()
+	public Quantity getItemStateSWE()
 	{
-		SWEHelper sweHelpData = new SWEHelper();
+		SWEHelper sweHelpItemState = new SWEHelper();
 		
-        Quantity data = sweHelpData.newQuantity("http://sensorml.com/ont/swe/property/Data",
-        		"Current Data", 
-        		"Current data value offered by sensor", 
+        Quantity itemState = sweHelpItemState.newQuantity("http://sensorml.com/ont/swe/property/ItemState",
+        		"Current State", 
+        		"Current state of item", 
         		null, DataType.ASCII_STRING);
         
-        return data;
+        return itemState;
 	}
 	
 	public Quantity getEnviroDataSWE()
@@ -89,7 +76,7 @@ public class DomoticzSWEHelper
 		Quantity relhum = sweHelpHum.newQuantity("http://sensorml.com/ont/swe/property/RelativeHumidity", 
         		"Relative Humidity", 
         		"Relative Humidity", 
-        		"%", DataType.INT);
+        		"%", DataType.DOUBLE);
 		
 		return relhum;
 	}
@@ -101,7 +88,7 @@ public class DomoticzSWEHelper
 		Quantity lux = sweHelpLum.newQuantity("http://sensorml.com/ont/swe/property/Illuminance", 
         		"Illuminance", 
         		"Luminous Flux per Area", 
-        		"lx", DataType.INT);
+        		"lx", DataType.FLOAT);
 		
 		return lux;
 	}
@@ -113,9 +100,21 @@ public class DomoticzSWEHelper
 		Quantity uvi = sweHelpUV.newQuantity("http://sensorml.com/ont/swe/property/UVI", 
         		"UV Index", 
         		"Index of Ultraviolet Radiation", 
-        		"UVI", DataType.DOUBLE);
+        		"UVI", DataType.INT);
 		
 		return uvi;
+	}
+	
+	public Quantity getThingStatusSWE()
+	{
+		SWEHelper sweHelpStatus = new SWEHelper();
+		
+		Quantity status = sweHelpStatus.newQuantity("http://sensorml.com/ont/swe/property/ThingStatus", 
+        		"Thing Status", 
+        		"Status of Thing", 
+        		null, DataType.ASCII_STRING);
+		
+		return status;
 	}
 	
 	public Quantity getSwitchStateSWE()
@@ -128,6 +127,66 @@ public class DomoticzSWEHelper
         		null, DataType.ASCII_STRING);
 		
 		return state;
+	}
+	
+	public Quantity getSensorBinarySWE()
+	{
+		SWEHelper sweHelpBinary = new SWEHelper();
+		
+		Quantity status = sweHelpBinary.newQuantity("http://sensorml.com/ont/swe/property/SensorState", 
+        		"Sensor Status", 
+        		"Status of Sensor", 
+        		null, DataType.ASCII_STRING);
+		
+		return status;
+	}
+	
+	public Quantity getAlarmEntrySWE()
+	{
+		SWEHelper sweHelpEntry = new SWEHelper();
+		
+		Quantity entry = sweHelpEntry.newQuantity("http://sensorml.com/ont/swe/property/Entry", 
+        		"Alarm Status", 
+        		"Status of Entry Alarm", 
+        		null, DataType.ASCII_STRING);
+		
+		return entry;
+	}
+	
+	public Quantity getAlarmBurglarSWE()
+	{
+		SWEHelper sweHelpBurglar = new SWEHelper();
+		
+		Quantity burg = sweHelpBurglar.newQuantity("http://sensorml.com/ont/swe/property/Burglar", 
+        		"Alarm Status", 
+        		"Status of Burglar Alarm", 
+        		null, DataType.ASCII_STRING);
+		
+		return burg;
+	}
+	
+	public Quantity getAlarmGeneralSWE()
+	{
+		SWEHelper sweHelpGen = new SWEHelper();
+		
+		Quantity gen = sweHelpGen.newQuantity("http://sensorml.com/ont/swe/property/General", 
+        		"Alarm Status", 
+        		"Status of General Alarm", 
+        		null, DataType.ASCII_STRING);
+		
+		return gen;
+	}
+	
+	public Quantity getAlarmAllSWE()
+	{
+		SWEHelper sweHelpAlarm = new SWEHelper();
+		
+		Quantity alarm = sweHelpAlarm.newQuantity("http://sensorml.com/ont/swe/property/Alarm", 
+        		"Alarm Status", 
+        		"Status of All Alarms", 
+        		null, DataType.ASCII_STRING);
+		
+		return alarm;
 	}
 	
 	public Quantity getMotionStatusSWE()
@@ -175,26 +234,26 @@ public class DomoticzSWEHelper
         return locDesc;
 	}
 	
-	public Text getSensorTypeSWE()
+	public Text getBindingTypeSWE()
 	{
-		SWEHelper sweHelpSensorType = new SWEHelper();
+		SWEHelper sweHelpBindingType = new SWEHelper();
 		
-        Text type = sweHelpSensorType.newText("http://sensorml.com/ont/csm/property/SENSOR_TYPE",
-        		"Sensor Type", "Type of Sensor given by Domoticz");
+        Text type = sweHelpBindingType.newText("http://sensorml.com/ont/csm/property/BindingType",
+        		"Binding Type", "Type of Channel given by OpenHAB");
         
         return type;
 	}
 	
-	public Quantity getSensorSubTypeSWE()
+	public Quantity getOwningThingSWE()
 	{
-		SWEHelper sweHelpSensorSubType = new SWEHelper();
+		SWEHelper sweHelpOwningThing = new SWEHelper();
 		
-        Quantity subtype = sweHelpSensorSubType.newQuantity("http://sensorml.com/ont/csm/property/SENSOR_TYPE",
-        		"Sensor Subtype", 
-        		"Subtype of Sensor input by User", 
-        		null, DataType.INT);
+        Quantity thing = sweHelpOwningThing.newQuantity("http://sensorml.com/ont/csm/property/OwningThing",
+        		"Owning Thing", 
+        		"'Thing' that owns item", 
+        		null, DataType.ASCII_STRING);
         
-        return subtype;
+        return thing;
 	}
 	
 	public Text getAlertMsgSWE()

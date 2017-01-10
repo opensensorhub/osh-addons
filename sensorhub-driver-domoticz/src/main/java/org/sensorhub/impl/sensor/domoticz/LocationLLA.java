@@ -2,9 +2,9 @@ package org.sensorhub.impl.sensor.domoticz;
 
 public class LocationLLA
 {
-	private double lat = Double.NaN;
-	private double lon = Double.NaN;
-	private double alt = Double.NaN;
+	public double lat = Double.NaN;
+	public double lon = Double.NaN;
+	public double alt = Double.NaN;
 
 	public double getLat() {
 		return lat;

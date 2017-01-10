@@ -2,11 +2,11 @@ package org.sensorhub.impl.sensor.domoticz;
 
 public class DomoticzDevice
 {
-	private String deviceIdx;
-	private int deviceType;
-	private LocationLLA locationLLA;
-	private String locDesc;
-	private boolean provideAlert;
+	public String deviceIdx;
+	public int deviceType;
+	public LocationLLA locationLLA;
+	public String locDesc;
+	public boolean provideAlert;
 
 	public DomoticzDevice()
 	{	    

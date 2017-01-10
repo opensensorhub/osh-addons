@@ -1,10 +1,7 @@
-package org.sensorhub.test.impl.sensor.domoticz;
+package org.sensorhub.test.impl.sensor.openhab;
 
 
-import java.awt.image.BufferedImage;
 import java.util.UUID;
-
-import javax.swing.JFrame;
 
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataBlock;
@@ -19,9 +16,8 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.security.ClientAuth;
-import org.sensorhub.impl.sensor.domoticz.DomoticzConfig;
-import org.sensorhub.impl.sensor.domoticz.DomoticzDriver;
+import org.sensorhub.impl.sensor.openhab.OpenHabConfig;
+import org.sensorhub.impl.sensor.openhab.OpenHabDriver;
 import org.vast.data.DataChoiceImpl;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
@@ -40,20 +36,20 @@ import static org.junit.Assert.*;
  * 
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  */
-public class TestDomoticzDriver implements IEventListener
+public class TestOpenHabDriver implements IEventListener
 {
-	DomoticzDriver driver;
-	DomoticzConfig config;
+	OpenHabDriver driver;
+	OpenHabConfig config;
 	AsciiDataWriter writer;
 	int sampleCount = 0;
     
     @Before
     public void init() throws Exception
     {
-        config = new DomoticzConfig();
+        config = new OpenHabConfig();
         config.id = UUID.randomUUID().toString();
 
-        driver = new DomoticzDriver();
+        driver = new OpenHabDriver();
         driver.init(config);
     }
     
@@ -83,7 +79,7 @@ public class TestDomoticzDriver implements IEventListener
     {
         System.out.println();
         
-        ISensorDataInterface dataOutput = driver.getObservationOutputs().get("DomoticzTempData");
+        ISensorDataInterface dataOutput = driver.getObservationOutputs().get("OpenHABUltravioletData");
 
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
@@ -93,10 +89,11 @@ public class TestDomoticzDriver implements IEventListener
         
         driver.start();
         
+        
         synchronized (this) 
         {
             while (sampleCount < 2)
-                wait();
+            	wait();
         }
         
         System.out.println();
@@ -104,53 +101,62 @@ public class TestDomoticzDriver implements IEventListener
     }
     
 //    @Test
-//    public void testSwitchOrSelectorCommand() throws Exception
+//    public void testSwitchCommand() throws Exception
 //    {  
 //        // get control interface
-//        ISensorControlInterface ci = driver.getCommandInputs().get("selectorControl");
+//        ISensorControlInterface ci = driver.getCommandInputs().get("switchControl");
 //        DataComponent commandDesc = ci.getCommandDescription().copy();
 //    	DataBlock commandData;
 //    	
+//    	/********** Test setting dimmer on/off *********/
+//    	String setStatus = "setOff";
+//    	String name = "zwave_device_office_node5_switch_dimmer";
 //    	
-//    	String switchID = "8";
-//    	String setStatus = "setOn";
-//    	//String setStatus = "setOff";
-//    	//String setStatus = "toggle";
+//    	// test switch
+//    	((DataChoiceImpl)commandDesc).setSelectedItem(setStatus);
+//    	commandData = commandDesc.createDataBlock();
+//    	commandData.setStringValue(1, name);
+//    	ci.execCommand(commandData);
+//    	Thread.sleep(5000);
+//    }
+    
+//    @Test
+//    public void testDimmerCommand() throws Exception
+//    {  
+//        // get control interface
+//        ISensorControlInterface ci = driver.getCommandInputs().get("dimmerControl");
+//        DataComponent commandDesc = ci.getCommandDescription().copy();
+//    	DataBlock commandData;
 //    	
-//    	
-//    	int cnt = 0;
-//    	while (cnt<6)
-//    	{
-//	    	if (cnt%2 == 0)
-//	    		setStatus = "setOn";
-//	    	else
-//	    		setStatus = "setOff";
-//	    	
-//	    	// test switch
-//	    	((DataChoiceImpl)commandDesc).setSelectedItem(setStatus);
-//	    	commandData = commandDesc.createDataBlock();
-//	    	commandData.setStringValue(1, switchID);
-//	    	ci.execCommand(commandData);
-//	    	cnt ++;
-//	    	Thread.sleep(5000);
-//    	}
-    	
+//    	/********** Test setting dimmer level **********/
 //    	String setStatus = "setLevel";
-//    	String switchID = "8,0";
+//    	String nameANDlevel = "zwave_device_office_node5_switch_dimmer,0";
+//    	
 //    	int cnt = 0;
 //    	int level = 0;
 //    	while (cnt<6)
 //    	{
-//	    	// test selector
+//	    	// test dimmer
 //	    	((DataChoiceImpl)commandDesc).setSelectedItem(setStatus);
 //	    	commandData = commandDesc.createDataBlock();
-//	    	commandData.setStringValue(1, switchID);
+//	    	commandData.setStringValue(1, nameANDlevel);
 //	    	ci.execCommand(commandData);
 //	    	cnt ++;
 //	    	level += 20;
-//	    	switchID = "8," + Integer.toString(level);
+//	    	nameANDlevel = "zwave_device_office_node5_switch_dimmer," + Integer.toString(level);
 //	    	Thread.sleep(5000);
 //    	}
+//    	
+//    	/********** Test setting dimmer on/off *********/
+////    	String setStatus = "setOn";
+////    	String name = "zwave_device_office_node5_switch_dimmer";
+////    	
+////    	// test switch
+////    	((DataChoiceImpl)commandDesc).setSelectedItem(setStatus);
+////    	commandData = commandDesc.createDataBlock();
+////    	commandData.setStringValue(1, name);
+////    	ci.execCommand(commandData);
+////    	Thread.sleep(5000);
 //    }
     
     
@@ -160,7 +166,7 @@ public class TestDomoticzDriver implements IEventListener
         assertTrue(e instanceof SensorDataEvent);
         SensorDataEvent newDataEvent = (SensorDataEvent)e;
         
-        double timeStamp = newDataEvent.getRecords()[0].getDoubleValue(0);
+        double timeStamp = newDataEvent.getRecords()[0].getDoubleValue(1);
         System.out.println("Frame received on " + new DateTimeFormat().formatIso(timeStamp, 0));
         sampleCount++;
         
