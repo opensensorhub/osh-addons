@@ -192,7 +192,7 @@ public class DomoticzSWEHelper
         Quantity subtype = sweHelpSensorSubType.newQuantity("http://sensorml.com/ont/csm/property/SENSOR_TYPE",
         		"Sensor Subtype", 
         		"Subtype of Sensor input by User", 
-        		null, DataType.INT);
+        		null, DataType.ASCII_STRING);
         
         return subtype;
 	}

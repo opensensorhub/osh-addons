@@ -31,7 +31,7 @@ public class DomoticzHandler
 	public String getDomDevices(String jsonURL)  throws IOException
 	{
     	URL urlGetDevices = new URL(jsonURL);
-    	System.out.println("Issuing request: " + urlGetDevices);
+//    	System.out.println("Issuing request: " + urlGetDevices);
     	InputStream isGetDevices = urlGetDevices.openStream();
     	BufferedReader reader = null;
     	try

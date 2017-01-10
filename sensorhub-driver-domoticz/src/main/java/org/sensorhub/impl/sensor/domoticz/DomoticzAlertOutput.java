@@ -62,7 +62,7 @@ public class DomoticzAlertOutput extends AbstractSensorOutput<DomoticzDriver>
     	dataBlock.setStringValue(0, domAlertData.getResult()[0].getIdx());
     	dataBlock.setStringValue(1, domAlertData.getResult()[0].getName());
     	dataBlock.setDoubleValue(2, time);
-    	dataBlock.setIntValue(3, validAlert.getValidType());
+    	dataBlock.setStringValue(3, validAlert.getValidType().toString());
     	dataBlock.setStringValue(4, validAlert.getValidAlertMsg());
     	dataBlock.setDoubleValue(5, validAlert.getValidLocationLLA().getLat());
     	dataBlock.setDoubleValue(6, validAlert.getValidLocationLLA().getLon());

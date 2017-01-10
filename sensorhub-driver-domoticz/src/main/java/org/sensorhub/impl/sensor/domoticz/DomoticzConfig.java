@@ -35,8 +35,35 @@ public class DomoticzConfig extends SensorConfig
     
     public List<DomoticzDevice> domoticzDevice = new ArrayList<DomoticzDevice>();
     
-    public List<Integer> enviroTypes = new ArrayList<Integer>();
     public List<String> motionIdx = new ArrayList<String>();
+    
+    public enum DeviceTypeEnum
+    {
+    	Temperature,
+    	Humidity,
+    	Air_Pressure,
+    	Temperature_Humidity,
+    	Temperature_Humidity_Pressure,
+    	Rain,
+    	Wind,
+    	UV,
+    	Count,
+    	Electricity,
+    	Electricity_P1_Smart_Meter,
+    	Air_Quality,
+    	Pressure,
+    	Percentage,
+    	Gas,
+    	Lux,
+    	Voltage,
+    	Text_Sensor,
+    	Selector_Switch,
+    	Battery_Level,
+    	Switch
+    }
+    
+    public List<DeviceTypeEnum> enviroTypes = new ArrayList<DeviceTypeEnum>();
+    
     
     public DomoticzConfig() throws IOException
     {
@@ -52,77 +79,52 @@ public class DomoticzConfig extends SensorConfig
 //        http.password = "osh12345";
 //        http.remoteHost = "192.168.1.164";
         
-//######################################################
-//##    	/* Z-Wave Device Type Map */              ##
-//######################################################
-//##  	1 = Temperature                               ##
-//##  	2 = Humidity                                  ##
-//##  	3 = Air Pressure                              ##
-//##  	4 = Temperature/Humidity                      ##
-//##  	5 = Temperature/Humidity/Pressure             ##
-//##  	6 = Rain                                      ##
-//##  	7 = Wind                                      ##
-//##  	8 = UV                                        ##
-//##  	9 = Count                                     ##
-//##  	10 = Electricity (instant & counter)          ##
-//##  	11 = Electricity P1 Smart Meter               ##
-//##  	12 = Air Quality                              ##
-//##  	13 = Pressure                                 ##
-//##  	14 = Percentage                               ##
-//##  	15 = Gas                                      ##
-//##  	16 = Lux                                      ##
-//##  	17 = Voltage                                  ##
-//##  	18 = Text Sensor                              ##
-//##  	19 = Alert Sensor                             ##
-//##  	20 = Distance Sensor                          ##
-//##  	21 = Selector Switch                          ##
-//##  	22 = Custom Sensor                            ##
-//##  	23 = Signal Level & Battery Level             ##
-//##    24 = Switch (including alarm & motion)        ##
-//######################################################
-//######################################################
-        
         http.remotePort = 8080;
         
-        //ArrayList<DomoticzDevice> domoticzDevice = new ArrayList<DomoticzDevice>();
-        /****************************************************************************************************/
-        /* Add Devices in Z-Wave Network Using Above Map                                                    */
-        /*                                                                                                  */
-        /* Format: domoticzDevice.add(new DomoticzDevice(deviceIdx, deviceType, deviceLoc, deviceLocDesc)); */
-        /*                                                                                                  */
-        /* Note: deviceIdx is type String                                                                   */
-        /*       deviceType is type int                                                                     */
-        /*       deviceLoc is type double[lat, lon, alt]                                                    */
-        /*       deviceLocDesc is type String                                                               */
-        /****************************************************************************************************/
+/****************************************************************************************************/
+/* Add Devices in Z-Wave Network Using Above Map                                                    */
+/*                                                                                                  */
+/* Format: domoticzDevice.add(new DomoticzDevice(deviceIdx,                                         */
+/* 												 deviceType,                                        */
+/* 												 deviceLoc,                                         */
+/* 												 deviceLocDesc,                                     */
+/* 												 provideAlert));                                    */
+/*                                                                                                  */
+/* Note: deviceIdx is type String                                                                   */
+/*       deviceType is type DeviceTypeEnum                                                          */
+/*       deviceLoc is type double[lat, lon, alt]                                                    */
+/*       deviceLocDesc is type String                                                               */
+/*       provideAlert is type boolean                                                               */
+/****************************************************************************************************/
+        
         LocationLLA locIdx8 = new LocationLLA();
         locIdx8.setLat(34.66); locIdx8.setLon(-86.78); locIdx8.setAlt(192.0);
-        domoticzDevice.add(new DomoticzDevice("8", 21, locIdx8, "Sensor Lab", true)); // Dimmable LED Bulb
+        domoticzDevice.add(new DomoticzDevice("8", DeviceTypeEnum.Selector_Switch, locIdx8, "Sensor Lab", true)); // Dimmable LED Bulb
         
         
         LocationLLA locIdx9 = new LocationLLA();
         locIdx9.setLat(34.55); locIdx9.setLon(-86.78); locIdx9.setAlt(190.0);
-        domoticzDevice.add(new DomoticzDevice("9", 24, locIdx9, "Unknown Office", false)); //
+        domoticzDevice.add(new DomoticzDevice("9", DeviceTypeEnum.Switch, locIdx9, "Unknown Office", false)); //
         
         
         LocationLLA locIdx10 = new LocationLLA();
         locIdx10.setLat(34.66); locIdx10.setLon(-86.76); locIdx10.setAlt(92.0);
-        domoticzDevice.add(new DomoticzDevice("10", 24, locIdx10, "Sensor Lab", true)); // Siren Switch - active
+        domoticzDevice.add(new DomoticzDevice("10", DeviceTypeEnum.Switch, locIdx10, "Sensor Lab", true)); // Siren Switch - active
         
         
         LocationLLA locIdx11 = new LocationLLA();
         locIdx11.setLat(34.59); locIdx11.setLon(-87.70); locIdx11.setAlt(98.4);
-        domoticzDevice.add(new DomoticzDevice("11", 24, locIdx11, "Unknown Office", false)); // Unknown Alarm Type
+        domoticzDevice.add(new DomoticzDevice("11", DeviceTypeEnum.Switch, locIdx11, "Unknown Office", false)); // Unknown Alarm Type
         
         
         LocationLLA locIdx12 = new LocationLLA();
         locIdx12.setLat(34.648); locIdx12.setLon(-86.768); locIdx12.setAlt(160.40);
-        domoticzDevice.add(new DomoticzDevice("12", 24, locIdx12, "", false)); // Unknown Alarm Level
+        domoticzDevice.add(new DomoticzDevice("12", DeviceTypeEnum.Switch, locIdx12, "", false)); // Unknown Alarm Level
  
 
         LocationLLA locIdx14 = new LocationLLA();
         locIdx14.setLat(34.665); locIdx14.setLon(-86.776); locIdx14.setAlt(105.60);
-        domoticzDevice.add(new DomoticzDevice("14", 1, locIdx14, "Sensor Lab", true)); // Lab Motion Sensor Temp
+        domoticzDevice.add(new DomoticzDevice("14", DeviceTypeEnum.Temperature, locIdx14, "Sensor Lab", true)); // Lab Motion Sensor Temp
 //        
 
 //        domoticzDevice.add(new DomoticzDevice("16",24, devLoc)); // MultiSensor6 Alarm Type
@@ -133,17 +135,17 @@ public class DomoticzConfig extends SensorConfig
 
         LocationLLA locIdx19 = new LocationLLA();
         locIdx19.setLat(34.775); locIdx19.setLon(-86.716); locIdx19.setAlt(95.60);
-        domoticzDevice.add(new DomoticzDevice("19", 24, locIdx19, "Main Office", true)); // MultiSensor6 Motion
+        domoticzDevice.add(new DomoticzDevice("19", DeviceTypeEnum.Switch, locIdx19, "Main Office", true)); // MultiSensor6 Motion
         
 
         LocationLLA locIdx20 = new LocationLLA();
         locIdx20.setLat(34.6985); locIdx20.setLon(-86.7685); locIdx20.setAlt(101.350);
-        domoticzDevice.add(new DomoticzDevice("20",16, locIdx20, "Main Office", false)); // MultiSensor6 Luminance
+        domoticzDevice.add(new DomoticzDevice("20", DeviceTypeEnum.Lux, locIdx20, "Main Office", false)); // MultiSensor6 Luminance
         
 
         LocationLLA locIdx21 = new LocationLLA();
         locIdx21.setLat(34.7222); locIdx21.setLon(-86.7721); locIdx21.setAlt(100.050);
-        domoticzDevice.add(new DomoticzDevice("21",8, locIdx21, "Main Office", false)); // MultiSensor6 UV
+        domoticzDevice.add(new DomoticzDevice("21", DeviceTypeEnum.UV, locIdx21, "Main Office", false)); // MultiSensor6 UV
         
 
 //        domoticzDevice.add(new DomoticzDevice("22",24, devLoc)); // Unknown Alarm Type
@@ -160,7 +162,7 @@ public class DomoticzConfig extends SensorConfig
 
         LocationLLA locIdx28 = new LocationLLA();
         locIdx28.setLat(34.665); locIdx28.setLon(-86.776); locIdx28.setAlt(101.20);
-        domoticzDevice.add(new DomoticzDevice("28", 4, locIdx28, "Main Office", true)); // MultiSensor6 Temp/Hum
+        domoticzDevice.add(new DomoticzDevice("28", DeviceTypeEnum.Temperature_Humidity, locIdx28, "Main Office", true)); // MultiSensor6 Temp/Hum
         
 
 //        domoticzDevice.add(new DomoticzDevice("29",24, devLoc)); // Unknown Alarm Type
@@ -197,18 +199,21 @@ public class DomoticzConfig extends SensorConfig
         
         
         // Build list of environmental sensor type indexes
-        // to compare with list of valid sensor types
-        enviroTypes.add(1); enviroTypes.add(2); enviroTypes.add(3); enviroTypes.add(4);
-        enviroTypes.add(5); enviroTypes.add(8); enviroTypes.add(12); enviroTypes.add(13);
-        enviroTypes.add(16);
+        DeviceTypeEnum envTemp = DeviceTypeEnum.Temperature;
+        enviroTypes.add(envTemp);
         
+        DeviceTypeEnum envHum = DeviceTypeEnum.Humidity;
+        enviroTypes.add(envHum);
+        
+        DeviceTypeEnum envPres = DeviceTypeEnum.Pressure;
+        enviroTypes.add(envPres);
         
         // Build list of motion sensor idx's
         // to compare with list of valid sensor idx's
         motionIdx.add("9"); motionIdx.add("19");
     }
 
-    public List<Integer> getEnviroTypes()
+    public List<DeviceTypeEnum> getEnviroTypes()
     {
         return enviroTypes;
     }

@@ -66,7 +66,7 @@ public class DomoticzStatusOutput extends AbstractSensorOutput<DomoticzDriver>
     	dataBlock.setStringValue(1, domStatusData.getResult()[0].getName());
     	dataBlock.setDoubleValue(2, time);
     	dataBlock.setStringValue(3, domStatusData.getResult()[0].getType()); // Type given by domoticz
-    	dataBlock.setIntValue(4, validStatus.getValidType()); // Subtype given by user
+    	dataBlock.setStringValue(4, validStatus.getValidType().toString()); // Subtype given by user
     	dataBlock.setIntValue(5, batt);
     	dataBlock.setStringValue(6, domStatusData.getResult()[0].getData());
     	dataBlock.setDoubleValue(7, validStatus.getValidLocationLLA().getLat());

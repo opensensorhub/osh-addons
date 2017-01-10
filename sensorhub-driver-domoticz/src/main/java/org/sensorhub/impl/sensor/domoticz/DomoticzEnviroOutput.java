@@ -62,7 +62,7 @@ public class DomoticzEnviroOutput extends AbstractSensorOutput<DomoticzDriver>
     	dataBlock.setStringValue(0, domEnviroData.getResult()[0].getIdx());
     	dataBlock.setStringValue(1, domEnviroData.getResult()[0].getName());
     	dataBlock.setDoubleValue(2, time);
-    	dataBlock.setIntValue(3, validEnviro.getValidType()); // Subtype given by user
+    	dataBlock.setStringValue(3, validEnviro.getValidType().toString()); // Subtype given by user
     	dataBlock.setStringValue(4, domEnviroData.getResult()[0].getData());
     	dataBlock.setDoubleValue(5, validEnviro.getValidLocationLLA().getLat());
     	dataBlock.setDoubleValue(6, validEnviro.getValidLocationLLA().getLon());

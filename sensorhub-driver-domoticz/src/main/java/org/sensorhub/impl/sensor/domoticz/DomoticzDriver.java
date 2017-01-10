@@ -13,6 +13,7 @@ import java.util.TimerTask;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.module.RobustConnection;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.domoticz.DomoticzConfig.DeviceTypeEnum;
 import org.sensorhub.impl.sensor.domoticz.DomoticzHandler.DomoticzResponse;
 import org.vast.sensorML.SMLFactory;
 import org.vast.swe.SWEHelper;
@@ -42,7 +43,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 	
 	ArrayList<ValidDevice> validDevices = new ArrayList<ValidDevice>();
 	ArrayList<ValidDevice> validDeviceInit = new ArrayList<ValidDevice>();
-	List<Integer> valTypes = new ArrayList<Integer>();
+	List<DeviceTypeEnum> valTypes = new ArrayList<DeviceTypeEnum>();
 	List<Boolean> valAlert = new ArrayList<Boolean>();
 	List<String> valPtlMotionIdx = new ArrayList<String>(); // Potential motion idx
 	ArrayList<ValidDevice> validDeviceStart = new ArrayList<ValidDevice>();
@@ -52,13 +53,13 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 	
 	public void setValidDevices() throws SensorHubException
 	{
-		System.out.println("Setting Valid Devices");
+//		System.out.println("Setting Valid Devices");
 		validDevices = getValidDevicesTotal();
 	}
 	
 	public ArrayList<ValidDevice> getValidDevices() throws SensorHubException
 	{
-		System.out.println("Returning Valid Devices");
+//		System.out.println("Returning Valid Devices");
 		return validDevices;
 	}
 	
@@ -86,49 +87,49 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 	  validDeviceInit = getValidDevices();
 
 	  // Print User Input
-	  System.out.println("############################################################");
-	  System.out.println("#                     User Input                           #");
-	  System.out.println("############################################################");
-	  System.out.println("idx : type : latLonLat : locDesc : Alert");
-	  System.out.println();
-	  for (int i = 0; i < config.domoticzDevice.size(); i++)
-	  {
-		  System.out.println(
-				  config.domoticzDevice.get(i).getDeviceIdx() + ":" + 
-				  config.domoticzDevice.get(i).getDeviceType() + ":[" + 
-				  config.domoticzDevice.get(i).getLocationLLA().getLat() + "," +
-				  config.domoticzDevice.get(i).getLocationLLA().getLon() + "," + 
-				  config.domoticzDevice.get(i).getLocationLLA().getAlt() + "]:" + 
-				  config.domoticzDevice.get(i).getLocDesc() + ":" + 
-				  config.domoticzDevice.get(i).getProvideAlert());
-	  }
-	  System.out.println("############################################################");
-	  System.out.println();
+//	  System.out.println("############################################################");
+//	  System.out.println("#                     User Input                           #");
+//	  System.out.println("############################################################");
+//	  System.out.println("idx : type : latLonLat : locDesc : Alert");
+//	  System.out.println();
+//	  for (int i = 0; i < config.domoticzDevice.size(); i++)
+//	  {
+//		  System.out.println(
+//				  config.domoticzDevice.get(i).getDeviceIdx() + ":" + 
+//				  config.domoticzDevice.get(i).getDeviceType() + ":[" + 
+//				  config.domoticzDevice.get(i).getLocationLLA().getLat() + "," +
+//				  config.domoticzDevice.get(i).getLocationLLA().getLon() + "," + 
+//				  config.domoticzDevice.get(i).getLocationLLA().getAlt() + "]:" + 
+//				  config.domoticzDevice.get(i).getLocDesc() + ":" + 
+//				  config.domoticzDevice.get(i).getProvideAlert());
+//	  }
+//	  System.out.println("############################################################");
+//	  System.out.println();
 
 	  // Print Added Devices
-	  System.out.println("############################################################");
-	  System.out.println("#                   Valid Devices                          #");
-	  System.out.println("############################################################");
-	  System.out.println("idx : type : latLonLat : locDesc : Alert");
-	  System.out.println();
+//	  System.out.println("############################################################");
+//	  System.out.println("#                   Valid Devices                          #");
+//	  System.out.println("############################################################");
+//	  System.out.println("idx : type : latLonLat : locDesc : Alert");
+//	  System.out.println();
 	  for (int i = 0; i < validDeviceInit.size(); i++)
 	  {
-		  System.out.println(
-				  validDeviceInit.get(i).getValidIdx() + ":" + 
-				  validDeviceInit.get(i).getValidType() + ":[" + 
-				  validDeviceInit.get(i).getValidLocationLLA().getLat() + "," +
-				  validDeviceInit.get(i).getValidLocationLLA().getLon() + "," + 
-				  validDeviceInit.get(i).getValidLocationLLA().getAlt() + "]:" + 
-				  validDeviceInit.get(i).getValidLocDesc() + ":" + 
-				  validDeviceInit.get(i).getValidProvideAlert());
+//		  System.out.println(
+//				  validDeviceInit.get(i).getValidIdx() + ":" + 
+//				  validDeviceInit.get(i).getValidType() + ":[" + 
+//				  validDeviceInit.get(i).getValidLocationLLA().getLat() + "," +
+//				  validDeviceInit.get(i).getValidLocationLLA().getLon() + "," + 
+//				  validDeviceInit.get(i).getValidLocationLLA().getAlt() + "]:" + 
+//				  validDeviceInit.get(i).getValidLocDesc() + ":" + 
+//				  validDeviceInit.get(i).getValidProvideAlert());
 		  
 		  valTypes.add(validDeviceInit.get(i).getValidType());
 		  valAlert.add(validDeviceInit.get(i).getValidProvideAlert());
-		  if (validDeviceInit.get(i).getValidType() == 24)
+		  if (validDeviceInit.get(i).getValidType() == DeviceTypeEnum.Switch)
 			  valPtlMotionIdx.add(validDeviceInit.get(i).getValidIdx());
 	  }
-	  System.out.println("############################################################");
-	  System.out.println();
+//	  System.out.println("############################################################");
+//	  System.out.println();
 	  
 	  // Construct SWE outputs
 	  if (valTypes.size() > 0)
@@ -163,7 +164,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 		  addOutput(domAlertOut, false);
 	  }
 	  
-	  if (valTypes.contains(1))
+	  if (valTypes.contains(DeviceTypeEnum.Temperature))
 	  {
 		  domTempOut = new DomoticzTempOutput(this);
 		  try { domTempOut.init(); }
@@ -171,7 +172,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 		  addOutput(domTempOut, false);
 	  }
 	  
-	  if (valTypes.contains(4))
+	  if (valTypes.contains(DeviceTypeEnum.Temperature_Humidity))
 	  {
 		  domTempHumOut = new DomoticzTempHumOutput(this);
 		  try { domTempHumOut.init(); }
@@ -179,7 +180,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 		  addOutput(domTempHumOut, false);
 	  }
 	  
-	  if (valTypes.contains(8))
+	  if (valTypes.contains(DeviceTypeEnum.UV))
 	  {
 		  domUVOut = new DomoticzUVOutput(this);
 		  try { domUVOut.init(); }
@@ -187,7 +188,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 		  addOutput(domUVOut, false);
 	  }
 	  
-	  if (valTypes.contains(16))
+	  if (valTypes.contains(DeviceTypeEnum.Lux))
 	  {
 		  domLumOut = new DomoticzLumOutput(this);
 		  try { domLumOut.init(); }
@@ -196,7 +197,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 	  }
 	  
 	  
-	  if (valTypes.contains(21))
+	  if (valTypes.contains(DeviceTypeEnum.Selector_Switch))
 	  {
 		  domSelectorOut = new DomoticzSelectorOutput(this);
 		  try { domSelectorOut.init(); }
@@ -210,7 +211,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 	  }
 	  
 	  
-	  if (valTypes.contains(24))
+	  if (valTypes.contains(DeviceTypeEnum.Switch))
 	  {
 		  domSwitchOut = new DomoticzSwitchOutput(this);
 		  try { domSwitchOut.init(); }
@@ -218,7 +219,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 		  addOutput(domSwitchOut, false);
 	  }
 	  
-	  if (valTypes.contains(21) || valTypes.contains(24))
+	  if (valTypes.contains(DeviceTypeEnum.Selector_Switch) || valTypes.contains(DeviceTypeEnum.Switch))
 	  {
 		  // add switch controller
           this.switchControl = new DomoticzSwitchControl(this);
@@ -233,8 +234,8 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
   
   public ArrayList<ValidDevice> getValidDevicesTotal() throws SensorHubException
   {
-	  System.out.println("Checking Network Devices...");
-	  System.out.println();
+//	  System.out.println("Checking Network Devices...");
+//	  System.out.println();
 	  
 	  // Check for duplicate entries and do not include them
 	  for (int i = 0; i < config.domoticzDevice.size(); i++)
@@ -256,7 +257,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 	  System.out.println();
 	  for (int i = 0; i < uniqueDevice.size(); i++)
 	  {
-		  System.out.println("uniqueDevice idx = " + uniqueDevice.get(i).getDeviceIdx());
+//		  System.out.println("uniqueDevice idx = " + uniqueDevice.get(i).getDeviceIdx());
 		  DomoticzResponse domData = domHandler.getFromJSON(getHostURL() + 
 				  "type=devices&rid=" + uniqueDevice.get(i).getDeviceIdx());
 		  
@@ -266,10 +267,10 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 			  // If there is a mismatch, device will be deemed "invalid" and not included
 			  switch (uniqueDevice.get(i).getDeviceType())
 			  {
-			  	case 1:
+			  	case Temperature:
 			  		if (!Double.isNaN(domData.getResult()[0].getTemp()))
 			  		{
-			  			System.out.println("Temp device idx " + uniqueDevice.get(i).getDeviceIdx() + " is OK...adding");
+//			  			System.out.println("Temp device idx " + uniqueDevice.get(i).getDeviceIdx() + " is OK...adding");
 			  			validDeviceTotal.add(new ValidDevice (uniqueDevice.get(i).getDeviceIdx(), uniqueDevice.get(i).getDeviceType(), uniqueDevice.get(i).getLocationLLA(), uniqueDevice.get(i).getLocDesc(), uniqueDevice.get(i).getProvideAlert(), "Temp is out of bounds!"));
 			  		}
 					else
@@ -278,10 +279,10 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 					}
 			  		break;
 			  		
-			  	case 4:
+			  	case Temperature_Humidity:
 			  		if (!Double.isNaN(domData.getResult()[0].getTemp()) && domData.getResult()[0].getHumidity() != Integer.MIN_VALUE)
 			  		{
-			  			System.out.println("Temp/Hum device idx " + uniqueDevice.get(i).getDeviceIdx() + " is OK...adding");
+//			  			System.out.println("Temp/Hum device idx " + uniqueDevice.get(i).getDeviceIdx() + " is OK...adding");
 			  			validDeviceTotal.add(new ValidDevice (uniqueDevice.get(i).getDeviceIdx(), uniqueDevice.get(i).getDeviceType(), uniqueDevice.get(i).getLocationLLA(), uniqueDevice.get(i).getLocDesc(), uniqueDevice.get(i).getProvideAlert(), "Temp and/or RelHum are/is out of bounds!"));
 			  		}
 					else
@@ -290,10 +291,10 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 					}
 			  		break;
 			  		
-			  	case 8:
+			  	case UV:
 			  		if (domData.getResult()[0].getUVI() != null)
 			  		{
-			  			System.out.println("UV device idx " + uniqueDevice.get(i).getDeviceIdx() + " is OK...adding");
+//			  			System.out.println("UV device idx " + uniqueDevice.get(i).getDeviceIdx() + " is OK...adding");
 			  			validDeviceTotal.add(new ValidDevice (uniqueDevice.get(i).getDeviceIdx(), uniqueDevice.get(i).getDeviceType(), uniqueDevice.get(i).getLocationLLA(), uniqueDevice.get(i).getLocDesc(), uniqueDevice.get(i).getProvideAlert(), "UVI is out of bounds!"));
 			  		}
 					else
@@ -302,10 +303,10 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 					}
 			  		break;
 			  		
-			  	case 16:
+			  	case Lux:
 			  		if (domData.getResult()[0].getData().contains("Lux"))
 			  		{
-			  			System.out.println("Luminance device idx " + uniqueDevice.get(i).getDeviceIdx() + " is OK...adding");
+//			  			System.out.println("Luminance device idx " + uniqueDevice.get(i).getDeviceIdx() + " is OK...adding");
 			  			validDeviceTotal.add(new ValidDevice (uniqueDevice.get(i).getDeviceIdx(), uniqueDevice.get(i).getDeviceType(), uniqueDevice.get(i).getLocationLLA(), uniqueDevice.get(i).getLocDesc(), uniqueDevice.get(i).getProvideAlert(), "Illuminance is out of bounds!"));
 			  		}
 					else
@@ -314,10 +315,10 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 					}
 			  		break;
 			  		
-			  	case 21:
+			  	case Selector_Switch:
 			  		if (domData.getResult()[0].getLevel() != Integer.MIN_VALUE)
 			  		{
-			  			System.out.println("Selector device idx " + uniqueDevice.get(i).getDeviceIdx() + " is OK...adding");
+//			  			System.out.println("Selector device idx " + uniqueDevice.get(i).getDeviceIdx() + " is OK...adding");
 			  			validDeviceTotal.add(new ValidDevice (uniqueDevice.get(i).getDeviceIdx(), uniqueDevice.get(i).getDeviceType(), uniqueDevice.get(i).getLocationLLA(), uniqueDevice.get(i).getLocDesc(), uniqueDevice.get(i).getProvideAlert(), "Selector Level is out of bounds!"));
 			  		}
 					else
@@ -326,10 +327,10 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 					}
 			  		break;
 			  		
-			  	case 24:
+			  	case Switch:
 			  		if (domData.getResult()[0].getStatus() != null)
 			  		{
-			  			System.out.println("Switch device idx " + uniqueDevice.get(i).getDeviceIdx() + " is OK...adding");
+//			  			System.out.println("Switch device idx " + uniqueDevice.get(i).getDeviceIdx() + " is OK...adding");
 			  			validDeviceTotal.add(new ValidDevice (uniqueDevice.get(i).getDeviceIdx(), uniqueDevice.get(i).getDeviceType(), uniqueDevice.get(i).getLocationLLA(), uniqueDevice.get(i).getLocDesc(), uniqueDevice.get(i).getProvideAlert(), "Switch/Detector was triggered!"));
 			  		}
 					else
@@ -342,7 +343,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 		  else
 			  System.out.println("device Idx " + uniqueDevice.get(i).getDeviceIdx() + " has no data...");
 		  
-		  System.out.println();
+//		  System.out.println();
 	  }
 	return validDeviceTotal;
   }
@@ -359,7 +360,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 		  {
 			  switch (validDeviceStart.get(k).getValidType())
 			  {
-			  case 1:
+			  case Temperature:
 				  domTempOut.postTempData(domDataStart, validDeviceStart.get(k));
 				  domStatusOut.postStatusData(domDataStart, validDeviceStart.get(k));
 				  domEnviroOut.postEnviroData(domDataStart, validDeviceStart.get(k));
@@ -370,7 +371,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 				  }
 				  break;
 			  
-			  case 4:
+			  case Temperature_Humidity:
 				  domTempHumOut.postTempHumData(domDataStart, validDeviceStart.get(k));
 				  domStatusOut.postStatusData(domDataStart, validDeviceStart.get(k));
 				  domEnviroOut.postEnviroData(domDataStart, validDeviceStart.get(k));
@@ -381,7 +382,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 				  }
 				  break;
 				  
-			  case 8:
+			  case UV:
 				  domUVOut.postUVData(domDataStart, validDeviceStart.get(k));
 				  domStatusOut.postStatusData(domDataStart, validDeviceStart.get(k));
 				  domEnviroOut.postEnviroData(domDataStart, validDeviceStart.get(k));
@@ -392,7 +393,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 				  }
 				  break;
 				  
-			  case 16:
+			  case Lux:
 				  domLumOut.postLumData(domDataStart, validDeviceStart.get(k));
 				  domStatusOut.postStatusData(domDataStart, validDeviceStart.get(k));
 				  domEnviroOut.postEnviroData(domDataStart, validDeviceStart.get(k));
@@ -403,7 +404,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 				  }
 				  break;
 				  
-			  case 21:
+			  case Selector_Switch:
 				  domSelectorOut.postSelectorData(domDataStart, validDeviceStart.get(k));
 				  domStatusOut.postStatusData(domDataStart, validDeviceStart.get(k));
 				  if (validDeviceStart.get(k).getValidProvideAlert() && (domDataStart.getResult()[0].getLevel() < 10 || domDataStart.getResult()[0].getLevel() > 90))
@@ -413,7 +414,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 				  }
 				  break;
 				  
-			  case 24:
+			  case Switch:
 				  domSwitchOut.postSwitchData(domDataStart, validDeviceStart.get(k));
 				  domStatusOut.postStatusData(domDataStart, validDeviceStart.get(k));
 				  if (config.getMotionIdx().contains(validDeviceStart.get(k).getValidIdx()))
@@ -488,13 +489,13 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
   class ValidDevice
   {
   	  private String validIdx;
-  	  private int validType;
+  	  private DeviceTypeEnum validType;
   	  private LocationLLA validLocationLLA;
   	  private String validLocDesc;
   	  private boolean validProvideAlert;
   	  private String validAlertMsg;
 
-  	  public ValidDevice(String validIdx, int validType, LocationLLA validLocationLLA, String validLocDesc, boolean validProvideAlert, String validAlertMsg)
+  	  public ValidDevice(String validIdx, DeviceTypeEnum validType, LocationLLA validLocationLLA, String validLocDesc, boolean validProvideAlert, String validAlertMsg)
   	  {
   	    this.validIdx = validIdx;
   	    this.validType = validType;
@@ -514,12 +515,12 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
   		  this.validIdx = validIdx;
   	  }
   	  
-  	  public int getValidType()
+  	  public DeviceTypeEnum getValidType()
   	  {
   		  return this.validType;
   	  }
 
-  	  public void setValidType(int validType)
+  	  public void setValidType(DeviceTypeEnum validType)
   	  {
   		  this.validType = validType;
   	  }

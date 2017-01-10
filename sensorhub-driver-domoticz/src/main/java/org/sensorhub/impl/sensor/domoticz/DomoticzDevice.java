@@ -1,18 +1,21 @@
 package org.sensorhub.impl.sensor.domoticz;
 
+import org.sensorhub.impl.sensor.domoticz.DomoticzConfig.DeviceTypeEnum;
+
 public class DomoticzDevice
 {
 	public String deviceIdx;
-	public int deviceType;
+//	public int deviceType;
 	public LocationLLA locationLLA;
 	public String locDesc;
 	public boolean provideAlert;
+	public DeviceTypeEnum deviceType;
 
 	public DomoticzDevice()
 	{	    
 	}
 	
-	public DomoticzDevice(String deviceIdx, int deviceType, LocationLLA locationLLA, String locDesc, boolean provideAlert)
+	public DomoticzDevice(String deviceIdx, DeviceTypeEnum deviceType, LocationLLA locationLLA, String locDesc, boolean provideAlert)
 	{
 		this.deviceIdx = deviceIdx;
 		this.deviceType = deviceType;
@@ -31,12 +34,12 @@ public class DomoticzDevice
 		this.deviceIdx = deviceIdx;
 	}
 
-	public int getDeviceType()
+	public DeviceTypeEnum getDeviceType()
 	{
 		return this.deviceType;
 	}
 
-	public void setDeviceType(int deviceType)
+	public void setDeviceType(DeviceTypeEnum deviceType)
 	{
 		this.deviceType = deviceType;
 	}
