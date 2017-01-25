@@ -16,7 +16,7 @@ package org.sensorhub.impl.security.oauth;
 
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.ModuleConfig;
-import org.sensorhub.impl.module.AbstractModuleProvider;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 
 /**
@@ -28,7 +28,7 @@ import org.sensorhub.impl.module.AbstractModuleProvider;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Nov 19, 2016
  */
-public class OAuthClientDescriptor extends AbstractModuleProvider
+public class OAuthClientDescriptor extends JarModuleProvider
 {
 
     @Override
