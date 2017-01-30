@@ -20,7 +20,6 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import gnu.io.SerialPort;
 import net.opengis.sensorml.v20.IdentifierList;
 import net.opengis.sensorml.v20.Term;
 
@@ -60,7 +59,6 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
     String inputLine = null;
     String modelNumber = null;
     String serialNumber = null;
-    SerialPort serialPort;
     boolean started = false;
     
     
@@ -93,23 +91,7 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
             {
             	dataIn = new BufferedReader(new InputStreamReader(commProvider.getInputStream()));
                 //dataOut = new BufferedWriter(new OutputStreamWriter(commProvider.getOutputStream()));
-                getLogger().info("Connected to Vaisala data stream");
-
-                
-                /************************* Get Device Address *************************/
-                //dataOut.flush();
-//                try {
-//					Thread.sleep(1000);
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-                
-                // get line and split to check its length
-//                inputLine = dataIn.readLine();
-//                System.out.println(inputLine);
-//                inputLine = null;
-                /***********************************************************************/
+                getLogger().info("Connected to Intelipod data stream");
                 
             }
             catch (IOException e)
@@ -117,53 +99,7 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
                 throw new RuntimeException("Error while initializing communications ", e);
             }
         }
-        
-//        CommPortIdentifier portId = null;
-//        Enumeration portEnum = CommPortIdentifier.getPortIdentifiers();
-//        
-//        //First, Find an instance of serial port as set in PORT_NAMES.
-//        while (portEnum.hasMoreElements()) {
-//            CommPortIdentifier currPortId = (CommPortIdentifier) portEnum.nextElement();
-//            System.out.println("portId: " + currPortId);
-//            for (String portName : PORT_NAMES) {
-//            	System.out.println("portName: " + portName);
-//                if (currPortId.getName().equals(portName)) {
-//                    portId = currPortId;
-//                    break;
-//                }
-//            }
-//        }
-//        
-//        if (portId == null) {
-//            System.out.println("Could not find COM port.");
-//            return;
-//        }
-//        
-//        try {
-//            // open serial port, and use class name for the appName.
-//            serialPort = (SerialPort) portId.open(this.getClass().getName(), TIME_OUT);
-//
-//            // set port parameters
-//            serialPort.setSerialPortParams(DATA_RATE,
-//                    SerialPort.DATABITS_8,
-//                    SerialPort.STOPBITS_1,
-//                    SerialPort.PARITY_NONE);
-//
-//            // open the streams
-//            input = new BufferedReader(new InputStreamReader(serialPort.getInputStream()));
-//            output = serialPort.getOutputStream();
-//            
-//
-//            // add event listeners
-//            serialPort.addEventListener(this);
-//            serialPort.notifyOnDataAvailable(true);
-//        } catch (Exception e) {
-//            System.err.println(e.toString());
-//        }
-        
-        
-        
-        
+
         // generate identifiers: use serial number from config or first characters of local ID
         generateUniqueID("urn:osh:intelipod:", config.serialNumber);
         generateXmlID("INTELIPOD_", config.serialNumber);
@@ -307,31 +243,4 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
     {
         return true;
     }
-
-    
-//    public synchronized void close() {
-//        if (serialPort != null) {
-//            serialPort.removeEventListener();
-//            serialPort.close();
-//        }
-//    }
-
-    
-//	@Override
-//	public void serialEvent(SerialPortEvent oEvent) {
-//        if (started & oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
-//            try
-//            {
-//                String inputLine = input.readLine();
-//                System.out.println(inputLine);
-//                
-//                // Pick up here - parse inputLine
-//            }
-//            
-//            catch (Exception e)
-//            {
-//                System.err.println(e.toString());
-//            }
-//        }
-//	}
 }

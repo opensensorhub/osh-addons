@@ -53,7 +53,7 @@ public class TestIntelipodDriver implements IEventListener
         config.id = UUID.randomUUID().toString();
         
         RxtxSerialCommProviderConfig serialConf = new RxtxSerialCommProviderConfig();
-        serialConf.protocol.portName = "/dev/rfcomm1";
+        serialConf.protocol.portName = "/dev/rfcomm0";
         serialConf.protocol.baudRate = 9600;
         config.commSettings = serialConf;
 
