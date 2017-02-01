@@ -52,7 +52,6 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
     IntelipodOutput intelipodOut;
     BufferedReader dataIn;
     BufferedWriter dataOut;
-    BufferedReader reader;
     BufferedWriter writer;
     BufferedReader input;
     OutputStream output;
@@ -85,7 +84,7 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
                 throw new SensorHubException("No communication settings specified");
             commProvider = config.commSettings.getProvider();
             commProvider.start();
-
+            
             // connect to comm data streams
             try
             {
@@ -181,7 +180,7 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
                     getMeasurement();
                 }
                 
-                reader = null;
+                dataIn = null;
             }
         });
         
@@ -196,9 +195,9 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
     	//close();
     	started = false;
         
-        if (reader != null)
+        if (dataIn != null)
         {
-            try { reader.close(); }
+            try { dataIn.close(); }
             catch (IOException e) { }
         }
         

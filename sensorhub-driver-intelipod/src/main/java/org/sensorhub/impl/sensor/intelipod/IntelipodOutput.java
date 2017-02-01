@@ -41,14 +41,7 @@ import org.vast.swe.helper.GeoPosHelper;
 
 public class IntelipodOutput extends AbstractSensorOutput<IntelipodSensor>
 {
-    private static String MSG_PREFIX = "$PLTIT";
-    private static String MSG_TYPE_HV = "HV";
-    //private static String MSG_TYPE_HT = "HT";
-    //private static String MSG_TYPE_ML = "ML";
-    private static double FEET_TO_METERS = 0.304800610;
-    private static double YARDS_TO_METERS = 0.9144;
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-    
     DataComponent intelipodData;
     DataEncoding dataEncoding;
     BufferedReader msgReader;
@@ -87,7 +80,7 @@ public class IntelipodOutput extends AbstractSensorOutput<IntelipodSensor>
         intelipodData.addComponent("location", geo.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC));
         intelipodData.addComponent("numSatellites", swe.newQuantity(SWEHelper.getPropertyUri("NumberOfSatellites"), "Number of Satellites Reported by GPS", null, null));
         intelipodData.addComponent("gpsHDOP", swe.newQuantity(SWEHelper.getPropertyUri("HDOP"), "Horizontal Dilution of Precision", null, null));
-        intelipodData.addComponent("temperature", swe.newQuantity(SWEHelper.getPropertyUri("Temperature"), "Air Temperature", null, "degC"));
+        intelipodData.addComponent("temperature", swe.newQuantity(SWEHelper.getPropertyUri("Temperature"), "Air Temperature", null, "degF"));
         intelipodData.addComponent("pressure", swe.newQuantity(SWEHelper.getPropertyUri("BarometricPressure"), "Barometric Pressure", null, "hPa"));
         
         // also generate encoding definition as text block
@@ -130,66 +123,6 @@ public class IntelipodOutput extends AbstractSensorOutput<IntelipodSensor>
         latestRecordTime = System.currentTimeMillis();
         eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, IntelipodOutput.this, dataBlock));    
     }
-    
-    
-    protected double convert(double val, String unit)
-    {
-        // feet to meters
-        if (unit.equals("F"))
-            return val * FEET_TO_METERS;
-        
-        // yards to meters
-        else if (unit.equals("Y"))
-            return val * YARDS_TO_METERS;
-        
-        return val;
-    }
-
-
-//    protected void start(ICommProvider<?> commProvider)
-//    {
-//        if (sendData)
-//            return;
-//        
-//        sendData = true;
-//        
-//        // connect to data stream
-//        try
-//        {
-//            msgReader = new BufferedReader(new InputStreamReader(commProvider.getInputStream()));
-//            IntelipodSensor.log.info("Connected to Intelipod data stream");
-//        }
-//        catch (IOException e)
-//        {
-//            throw new RuntimeException("Error while initializing communications ", e);
-//        }
-//        
-//        // start main measurement thread
-//        Thread t = new Thread(new Runnable()
-//        {
-//            public void run()
-//            {
-//                while (sendData)
-//                {
-//                    pollAndSendMeasurement();
-//                }
-//            }
-//        });
-//        t.start();
-//    }
-
-
-//    protected void stop()
-//    {
-//        sendData = false;
-//        
-//        if (msgReader != null)
-//        {
-//            try { msgReader.close(); }
-//            catch (IOException e) { }
-//            msgReader = null;
-//        }
-//    }
 
 
     @Override
