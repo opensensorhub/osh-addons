@@ -1,0 +1,39 @@
+description = 'RTSP/RTP Camera Driver'
+ext.details = 'Sensor driver for IP cameras streaming H264 video through RTSP/RTP'
+version = '1.0.0'
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile project(':sensorhub-driver-videocam')
+  testCompile 'org.jcodec:jcodec-javase:0.1.9'
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+test {
+  exclude '**/TestRTPCameraDriverSolo.class'
+  exclude '**/TestRTPCameraDriverDahua.class'
+  exclude '**/TestRTPCameraDriverAxis.class'
+  exclude '**/TestRTPCameraDriverFoscam.class'
+  exclude '**/TestRTPCameraDriverVirbXE.class'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.fakegps.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com' 
+    }
+  }
+}
