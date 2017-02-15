@@ -14,6 +14,8 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.persistence.es;
 
+import org.sensorhub.api.config.DisplayInfo;
+
 /**
  * <p>
  * Configuration class for ES basic storage
@@ -23,5 +25,9 @@ package org.sensorhub.impl.persistence.es;
  * @since 2017
  */
 public class ESStorageConfig extends org.sensorhub.api.persistence.ObsStorageConfig {
-
+	@DisplayInfo(desc="Scroll timeout, in ms")
+    public int scrollTimeOut = 6000;
+	
+	@DisplayInfo(desc="Max of hits will be returned for each scroll")
+    public int maxScrollHits = 2;
 }
