@@ -31,38 +31,32 @@ public class ESObsStorageDescriptor implements IModuleProvider{
 
 	@Override
 	public String getModuleName() {
-		// TODO Auto-generated method stub
-		return null;
+		 return "ElasticSearch Observation Storage";
 	}
 
 	@Override
 	public String getModuleDescription() {
-		// TODO Auto-generated method stub
-		return null;
+		return "Generic implementation of observation storage using ElasticSearch Database";
 	}
 
 	@Override
 	public String getModuleVersion() {
-		// TODO Auto-generated method stub
-		return null;
+		return "0.5";
 	}
 
 	@Override
 	public String getProviderName() {
-		// TODO Auto-generated method stub
-		return null;
+		return "Sensia Software LLC";
 	}
 
 	@Override
 	public Class<? extends IModule<?>> getModuleClass() {
-		// TODO Auto-generated method stub
-		return null;
+		return ESObsStorageImpl.class;
 	}
 
 	@Override
 	public Class<? extends ModuleConfig> getModuleConfigClass() {
-		// TODO Auto-generated method stub
-		return null;
+		return ESStorageConfig.class;
 	}
 
 }
