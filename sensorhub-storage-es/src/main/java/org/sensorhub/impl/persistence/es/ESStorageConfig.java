@@ -14,6 +14,9 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.persistence.es;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.sensorhub.api.config.DisplayInfo;
 
 /**
@@ -25,9 +28,28 @@ import org.sensorhub.api.config.DisplayInfo;
  * @since 2017
  */
 public class ESStorageConfig extends org.sensorhub.api.persistence.ObsStorageConfig {
-	@DisplayInfo(desc="Scroll timeout, in ms")
-    public int scrollTimeOut = 6000;
+	@DisplayInfo(desc="When scrolling, the maximum duration ScrollableResults will be usable if no other results are fetched from, in ms")
+    public int scrollMaxDuration = 6000;
 	
-	@DisplayInfo(desc="Max of hits will be returned for each scroll")
-    public int maxScrollHits = 2;
+	@DisplayInfo(desc="MWhen scrolling, the number of results fetched by each Elasticsearch call")
+    public int scrollFetchSize = 2;
+	
+	@DisplayInfo(desc="When scrolling, the minimum number of previous results kept in memory at any time")
+	public int scrollBacktrackingWindowSize = 10000;
+	
+	@DisplayInfo(desc="List of nodes")
+	public List<String> nodeUrls = new ArrayList<String>();
+	
+	@DisplayInfo(desc="Set to true to ignore cluster name validation of connected nodes")
+	public boolean ignoreClusterName = false;
+	
+	@DisplayInfo(desc="The time to wait for a ping response from a node")
+	public int pingTimeout = 5;
+	
+	@DisplayInfo(desc="How often to sample / ping the nodes listed and connected")
+	public int nodeSamplerInterval = 5;
+	
+	@DisplayInfo(desc="Enable sniffing")
+	public boolean transportSniff = false;
+	
 }
