@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -146,7 +148,6 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 
 	@Override
 	public void start() throws SensorHubException {
-		System.err.println("Get local id"+getLocalID());
 		// init transport client
 		Settings settings = Settings.builder()
 		        .put("cluster.name", config.storagePath)
@@ -230,12 +231,11 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 	@Override
 	public AbstractProcess getDataSourceDescriptionAtTime(double time) {
 		// query ES to get the corresponding timestamp
-		SearchResponse response = processDescSearch
-		        .setQuery(QueryBuilders.termQuery(TIMESTAMP_FIELD_NAME, time))                 // Query
-		        .get();
-		// check there is only 1 hits
-		if(response.getHits().getTotalHits() == 1) {
-			Object blob = response.getHits().getAt(0).getSource().get(BLOB_FIELD_NAME);
+		GetRequest getRequest = new GetRequest( "uuid1","desc",time+"");
+		
+		GetResponse response = client.get( getRequest ).actionGet();
+		if (response.isExists()) {
+			Object blob = response.getSource().get(BLOB_FIELD_NAME);
 			return ESObsStorageImpl.getObject(blob);
 		}
 		return null;
@@ -247,21 +247,8 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		json.put(BLOB_FIELD_NAME,ESObsStorageImpl.getBlob(process));
 		
 		if (update) {
-			// first get the object
-			// query ES to get the corresponding timestamp
-			SearchResponse response = processDescSearch
-			        .setQuery(QueryBuilders.termQuery(TIMESTAMP_FIELD_NAME, time))                 // Query
-			        .get();
-			// should have only 1 hit
-			if(response.getHits().getTotalHits() > 1) {
-				return false;
-			}
-			
-			// we need the hit id to build the update request
-			SearchHit hit = response.getHits().getAt(0);
-			
 			// prepare update
-			UpdateRequest updateRequest = new UpdateRequest(getLocalID(), DESC_HISTORY_IDX_NAME, hit.getId());
+			UpdateRequest updateRequest = new UpdateRequest(getLocalID(), DESC_HISTORY_IDX_NAME, time+"");
 			updateRequest.doc(json);
 			
 			String id=null;
@@ -272,6 +259,7 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 			}
             return (id != null);
         } else {
+        	processDescIdx.setId(time+"");
     		processDescIdx.setSource(json);
     		// send request and check if the id is not null
             return (processDescIdx.get().getId() == null);
