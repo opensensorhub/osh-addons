@@ -117,6 +117,7 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 	
 	// search
 	protected SearchRequestBuilder processDescSearch;
+	protected SearchRequestBuilder recordStoreInfoSearch;
 	
 	@Override
 	public void backup(OutputStream os) throws IOException {
@@ -182,6 +183,7 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		
 		// prepare requests
 		processDescSearch = client.prepareSearch(getLocalID()).setTypes(DESC_HISTORY_IDX_NAME);
+		recordStoreInfoSearch = client.prepareSearch(getLocalID()).setTypes(RS_INFO_IDX_NAME);
 	}
 
 	@Override
@@ -195,7 +197,6 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 	public AbstractProcess getLatestDataSourceDescription() {
 		// build search response given a timestamp desc sort
 		SearchResponse response = processDescSearch
-							.setTypes("desc")
 							.addSort("timestamp", SortOrder.DESC)
 							.get();
 		
@@ -343,8 +344,17 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 
 	@Override
 	public Map<String, ? extends IRecordStoreInfo> getRecordStores() {
-		System.err.println("TODO: getRecordStores");
-		return null;
+		Map<String, IRecordStoreInfo> result = new HashMap<>();
+		SearchResponse response = recordStoreInfoSearch.get();
+		
+		String name = null;
+		DataStreamInfo rsInfo = null;
+		for(SearchHit hit : response.getHits()) {
+			name = hit.getId(); // name
+			rsInfo = ESObsStorageImpl.<DataStreamInfo>getObject(hit.getSource().get(BLOB_FIELD_NAME)); // DataStreamInfo
+			result.put(name,rsInfo);
+		}
+		return result;
 	}
 
 	@Override
