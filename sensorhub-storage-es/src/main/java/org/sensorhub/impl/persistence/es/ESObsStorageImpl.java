@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
@@ -202,7 +203,7 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		// the response should contain the whole list of source
 		// sorted desc by their timestamp
 		if(response.getHits().getTotalHits() > 0){
-			// get the first one of the list, that means the most recent
+			// get the first one of the list means the most recent
 			Object blob = response.getHits().getAt(0).getSource().get(BLOB_FIELD_NAME);
 			result = ESObsStorageImpl.<AbstractProcess>getObject(blob);
 		}
@@ -232,12 +233,18 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 	public AbstractProcess getDataSourceDescriptionAtTime(double time) {
 		AbstractProcess result = null;
 		
-		// query ES to get the corresponding timestamp
+		// build the request
 		GetRequest getRequest = new GetRequest( "uuid1","desc",time+"");
 		
+		// build  and execute the response
 		GetResponse response = client.get( getRequest ).actionGet();
+		
+		// if any response
 		if (response.isExists()) {
+			// get the blob from the source response field
 			Object blob = response.getSource().get(BLOB_FIELD_NAME);
+			
+			// deserialize the object
 			result = ESObsStorageImpl.getObject(blob);
 		}
 		return result;
@@ -304,12 +311,34 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 
 	@Override
 	public void removeDataSourceDescription(double time) {
-		System.err.println("TODO: removeDataSourceDescription");
+		DeleteRequest deleteRequest = new DeleteRequest(getLocalID(), DESC_HISTORY_IDX_NAME, time+"");
+		try {
+			client.delete(deleteRequest).get().getId();
+		} catch (InterruptedException | ExecutionException e) {
+			log.error("[ES] Cannot delete the object with the index: "+time);
+		}
 	}
 
 	@Override
 	public void removeDataSourceDescriptionHistory(double startTime, double endTime) {
 		System.err.println("TODO: removeDataSourceDescriptionHistory");
+		// query ES to get the corresponding timestamp
+		// the response is applied a post filter allowing to specify a range request on the timestamp
+		// the hits should be directly filtered
+		SearchResponse response = processDescSearch
+				.setPostFilter(QueryBuilders.rangeQuery("timestamp").from(startTime).to(endTime))                // Query
+		        .get();
+		
+		// the corresponding filtering hits
+		DeleteRequest deleteRequest = new DeleteRequest(getLocalID(), DESC_HISTORY_IDX_NAME,"");
+		for(SearchHit hit : response.getHits()) {
+			deleteRequest.id(hit.getId());
+			try {
+				client.delete(deleteRequest).get().getId();
+			} catch (InterruptedException | ExecutionException e) {
+				log.error("[ES] Cannot delete the object with the index: "+hit.getId());
+			}
+		}
 	}
 
 	@Override
