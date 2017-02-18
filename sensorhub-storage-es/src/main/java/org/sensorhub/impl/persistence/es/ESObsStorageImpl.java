@@ -230,15 +230,17 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 
 	@Override
 	public AbstractProcess getDataSourceDescriptionAtTime(double time) {
+		AbstractProcess result = null;
+		
 		// query ES to get the corresponding timestamp
 		GetRequest getRequest = new GetRequest( "uuid1","desc",time+"");
 		
 		GetResponse response = client.get( getRequest ).actionGet();
 		if (response.isExists()) {
 			Object blob = response.getSource().get(BLOB_FIELD_NAME);
-			return ESObsStorageImpl.getObject(blob);
+			result = ESObsStorageImpl.getObject(blob);
 		}
-		return null;
+		return result;
 	}
 
 	protected boolean storeDataSourceDescription(AbstractProcess process, double time, boolean update) {
