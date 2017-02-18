@@ -14,6 +14,7 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.persistence.es;
 
+import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.sensorhub.api.persistence.IRecordStoreInfo;
 
 import net.opengis.swe.v20.DataComponent;
@@ -30,6 +31,21 @@ import net.opengis.swe.v20.DataEncoding;
  */
 public class ESTimeSeriesImpl implements IRecordStoreInfo {
 
+	// current rsInfo index
+	private String rsInfoIdx;
+	
+	// index request builder to make request onto the record storage
+	private IndexRequestBuilder recordStoreIdx;
+	
+	// index request builder to make request onto the record info storage
+	private IndexRequestBuilder recordStoreInfoIdx;
+	
+	public ESTimeSeriesImpl(IndexRequestBuilder recordStoreIdx,IndexRequestBuilder recordStoreInfoIdx,String rsInfoIdx) {
+		this.rsInfoIdx = rsInfoIdx;
+		this.recordStoreIdx = recordStoreIdx;
+		this.recordStoreInfoIdx = recordStoreInfoIdx;
+	}
+	
 	@Override
 	public String getName() {
 		// TODO Auto-generated method stub

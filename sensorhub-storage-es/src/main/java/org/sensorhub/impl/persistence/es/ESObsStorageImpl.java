@@ -54,6 +54,7 @@ import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.api.persistence.IStorageModule;
 import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.impl.module.AbstractModule;
+import org.sensorhub.impl.persistence.h2.DataStreamInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.util.Bbox;
@@ -118,6 +119,7 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 	// search
 	protected SearchRequestBuilder processDescSearch;
 	protected SearchRequestBuilder recordStoreInfoSearch;
+	protected SearchRequestBuilder recordStoreSearch;
 	
 	@Override
 	public void backup(OutputStream os) throws IOException {
@@ -181,9 +183,10 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		recordStoreInfoIdx = client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME);
 		recordStoreIdx = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME);
 		
-		// prepare requests
+		// prepare search requests
 		processDescSearch = client.prepareSearch(getLocalID()).setTypes(DESC_HISTORY_IDX_NAME);
 		recordStoreInfoSearch = client.prepareSearch(getLocalID()).setTypes(RS_INFO_IDX_NAME);
+		recordStoreSearch = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME);
 	}
 
 	@Override
@@ -219,7 +222,7 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		// the response is applied a post filter allowing to specify a range request on the timestamp
 		// the hits should be directly filtered
 		SearchResponse response = processDescSearch
-				.setPostFilter(QueryBuilders.rangeQuery("timestamp").from(startTime).to(endTime))                // Query
+				.setQuery(QueryBuilders.rangeQuery("timestamp").from(startTime).to(endTime))                // Query
 		        .get();
 		
 		// the corresponding filtering hits
@@ -359,13 +362,23 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 
 	@Override
 	public void addRecordStore(String name, DataComponent recordStructure, DataEncoding recommendedEncoding) {
-		System.err.println("TODO: addRecordStore");
+		DataStreamInfo rsInfo = new DataStreamInfo(name, recordStructure, recommendedEncoding);
+        
+		// add new record storage
+		Object blob = ESObsStorageImpl.getBlob(rsInfo);
+		
+		// set id and blob before executing the request
+		recordStoreInfoIdx.setId(name).setSource(blob).get();
+		
+		//TODO: make the link to the recordStore storage
 	}
 
 	@Override
 	public int getNumRecords(String recordType) {
-		System.err.println("TODO: getNumRecords");
-		return 0;
+		SearchResponse response = recordStoreSearch
+				.setQuery(QueryBuilders.matchQuery("type", recordType))
+		        .get();
+		return (int) response.getHits().getTotalHits();
 	}
 
 	@Override
