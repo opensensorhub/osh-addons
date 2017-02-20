@@ -560,8 +560,27 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 
 	@Override
 	public int getNumMatchingRecords(IDataFilter filter, long maxCount) {
-		System.err.println("TODO: getNumMatchingRecords");
-		return 0;
+		// build filter
+		long startTimestamp = (long)(filter.getTimeStampRange()[0]*DOUBLE_TO_LONG_MULTIPLIER);
+		long endTimestamp = (long)(filter.getTimeStampRange()[1]*DOUBLE_TO_LONG_MULTIPLIER);
+		
+		// prepare filter
+		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(startTimestamp).to(endTimestamp);
+		QueryBuilder recordTypeQuery = QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
+		QueryBuilder producerID = QueryBuilders.termQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs());
+		
+		// aggregate queries
+		BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
+				.must(timeStampRangeQuery)
+				.must(recordTypeQuery)
+				.must(producerID);
+		
+		// build response
+		final SearchResponse scrollResp = recordStoreSearch
+		        .setScroll(new TimeValue(config.pingTimeout))
+		        .setQuery(queryBuilder)
+		        .setSize(config.scrollFetchSize).get(); //max of scrollFetchSize hits will be returned for each scroll
+		return (int) scrollResp.getHits().getTotalHits();
 	}
 
 	@Override
