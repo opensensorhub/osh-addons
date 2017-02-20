@@ -24,6 +24,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
+import org.elasticsearch.action.admin.indices.exists.types.TypesExistsRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -220,8 +222,13 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		recordStoreSearch = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME);
 		
 		// create indices if they dont exist
-		CreateIndexRequest indexRequest = new CreateIndexRequest(getLocalID());
-		client.admin().indices().create(indexRequest).actionGet();
+		boolean exists = client.admin().indices()
+			    .prepareExists(getLocalID())
+			    .execute().actionGet().isExists();
+		if(!exists) {
+			CreateIndexRequest indexRequest = new CreateIndexRequest(getLocalID());
+			client.admin().indices().create(indexRequest).actionGet();
+		}
 	}
 
 	@Override
@@ -233,6 +240,9 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 
 	@Override
 	public AbstractProcess getLatestDataSourceDescription() {
+		if(!isTypeExist(getLocalID(),DESC_HISTORY_IDX_NAME)) {
+			return null;
+		}
 		// build search response given a timestamp desc sort
 		SearchResponse response = processDescSearch
 							.addSort(TIMESTAMP_FIELD_NAME, SortOrder.DESC)
@@ -243,7 +253,7 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		// sorted desc by their timestamp
 		if(response.getHits().getTotalHits() > 0){
 			// get the first one of the list means the most recent
-			Object blob = response.getHits().getAt(0).getSource().get(BLOB_FIELD_NAME);
+			byte[] blob = (byte[]) response.getHits().getAt(0).getSource().get(BLOB_FIELD_NAME);
 			result = ESObsStorageImpl.<AbstractProcess>getObject(blob);
 		}
 		return result;
@@ -263,7 +273,7 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		
 		// the corresponding filtering hits
 		for(SearchHit hit : response.getHits()) {
-			Object blob = hit.getSource().get(BLOB_FIELD_NAME);
+			byte[] blob = (byte[]) hit.getSource().get(BLOB_FIELD_NAME);
 			results.add(ESObsStorageImpl.<AbstractProcess>getObject(blob));
 		}
 		return results;
@@ -271,6 +281,10 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 
 	@Override
 	public AbstractProcess getDataSourceDescriptionAtTime(double time) {
+		if(!isTypeExist(getLocalID(),DESC_HISTORY_IDX_NAME)) {
+			return null;
+		}
+		
 		AbstractProcess result = null;
 		
 		// build the request
@@ -282,7 +296,7 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		// if any response
 		if (response.isExists()) {
 			// get the blob from the source response field
-			Object blob = response.getSource().get(BLOB_FIELD_NAME);
+			byte[] blob = (byte[]) response.getSource().get(BLOB_FIELD_NAME);
 			
 			// deserialize the object
 			result = ESObsStorageImpl.getObject(blob);
@@ -392,7 +406,7 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		DataStreamInfo rsInfo = null;
 		for(SearchHit hit : response.getHits()) {
 			name = hit.getId(); // name
-			rsInfo = ESObsStorageImpl.<DataStreamInfo>getObject(hit.getSource().get(BLOB_FIELD_NAME)); // DataStreamInfo
+			rsInfo = ESObsStorageImpl.<DataStreamInfo>getObject((byte[])hit.getSource().get(BLOB_FIELD_NAME)); // DataStreamInfo
 			result.put(name,rsInfo);
 		}
 		return result;
@@ -405,8 +419,12 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		// add new record storage
 		Object blob = ESObsStorageImpl.getBlob(rsInfo);
 		
+		Map<String, Object> json = new HashMap<String, Object>();
+		json.put(TIMESTAMP_FIELD_NAME,0l);
+		json.put(BLOB_FIELD_NAME,blob);
+		
 		// set id and blob before executing the request
-		String id = recordStoreInfoIdx.setId(name).setSource(blob).get().getId();
+		String id = recordStoreInfoIdx.setId(name).setSource(json).get().getId();
 		
 		//TODO: make the link to the recordStore storage
 		// either we can use an intermediate mapping table or use directly the recordStoreInfo index
@@ -475,7 +493,7 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		
 		// deserialize the blob field from the response if any
 		if(response.isExists()) {
-			result = ESObsStorageImpl.<DataBlock>getObject(response.getSource().get(BLOB_FIELD_NAME)); // DataBlock
+			result = ESObsStorageImpl.<DataBlock>getObject((byte[])response.getSource().get(BLOB_FIELD_NAME)); // DataBlock
 		}
 		return result;
 	}
@@ -518,7 +536,7 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 			public DataBlock next() {
 				SearchHit nextSearchHit = searchHitsIterator.next();
 				// get DataBlock from blob
-				return ESObsStorageImpl.<DataBlock>getObject(nextSearchHit.getSource().get(BLOB_FIELD_NAME)); // DataBlock
+				return ESObsStorageImpl.<DataBlock>getObject((byte[])nextSearchHit.getSource().get(BLOB_FIELD_NAME)); // DataBlock
 			}
 		};
 	}
@@ -564,7 +582,7 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 				// build key
 				final DataKey key = getDataKey(nextSearchHit.getId());
 				// get DataBlock from blob
-				final DataBlock datablock=ESObsStorageImpl.<DataBlock>getObject(nextSearchHit.getSource().get(BLOB_FIELD_NAME)); // DataBlock
+				final DataBlock datablock=ESObsStorageImpl.<DataBlock>getObject((byte[])nextSearchHit.getSource().get(BLOB_FIELD_NAME)); // DataBlock
 				
 				return new IDataRecord(){
 
@@ -743,26 +761,13 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 	}
 	
 	//TODO: use Kryo
-	private static  <T> Object getBlob(T object) {
-		/*Output output = new Output(new ByteArrayOutputStream());
-		KryoSerializer.serialize(object, output);
-		
-		String result = output.getOutputStream().toString();
-		output.close();
-		
-		return result;*/
-		return object;
-		
+	private static  <T> byte[] getBlob(T object){
+		return KryoSerializer.serialize(object);
 	}
 	
 	//TODO: use Kryo
-	private static  <T> T getObject(Object blob) {
-		/*Input input = new Input(new ByteArrayInputStream(blob.toString().getBytes()));
-		T result = KryoSerializer.<T>deserialize(input);
-		
-		input.close();
-		return result;*/
-		return (T) blob;
+	private static  <T> T getObject(byte[] blob) {
+		return KryoSerializer.deserialize(blob);
 	}
 	
 	/**
@@ -790,5 +795,10 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
     		dataKey = new DataKey(split[0], split[2], Long.parseLong(split[1])/(double)DOUBLE_TO_LONG_MULTIPLIER);
     	}
 		return dataKey;
+	}
+	
+	protected boolean isTypeExist(String indexName, String typeName) {
+		TypesExistsRequest typeExistRequest = new TypesExistsRequest(new String[]{indexName},typeName);
+		return client.admin().indices().typesExists(typeExistRequest).actionGet().isExists();
 	}
 }
