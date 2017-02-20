@@ -6,6 +6,8 @@ dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   compile 'org.elasticsearch.client:transport:5.2.1'
   compile 'com.esotericsoftware:kryo:4.0.0'
+  compile 'org.apache.logging.log4j:log4j-api:2.7'
+  compile 'org.apache.logging.log4j:log4j-core:2.7'
   testCompile group:'org.sensorhub', name:'sensorhub-core', version:oshCoreVersion, configuration: 'testArtifacts'
 }
 
