@@ -1,5 +1,8 @@
 package org.sensorhub.impl.persistence.es;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -46,11 +49,32 @@ public class KryoSerializer {
 		};
 	};
 
-	public static void serialize(Object object, Output output) {
+	public static byte[] serialize(Object object) {
+		//kryoLocal.get().writeClassAndObject(output, object);
+		
+		// create buffer
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		Output output = new Output(bos);
+		
+		// write into buffer
 		kryoLocal.get().writeClassAndObject(output, object);
+		output.flush();
+		
+		// get serialized data
+		byte[] result = bos.toByteArray();
+		
+		// close buffer
+		output.close();
+		
+		// return serialized data
+		return result;
 	}
 
-	public static <T> T deserialize(Input input) {
-		return (T) kryoLocal.get().readClassAndObject(input);
+	public static <T> T deserialize(byte[] serializedData) {
+		ByteArrayInputStream bis = new ByteArrayInputStream(serializedData);
+	    Input ki = new Input(bis);
+	    T result = (T) kryoLocal.get().readClassAndObject(ki);
+	    ki.close();
+	    return result;
 	}
 }
