@@ -14,6 +14,8 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.persistence.es;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,6 +41,7 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -60,6 +63,9 @@ import org.sensorhub.impl.module.AbstractModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.util.Bbox;
+
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.AbstractTimeGeometricPrimitive;
@@ -166,21 +172,27 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		Settings settings = Settings.builder()
 		        .put("cluster.name", config.storagePath)
 		        .put("client.transport.ignore_cluster_name",config.ignoreClusterName)
-		        .put("client.transport.ping_timeout",config.pingTimeout)
-		        .put("client.transport.nodes_sampler_interval",config.nodeSamplerInterval)
+		        //.put("client.transport.ping_timeout",config.pingTimeout)
+		        //.put("client.transport.nodes_sampler_interval",config.nodeSamplerInterval)
 		        .put("client.transport.sniff",config.transportSniff)
 		        .build();
 		
-		client = new PreBuiltTransportClient(settings);
-		
 		// add transport address(es)
+		TransportAddress [] transportAddresses  = new TransportAddress[config.nodeUrls.size()];
+		int i=0;
 		for(String nodeUrl : config.nodeUrls){
 			try {
+				URL url = null;
 				// <host>:<port>
-				URL url = new URL(nodeUrl);
-				client.addTransportAddress(new InetSocketTransportAddress(
+				if(nodeUrl.startsWith("http://")){
+					url = new URL(nodeUrl);
+				} else {
+					url = new URL("http://"+nodeUrl);
+				}
+				
+				transportAddresses[i++]=new InetSocketTransportAddress(
 						InetAddress.getByName(url.getHost()), // host
-						url.getPort())); //port
+						url.getPort()); //port
 			} catch (MalformedURLException e) {
 				throw new SensorHubException("Cannot initialize transport address:"+e.getMessage());
 			} catch (UnknownHostException e) {
@@ -188,6 +200,14 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 			}
 		}
 		
+		try{
+		// build the client
+		client = new PreBuiltTransportClient(settings)
+		        .addTransportAddresses(transportAddresses);
+		
+		}catch(Throwable ex) {
+			ex.printStackTrace();
+		}
 		// prepare indices
 		processDescIdx = client.prepareIndex(getLocalID(),DESC_HISTORY_IDX_NAME);
 		recordStoreInfoIdx = client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME);
@@ -719,13 +739,25 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 	
 	//TODO: use Kryo
 	private static  <T> Object getBlob(T object) {
-		return null;
+		/*Output output = new Output(new ByteArrayOutputStream());
+		KryoSerializer.serialize(object, output);
+		
+		String result = output.getOutputStream().toString();
+		output.close();
+		
+		return result;*/
+		return object;
 		
 	}
 	
 	//TODO: use Kryo
 	private static  <T> T getObject(Object blob) {
-		return null;
+		/*Input input = new Input(new ByteArrayInputStream(blob.toString().getBytes()));
+		T result = KryoSerializer.<T>deserialize(input);
+		
+		input.close();
+		return result;*/
+		return (T) blob;
 	}
 	
 	/**
