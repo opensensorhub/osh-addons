@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -217,6 +218,10 @@ public class ESObsStorageImpl extends AbstractModule<ESStorageConfig> implements
 		processDescSearch = client.prepareSearch(getLocalID()).setTypes(DESC_HISTORY_IDX_NAME);
 		recordStoreInfoSearch = client.prepareSearch(getLocalID()).setTypes(RS_INFO_IDX_NAME);
 		recordStoreSearch = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME);
+		
+		// create indices if they dont exist
+		CreateIndexRequest indexRequest = new CreateIndexRequest(getLocalID());
+		client.admin().indices().create(indexRequest).actionGet();
 	}
 
 	@Override
