@@ -662,7 +662,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		json.put(BLOB_FIELD_NAME,blob); // store DataBlock
 		
 		// set id and blob before executing the request
-		String id = recordStoreIdx.setId(esKey).setSource(json).get().getId();
+		String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME).setId(esKey).setSource(json).get().getId();
 	}
 
 	@Override
