@@ -243,7 +243,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		if(response.getHits().getTotalHits() > 0){
 			// get the first one of the list means the most recent
 			Object blob = response.getHits().getAt(0).getSource().get(BLOB_FIELD_NAME);
-			result = ESBasicStorageImpl.<AbstractProcess>getObject(blob);
+			result = this.<AbstractProcess>getObject(blob);
 		}
 		return result;
 	}
@@ -258,7 +258,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		SearchRequestBuilder request = client.prepareSearch(getLocalID()).setTypes(DESC_HISTORY_IDX_NAME)
 				.setScroll(new TimeValue(config.scrollMaxDuration))
 				.addSort(TIMESTAMP_FIELD_NAME,SortOrder.ASC)
-				.setQuery(QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME)
+				.setPostFilter(QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME)
 						.from(startTime).to(endTime))     // Query
 		        ;
 		
@@ -267,7 +267,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		while(iterator.hasNext()) {
 			SearchHit hit = iterator.next();
 			Object blob = hit.getSource().get(BLOB_FIELD_NAME);
-			results.add(ESBasicStorageImpl.<AbstractProcess>getObject(blob));
+			results.add(this.<AbstractProcess>getObject(blob));
 		}
 		return results;
 	}
@@ -292,7 +292,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			Object blob = response.getSource().get(BLOB_FIELD_NAME);
 			
 			// deserialize the object
-			result = ESBasicStorageImpl.getObject(blob);
+			result = this.getObject(blob);
 		}
 		return result;
 	}
@@ -300,7 +300,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	protected synchronized boolean storeDataSourceDescription(AbstractProcess process, double time, boolean update) {
 		Map<String, Object> json = new HashMap<String, Object>();
 		json.put(TIMESTAMP_FIELD_NAME,time);
-		json.put(BLOB_FIELD_NAME,ESBasicStorageImpl.getBlob(process));
+		json.put(BLOB_FIELD_NAME,this.getBlob(process));
 		
 		if (update) {
 			// prepare update
@@ -374,7 +374,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// the response is applied a post filter allowing to specify a range request on the timestamp
 		// the hits should be directly filtered
 		SearchResponse response = client.prepareSearch(getLocalID()).setTypes(DESC_HISTORY_IDX_NAME)
-				.setQuery(QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME)
+				.setPostFilter(QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME)
 					.from(startTime).to(endTime)) // Query
 				.setFetchSource(new String[]{}, new String[]{"*"}) // does not fetch source
 		        .get();
@@ -392,7 +392,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized  Map<String, ? extends IRecordStoreInfo> getRecordStores() {
+	public  Map<String, ? extends IRecordStoreInfo> getRecordStores() {
 		Map<String, IRecordStoreInfo> result = new HashMap<>();
 		SearchResponse response = client.prepareSearch(getLocalID()).setTypes(RS_INFO_IDX_NAME).get();
 		
@@ -400,7 +400,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		DataStreamInfo rsInfo = null;
 		for(SearchHit hit : response.getHits()) {
 			name = hit.getId(); // name
-			rsInfo = ESBasicStorageImpl.<DataStreamInfo>getObject(hit.getSource().get(BLOB_FIELD_NAME)); // DataStreamInfo
+			rsInfo = this.<DataStreamInfo>getObject(hit.getSource().get(BLOB_FIELD_NAME)); // DataStreamInfo
 			result.put(name,rsInfo);
 		}
 		return result;
@@ -411,7 +411,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		DataStreamInfo rsInfo = new DataStreamInfo(name, recordStructure, recommendedEncoding);
         
 		// add new record storage
-		Object blob = ESBasicStorageImpl.getBlob(rsInfo);
+		Object blob = this.getBlob(rsInfo);
 		
 		Map<String, Object> json = new HashMap<String, Object>();
 		json.put(BLOB_FIELD_NAME,blob);
@@ -428,21 +428,21 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized  int getNumRecords(String recordType) {
+	public synchronized int getNumRecords(String recordType) {
 		SearchResponse response = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
-				.setQuery(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
+				.setPostFilter(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
 				.setFetchSource(new String[]{}, new String[]{"*"}) // does not fetch source
 		        .get();
 		return (int) response.getHits().getTotalHits();
 	}
 
 	@Override  
-	public synchronized  double[] getRecordsTimeRange(String recordType) {
+	public synchronized double[] getRecordsTimeRange(String recordType) {
 		double[] result = new double[2];
 		
 		// build request to get the least recent record
 		SearchResponse response = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
-				.setQuery(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
+				.setPostFilter(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC) // sort results by DESC timestamp
 				.setFetchSource(new String[]{TIMESTAMP_FIELD_NAME}, new String[]{}) // get only the timestamp
 				.setSize(1) // fetch only 1 result
@@ -454,7 +454,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		
 		// build request to get the most recent record
 		 response = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
-				.setQuery(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
+				.setPostFilter(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.DESC) // sort results by DESC timestamp
 				.setFetchSource(new String[]{TIMESTAMP_FIELD_NAME}, new String[]{}) // get only the timestamp
 				//.setSize(1) // fetch only 1 result
@@ -483,7 +483,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				config.scrollFetchSize); //max of scrollFetchSize hits will be returned for each scroll
 				
 		return new Iterator<double[]>() {
-			double lastTime = Double.NaN;
+			Double lastTime = Double.NaN;
 			
 			@Override
 			public boolean hasNext() {
@@ -504,16 +504,17 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 					nextSearchHit = searchHitsIterator.next();
 					recTime = (double) nextSearchHit.getSource().get(TIMESTAMP_FIELD_NAME);
 
-					if (Double.isNaN(lastTime)) {
-						clusterTimeRange[0] = recTime;
-						lastTime = recTime;
-					} else {
-						 dt = recTime - lastTime;
-						lastTime = recTime;
-						if (dt > MAX_TIME_CLUSTER_DELTA)
-							break;
+					synchronized (lastTime) {
+						if (Double.isNaN(lastTime)) {
+							clusterTimeRange[0] = recTime;
+							lastTime = recTime;
+						} else {
+							 dt = recTime - lastTime;
+							lastTime = recTime;
+							if (dt > MAX_TIME_CLUSTER_DELTA)
+								break;
+						}
 					}
-
 					clusterTimeRange[1] = recTime;
 				}
 				return clusterTimeRange;
@@ -522,7 +523,8 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized  DataBlock getDataBlock(DataKey key) {
+	public synchronized DataBlock getDataBlock(DataKey key) {
+		DataBlock result = null;
 		// build the key as recordTYpe_timestamp_producerID
 		String esKey = getRsKey(key);
 		
@@ -532,24 +534,22 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// build  and execute the response
 		GetResponse response = client.get(getRequest).actionGet();
 		
-		DataBlock result = null;
-		
 		// deserialize the blob field from the response if any
 		if(response.isExists()) {
-			result = ESBasicStorageImpl.<DataBlock>getObject(response.getSource().get(BLOB_FIELD_NAME)); // DataBlock
+			result = this.<DataBlock>getObject(response.getSource().get(BLOB_FIELD_NAME)); // DataBlock
 		}
 		return result;
 	}
 
 	@Override
-	public synchronized  Iterator<DataBlock> getDataBlockIterator(IDataFilter filter) {
+	public synchronized Iterator<DataBlock> getDataBlockIterator(IDataFilter filter) {
 		double[] timeRange = getTimeRange(filter);
 		
 		// prepare filter
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[0]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
-		// check if any producerIDs
+		/*// check if any producerIDs
 		QueryBuilder producerID = null;
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
 			producerID = QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs());
@@ -563,7 +563,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// if any producerIDs
 		if(producerID != null) {
 			queryBuilder.must(producerID);
-		}
+		}*/
 		
 		// build response
 		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
@@ -571,7 +571,8 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 				.setFetchSource(new String[]{BLOB_FIELD_NAME}, new String[]{}) // get only the BLOB
 		        .setScroll(new TimeValue(config.pingTimeout))
-		        .setQuery(queryBuilder);
+		        .setQuery(recordTypeQuery)
+		        .setPostFilter(timeStampRangeQuery);
 		
 		// wrap the request into custom ES Scroll iterator
 		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq,
@@ -606,7 +607,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
-		// check if any producerIDs
+		/*// check if any producerIDs
 		QueryBuilder producerID = null;
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
 			producerID = QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs());
@@ -620,13 +621,14 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// if any producerIDs
 		if(producerID != null) {
 			queryBuilder.must(producerID);
-		}
+		}*/
 		
 		// build response
 		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 		        .setScroll(new TimeValue(config.pingTimeout))
-		        .setQuery(queryBuilder);
+		        .setQuery(recordTypeQuery)
+		        .setPostFilter(timeStampRangeQuery);
 		
         // wrap the request into custom ES Scroll iterator
 		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq,
@@ -648,7 +650,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				// build key
 				final DataKey key = getDataKey(nextSearchHit.getId());
 				// get DataBlock from blob
-				final DataBlock datablock=ESBasicStorageImpl.<DataBlock>getObject(nextSearchHit.getSource().get(BLOB_FIELD_NAME)); // DataBlock
+				final DataBlock datablock=ESBasicStorageImpl.this.<DataBlock>getObject(nextSearchHit.getSource().get(BLOB_FIELD_NAME)); // DataBlock
 				
 				return new IDataRecord(){
 
@@ -675,21 +677,21 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
-		// check if any producerIDs
+		/*// check if any producerIDs
 		QueryBuilder producerID = null;
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
 			producerID = QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs());
-		}
+		}*/
 		
 		// aggregate queries
 		BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
 				.must(timeStampRangeQuery)
 				.must(recordTypeQuery);
 		
-		// if any producerIDs
+		/*// if any producerIDs
 		if(producerID != null) {
 			queryBuilder.must(producerID);
-		}
+		}*/
 		
 		// build response
 		final SearchResponse scrollResp = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
@@ -706,7 +708,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		String esKey = getRsKey(key);
 		
 		// get blob from dataBlock object using serializer
-		Object blob = ESBasicStorageImpl.getBlob(data);
+		Object blob = this.getBlob(data);
 		
 		Map<String, Object> json = new HashMap<String, Object>();
 		json.put(TIMESTAMP_FIELD_NAME,key.timeStamp); // store timestamp
@@ -724,14 +726,14 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		String esKey = getRsKey(key);
 		
 		// get blob from dataBlock object using serializer
-		Object blob = ESBasicStorageImpl.getBlob(data);
+		Object blob = this.getBlob(data);
 		
 		//TOCHECK: do we need to store the whole key?
 		Map<String, Object> json = new HashMap<String, Object>();
 		json.put(TIMESTAMP_FIELD_NAME,key.timeStamp); // store timestamp
 		json.put(PRODUCER_ID_FIELD_NAME,key.producerID); // store producerID
 		json.put(RECORD_TYPE_FIELD_NAME,key.recordType); // store recordType
-		json.put(BLOB_FIELD_NAME,ESBasicStorageImpl.getBlob(blob)); // store DataBlock
+		json.put(BLOB_FIELD_NAME,blob); // store DataBlock
 		
 		// prepare update
 		UpdateRequest updateRequest = new UpdateRequest(getLocalID(), RS_DATA_IDX_NAME, esKey);
@@ -769,7 +771,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
-		// check if any producerIDs
+		/*// check if any producerIDs
 		QueryBuilder producerID = null;
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
 			producerID = QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs());
@@ -783,14 +785,16 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// if any producerIDs
 		if(producerID != null) {
 			queryBuilder.must(producerID);
-		}
+		}*/
 		
 		// build response
 		SearchResponse scrollResp = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
 		        .setScroll(new TimeValue(config.pingTimeout))
-		        .setQuery(queryBuilder)
+		        .setQuery(recordTypeQuery)
 		        .setFetchSource(new String[]{}, new String[]{"*"}) // does not fetch source
+		        .setPostFilter(timeStampRangeQuery)
 		        .setSize(config.scrollFetchSize).get(); //max of scrollFetchSize hits will be returned for each scroll
+				
 		//Scroll until no hits are returned
 		int nb = 0;
 		do {
@@ -819,7 +823,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * @param object The raw object
 	 * @return the serialized object
 	 */
-	private synchronized static  <T> byte[] getBlob(T object){
+	private synchronized <T> byte[] getBlob(T object){
 		return KryoSerializer.serialize(object);
 	}
 	
@@ -829,7 +833,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * @param blob The base64 encoding String
 	 * @return The deserialized object
 	 */
-	private synchronized static  <T> T getObject(Object blob) {
+	private synchronized <T> T getObject(Object blob) {
 		byte [] base64decodedData = Base64.decodeBase64(blob.toString().getBytes());
 		return KryoSerializer.<T>deserialize(base64decodedData);
 	}
@@ -874,7 +878,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			return ALL_TIMES;
 	}
 	
-	protected synchronized void refreshIndex() {
+	protected void refreshIndex() {
 		client.admin().indices().prepareRefresh(getLocalID()).get();
 	}
 }
