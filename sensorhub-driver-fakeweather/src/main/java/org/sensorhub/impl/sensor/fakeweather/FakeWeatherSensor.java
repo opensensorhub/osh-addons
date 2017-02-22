@@ -18,6 +18,7 @@ package org.sensorhub.impl.sensor.fakeweather;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
+import org.vast.sensorML.SMLHelper;
 
 
 /**
@@ -66,6 +67,9 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
             
             if (!sensorDescription.isSetDescription())
                 sensorDescription.setDescription("Simulated weather station generating realistic pseudo-random measurements");
+            
+            SMLHelper helper = new SMLHelper(sensorDescription);
+            helper.addSerialNumber(config.serialNumber);
         }
     }
 
