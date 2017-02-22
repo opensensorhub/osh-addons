@@ -20,14 +20,14 @@ import org.sensorhub.api.module.ModuleConfig;
 
 /**
  * <p>
- * Descriptor of ES observation storage module.
+ * Descriptor of ES multi source storage module.
  * This is needed for automatic discovery by the ModuleRegistry.
  * </p>
  *
  * @author Mathieu Dhainaut <mathieu.dhainaut@gmail.com>
  * @since 2017
  */
-public class ESObsStorageDescriptor implements IModuleProvider{
+public class ESMultiSourceStorageDescriptor implements IModuleProvider{
 
 	@Override
 	public String getModuleName() {
@@ -36,7 +36,7 @@ public class ESObsStorageDescriptor implements IModuleProvider{
 
 	@Override
 	public String getModuleDescription() {
-		return "Generic implementation of observation storage using ElasticSearch Database";
+		return "Generic implementation of multisource storage using ElasticSearch Database";
 	}
 
 	@Override
@@ -51,7 +51,7 @@ public class ESObsStorageDescriptor implements IModuleProvider{
 
 	@Override
 	public Class<? extends IModule<?>> getModuleClass() {
-		return ESBasicStorageImpl.class;
+		return ESMultiSourceStorageImpl.class;
 	}
 
 	@Override

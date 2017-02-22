@@ -1,13 +1,23 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+The contents of this file are subject to the Mozilla Public License, v. 2.0.
+If a copy of the MPL was not distributed with this file, You can obtain one
+at http://mozilla.org/MPL/2.0/.
+
+Software distributed under the License is distributed on an "AS IS" basis,
+WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+for the specific language governing rights and limitations under the License.
+ 
+Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
+ 
+******************************* END LICENSE BLOCK ***************************/
+
 package org.sensorhub.impl.persistence.es;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 import org.objenesis.strategy.StdInstantiatorStrategy;
-import org.sensorhub.impl.persistence.es.KryoDataType.KryoInstance;
 import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockByte;
 import org.vast.data.DataBlockDouble;
@@ -27,6 +37,14 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 
 import net.opengis.OgcPropertyList;
 
+/**
+ * <p>
+ * Kryo Serializer/Deserializer.
+ * </p>
+ *
+ * @author Mathieu Dhainaut <mathieu.dhainaut@gmail.com>
+ * @since 2017
+ */
 public class KryoSerializer {
 	private static final ThreadLocal<Kryo> kryoLocal = new ThreadLocal<Kryo>() {
 		protected Kryo initialValue() {
@@ -49,9 +67,11 @@ public class KryoSerializer {
 		};
 	};
 
-	public static byte[] serialize(Object object) {
-		//kryoLocal.get().writeClassAndObject(output, object);
-		
+	public synchronized static Kryo getInstance() {
+		return kryoLocal.get();
+	}
+	
+	public synchronized static byte[] serialize(Object object) {
 		// create buffer
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		Output output = new Output(bos);
@@ -66,15 +86,23 @@ public class KryoSerializer {
 		// close buffer
 		output.close();
 		
+		// 
 		// return serialized data
 		return result;
 	}
 
-	public static <T> T deserialize(byte[] serializedData) {
+	public synchronized static <T> T deserialize(byte[] serializedData) {
+		// create buffer
 		ByteArrayInputStream bis = new ByteArrayInputStream(serializedData);
 	    Input ki = new Input(bis);
+	    
+	    // read from buffer
 	    T result = (T) kryoLocal.get().readClassAndObject(ki);
+	    
+	    // close buffer
 	    ki.close();
+	    
+	    // return deserialized data
 	    return result;
 	}
 }

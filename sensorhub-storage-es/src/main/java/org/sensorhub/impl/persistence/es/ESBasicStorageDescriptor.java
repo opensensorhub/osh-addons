@@ -20,23 +20,23 @@ import org.sensorhub.api.module.ModuleConfig;
 
 /**
  * <p>
- * Descriptor of ES observation storage module.
+ * Descriptor of ES basic storage module.
  * This is needed for automatic discovery by the ModuleRegistry.
  * </p>
  *
  * @author Mathieu Dhainaut <mathieu.dhainaut@gmail.com>
  * @since 2017
  */
-public class ESObsStorageDescriptor implements IModuleProvider{
+public class ESBasicStorageDescriptor implements IModuleProvider{
 
 	@Override
 	public String getModuleName() {
-		 return "ElasticSearch Observation Storage";
+		 return "ElasticSearch Basic Record Storage";
 	}
 
 	@Override
 	public String getModuleDescription() {
-		return "Generic implementation of observation storage using ElasticSearch Database";
+		return "Generic implementation of record storage using ElasticSearch Database";
 	}
 
 	@Override

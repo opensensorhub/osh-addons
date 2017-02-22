@@ -27,7 +27,7 @@ import org.sensorhub.api.config.DisplayInfo;
  * @author Mathieu Dhainaut <mathieu.dhainaut@gmail.com>
  * @since 2017
  */
-public class ESStorageConfig extends org.sensorhub.api.persistence.ObsStorageConfig {
+public class ESBasicStorageConfig extends org.sensorhub.api.persistence.ObsStorageConfig {
 	@DisplayInfo(desc="When scrolling, the maximum duration ScrollableResults will be usable if no other results are fetched from, in ms")
     public int scrollMaxDuration = 6000;
 	

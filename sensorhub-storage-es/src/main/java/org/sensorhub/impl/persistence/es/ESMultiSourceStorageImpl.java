@@ -14,9 +14,11 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.persistence.es;
 
+import java.util.Collection;
 import java.util.Iterator;
 
 import org.sensorhub.api.persistence.IFoiFilter;
+import org.sensorhub.api.persistence.IMultiSourceStorage;
 import org.sensorhub.api.persistence.IObsStorage;
 import org.sensorhub.api.persistence.IObsStorageModule;
 import org.vast.util.Bbox;
@@ -31,36 +33,25 @@ import net.opengis.gml.v32.AbstractFeature;
  * @author Mathieu Dhainaut <mathieu.dhainaut@gmail.com>
  * @since 2017
  */
-public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageModule<ESBasicStorageConfig> {
+public class ESMultiSourceStorageImpl extends ESObsStorageImpl implements IMultiSourceStorage<IObsStorage> {
 
 	@Override
-	public int getNumFois(IFoiFilter filter) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public Bbox getFoisSpatialExtent() {
+	public Collection<String> getProducerIDs() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public Iterator<String> getFoiIDs(IFoiFilter filter) {
+	public IObsStorage getDataStore(String producerID) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public Iterator<AbstractFeature> getFois(IFoiFilter filter) {
+	public IObsStorage addDataStore(String producerID) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
-	@Override
-	public void storeFoi(String producerID, AbstractFeature foi) {
-		// TODO Auto-generated method stub
-		
-	}
 	
 }

@@ -14,26 +14,31 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.persistence.es;
 
-import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
-import org.sensorhub.test.persistence.AbstractTestObsStorage;
+import org.sensorhub.test.persistence.AbstractTestBasicStorage;
 
 
-public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl>
+public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageImpl>
 {
-    File dbFile;
-    
     
     @Before
     public void init() throws Exception
     {
-        ESStorageConfig config = new ESStorageConfig();
+        ESBasicStorageConfig config = new ESBasicStorageConfig();
         config.autoStart = true;
-        config.storagePath = dbFile.getAbsolutePath();
+        config.storagePath = "elastic-cluster";
+        List<String> nodes = new ArrayList<String>();
+        nodes.add("localhost:9300");
         
-        storage = new ESObsStorageImpl();
+        config.nodeUrls = nodes;
+        config.scrollFetchSize = 2;
+        config.id = "junit_"+UUID.randomUUID().toString();
+        storage = new ESBasicStorageImpl();
         storage.init(config);
         storage.start();
     }
@@ -42,15 +47,13 @@ public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl>
     @Override
     protected void forceReadBackFromStorage() throws Exception
     {
-        storage.stop();
-        storage.start();
+    	storage.commit();
     }
     
     
     @After
     public void cleanup()
     {
-        dbFile.delete();
     }
     
 }
