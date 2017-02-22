@@ -44,7 +44,6 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -54,9 +53,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataKey;
 import org.sensorhub.api.persistence.IDataFilter;
 import org.sensorhub.api.persistence.IDataRecord;
-import org.sensorhub.api.persistence.IFoiFilter;
 import org.sensorhub.api.persistence.IObsStorage;
-import org.sensorhub.api.persistence.IObsStorageModule;
 import org.sensorhub.api.persistence.IRecordStorageModule;
 import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.api.persistence.IStorageModule;
@@ -64,9 +61,7 @@ import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.impl.module.AbstractModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.vast.util.Bbox;
 
-import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.AbstractTimeGeometricPrimitive;
 import net.opengis.gml.v32.TimeInstant;
 import net.opengis.gml.v32.TimePeriod;
@@ -84,19 +79,19 @@ import net.opengis.swe.v20.DataEncoding;
  * @since 2017
  */
 public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> implements IRecordStorageModule<ESBasicStorageConfig> {
-	private static final double MAX_TIME_CLUSTER_DELTA = 60.0;
+	protected static final double MAX_TIME_CLUSTER_DELTA = 60.0;
 
-	private static final String RECORD_TYPE_FIELD_NAME = "recordType";
+	protected static final String RECORD_TYPE_FIELD_NAME = "recordType";
 
-	private static final String PRODUCER_ID_FIELD_NAME = "producerID";
+	protected static final String PRODUCER_ID_FIELD_NAME = "producerID";
 
-	private static final String RS_KEY_SEPARATOR = "##";
+	protected static final String RS_KEY_SEPARATOR = "##";
 
-	private static final String BLOB_FIELD_NAME = "blob";
+	protected static final String BLOB_FIELD_NAME = "blob";
 
-	private static final String TIMESTAMP_FIELD_NAME = "timestamp";
+	protected static final String TIMESTAMP_FIELD_NAME = "timestamp";
 
-	private static final double[] ALL_TIMES = new double[] {Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY};
+	protected static final double[] ALL_TIMES = new double[] {Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY};
 	/**
 	 * Class logger
 	 */
@@ -128,9 +123,9 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 */
 	protected IndexRequestBuilder recordStoreIdx;
 	
-	private final static String DESC_HISTORY_IDX_NAME = "desc";
-	private final static String RS_INFO_IDX_NAME = "info";
-	private final static String RS_DATA_IDX_NAME = "data";
+	protected final static String DESC_HISTORY_IDX_NAME = "desc";
+	protected final static String RS_INFO_IDX_NAME = "info";
+	protected final static String RS_DATA_IDX_NAME = "data";
 	
 	@Override
 	public void backup(OutputStream os) throws IOException {
@@ -442,7 +437,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		
 		// build request to get the least recent record
 		SearchResponse response = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
-				.setPostFilter(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
+				.setQuery(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC) // sort results by DESC timestamp
 				.setFetchSource(new String[]{TIMESTAMP_FIELD_NAME}, new String[]{}) // get only the timestamp
 				.setSize(1) // fetch only 1 result
@@ -454,7 +449,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		
 		// build request to get the most recent record
 		 response = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
-				.setPostFilter(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
+				.setQuery(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.DESC) // sort results by DESC timestamp
 				.setFetchSource(new String[]{TIMESTAMP_FIELD_NAME}, new String[]{}) // get only the timestamp
 				//.setSize(1) // fetch only 1 result
@@ -549,22 +544,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[0]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
-		/*// check if any producerIDs
-		QueryBuilder producerID = null;
-		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
-			producerID = QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs());
-		}
-		
-		// aggregate queries
-		BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
-				.must(timeStampRangeQuery)
-				.must(recordTypeQuery);
-		
-		// if any producerIDs
-		if(producerID != null) {
-			queryBuilder.must(producerID);
-		}*/
-		
 		// build response
 		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
 				//TOCHECK
@@ -590,11 +569,8 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			public DataBlock next() {
 				SearchHit nextSearchHit = searchHitsIterator.next();
 				// get DataBlock from blob
-				DataBlock a = KryoSerializer.deserialize(
-						Base64.decodeBase64(nextSearchHit.getSource().get(BLOB_FIELD_NAME).toString().getBytes()));
-				//Object blob = nextSearchHit.getSource().get(BLOB_FIELD_NAME);
-				//return ESObsStorageImpl.<DataBlock>getObject(blob); // DataBlock
-				return a;
+				Object blob = nextSearchHit.getSource().get(BLOB_FIELD_NAME);
+				return ESBasicStorageImpl.this.<DataBlock>getObject(blob); // DataBlock
 			}
 		};
 	}
@@ -606,22 +582,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// prepare filter
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
-		
-		/*// check if any producerIDs
-		QueryBuilder producerID = null;
-		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
-			producerID = QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs());
-		}
-		
-		// aggregate queries
-		BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
-				.must(timeStampRangeQuery)
-				.must(recordTypeQuery);
-		
-		// if any producerIDs
-		if(producerID != null) {
-			queryBuilder.must(producerID);
-		}*/
 		
 		// build response
 		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
@@ -677,26 +637,11 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
-		/*// check if any producerIDs
-		QueryBuilder producerID = null;
-		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
-			producerID = QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs());
-		}*/
-		
-		// aggregate queries
-		BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
-				.must(timeStampRangeQuery)
-				.must(recordTypeQuery);
-		
-		/*// if any producerIDs
-		if(producerID != null) {
-			queryBuilder.must(producerID);
-		}*/
-		
 		// build response
 		final SearchResponse scrollResp = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
 		        .setScroll(new TimeValue(config.pingTimeout))
-		        .setQuery(queryBuilder)
+		        .setQuery(recordTypeQuery)
+		        .setPostFilter(timeStampRangeQuery)
 		        .setFetchSource(new String[]{}, new String[]{"*"}) // does not fetch source
 		        .setSize(config.scrollFetchSize).get(); //max of scrollFetchSize hits will be returned for each scroll
 		return (int) scrollResp.getHits().getTotalHits();
@@ -771,22 +716,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
-		/*// check if any producerIDs
-		QueryBuilder producerID = null;
-		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
-			producerID = QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs());
-		}
-		
-		// aggregate queries
-		BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
-				.must(timeStampRangeQuery)
-				.must(recordTypeQuery);
-		
-		// if any producerIDs
-		if(producerID != null) {
-			queryBuilder.must(producerID);
-		}*/
-		
 		// build response
 		SearchResponse scrollResp = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
 		        .setScroll(new TimeValue(config.pingTimeout))
@@ -823,7 +752,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * @param object The raw object
 	 * @return the serialized object
 	 */
-	private synchronized <T> byte[] getBlob(T object){
+	protected synchronized <T> byte[] getBlob(T object){
 		return KryoSerializer.serialize(object);
 	}
 	
@@ -833,7 +762,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * @param blob The base64 encoding String
 	 * @return The deserialized object
 	 */
-	private synchronized <T> T getObject(Object blob) {
+	protected synchronized <T> T getObject(Object blob) {
 		byte [] base64decodedData = Base64.decodeBase64(blob.toString().getBytes());
 		return KryoSerializer.<T>deserialize(base64decodedData);
 	}
