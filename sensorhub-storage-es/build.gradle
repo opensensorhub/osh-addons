@@ -8,6 +8,9 @@ dependencies {
   compile 'com.esotericsoftware:kryo:4.0.0'
   compile 'org.apache.logging.log4j:log4j-api:2.7'
   compile 'org.apache.logging.log4j:log4j-core:2.7'
+  compile 'org.locationtech.spatial4j:spatial4j:0.6'
+  compile 'com.vividsolutions:jts:1.13'
+  
   testCompile group:'org.sensorhub', name:'sensorhub-core', version:oshCoreVersion, configuration: 'testArtifacts'
 }
 
