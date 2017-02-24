@@ -519,7 +519,8 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			points.add(new GeoPoint(c.x, c.y));
 		}
 
-		return QueryBuilders.geoShapeQuery(SHAPE_FIELD_NAME,
-				ShapeBuilders.newMultiPoint(Arrays.asList(polygon.getCoordinates())));
+		ShapeBuilder shapeBuilder;
+			shapeBuilder = getPolygonBuilder(polygon);
+			return QueryBuilders.geoShapeQuery(SHAPE_FIELD_NAME, shapeBuilder);
 	}
 }
