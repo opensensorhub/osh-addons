@@ -112,7 +112,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	@Override
 	public synchronized Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
 		if(!(filter instanceof ObsFilter)) {
-			return (Iterator<? extends IDataRecord>) super.getDataBlockIterator(filter);
+			return super.getRecordIterator(filter);
 		}
 		
 		IObsFilter obsFilter = (IObsFilter) filter;
