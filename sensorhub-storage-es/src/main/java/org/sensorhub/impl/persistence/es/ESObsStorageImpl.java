@@ -44,6 +44,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataKey;
 import org.sensorhub.api.persistence.IDataFilter;
+import org.sensorhub.api.persistence.IDataRecord;
 import org.sensorhub.api.persistence.IFoiFilter;
 import org.sensorhub.api.persistence.IObsFilter;
 import org.sensorhub.api.persistence.IObsStorage;
@@ -106,6 +107,93 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		}
 		
 		//TODO: update mapping for RS_DATA and add support for samplingTime => geo_shape
+	}
+	
+	@Override
+	public synchronized Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
+		if(!(filter instanceof ObsFilter)) {
+			return (Iterator<? extends IDataRecord>) super.getDataBlockIterator(filter);
+		}
+		
+		IObsFilter obsFilter = (IObsFilter) filter;
+		
+		double[] timeRange = getTimeRange(obsFilter);
+		
+		// prepare filter
+		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
+		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
+		
+		// aggregate queries
+		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery()
+				.must(timeStampRangeQuery);
+		
+		// filter on producerIDs
+		if(obsFilter.getProducerIDs() != null && !obsFilter.getProducerIDs().isEmpty()) {
+			filterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
+		}
+		
+		// filter on fois
+		if(obsFilter.getFoiIDs() != null && !obsFilter.getFoiIDs().isEmpty()) {
+			filterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
+		}
+		
+		// filter on ROI
+		if (obsFilter.getRoi() != null) {
+			try {
+				filterQueryBuilder.must(getPolygonGeoQuery(obsFilter.getRoi()));
+			} catch (IOException e) {
+				log.error("[PolygonGeoQueryBuilder] Cannot build the polygon Geo query");
+			}
+		}
+		
+		// build response
+		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
+				//TOCHECK
+				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
+		        .setScroll(new TimeValue(config.scrollMaxDuration))
+		        .setQuery(recordTypeQuery)
+		        .setPostFilter(filterQueryBuilder);
+		
+		// wrap the request into custom ES Scroll iterator
+		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq,
+				config.scrollFetchSize); //max of scrollFetchSize hits will be returned for each scroll
+		
+		return new Iterator<IDataRecord>(){
+
+			@Override
+			public boolean hasNext() {
+				return searchHitsIterator.hasNext();
+			}
+
+			@Override
+			public IDataRecord next() {
+				SearchHit nextSearchHit = searchHitsIterator.next();
+				
+				// build key
+				String recordType = nextSearchHit.getSource().get(RECORD_TYPE_FIELD_NAME).toString();
+				String foiID = nextSearchHit.getSource().get(FOI_UNIQUE_ID_FIELD).toString();
+				double timeStamp = (double) nextSearchHit.getSource().get(TIMESTAMP_FIELD_NAME);
+				
+				final ObsKey key = new ObsKey(recordType, foiID, timeStamp);
+				
+				// get DataBlock from blob
+				final DataBlock datablock=ESObsStorageImpl.this.<DataBlock>getObject(nextSearchHit.getSource().get(BLOB_FIELD_NAME)); // DataBlock
+				
+				return new IDataRecord(){
+
+					@Override
+					public ObsKey getKey() {
+						return key;
+					}
+
+					@Override
+					public DataBlock getData() {
+						return datablock;
+					}
+					
+				};
+			}
+		};
 	}
 	
 	@Override
