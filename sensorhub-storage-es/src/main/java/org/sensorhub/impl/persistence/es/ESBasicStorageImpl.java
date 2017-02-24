@@ -547,7 +547,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		double[] timeRange = getTimeRange(filter);
 		
 		// prepare filter
-		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[0]);
+		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
 		// aggregate queries

@@ -119,7 +119,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		double[] timeRange = getTimeRange(obsFilter);
 		
 		// prepare filter
-		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[0]);
+		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
 		// aggregate queries
