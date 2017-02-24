@@ -475,6 +475,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				//.addSort(SortOrder.ASC)
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 		        .setScroll(new TimeValue(config.pingTimeout))
+		        .setRequestCache(true)
 		        .setQuery(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
 		        .setFetchSource(new String[]{TIMESTAMP_FIELD_NAME}, new String[]{}); // get only the timestamp
 		    	
@@ -565,6 +566,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				.setFetchSource(new String[]{BLOB_FIELD_NAME}, new String[]{}) // get only the BLOB
 		        .setScroll(new TimeValue(config.pingTimeout))
 		        .setQuery(recordTypeQuery)
+		        .setRequestCache(true)
 		        .setPostFilter(filterQueryBuilder);
 		
 		// wrap the request into custom ES Scroll iterator
@@ -612,6 +614,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 		        .setScroll(new TimeValue(config.pingTimeout))
 		        .setQuery(recordTypeQuery)
+		        .setRequestCache(true)
 		        .setPostFilter(queryBuilder);
 		
         // wrap the request into custom ES Scroll iterator
@@ -675,6 +678,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		final SearchResponse scrollResp = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
 		        .setScroll(new TimeValue(config.pingTimeout))
 		        .setQuery(recordTypeQuery)
+		        .setRequestCache(true)
 		        .setPostFilter(filterQueryBuilder)
 		        .setFetchSource(new String[]{}, new String[]{"*"}) // does not fetch source
 		        .setSize(config.scrollFetchSize).get(); //max of scrollFetchSize hits will be returned for each scroll

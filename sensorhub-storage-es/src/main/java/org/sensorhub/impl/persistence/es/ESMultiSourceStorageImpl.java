@@ -16,9 +16,12 @@ package org.sensorhub.impl.persistence.es;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.lucene.util.packed.PackedDataOutput;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -53,29 +56,33 @@ public class ESMultiSourceStorageImpl extends ESObsStorageImpl implements IMulti
 	 */
 	private static final Logger log = LoggerFactory.getLogger(ESMultiSourceStorageImpl.class);  
 	
-	
-	
-	
-	
-	
-	
-	
-	
 	@Override
 	public Collection<String> getProducerIDs() {
-		return null;
+		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
+				.setTypes(RS_DATA_IDX_NAME)
+				.setQuery(QueryBuilders.existsQuery(PRODUCER_ID_FIELD_NAME))
+		        .setScroll(new TimeValue(6000));
+
+		// wrap the request into custom ES Scroll iterator
+		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq,
+				config.scrollFetchSize); //max of scrollFetchSize hits will be returned for each scroll
+		
+		Set<String> uniqueList = new HashSet<String>();
+		while(searchHitsIterator.hasNext()) {
+			SearchHit hit = searchHitsIterator.next();
+			uniqueList.add(hit.getSource().get(PRODUCER_ID_FIELD_NAME).toString());
+		}
+		return uniqueList;
 	}
 
 	@Override
 	public IObsStorage getDataStore(String producerID) {
-		// TODO Auto-generated method stub
-		return null;
+		return this;
 	}
 
 	@Override
 	public IObsStorage addDataStore(String producerID) {
-		// TODO Auto-generated method stub
-		return null;
+		return this;
 	}
 
 	
