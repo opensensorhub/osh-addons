@@ -44,6 +44,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -207,14 +208,18 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			    .prepareExists(getLocalID())
 			    .execute().actionGet().isExists();
 		if(!exists) {
-			CreateIndexRequest indexRequest = new CreateIndexRequest(getLocalID());
-			client.admin().indices().create(indexRequest).actionGet();
+			createIndices();
 		}
 		}catch(Throwable ex) {
 			ex.printStackTrace();
 		}
 	}
 
+	protected void createIndices (){
+		CreateIndexRequest indexRequest = new CreateIndexRequest(getLocalID());
+		client.admin().indices().create(indexRequest).actionGet();
+	}
+	
 	@Override
 	public synchronized void stop() throws SensorHubException {
 		if(client != null) {
@@ -544,6 +549,15 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[0]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
+		// aggregate queries
+		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery()
+				.must(timeStampRangeQuery);
+		
+		// check if any producerIDs
+		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
+			filterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
+		}
+				
 		// build response
 		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
 				//TOCHECK
@@ -551,7 +565,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				.setFetchSource(new String[]{BLOB_FIELD_NAME}, new String[]{}) // get only the BLOB
 		        .setScroll(new TimeValue(config.pingTimeout))
 		        .setQuery(recordTypeQuery)
-		        .setPostFilter(timeStampRangeQuery);
+		        .setPostFilter(filterQueryBuilder);
 		
 		// wrap the request into custom ES Scroll iterator
 		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq,
@@ -574,7 +588,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			}
 		};
 	}
-
+	
 	@Override
 	public synchronized Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
 		double[] timeRange = getTimeRange(filter);
@@ -583,12 +597,22 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
+		// aggregate queries
+		BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
+				.must(timeStampRangeQuery)
+				.must(recordTypeQuery);
+		
+		// check if any producerIDs
+		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
+			queryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
+		}
+		
 		// build response
 		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 		        .setScroll(new TimeValue(config.pingTimeout))
 		        .setQuery(recordTypeQuery)
-		        .setPostFilter(timeStampRangeQuery);
+		        .setPostFilter(queryBuilder);
 		
         // wrap the request into custom ES Scroll iterator
 		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq,
@@ -628,25 +652,34 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			}
 		};
 	}
-
+	
 	@Override
 	public synchronized int getNumMatchingRecords(IDataFilter filter, long maxCount) {
 		double[] timeRange = getTimeRange(filter);
-		
+
+		// aggregate queries
+		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery();
+				
 		// prepare filter
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
+
+		filterQueryBuilder.must(timeStampRangeQuery);
+		
+		// check if any producerIDs
+		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
+			filterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
+		}
 		
 		// build response
 		final SearchResponse scrollResp = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
 		        .setScroll(new TimeValue(config.pingTimeout))
 		        .setQuery(recordTypeQuery)
-		        .setPostFilter(timeStampRangeQuery)
+		        .setPostFilter(filterQueryBuilder)
 		        .setFetchSource(new String[]{}, new String[]{"*"}) // does not fetch source
 		        .setSize(config.scrollFetchSize).get(); //max of scrollFetchSize hits will be returned for each scroll
 		return (int) scrollResp.getHits().getTotalHits();
 	}
-
 	@Override
 	public synchronized void storeRecord(DataKey key, DataBlock data) {
 		// build the key as recordTYpe_timestamp_producerID
@@ -716,15 +749,24 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
 		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
+		// aggregate queries
+		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery()
+				.must(timeStampRangeQuery);
+		
+		// check if any producerIDs
+		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
+			filterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
+		}
+				
 		// build response
 		SearchResponse scrollResp = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
 		        .setScroll(new TimeValue(config.pingTimeout))
 		        .setQuery(recordTypeQuery)
 		        .setFetchSource(new String[]{}, new String[]{"*"}) // does not fetch source
-		        .setPostFilter(timeStampRangeQuery)
+		        .setPostFilter(filterQueryBuilder)
 		        .setSize(config.scrollFetchSize).get(); //max of scrollFetchSize hits will be returned for each scroll
 				
-		//Scroll until no hits are returned
+		//Scroll until no hit are returned
 		int nb = 0;
 		do {
 		    for (SearchHit hit : scrollResp.getHits().getHits()) {
@@ -745,7 +787,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		log.info("[ES] Delete "+nb+" records from "+new Date((long)timeRange[0]*1000)+" to "+new Date((long)timeRange[1]*1000));
 		return 0;
 	}
-
+	
 	/**
 	 * Get a serialized object from an object. 
 	 * The object is serialized using Kryo.
