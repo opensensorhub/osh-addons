@@ -513,14 +513,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	}
 	
 	protected synchronized QueryBuilder getPolygonGeoQuery(Polygon polygon) throws IOException {
-		List<GeoPoint> points = new ArrayList<GeoPoint>();
-
-		for (Coordinate c : polygon.getCoordinates()) {
-			points.add(new GeoPoint(c.x, c.y));
-		}
-
-		ShapeBuilder shapeBuilder;
-			shapeBuilder = getPolygonBuilder(polygon);
-			return QueryBuilders.geoShapeQuery(SHAPE_FIELD_NAME, shapeBuilder);
+		return QueryBuilders.geoIntersectionQuery(SHAPE_FIELD_NAME, 
+				ShapeBuilders.newPolygon(Arrays.asList(polygon.getCoordinates())));
 	}
 }
