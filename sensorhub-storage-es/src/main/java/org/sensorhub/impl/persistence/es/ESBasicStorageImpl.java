@@ -44,6 +44,8 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -198,11 +200,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		        .addTransportAddresses(transportAddresses);
 		
 		
-		// prepare indices
-		processDescIdx = client.prepareIndex(getLocalID(),DESC_HISTORY_IDX_NAME);
-		recordStoreInfoIdx = client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME);
-		recordStoreIdx = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME);
-		
 		// create indices if they dont exist
 		boolean exists = client.admin().indices()
 			    .prepareExists(getLocalID())
@@ -213,6 +210,11 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		}catch(Throwable ex) {
 			ex.printStackTrace();
 		}
+		
+		// prepare indices
+		processDescIdx = client.prepareIndex(getLocalID(),DESC_HISTORY_IDX_NAME);
+		recordStoreInfoIdx = client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME);
+		recordStoreIdx = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME);
 	}
 
 	protected void createIndices (){

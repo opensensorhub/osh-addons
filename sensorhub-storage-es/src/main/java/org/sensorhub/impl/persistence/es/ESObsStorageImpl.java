@@ -22,7 +22,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
+import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -94,17 +96,30 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	@Override
 	protected void createIndices (){
 		super.createIndices();
-		// create FOI mapping
+		
 		try {
 			client.admin().indices() 
 			    .preparePutMapping(getLocalID()) 
-			    .setType(RS_FOI_IDX_NAME)
-			    .setSource(getMapping(RS_FOI_IDX_NAME)) 
+			    .setType(RS_DATA_IDX_NAME)
+			    .setSource(getRsDataMapping())
 			    .execute().actionGet();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		// create FOI mapping
+		try {
+			client.admin().indices() 
+			    .preparePutMapping(getLocalID()) 
+			    .setType(RS_FOI_IDX_NAME)
+			    .setSource(getMapping()) 
+			    .execute().actionGet();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		
 		//TODO: update mapping for RS_DATA and add support for samplingTime => geo_shape
 	}
@@ -117,42 +132,81 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		
 		IObsFilter obsFilter = (IObsFilter) filter;
 		
-		double[] timeRange = getTimeRange(obsFilter);
+		BoolQueryBuilder foiFilterQueryBuilder = QueryBuilders.boolQuery(); //children query
+		BoolQueryBuilder dataFilterQueryBuilder = QueryBuilders.boolQuery(); //parent query
+
+		// FOI STORE has: 
+		// Foi: uniqueId
+		// ProducerId: producer id
+		// Shape : geo_shape = roi
 		
-		// prepare filter
-		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
-		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
+		boolean useFoiFilter = false;
 		
-		// aggregate queries
-		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery()
-				.must(timeStampRangeQuery);
-		
-		// filter on producerIDs
+		// filter on Producer Ids
 		if(obsFilter.getProducerIDs() != null && !obsFilter.getProducerIDs().isEmpty()) {
-			filterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
+			//foiFilterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
 		}
 		
-		// filter on fois
+		// filter on Foi
 		if(obsFilter.getFoiIDs() != null && !obsFilter.getFoiIDs().isEmpty()) {
-			filterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
+			//foiFilterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
 		}
 		
 		// filter on ROI
 		if (obsFilter.getRoi() != null) {
 			try {
-				filterQueryBuilder.must(getPolygonGeoQuery(obsFilter.getRoi()));
+				useFoiFilter = true;
+				foiFilterQueryBuilder.must(getPolygonGeoQuery(obsFilter.getRoi()));
 			} catch (IOException e) {
 				log.error("[PolygonGeoQueryBuilder] Cannot build the polygon Geo query");
 			}
 		}
 		
+		// Build parent query = data
+		// Data Store has:
+		// Timestamp: double
+		// Producer Id: producer Id
+		// Record type: record type
+		// Foi id: foi unique id
+		// Blob: datablock
+		
+		// build the RS data request using the filtering list if not null
+		double[] timeRange = getTimeRange(obsFilter);
+		if(timeRange[0] != Double.NEGATIVE_INFINITY && timeRange[1] != Double.NEGATIVE_INFINITY){
+			dataFilterQueryBuilder.must(QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]));
+		}
+		
+		// prepare filter
+		if(filter.getRecordType() != null) {
+			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType()));
+		}
+		
+		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
+			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
+		}
+				
+		// filter on Foi
+		if(obsFilter.getFoiIDs() != null && !obsFilter.getFoiIDs().isEmpty()) {
+			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
+		}		
+		
+		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery();
+		
+		if(useFoiFilter) {
+			// combine queries
+			filterQueryBuilder.must(QueryBuilders.hasParentQuery(RS_FOI_IDX_NAME, foiFilterQueryBuilder, false))
+					.must(dataFilterQueryBuilder);
+		}	else {
+			filterQueryBuilder = dataFilterQueryBuilder;
+		}
+		
 		// build response
-		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
+		SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
+				.setTypes(RS_DATA_IDX_NAME)
 				//TOCHECK
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 		        .setScroll(new TimeValue(config.scrollMaxDuration))
-		        .setQuery(recordTypeQuery)
-		        .setPostFilter(filterQueryBuilder);
+		        .setQuery(filterQueryBuilder);
 		
 		// wrap the request into custom ES Scroll iterator
 		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq,
@@ -204,43 +258,82 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		
 		IObsFilter obsFilter = (IObsFilter) filter;
 		
-		double[] timeRange = getTimeRange(obsFilter);
+		BoolQueryBuilder foiFilterQueryBuilder = QueryBuilders.boolQuery(); //children query
+		BoolQueryBuilder dataFilterQueryBuilder = QueryBuilders.boolQuery(); //parent query
+
+		// FOI STORE has: 
+		// Foi: uniqueId
+		// ProducerId: producer id
+		// Shape : geo_shape = roi
 		
-		// prepare filter
-		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
-		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
+		boolean useFoiFilter = false;
 		
-		// aggregate queries
-		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery()
-				.must(timeStampRangeQuery);
-		
-		// filter on producerIDs
+		// filter on Producer Ids
 		if(obsFilter.getProducerIDs() != null && !obsFilter.getProducerIDs().isEmpty()) {
-			filterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
+			//foiFilterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
 		}
 		
-		// filter on fois
+		// filter on Foi
 		if(obsFilter.getFoiIDs() != null && !obsFilter.getFoiIDs().isEmpty()) {
-			filterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
+			//foiFilterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
 		}
 		
 		// filter on ROI
 		if (obsFilter.getRoi() != null) {
 			try {
-				filterQueryBuilder.must(getPolygonGeoQuery(obsFilter.getRoi()));
+				useFoiFilter = true;
+				foiFilterQueryBuilder.must(getPolygonGeoQuery(obsFilter.getRoi()));
 			} catch (IOException e) {
 				log.error("[PolygonGeoQueryBuilder] Cannot build the polygon Geo query");
 			}
 		}
 		
+		// Build parent query = data
+		// Data Store has:
+		// Timestamp: double
+		// Producer Id: producer Id
+		// Record type: record type
+		// Foi id: foi unique id
+		// Blob: datablock
+		
+		// build the RS data request using the filtering list if not null
+		double[] timeRange = getTimeRange(obsFilter);
+		if(timeRange[0] != Double.NEGATIVE_INFINITY && timeRange[1] != Double.NEGATIVE_INFINITY){
+			dataFilterQueryBuilder.must(QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]));
+		}
+		
+		// prepare filter
+		if(filter.getRecordType() != null) {
+			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType()));
+		}
+		
+		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
+			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
+		}
+				
+		// filter on Foi
+		if(obsFilter.getFoiIDs() != null && !obsFilter.getFoiIDs().isEmpty()) {
+			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
+		}		
+		
+		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery();
+		
+		if(useFoiFilter) {
+			// combine queries
+			filterQueryBuilder.must(QueryBuilders.hasParentQuery(RS_FOI_IDX_NAME, foiFilterQueryBuilder, false))
+					.must(dataFilterQueryBuilder);
+		}	else {
+			filterQueryBuilder = dataFilterQueryBuilder;
+		}
+		
 		// build response
-		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
+		SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
+				.setTypes(RS_DATA_IDX_NAME)
 				//TOCHECK
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 				.setFetchSource(new String[]{BLOB_FIELD_NAME}, new String[]{}) // get only the BLOB
 		        .setScroll(new TimeValue(config.scrollMaxDuration))
-		        .setQuery(recordTypeQuery)
-		        .setPostFilter(filterQueryBuilder);
+		        .setQuery(filterQueryBuilder);
 		
 		// wrap the request into custom ES Scroll iterator
 		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq,
@@ -404,9 +497,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			super.storeRecord(key, data);
 		} else {
 			ObsKey obsKey = (ObsKey) key;
-			// build the key as recordTYpe_timestamp_producerID
-			String esKey = getRsKey(key);
-			
+
 			// get blob from dataBlock object using serializer
 			Object blob = this.getBlob(data);
 			
@@ -435,7 +526,9 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			}
 			
 			// set id and blob before executing the request
-			String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME).setId(esKey).setSource(json).get().getId();
+			String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
+					.setParent(obsKey.foiID)
+					.setSource(json).get().getId();
 		}
 	}
 	
@@ -462,24 +555,44 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		}
 		
 		// set source before executing the request
-		String id = foiIdxReq.setSource(json).get().getId();
+		String id = foiIdxReq.setSource(json).setId(foi.getUniqueIdentifier()).get().getId();
 	}
 
-	protected synchronized XContentBuilder getMapping(String type) throws IOException {
+	protected synchronized XContentBuilder getMapping() throws IOException {
 		XContentBuilder builder = XContentFactory.jsonBuilder()
 				.startObject()
-					//.startObject(type)
+					.startObject(RS_FOI_IDX_NAME)
 						.startObject("properties")
 							.startObject(SHAPE_FIELD_NAME).field("type", "geo_shape").endObject()
 							.startObject(FOI_UNIQUE_ID_FIELD).field("type", "text").endObject()
 							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "text").endObject()
 							.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
 						.endObject()
-					//.endObject()
+					.endObject()
 				.endObject();
 		return builder;
 	}
 
+	protected synchronized XContentBuilder getRsDataMapping() throws IOException {
+		XContentBuilder builder = XContentFactory.jsonBuilder()
+				.startObject()
+					.startObject(RS_DATA_IDX_NAME)
+						.startObject("_parent")
+							.field("type", RS_FOI_IDX_NAME)
+						.endObject()
+						.startObject("properties")
+							.startObject(FOI_UNIQUE_ID_FIELD).field("type", "text").endObject()
+							.startObject(TIMESTAMP_FIELD_NAME).field("type", "double").endObject()
+							.startObject(RECORD_TYPE_FIELD_NAME).field("type", "text").endObject()
+							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "text").endObject()
+							.startObject(SAMPLING_GEOMETRY_FIELD_NAME).field("type", "geo_shape").endObject()
+							.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
+						.endObject()
+					.endObject()
+				.endObject();
+		return builder;
+	}
+	
 	protected synchronized EnvelopeBuilder getEnvelopeBuilder(Envelope envelope) {
 		double[] upperCorner = envelope.getUpperCorner();
 		double[] lowerCorner = envelope.getLowerCorner();
@@ -497,7 +610,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	
 	protected synchronized PointBuilder getPointBuilder(Point point) {
 		// build shape builder from coordinates
-		return ShapeBuilders.newPoint(new Coordinate(point.getPos()[1],point.getPos()[0]));
+		return ShapeBuilders.newPoint(new Coordinate(point.getPos()[0],point.getPos()[1]));
 	}
 	
 	protected synchronized ShapeBuilder getShapeBuilder(AbstractGeometry geometry) throws SensorHubException {
