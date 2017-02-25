@@ -24,8 +24,8 @@ public class DomoticzHandler
 		}
 		
 		Gson gsonL = new Gson();
-		DomoticzResponse infoHAB = gsonL.fromJson(jsonL, DomoticzResponse.class);
-		return infoHAB;
+		DomoticzResponse infoDom = gsonL.fromJson(jsonL, DomoticzResponse.class);
+		return infoDom;
 	}
 	
 	public String getDomDevices(String jsonURL)  throws IOException
