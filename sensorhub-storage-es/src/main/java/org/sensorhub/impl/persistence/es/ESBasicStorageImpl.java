@@ -107,28 +107,17 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 */
 	protected TransportClient client;
 	
-	// indices
-	/**
-	 * The process description index.
-	 * UUID_SOURCE/PROCESS_DESC
-	 */
-	protected IndexRequestBuilder processDescIdx;
-	
-	/**
-	 * The record store info index.
-	 * UUID_SOURCE/RECORD_STORE_INFO
-	 */
-	protected IndexRequestBuilder recordStoreInfoIdx;
-	
 	/**
 	 * The data index. The data are indexed by their timestamps
 	 * UUID_SOURCE/RECORD_STORE_ID/{ timestamp: <timestamp>, data: <anyData> }
 	 */
-	protected IndexRequestBuilder recordStoreIdx;
-	
 	protected final static String DESC_HISTORY_IDX_NAME = "desc";
 	protected final static String RS_INFO_IDX_NAME = "info";
 	protected final static String RS_DATA_IDX_NAME = "data";
+	
+	public ESBasicStorageImpl() {
+		
+	}
 	
 	@Override
 	public void backup(OutputStream os) throws IOException {
@@ -210,11 +199,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		}catch(Throwable ex) {
 			ex.printStackTrace();
 		}
-		
-		// prepare indices
-		processDescIdx = client.prepareIndex(getLocalID(),DESC_HISTORY_IDX_NAME);
-		recordStoreInfoIdx = client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME);
-		recordStoreIdx = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME);
 	}
 
 	protected void createIndices (){
@@ -317,10 +301,9 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			}
             return (id != null);
         } else {
-        	processDescIdx.setId(time+"");
-    		processDescIdx.setSource(json);
-    		// send request and check if the id is not null
-            String id = processDescIdx.get().getId();
+        	// send request and check if the id is not null
+        	 String id = client.prepareIndex(getLocalID(),DESC_HISTORY_IDX_NAME).setId(time+"")
+    					.setSource(json).get().getId();
             
             return (id != null);
         }
@@ -419,7 +402,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		json.put(BLOB_FIELD_NAME,blob);
 		
 		// set id and blob before executing the request
-		String id = recordStoreInfoIdx.setId(name).setSource(json).get().getId();
+		String id = client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME).setId(name).setSource(json).get().getId();
 		
 		//TODO: make the link to the recordStore storage
 		// either we can use an intermediate mapping table or use directly the recordStoreInfo index
@@ -701,7 +684,10 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		json.put(BLOB_FIELD_NAME,blob); // store DataBlock
 		
 		// set id and blob before executing the request
-		String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME).setId(esKey).setSource(json).get().getId();
+		String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
+				.setId(esKey)
+				.setSource(json)
+				.get().getId();
 	}
 
 	@Override
@@ -858,4 +844,5 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	protected void refreshIndex() {
 		client.admin().indices().prepareRefresh(getLocalID()).get();
 	}
+	
 }

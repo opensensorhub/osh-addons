@@ -23,11 +23,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.geo.builders.EnvelopeBuilder;
 import org.elasticsearch.common.geo.builders.PointBuilder;
@@ -144,12 +150,12 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		
 		// filter on Producer Ids
 		if(obsFilter.getProducerIDs() != null && !obsFilter.getProducerIDs().isEmpty()) {
-			//foiFilterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
+			foiFilterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
 		}
 		
 		// filter on Foi
 		if(obsFilter.getFoiIDs() != null && !obsFilter.getFoiIDs().isEmpty()) {
-			//foiFilterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
+			foiFilterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
 		}
 		
 		// filter on ROI
@@ -270,12 +276,12 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		
 		// filter on Producer Ids
 		if(obsFilter.getProducerIDs() != null && !obsFilter.getProducerIDs().isEmpty()) {
-			//foiFilterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
+			foiFilterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
 		}
 		
 		// filter on Foi
 		if(obsFilter.getFoiIDs() != null && !obsFilter.getFoiIDs().isEmpty()) {
-			//foiFilterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
+			foiFilterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
 		}
 		
 		// filter on ROI
@@ -492,9 +498,128 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	}
 
 	@Override
+	public synchronized DataBlock getDataBlock(DataKey key) {
+		String parent = "";
+		
+		if(!(key instanceof ObsKey)) {
+			parent = "-1";
+		} else {
+			parent = ((ObsKey)key).foiID;
+		}
+		
+		DataBlock result = null;
+		// build the key as recordTYpe_timestamp_producerID
+		String esKey = getRsKey(key);
+		
+		// build the request
+		GetResponse  response = client.prepareGet(getLocalID(),RS_DATA_IDX_NAME,esKey)
+				.setParent(parent)
+				.get();
+		
+		// deserialize the blob field from the response if any
+		if(response.isExists()) {
+			result = this.<DataBlock>getObject(response.getSource().get(BLOB_FIELD_NAME)); // DataBlock
+		}
+		return result;
+	}
+	
+	@Override
+	public synchronized void removeRecord(DataKey key) {
+		String parent = "";
+		
+		if(!(key instanceof ObsKey)) {
+			parent = "-1";
+		} else {
+			parent = ((ObsKey)key).foiID;
+		}
+		
+		// build the key as recordTYpe_timestamp_producerID
+		String esKey = getRsKey(key);
+		
+		// prepare delete request
+		client.prepareDelete(getLocalID(), RS_DATA_IDX_NAME, esKey)
+			.setParent(parent).get();
+	}
+	
+	@Override
+	public synchronized void updateRecord(DataKey key, DataBlock data) {
+		String esKey = getRsKey(key);
+		
+		if(!(key instanceof ObsKey)) {
+			// build the key as recordTYpe_timestamp_producerID
+			
+			// get blob from dataBlock object using serializer
+			Object blob = this.getBlob(data);
+			
+			//TOCHECK: do we need to store the whole key?
+			Map<String, Object> json = new HashMap<String, Object>();
+			json.put(TIMESTAMP_FIELD_NAME,key.timeStamp); // store timestamp
+			json.put(PRODUCER_ID_FIELD_NAME,key.producerID); // store producerID
+			json.put(RECORD_TYPE_FIELD_NAME,key.recordType); // store recordType
+			json.put(BLOB_FIELD_NAME,blob); // store DataBlock
+			
+			client.prepareUpdate(getLocalID(), RS_DATA_IDX_NAME, esKey)
+				.setDoc(json)
+				.setParent("-1").get();
+		} else {
+			ObsKey obsKey = (ObsKey) key;
+
+			// get blob from dataBlock object using serializer
+			Object blob = this.getBlob(data);
+			
+			Map<String, Object> json = new HashMap<String, Object>();
+			json.put(TIMESTAMP_FIELD_NAME,key.timeStamp); // store timestamp
+			
+			if(key.producerID != null) {
+				json.put(PRODUCER_ID_FIELD_NAME,key.producerID); // store producerID
+			}
+			
+			if(key.recordType != null) {
+				json.put(RECORD_TYPE_FIELD_NAME,key.recordType); // store recordType
+			}
+			
+			json.put(BLOB_FIELD_NAME,blob); // store DataBlock
+			
+			// obs part
+			json.put(RESULT_TIME_FIELD_NAME,obsKey.resultTime);
+			
+			if(obsKey.foiID != null) {
+				json.put(FOI_UNIQUE_ID_FIELD,obsKey.foiID);
+			}
+			
+			if(obsKey.samplingGeometry != null) {
+				json.put(SAMPLING_GEOMETRY_FIELD_NAME,getPolygonBuilder(obsKey.samplingGeometry));
+			}
+			
+			client.prepareUpdate(getLocalID(), RS_DATA_IDX_NAME, esKey)
+				.setDoc(json)
+				.setParent(obsKey.foiID).get();
+		}
+		
+		
+	}
+	
+	@Override
 	public synchronized void storeRecord(DataKey key, DataBlock data) {
 		if(!(key instanceof ObsKey)) {
-			super.storeRecord(key, data);
+			// build the key as recordTYpe_timestamp_producerID
+			String esKey = getRsKey(key);
+			
+			// get blob from dataBlock object using serializer
+			Object blob = this.getBlob(data);
+			
+			Map<String, Object> json = new HashMap<String, Object>();
+			json.put(TIMESTAMP_FIELD_NAME,key.timeStamp); // store timestamp
+			json.put(PRODUCER_ID_FIELD_NAME,key.producerID); // store producerID
+			json.put(RECORD_TYPE_FIELD_NAME,key.recordType); // store recordType
+			json.put(BLOB_FIELD_NAME,blob); // store DataBlock
+			
+			// set id and blob before executing the request
+				String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
+						.setId(esKey)
+						.setSource(json)
+						.setParent("-1")
+						.get().getId();
 		} else {
 			ObsKey obsKey = (ObsKey) key;
 
