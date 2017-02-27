@@ -67,11 +67,11 @@ public class KryoSerializer {
 		};
 	};
 
-	public synchronized static Kryo getInstance() {
+	public static Kryo getInstance() {
 		return kryoLocal.get();
 	}
 	
-	public synchronized static byte[] serialize(Object object) {
+	public static byte[] serialize(Object object) {
 		// create buffer
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		Output output = new Output(bos);
@@ -91,7 +91,7 @@ public class KryoSerializer {
 		return result;
 	}
 
-	public synchronized static <T> T deserialize(byte[] serializedData) {
+	public static <T> T deserialize(byte[] serializedData) {
 		// create buffer
 		ByteArrayInputStream bis = new ByteArrayInputStream(serializedData);
 	    Input ki = new Input(bis);

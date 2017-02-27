@@ -35,7 +35,6 @@ import org.elasticsearch.action.admin.indices.exists.types.TypesExistsRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -44,8 +43,6 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -76,6 +73,7 @@ import net.opengis.swe.v20.DataEncoding;
 /**
  * <p>
  * ES implementation of {@link IObsStorage} for storing observations.
+ * This class is Thread-safe.
  * </p>
  *
  * @author Mathieu Dhainaut <mathieu.dhainaut@gmail.com>
@@ -115,6 +113,8 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	protected final static String RS_INFO_IDX_NAME = "info";
 	protected final static String RS_DATA_IDX_NAME = "data";
 	
+	protected volatile int nbDataToCommit = 0;
+	
 	public ESBasicStorageImpl() {
 		
 	}
@@ -131,7 +131,11 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 
 	@Override
 	public void commit() {
-		refreshIndex();
+		if(nbDataToCommit  > 0) {
+			refreshIndex();
+			nbDataToCommit = 0;
+		}
+		
 		// ES does not support native transaction
 		//throw new UnsupportedOperationException("Does not support ES data storage commit");
 	}
@@ -214,7 +218,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized AbstractProcess getLatestDataSourceDescription() {
+	public AbstractProcess getLatestDataSourceDescription() {
 		if(!isTypeExist(getLocalID(),DESC_HISTORY_IDX_NAME)) {
 			return null;
 		}
@@ -235,7 +239,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized List<AbstractProcess> getDataSourceDescriptionHistory(double startTime, double endTime) {
+	public List<AbstractProcess> getDataSourceDescriptionHistory(double startTime, double endTime) {
 		List<AbstractProcess> results = new ArrayList<AbstractProcess>();
 		
 		// query ES to get the corresponding timestamp
@@ -259,7 +263,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized AbstractProcess getDataSourceDescriptionAtTime(double time) {
+	public AbstractProcess getDataSourceDescriptionAtTime(double time) {
 		if(!isTypeExist(getLocalID(),DESC_HISTORY_IDX_NAME)) {
 			return null;
 		}
@@ -283,7 +287,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		return result;
 	}
 
-	protected synchronized boolean storeDataSourceDescription(AbstractProcess process, double time, boolean update) {
+	protected boolean storeDataSourceDescription(AbstractProcess process, double time, boolean update) {
 		Map<String, Object> json = new HashMap<String, Object>();
 		json.put(TIMESTAMP_FIELD_NAME,time);
 		json.put(BLOB_FIELD_NAME,this.getBlob(process));
@@ -296,6 +300,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			String id=null;
 			try {
 				id = client.update(updateRequest).get().getId();
+				nbDataToCommit++;
 			} catch (InterruptedException | ExecutionException e) {
 				log.error("[ES] Cannot update: ");
 			}
@@ -304,12 +309,12 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
         	// send request and check if the id is not null
         	 String id = client.prepareIndex(getLocalID(),DESC_HISTORY_IDX_NAME).setId(time+"")
     					.setSource(json).get().getId();
-            
+        	 nbDataToCommit++;
             return (id != null);
         }
 	}
 
-	protected synchronized boolean storeDataSourceDescription(AbstractProcess process, boolean update) {
+	protected boolean storeDataSourceDescription(AbstractProcess process, boolean update) {
 		boolean ok = false;
 
 		if (process.getNumValidTimes() > 0) {
@@ -334,17 +339,17 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized void storeDataSourceDescription(AbstractProcess process) {
+	public void storeDataSourceDescription(AbstractProcess process) {
 		storeDataSourceDescription(process, false);
 	}
 
 	@Override
-	public synchronized void updateDataSourceDescription(AbstractProcess process) {
+	public void updateDataSourceDescription(AbstractProcess process) {
 		storeDataSourceDescription(process, true);
 	}
 
 	@Override
-	public synchronized void removeDataSourceDescription(double time) {
+	public void removeDataSourceDescription(double time) {
 		DeleteRequest deleteRequest = new DeleteRequest(getLocalID(), DESC_HISTORY_IDX_NAME, time+"");
 		try {
 			client.delete(deleteRequest).get().getId();
@@ -354,7 +359,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized void removeDataSourceDescriptionHistory(double startTime, double endTime) {
+	public void removeDataSourceDescriptionHistory(double startTime, double endTime) {
 		// query ES to get the corresponding timestamp
 		// the response is applied a post filter allowing to specify a range request on the timestamp
 		// the hits should be directly filtered
@@ -392,7 +397,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized void addRecordStore(String name, DataComponent recordStructure, DataEncoding recommendedEncoding) {
+	public void addRecordStore(String name, DataComponent recordStructure, DataEncoding recommendedEncoding) {
 		DataStreamInfo rsInfo = new DataStreamInfo(name, recordStructure, recommendedEncoding);
         
 		// add new record storage
@@ -404,6 +409,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// set id and blob before executing the request
 		String id = client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME).setId(name).setSource(json).get().getId();
 		
+		nbDataToCommit++;
 		//TODO: make the link to the recordStore storage
 		// either we can use an intermediate mapping table or use directly the recordStoreInfo index
 		// to fetch the corresponding description
@@ -413,7 +419,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized int getNumRecords(String recordType) {
+	public int getNumRecords(String recordType) {
 		SearchResponse response = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
 				.setPostFilter(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
 				.setFetchSource(new String[]{}, new String[]{"*"}) // does not fetch source
@@ -453,7 +459,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized Iterator<double[]> getRecordsTimeClusters(String recordType) {
+	public Iterator<double[]> getRecordsTimeClusters(String recordType) {
 		// build response
 		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
 				//TOCHECK
@@ -509,7 +515,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized DataBlock getDataBlock(DataKey key) {
+	public DataBlock getDataBlock(DataKey key) {
 		DataBlock result = null;
 		// build the key as recordTYpe_timestamp_producerID
 		String esKey = getRsKey(key);
@@ -528,7 +534,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized Iterator<DataBlock> getDataBlockIterator(IDataFilter filter) {
+	public Iterator<DataBlock> getDataBlockIterator(IDataFilter filter) {
 		double[] timeRange = getTimeRange(filter);
 		
 		// prepare filter
@@ -577,7 +583,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 	
 	@Override
-	public synchronized Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
+	public Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
 		double[] timeRange = getTimeRange(filter);
 		
 		// prepare filter
@@ -642,7 +648,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 	
 	@Override
-	public synchronized int getNumMatchingRecords(IDataFilter filter, long maxCount) {
+	public int getNumMatchingRecords(IDataFilter filter, long maxCount) {
 		double[] timeRange = getTimeRange(filter);
 
 		// aggregate queries
@@ -670,7 +676,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		return (int) scrollResp.getHits().getTotalHits();
 	}
 	@Override
-	public synchronized void storeRecord(DataKey key, DataBlock data) {
+	public void storeRecord(DataKey key, DataBlock data) {
 		// build the key as recordTYpe_timestamp_producerID
 		String esKey = getRsKey(key);
 		
@@ -687,11 +693,13 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
 				.setId(esKey)
 				.setSource(json)
-				.get().getId();
+				.get()
+				.getId();
+		nbDataToCommit++;
 	}
 
 	@Override
-	public synchronized void updateRecord(DataKey key, DataBlock data) {
+	public void updateRecord(DataKey key, DataBlock data) {
 		// build the key as recordTYpe_timestamp_producerID
 		String esKey = getRsKey(key);
 		
@@ -712,13 +720,14 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		String id=null;
 		try {
 			id = client.update(updateRequest).get().getId();
+			nbDataToCommit++;
 		} catch (InterruptedException | ExecutionException e) {
 			log.error("[ES] Cannot update the object with the key: "+esKey);
 		}
 	}
 
 	@Override
-	public synchronized void removeRecord(DataKey key) {
+	public void removeRecord(DataKey key) {
 		// build the key as recordTYpe_timestamp_producerID
 		String esKey = getRsKey(key);
 		
@@ -727,13 +736,14 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		try {
 			// execute delete
 			client.delete(deleteRequest).get().getId();
+			nbDataToCommit++;
 		} catch (InterruptedException | ExecutionException e) {
 			log.error("[ES] Cannot delete the object with the key: "+esKey);
 		}
 	}
 
 	@Override
-	public synchronized int removeRecords(IDataFilter filter) {
+	public int removeRecords(IDataFilter filter) {
 		double[] timeRange = getTimeRange(filter);
 		
 		// MultiSearch API does not support scroll?!
@@ -767,6 +777,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				// execute delete
 				try {
 					client.delete(deleteRequest).get().getId();
+					nbDataToCommit++;
 				} catch (InterruptedException | ExecutionException e) {
 					log.error("[ES] Cannot delete the object with the key: "+hit.getId());
 				}
@@ -786,7 +797,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * @param object The raw object
 	 * @return the serialized object
 	 */
-	protected synchronized <T> byte[] getBlob(T object){
+	protected <T> byte[] getBlob(T object){
 		return KryoSerializer.serialize(object);
 	}
 	
@@ -796,7 +807,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * @param blob The base64 encoding String
 	 * @return The deserialized object
 	 */
-	protected synchronized <T> T getObject(Object blob) {
+	protected <T> T getObject(Object blob) {
 		byte [] base64decodedData = Base64.decodeBase64(blob.toString().getBytes());
 		return KryoSerializer.<T>deserialize(base64decodedData);
 	}
@@ -806,7 +817,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * @param key the ES key.
 	 * @return the ES key. 
 	 */
-	protected synchronized String getRsKey(DataKey key) {
+	protected String getRsKey(DataKey key) {
 		return key.recordType+RS_KEY_SEPARATOR+key.timeStamp+RS_KEY_SEPARATOR+key.producerID;
 	}
 	
@@ -815,7 +826,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * @param dataKey the corresponding dataKey
 	 * @return the dataKey. NULL if the length != 3 after splitting
 	 */
-	protected synchronized DataKey getDataKey(String rsKey) {
+	protected DataKey getDataKey(String rsKey) {
 		DataKey dataKey = null;
 		
 		// split the rsKey using separator
@@ -828,12 +839,12 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		return dataKey;
 	}
 	
-	protected synchronized boolean isTypeExist(String indexName, String typeName) {
+	protected boolean isTypeExist(String indexName, String typeName) {
 		TypesExistsRequest typeExistRequest = new TypesExistsRequest(new String[]{indexName},typeName);
 		return client.admin().indices().typesExists(typeExistRequest).actionGet().isExists();
 	}
 	
-	protected synchronized double[] getTimeRange(IDataFilter filter) {
+	protected double[] getTimeRange(IDataFilter filter) {
 		double[] timeRange = filter.getTimeStampRange();
 		if (timeRange != null)
 			return timeRange;
