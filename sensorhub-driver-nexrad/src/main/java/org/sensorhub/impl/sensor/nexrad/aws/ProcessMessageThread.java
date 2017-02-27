@@ -19,7 +19,6 @@ public class ProcessMessageThread implements Runnable {
 
 	private AwsSqsService sqsService;
 	List<String> sitesToKeep;
-	private String outputPath;
 	ChunkPathQueue chunkQueue;
 	
 	public ProcessMessageThread(AwsSqsService sqsService, AmazonS3Client client, List<String> sites, ChunkPathQueue chunkQueue) {
@@ -43,7 +42,6 @@ public class ProcessMessageThread implements Runnable {
 			}
 			sqsService.deleteMessages(messages);		}
 	}
-
 
 	public void addSite(String site) {
 		sitesToKeep.add(site);
