@@ -34,8 +34,8 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.EnumSet;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.module.AbstractModule;
@@ -54,14 +54,14 @@ import org.sensorhub.impl.module.AbstractModule;
 public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderConfig> implements ICommProvider<MultipleFilesProviderConfig>
 {
     WatchService watcher;
-    BlockingDeque<File> files;
+    BlockingQueue<File> files;
     InputStream multiFileInputStream;
     boolean started, init;
 
 
     public MultipleFilesProvider()
     {
-        this.files = new LinkedBlockingDeque<File>();
+        this.files = new PriorityBlockingQueue<File>();
     }
     
     
@@ -149,7 +149,7 @@ public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderC
     {
         try
         {
-            File nextFile = files.takeFirst();
+            File nextFile = files.take();
             AVLDriver.log.debug("Next data file: " + nextFile);
             return new FileInputStream(nextFile);
         }
@@ -180,7 +180,7 @@ public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderC
                 public FileVisitResult visitFile(Path f, BasicFileAttributes att) throws IOException
                 {
                     if (f.toString().endsWith(".trk"))
-                        files.addLast(f.toFile());
+                        files.add(f.toFile());
                     return FileVisitResult.CONTINUE;
                 }
             });
@@ -231,7 +231,7 @@ public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderC
                             if (newFile.toString().endsWith(".trk"))
                             {
                                 AVLDriver.log.debug("New AVL file detected: " + newFile);
-                                files.addLast(dir.resolve(newFile).toFile());
+                                files.add(dir.resolve(newFile).toFile());
                             }
                         }
                         
