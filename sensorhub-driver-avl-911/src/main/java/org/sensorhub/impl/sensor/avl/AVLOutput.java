@@ -20,15 +20,21 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import net.opengis.swe.v20.AllowedTokens;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
+import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.Vector;
 import net.opengis.swe.v20.Category;
 import org.sensorhub.api.comm.ICommProvider;
+import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
@@ -36,15 +42,16 @@ import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 
-public class AVLOutput extends AbstractSensorOutput<AVLDriver>
+public class AVLOutput extends AbstractSensorOutput<AVLDriver> implements IMultiSourceDataInterface
 {
     GregorianCalendar cal;
 
-    DataComponent dataStruct;
+    DataRecord dataStruct;
     DataEncoding dataEncoding;
     BufferedReader msgReader;
     boolean sendData;
     SimpleDateFormat timeFormat;
+    Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
 
 
     public AVLOutput(AVLDriver parentSensor)
@@ -81,9 +88,12 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver>
         // Mobile Data Terminal ID
         dataStruct.addComponent("mdt-id", fac.newCategory(SWEHelper.getPropertyUri("MDT-ID"), "MDT-ID", "Mobile Data Terminal ID", null));
 
-        // Unit and Vehicle ID (often the same)
+        // Unit ID
         dataStruct.addComponent("unit-id", fac.newCategory(SWEHelper.getPropertyUri("Unit-ID"), "Unit ID", "Mobile Unit ID", null));
+        
+        // Vehicle ID
         dataStruct.addComponent("veh-id", fac.newCategory(SWEHelper.getPropertyUri("Vehicle-ID"), "Vehicle ID", "Mobile Vehicle Identification", null));
+        dataStruct.getFieldList().getProperty("veh-id").setRole(ENTITY_ID_URI); // tag with entity ID role
 
         // location (latitude-longitude)	        
         Vector locVector = fac.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC);
@@ -201,6 +211,7 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver>
 
         // update latest record and send event
         latestRecord = dataBlock;
+        latestRecords.put(vehID, latestRecord);
         latestRecordTime = System.currentTimeMillis();
         eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, vehID, AVLOutput.this, dataBlock));
     }
@@ -267,6 +278,27 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver>
     public double getAverageSamplingPeriod()
     {
         return 1200.0; //why 20 minutes?
+    }
+
+
+    @Override
+    public Collection<String> getEntityIDs()
+    {
+        return parentSensor.getEntityIDs();
+    }
+
+
+    @Override
+    public Map<String, DataBlock> getLatestRecords()
+    {
+        return Collections.unmodifiableMap(latestRecords);
+    }
+
+
+    @Override
+    public DataBlock getLatestRecord(String entityID)
+    {
+        return latestRecords.get(entityID);
     }
 
 }

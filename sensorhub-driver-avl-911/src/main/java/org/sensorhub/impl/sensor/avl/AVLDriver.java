@@ -14,6 +14,7 @@ Copyright (C) 2012-2015 Botts Innovative Research, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.avl;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -188,7 +189,7 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
     @Override
     public Collection<String> getEntityIDs()
     {
-        return Collections.unmodifiableCollection(vehicleFois.keySet());
+        return Collections.unmodifiableSet(vehicleFois.keySet());
     }
     
     
@@ -230,7 +231,18 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
     @Override
     public Collection<String> getFeaturesOfInterestIDs()
     {
-        return Collections.unmodifiableCollection(foiIDs);
+        return Collections.unmodifiableSet(foiIDs);
+    }
+
+
+    @Override
+    public Collection<String> getEntitiesWithFoi(String foiID)
+    {
+        if (!foiIDs.contains(foiID))
+            return Collections.EMPTY_SET;
+        
+        String entityID = foiID.substring(foiID.lastIndexOf(':')+1);
+        return Arrays.asList(entityID);
     }
 
 }
