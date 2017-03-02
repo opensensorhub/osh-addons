@@ -15,7 +15,10 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.station.metar;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -24,6 +27,7 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
+import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEHelper;
@@ -37,7 +41,7 @@ import org.vast.swe.SWEHelper;
  *      If record time is greater than latestRecord.time, we update latestRecord and latestBlock
  *      and send event to bus.  
  */
-public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends StationOutput
+public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IMultiSourceDataInterface//extends StationOutput
 {
     private static final long POLLING_INTERVAL_SECONDS = 120;
     private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toSeconds(20);
@@ -46,7 +50,9 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
     DataEncoding metarRecordEncoding;
     Timer timer;
     Map<String, Long> latestUpdateTimes;
-    MetarDataPoller metarPoller; // constructing in config now  
+    MetarDataPoller metarPoller; // constructing in config now 
+    Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
+    
 
     public MetarOutput(MetarSensor parentSensor)
     {
@@ -85,6 +91,9 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
         metarRecordStruct.addField("visibilty", fac.newQuantity("http://sensorml.com/ont/swe/property/Visibility", "Visibility", null, "[ft_i]"));
         metarRecordStruct.addField("weather", fac.newText("http://sensorml.com/ont/swe/property/PresentWeather", "Present Weather", null));
         metarRecordStruct.addField("sky", fac.newText("http://sensorml.com/ont/swe/property/SkyConditions", "Sky Conditions", null));
+        
+        // mark component providing entity ID
+        metarRecordStruct.getFieldList().getProperty(1).setRole(ENTITY_ID_URI);
         
         // default encoding is text
         metarRecordEncoding = fac.newTextEncoding(",", "\n");
@@ -136,10 +145,11 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
                     Long lastUpdateTime = latestUpdateTimes.get(stationID);
                 	if (lastUpdateTime == null || rec.getTimeUtc() > lastUpdateTime)
                 	{
+                	    String stationUID = MetarSensor.STATION_UID_PREFIX + stationID;
                 	    latestUpdateTimes.put(stationID, rec.getTimeUtc());
                 		latestRecordTime = System.currentTimeMillis();
                 		latestRecord = metarRecordToDataBlock(stationID, rec);
-                		String stationUID = MetarSensor.STATION_UID_PREFIX + stationID;
+                        latestRecords.put(stationUID, latestRecord);                		
                 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, stationUID, MetarOutput.this, latestRecord));
                 	}
                 	
@@ -182,5 +192,26 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
     public DataEncoding getRecommendedEncoding()
     {
         return metarRecordEncoding;
+    }
+
+
+    @Override
+    public Collection<String> getEntityIDs()
+    {
+        return parentSensor.getEntityIDs();
+    }
+
+
+    @Override
+    public Map<String, DataBlock> getLatestRecords()
+    {
+        return Collections.unmodifiableMap(latestRecords);
+    }
+
+
+    @Override
+    public DataBlock getLatestRecord(String entityID)
+    {
+        return latestRecords.get(entityID);
     }
 }

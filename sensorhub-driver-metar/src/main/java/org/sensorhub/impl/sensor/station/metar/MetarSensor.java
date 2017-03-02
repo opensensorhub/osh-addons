@@ -1,6 +1,7 @@
 package org.sensorhub.impl.sensor.station.metar;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -192,5 +193,12 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
     public Collection<String> getFeaturesOfInterestIDs()
     {
         return Collections.unmodifiableCollection(foiIDs);
+    }
+
+
+    @Override
+    public Collection<String> getEntitiesWithFoi(String foiID)
+    {
+        return Arrays.asList(foiID);
     }
 }
