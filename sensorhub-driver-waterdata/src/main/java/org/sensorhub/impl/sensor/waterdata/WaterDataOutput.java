@@ -89,7 +89,7 @@ public class WaterDataOutput extends AbstractSensorOutput<WaterDataDriver>
         waterRecordStruct.addComponent("siteName", fac.newText("http://sensorml.com/ont/swe/property/StationName", "Site Name", null));
         waterRecordStruct.addComponent("location", geo.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC));
         waterRecordStruct.addComponent("discharge", fac.newQuantity("http://sensorml.com/ont/swe/property/StreamDischarge", "Stream Discharge", null, "ft3/s"));
-        waterRecordStruct.addComponent("gaugeHeight", fac.newQuantity("http://sensorml.com/ont/swe/property/GaugeHeight", "Gauge Height", null, "ft"));
+        waterRecordStruct.addComponent("gageHeight", fac.newQuantity("http://sensorml.com/ont/swe/property/GageHeight", "Gage Height", null, "ft"));
         
         // default encoding is text
         waterRecordEncoding = fac.newTextEncoding("$$", "\n");           
@@ -153,7 +153,7 @@ public class WaterDataOutput extends AbstractSensorOutput<WaterDataDriver>
 //	    	System.out.println("lat = " + waterData.value.timeSeries[0].sourceInfo.geoLocation.geogLocation.latitude);
 //	    	System.out.println("lon = " + waterData.value.timeSeries[0].sourceInfo.geoLocation.geogLocation.longitude);
 //	    	System.out.println("discharge = " + waterData.value.timeSeries[0].values[0].value[0].value);
-//	    	System.out.println("gaugeHeight = " + waterData.value.timeSeries[1].values[0].value[0].value);
+//	    	System.out.println("gageHeight = " + waterData.value.timeSeries[1].values[0].value[0].value);
 	    	
 	    	//dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 	    	Date date = dateFormat.parse(waterData.value.timeSeries[0].values[0].value[0].dateTime);

@@ -1,3 +1,3 @@
-### My New Module
+### USGS Water Data
 
-Describe what the module does and what its limitations are (e.g. for sensor drivers the exact hardware that is supported should be listed here)
+Sensor adapter for USGS-provided water data (https://waterdata.usgs.gov) in json format. Currently supports discharge and gage height, requesting the latest data every 15 minutes.
