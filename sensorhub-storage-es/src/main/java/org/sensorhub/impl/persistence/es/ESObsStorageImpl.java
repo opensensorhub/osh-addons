@@ -103,17 +103,6 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	protected void createIndices (){
 		super.createIndices();
 		
-		try {
-			client.admin().indices() 
-			    .preparePutMapping(getLocalID()) 
-			    .setType(RS_DATA_IDX_NAME)
-			    .setSource(getRsDataMapping())
-			    .execute().actionGet();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
 		// create FOI mapping
 		try {
 			client.admin().indices() 
@@ -396,7 +385,21 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 
 	@Override
 	public Bbox getFoisSpatialExtent() {
-		// TODO Auto-generated method stub
+		// compute the maxExtent of the shapes contained in the DB
+		final EnvelopeJTS maxExtent = new EnvelopeJTS();
+		
+		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
+				.setTypes(RS_FOI_IDX_NAME)
+				.setFetchSource(new String[] {SHAPE_FIELD_NAME}, new String[] {}) 
+				.setScroll(new TimeValue(config.scrollMaxDuration));
+		
+		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq, config.scrollFetchSize); 
+		SearchHit currentHit = null;
+		
+		// iterate over every hit to get the corresponding geo_shape object
+		while(searchHitsIterator.hasNext()) {
+			currentHit = searchHitsIterator.next();
+		}
 		return null;
 	}
 
@@ -640,19 +643,25 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			json.put(BLOB_FIELD_NAME,blob); // store DataBlock
 			
 			// obs part
-			json.put(RESULT_TIME_FIELD_NAME,obsKey.resultTime);
+			if(!Double.isNaN(obsKey.resultTime)) {
+				json.put(RESULT_TIME_FIELD_NAME,obsKey.resultTime);
+			}
+			
+			String uniqueParentID = "-1";
 			
 			if(obsKey.foiID != null) {
 				json.put(FOI_UNIQUE_ID_FIELD,obsKey.foiID);
+				uniqueParentID = obsKey.foiID;
 			}
 			
 			if(obsKey.samplingGeometry != null) {
 				json.put(SAMPLING_GEOMETRY_FIELD_NAME,getPolygonBuilder(obsKey.samplingGeometry));
 			}
 			
+			
 			// set id and blob before executing the request
 			String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
-					.setParent(obsKey.foiID)
+					.setParent(uniqueParentID)
 					.setSource(json).get().getId();
 		}
 	}
@@ -698,6 +707,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		return builder;
 	}
 
+	@Override
 	protected synchronized XContentBuilder getRsDataMapping() throws IOException {
 		XContentBuilder builder = XContentFactory.jsonBuilder()
 				.startObject()
