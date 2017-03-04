@@ -43,6 +43,8 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -113,7 +115,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	protected final static String RS_INFO_IDX_NAME = "info";
 	protected final static String RS_DATA_IDX_NAME = "data";
 	
-	protected volatile int nbDataToCommit = 0;
+	//protected volatile int nbDataToCommit = 0;
 	
 	public ESBasicStorageImpl() {
 		
@@ -130,11 +132,11 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public void commit() {
-		if(nbDataToCommit  > 0) {
+	public synchronized void commit() {
+		//if(nbDataToCommit  > 0) {
 			refreshIndex();
-			nbDataToCommit = 0;
-		}
+		//	nbDataToCommit = 0;
+		//}
 		
 		// ES does not support native transaction
 		//throw new UnsupportedOperationException("Does not support ES data storage commit");
@@ -208,6 +210,17 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	protected void createIndices (){
 		CreateIndexRequest indexRequest = new CreateIndexRequest(getLocalID());
 		client.admin().indices().create(indexRequest).actionGet();
+		
+		try {
+			client.admin().indices() 
+			    .preparePutMapping(getLocalID()) 
+			    .setType(RS_DATA_IDX_NAME)
+			    .setSource(getRsDataMapping())
+			    .execute().actionGet();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	@Override
@@ -300,7 +313,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			String id=null;
 			try {
 				id = client.update(updateRequest).get().getId();
-				nbDataToCommit++;
+				//nbDataToCommit++;
 			} catch (InterruptedException | ExecutionException e) {
 				log.error("[ES] Cannot update: ");
 			}
@@ -309,7 +322,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
         	// send request and check if the id is not null
         	 String id = client.prepareIndex(getLocalID(),DESC_HISTORY_IDX_NAME).setId(time+"")
     					.setSource(json).get().getId();
-        	 nbDataToCommit++;
+        	// nbDataToCommit++;
             return (id != null);
         }
 	}
@@ -409,7 +422,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// set id and blob before executing the request
 		String id = client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME).setId(name).setSource(json).get().getId();
 		
-		nbDataToCommit++;
+		//nbDataToCommit++;
 		//TODO: make the link to the recordStore storage
 		// either we can use an intermediate mapping table or use directly the recordStoreInfo index
 		// to fetch the corresponding description
@@ -466,7 +479,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				//.addSort(SortOrder.ASC)
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 		        .setScroll(new TimeValue(config.pingTimeout))
-		        .setRequestCache(true)
+		        //.setRequestCache(true)
 		        .setQuery(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
 		        .setFetchSource(new String[]{TIMESTAMP_FIELD_NAME}, new String[]{}); // get only the timestamp
 		    	
@@ -605,7 +618,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 		        .setScroll(new TimeValue(config.pingTimeout))
 		        .setQuery(recordTypeQuery)
-		        .setRequestCache(true)
+		        //.setRequestCache(true)
 		        .setPostFilter(queryBuilder);
 		
         // wrap the request into custom ES Scroll iterator
@@ -627,9 +640,9 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				
 				// build key
 				final DataKey key = getDataKey(nextSearchHit.getId());
+				key.timeStamp = (double) nextSearchHit.getSource().get(TIMESTAMP_FIELD_NAME);
 				// get DataBlock from blob
 				final DataBlock datablock=ESBasicStorageImpl.this.<DataBlock>getObject(nextSearchHit.getSource().get(BLOB_FIELD_NAME)); // DataBlock
-				
 				return new IDataRecord(){
 
 					@Override
@@ -695,7 +708,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				.setSource(json)
 				.get()
 				.getId();
-		nbDataToCommit++;
+		//nbDataToCommit++;
 	}
 
 	@Override
@@ -720,7 +733,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		String id=null;
 		try {
 			id = client.update(updateRequest).get().getId();
-			nbDataToCommit++;
+			//nbDataToCommit++;
 		} catch (InterruptedException | ExecutionException e) {
 			log.error("[ES] Cannot update the object with the key: "+esKey);
 		}
@@ -736,7 +749,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		try {
 			// execute delete
 			client.delete(deleteRequest).get().getId();
-			nbDataToCommit++;
+			//nbDataToCommit++;
 		} catch (InterruptedException | ExecutionException e) {
 			log.error("[ES] Cannot delete the object with the key: "+esKey);
 		}
@@ -777,7 +790,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				// execute delete
 				try {
 					client.delete(deleteRequest).get().getId();
-					nbDataToCommit++;
+					//nbDataToCommit++;
 				} catch (InterruptedException | ExecutionException e) {
 					log.error("[ES] Cannot delete the object with the key: "+hit.getId());
 				}
@@ -856,4 +869,18 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		client.admin().indices().prepareRefresh(getLocalID()).get();
 	}
 	
+	protected synchronized XContentBuilder getRsDataMapping() throws IOException {
+		XContentBuilder builder = XContentFactory.jsonBuilder()
+				.startObject()
+					.startObject(RS_DATA_IDX_NAME)
+						.startObject("properties")
+							.startObject(TIMESTAMP_FIELD_NAME).field("type", "double").endObject()
+							.startObject(RECORD_TYPE_FIELD_NAME).field("type", "string").endObject()
+							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "string").endObject()
+							.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
+						.endObject()
+					.endObject()
+				.endObject();
+		return builder;
+	}
 }
