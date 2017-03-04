@@ -28,10 +28,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.codec.binary.Base64;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.types.TypesExistsRequest;
+import org.elasticsearch.action.bulk.BackoffPolicy;
+import org.elasticsearch.action.bulk.BulkProcessor;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -42,6 +47,8 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.transport.TransportAddress;
+import org.elasticsearch.common.unit.ByteSizeUnit;
+import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -82,6 +89,8 @@ import net.opengis.swe.v20.DataEncoding;
  * @since 2017
  */
 public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> implements IRecordStorageModule<ESBasicStorageConfig> {
+	private static final int TIME_RANGE_CLUSTER_SCROLL_FETCH_SIZE = 2000;
+
 	protected static final double MAX_TIME_CLUSTER_DELTA = 60.0;
 
 	protected static final String RECORD_TYPE_FIELD_NAME = "recordType";
@@ -115,7 +124,10 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	protected final static String RS_INFO_IDX_NAME = "info";
 	protected final static String RS_DATA_IDX_NAME = "data";
 	
-	//protected volatile int nbDataToCommit = 0;
+	protected volatile int nbDataToCommit = 0;
+	protected volatile int nbBulkDataToCommit = 0;
+	
+	protected BulkProcessor bulkProcessor;
 	
 	public ESBasicStorageImpl() {
 		
@@ -132,12 +144,23 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	@Override
-	public synchronized void commit() {
-		//if(nbDataToCommit  > 0) {
-			refreshIndex();
-		//	nbDataToCommit = 0;
-		//}
+	public void commit() {
+		AtomicBoolean refresh = new AtomicBoolean(false);
+		if(nbBulkDataToCommit  > 0) {
+			bulkProcessor.flush();
+			refresh.getAndSet(true);
+			nbBulkDataToCommit = 0;
+		}
 		
+		if(nbDataToCommit  > 0) {
+			refreshIndex();
+			refresh.getAndSet(true);
+			nbDataToCommit = 0;
+		}
+		
+		if(refresh.get()) {
+			refreshIndex();
+		}
 		// ES does not support native transaction
 		//throw new UnsupportedOperationException("Does not support ES data storage commit");
 	}
@@ -182,6 +205,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				transportAddresses[i++]=new InetSocketTransportAddress(
 						InetAddress.getByName(url.getHost()), // host
 						url.getPort()); //port
+				
 			} catch (MalformedURLException e) {
 				throw new SensorHubException("Cannot initialize transport address:"+e.getMessage());
 			} catch (UnknownHostException e) {
@@ -195,6 +219,30 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		        .addTransportAddresses(transportAddresses);
 		
 		
+		bulkProcessor = BulkProcessor.builder(
+		        client,  
+		        new BulkProcessor.Listener() {
+		            @Override
+		            public void beforeBulk(long executionId,
+		                                   BulkRequest request) {  } 
+
+		            @Override
+		            public void afterBulk(long executionId,
+		                                  BulkRequest request,
+		                                  BulkResponse response) {  } 
+
+		            @Override
+		            public void afterBulk(long executionId,
+		                                  BulkRequest request,
+		                                  Throwable failure) {  } 
+		        })
+		        .setBulkActions(config.bulkActions) 
+		        .setBulkSize(new ByteSizeValue(config.bulkSize, ByteSizeUnit.MB)) 
+		        .setFlushInterval(TimeValue.timeValueSeconds(config.bulkFlushInterval)) 
+		        .setConcurrentRequests(config.bulkConcurrentRequests) 
+		        .setBackoffPolicy(
+		            BackoffPolicy.exponentialBackoff(TimeValue.timeValueMillis(100), 3)) 
+		        .build();
 		// create indices if they dont exist
 		boolean exists = client.admin().indices()
 			    .prepareExists(getLocalID())
@@ -313,7 +361,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			String id=null;
 			try {
 				id = client.update(updateRequest).get().getId();
-				//nbDataToCommit++;
+				nbDataToCommit++;
 			} catch (InterruptedException | ExecutionException e) {
 				log.error("[ES] Cannot update: ");
 			}
@@ -322,7 +370,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
         	// send request and check if the id is not null
         	 String id = client.prepareIndex(getLocalID(),DESC_HISTORY_IDX_NAME).setId(time+"")
     					.setSource(json).get().getId();
-        	// nbDataToCommit++;
+        	 nbDataToCommit++;
             return (id != null);
         }
 	}
@@ -366,6 +414,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		DeleteRequest deleteRequest = new DeleteRequest(getLocalID(), DESC_HISTORY_IDX_NAME, time+"");
 		try {
 			client.delete(deleteRequest).get().getId();
+			nbDataToCommit++;
 		} catch (InterruptedException | ExecutionException e) {
 			log.error("[ES] Cannot delete the object with the index: "+time);
 		}
@@ -388,6 +437,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			deleteRequest.id(hit.getId());
 			try {
 				client.delete(deleteRequest).get().getId();
+				nbDataToCommit++;
 			} catch (InterruptedException | ExecutionException e) {
 				log.error("[ES] Cannot delete the object with the index: "+hit.getId());
 			}
@@ -420,9 +470,9 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		json.put(BLOB_FIELD_NAME,blob);
 		
 		// set id and blob before executing the request
-		String id = client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME).setId(name).setSource(json).get().getId();
-		
-		//nbDataToCommit++;
+		//String id = client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME).setId(name).setSource(json).get().getId();
+		bulkProcessor.add(client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME).setId(name).setSource(json).request());
+		nbBulkDataToCommit++;
 		//TODO: make the link to the recordStore storage
 		// either we can use an intermediate mapping table or use directly the recordStoreInfo index
 		// to fetch the corresponding description
@@ -485,7 +535,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		    	
         // wrap the request into custom ES Scroll iterator
 		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq,
-				config.scrollFetchSize); //max of scrollFetchSize hits will be returned for each scroll
+				TIME_RANGE_CLUSTER_SCROLL_FETCH_SIZE); //max of scrollFetchSize hits will be returned for each scroll
 				
 		return new Iterator<double[]>() {
 			Double lastTime = Double.NaN;
@@ -703,12 +753,15 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		json.put(BLOB_FIELD_NAME,blob); // store DataBlock
 		
 		// set id and blob before executing the request
-		String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
+		/*String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
 				.setId(esKey)
 				.setSource(json)
 				.get()
-				.getId();
-		//nbDataToCommit++;
+				.getId();*/
+		bulkProcessor.add(client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
+				.setId(esKey)
+				.setSource(json).request());
+		nbBulkDataToCommit++;
 	}
 
 	@Override
@@ -733,7 +786,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		String id=null;
 		try {
 			id = client.update(updateRequest).get().getId();
-			//nbDataToCommit++;
+			nbDataToCommit++;
 		} catch (InterruptedException | ExecutionException e) {
 			log.error("[ES] Cannot update the object with the key: "+esKey);
 		}
@@ -749,7 +802,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		try {
 			// execute delete
 			client.delete(deleteRequest).get().getId();
-			//nbDataToCommit++;
+			nbDataToCommit++;
 		} catch (InterruptedException | ExecutionException e) {
 			log.error("[ES] Cannot delete the object with the key: "+esKey);
 		}
@@ -790,7 +843,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				// execute delete
 				try {
 					client.delete(deleteRequest).get().getId();
-					//nbDataToCommit++;
+					nbDataToCommit++;
 				} catch (InterruptedException | ExecutionException e) {
 					log.error("[ES] Cannot delete the object with the key: "+hit.getId());
 				}
@@ -874,10 +927,21 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				.startObject()
 					.startObject(RS_DATA_IDX_NAME)
 						.startObject("properties")
-							.startObject(TIMESTAMP_FIELD_NAME).field("type", "double").endObject()
-							.startObject(RECORD_TYPE_FIELD_NAME).field("type", "string").endObject()
-							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "string").endObject()
-							.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
+							.startObject(TIMESTAMP_FIELD_NAME)
+								.field("type", "double")
+								.field("index", "analyzed")
+							.endObject()
+							.startObject(RECORD_TYPE_FIELD_NAME)
+								.field("type", "string")
+								.field("index", "not_analyzed")
+							.endObject()
+							.startObject(PRODUCER_ID_FIELD_NAME)
+								.field("type", "string")
+								.field("index", "not_analyzed")
+							.endObject()
+							.startObject(BLOB_FIELD_NAME)
+								.field("type", "binary")
+							.endObject()
 						.endObject()
 					.endObject()
 				.endObject();

@@ -52,4 +52,16 @@ public class ESBasicStorageConfig extends org.sensorhub.api.persistence.ObsStora
 	@DisplayInfo(desc="Enable sniffing")
 	public boolean transportSniff = false;
 	
+	@DisplayInfo(desc="Set the number of concurrent requests")
+	public int bulkConcurrentRequests = 10;
+	
+	@DisplayInfo(desc="We want to execute the bulk every n requests")
+	public int bulkActions = 10000;
+	
+	@DisplayInfo(desc="We want to flush the bulk every n mb")
+	public int bulkSize = 10;
+	
+	@DisplayInfo(desc="We want to flush the bulk every n seconds whatever the number of requests")
+	public int bulkFlushInterval = 10;
+	
 }
