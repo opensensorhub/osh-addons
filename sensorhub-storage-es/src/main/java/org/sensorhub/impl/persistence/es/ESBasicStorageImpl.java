@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.codec.binary.Base64;
@@ -89,7 +90,7 @@ import net.opengis.swe.v20.DataEncoding;
  * @since 2017
  */
 public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> implements IRecordStorageModule<ESBasicStorageConfig> {
-	private static final int TIME_RANGE_CLUSTER_SCROLL_FETCH_SIZE = 2000;
+	private static final int TIME_RANGE_CLUSTER_SCROLL_FETCH_SIZE = 5000;
 
 	protected static final double MAX_TIME_CLUSTER_DELTA = 60.0;
 
@@ -275,6 +276,14 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	public synchronized void stop() throws SensorHubException {
 		if(client != null) {
 			client.close();
+		}
+		if(bulkProcessor != null) {
+			try {
+				bulkProcessor.flush();
+				bulkProcessor.awaitClose(10, TimeUnit.MINUTES);
+			} catch (InterruptedException e) {
+				throw new SensorHubException(e.getMessage());
+			}
 		}
 	}
 
@@ -529,7 +538,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				//.addSort(SortOrder.ASC)
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 		        .setScroll(new TimeValue(config.pingTimeout))
-		        //.setRequestCache(true)
+		        .setRequestCache(true)
 		        .setQuery(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
 		        .setFetchSource(new String[]{TIMESTAMP_FIELD_NAME}, new String[]{}); // get only the timestamp
 		    	
