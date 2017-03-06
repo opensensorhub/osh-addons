@@ -12,11 +12,9 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.persistence.es;
+package org.sensorhub.impl.persistence.es.integration;
 
 import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,41 +25,58 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.test.persistence.AbstractTestBasicStorage;
+import org.sensorhub.impl.persistence.es.ESBasicStorageConfig;
+import org.sensorhub.impl.persistence.es.ESObsStorageImpl;
+import org.sensorhub.test.persistence.AbstractTestObsStorage;
 
-public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageImpl> {
 
-	@Before
-	public void init() throws Exception {
-		ESBasicStorageConfig config = new ESBasicStorageConfig();
-		config.autoStart = true;
-		config.storagePath = "elastic-cluster";
-		List<String> nodes = new ArrayList<String>();
-		nodes.add("localhost:9300");
-
-		config.nodeUrls = nodes;
-		config.scrollFetchSize = 2000;
+public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl>
+{
+    
+    @Before
+    public void init() throws Exception
+    {
+        ESBasicStorageConfig config = new ESBasicStorageConfig();
+        config.autoStart = true;
+        config.storagePath = "elastic-cluster";
+        List<String> nodes = new ArrayList<String>();
+        nodes.add("localhost:9300");
+        
+        config.nodeUrls = nodes;
+        config.scrollFetchSize = 200;
 		config.bulkConcurrentRequests = 0;
-		config.id = "junit_" + UUID.randomUUID().toString();
-		storage = new ESBasicStorageImpl();
-		storage.init(config);
-		storage.start();
-	}
+        config.scrollMaxDuration = 999999000;
+        config.id = "junit_"+UUID.randomUUID().toString();
+        storage = new ESObsStorageImpl();
+        storage.init(config);
+        storage.start();
+    }
+    
 
-	@Override
-	protected void forceReadBackFromStorage() throws Exception {
-		storage.commit();
+	@After
+	public void closeStorage() throws SensorHubException {
+		storage.stop();
 	}
-
-	@AfterClass
-	public static void cleanup() throws UnknownHostException {
-		// add transport address(es)
+	
+    @Override
+    protected void forceReadBackFromStorage() throws Exception
+    {
+    	// Let the time to ES to write the data
+    	// if some tests are not passed,  try to increase this value first!!
+    	//Thread.sleep(2500);
+    	storage.commit();
+    	
+    }
+    
+    @AfterClass
+    public static void cleanup() throws UnknownHostException
+    {
+    	// add transport address(es)
 		Settings settings = Settings.builder()
 		        .put("cluster.name", "elastic-cluster").build();
 		TransportClient client = new PreBuiltTransportClient(settings)
@@ -75,5 +90,6 @@ public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageI
 		}
 		
 		client.close();
-	}
+    }
+    
 }

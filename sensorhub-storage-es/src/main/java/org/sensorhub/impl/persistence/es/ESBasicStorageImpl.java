@@ -44,6 +44,7 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.support.AbstractClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
@@ -115,7 +116,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * It does not join the cluster, but simply gets one or more initial transport addresses and communicates 
 	 * with them in round robin fashion on each action (though most actions will probably be "two hop" operations).
 	 */
-	protected TransportClient client;
+	protected AbstractClient client;
 	
 	/**
 	 * The data index. The data are indexed by their timestamps
@@ -125,13 +126,17 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	protected final static String RS_INFO_IDX_NAME = "info";
 	protected final static String RS_DATA_IDX_NAME = "data";
 	
-	protected volatile int nbDataToCommit = 0;
-	protected volatile int nbBulkDataToCommit = 0;
-	
+	/**
+	 * Use the bulkProcessor to increase perfs when writting and deleting a set of data.
+	 */
 	protected BulkProcessor bulkProcessor;
 	
 	public ESBasicStorageImpl() {
 		
+	}
+	
+	public ESBasicStorageImpl(AbstractClient client) {
+		this.client = client;
 	}
 	
 	@Override
@@ -146,24 +151,8 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 
 	@Override
 	public void commit() {
-		AtomicBoolean refresh = new AtomicBoolean(false);
-		if(nbBulkDataToCommit  > 0) {
-			bulkProcessor.flush();
-			refresh.getAndSet(true);
-			nbBulkDataToCommit = 0;
-		}
-		
-		if(nbDataToCommit  > 0) {
-			refreshIndex();
-			refresh.getAndSet(true);
-			nbDataToCommit = 0;
-		}
-		
-		if(refresh.get()) {
-			refreshIndex();
-		}
-		// ES does not support native transaction
-		//throw new UnsupportedOperationException("Does not support ES data storage commit");
+		bulkProcessor.flush();
+		refreshIndex();
 	}
 
 	@Override
@@ -181,85 +170,90 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 
 	@Override
 	public synchronized void start() throws SensorHubException {
-		// init transport client
-		Settings settings = Settings.builder()
-		        .put("cluster.name", config.storagePath)
-		        .put("client.transport.ignore_cluster_name",config.ignoreClusterName)
-		        //.put("client.transport.ping_timeout",config.pingTimeout)
-		        //.put("client.transport.nodes_sampler_interval",config.nodeSamplerInterval)
-		        .put("client.transport.sniff",config.transportSniff)
-		        .build();
-		
-		// add transport address(es)
-		TransportAddress [] transportAddresses  = new TransportAddress[config.nodeUrls.size()];
-		int i=0;
-		for(String nodeUrl : config.nodeUrls){
-			try {
-				URL url = null;
-				// <host>:<port>
-				if(nodeUrl.startsWith("http://")){
-					url = new URL(nodeUrl);
-				} else {
-					url = new URL("http://"+nodeUrl);
+		if(client == null) {
+			// init transport client
+			Settings settings = Settings.builder()
+			        .put("cluster.name", config.storagePath)
+			        .put("client.transport.ignore_cluster_name",config.ignoreClusterName)
+			        //.put("client.transport.ping_timeout",config.pingTimeout)
+			        //.put("client.transport.nodes_sampler_interval",config.nodeSamplerInterval)
+			        .put("client.transport.sniff",config.transportSniff)
+			        .build();
+			
+			// add transport address(es)
+			TransportAddress [] transportAddresses  = new TransportAddress[config.nodeUrls.size()];
+			int i=0;
+			for(String nodeUrl : config.nodeUrls){
+				try {
+					URL url = null;
+					// <host>:<port>
+					if(nodeUrl.startsWith("http://")){
+						url = new URL(nodeUrl);
+					} else {
+						url = new URL("http://"+nodeUrl);
+					}
+					
+					transportAddresses[i++]=new InetSocketTransportAddress(
+							InetAddress.getByName(url.getHost()), // host
+							url.getPort()); //port
+					
+				} catch (MalformedURLException e) {
+					log.error("Cannot initialize transport address:"+e.getMessage());
+					throw new SensorHubException("Cannot initialize transport address",e);
+				} catch (UnknownHostException e) {
+					log.error("Cannot initialize transport address:"+e.getMessage());
+					throw new SensorHubException("Cannot initialize transport address",e);
 				}
-				
-				transportAddresses[i++]=new InetSocketTransportAddress(
-						InetAddress.getByName(url.getHost()), // host
-						url.getPort()); //port
-				
-			} catch (MalformedURLException e) {
-				throw new SensorHubException("Cannot initialize transport address:"+e.getMessage());
-			} catch (UnknownHostException e) {
-				throw new SensorHubException("Cannot initialize transport address:"+e.getMessage());
 			}
-		}
+				// build the client
+				client = new PreBuiltTransportClient(settings)
+				        .addTransportAddresses(transportAddresses);
+		}	
 		
 		try{
-		// build the client
-		client = new PreBuiltTransportClient(settings)
-		        .addTransportAddresses(transportAddresses);
-		
-		
-		bulkProcessor = BulkProcessor.builder(
-		        client,  
-		        new BulkProcessor.Listener() {
-		            @Override
-		            public void beforeBulk(long executionId,
-		                                   BulkRequest request) {  } 
-
-		            @Override
-		            public void afterBulk(long executionId,
-		                                  BulkRequest request,
-		                                  BulkResponse response) {  } 
-
-		            @Override
-		            public void afterBulk(long executionId,
-		                                  BulkRequest request,
-		                                  Throwable failure) {  } 
-		        })
-		        .setBulkActions(config.bulkActions) 
-		        .setBulkSize(new ByteSizeValue(config.bulkSize, ByteSizeUnit.MB)) 
-		        .setFlushInterval(TimeValue.timeValueSeconds(config.bulkFlushInterval)) 
-		        .setConcurrentRequests(config.bulkConcurrentRequests) 
-		        .setBackoffPolicy(
-		            BackoffPolicy.exponentialBackoff(TimeValue.timeValueMillis(100), 3)) 
-		        .build();
-		// create indices if they dont exist
-		boolean exists = client.admin().indices()
-			    .prepareExists(getLocalID())
-			    .execute().actionGet().isExists();
-		if(!exists) {
-			createIndices();
-		}
+			// build the bulk processor
+			bulkProcessor = BulkProcessor.builder(
+			        client,  
+			        new BulkProcessor.Listener() {
+			            @Override
+			            public void beforeBulk(long executionId,
+			                                   BulkRequest request) {  } 
+	
+			            @Override
+			            public void afterBulk(long executionId,
+			                                  BulkRequest request,
+			                                  BulkResponse response) {  } 
+	
+			            @Override
+			            public void afterBulk(long executionId,
+			                                  BulkRequest request,
+			                                  Throwable failure) {  } 
+			        })
+			        .setBulkActions(config.bulkActions) 
+			        .setBulkSize(new ByteSizeValue(config.bulkSize, ByteSizeUnit.MB)) 
+			        .setFlushInterval(TimeValue.timeValueSeconds(config.bulkFlushInterval)) 
+			        .setConcurrentRequests(config.bulkConcurrentRequests) 
+			        .setBackoffPolicy(
+			            BackoffPolicy.exponentialBackoff(TimeValue.timeValueMillis(100), 3)) 
+			        .build();
+			// create indices if they dont exist
+			boolean exists = client.admin().indices()
+				    .prepareExists(getLocalID())
+				    .execute().actionGet().isExists();
+			if(!exists) {
+				createIndices();
+			}
 		}catch(Throwable ex) {
-			ex.printStackTrace();
+			log.error("Cannot initialize the client",ex);
 		}
 	}
 
 	protected void createIndices (){
+		// create the index 
 		CreateIndexRequest indexRequest = new CreateIndexRequest(getLocalID());
 		client.admin().indices().create(indexRequest).actionGet();
 		
+		// create the corresponding data mapping
 		try {
 			client.admin().indices() 
 			    .preparePutMapping(getLocalID()) 
@@ -267,8 +261,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			    .setSource(getRsDataMapping())
 			    .execute().actionGet();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Cannot create indices",e);
 		}
 	}
 	
@@ -277,11 +270,13 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		if(client != null) {
 			client.close();
 		}
+		// flush and close the bulk processor
 		if(bulkProcessor != null) {
 			try {
 				bulkProcessor.flush();
 				bulkProcessor.awaitClose(10, TimeUnit.MINUTES);
 			} catch (InterruptedException e) {
+				log.error("Cannot close/flush the bulk processor",e);
 				throw new SensorHubException(e.getMessage());
 			}
 		}
@@ -326,6 +321,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// the corresponding filtering hits
 		while(iterator.hasNext()) {
 			SearchHit hit = iterator.next();
+			// deSerialize the AbstractProcess stored object 
 			Object blob = hit.getSource().get(BLOB_FIELD_NAME);
 			results.add(this.<AbstractProcess>getObject(blob));
 		}
@@ -334,6 +330,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 
 	@Override
 	public AbstractProcess getDataSourceDescriptionAtTime(double time) {
+		// if the type does not exist, return
 		if(!isTypeExist(getLocalID(),DESC_HISTORY_IDX_NAME)) {
 			return null;
 		}
@@ -358,6 +355,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 
 	protected boolean storeDataSourceDescription(AbstractProcess process, double time, boolean update) {
+		// prepare source map
 		Map<String, Object> json = new HashMap<String, Object>();
 		json.put(TIMESTAMP_FIELD_NAME,time);
 		json.put(BLOB_FIELD_NAME,this.getBlob(process));
@@ -370,7 +368,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			String id=null;
 			try {
 				id = client.update(updateRequest).get().getId();
-				nbDataToCommit++;
 			} catch (InterruptedException | ExecutionException e) {
 				log.error("[ES] Cannot update: ");
 			}
@@ -379,7 +376,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
         	// send request and check if the id is not null
         	 String id = client.prepareIndex(getLocalID(),DESC_HISTORY_IDX_NAME).setId(time+"")
     					.setSource(json).get().getId();
-        	 nbDataToCommit++;
             return (id != null);
         }
 	}
@@ -423,7 +419,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		DeleteRequest deleteRequest = new DeleteRequest(getLocalID(), DESC_HISTORY_IDX_NAME, time+"");
 		try {
 			client.delete(deleteRequest).get().getId();
-			nbDataToCommit++;
 		} catch (InterruptedException | ExecutionException e) {
 			log.error("[ES] Cannot delete the object with the index: "+time);
 		}
@@ -446,7 +441,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			deleteRequest.id(hit.getId());
 			try {
 				client.delete(deleteRequest).get().getId();
-				nbDataToCommit++;
 			} catch (InterruptedException | ExecutionException e) {
 				log.error("[ES] Cannot delete the object with the index: "+hit.getId());
 			}
@@ -481,7 +475,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// set id and blob before executing the request
 		//String id = client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME).setId(name).setSource(json).get().getId();
 		bulkProcessor.add(client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME).setId(name).setSource(json).request());
-		nbBulkDataToCommit++;
 		//TODO: make the link to the recordStore storage
 		// either we can use an intermediate mapping table or use directly the recordStoreInfo index
 		// to fetch the corresponding description
@@ -770,7 +763,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		bulkProcessor.add(client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
 				.setId(esKey)
 				.setSource(json).request());
-		nbBulkDataToCommit++;
 	}
 
 	@Override
@@ -781,7 +773,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// get blob from dataBlock object using serializer
 		Object blob = this.getBlob(data);
 		
-		//TOCHECK: do we need to store the whole key?
 		Map<String, Object> json = new HashMap<String, Object>();
 		json.put(TIMESTAMP_FIELD_NAME,key.timeStamp); // store timestamp
 		json.put(PRODUCER_ID_FIELD_NAME,key.producerID); // store producerID
@@ -795,7 +786,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		String id=null;
 		try {
 			id = client.update(updateRequest).get().getId();
-			nbDataToCommit++;
 		} catch (InterruptedException | ExecutionException e) {
 			log.error("[ES] Cannot update the object with the key: "+esKey);
 		}
@@ -811,7 +801,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		try {
 			// execute delete
 			client.delete(deleteRequest).get().getId();
-			nbDataToCommit++;
 		} catch (InterruptedException | ExecutionException e) {
 			log.error("[ES] Cannot delete the object with the key: "+esKey);
 		}
@@ -852,7 +841,6 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				// execute delete
 				try {
 					client.delete(deleteRequest).get().getId();
-					nbDataToCommit++;
 				} catch (InterruptedException | ExecutionException e) {
 					log.error("[ES] Cannot delete the object with the key: "+hit.getId());
 				}
@@ -883,7 +871,9 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * @return The deserialized object
 	 */
 	protected <T> T getObject(Object blob) {
+		// Base 64 decoding
 		byte [] base64decodedData = Base64.decodeBase64(blob.toString().getBytes());
+		// Kryo deserialize
 		return KryoSerializer.<T>deserialize(base64decodedData);
 	}
 	
@@ -914,6 +904,12 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		return dataKey;
 	}
 	
+	/**
+	 * Check if a type exist into the ES index.
+	 * @param indexName 
+	 * @param typeName
+	 * @return true if the type exists, false otherwise
+	 */
 	protected boolean isTypeExist(String indexName, String typeName) {
 		TypesExistsRequest typeExistRequest = new TypesExistsRequest(new String[]{indexName},typeName);
 		return client.admin().indices().typesExists(typeExistRequest).actionGet().isExists();
@@ -927,27 +923,39 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			return ALL_TIMES;
 	}
 	
+	/**
+	 * Refreshes the index.
+	 */
 	protected void refreshIndex() {
 		client.admin().indices().prepareRefresh(getLocalID()).get();
 	}
 	
+	/**
+	 * Build and return the data mapping.
+	 * @return The object used to map the type
+	 * @throws IOException
+	 */
 	protected synchronized XContentBuilder getRsDataMapping() throws IOException {
 		XContentBuilder builder = XContentFactory.jsonBuilder()
 				.startObject()
 					.startObject(RS_DATA_IDX_NAME)
 						.startObject("properties")
+							// map the timestamp as double and analyze
 							.startObject(TIMESTAMP_FIELD_NAME)
 								.field("type", "double")
 								.field("index", "analyzed")
 							.endObject()
+							// map the type as string (to exact match) and does not analyze
 							.startObject(RECORD_TYPE_FIELD_NAME)
 								.field("type", "string")
 								.field("index", "not_analyzed")
 							.endObject()
+							// map the producer id as string (to exact match) and does not analyze
 							.startObject(PRODUCER_ID_FIELD_NAME)
 								.field("type", "string")
 								.field("index", "not_analyzed")
 							.endObject()
+							// map the blob as binary data
 							.startObject(BLOB_FIELD_NAME)
 								.field("type", "binary")
 							.endObject()

@@ -34,6 +34,7 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.support.AbstractClient;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.geo.builders.EnvelopeBuilder;
 import org.elasticsearch.common.geo.builders.PointBuilder;
@@ -84,6 +85,7 @@ import net.opengis.swe.v20.DataBlock;
  */
 public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageModule<ESBasicStorageConfig> {
 
+	private static final String NO_PARENT_VALUE = "-1";
 	private static final String RESULT_TIME_FIELD_NAME = "resultTime";
 	private static final String SAMPLING_GEOMETRY_FIELD_NAME = "samplingGeometry";
 	protected final static String RS_FOI_IDX_NAME = "foi";
@@ -99,6 +101,9 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	public ESObsStorageImpl() {
 	}
 
+	public ESObsStorageImpl(AbstractClient client) {
+		super(client);
+	}
 	@Override
 	protected void createIndices (){
 		super.createIndices();
@@ -111,8 +116,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			    .setSource(getMapping()) 
 			    .execute().actionGet();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Cannot create the foi mapping",e);
 		}
 		
 		
@@ -121,10 +125,12 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	
 	@Override
 	public synchronized Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
+		// if not Obs, use the super one
 		if(!(filter instanceof ObsFilter)) {
 			return super.getRecordIterator(filter);
 		}
 		
+		// otherwise case as obsFilter
 		IObsFilter obsFilter = (IObsFilter) filter;
 		
 		BoolQueryBuilder foiFilterQueryBuilder = QueryBuilders.boolQuery(); //children query
@@ -151,6 +157,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		if (obsFilter.getRoi() != null) {
 			try {
 				useFoiFilter = true;
+				// get the geo query
 				foiFilterQueryBuilder.must(getPolygonGeoQuery(obsFilter.getRoi()));
 			} catch (IOException e) {
 				log.error("[PolygonGeoQueryBuilder] Cannot build the polygon Geo query");
@@ -171,20 +178,23 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			dataFilterQueryBuilder.must(QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]));
 		}
 		
-		// prepare filter
+		// prepare filters
+		// filter on record type?
 		if(filter.getRecordType() != null) {
 			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType()));
 		}
 		
+		// filter on producer id?
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
 			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
 		}
 				
-		// filter on Foi
+		// filter on Foi?
 		if(obsFilter.getFoiIDs() != null && !obsFilter.getFoiIDs().isEmpty()) {
 			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
 		}		
 		
+		// queries concatener
 		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery();
 		
 		if(useFoiFilter) {
@@ -198,7 +208,6 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		// build response
 		SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
 				.setTypes(RS_DATA_IDX_NAME)
-				//TOCHECK
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 		        .setScroll(new TimeValue(config.scrollMaxDuration))
 		        .setQuery(filterQueryBuilder);
@@ -247,10 +256,12 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	
 	@Override
 	public synchronized Iterator<DataBlock> getDataBlockIterator(IDataFilter filter) {
+		// if not Obs, use the super one
 		if(!(filter instanceof ObsFilter)) {
 			return super.getDataBlockIterator(filter);
 		}
 		
+		// otherwise case as obsFilter
 		IObsFilter obsFilter = (IObsFilter) filter;
 		
 		BoolQueryBuilder foiFilterQueryBuilder = QueryBuilders.boolQuery(); //children query
@@ -324,7 +335,6 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		// build response
 		SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
 				.setTypes(RS_DATA_IDX_NAME)
-				//TOCHECK
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 				.setFetchSource(new String[]{BLOB_FIELD_NAME}, new String[]{}) // get only the BLOB
 		        .setScroll(new TimeValue(config.scrollMaxDuration))
@@ -358,28 +368,33 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		// aggregate queries
 		
 		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery();
+		// filter on feature ids?
 		if(filter.getFeatureIDs() != null && !filter.getFeatureIDs().isEmpty()) {
 			filterQueryBuilder.must(QueryBuilders.termsQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(filter.getFeatureIDs())));
 		}
 
+		// filter on producer ids
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
 			filterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(filter.getProducerIDs())));
 		}
 
+		// filter on ROI
 		if (filter.getRoi() != null) {
 			try {
+				// build geo query from filter ROI
 				filterQueryBuilder.must(getPolygonGeoQuery(filter.getRoi()));
 			} catch (IOException e) {
 				log.error("[PolygonGeoQueryBuilder] Cannot build the polygon Geo query");
 			}
 		}
 
+		// build the request
 		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
 				.setTypes(RS_FOI_IDX_NAME)
 				.setQuery(filterQueryBuilder)
-				.setFetchSource(new String[] {}, new String[] {"*"}) 
-				.setScroll(new TimeValue(config.scrollMaxDuration));
+				.setFetchSource(new String[] {}, new String[] {"*"}); 
 
+		// return the number of total hits
 		return (int) scrollReq.get().getHits().getTotalHits();
 	}
 
@@ -408,16 +423,20 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		// build query
 		// aggregate queries
 		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery();
+		// filter on feature ids?
 		if(filter.getFeatureIDs() != null && !filter.getFeatureIDs().isEmpty()) {
 			filterQueryBuilder.must(QueryBuilders.termsQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(filter.getFeatureIDs())));
 		}
 
+		// filter on producer ids?
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
 			filterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(filter.getProducerIDs())));
 		}
 		
+		// filter on ROI?
 		if (filter.getRoi() != null) {
 			try {
+				// build geo query
 				filterQueryBuilder.must(getPolygonGeoQuery(filter.getRoi()));
 			} catch (IOException e) {
 				log.error("[PolygonGeoQueryBuilder] Cannot build the polygon Geo query");
@@ -455,21 +474,28 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		// build query
 		// aggregate queries
 		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery();
+		
+		// filter on feature ids?
 		if(filter.getFeatureIDs() != null && !filter.getFeatureIDs().isEmpty()) {
 			filterQueryBuilder.must(QueryBuilders.termsQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(filter.getFeatureIDs())));
 		}
 
+		// filter on producer ids?
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
 			filterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(filter.getProducerIDs())));
 		}
 		
+		// filter on roi?
 		if (filter.getRoi() != null) {
 			try {
+				// build geo query
 				filterQueryBuilder.must(getPolygonGeoQuery(filter.getRoi()));
 			} catch (IOException e) {
 				log.error("[PolygonGeoQueryBuilder] Cannot build the polygon Geo query");
 			}
 		}
+		
+		// create scroll request
 		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
 				.setTypes(RS_FOI_IDX_NAME)
 				.setQuery(filterQueryBuilder)
@@ -502,10 +528,14 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 
 	@Override
 	public synchronized DataBlock getDataBlock(DataKey key) {
+		// because we need to specify parent in any case
 		String parent = "";
 		
+		// test if obsKey
+		// if not, set parent to -1. If no parent is specified, ES will throw an exception.
+		// we must specify a parent
 		if(!(key instanceof ObsKey)) {
-			parent = "-1";
+			parent = NO_PARENT_VALUE;
 		} else {
 			parent = ((ObsKey)key).foiID;
 		}
@@ -528,10 +558,14 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	
 	@Override
 	public synchronized void removeRecord(DataKey key) {
+		// because we need to specify parent in any case
 		String parent = "";
 		
+		// test if obsKey
+		// if not, set parent to -1. If no parent is specified, ES will throw an exception.
+		// we must specify a parent
 		if(!(key instanceof ObsKey)) {
-			parent = "-1";
+			parent = NO_PARENT_VALUE;
 		} else {
 			parent = ((ObsKey)key).foiID;
 		}
@@ -561,9 +595,10 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			json.put(RECORD_TYPE_FIELD_NAME,key.recordType); // store recordType
 			json.put(BLOB_FIELD_NAME,blob); // store DataBlock
 			
+			// create update request
 			client.prepareUpdate(getLocalID(), RS_DATA_IDX_NAME, esKey)
 				.setDoc(json)
-				.setParent("-1").get();
+				.setParent(NO_PARENT_VALUE).get();
 		} else {
 			ObsKey obsKey = (ObsKey) key;
 
@@ -594,6 +629,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 				json.put(SAMPLING_GEOMETRY_FIELD_NAME,getPolygonBuilder(obsKey.samplingGeometry));
 			}
 			
+			// create update request
 			client.prepareUpdate(getLocalID(), RS_DATA_IDX_NAME, esKey)
 				.setDoc(json)
 				.setParent(obsKey.foiID).get();
@@ -618,11 +654,11 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			json.put(BLOB_FIELD_NAME,blob); // store DataBlock
 			
 			// set id and blob before executing the request
-				String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
-						.setId(esKey)
-						.setSource(json)
-						.setParent("-1")
-						.get().getId();
+			String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
+					.setId(esKey)
+					.setSource(json)
+					.setParent(NO_PARENT_VALUE)
+					.get().getId();
 		} else {
 			ObsKey obsKey = (ObsKey) key;
 
@@ -647,7 +683,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 				json.put(RESULT_TIME_FIELD_NAME,obsKey.resultTime);
 			}
 			
-			String uniqueParentID = "-1";
+			String uniqueParentID = NO_PARENT_VALUE;
 			
 			if(obsKey.foiID != null) {
 				json.put(FOI_UNIQUE_ID_FIELD,obsKey.foiID);
@@ -679,19 +715,27 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		json.put(BLOB_FIELD_NAME, this.getBlob(foi)); // store AbstractFeature
 		json.put(PRODUCER_ID_FIELD_NAME, producerID);
 		json.put(TIMESTAMP_INSERT_FIELD_NAME,new Date().getTime());
-		
-		try {
-			ShapeBuilder shapeBuilder = getShapeBuilder(geometry);
-			json.put(SHAPE_FIELD_NAME, shapeBuilder);
-		} catch (SensorHubException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+
+		if(geometry != null) {
+			try {
+				// get shape builder from Geom
+				ShapeBuilder shapeBuilder = getShapeBuilder(geometry);
+				// store Shape builder
+				json.put(SHAPE_FIELD_NAME, shapeBuilder);
+			} catch (SensorHubException e) {
+				log.error("Cannot create shape builder",e);
+			}
 		}
 		
 		// set source before executing the request
 		String id = foiIdxReq.setSource(json).setId(foi.getUniqueIdentifier()).get().getId();
 	}
 
+	/**
+	 * Build and return the FOI mapping.
+	 * @return The object used to map the type
+	 * @throws IOException
+	 */
 	protected synchronized XContentBuilder getMapping() throws IOException {
 		XContentBuilder builder = XContentFactory.jsonBuilder()
 				.startObject()
@@ -707,6 +751,11 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		return builder;
 	}
 
+	/**
+	 * Override and return the data mapping. This mapping adds some field like parent, sampling geometry, foi ids etc..
+	 * @return The object used to map the type
+	 * @throws IOException
+	 */
 	@Override
 	protected synchronized XContentBuilder getRsDataMapping() throws IOException {
 		XContentBuilder builder = XContentFactory.jsonBuilder()
@@ -728,6 +777,11 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		return builder;
 	}
 	
+	/**
+	 * Gets the envelope builder from envelope geometry.
+	 * @param envelope the envelope geometry 
+	 * @returnthe Envelope builder
+	 */
 	protected synchronized EnvelopeBuilder getEnvelopeBuilder(Envelope envelope) {
 		double[] upperCorner = envelope.getUpperCorner();
 		double[] lowerCorner = envelope.getLowerCorner();
@@ -735,6 +789,11 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 				new Coordinate(lowerCorner[0], lowerCorner[1]));
 	}
 
+	/**
+	 * Build a polygon builder from a polygon geometry.
+	 * @param polygon the Polygon geometry
+	 * @return the builder
+	 */
 	protected synchronized PolygonBuilder getPolygonBuilder(Polygon polygon) {
 		// get coordinates list from polygon
 		List<Coordinate> coords = Arrays.asList(polygon.getCoordinates());
@@ -743,11 +802,22 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		//.relation(ShapeRelation.WITHIN); strategy, Default is INTERSECT
 	}
 	
+	/**
+	 * Build a point builder from a point geometry.
+	 * @param point the Point geometry
+	 * @return the builder
+	 */
 	protected synchronized PointBuilder getPointBuilder(Point point) {
 		// build shape builder from coordinates
 		return ShapeBuilders.newPoint(new Coordinate(point.getPos()[0],point.getPos()[1]));
 	}
 	
+	/**
+	 * Build the corresponding builder given a generic geometry.
+	 * @param geometry The abstract geometry
+	 * @return the corresponding builder. The current supported builder are: PolygonJTS, Point, EnvelopeJTS
+	 * @throws SensorHubException if the geometry is not supported
+	 */
 	protected synchronized ShapeBuilder getShapeBuilder(AbstractGeometry geometry) throws SensorHubException {
 		if(geometry instanceof PolygonJTS) {
 			return getPolygonBuilder(((PolygonJTS)geometry));
@@ -760,6 +830,12 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		}
 	}
 	
+	/**
+	 * Build the geo shape query from a Polygon. The query will use a geo intersection query
+	 * @param polygon The geometry to build the query
+	 * @return The corresponding builder
+	 * @throws IOException
+	 */
 	protected synchronized QueryBuilder getPolygonGeoQuery(Polygon polygon) throws IOException {
 		return QueryBuilders.geoIntersectionQuery(SHAPE_FIELD_NAME, 
 				ShapeBuilders.newPolygon(Arrays.asList(polygon.getCoordinates())));

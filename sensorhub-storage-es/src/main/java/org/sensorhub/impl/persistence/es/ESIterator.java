@@ -18,6 +18,7 @@ import java.util.Iterator;
 
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.support.AbstractClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.SearchHit;
@@ -65,7 +66,7 @@ public class ESIterator implements Iterator<SearchHit>{
 	/**
 	 * The shared transport client.
 	 */
-	private TransportClient client;
+	private AbstractClient client;
 	
 	/**
 	 * The current fetch size.
@@ -77,14 +78,14 @@ public class ESIterator implements Iterator<SearchHit>{
 	 */
 	private long nbHits;
 	
-	public ESIterator(TransportClient client,SearchRequestBuilder scrollSearchResponse,int fetchSize) {
+	public ESIterator(AbstractClient client,SearchRequestBuilder scrollSearchResponse,int fetchSize) {
 		this.fetchSize = fetchSize;
 		this.client = client;
 		this.scrollSearchResponse = scrollSearchResponse;
 		this.nbHits = 0;
 	}
 	
-	public ESIterator(TransportClient client, SearchRequestBuilder scrollSearchResponse) {
+	public ESIterator(AbstractClient client, SearchRequestBuilder scrollSearchResponse) {
 		this(client,scrollSearchResponse,DEFAULT_FETCH_SIZE);
 	}
 

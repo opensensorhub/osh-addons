@@ -25,6 +25,7 @@ import org.apache.lucene.util.packed.PackedDataOutput;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.support.AbstractClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -51,6 +52,14 @@ import net.opengis.swe.v20.DataBlock;
  */
 public class ESMultiSourceStorageImpl extends ESObsStorageImpl implements IMultiSourceStorage<IObsStorage> {
 
+	public ESMultiSourceStorageImpl() {
+
+	}
+	
+	public ESMultiSourceStorageImpl(AbstractClient client) {
+		super(client);
+	}
+	
 	/**
 	 * Class logger
 	 */
@@ -61,7 +70,7 @@ public class ESMultiSourceStorageImpl extends ESObsStorageImpl implements IMulti
 		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
 				.setTypes(RS_DATA_IDX_NAME)
 				.setQuery(QueryBuilders.existsQuery(PRODUCER_ID_FIELD_NAME))
-		        .setScroll(new TimeValue(6000));
+		        .setScroll(new TimeValue(config.scrollMaxDuration));
 
 		// wrap the request into custom ES Scroll iterator
 		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq,
@@ -77,11 +86,13 @@ public class ESMultiSourceStorageImpl extends ESObsStorageImpl implements IMulti
 
 	@Override
 	public IObsStorage getDataStore(String producerID) {
+		// return this because ES does not encapsulate any storage
 		return this;
 	}
 
 	@Override
 	public IObsStorage addDataStore(String producerID) {
+		// return this because ES does not encapsulate any storage
 		return this;
 	}
 
