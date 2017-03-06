@@ -20,13 +20,15 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+
+import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEHelper;
+
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
-import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.vast.swe.SWEHelper;
 
 
 /**
@@ -91,25 +93,25 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
     }
 
 
-    private DataBlock metarRecordToDataBlock(String stationID, MetarDataRecord rec)
+    private DataBlock metarRecordToDataBlock(String stationID, Metar rec)
     {
     	DataBlock dataBlock = metarRecordStruct.createDataBlock();
     	
     	int index = 0;
-    	dataBlock.setDoubleValue(index++, rec.getTimeUtc()/1000.);
+    	dataBlock.setDoubleValue(index++, rec.timeUtc/000.);
         dataBlock.setStringValue(index++, stationID);
-        dataBlock.setDoubleValue(index++, rec.getTemperature());
-        dataBlock.setDoubleValue(index++, rec.getDewPoint());
-        dataBlock.setDoubleValue(index++, rec.getRelativeHumidity());
-        dataBlock.setDoubleValue(index++, rec.getPressure());
+        dataBlock.setDoubleValue(index++, rec.temperature);
+        dataBlock.setDoubleValue(index++, rec.dewPoint);
+//        dataBlock.setDoubleValue(index++, rec.re);
+        dataBlock.setDoubleValue(index++, rec.pressure);
         dataBlock.setDoubleValue(index++, rec.getWindSpeed());
-        dataBlock.setDoubleValue(index++, rec.getWindDirection());
-        dataBlock.setDoubleValue(index++, rec.getWindGust());
-        dataBlock.setDoubleValue(index++, rec.getHourlyPrecip());
-        dataBlock.setIntValue(index++, rec.getCloudCeiling());
-        dataBlock.setIntValue(index++, rec.getVisibility());
-        dataBlock.setStringValue(index++, rec.getPresentWeather());
-        dataBlock.setStringValue(index++, rec.getSkyConditions());
+        dataBlock.setDoubleValue(index++, rec.windDirection);
+        dataBlock.setDoubleValue(index++, rec.windGust);
+        dataBlock.setDoubleValue(index++, rec.hourlyPrecipInches);
+//        dataBlock.setIntValue(index++, rec.getCloudCeiling());
+//        dataBlock.setIntValue(index++, rec.getVisibility());
+//        dataBlock.setStringValue(index++, rec.getPresentWeather());
+//        dataBlock.setStringValue(index++, rec.getSkyConditions());
         
         return dataBlock;
     }
@@ -138,9 +140,9 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> //extends Sta
                 	{
                 	    latestUpdateTimes.put(stationID, rec.getTimeUtc());
                 		latestRecordTime = System.currentTimeMillis();
-                		latestRecord = metarRecordToDataBlock(stationID, rec);
-                		String stationUID = MetarSensor.STATION_UID_PREFIX + stationID;
-                		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, stationUID, MetarOutput.this, latestRecord));
+//                		latestRecord = metarRecordToDataBlock(stationID, rec);
+//                		String stationUID = MetarSensor.STATION_UID_PREFIX + stationID;
+//                		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, stationUID, MetarOutput.this, latestRecord));
                 	}
                 	
                 	// wait a bit before querying next station
