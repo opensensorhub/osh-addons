@@ -3,17 +3,17 @@ package org.sensorhub.impl.sensor.nexrad.aws;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.nexrad.aws.sqs.AwsSqsService;
 import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkPathQueue;
+import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkQueueManager;
 import org.sensorhub.impl.sensor.nexrad.aws.sqs.QueueFactory;
-import org.sensorhub.impl.sensor.nexrad.aws.sqs.RealtimeRadialProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +37,8 @@ public class NexradSqsService
 	private AwsSqsService sqsService;
 	private ExecutorService execService;
 	// local queue of filenames on disk- NexradSensor creates and passes this in- a bit clumsy so revisit later
-	ChunkPathQueue chunkQueue;  
+//	ChunkPathQueue chunkQueue;  
+	ChunkQueueManager chunkQueueManager;
 
 	//  S3 Client needs to be created only once
 	private AmazonS3Client s3client;
@@ -46,7 +47,7 @@ public class NexradSqsService
 
 	//  Relocating queue control to this class, where it makes more sense
 	static final long QUEUE_CHECK_INTERVAL = TimeUnit.MINUTES.toMillis(1);
-	long idleStartTime;  // the last time data was requested from the queue in millis
+	long idleStartTime;  // the last time data was requested from the any listener
 	long idleTimeMillis;  // how long in milliseconds to allow queue to be idle (no requests) before disabling
 	boolean queueActive = false;
 
@@ -70,14 +71,15 @@ public class NexradSqsService
 	}
 
 	public void start() {
-		assert chunkQueue != null;
+//		assert chunkQueue != null;
+		assert chunkQueueManager != null;
 		String queueUrl  = QueueFactory.createAndSubscribeQueue(topicArn, queueName);
 
 		execService = Executors.newFixedThreadPool(numThreads);
 		sqsService = new AwsSqsService(queueUrl);
 
 		for(int i=0; i<numThreads; i++) {
-			ProcessMessageThread t = new ProcessMessageThread(sqsService, s3client, sites, chunkQueue);
+			ProcessMessageThread t = new ProcessMessageThread(sqsService, s3client, sites, chunkQueueManager);
 			messageThreads.add(t);
 			execService.execute(t);
 		}
@@ -88,9 +90,30 @@ public class NexradSqsService
 
 	public void stop() {
 		if(queueActive) {
-			execService.shutdownNow();
+			for(ProcessMessageThread t: messageThreads) {
+				t.setProcessing(false);
+			}
+			shutdownAndAwaitTermination(execService);
 			QueueFactory.deleteQueue(queueName);
 		}
+	}
+	
+	void shutdownAndAwaitTermination(ExecutorService pool) {
+	    pool.shutdown(); // Disable new tasks from being submitted
+	    try {
+	        // Wait a while for existing tasks to terminate
+	        if (!pool.awaitTermination(10, TimeUnit.SECONDS)) {
+	            pool.shutdownNow(); // Cancel currently executing tasks
+	            // Wait a while for tasks to respond to being cancelled
+	            if (!pool.awaitTermination(10, TimeUnit.SECONDS))
+	                System.err.println("Pool did not terminate");
+	        }
+	    } catch (InterruptedException ie) {
+	        // (Re-)Cancel if current thread also interrupted
+	        pool.shutdownNow();
+	        // Preserve interrupt status
+	        Thread.currentThread().interrupt();
+	    }
 	}
 
 	public void setQueueActive() throws IOException {
@@ -164,8 +187,7 @@ public class NexradSqsService
 		this.numThreads = numThreads;
 	}
 
-	public void setChunkQueue(ChunkPathQueue chunkQueue) {
-		this.chunkQueue = chunkQueue;
+	public void setChunkQueueManager(ChunkQueueManager chunkQueueManager) {
+		this.chunkQueueManager = chunkQueueManager;
 	}
-
 }

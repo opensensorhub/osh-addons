@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
  * @author T
  * @date Mar 9, 2016
  */
-public class LdmLevel2Reader implements RadialProvider 
+public class LdmLevel2Reader //implements RadialProvider 
 {
 	byte [] b2 = new byte[2];
 	byte [] b4 = new byte[4];
@@ -389,31 +389,15 @@ public class LdmLevel2Reader implements RadialProvider
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see org.sensorhub.impl.sensor.nexrad.RadialProvider#getNextRadial()
-	 */
-	@Override
-	public LdmRadial getNextRadial() {
-		return null;
-	}
-
-	/* (non-Javadoc)
-	 * @see org.sensorhub.impl.sensor.nexrad.RadialProvider#getNextRadials()
-	 */
-	@Override
-	public List<LdmRadial> getNextRadials() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		LdmLevel2Reader reader = new LdmLevel2Reader();
-		String p = "C:/Data/sensorhub/Level2/archive/KBMX/kbmxTest-S";
+		String p = "C:/Data/sensorhub/Level2/KGRK/KGRK_669_20170228-033456-011-I";
 		//String p = "C:/Users/tcook/root/sensorHub/doppler/issues/KHTX_570_20160712-182557-040-E";
+		for(int i=0; i<1000; i++) {
 		List<LdmRadial> rads = reader.read(new File(p));
-				for(LdmRadial r: rads)
-					System.err.println(r.dataHeader.elevationAngle + ":" + r.dataHeader.azimuthAngle);
-
+//				for(LdmRadial r: rads)
+					System.err.println("Read " + rads.size() + " radials");
+		}
 	}
 
 
