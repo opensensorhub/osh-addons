@@ -1,6 +1,6 @@
 description = 'Video4Linux Camera'
 ext.details = 'Driver for Video4Linux compatible cameras (only supported on Linux)'
-version = '1.0-SNAPSHOT'
+version = '1.0.0'
 
 def thisProjectDir = projectDir
 rootProject.allprojects {
