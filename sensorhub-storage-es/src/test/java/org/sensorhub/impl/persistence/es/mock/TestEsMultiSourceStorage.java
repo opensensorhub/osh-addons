@@ -44,11 +44,14 @@ import org.sensorhub.test.persistence.AbstractTestBasicStorage;
 
 public class TestEsMultiSourceStorage extends AbstractTestBasicStorage<ESMultiSourceStorageImpl> {
 
-	static AbstractClient client;
+static AbstractClient client;
 	
-	@BeforeClass
-	public static void initClient() throws MalformedURLException, NodeValidationException, URISyntaxException {
-		client = (AbstractClient) getClient();
+	static {
+		try {
+			client = (AbstractClient) getClient();
+		} catch (NodeValidationException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	@Before
@@ -80,18 +83,24 @@ public class TestEsMultiSourceStorage extends AbstractTestBasicStorage<ESMultiSo
 	}
 
 	public static Client getClient() throws NodeValidationException {
-		File file	 = new File("test/es");
+		File file	 = new File(System.getProperty("java.io.tmpdir")+"/es");
 		file.mkdirs();
 		
 		Settings settings = Settings.builder()
 	            .put("path.home", file.getAbsolutePath())
 	            .put("transport.type", "local")
 	            .put("http.enabled", false)
+	            .put("processors",Runtime.getRuntime().availableProcessors())
+	            .put("node.max_local_storage_nodes", 1)
+                .put("thread_pool.bulk.size", Runtime.getRuntime().availableProcessors())
+                // default is 50 which is too low
+                .put("thread_pool.bulk.queue_size", 16 * Runtime.getRuntime().availableProcessors())
 	            .build();
 
 	    Node node = new Node(settings).start();
 	    return node.client();
 	}
+	
 	@AfterClass
 	public static void closeClient() throws IOException {
 		Path directory = Paths.get("test/es");

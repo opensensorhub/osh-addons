@@ -44,9 +44,12 @@ public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageI
 
 	static AbstractClient client;
 	
-	@BeforeClass
-	public static void initClient() throws MalformedURLException, NodeValidationException, URISyntaxException {
-		client = (AbstractClient) getClient();
+	static {
+		try {
+			client = (AbstractClient) getClient();
+		} catch (NodeValidationException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	@Before
@@ -58,7 +61,7 @@ public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageI
 		nodes.add("localhost:9300");
 
 		config.nodeUrls = nodes;
-		config.scrollFetchSize = 200;
+		config.scrollFetchSize = 2000;
 		config.bulkConcurrentRequests = 0;
 		config.id = "junit_" + UUID.randomUUID().toString();
 		
@@ -78,21 +81,27 @@ public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageI
 	}
 
 	public static Client getClient() throws NodeValidationException {
-		File file	 = new File("test/es");
+		File file	 = new File(System.getProperty("java.io.tmpdir")+"/es");
 		file.mkdirs();
 		
 		Settings settings = Settings.builder()
 	            .put("path.home", file.getAbsolutePath())
 	            .put("transport.type", "local")
 	            .put("http.enabled", false)
+	            .put("processors",Runtime.getRuntime().availableProcessors())
+	            .put("node.max_local_storage_nodes", 1)
+                .put("thread_pool.bulk.size", Runtime.getRuntime().availableProcessors())
+                // default is 50 which is too low
+                .put("thread_pool.bulk.queue_size", 16 * Runtime.getRuntime().availableProcessors())
 	            .build();
 
 	    Node node = new Node(settings).start();
 	    return node.client();
 	}
+	
 	@AfterClass
 	public static void closeClient() throws IOException {
-		Path directory = Paths.get("test/es");
+		Path directory = Paths.get(System.getProperty("java.io.tmpdir")+"/es");
         Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
