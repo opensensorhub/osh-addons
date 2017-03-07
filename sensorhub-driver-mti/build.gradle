@@ -1,6 +1,6 @@
 description = 'XSense MTi IMU Sensor'
 ext.details = 'Sensor driver for XSense MTi inertial measurement units'
-version = '1.0-SNAPSHOT'
+version = '1.0.0'
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
