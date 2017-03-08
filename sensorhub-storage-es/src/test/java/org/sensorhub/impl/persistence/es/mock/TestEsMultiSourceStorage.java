@@ -16,8 +16,6 @@ package org.sensorhub.impl.persistence.es.mock;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,14 +33,12 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeValidationException;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.sensorhub.impl.persistence.es.ESBasicStorageImpl;
 import org.sensorhub.impl.persistence.es.ESBasicStorageConfig;
 import org.sensorhub.impl.persistence.es.ESMultiSourceStorageImpl;
-import org.sensorhub.impl.persistence.es.ESObsStorageImpl;
-import org.sensorhub.test.persistence.AbstractTestBasicStorage;
+import org.sensorhub.test.persistence.AbstractTestMultiObsStorage;
 
-public class TestEsMultiSourceStorage extends AbstractTestBasicStorage<ESMultiSourceStorageImpl> {
+
+public class TestEsMultiSourceStorage extends AbstractTestMultiObsStorage<ESMultiSourceStorageImpl> {
 
 static AbstractClient client;
 	

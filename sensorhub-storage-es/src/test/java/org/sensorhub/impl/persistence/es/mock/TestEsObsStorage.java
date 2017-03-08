@@ -41,6 +41,7 @@ import org.sensorhub.impl.persistence.es.ESBasicStorageConfig;
 import org.sensorhub.impl.persistence.es.ESObsStorageImpl;
 import org.sensorhub.test.persistence.AbstractTestBasicStorage;
 import org.sensorhub.test.persistence.AbstractTestObsStorage;
+import org.sensorhub.utils.FileUtils;
 
 public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl> {
 
@@ -48,7 +49,7 @@ public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl> {
 	
 	static {
 		try {
-			client = (AbstractClient) getClient();
+		    client = (AbstractClient) getClient();
 		} catch (NodeValidationException e) {
 			e.printStackTrace();
 		}
@@ -56,6 +57,8 @@ public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl> {
 	
 	@Before
 	public void init() throws Exception {
+	    
+	    numFois = 80; // cannot 
 		ESBasicStorageConfig config = new ESBasicStorageConfig();
 		config.autoStart = true;
 		config.storagePath = "elastic-cluster";
@@ -83,7 +86,7 @@ public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl> {
 	}
 
 	public static Client getClient() throws NodeValidationException {
-		File file	 = new File(System.getProperty("java.io.tmpdir")+"/es");
+		File file = new File(System.getProperty("java.io.tmpdir")+"/es");
 		file.mkdirs();
 		
 		Settings settings = Settings.builder()
@@ -103,21 +106,7 @@ public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl> {
 	
 	@AfterClass
 	public static void closeClient() throws IOException {
-		Path directory = Paths.get(System.getProperty("java.io.tmpdir")+"/es");
-        Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-        });
-        
+		FileUtils.deleteRecursively(new File(System.getProperty("java.io.tmpdir")+"/es"));        
 		if(client != null) {
 			client.close();
 		}
