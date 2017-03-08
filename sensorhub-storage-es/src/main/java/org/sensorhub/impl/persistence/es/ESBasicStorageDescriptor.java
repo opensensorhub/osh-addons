@@ -17,6 +17,7 @@ package org.sensorhub.impl.persistence.es;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 /**
  * <p>
@@ -27,7 +28,7 @@ import org.sensorhub.api.module.ModuleConfig;
  * @author Mathieu Dhainaut <mathieu.dhainaut@gmail.com>
  * @since 2017
  */
-public class ESBasicStorageDescriptor implements IModuleProvider{
+public class ESBasicStorageDescriptor extends JarModuleProvider implements IModuleProvider{
 
 	@Override
 	public String getModuleName() {
@@ -37,16 +38,6 @@ public class ESBasicStorageDescriptor implements IModuleProvider{
 	@Override
 	public String getModuleDescription() {
 		return "Generic implementation of record storage using ElasticSearch Database";
-	}
-
-	@Override
-	public String getModuleVersion() {
-		return "0.5";
-	}
-
-	@Override
-	public String getProviderName() {
-		return "Sensia Software LLC";
 	}
 
 	@Override

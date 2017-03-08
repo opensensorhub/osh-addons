@@ -17,6 +17,7 @@ package org.sensorhub.impl.persistence.es;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 /**
  * <p>
@@ -27,26 +28,16 @@ import org.sensorhub.api.module.ModuleConfig;
  * @author Mathieu Dhainaut <mathieu.dhainaut@gmail.com>
  * @since 2017
  */
-public class ESMultiSourceStorageDescriptor implements IModuleProvider{
+public class ESMultiSourceStorageDescriptor extends JarModuleProvider implements IModuleProvider{
 
 	@Override
 	public String getModuleName() {
-		 return "ElasticSearch Observation Storage";
+		 return "ElasticSearch Multi-Source Storage";
 	}
 
 	@Override
 	public String getModuleDescription() {
 		return "Generic implementation of multisource storage using ElasticSearch Database";
-	}
-
-	@Override
-	public String getModuleVersion() {
-		return "0.5";
-	}
-
-	@Override
-	public String getProviderName() {
-		return "Sensia Software LLC";
 	}
 
 	@Override
