@@ -133,27 +133,27 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		// otherwise case as obsFilter
 		IObsFilter obsFilter = (IObsFilter) filter;
 		
-		BoolQueryBuilder foiFilterQueryBuilder = QueryBuilders.boolQuery(); //children query
-		BoolQueryBuilder dataFilterQueryBuilder = QueryBuilders.boolQuery(); //parent query
+		BoolQueryBuilder foiFilterQueryBuilder = QueryBuilders.boolQuery(); //parent query
+		BoolQueryBuilder dataFilterQueryBuilder = QueryBuilders.boolQuery(); //children query
 
 		// FOI STORE has: 
 		// Foi: uniqueId
 		// ProducerId: producer id
 		// Shape : geo_shape = roi
 		
-		boolean useFoiFilter = false;
-		
-		// filter on Producer Ids
+		/*// filter on Producer Ids
 		if(obsFilter.getProducerIDs() != null && !obsFilter.getProducerIDs().isEmpty()) {
-			foiFilterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
+			foiFilterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, obsFilter.getProducerIDs()));
 		}
 		
 		// filter on Foi
 		if(obsFilter.getFoiIDs() != null && !obsFilter.getFoiIDs().isEmpty()) {
-			foiFilterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
-		}
+			foiFilterQueryBuilder.must(QueryBuilders.termsQuery(FOI_UNIQUE_ID_FIELD, obsFilter.getFoiIDs()));
+		}*/
 		
+		// build parent query if ROI filter is used
 		// filter on ROI
+		boolean useFoiFilter = false;
 		if (obsFilter.getRoi() != null) {
 			try {
 				useFoiFilter = true;
@@ -164,7 +164,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			}
 		}
 		
-		// Build parent query = data
+		// build children query (data records)
 		// Data Store has:
 		// Timestamp: double
 		// Producer Id: producer Id
@@ -181,17 +181,17 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		// prepare filters
 		// filter on record type?
 		if(filter.getRecordType() != null) {
-			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType()));
+			dataFilterQueryBuilder.must(QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType()));
 		}
 		
 		// filter on producer id?
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
-			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
+			dataFilterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, obsFilter.getProducerIDs()));
 		}
 				
 		// filter on Foi?
 		if(obsFilter.getFoiIDs() != null && !obsFilter.getFoiIDs().isEmpty()) {
-			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
+			dataFilterQueryBuilder.must(QueryBuilders.termsQuery(FOI_UNIQUE_ID_FIELD, obsFilter.getFoiIDs()));
 		}		
 		
 		// queries concatener
@@ -276,12 +276,12 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		
 		// filter on Producer Ids
 		if(obsFilter.getProducerIDs() != null && !obsFilter.getProducerIDs().isEmpty()) {
-			foiFilterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
+			foiFilterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, obsFilter.getProducerIDs()));
 		}
 		
 		// filter on Foi
 		if(obsFilter.getFoiIDs() != null && !obsFilter.getFoiIDs().isEmpty()) {
-			foiFilterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
+			foiFilterQueryBuilder.must(QueryBuilders.termsQuery(FOI_UNIQUE_ID_FIELD, obsFilter.getFoiIDs()));
 		}
 		
 		// filter on ROI
@@ -310,16 +310,16 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		
 		// prepare filter
 		if(filter.getRecordType() != null) {
-			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType()));
+			dataFilterQueryBuilder.must(QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType()));
 		}
 		
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
-			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(obsFilter.getProducerIDs())));
+			dataFilterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, obsFilter.getProducerIDs()));
 		}
 				
 		// filter on Foi
 		if(obsFilter.getFoiIDs() != null && !obsFilter.getFoiIDs().isEmpty()) {
-			dataFilterQueryBuilder.must(QueryBuilders.matchQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(obsFilter.getFoiIDs())));
+			dataFilterQueryBuilder.must(QueryBuilders.termsQuery(FOI_UNIQUE_ID_FIELD, obsFilter.getFoiIDs()));
 		}		
 		
 		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery();
@@ -370,12 +370,12 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery();
 		// filter on feature ids?
 		if(filter.getFeatureIDs() != null && !filter.getFeatureIDs().isEmpty()) {
-			filterQueryBuilder.must(QueryBuilders.termsQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(filter.getFeatureIDs())));
+			filterQueryBuilder.must(QueryBuilders.termsQuery(FOI_UNIQUE_ID_FIELD, filter.getFeatureIDs()));
 		}
 
 		// filter on producer ids
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
-			filterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(filter.getProducerIDs())));
+			filterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
 		}
 
 		// filter on ROI
@@ -425,12 +425,12 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery();
 		// filter on feature ids?
 		if(filter.getFeatureIDs() != null && !filter.getFeatureIDs().isEmpty()) {
-			filterQueryBuilder.must(QueryBuilders.termsQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(filter.getFeatureIDs())));
+			filterQueryBuilder.must(QueryBuilders.termsQuery(FOI_UNIQUE_ID_FIELD, filter.getFeatureIDs()));
 		}
 
 		// filter on producer ids?
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
-			filterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(filter.getProducerIDs())));
+			filterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
 		}
 		
 		// filter on ROI?
@@ -477,12 +477,12 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		
 		// filter on feature ids?
 		if(filter.getFeatureIDs() != null && !filter.getFeatureIDs().isEmpty()) {
-			filterQueryBuilder.must(QueryBuilders.termsQuery(FOI_UNIQUE_ID_FIELD, new ArrayList<String>(filter.getFeatureIDs())));
+			filterQueryBuilder.must(QueryBuilders.termsQuery(FOI_UNIQUE_ID_FIELD, filter.getFeatureIDs()));
 		}
 
 		// filter on producer ids?
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
-			filterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, new ArrayList<String>(filter.getProducerIDs())));
+			filterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
 		}
 		
 		// filter on roi?
@@ -742,8 +742,8 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 					.startObject(RS_FOI_IDX_NAME)
 						.startObject("properties")
 							.startObject(SHAPE_FIELD_NAME).field("type", "geo_shape").endObject()
-							.startObject(FOI_UNIQUE_ID_FIELD).field("type", "text").endObject()
-							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "text").endObject()
+							.startObject(FOI_UNIQUE_ID_FIELD).field("type", "keyword").endObject()
+							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "keyword").endObject()
 							.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
 						.endObject()
 					.endObject()
@@ -765,10 +765,10 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 							.field("type", RS_FOI_IDX_NAME)
 						.endObject()
 						.startObject("properties")
-							.startObject(FOI_UNIQUE_ID_FIELD).field("type", "text").endObject()
+							.startObject(FOI_UNIQUE_ID_FIELD).field("type", "keyword").endObject()
 							.startObject(TIMESTAMP_FIELD_NAME).field("type", "double").endObject()
-							.startObject(RECORD_TYPE_FIELD_NAME).field("type", "text").endObject()
-							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "text").endObject()
+							.startObject(RECORD_TYPE_FIELD_NAME).field("type", "keyword").endObject()
+							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "keyword").endObject()
 							.startObject(SAMPLING_GEOMETRY_FIELD_NAME).field("type", "geo_shape").endObject()
 							.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
 						.endObject()

@@ -29,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.commons.codec.binary.Base64;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.types.TypesExistsRequest;
@@ -45,7 +43,6 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.support.AbstractClient;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.transport.TransportAddress;
@@ -486,7 +483,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	@Override
 	public int getNumRecords(String recordType) {
 		SearchResponse response = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
-				.setPostFilter(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
+				.setPostFilter(QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, recordType))
 				.setFetchSource(new String[]{}, new String[]{"*"}) // does not fetch source
 		        .get();
 		return (int) response.getHits().getTotalHits();
@@ -498,7 +495,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		
 		// build request to get the least recent record
 		SearchResponse response = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
-				.setQuery(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
+				.setQuery(QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, recordType))
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC) // sort results by DESC timestamp
 				.setFetchSource(new String[]{TIMESTAMP_FIELD_NAME}, new String[]{}) // get only the timestamp
 				.setSize(1) // fetch only 1 result
@@ -510,7 +507,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		
 		// build request to get the most recent record
 		 response = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
-				.setQuery(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
+				.setQuery(QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, recordType))
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.DESC) // sort results by DESC timestamp
 				.setFetchSource(new String[]{TIMESTAMP_FIELD_NAME}, new String[]{}) // get only the timestamp
 				//.setSize(1) // fetch only 1 result
@@ -532,7 +529,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 		        .setScroll(new TimeValue(config.pingTimeout))
 		        .setRequestCache(true)
-		        .setQuery(QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, recordType))
+		        .setQuery(QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, recordType))
 		        .setFetchSource(new String[]{TIMESTAMP_FIELD_NAME}, new String[]{}); // get only the timestamp
 		    	
         // wrap the request into custom ES Scroll iterator
@@ -604,7 +601,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		
 		// prepare filter
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
-		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
+		QueryBuilder recordTypeQuery = QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
 		// aggregate queries
 		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery()
@@ -612,7 +609,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		
 		// check if any producerIDs
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
-			filterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
+			filterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
 		}
 				
 		// build response
@@ -653,7 +650,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		
 		// prepare filter
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
-		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
+		QueryBuilder recordTypeQuery = QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
 		// aggregate queries
 		BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
@@ -662,7 +659,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		
 		// check if any producerIDs
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
-			queryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
+			queryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
 		}
 		
 		// build response
@@ -721,13 +718,13 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				
 		// prepare filter
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
-		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
+		QueryBuilder recordTypeQuery = QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 
 		filterQueryBuilder.must(timeStampRangeQuery);
 		
 		// check if any producerIDs
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
-			filterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
+			filterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
 		}
 		
 		// build response
@@ -813,7 +810,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// MultiSearch API does not support scroll?!
 		// prepare filter
 		QueryBuilder timeStampRangeQuery = QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME).from(timeRange[0]).to(timeRange[1]);
-		QueryBuilder recordTypeQuery = QueryBuilders.matchQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
+		QueryBuilder recordTypeQuery = QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, filter.getRecordType());
 		
 		// aggregate queries
 		BoolQueryBuilder filterQueryBuilder = QueryBuilders.boolQuery()
@@ -821,7 +818,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		
 		// check if any producerIDs
 		if(filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty()) {
-			filterQueryBuilder.must(QueryBuilders.matchQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
+			filterQueryBuilder.must(QueryBuilders.termsQuery(PRODUCER_ID_FIELD_NAME, filter.getProducerIDs()));
 		}
 				
 		// build response
@@ -945,14 +942,14 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 								.field("type", "double")
 								.field("index", "analyzed")
 							.endObject()
-							// map the type as string (to exact match) and does not analyze
+							// map the type as keyword (to exact match) and does not analyze
 							.startObject(RECORD_TYPE_FIELD_NAME)
-								.field("type", "string")
+								.field("type", "keyword")
 								.field("index", "not_analyzed")
 							.endObject()
-							// map the producer id as string (to exact match) and does not analyze
+							// map the producer id as keyword (to exact match) and does not analyze
 							.startObject(PRODUCER_ID_FIELD_NAME)
-								.field("type", "string")
+								.field("type", "keyword")
 								.field("index", "not_analyzed")
 							.endObject()
 							// map the blob as binary data
