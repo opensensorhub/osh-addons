@@ -640,10 +640,10 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	
 	@Override
 	public synchronized void storeRecord(DataKey key, DataBlock data) {
-		if(!(key instanceof ObsKey)) {
-			// build the key as recordTYpe_timestamp_producerID
-			String esKey = getRsKey(key);
-			
+	    // build the key as recordTYpe_timestamp_producerID
+        String esKey = getRsKey(key);
+        
+	    if(!(key instanceof ObsKey)) {
 			// get blob from dataBlock object using serializer
 			Object blob = this.getBlob(data);
 			
@@ -656,8 +656,8 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			// set id and blob before executing the request
 			String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
 					.setId(esKey)
+                    .setParent(NO_PARENT_VALUE)
 					.setSource(json)
-					.setParent(NO_PARENT_VALUE)
 					.get().getId();
 		} else {
 			ObsKey obsKey = (ObsKey) key;
@@ -697,6 +697,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			
 			// set id and blob before executing the request
 			String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
+			        .setId(esKey)
 					.setParent(uniqueParentID)
 					.setSource(json).get().getId();
 		}
