@@ -1,1 +1,2 @@
 org.sensorhub.impl.persistence.h2.MVObsStorageDescriptor
+org.sensorhub.impl.persistence.h2.MVMultiStorageDescriptor

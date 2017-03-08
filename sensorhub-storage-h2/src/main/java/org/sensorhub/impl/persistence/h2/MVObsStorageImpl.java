@@ -88,6 +88,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
             
             this.mvStore = builder.open();
             //this.mvStore.setAutoCommitDelay(100000);
+            //this.mvStore.setRetentionTime(100);
             
             // create description map
             this.processDescMap = mvStore.openMap(DESC_HISTORY_MAP_NAME, new MVMap.Builder<Double, AbstractProcess>().valueType(new KryoDataType()));

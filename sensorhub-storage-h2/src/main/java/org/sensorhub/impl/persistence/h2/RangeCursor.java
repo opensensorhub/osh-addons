@@ -23,7 +23,7 @@ import org.h2.mvstore.Page;
 
 /**
  * <p>
- * Custom MVMap cursor adding support an end key to stop iteration.
+ * Custom MVMap cursor adding support for an end key to stop iteration.
  * </p>
  *
  * @author Alex Robin

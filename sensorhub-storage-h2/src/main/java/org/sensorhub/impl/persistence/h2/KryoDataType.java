@@ -42,19 +42,33 @@ public class KryoDataType implements DataType
         KryoInstance(int averageSize)
         {
             kryo = new Kryo();
+            
+            // instantiate classes using default (private) constructor when available
+            // or using direct JVM technique when needed
             kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+            
+            // avoid using collection serializer on OgcPropertyList because
+            // the add method doesn't behave as expected
             kryo.addDefaultSerializer(OgcPropertyList.class, FieldSerializer.class);
             
-            kryo.register(AbstractDataBlock[].class);
-            kryo.register(DataBlockTuple.class);
-            kryo.register(DataBlockParallel.class);
+            // pre-register data block classes to reduce storage size
+            // don't change the order to stay compatible with old storage files!!
+            kryo.register(DataBlockBoolean.class);
             kryo.register(DataBlockByte.class);
+            kryo.register(DataBlockUByte.class);
             kryo.register(DataBlockShort.class);
+            kryo.register(DataBlockUShort.class);
             kryo.register(DataBlockInt.class);
+            kryo.register(DataBlockUInt.class);
             kryo.register(DataBlockLong.class);
             kryo.register(DataBlockFloat.class);
             kryo.register(DataBlockDouble.class);
             kryo.register(DataBlockString.class);
+            kryo.register(AbstractDataBlock[].class);
+            kryo.register(DataBlockTuple.class);
+            kryo.register(DataBlockParallel.class);
+            kryo.register(DataBlockMixed.class);
+            kryo.register(DataBlockCompressed.class);
             
             input = new Input();
             output = new Output(averageSize);

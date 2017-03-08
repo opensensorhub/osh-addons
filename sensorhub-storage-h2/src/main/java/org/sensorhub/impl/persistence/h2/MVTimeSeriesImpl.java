@@ -206,6 +206,9 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
 
     double[] getDataTimeRange()
     {
+        if (recordIndex.isEmpty())
+            return new double[] { Double.NaN, Double.NaN };
+        
         return new double[] {recordIndex.firstKey(), recordIndex.lastKey()};
     }
     
