@@ -40,8 +40,9 @@ import org.sensorhub.impl.persistence.es.ESBasicStorageImpl;
 import org.sensorhub.impl.persistence.es.ESBasicStorageConfig;
 import org.sensorhub.impl.persistence.es.ESObsStorageImpl;
 import org.sensorhub.test.persistence.AbstractTestBasicStorage;
+import org.sensorhub.test.persistence.AbstractTestObsStorage;
 
-public class TestEsObsStorage extends AbstractTestBasicStorage<ESObsStorageImpl> {
+public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl> {
 
 	static AbstractClient client;
 	
@@ -102,7 +103,7 @@ public class TestEsObsStorage extends AbstractTestBasicStorage<ESObsStorageImpl>
 	
 	@AfterClass
 	public static void closeClient() throws IOException {
-		Path directory = Paths.get("test/es");
+		Path directory = Paths.get(System.getProperty("java.io.tmpdir")+"/es");
         Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
