@@ -937,25 +937,14 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				.startObject()
 					.startObject(RS_DATA_IDX_NAME)
 						.startObject("properties")
-							// map the timestamp as double and analyze
-							.startObject(TIMESTAMP_FIELD_NAME)
-								.field("type", "double")
-								.field("index", "analyzed")
-							.endObject()
-							// map the type as keyword (to exact match) and does not analyze
-							.startObject(RECORD_TYPE_FIELD_NAME)
-								.field("type", "keyword")
-								.field("index", "not_analyzed")
-							.endObject()
-							// map the producer id as keyword (to exact match) and does not analyze
-							.startObject(PRODUCER_ID_FIELD_NAME)
-								.field("type", "keyword")
-								.field("index", "not_analyzed")
-							.endObject()
+							// map the timestamp as double
+							.startObject(TIMESTAMP_FIELD_NAME).field("type", "double").endObject()
+							// map the record type as keyword (to exact match)
+							.startObject(RECORD_TYPE_FIELD_NAME).field("type", "keyword").endObject()
+							// map the producer id as keyword (to exact match)
+							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "keyword").endObject()
 							// map the blob as binary data
-							.startObject(BLOB_FIELD_NAME)
-								.field("type", "binary")
-							.endObject()
+							.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
 						.endObject()
 					.endObject()
 				.endObject();

@@ -15,27 +15,16 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.persistence.es;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-
-import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.delete.DeleteResponse;
-import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.support.AbstractClient;
-import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.geo.builders.EnvelopeBuilder;
 import org.elasticsearch.common.geo.builders.PointBuilder;
 import org.elasticsearch.common.geo.builders.PolygonBuilder;
@@ -48,7 +37,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataKey;
@@ -62,16 +50,18 @@ import org.sensorhub.api.persistence.ObsFilter;
 import org.sensorhub.api.persistence.ObsKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vast.ogc.gml.GMLUtils;
 import org.vast.util.Bbox;
 
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.AbstractGeometry;
-import net.opengis.gml.v32.Envelope;
-import net.opengis.gml.v32.Point;
 import net.opengis.gml.v32.impl.EnvelopeJTS;
+import net.opengis.gml.v32.impl.PointJTS;
 import net.opengis.gml.v32.impl.PolygonJTS;
 import net.opengis.swe.v20.DataBlock;
 
@@ -87,12 +77,14 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 
 	private static final String NO_PARENT_VALUE = "-1";
 	private static final String RESULT_TIME_FIELD_NAME = "resultTime";
-	private static final String SAMPLING_GEOMETRY_FIELD_NAME = "samplingGeometry";
-	protected final static String RS_FOI_IDX_NAME = "foi";
-	protected final static String FOI_UNIQUE_ID_FIELD = "foiUniqueId";
-	protected final static String SHAPE_FIELD_NAME = "shapeObject";
+	private static final String SAMPLING_GEOMETRY_FIELD_NAME = "geom";
+	protected final static String FOI_IDX_NAME = "foi";
+	protected final static String GEOBOUNDS_IDX_NAME = "geobounds";
+	protected final static String FOI_UNIQUE_ID_FIELD = "foiID";
+	protected final static String SHAPE_FIELD_NAME = "geom";
 	protected final static String PRODUCER_ID_FIELD_NAME = "producerID";
-	protected final static String TIMESTAMP_INSERT_FIELD_NAME ="insertTime";
+	protected Bbox foiExtent = null;
+	
 	/**
 	 * Class logger
 	 */
@@ -104,20 +96,52 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	public ESObsStorageImpl(AbstractClient client) {
 		super(client);
 	}
+	
+	@Override
+	public void start() throws SensorHubException {
+	    super.start();
+	    
+	    // preload bbox
+	    if (client != null) {
+	        GetResponse response = client.prepareGet(getLocalID(), GEOBOUNDS_IDX_NAME, GEOBOUNDS_IDX_NAME).get();
+	        foiExtent = getObject(response.getSource().get(BLOB_FIELD_NAME));	        
+	    }
+	}
+	
 	@Override
 	protected void createIndices (){
 		super.createIndices();
 		
-		// create FOI mapping
+		// create FOI index
 		try {
 			client.admin().indices() 
 			    .preparePutMapping(getLocalID()) 
-			    .setType(RS_FOI_IDX_NAME)
-			    .setSource(getMapping()) 
+			    .setType(FOI_IDX_NAME)
+			    .setSource(getFoiMapping()) 
 			    .execute().actionGet();
 		} catch (IOException e) {
-			log.error("Cannot create the foi mapping",e);
+			log.error("Cannot create the " + FOI_IDX_NAME + " mapping",e);
 		}
+		
+		// create FOI bounds index
+		// this is used to store computed geographic bounds since
+		// the geobounds aggregation doesn't work with geo_shape yet
+        try {
+            client.admin().indices() 
+                .preparePutMapping(getLocalID()) 
+                .setType(GEOBOUNDS_IDX_NAME)
+                .setSource(getFoiBoundsMapping())
+                .execute().actionGet();
+            
+            // index an empty bbox
+            foiExtent = new Bbox();
+            client.prepareIndex(getLocalID(), GEOBOUNDS_IDX_NAME)
+                .setId(GEOBOUNDS_IDX_NAME)
+                .setSource(BLOB_FIELD_NAME, this.getBlob(foiExtent))
+                .get();
+        } catch (IOException e) {
+            log.error("Cannot create the " + GEOBOUNDS_IDX_NAME + " mapping",e);
+        }
 		
 		
 		//TODO: update mapping for RS_DATA and add support for samplingTime => geo_shape
@@ -199,7 +223,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		
 		if(useFoiFilter) {
 			// combine queries
-			filterQueryBuilder.must(QueryBuilders.hasParentQuery(RS_FOI_IDX_NAME, foiFilterQueryBuilder, false))
+			filterQueryBuilder.must(QueryBuilders.hasParentQuery(FOI_IDX_NAME, foiFilterQueryBuilder, false))
 					.must(dataFilterQueryBuilder);
 		}	else {
 			filterQueryBuilder = dataFilterQueryBuilder;
@@ -326,7 +350,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		
 		if(useFoiFilter) {
 			// combine queries
-			filterQueryBuilder.must(QueryBuilders.hasParentQuery(RS_FOI_IDX_NAME, foiFilterQueryBuilder, false))
+			filterQueryBuilder.must(QueryBuilders.hasParentQuery(FOI_IDX_NAME, foiFilterQueryBuilder, false))
 					.must(dataFilterQueryBuilder);
 		}	else {
 			filterQueryBuilder = dataFilterQueryBuilder;
@@ -390,7 +414,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 
 		// build the request
 		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
-				.setTypes(RS_FOI_IDX_NAME)
+				.setTypes(FOI_IDX_NAME)
 				.setQuery(filterQueryBuilder)
 				.setFetchSource(new String[] {}, new String[] {"*"}); 
 
@@ -400,22 +424,21 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 
 	@Override
 	public Bbox getFoisSpatialExtent() {
-		// compute the maxExtent of the shapes contained in the DB
-		final EnvelopeJTS maxExtent = new EnvelopeJTS();
 		
-		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
-				.setTypes(RS_FOI_IDX_NAME)
-				.setFetchSource(new String[] {SHAPE_FIELD_NAME}, new String[] {}) 
-				.setScroll(new TimeValue(config.scrollMaxDuration));
+		// NOT WORKING because of https://github.com/elastic/elasticsearch/issues/7574
+	    /*final SearchRequestBuilder sReq = client.prepareSearch(getLocalID())
+            .setTypes(RS_FOI_IDX_NAME)
+            .addAggregation(
+                AggregationBuilders.geoBounds("agg")
+                                   .field(SHAPE_FIELD_NAME)
+                                   .wrapLongitude(true)
+            );
 		
-		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq, config.scrollFetchSize); 
-		SearchHit currentHit = null;
-		
-		// iterate over every hit to get the corresponding geo_shape object
-		while(searchHitsIterator.hasNext()) {
-			currentHit = searchHitsIterator.next();
-		}
-		return null;
+		GeoBounds agg = sReq.get().getAggregations().get("agg");
+		GeoPoint tl = agg.topLeft();
+		GeoPoint br = agg.bottomRight();
+		return new Bbox(tl.lon(), br.lat(), br.lon(), tl.lat());*/
+	    return foiExtent.copy();
 	}
 
 	@Override
@@ -444,10 +467,9 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		}
 		
 		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
-				.setTypes(RS_FOI_IDX_NAME)
+				.setTypes(FOI_IDX_NAME)
 				.setQuery(filterQueryBuilder)
-				.addSort(TIMESTAMP_INSERT_FIELD_NAME, SortOrder.ASC)
-				 // get only the blob
+				 // get only the id
 				.setFetchSource(new String[] { FOI_UNIQUE_ID_FIELD }, new String[] {}) 
 				.setScroll(new TimeValue(config.scrollMaxDuration));
 		// wrap the request into custom ES Scroll iterator
@@ -497,9 +519,8 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		
 		// create scroll request
 		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
-				.setTypes(RS_FOI_IDX_NAME)
+				.setTypes(FOI_IDX_NAME)
 				.setQuery(filterQueryBuilder)
-				.addSort(TIMESTAMP_INSERT_FIELD_NAME, SortOrder.ASC)
 				 // get only the blob
 				.setFetchSource(new String[] { BLOB_FIELD_NAME }, new String[] {}) 
 				.setScroll(new TimeValue(config.scrollMaxDuration));
@@ -706,7 +727,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	@Override
 	public synchronized void storeFoi(String producerID, AbstractFeature foi) {
 		// build the foi index requQueryBuilders.termsQuery("producerId", producerIds)QueryBuilders.termsQuery("producerId", producerIds)est
-		IndexRequestBuilder foiIdxReq = client.prepareIndex(getLocalID(), RS_FOI_IDX_NAME);
+		IndexRequestBuilder foiIdxReq = client.prepareIndex(getLocalID(), FOI_IDX_NAME);
 
 		AbstractGeometry geometry = foi.getLocation();
 
@@ -715,7 +736,6 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		json.put(FOI_UNIQUE_ID_FIELD, foi.getUniqueIdentifier()); 
 		json.put(BLOB_FIELD_NAME, this.getBlob(foi)); // store AbstractFeature
 		json.put(PRODUCER_ID_FIELD_NAME, producerID);
-		json.put(TIMESTAMP_INSERT_FIELD_NAME,new Date().getTime());
 
 		if(geometry != null) {
 			try {
@@ -723,6 +743,12 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 				ShapeBuilder shapeBuilder = getShapeBuilder(geometry);
 				// store Shape builder
 				json.put(SHAPE_FIELD_NAME, shapeBuilder);
+				
+				// also update bounds
+				foiExtent.add(GMLUtils.envelopeToBbox(geometry.getGeomEnvelope()));
+				UpdateRequestBuilder boundsIdxReq = client.prepareUpdate(getLocalID(), GEOBOUNDS_IDX_NAME, GEOBOUNDS_IDX_NAME);
+				boundsIdxReq.setDoc(BLOB_FIELD_NAME, this.getBlob(foiExtent)).get();
+				
 			} catch (SensorHubException e) {
 				log.error("Cannot create shape builder",e);
 			}
@@ -737,13 +763,13 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	 * @return The object used to map the type
 	 * @throws IOException
 	 */
-	protected synchronized XContentBuilder getMapping() throws IOException {
+	protected synchronized XContentBuilder getFoiMapping() throws IOException {
 		XContentBuilder builder = XContentFactory.jsonBuilder()
 				.startObject()
-					.startObject(RS_FOI_IDX_NAME)
+					.startObject(FOI_IDX_NAME)
 						.startObject("properties")
-							.startObject(SHAPE_FIELD_NAME).field("type", "geo_shape").endObject()
-							.startObject(FOI_UNIQUE_ID_FIELD).field("type", "keyword").endObject()
+						    .startObject(FOI_UNIQUE_ID_FIELD).field("type", "keyword").endObject()
+                            .startObject(SHAPE_FIELD_NAME).field("type", "geo_shape").endObject()
 							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "keyword").endObject()
 							.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
 						.endObject()
@@ -751,6 +777,23 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 				.endObject();
 		return builder;
 	}
+	
+	/**
+     * Build and return the FOI bounds mapping.
+     * @return The object used to map the type
+     * @throws IOException
+     */
+    protected synchronized XContentBuilder getFoiBoundsMapping() throws IOException {
+        XContentBuilder builder = XContentFactory.jsonBuilder()
+                .startObject()
+                    .startObject(GEOBOUNDS_IDX_NAME)
+                        .startObject("properties")
+                            .startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
+                        .endObject()
+                    .endObject()
+                .endObject();
+        return builder;
+    }
 
 	/**
 	 * Override and return the data mapping. This mapping adds some field like parent, sampling geometry, foi ids etc..
@@ -763,14 +806,14 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 				.startObject()
 					.startObject(RS_DATA_IDX_NAME)
 						.startObject("_parent")
-							.field("type", RS_FOI_IDX_NAME)
+							.field("type", FOI_IDX_NAME)
 						.endObject()
 						.startObject("properties")
-							.startObject(FOI_UNIQUE_ID_FIELD).field("type", "keyword").endObject()
-							.startObject(TIMESTAMP_FIELD_NAME).field("type", "double").endObject()
-							.startObject(RECORD_TYPE_FIELD_NAME).field("type", "keyword").endObject()
+						    .startObject(TIMESTAMP_FIELD_NAME).field("type", "double").endObject()
+                            .startObject(RECORD_TYPE_FIELD_NAME).field("type", "keyword").endObject()
 							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "keyword").endObject()
-							.startObject(SAMPLING_GEOMETRY_FIELD_NAME).field("type", "geo_shape").endObject()
+							.startObject(FOI_UNIQUE_ID_FIELD).field("type", "keyword").endObject()
+                            .startObject(SAMPLING_GEOMETRY_FIELD_NAME).field("type", "geo_shape").endObject()
 							.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
 						.endObject()
 					.endObject()
@@ -779,15 +822,25 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	}
 	
 	/**
+     * Gets the envelope builder from a bbox object.
+     * @param envelope the bbox
+     * @returnthe Envelope builder
+     */
+    protected synchronized EnvelopeBuilder getEnvelopeBuilder(Bbox bbox) {
+        Coordinate topLeft = new Coordinate(bbox.getMinX(), bbox.getMaxY());
+        Coordinate btmRight = new Coordinate(bbox.getMaxX(), bbox.getMinY());
+        return ShapeBuilders.newEnvelope(topLeft, btmRight);
+    }
+	
+	/**
 	 * Gets the envelope builder from envelope geometry.
 	 * @param envelope the envelope geometry 
 	 * @returnthe Envelope builder
 	 */
-	protected synchronized EnvelopeBuilder getEnvelopeBuilder(Envelope envelope) {
-		double[] upperCorner = envelope.getUpperCorner();
-		double[] lowerCorner = envelope.getLowerCorner();
-		return ShapeBuilders.newEnvelope(new Coordinate(upperCorner[0], upperCorner[1]),
-				new Coordinate(lowerCorner[0], lowerCorner[1]));
+	protected synchronized EnvelopeBuilder getEnvelopeBuilder(Envelope env) {
+	    Coordinate topLeft = new Coordinate(env.getMinX(), env.getMaxY());
+        Coordinate btmRight = new Coordinate(env.getMaxX(), env.getMinY());
+        return ShapeBuilders.newEnvelope(topLeft, btmRight);
 	}
 
 	/**
@@ -810,7 +863,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	 */
 	protected synchronized PointBuilder getPointBuilder(Point point) {
 		// build shape builder from coordinates
-		return ShapeBuilders.newPoint(new Coordinate(point.getPos()[0],point.getPos()[1]));
+		return ShapeBuilders.newPoint(point.getCoordinate());
 	}
 	
 	/**
@@ -822,8 +875,8 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	protected synchronized ShapeBuilder getShapeBuilder(AbstractGeometry geometry) throws SensorHubException {
 		if(geometry instanceof PolygonJTS) {
 			return getPolygonBuilder(((PolygonJTS)geometry));
-		} else if(geometry instanceof Point) {
-			return getPointBuilder((Point)geometry);
+		} else if(geometry instanceof PointJTS) {
+			return getPointBuilder((PointJTS)geometry);
 		} else if(geometry instanceof EnvelopeJTS) {
 			return getEnvelopeBuilder((Envelope)geometry);
 		} else {
