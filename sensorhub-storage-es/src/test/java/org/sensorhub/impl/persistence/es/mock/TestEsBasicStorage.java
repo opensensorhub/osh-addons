@@ -42,6 +42,8 @@ import org.sensorhub.test.persistence.AbstractTestBasicStorage;
 
 public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageImpl> {
 
+	protected static final String CLUSTER_NAME = "elasticsearch";
+	
 	static AbstractClient client;
 	
 	static {
@@ -56,7 +58,7 @@ public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageI
 	public void init() throws Exception {
 		ESBasicStorageConfig config = new ESBasicStorageConfig();
 		config.autoStart = true;
-		config.storagePath = "elastic-cluster";
+		config.storagePath = CLUSTER_NAME;
 		List<String> nodes = new ArrayList<String>();
 		nodes.add("localhost:9300");
 

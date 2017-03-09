@@ -40,6 +40,7 @@ import org.sensorhub.test.persistence.AbstractTestMultiObsStorage;
 
 public class TestEsMultiSourceStorage extends AbstractTestMultiObsStorage<ESMultiSourceStorageImpl> {
 
+	protected static final String CLUSTER_NAME = "elasticsearch";
 static AbstractClient client;
 	
 	static {
@@ -54,7 +55,7 @@ static AbstractClient client;
 	public void init() throws Exception {
 		ESBasicStorageConfig config = new ESBasicStorageConfig();
 		config.autoStart = true;
-		config.storagePath = "elastic-cluster";
+		config.storagePath = CLUSTER_NAME;
 		List<String> nodes = new ArrayList<String>();
 		nodes.add("localhost:9300");
 

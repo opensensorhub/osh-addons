@@ -45,6 +45,8 @@ import org.sensorhub.utils.FileUtils;
 
 public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl> {
 
+	protected static final String CLUSTER_NAME = "elasticsearch";
+	
 	static AbstractClient client;
 	
 	static {
@@ -61,7 +63,7 @@ public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl> {
 	    numFois = 80; // cannot 
 		ESBasicStorageConfig config = new ESBasicStorageConfig();
 		config.autoStart = true;
-		config.storagePath = "elastic-cluster";
+		config.storagePath = CLUSTER_NAME;
 		List<String> nodes = new ArrayList<String>();
 		nodes.add("localhost:9300");
 
