@@ -39,6 +39,7 @@ import org.junit.BeforeClass;
 import org.sensorhub.impl.persistence.es.ESBasicStorageImpl;
 import org.sensorhub.impl.persistence.es.ESBasicStorageConfig;
 import org.sensorhub.test.persistence.AbstractTestBasicStorage;
+import org.sensorhub.utils.FileUtils;
 
 public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageImpl> {
 
@@ -103,21 +104,7 @@ public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageI
 	
 	@AfterClass
 	public static void closeClient() throws IOException {
-		Path directory = Paths.get(System.getProperty("java.io.tmpdir")+"/es");
-        Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-        });
-        
+		FileUtils.deleteRecursively(new File(System.getProperty("java.io.tmpdir")+"/es"));        
 		if(client != null) {
 			client.close();
 		}
