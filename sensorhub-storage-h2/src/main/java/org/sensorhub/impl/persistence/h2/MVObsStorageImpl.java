@@ -423,4 +423,18 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     {
         featureStore.store(foi);
     }
+
+
+    @Override
+    public boolean isReadSupported()
+    {
+        return true;
+    }
+
+
+    @Override
+    public boolean isWriteSupported()
+    {
+        return true;
+    }
 }

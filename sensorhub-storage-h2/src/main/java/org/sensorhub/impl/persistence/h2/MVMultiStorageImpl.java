@@ -303,5 +303,19 @@ public class MVMultiStorageImpl extends AbstractModule<MVStorageConfig> implemen
         // TODO Auto-generated method stub
         return null;
     }
+
+    @Override
+    public boolean isReadSupported()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public boolean isWriteSupported()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
     
 }
