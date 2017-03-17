@@ -19,20 +19,20 @@ import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class WebArchiveDescriptor extends JarModuleProvider
+public class USGSWaterDataDescriptor extends JarModuleProvider
 {
 
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return WebArchiveConnector.class;
+        return USGSWaterDataArchive.class;
     }
 
 
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return WebArchiveConfig.class;
+        return USGSWaterDataConfig.class;
     }
 
 }

@@ -39,14 +39,14 @@ import net.opengis.gml.v32.impl.GMLFactory;
  */
 public class ObsSiteLoader
 {
-    static final String BASE_URL = WebArchiveConnector.BASE_USGS_URL + "site?";
-    static final String FOI_UID_PREFIX = WebArchiveConnector.UID_PREFIX + "site:";
-    static final String AREA_UID_PREFIX = WebArchiveConnector.UID_PREFIX + "region:";
+    static final String BASE_URL = USGSWaterDataArchive.BASE_USGS_URL + "site?";
+    static final String FOI_UID_PREFIX = USGSWaterDataArchive.UID_PREFIX + "site:";
+    static final String AREA_UID_PREFIX = USGSWaterDataArchive.UID_PREFIX + "region:";
     
-    WebArchiveConnector module;
+    USGSWaterDataArchive module;
     
     
-    public ObsSiteLoader(WebArchiveConnector module)
+    public ObsSiteLoader(USGSWaterDataArchive module)
     {
         this.module = module;
     }
@@ -170,11 +170,13 @@ public class ObsSiteLoader
                     Point siteLoc = gmlFac.newPoint();
                     if (Double.isNaN(alt))
                     {
+                        siteLoc.setSrsDimension(2);
                         siteLoc.setSrsName(SWEHelper.getEpsgUri(4269)); // NAD83
                         siteLoc.setPos(new double[] {lat, lon});
                     }
                     else
                     {
+                        siteLoc.setSrsDimension(3);
                         siteLoc.setSrsName(SWEHelper.getEpsgUri(5498)); // NAD83 + NGVD29/NAVD88 height
                         siteLoc.setPos(new double[] {lat, lon, alt});
                     }

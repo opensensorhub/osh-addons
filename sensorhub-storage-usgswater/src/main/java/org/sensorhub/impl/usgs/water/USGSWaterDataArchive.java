@@ -66,7 +66,7 @@ import net.opengis.swe.v20.DataEncoding;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Mar 13, 2017
  */
-public class WebArchiveConnector extends AbstractModule<WebArchiveConfig> implements IObsStorageModule<WebArchiveConfig>, IMultiSourceStorage<IObsStorage>
+public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig> implements IObsStorageModule<USGSWaterDataConfig>, IMultiSourceStorage<IObsStorage>
 {
     static final String BASE_USGS_URL = "https://waterservices.usgs.gov/nwis/";
     static final String UID_PREFIX = "urn:usgs:water:";
@@ -157,16 +157,33 @@ public class WebArchiveConnector extends AbstractModule<WebArchiveConfig> implem
 
 
     @Override
+    public int getNumMatchingRecords(IDataFilter filter, long maxCount)
+    {
+        // compute rough estimate here
+        DataFilter usgsFilter = getUsgsFilter(filter);
+        long dt = usgsFilter.endTime.getTime() - usgsFilter.startTime.getTime();
+        long samplingPeriod = 15*60*1000; // shortest sampling period seems to be 15min
+        int numSites = usgsFilter.siteIds.isEmpty() ? fois.size() : usgsFilter.siteIds.size();
+        return (int)(numSites * dt / samplingPeriod);
+    }
+
+
+    @Override
     public int getNumRecords(String recordType)
     {
-        return 0;
+        long dt = config.exposeFilter.endTime.getTime() - config.exposeFilter.startTime.getTime();
+        long samplingPeriod = 15*60*1000; // shortest sampling period seems to be 15min
+        int numSites = fois.size();
+        return (int)(numSites * dt / samplingPeriod);
     }
 
 
     @Override
     public double[] getRecordsTimeRange(String recordType)
     {
-        return null;
+        double startTime = config.exposeFilter.startTime.getTime() / 1000.;
+        double endTime = config.exposeFilter.endTime.getTime() / 1000.;
+        return new double[] {startTime, endTime};
     }
 
 
@@ -215,40 +232,16 @@ public class WebArchiveConnector extends AbstractModule<WebArchiveConfig> implem
         
         // prepare loader to fetch data from USGS web service
         final ObsRecordLoader loader = new ObsRecordLoader(this, rs.getRecordDescription());
-        
-        // create filter
-        final DataFilter usgsFilter = new DataFilter();        
-        
-        if (filter.getProducerIDs() != null)
-            usgsFilter.siteIds.addAll(filter.getProducerIDs());
-        
-        if (filter instanceof IObsFilter)
-        {
-            Collection<String> fois = ((IObsFilter) filter).getFoiIDs();
-            if (fois != null)
-            {
-                for (String foiID: fois)
-                    usgsFilter.siteIds.add(foiID.substring(ObsSiteLoader.FOI_UID_PREFIX.length()));
-            }
-        }
-        if (!config.exposeFilter.siteIds.isEmpty())
-            usgsFilter.siteIds.retainAll(config.exposeFilter.siteIds);
-                    
-        usgsFilter.stateCodes.addAll(config.exposeFilter.stateCodes);
-        usgsFilter.countyCodes.addAll(config.exposeFilter.countyCodes);
-        usgsFilter.parameters.addAll(config.exposeFilter.parameters);
-        
+        final DataFilter usgsFilter = getUsgsFilter(filter);        
         
         // request observations by batch and iterates through them sequentially
-        final long startTime = (long)(filter.getTimeStampRange()[0]*1000.);
-        final long endTime = (long)(filter.getTimeStampRange()[1]*1000.);
-        final long batchLength = 8*3600*1000; // 8 hours
-        
+        final long endTime = usgsFilter.endTime.getTime();
+        final long batchLength = 8*3600*1000; // 8 hours        
         class BatchIterator implements Iterator<IDataRecord>
         {                
             Iterator<WaterDataRecord> batchIt;
             IDataRecord next;
-            long nextBatchStartTime = startTime;
+            long nextBatchStartTime = usgsFilter.startTime.getTime();
             
             BatchIterator()
             {
@@ -302,6 +295,49 @@ public class WebArchiveConnector extends AbstractModule<WebArchiveConfig> implem
     }
     
     
+    protected DataFilter getUsgsFilter(IDataFilter filter)
+    {
+        DataFilter usgsFilter = new DataFilter();        
+        
+        // keep only site IDs that are in both request and config
+        if (filter.getProducerIDs() != null)
+            usgsFilter.siteIds.addAll(filter.getProducerIDs());
+        
+        if (filter instanceof IObsFilter)
+        {
+            Collection<String> fois = ((IObsFilter) filter).getFoiIDs();
+            if (fois != null)
+            {
+                for (String foiID: fois)
+                    usgsFilter.siteIds.add(foiID.substring(ObsSiteLoader.FOI_UID_PREFIX.length()));
+            }
+        }
+        if (!config.exposeFilter.siteIds.isEmpty())
+            usgsFilter.siteIds.retainAll(config.exposeFilter.siteIds);
+                    
+        // use config params
+        usgsFilter.stateCodes.addAll(config.exposeFilter.stateCodes);
+        usgsFilter.countyCodes.addAll(config.exposeFilter.countyCodes);
+        usgsFilter.parameters.addAll(config.exposeFilter.parameters);
+        
+        // init time filter
+        long configStartTime = config.exposeFilter.startTime.getTime();
+        long configEndTime = config.exposeFilter.endTime.getTime();
+        long filterStartTime = Long.MIN_VALUE;
+        long filterEndTime = Long.MAX_VALUE;
+        if (filter.getTimeStampRange() != null)
+        {
+            filterStartTime = (long)(filter.getTimeStampRange()[0] * 1000);
+            filterEndTime = (long)(filter.getTimeStampRange()[1] * 1000);
+        }
+        
+        usgsFilter.startTime = new Date(Math.min(configEndTime, Math.max(configStartTime, filterStartTime)));
+        usgsFilter.endTime = new Date(Math.min(configEndTime, Math.max(configStartTime, filterEndTime)));
+        
+        return usgsFilter;
+    }
+    
+    
     protected Collection<WaterDataRecord> nextBatch(ObsRecordLoader loader, DataFilter filter, String recType)
     {
         try
@@ -316,6 +352,8 @@ public class WebArchiveConnector extends AbstractModule<WebArchiveConfig> implem
             while (loader.hasNext())
             {
                 DataBlock data = loader.next();
+                if (data == null)
+                    break;
                 DataKey key = new DataKey(recType, data.getDoubleValue(0));
                 records.add(new WaterDataRecord(key, data));
             }
@@ -328,22 +366,6 @@ public class WebArchiveConnector extends AbstractModule<WebArchiveConfig> implem
         {
             throw new RuntimeException("Error while sending request for instantaneous values");
         }
-    }
-
-
-    @Override
-    public int getNumMatchingRecords(IDataFilter filter, long maxCount)
-    {
-        Iterator<? extends IDataRecord> it = getRecordIterator(filter);
-        
-        int count = 0;
-        while (it.hasNext())
-        {
-            it.next();
-            count++;
-        }
-        
-        return count;
     }
 
 
@@ -425,13 +447,15 @@ public class WebArchiveConnector extends AbstractModule<WebArchiveConfig> implem
     }
     
     
-    public boolean isReadEnabled()
+    @Override
+    public boolean isReadSupported()
     {
         return true;
     }
     
     
-    public boolean isWriteEnabled()
+    @Override
+    public boolean isWriteSupported()
     {
         return false;
     }

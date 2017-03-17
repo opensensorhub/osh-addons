@@ -25,8 +25,8 @@ import org.sensorhub.api.persistence.IObsFilter;
 import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
 import org.sensorhub.impl.usgs.water.CodeEnums.StateCode;
-import org.sensorhub.impl.usgs.water.WebArchiveConfig;
-import org.sensorhub.impl.usgs.water.WebArchiveConnector;
+import org.sensorhub.impl.usgs.water.USGSWaterDataConfig;
+import org.sensorhub.impl.usgs.water.USGSWaterDataArchive;
 import org.vast.data.TextEncodingImpl;
 import org.vast.ogc.om.SamplingPoint;
 import org.vast.swe.fast.TextDataWriter;
@@ -42,8 +42,8 @@ public class TestWebArchiveConnector
     @Test
     public void test() throws Exception
     {
-        WebArchiveConnector storage = new WebArchiveConnector();
-        WebArchiveConfig config = new WebArchiveConfig();
+        USGSWaterDataArchive storage = new USGSWaterDataArchive();
+        USGSWaterDataConfig config = new USGSWaterDataConfig();
         config.id = "USGS_TEST_STORAGE";
         config.exposeFilter.stateCodes.add(StateCode.AL);
         //config.exposeFilter.countyCodes.add(1089);

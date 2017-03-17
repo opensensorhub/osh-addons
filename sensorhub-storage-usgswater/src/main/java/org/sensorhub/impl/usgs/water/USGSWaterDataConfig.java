@@ -21,18 +21,24 @@ import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
 import org.sensorhub.impl.usgs.water.CodeEnums.StateCode;
 
 
-public class WebArchiveConfig extends ObsStorageConfig
+public class USGSWaterDataConfig extends ObsStorageConfig
 {
     
     @DisplayInfo(desc="Only data matching this filter will be accessible through this storage instance")
     public DataFilter exposeFilter = new DataFilter();
     
     
-    public WebArchiveConfig()
+    public USGSWaterDataConfig()
     {
         exposeFilter.stateCodes.add(StateCode.AL);
         exposeFilter.parameters.add(ObsParam.DISCHARGE);
-        exposeFilter.endTime = new Date();
-        exposeFilter.startTime = new Date(exposeFilter.endTime.getTime()-3600*24*1000);
+        exposeFilter.endTime = new Date(new Date().getTime()/86400000*86400000);
+        exposeFilter.startTime = new Date(exposeFilter.endTime.getTime()-3600*24*30*1000);
+    }
+
+
+    @Override
+    public void setStorageIdentifier(String name)
+    {
     }
 }

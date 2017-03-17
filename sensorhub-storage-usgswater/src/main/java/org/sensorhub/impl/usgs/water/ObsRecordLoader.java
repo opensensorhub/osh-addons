@@ -46,16 +46,16 @@ import net.opengis.swe.v20.DataComponent;
  */
 public class ObsRecordLoader implements Iterator<DataBlock>
 {
-    static final String BASE_URL = WebArchiveConnector.BASE_USGS_URL + "iv?";
+    static final String BASE_URL = USGSWaterDataArchive.BASE_USGS_URL + "iv?";
     
-    WebArchiveConnector module;
+    USGSWaterDataArchive module;
     BufferedReader reader;
     DataFilter filter;
     ParamValueParser[] paramReaders;
     DataBlock templateRecord, nextRecord;
         
     
-    public ObsRecordLoader(WebArchiveConnector module, DataComponent recordDesc)
+    public ObsRecordLoader(USGSWaterDataArchive module, DataComponent recordDesc)
     {
         this.module = module;
         this.templateRecord = recordDesc.createDataBlock();
@@ -226,6 +226,8 @@ public class ObsRecordLoader implements Iterator<DataBlock>
                 {
                     parseHeader();
                     line = reader.readLine();
+                    if (line == null || line.trim().isEmpty())
+                        return null;
                 }
                 
                 String[] fields = line.split("\t");
@@ -367,7 +369,7 @@ public class ObsRecordLoader implements Iterator<DataBlock>
                 if (fromIndex >= 0)
                 {
                     String val = tokens[fromIndex].trim();
-                    if (!val.isEmpty())
+                    if (!val.isEmpty() && !val.startsWith("*"))
                         f = Float.parseFloat(val);
                 }
                 

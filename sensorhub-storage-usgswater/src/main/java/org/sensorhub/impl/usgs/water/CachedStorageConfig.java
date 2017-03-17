@@ -18,7 +18,7 @@ import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.persistence.StorageConfig;
 
 
-public class CachedStorageConfig extends WebArchiveConfig
+public class CachedStorageConfig extends USGSWaterDataConfig
 {
     
     @DisplayInfo(label="Cache Config", desc="Configuration of underlying storage used for caching USGS database")

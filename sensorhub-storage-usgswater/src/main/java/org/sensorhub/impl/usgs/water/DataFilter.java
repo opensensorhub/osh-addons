@@ -26,9 +26,6 @@ import org.vast.util.Bbox;
 
 public class DataFilter
 {
-    @DisplayInfo(desc="List of site types")
-    public Set<SiteType> siteTypes = new LinkedHashSet<SiteType>();
-    
     @DisplayInfo(desc="List of site identifiers")
     public Set<String> siteIds = new LinkedHashSet<String>();
     
@@ -39,7 +36,10 @@ public class DataFilter
     public Set<Integer> countyCodes = new LinkedHashSet<Integer>();
     
     @DisplayInfo(desc="Geographic region (BBOX)")
-    public Bbox siteBbox = new Bbox();
+    public Bbox siteBbox = null;
+    
+    @DisplayInfo(desc="List of site types")
+    public Set<SiteType> siteTypes = new LinkedHashSet<SiteType>();
     
     @DisplayInfo(desc="Observed parameters")
     public Set<ObsParam> parameters = new LinkedHashSet<ObsParam>();

@@ -79,7 +79,7 @@ public class RecordStore implements IRecordStoreInfo
     
     protected String getDesc(ObsParam param)
     {
-        return "Water data parameter, code=" + param.getCode();
+        return param.toString() + " parameter, USGS code " + param.getCode();
     }
     
     
