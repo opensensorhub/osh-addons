@@ -15,32 +15,18 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.persistence.es;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-
-import org.apache.lucene.util.packed.PackedDataOutput;
-import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.support.AbstractClient;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.sort.SortOrder;
-import org.sensorhub.api.persistence.DataKey;
-import org.sensorhub.api.persistence.IDataFilter;
-import org.sensorhub.api.persistence.IDataRecord;
 import org.sensorhub.api.persistence.IMultiSourceStorage;
 import org.sensorhub.api.persistence.IObsStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import net.opengis.swe.v20.DataBlock;
 
 /**
  * <p>
@@ -67,7 +53,7 @@ public class ESMultiSourceStorageImpl extends ESObsStorageImpl implements IMulti
 	
 	@Override
 	public Collection<String> getProducerIDs() {
-		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID())
+		final SearchRequestBuilder scrollReq = client.prepareSearch(indexName)
 				.setTypes(RS_DATA_IDX_NAME)
 				.setQuery(QueryBuilders.existsQuery(PRODUCER_ID_FIELD_NAME))
 		        .setScroll(new TimeValue(config.scrollMaxDuration));

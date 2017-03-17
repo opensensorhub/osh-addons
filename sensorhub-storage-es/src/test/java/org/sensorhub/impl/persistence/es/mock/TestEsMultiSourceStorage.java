@@ -56,7 +56,7 @@ static AbstractClient client;
 	public void init() throws Exception {
 		ESBasicStorageConfig config = new ESBasicStorageConfig();
 		config.autoStart = true;
-		config.storagePath = CLUSTER_NAME;
+		config.clusterName = CLUSTER_NAME;
 		List<String> nodes = new ArrayList<String>();
 		nodes.add("localhost:9300");
 

@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.codec.binary.Base64;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
@@ -127,6 +126,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * Use the bulkProcessor to increase perfs when writting and deleting a set of data.
 	 */
 	protected BulkProcessor bulkProcessor;
+	protected String indexName;
 	
 	public ESBasicStorageImpl() {
 		
@@ -164,13 +164,18 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		//throw new UnsupportedOperationException("Does not support ES data storage synchronization");
 
 	}
+	
+	@Override
+	public void init() {
+	    this.indexName = (config.indexName != null) ? config.indexName : getLocalID();
+	}
 
 	@Override
 	public synchronized void start() throws SensorHubException {
 		if(client == null) {
 			// init transport client
 			Settings settings = Settings.builder()
-			        .put("cluster.name", config.storagePath)
+			        .put("cluster.name", config.clusterName)
 			        .put("client.transport.ignore_cluster_name",config.ignoreClusterName)
 			        //.put("client.transport.ping_timeout",config.pingTimeout)
 			        //.put("client.transport.nodes_sampler_interval",config.nodeSamplerInterval)
@@ -235,7 +240,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			        .build();
 			// create indices if they dont exist
 			boolean exists = client.admin().indices()
-				    .prepareExists(getLocalID())
+				    .prepareExists(indexName)
 				    .execute().actionGet().isExists();
 			if(!exists) {
 				createIndices();
@@ -247,13 +252,13 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 
 	protected void createIndices (){
 		// create the index 
-		CreateIndexRequest indexRequest = new CreateIndexRequest(getLocalID());
+	    CreateIndexRequest indexRequest = new CreateIndexRequest(indexName);
 		client.admin().indices().create(indexRequest).actionGet();
 		
 		// create the corresponding data mapping
 		try {
 			client.admin().indices() 
-			    .preparePutMapping(getLocalID()) 
+			    .preparePutMapping(indexName) 
 			    .setType(RS_DATA_IDX_NAME)
 			    .setSource(getRsDataMapping())
 			    .execute().actionGet();
@@ -281,11 +286,11 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 
 	@Override
 	public AbstractProcess getLatestDataSourceDescription() {
-		if(!isTypeExist(getLocalID(),DESC_HISTORY_IDX_NAME)) {
+		if(!isTypeExist(indexName,DESC_HISTORY_IDX_NAME)) {
 			return null;
 		}
 		// build search response given a timestamp desc sort
-		SearchResponse response = client.prepareSearch(getLocalID()).setTypes(DESC_HISTORY_IDX_NAME)
+		SearchResponse response = client.prepareSearch(indexName).setTypes(DESC_HISTORY_IDX_NAME)
 							.addSort(TIMESTAMP_FIELD_NAME, SortOrder.DESC)
 							.get();
 		
@@ -307,7 +312,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// query ES to get the corresponding timestamp
 		// the response is applied a post filter allowing to specify a range request on the timestamp
 		// the hits should be directly filtered
-		SearchRequestBuilder request = client.prepareSearch(getLocalID()).setTypes(DESC_HISTORY_IDX_NAME)
+		SearchRequestBuilder request = client.prepareSearch(indexName).setTypes(DESC_HISTORY_IDX_NAME)
 				.setScroll(new TimeValue(config.scrollMaxDuration))
 				.addSort(TIMESTAMP_FIELD_NAME,SortOrder.ASC)
 				.setPostFilter(QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME)
@@ -330,7 +335,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// query ES to get the corresponding timestamp
 		// the response is applied a post filter allowing to specify a range request on the timestamp
 		// the hits should be directly filtered
-		SearchRequestBuilder request = client.prepareSearch(getLocalID()).setTypes(DESC_HISTORY_IDX_NAME)
+		SearchRequestBuilder request = client.prepareSearch(indexName).setTypes(DESC_HISTORY_IDX_NAME)
 				.setScroll(new TimeValue(config.scrollMaxDuration))
 				.addSort(TIMESTAMP_FIELD_NAME,SortOrder.DESC)
 				.setPostFilter(QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME)
@@ -359,14 +364,14 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		
 		if (update) {
 			// prepare update
-			UpdateRequest updateRequest = new UpdateRequest(getLocalID(), DESC_HISTORY_IDX_NAME, time+"");
+			UpdateRequest updateRequest = new UpdateRequest(indexName, DESC_HISTORY_IDX_NAME, time+"");
 			updateRequest.doc(json);
 			
 			bulkProcessor.add(updateRequest);
             return true;
         } else {
         	// send request and check if the id is not null
-       	 	bulkProcessor.add(client.prepareIndex(getLocalID(),DESC_HISTORY_IDX_NAME).setId(time+"")
+       	 	bulkProcessor.add(client.prepareIndex(indexName,DESC_HISTORY_IDX_NAME).setId(time+"")
 					.setSource(json).request());
            return true;
         }
@@ -408,7 +413,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 
 	@Override
 	public void removeDataSourceDescription(double time) {
-		DeleteRequest deleteRequest = new DeleteRequest(getLocalID(), DESC_HISTORY_IDX_NAME, time+"");
+		DeleteRequest deleteRequest = new DeleteRequest(indexName, DESC_HISTORY_IDX_NAME, time+"");
 		bulkProcessor.add(deleteRequest);
 	}
 
@@ -417,7 +422,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// query ES to get the corresponding timestamp
 		// the response is applied a post filter allowing to specify a range request on the timestamp
 		// the hits should be directly filtered
-		SearchResponse response = client.prepareSearch(getLocalID()).setTypes(DESC_HISTORY_IDX_NAME)
+		SearchResponse response = client.prepareSearch(indexName).setTypes(DESC_HISTORY_IDX_NAME)
 				.setPostFilter(QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME)
 					.from(startTime).to(endTime)) // Query
 				.setFetchSource(new String[]{}, new String[]{"*"}) // does not fetch source
@@ -425,7 +430,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		
 		// the corresponding filtering hits
 		for(SearchHit hit : response.getHits()) {
-			DeleteRequest deleteRequest = new DeleteRequest(getLocalID(), DESC_HISTORY_IDX_NAME,hit.getId());
+			DeleteRequest deleteRequest = new DeleteRequest(indexName, DESC_HISTORY_IDX_NAME,hit.getId());
 			bulkProcessor.add(deleteRequest);
 		}
 	}
@@ -433,7 +438,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	@Override
 	public  Map<String, ? extends IRecordStoreInfo> getRecordStores() {
 		Map<String, IRecordStoreInfo> result = new HashMap<>();
-		SearchResponse response = client.prepareSearch(getLocalID()).setTypes(RS_INFO_IDX_NAME).get();
+		SearchResponse response = client.prepareSearch(indexName).setTypes(RS_INFO_IDX_NAME).get();
 		
 		String name = null;
 		DataStreamInfo rsInfo = null;
@@ -456,8 +461,8 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		json.put(BLOB_FIELD_NAME,blob);
 		
 		// set id and blob before executing the request
-		//String id = client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME).setId(name).setSource(json).get().getId();
-		bulkProcessor.add(client.prepareIndex(getLocalID(),RS_INFO_IDX_NAME).setId(name).setSource(json).request());
+		//String id = client.prepareIndex(indexName,RS_INFO_IDX_NAME).setId(name).setSource(json).get().getId();
+		bulkProcessor.add(client.prepareIndex(indexName,RS_INFO_IDX_NAME).setId(name).setSource(json).request());
 		//TODO: make the link to the recordStore storage
 		// either we can use an intermediate mapping table or use directly the recordStoreInfo index
 		// to fetch the corresponding description
@@ -468,7 +473,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 
 	@Override
 	public int getNumRecords(String recordType) {
-		SearchResponse response = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
+		SearchResponse response = client.prepareSearch(indexName).setTypes(RS_DATA_IDX_NAME)
 				.setPostFilter(QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, recordType))
 				.setFetchSource(new String[]{}, new String[]{"*"}) // does not fetch source
 		        .get();
@@ -480,7 +485,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		double[] result = new double[2];
 		
 		// build request to get the least recent record
-		SearchResponse response = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
+		SearchResponse response = client.prepareSearch(indexName).setTypes(RS_DATA_IDX_NAME)
 				.setQuery(QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, recordType))
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC) // sort results by DESC timestamp
 				.setFetchSource(new String[]{TIMESTAMP_FIELD_NAME}, new String[]{}) // get only the timestamp
@@ -492,7 +497,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		}
 		
 		// build request to get the most recent record
-		 response = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
+		 response = client.prepareSearch(indexName).setTypes(RS_DATA_IDX_NAME)
 				.setQuery(QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, recordType))
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.DESC) // sort results by DESC timestamp
 				.setFetchSource(new String[]{TIMESTAMP_FIELD_NAME}, new String[]{}) // get only the timestamp
@@ -509,7 +514,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	@Override
 	public Iterator<double[]> getRecordsTimeClusters(String recordType) {
 		// build response
-		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
+		final SearchRequestBuilder scrollReq = client.prepareSearch(indexName).setTypes(RS_DATA_IDX_NAME)
 				//TOCHECK
 				//.addSort(SortOrder.ASC)
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
@@ -569,7 +574,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		String esKey = getRsKey(key);
 		
 		// build the request
-		GetRequest getRequest = new GetRequest( getLocalID(),RS_DATA_IDX_NAME,esKey);
+		GetRequest getRequest = new GetRequest(indexName,RS_DATA_IDX_NAME,esKey);
 		
 		// build  and execute the response
 		GetResponse response = client.get(getRequest).actionGet();
@@ -599,7 +604,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		}
 				
 		// build response
-		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
+		final SearchRequestBuilder scrollReq = client.prepareSearch(indexName).setTypes(RS_DATA_IDX_NAME)
 				//TOCHECK
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 				.setFetchSource(new String[]{BLOB_FIELD_NAME}, new String[]{}) // get only the BLOB
@@ -649,7 +654,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		}
 		
 		// build response
-		final SearchRequestBuilder scrollReq = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
+		final SearchRequestBuilder scrollReq = client.prepareSearch(indexName).setTypes(RS_DATA_IDX_NAME)
 				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
 		        .setScroll(new TimeValue(config.pingTimeout))
 		        .setQuery(recordTypeQuery)
@@ -714,7 +719,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		}
 		
 		// build response
-		final SearchResponse scrollResp = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
+		final SearchResponse scrollResp = client.prepareSearch(indexName).setTypes(RS_DATA_IDX_NAME)
 		        .setScroll(new TimeValue(config.pingTimeout))
 		        .setQuery(recordTypeQuery)
 		        .setRequestCache(true)
@@ -738,12 +743,12 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		json.put(BLOB_FIELD_NAME,blob); // store DataBlock
 		
 		// set id and blob before executing the request
-		/*String id = client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
+		/*String id = client.prepareIndex(indexName,RS_DATA_IDX_NAME)
 				.setId(esKey)
 				.setSource(json)
 				.get()
 				.getId();*/
-		bulkProcessor.add(client.prepareIndex(getLocalID(),RS_DATA_IDX_NAME)
+		bulkProcessor.add(client.prepareIndex(indexName,RS_DATA_IDX_NAME)
 				.setId(esKey)
 				.setSource(json).request());
 	}
@@ -763,7 +768,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		json.put(BLOB_FIELD_NAME,blob); // store DataBlock
 		
 		// prepare update
-		UpdateRequest updateRequest = new UpdateRequest(getLocalID(), RS_DATA_IDX_NAME, esKey);
+		UpdateRequest updateRequest = new UpdateRequest(indexName, RS_DATA_IDX_NAME, esKey);
 		updateRequest.doc(json);
 		
 		bulkProcessor.add(updateRequest);
@@ -775,7 +780,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		String esKey = getRsKey(key);
 		
 		// prepare delete request
-		DeleteRequest deleteRequest = new DeleteRequest(getLocalID(), RS_DATA_IDX_NAME, esKey);
+		DeleteRequest deleteRequest = new DeleteRequest(indexName, RS_DATA_IDX_NAME, esKey);
 		bulkProcessor.add(deleteRequest);
 	}
 
@@ -798,7 +803,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		}
 				
 		// build response
-		SearchResponse scrollResp = client.prepareSearch(getLocalID()).setTypes(RS_DATA_IDX_NAME)
+		SearchResponse scrollResp = client.prepareSearch(indexName).setTypes(RS_DATA_IDX_NAME)
 		        .setScroll(new TimeValue(config.pingTimeout))
 		        .setQuery(recordTypeQuery)
 		        .setFetchSource(new String[]{}, new String[]{"*"}) // does not fetch source
@@ -810,7 +815,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		do {
 		    for (SearchHit hit : scrollResp.getHits().getHits()) {
 		    	// prepare delete request
-				DeleteRequest deleteRequest = new DeleteRequest(getLocalID(),RS_DATA_IDX_NAME, hit.getId());
+				DeleteRequest deleteRequest = new DeleteRequest(indexName,RS_DATA_IDX_NAME, hit.getId());
 				bulkProcessor.add(deleteRequest);
 		    	nb++;
 		    }
@@ -895,7 +900,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * Refreshes the index.
 	 */
 	protected void refreshIndex() {
-		client.admin().indices().prepareRefresh(getLocalID()).get();
+		client.admin().indices().prepareRefresh(indexName).get();
 	}
 	
 	/**

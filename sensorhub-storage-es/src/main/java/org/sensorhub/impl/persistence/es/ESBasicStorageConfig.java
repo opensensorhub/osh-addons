@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.config.DisplayInfo.Required;
 
 /**
  * <p>
@@ -28,7 +29,20 @@ import org.sensorhub.api.config.DisplayInfo;
  * @since 2017
  */
 public class ESBasicStorageConfig extends org.sensorhub.api.persistence.ObsStorageConfig {
-	@DisplayInfo(desc="When scrolling, the maximum duration ScrollableResults will be usable if no other results are fetched from, in ms")
+	
+    @Required
+    @DisplayInfo(desc="ES cluster name")
+    public String clusterName;
+        
+    @Required
+    @DisplayInfo(desc="List of nodes")
+    public List<String> nodeUrls = new ArrayList<String>();
+    
+    @Required
+    @DisplayInfo(desc="Main index name (if null, the localID of the module is used)")
+    public String indexName;
+            
+    @DisplayInfo(desc="When scrolling, the maximum duration ScrollableResults will be usable if no other results are fetched from, in ms")
     public int scrollMaxDuration = 6000;
 	
 	@DisplayInfo(desc="MWhen scrolling, the number of results fetched by each Elasticsearch call")
@@ -36,10 +50,7 @@ public class ESBasicStorageConfig extends org.sensorhub.api.persistence.ObsStora
 	
 	@DisplayInfo(desc="When scrolling, the minimum number of previous results kept in memory at any time")
 	public int scrollBacktrackingWindowSize = 10000;
-	
-	@DisplayInfo(desc="List of nodes")
-	public List<String> nodeUrls = new ArrayList<String>();
-	
+		
 	@DisplayInfo(desc="Set to true to ignore cluster name validation of connected nodes")
 	public boolean ignoreClusterName = false;
 	
@@ -63,5 +74,11 @@ public class ESBasicStorageConfig extends org.sensorhub.api.persistence.ObsStora
 	
 	@DisplayInfo(desc="We want to flush the bulk every n seconds whatever the number of requests")
 	public int bulkFlushInterval = 10;
+
+    @Override
+    public void setStorageIdentifier(String name)
+    {
+        indexName = name;        
+    }
 	
 }
