@@ -15,6 +15,9 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.persistence.h2;
 
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.config.DisplayInfo.Required;
+import org.sensorhub.api.persistence.ObsStorageConfig;
+import org.sensorhub.utils.FileUtils;
 
 
 /**
@@ -25,8 +28,13 @@ import org.sensorhub.api.config.DisplayInfo;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Sep 7, 2013
  */
-public class MVStorageConfig extends org.sensorhub.api.persistence.ObsStorageConfig
+public class MVStorageConfig extends ObsStorageConfig
 {
+    
+    @Required
+    @DisplayInfo(desc="Path to database file")
+    public String storagePath;
+    
     
     @DisplayInfo(desc="Memory cache size for page chunks, in KB")
     public int memoryCacheSize = 5*1024;
@@ -38,4 +46,11 @@ public class MVStorageConfig extends org.sensorhub.api.persistence.ObsStorageCon
         
     @DisplayInfo(desc="Set to compress underlying file storage")
     public boolean useCompression = false;
+
+
+    @Override
+    public void setStorageIdentifier(String name)
+    {
+        storagePath = FileUtils.safeFileName(name) + ".dat";        
+    }
 }
