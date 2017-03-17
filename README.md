@@ -1,2 +1,3 @@
-# osh-hydro
-OSH add-ons for water and hydrology applications 
+# OSH for Hydrology
+
+This repository contains various add-on modules for hydrology applications and water in general (e.g. water quality, surface waters, water management systems, etc.)
