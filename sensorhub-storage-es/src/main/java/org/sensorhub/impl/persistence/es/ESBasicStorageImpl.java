@@ -327,23 +327,23 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 
 	@Override
 	public AbstractProcess getDataSourceDescriptionAtTime(double time) {
-		// if the type does not exist, return
-		if(!isTypeExist(getLocalID(),DESC_HISTORY_IDX_NAME)) {
-			return null;
-		}
+		// query ES to get the corresponding timestamp
+		// the response is applied a post filter allowing to specify a range request on the timestamp
+		// the hits should be directly filtered
+		SearchRequestBuilder request = client.prepareSearch(getLocalID()).setTypes(DESC_HISTORY_IDX_NAME)
+				.setScroll(new TimeValue(config.scrollMaxDuration))
+				.addSort(TIMESTAMP_FIELD_NAME,SortOrder.DESC)
+				.setPostFilter(QueryBuilders.rangeQuery(TIMESTAMP_FIELD_NAME)
+						.from(0).to(time))     // Query
+		        ;
+		
+		Iterator<SearchHit> iterator = new ESIterator(client, request,config.scrollFetchSize);
 		
 		AbstractProcess result = null;
-		
-		// build the request
-		GetRequest getRequest = new GetRequest( getLocalID(),DESC_HISTORY_IDX_NAME,time+"");
-		
-		// build  and execute the response
-		GetResponse response = client.get(getRequest).actionGet();
-		
-		// if any response
-		if (response.isExists()) {
+
+		if(iterator.hasNext()) {
 			// get the blob from the source response field
-			Object blob = response.getSource().get(BLOB_FIELD_NAME);
+			Object blob = iterator.next().getSource().get(BLOB_FIELD_NAME);
 			
 			// deserialize the object
 			result = this.getObject(blob);
@@ -362,18 +362,13 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			UpdateRequest updateRequest = new UpdateRequest(getLocalID(), DESC_HISTORY_IDX_NAME, time+"");
 			updateRequest.doc(json);
 			
-			String id=null;
-			try {
-				id = client.update(updateRequest).get().getId();
-			} catch (InterruptedException | ExecutionException e) {
-				log.error("[ES] Cannot update: ");
-			}
-            return (id != null);
+			bulkProcessor.add(updateRequest);
+            return true;
         } else {
         	// send request and check if the id is not null
-        	 String id = client.prepareIndex(getLocalID(),DESC_HISTORY_IDX_NAME).setId(time+"")
-    					.setSource(json).get().getId();
-            return (id != null);
+       	 	bulkProcessor.add(client.prepareIndex(getLocalID(),DESC_HISTORY_IDX_NAME).setId(time+"")
+					.setSource(json).request());
+           return true;
         }
 	}
 
@@ -414,11 +409,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	@Override
 	public void removeDataSourceDescription(double time) {
 		DeleteRequest deleteRequest = new DeleteRequest(getLocalID(), DESC_HISTORY_IDX_NAME, time+"");
-		try {
-			client.delete(deleteRequest).get().getId();
-		} catch (InterruptedException | ExecutionException e) {
-			log.error("[ES] Cannot delete the object with the index: "+time);
-		}
+		bulkProcessor.add(deleteRequest);
 	}
 
 	@Override
@@ -433,14 +424,9 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		        .get();
 		
 		// the corresponding filtering hits
-		DeleteRequest deleteRequest = new DeleteRequest(getLocalID(), DESC_HISTORY_IDX_NAME,"");
 		for(SearchHit hit : response.getHits()) {
-			deleteRequest.id(hit.getId());
-			try {
-				client.delete(deleteRequest).get().getId();
-			} catch (InterruptedException | ExecutionException e) {
-				log.error("[ES] Cannot delete the object with the index: "+hit.getId());
-			}
+			DeleteRequest deleteRequest = new DeleteRequest(getLocalID(), DESC_HISTORY_IDX_NAME,hit.getId());
+			bulkProcessor.add(deleteRequest);
 		}
 	}
 
@@ -780,12 +766,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		UpdateRequest updateRequest = new UpdateRequest(getLocalID(), RS_DATA_IDX_NAME, esKey);
 		updateRequest.doc(json);
 		
-		String id=null;
-		try {
-			id = client.update(updateRequest).get().getId();
-		} catch (InterruptedException | ExecutionException e) {
-			log.error("[ES] Cannot update the object with the key: "+esKey);
-		}
+		bulkProcessor.add(updateRequest);
 	}
 
 	@Override
@@ -795,12 +776,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		
 		// prepare delete request
 		DeleteRequest deleteRequest = new DeleteRequest(getLocalID(), RS_DATA_IDX_NAME, esKey);
-		try {
-			// execute delete
-			client.delete(deleteRequest).get().getId();
-		} catch (InterruptedException | ExecutionException e) {
-			log.error("[ES] Cannot delete the object with the key: "+esKey);
-		}
+		bulkProcessor.add(deleteRequest);
 	}
 
 	@Override
@@ -835,12 +811,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		    for (SearchHit hit : scrollResp.getHits().getHits()) {
 		    	// prepare delete request
 				DeleteRequest deleteRequest = new DeleteRequest(getLocalID(),RS_DATA_IDX_NAME, hit.getId());
-				// execute delete
-				try {
-					client.delete(deleteRequest).get().getId();
-				} catch (InterruptedException | ExecutionException e) {
-					log.error("[ES] Cannot delete the object with the key: "+hit.getId());
-				}
+				bulkProcessor.add(deleteRequest);
 		    	nb++;
 		    }
 

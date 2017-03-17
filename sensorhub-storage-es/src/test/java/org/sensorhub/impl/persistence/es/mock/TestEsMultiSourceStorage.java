@@ -36,10 +36,12 @@ import org.junit.Before;
 import org.sensorhub.impl.persistence.es.ESBasicStorageConfig;
 import org.sensorhub.impl.persistence.es.ESMultiSourceStorageImpl;
 import org.sensorhub.test.persistence.AbstractTestMultiObsStorage;
+import org.sensorhub.utils.FileUtils;
 
 
 public class TestEsMultiSourceStorage extends AbstractTestMultiObsStorage<ESMultiSourceStorageImpl> {
 
+	protected static final String CLUSTER_NAME = "elasticsearch";
 static AbstractClient client;
 	
 	static {
@@ -54,7 +56,7 @@ static AbstractClient client;
 	public void init() throws Exception {
 		ESBasicStorageConfig config = new ESBasicStorageConfig();
 		config.autoStart = true;
-		config.storagePath = "elastic-cluster";
+		config.storagePath = CLUSTER_NAME;
 		List<String> nodes = new ArrayList<String>();
 		nodes.add("localhost:9300");
 
@@ -99,21 +101,7 @@ static AbstractClient client;
 	
 	@AfterClass
 	public static void closeClient() throws IOException {
-		Path directory = Paths.get("test/es");
-        Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-        });
-        
+		FileUtils.deleteRecursively(new File(System.getProperty("java.io.tmpdir")+"/es"));        
 		if(client != null) {
 			client.close();
 		}

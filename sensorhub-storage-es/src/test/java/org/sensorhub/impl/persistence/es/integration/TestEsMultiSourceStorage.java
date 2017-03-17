@@ -39,13 +39,14 @@ import org.sensorhub.test.persistence.AbstractTestMultiObsStorage;
 
 public class TestEsMultiSourceStorage extends AbstractTestMultiObsStorage<IObsStorageModule<ESBasicStorageConfig>>
 {
-    
+	protected static final String CLUSTER_NAME = "elasticsearch";
+	
     @Before
     public void init() throws Exception
     {
         ESBasicStorageConfig config = new ESBasicStorageConfig();
         config.autoStart = true;
-        config.storagePath = "elastic-cluster";
+        config.storagePath = CLUSTER_NAME;
         List<String> nodes = new ArrayList<String>();
         nodes.add("localhost:9300");
         
@@ -78,7 +79,7 @@ public class TestEsMultiSourceStorage extends AbstractTestMultiObsStorage<IObsSt
     {
     	// add transport address(es)
 		Settings settings = Settings.builder()
-		        .put("cluster.name", "elastic-cluster").build();
+		        .put("cluster.name", CLUSTER_NAME).build();
 		TransportClient client = new PreBuiltTransportClient(settings)
 		        .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("localhost"), 9300));
 					
