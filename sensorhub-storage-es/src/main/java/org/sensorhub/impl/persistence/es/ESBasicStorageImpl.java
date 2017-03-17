@@ -950,4 +950,14 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 				.endObject();
 		return builder;
 	}
+
+    @Override
+    public boolean isReadSupported() {
+        return true;
+    }
+
+    @Override
+    public boolean isWriteSupported() {
+        return true;
+    }
 }
