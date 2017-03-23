@@ -151,27 +151,6 @@ public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
             commandData.addComponent("frameRate", rateVal);
         }
     }
-    
-    
-    @Override
-    public boolean isAsyncExecSupported()
-    {
-        return false;
-    }
-
-
-    @Override
-    public boolean isSchedulingSupported()
-    {
-        return false;
-    }
-
-
-    @Override
-    public boolean isStatusHistorySupported()
-    {
-        return false;
-    }
 
 
     @Override
