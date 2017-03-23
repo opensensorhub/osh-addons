@@ -28,27 +28,6 @@ public abstract class MavlinkControlInput extends AbstractSensorControl<MavlinkD
     {
         super(parentSensor);
     }
-
-
-    @Override
-    public boolean isAsyncExecSupported()
-    {
-        return false;
-    }
-
-
-    @Override
-    public boolean isSchedulingSupported()
-    {
-        return false;
-    }
-
-
-    @Override
-    public boolean isStatusHistorySupported()
-    {
-        return false;
-    }
     
     
     @Override
