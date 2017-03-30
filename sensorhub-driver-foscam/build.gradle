@@ -1,6 +1,6 @@
 description = 'Foscam Cameras'
 ext.details = 'Driver for Foscam video cameras using IP protocol'
-version = '0.1-SNAPSHOT'
+version = '1.0.0'
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
