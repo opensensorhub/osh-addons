@@ -306,7 +306,6 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
                     // set time stamp
                     double samplingTime = System.currentTimeMillis() / 1000.0;
                     newRecord.setDoubleValue(0, samplingTime);
-                    
                     // set encoded data
                     AbstractDataBlock frameData = ((DataBlockMixed)newRecord).getUnderlyingObject()[1];
                     frameData.setUnderlyingObject(frameBytes);

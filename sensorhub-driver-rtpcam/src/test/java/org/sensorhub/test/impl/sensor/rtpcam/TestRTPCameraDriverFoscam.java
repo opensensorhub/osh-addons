@@ -57,6 +57,7 @@ public class TestRTPCameraDriverFoscam implements IEventListener
         
         driver = new RTPCameraDriver();
         driver.init(config);
+        
     }
     
     

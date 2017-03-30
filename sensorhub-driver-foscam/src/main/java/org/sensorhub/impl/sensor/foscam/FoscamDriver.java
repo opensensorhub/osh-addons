@@ -15,25 +15,18 @@ Developer are Copyright (C) 2016 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.foscam;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-
-import net.opengis.sensorml.v20.IdentifierList;
-import net.opengis.sensorml.v20.Term;
+import java.util.Map;
 
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.comm.RobustHTTPConnection;
-import org.sensorhub.impl.comm.RobustIPConnection;
-import org.sensorhub.impl.module.RobustConnection;
-import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.vast.sensorML.SMLFactory;
-import org.vast.swe.SWEHelper;
+import org.sensorhub.impl.sensor.rtpcam.RTPCameraDriver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -45,139 +38,95 @@ import org.vast.swe.SWEHelper;
  * @author Lee Butler <labutler10@gmail.com>
  * @since September 2016
  */
-public class FoscamDriver extends AbstractSensorModule<FoscamConfig>
-{
-    RobustConnection connection;
-    FoscamVideoOutput<FoscamDriver> videoDataInterface;
-    FoscamVideoControl videoControlInterface;
-    FoscamPtzControl ptzControlInterface;
-    
-    boolean ptzSupported = false;
-    String serialNumber;
-    String modelNumber;
+public class FoscamDriver extends AbstractSensorModule<FoscamConfig> {
+	private static final Logger logger = LoggerFactory.getLogger(FoscamDriver.class);
+	private RTPCameraDriver rtpCameraDriver;
+	private FoscamPtzControl ptzControlInterface;
 
+	boolean ptzSupported = false;
+	String serialNumber;
+	String modelNumber;
 
-    public FoscamDriver()
-    {
-    }
-    
-    
-    @Override
-    public void init() throws SensorHubException
-    {
-    	System.out.println("In Driver init()...");
-        // reset internal state in case init() was already called
-        super.init();
-        videoDataInterface = null;
-        ptzControlInterface = null;
-        ptzSupported = false;
+	public FoscamDriver() {
+	}
 
-        // create connection handler
-        this.connection = new RobustIPConnection(this, config.connection, "Foscam Camera")
-        {
-            public boolean tryConnect() throws Exception
-            {
-            	// just check host is reachable on specified RTSP port
-                return tryConnectTCP(config.rtsp.remoteHost, config.rtsp.remotePort);
-            }
-        };
-        
-        // create video output
-        this.videoDataInterface = new FoscamVideoOutput<FoscamDriver>(this);
-        this.videoDataInterface.init(config.video.frameWidth, config.video.frameHeight);
-        addOutput(videoDataInterface, false);
+	@Override
+	public void init() throws SensorHubException {
+		// reset internal state in case init() was already called
+		super.init();
+		ptzControlInterface = null;
+		ptzSupported = false;
 
-        // PTZ control and status
-        try
-        {
+		config.rtp.id = config.id;
+		config.rtp.cameraID = config.cameraID;
+
+		// create generic RTPDriver
+		rtpCameraDriver = new RTPCameraDriver();
+		// init generic RTP driver
+		rtpCameraDriver.init(config.rtp);
+
+		// PTZ control and status
+		try {
 			createPtzInterfaces();
+		} catch (IOException e) {
+			logger.error("Cannot create ptz interfaces", e);
+			throw new SensorException("Cannot create ptz interfaces", e);
 		}
-        catch (IOException e)
-        {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+	}
+
+	@Override
+	public synchronized void start() throws SensorHubException {
+		rtpCameraDriver.start();
+	}
+
+	@Override
+	public synchronized void stop() {
+		rtpCameraDriver.stop();
+
+		if (ptzControlInterface != null)
+			ptzControlInterface.stop();
+	}
+
+	@Override
+	protected void updateSensorDescription() {
+		synchronized (sensorDescLock) {
+			super.updateSensorDescription();
+			if (!sensorDescription.isSetDescription())
+				sensorDescription.setDescription("Foscam Network Camera");
 		}
-    }
-    
-    @Override
-    public synchronized void start() throws SensorHubException
-    {
-        // wait for valid connection to camera
-        connection.waitForConnection();
-        
-        // start video stream
-        videoDataInterface.start(config.video, config.rtsp, config.connection.connectTimeout);
-    }
-    
-    
-    @Override
-    public synchronized void stop()
-    {
-    	if (connection != null)
-            connection.cancel();
-        
-    	if (ptzControlInterface != null)
-        	ptzControlInterface.stop();
-        
-    	if (videoDataInterface != null)
-        	videoDataInterface.stop();
-        
-    	if (videoControlInterface != null)
-       		videoControlInterface.stop();
-    }
-    
-    
-    @Override
-    protected void updateSensorDescription()
-    {
-        synchronized (sensorDescLock)
-        {
-            super.updateSensorDescription();
-            if (!sensorDescription.isSetDescription())
-                sensorDescription.setDescription("Foscam Network Camera");
-        }
-    }
-    
-    
-    @Override
-    public boolean isConnected()
-    {
-        if (videoDataInterface != null)
-            return videoDataInterface.firstFrameReceived;
-        
-        return false;
-    }
-    
-    
-    protected void createPtzInterfaces() throws SensorException, IOException
-    {
-        // connect to PTZ URL
-        HttpURLConnection conn = null;
-        try
-        {
-            URL optionsURL = new URL("http://" + config.http.remoteHost + 
-            		":" + Integer.toString(config.http.remotePort) + 
-            		"/cgi-bin/CGIProxy.fcgi?cmd=getDevInfo&usr=" + config.http.user + 
-            		"&pwd=" + config.http.password);
-            conn = (HttpURLConnection)optionsURL.openConnection();
-            conn.setConnectTimeout(config.connection.connectTimeout);
-            conn.setReadTimeout(config.connection.connectTimeout);
-            conn.connect();
-        }
-        catch (IOException e)
-        {
-            throw new SensorException("Cannot connect to camera PTZ service", e);
-        }
+	}
 
-      //add PTZ controller
-      this.ptzControlInterface = new FoscamPtzControl(this);
-      addControlInput(ptzControlInterface);
-      ptzControlInterface.init();
-    }
-    
+	@Override
+	public boolean isConnected() {
+		return rtpCameraDriver.isConnected();
+	}
 
-    @Override
-    public void cleanup()
-    {
-    }
+	protected void createPtzInterfaces() throws SensorException, IOException {
+		// connect to PTZ URL
+		HttpURLConnection conn = null;
+		try {
+			URL optionsURL = new URL("http://" + config.http.remoteHost + ":" + Integer.toString(config.http.remotePort)
+					+ "/cgi-bin/CGIProxy.fcgi?cmd=getDevInfo&usr=" + config.http.user + "&pwd=" + config.http.password);
+			conn = (HttpURLConnection) optionsURL.openConnection();
+			conn.setConnectTimeout(config.rtp.connection.connectTimeout);
+			conn.setReadTimeout(config.rtp.connection.connectTimeout);
+			conn.connect();
+		} catch (IOException e) {
+			throw new SensorException("Cannot connect to camera PTZ service", e);
+		}
+
+		// add PTZ controller
+		this.ptzControlInterface = new FoscamPtzControl(this);
+		addControlInput(ptzControlInterface);
+		ptzControlInterface.init();
+	}
+
+	@Override
+	public void cleanup() {
+	}
+
+	@Override
+	public Map<String, ISensorDataInterface> getObservationOutputs() {
+		return rtpCameraDriver.getObservationOutputs();
+	}
 }

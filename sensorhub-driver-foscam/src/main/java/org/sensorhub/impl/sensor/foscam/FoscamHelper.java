@@ -17,23 +17,22 @@ package org.sensorhub.impl.sensor.foscam;
 
 import java.nio.ByteOrder;
 import java.util.Collection;
+
+import org.vast.cdm.common.CDMException;
+import org.vast.swe.SWEHelper;
+
 import net.opengis.swe.v20.AllowedTokens;
-import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.BinaryBlock;
 import net.opengis.swe.v20.BinaryComponent;
 import net.opengis.swe.v20.BinaryEncoding;
 import net.opengis.swe.v20.ByteEncoding;
-import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.DataStream;
 import net.opengis.swe.v20.DataType;
-import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Text;
 import net.opengis.swe.v20.Time;
-import org.vast.cdm.common.CDMException;
-import org.vast.swe.SWEHelper;
 
 
 /**
