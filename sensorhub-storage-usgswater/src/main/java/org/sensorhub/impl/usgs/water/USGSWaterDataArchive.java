@@ -71,8 +71,8 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig> im
     static final String BASE_USGS_URL = "https://waterservices.usgs.gov/nwis/";
     static final String UID_PREFIX = "urn:usgs:water:";
     
-    Map<String, RecordStore> dataStores = new LinkedHashMap<String, RecordStore>();
-    Map<String, AbstractFeature> fois = new LinkedHashMap<String, AbstractFeature>();
+    Map<String, RecordStore> dataStores = new LinkedHashMap<>();
+    Map<String, AbstractFeature> fois = new LinkedHashMap<>();
     Bbox foiExtent = new Bbox();
     PhysicalSystem systemDesc;
     
@@ -98,7 +98,7 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig> im
         try
         {
             ObsSiteLoader parser = new ObsSiteLoader(this);
-            parser.preloadSites(config.exposeFilter);
+            parser.preloadSites(config.exposeFilter, fois);
         }
         catch (Exception e)
         {
@@ -343,9 +343,15 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig> im
         try
         {
             ArrayList<WaterDataRecord> records = new ArrayList<WaterDataRecord>();
-            getLogger().debug("Next batch is " +
-                              new DateTimeFormat().formatIso(filter.startTime.getTime()/1000., 0) + " - " +
-                              new DateTimeFormat().formatIso(filter.endTime.getTime()/1000., 0));
+            
+            // log batch time range
+            if (getLogger().isDebugEnabled())
+            {
+                DateTimeFormat timeFormat = new DateTimeFormat();
+                getLogger().debug("Next batch is {} - {}",
+                                  timeFormat.formatIso(filter.startTime.getTime()/1000., 0),
+                                  timeFormat.formatIso(filter.endTime.getTime()/1000., 0));
+            }
             
             // request and parse next batch
             loader.sendRequest(filter);

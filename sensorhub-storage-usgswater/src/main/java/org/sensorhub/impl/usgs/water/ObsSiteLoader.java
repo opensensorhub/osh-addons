@@ -19,13 +19,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.NumberFormat;
+import java.util.Map;
+import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.usgs.water.CodeEnums.SiteType;
 import org.sensorhub.impl.usgs.water.CodeEnums.StateCode;
 import org.vast.ogc.om.SamplingPoint;
 import org.vast.swe.SWEHelper;
 import org.vast.util.Bbox;
+import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.Point;
 import net.opengis.gml.v32.impl.GMLFactory;
+
 
 /**
  * <p>
@@ -43,10 +47,10 @@ public class ObsSiteLoader
     static final String FOI_UID_PREFIX = USGSWaterDataArchive.UID_PREFIX + "site:";
     static final String AREA_UID_PREFIX = USGSWaterDataArchive.UID_PREFIX + "region:";
     
-    USGSWaterDataArchive module;
+    AbstractModule<?> module;
     
     
-    public ObsSiteLoader(USGSWaterDataArchive module)
+    public ObsSiteLoader(AbstractModule<?> module)
     {
         this.module = module;
     }
@@ -115,12 +119,12 @@ public class ObsSiteLoader
     }
     
     
-    protected void preloadSites(DataFilter filter) throws IOException
+    public void preloadSites(DataFilter filter, Map<String, AbstractFeature> fois) throws IOException
     {
         String requestUrl = buildSiteInfoRequest(filter);
-        
-        module.getLogger().debug("Requesting site info from: " + requestUrl);        
-        URL url = new URL(requestUrl);        
+                
+        module.getLogger().debug("Requesting site info from: {}", requestUrl);        
+        URL url = new URL(requestUrl);
         
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));)
         {
@@ -186,7 +190,7 @@ public class ObsSiteLoader
                     site.setSampledFeatureUID(AREA_UID_PREFIX + StateCode.values()[stateCd-1]);
                     //site.setSampledFeatureUID(AREA_UID_PREFIX + countyCd);
                     
-                    module.fois.put(id, site);                
+                    fois.put(id, site);                
                 }
                 catch (Exception e)
                 {
