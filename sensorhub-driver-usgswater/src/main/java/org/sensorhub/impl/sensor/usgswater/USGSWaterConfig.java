@@ -1,13 +1,10 @@
 package org.sensorhub.impl.sensor.usgswater;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.sensorhub.api.config.DisplayInfo;
-import org.sensorhub.api.sensor.PositionConfig;
 import org.sensorhub.api.sensor.SensorConfig;
-import org.sensorhub.api.sensor.PositionConfig.LLALocation;
+import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
+import org.sensorhub.impl.usgs.water.CodeEnums.StateCode;
+import org.sensorhub.impl.usgs.water.DataFilter;
 
 
 /**
@@ -17,24 +14,30 @@ import org.sensorhub.api.sensor.PositionConfig.LLALocation;
  * </p>
  * 
  * @author Lee Butler <labutler10@gmail.com>
- * @since October 30, 2014
+ * @since March 22, 2017
  */
 public class USGSWaterConfig extends SensorConfig {
     
-    @DisplayInfo(desc="Base URL (e.g. https://waterservices.usgs.gov/nwis/iv/?format=json)")
-    public String urlBase = "https://waterservices.usgs.gov/nwis/iv/?format=json";
+    @DisplayInfo(desc="Only data matching this filter will be accessible through this storage instance")
+    public DataFilter exposeFilter = new DataFilter();
     
-    public String getUrlBase()
+    public USGSWaterConfig()
     {
-    	return urlBase;
+    	exposeFilter.siteIds.add("02339495");
+//    	exposeFilter.siteIds.add("03574500");
+//    	exposeFilter.siteIds.add("03574100");
+//    	exposeFilter.siteIds.add("03575100");
+    	exposeFilter.stateCodes.add(StateCode.AL);
+    	exposeFilter.countyCodes.add(01053);
+        exposeFilter.parameters.add(ObsParam.DISCHARGE);
     }
     
-    @DisplayInfo(label="Site Codes", desc="List of site codes to provide data")
-    public List<String> siteCodes = new ArrayList<String>();
-    //public List<String> siteCodes = Arrays.asList("02339495", "03574500", "03574100");
-    
-    public List<String> getSiteCodes()
-    {
-    	return siteCodes;
-    }
+//    @DisplayInfo(label="Get Data By Site Code", desc="Get water data by site code")
+//    public boolean getBySiteCode;
+//    
+//    @DisplayInfo(label="Get Data By State", desc="Get water data by US state")
+//    public boolean getByState;
+//    
+//    @DisplayInfo(label="Get Data By County", desc="Get water data by US county")
+//    public boolean getByCounty;
 }
