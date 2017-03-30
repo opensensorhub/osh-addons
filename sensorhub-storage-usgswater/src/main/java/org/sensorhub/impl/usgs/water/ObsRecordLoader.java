@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
 import org.sensorhub.impl.usgs.water.CodeEnums.SiteType;
 import org.sensorhub.impl.usgs.water.CodeEnums.StateCode;
@@ -48,14 +49,14 @@ public class ObsRecordLoader implements Iterator<DataBlock>
 {
     static final String BASE_URL = USGSWaterDataArchive.BASE_USGS_URL + "iv?";
     
-    USGSWaterDataArchive module;
+    AbstractModule<?> module;
     BufferedReader reader;
     DataFilter filter;
     ParamValueParser[] paramReaders;
     DataBlock templateRecord, nextRecord;
         
     
-    public ObsRecordLoader(USGSWaterDataArchive module, DataComponent recordDesc)
+    public ObsRecordLoader(AbstractModule<?> module, DataComponent recordDesc)
     {
         this.module = module;
         this.templateRecord = recordDesc.createDataBlock();

@@ -27,23 +27,26 @@ import org.vast.util.Bbox;
 public class DataFilter
 {
     @DisplayInfo(desc="List of site identifiers")
-    public Set<String> siteIds = new LinkedHashSet<String>();
+    public Set<String> siteIds = new LinkedHashSet<>();
     
     @DisplayInfo(desc="List of US states")
-    public Set<StateCode> stateCodes = new LinkedHashSet<StateCode>();
+    public Set<StateCode> stateCodes = new LinkedHashSet<>();
     
     @DisplayInfo(desc="List of US counties")
-    public Set<Integer> countyCodes = new LinkedHashSet<Integer>();
+    public Set<Integer> countyCodes = new LinkedHashSet<>();
     
     @DisplayInfo(desc="Geographic region (BBOX)")
     public Bbox siteBbox = null;
     
     @DisplayInfo(desc="List of site types")
-    public Set<SiteType> siteTypes = new LinkedHashSet<SiteType>();
+    public Set<SiteType> siteTypes = new LinkedHashSet<>();
     
     @DisplayInfo(desc="Observed parameters")
-    public Set<ObsParam> parameters = new LinkedHashSet<ObsParam>();
+    public Set<ObsParam> parameters = new LinkedHashSet<>();
     
-    public Date startTime;
-    public Date endTime;    
+    @DisplayInfo(desc="Minimum time stamp of requested objects")
+    public Date startTime = null;
+    
+    @DisplayInfo(desc="Maximum time stamp of requested objects")
+    public Date endTime = null;    
 }
