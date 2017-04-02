@@ -18,7 +18,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.text.NumberFormat;
 import java.util.Map;
 import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.usgs.water.CodeEnums.SiteType;
