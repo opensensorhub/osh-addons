@@ -88,12 +88,9 @@ public class ObsRecordLoader implements Iterator<DataBlock>
         // county codes
         else if (!filter.countyCodes.isEmpty())
         {
-            NumberFormat format = NumberFormat.getIntegerInstance();
-            format.setGroupingUsed(false);
-            format.setMinimumIntegerDigits(5);
             buf.append("countyCd=");
-            for (int countyCd: filter.countyCodes)
-                buf.append(format.format(countyCd)).append(',');
+            for (String countyCd: filter.countyCodes)
+            	buf.append(countyCd).append(',');
             buf.setCharAt(buf.length()-1, '&');
         }            
         

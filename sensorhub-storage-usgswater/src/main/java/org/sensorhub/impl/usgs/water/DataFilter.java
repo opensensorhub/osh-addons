@@ -33,7 +33,7 @@ public class DataFilter
     public Set<StateCode> stateCodes = new LinkedHashSet<>();
     
     @DisplayInfo(desc="List of US counties")
-    public Set<Integer> countyCodes = new LinkedHashSet<>();
+    public Set<String> countyCodes = new LinkedHashSet<>();
     
     @DisplayInfo(desc="Geographic region (BBOX)")
     public Bbox siteBbox = null;
