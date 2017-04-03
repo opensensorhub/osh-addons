@@ -64,11 +64,11 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     
     Set<CountyCode> countyCode;
     CountyCode county;
+    
     Map<String, AbstractFeature> siteFois = new LinkedHashMap<>();
-    Map<String, PhysicalSystem> siteDesc;
+    Map<String, PhysicalSystem> siteDesc = new LinkedHashMap<>();
     
     Map<String, RecordStore> dataStores = new LinkedHashMap<>();
-    PhysicalSystem systemDesc;
     
     RobustConnection connection;
     USGSWaterOutput waterOut;
@@ -91,8 +91,8 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
         // reset internal state in case init() was already called
         super.init();
         
-        try {populateCountyCodes();}
-        catch (IOException e) {e.printStackTrace();}
+//        try {populateCountyCodes();}
+//        catch (IOException e) {e.printStackTrace();}
         
         loadFois();
         

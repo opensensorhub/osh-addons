@@ -27,6 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -54,13 +56,15 @@ import org.vast.swe.helper.GeoPosHelper;
  * @since March 22, 2017
  */
 
-public class USGSWaterOutput extends AbstractSensorOutput<USGSWaterDriver> implements IMultiSourceDataInterface
+public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> implements IMultiSourceDataInterface
 {
     DataRecord dataStruct;
     TextEncoding encoding;
     Timer timer;
     Map<String, Long> latestUpdateTimes;
     Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
+    
+    ObsSender sender;
 
     public USGSWaterOutput(USGSWaterDriver driver)
     {
@@ -105,27 +109,6 @@ public class USGSWaterOutput extends AbstractSensorOutput<USGSWaterDriver> imple
         
         // use text encoding with "$$" separators
         encoding = swe.newTextEncoding("$$", "\n");
-        
-//        // build SWE Common record structure
-//        waterRecordStruct = fac.newDataRecord(10);
-//        waterRecordStruct.setName(getName());
-//        waterRecordStruct.setDefinition("http://sensorml.com/ont/swe/property/StreamData");
-//        waterRecordStruct.addComponent("time", fac.newTimeStampIsoUTC());
-//        waterRecordStruct.addComponent("siteCode", fac.newText("http://sensorml.com/ont/swe/property/StationID", "Site ID", null));
-//        waterRecordStruct.addComponent("siteName", fac.newText("http://sensorml.com/ont/swe/property/StationName", "Site Name", null));
-//        waterRecordStruct.addComponent("location", geo.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC));
-//        waterRecordStruct.addComponent("discharge", fac.newQuantity("http://sensorml.com/ont/swe/property/StreamDischarge", "Stream Discharge", null, "ft3/s"));
-//        waterRecordStruct.addComponent("gageHeight", fac.newQuantity("http://sensorml.com/ont/swe/property/GageHeight", "Gage Height", null, "ft"));
-//        waterRecordStruct.addComponent("specificConductance", fac.newQuantity("http://sensorml.com/ont/swe/property/SpecificConductance", "Specific Conductance", null, "uS/cm @ 25degC"));
-//        waterRecordStruct.addComponent("dissolvedOxygen", fac.newQuantity("http://sensorml.com/ont/swe/property/DissolvedOxygen", "Dissolved Oxygen", null, "mg/L"));
-//        waterRecordStruct.addComponent("waterPH", fac.newQuantity("http://sensorml.com/ont/swe/property/WaterPH", "Water PH", null, null));
-//        waterRecordStruct.addComponent("waterTemperature", fac.newQuantity("http://sensorml.com/ont/swe/property/WaterTemperature", "Water Temperature", null, "degC"));
-//        
-//        // mark component providing entity ID
-//        waterRecordStruct.getFieldList().getProperty(1).setRole(ENTITY_ID_URI);
-//        
-//        // Encode using $$ because site names contain commas
-//        waterRecordEncoding = fac.newTextEncoding("$$", "\n");
     }
     
     protected String getDefUri(ObsParam param)
@@ -190,26 +173,34 @@ public class USGSWaterOutput extends AbstractSensorOutput<USGSWaterDriver> imple
     
     protected void start()
     {
-    	
+    	sender = new ObsSender(getRecordDescription());
     	if (timer != null)
             return;
-    	timer = new Timer();
         
     	TimerTask timerTask = new TimerTask()
     	{
 			public void run()
     		{
-    			//URL waterURL = new URL(parentSensor.jsonURL);
-			    for (String siteCode : parentSensor.getConfiguration().exposeFilter.siteIds)
-			    {
-			    	WaterDataRecord rec = null;
-					// wait a bit before querying next station
-                	try { Thread.sleep(1000); }
-                    catch (InterruptedException e) { }
-			    }
+				//System.out.println("try every 10 seconds...");
+		    	try
+		    	{
+					latestRecord = sender.sendRequest(parentSensor.siteFois);
+//			        latestRecordTime = System.currentTimeMillis();
+			        System.out.println("publishing...");
+//			        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, USGSWaterOutput.this, latestRecord));
+				}
+		    	
+		    	catch (IOException e1)
+		    	{
+					e1.printStackTrace();
+				}
+		    	
+				// wait a bit before querying next station
+            	try { Thread.sleep(1000); }
+                catch (InterruptedException e) { }
 			}
 		};
-		
+		timer = new Timer();
 		timer.scheduleAtFixedRate(timerTask, 0, (long)(getAverageSamplingPeriod()*1000));
     }
     
@@ -219,7 +210,7 @@ public class USGSWaterOutput extends AbstractSensorOutput<USGSWaterDriver> imple
     {
         // generating 1 record per second for PTZ settings
         //return 1.0*60*15;
-    	return 2.0;
+    	return 60.0;
     }
 
 

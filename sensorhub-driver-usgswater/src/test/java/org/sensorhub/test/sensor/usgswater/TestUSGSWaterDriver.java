@@ -78,30 +78,30 @@ public class TestUSGSWaterDriver implements IEventListener
     }
     
 
-//    @Test
-//    public void testSendMeasurements() throws Exception
-//    {
-//        System.out.println();
-//        ISensorDataInterface waterOutput = driver.getObservationOutputs().get("waterData");
-//        
-//        writer = new AsciiDataWriter();
-//        writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
-//        writer.setDataComponents(waterOutput.getRecordDescription());
-//        writer.setOutput(System.out);
-//
-//        waterOutput.registerListener(this);
-//        driver.start();
-//        
-//        synchronized (this) 
-//        {
-//            while (sampleCount < 3)
-//                wait();
-//        }
-//        
-//        driver.stop();
-//        
-//        System.out.println();
-//    }
+    @Test
+    public void testSendMeasurements() throws Exception
+    {
+        System.out.println();
+        ISensorDataInterface waterOutput = driver.getObservationOutputs().get("waterData");
+        
+        writer = new AsciiDataWriter();
+        writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
+        writer.setDataComponents(waterOutput.getRecordDescription());
+        writer.setOutput(System.out);
+
+        waterOutput.registerListener(this);
+        driver.start();
+        
+        synchronized (this) 
+        {
+            while (sampleCount < 3)
+                wait();
+        }
+        
+        driver.stop();
+        
+        System.out.println();
+    }
     
     
     @Override
