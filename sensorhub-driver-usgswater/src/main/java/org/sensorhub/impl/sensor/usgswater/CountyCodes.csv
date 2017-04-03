@@ -1,0 +1,3283 @@
+US,01,001,Autauga County
+US,01,003,Baldwin County
+US,01,005,Barbour County
+US,01,007,Bibb County
+US,01,009,Blount County
+US,01,011,Bullock County
+US,01,013,Butler County
+US,01,015,Calhoun County
+US,01,017,Chambers County
+US,01,019,Cherokee County
+US,01,021,Chilton County
+US,01,023,Choctaw County
+US,01,025,Clarke County
+US,01,027,Clay County
+US,01,029,Cleburne County
+US,01,031,Coffee County
+US,01,033,Colbert County
+US,01,035,Conecuh County
+US,01,037,Coosa County
+US,01,039,Covington County
+US,01,041,Crenshaw County
+US,01,043,Cullman County
+US,01,045,Dale County
+US,01,047,Dallas County
+US,01,049,Dekalb County
+US,01,051,Elmore County
+US,01,053,Escambia County
+US,01,055,Etowah County
+US,01,057,Fayette County
+US,01,059,Franklin County
+US,01,061,Geneva County
+US,01,063,Greene County
+US,01,065,Hale County
+US,01,067,Henry County
+US,01,069,Houston County
+US,01,071,Jackson County
+US,01,073,Jefferson County
+US,01,075,Lamar County
+US,01,077,Lauderdale County
+US,01,079,Lawrence County
+US,01,081,Lee County
+US,01,083,Limestone County
+US,01,085,Lowndes County
+US,01,087,Macon County
+US,01,089,Madison County
+US,01,091,Marengo County
+US,01,093,Marion County
+US,01,095,Marshall County
+US,01,097,Mobile County
+US,01,099,Monroe County
+US,01,101,Montgomery County
+US,01,103,Morgan County
+US,01,105,Perry County
+US,01,107,Pickens County
+US,01,109,Pike County
+US,01,111,Randolph County
+US,01,113,Russell County
+US,01,115,St. Clair County
+US,01,117,Shelby County
+US,01,119,Sumter County
+US,01,121,Talladega County
+US,01,123,Tallapoosa County
+US,01,125,Tuscaloosa County
+US,01,127,Walker County
+US,01,129,Washington County
+US,01,131,Wilcox County
+US,01,133,Winston County
+US,02,013,Aleutians East Borough
+US,02,016,Aleutians West Census Area County
+US,02,020,Municipality Of Anchorage
+US,02,050,Bethel Census Area County
+US,02,060,Bristol Bay Borough
+US,02,068,Denali Borough
+US,02,070,Dillingham Census Area County
+US,02,090,Fairbanks North Star Borough
+US,02,100,Haines Borough
+US,02,105,Hoonah-Angoon Census Area County
+US,02,110,City And Borough Of Juneau
+US,02,122,Kenai Peninsula Borough
+US,02,130,Ketchikan Gateway Borough
+US,02,150,Kodiak Island Borough
+US,02,158,Kusilvak Census Area County
+US,02,164,Lake And Peninsula Borough
+US,02,170,Matanuska-Susitna Borough
+US,02,180,Nome Census Area County
+US,02,185,North Slope Borough
+US,02,188,Northwest Arctic Borough
+US,02,195,Petersburg Borough
+US,02,198,Prince Of Wales-Hyder Census Area County
+US,02,220,City And Borough Of Sitka
+US,02,230,Skagway Municipality
+US,02,240,Southeast Fairbanks Census Area County
+US,02,261,Valdez-Cordova Census Area County
+US,02,270,Wade Hampton Census Area County
+US,02,275,City And Borough Of Wrangell
+US,02,282,City And Borough Of Yakutat
+US,02,290,Yukon-Koyukuk Census Area County
+US,04,001,Apache County
+US,04,003,Cochise County
+US,04,005,Coconino County
+US,04,007,Gila County
+US,04,009,Graham County
+US,04,011,Greenlee County
+US,04,012,La Paz County
+US,04,013,Maricopa County
+US,04,015,Mohave County
+US,04,017,Navajo County
+US,04,019,Pima County
+US,04,021,Pinal County
+US,04,023,Santa Cruz County
+US,04,025,Yavapai County
+US,04,027,Yuma County
+US,05,001,Arkansas County
+US,05,003,Ashley County
+US,05,005,Baxter County
+US,05,007,Benton County
+US,05,009,Boone County
+US,05,011,Bradley County
+US,05,013,Calhoun County
+US,05,015,Carroll County
+US,05,017,Chicot County
+US,05,019,Clark County
+US,05,021,Clay County
+US,05,023,Cleburne County
+US,05,025,Cleveland County
+US,05,027,Columbia County
+US,05,029,Conway County
+US,05,031,Craighead County
+US,05,033,Crawford County
+US,05,035,Crittenden County
+US,05,037,Cross County
+US,05,039,Dallas County
+US,05,041,Desha County
+US,05,043,Drew County
+US,05,045,Faulkner County
+US,05,047,Franklin County
+US,05,049,Fulton County
+US,05,051,Garland County
+US,05,053,Grant County
+US,05,055,Greene County
+US,05,057,Hempstead County
+US,05,059,Hot Spring County
+US,05,061,Howard County
+US,05,063,Independence County
+US,05,065,Izard County
+US,05,067,Jackson County
+US,05,069,Jefferson County
+US,05,071,Johnson County
+US,05,073,Lafayette County
+US,05,075,Lawrence County
+US,05,077,Lee County
+US,05,079,Lincoln County
+US,05,081,Little River County
+US,05,083,Logan County
+US,05,085,Lonoke County
+US,05,087,Madison County
+US,05,089,Marion County
+US,05,091,Miller County
+US,05,093,Mississippi County
+US,05,095,Monroe County
+US,05,097,Montgomery County
+US,05,099,Nevada County
+US,05,101,Newton County
+US,05,103,Ouachita County
+US,05,105,Perry County
+US,05,107,Phillips County
+US,05,109,Pike County
+US,05,111,Poinsett County
+US,05,113,Polk County
+US,05,115,Pope County
+US,05,117,Prairie County
+US,05,119,Pulaski County
+US,05,121,Randolph County
+US,05,123,St. Francis County
+US,05,125,Saline County
+US,05,127,Scott County
+US,05,129,Searcy County
+US,05,131,Sebastian County
+US,05,133,Sevier County
+US,05,135,Sharp County
+US,05,137,Stone County
+US,05,139,Union County
+US,05,141,Van Buren County
+US,05,143,Washington County
+US,05,145,White County
+US,05,147,Woodruff County
+US,05,149,Yell County
+US,06,001,Alameda County
+US,06,003,Alpine County
+US,06,005,Amador County
+US,06,007,Butte County
+US,06,009,Calaveras County
+US,06,011,Colusa County
+US,06,013,Contra Costa County
+US,06,015,Del Norte County
+US,06,017,El Dorado County
+US,06,019,Fresno County
+US,06,021,Glenn County
+US,06,023,Humboldt County
+US,06,025,Imperial County
+US,06,027,Inyo County
+US,06,029,Kern County
+US,06,031,Kings County
+US,06,033,Lake County
+US,06,035,Lassen County
+US,06,037,Los Angeles County
+US,06,039,Madera County
+US,06,041,Marin County
+US,06,043,Mariposa County
+US,06,045,Mendocino County
+US,06,047,Merced County
+US,06,049,Modoc County
+US,06,051,Mono County
+US,06,053,Monterey County
+US,06,055,Napa County
+US,06,057,Nevada County
+US,06,059,Orange County
+US,06,061,Placer County
+US,06,063,Plumas County
+US,06,065,Riverside County
+US,06,067,Sacramento County
+US,06,069,San Benito County
+US,06,071,San Bernardino County
+US,06,073,San Diego County
+US,06,075,San Francisco County
+US,06,077,San Joaquin County
+US,06,079,San Luis Obispo County
+US,06,081,San Mateo County
+US,06,083,Santa Barbara County
+US,06,085,Santa Clara County
+US,06,087,Santa Cruz County
+US,06,089,Shasta County
+US,06,091,Sierra County
+US,06,093,Siskiyou County
+US,06,095,Solano County
+US,06,097,Sonoma County
+US,06,099,Stanislaus County
+US,06,101,Sutter County
+US,06,103,Tehama County
+US,06,105,Trinity County
+US,06,107,Tulare County
+US,06,109,Tuolumne County
+US,06,111,Ventura County
+US,06,113,Yolo County
+US,06,115,Yuba County
+US,08,001,Adams County
+US,08,003,Alamosa County
+US,08,005,Arapahoe County
+US,08,007,Archuleta County
+US,08,009,Baca County
+US,08,011,Bent County
+US,08,013,Boulder County
+US,08,014,Broomfield County
+US,08,015,Chaffee County
+US,08,017,Cheyenne County
+US,08,019,Clear Creek County
+US,08,021,Conejos County
+US,08,023,Costilla County
+US,08,025,Crowley County
+US,08,027,Custer County
+US,08,029,Delta County
+US,08,031,Denver County
+US,08,033,Dolores County
+US,08,035,Douglas County
+US,08,037,Eagle County
+US,08,039,Elbert County
+US,08,041,El Paso County
+US,08,043,Fremont County
+US,08,045,Garfield County
+US,08,047,Gilpin County
+US,08,049,Grand County
+US,08,051,Gunnison County
+US,08,053,Hinsdale County
+US,08,055,Huerfano County
+US,08,057,Jackson County
+US,08,059,Jefferson County
+US,08,061,Kiowa County
+US,08,063,Kit Carson County
+US,08,065,Lake County
+US,08,067,La Plata County
+US,08,069,Larimer County
+US,08,071,Las Animas County
+US,08,073,Lincoln County
+US,08,075,Logan County
+US,08,077,Mesa County
+US,08,079,Mineral County
+US,08,081,Moffat County
+US,08,083,Montezuma County
+US,08,085,Montrose County
+US,08,087,Morgan County
+US,08,089,Otero County
+US,08,091,Ouray County
+US,08,093,Park County
+US,08,095,Phillips County
+US,08,097,Pitkin County
+US,08,099,Prowers County
+US,08,101,Pueblo County
+US,08,103,Rio Blanco County
+US,08,105,Rio Grande County
+US,08,107,Routt County
+US,08,109,Saguache County
+US,08,111,San Juan County
+US,08,113,San Miguel County
+US,08,115,Sedgwick County
+US,08,117,Summit County
+US,08,119,Teller County
+US,08,121,Washington County
+US,08,123,Weld County
+US,08,125,Yuma County
+US,09,001,Fairfield County
+US,09,003,Hartford County
+US,09,005,Litchfield County
+US,09,007,Middlesex County
+US,09,009,New Haven County
+US,09,011,New London County
+US,09,013,Tolland County
+US,09,015,Windham County
+US,10,001,Kent County
+US,10,003,New Castle County
+US,10,005,Sussex County
+US,11,001,District Of Columbia
+US,12,001,Alachua County
+US,12,003,Baker County
+US,12,005,Bay County
+US,12,007,Bradford County
+US,12,009,Brevard County
+US,12,011,Broward County
+US,12,013,Calhoun County
+US,12,015,Charlotte County
+US,12,017,Citrus County
+US,12,019,Clay County
+US,12,021,Collier County
+US,12,023,Columbia County
+US,12,027,Desoto County
+US,12,029,Dixie County
+US,12,031,Duval County
+US,12,033,Escambia County
+US,12,035,Flagler County
+US,12,037,Franklin County
+US,12,039,Gadsden County
+US,12,041,Gilchrist County
+US,12,043,Glades County
+US,12,045,Gulf County
+US,12,047,Hamilton County
+US,12,049,Hardee County
+US,12,051,Hendry County
+US,12,053,Hernando County
+US,12,055,Highlands County
+US,12,057,Hillsborough County
+US,12,059,Holmes County
+US,12,061,Indian River County
+US,12,063,Jackson County
+US,12,065,Jefferson County
+US,12,067,Lafayette County
+US,12,069,Lake County
+US,12,071,Lee County
+US,12,073,Leon County
+US,12,075,Levy County
+US,12,077,Liberty County
+US,12,079,Madison County
+US,12,081,Manatee County
+US,12,083,Marion County
+US,12,085,Martin County
+US,12,086,Miami-Dade County
+US,12,087,Monroe County
+US,12,089,Nassau County
+US,12,091,Okaloosa County
+US,12,093,Okeechobee County
+US,12,095,Orange County
+US,12,097,Osceola County
+US,12,099,Palm Beach County
+US,12,101,Pasco County
+US,12,103,Pinellas County
+US,12,105,Polk County
+US,12,107,Putnam County
+US,12,109,St. Johns County
+US,12,111,St. Lucie County
+US,12,113,Santa Rosa County
+US,12,115,Sarasota County
+US,12,117,Seminole County
+US,12,119,Sumter County
+US,12,121,Suwannee County
+US,12,123,Taylor County
+US,12,125,Union County
+US,12,127,Volusia County
+US,12,129,Wakulla County
+US,12,131,Walton County
+US,12,133,Washington County
+US,13,001,Appling County
+US,13,003,Atkinson County
+US,13,005,Bacon County
+US,13,007,Baker County
+US,13,009,Baldwin County
+US,13,011,Banks County
+US,13,013,Barrow County
+US,13,015,Bartow County
+US,13,017,Ben Hill County
+US,13,019,Berrien County
+US,13,021,Bibb County
+US,13,023,Bleckley County
+US,13,025,Brantley County
+US,13,027,Brooks County
+US,13,029,Bryan County
+US,13,031,Bulloch County
+US,13,033,Burke County
+US,13,035,Butts County
+US,13,037,Calhoun County
+US,13,039,Camden County
+US,13,043,Candler County
+US,13,045,Carroll County
+US,13,047,Catoosa County
+US,13,049,Charlton County
+US,13,051,Chatham County
+US,13,053,Chattahoochee County
+US,13,055,Chattooga County
+US,13,057,Cherokee County
+US,13,059,Clarke County
+US,13,061,Clay County
+US,13,063,Clayton County
+US,13,065,Clinch County
+US,13,067,Cobb County
+US,13,069,Coffee County
+US,13,071,Colquitt County
+US,13,073,Columbia County
+US,13,075,Cook County
+US,13,077,Coweta County
+US,13,079,Crawford County
+US,13,081,Crisp County
+US,13,083,Dade County
+US,13,085,Dawson County
+US,13,087,Decatur County
+US,13,089,Dekalb County
+US,13,091,Dodge County
+US,13,093,Dooly County
+US,13,095,Dougherty County
+US,13,097,Douglas County
+US,13,099,Early County
+US,13,101,Echols County
+US,13,103,Effingham County
+US,13,105,Elbert County
+US,13,107,Emanuel County
+US,13,109,Evans County
+US,13,111,Fannin County
+US,13,113,Fayette County
+US,13,115,Floyd County
+US,13,117,Forsyth County
+US,13,119,Franklin County
+US,13,121,Fulton County
+US,13,123,Gilmer County
+US,13,125,Glascock County
+US,13,127,Glynn County
+US,13,129,Gordon County
+US,13,131,Grady County
+US,13,133,Greene County
+US,13,135,Gwinnett County
+US,13,137,Habersham County
+US,13,139,Hall County
+US,13,141,Hancock County
+US,13,143,Haralson County
+US,13,145,Harris County
+US,13,147,Hart County
+US,13,149,Heard County
+US,13,151,Henry County
+US,13,153,Houston County
+US,13,155,Irwin County
+US,13,157,Jackson County
+US,13,159,Jasper County
+US,13,161,Jeff Davis County
+US,13,163,Jefferson County
+US,13,165,Jenkins County
+US,13,167,Johnson County
+US,13,169,Jones County
+US,13,171,Lamar County
+US,13,173,Lanier County
+US,13,175,Laurens County
+US,13,177,Lee County
+US,13,179,Liberty County
+US,13,181,Lincoln County
+US,13,183,Long County
+US,13,185,Lowndes County
+US,13,187,Lumpkin County
+US,13,189,Mcduffie County
+US,13,191,Mcintosh County
+US,13,193,Macon County
+US,13,195,Madison County
+US,13,197,Marion County
+US,13,199,Meriwether County
+US,13,201,Miller County
+US,13,205,Mitchell County
+US,13,207,Monroe County
+US,13,209,Montgomery County
+US,13,211,Morgan County
+US,13,213,Murray County
+US,13,215,Muscogee County
+US,13,217,Newton County
+US,13,219,Oconee County
+US,13,221,Oglethorpe County
+US,13,223,Paulding County
+US,13,225,Peach County
+US,13,227,Pickens County
+US,13,229,Pierce County
+US,13,231,Pike County
+US,13,233,Polk County
+US,13,235,Pulaski County
+US,13,237,Putnam County
+US,13,239,Quitman County
+US,13,241,Rabun County
+US,13,243,Randolph County
+US,13,245,Richmond County
+US,13,247,Rockdale County
+US,13,249,Schley County
+US,13,251,Screven County
+US,13,253,Seminole County
+US,13,255,Spalding County
+US,13,257,Stephens County
+US,13,259,Stewart County
+US,13,261,Sumter County
+US,13,263,Talbot County
+US,13,265,Taliaferro County
+US,13,267,Tattnall County
+US,13,269,Taylor County
+US,13,271,Telfair County
+US,13,273,Terrell County
+US,13,275,Thomas County
+US,13,277,Tift County
+US,13,279,Toombs County
+US,13,281,Towns County
+US,13,283,Treutlen County
+US,13,285,Troup County
+US,13,287,Turner County
+US,13,289,Twiggs County
+US,13,291,Union County
+US,13,293,Upson County
+US,13,295,Walker County
+US,13,297,Walton County
+US,13,299,Ware County
+US,13,301,Warren County
+US,13,303,Washington County
+US,13,305,Wayne County
+US,13,307,Webster County
+US,13,309,Wheeler County
+US,13,311,White County
+US,13,313,Whitfield County
+US,13,315,Wilcox County
+US,13,317,Wilkes County
+US,13,319,Wilkinson County
+US,13,321,Worth County
+US,15,001,Hawaii County
+US,15,003,Honolulu County
+US,15,005,Kalawao County
+US,15,007,Kauai County
+US,15,009,Maui County
+US,16,001,Ada County
+US,16,003,Adams County
+US,16,005,Bannock County
+US,16,007,Bear Lake County
+US,16,009,Benewah County
+US,16,011,Bingham County
+US,16,013,Blaine County
+US,16,015,Boise County
+US,16,017,Bonner County
+US,16,019,Bonneville County
+US,16,021,Boundary County
+US,16,023,Butte County
+US,16,025,Camas County
+US,16,027,Canyon County
+US,16,029,Caribou County
+US,16,031,Cassia County
+US,16,033,Clark County
+US,16,035,Clearwater County
+US,16,037,Custer County
+US,16,039,Elmore County
+US,16,041,Franklin County
+US,16,043,Fremont County
+US,16,045,Gem County
+US,16,047,Gooding County
+US,16,049,Idaho County
+US,16,051,Jefferson County
+US,16,053,Jerome County
+US,16,055,Kootenai County
+US,16,057,Latah County
+US,16,059,Lemhi County
+US,16,061,Lewis County
+US,16,063,Lincoln County
+US,16,065,Madison County
+US,16,067,Minidoka County
+US,16,069,Nez Perce County
+US,16,071,Oneida County
+US,16,073,Owyhee County
+US,16,075,Payette County
+US,16,077,Power County
+US,16,079,Shoshone County
+US,16,081,Teton County
+US,16,083,Twin Falls County
+US,16,085,Valley County
+US,16,087,Washington County
+US,17,001,Adams County
+US,17,003,Alexander County
+US,17,005,Bond County
+US,17,007,Boone County
+US,17,009,Brown County
+US,17,011,Bureau County
+US,17,013,Calhoun County
+US,17,015,Carroll County
+US,17,017,Cass County
+US,17,019,Champaign County
+US,17,021,Christian County
+US,17,023,Clark County
+US,17,025,Clay County
+US,17,027,Clinton County
+US,17,029,Coles County
+US,17,031,Cook County
+US,17,033,Crawford County
+US,17,035,Cumberland County
+US,17,037,Dekalb County
+US,17,039,Dewitt County
+US,17,041,Douglas County
+US,17,043,Dupage County
+US,17,045,Edgar County
+US,17,047,Edwards County
+US,17,049,Effingham County
+US,17,051,Fayette County
+US,17,053,Ford County
+US,17,055,Franklin County
+US,17,057,Fulton County
+US,17,059,Gallatin County
+US,17,061,Greene County
+US,17,063,Grundy County
+US,17,065,Hamilton County
+US,17,067,Hancock County
+US,17,069,Hardin County
+US,17,071,Henderson County
+US,17,073,Henry County
+US,17,075,Iroquois County
+US,17,077,Jackson County
+US,17,079,Jasper County
+US,17,081,Jefferson County
+US,17,083,Jersey County
+US,17,085,Jo Daviess County
+US,17,087,Johnson County
+US,17,089,Kane County
+US,17,091,Kankakee County
+US,17,093,Kendall County
+US,17,095,Knox County
+US,17,097,Lake County
+US,17,099,Lasalle County
+US,17,101,Lawrence County
+US,17,103,Lee County
+US,17,105,Livingston County
+US,17,107,Logan County
+US,17,109,Mcdonough County
+US,17,111,Mchenry County
+US,17,113,Mclean County
+US,17,115,Macon County
+US,17,117,Macoupin County
+US,17,119,Madison County
+US,17,121,Marion County
+US,17,123,Marshall County
+US,17,125,Mason County
+US,17,127,Massac County
+US,17,129,Menard County
+US,17,131,Mercer County
+US,17,133,Monroe County
+US,17,135,Montgomery County
+US,17,137,Morgan County
+US,17,139,Moultrie County
+US,17,141,Ogle County
+US,17,143,Peoria County
+US,17,145,Perry County
+US,17,147,Piatt County
+US,17,149,Pike County
+US,17,151,Pope County
+US,17,153,Pulaski County
+US,17,155,Putnam County
+US,17,157,Randolph County
+US,17,159,Richland County
+US,17,161,Rock Island County
+US,17,163,St. Clair County
+US,17,165,Saline County
+US,17,167,Sangamon County
+US,17,169,Schuyler County
+US,17,171,Scott County
+US,17,173,Shelby County
+US,17,175,Stark County
+US,17,177,Stephenson County
+US,17,179,Tazewell County
+US,17,181,Union County
+US,17,183,Vermilion County
+US,17,185,Wabash County
+US,17,187,Warren County
+US,17,189,Washington County
+US,17,191,Wayne County
+US,17,193,White County
+US,17,195,Whiteside County
+US,17,197,Will County
+US,17,199,Williamson County
+US,17,201,Winnebago County
+US,17,203,Woodford County
+US,18,001,Adams County
+US,18,003,Allen County
+US,18,005,Bartholomew County
+US,18,007,Benton County
+US,18,009,Blackford County
+US,18,011,Boone County
+US,18,013,Brown County
+US,18,015,Carroll County
+US,18,017,Cass County
+US,18,019,Clark County
+US,18,021,Clay County
+US,18,023,Clinton County
+US,18,025,Crawford County
+US,18,027,Daviess County
+US,18,029,Dearborn County
+US,18,031,Decatur County
+US,18,033,Dekalb County
+US,18,035,Delaware County
+US,18,037,Dubois County
+US,18,039,Elkhart County
+US,18,041,Fayette County
+US,18,043,Floyd County
+US,18,045,Fountain County
+US,18,047,Franklin County
+US,18,049,Fulton County
+US,18,051,Gibson County
+US,18,053,Grant County
+US,18,055,Greene County
+US,18,057,Hamilton County
+US,18,059,Hancock County
+US,18,061,Harrison County
+US,18,063,Hendricks County
+US,18,065,Henry County
+US,18,067,Howard County
+US,18,069,Huntington County
+US,18,071,Jackson County
+US,18,073,Jasper County
+US,18,075,Jay County
+US,18,077,Jefferson County
+US,18,079,Jennings County
+US,18,081,Johnson County
+US,18,083,Knox County
+US,18,085,Kosciusko County
+US,18,087,Lagrange County
+US,18,089,Lake County
+US,18,091,Laporte County
+US,18,093,Lawrence County
+US,18,095,Madison County
+US,18,097,Marion County
+US,18,099,Marshall County
+US,18,101,Martin County
+US,18,103,Miami County
+US,18,105,Monroe County
+US,18,107,Montgomery County
+US,18,109,Morgan County
+US,18,111,Newton County
+US,18,113,Noble County
+US,18,115,Ohio County
+US,18,117,Orange County
+US,18,119,Owen County
+US,18,121,Parke County
+US,18,123,Perry County
+US,18,125,Pike County
+US,18,127,Porter County
+US,18,129,Posey County
+US,18,131,Pulaski County
+US,18,133,Putnam County
+US,18,135,Randolph County
+US,18,137,Ripley County
+US,18,139,Rush County
+US,18,141,St. Joseph County
+US,18,143,Scott County
+US,18,145,Shelby County
+US,18,147,Spencer County
+US,18,149,Starke County
+US,18,151,Steuben County
+US,18,153,Sullivan County
+US,18,155,Switzerland County
+US,18,157,Tippecanoe County
+US,18,159,Tipton County
+US,18,161,Union County
+US,18,163,Vanderburgh County
+US,18,165,Vermillion County
+US,18,167,Vigo County
+US,18,169,Wabash County
+US,18,171,Warren County
+US,18,173,Warrick County
+US,18,175,Washington County
+US,18,177,Wayne County
+US,18,179,Wells County
+US,18,181,White County
+US,18,183,Whitley County
+US,19,001,Adair County
+US,19,003,Adams County
+US,19,005,Allamakee County
+US,19,007,Appanoose County
+US,19,009,Audubon County
+US,19,011,Benton County
+US,19,013,Black Hawk County
+US,19,015,Boone County
+US,19,017,Bremer County
+US,19,019,Buchanan County
+US,19,021,Buena Vista County
+US,19,023,Butler County
+US,19,025,Calhoun County
+US,19,027,Carroll County
+US,19,029,Cass County
+US,19,031,Cedar County
+US,19,033,Cerro Gordo County
+US,19,035,Cherokee County
+US,19,037,Chickasaw County
+US,19,039,Clarke County
+US,19,041,Clay County
+US,19,043,Clayton County
+US,19,045,Clinton County
+US,19,047,Crawford County
+US,19,049,Dallas County
+US,19,051,Davis County
+US,19,053,Decatur County
+US,19,055,Delaware County
+US,19,057,Des Moines County
+US,19,059,Dickinson County
+US,19,061,Dubuque County
+US,19,063,Emmet County
+US,19,065,Fayette County
+US,19,067,Floyd County
+US,19,069,Franklin County
+US,19,071,Fremont County
+US,19,073,Greene County
+US,19,075,Grundy County
+US,19,077,Guthrie County
+US,19,079,Hamilton County
+US,19,081,Hancock County
+US,19,083,Hardin County
+US,19,085,Harrison County
+US,19,087,Henry County
+US,19,089,Howard County
+US,19,091,Humboldt County
+US,19,093,Ida County
+US,19,095,Iowa County
+US,19,097,Jackson County
+US,19,099,Jasper County
+US,19,101,Jefferson County
+US,19,103,Johnson County
+US,19,105,Jones County
+US,19,107,Keokuk County
+US,19,109,Kossuth County
+US,19,111,Lee County
+US,19,113,Linn County
+US,19,115,Louisa County
+US,19,117,Lucas County
+US,19,119,Lyon County
+US,19,121,Madison County
+US,19,123,Mahaska County
+US,19,125,Marion County
+US,19,127,Marshall County
+US,19,129,Mills County
+US,19,131,Mitchell County
+US,19,133,Monona County
+US,19,135,Monroe County
+US,19,137,Montgomery County
+US,19,139,Muscatine County
+US,19,141,O'Brien County
+US,19,143,Osceola County
+US,19,145,Page County
+US,19,147,Palo Alto County
+US,19,149,Plymouth County
+US,19,151,Pocahontas County
+US,19,153,Polk County
+US,19,155,Pottawattamie County
+US,19,157,Poweshiek County
+US,19,159,Ringgold County
+US,19,161,Sac County
+US,19,163,Scott County
+US,19,165,Shelby County
+US,19,167,Sioux County
+US,19,169,Story County
+US,19,171,Tama County
+US,19,173,Taylor County
+US,19,175,Union County
+US,19,177,Van Buren County
+US,19,179,Wapello County
+US,19,181,Warren County
+US,19,183,Washington County
+US,19,185,Wayne County
+US,19,187,Webster County
+US,19,189,Winnebago County
+US,19,191,Winneshiek County
+US,19,193,Woodbury County
+US,19,195,Worth County
+US,19,197,Wright County
+US,20,001,Allen County
+US,20,003,Anderson County
+US,20,005,Atchison County
+US,20,007,Barber County
+US,20,009,Barton County
+US,20,011,Bourbon County
+US,20,013,Brown County
+US,20,015,Butler County
+US,20,017,Chase County
+US,20,019,Chautauqua County
+US,20,021,Cherokee County
+US,20,023,Cheyenne County
+US,20,025,Clark County
+US,20,027,Clay County
+US,20,029,Cloud County
+US,20,031,Coffey County
+US,20,033,Comanche County
+US,20,035,Cowley County
+US,20,037,Crawford County
+US,20,039,Decatur County
+US,20,041,Dickinson County
+US,20,043,Doniphan County
+US,20,045,Douglas County
+US,20,047,Edwards County
+US,20,049,Elk County
+US,20,051,Ellis County
+US,20,053,Ellsworth County
+US,20,055,Finney County
+US,20,057,Ford County
+US,20,059,Franklin County
+US,20,061,Geary County
+US,20,063,Gove County
+US,20,065,Graham County
+US,20,067,Grant County
+US,20,069,Gray County
+US,20,071,Greeley County
+US,20,073,Greenwood County
+US,20,075,Hamilton County
+US,20,077,Harper County
+US,20,079,Harvey County
+US,20,081,Haskell County
+US,20,083,Hodgeman County
+US,20,085,Jackson County
+US,20,087,Jefferson County
+US,20,089,Jewell County
+US,20,091,Johnson County
+US,20,093,Kearny County
+US,20,095,Kingman County
+US,20,097,Kiowa County
+US,20,099,Labette County
+US,20,101,Lane County
+US,20,103,Leavenworth County
+US,20,105,Lincoln County
+US,20,107,Linn County
+US,20,109,Logan County
+US,20,111,Lyon County
+US,20,113,Mcpherson County
+US,20,115,Marion County
+US,20,117,Marshall County
+US,20,119,Meade County
+US,20,121,Miami County
+US,20,123,Mitchell County
+US,20,125,Montgomery County
+US,20,127,Morris County
+US,20,129,Morton County
+US,20,131,Nemaha County
+US,20,133,Neosho County
+US,20,135,Ness County
+US,20,137,Norton County
+US,20,139,Osage County
+US,20,141,Osborne County
+US,20,143,Ottawa County
+US,20,145,Pawnee County
+US,20,147,Phillips County
+US,20,149,Pottawatomie County
+US,20,151,Pratt County
+US,20,153,Rawlins County
+US,20,155,Reno County
+US,20,157,Republic County
+US,20,159,Rice County
+US,20,161,Riley County
+US,20,163,Rooks County
+US,20,165,Rush County
+US,20,167,Russell County
+US,20,169,Saline County
+US,20,171,Scott County
+US,20,173,Sedgwick County
+US,20,175,Seward County
+US,20,177,Shawnee County
+US,20,179,Sheridan County
+US,20,181,Sherman County
+US,20,183,Smith County
+US,20,185,Stafford County
+US,20,187,Stanton County
+US,20,189,Stevens County
+US,20,191,Sumner County
+US,20,193,Thomas County
+US,20,195,Trego County
+US,20,197,Wabaunsee County
+US,20,199,Wallace County
+US,20,201,Washington County
+US,20,203,Wichita County
+US,20,205,Wilson County
+US,20,207,Woodson County
+US,20,209,Wyandotte County
+US,21,001,Adair County
+US,21,003,Allen County
+US,21,005,Anderson County
+US,21,007,Ballard County
+US,21,009,Barren County
+US,21,011,Bath County
+US,21,013,Bell County
+US,21,015,Boone County
+US,21,017,Bourbon County
+US,21,019,Boyd County
+US,21,021,Boyle County
+US,21,023,Bracken County
+US,21,025,Breathitt County
+US,21,027,Breckinridge County
+US,21,029,Bullitt County
+US,21,031,Butler County
+US,21,033,Caldwell County
+US,21,035,Calloway County
+US,21,037,Campbell County
+US,21,039,Carlisle County
+US,21,041,Carroll County
+US,21,043,Carter County
+US,21,045,Casey County
+US,21,047,Christian County
+US,21,049,Clark County
+US,21,051,Clay County
+US,21,053,Clinton County
+US,21,055,Crittenden County
+US,21,057,Cumberland County
+US,21,059,Daviess County
+US,21,061,Edmonson County
+US,21,063,Elliott County
+US,21,065,Estill County
+US,21,067,Fayette County
+US,21,069,Fleming County
+US,21,071,Floyd County
+US,21,073,Franklin County
+US,21,075,Fulton County
+US,21,077,Gallatin County
+US,21,079,Garrard County
+US,21,081,Grant County
+US,21,083,Graves County
+US,21,085,Grayson County
+US,21,087,Green County
+US,21,089,Greenup County
+US,21,091,Hancock County
+US,21,093,Hardin County
+US,21,095,Harlan County
+US,21,097,Harrison County
+US,21,099,Hart County
+US,21,101,Henderson County
+US,21,103,Henry County
+US,21,105,Hickman County
+US,21,107,Hopkins County
+US,21,109,Jackson County
+US,21,111,Jefferson County
+US,21,113,Jessamine County
+US,21,115,Johnson County
+US,21,117,Kenton County
+US,21,119,Knott County
+US,21,121,Knox County
+US,21,123,Larue County
+US,21,125,Laurel County
+US,21,127,Lawrence County
+US,21,129,Lee County
+US,21,131,Leslie County
+US,21,133,Letcher County
+US,21,135,Lewis County
+US,21,137,Lincoln County
+US,21,139,Livingston County
+US,21,141,Logan County
+US,21,143,Lyon County
+US,21,145,Mccracken County
+US,21,147,Mccreary County
+US,21,149,Mclean County
+US,21,151,Madison County
+US,21,153,Magoffin County
+US,21,155,Marion County
+US,21,157,Marshall County
+US,21,159,Martin County
+US,21,161,Mason County
+US,21,163,Meade County
+US,21,165,Menifee County
+US,21,167,Mercer County
+US,21,169,Metcalfe County
+US,21,171,Monroe County
+US,21,173,Montgomery County
+US,21,175,Morgan County
+US,21,177,Muhlenberg County
+US,21,179,Nelson County
+US,21,181,Nicholas County
+US,21,183,Ohio County
+US,21,185,Oldham County
+US,21,187,Owen County
+US,21,189,Owsley County
+US,21,191,Pendleton County
+US,21,193,Perry County
+US,21,195,Pike County
+US,21,197,Powell County
+US,21,199,Pulaski County
+US,21,201,Robertson County
+US,21,203,Rockcastle County
+US,21,205,Rowan County
+US,21,207,Russell County
+US,21,209,Scott County
+US,21,211,Shelby County
+US,21,213,Simpson County
+US,21,215,Spencer County
+US,21,217,Taylor County
+US,21,219,Todd County
+US,21,221,Trigg County
+US,21,223,Trimble County
+US,21,225,Union County
+US,21,227,Warren County
+US,21,229,Washington County
+US,21,231,Wayne County
+US,21,233,Webster County
+US,21,235,Whitley County
+US,21,237,Wolfe County
+US,21,239,Woodford County
+US,22,001,Acadia Parish Parish
+US,22,003,Allen Parish Parish
+US,22,005,Ascension Parish Parish
+US,22,007,Assumption Parish Parish
+US,22,009,Avoyelles Parish Parish
+US,22,011,Beauregard Parish Parish
+US,22,013,Bienville Parish Parish
+US,22,015,Bossier Parish Parish
+US,22,017,Caddo Parish Parish
+US,22,019,Calcasieu Parish Parish
+US,22,021,Caldwell Parish Parish
+US,22,023,Cameron Parish Parish
+US,22,025,Catahoula Parish Parish
+US,22,027,Claiborne Parish Parish
+US,22,029,Concordia Parish Parish
+US,22,031,De Soto Parish Parish
+US,22,033,East Baton Rouge Parish Parish
+US,22,035,East Carroll Parish Parish
+US,22,037,East Feliciana Parish Parish
+US,22,039,Evangeline Parish Parish
+US,22,041,Franklin Parish Parish
+US,22,043,Grant Parish Parish
+US,22,045,Iberia Parish Parish
+US,22,047,Iberville Parish Parish
+US,22,049,Jackson Parish Parish
+US,22,051,Jefferson Parish Parish
+US,22,053,Jefferson Davis Parish Parish
+US,22,055,Lafayette Parish Parish
+US,22,057,Lafourche Parish Parish
+US,22,059,Lasalle Parish Parish
+US,22,061,Lincoln Parish Parish
+US,22,063,Livingston Parish Parish
+US,22,065,Madison Parish Parish
+US,22,067,Morehouse Parish Parish
+US,22,069,Natchitoches Parish Parish
+US,22,071,Orleans Parish Parish
+US,22,073,Ouachita Parish Parish
+US,22,075,Plaquemines Parish Parish
+US,22,077,Pointe Coupee Parish Parish
+US,22,079,Rapides Parish Parish
+US,22,081,Red River Parish Parish
+US,22,083,Richland Parish Parish
+US,22,085,Sabine Parish Parish
+US,22,087,St. Bernard Parish Parish
+US,22,089,St. Charles Parish Parish
+US,22,091,St. Helena Parish Parish
+US,22,093,St. James Parish Parish
+US,22,095,St. John The Baptist Parish Parish
+US,22,097,St. Landry Parish Parish
+US,22,099,St. Martin Parish Parish
+US,22,101,St. Mary Parish Parish
+US,22,103,St. Tammany Parish Parish
+US,22,105,Tangipahoa Parish Parish
+US,22,107,Tensas Parish Parish
+US,22,109,Terrebonne Parish Parish
+US,22,111,Union Parish Parish
+US,22,113,Vermilion Parish Parish
+US,22,115,Vernon Parish Parish
+US,22,117,Washington Parish Parish
+US,22,119,Webster Parish Parish
+US,22,121,West Baton Rouge Parish Parish
+US,22,123,West Carroll Parish Parish
+US,22,125,West Feliciana Parish Parish
+US,22,127,Winn Parish Parish
+US,23,001,Androscoggin County
+US,23,003,Aroostook County
+US,23,005,Cumberland County
+US,23,007,Franklin County
+US,23,009,Hancock County
+US,23,011,Kennebec County
+US,23,013,Knox County
+US,23,015,Lincoln County
+US,23,017,Oxford County
+US,23,019,Penobscot County
+US,23,021,Piscataquis County
+US,23,023,Sagadahoc County
+US,23,025,Somerset County
+US,23,027,Waldo County
+US,23,029,Washington County
+US,23,031,York County
+US,24,001,Allegany County
+US,24,003,Anne Arundel County
+US,24,005,Baltimore County
+US,24,009,Calvert County
+US,24,011,Caroline County
+US,24,013,Carroll County
+US,24,015,Cecil County
+US,24,017,Charles County
+US,24,019,Dorchester County
+US,24,021,Frederick County
+US,24,023,Garrett County
+US,24,025,Harford County
+US,24,027,Howard County
+US,24,029,Kent County
+US,24,031,Montgomery County
+US,24,033,Prince George'S County
+US,24,035,Queen Anne'S County
+US,24,037,St. Mary'S County
+US,24,039,Somerset County
+US,24,041,Talbot County
+US,24,043,Washington County
+US,24,045,Wicomico County
+US,24,047,Worcester County
+US,24,510,Baltimore City
+US,25,001,Barnstable County
+US,25,003,Berkshire County
+US,25,005,Bristol County
+US,25,007,Dukes County
+US,25,009,Essex County
+US,25,011,Franklin County
+US,25,013,Hampden County
+US,25,015,Hampshire County
+US,25,017,Middlesex County
+US,25,019,Nantucket County
+US,25,021,Norfolk County
+US,25,023,Plymouth County
+US,25,025,Suffolk County
+US,25,027,Worcester County
+US,26,001,Alcona County
+US,26,003,Alger County
+US,26,005,Allegan County
+US,26,007,Alpena County
+US,26,009,Antrim County
+US,26,011,Arenac County
+US,26,013,Baraga County
+US,26,015,Barry County
+US,26,017,Bay County
+US,26,019,Benzie County
+US,26,021,Berrien County
+US,26,023,Branch County
+US,26,025,Calhoun County
+US,26,027,Cass County
+US,26,029,Charlevoix County
+US,26,031,Cheboygan County
+US,26,033,Chippewa County
+US,26,035,Clare County
+US,26,037,Clinton County
+US,26,039,Crawford County
+US,26,041,Delta County
+US,26,043,Dickinson County
+US,26,045,Eaton County
+US,26,047,Emmet County
+US,26,049,Genesee County
+US,26,051,Gladwin County
+US,26,053,Gogebic County
+US,26,055,Grand Traverse County
+US,26,057,Gratiot County
+US,26,059,Hillsdale County
+US,26,061,Houghton County
+US,26,063,Huron County
+US,26,065,Ingham County
+US,26,067,Ionia County
+US,26,069,Iosco County
+US,26,071,Iron County
+US,26,073,Isabella County
+US,26,075,Jackson County
+US,26,077,Kalamazoo County
+US,26,079,Kalkaska County
+US,26,081,Kent County
+US,26,083,Keweenaw County
+US,26,085,Lake County
+US,26,087,Lapeer County
+US,26,089,Leelanau County
+US,26,091,Lenawee County
+US,26,093,Livingston County
+US,26,095,Luce County
+US,26,097,Mackinac County
+US,26,099,Macomb County
+US,26,101,Manistee County
+US,26,103,Marquette County
+US,26,105,Mason County
+US,26,107,Mecosta County
+US,26,109,Menominee County
+US,26,111,Midland County
+US,26,113,Missaukee County
+US,26,115,Monroe County
+US,26,117,Montcalm County
+US,26,119,Montmorency County
+US,26,121,Muskegon County
+US,26,123,Newaygo County
+US,26,125,Oakland County
+US,26,127,Oceana County
+US,26,129,Ogemaw County
+US,26,131,Ontonagon County
+US,26,133,Osceola County
+US,26,135,Oscoda County
+US,26,137,Otsego County
+US,26,139,Ottawa County
+US,26,141,Presque Isle County
+US,26,143,Roscommon County
+US,26,145,Saginaw County
+US,26,147,St. Clair County
+US,26,149,St. Joseph County
+US,26,151,Sanilac County
+US,26,153,Schoolcraft County
+US,26,155,Shiawassee County
+US,26,157,Tuscola County
+US,26,159,Van Buren County
+US,26,161,Washtenaw County
+US,26,163,Wayne County
+US,26,165,Wexford County
+US,27,001,Aitkin County
+US,27,003,Anoka County
+US,27,005,Becker County
+US,27,007,Beltrami County
+US,27,009,Benton County
+US,27,011,Big Stone County
+US,27,013,Blue Earth County
+US,27,015,Brown County
+US,27,017,Carlton County
+US,27,019,Carver County
+US,27,021,Cass County
+US,27,023,Chippewa County
+US,27,025,Chisago County
+US,27,027,Clay County
+US,27,029,Clearwater County
+US,27,031,Cook County
+US,27,033,Cottonwood County
+US,27,035,Crow Wing County
+US,27,037,Dakota County
+US,27,039,Dodge County
+US,27,041,Douglas County
+US,27,043,Faribault County
+US,27,045,Fillmore County
+US,27,047,Freeborn County
+US,27,049,Goodhue County
+US,27,051,Grant County
+US,27,053,Hennepin County
+US,27,055,Houston County
+US,27,057,Hubbard County
+US,27,059,Isanti County
+US,27,061,Itasca County
+US,27,063,Jackson County
+US,27,065,Kanabec County
+US,27,067,Kandiyohi County
+US,27,069,Kittson County
+US,27,071,Koochiching County
+US,27,073,Lac Qui Parle County
+US,27,075,Lake County
+US,27,077,Lake Of The Woods County
+US,27,079,Le Sueur County
+US,27,081,Lincoln County
+US,27,083,Lyon County
+US,27,085,Mcleod County
+US,27,087,Mahnomen County
+US,27,089,Marshall County
+US,27,091,Martin County
+US,27,093,Meeker County
+US,27,095,Mille Lacs County
+US,27,097,Morrison County
+US,27,099,Mower County
+US,27,101,Murray County
+US,27,103,Nicollet County
+US,27,105,Nobles County
+US,27,107,Norman County
+US,27,109,Olmsted County
+US,27,111,Otter Tail County
+US,27,113,Pennington County
+US,27,115,Pine County
+US,27,117,Pipestone County
+US,27,119,Polk County
+US,27,121,Pope County
+US,27,123,Ramsey County
+US,27,125,Red Lake County
+US,27,127,Redwood County
+US,27,129,Renville County
+US,27,131,Rice County
+US,27,133,Rock County
+US,27,135,Roseau County
+US,27,137,St. Louis County
+US,27,139,Scott County
+US,27,141,Sherburne County
+US,27,143,Sibley County
+US,27,145,Stearns County
+US,27,147,Steele County
+US,27,149,Stevens County
+US,27,151,Swift County
+US,27,153,Todd County
+US,27,155,Traverse County
+US,27,157,Wabasha County
+US,27,159,Wadena County
+US,27,161,Waseca County
+US,27,163,Washington County
+US,27,165,Watonwan County
+US,27,167,Wilkin County
+US,27,169,Winona County
+US,27,171,Wright County
+US,27,173,Yellow Medicine County
+US,28,001,Adams County
+US,28,003,Alcorn County
+US,28,005,Amite County
+US,28,007,Attala County
+US,28,009,Benton County
+US,28,011,Bolivar County
+US,28,013,Calhoun County
+US,28,015,Carroll County
+US,28,017,Chickasaw County
+US,28,019,Choctaw County
+US,28,021,Claiborne County
+US,28,023,Clarke County
+US,28,025,Clay County
+US,28,027,Coahoma County
+US,28,029,Copiah County
+US,28,031,Covington County
+US,28,033,Desoto County
+US,28,035,Forrest County
+US,28,037,Franklin County
+US,28,039,George County
+US,28,041,Greene County
+US,28,043,Grenada County
+US,28,045,Hancock County
+US,28,047,Harrison County
+US,28,049,Hinds County
+US,28,051,Holmes County
+US,28,053,Humphreys County
+US,28,055,Issaquena County
+US,28,057,Itawamba County
+US,28,059,Jackson County
+US,28,061,Jasper County
+US,28,063,Jefferson County
+US,28,065,Jefferson Davis County
+US,28,067,Jones County
+US,28,069,Kemper County
+US,28,071,Lafayette County
+US,28,073,Lamar County
+US,28,075,Lauderdale County
+US,28,077,Lawrence County
+US,28,079,Leake County
+US,28,081,Lee County
+US,28,083,Leflore County
+US,28,085,Lincoln County
+US,28,087,Lowndes County
+US,28,089,Madison County
+US,28,091,Marion County
+US,28,093,Marshall County
+US,28,095,Monroe County
+US,28,097,Montgomery County
+US,28,099,Neshoba County
+US,28,101,Newton County
+US,28,103,Noxubee County
+US,28,105,Oktibbeha County
+US,28,107,Panola County
+US,28,109,Pearl River County
+US,28,111,Perry County
+US,28,113,Pike County
+US,28,115,Pontotoc County
+US,28,117,Prentiss County
+US,28,119,Quitman County
+US,28,121,Rankin County
+US,28,123,Scott County
+US,28,125,Sharkey County
+US,28,127,Simpson County
+US,28,129,Smith County
+US,28,131,Stone County
+US,28,133,Sunflower County
+US,28,135,Tallahatchie County
+US,28,137,Tate County
+US,28,139,Tippah County
+US,28,141,Tishomingo County
+US,28,143,Tunica County
+US,28,145,Union County
+US,28,147,Walthall County
+US,28,149,Warren County
+US,28,151,Washington County
+US,28,153,Wayne County
+US,28,155,Webster County
+US,28,157,Wilkinson County
+US,28,159,Winston County
+US,28,161,Yalobusha County
+US,28,163,Yazoo County
+US,29,001,Adair County
+US,29,003,Andrew County
+US,29,005,Atchison County
+US,29,007,Audrain County
+US,29,009,Barry County
+US,29,011,Barton County
+US,29,013,Bates County
+US,29,015,Benton County
+US,29,017,Bollinger County
+US,29,019,Boone County
+US,29,021,Buchanan County
+US,29,023,Butler County
+US,29,025,Caldwell County
+US,29,027,Callaway County
+US,29,029,Camden County
+US,29,031,Cape Girardeau County
+US,29,033,Carroll County
+US,29,035,Carter County
+US,29,037,Cass County
+US,29,039,Cedar County
+US,29,041,Chariton County
+US,29,043,Christian County
+US,29,045,Clark County
+US,29,047,Clay County
+US,29,049,Clinton County
+US,29,051,Cole County
+US,29,053,Cooper County
+US,29,055,Crawford County
+US,29,057,Dade County
+US,29,059,Dallas County
+US,29,061,Daviess County
+US,29,063,Dekalb County
+US,29,065,Dent County
+US,29,067,Douglas County
+US,29,069,Dunklin County
+US,29,071,Franklin County
+US,29,073,Gasconade County
+US,29,075,Gentry County
+US,29,077,Greene County
+US,29,079,Grundy County
+US,29,081,Harrison County
+US,29,083,Henry County
+US,29,085,Hickory County
+US,29,087,Holt County
+US,29,089,Howard County
+US,29,091,Howell County
+US,29,093,Iron County
+US,29,095,Jackson County
+US,29,097,Jasper County
+US,29,099,Jefferson County
+US,29,101,Johnson County
+US,29,103,Knox County
+US,29,105,Laclede County
+US,29,107,Lafayette County
+US,29,109,Lawrence County
+US,29,111,Lewis County
+US,29,113,Lincoln County
+US,29,115,Linn County
+US,29,117,Livingston County
+US,29,119,Mcdonald County
+US,29,121,Macon County
+US,29,123,Madison County
+US,29,125,Maries County
+US,29,127,Marion County
+US,29,129,Mercer County
+US,29,131,Miller County
+US,29,133,Mississippi County
+US,29,135,Moniteau County
+US,29,137,Monroe County
+US,29,139,Montgomery County
+US,29,141,Morgan County
+US,29,143,New Madrid County
+US,29,145,Newton County
+US,29,147,Nodaway County
+US,29,149,Oregon County
+US,29,151,Osage County
+US,29,153,Ozark County
+US,29,155,Pemiscot County
+US,29,157,Perry County
+US,29,159,Pettis County
+US,29,161,Phelps County
+US,29,163,Pike County
+US,29,165,Platte County
+US,29,167,Polk County
+US,29,169,Pulaski County
+US,29,171,Putnam County
+US,29,173,Ralls County
+US,29,175,Randolph County
+US,29,177,Ray County
+US,29,179,Reynolds County
+US,29,181,Ripley County
+US,29,183,St. Charles County
+US,29,185,St. Clair County
+US,29,186,Ste. Genevieve County
+US,29,187,St. Francois County
+US,29,189,St. Louis County
+US,29,195,Saline County
+US,29,197,Schuyler County
+US,29,199,Scotland County
+US,29,201,Scott County
+US,29,203,Shannon County
+US,29,205,Shelby County
+US,29,207,Stoddard County
+US,29,209,Stone County
+US,29,211,Sullivan County
+US,29,213,Taney County
+US,29,215,Texas County
+US,29,217,Vernon County
+US,29,219,Warren County
+US,29,221,Washington County
+US,29,223,Wayne County
+US,29,225,Webster County
+US,29,227,Worth County
+US,29,229,Wright County
+US,29,510,St. Louis City
+US,30,001,Beaverhead County
+US,30,003,Big Horn County
+US,30,005,Blaine County
+US,30,007,Broadwater County
+US,30,009,Carbon County
+US,30,011,Carter County
+US,30,013,Cascade County
+US,30,015,Chouteau County
+US,30,017,Custer County
+US,30,019,Daniels County
+US,30,021,Dawson County
+US,30,023,Deer Lodge County
+US,30,025,Fallon County
+US,30,027,Fergus County
+US,30,029,Flathead County
+US,30,031,Gallatin County
+US,30,033,Garfield County
+US,30,035,Glacier County
+US,30,037,Golden Valley County
+US,30,039,Granite County
+US,30,041,Hill County
+US,30,043,Jefferson County
+US,30,045,Judith Basin County
+US,30,047,Lake County
+US,30,049,Lewis And Clark County
+US,30,051,Liberty County
+US,30,053,Lincoln County
+US,30,055,Mccone County
+US,30,057,Madison County
+US,30,059,Meagher County
+US,30,061,Mineral County
+US,30,063,Missoula County
+US,30,065,Musselshell County
+US,30,067,Park County
+US,30,069,Petroleum County
+US,30,071,Phillips County
+US,30,073,Pondera County
+US,30,075,Powder River County
+US,30,077,Powell County
+US,30,079,Prairie County
+US,30,081,Ravalli County
+US,30,083,Richland County
+US,30,085,Roosevelt County
+US,30,087,Rosebud County
+US,30,089,Sanders County
+US,30,091,Sheridan County
+US,30,093,Silver Bow County
+US,30,095,Stillwater County
+US,30,097,Sweet Grass County
+US,30,099,Teton County
+US,30,101,Toole County
+US,30,103,Treasure County
+US,30,105,Valley County
+US,30,107,Wheatland County
+US,30,109,Wibaux County
+US,30,111,Yellowstone County
+US,30,113,Yellowstone National Park - Part County
+US,31,001,Adams County
+US,31,003,Antelope County
+US,31,005,Arthur County
+US,31,007,Banner County
+US,31,009,Blaine County
+US,31,011,Boone County
+US,31,013,Box Butte County
+US,31,015,Boyd County
+US,31,017,Brown County
+US,31,019,Buffalo County
+US,31,021,Burt County
+US,31,023,Butler County
+US,31,025,Cass County
+US,31,027,Cedar County
+US,31,029,Chase County
+US,31,031,Cherry County
+US,31,033,Cheyenne County
+US,31,035,Clay County
+US,31,037,Colfax County
+US,31,039,Cuming County
+US,31,041,Custer County
+US,31,043,Dakota County
+US,31,045,Dawes County
+US,31,047,Dawson County
+US,31,049,Deuel County
+US,31,051,Dixon County
+US,31,053,Dodge County
+US,31,055,Douglas County
+US,31,057,Dundy County
+US,31,059,Fillmore County
+US,31,061,Franklin County
+US,31,063,Frontier County
+US,31,065,Furnas County
+US,31,067,Gage County
+US,31,069,Garden County
+US,31,071,Garfield County
+US,31,073,Gosper County
+US,31,075,Grant County
+US,31,077,Greeley County
+US,31,079,Hall County
+US,31,081,Hamilton County
+US,31,083,Harlan County
+US,31,085,Hayes County
+US,31,087,Hitchcock County
+US,31,089,Holt County
+US,31,091,Hooker County
+US,31,093,Howard County
+US,31,095,Jefferson County
+US,31,097,Johnson County
+US,31,099,Kearney County
+US,31,101,Keith County
+US,31,103,Keya Paha County
+US,31,105,Kimball County
+US,31,107,Knox County
+US,31,109,Lancaster County
+US,31,111,Lincoln County
+US,31,113,Logan County
+US,31,115,Loup County
+US,31,117,Mcpherson County
+US,31,119,Madison County
+US,31,121,Merrick County
+US,31,123,Morrill County
+US,31,125,Nance County
+US,31,127,Nemaha County
+US,31,129,Nuckolls County
+US,31,131,Otoe County
+US,31,133,Pawnee County
+US,31,135,Perkins County
+US,31,137,Phelps County
+US,31,139,Pierce County
+US,31,141,Platte County
+US,31,143,Polk County
+US,31,145,Red Willow County
+US,31,147,Richardson County
+US,31,149,Rock County
+US,31,151,Saline County
+US,31,153,Sarpy County
+US,31,155,Saunders County
+US,31,157,Scotts Bluff County
+US,31,159,Seward County
+US,31,161,Sheridan County
+US,31,163,Sherman County
+US,31,165,Sioux County
+US,31,167,Stanton County
+US,31,169,Thayer County
+US,31,171,Thomas County
+US,31,173,Thurston County
+US,31,175,Valley County
+US,31,177,Washington County
+US,31,179,Wayne County
+US,31,181,Webster County
+US,31,183,Wheeler County
+US,31,185,York County
+US,32,001,Churchill County
+US,32,003,Clark County
+US,32,005,Douglas County
+US,32,007,Elko County
+US,32,009,Esmeralda County
+US,32,011,Eureka County
+US,32,013,Humboldt County
+US,32,015,Lander County
+US,32,017,Lincoln County
+US,32,019,Lyon County
+US,32,021,Mineral County
+US,32,023,Nye County
+US,32,027,Pershing County
+US,32,029,Storey County
+US,32,031,Washoe County
+US,32,033,White Pine County
+US,32,510,Carson City
+US,33,001,Belknap County
+US,33,003,Carroll County
+US,33,005,Cheshire County
+US,33,007,Coos County
+US,33,009,Grafton County
+US,33,011,Hillsborough County
+US,33,013,Merrimack County
+US,33,015,Rockingham County
+US,33,017,Strafford County
+US,33,019,Sullivan County
+US,34,001,Atlantic County
+US,34,003,Bergen County
+US,34,005,Burlington County
+US,34,007,Camden County
+US,34,009,Cape May County
+US,34,011,Cumberland County
+US,34,013,Essex County
+US,34,015,Gloucester County
+US,34,017,Hudson County
+US,34,019,Hunterdon County
+US,34,021,Mercer County
+US,34,023,Middlesex County
+US,34,025,Monmouth County
+US,34,027,Morris County
+US,34,029,Ocean County
+US,34,031,Passaic County
+US,34,033,Salem County
+US,34,035,Somerset County
+US,34,037,Sussex County
+US,34,039,Union County
+US,34,041,Warren County
+US,35,001,Bernalillo County
+US,35,003,Catron County
+US,35,005,Chaves County
+US,35,006,Cibola County
+US,35,007,Colfax County
+US,35,009,Curry County
+US,35,011,De Baca County
+US,35,013,Dona Ana County
+US,35,015,Eddy County
+US,35,017,Grant County
+US,35,019,Guadalupe County
+US,35,021,Harding County
+US,35,023,Hidalgo County
+US,35,025,Lea County
+US,35,027,Lincoln County
+US,35,028,Los Alamos County
+US,35,029,Luna County
+US,35,031,Mckinley County
+US,35,033,Mora County
+US,35,035,Otero County
+US,35,037,Quay County
+US,35,039,Rio Arriba County
+US,35,041,Roosevelt County
+US,35,043,Sandoval County
+US,35,045,San Juan County
+US,35,047,San Miguel County
+US,35,049,Santa Fe County
+US,35,051,Sierra County
+US,35,053,Socorro County
+US,35,055,Taos County
+US,35,057,Torrance County
+US,35,059,Union County
+US,35,061,Valencia County
+US,36,001,Albany County
+US,36,003,Allegany County
+US,36,005,Bronx County
+US,36,007,Broome County
+US,36,009,Cattaraugus County
+US,36,011,Cayuga County
+US,36,013,Chautauqua County
+US,36,015,Chemung County
+US,36,017,Chenango County
+US,36,019,Clinton County
+US,36,021,Columbia County
+US,36,023,Cortland County
+US,36,025,Delaware County
+US,36,027,Dutchess County
+US,36,029,Erie County
+US,36,031,Essex County
+US,36,033,Franklin County
+US,36,035,Fulton County
+US,36,037,Genesee County
+US,36,039,Greene County
+US,36,041,Hamilton County
+US,36,043,Herkimer County
+US,36,045,Jefferson County
+US,36,047,Kings County
+US,36,049,Lewis County
+US,36,051,Livingston County
+US,36,053,Madison County
+US,36,055,Monroe County
+US,36,057,Montgomery County
+US,36,059,Nassau County
+US,36,061,New York County
+US,36,063,Niagara County
+US,36,065,Oneida County
+US,36,067,Onondaga County
+US,36,069,Ontario County
+US,36,071,Orange County
+US,36,073,Orleans County
+US,36,075,Oswego County
+US,36,077,Otsego County
+US,36,079,Putnam County
+US,36,081,Queens County
+US,36,083,Rensselaer County
+US,36,085,Richmond County
+US,36,087,Rockland County
+US,36,089,St. Lawrence County
+US,36,091,Saratoga County
+US,36,093,Schenectady County
+US,36,095,Schoharie County
+US,36,097,Schuyler County
+US,36,099,Seneca County
+US,36,101,Steuben County
+US,36,103,Suffolk County
+US,36,105,Sullivan County
+US,36,107,Tioga County
+US,36,109,Tompkins County
+US,36,111,Ulster County
+US,36,113,Warren County
+US,36,115,Washington County
+US,36,117,Wayne County
+US,36,119,Westchester County
+US,36,121,Wyoming County
+US,36,123,Yates County
+US,37,001,Alamance County
+US,37,003,Alexander County
+US,37,005,Alleghany County
+US,37,007,Anson County
+US,37,009,Ashe County
+US,37,011,Avery County
+US,37,013,Beaufort County
+US,37,015,Bertie County
+US,37,017,Bladen County
+US,37,019,Brunswick County
+US,37,021,Buncombe County
+US,37,023,Burke County
+US,37,025,Cabarrus County
+US,37,027,Caldwell County
+US,37,029,Camden County
+US,37,031,Carteret County
+US,37,033,Caswell County
+US,37,035,Catawba County
+US,37,037,Chatham County
+US,37,039,Cherokee County
+US,37,041,Chowan County
+US,37,043,Clay County
+US,37,045,Cleveland County
+US,37,047,Columbus County
+US,37,049,Craven County
+US,37,051,Cumberland County
+US,37,053,Currituck County
+US,37,055,Dare County
+US,37,057,Davidson County
+US,37,059,Davie County
+US,37,061,Duplin County
+US,37,063,Durham County
+US,37,065,Edgecombe County
+US,37,067,Forsyth County
+US,37,069,Franklin County
+US,37,071,Gaston County
+US,37,073,Gates County
+US,37,075,Graham County
+US,37,077,Granville County
+US,37,079,Greene County
+US,37,081,Guilford County
+US,37,083,Halifax County
+US,37,085,Harnett County
+US,37,087,Haywood County
+US,37,089,Henderson County
+US,37,091,Hertford County
+US,37,093,Hoke County
+US,37,095,Hyde County
+US,37,097,Iredell County
+US,37,099,Jackson County
+US,37,101,Johnston County
+US,37,103,Jones County
+US,37,105,Lee County
+US,37,107,Lenoir County
+US,37,109,Lincoln County
+US,37,111,Mcdowell County
+US,37,113,Macon County
+US,37,115,Madison County
+US,37,117,Martin County
+US,37,119,Mecklenburg County
+US,37,121,Mitchell County
+US,37,123,Montgomery County
+US,37,125,Moore County
+US,37,127,Nash County
+US,37,129,New Hanover County
+US,37,131,Northampton County
+US,37,133,Onslow County
+US,37,135,Orange County
+US,37,137,Pamlico County
+US,37,139,Pasquotank County
+US,37,141,Pender County
+US,37,143,Perquimans County
+US,37,145,Person County
+US,37,147,Pitt County
+US,37,149,Polk County
+US,37,151,Randolph County
+US,37,153,Richmond County
+US,37,155,Robeson County
+US,37,157,Rockingham County
+US,37,159,Rowan County
+US,37,161,Rutherford County
+US,37,163,Sampson County
+US,37,165,Scotland County
+US,37,167,Stanly County
+US,37,169,Stokes County
+US,37,171,Surry County
+US,37,173,Swain County
+US,37,175,Transylvania County
+US,37,177,Tyrrell County
+US,37,179,Union County
+US,37,181,Vance County
+US,37,183,Wake County
+US,37,185,Warren County
+US,37,187,Washington County
+US,37,189,Watauga County
+US,37,191,Wayne County
+US,37,193,Wilkes County
+US,37,195,Wilson County
+US,37,197,Yadkin County
+US,37,199,Yancey County
+US,38,001,Adams County
+US,38,003,Barnes County
+US,38,005,Benson County
+US,38,007,Billings County
+US,38,009,Bottineau County
+US,38,011,Bowman County
+US,38,013,Burke County
+US,38,015,Burleigh County
+US,38,017,Cass County
+US,38,019,Cavalier County
+US,38,021,Dickey County
+US,38,023,Divide County
+US,38,025,Dunn County
+US,38,027,Eddy County
+US,38,029,Emmons County
+US,38,031,Foster County
+US,38,033,Golden Valley County
+US,38,035,Grand Forks County
+US,38,037,Grant County
+US,38,039,Griggs County
+US,38,041,Hettinger County
+US,38,043,Kidder County
+US,38,045,Lamoure County
+US,38,047,Logan County
+US,38,049,Mchenry County
+US,38,051,Mcintosh County
+US,38,053,Mckenzie County
+US,38,055,Mclean County
+US,38,057,Mercer County
+US,38,059,Morton County
+US,38,061,Mountrail County
+US,38,063,Nelson County
+US,38,065,Oliver County
+US,38,067,Pembina County
+US,38,069,Pierce County
+US,38,071,Ramsey County
+US,38,073,Ransom County
+US,38,075,Renville County
+US,38,077,Richland County
+US,38,079,Rolette County
+US,38,081,Sargent County
+US,38,083,Sheridan County
+US,38,085,Sioux County
+US,38,087,Slope County
+US,38,089,Stark County
+US,38,091,Steele County
+US,38,093,Stutsman County
+US,38,095,Towner County
+US,38,097,Traill County
+US,38,099,Walsh County
+US,38,101,Ward County
+US,38,103,Wells County
+US,38,105,Williams County
+US,39,001,Adams County
+US,39,003,Allen County
+US,39,005,Ashland County
+US,39,007,Ashtabula County
+US,39,009,Athens County
+US,39,011,Auglaize County
+US,39,013,Belmont County
+US,39,015,Brown County
+US,39,017,Butler County
+US,39,019,Carroll County
+US,39,021,Champaign County
+US,39,023,Clark County
+US,39,025,Clermont County
+US,39,027,Clinton County
+US,39,029,Columbiana County
+US,39,031,Coshocton County
+US,39,033,Crawford County
+US,39,035,Cuyahoga County
+US,39,037,Darke County
+US,39,039,Defiance County
+US,39,041,Delaware County
+US,39,043,Erie County
+US,39,045,Fairfield County
+US,39,047,Fayette County
+US,39,049,Franklin County
+US,39,051,Fulton County
+US,39,053,Gallia County
+US,39,055,Geauga County
+US,39,057,Greene County
+US,39,059,Guernsey County
+US,39,061,Hamilton County
+US,39,063,Hancock County
+US,39,065,Hardin County
+US,39,067,Harrison County
+US,39,069,Henry County
+US,39,071,Highland County
+US,39,073,Hocking County
+US,39,075,Holmes County
+US,39,077,Huron County
+US,39,079,Jackson County
+US,39,081,Jefferson County
+US,39,083,Knox County
+US,39,085,Lake County
+US,39,087,Lawrence County
+US,39,089,Licking County
+US,39,091,Logan County
+US,39,093,Lorain County
+US,39,095,Lucas County
+US,39,097,Madison County
+US,39,099,Mahoning County
+US,39,101,Marion County
+US,39,103,Medina County
+US,39,105,Meigs County
+US,39,107,Mercer County
+US,39,109,Miami County
+US,39,111,Monroe County
+US,39,113,Montgomery County
+US,39,115,Morgan County
+US,39,117,Morrow County
+US,39,119,Muskingum County
+US,39,121,Noble County
+US,39,123,Ottawa County
+US,39,125,Paulding County
+US,39,127,Perry County
+US,39,129,Pickaway County
+US,39,131,Pike County
+US,39,133,Portage County
+US,39,135,Preble County
+US,39,137,Putnam County
+US,39,139,Richland County
+US,39,141,Ross County
+US,39,143,Sandusky County
+US,39,145,Scioto County
+US,39,147,Seneca County
+US,39,149,Shelby County
+US,39,151,Stark County
+US,39,153,Summit County
+US,39,155,Trumbull County
+US,39,157,Tuscarawas County
+US,39,159,Union County
+US,39,161,Van Wert County
+US,39,163,Vinton County
+US,39,165,Warren County
+US,39,167,Washington County
+US,39,169,Wayne County
+US,39,171,Williams County
+US,39,173,Wood County
+US,39,175,Wyandot County
+US,40,001,Adair County
+US,40,003,Alfalfa County
+US,40,005,Atoka County
+US,40,007,Beaver County
+US,40,009,Beckham County
+US,40,011,Blaine County
+US,40,013,Bryan County
+US,40,015,Caddo County
+US,40,017,Canadian County
+US,40,019,Carter County
+US,40,021,Cherokee County
+US,40,023,Choctaw County
+US,40,025,Cimarron County
+US,40,027,Cleveland County
+US,40,029,Coal County
+US,40,031,Comanche County
+US,40,033,Cotton County
+US,40,035,Craig County
+US,40,037,Creek County
+US,40,039,Custer County
+US,40,041,Delaware County
+US,40,043,Dewey County
+US,40,045,Ellis County
+US,40,047,Garfield County
+US,40,049,Garvin County
+US,40,051,Grady County
+US,40,053,Grant County
+US,40,055,Greer County
+US,40,057,Harmon County
+US,40,059,Harper County
+US,40,061,Haskell County
+US,40,063,Hughes County
+US,40,065,Jackson County
+US,40,067,Jefferson County
+US,40,069,Johnston County
+US,40,071,Kay County
+US,40,073,Kingfisher County
+US,40,075,Kiowa County
+US,40,077,Latimer County
+US,40,079,Le Flore County
+US,40,081,Lincoln County
+US,40,083,Logan County
+US,40,085,Love County
+US,40,087,Mcclain County
+US,40,089,Mccurtain County
+US,40,091,Mcintosh County
+US,40,093,Major County
+US,40,095,Marshall County
+US,40,097,Mayes County
+US,40,099,Murray County
+US,40,101,Muskogee County
+US,40,103,Noble County
+US,40,105,Nowata County
+US,40,107,Okfuskee County
+US,40,109,Oklahoma County
+US,40,111,Okmulgee County
+US,40,113,Osage County
+US,40,115,Ottawa County
+US,40,117,Pawnee County
+US,40,119,Payne County
+US,40,121,Pittsburg County
+US,40,123,Pontotoc County
+US,40,125,Pottawatomie County
+US,40,127,Pushmataha County
+US,40,129,Roger Mills County
+US,40,131,Rogers County
+US,40,133,Seminole County
+US,40,135,Sequoyah County
+US,40,137,Stephens County
+US,40,139,Texas County
+US,40,141,Tillman County
+US,40,143,Tulsa County
+US,40,145,Wagoner County
+US,40,147,Washington County
+US,40,149,Washita County
+US,40,151,Woods County
+US,40,153,Woodward County
+US,41,001,Baker County
+US,41,003,Benton County
+US,41,005,Clackamas County
+US,41,007,Clatsop County
+US,41,009,Columbia County
+US,41,011,Coos County
+US,41,013,Crook County
+US,41,015,Curry County
+US,41,017,Deschutes County
+US,41,019,Douglas County
+US,41,021,Gilliam County
+US,41,023,Grant County
+US,41,025,Harney County
+US,41,027,Hood River County
+US,41,029,Jackson County
+US,41,031,Jefferson County
+US,41,033,Josephine County
+US,41,035,Klamath County
+US,41,037,Lake County
+US,41,039,Lane County
+US,41,041,Lincoln County
+US,41,043,Linn County
+US,41,045,Malheur County
+US,41,047,Marion County
+US,41,049,Morrow County
+US,41,051,Multnomah County
+US,41,053,Polk County
+US,41,055,Sherman County
+US,41,057,Tillamook County
+US,41,059,Umatilla County
+US,41,061,Union County
+US,41,063,Wallowa County
+US,41,065,Wasco County
+US,41,067,Washington County
+US,41,069,Wheeler County
+US,41,071,Yamhill County
+US,42,001,Adams County
+US,42,003,Allegheny County
+US,42,005,Armstrong County
+US,42,007,Beaver County
+US,42,009,Bedford County
+US,42,011,Berks County
+US,42,013,Blair County
+US,42,015,Bradford County
+US,42,017,Bucks County
+US,42,019,Butler County
+US,42,021,Cambria County
+US,42,023,Cameron County
+US,42,025,Carbon County
+US,42,027,Centre County
+US,42,029,Chester County
+US,42,031,Clarion County
+US,42,033,Clearfield County
+US,42,035,Clinton County
+US,42,037,Columbia County
+US,42,039,Crawford County
+US,42,041,Cumberland County
+US,42,043,Dauphin County
+US,42,045,Delaware County
+US,42,047,Elk County
+US,42,049,Erie County
+US,42,051,Fayette County
+US,42,053,Forest County
+US,42,055,Franklin County
+US,42,057,Fulton County
+US,42,059,Greene County
+US,42,061,Huntingdon County
+US,42,063,Indiana County
+US,42,065,Jefferson County
+US,42,067,Juniata County
+US,42,069,Lackawanna County
+US,42,071,Lancaster County
+US,42,073,Lawrence County
+US,42,075,Lebanon County
+US,42,077,Lehigh County
+US,42,079,Luzerne County
+US,42,081,Lycoming County
+US,42,083,Mckean County
+US,42,085,Mercer County
+US,42,087,Mifflin County
+US,42,089,Monroe County
+US,42,091,Montgomery County
+US,42,093,Montour County
+US,42,095,Northampton County
+US,42,097,Northumberland County
+US,42,099,Perry County
+US,42,101,Philadelphia County
+US,42,103,Pike County
+US,42,105,Potter County
+US,42,107,Schuylkill County
+US,42,109,Snyder County
+US,42,111,Somerset County
+US,42,113,Sullivan County
+US,42,115,Susquehanna County
+US,42,117,Tioga County
+US,42,119,Union County
+US,42,121,Venango County
+US,42,123,Warren County
+US,42,125,Washington County
+US,42,127,Wayne County
+US,42,129,Westmoreland County
+US,42,131,Wyoming County
+US,42,133,York County
+US,44,001,Bristol County
+US,44,003,Kent County
+US,44,005,Newport County
+US,44,007,Providence County
+US,44,009,Washington County
+US,45,001,Abbeville County
+US,45,003,Aiken County
+US,45,005,Allendale County
+US,45,007,Anderson County
+US,45,009,Bamberg County
+US,45,011,Barnwell County
+US,45,013,Beaufort County
+US,45,015,Berkeley County
+US,45,017,Calhoun County
+US,45,019,Charleston County
+US,45,021,Cherokee County
+US,45,023,Chester County
+US,45,025,Chesterfield County
+US,45,027,Clarendon County
+US,45,029,Colleton County
+US,45,031,Darlington County
+US,45,033,Dillon County
+US,45,035,Dorchester County
+US,45,037,Edgefield County
+US,45,039,Fairfield County
+US,45,041,Florence County
+US,45,043,Georgetown County
+US,45,045,Greenville County
+US,45,047,Greenwood County
+US,45,049,Hampton County
+US,45,051,Horry County
+US,45,053,Jasper County
+US,45,055,Kershaw County
+US,45,057,Lancaster County
+US,45,059,Laurens County
+US,45,061,Lee County
+US,45,063,Lexington County
+US,45,065,Mccormick County
+US,45,067,Marion County
+US,45,069,Marlboro County
+US,45,071,Newberry County
+US,45,073,Oconee County
+US,45,075,Orangeburg County
+US,45,077,Pickens County
+US,45,079,Richland County
+US,45,081,Saluda County
+US,45,083,Spartanburg County
+US,45,085,Sumter County
+US,45,087,Union County
+US,45,089,Williamsburg County
+US,45,091,York County
+US,46,003,Aurora County
+US,46,005,Beadle County
+US,46,007,Bennett County
+US,46,009,Bon Homme County
+US,46,011,Brookings County
+US,46,013,Brown County
+US,46,015,Brule County
+US,46,017,Buffalo County
+US,46,019,Butte County
+US,46,021,Campbell County
+US,46,023,Charles Mix County
+US,46,025,Clark County
+US,46,027,Clay County
+US,46,029,Codington County
+US,46,031,Corson County
+US,46,033,Custer County
+US,46,035,Davison County
+US,46,037,Day County
+US,46,039,Deuel County
+US,46,041,Dewey County
+US,46,043,Douglas County
+US,46,045,Edmunds County
+US,46,047,Fall River County
+US,46,049,Faulk County
+US,46,051,Grant County
+US,46,053,Gregory County
+US,46,055,Haakon County
+US,46,057,Hamlin County
+US,46,059,Hand County
+US,46,061,Hanson County
+US,46,063,Harding County
+US,46,065,Hughes County
+US,46,067,Hutchinson County
+US,46,069,Hyde County
+US,46,071,Jackson County
+US,46,073,Jerauld County
+US,46,075,Jones County
+US,46,077,Kingsbury County
+US,46,079,Lake County
+US,46,081,Lawrence County
+US,46,083,Lincoln County
+US,46,085,Lyman County
+US,46,087,Mccook County
+US,46,089,Mcpherson County
+US,46,091,Marshall County
+US,46,093,Meade County
+US,46,095,Mellette County
+US,46,097,Miner County
+US,46,099,Minnehaha County
+US,46,101,Moody County
+US,46,102,Oglala Lakota County
+US,46,103,Pennington County
+US,46,105,Perkins County
+US,46,107,Potter County
+US,46,109,Roberts County
+US,46,111,Sanborn County
+US,46,113,Shannon County
+US,46,115,Spink County
+US,46,117,Stanley County
+US,46,119,Sully County
+US,46,121,Todd County
+US,46,123,Tripp County
+US,46,125,Turner County
+US,46,127,Union County
+US,46,129,Walworth County
+US,46,135,Yankton County
+US,46,137,Ziebach County
+US,47,001,Anderson County
+US,47,003,Bedford County
+US,47,005,Benton County
+US,47,007,Bledsoe County
+US,47,009,Blount County
+US,47,011,Bradley County
+US,47,013,Campbell County
+US,47,015,Cannon County
+US,47,017,Carroll County
+US,47,019,Carter County
+US,47,021,Cheatham County
+US,47,023,Chester County
+US,47,025,Claiborne County
+US,47,027,Clay County
+US,47,029,Cocke County
+US,47,031,Coffee County
+US,47,033,Crockett County
+US,47,035,Cumberland County
+US,47,037,Davidson County
+US,47,039,Decatur County
+US,47,041,Dekalb County
+US,47,043,Dickson County
+US,47,045,Dyer County
+US,47,047,Fayette County
+US,47,049,Fentress County
+US,47,051,Franklin County
+US,47,053,Gibson County
+US,47,055,Giles County
+US,47,057,Grainger County
+US,47,059,Greene County
+US,47,061,Grundy County
+US,47,063,Hamblen County
+US,47,065,Hamilton County
+US,47,067,Hancock County
+US,47,069,Hardeman County
+US,47,071,Hardin County
+US,47,073,Hawkins County
+US,47,075,Haywood County
+US,47,077,Henderson County
+US,47,079,Henry County
+US,47,081,Hickman County
+US,47,083,Houston County
+US,47,085,Humphreys County
+US,47,087,Jackson County
+US,47,089,Jefferson County
+US,47,091,Johnson County
+US,47,093,Knox County
+US,47,095,Lake County
+US,47,097,Lauderdale County
+US,47,099,Lawrence County
+US,47,101,Lewis County
+US,47,103,Lincoln County
+US,47,105,Loudon County
+US,47,107,Mcminn County
+US,47,109,Mcnairy County
+US,47,111,Macon County
+US,47,113,Madison County
+US,47,115,Marion County
+US,47,117,Marshall County
+US,47,119,Maury County
+US,47,121,Meigs County
+US,47,123,Monroe County
+US,47,125,Montgomery County
+US,47,127,Moore County
+US,47,129,Morgan County
+US,47,131,Obion County
+US,47,133,Overton County
+US,47,135,Perry County
+US,47,137,Pickett County
+US,47,139,Polk County
+US,47,141,Putnam County
+US,47,143,Rhea County
+US,47,145,Roane County
+US,47,147,Robertson County
+US,47,149,Rutherford County
+US,47,151,Scott County
+US,47,153,Sequatchie County
+US,47,155,Sevier County
+US,47,157,Shelby County
+US,47,159,Smith County
+US,47,161,Stewart County
+US,47,163,Sullivan County
+US,47,165,Sumner County
+US,47,167,Tipton County
+US,47,169,Trousdale County
+US,47,171,Unicoi County
+US,47,173,Union County
+US,47,175,Van Buren County
+US,47,177,Warren County
+US,47,179,Washington County
+US,47,181,Wayne County
+US,47,183,Weakley County
+US,47,185,White County
+US,47,187,Williamson County
+US,47,189,Wilson County
+US,48,001,Anderson County
+US,48,003,Andrews County
+US,48,005,Angelina County
+US,48,007,Aransas County
+US,48,009,Archer County
+US,48,011,Armstrong County
+US,48,013,Atascosa County
+US,48,015,Austin County
+US,48,017,Bailey County
+US,48,019,Bandera County
+US,48,021,Bastrop County
+US,48,023,Baylor County
+US,48,025,Bee County
+US,48,027,Bell County
+US,48,029,Bexar County
+US,48,031,Blanco County
+US,48,033,Borden County
+US,48,035,Bosque County
+US,48,037,Bowie County
+US,48,039,Brazoria County
+US,48,041,Brazos County
+US,48,043,Brewster County
+US,48,045,Briscoe County
+US,48,047,Brooks County
+US,48,049,Brown County
+US,48,051,Burleson County
+US,48,053,Burnet County
+US,48,055,Caldwell County
+US,48,057,Calhoun County
+US,48,059,Callahan County
+US,48,061,Cameron County
+US,48,063,Camp County
+US,48,065,Carson County
+US,48,067,Cass County
+US,48,069,Castro County
+US,48,071,Chambers County
+US,48,073,Cherokee County
+US,48,075,Childress County
+US,48,077,Clay County
+US,48,079,Cochran County
+US,48,081,Coke County
+US,48,083,Coleman County
+US,48,085,Collin County
+US,48,087,Collingsworth County
+US,48,089,Colorado County
+US,48,091,Comal County
+US,48,093,Comanche County
+US,48,095,Concho County
+US,48,097,Cooke County
+US,48,099,Coryell County
+US,48,101,Cottle County
+US,48,103,Crane County
+US,48,105,Crockett County
+US,48,107,Crosby County
+US,48,109,Culberson County
+US,48,111,Dallam County
+US,48,113,Dallas County
+US,48,115,Dawson County
+US,48,117,Deaf Smith County
+US,48,119,Delta County
+US,48,121,Denton County
+US,48,123,Dewitt County
+US,48,125,Dickens County
+US,48,127,Dimmit County
+US,48,129,Donley County
+US,48,131,Duval County
+US,48,133,Eastland County
+US,48,135,Ector County
+US,48,137,Edwards County
+US,48,139,Ellis County
+US,48,141,El Paso County
+US,48,143,Erath County
+US,48,145,Falls County
+US,48,147,Fannin County
+US,48,149,Fayette County
+US,48,151,Fisher County
+US,48,153,Floyd County
+US,48,155,Foard County
+US,48,157,Fort Bend County
+US,48,159,Franklin County
+US,48,161,Freestone County
+US,48,163,Frio County
+US,48,165,Gaines County
+US,48,167,Galveston County
+US,48,169,Garza County
+US,48,171,Gillespie County
+US,48,173,Glasscock County
+US,48,175,Goliad County
+US,48,177,Gonzales County
+US,48,179,Gray County
+US,48,181,Grayson County
+US,48,183,Gregg County
+US,48,185,Grimes County
+US,48,187,Guadalupe County
+US,48,189,Hale County
+US,48,191,Hall County
+US,48,193,Hamilton County
+US,48,195,Hansford County
+US,48,197,Hardeman County
+US,48,199,Hardin County
+US,48,201,Harris County
+US,48,203,Harrison County
+US,48,205,Hartley County
+US,48,207,Haskell County
+US,48,209,Hays County
+US,48,211,Hemphill County
+US,48,213,Henderson County
+US,48,215,Hidalgo County
+US,48,217,Hill County
+US,48,219,Hockley County
+US,48,221,Hood County
+US,48,223,Hopkins County
+US,48,225,Houston County
+US,48,227,Howard County
+US,48,229,Hudspeth County
+US,48,231,Hunt County
+US,48,233,Hutchinson County
+US,48,235,Irion County
+US,48,237,Jack County
+US,48,239,Jackson County
+US,48,241,Jasper County
+US,48,243,Jeff Davis County
+US,48,245,Jefferson County
+US,48,247,Jim Hogg County
+US,48,249,Jim Wells County
+US,48,251,Johnson County
+US,48,253,Jones County
+US,48,255,Karnes County
+US,48,257,Kaufman County
+US,48,259,Kendall County
+US,48,261,Kenedy County
+US,48,263,Kent County
+US,48,265,Kerr County
+US,48,267,Kimble County
+US,48,269,King County
+US,48,271,Kinney County
+US,48,273,Kleberg County
+US,48,275,Knox County
+US,48,277,Lamar County
+US,48,279,Lamb County
+US,48,281,Lampasas County
+US,48,283,La Salle County
+US,48,285,Lavaca County
+US,48,287,Lee County
+US,48,289,Leon County
+US,48,291,Liberty County
+US,48,293,Limestone County
+US,48,295,Lipscomb County
+US,48,297,Live Oak County
+US,48,299,Llano County
+US,48,301,Loving County
+US,48,303,Lubbock County
+US,48,305,Lynn County
+US,48,307,Mcculloch County
+US,48,309,Mclennan County
+US,48,311,Mcmullen County
+US,48,313,Madison County
+US,48,315,Marion County
+US,48,317,Martin County
+US,48,319,Mason County
+US,48,321,Matagorda County
+US,48,323,Maverick County
+US,48,325,Medina County
+US,48,327,Menard County
+US,48,329,Midland County
+US,48,331,Milam County
+US,48,333,Mills County
+US,48,335,Mitchell County
+US,48,337,Montague County
+US,48,339,Montgomery County
+US,48,341,Moore County
+US,48,343,Morris County
+US,48,345,Motley County
+US,48,347,Nacogdoches County
+US,48,349,Navarro County
+US,48,351,Newton County
+US,48,353,Nolan County
+US,48,355,Nueces County
+US,48,357,Ochiltree County
+US,48,359,Oldham County
+US,48,361,Orange County
+US,48,363,Palo Pinto County
+US,48,365,Panola County
+US,48,367,Parker County
+US,48,369,Parmer County
+US,48,371,Pecos County
+US,48,373,Polk County
+US,48,375,Potter County
+US,48,377,Presidio County
+US,48,379,Rains County
+US,48,381,Randall County
+US,48,383,Reagan County
+US,48,385,Real County
+US,48,387,Red River County
+US,48,389,Reeves County
+US,48,391,Refugio County
+US,48,393,Roberts County
+US,48,395,Robertson County
+US,48,397,Rockwall County
+US,48,399,Runnels County
+US,48,401,Rusk County
+US,48,403,Sabine County
+US,48,405,San Augustine County
+US,48,407,San Jacinto County
+US,48,409,San Patricio County
+US,48,411,San Saba County
+US,48,413,Schleicher County
+US,48,415,Scurry County
+US,48,417,Shackelford County
+US,48,419,Shelby County
+US,48,421,Sherman County
+US,48,423,Smith County
+US,48,425,Somervell County
+US,48,427,Starr County
+US,48,429,Stephens County
+US,48,431,Sterling County
+US,48,433,Stonewall County
+US,48,435,Sutton County
+US,48,437,Swisher County
+US,48,439,Tarrant County
+US,48,441,Taylor County
+US,48,443,Terrell County
+US,48,445,Terry County
+US,48,447,Throckmorton County
+US,48,449,Titus County
+US,48,451,Tom Green County
+US,48,453,Travis County
+US,48,455,Trinity County
+US,48,457,Tyler County
+US,48,459,Upshur County
+US,48,461,Upton County
+US,48,463,Uvalde County
+US,48,465,Val Verde County
+US,48,467,Van Zandt County
+US,48,469,Victoria County
+US,48,471,Walker County
+US,48,473,Waller County
+US,48,475,Ward County
+US,48,477,Washington County
+US,48,479,Webb County
+US,48,481,Wharton County
+US,48,483,Wheeler County
+US,48,485,Wichita County
+US,48,487,Wilbarger County
+US,48,489,Willacy County
+US,48,491,Williamson County
+US,48,493,Wilson County
+US,48,495,Winkler County
+US,48,497,Wise County
+US,48,499,Wood County
+US,48,501,Yoakum County
+US,48,503,Young County
+US,48,505,Zapata County
+US,48,507,Zavala County
+US,49,001,Beaver County
+US,49,003,Box Elder County
+US,49,005,Cache County
+US,49,007,Carbon County
+US,49,009,Daggett County
+US,49,011,Davis County
+US,49,013,Duchesne County
+US,49,015,Emery County
+US,49,017,Garfield County
+US,49,019,Grand County
+US,49,021,Iron County
+US,49,023,Juab County
+US,49,025,Kane County
+US,49,027,Millard County
+US,49,029,Morgan County
+US,49,031,Piute County
+US,49,033,Rich County
+US,49,035,Salt Lake County
+US,49,037,San Juan County
+US,49,039,Sanpete County
+US,49,041,Sevier County
+US,49,043,Summit County
+US,49,045,Tooele County
+US,49,047,Uintah County
+US,49,049,Utah County
+US,49,051,Wasatch County
+US,49,053,Washington County
+US,49,055,Wayne County
+US,49,057,Weber County
+US,50,001,Addison County
+US,50,003,Bennington County
+US,50,005,Caledonia County
+US,50,007,Chittenden County
+US,50,009,Essex County
+US,50,011,Franklin County
+US,50,013,Grand Isle County
+US,50,015,Lamoille County
+US,50,017,Orange County
+US,50,019,Orleans County
+US,50,021,Rutland County
+US,50,023,Washington County
+US,50,025,Windham County
+US,50,027,Windsor County
+US,51,001,Accomack County
+US,51,003,Albemarle County
+US,51,005,Alleghany County
+US,51,007,Amelia County
+US,51,009,Amherst County
+US,51,011,Appomattox County
+US,51,013,Arlington County
+US,51,015,Augusta County
+US,51,017,Bath County
+US,51,019,Bedford County
+US,51,021,Bland County
+US,51,023,Botetourt County
+US,51,025,Brunswick County
+US,51,027,Buchanan County
+US,51,029,Buckingham County
+US,51,031,Campbell County
+US,51,033,Caroline County
+US,51,035,Carroll County
+US,51,036,Charles City County
+US,51,037,Charlotte County
+US,51,041,Chesterfield County
+US,51,043,Clarke County
+US,51,045,Craig County
+US,51,047,Culpeper County
+US,51,049,Cumberland County
+US,51,051,Dickenson County
+US,51,053,Dinwiddie County
+US,51,057,Essex County
+US,51,059,Fairfax County
+US,51,061,Fauquier County
+US,51,063,Floyd County
+US,51,065,Fluvanna County
+US,51,067,Franklin County
+US,51,069,Frederick County
+US,51,071,Giles County
+US,51,073,Gloucester County
+US,51,075,Goochland County
+US,51,077,Grayson County
+US,51,079,Greene County
+US,51,081,Greensville County
+US,51,083,Halifax County
+US,51,085,Hanover County
+US,51,087,Henrico County
+US,51,089,Henry County
+US,51,091,Highland County
+US,51,093,Isle Of Wight County
+US,51,095,James City County
+US,51,097,King And Queen County
+US,51,099,King George County
+US,51,101,King William County
+US,51,103,Lancaster County
+US,51,105,Lee County
+US,51,107,Loudoun County
+US,51,109,Louisa County
+US,51,111,Lunenburg County
+US,51,113,Madison County
+US,51,115,Mathews County
+US,51,117,Mecklenburg County
+US,51,119,Middlesex County
+US,51,121,Montgomery County
+US,51,125,Nelson County
+US,51,127,New Kent County
+US,51,131,Northampton County
+US,51,133,Northumberland County
+US,51,135,Nottoway County
+US,51,137,Orange County
+US,51,139,Page County
+US,51,141,Patrick County
+US,51,143,Pittsylvania County
+US,51,145,Powhatan County
+US,51,147,Prince Edward County
+US,51,149,Prince George County
+US,51,153,Prince William County
+US,51,155,Pulaski County
+US,51,157,Rappahannock County
+US,51,159,Richmond County
+US,51,161,Roanoke County
+US,51,163,Rockbridge County
+US,51,165,Rockingham County
+US,51,167,Russell County
+US,51,169,Scott County
+US,51,171,Shenandoah County
+US,51,173,Smyth County
+US,51,175,Southampton County
+US,51,177,Spotsylvania County
+US,51,179,Stafford County
+US,51,181,Surry County
+US,51,183,Sussex County
+US,51,185,Tazewell County
+US,51,187,Warren County
+US,51,191,Washington County
+US,51,193,Westmoreland County
+US,51,195,Wise County
+US,51,197,Wythe County
+US,51,199,York County
+US,51,510,Alexandria City
+US,51,520,Bristol City
+US,51,530,Buena Vista City
+US,51,540,Charlottesville City
+US,51,550,Chesapeake City
+US,51,560,Clifton Forge City
+US,51,570,Colonial Heights City
+US,51,580,Covington City
+US,51,590,Danville City
+US,51,595,Emporia City
+US,51,600,Fairfax City
+US,51,610,Falls Church City
+US,51,620,Franklin City
+US,51,630,Fredericksburg City
+US,51,640,Galax City
+US,51,650,Hampton City
+US,51,660,Harrisonburg City
+US,51,670,Hopewell City
+US,51,678,Lexington City
+US,51,680,Lynchburg City
+US,51,683,Manassas City
+US,51,685,Manassas Park City
+US,51,690,Martinsville City
+US,51,700,Newport News City
+US,51,710,Norfolk City
+US,51,720,Norton City
+US,51,730,Petersburg City
+US,51,735,Poquoson City
+US,51,740,Portsmouth City
+US,51,750,Radford City
+US,51,760,Richmond City
+US,51,770,Roanoke City
+US,51,775,Salem City
+US,51,780,South Boston City
+US,51,790,Staunton City
+US,51,800,Suffolk City
+US,51,810,Virginia Beach City
+US,51,820,Waynesboro City
+US,51,830,Williamsburg City
+US,51,840,Winchester City
+US,53,001,Adams County
+US,53,003,Asotin County
+US,53,005,Benton County
+US,53,007,Chelan County
+US,53,009,Clallam County
+US,53,011,Clark County
+US,53,013,Columbia County
+US,53,015,Cowlitz County
+US,53,017,Douglas County
+US,53,019,Ferry County
+US,53,021,Franklin County
+US,53,023,Garfield County
+US,53,025,Grant County
+US,53,027,Grays Harbor County
+US,53,029,Island County
+US,53,031,Jefferson County
+US,53,033,King County
+US,53,035,Kitsap County
+US,53,037,Kittitas County
+US,53,039,Klickitat County
+US,53,041,Lewis County
+US,53,043,Lincoln County
+US,53,045,Mason County
+US,53,047,Okanogan County
+US,53,049,Pacific County
+US,53,051,Pend Oreille County
+US,53,053,Pierce County
+US,53,055,San Juan County
+US,53,057,Skagit County
+US,53,059,Skamania County
+US,53,061,Snohomish County
+US,53,063,Spokane County
+US,53,065,Stevens County
+US,53,067,Thurston County
+US,53,069,Wahkiakum County
+US,53,071,Walla Walla County
+US,53,073,Whatcom County
+US,53,075,Whitman County
+US,53,077,Yakima County
+US,54,001,Barbour County
+US,54,003,Berkeley County
+US,54,005,Boone County
+US,54,007,Braxton County
+US,54,009,Brooke County
+US,54,011,Cabell County
+US,54,013,Calhoun County
+US,54,015,Clay County
+US,54,017,Doddridge County
+US,54,019,Fayette County
+US,54,021,Gilmer County
+US,54,023,Grant County
+US,54,025,Greenbrier County
+US,54,027,Hampshire County
+US,54,029,Hancock County
+US,54,031,Hardy County
+US,54,033,Harrison County
+US,54,035,Jackson County
+US,54,037,Jefferson County
+US,54,039,Kanawha County
+US,54,041,Lewis County
+US,54,043,Lincoln County
+US,54,045,Logan County
+US,54,047,Mcdowell County
+US,54,049,Marion County
+US,54,051,Marshall County
+US,54,053,Mason County
+US,54,055,Mercer County
+US,54,057,Mineral County
+US,54,059,Mingo County
+US,54,061,Monongalia County
+US,54,063,Monroe County
+US,54,065,Morgan County
+US,54,067,Nicholas County
+US,54,069,Ohio County
+US,54,071,Pendleton County
+US,54,073,Pleasants County
+US,54,075,Pocahontas County
+US,54,077,Preston County
+US,54,079,Putnam County
+US,54,081,Raleigh County
+US,54,083,Randolph County
+US,54,085,Ritchie County
+US,54,087,Roane County
+US,54,089,Summers County
+US,54,091,Taylor County
+US,54,093,Tucker County
+US,54,095,Tyler County
+US,54,097,Upshur County
+US,54,099,Wayne County
+US,54,101,Webster County
+US,54,103,Wetzel County
+US,54,105,Wirt County
+US,54,107,Wood County
+US,54,109,Wyoming County
+US,55,001,Adams County
+US,55,003,Ashland County
+US,55,005,Barron County
+US,55,007,Bayfield County
+US,55,009,Brown County
+US,55,011,Buffalo County
+US,55,013,Burnett County
+US,55,015,Calumet County
+US,55,017,Chippewa County
+US,55,019,Clark County
+US,55,021,Columbia County
+US,55,023,Crawford County
+US,55,025,Dane County
+US,55,027,Dodge County
+US,55,029,Door County
+US,55,031,Douglas County
+US,55,033,Dunn County
+US,55,035,Eau Claire County
+US,55,037,Florence County
+US,55,039,Fond Du Lac County
+US,55,041,Forest County
+US,55,043,Grant County
+US,55,045,Green County
+US,55,047,Green Lake County
+US,55,049,Iowa County
+US,55,051,Iron County
+US,55,053,Jackson County
+US,55,055,Jefferson County
+US,55,057,Juneau County
+US,55,059,Kenosha County
+US,55,061,Kewaunee County
+US,55,063,La Crosse County
+US,55,065,Lafayette County
+US,55,067,Langlade County
+US,55,069,Lincoln County
+US,55,071,Manitowoc County
+US,55,073,Marathon County
+US,55,075,Marinette County
+US,55,077,Marquette County
+US,55,078,Menominee County
+US,55,079,Milwaukee County
+US,55,081,Monroe County
+US,55,083,Oconto County
+US,55,085,Oneida County
+US,55,087,Outagamie County
+US,55,089,Ozaukee County
+US,55,091,Pepin County
+US,55,093,Pierce County
+US,55,095,Polk County
+US,55,097,Portage County
+US,55,099,Price County
+US,55,101,Racine County
+US,55,103,Richland County
+US,55,105,Rock County
+US,55,107,Rusk County
+US,55,109,St. Croix County
+US,55,111,Sauk County
+US,55,113,Sawyer County
+US,55,115,Shawano County
+US,55,117,Sheboygan County
+US,55,119,Taylor County
+US,55,121,Trempealeau County
+US,55,123,Vernon County
+US,55,125,Vilas County
+US,55,127,Walworth County
+US,55,129,Washburn County
+US,55,131,Washington County
+US,55,133,Waukesha County
+US,55,135,Waupaca County
+US,55,137,Waushara County
+US,55,139,Winnebago County
+US,55,141,Wood County
+US,56,001,Albany County
+US,56,003,Big Horn County
+US,56,005,Campbell County
+US,56,007,Carbon County
+US,56,009,Converse County
+US,56,011,Crook County
+US,56,013,Fremont County
+US,56,015,Goshen County
+US,56,017,Hot Springs County
+US,56,019,Johnson County
+US,56,021,Laramie County
+US,56,023,Lincoln County
+US,56,025,Natrona County
+US,56,027,Niobrara County
+US,56,029,Park County
+US,56,031,Platte County
+US,56,033,Sheridan County
+US,56,035,Sublette County
+US,56,037,Sweetwater County
+US,56,039,Teton County
+US,56,041,Uinta County
+US,56,043,Washakie County
+US,56,045,Weston County
+US,60,010,Eastern District County
+US,60,020,Manu'A District County
+US,60,030,Rose Island County
+US,60,040,Swains Island County
+US,60,050,Western District County
+FM,64,005,Kosrae County
+FM,64,040,Pohnpei County
+FM,64,050,Chuuk County
+FM,64,060,Yap County
+US,66,010,Guam
+RM,68,010,Ailinglaplap County
+RM,68,030,Ailuk County
+RM,68,040,Arno County
+RM,68,050,Aur County
+RM,68,070,Bikini And Kili County
+RM,68,080,Ebon County
+RM,68,090,Enewetak And Ujelang County
+RM,68,110,Jabat County
+RM,68,120,Jaluit County
+RM,68,150,Kwajalein County
+RM,68,160,Lae County
+RM,68,170,Lib County
+RM,68,180,Likiep County
+RM,68,190,Majuro County
+RM,68,300,Maloelap County
+RM,68,310,Mejit County
+RM,68,320,Mili County
+RM,68,330,Namorik County
+RM,68,340,Namu County
+RM,68,350,Rongelap County
+RM,68,390,Ujae County
+RM,68,410,Utrik County
+RM,68,420,Wotho County
+RM,68,430,Wotje County
+US,69,085,Northern Islands Municipality
+US,69,100,Rota Municipality
+US,69,110,Saipan Municipality
+US,69,120,Tinian Municipality
+PS,70,002,Aimeliik County
+PS,70,004,Airai County
+PS,70,010,Angaur County
+PS,70,100,Kayangel County
+PS,70,150,Koror County
+PS,70,212,Melekeok County
+PS,70,214,Ngaraard County
+PS,70,218,Ngarchelong County
+PS,70,222,Ngardmau County
+PS,70,223,Ngaremlengui County
+PS,70,224,Ngatpang County
+PS,70,226,Ngchesar County
+PS,70,228,Ngiwal County
+PS,70,300,Palau-Unorg. County
+PS,70,350,Peleiu County
+PS,70,370,Sonsorol County
+PS,70,380,Tobi County
+US,72,001,Adjuntas Municipio Municipio
+US,72,003,Aguada Municipio Municipio
+US,72,005,Aguadilla Municipio Municipio
+US,72,007,Aguas Buenas Municipio Municipio
+US,72,009,Aibonito Municipio Municipio
+US,72,011,Anasco Municipio Municipio
+US,72,013,Arecibo Municipio Municipio
+US,72,015,Arroyo Municipio Municipio
+US,72,017,Barceloneta Municipio Municipio
+US,72,019,Barranquitas Municipio Municipio
+US,72,021,Bayamon Municipio Municipio
+US,72,023,Cabo Rojo Municipio Municipio
+US,72,025,Caguas Municipio Municipio
+US,72,027,Camuy Municipio Municipio
+US,72,029,Canovanas Municipio Municipio
+US,72,031,Carolina Municipio Municipio
+US,72,033,Catano Municipio Municipio
+US,72,035,Cayey Municipio Municipio
+US,72,037,Ceiba Municipio Municipio
+US,72,039,Ciales Municipio Municipio
+US,72,041,Cidra Municipio Municipio
+US,72,043,Coamo Municipio Municipio
+US,72,045,Comerio Municipio Municipio
+US,72,047,Corozal Municipio Municipio
+US,72,049,Culebra Municipio Municipio
+US,72,051,Dorado Municipio Municipio
+US,72,053,Fajardo Municipio Municipio
+US,72,054,Florida Municipio Municipio
+US,72,055,Guanica Municipio Municipio
+US,72,057,Guayama Municipio Municipio
+US,72,059,Guayanilla Municipio Municipio
+US,72,061,Guaynabo Municipio Municipio
+US,72,063,Gurabo Municipio Municipio
+US,72,065,Hatillo Municipio Municipio
+US,72,067,Hormigueros Municipio Municipio
+US,72,069,Humacao Municipio Municipio
+US,72,071,Isabela Municipio Municipio
+US,72,073,Jayuya Municipio Municipio
+US,72,075,Juana Diaz Municipio Municipio
+US,72,077,Juncos Municipio Municipio
+US,72,079,Lajas Municipio Municipio
+US,72,081,Lares Municipio Municipio
+US,72,083,Las Marias Municipio Municipio
+US,72,085,Las Piedras Municipio Municipio
+US,72,087,Loiza Municipio Municipio
+US,72,089,Luquillo Municipio Municipio
+US,72,091,Manati Municipio Municipio
+US,72,093,Maricao Municipio Municipio
+US,72,095,Maunabo Municipio Municipio
+US,72,097,Mayaquez Municipio Municipio
+US,72,099,Moca Municipio Municipio
+US,72,101,Morovis Municipio Municipio
+US,72,103,Naguabo Municipio Municipio
+US,72,105,Naranjito Municipio Municipio
+US,72,107,Orocovis Municipio Municipio
+US,72,109,Patillas Municipio Municipio
+US,72,111,Penuelas Municipio Municipio
+US,72,113,Ponce Municipio Municipio
+US,72,115,Quebradillas Municipio Municipio
+US,72,117,Rincon Municipio Municipio
+US,72,119,Rio Grande Municipio Municipio
+US,72,121,Sabana Grande Municipio Municipio
+US,72,123,Salinas Municipio Municipio
+US,72,125,San German Municipio Municipio
+US,72,127,San Juan Municipio Municipio
+US,72,129,San Lorenzo Municipio Municipio
+US,72,131,San Sebastian Municipio Municipio
+US,72,133,Santa Isabel Municipio Municipio
+US,72,135,Toa Alta Municipio Municipio
+US,72,137,Toa Baja Municipio Municipio
+US,72,139,Trujillo Alto Municipio Municipio
+US,72,141,Utuado Municipio Municipio
+US,72,143,Vega Alta Municipio Municipio
+US,72,145,Vega Baja Municipio Municipio
+US,72,147,Vieques Municipio Municipio
+US,72,149,Villalba Municipio Municipio
+US,72,151,Yabucoa Municipio Municipio
+US,72,153,Yauco Municipio Municipio
+US,78,010,St. Croix Island County
+US,78,020,St. John Island County
+US,78,030,St. Thomas Island County

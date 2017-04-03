@@ -1,0 +1,74 @@
+Alabama,01
+Alaska,02
+American Samoa,60
+American Samoa,03
+Arizona,04
+Arkansas,05
+Baker Island,81
+California,06
+Canal Zone,07
+Colorado,08
+Connecticut,09
+Delaware,10
+District of Columbia,11
+Florida,12
+Federated States of Micronesia,64
+Georgia,13
+Guam,14
+Guam,66
+Hawaii,15
+Howland Island,84
+Idaho,16
+Illinois,17
+Indiana,18
+Iowa,19
+Jarvis Island,86
+Johnston Atoll,67
+Kansas,20
+Kentucky,21
+Kingman Reef,89
+Louisiana,22
+Maine,23
+Marshall Islands,68
+Maryland,24
+Massachusetts,25
+Michigan,26
+Midway Islands,71
+Minnesota,27
+Mississippi,28
+Missouri,29
+Montana,30
+Navassa Island,76
+Nebraska,31
+Nevada,32
+New Hampshire,33
+New Jersey,34
+New Mexico,35
+New York,36
+North Carolina,37
+North Dakota,38
+Northern Mariana Islands,69
+Ohio,39
+Oklahoma,40
+Oregon,41
+Palau,70
+Palmyra Atoll,95
+Pennsylvania,42
+Puerto Rico,43
+Puerto Rico,72
+Rhode Island,44
+South Carolina,45
+South Dakota,46
+Tennessee,47
+Texas,48
+U.S. Minor Outlying Islands,74
+Utah,49
+Vermont,50
+Virginia,51
+Virgin Islands of the U.S.,52
+Virgin Islands of the U.S.,78
+Wake Island,79
+Washington,53
+West Virginia,54
+Wisconsin,55
+Wyoming,56

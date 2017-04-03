@@ -15,17 +15,14 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.usgswater;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -34,16 +31,17 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
+import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.TextEncoding;
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.usgs.water.RecordStore;
+import org.sensorhub.impl.usgs.water.WaterDataRecord;
+import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
-
-import com.google.gson.Gson;
 
 
 /**
@@ -53,24 +51,21 @@ import com.google.gson.Gson;
  * </p>
  * 
  * @author Lee Butler <labutler10@gmail.com>
- * @since October 30, 2014
+ * @since March 22, 2017
  */
 
 public class USGSWaterOutput extends AbstractSensorOutput<USGSWaterDriver> implements IMultiSourceDataInterface
 {
-	WaterML2 waterData;
-	
-	// Define format of incoming time stamp
-	DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
-	Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
-	
-    DataRecord waterRecordStruct;
-    TextEncoding waterRecordEncoding;
+    DataRecord dataStruct;
+    TextEncoding encoding;
     Timer timer;
+    Map<String, Long> latestUpdateTimes;
+    Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
 
     public USGSWaterOutput(USGSWaterDriver driver)
     {
         super(driver);
+        latestUpdateTimes = new HashMap<String, Long>();
     }
 
 
@@ -82,127 +77,142 @@ public class USGSWaterOutput extends AbstractSensorOutput<USGSWaterDriver> imple
   
     
     protected void init()
-    {   	
-        SWEHelper fac = new SWEHelper();
+    {   
+        SWEHelper swe = new SWEHelper();
         GeoPosHelper geo = new GeoPosHelper();
         
-        // build SWE Common record structure
-        waterRecordStruct = fac.newDataRecord(6);
-        waterRecordStruct.setName(getName());
-        waterRecordStruct.setDefinition("http://sensorml.com/ont/swe/property/StreamData");
-        waterRecordStruct.addComponent("time", fac.newTimeStampIsoUTC());
-        waterRecordStruct.addComponent("siteCode", fac.newText("http://sensorml.com/ont/swe/property/StationID", "Site ID", null));
-        waterRecordStruct.addComponent("siteName", fac.newText("http://sensorml.com/ont/swe/property/StationName", "Site Name", null));
-        waterRecordStruct.addComponent("location", geo.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC));
-        waterRecordStruct.addComponent("discharge", fac.newQuantity("http://sensorml.com/ont/swe/property/StreamDischarge", "Stream Discharge", null, "ft3/s"));
-        waterRecordStruct.addComponent("gageHeight", fac.newQuantity("http://sensorml.com/ont/swe/property/GageHeight", "Gage Height", null, "ft"));
+        dataStruct = swe.newDataRecord();
+        dataStruct.setName(getName());
         
-        // default encoding is text
-        waterRecordEncoding = fac.newTextEncoding("$$", "\n");           
+        dataStruct.addField("time", swe.newTimeStampIsoUTC());
+        dataStruct.addField("site", swe.newText("http://sensorml.com/ont/swe/property/SiteID", "Site ID", null));
+        dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
+        dataStruct.addField("location", geo.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC));
+        
+        for (ObsParam param: parentSensor.getConfiguration().exposeFilter.parameters)
+        {
+            String paramName = param.name().toLowerCase();
+            
+            DataComponent c = swe.newQuantity(
+                    getDefUri(param),
+                    getLabel(param),
+                    getDesc(param),
+                    getUom(param),
+                    DataType.FLOAT);
+            
+            dataStruct.addComponent(paramName, c);
+        }
+        
+        // use text encoding with "$$" separators
+        encoding = swe.newTextEncoding("$$", "\n");
+        
+//        // build SWE Common record structure
+//        waterRecordStruct = fac.newDataRecord(10);
+//        waterRecordStruct.setName(getName());
+//        waterRecordStruct.setDefinition("http://sensorml.com/ont/swe/property/StreamData");
+//        waterRecordStruct.addComponent("time", fac.newTimeStampIsoUTC());
+//        waterRecordStruct.addComponent("siteCode", fac.newText("http://sensorml.com/ont/swe/property/StationID", "Site ID", null));
+//        waterRecordStruct.addComponent("siteName", fac.newText("http://sensorml.com/ont/swe/property/StationName", "Site Name", null));
+//        waterRecordStruct.addComponent("location", geo.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC));
+//        waterRecordStruct.addComponent("discharge", fac.newQuantity("http://sensorml.com/ont/swe/property/StreamDischarge", "Stream Discharge", null, "ft3/s"));
+//        waterRecordStruct.addComponent("gageHeight", fac.newQuantity("http://sensorml.com/ont/swe/property/GageHeight", "Gage Height", null, "ft"));
+//        waterRecordStruct.addComponent("specificConductance", fac.newQuantity("http://sensorml.com/ont/swe/property/SpecificConductance", "Specific Conductance", null, "uS/cm @ 25degC"));
+//        waterRecordStruct.addComponent("dissolvedOxygen", fac.newQuantity("http://sensorml.com/ont/swe/property/DissolvedOxygen", "Dissolved Oxygen", null, "mg/L"));
+//        waterRecordStruct.addComponent("waterPH", fac.newQuantity("http://sensorml.com/ont/swe/property/WaterPH", "Water PH", null, null));
+//        waterRecordStruct.addComponent("waterTemperature", fac.newQuantity("http://sensorml.com/ont/swe/property/WaterTemperature", "Water Temperature", null, "degC"));
+//        
+//        // mark component providing entity ID
+//        waterRecordStruct.getFieldList().getProperty(1).setRole(ENTITY_ID_URI);
+//        
+//        // Encode using $$ because site names contain commas
+//        waterRecordEncoding = fac.newTextEncoding("$$", "\n");
+    }
+    
+    protected String getDefUri(ObsParam param)
+    {
+        String name = param.toString().replaceAll(" ", "");
+        return SWEHelper.getPropertyUri(name);
     }
     
     
-    protected void start() throws SensorHubException
+    protected String getLabel(ObsParam param)
     {
+        return param.toString();
+    }
+    
+    
+    protected String getDesc(ObsParam param)
+    {
+        return param.toString() + " parameter, USGS code " + param.getCode();
+    }
+    
+    
+    protected String getUom(ObsParam param)
+    {
+        switch (param)
+        {
+            case WATER_TEMP:
+                return "Cel";                
+            case DISCHARGE:
+                return "[cft_i]/s";
+            case GAGE_HEIGHT:
+                return "[ft_i]";
+            case CONDUCTANCE:
+                return "uS/cm";
+            case OXY:
+                return "mg/L";
+            case PH:
+                return "1";
+        }
+        
+        return null;
+    }
+    
+//    private DataBlock waterRecordToDataBlock(String siteCode, WaterDataRecord rec) throws ParseException
+//    {
+//    	DataBlock dataBlock = dataStruct.createDataBlock();
+//    	
+//    	dataBlock.setDoubleValue(0, rec.getMeasurementTime());
+//    	dataBlock.setStringValue(1, rec.getSiteCode());
+//    	dataBlock.setStringValue(2, rec.getSiteName());
+//    	dataBlock.setDoubleValue(3, rec.getSiteLat());
+//    	dataBlock.setDoubleValue(4, rec.getSiteLon());
+//    	dataBlock.setDoubleValue(5, rec.getDischarge());
+//    	dataBlock.setDoubleValue(6, rec.getGageHeight());
+//    	dataBlock.setDoubleValue(7, rec.getConductance());
+//    	dataBlock.setDoubleValue(8, rec.getDissOxygen());
+//    	dataBlock.setDoubleValue(9, rec.getWaterPH());
+//    	dataBlock.setDoubleValue(10, rec.getWaterTemp());
+//        
+//        return dataBlock;
+//    }
+    
+    
+    protected void start()
+    {
+    	
     	if (timer != null)
             return;
+    	timer = new Timer();
         
-		try
-		{
-			TimerTask timerTask = new TimerTask()
-			{
-				@Override
-				public void run()
-				{
-	          	try
-	          	{
-	          		PublishData();
-	          	}
-	          	
-	          	catch (Exception e)
-	          	{
-	          	}
-	          }
-	      };
-	      timer = new Timer();
-	      timer.scheduleAtFixedRate(timerTask, 0, (long)(getAverageSamplingPeriod()*1000));
-	    }
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}  
+    	TimerTask timerTask = new TimerTask()
+    	{
+			public void run()
+    		{
+    			//URL waterURL = new URL(parentSensor.jsonURL);
+			    for (String siteCode : parentSensor.getConfiguration().exposeFilter.siteIds)
+			    {
+			    	WaterDataRecord rec = null;
+					// wait a bit before querying next station
+                	try { Thread.sleep(1000); }
+                    catch (InterruptedException e) { }
+			    }
+			}
+		};
+		
+		timer.scheduleAtFixedRate(timerTask, 0, (long)(getAverageSamplingPeriod()*1000));
     }
     
-    public void PublishData() throws SensorHubException, IOException, ParseException
-    {
-    	//URL waterURL = new URL(parentSensor.jsonURL);
-    	for (String siteCode : parentSensor.getConfiguration().siteCodes)
-    	{
-        	URL waterURL = new URL(parentSensor.getConfiguration().urlBase + "&sites=" + siteCode + "&parameterCd=00060,00065");
-        	InputStream isData = waterURL.openStream();
-        	BufferedReader reader = null;
-        	try
-        	{
-        		reader = new BufferedReader(new InputStreamReader(isData));
-        		StringBuffer response = new StringBuffer();
-    	    	String line;
-    	    	
-    	    	while ((line = reader.readLine()) != null)
-    	    	{
-    	    		response.append(line);
-    	    	}
-    	    	
-    	    	Gson gsonL = new Gson();
-    	    	waterData = gsonL.fromJson(response.toString(), WaterML2.class);
-    	    	
-//    	    	System.out.println("");
-//    	    	System.out.println("time = " + waterData.value.timeSeries[0].values[0].value[0].dateTime);
-//    	    	System.out.println("siteCode = " + waterData.value.timeSeries[0].sourceInfo.siteCode[0].value);
-//    	    	System.out.println("siteName = " + waterData.value.timeSeries[0].sourceInfo.siteName);
-//    	    	System.out.println("lat = " + waterData.value.timeSeries[0].sourceInfo.geoLocation.geogLocation.latitude);
-//    	    	System.out.println("lon = " + waterData.value.timeSeries[0].sourceInfo.geoLocation.geogLocation.longitude);
-//    	    	System.out.println("discharge = " + waterData.value.timeSeries[0].values[0].value[0].value);
-//    	    	System.out.println("gageHeight = " + waterData.value.timeSeries[1].values[0].value[0].value);
-    	    	
-    	    	//dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-    	    	Date date = dateFormat.parse(waterData.value.timeSeries[0].values[0].value[0].dateTime);
-    	    	long seconds = date.getTime();
-    	    	
-    	        DataBlock dataBlock;
-    	    	if (latestRecord == null)
-    	    	    dataBlock = waterRecordStruct.createDataBlock();
-    	    	else
-    	    	    dataBlock = latestRecord.renew();
-    	    	
-    	    	dataBlock.setDoubleValue(0, seconds/1000);
-    	    	dataBlock.setStringValue(1, waterData.value.timeSeries[0].sourceInfo.siteCode[0].value);
-    	    	dataBlock.setStringValue(2, waterData.value.timeSeries[0].sourceInfo.siteName);
-    	    	dataBlock.setDoubleValue(3, waterData.value.timeSeries[0].sourceInfo.geoLocation.geogLocation.latitude);
-    	    	dataBlock.setDoubleValue(4, waterData.value.timeSeries[0].sourceInfo.geoLocation.geogLocation.longitude);
-    	    	dataBlock.setDoubleValue(5, Double.parseDouble(waterData.value.timeSeries[0].values[0].value[0].value));
-    	    	dataBlock.setDoubleValue(6, Double.parseDouble(waterData.value.timeSeries[1].values[0].value[0].value));
-    	        // update latest record and send event
-    	    	String siteUID = USGSWaterDriver.SITE_UID_PREFIX + siteCode;
-    	        latestRecord = dataBlock;
-    	        latestRecordTime = System.currentTimeMillis();
-    	        latestRecords.put(siteUID, latestRecord);
-    	        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, USGSWaterOutput.this, dataBlock));  
-        	}
-        	
-        	catch (IOException e)
-            {
-                throw new IOException("Cannot read server response", e);
-            }
-        	finally
-        	{
-        		if (reader != null)
-        			reader.close();
-        		if (isData != null)
-        			isData.close();
-        	}	
-    	}
-    }
-
     
     @Override
     public double getAverageSamplingPeriod()
@@ -216,14 +226,14 @@ public class USGSWaterOutput extends AbstractSensorOutput<USGSWaterDriver> imple
     @Override
     public DataComponent getRecordDescription()
     {
-        return waterRecordStruct;
+        return dataStruct;
     }
 
 
     @Override
     public DataEncoding getRecommendedEncoding()
     {
-        return waterRecordEncoding;
+        return encoding;
     }
 
 

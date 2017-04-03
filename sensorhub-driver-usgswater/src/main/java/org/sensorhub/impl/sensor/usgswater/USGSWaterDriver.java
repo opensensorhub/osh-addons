@@ -16,33 +16,34 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.usgswater;
 
 import net.opengis.gml.v32.AbstractFeature;
-import net.opengis.gml.v32.Point;
-import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.AbstractProcess;
-import net.opengis.sensorml.v20.IdentifierList;
 import net.opengis.sensorml.v20.PhysicalSystem;
-import net.opengis.sensorml.v20.Term;
 import org.sensorhub.impl.module.RobustConnection;
+import org.sensorhub.impl.persistence.FilterUtils;
+import org.sensorhub.impl.persistence.FilteredIterator;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.usgs.water.ObsSiteLoader;
+import org.sensorhub.impl.usgs.water.RecordStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
-import org.vast.sensorML.SMLFactory;
+import org.sensorhub.api.persistence.IFoiFilter;
 import org.vast.sensorML.SMLHelper;
-import org.vast.swe.SWEHelper;
 
 
 /**
@@ -52,103 +53,123 @@ import org.vast.swe.SWEHelper;
  * </p>
  * 
  * @author Lee Butler <labutler10@gmail.com>
- * @since October 30, 2014
+ * @since March 22, 2017
  */
 
 public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> implements IMultiSourceDataProducer
 {
 	static final Logger log = LoggerFactory.getLogger(USGSWaterDriver.class);
-    static final String SENSOR_UID_PREFIX = "urn:osh:usgs:water:";
-    static final String SITE_UID_PREFIX = SENSOR_UID_PREFIX + "site:";
+    static final String BASE_USGS_URL = "https://waterservices.usgs.gov/nwis/";
+    static final String UID_PREFIX = "urn:usgs:water:";
     
-    Set<String> foiIDs;
-    Map<String, PhysicalSystem> siteFois;
+    Set<CountyCode> countyCode;
+    CountyCode county;
+    Map<String, AbstractFeature> siteFois = new LinkedHashMap<>();
     Map<String, PhysicalSystem> siteDesc;
+    
+    Map<String, RecordStore> dataStores = new LinkedHashMap<>();
+    PhysicalSystem systemDesc;
     
     RobustConnection connection;
     USGSWaterOutput waterOut;
     
-    List<String> jsonURLs = new ArrayList<String>();
-    
-    String jsonURL;
-    String serialNumber;
-    String modelNumber;
-    String longName;
-    String shortName;
-    
     public USGSWaterDriver()
     {
-	    this.foiIDs = new LinkedHashSet<String>();
-	    this.siteFois = new LinkedHashMap<String, PhysicalSystem>();
-	    this.siteDesc = new LinkedHashMap<String, PhysicalSystem>();
+//    	this.countyCode = new LinkedHashSet<CountyCode>();
+//	    this.siteFois = new LinkedHashMap<String, AbstractFeature>();
+//	    this.siteDesc = new LinkedHashMap<String, PhysicalSystem>();
     }
     
     @Override
     public void setConfiguration(final USGSWaterConfig config) {
         super.setConfiguration(config);
     };
-
-
+    
     @Override
-    public void init() throws SensorHubException {
+    public void init() throws SensorHubException
+    {
         // reset internal state in case init() was already called
         super.init();
+        
+        try {populateCountyCodes();}
+        catch (IOException e) {e.printStackTrace();}
+        
+        loadFois();
+        
+//        for (Map.Entry<String, AbstractFeature> entry : siteFois.entrySet())
+//        {
+//            System.out.println(entry.getKey() + "/" + entry.getValue().getDescription());
+//        }
         
         // generate identifiers
         this.uniqueID = "urn:usgs:water:network";
         this.xmlID = "USGS_WATER_DATA_NETWORK";
         
-        // init main data interface
         this.waterOut = new USGSWaterOutput(this);
         addOutput(waterOut, false);
-        
-        //jsonURL = config.getUrlBase() + "&sites=" + config.getSiteCode() + "&parameterCd=00060,00065";
-        
         waterOut.init();
+    }
+    
+    public void populateCountyCodes() throws IOException
+    {
+    	countyCode = new LinkedHashSet<CountyCode>();
+    	
+        InputStream is = getClass().getResourceAsStream("CountyCodes.csv");
+        InputStreamReader isr = new InputStreamReader(is);
+        BufferedReader br = new BufferedReader(isr);
+        String[] lineArr;
+        String line;
+        
+        while ((line = br.readLine()) != null)
+        {
+        	county = new CountyCode();
+        	
+        	lineArr = line.split(",");
+        	county.setTerritory(lineArr[0]);
+        	county.setCountyCode((lineArr[1] + lineArr[2]));
+        	county.setName(lineArr[3]);
+        	countyCode.add(county);
+        }
+        br.close();
+        isr.close();
+        is.close();
     }
 
     @Override
     public void start() throws SensorHubException {
-	    SMLHelper smlFac = new SMLHelper();
-	    GMLFactory gmlFac = new GMLFactory(true);
 	    
-	    //MetarStationMap map = null;
-	    //try {
-		//	map = MetarStationMap.getInstance();
-		//} catch (IOException e) {
-		//	throw new SensorHubException("IO Exception trying to load metarStationMap");
-		//}
+    	SMLHelper sml = new SMLHelper();
+	    
 	    // generate station FOIs and full descriptions
-	    for (String siteCode: config.siteCodes)
-        {
-	        String uid = SITE_UID_PREFIX + siteCode;
-	        String description = "USGS Water Data Site: " + siteCode;
-	        
-	        // generate small SensorML for FOI (in this case the system is the FOI)
-	        //Station station = map.getStation(stationID);
-	        PhysicalSystem foi = smlFac.newPhysicalSystem();
-	        foi.setId(siteCode);
-	        foi.setUniqueIdentifier(uid);
-	        //foi.setName(station.getName());
-	        foi.setDescription(description);
-
-	        Point stationLoc = gmlFac.newPoint();
-	        //stationLoc.setPos(new double[] {station.getLat(), station.getLon(), station.getElevation()});
-	        foi.setLocation(stationLoc);
-	        siteFois.put(uid, foi);
-	        foiIDs.add(uid);
-	        
-	        // TODO generate full SensorML for sensor description
-	        PhysicalSystem sensorDesc = smlFac.newPhysicalSystem();
-	        sensorDesc.setId("STATION_" + siteCode);
-	        sensorDesc.setUniqueIdentifier(uid);
-            //sensorDesc.setName(station.getName());
-            sensorDesc.setDescription(description);
-            siteDesc.put(uid, sensorDesc);
+	    for (Map.Entry<String, AbstractFeature> entry : siteFois.entrySet())
+	    {
+	    	String uid = UID_PREFIX + entry.getValue().getId();
+	    	
+			// generate full SensorML for sensor description
+			PhysicalSystem sensorDesc = sml.newPhysicalSystem();
+			sensorDesc.setId("STATION_" + entry.getValue().getId());
+			sensorDesc.setUniqueIdentifier(uid);
+			sensorDesc.setName(entry.getValue().getDescription());
+			sensorDesc.setDescription(entry.getValue().getName());
+			siteDesc.put(uid, sensorDesc);
         }
+        
     	waterOut.start();
     }
-
+    
+    protected void loadFois() throws SensorHubException
+    {
+        // request and parse site info
+        try
+        {
+            ObsSiteLoader parser = new ObsSiteLoader(this);
+            parser.preloadSites(config.exposeFilter, siteFois);
+        }
+        catch (Exception e)
+        {
+            throw new SensorHubException("Error loading site information", e);
+        }
+    }
 
     @Override
     protected void updateSensorDescription()
@@ -156,13 +177,13 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 		synchronized (sensorDescLock)
 		{
 			super.updateSensorDescription();
-			sensorDescription.setDescription("METAR weather station network");
+			sensorDescription.setDescription("USGS water site network");
 			
 			// append href to all stations composing the network
-			for (String stationID: config.siteCodes)
+			for (Map.Entry<String, AbstractFeature> entry : siteFois.entrySet())
 			{
-			    String name = "station" + stationID;
-			    String href = SITE_UID_PREFIX + stationID;
+			    String name = "usgsSite-" + entry.getValue().getId();
+			    String href = UID_PREFIX + "site:" + entry.getValue().getId();
 			    ((PhysicalSystem)sensorDescription).getComponentList().add(name, href, null);
 			}
 		}
@@ -231,13 +252,6 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     {
         return Collections.unmodifiableCollection(siteFois.values());
     }
-    
-    
-    @Override
-    public Collection<String> getFeaturesOfInterestIDs()
-    {
-        return Collections.unmodifiableCollection(foiIDs);
-    }
 
 
     @Override
@@ -245,4 +259,10 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     {
         return Arrays.asList(foiID);
     }
+
+	@Override
+	public Collection<String> getFeaturesOfInterestIDs() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

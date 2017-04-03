@@ -23,13 +23,15 @@ public class USGSWaterConfig extends SensorConfig {
     
     public USGSWaterConfig()
     {
-    	exposeFilter.siteIds.add("02339495");
+//    	exposeFilter.siteIds.add("02339495");
 //    	exposeFilter.siteIds.add("03574500");
 //    	exposeFilter.siteIds.add("03574100");
 //    	exposeFilter.siteIds.add("03575100");
-    	exposeFilter.stateCodes.add(StateCode.AL);
-    	exposeFilter.countyCodes.add(01053);
+//    	exposeFilter.stateCodes.add(StateCode.AL);
+    	exposeFilter.countyCodes.add("01053");
+    	exposeFilter.countyCodes.add("01133");
         exposeFilter.parameters.add(ObsParam.DISCHARGE);
+        exposeFilter.parameters.add(ObsParam.GAGE_HEIGHT);
     }
     
 //    @DisplayInfo(label="Get Data By Site Code", desc="Get water data by site code")
