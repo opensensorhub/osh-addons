@@ -15,24 +15,11 @@ Developer are Copyright (C) 2016 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.foscam;
 
-import java.nio.ByteOrder;
 import java.util.Collection;
-
-import org.vast.cdm.common.CDMException;
-import org.vast.swe.SWEHelper;
-
+import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import net.opengis.swe.v20.AllowedTokens;
-import net.opengis.swe.v20.BinaryBlock;
-import net.opengis.swe.v20.BinaryComponent;
-import net.opengis.swe.v20.BinaryEncoding;
-import net.opengis.swe.v20.ByteEncoding;
-import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataChoice;
-import net.opengis.swe.v20.DataRecord;
-import net.opengis.swe.v20.DataStream;
-import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Text;
-import net.opengis.swe.v20.Time;
 
 
 /**
@@ -44,19 +31,11 @@ import net.opengis.swe.v20.Time;
  * @author Lee Butler <labutler10@gmail.com>
  * @since September 2016
  */
-public class FoscamHelper extends SWEHelper
+public class FoscamHelper extends VideoCamHelper
 {
-    public static final String DEF_VIDEOFRAME = getPropertyUri("VideoFrame");
-    
     // PTZ tasking commands
     public static final String TASKING_PTZPRESET = "preset";
     public static final String TASKING_PTZREL = "relMove";
-
-
-    // system info	
-    String cameraBrand = " ";
-    String cameraModel = " ";
-    String serialNumber = " ";
 
 
     public DataChoice getPtzTaskParameters(String name, Collection<String> relMoveNames, Collection<String> presetNames)
@@ -85,71 +64,5 @@ public class FoscamHelper extends SWEHelper
         commandData.addItem(TASKING_PTZREL, relMove);
         
         return commandData;
-    }
-    
-    
-    public DataRecord newVideoFrameRGB(String name, int width, int height)
-    {
-        Time timeStamp = newTimeStampIsoUTC();        
-        DataArray imgArr = newRgbImage(width, height, DataType.BYTE);
-        imgArr.setName("img");
-        
-        DataRecord dataStruct = wrapWithTimeStamp(timeStamp, imgArr);
-        dataStruct.setName(name);
-        dataStruct.setDefinition(DEF_VIDEOFRAME);
-        
-        return dataStruct;
-    }
-    
-    
-    public DataStream newVideoOutputRGB(String name, int width, int height)
-    {
-        DataRecord dataStruct = newVideoFrameRGB(name, width, height);
-        BinaryEncoding dataEnc = SWEHelper.getDefaultBinaryEncoding(dataStruct);        
-        return newDataStream(dataStruct, dataEnc);
-    }
-    
-    
-    public DataStream newVideoOutputCODEC(String name, int width, int height, String codec)
-    {
-        DataRecord dataStruct = newVideoFrameRGB(name, width, height);
-        
-        // MJPEG encoding
-        BinaryEncoding dataEnc = newBinaryEncoding();
-        dataEnc.setByteEncoding(ByteEncoding.RAW);
-        dataEnc.setByteOrder(ByteOrder.BIG_ENDIAN);
-        
-        BinaryComponent timeEnc = newBinaryComponent();
-        timeEnc.setRef("/" + dataStruct.getComponent(0).getName());
-        timeEnc.setCdmDataType(DataType.DOUBLE);
-        dataEnc.addMemberAsComponent(timeEnc);
-        
-        BinaryBlock compressedBlock = newBinaryBlock();
-        compressedBlock.setRef("/" + dataStruct.getComponent(1).getName());
-        compressedBlock.setCompression(codec);
-        dataEnc.addMemberAsBlock(compressedBlock);
-        
-        try
-        {
-            SWEHelper.assignBinaryEncoding(dataStruct, dataEnc);
-        }
-        catch (CDMException e)
-        {
-            throw new RuntimeException("Invalid binary encoding configuration", e);
-        };
-        
-        return newDataStream(dataStruct, dataEnc);
-    }
-    
-    
-    public DataStream newVideoOutputMJPEG(String name, int width, int height)
-    {
-        return newVideoOutputCODEC(name, width, height, "JPEG");
-    }
-    
-    
-    public DataStream newVideoOutputH264(String name, int width, int height)
-    {
-        return newVideoOutputCODEC(name, width, height, "H264");
     }
 }
