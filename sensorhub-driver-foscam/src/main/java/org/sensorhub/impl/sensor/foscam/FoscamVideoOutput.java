@@ -26,7 +26,7 @@ import org.sensorhub.impl.sensor.videocam.VideoResolution;
 
 /**
  * <p>
- * Implementation of video output interface for Dahua cameras using
+ * Implementation of video output interface for Foscam cameras using
  * RTSP/RTP protocol
  * </p>
  *
