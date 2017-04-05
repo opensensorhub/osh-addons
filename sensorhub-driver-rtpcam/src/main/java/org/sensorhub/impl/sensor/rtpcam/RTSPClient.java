@@ -77,8 +77,8 @@ public class RTSPClient
     public class StreamInfo
     {
         String controlArg;
-        String codecString;
-        String paramSets;
+        public String codecString;
+        public String paramSets;
         
         public String toString()
         {

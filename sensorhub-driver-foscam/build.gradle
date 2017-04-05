@@ -17,8 +17,8 @@ test {
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.foscam.Activator'
+    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.fakegps.Activator'
   }
 }
 
@@ -28,12 +28,6 @@ ext.pom >>= {
     developer {
       id 'labutler'
       name 'Lee Butler'
-      organization 'Botts Innovative Research, Inc.'
-      organizationUrl 'http://www.botts-inc.com' 
-    },
-    developer {
-      id 'mdhsl'
-      name 'Mathieu Dhainaut'
       organization 'Botts Innovative Research, Inc.'
       organizationUrl 'http://www.botts-inc.com' 
     }

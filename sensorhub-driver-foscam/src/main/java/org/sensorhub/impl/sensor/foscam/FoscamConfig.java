@@ -23,17 +23,20 @@ import java.net.URL;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
+import org.sensorhub.api.sensor.PositionConfig;
 import org.sensorhub.api.sensor.PositionConfig.EulerOrientation;
 import org.sensorhub.api.sensor.PositionConfig.LLALocation;
 import org.sensorhub.api.sensor.SensorConfig;
 import org.sensorhub.impl.comm.HTTPConfig;
+import org.sensorhub.impl.comm.RobustIPConnectionConfig;
 import org.sensorhub.impl.sensor.foscam.ptz.FoscamPTZconfig;
 import org.sensorhub.impl.sensor.foscam.ptz.FoscamPTZpreset;
 import org.sensorhub.impl.sensor.foscam.ptz.FoscamPTZrelMove;
-import org.sensorhub.impl.sensor.rtpcam.RTPCameraConfig;
+import org.sensorhub.impl.sensor.rtpcam.RTSPConfig;
+import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
+import org.sensorhub.impl.sensor.videocam.VideoResolution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * <p>
@@ -45,7 +48,7 @@ import org.slf4j.LoggerFactory;
  */
 public class FoscamConfig extends SensorConfig {
 	private static final Logger logger = LoggerFactory.getLogger(FoscamConfig.class);
-	
+
 	@Required
 	@DisplayInfo(label = "Camera ID", desc = "Camera ID to be appended to UID prefix")
 	public String cameraID;
@@ -53,8 +56,17 @@ public class FoscamConfig extends SensorConfig {
 	@DisplayInfo(label = "HTTP", desc = "HTTP configuration")
 	public HTTPConfig http = new HTTPConfig();
 
-	@DisplayInfo(label = "RTP", desc = "RTP configuration")
-	public RTPCameraConfig rtp = new RTPCameraConfig();
+	@DisplayInfo(label = "RTP/RTSP", desc = "RTP/RTSP configuration (Remote host is obtained from HTTP configuration)")
+	public RTSPConfig rtsp = new RTSPConfig();
+
+	@DisplayInfo(label = "Connection Options")
+	public RobustIPConnectionConfig connection = new RobustIPConnectionConfig();
+
+	@DisplayInfo(label = "Video", desc = "Video settings")
+	public VideoConfig video = new VideoConfig();
+
+	@DisplayInfo(desc = "Camera geographic position")
+	public PositionConfig position = new PositionConfig();
 
 	@DisplayInfo(label = "PTZ", desc = "Pan-Tilt-Zoom configuration")
 	public FoscamPTZconfig ptz = new FoscamPTZconfig();
@@ -62,11 +74,44 @@ public class FoscamConfig extends SensorConfig {
 	public int ptzSpeedVal = 2; // Set PTZ Speed (integer value in range 0-4,
 								// 0=fast, 4=slow)
 
+	public class VideoConfig extends BasicVideoConfig {
+		@DisplayInfo(desc = "Resolution of video frames in pixels")
+		public ResolutionEnum resolution;
+
+		public VideoResolution getResolution() {
+			return resolution;
+		}
+	}
+
+	public enum ResolutionEnum implements VideoResolution {
+		D1("D1", 704, 480), HD_720P("HD", 1280, 720), HD_1080P("Full HD", 1920, 1080);
+
+		private String text;
+		private int width, height;
+
+		private ResolutionEnum(String text, int width, int height) {
+			this.text = text;
+			this.width = width;
+			this.height = height;
+		}
+
+		public int getWidth() {
+			return width;
+		};
+
+		public int getHeight() {
+			return height;
+		};
+
+		public String toString() {
+			return text + " (" + width + "x" + height + ")";
+		}
+	};
+
 	public FoscamConfig() throws IOException {
 		// default params for Foscam
-		rtp.video.frameWidth = 1280;
-		rtp.video.frameHeight = 720;
-		rtp.video.frameRate = 30;
+		video.resolution = ResolutionEnum.HD_1080P;
+		video.frameRate = 30;
 
 		http.remotePort = 88;
 
@@ -287,6 +332,7 @@ public class FoscamConfig extends SensorConfig {
 		}
 		/*****************************************************************/
 	}
+
 	/************ Method to get and return current PTZ speed *************/
 	public int getPTZspeed() throws IOException {
 		URL optionsURLspeed = new URL("http://" + http.remoteHost + ":" + Integer.toString(http.remotePort)
@@ -335,11 +381,11 @@ public class FoscamConfig extends SensorConfig {
 
 	@Override
 	public LLALocation getLocation() {
-		return rtp.position.location;
+		return position.location;
 	}
 
 	@Override
 	public EulerOrientation getOrientation() {
-		return rtp.position.orientation;
+		return position.orientation;
 	}
 }

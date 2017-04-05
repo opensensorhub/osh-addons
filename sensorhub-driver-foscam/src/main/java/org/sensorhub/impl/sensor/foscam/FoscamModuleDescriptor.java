@@ -18,6 +18,7 @@ package org.sensorhub.impl.sensor.foscam;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
 /**
  * <p>
@@ -35,7 +36,7 @@ import org.sensorhub.api.module.ModuleConfig;
  */
 
 
-public class FoscamModuleDescriptor implements IModuleProvider
+public class FoscamModuleDescriptor extends JarModuleProvider implements IModuleProvider
 {
 
 	@Override
@@ -48,12 +49,6 @@ public class FoscamModuleDescriptor implements IModuleProvider
 	public String getModuleDescription()
 	{
 		return "Supports access to video and tasking of Pan-Tilt-Zoom gimbal for Foscam FI9821P video camera using IP protocol";
-	}
-
-	@Override
-	public String getModuleVersion()
-	{
-		return "0.1";
 	}
 
 	@Override

@@ -16,6 +16,7 @@ Developer are Copyright (C) 2016 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.foscam;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -66,6 +67,11 @@ public class FoscamPtzControl extends AbstractSensorControl<FoscamDriver> {
 	protected void init() throws SensorException {
 		logger.debug("Initializing PTZ control");
 		FoscamConfig config = parentSensor.getConfiguration();
+		try {
+			config.init();
+		} catch (IOException e) {
+			logger.error("Cannot init ptz control");
+		}
 		presetsHandler = new FoscamPTZpresetsHandler(config.ptz);
 		relMoveHandler = new FoscamPTZrelMoveHandler(config.ptz);
 
@@ -96,7 +102,6 @@ public class FoscamPtzControl extends AbstractSensorControl<FoscamDriver> {
 
 	@Override
 	public CommandStatus execCommand(DataBlock command) throws SensorException {
-		logger.info("In execCommand...");
 		// associate command data to msg structure definition
 		DataChoice commandMsg = (DataChoice) commandData.copy();
 		commandMsg.setData(command);

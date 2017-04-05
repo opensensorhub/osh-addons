@@ -17,7 +17,6 @@ package org.sensorhub.test.impl.sensor.foscam;
 
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.util.UUID;
 
 import org.junit.After;
@@ -29,6 +28,7 @@ import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.foscam.FoscamConfig;
+import org.sensorhub.impl.sensor.foscam.FoscamConfig.ResolutionEnum;
 import org.sensorhub.impl.sensor.foscam.FoscamDriver;
 import org.vast.data.DataChoiceImpl;
 import org.vast.sensorML.SMLUtils;
@@ -57,28 +57,20 @@ public class TestFoscamCameraDriver implements IEventListener {
 	@Before
 	public void init() throws Exception {
 		config = new FoscamConfig();
-		config.id = UUID.randomUUID().toString();
-		config.cameraID = "foscam:001";
-		config.rtp.video.backupFile = new File(System.getProperty("java.io.tmpdir")+File.separator+"test-foscam.h264").getAbsolutePath();
-
-		// HTTP
-		config.http.remotePort = 88;
-		config.http.password = "<PASSWORD>";
-		config.http.user = "<USER>";
-		config.http.remoteHost = "<HOST>";
-
-		// RTSP
-		config.rtp.rtsp.remoteHost = "<HOST>";
-		config.rtp.rtsp.user = "<USER>";
-		config.rtp.rtsp.password = "<PASSWORD>";
-		config.rtp.rtsp.remotePort = 88;
-		config.rtp.rtsp.videoPath = "/videoMain";
-		config.rtp.rtsp.localUdpPort = 5600;
-		config.rtp.rtsp.onlyConnectRtsp = false;
-
-		config.rtp.video.frameWidth = 1920; //R2 setup
-		config.rtp.video.frameHeight = 1080; //R2 setup
-		config.rtp.video.frameRate = 25; //R2 setup
+        config.id = UUID.randomUUID().toString();
+        config.connection.connectTimeout = 10000;
+        
+        config.http.remoteHost = "<HOST>";
+        config.http.user = "<USER>";
+        config.http.password = "<PASSWORD>";
+        config.http.remotePort = 88;
+        
+        config.rtsp.remotePort = 88;
+        config.rtsp.localUdpPort = 5600;
+        config.rtsp.videoPath = "/videoMain";  
+        
+		config.video.resolution = ResolutionEnum.HD_1080P;
+		config.video.frameRate = 25; //R2 setup
 
 		config.init();
 
