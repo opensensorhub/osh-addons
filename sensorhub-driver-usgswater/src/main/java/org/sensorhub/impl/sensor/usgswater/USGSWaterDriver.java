@@ -144,7 +144,6 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 	    for (Map.Entry<String, AbstractFeature> entry : siteFois.entrySet())
 	    {
 	    	String uid = UID_PREFIX + entry.getValue().getId();
-	    	
 			// generate full SensorML for sensor description
 			PhysicalSystem sensorDesc = sml.newPhysicalSystem();
 			sensorDesc.setId("STATION_" + entry.getValue().getId());
@@ -154,7 +153,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 			siteDesc.put(uid, sensorDesc);
         }
         
-    	waterOut.start();
+    	waterOut.start(siteFois);
     }
     
     protected void loadFois() throws SensorHubException

@@ -15,20 +15,29 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.usgswater;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import net.opengis.gml.v32.AbstractFeature;
+import net.opengis.gml.v32.Point;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -38,6 +47,7 @@ import net.opengis.swe.v20.TextEncoding;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.sensor.usgswater.ObsSender.ParamValueParser;
 import org.sensorhub.impl.usgs.water.RecordStore;
 import org.sensorhub.impl.usgs.water.WaterDataRecord;
 import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
@@ -61,10 +71,13 @@ public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> impl
     DataRecord dataStruct;
     TextEncoding encoding;
     Timer timer;
+    BufferedReader reader;
     Map<String, Long> latestUpdateTimes;
     Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
+    static final String BASE_URL = USGSWaterDriver.BASE_USGS_URL + "iv?sites=";
+    final int urlChunkSize = 100;
     
-    ObsSender sender;
+    List<String> qualCodes = new ArrayList<String>();
 
     public USGSWaterOutput(USGSWaterDriver driver)
     {
@@ -87,7 +100,7 @@ public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> impl
         
         dataStruct = swe.newDataRecord();
         dataStruct.setName(getName());
-        
+        dataStruct.setDefinition("http://sensorml.com/ont/swe/property/StreamData");
         dataStruct.addField("time", swe.newTimeStampIsoUTC());
         dataStruct.addField("site", swe.newText("http://sensorml.com/ont/swe/property/SiteID", "Site ID", null));
         dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
@@ -151,50 +164,28 @@ public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> impl
         return null;
     }
     
-//    private DataBlock waterRecordToDataBlock(String siteCode, WaterDataRecord rec) throws ParseException
-//    {
-//    	DataBlock dataBlock = dataStruct.createDataBlock();
-//    	
-//    	dataBlock.setDoubleValue(0, rec.getMeasurementTime());
-//    	dataBlock.setStringValue(1, rec.getSiteCode());
-//    	dataBlock.setStringValue(2, rec.getSiteName());
-//    	dataBlock.setDoubleValue(3, rec.getSiteLat());
-//    	dataBlock.setDoubleValue(4, rec.getSiteLon());
-//    	dataBlock.setDoubleValue(5, rec.getDischarge());
-//    	dataBlock.setDoubleValue(6, rec.getGageHeight());
-//    	dataBlock.setDoubleValue(7, rec.getConductance());
-//    	dataBlock.setDoubleValue(8, rec.getDissOxygen());
-//    	dataBlock.setDoubleValue(9, rec.getWaterPH());
-//    	dataBlock.setDoubleValue(10, rec.getWaterTemp());
-//        
-//        return dataBlock;
-//    }
     
-    
-    protected void start()
+    protected void start(final Map<String, AbstractFeature> fois)
     {
-    	sender = new ObsSender(getRecordDescription());
+    	//sender = new ObsSender(getRecordDescription());
     	if (timer != null)
             return;
         
     	TimerTask timerTask = new TimerTask()
     	{
 			public void run()
-    		{
-				//System.out.println("try every 10 seconds...");
-		    	try
-		    	{
-					latestRecord = sender.sendRequest(parentSensor.siteFois);
-//			        latestRecordTime = System.currentTimeMillis();
-			        System.out.println("publishing...");
-//			        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, USGSWaterOutput.this, latestRecord));
+    		{	
+				String[] requestUrl = buildIvRequest(fois);
+				
+				try
+				{
+					for (int i=0; i<requestUrl.length; i++)
+						sendObs(requestUrl[i], fois); // Pass url array and fois map to sendObs()
 				}
-		    	
-		    	catch (IOException e1)
-		    	{
+				catch (IOException e1)
+				{
 					e1.printStackTrace();
 				}
-		    	
 				// wait a bit before querying next station
             	try { Thread.sleep(1000); }
                 catch (InterruptedException e) { }
@@ -204,13 +195,213 @@ public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> impl
 		timer.scheduleAtFixedRate(timerTask, 0, (long)(getAverageSamplingPeriod()*1000));
     }
     
+    public void sendObs(String requestUrl, Map<String, AbstractFeature> fois) throws IOException
+    {
+    	// Populate list of qualification codes
+    	// Codes found at https://waterdata.usgs.gov/nwis?codes_help
+    	
+    	qualCodes.add("Ssn"); // Parameter monitored seasonally
+    	qualCodes.add("Bkw"); // Flow affected by backwater
+    	qualCodes.add("Ice"); // Ice affected
+    	qualCodes.add("Pr"); // Partial-record site
+    	qualCodes.add("Rat"); // Rating being developed or revised
+    	qualCodes.add("Eqp"); // Eqp = equipment malfunction
+    	qualCodes.add("Fld"); // Flood damage
+    	qualCodes.add("Dry"); // Dry
+    	qualCodes.add("Dis"); // Data-collection discontinued
+    	qualCodes.add("--"); // Parameter not determined
+    	qualCodes.add("Mnt"); // Maintenance in progress
+    	qualCodes.add("ZFl"); // Zero flow
+    	qualCodes.add("***"); // *** = temporarily unavailable
+    	
+    	
+    	AbstractFeature foiValue;
+    	
+    	Set<ObsParam> params = parentSensor.getConfiguration().exposeFilter.parameters;
+    	String siteId, point;
+    	String[] pointArr, locArr;
+    	long ts;
+    	double siteLat, siteLon;
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm z");
+        StringBuilder buf = new StringBuilder();
+    	Float[] f = new Float[parentSensor.getConfiguration().exposeFilter.parameters.size()];
+    	
+    	URL url = new URL(requestUrl);
+    	USGSWaterDriver.log.debug("Requesting observations from: " + url);
+    	reader = new BufferedReader(new InputStreamReader(url.openStream()));
+    	
+    	String line;
+        while ((line = reader.readLine()) != null)
+        {                
+            line = line.trim();
+            
+            // parse section header when data for next site begins
+            if (line.startsWith("#"))
+            	continue;
+	        
+	        // Get data field names
+	        String[] fields = line.split("\t");
+	        
+	//        for (int s=0; s<fields.length; s++)
+	//        	System.out.println("fields[s]: " + fields[s]);
+	        
+	        // Skip middle line in data section
+	        reader.readLine();
+	        
+	        // Loop to get all lines with data values
+	        // There are sometimes more than one
+	        while ((line = reader.readLine()) != null)
+	        {
+		        // Now get line with data values
+	        	line = line.trim();
+		        
+	        	// if line is not a data line, exit this loop
+	        	// and go to main loop to start next section
+		    	if (line.startsWith("#"))
+		    		break;
+		        
+		        // And separate them, put them into array
+		        String[] data = line.split("\t");
+		        
+//		        for (int d=0; d<data.length; d++)
+//		        	System.out.println("data[d]: " + data[d]);
+		        
+		        // Create float array. Should be safe since this should be same
+		        // number of float components added to data record in init()
+		        Arrays.fill(f, Float.NaN); // Set all float values to NaN
+		        siteId = "unreported"; // Initialize siteId in case it isn't reported
+		        point = null;
+		        buf.setLength(0); // Clear string builder for datetime
+		        ts = 0; // Initialize time variable
+
+		        // Initialize Site Lat/Lon
+		        siteLat = Double.NaN;
+		        siteLon = Double.NaN;
+		        
+		        int paramIt = 0;
+		    	for (ObsParam param: params) // Loop over list of observation types requested in config
+		    	{
+		    		// Loop over data array; size should be <= size of fields[]
+		    		for (int i=0; i<data.length; i++)
+		    		{
+		    			if ("site_no".equalsIgnoreCase(fields[i]))
+		    			{
+		    				siteId = data[i];
+		    				// Get location of this site
+		    				foiValue = fois.get(siteId);
+		    				pointArr = foiValue.getLocation().toString().split("\\(");
+		    				point = pointArr[1].substring(0, pointArr[1].length()-1);
+		    				locArr = point.split("\\s+");
+		    				
+		    				siteLat = Double.parseDouble(locArr[0]);
+		    				siteLon = Double.parseDouble(locArr[1]);
+		    			}
+		    			
+		    			if ("datetime".equalsIgnoreCase(fields[i]))
+		    			{
+		    				buf.append(data[i].trim());
+		    				buf.append(' ');
+		    				buf.append(data[i+1].trim());
+		    				
+		    				try
+		    				{
+								ts = dateFormat.parse(buf.toString()).getTime();
+							}
+		    				catch (ParseException e)
+		    				{
+		    					throw new IOException("Invalid time stamp " + buf.toString());
+							}
+		    			}
+		    				
+		    			if (fields[i].endsWith(param.getCode()) && !(data[i].isEmpty()) && !qualCodes.contains(data[i]))
+		    				f[paramIt] = Float.parseFloat(data[i]);
+		    			
+		    		}
+		    		paramIt++;
+		    	}
+		    	
+//		    	System.out.println("time = " + ts);
+//		    	System.out.println("site = " + siteId);
+//		    	System.out.println("lat = " + siteLat);
+//		    	System.out.println("lon = " + siteLon);
+		    	
+//		    	for (int k=0; k<f.length; k++)
+//		    		System.out.println("val " + k + " = " + f[k]);
+		    	
+		    	DataBlock dataBlock = dataStruct.createDataBlock();
+		    	
+		    	int blockPos = 0;
+		    	dataBlock.setDoubleValue(blockPos++, ts/1000);
+		    	dataBlock.setStringValue(blockPos++, siteId);
+		    	dataBlock.setDoubleValue(blockPos++, siteLat);
+		    	dataBlock.setDoubleValue(blockPos++, siteLon);
+		    	
+		    	for (int bi=0; bi<f.length; bi++)
+		    		dataBlock.setFloatValue(blockPos++, f[bi]);
+		    	
+		    	latestRecord = dataBlock;
+		    	latestRecordTime = System.currentTimeMillis();
+		    	eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, USGSWaterOutput.this, dataBlock));
+		    	
+//		    	System.out.println();
+	        }
+
+        }
+    	
+    }
+    
+    public String[] buildIvRequest(Map<String, AbstractFeature> fois)
+    {
+    	String[] idArr = new String[fois.size()];
+    	int idIt = 0;
+        for (Map.Entry<String, AbstractFeature> entry : fois.entrySet())
+        {
+        	idArr[idIt] = entry.getValue().getId();
+        	idIt++;
+        }
+        
+    	
+    	StringBuilder buf = new StringBuilder(BASE_URL);
+    	int bufStartLen = buf.length();
+    	
+    	int numUrl = (int)Math.ceil((double)fois.size()/urlChunkSize);
+    	int maxNumSites = (int)Math.ceil((double)fois.size()/numUrl);
+    	String[] urlArr = new String[numUrl];
+    	
+    	int idMarker = 0;
+    	for (int i=0; i<numUrl; i++)
+    	{
+    		for (int k=0; k<maxNumSites; k++)
+    		{
+    			if (idMarker <= (idArr.length-1))
+    			{
+    				buf.append(idArr[idMarker]).append(',');
+				
+					if (idMarker == (idArr.length-1))
+						break;
+					
+					if (k!=(maxNumSites-1))
+						idMarker++;
+    			}
+    		}
+			buf.setCharAt(buf.length()-1, '&');
+			buf.append("format=rdb"); // output format
+			idMarker++;
+			
+    		urlArr[i] = buf.toString();
+    		buf.delete(bufStartLen, buf.length());
+    	}
+		return urlArr;	
+    }
+    
     
     @Override
     public double getAverageSamplingPeriod()
     {
-        // generating 1 record per second for PTZ settings
         //return 1.0*60*15;
-    	return 60.0;
+    	//return 60.0;
+    	// Make data request every 5 minutes
+    	return 5.0*60.0;
     }
 
 
