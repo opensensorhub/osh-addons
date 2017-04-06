@@ -18,9 +18,6 @@ package org.sensorhub.impl.sensor.usgswater;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
-import org.sensorhub.impl.module.RobustConnection;
-import org.sensorhub.impl.persistence.FilterUtils;
-import org.sensorhub.impl.persistence.FilteredIterator;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.usgs.water.ObsSiteLoader;
 import org.sensorhub.impl.usgs.water.RecordStore;
@@ -36,13 +33,11 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
-import org.sensorhub.api.persistence.IFoiFilter;
 import org.vast.sensorML.SMLHelper;
 
 
@@ -65,19 +60,16 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     Set<CountyCode> countyCode;
     CountyCode county;
     
+    Set<String> foiIDs;
     Map<String, AbstractFeature> siteFois = new LinkedHashMap<>();
     Map<String, PhysicalSystem> siteDesc = new LinkedHashMap<>();
     
     Map<String, RecordStore> dataStores = new LinkedHashMap<>();
     
-    RobustConnection connection;
     USGSWaterOutput waterOut;
     
     public USGSWaterDriver()
     {
-//    	this.countyCode = new LinkedHashSet<CountyCode>();
-//	    this.siteFois = new LinkedHashMap<String, AbstractFeature>();
-//	    this.siteDesc = new LinkedHashMap<String, PhysicalSystem>();
     }
     
     @Override
@@ -90,6 +82,11 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     {
         // reset internal state in case init() was already called
         super.init();
+        
+    	this.countyCode = new LinkedHashSet<CountyCode>();
+    	this.foiIDs = new LinkedHashSet<String>();
+	    this.siteFois = new LinkedHashMap<String, AbstractFeature>();
+	    this.siteDesc = new LinkedHashMap<String, PhysicalSystem>();
         
 //        try {populateCountyCodes();}
 //        catch (IOException e) {e.printStackTrace();}
@@ -151,6 +148,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 			sensorDesc.setName(entry.getValue().getDescription());
 			sensorDesc.setDescription(entry.getValue().getName());
 			siteDesc.put(uid, sensorDesc);
+			foiIDs.add(uid);
         }
         
     	waterOut.start(siteFois);
@@ -191,20 +189,13 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 
     @Override
     public boolean isConnected() {
-        if (connection == null)
-            return false;
-
-        return connection.isConnected();
+    	return true;
     }
 
 
     @Override
     public void stop() {
-        if (connection != null)
-            connection.cancel();
-
-        if (waterOut != null)
-        	waterOut.stop();
+    	waterOut.stop();
     }
 
 
@@ -261,7 +252,6 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 
 	@Override
 	public Collection<String> getFeaturesOfInterestIDs() {
-		// TODO Auto-generated method stub
-		return null;
+		return Collections.unmodifiableCollection(foiIDs);
 	}
 }

@@ -18,16 +18,13 @@ package org.sensorhub.impl.sensor.usgswater;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,7 +34,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import net.opengis.gml.v32.AbstractFeature;
-import net.opengis.gml.v32.Point;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -47,9 +43,6 @@ import net.opengis.swe.v20.TextEncoding;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.usgswater.ObsSender.ParamValueParser;
-import org.sensorhub.impl.usgs.water.RecordStore;
-import org.sensorhub.impl.usgs.water.WaterDataRecord;
 import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
@@ -170,6 +163,7 @@ public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> impl
     	//sender = new ObsSender(getRecordDescription());
     	if (timer != null)
             return;
+    	timer = new Timer();
         
     	TimerTask timerTask = new TimerTask()
     	{
@@ -187,11 +181,11 @@ public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> impl
 					e1.printStackTrace();
 				}
 				// wait a bit before querying next station
-            	try { Thread.sleep(1000); }
-                catch (InterruptedException e) { }
+//            	try { Thread.sleep(1000); }
+//                catch (InterruptedException e) { }
 			}
 		};
-		timer = new Timer();
+		
 		timer.scheduleAtFixedRate(timerTask, 0, (long)(getAverageSamplingPeriod()*1000));
     }
     
@@ -339,10 +333,15 @@ public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> impl
 		    	for (int bi=0; bi<f.length; bi++)
 		    		dataBlock.setFloatValue(blockPos++, f[bi]);
 		    	
-		    	latestRecord = dataBlock;
-		    	latestRecordTime = System.currentTimeMillis();
-		    	eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, USGSWaterOutput.this, dataBlock));
-		    	
+		    	Long lastUpdateTime = latestUpdateTimes.get(siteId);
+		    	if (lastUpdateTime == null || ts > lastUpdateTime)
+		    	{
+		    		latestUpdateTimes.put(siteId, ts);
+		    		latestRecordTime = System.currentTimeMillis();
+		    		latestRecord = dataBlock;
+		    		latestRecords.put(siteId, latestRecord); 
+		    		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, siteId, USGSWaterOutput.this, latestRecord));
+		    	}
 //		    	System.out.println();
 	        }
 
