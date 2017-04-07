@@ -35,6 +35,7 @@ import java.util.TimerTask;
 
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
@@ -61,6 +62,7 @@ import org.vast.swe.helper.GeoPosHelper;
 
 public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> implements IMultiSourceDataInterface
 {
+	DataChoice dataChoice;
     DataRecord dataStruct;
     TextEncoding encoding;
     Timer timer;
@@ -91,30 +93,31 @@ public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> impl
         SWEHelper swe = new SWEHelper();
         GeoPosHelper geo = new GeoPosHelper();
         
-        dataStruct = swe.newDataRecord();
-        dataStruct.setName(getName());
-        dataStruct.setDefinition("http://sensorml.com/ont/swe/property/StreamData");
-        dataStruct.addField("time", swe.newTimeStampIsoUTC());
-        dataStruct.addField("site", swe.newText("http://sensorml.com/ont/swe/property/SiteID", "Site ID", null));
-        dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
-        dataStruct.addField("location", geo.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC));
-        
+        dataChoice = swe.newDataChoice();
+        dataChoice.setName(getName());
+
         for (ObsParam param: parentSensor.getConfiguration().exposeFilter.parameters)
         {
-            String paramName = param.name().toLowerCase();
-            
-            DataComponent c = swe.newQuantity(
-                    getDefUri(param),
-                    getLabel(param),
-                    getDesc(param),
-                    getUom(param),
-                    DataType.FLOAT);
-            
-            dataStruct.addComponent(paramName, c);
+        	String paramName = param.name().toLowerCase();
+        	dataStruct = swe.newDataRecord();
+        	dataStruct.setDefinition(getDefUri(param ));
+        	dataStruct.addField("time", swe.newTimeStampIsoUTC());
+        	dataStruct.addField("site", swe.newText("http://sensorml.com/ont/swe/property/SiteID", "Site ID", null));
+        	dataStruct.addField("location", geo.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC));
+        	
+        	DataComponent c = swe.newQuantity(
+        			getDefUri(param) + "Value",
+        			getLabel(param),
+        			getDesc(param),
+        			getUom(param),
+        			DataType.FLOAT);
+        	
+        	dataStruct.addField(paramName, c);
+        	dataChoice.addItem(getItemName(param), dataStruct);
         }
         
-        // use text encoding with "$$" separators
-        encoding = swe.newTextEncoding("$$", "\n");
+        // use text encoding with "," separators
+        encoding = swe.newTextEncoding(",", "\n");
     }
     
     protected String getDefUri(ObsParam param)
@@ -152,6 +155,27 @@ public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> impl
                 return "mg/L";
             case PH:
                 return "1";
+        }
+        
+        return null;
+    }
+    
+    protected String getItemName(ObsParam param)
+    {
+        switch (param)
+        {
+            case WATER_TEMP:
+                return "WaterTemperature";                
+            case DISCHARGE:
+                return "Discharge";
+            case GAGE_HEIGHT:
+                return "GageHeight";
+            case CONDUCTANCE:
+                return "Conductance";
+            case OXY:
+                return "DissolvedOxygen";
+            case PH:
+                return "pH";
         }
         
         return null;
@@ -218,7 +242,7 @@ public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> impl
     	double siteLat, siteLon;
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm z");
         StringBuilder buf = new StringBuilder();
-    	Float[] f = new Float[parentSensor.getConfiguration().exposeFilter.parameters.size()];
+    	Float f;
     	
     	URL url = new URL(requestUrl);
     	USGSWaterDriver.log.debug("Requesting observations from: " + url);
@@ -260,21 +284,18 @@ public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> impl
 //		        for (int d=0; d<data.length; d++)
 //		        	System.out.println("data[d]: " + data[d]);
 		        
-		        // Create float array. Should be safe since this should be same
-		        // number of float components added to data record in init()
-		        Arrays.fill(f, Float.NaN); // Set all float values to NaN
-		        siteId = "unreported"; // Initialize siteId in case it isn't reported
-		        point = null;
-		        buf.setLength(0); // Clear string builder for datetime
-		        ts = 0; // Initialize time variable
-
-		        // Initialize Site Lat/Lon
-		        siteLat = Double.NaN;
-		        siteLon = Double.NaN;
-		        
-		        int paramIt = 0;
 		    	for (ObsParam param: params) // Loop over list of observation types requested in config
 		    	{
+		    		f = Float.NaN; // Set float value to NaN
+			        siteId = "unreported"; // Initialize siteId in case it isn't reported
+			        point = null;
+			        buf.setLength(0); // Clear string builder for datetime
+			        ts = 0; // Initialize time variable
+
+			        // Initialize Site Lat/Lon
+			        siteLat = Double.NaN;
+			        siteLon = Double.NaN;
+		    		
 		    		// Loop over data array; size should be <= size of fields[]
 		    		for (int i=0; i<data.length; i++)
 		    		{
@@ -308,45 +329,31 @@ public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> impl
 		    			}
 		    				
 		    			if (fields[i].endsWith(param.getCode()) && !(data[i].isEmpty()) && !qualCodes.contains(data[i]))
-		    				f[paramIt] = Float.parseFloat(data[i]);
+		    				//f[paramIt] = Float.parseFloat(data[i]);
+		    				f = Float.parseFloat(data[i]);
 		    			
 		    		}
-		    		paramIt++;
+		    		
+		    		dataChoice.setSelectedItem(getItemName(param));
+		    		DataBlock dataBlock = dataChoice.createDataBlock();
+		    		if (!f.isNaN())
+		    		{
+				    	int blockPos = 1;
+				    	dataBlock.setDoubleValue(blockPos++, ts/1000);
+				    	dataBlock.setStringValue(blockPos++, siteId);
+				    	dataBlock.setDoubleValue(blockPos++, siteLat);
+				    	dataBlock.setDoubleValue(blockPos++, siteLon);
+				    	dataBlock.setFloatValue(blockPos++, f);
+				    	
+				    	latestUpdateTimes.put(siteId, ts);
+				    	latestRecordTime = System.currentTimeMillis();
+				    	latestRecord = dataBlock;
+				    	latestRecords.put(siteId, latestRecord); 
+				    	eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, siteId, USGSWaterOutput.this, latestRecord));
+		    		}
 		    	}
-		    	
-//		    	System.out.println("time = " + ts);
-//		    	System.out.println("site = " + siteId);
-//		    	System.out.println("lat = " + siteLat);
-//		    	System.out.println("lon = " + siteLon);
-		    	
-//		    	for (int k=0; k<f.length; k++)
-//		    		System.out.println("val " + k + " = " + f[k]);
-		    	
-		    	DataBlock dataBlock = dataStruct.createDataBlock();
-		    	
-		    	int blockPos = 0;
-		    	dataBlock.setDoubleValue(blockPos++, ts/1000);
-		    	dataBlock.setStringValue(blockPos++, siteId);
-		    	dataBlock.setDoubleValue(blockPos++, siteLat);
-		    	dataBlock.setDoubleValue(blockPos++, siteLon);
-		    	
-		    	for (int bi=0; bi<f.length; bi++)
-		    		dataBlock.setFloatValue(blockPos++, f[bi]);
-		    	
-		    	Long lastUpdateTime = latestUpdateTimes.get(siteId);
-		    	if (lastUpdateTime == null || ts > lastUpdateTime)
-		    	{
-		    		latestUpdateTimes.put(siteId, ts);
-		    		latestRecordTime = System.currentTimeMillis();
-		    		latestRecord = dataBlock;
-		    		latestRecords.put(siteId, latestRecord); 
-		    		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, siteId, USGSWaterOutput.this, latestRecord));
-		    	}
-//		    	System.out.println();
 	        }
-
         }
-    	
     }
     
     public String[] buildIvRequest(Map<String, AbstractFeature> fois)
@@ -407,7 +414,7 @@ public class USGSWaterOutput extends AbstractSensorOutput <USGSWaterDriver> impl
     @Override
     public DataComponent getRecordDescription()
     {
-        return dataStruct;
+        return dataChoice;
     }
 
 

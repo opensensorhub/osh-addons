@@ -112,7 +112,7 @@ public class TestUSGSWaterDriver implements IEventListener
         
         try
         {
-            System.out.print("\nNew data received from sensor " + newDataEvent.getSensorID());
+            System.out.print("\n ");
             writer.write(newDataEvent.getRecords()[0]);
             writer.flush();
             

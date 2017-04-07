@@ -28,9 +28,13 @@ public class USGSWaterConfig extends SensorConfig {
 //    	exposeFilter.siteIds.add("03574100");
 //    	exposeFilter.siteIds.add("03575100");
     	exposeFilter.stateCodes.add(StateCode.AL);
-//    	exposeFilter.countyCodes.add("01053");
-//    	exposeFilter.countyCodes.add("01133");
+//    	exposeFilter.countyCodes.add("01003");
+//    	exposeFilter.countyCodes.add("01089");
         exposeFilter.parameters.add(ObsParam.DISCHARGE);
         exposeFilter.parameters.add(ObsParam.GAGE_HEIGHT);
+        exposeFilter.parameters.add(ObsParam.OXY);
+        exposeFilter.parameters.add(ObsParam.PH);
+        exposeFilter.parameters.add(ObsParam.WATER_TEMP);
+        exposeFilter.parameters.add(ObsParam.CONDUCTANCE);
     }
 }
