@@ -18,26 +18,38 @@ package org.sensorhub.impl.sensor.usgswater;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
+import net.opengis.swe.v20.DataBlock;
+
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.usgs.water.ObsSiteLoader;
 import org.sensorhub.impl.usgs.water.RecordStore;
+import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
+import org.sensorhub.api.sensor.SensorDataEvent;
 import org.vast.sensorML.SMLHelper;
 
 
@@ -54,19 +66,33 @@ import org.vast.sensorML.SMLHelper;
 public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> implements IMultiSourceDataProducer
 {
 	static final Logger log = LoggerFactory.getLogger(USGSWaterDriver.class);
-    static final String BASE_USGS_URL = "https://waterservices.usgs.gov/nwis/";
+	static final String BASE_URL = "https://waterservices.usgs.gov/nwis/iv?sites=";
     static final String UID_PREFIX = "urn:usgs:water:";
     
+    final int urlChunkSize = 100;
+    Timer timer;
+    BufferedReader reader;
     Set<CountyCode> countyCode;
     CountyCode county;
-    
     Set<String> foiIDs;
     Map<String, AbstractFeature> siteFois = new LinkedHashMap<>();
     Map<String, PhysicalSystem> siteDesc = new LinkedHashMap<>();
-    
     Map<String, RecordStore> dataStores = new LinkedHashMap<>();
+    List<String> qualCodes = new ArrayList<String>();
     
-    USGSWaterOutput waterOut;
+    List<USGSDataRecord> waterTempRecList = new ArrayList<USGSDataRecord>();
+    List<USGSDataRecord> dischargeRecList = new ArrayList<USGSDataRecord>();
+    List<USGSDataRecord> gageHeightRecList = new ArrayList<USGSDataRecord>();
+    List<USGSDataRecord> conductanceRecList = new ArrayList<USGSDataRecord>();
+    List<USGSDataRecord> oxyRecList = new ArrayList<USGSDataRecord>();
+    List<USGSDataRecord> pHRecList = new ArrayList<USGSDataRecord>();
+    
+    WaterTempCelsiusOutput tempCelOut;
+    DischargeOutput dischargeOut;
+    GageHeightOutput gageHeightOut;
+    SpecificConductanceOutput conductanceOut;
+    DissolvedOxygenOutput oxyOut;
+    PhOutput pHOut;
     
     public USGSWaterDriver()
     {
@@ -98,16 +124,56 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 //            System.out.println(entry.getKey() + "/" + entry.getValue().getDescription());
 //        }
         
+        loadQualCodes();
         // generate identifiers
         this.uniqueID = "urn:usgs:water:network";
         this.xmlID = "USGS_WATER_DATA_NETWORK";
         
-        this.waterOut = new USGSWaterOutput(this);
-        addOutput(waterOut, false);
-        waterOut.init();
+        if (config.exposeFilter.parameters.contains(ObsParam.WATER_TEMP))
+        {
+        	this.tempCelOut = new WaterTempCelsiusOutput(this);
+        	addOutput(tempCelOut, false);
+        	tempCelOut.init();
+        }
+        
+        
+        if (config.exposeFilter.parameters.contains(ObsParam.DISCHARGE))
+        {
+        	this.dischargeOut = new DischargeOutput(this);
+        	addOutput(dischargeOut, false);
+        	dischargeOut.init();
+        }
+        
+        if (config.exposeFilter.parameters.contains(ObsParam.GAGE_HEIGHT))
+        {
+        	this.gageHeightOut = new GageHeightOutput(this);
+        	addOutput(gageHeightOut, false);
+        	gageHeightOut.init();
+        }
+        
+        if (config.exposeFilter.parameters.contains(ObsParam.CONDUCTANCE))
+        {
+        	this.conductanceOut = new SpecificConductanceOutput(this);
+        	addOutput(conductanceOut, false);
+        	conductanceOut.init();
+        }
+        
+        if (config.exposeFilter.parameters.contains(ObsParam.OXY))
+        {
+        	this.oxyOut = new DissolvedOxygenOutput(this);
+        	addOutput(oxyOut, false);
+        	oxyOut.init();
+        }
+        
+        if (config.exposeFilter.parameters.contains(ObsParam.PH))
+        {
+        	this.pHOut = new PhOutput(this);
+        	addOutput(pHOut, false);
+        	pHOut.init();
+        }
     }
-    
-    public void populateCountyCodes() throws IOException
+
+	public void populateCountyCodes() throws IOException
     {
     	countyCode = new LinkedHashSet<CountyCode>();
     	
@@ -133,7 +199,8 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     }
 
     @Override
-    public void start() throws SensorHubException {
+    public void start() throws SensorHubException
+    {
 	    
     	SMLHelper sml = new SMLHelper();
 	    
@@ -150,11 +217,317 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 			siteDesc.put(uid, sensorDesc);
 			foiIDs.add(uid);
         }
+
+    	
+    	/********************************* Added 4-10-17 ******************************************/
+    	//sender = new ObsSender(getRecordDescription());
+    	if (timer != null)
+            return;
+    	timer = new Timer();
         
-    	waterOut.start(siteFois);
+    	TimerTask timerTask = new TimerTask()
+    	{
+			public void run()
+    		{	
+		    	waterTempRecList.clear(); dischargeRecList.clear();
+		    	gageHeightRecList.clear(); conductanceRecList.clear();
+		    	oxyRecList.clear(); pHRecList.clear();
+				String[] requestUrl = buildIvRequest(siteFois);
+				
+				try
+				{	
+					for (int i=0; i<requestUrl.length; i++)
+						sendRequests(requestUrl[i], siteFois); // Pass url array and fois map to sendRequests()
+
+					if (!waterTempRecList.isEmpty())
+					{
+//						System.out.println("------------------- Before -------------------");
+//						for (USGSDataRecord rec : waterTempRecList)
+//							System.out.println("tempRec: " + "[" + rec.getTimeStamp() + "," + rec.getSiteCode() + "," + rec.getSiteLat() + "," + rec.getSiteLon() + "," + rec.getDataValue() + "]");
+						
+						sortList(waterTempRecList);
+						
+//						System.out.println();
+//						System.out.println("------------------- After -------------------");
+//						for (USGSDataRecord rec : waterTempRecList)
+//							System.out.println("tempRec: " + "[" + rec.getTimeStamp() + "," + rec.getSiteCode() + "," + rec.getSiteLat() + "," + rec.getSiteLon() + "," + rec.getDataValue() + "]");
+						
+						// send to output publishData()
+						tempCelOut.publishData(waterTempRecList);
+						waterTempRecList.clear();
+					}
+					
+					if (!dischargeRecList.isEmpty())
+					{
+						sortList(dischargeRecList);
+						
+						// send to output publishData()
+						dischargeOut.publishData(dischargeRecList);
+						dischargeRecList.clear();
+					}
+					
+					if (!gageHeightRecList.isEmpty())
+					{
+						sortList(gageHeightRecList);
+						
+						// send to output publishData()
+						gageHeightOut.publishData(gageHeightRecList);
+						gageHeightRecList.clear();
+					}
+					
+					if (!conductanceRecList.isEmpty())
+					{
+						sortList(conductanceRecList);
+						
+						// send to output publishData()
+						conductanceOut.publishData(conductanceRecList);
+						conductanceRecList.clear();
+					}
+					
+					if (!oxyRecList.isEmpty())
+					{
+						sortList(oxyRecList);
+						
+						// send to output publishData()
+						oxyOut.publishData(oxyRecList);
+						oxyRecList.clear();
+					}
+					
+					if (!pHRecList.isEmpty())
+					{
+						sortList(pHRecList);
+						
+						// send to output publishData()
+						pHOut.publishData(pHRecList);
+						pHRecList.clear();
+					}
+					
+				}
+				catch (IOException e1)
+				{
+					e1.printStackTrace();
+				}
+			}
+		};
+		
+		timer.scheduleAtFixedRate(timerTask, 0, (long)(getAverageSamplingPeriod()*1000));
+    	/******************************************************************************************/
     }
     
-    protected void loadFois() throws SensorHubException
+    /********************************* Added 4-10-17 ******************************************/
+    // function to sort list of data records by time
+    public void sortList(List<USGSDataRecord> dataList)
+    {
+		Collections.sort(dataList, new Comparator<USGSDataRecord>() {
+			public int compare(USGSDataRecord o1, USGSDataRecord o2)
+			{
+				return (int) (o1.getTimeStamp() - o2.getTimeStamp());
+			}
+		});
+    }
+    /******************************************************************************************/
+    
+    /********************************* Added 4-10-17 ******************************************/
+    public String[] buildIvRequest(Map<String, AbstractFeature> fois)
+    {
+    	String[] idArr = new String[fois.size()];
+    	int idIt = 0;
+        for (Map.Entry<String, AbstractFeature> entry : fois.entrySet())
+        {
+        	idArr[idIt] = entry.getValue().getId();
+        	idIt++;
+        }
+    	
+    	StringBuilder buf = new StringBuilder(BASE_URL);
+    	int bufStartLen = buf.length();
+    	
+    	int numUrl = (int)Math.ceil((double)fois.size()/urlChunkSize);
+    	int maxNumSites = (int)Math.ceil((double)fois.size()/numUrl);
+    	String[] urlArr = new String[numUrl];
+    	
+    	int idMarker = 0;
+    	for (int i=0; i<numUrl; i++)
+    	{
+    		for (int k=0; k<maxNumSites; k++)
+    		{
+    			if (idMarker <= (idArr.length-1))
+    			{
+    				buf.append(idArr[idMarker]).append(',');
+				
+					if (idMarker == (idArr.length-1))
+						break;
+					
+					if (k!=(maxNumSites-1))
+						idMarker++;
+    			}
+    		}
+			buf.setCharAt(buf.length()-1, '&');
+			buf.append("format=rdb"); // output format
+			idMarker++;
+			
+    		urlArr[i] = buf.toString();
+    		buf.delete(bufStartLen, buf.length());
+    	}
+		return urlArr;	
+    }
+    /******************************************************************************************/
+    
+    /********************************* Added 4-10-17 ******************************************/
+    public void sendRequests(String requestUrl, Map<String, AbstractFeature> fois) throws IOException
+    {
+    	AbstractFeature foiValue;
+    	Set<ObsParam> params = config.exposeFilter.parameters;
+    	
+    	String siteId, point;
+    	boolean siteSet, timeSet;
+    	String[] pointArr, locArr;
+    	long ts;
+    	double siteLat, siteLon;
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm z");
+        StringBuilder buf = new StringBuilder();
+    	Float f;
+    	
+    	URL url = new URL(requestUrl);
+    	USGSWaterDriver.log.debug("Requesting observations from: " + url);
+    	reader = new BufferedReader(new InputStreamReader(url.openStream()));
+    	
+    	String line;
+        while ((line = reader.readLine()) != null)
+        {                
+            line = line.trim();
+            
+            // parse section header when data for next site begins
+            if (line.startsWith("#"))
+            	continue;
+	        
+	        // Get data field names
+	        String[] fields = line.split("\t");
+	        
+	//        for (int s=0; s<fields.length; s++)
+	//        	System.out.println("fields[s]: " + fields[s]);
+	        
+	        // Skip middle line in data section
+	        reader.readLine();
+	        
+	        // Loop to get all lines with data values
+	        // There are sometimes more than one
+	        while ((line = reader.readLine()) != null)
+	        {
+		        // Now get line with data values
+	        	line = line.trim();
+		        
+	        	// if line is not a data line, exit this loop
+	        	// and go to main loop to start next section
+		    	if (line.startsWith("#"))
+		    		break;
+		        
+		        // And separate them, put them into array
+		        String[] data = line.split("\t");
+		        
+//		        for (int d=0; d<data.length; d++)
+//		        	System.out.println("data[d]: " + data[d]);
+		        
+		        point = null;
+		        buf.setLength(0); // Clear string builder for datetime
+		        siteId = "unreported"; // Initialize siteId in case it isn't reported
+		        ts = 0; // Initialize time variable
+
+		        // Initialize Site Lat/Lon
+		        siteLat = Double.NaN;
+		        siteLon = Double.NaN;
+		        
+		        f = Float.NaN; // Initialize float value to NaN
+		        
+		        // Flags for site & time to avoid redundant settings
+		        siteSet = false;
+		        timeSet = false;
+		        
+		    	for (ObsParam param: params) // Loop over list of observation types requested in config
+		    	{
+		    		// Loop over data array; size should be <= size of fields[]
+		    		for (int i=0; i<data.length; i++)
+		    		{
+		    			if ("site_no".equalsIgnoreCase(fields[i]) && !siteSet)
+		    			{
+		    				siteId = data[i];
+		    				// Get location of this site
+		    				foiValue = fois.get(siteId);
+		    				pointArr = foiValue.getLocation().toString().split("\\(");
+		    				point = pointArr[1].substring(0, pointArr[1].length()-1);
+		    				locArr = point.split("\\s+");
+		    				
+		    				siteLat = Double.parseDouble(locArr[0]);
+		    				siteLon = Double.parseDouble(locArr[1]);
+		    			}
+		    			
+		    			if ("datetime".equalsIgnoreCase(fields[i]) && !timeSet)
+		    			{
+		    				buf.append(data[i].trim());
+		    				buf.append(' ');
+		    				buf.append(data[i+1].trim());
+		    				
+		    				try
+		    				{
+								ts = dateFormat.parse(buf.toString()).getTime();
+							}
+		    				catch (ParseException e)
+		    				{
+		    					throw new IOException("Invalid time stamp " + buf.toString());
+							}
+		    			}
+		    				
+		    			if (fields[i].endsWith(param.getCode()) && !(data[i].isEmpty()) && !qualCodes.contains(data[i]))
+		    			{
+		    				f = Float.parseFloat(data[i]);
+		    				
+		    				if (!f.isNaN())
+		    				{
+			    				switch (param)
+			    				{
+			    				case WATER_TEMP:
+			    					// send to water temp output
+			    					waterTempRecList.add(new USGSDataRecord(ts, siteId, siteLat, siteLon, f));
+			    					break;
+			    				
+			    				case DISCHARGE:
+			    					// send to discharge output
+			    					dischargeRecList.add(new USGSDataRecord(ts, siteId, siteLat, siteLon, f));
+			    					break;
+			    					
+			    				case GAGE_HEIGHT:
+			    					// send to gage height output
+			    					gageHeightRecList.add(new USGSDataRecord(ts, siteId, siteLat, siteLon, f));
+			    					break;
+			    					
+			    				case CONDUCTANCE:
+			    					// send to specific conductance output
+			    					conductanceRecList.add(new USGSDataRecord(ts, siteId, siteLat, siteLon, f));
+			    					break;
+			    					
+			    				case OXY:
+			    					// send to dissolved oxygen output
+			    					oxyRecList.add(new USGSDataRecord(ts, siteId, siteLat, siteLon, f));
+			    					break;
+			    					
+			    				case PH:
+			    					// send to water pH output
+			    					pHRecList.add(new USGSDataRecord(ts, siteId, siteLat, siteLon, f));
+			    					break;
+			    				}
+		    				}
+		    			}
+		    		}
+		    	}
+	        }
+        }
+    }
+    /******************************************************************************************/
+    
+    private int getAverageSamplingPeriod() {
+		return 5*60;
+	}
+
+	protected void loadFois() throws SensorHubException
     {
         // request and parse site info
         try
@@ -167,6 +540,26 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
             throw new SensorHubException("Error loading site information", e);
         }
     }
+	
+    private void loadQualCodes()
+    {
+    	// Populate list of qualification codes
+    	// Codes found at https://waterdata.usgs.gov/nwis?codes_help
+    	
+    	qualCodes.add("Ssn"); // Parameter monitored seasonally
+    	qualCodes.add("Bkw"); // Flow affected by backwater
+    	qualCodes.add("Ice"); // Ice affected
+    	qualCodes.add("Pr"); // Partial-record site
+    	qualCodes.add("Rat"); // Rating being developed or revised
+    	qualCodes.add("Eqp"); // Eqp = equipment malfunction
+    	qualCodes.add("Fld"); // Flood damage
+    	qualCodes.add("Dry"); // Dry
+    	qualCodes.add("Dis"); // Data-collection discontinued
+    	qualCodes.add("--"); // Parameter not determined
+    	qualCodes.add("Mnt"); // Maintenance in progress
+    	qualCodes.add("ZFl"); // Zero flow
+    	qualCodes.add("***"); // *** = temporarily unavailable
+	}
 
     @Override
     protected void updateSensorDescription()
@@ -195,7 +588,11 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 
     @Override
     public void stop() {
-    	waterOut.stop();
+	    if (timer != null)
+        {
+            timer.cancel();
+            timer = null;
+        }
     }
 
 
