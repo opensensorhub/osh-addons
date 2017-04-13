@@ -32,7 +32,9 @@ import org.sensorhub.api.sensor.SensorConfig;
  */
 public class MetarConfig extends SensorConfig
 {   
-    
+    public String emwinRoot;
+	
+	
     public String serverUrl; // = "http://webservices.anythingweather.com/CurrentObs/GetCurrentObs";
     public String serverPath; // = "http://webservices.anythingweather.com/CurrentObs/GetCurrentObs";
     
