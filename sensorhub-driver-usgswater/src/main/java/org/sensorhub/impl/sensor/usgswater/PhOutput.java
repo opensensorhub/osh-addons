@@ -48,13 +48,11 @@ public class PhOutput extends AbstractSensorOutput <USGSWaterDriver> implements 
 {
     DataRecord dataStruct;
     TextEncoding encoding;
-    Map<String, Long> latestUpdateTimes;
     Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
 
     public PhOutput(USGSWaterDriver driver)
     {
         super(driver);
-        latestUpdateTimes = new HashMap<String, Long>();
     }
 
 
@@ -68,15 +66,17 @@ public class PhOutput extends AbstractSensorOutput <USGSWaterDriver> implements 
     protected void init()
     {   
         SWEHelper swe = new SWEHelper();
-        GeoPosHelper geo = new GeoPosHelper();
         
         dataStruct = swe.newDataRecord(5);
         dataStruct.setName(getName());
-        dataStruct.addField("time", swe.newTimeStampIsoUTC());
-        dataStruct.addField("site", swe.newText("http://sensorml.com/ont/swe/property/SiteID", "Site ID", null));
-        dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
-        dataStruct.addField("location", geo.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC));
-        dataStruct.addField("ph", swe.newQuantity(SWEHelper.getPropertyUri("WaterpH"), "Water pH", "Water pH parameter, USGS code 00400", "1"));
+        dataStruct.setDefinition("http://sensorml.com/ont/swe/property/WaterpH");
+        dataStruct.addComponent("time", swe.newTimeStampIsoUTC());
+        
+        // Set definitions to NULL so these outputs are not observable
+        dataStruct.addComponent("site", swe.newText(null, "Site ID", null));
+        dataStruct.getFieldList().getProperty("site").setRole(ENTITY_ID_URI); // tag with entity ID role
+        dataStruct.addComponent("location", swe.newVector(null, SWEConstants.REF_FRAME_4326, new String[]{"lat","lon"}, new String[] {"Geodetic Latitude", "Longitude"}, new String[] {"deg", "deg"}, new String[] {"Lat", "Long"}));
+        dataStruct.addComponent("water_pH", swe.newQuantity(null, "Water pH", "Water pH parameter, USGS code 00400", "1"));
         
         // use text encoding with "," separators
         encoding = swe.newTextEncoding(",", "\n");
@@ -87,7 +87,12 @@ public class PhOutput extends AbstractSensorOutput <USGSWaterDriver> implements 
     {
     	for (USGSDataRecord rec : dataRec)
     	{
-    		DataBlock dataBlock = dataStruct.createDataBlock();
+            // create and populate datablock
+            DataBlock dataBlock;
+            if (latestRecord == null)
+                dataBlock = dataStruct.createDataBlock();
+            else
+                dataBlock = latestRecord.renew();
     		
     		int blockPos = 0;
     		dataBlock.setDoubleValue(blockPos++, rec.getTimeStamp()/1000);
@@ -96,11 +101,10 @@ public class PhOutput extends AbstractSensorOutput <USGSWaterDriver> implements 
     		dataBlock.setDoubleValue(blockPos++, rec.getSiteLon());
     		dataBlock.setFloatValue(blockPos++, rec.getDataValue());
     		
-    		latestUpdateTimes.put(rec.getSiteCode(), rec.getTimeStamp());
     		latestRecordTime = System.currentTimeMillis();
     		latestRecord = dataBlock;
     		latestRecords.put(rec.getSiteCode(), latestRecord); 
-    		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, rec.getSiteCode(), PhOutput.this, latestRecord));
+    		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, rec.getSiteCode(), PhOutput.this, dataBlock));
     	}
     }
 

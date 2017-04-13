@@ -18,8 +18,6 @@ package org.sensorhub.impl.sensor.usgswater;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
-import net.opengis.swe.v20.DataBlock;
-
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.usgs.water.ObsSiteLoader;
 import org.sensorhub.impl.usgs.water.RecordStore;
@@ -49,7 +47,6 @@ import java.util.List;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
-import org.sensorhub.api.sensor.SensorDataEvent;
 import org.vast.sensorML.SMLHelper;
 
 
@@ -86,6 +83,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     List<USGSDataRecord> conductanceRecList = new ArrayList<USGSDataRecord>();
     List<USGSDataRecord> oxyRecList = new ArrayList<USGSDataRecord>();
     List<USGSDataRecord> pHRecList = new ArrayList<USGSDataRecord>();
+    List<USGSDataRecord> allRecList = new ArrayList<USGSDataRecord>();
     
     WaterTempCelsiusOutput tempCelOut;
     DischargeOutput dischargeOut;
@@ -93,6 +91,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     SpecificConductanceOutput conductanceOut;
     DissolvedOxygenOutput oxyOut;
     PhOutput pHOut;
+    AllWaterOutput allOut;
     
     public USGSWaterDriver()
     {
@@ -171,6 +170,13 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
         	addOutput(pHOut, false);
         	pHOut.init();
         }
+        
+        if (!config.exposeFilter.parameters.isEmpty())
+        {
+        	this.allOut = new AllWaterOutput(this);
+        	addOutput(allOut, false);
+        	allOut.init();
+        }
     }
 
 	public void populateCountyCodes() throws IOException
@@ -216,10 +222,10 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 			sensorDesc.setDescription(entry.getValue().getName());
 			siteDesc.put(uid, sensorDesc);
 			foiIDs.add(uid);
+			
+			log.debug("New site added as FOI: {}", uid);
         }
-
-    	
-    	/********************************* Added 4-10-17 ******************************************/
+	    
     	//sender = new ObsSender(getRecordDescription());
     	if (timer != null)
             return;
@@ -232,6 +238,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 		    	waterTempRecList.clear(); dischargeRecList.clear();
 		    	gageHeightRecList.clear(); conductanceRecList.clear();
 		    	oxyRecList.clear(); pHRecList.clear();
+		    	allRecList.clear();
 				String[] requestUrl = buildIvRequest(siteFois);
 				
 				try
@@ -239,18 +246,14 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 					for (int i=0; i<requestUrl.length; i++)
 						sendRequests(requestUrl[i], siteFois); // Pass url array and fois map to sendRequests()
 
-					if (!waterTempRecList.isEmpty())
-					{
-//						System.out.println("------------------- Before -------------------");
-//						for (USGSDataRecord rec : waterTempRecList)
-//							System.out.println("tempRec: " + "[" + rec.getTimeStamp() + "," + rec.getSiteCode() + "," + rec.getSiteLat() + "," + rec.getSiteLon() + "," + rec.getDataValue() + "]");
-						
+					if (!waterTempRecList.isEmpty()) // water temp record list only initialized if listed as desired parameter in expose filter
+					{					
 						sortList(waterTempRecList);
-						
+//						System.out.println("Total Num Temp Recs: " + waterTempRecList.size());
+//						
+//						for (USGSDataRecord r : waterTempRecList)
+//							System.out.println("[" + r.getDataType() + "," + r.getTimeStamp() + "," + r.getSiteCode() + "," + r.getSiteLat() + "," + r.getSiteLon() + "," + r.getDataValue() + "]");
 //						System.out.println();
-//						System.out.println("------------------- After -------------------");
-//						for (USGSDataRecord rec : waterTempRecList)
-//							System.out.println("tempRec: " + "[" + rec.getTimeStamp() + "," + rec.getSiteCode() + "," + rec.getSiteLat() + "," + rec.getSiteLon() + "," + rec.getDataValue() + "]");
 						
 						// send to output publishData()
 						tempCelOut.publishData(waterTempRecList);
@@ -260,7 +263,10 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 					if (!dischargeRecList.isEmpty())
 					{
 						sortList(dischargeRecList);
-						
+//						System.out.println("Total Num Discharge Recs: " + dischargeRecList.size());
+//						for (USGSDataRecord r : dischargeRecList)
+//							System.out.println("[" + r.getDataType() + "," + r.getTimeStamp() + "," + r.getSiteCode() + "," + r.getSiteLat() + "," + r.getSiteLon() + "," + r.getDataValue() + "]");
+//						System.out.println();
 						// send to output publishData()
 						dischargeOut.publishData(dischargeRecList);
 						dischargeRecList.clear();
@@ -269,7 +275,10 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 					if (!gageHeightRecList.isEmpty())
 					{
 						sortList(gageHeightRecList);
-						
+//						System.out.println("Total Num Gage Height Recs: " + gageHeightRecList.size());
+//						for (USGSDataRecord r : gageHeightRecList)
+//							System.out.println("[" + r.getDataType() + "," + r.getTimeStamp() + "," + r.getSiteCode() + "," + r.getSiteLat() + "," + r.getSiteLon() + "," + r.getDataValue() + "]");
+//						System.out.println();
 						// send to output publishData()
 						gageHeightOut.publishData(gageHeightRecList);
 						gageHeightRecList.clear();
@@ -278,7 +287,10 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 					if (!conductanceRecList.isEmpty())
 					{
 						sortList(conductanceRecList);
-						
+//						System.out.println("Total Num Cond Recs: " + conductanceRecList.size());
+//						for (USGSDataRecord r : conductanceRecList)
+//							System.out.println("[" + r.getDataType() + "," + r.getTimeStamp() + "," + r.getSiteCode() + "," + r.getSiteLat() + "," + r.getSiteLon() + "," + r.getDataValue() + "]");
+//						System.out.println();
 						// send to output publishData()
 						conductanceOut.publishData(conductanceRecList);
 						conductanceRecList.clear();
@@ -287,7 +299,10 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 					if (!oxyRecList.isEmpty())
 					{
 						sortList(oxyRecList);
-						
+//						System.out.println("Total Num Oxy Recs: " + oxyRecList.size());
+//						for (USGSDataRecord r : oxyRecList)
+//							System.out.println("[" + r.getDataType() + "," + r.getTimeStamp() + "," + r.getSiteCode() + "," + r.getSiteLat() + "," + r.getSiteLon() + "," + r.getDataValue() + "]");
+//						System.out.println();
 						// send to output publishData()
 						oxyOut.publishData(oxyRecList);
 						oxyRecList.clear();
@@ -296,10 +311,25 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 					if (!pHRecList.isEmpty())
 					{
 						sortList(pHRecList);
-						
+//						System.out.println("Total Num pH Recs: " + pHRecList.size());
+//						for (USGSDataRecord r : pHRecList)
+//							System.out.println("[" + r.getDataType() + "," + r.getTimeStamp() + "," + r.getSiteCode() + "," + r.getSiteLat() + "," + r.getSiteLon() + "," + r.getDataValue() + "]");
+//						System.out.println();
 						// send to output publishData()
 						pHOut.publishData(pHRecList);
 						pHRecList.clear();
+					}
+					
+					if (!allRecList.isEmpty())
+					{
+						sortList(allRecList);
+//						System.out.println("Total Num Recs: " + allRecList.size());
+//						for (USGSDataRecord r : allRecList)
+//							System.out.println("[" + r.getDataType() + "," + r.getTimeStamp() + "," + r.getSiteCode() + "," + r.getSiteLat() + "," + r.getSiteLon() + "," + r.getDataValue() + "]");
+//						System.out.println();
+						// send to output publishData()
+						allOut.publishData(allRecList);
+						allRecList.clear();
 					}
 					
 				}
@@ -311,23 +341,19 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 		};
 		
 		timer.scheduleAtFixedRate(timerTask, 0, (long)(getAverageSamplingPeriod()*1000));
-    	/******************************************************************************************/
     }
     
-    /********************************* Added 4-10-17 ******************************************/
     // function to sort list of data records by time
     public void sortList(List<USGSDataRecord> dataList)
     {
 		Collections.sort(dataList, new Comparator<USGSDataRecord>() {
 			public int compare(USGSDataRecord o1, USGSDataRecord o2)
 			{
-				return (int) (o1.getTimeStamp() - o2.getTimeStamp());
+				return (int) Long.compare(o1.getTimeStamp(), o2.getTimeStamp());
 			}
 		});
     }
-    /******************************************************************************************/
     
-    /********************************* Added 4-10-17 ******************************************/
     public String[] buildIvRequest(Map<String, AbstractFeature> fois)
     {
     	String[] idArr = new String[fois.size()];
@@ -370,9 +396,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     	}
 		return urlArr;	
     }
-    /******************************************************************************************/
     
-    /********************************* Added 4-10-17 ******************************************/
     public void sendRequests(String requestUrl, Map<String, AbstractFeature> fois) throws IOException
     {
     	AbstractFeature foiValue;
@@ -458,6 +482,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 		    				
 		    				siteLat = Double.parseDouble(locArr[0]);
 		    				siteLon = Double.parseDouble(locArr[1]);
+		    				siteSet = true;
 		    			}
 		    			
 		    			if ("datetime".equalsIgnoreCase(fields[i]) && !timeSet)
@@ -469,6 +494,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 		    				try
 		    				{
 								ts = dateFormat.parse(buf.toString()).getTime();
+								timeSet = true;
 							}
 		    				catch (ParseException e)
 		    				{
@@ -485,33 +511,45 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 			    				switch (param)
 			    				{
 			    				case WATER_TEMP:
-			    					// send to water temp output
-			    					waterTempRecList.add(new USGSDataRecord(ts, siteId, siteLat, siteLon, f));
+			    					// add to water temp record list
+			    					waterTempRecList.add(new USGSDataRecord(ObsParam.WATER_TEMP, ts, siteId, siteLat, siteLon, f));
+			    					// add to all record list
+			    					allRecList.add(new USGSDataRecord(ObsParam.WATER_TEMP, ts, siteId, siteLat, siteLon, f));
 			    					break;
 			    				
 			    				case DISCHARGE:
-			    					// send to discharge output
-			    					dischargeRecList.add(new USGSDataRecord(ts, siteId, siteLat, siteLon, f));
+			    					// add to discharge record list
+			    					dischargeRecList.add(new USGSDataRecord(ObsParam.DISCHARGE, ts, siteId, siteLat, siteLon, f));
+			    					// add to all record list
+			    					allRecList.add(new USGSDataRecord(ObsParam.DISCHARGE, ts, siteId, siteLat, siteLon, f));
 			    					break;
 			    					
 			    				case GAGE_HEIGHT:
-			    					// send to gage height output
-			    					gageHeightRecList.add(new USGSDataRecord(ts, siteId, siteLat, siteLon, f));
+			    					// add to gage height record list
+			    					gageHeightRecList.add(new USGSDataRecord(ObsParam.GAGE_HEIGHT, ts, siteId, siteLat, siteLon, f));
+			    					// add to all record list
+			    					allRecList.add(new USGSDataRecord(ObsParam.GAGE_HEIGHT, ts, siteId, siteLat, siteLon, f));
 			    					break;
 			    					
 			    				case CONDUCTANCE:
-			    					// send to specific conductance output
-			    					conductanceRecList.add(new USGSDataRecord(ts, siteId, siteLat, siteLon, f));
+			    					// add to specific conductance record list
+			    					conductanceRecList.add(new USGSDataRecord(ObsParam.CONDUCTANCE, ts, siteId, siteLat, siteLon, f));
+			    					// add to all record list
+			    					allRecList.add(new USGSDataRecord(ObsParam.CONDUCTANCE, ts, siteId, siteLat, siteLon, f));
 			    					break;
 			    					
 			    				case OXY:
-			    					// send to dissolved oxygen output
-			    					oxyRecList.add(new USGSDataRecord(ts, siteId, siteLat, siteLon, f));
+			    					// add to dissolved oxygen record list
+			    					oxyRecList.add(new USGSDataRecord(ObsParam.OXY, ts, siteId, siteLat, siteLon, f));
+			    					// add to all record list
+			    					allRecList.add(new USGSDataRecord(ObsParam.OXY, ts, siteId, siteLat, siteLon, f));
 			    					break;
 			    					
 			    				case PH:
-			    					// send to water pH output
-			    					pHRecList.add(new USGSDataRecord(ts, siteId, siteLat, siteLon, f));
+			    					// add to water pH record list
+			    					pHRecList.add(new USGSDataRecord(ObsParam.PH, ts, siteId, siteLat, siteLon, f));
+			    					// add to all record list
+			    					allRecList.add(new USGSDataRecord(ObsParam.PH, ts, siteId, siteLat, siteLon, f));
 			    					break;
 			    				}
 		    				}
@@ -521,7 +559,6 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 	        }
         }
     }
-    /******************************************************************************************/
     
     private int getAverageSamplingPeriod() {
 		return 5*60;
@@ -549,13 +586,13 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     	qualCodes.add("Ssn"); // Parameter monitored seasonally
     	qualCodes.add("Bkw"); // Flow affected by backwater
     	qualCodes.add("Ice"); // Ice affected
-    	qualCodes.add("Pr"); // Partial-record site
+    	qualCodes.add("Pr");  // Partial-record site
     	qualCodes.add("Rat"); // Rating being developed or revised
     	qualCodes.add("Eqp"); // Eqp = equipment malfunction
     	qualCodes.add("Fld"); // Flood damage
     	qualCodes.add("Dry"); // Dry
     	qualCodes.add("Dis"); // Data-collection discontinued
-    	qualCodes.add("--"); // Parameter not determined
+    	qualCodes.add("--");  // Parameter not determined
     	qualCodes.add("Mnt"); // Maintenance in progress
     	qualCodes.add("ZFl"); // Zero flow
     	qualCodes.add("***"); // *** = temporarily unavailable
@@ -616,7 +653,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     @Override
     public AbstractProcess getCurrentDescription(String entityID)
     {
-        return siteDesc.get(entityID);
+        return null;
     }
 
 
