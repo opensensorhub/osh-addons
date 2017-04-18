@@ -62,10 +62,6 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 		this.metarInterface = new MetarOutput(this);        
 		addOutput(metarInterface, false);
 		metarInterface.init();        
-
-		// Construct poller
-		//        metarPoller = new MetarDataPoller(config.serverUrl, config.serverPath);
-
 	}
 
 
@@ -98,7 +94,7 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 
 		map = null;
 		try {
-			map = MetarStationMap.getInstance();
+			map = MetarStationMap.getInstance(config.metarStationMapPath);
 		} catch (IOException e) {
 			throw new SensorHubException("IO Exception trying to load metarStationMap");
 		}
@@ -144,10 +140,11 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 			e.printStackTrace();
 		}
 		updateSensorDescription();
-		//	    metarInterface.start(metarPoller);
-
 	}
 
+	public Station getStation(String stationId) {
+		return map.getStation(stationId);
+	}
 
 	@Override
 	public void stop() throws SensorHubException
