@@ -1,0 +1,513 @@
+[composite-build] Configuring build: /Users/theastrowolfe/Development/OSH/osh-core
+:sensorhub-driver-twitter:dependencies
+
+------------------------------------------------------------
+Project :sensorhub-driver-twitter - Twitter Sensor
+------------------------------------------------------------
+
+apiElements - API elements for main. (n)
+No dependencies
+
+archives - Configuration for archive artifacts.
+No dependencies
+
+compile - Dependencies for source set 'main' (deprecated, use 'implementation ' instead).
++--- org.sensorhub:sensorhub-core:1.2.1-SNAPSHOT -> project :osh-core:sensorhub-core
+|    +--- project :osh-core:swe-common-core
+|    |    +--- ch.qos.logback:logback-classic:1.1.2
+|    |    |    +--- ch.qos.logback:logback-core:1.1.2
+|    |    |    \--- org.slf4j:slf4j-api:1.7.6
+|    |    +--- org.codehaus.woodstox:woodstox-core-asl:4.2.0
+|    |    |    +--- javax.xml.stream:stax-api:1.0-2
+|    |    |    \--- org.codehaus.woodstox:stax2-api:3.1.1
+|    |    |         \--- javax.xml.stream:stax-api:1.0-2
+|    |    \--- com.google.code.gson:gson:2.8.0
+|    +--- project :osh-core:swe-common-om
+|    |    +--- project :osh-core:swe-common-core (*)
+|    |    \--- com.vividsolutions:jts:1.13
+|    +--- project :osh-core:sensorml-core
+|    |    \--- project :osh-core:swe-common-om (*)
+|    +--- org.apache.felix:org.apache.felix.framework:4.2.1
+|    +--- com.google.code.gson:gson:2.7 -> 2.8.0
+|    +--- ch.qos.logback:logback-classic:1.1.2 (*)
+|    +--- uk.com.robust-it:cloning:1.9.1
+|    |    \--- org.objenesis:objenesis:2.1
+|    +--- org.eclipse.jetty:jetty-servlet:9.2.7.v20150116
+|    |    \--- org.eclipse.jetty:jetty-security:9.2.7.v20150116
+|    |         \--- org.eclipse.jetty:jetty-server:9.2.7.v20150116
+|    |              +--- javax.servlet:javax.servlet-api:3.1.0
+|    |              +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116
+|    |              |    \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    |              \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116
+|    |                   \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    \--- org.eclipse.jetty:jetty-servlets:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-continuation:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116 (*)
+|         +--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|         \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116 (*)
++--- com.twitter:hbc-core:2.2.0
+|    +--- org.apache.httpcomponents:httpclient:4.2.5
+|    |    +--- org.apache.httpcomponents:httpcore:4.2.4
+|    |    +--- commons-logging:commons-logging:1.1.1
+|    |    \--- commons-codec:commons-codec:1.6
+|    +--- com.google.guava:guava:14.0.1 -> 15.0
+|    +--- org.slf4j:slf4j-api:1.6.6 -> 1.7.6
+|    +--- com.twitter:joauth:6.0.2
+|    |    \--- com.google.guava:guava:15.0
+|    \--- com.google.code.findbugs:jsr305:1.3.9
+\--- com.twitter:hbc-twitter4j:2.2.0
+     +--- com.twitter:hbc-core:2.2.0 (*)
+     +--- com.google.guava:guava:14.0.1 -> 15.0
+     +--- org.twitter4j:twitter4j-core:4.0.1
+     \--- org.twitter4j:twitter4j-stream:4.0.1
+          \--- org.twitter4j:twitter4j-core:4.0.1
+
+compileClasspath - Compile classpath for source set 'main'.
++--- org.sensorhub:sensorhub-core:1.2.1-SNAPSHOT -> project :osh-core:sensorhub-core
+|    +--- project :osh-core:swe-common-core
+|    |    +--- ch.qos.logback:logback-classic:1.1.2
+|    |    |    +--- ch.qos.logback:logback-core:1.1.2
+|    |    |    \--- org.slf4j:slf4j-api:1.7.6
+|    |    +--- org.codehaus.woodstox:woodstox-core-asl:4.2.0
+|    |    |    +--- javax.xml.stream:stax-api:1.0-2
+|    |    |    \--- org.codehaus.woodstox:stax2-api:3.1.1
+|    |    |         \--- javax.xml.stream:stax-api:1.0-2
+|    |    \--- com.google.code.gson:gson:2.8.0
+|    +--- project :osh-core:swe-common-om
+|    |    +--- project :osh-core:swe-common-core (*)
+|    |    \--- com.vividsolutions:jts:1.13
+|    +--- project :osh-core:sensorml-core
+|    |    \--- project :osh-core:swe-common-om (*)
+|    +--- org.apache.felix:org.apache.felix.framework:4.2.1
+|    +--- com.google.code.gson:gson:2.7 -> 2.8.0
+|    +--- ch.qos.logback:logback-classic:1.1.2 (*)
+|    +--- uk.com.robust-it:cloning:1.9.1
+|    |    \--- org.objenesis:objenesis:2.1
+|    +--- org.eclipse.jetty:jetty-servlet:9.2.7.v20150116
+|    |    \--- org.eclipse.jetty:jetty-security:9.2.7.v20150116
+|    |         \--- org.eclipse.jetty:jetty-server:9.2.7.v20150116
+|    |              +--- javax.servlet:javax.servlet-api:3.1.0
+|    |              +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116
+|    |              |    \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    |              \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116
+|    |                   \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    \--- org.eclipse.jetty:jetty-servlets:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-continuation:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116 (*)
+|         +--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|         \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116 (*)
++--- com.twitter:hbc-core:2.2.0
+|    +--- org.apache.httpcomponents:httpclient:4.2.5
+|    |    +--- org.apache.httpcomponents:httpcore:4.2.4
+|    |    +--- commons-logging:commons-logging:1.1.1
+|    |    \--- commons-codec:commons-codec:1.6
+|    +--- com.google.guava:guava:14.0.1 -> 15.0
+|    +--- org.slf4j:slf4j-api:1.6.6 -> 1.7.6
+|    +--- com.twitter:joauth:6.0.2
+|    |    \--- com.google.guava:guava:15.0
+|    \--- com.google.code.findbugs:jsr305:1.3.9
+\--- com.twitter:hbc-twitter4j:2.2.0
+     +--- com.twitter:hbc-core:2.2.0 (*)
+     +--- com.google.guava:guava:14.0.1 -> 15.0
+     +--- org.twitter4j:twitter4j-core:4.0.1
+     \--- org.twitter4j:twitter4j-stream:4.0.1
+          \--- org.twitter4j:twitter4j-core:4.0.1
+
+compileOnly - Compile only dependencies for source set 'main'.
+No dependencies
+
+default - Configuration for default artifacts.
++--- org.sensorhub:sensorhub-core:1.2.1-SNAPSHOT -> project :osh-core:sensorhub-core
+|    +--- project :osh-core:swe-common-core
+|    |    +--- ch.qos.logback:logback-classic:1.1.2
+|    |    |    +--- ch.qos.logback:logback-core:1.1.2
+|    |    |    \--- org.slf4j:slf4j-api:1.7.6
+|    |    +--- org.codehaus.woodstox:woodstox-core-asl:4.2.0
+|    |    |    +--- javax.xml.stream:stax-api:1.0-2
+|    |    |    \--- org.codehaus.woodstox:stax2-api:3.1.1
+|    |    |         \--- javax.xml.stream:stax-api:1.0-2
+|    |    \--- com.google.code.gson:gson:2.8.0
+|    +--- project :osh-core:swe-common-om
+|    |    +--- project :osh-core:swe-common-core (*)
+|    |    \--- com.vividsolutions:jts:1.13
+|    +--- project :osh-core:sensorml-core
+|    |    \--- project :osh-core:swe-common-om (*)
+|    +--- org.apache.felix:org.apache.felix.framework:4.2.1
+|    +--- com.google.code.gson:gson:2.7 -> 2.8.0
+|    +--- ch.qos.logback:logback-classic:1.1.2 (*)
+|    +--- uk.com.robust-it:cloning:1.9.1
+|    |    \--- org.objenesis:objenesis:2.1
+|    +--- org.eclipse.jetty:jetty-servlet:9.2.7.v20150116
+|    |    \--- org.eclipse.jetty:jetty-security:9.2.7.v20150116
+|    |         \--- org.eclipse.jetty:jetty-server:9.2.7.v20150116
+|    |              +--- javax.servlet:javax.servlet-api:3.1.0
+|    |              +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116
+|    |              |    \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    |              \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116
+|    |                   \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    \--- org.eclipse.jetty:jetty-servlets:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-continuation:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116 (*)
+|         +--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|         \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116 (*)
++--- com.twitter:hbc-core:2.2.0
+|    +--- org.apache.httpcomponents:httpclient:4.2.5
+|    |    +--- org.apache.httpcomponents:httpcore:4.2.4
+|    |    +--- commons-logging:commons-logging:1.1.1
+|    |    \--- commons-codec:commons-codec:1.6
+|    +--- com.google.guava:guava:14.0.1 -> 15.0
+|    +--- org.slf4j:slf4j-api:1.6.6 -> 1.7.6
+|    +--- com.twitter:joauth:6.0.2
+|    |    \--- com.google.guava:guava:15.0
+|    \--- com.google.code.findbugs:jsr305:1.3.9
+\--- com.twitter:hbc-twitter4j:2.2.0
+     +--- com.twitter:hbc-core:2.2.0 (*)
+     +--- com.google.guava:guava:14.0.1 -> 15.0
+     +--- org.twitter4j:twitter4j-core:4.0.1
+     \--- org.twitter4j:twitter4j-stream:4.0.1
+          \--- org.twitter4j:twitter4j-core:4.0.1
+
+embedded
+No dependencies
+
+implementation - Implementation only dependencies for source set 'main'. (n)
+No dependencies
+
+runtime - Runtime dependencies for source set 'main' (deprecated, use 'runtimeOnly ' instead).
++--- org.sensorhub:sensorhub-core:1.2.1-SNAPSHOT -> project :osh-core:sensorhub-core
+|    +--- project :osh-core:swe-common-core
+|    |    +--- ch.qos.logback:logback-classic:1.1.2
+|    |    |    +--- ch.qos.logback:logback-core:1.1.2
+|    |    |    \--- org.slf4j:slf4j-api:1.7.6
+|    |    +--- org.codehaus.woodstox:woodstox-core-asl:4.2.0
+|    |    |    +--- javax.xml.stream:stax-api:1.0-2
+|    |    |    \--- org.codehaus.woodstox:stax2-api:3.1.1
+|    |    |         \--- javax.xml.stream:stax-api:1.0-2
+|    |    \--- com.google.code.gson:gson:2.8.0
+|    +--- project :osh-core:swe-common-om
+|    |    +--- project :osh-core:swe-common-core (*)
+|    |    \--- com.vividsolutions:jts:1.13
+|    +--- project :osh-core:sensorml-core
+|    |    \--- project :osh-core:swe-common-om (*)
+|    +--- org.apache.felix:org.apache.felix.framework:4.2.1
+|    +--- com.google.code.gson:gson:2.7 -> 2.8.0
+|    +--- ch.qos.logback:logback-classic:1.1.2 (*)
+|    +--- uk.com.robust-it:cloning:1.9.1
+|    |    \--- org.objenesis:objenesis:2.1
+|    +--- org.eclipse.jetty:jetty-servlet:9.2.7.v20150116
+|    |    \--- org.eclipse.jetty:jetty-security:9.2.7.v20150116
+|    |         \--- org.eclipse.jetty:jetty-server:9.2.7.v20150116
+|    |              +--- javax.servlet:javax.servlet-api:3.1.0
+|    |              +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116
+|    |              |    \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    |              \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116
+|    |                   \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    \--- org.eclipse.jetty:jetty-servlets:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-continuation:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116 (*)
+|         +--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|         \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116 (*)
++--- com.twitter:hbc-core:2.2.0
+|    +--- org.apache.httpcomponents:httpclient:4.2.5
+|    |    +--- org.apache.httpcomponents:httpcore:4.2.4
+|    |    +--- commons-logging:commons-logging:1.1.1
+|    |    \--- commons-codec:commons-codec:1.6
+|    +--- com.google.guava:guava:14.0.1 -> 15.0
+|    +--- org.slf4j:slf4j-api:1.6.6 -> 1.7.6
+|    +--- com.twitter:joauth:6.0.2
+|    |    \--- com.google.guava:guava:15.0
+|    \--- com.google.code.findbugs:jsr305:1.3.9
+\--- com.twitter:hbc-twitter4j:2.2.0
+     +--- com.twitter:hbc-core:2.2.0 (*)
+     +--- com.google.guava:guava:14.0.1 -> 15.0
+     +--- org.twitter4j:twitter4j-core:4.0.1
+     \--- org.twitter4j:twitter4j-stream:4.0.1
+          \--- org.twitter4j:twitter4j-core:4.0.1
+
+runtimeClasspath - Runtime classpath of source set 'main'.
++--- org.sensorhub:sensorhub-core:1.2.1-SNAPSHOT -> project :osh-core:sensorhub-core
+|    +--- project :osh-core:swe-common-core
+|    |    +--- ch.qos.logback:logback-classic:1.1.2
+|    |    |    +--- ch.qos.logback:logback-core:1.1.2
+|    |    |    \--- org.slf4j:slf4j-api:1.7.6
+|    |    +--- org.codehaus.woodstox:woodstox-core-asl:4.2.0
+|    |    |    +--- javax.xml.stream:stax-api:1.0-2
+|    |    |    \--- org.codehaus.woodstox:stax2-api:3.1.1
+|    |    |         \--- javax.xml.stream:stax-api:1.0-2
+|    |    \--- com.google.code.gson:gson:2.8.0
+|    +--- project :osh-core:swe-common-om
+|    |    +--- project :osh-core:swe-common-core (*)
+|    |    \--- com.vividsolutions:jts:1.13
+|    +--- project :osh-core:sensorml-core
+|    |    \--- project :osh-core:swe-common-om (*)
+|    +--- org.apache.felix:org.apache.felix.framework:4.2.1
+|    +--- com.google.code.gson:gson:2.7 -> 2.8.0
+|    +--- ch.qos.logback:logback-classic:1.1.2 (*)
+|    +--- uk.com.robust-it:cloning:1.9.1
+|    |    \--- org.objenesis:objenesis:2.1
+|    +--- org.eclipse.jetty:jetty-servlet:9.2.7.v20150116
+|    |    \--- org.eclipse.jetty:jetty-security:9.2.7.v20150116
+|    |         \--- org.eclipse.jetty:jetty-server:9.2.7.v20150116
+|    |              +--- javax.servlet:javax.servlet-api:3.1.0
+|    |              +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116
+|    |              |    \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    |              \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116
+|    |                   \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    \--- org.eclipse.jetty:jetty-servlets:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-continuation:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116 (*)
+|         +--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|         \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116 (*)
++--- com.twitter:hbc-core:2.2.0
+|    +--- org.apache.httpcomponents:httpclient:4.2.5
+|    |    +--- org.apache.httpcomponents:httpcore:4.2.4
+|    |    +--- commons-logging:commons-logging:1.1.1
+|    |    \--- commons-codec:commons-codec:1.6
+|    +--- com.google.guava:guava:14.0.1 -> 15.0
+|    +--- org.slf4j:slf4j-api:1.6.6 -> 1.7.6
+|    +--- com.twitter:joauth:6.0.2
+|    |    \--- com.google.guava:guava:15.0
+|    \--- com.google.code.findbugs:jsr305:1.3.9
+\--- com.twitter:hbc-twitter4j:2.2.0
+     +--- com.twitter:hbc-core:2.2.0 (*)
+     +--- com.google.guava:guava:14.0.1 -> 15.0
+     +--- org.twitter4j:twitter4j-core:4.0.1
+     \--- org.twitter4j:twitter4j-stream:4.0.1
+          \--- org.twitter4j:twitter4j-core:4.0.1
+
+runtimeElements - Elements of runtime for main. (n)
+No dependencies
+
+runtimeOnly - Runtime only dependencies for source set 'main'. (n)
+No dependencies
+
+testCompile - Dependencies for source set 'test' (deprecated, use 'testImplementation ' instead).
++--- org.sensorhub:sensorhub-core:1.2.1-SNAPSHOT -> project :osh-core:sensorhub-core
+|    +--- project :osh-core:swe-common-core
+|    |    +--- ch.qos.logback:logback-classic:1.1.2
+|    |    |    +--- ch.qos.logback:logback-core:1.1.2
+|    |    |    \--- org.slf4j:slf4j-api:1.7.6
+|    |    +--- org.codehaus.woodstox:woodstox-core-asl:4.2.0
+|    |    |    +--- javax.xml.stream:stax-api:1.0-2
+|    |    |    \--- org.codehaus.woodstox:stax2-api:3.1.1
+|    |    |         \--- javax.xml.stream:stax-api:1.0-2
+|    |    \--- com.google.code.gson:gson:2.8.0
+|    +--- project :osh-core:swe-common-om
+|    |    +--- project :osh-core:swe-common-core (*)
+|    |    \--- com.vividsolutions:jts:1.13
+|    +--- project :osh-core:sensorml-core
+|    |    \--- project :osh-core:swe-common-om (*)
+|    +--- org.apache.felix:org.apache.felix.framework:4.2.1
+|    +--- com.google.code.gson:gson:2.7 -> 2.8.0
+|    +--- ch.qos.logback:logback-classic:1.1.2 (*)
+|    +--- uk.com.robust-it:cloning:1.9.1
+|    |    \--- org.objenesis:objenesis:2.1
+|    +--- org.eclipse.jetty:jetty-servlet:9.2.7.v20150116
+|    |    \--- org.eclipse.jetty:jetty-security:9.2.7.v20150116
+|    |         \--- org.eclipse.jetty:jetty-server:9.2.7.v20150116
+|    |              +--- javax.servlet:javax.servlet-api:3.1.0
+|    |              +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116
+|    |              |    \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    |              \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116
+|    |                   \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    \--- org.eclipse.jetty:jetty-servlets:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-continuation:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116 (*)
+|         +--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|         \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116 (*)
++--- com.twitter:hbc-core:2.2.0
+|    +--- org.apache.httpcomponents:httpclient:4.2.5
+|    |    +--- org.apache.httpcomponents:httpcore:4.2.4
+|    |    +--- commons-logging:commons-logging:1.1.1
+|    |    \--- commons-codec:commons-codec:1.6
+|    +--- com.google.guava:guava:14.0.1 -> 15.0
+|    +--- org.slf4j:slf4j-api:1.6.6 -> 1.7.6
+|    +--- com.twitter:joauth:6.0.2
+|    |    \--- com.google.guava:guava:15.0
+|    \--- com.google.code.findbugs:jsr305:1.3.9
++--- com.twitter:hbc-twitter4j:2.2.0
+|    +--- com.twitter:hbc-core:2.2.0 (*)
+|    +--- com.google.guava:guava:14.0.1 -> 15.0
+|    +--- org.twitter4j:twitter4j-core:4.0.1
+|    \--- org.twitter4j:twitter4j-stream:4.0.1
+|         \--- org.twitter4j:twitter4j-core:4.0.1
++--- junit:junit:4.11
+|    \--- org.hamcrest:hamcrest-core:1.3
+\--- xmlunit:xmlunit:1.6
+
+testCompileClasspath - Compile classpath for source set 'test'.
++--- org.sensorhub:sensorhub-core:1.2.1-SNAPSHOT -> project :osh-core:sensorhub-core
+|    +--- project :osh-core:swe-common-core
+|    |    +--- ch.qos.logback:logback-classic:1.1.2
+|    |    |    +--- ch.qos.logback:logback-core:1.1.2
+|    |    |    \--- org.slf4j:slf4j-api:1.7.6
+|    |    +--- org.codehaus.woodstox:woodstox-core-asl:4.2.0
+|    |    |    +--- javax.xml.stream:stax-api:1.0-2
+|    |    |    \--- org.codehaus.woodstox:stax2-api:3.1.1
+|    |    |         \--- javax.xml.stream:stax-api:1.0-2
+|    |    \--- com.google.code.gson:gson:2.8.0
+|    +--- project :osh-core:swe-common-om
+|    |    +--- project :osh-core:swe-common-core (*)
+|    |    \--- com.vividsolutions:jts:1.13
+|    +--- project :osh-core:sensorml-core
+|    |    \--- project :osh-core:swe-common-om (*)
+|    +--- org.apache.felix:org.apache.felix.framework:4.2.1
+|    +--- com.google.code.gson:gson:2.7 -> 2.8.0
+|    +--- ch.qos.logback:logback-classic:1.1.2 (*)
+|    +--- uk.com.robust-it:cloning:1.9.1
+|    |    \--- org.objenesis:objenesis:2.1
+|    +--- org.eclipse.jetty:jetty-servlet:9.2.7.v20150116
+|    |    \--- org.eclipse.jetty:jetty-security:9.2.7.v20150116
+|    |         \--- org.eclipse.jetty:jetty-server:9.2.7.v20150116
+|    |              +--- javax.servlet:javax.servlet-api:3.1.0
+|    |              +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116
+|    |              |    \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    |              \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116
+|    |                   \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    \--- org.eclipse.jetty:jetty-servlets:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-continuation:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116 (*)
+|         +--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|         \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116 (*)
++--- com.twitter:hbc-core:2.2.0
+|    +--- org.apache.httpcomponents:httpclient:4.2.5
+|    |    +--- org.apache.httpcomponents:httpcore:4.2.4
+|    |    +--- commons-logging:commons-logging:1.1.1
+|    |    \--- commons-codec:commons-codec:1.6
+|    +--- com.google.guava:guava:14.0.1 -> 15.0
+|    +--- org.slf4j:slf4j-api:1.6.6 -> 1.7.6
+|    +--- com.twitter:joauth:6.0.2
+|    |    \--- com.google.guava:guava:15.0
+|    \--- com.google.code.findbugs:jsr305:1.3.9
++--- com.twitter:hbc-twitter4j:2.2.0
+|    +--- com.twitter:hbc-core:2.2.0 (*)
+|    +--- com.google.guava:guava:14.0.1 -> 15.0
+|    +--- org.twitter4j:twitter4j-core:4.0.1
+|    \--- org.twitter4j:twitter4j-stream:4.0.1
+|         \--- org.twitter4j:twitter4j-core:4.0.1
++--- junit:junit:4.11
+|    \--- org.hamcrest:hamcrest-core:1.3
+\--- xmlunit:xmlunit:1.6
+
+testCompileOnly - Compile only dependencies for source set 'test'.
+No dependencies
+
+testImplementation - Implementation only dependencies for source set 'test'. (n)
+No dependencies
+
+testRuntime - Runtime dependencies for source set 'test' (deprecated, use 'testRuntimeOnly ' instead).
++--- org.sensorhub:sensorhub-core:1.2.1-SNAPSHOT -> project :osh-core:sensorhub-core
+|    +--- project :osh-core:swe-common-core
+|    |    +--- ch.qos.logback:logback-classic:1.1.2
+|    |    |    +--- ch.qos.logback:logback-core:1.1.2
+|    |    |    \--- org.slf4j:slf4j-api:1.7.6
+|    |    +--- org.codehaus.woodstox:woodstox-core-asl:4.2.0
+|    |    |    +--- javax.xml.stream:stax-api:1.0-2
+|    |    |    \--- org.codehaus.woodstox:stax2-api:3.1.1
+|    |    |         \--- javax.xml.stream:stax-api:1.0-2
+|    |    \--- com.google.code.gson:gson:2.8.0
+|    +--- project :osh-core:swe-common-om
+|    |    +--- project :osh-core:swe-common-core (*)
+|    |    \--- com.vividsolutions:jts:1.13
+|    +--- project :osh-core:sensorml-core
+|    |    \--- project :osh-core:swe-common-om (*)
+|    +--- org.apache.felix:org.apache.felix.framework:4.2.1
+|    +--- com.google.code.gson:gson:2.7 -> 2.8.0
+|    +--- ch.qos.logback:logback-classic:1.1.2 (*)
+|    +--- uk.com.robust-it:cloning:1.9.1
+|    |    \--- org.objenesis:objenesis:2.1
+|    +--- org.eclipse.jetty:jetty-servlet:9.2.7.v20150116
+|    |    \--- org.eclipse.jetty:jetty-security:9.2.7.v20150116
+|    |         \--- org.eclipse.jetty:jetty-server:9.2.7.v20150116
+|    |              +--- javax.servlet:javax.servlet-api:3.1.0
+|    |              +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116
+|    |              |    \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    |              \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116
+|    |                   \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    \--- org.eclipse.jetty:jetty-servlets:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-continuation:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116 (*)
+|         +--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|         \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116 (*)
++--- com.twitter:hbc-core:2.2.0
+|    +--- org.apache.httpcomponents:httpclient:4.2.5
+|    |    +--- org.apache.httpcomponents:httpcore:4.2.4
+|    |    +--- commons-logging:commons-logging:1.1.1
+|    |    \--- commons-codec:commons-codec:1.6
+|    +--- com.google.guava:guava:14.0.1 -> 15.0
+|    +--- org.slf4j:slf4j-api:1.6.6 -> 1.7.6
+|    +--- com.twitter:joauth:6.0.2
+|    |    \--- com.google.guava:guava:15.0
+|    \--- com.google.code.findbugs:jsr305:1.3.9
++--- com.twitter:hbc-twitter4j:2.2.0
+|    +--- com.twitter:hbc-core:2.2.0 (*)
+|    +--- com.google.guava:guava:14.0.1 -> 15.0
+|    +--- org.twitter4j:twitter4j-core:4.0.1
+|    \--- org.twitter4j:twitter4j-stream:4.0.1
+|         \--- org.twitter4j:twitter4j-core:4.0.1
++--- junit:junit:4.11
+|    \--- org.hamcrest:hamcrest-core:1.3
+\--- xmlunit:xmlunit:1.6
+
+testRuntimeClasspath - Runtime classpath of source set 'test'.
++--- org.sensorhub:sensorhub-core:1.2.1-SNAPSHOT -> project :osh-core:sensorhub-core
+|    +--- project :osh-core:swe-common-core
+|    |    +--- ch.qos.logback:logback-classic:1.1.2
+|    |    |    +--- ch.qos.logback:logback-core:1.1.2
+|    |    |    \--- org.slf4j:slf4j-api:1.7.6
+|    |    +--- org.codehaus.woodstox:woodstox-core-asl:4.2.0
+|    |    |    +--- javax.xml.stream:stax-api:1.0-2
+|    |    |    \--- org.codehaus.woodstox:stax2-api:3.1.1
+|    |    |         \--- javax.xml.stream:stax-api:1.0-2
+|    |    \--- com.google.code.gson:gson:2.8.0
+|    +--- project :osh-core:swe-common-om
+|    |    +--- project :osh-core:swe-common-core (*)
+|    |    \--- com.vividsolutions:jts:1.13
+|    +--- project :osh-core:sensorml-core
+|    |    \--- project :osh-core:swe-common-om (*)
+|    +--- org.apache.felix:org.apache.felix.framework:4.2.1
+|    +--- com.google.code.gson:gson:2.7 -> 2.8.0
+|    +--- ch.qos.logback:logback-classic:1.1.2 (*)
+|    +--- uk.com.robust-it:cloning:1.9.1
+|    |    \--- org.objenesis:objenesis:2.1
+|    +--- org.eclipse.jetty:jetty-servlet:9.2.7.v20150116
+|    |    \--- org.eclipse.jetty:jetty-security:9.2.7.v20150116
+|    |         \--- org.eclipse.jetty:jetty-server:9.2.7.v20150116
+|    |              +--- javax.servlet:javax.servlet-api:3.1.0
+|    |              +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116
+|    |              |    \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    |              \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116
+|    |                   \--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|    \--- org.eclipse.jetty:jetty-servlets:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-continuation:9.2.7.v20150116
+|         +--- org.eclipse.jetty:jetty-http:9.2.7.v20150116 (*)
+|         +--- org.eclipse.jetty:jetty-util:9.2.7.v20150116
+|         \--- org.eclipse.jetty:jetty-io:9.2.7.v20150116 (*)
++--- com.twitter:hbc-core:2.2.0
+|    +--- org.apache.httpcomponents:httpclient:4.2.5
+|    |    +--- org.apache.httpcomponents:httpcore:4.2.4
+|    |    +--- commons-logging:commons-logging:1.1.1
+|    |    \--- commons-codec:commons-codec:1.6
+|    +--- com.google.guava:guava:14.0.1 -> 15.0
+|    +--- org.slf4j:slf4j-api:1.6.6 -> 1.7.6
+|    +--- com.twitter:joauth:6.0.2
+|    |    \--- com.google.guava:guava:15.0
+|    \--- com.google.code.findbugs:jsr305:1.3.9
++--- com.twitter:hbc-twitter4j:2.2.0
+|    +--- com.twitter:hbc-core:2.2.0 (*)
+|    +--- com.google.guava:guava:14.0.1 -> 15.0
+|    +--- org.twitter4j:twitter4j-core:4.0.1
+|    \--- org.twitter4j:twitter4j-stream:4.0.1
+|         \--- org.twitter4j:twitter4j-core:4.0.1
++--- junit:junit:4.11
+|    \--- org.hamcrest:hamcrest-core:1.3
+\--- xmlunit:xmlunit:1.6
+
+testRuntimeOnly - Runtime only dependencies for source set 'test'. (n)
+No dependencies
+
+(*) - dependencies omitted (listed previously)
+
+BUILD SUCCESSFUL
+
+Total time: 1.368 secs
