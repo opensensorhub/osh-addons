@@ -16,7 +16,6 @@ import org.sensorhub.impl.module.JarModuleProvider;
  */
 public class TwitterDescriptor extends JarModuleProvider implements IModuleProvider 
 {
-
 	@Override
 	public String getModuleName() 
 	{

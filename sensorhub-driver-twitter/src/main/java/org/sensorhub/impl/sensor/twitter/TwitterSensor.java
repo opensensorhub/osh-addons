@@ -50,25 +50,17 @@ public class TwitterSensor extends AbstractSensorModule<TwitterConfig>
 	@Override
 	public boolean isConnected() 
 	{
-		return true;
+		return dataInterface.isConnected();
 	}
 	
 	@Override
-	public void start() 
+	public void start() throws SensorHubException
 	{
-		if (config.apiKey == null||
-				config.apiSecret == null ||
-				config.accessToken == null || 
-				config.accessTokenSecret == null)
-		{
-			stop();
-		} else {
-			try {
-				dataInterface.start(config);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		try {
+			dataInterface.start(config);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 

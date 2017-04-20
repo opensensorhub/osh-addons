@@ -45,10 +45,11 @@ public class TwitterOutput extends AbstractSensorOutput<TwitterSensor>
 
 	DataRecord twitterData;
 	DataEncoding twitterEncoding;
-	Timer timer;
 	
+	Boolean started;
 	Client client;
 	TweetsModel tweetData;
+	BlockingQueue<String> queue;
 	
 	public TwitterOutput(TwitterSensor parentSensor) 
 	{
@@ -57,6 +58,9 @@ public class TwitterOutput extends AbstractSensorOutput<TwitterSensor>
 
 	protected void init()
 	{
+	    // Create a queue for processing
+		queue = new LinkedBlockingQueue<String>(10000);
+
 		GeoPosHelper fac = new GeoPosHelper(); 
 
 		// Build SWE Common record structure
@@ -79,40 +83,13 @@ public class TwitterOutput extends AbstractSensorOutput<TwitterSensor>
         twitterEncoding = fac.newXMLEncoding();
 	}
 	
-	@Override
-	public String getName() {
-		return "Twitter_Output";
-	}
-
-	@Override
-	public DataComponent getRecordDescription() 
-	{
-		return twitterData;
-	}
-
-	@Override
-	public DataEncoding getRecommendedEncoding() 
-	{
-		return twitterEncoding;
-	}
-
-	@Override
-	public double getAverageSamplingPeriod() 
-	{
-		return 1;
-	}
-
-	public void start() 
-	{
-	}
-
-	public void start(TwitterConfig config) throws InterruptedException
+	protected void start(TwitterConfig config) throws InterruptedException 
 	{
 		// Authenticate with api
-		String apiKey = config.apiKey; 
-		String apiSecret = config.apiSecret;
-		String accessToken = config.accessToken;
-		String accessTokenSecret = config.accessTokenSecret;
+		String apiKey = config.apiKey.replace(" ", ""); 
+		String apiSecret = config.apiSecret.replace(" ", ""); 
+		String accessToken = config.accessToken.replace(" ", ""); 
+		String accessTokenSecret = config.accessTokenSecret.replace(" ", ""); 
 
 	    Authentication auth = new OAuth1(apiKey, apiSecret, accessToken, accessTokenSecret);
 	    // Authentication auth = new BasicAuth(username, password);
@@ -141,11 +118,8 @@ public class TwitterOutput extends AbstractSensorOutput<TwitterSensor>
 			return;
 		}
 
-	    // Create a queue for processing
-	    BlockingQueue<String> queue = new LinkedBlockingQueue<String>(10000);
-
 	    // Create a new BasicClient. By default gzip is enabled.
-	    Client client = new ClientBuilder()
+	    client = new ClientBuilder()
 	            .hosts(Constants.STREAM_HOST)
 	            .endpoint(endpoint)
 	            .authentication(auth)
@@ -155,43 +129,48 @@ public class TwitterOutput extends AbstractSensorOutput<TwitterSensor>
 	    // Establish a connection
 	    client.connect();
 
-	    // Do whatever needs to be done with messages
-	    while (true)
-	    {
-	    	String tweet = queue.take();
-			Gson gson = new GsonBuilder().setPrettyPrinting().create();
-			tweetData = gson.fromJson(tweet, TweetsModel.class);
-			System.out.println(gson.toJson(tweetData));
-			publishData(tweet);
-	    }
+	    Thread t = new Thread(new Runnable()
+        {
+            public void run()
+            {
+                while (started)
+                {
+					if(queue.isEmpty())
+						continue;
+
+					try {
+						publishData(queue.take());
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+                }
+                client.stop();
+                queue.clear();
+            }
+        });
+	    
+	    started = true;
+	    t.start();
 	}
 	
 	private void publishData(String tweet)
 	{
-		if (tweet == null)
-		{
-			return;
-		}
-
-		Gson gson = new Gson();
+		//Gson gson = new Gson();
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		tweetData = gson.fromJson(tweet, TweetsModel.class);
+		//System.out.println(gson.toJson(tweetData));
 		
+		// Edge case when there is no tweet or it was deleted after hitting the stream (i guess)
 		if (tweetData.id == 0)
-		{
 			return;
-		}
 		
         double time = System.currentTimeMillis() / 1000.0;
-
         double lon = tweetData.coordinates != null ? tweetData.coordinates.coordinates[0] : 0.0;
         double lat = tweetData.coordinates != null ? tweetData.coordinates.coordinates[1] : 0.0;
 
-		DataBlock dataBlock;
-		if (latestRecord == null)
-			dataBlock = twitterData.createDataBlock();
-		else
-			dataBlock = latestRecord.renew();
-		
+		//DataBlock dataBlock = latestRecord == null ? twitterData.createDataBlock() : latestRecord.renew();
+		DataBlock dataBlock = twitterData.createDataBlock();
 		dataBlock.setDoubleValue(0, time);
 		dataBlock.setDoubleValue(1, lat);
 		dataBlock.setDoubleValue(2, lon);
@@ -203,13 +182,41 @@ public class TwitterOutput extends AbstractSensorOutput<TwitterSensor>
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, TwitterOutput.this, dataBlock));
 	}
 
-	public void stop() 
+	protected void stop() 
 	{
+		started = false;
+
 		if (client == null)
-		{
 			return;
-		}
 
 		client.stop();
+		client = null;
+	}
+
+	public boolean isConnected() {
+		return client != null ? true : false;
+	}
+
+	@Override
+	public String getName() {
+		return "Twitter_Output";
+	}
+
+	@Override
+	public DataComponent getRecordDescription() 
+	{
+		return twitterData;
+	}
+
+	@Override
+	public DataEncoding getRecommendedEncoding() 
+	{
+		return twitterEncoding;
+	}
+
+	@Override
+	public double getAverageSamplingPeriod() 
+	{
+		return 0.5;
 	}
 }
