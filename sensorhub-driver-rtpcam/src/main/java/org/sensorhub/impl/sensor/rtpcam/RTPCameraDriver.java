@@ -14,6 +14,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.rtpcam;
 
+import java.io.IOException;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.comm.RobustIPConnection;
 import org.sensorhub.impl.module.RobustConnection;
@@ -53,7 +54,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
         // create connection handler
         this.connection = new RobustIPConnection(this, config.connection, "RTP Camera")
         {
-            public boolean tryConnect() throws Exception
+            public boolean tryConnect() throws IOException
             {
                 // just check host is reachable on specified RTSP port
                 return tryConnectTCP(config.rtsp.remoteHost, config.rtsp.remotePort);

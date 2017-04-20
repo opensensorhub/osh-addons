@@ -91,7 +91,7 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
         // create connection handler
         this.connection = new RobustHTTPConnection(this, config.connection, "VIRB Camera")
         {
-            public boolean tryConnect() throws Exception
+            public boolean tryConnect() throws IOException
             {
                 // check connection to HTTP server
                 String json = sendCommand("{\"command\":\"deviceInfo\"}");

@@ -110,7 +110,7 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
 
         // create connection handler
         connection = new RobustHTTPConnection(this, config.connection, "Axis Camera") {
-            public boolean tryConnect() throws Exception {
+            public boolean tryConnect() throws IOException {
                 // check we can reach the HTTP server
                 // and access the param URL
                 HttpURLConnection conn = tryConnectGET(getHostUrl() + VAPIX_QUERY_PARAMS_LIST);
@@ -160,10 +160,10 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
                     throw new IOException("Cannot read camera serial number");
 
                 if (!h264Supported && config.enableH264)
-                    throw new SensorException("Cannot connect to RTSP server - H264 not supported");
+                    throw new IOException("Cannot connect to RTSP server - H264 not supported");
 
                 if (vapixVersion != 2 && vapixVersion != 3)
-                    throw new SensorException("Unsupported VAPIX API for this camera. VAPIX API version returned: " + vapixVersion);
+                    throw new IOException("Unsupported VAPIX API for this camera. VAPIX API version returned: " + vapixVersion);
 
                 // check connection to RTSP server
                 if (h264Supported && config.enableH264) {

@@ -62,7 +62,7 @@ public class FoscamDriver extends AbstractSensorModule<FoscamConfig> {
 		// create connection handler
         this.connection = new RobustIPConnection(this, config.connection, "Foscam Camera")
         {
-            public boolean tryConnect() throws Exception
+            public boolean tryConnect() throws IOException
             {
             	// just check host is reachable on specified RTSP port
                 return tryConnectTCP(config.rtsp.remoteHost, config.rtsp.remotePort);

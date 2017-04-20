@@ -16,7 +16,6 @@ package org.sensorhub.impl.sensor.fakecam;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.Iterator;
@@ -25,6 +24,7 @@ import java.util.TimerTask;
 import net.opengis.swe.v20.BinaryBlock;
 import net.opengis.swe.v20.BinaryEncoding;
 import net.opengis.swe.v20.ByteEncoding;
+import net.opengis.swe.v20.ByteOrder;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;

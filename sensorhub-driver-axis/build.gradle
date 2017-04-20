@@ -6,7 +6,7 @@ dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   compile project(':sensorhub-driver-rtpcam')
   compile('net.sf.jipcam:jipcam:0.9.1') {
-    exclude group: 'servlet-api', module: 'javax.servlet'
+    exclude group: 'javax.servlet', module: 'servlet-api'
     exclude group: 'commons-cli', module: 'commons-cli'
     exclude group: 'commons-httpclient', module: 'commons-httpclient'
   }

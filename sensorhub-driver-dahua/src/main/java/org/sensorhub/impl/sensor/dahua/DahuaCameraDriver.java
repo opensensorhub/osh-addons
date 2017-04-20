@@ -95,7 +95,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
         // create connection handler
         connection = new RobustHTTPConnection(this, config.connection, "Dahua Camera")
         {
-            public boolean tryConnect() throws Exception
+            public boolean tryConnect() throws IOException
             {
                 // check we can reach the HTTP server
                 // and access the system info URL

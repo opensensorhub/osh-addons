@@ -15,7 +15,6 @@ Developer are Copyright (C) 2016 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.videocam;
 
-import java.nio.ByteOrder;
 import java.util.Collection;
 import net.opengis.swe.v20.AllowedTokens;
 import net.opengis.swe.v20.AllowedValues;
@@ -23,6 +22,7 @@ import net.opengis.swe.v20.BinaryBlock;
 import net.opengis.swe.v20.BinaryComponent;
 import net.opengis.swe.v20.BinaryEncoding;
 import net.opengis.swe.v20.ByteEncoding;
+import net.opengis.swe.v20.ByteOrder;
 import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataChoice;
