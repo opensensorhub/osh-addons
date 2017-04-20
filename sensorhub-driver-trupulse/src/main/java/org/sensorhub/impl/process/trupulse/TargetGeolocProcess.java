@@ -118,7 +118,7 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
     
     
     @Override
-    protected void connectInput(String inputName, String dataPath, DataQueue inputQueue) throws Exception
+    protected void connectInput(String inputName, String dataPath, DataQueue inputQueue) throws ProcessException
     {        
         super.connectInput(inputName, dataPath, inputQueue);
         
