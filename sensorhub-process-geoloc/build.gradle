@@ -4,7 +4,7 @@ version = '1.0.0'
 
 dependencies {
   compile project(':sensorhub-process-vecmath')
-  compile 'org.vast.opengis:ows-framework-bindings:' + oshCoreVersion
+  compile 'org.vast.opengis:ogc-services-sps:' + oshCoreVersion
 }
 
 test {
