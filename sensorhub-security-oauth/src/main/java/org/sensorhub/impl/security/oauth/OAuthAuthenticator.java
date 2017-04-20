@@ -48,12 +48,6 @@ import com.google.gson.stream.JsonReader;
 
 public class OAuthAuthenticator extends LoginAuthenticator
 {
-    private static final String GOOGLE_TOKEN_ENDPOINT = OAuthProviderType.GOOGLE.getTokenEndpoint();
-    private static final String GOOGLE_AUTHZ_ENDPOINT = OAuthProviderType.GOOGLE.getAuthzEndpoint();
-    private static final String GOOGLE_USERINFO_ENDPOINT = "https://www.googleapis.com/oauth2/v1/userinfo";
-    private static final String GOOGLE_CLIENT_ID = "756042811191-k5q4tc6usq8dtkjpquq4ue78eq5mtru7.apps.googleusercontent.com";
-    private static final String GOOGLE_CLIENT_SECRET = "7bIXZed1WZmDu9v5my-SYEYD";
-    private static final String GOOGLE_SCOPE = "https://www.googleapis.com/auth/userinfo.profile";
     private static final String AUTH_METHOD_OAUTH2 = "OAUTH2";
     
     private Logger log;
