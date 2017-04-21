@@ -31,7 +31,6 @@ import org.apache.oltu.oauth2.client.response.OAuthJSONAccessTokenResponse;
 import org.apache.oltu.oauth2.client.response.OAuthResourceResponse;
 import org.apache.oltu.oauth2.common.OAuth;
 import org.apache.oltu.oauth2.common.OAuth.HttpMethod;
-import org.apache.oltu.oauth2.common.OAuthProviderType;
 import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.apache.oltu.oauth2.common.message.types.GrantType;
@@ -72,7 +71,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
     @Override
     public void prepareRequest(ServletRequest arg0)
     {
-
+        // nothing to prepare
     }
 
 
@@ -149,9 +148,9 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     return Authentication.SEND_FAILURE;
                 }
-                catch (OAuthProblemException | OAuthSystemException e)
+                catch (OAuthProblemException | OAuthSystemException | IOException e)
                 {
-                    e.printStackTrace();
+                    log.error("Cannot complete authentication at endpoint " + config.tokenEndpoint, e);
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
                     return Authentication.SEND_FAILURE;
                 }
@@ -174,7 +173,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
                 }
                 catch (OAuthSystemException e)
                 {
-                    e.printStackTrace();
+                    log.error("Cannot redirect to authentication endpoint " + config.authzEndpoint, e);
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
                     return Authentication.SEND_FAILURE;
                 }
@@ -182,8 +181,8 @@ public class OAuthAuthenticator extends LoginAuthenticator
         }
         catch (IOException e)
         {
-            e.printStackTrace();
-            throw new ServerAuthException(e);
+            log.error("Cannot send HTTP error", e);
+            return Authentication.SEND_FAILURE;
         }
     }
 
@@ -196,7 +195,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
         while (reader.hasNext())
         {
             String name = reader.nextName();
-            if (name.equals("id") || name.equals("user_id"))
+            if ("id".equals(name) || "user_id".equals(name))
                 userId = reader.nextString();
             else
                 reader.skipValue();
