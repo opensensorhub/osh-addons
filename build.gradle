@@ -1,6 +1,6 @@
 apply from: gradle.oshCoreDir + '/common.gradle'
 version = oshCoreVersion
-description = 'OSH Video Modules'
+description = 'OSH Video Add-ons'
 
 subprojects {  
   // inject all repositories from included builds if any
