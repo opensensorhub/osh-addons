@@ -1,5 +1,6 @@
 apply from: gradle.oshCoreDir + '/common.gradle'
 version = oshCoreVersion
+description = 'OSH SmartHome Add-ons'
 
 
 subprojects {  
