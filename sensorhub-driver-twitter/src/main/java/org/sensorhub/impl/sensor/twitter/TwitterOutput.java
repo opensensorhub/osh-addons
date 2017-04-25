@@ -80,7 +80,7 @@ public class TwitterOutput extends AbstractSensorOutput<TwitterSensor>
         twitterData.addComponent("user", fac.newText(GeoPosHelper.getPropertyUri("User"), "Uesr", "The user who pulbished a Tweet"));
 
 	    // Generate encoding definition
-        twitterEncoding = fac.newXMLEncoding();
+		twitterEncoding = fac.newTextEncoding(",", "\n");
 	}
 	
 	protected void start(TwitterConfig config) throws InterruptedException 
@@ -146,6 +146,7 @@ public class TwitterOutput extends AbstractSensorOutput<TwitterSensor>
 					}
                 }
                 client.stop();
+				client = null;
                 queue.clear();
             }
         });
