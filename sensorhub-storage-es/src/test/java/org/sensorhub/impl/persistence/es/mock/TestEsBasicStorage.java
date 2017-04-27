@@ -33,23 +33,26 @@ import org.elasticsearch.client.support.AbstractClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeValidationException;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.sensorhub.impl.persistence.es.ESBasicStorageImpl;
+import org.sensorhub.impl.persistence.es.ESMultiSourceStorageImpl;
 import org.sensorhub.impl.persistence.es.ESBasicStorageConfig;
 import org.sensorhub.test.persistence.AbstractTestBasicStorage;
 import org.sensorhub.utils.FileUtils;
 
 public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageImpl> {
 
-	protected static final String CLUSTER_NAME = "elasticsearch";
-	
-	static AbstractClient client;
+	private static Node node;
+	private static File tmpDir;
 	
 	static {
+		tmpDir = new File(System.getProperty("java.io.tmpdir")+"/es/"+UUID.randomUUID().toString());
+		tmpDir.mkdirs();
 		try {
-			client = (AbstractClient) getClient();
+			node = getNode(tmpDir);
 		} catch (NodeValidationException e) {
 			e.printStackTrace();
 		}
@@ -57,9 +60,11 @@ public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageI
 	
 	@Before
 	public void init() throws Exception {
+		
+		
 		ESBasicStorageConfig config = new ESBasicStorageConfig();
 		config.autoStart = true;
-		config.clusterName = CLUSTER_NAME;
+		config.storagePath = "elastic-cluster";
 		List<String> nodes = new ArrayList<String>();
 		nodes.add("localhost:9300");
 
@@ -68,11 +73,9 @@ public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageI
 		config.bulkConcurrentRequests = 0;
 		config.id = "junit_" + UUID.randomUUID().toString();
 		
-		
-		storage = new ESBasicStorageImpl(client);
+		storage = new ESBasicStorageImpl((AbstractClient) node.client());
 		storage.init(config);
 		storage.start();
-		
 	}
 
 	@Override
@@ -83,30 +86,33 @@ public class TestEsBasicStorage extends AbstractTestBasicStorage<ESBasicStorageI
 		
 	}
 
-	public static Client getClient() throws NodeValidationException {
-		File file	 = new File(System.getProperty("java.io.tmpdir")+"/es");
-		file.mkdirs();
-		
+	public static Node getNode(File outputDir) throws NodeValidationException {
 		Settings settings = Settings.builder()
-	            .put("path.home", file.getAbsolutePath())
+	            .put("path.home", tmpDir.getAbsolutePath())
 	            .put("transport.type", "local")
 	            .put("http.enabled", false)
 	            .put("processors",Runtime.getRuntime().availableProcessors())
-	            .put("node.max_local_storage_nodes", 1)
+	            .put("node.max_local_storage_nodes", 15)
                 .put("thread_pool.bulk.size", Runtime.getRuntime().availableProcessors())
                 // default is 50 which is too low
                 .put("thread_pool.bulk.queue_size", 16 * Runtime.getRuntime().availableProcessors())
 	            .build();
 
-	    Node node = new Node(settings).start();
-	    return node.client();
+	    return new Node(settings).start();
 	}
 	
 	@AfterClass
-	public static void closeClient() throws IOException {
-		FileUtils.deleteRecursively(new File(System.getProperty("java.io.tmpdir")+"/es"));        
-		if(client != null) {
-			client.close();
+    public static void cleanup() throws Exception {
+		if(node != null) {
+			if(node.client() != null) {
+				node.client().close();
+			}
+			node.close();
+			node = null;
+		}
+		
+		if(tmpDir.exists()) {
+			FileUtils.deleteRecursively(tmpDir);
 		}
 	}
 }
