@@ -46,7 +46,8 @@ import org.sensorhub.utils.FileUtils;
 
 public class TestEsMultiSourceStorage extends AbstractTestBasicStorage<ESMultiSourceStorageImpl> {
 
-	private static Node node;
+    protected static final String CLUSTER_NAME = "elasticsearch";
+    private static Node node;
 	private static File tmpDir;
 	
 	static {
@@ -65,7 +66,7 @@ public class TestEsMultiSourceStorage extends AbstractTestBasicStorage<ESMultiSo
 		
 		ESBasicStorageConfig config = new ESBasicStorageConfig();
 		config.autoStart = true;
-		config.storagePath = "elastic-cluster";
+		config.clusterName = CLUSTER_NAME;
 		List<String> nodes = new ArrayList<String>();
 		nodes.add("localhost:9300");
 

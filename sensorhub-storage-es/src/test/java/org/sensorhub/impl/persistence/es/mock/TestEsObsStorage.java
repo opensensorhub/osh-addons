@@ -47,7 +47,8 @@ import org.sensorhub.utils.FileUtils;
 
 public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl> {
 
-	private static Node node;
+    protected static final String CLUSTER_NAME = "elasticsearch";
+    private static Node node;
 	private static File tmpDir;
 	
 	static {
@@ -63,10 +64,11 @@ public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl> {
 	@Before
 	public void init() throws Exception {
 		
-		
+	    numFois = 80; // cannot go beyond 90° coordinate in ES
+        
 		ESBasicStorageConfig config = new ESBasicStorageConfig();
 		config.autoStart = true;
-		config.storagePath = "elastic-cluster";
+		config.clusterName = CLUSTER_NAME;
 		List<String> nodes = new ArrayList<String>();
 		nodes.add("localhost:9300");
 
