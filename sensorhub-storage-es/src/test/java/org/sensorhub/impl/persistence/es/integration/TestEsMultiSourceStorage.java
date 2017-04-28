@@ -19,7 +19,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.client.transport.TransportClient;
@@ -33,7 +32,6 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.IObsStorageModule;
 import org.sensorhub.impl.persistence.es.ESBasicStorageConfig;
 import org.sensorhub.impl.persistence.es.ESMultiSourceStorageImpl;
-import org.sensorhub.test.persistence.AbstractTestBasicStorage;
 import org.sensorhub.test.persistence.AbstractTestMultiObsStorage;
 
 
@@ -80,8 +78,9 @@ public class TestEsMultiSourceStorage extends AbstractTestMultiObsStorage<IObsSt
     	// add transport address(es)
 		Settings settings = Settings.builder()
 		        .put("cluster.name", CLUSTER_NAME).build();
-		TransportClient client = new PreBuiltTransportClient(settings)
-		        .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("localhost"), 9300));
+		
+		TransportClient client = new PreBuiltTransportClient(settings);
+		client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("localhost"), 9300));
 					
 		String idxName = "junit_*";
 

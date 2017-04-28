@@ -46,7 +46,9 @@ import net.opengis.OgcPropertyList;
  * @since 2017
  */
 public class KryoSerializer {
+    
 	private static final ThreadLocal<Kryo> kryoLocal = new ThreadLocal<Kryo>() {
+		@Override
 		protected Kryo initialValue() {
 			Kryo kryo = new Kryo();
 			kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
@@ -66,6 +68,9 @@ public class KryoSerializer {
 			return kryo;
 		};
 	};
+	
+	private KryoSerializer() {	    
+	}
 
 	public static Kryo getInstance() {
 		return kryoLocal.get();

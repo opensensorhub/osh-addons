@@ -38,18 +38,16 @@ import org.slf4j.LoggerFactory;
  */
 public class ESMultiSourceStorageImpl extends ESObsStorageImpl implements IMultiSourceStorage<IObsStorage> {
 
-	public ESMultiSourceStorageImpl() {
-
-	}
-	
-	public ESMultiSourceStorageImpl(AbstractClient client) {
+    private static final Logger log = LoggerFactory.getLogger(ESMultiSourceStorageImpl.class); 
+    
+    
+    public ESMultiSourceStorageImpl() {
+        // default constructor
+    }
+    
+    public ESMultiSourceStorageImpl(AbstractClient client) {
 		super(client);
-	}
-	
-	/**
-	 * Class logger
-	 */
-	private static final Logger log = LoggerFactory.getLogger(ESMultiSourceStorageImpl.class);  
+	}	 
 	
 	@Override
 	public Collection<String> getProducerIDs() {
@@ -62,7 +60,7 @@ public class ESMultiSourceStorageImpl extends ESObsStorageImpl implements IMulti
 		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq,
 				config.scrollFetchSize); //max of scrollFetchSize hits will be returned for each scroll
 		
-		Set<String> uniqueList = new HashSet<String>();
+		Set<String> uniqueList = new HashSet<>();
 		while(searchHitsIterator.hasNext()) {
 			SearchHit hit = searchHitsIterator.next();
 			uniqueList.add(hit.getSource().get(PRODUCER_ID_FIELD_NAME).toString());

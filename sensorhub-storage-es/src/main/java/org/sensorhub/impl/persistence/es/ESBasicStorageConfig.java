@@ -36,7 +36,7 @@ public class ESBasicStorageConfig extends org.sensorhub.api.persistence.ObsStora
         
     @Required
     @DisplayInfo(desc="List of nodes")
-    public List<String> nodeUrls = new ArrayList<String>();
+    public List<String> nodeUrls = new ArrayList<>();
     
     @Required
     @DisplayInfo(desc="Main index name (if null, the localID of the module is used)")

@@ -19,7 +19,6 @@ import java.util.Iterator;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.support.AbstractClient;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.SearchHit;
 
@@ -112,7 +111,7 @@ public class ESIterator implements Iterator<SearchHit>{
 		if(totalHits == -1) {
 			init();
 		}
-		return (nbHits < totalHits);
+		return nbHits < totalHits;
 	}
 
 	/**

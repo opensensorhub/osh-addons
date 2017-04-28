@@ -75,14 +75,14 @@ import net.opengis.swe.v20.DataBlock;
  */
 public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageModule<ESBasicStorageConfig> {
 
-	private static final String NO_PARENT_VALUE = "-1";
+	private static final String POLYGON_QUERY_ERROR_MSG = "Cannot build polygon geo query";
+    private static final String NO_PARENT_VALUE = "-1";
 	private static final String RESULT_TIME_FIELD_NAME = "resultTime";
 	private static final String SAMPLING_GEOMETRY_FIELD_NAME = "geom";
-	protected final static String FOI_IDX_NAME = "foi";
-	protected final static String GEOBOUNDS_IDX_NAME = "geobounds";
-	protected final static String FOI_UNIQUE_ID_FIELD = "foiID";
-	protected final static String SHAPE_FIELD_NAME = "geom";
-	protected final static String PRODUCER_ID_FIELD_NAME = "producerID";
+	protected static final String FOI_IDX_NAME = "foi";
+	protected static final String GEOBOUNDS_IDX_NAME = "geobounds";
+	protected static final String FOI_UNIQUE_ID_FIELD = "foiID";
+	protected static final String SHAPE_FIELD_NAME = "geom";
 	protected Bbox foiExtent = null;
 	
 	/**
@@ -91,9 +91,10 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	private static final Logger log = LoggerFactory.getLogger(ESObsStorageImpl.class);
 
 	public ESObsStorageImpl() {
-	}
-
-	public ESObsStorageImpl(AbstractClient client) {
+        // default constructor
+    }
+    
+    public ESObsStorageImpl(AbstractClient client) {
 		super(client);
 	}
 	
@@ -184,7 +185,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 				// get the geo query
 				foiFilterQueryBuilder.must(getPolygonGeoQuery(obsFilter.getRoi()));
 			} catch (IOException e) {
-				log.error("[PolygonGeoQueryBuilder] Cannot build the polygon Geo query");
+				log.error(POLYGON_QUERY_ERROR_MSG, e);
 			}
 		}
 		
@@ -314,7 +315,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 				useFoiFilter = true;
 				foiFilterQueryBuilder.must(getPolygonGeoQuery(obsFilter.getRoi()));
 			} catch (IOException e) {
-				log.error("[PolygonGeoQueryBuilder] Cannot build the polygon Geo query");
+				log.error(POLYGON_QUERY_ERROR_MSG, e);
 			}
 		}
 		
@@ -408,7 +409,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 				// build geo query from filter ROI
 				filterQueryBuilder.must(getPolygonGeoQuery(filter.getRoi()));
 			} catch (IOException e) {
-				log.error("[PolygonGeoQueryBuilder] Cannot build the polygon Geo query");
+				log.error(POLYGON_QUERY_ERROR_MSG, e);
 			}
 		}
 
@@ -462,7 +463,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 				// build geo query
 				filterQueryBuilder.must(getPolygonGeoQuery(filter.getRoi()));
 			} catch (IOException e) {
-				log.error("[PolygonGeoQueryBuilder] Cannot build the polygon Geo query");
+				log.error(POLYGON_QUERY_ERROR_MSG, e);
 			}
 		}
 		
@@ -513,7 +514,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 				// build geo query
 				filterQueryBuilder.must(getPolygonGeoQuery(filter.getRoi()));
 			} catch (IOException e) {
-				log.error("[PolygonGeoQueryBuilder] Cannot build the polygon Geo query");
+				log.error(POLYGON_QUERY_ERROR_MSG, e);
 			}
 		}
 		
@@ -538,10 +539,8 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			@Override
 			public AbstractFeature next() {
 				SearchHit nextSearchHit = searchHitsIterator.next();
-
 				// get Feature from blob
-				AbstractFeature f = ESObsStorageImpl.this.<AbstractFeature>getObject(nextSearchHit.getSource().get(BLOB_FIELD_NAME)); // Feature
-				return f;
+				return ESObsStorageImpl.this.<AbstractFeature>getObject(nextSearchHit.getSource().get(BLOB_FIELD_NAME));
 			}
 
 		};
@@ -610,7 +609,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			Object blob = this.getBlob(data);
 			
 			//TOCHECK: do we need to store the whole key?
-			Map<String, Object> json = new HashMap<String, Object>();
+			Map<String, Object> json = new HashMap<>();
 			json.put(TIMESTAMP_FIELD_NAME,key.timeStamp); // store timestamp
 			json.put(PRODUCER_ID_FIELD_NAME,key.producerID); // store producerID
 			json.put(RECORD_TYPE_FIELD_NAME,key.recordType); // store recordType
@@ -626,7 +625,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			// get blob from dataBlock object using serializer
 			Object blob = this.getBlob(data);
 			
-			Map<String, Object> json = new HashMap<String, Object>();
+			Map<String, Object> json = new HashMap<>();
 			json.put(TIMESTAMP_FIELD_NAME,key.timeStamp); // store timestamp
 			
 			if(key.producerID != null) {
@@ -668,7 +667,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			// get blob from dataBlock object using serializer
 			Object blob = this.getBlob(data);
 			
-			Map<String, Object> json = new HashMap<String, Object>();
+			Map<String, Object> json = new HashMap<>();
 			json.put(TIMESTAMP_FIELD_NAME,key.timeStamp); // store timestamp
 			json.put(PRODUCER_ID_FIELD_NAME,key.producerID); // store producerID
 			json.put(RECORD_TYPE_FIELD_NAME,key.recordType); // store recordType
@@ -686,7 +685,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 			// get blob from dataBlock object using serializer
 			Object blob = this.getBlob(data);
 			
-			Map<String, Object> json = new HashMap<String, Object>();
+			Map<String, Object> json = new HashMap<>();
 			json.put(TIMESTAMP_FIELD_NAME,key.timeStamp); // store timestamp
 			
 			if(key.producerID != null) {
@@ -732,7 +731,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		AbstractGeometry geometry = foi.getLocation();
 
 		// build source
-		Map<String, Object> json = new HashMap<String, Object>();
+		Map<String, Object> json = new HashMap<>();
 		json.put(FOI_UNIQUE_ID_FIELD, foi.getUniqueIdentifier()); 
 		json.put(BLOB_FIELD_NAME, this.getBlob(foi)); // store AbstractFeature
 		json.put(PRODUCER_ID_FIELD_NAME, producerID);
@@ -764,18 +763,26 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	 * @throws IOException
 	 */
 	protected synchronized XContentBuilder getFoiMapping() throws IOException {
-		XContentBuilder builder = XContentFactory.jsonBuilder()
-				.startObject()
-					.startObject(FOI_IDX_NAME)
-						.startObject("properties")
-						    .startObject(FOI_UNIQUE_ID_FIELD).field("type", "keyword").endObject()
+		XContentBuilder builder = XContentFactory.jsonBuilder();
+	    try
+        {
+            builder.startObject()
+            		.startObject(FOI_IDX_NAME)
+            			.startObject("properties")
+            			    .startObject(FOI_UNIQUE_ID_FIELD).field("type", "keyword").endObject()
                             .startObject(SHAPE_FIELD_NAME).field("type", "geo_shape").endObject()
-							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "keyword").endObject()
-							.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
-						.endObject()
-					.endObject()
-				.endObject();
-		return builder;
+            				.startObject(PRODUCER_ID_FIELD_NAME).field("type", "keyword").endObject()
+            				.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
+            			.endObject()
+            		.endObject()
+            	.endObject();
+            return builder;
+        }
+        catch (IOException e)
+        {
+            builder.close();
+            throw e;
+        }
 	}
 	
 	/**
@@ -784,15 +791,23 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
      * @throws IOException
      */
     protected synchronized XContentBuilder getFoiBoundsMapping() throws IOException {
-        XContentBuilder builder = XContentFactory.jsonBuilder()
-                .startObject()
-                    .startObject(GEOBOUNDS_IDX_NAME)
-                        .startObject("properties")
-                            .startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
-                        .endObject()
+        XContentBuilder builder = XContentFactory.jsonBuilder();                
+        try
+        {
+            builder.startObject()
+                .startObject(GEOBOUNDS_IDX_NAME)
+                    .startObject("properties")
+                        .startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
                     .endObject()
-                .endObject();
-        return builder;
+                .endObject()
+            .endObject();
+            return builder;
+        }
+        catch (IOException e)
+        {
+            builder.close();
+            throw e;
+        }
     }
 
 	/**
@@ -802,23 +817,31 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	 */
 	@Override
 	protected synchronized XContentBuilder getRsDataMapping() throws IOException {
-		XContentBuilder builder = XContentFactory.jsonBuilder()
-				.startObject()
-					.startObject(RS_DATA_IDX_NAME)
-						.startObject("_parent")
-							.field("type", FOI_IDX_NAME)
-						.endObject()
-						.startObject("properties")
-						    .startObject(TIMESTAMP_FIELD_NAME).field("type", "double").endObject()
-                            .startObject(RECORD_TYPE_FIELD_NAME).field("type", "keyword").endObject()
-							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "keyword").endObject()
-							.startObject(FOI_UNIQUE_ID_FIELD).field("type", "keyword").endObject()
-                            .startObject(SAMPLING_GEOMETRY_FIELD_NAME).field("type", "geo_shape").endObject()
-							.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
-						.endObject()
-					.endObject()
-				.endObject();
-		return builder;
+		XContentBuilder builder = XContentFactory.jsonBuilder();		
+		try
+        {
+            builder.startObject()
+            	.startObject(RS_DATA_IDX_NAME)
+            		.startObject("_parent")
+            			.field("type", FOI_IDX_NAME)
+            		.endObject()
+            		.startObject("properties")
+            		    .startObject(TIMESTAMP_FIELD_NAME).field("type", "double").endObject()
+                        .startObject(RECORD_TYPE_FIELD_NAME).field("type", "keyword").endObject()
+            			.startObject(PRODUCER_ID_FIELD_NAME).field("type", "keyword").endObject()
+            			.startObject(FOI_UNIQUE_ID_FIELD).field("type", "keyword").endObject()
+                        .startObject(SAMPLING_GEOMETRY_FIELD_NAME).field("type", "geo_shape").endObject()
+            			.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
+            		.endObject()
+            	.endObject()
+            .endObject();
+            return builder;
+        }
+        catch (IOException e)
+        {
+            builder.close();
+            throw e;
+        }
 	}
 	
 	/**
@@ -874,7 +897,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	 */
 	protected synchronized ShapeBuilder getShapeBuilder(AbstractGeometry geometry) throws SensorHubException {
 		if(geometry instanceof PolygonJTS) {
-			return getPolygonBuilder(((PolygonJTS)geometry));
+			return getPolygonBuilder((PolygonJTS)geometry);
 		} else if(geometry instanceof PointJTS) {
 			return getPointBuilder((PointJTS)geometry);
 		} else if(geometry instanceof EnvelopeJTS) {

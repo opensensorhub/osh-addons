@@ -81,8 +81,9 @@ public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl>
     	// add transport address(es)
 		Settings settings = Settings.builder()
 		        .put("cluster.name", CLUSTER_NAME).build();
-		TransportClient client = new PreBuiltTransportClient(settings)
-		        .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("localhost"), 9300));
+		
+		TransportClient client = new PreBuiltTransportClient(settings);
+		client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("localhost"), 9300));
 					
 		String idxName = "junit_*";
 

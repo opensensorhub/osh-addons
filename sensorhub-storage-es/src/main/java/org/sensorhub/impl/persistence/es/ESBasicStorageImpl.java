@@ -42,6 +42,7 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.support.AbstractClient;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.transport.TransportAddress;
@@ -88,7 +89,7 @@ import net.opengis.swe.v20.DataEncoding;
  */
 public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> implements IRecordStorageModule<ESBasicStorageConfig> {
 	private static final int TIME_RANGE_CLUSTER_SCROLL_FETCH_SIZE = 5000;
-
+    
 	protected static final double MAX_TIME_CLUSTER_DELTA = 60.0;
 
 	protected static final String RECORD_TYPE_FIELD_NAME = "recordType";
@@ -118,9 +119,9 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * The data index. The data are indexed by their timestamps
 	 * UUID_SOURCE/RECORD_STORE_ID/{ timestamp: <timestamp>, data: <anyData> }
 	 */
-	protected final static String DESC_HISTORY_IDX_NAME = "desc";
-	protected final static String RS_INFO_IDX_NAME = "info";
-	protected final static String RS_DATA_IDX_NAME = "data";
+	protected static final String DESC_HISTORY_IDX_NAME = "desc";
+	protected static final String RS_INFO_IDX_NAME = "info";
+	protected static final String RS_DATA_IDX_NAME = "data";
 	
 	/**
 	 * Use the bulkProcessor to increase perfs when writting and deleting a set of data.
@@ -128,9 +129,10 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	protected BulkProcessor bulkProcessor;
 	protected String indexName;
 	
+	
 	public ESBasicStorageImpl() {
-		
-	}
+	    // default constructor
+    }
 	
 	public ESBasicStorageImpl(AbstractClient client) {
 		this.client = client;
@@ -138,12 +140,12 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	
 	@Override
 	public void backup(OutputStream os) throws IOException {
-		//throw new UnsupportedOperationException("Does not support ES data storage backup");
+		throw new UnsupportedOperationException("Backup");
 	}
 
 	@Override
 	public void restore(InputStream is) throws IOException {
-		//throw new UnsupportedOperationException("Does not support ES data storage restore");
+		throw new UnsupportedOperationException("Restore");
 	}
 
 	@Override
@@ -154,15 +156,12 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 
 	@Override
 	public void rollback() {
-		// ES does not support native transaction
-		//throw new UnsupportedOperationException("Does not support ES data storage rollback");
+		throw new UnsupportedOperationException("Rollback");
 	}
 
 	@Override
 	public void sync(IStorageModule<?> storage) throws StorageException {
-		// TODO Auto-generated method stub
-		//throw new UnsupportedOperationException("Does not support ES data storage synchronization");
-
+		throw new UnsupportedOperationException("Storage Sync");
 	}
 	
 	@Override
@@ -207,9 +206,10 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 					throw new SensorHubException("Cannot initialize transport address",e);
 				}
 			}
-				// build the client
-				client = new PreBuiltTransportClient(settings)
-				        .addTransportAddresses(transportAddresses);
+			
+			// build the client
+			client = new PreBuiltTransportClient(settings);
+			((TransportClient)client).addTransportAddresses(transportAddresses);
 		}	
 		
 		try{
@@ -245,7 +245,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 			if(!exists) {
 				createIndices();
 			}
-		}catch(Throwable ex) {
+		}catch(Exception ex) {
 			log.error("Cannot initialize the client",ex);
 		}
 	}
@@ -307,7 +307,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 
 	@Override
 	public List<AbstractProcess> getDataSourceDescriptionHistory(double startTime, double endTime) {
-		List<AbstractProcess> results = new ArrayList<AbstractProcess>();
+		List<AbstractProcess> results = new ArrayList<>();
 		
 		// query ES to get the corresponding timestamp
 		// the response is applied a post filter allowing to specify a range request on the timestamp
@@ -358,20 +358,20 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 
 	protected boolean storeDataSourceDescription(AbstractProcess process, double time, boolean update) {
 		// prepare source map
-		Map<String, Object> json = new HashMap<String, Object>();
+		Map<String, Object> json = new HashMap<>();
 		json.put(TIMESTAMP_FIELD_NAME,time);
 		json.put(BLOB_FIELD_NAME,this.getBlob(process));
 		
 		if (update) {
 			// prepare update
-			UpdateRequest updateRequest = new UpdateRequest(indexName, DESC_HISTORY_IDX_NAME, time+"");
+			UpdateRequest updateRequest = new UpdateRequest(indexName, DESC_HISTORY_IDX_NAME, Double.toString(time));
 			updateRequest.doc(json);
 			
 			bulkProcessor.add(updateRequest);
             return true;
         } else {
         	// send request and check if the id is not null
-       	 	bulkProcessor.add(client.prepareIndex(indexName,DESC_HISTORY_IDX_NAME).setId(time+"")
+       	 	bulkProcessor.add(client.prepareIndex(indexName,DESC_HISTORY_IDX_NAME).setId(Double.toString(time))
 					.setSource(json).request());
            return true;
         }
@@ -413,7 +413,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 
 	@Override
 	public void removeDataSourceDescription(double time) {
-		DeleteRequest deleteRequest = new DeleteRequest(indexName, DESC_HISTORY_IDX_NAME, time+"");
+		DeleteRequest deleteRequest = new DeleteRequest(indexName, DESC_HISTORY_IDX_NAME, Double.toString(time));
 		bulkProcessor.add(deleteRequest);
 	}
 
@@ -457,7 +457,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// add new record storage
 		Object blob = this.getBlob(rsInfo);
 		
-		Map<String, Object> json = new HashMap<String, Object>();
+		Map<String, Object> json = new HashMap<>();
 		json.put(BLOB_FIELD_NAME,blob);
 		
 		// set id and blob before executing the request
@@ -541,15 +541,14 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
                 clusterTimeRange[0] = lastTime;
                 
                 SearchHit nextSearchHit = null;
-                long storedTimestamp = 0;
-                double recTime = 0.0;
-                double dt = 0.0;
+                double recTime;
+                double dt;
                 
 				while (searchHitsIterator.hasNext()) {
 					nextSearchHit = searchHitsIterator.next();
 					recTime = (double) nextSearchHit.getSource().get(TIMESTAMP_FIELD_NAME);
 
-					synchronized (lastTime) {
+					synchronized (this) {
 						if (Double.isNaN(lastTime)) {
 							clusterTimeRange[0] = recTime;
 							lastTime = recTime;
@@ -736,7 +735,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// get blob from dataBlock object using serializer
 		Object blob = this.getBlob(data);
 		
-		Map<String, Object> json = new HashMap<String, Object>();
+		Map<String, Object> json = new HashMap<>();
 		json.put(TIMESTAMP_FIELD_NAME,key.timeStamp); // store timestamp
 		json.put(PRODUCER_ID_FIELD_NAME,key.producerID); // store producerID
 		json.put(RECORD_TYPE_FIELD_NAME,key.recordType); // store recordType
@@ -761,7 +760,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// get blob from dataBlock object using serializer
 		Object blob = this.getBlob(data);
 		
-		Map<String, Object> json = new HashMap<String, Object>();
+		Map<String, Object> json = new HashMap<>();
 		json.put(TIMESTAMP_FIELD_NAME,key.timeStamp); // store timestamp
 		json.put(PRODUCER_ID_FIELD_NAME,key.producerID); // store producerID
 		json.put(RECORD_TYPE_FIELD_NAME,key.recordType); // store recordType
@@ -909,22 +908,30 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	 * @throws IOException
 	 */
 	protected synchronized XContentBuilder getRsDataMapping() throws IOException {
-		XContentBuilder builder = XContentFactory.jsonBuilder()
-				.startObject()
-					.startObject(RS_DATA_IDX_NAME)
-						.startObject("properties")
-							// map the timestamp as double
-							.startObject(TIMESTAMP_FIELD_NAME).field("type", "double").endObject()
-							// map the record type as keyword (to exact match)
-							.startObject(RECORD_TYPE_FIELD_NAME).field("type", "keyword").endObject()
-							// map the producer id as keyword (to exact match)
-							.startObject(PRODUCER_ID_FIELD_NAME).field("type", "keyword").endObject()
-							// map the blob as binary data
-							.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
-						.endObject()
-					.endObject()
-				.endObject();
-		return builder;
+	    XContentBuilder builder = XContentFactory.jsonBuilder();
+	    try
+        {   		
+            builder.startObject()
+            	.startObject(RS_DATA_IDX_NAME)
+            		.startObject("properties")
+            			// map the timestamp as double
+            			.startObject(TIMESTAMP_FIELD_NAME).field("type", "double").endObject()
+            			// map the record type as keyword (to exact match)
+            			.startObject(RECORD_TYPE_FIELD_NAME).field("type", "keyword").endObject()
+            			// map the producer id as keyword (to exact match)
+            			.startObject(PRODUCER_ID_FIELD_NAME).field("type", "keyword").endObject()
+            			// map the blob as binary data
+            			.startObject(BLOB_FIELD_NAME).field("type", "binary").endObject()
+            		.endObject()
+            	.endObject()
+            .endObject();
+            return builder;
+        }
+        catch (IOException e)
+        {
+            builder.close();
+            throw e;
+        }
 	}
 
     @Override
