@@ -1,9 +1,6 @@
 package org.sensorhub.impl.sensor.station.metar;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardWatchEventKinds;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -11,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimerTask;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
@@ -37,11 +35,15 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 	Map<String, PhysicalSystem> stationFois;
 	Map<String, PhysicalSystem> stationDesc;
 	MetarOutput metarInterface;
-	//    MetarDataPoller metarPoller;
+	private MetarStationMap map;
+	
+	//   For Emwin operation
 	private DirectoryWatcher watcher;
 	private Thread watcherThread;
-	private MetarStationMap map;
-
+	
+	//  For aviationWeather operation
+	
+	
 	public MetarSensor()
 	{
 		this.foiIDs = new LinkedHashSet<String>();
@@ -129,19 +131,20 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 			stationDesc.put(uid, sensorDesc);
 		}
 
-		assert Files.exists(Paths.get(config.emwinRoot));
-		try {
-			watcher = new DirectoryWatcher(Paths.get(config.emwinRoot), StandardWatchEventKinds.ENTRY_CREATE);
-			watcher.addListener(metarInterface);
-			watcherThread = new Thread(watcher);
-			watcherThread.start();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		// Emwin Mode
+//		assert Files.exists(Paths.get(config.emwinRoot));
+//		try {
+//			watcher = new DirectoryWatcher(Paths.get(config.emwinRoot), StandardWatchEventKinds.ENTRY_CREATE);
+//			watcher.addListener(metarInterface);
+//			watcherThread = new Thread(watcher);
+//			watcherThread.start();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		updateSensorDescription();
 	}
-
+	
 	public Station getStation(String stationId) {
 		return map.getStation(stationId);
 	}

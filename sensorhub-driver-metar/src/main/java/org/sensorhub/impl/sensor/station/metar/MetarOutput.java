@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.data.IMultiSourceDataInterface;
@@ -49,17 +50,21 @@ import net.opengis.swe.v20.DataRecord;
 public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IMultiSourceDataInterface, FileListener
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toSeconds(20);
+	private static final int AVERAGE_POLLING_PERIOD = (int)TimeUnit.MINUTES.toMillis(1);
 
 	DataRecord metarRecordStruct;
 	DataEncoding metarRecordEncoding;
-	Timer timer;
 	Map<String, Long> latestUpdateTimes;
-//	MetarDataPoller metarPoller; // constructing in config now  
 	Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
-
+	Timer timer;
+	TimerTask aviationTimerTask;
+	
 	public MetarOutput(MetarSensor parentSensor)
 	{
 		super(parentSensor);
+		aviationTimerTask = new AviationTimerTask(parentSensor.getConfiguration().aviationWeatherUrl);
+		timer = new Timer(true);
+	    timer.scheduleAtFixedRate(aviationTimerTask, 0, AVERAGE_POLLING_PERIOD);
 		latestUpdateTimes = new HashMap<String, Long>();
 	}
 
@@ -187,7 +192,40 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IM
 		}
 		return latestRecords.get(entityID);
 	}
-
+	
+	class AviationTimerTask extends TimerTask {
+		String serverUrl;
+		
+		public AviationTimerTask(String url) {
+			serverUrl = url;
+		}
+		
+		@Override
+		public void run() {
+			MetarAviationWeatherReader reader = new MetarAviationWeatherReader("https://aviationweather.gov/adds/dataserver_current/current/metars.cache.csv");
+			try {
+				List<Metar> metars = reader.read();
+				for(Metar metar: metars) {
+					try {
+						metar.timeUtc = MetarParserNew.computeTimeUtc(metar.dateString);
+						// TODO Fix the time!!
+						latestUpdateTimes.put(metar.stationID, metar.timeUtc);
+						latestRecordTime = System.currentTimeMillis();
+						String stationUID = MetarSensor.STATION_UID_PREFIX + metar.stationID;
+						latestRecord = metarRecordToDataBlock(metar.stationID, metar);
+						latestRecords.put(stationUID, latestRecord);   
+					} catch (Exception e) {
+						e.printStackTrace(System.err);
+						continue;
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	// 	The Emwin way- going away soon
 	@Override
 	public void newFile(Path p) throws IOException {
 		System.err.println("New File: " + p);

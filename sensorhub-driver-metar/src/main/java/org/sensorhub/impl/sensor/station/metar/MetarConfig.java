@@ -35,12 +35,5 @@ public class MetarConfig extends SensorConfig
     public String emwinRoot;
 	public String metarStationMapPath;
 	
-    public String serverUrl; // = "http://webservices.anythingweather.com/CurrentObs/GetCurrentObs";
-    public String serverPath; // = "http://webservices.anythingweather.com/CurrentObs/GetCurrentObs";
-    
-    /**
-     * List of station IDs to get data for
-     */
-    @DisplayInfo(label="Station IDs", desc="List of station IDs to get data for")
-    public List<String> stationIDs = new ArrayList<String>();
+	public String aviationWeatherUrl;
 }
