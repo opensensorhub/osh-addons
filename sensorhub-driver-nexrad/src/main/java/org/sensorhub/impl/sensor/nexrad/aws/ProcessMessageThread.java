@@ -39,7 +39,7 @@ public class ProcessMessageThread implements Runnable {
 				String chunkPath = AwsNexradUtil.getChunkPath(body);
 				//				String time = AwsNexradUtil.getEventTime(body);
 				String site = chunkPath.substring(0, 4);
-				System.err.println(chunkPath);
+//				System.err.println(chunkPath);
 				if(sitesToKeep.contains(site)) {
 					chunkQueueManager.addChunkPath(site, chunkPath);
 				}
