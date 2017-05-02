@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.nio.ByteBuffer;
+import java.util.PriorityQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.swe.Base64Decoder;
@@ -51,16 +52,22 @@ public class RTPH264Receiver extends Thread
     static final int NALU_SPS = 7;
     static final int NALU_PPS = 8;
     
+    volatile boolean started;
     String remoteHost;
     int localPort;
-    DatagramSocket rtpSocket;
-    volatile boolean started;    
+    DatagramSocket rtpSocket;    
     RTPH264Callback callback;
+    PriorityQueue<RTPPacket> pktQueue;
+    byte[] payload;
+    ByteBuffer dataBuf;
+    long expandedSeqNum = Long.MIN_VALUE;
+    long lastSeqNum = Long.MIN_VALUE; // last processed sequence number
+    boolean discardNAL = false;
     boolean spsReceived = false;
     boolean ppsReceived = false;
     boolean injectParamSets = false;
     byte[] sps, pps;
-    
+        
     
     public RTPH264Receiver(String remoteHost, int localPort, RTPH264Callback callback)
     {
@@ -114,11 +121,13 @@ public class RTPH264Receiver extends Thread
 
             final byte[] receiveData = new byte[MAX_DATAGRAM_SIZE];
             final DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            final byte[] payload = new byte[MAX_DATAGRAM_SIZE];            
-            final ByteBuffer dataBuf = ByteBuffer.allocate(MAX_FRAME_SIZE);
             
-            boolean discardNAL = false;
-            int lastSeqNum = 0;
+            discardNAL = false;
+            spsReceived = false;
+            ppsReceived = false;
+            payload = new byte[MAX_DATAGRAM_SIZE];            
+            dataBuf = ByteBuffer.allocate(MAX_FRAME_SIZE);
+            pktQueue = new PriorityQueue<>();            
             
             while (started)
             {
@@ -129,133 +138,179 @@ public class RTPH264Receiver extends Thread
                 RTPPacket rtpPacket = new RTPPacket(receiveData, length);
                 if (log.isTraceEnabled())
                 {
-                    log.trace("RTP packet: seqNum=" + rtpPacket.getSequenceNumber() +
+                    log.trace("Received RTP packet: seqNum=" + rtpPacket.getSequenceNumber() +
                               ", timeStamp=" + rtpPacket.getTimeStamp() +
                               ", payloadType=" + rtpPacket.getPayloadType());
                 }
-    
-                // get the payload bitstream from the RTPpacket object
-                int payload_length = rtpPacket.getPayload(payload);
                 
-                // to discard entire NAL unit when a packet is lost
-                if (lastSeqNum > 0 && rtpPacket.sequenceNumber > lastSeqNum+1) {
-                    log.trace("Packet Lost");
-                    discardNAL = true;
-                }
-                lastSeqNum = rtpPacket.sequenceNumber;
+                // add packet to re-ordering queue
+                pktQueue.add(expandSeqNum(rtpPacket));
                 
-                if (rtpPacket.payloadType == 96)
+                // process all packets in queue
+                while (!pktQueue.isEmpty())
                 {
-                    int packetType = (payload[0] & 0x1F);
-                    log.trace("H264 RTP packet type = {}", packetType);
+                    long nextSeqNumInQueue = pktQueue.peek().expandedSequenceNumber;
+                    long nextSeqNum = lastSeqNum + 1;
                     
-                    // case of fragmented packet (FU-4)
-                    if (packetType == FU4_PACKET_TYPE)
+                    if (lastSeqNum == Long.MIN_VALUE || nextSeqNumInQueue == nextSeqNum)
                     {
-                        int nalUnitType = payload[1] & 0x1F;
-                        boolean startNalUnit = (payload[1] & 0x80) != 0;
-                        
-                        if (injectParamSets && startNalUnit)
-                        {
-                            // inject SPS and PPS before key frame
-                            if (nalUnitType == NALU_KEYFRAME)
-                            {
-                                log.trace("Injecting SPS and PPS NAL units");
-                                dataBuf.put(NAL_UNIT_MARKER);
-                                dataBuf.put(sps);
-                                dataBuf.put(NAL_UNIT_MARKER);
-                                dataBuf.put(pps);
-                                spsReceived = true;
-                                ppsReceived = true;
-                            }
-                        }
-                        
-                        if (spsReceived && ppsReceived)
-                        {
-                            // if start of NAL unit
-                            if (startNalUnit) 
-                            {
-                                log.trace("FU-4: Start NAL unit, type = {}", nalUnitType);
-                                dataBuf.put(NAL_UNIT_MARKER);
-                                dataBuf.put((byte)((payload[0] & 0xE0) + nalUnitType));
-                            }
-                            
-                            // copy NAL fragment
-                            dataBuf.put(payload, 2, payload_length-2);
-                                    
-                            // if end of NAL unit
-                            if ((payload[1] & 0x40) != 0)
-                            {
-                                log.trace("FU-4: End NAL unit, type = {}", nalUnitType);
-                                
-                                if (!discardNAL)
-                                {
-                                    dataBuf.flip();
-                                    callback.onFrame(rtpPacket.getTimeStamp() & 0xFFFFFFFF, rtpPacket.getSequenceNumber(), dataBuf, discardNAL);
-                                    
-                                    // copy buffer
-                                    final ByteBuffer newBuf = ByteBuffer.allocate(dataBuf.limit());
-                                    newBuf.put(dataBuf);
-                                    newBuf.flip();
-                                }
-                                else
-                                    log.trace("FU-4: Discarded");
-                                
-                                discardNAL = false;
-                                dataBuf.clear();
-                            }
-                        }
+                        RTPPacket nextPacket = pktQueue.poll();
+                        log.trace("Processing packet {} -> {}", nextPacket.sequenceNumber, nextPacket.expandedSequenceNumber);
+                        processPacket(nextPacket);
+                        lastSeqNum = nextPacket.expandedSequenceNumber;
                     }
-                    
-                    // single time aggregation units
-                    else if (packetType == STAPA_PACKET_TYPE)
+                    else
                     {
-                        int index = 1;
-                        while (index+1 < payload_length)
+                        log.trace("Waiting for packet {}, Queue size: {}", nextSeqNum, pktQueue.size());
+                        
+                        // discard old packets and current NAL unit if we cannot wait anymore
+                        if (pktQueue.size() > 10)
                         {
-                            int nalSize = ((payload[index] & 0xFF) << 8) | (payload[index+1] & 0xFF);
-                            if (nalSize == 0)
-                                break;
-                            
-                            index += 2;
-                            int nalUnitType = payload[index] & 0x1F;
-                            log.trace("STAP NAL unit, type = " + nalUnitType);
-                            
-                            // write nal unit to buffer with a marker
-                            dataBuf.put(NAL_UNIT_MARKER);
-                            dataBuf.put(payload, index, nalSize);                            
-                            index += nalSize;
-                            
-                            // mark when SPS and PPS are received
-                            if (nalUnitType == NALU_SPS)
-                                spsReceived = true;
-                            else if (nalUnitType == NALU_PPS)
-                                ppsReceived = true;
+                            log.debug("Lost packet {}, Dropping frame", nextSeqNum);
+                            lastSeqNum = pktQueue.peek().expandedSequenceNumber - 1;
+                            discardNAL = true;
                         }
-                    }
-                    
-                    // case of single NAL unit directly as payload
-                    else if (packetType <= SINGLE_NALU_PACKET_TYPE)
-                    {
-                        int nalUnitType = packetType;
-                        log.trace("Single NAL unit, type = " + packetType);
                         
-                        dataBuf.put(NAL_UNIT_MARKER);
-                        dataBuf.put(payload, 0, payload_length);
-                        
-                        // mark when SPS and PPS are received
-                        if (nalUnitType == NALU_SPS)
-                            spsReceived = true;
-                        else if (nalUnitType == NALU_PPS)
-                            ppsReceived = true;
+                        break;
                     }
                 }
             }
         }
-        catch (Throwable e)
+        catch (Exception e)
         {
             if (started)
                 log.error("Error while demuxing H264 RTP stream", e);
+        }
+    }
+    
+    
+    /*
+     * Utility method to expand the rolling sequence number to a
+     * 64-bits integer for proper sorting
+     */
+    protected RTPPacket expandSeqNum(RTPPacket pkt)
+    {
+        if (expandedSeqNum == Long.MIN_VALUE)
+            expandedSeqNum = pkt.sequenceNumber;
+        
+        expandedSeqNum += (short)(pkt.sequenceNumber - expandedSeqNum);
+        pkt.expandedSequenceNumber = expandedSeqNum;
+        
+        return pkt;
+    }
+    
+    
+    protected void processPacket(RTPPacket rtpPacket)
+    {
+        // get the payload bitstream from the RTPpacket object
+        int payload_length = rtpPacket.getPayload(payload);
+        
+        if (rtpPacket.payloadType == 96)
+        {
+            int packetType = (payload[0] & 0x1F);
+            log.trace("H264 RTP packet type = {}", packetType);
+            
+            // case of fragmented packet (FU-4)
+            if (packetType == FU4_PACKET_TYPE)
+            {
+                int nalUnitType = payload[1] & 0x1F;
+                boolean startNalUnit = (payload[1] & 0x80) != 0;
+                
+                if (injectParamSets && startNalUnit)
+                {
+                    // inject SPS and PPS before key frame
+                    if (nalUnitType == NALU_KEYFRAME)
+                    {
+                        log.trace("Injecting SPS and PPS NAL units");
+                        dataBuf.put(NAL_UNIT_MARKER);
+                        dataBuf.put(sps);
+                        dataBuf.put(NAL_UNIT_MARKER);
+                        dataBuf.put(pps);
+                        spsReceived = true;
+                        ppsReceived = true;
+                    }
+                }
+                
+                if (spsReceived && ppsReceived)
+                {
+                    // if start of NAL unit
+                    if (startNalUnit) 
+                    {
+                        log.trace("FU-4: Start NAL unit, type = {}", nalUnitType);
+                        discardNAL = false;
+                        dataBuf.put(NAL_UNIT_MARKER);
+                        dataBuf.put((byte)((payload[0] & 0xE0) + nalUnitType));
+                    }
+                    
+                    // copy NAL fragment
+                    dataBuf.put(payload, 2, payload_length-2);
+                            
+                    // if end of NAL unit
+                    if ((payload[1] & 0x40) != 0)
+                    {
+                        log.trace("FU-4: End NAL unit, type = {}", nalUnitType);
+                        
+                        if (!discardNAL)
+                        {
+                            dataBuf.flip();
+                            callback.onFrame(rtpPacket.getTimeStamp() & 0xFFFFFFFF, rtpPacket.getSequenceNumber(), dataBuf, discardNAL);
+                            
+                            // copy buffer
+                            final ByteBuffer newBuf = ByteBuffer.allocate(dataBuf.limit());
+                            newBuf.put(dataBuf);
+                            newBuf.flip();
+                        }
+                        else
+                            log.trace("FU-4: Discarded");
+                        
+                        discardNAL = false;
+                        dataBuf.clear();
+                    }
+                }
+            }
+            
+            // single time aggregation units
+            else if (packetType == STAPA_PACKET_TYPE)
+            {
+                int index = 1;
+                while (index+1 < payload_length)
+                {
+                    int nalSize = ((payload[index] & 0xFF) << 8) | (payload[index+1] & 0xFF);
+                    if (nalSize == 0)
+                        break;
+                    
+                    index += 2;
+                    int nalUnitType = payload[index] & 0x1F;
+                    log.trace("STAP NAL unit, type = {}", nalUnitType);
+                    
+                    // write nal unit to buffer with a marker
+                    dataBuf.put(NAL_UNIT_MARKER);
+                    dataBuf.put(payload, index, nalSize);                            
+                    index += nalSize;
+                    
+                    // mark when SPS and PPS are received
+                    if (nalUnitType == NALU_SPS)
+                        spsReceived = true;
+                    else if (nalUnitType == NALU_PPS)
+                        ppsReceived = true;
+                }
+            }
+            
+            // case of single NAL unit directly as payload
+            else if (packetType <= SINGLE_NALU_PACKET_TYPE)
+            {
+                int nalUnitType = packetType;
+                log.trace("Single NAL unit, type = {}", packetType);
+                
+                dataBuf.put(NAL_UNIT_MARKER);
+                dataBuf.put(payload, 0, payload_length);
+                
+                // mark when SPS and PPS are received
+                if (nalUnitType == NALU_SPS)
+                    spsReceived = true;
+                else if (nalUnitType == NALU_PPS)
+                    ppsReceived = true;
+            }
         }
     }
     

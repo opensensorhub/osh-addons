@@ -23,10 +23,10 @@ package org.sensorhub.impl.sensor.rtpcam;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Dec 14, 2015
  */
-public class RTPPacket
+public class RTPPacket implements Comparable<RTPPacket>
 {
     // size of the RTP header:
-    static int HEADER_SIZE = 12;
+    static final int HEADER_SIZE = 12;
 
     // fields that compose the RTP header
     public int version;
@@ -36,6 +36,7 @@ public class RTPPacket
     public int marker;
     public int payloadType;
     public int sequenceNumber;
+    public long expandedSequenceNumber;
     public int timeStamp;
     public int ssrc;
 
@@ -185,7 +186,7 @@ public class RTPPacket
     public int getSequenceNumber()
     {
         return (sequenceNumber);
-    }
+    } 
 
 
     /**
@@ -194,5 +195,12 @@ public class RTPPacket
     public int getPayloadType()
     {
         return (payloadType);
+    }
+
+
+    @Override
+    public int compareTo(RTPPacket other)
+    {
+        return (int)(expandedSequenceNumber - other.expandedSequenceNumber); 
     }
 }
