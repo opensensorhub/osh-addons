@@ -1,4 +1,4 @@
-### USGS Water Data Archive
+### USGS Water Data Live
 
 This module implements the storage API and connects to USGS web archive for water data. It retrieves observations on-demand using USGS web service.
 

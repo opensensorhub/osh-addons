@@ -82,7 +82,7 @@ public class TestUSGSWaterDriver implements IEventListener
     public void testSendMeasurements() throws Exception
     {
         System.out.println();
-        ISensorDataInterface waterOutput = driver.getObservationOutputs().get("discharge");
+        ISensorDataInterface waterOutput = driver.getObservationOutputs().get("All-Data");
         
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));

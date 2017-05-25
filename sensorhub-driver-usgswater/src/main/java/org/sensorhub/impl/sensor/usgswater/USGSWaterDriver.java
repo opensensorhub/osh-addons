@@ -71,11 +71,13 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     BufferedReader reader;
     Set<CountyCode> countyCode;
     CountyCode county;
+    List<String> qualCodes = new ArrayList<String>();
+    
     Set<String> foiIDs;
     Map<String, AbstractFeature> siteFois = new LinkedHashMap<>();
     Map<String, PhysicalSystem> siteDesc = new LinkedHashMap<>();
     Map<String, RecordStore> dataStores = new LinkedHashMap<>();
-    List<String> qualCodes = new ArrayList<String>();
+    
     
     List<USGSDataRecord> waterTempRecList = new ArrayList<USGSDataRecord>();
     List<USGSDataRecord> dischargeRecList = new ArrayList<USGSDataRecord>();
@@ -125,7 +127,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
         
         loadQualCodes();
         // generate identifiers
-        this.uniqueID = "urn:usgs:water:network";
+        this.uniqueID = "urn:usgs:water:live";
         this.xmlID = "USGS_WATER_DATA_NETWORK";
         
         if (config.exposeFilter.parameters.contains(ObsParam.WATER_TEMP))
