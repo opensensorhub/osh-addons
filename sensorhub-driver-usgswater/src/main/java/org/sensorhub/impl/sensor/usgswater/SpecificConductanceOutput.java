@@ -17,7 +17,6 @@ package org.sensorhub.impl.sensor.usgswater;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,6 @@ import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
-import org.vast.swe.helper.GeoPosHelper;
 
 
 /**
@@ -70,13 +68,13 @@ public class SpecificConductanceOutput extends AbstractSensorOutput <USGSWaterDr
         dataStruct = swe.newDataRecord(5);
         dataStruct.setName(getName());
         dataStruct.setDefinition("http://sensorml.com/ont/swe/property/SpecificConductance");
-        dataStruct.addComponent("time", swe.newTimeStampIsoUTC());
+        dataStruct.addField("time", swe.newTimeStampIsoUTC());
         
         // Set definitions to NULL so these outputs are not observable
-        dataStruct.addComponent("site", swe.newText(null, "Site ID", null));
+        dataStruct.addField("site", swe.newText(null, "Site ID", null));
         dataStruct.getFieldList().getProperty("site").setRole(ENTITY_ID_URI); // tag with entity ID role
-        dataStruct.addComponent("location", swe.newVector(null, SWEConstants.REF_FRAME_4326, new String[]{"lat","lon"}, new String[] {"Geodetic Latitude", "Longitude"}, new String[] {"deg", "deg"}, new String[] {"Lat", "Long"}));
-        dataStruct.addComponent("specific_conductance", swe.newQuantity(null, "Specific Conductance", "Specific Conductance parameter, USGS code 00095", "uS/cm"));
+        dataStruct.addField("location", swe.newVector(null, SWEConstants.REF_FRAME_4326, new String[]{"lat","lon"}, new String[] {"Geodetic Latitude", "Longitude"}, new String[] {"deg", "deg"}, new String[] {"Lat", "Long"}));
+        dataStruct.addField("specific_conductance", swe.newQuantity(null, "Specific Conductance", "Specific Conductance parameter, USGS code 00095", "uS/cm"));
         
         // use text encoding with "," separators
         encoding = swe.newTextEncoding(",", "\n");

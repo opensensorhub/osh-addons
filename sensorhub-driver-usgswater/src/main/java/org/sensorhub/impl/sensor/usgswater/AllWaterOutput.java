@@ -75,12 +75,12 @@ public class AllWaterOutput extends AbstractSensorOutput <USGSWaterDriver> imple
         {
         	String paramName = param.name().toLowerCase();
         	dataStruct = swe.newDataRecord(5);
-        	dataStruct.addComponent("time", swe.newTimeStampIsoUTC());
+        	dataStruct.addField("time", swe.newTimeStampIsoUTC());
         	
             // Set definitions to NULL so these outputs are not observable
-            dataStruct.addComponent("site", swe.newText(null, "Site ID", null));
+            dataStruct.addField("site", swe.newText(null, "Site ID", null));
             dataStruct.getFieldList().getProperty("site").setRole(ENTITY_ID_URI); // tag with entity ID role
-            dataStruct.addComponent("location", swe.newVector(null, SWEConstants.REF_FRAME_4326, new String[]{"lat","lon"}, new String[] {"Geodetic Latitude", "Longitude"}, new String[] {"deg", "deg"}, new String[] {"Lat", "Long"}));
+            dataStruct.addField("location", swe.newVector(null, SWEConstants.REF_FRAME_4326, new String[]{"lat","lon"}, new String[] {"Geodetic Latitude", "Longitude"}, new String[] {"deg", "deg"}, new String[] {"Lat", "Long"}));
             
         	DataComponent c = swe.newQuantity(
         			null,
@@ -89,7 +89,7 @@ public class AllWaterOutput extends AbstractSensorOutput <USGSWaterDriver> imple
         			getUom(param),
         			DataType.FLOAT);
         	
-        	dataStruct.addComponent(paramName, c);
+        	dataStruct.addField(paramName, c);
         	dataChoice.addItem(getItemName(param), dataStruct);
         	dataStruct.clearData();
         }

@@ -97,6 +97,9 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     
     public USGSWaterDriver()
     {
+    	this.foiIDs = new LinkedHashSet<String>();
+	    this.siteFois = new LinkedHashMap<String, AbstractFeature>();
+	    this.siteDesc = new LinkedHashMap<String, PhysicalSystem>();
     }
     
     @Override
@@ -111,10 +114,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
         super.init();
         
     	this.countyCode = new LinkedHashSet<CountyCode>();
-    	this.foiIDs = new LinkedHashSet<String>();
-	    this.siteFois = new LinkedHashMap<String, AbstractFeature>();
-	    this.siteDesc = new LinkedHashMap<String, PhysicalSystem>();
-        
+
 //        try {populateCountyCodes();}
 //        catch (IOException e) {e.printStackTrace();}
         
@@ -172,13 +172,13 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
         	addOutput(pHOut, false);
         	pHOut.init();
         }
-        
-        if (!config.exposeFilter.parameters.isEmpty())
-        {
-        	this.allOut = new AllWaterOutput(this);
-        	addOutput(allOut, false);
-        	allOut.init();
-        }
+        // COMMENT OUT FOR NOW
+//        if (!config.exposeFilter.parameters.isEmpty())
+//        {
+//        	this.allOut = new AllWaterOutput(this);
+//        	addOutput(allOut, false);
+//        	allOut.init();
+//        }
     }
 
 	public void populateCountyCodes() throws IOException
@@ -330,7 +330,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 //							System.out.println("[" + r.getDataType() + "," + r.getTimeStamp() + "," + r.getSiteCode() + "," + r.getSiteLat() + "," + r.getSiteLon() + "," + r.getDataValue() + "]");
 //						System.out.println();
 						// send to output publishData()
-						allOut.publishData(allRecList);
+//						allOut.publishData(allRecList); // COMMENT OUT FOR NOW
 						allRecList.clear();
 					}
 					

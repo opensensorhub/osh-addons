@@ -17,7 +17,6 @@ package org.sensorhub.impl.sensor.usgswater;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,6 @@ import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
-import org.vast.swe.helper.GeoPosHelper;
 
 
 /**
@@ -70,13 +68,13 @@ public class WaterTempCelsiusOutput extends AbstractSensorOutput <USGSWaterDrive
         dataStruct = swe.newDataRecord(5);
         dataStruct.setName(getName());
         dataStruct.setDefinition("http://sensorml.com/ont/swe/property/WaterTempCelsius");
-        dataStruct.addComponent("time", swe.newTimeStampIsoUTC());
+        dataStruct.addField("time", swe.newTimeStampIsoUTC());
         
         // Set definitions to NULL so these outputs are not observable
-        dataStruct.addComponent("site", swe.newText(null, "Site ID", null));
+        dataStruct.addField("site", swe.newText(null, "Site ID", null));
         dataStruct.getFieldList().getProperty("site").setRole(ENTITY_ID_URI); // tag with entity ID role
-        dataStruct.addComponent("location", swe.newVector(null, SWEConstants.REF_FRAME_4326, new String[]{"lat","lon"}, new String[] {"Geodetic Latitude", "Longitude"}, new String[] {"deg", "deg"}, new String[] {"Lat", "Long"}));
-        dataStruct.addComponent("water_temp_celsius", swe.newQuantity(null, "Water Temperature", "Water Temperature parameter, USGS code 00010", "Cel"));
+        dataStruct.addField("location", swe.newVector(null, SWEConstants.REF_FRAME_4326, new String[]{"lat","lon"}, new String[] {"Geodetic Latitude", "Longitude"}, new String[] {"deg", "deg"}, new String[] {"Lat", "Long"}));
+        dataStruct.addField("water_temp_celsius", swe.newQuantity(null, "Water Temperature", "Water Temperature parameter, USGS code 00010", "Cel"));
         
         // use text encoding with "," separators
         encoding = swe.newTextEncoding(",", "\n");
