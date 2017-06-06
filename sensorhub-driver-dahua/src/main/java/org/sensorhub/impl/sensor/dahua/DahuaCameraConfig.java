@@ -72,6 +72,7 @@ public class DahuaCameraConfig extends SensorConfig
     
     public enum ResolutionEnum implements VideoResolution
     {
+    	CIF("CIF", 352, 240),
         D1("D1", 704, 480),
         HD_720P("HD", 1280, 720),
         HD_1080P("Full HD", 1920, 1080);
