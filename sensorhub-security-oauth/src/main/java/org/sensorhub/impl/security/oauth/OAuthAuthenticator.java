@@ -89,7 +89,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
         {
             HttpServletRequest request = (HttpServletRequest) req;
             HttpServletResponse response = (HttpServletResponse) resp;
-            String redirectUrl = request.getRequestURL().toString();
+            String redirectUrl = config.redirectURL != null ? config.redirectURL : request.getRequestURL().toString();
             HttpSession session = request.getSession(true);
             
             // check for cached auth
@@ -102,7 +102,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     return cachedAuth;
             }
             
-            // if calling back from provider with oauth code
+            // if calling back from provider with auth code
             if (generatedState != null && request.getParameter(OAuth.OAUTH_CODE) != null)
             {
                 try
