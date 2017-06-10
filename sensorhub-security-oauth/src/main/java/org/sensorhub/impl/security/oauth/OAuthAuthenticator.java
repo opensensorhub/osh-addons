@@ -195,7 +195,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
         while (reader.hasNext())
         {
             String name = reader.nextName();
-            if ("id".equals(name) || "user_id".equals(name))
+            if ("id".equals(name) || "user_id".equals(name) || "uid".equals(name))
                 userId = reader.nextString();
             else
                 reader.skipValue();
