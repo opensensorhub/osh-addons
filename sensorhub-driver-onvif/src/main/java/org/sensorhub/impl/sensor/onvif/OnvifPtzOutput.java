@@ -15,12 +15,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.onvif;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
@@ -29,7 +23,6 @@ import java.util.TimerTask;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.TextEncoding;
-import org.sensorhub.api.sensor.SensorException;
 import org.onvif.ver10.schema.FloatRange;
 import org.onvif.ver10.schema.PTZVector;
 import org.onvif.ver10.schema.Profile;
@@ -49,8 +42,8 @@ import de.onvif.soap.OnvifDevice;
  * </p>
  *
  * 
- * @author Mike Botts <mike.botts@botts-inc.com>
- * @since October 30, 2014
+ * @author Joshua Wolfe <developer.wolfe@gmail.com>
+ * @since June 13, 2017
  */
 
 public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>

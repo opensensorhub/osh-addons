@@ -37,15 +37,15 @@ import org.vast.data.DataBlockMixed;
 
 /**
  * <p>
- * Implementation of sensor interface for generic Axis Cameras using IP
+ * Implementation of sensor interface for generic cameras using ONVIF
  * protocol. This particular class provides time-tagged video output from the video
  * camera capabilities.
  * </p>
  * 
- * @author Mike Botts <mike.botts@botts-inc.com>
- * @since October 30, 2014
+ * @author Joshua Wolfe <developer.wolfe@gmail.com>
+ * @since June 13, 2017
  */
-public class OnvifVideoOutput extends AbstractSensorOutput < OnvifCameraDriver > {
+public class OnvifVideoOutput extends AbstractSensorOutput <OnvifCameraDriver> {
     DataComponent videoDataStruct;
     DataEncoding videoEncoding;
     boolean reconnect;

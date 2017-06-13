@@ -18,7 +18,6 @@ package org.sensorhub.impl.sensor.onvif;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.sensor.SensorConfig;
-import org.sensorhub.impl.sensor.videocam.ptz.PtzConfig;
 
 /**
  * <p>
