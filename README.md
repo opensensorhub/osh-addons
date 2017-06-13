@@ -6,6 +6,7 @@ This repository contains various add-on modules for handling everything that has
   - [sensorhub-driver-rtpcam](sensorhub-driver-rtpcam)
   - [sensorhub-driver-axis](sensorhub-driver-axis)
   - [sensorhub-driver-dahua](sensorhub-driver-dahua) 
+  - [sensorhub-driver-onvif](sensorhub-driver-onvif)
   - [sensorhub-driver-virb-xe](sensorhub-driver-virb-xe)  
   - [sensorhub-driver-v4l](sensorhub-driver-v4l)
 
