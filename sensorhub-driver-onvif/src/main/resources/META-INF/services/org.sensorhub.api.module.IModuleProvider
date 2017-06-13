@@ -1,1 +1,1 @@
-org.sensorhub.impl.sensor.axis.AxisCameraDescriptor
+org.sensorhub.impl.sensor.onvif.OnvifCameraDescriptor
