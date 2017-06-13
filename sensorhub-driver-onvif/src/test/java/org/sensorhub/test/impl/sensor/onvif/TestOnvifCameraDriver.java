@@ -38,6 +38,7 @@ import org.onvif.ver10.schema.PTZConfiguration;
 import org.onvif.ver10.schema.PTZVector;
 import org.onvif.ver10.schema.Profile;
 import org.onvif.ver10.schema.VideoSource;
+import org.sensorhub.api.common.CommandStatus;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorControlInterface;
@@ -133,13 +134,61 @@ public class TestOnvifCameraDriver implements IEventListener
         // get ptz control interface
         ISensorControlInterface ci = driver.getCommandInputs().get("ptzControl");
         DataComponent commandDesc = ci.getCommandDescription().copy();
-        
 
+        // instantiate command data block and status
         DataBlock commandData;
+        CommandStatus cs;
+
+        // Absolute Pan
+        ((DataChoiceImpl) commandDesc).setSelectedItem("pan");
+        commandData = commandDesc.createDataBlock();
+        commandData.setFloatValue(1, 0.0f);
+        cs = ci.execCommand(commandData);
+        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
+
+        // Absolute Tilt
+        ((DataChoiceImpl) commandDesc).setSelectedItem("tilt");
+        commandData = commandDesc.createDataBlock();
+        commandData.setFloatValue(1, 0.0f);
+        cs = ci.execCommand(commandData);
+        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
+
+        // Absolute Zoom
+        ((DataChoiceImpl) commandDesc).setSelectedItem("zoom");
+        commandData = commandDesc.createDataBlock();
+        commandData.setFloatValue(1, 0.0f);
+        cs = ci.execCommand(commandData);
+        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
+
+        // Absolute PTZ
+        ((DataChoiceImpl) commandDesc).setSelectedItem("ptzPos");
+        commandData = commandDesc.createDataBlock();
+        commandData.setFloatValue(1, 0.25f);
+        commandData.setFloatValue(2, -0.25f);
+        commandData.setFloatValue(3, 0.50f);
+        cs = ci.execCommand(commandData);
+        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
+        
+        // Relative Pan
+        ((DataChoiceImpl) commandDesc).setSelectedItem("rpan");
+        commandData = commandDesc.createDataBlock();
+        commandData.setFloatValue(1, -0.25f);
+        cs = ci.execCommand(commandData);
+        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
+
+        // Relative Tilt
+        ((DataChoiceImpl) commandDesc).setSelectedItem("rtilt");
+        commandData = commandDesc.createDataBlock();
+        commandData.setFloatValue(1, -0.25f);
+        cs = ci.execCommand(commandData);
+        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
+
+        // Relative Zoom
         ((DataChoiceImpl) commandDesc).setSelectedItem("rzoom");
         commandData = commandDesc.createDataBlock();
-        commandData.setFloatValue(1, 0.5f);
-        ci.execCommand(commandData);
+        commandData.setFloatValue(1, 0.50f);
+        cs = ci.execCommand(commandData);
+        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
     }
 
     @Override
