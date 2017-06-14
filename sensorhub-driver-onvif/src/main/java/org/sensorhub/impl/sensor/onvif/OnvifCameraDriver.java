@@ -93,7 +93,11 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         }
 
         try {
-			camera = new OnvifDevice(hostIp, user, password);
+        	if (user == null || password == null)
+				camera = new OnvifDevice(hostIp);
+        	else
+				camera = new OnvifDevice(hostIp, user, password);
+
 			camera.getSoap().setLogging(false);
 		} catch (ConnectException e) {
         	throw new SensorHubException("Exception occured when connecting to camera");
@@ -103,7 +107,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         
         List<Profile> profiles = camera.getDevices().getProfiles();
         
-        if (profiles.isEmpty()) {
+        if (profiles == null || profiles.isEmpty()) {
         	throw new SensorHubException("Camera does not have any profiles to use");
         }
         
