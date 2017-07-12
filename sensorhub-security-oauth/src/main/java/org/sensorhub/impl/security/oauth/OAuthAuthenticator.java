@@ -22,8 +22,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-
-import org.apache.commons.codec.binary.Base64;
 import org.apache.oltu.oauth2.client.OAuthClient;
 import org.apache.oltu.oauth2.client.URLConnectionClient;
 import org.apache.oltu.oauth2.client.request.OAuthBearerClientRequest;
@@ -118,14 +116,8 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     if (!generatedState.equals(oar.getState()))
                         throw OAuthProblemException.error("Invalid state parameter");
 
-                    OAuthClientRequest authRequest = OAuthClientRequest.tokenLocation(config.tokenEndpoint).setCode(code)
+                    OAuthClientRequest authRequest = OAuthClientRequest.tokenLocation(config.tokenEndpoint).setCode(code).setClientId(config.clientID).setClientSecret(config.clientSecret)
                             .setRedirectURI(redirectUrl).setGrantType(GrantType.AUTHORIZATION_CODE).buildBodyMessage();
-
-                    String authString = config.clientID +":"+config.clientSecret;
-                    byte[] authEncBytes = Base64.encodeBase64(authString.getBytes());
-                    String authStringEnc = new String(authEncBytes);
-
-                    authRequest.addHeader("Authorization", "Basic "+authStringEnc);
                     authRequest.addHeader("Accept", "application/json");
 
                     OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
@@ -137,7 +129,6 @@ public class OAuthAuthenticator extends LoginAuthenticator
 
                     // request user info
                     OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint).setAccessToken(accessToken).buildQueryMessage();
-                    bearerClientRequest.addHeader("Authorization", accessToken);
                     OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, HttpMethod.GET, OAuthResourceResponse.class);
 
                     // parse user info
