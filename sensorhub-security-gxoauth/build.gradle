@@ -22,13 +22,13 @@ ext.pom >>= {
       id 'alexrobin'
       name 'Alex Robin'
       organization 'Sensia Software LLC'
-      organizationUrl 'http://www.sensiasoftware.com' 
+      organizationUrl 'http://www.sensiasoftware.com'
     }
     developer {
       id 'theastrowolfe'
       name 'Joshua Wolfe'
       organization 'Botts Innovative Research, Inc.'
-      organizationUrl 'http://www.botts-inc.com' 
+      organizationUrl 'http://www.botts-inc.com'
     }
   }
 }
