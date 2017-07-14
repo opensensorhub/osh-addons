@@ -64,11 +64,14 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
 //    double tilt = 0.0;
 //    double zoom = 1.0;    
     PtzPresetsHandler presetsHandler;
+    boolean alwaysRequestPtzStatus;
+    long lastCommandReceived = 0;
     
     
     protected DahuaPtzControl(DahuaCameraDriver driver)
     {
         super(driver);
+        this.alwaysRequestPtzStatus = !driver.getConfiguration().exclusiveControl;
     }
     
     
@@ -147,8 +150,19 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
     @Override
     public CommandStatus execCommand(DataBlock command) throws SensorException
     {
+        // reject if commands are too frequent because camera cannot handle 
+        // successive commands if they come too fast
+        if (System.currentTimeMillis() - lastCommandReceived < 1000)
+        {
+            parentSensor.getLogger().warn("PTZ command rejected");
+            CommandStatus cmdStatus = new CommandStatus();
+            cmdStatus.status = StatusCode.REJECTED;
+            return cmdStatus;
+        }        
+        lastCommandReceived = System.currentTimeMillis();
+        
         // associate command data to msg structure definition
-        DataChoice commandMsg = (DataChoice) commandData.copy();
+        DataChoice commandMsg = commandData.copy();
         commandMsg.setData(command);
               
         DataComponent component = ((DataChoiceImpl) commandMsg).getSelectedItem();
@@ -156,15 +170,12 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         DataBlock data = component.getData();
         
         // refresh PTZ status
-        parentSensor.ptzDataInterface.requestPtzStatus();
+        if (alwaysRequestPtzStatus)
+            parentSensor.ptzDataInterface.requestPtzStatus();
         double pan = parentSensor.ptzDataInterface.pan;
         double tilt = parentSensor.ptzDataInterface.tilt;
         double zoom = parentSensor.ptzDataInterface.zoom;
         
-        // NOTE: you can use validate() method in DataComponent
-        // component.validateData(errorList);  // give it a list so it can store the errors
-        // if (errorList != empty)  //then you have an error
-              
         try
         {
         	// preset position
@@ -180,7 +191,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PTZ_POS))
         	{
         		pan = data.getDoubleValue(0);
-        	    tilt = data.getDoubleValue(1);
+        	    tilt = -data.getDoubleValue(1);
         	    zoom = data.getDoubleValue(2);    		
         	}
         	
@@ -190,27 +201,30 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         	    if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PAN))
                     pan = data.getDoubleValue();
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_TILT))
-                    tilt = data.getDoubleValue();
+                    tilt = -data.getDoubleValue();
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_ZOOM))
                     zoom = data.getDoubleValue(); 
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RPAN))
                     pan = data.getDoubleValue() + pan;
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RTILT))
-                    tilt = data.getDoubleValue() + tilt;
+                    tilt = -data.getDoubleValue() + tilt;
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RZOOM))
                     zoom = data.getDoubleValue() + zoom;
         	}        		
         	       	
         	// send request to absolute pan/tilt/zoom positions
             URL optionsURL = new URL(parentSensor.getHostUrl() + 
-            		"/ptz.cgi?action=start&channel=0&code=PositionABS&arg1=" + pan + "&arg2=" + tilt + "&arg3=" + zoom);
-                   	         
+            		"/ptz.cgi?action=start&channel=0&code=PositionABS&arg1=" + pan + "&arg2=" + tilt + "&arg3=" + zoom*120);
+            if (!alwaysRequestPtzStatus)
+            {
+                parentSensor.ptzDataInterface.pan = (float)pan;
+                parentSensor.ptzDataInterface.tilt = (float)tilt;
+                parentSensor.ptzDataInterface.zoom = (float)zoom;
+            }
+            
             // add BufferReader and read first line; if "Error", read second line and log error
             InputStream is = optionsURL.openStream();
             is.close();
-            
-            // wait because camera cannot handle successive commands if they come too fast
-            Thread.sleep(1000);
 	    }
 	    catch (Exception e)
 	    {
