@@ -26,6 +26,8 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IDataProducerModule;
 import org.sensorhub.api.data.IStreamingDataInterface;
+import org.sensorhub.api.sensor.ISensorControlInterface;
+import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.impl.SensorHub;
 import org.vast.data.TextEncodingImpl;
 import org.vast.ows.OWSException;
@@ -56,9 +58,13 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
     DataBlock latestRecord;
     double samplingPeriod = 10.0;
     
-    // SPS stuff for temporary HACK
+    // command stuff for temporary HACK
+    boolean useSps;
     SPSUtils utils = new SPSUtils();
     DescribeTaskingResponse dtResp;
+    ISensorControlInterface controlInput;
+    int commandID;
+    DataBlock commandData;
     
 
     public CamPtzGeoPointingOutput(CamPtzGeoPointingProcess parentProcess)
@@ -72,7 +78,7 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
         rec.addField("time", fac.newTimeStampIsoUTC());
         rec.addField("pan", fac.newQuantity(SWEHelper.getPropertyUri("Pan"), "Pan", null, "deg", DataType.FLOAT));
         rec.addField("tilt", fac.newQuantity(SWEHelper.getPropertyUri("Tilt"), "Tilt", null, "deg", DataType.FLOAT));
-        rec.addField("zoom", fac.newCount(SWEHelper.getPropertyUri("AxisZoomFactor"), "Zoom Factor", null, DataType.SHORT));
+        rec.addField("zoom", fac.newCount(SWEHelper.getPropertyUri("ZoomFactor"), "Zoom Factor", null, DataType.SHORT));
         this.outputDef = rec;        
         this.outputEncoding = fac.newTextEncoding();
         
@@ -85,7 +91,15 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
     
     protected void start() throws SensorHubException
     {
-        // HACK: for now, connect to SPS directly from here
+        if (parentProcess.getConfiguration().camSpsEndpointUrl != null)
+            initSps();
+        else
+            initSensorControl();
+    }
+    
+    
+    private void initSps() throws SensorHubException
+    {
         try
         {
             // connect to SPS server and retrieve tasking parameters
@@ -95,7 +109,7 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
             dtReq.setProcedureID(parentProcess.getConfiguration().camSensorUID);
             utils.writeXMLQuery(System.out, dtReq);
             dtResp = utils.sendRequest(dtReq, false);
-            utils.writeXMLResponse(System.out, dtResp);
+            useSps = true;
         }
         catch (OWSException e)
         {
@@ -104,36 +118,85 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
     }
     
     
+    private void initSensorControl() throws SensorHubException
+    {
+        String sensorUID = parentProcess.getConfiguration().camSensorUID;
+        
+        try
+        {
+            ISensorModule<?> camSensor = SensorHub.getInstance().getSensorManager().findSensor(sensorUID);
+            if (camSensor == null)
+                throw new SensorHubException("Cannot find sensor " + sensorUID);
+            controlInput = camSensor.getCommandInputs().get("ptzControl");
+            if (controlInput == null)
+                throw new SensorHubException("No PTZ control interface available");
+        }
+        catch (Exception e)
+        {
+            throw new SensorHubException("Cannot connect to PTZ camera " + sensorUID, e);
+        }
+    }
+    
+    
     protected void sendPtz(double time, double pan, double tilt, double zoom)
     {
         // create and populate datablock
         DataBlock dataBlock;
-        if (latestRecord == null)
-        {
-            dataBlock = outputDef.createDataBlock();
-        }
-        else
+        if (latestRecord != null)
         {
             dataBlock = latestRecord.renew();
             samplingPeriod = time - latestRecord.getDoubleValue(0);
         }
+        else
+            dataBlock = outputDef.createDataBlock();
         
         dataBlock.setDoubleValue(0, time);
         dataBlock.setDoubleValue(1, pan);
         dataBlock.setDoubleValue(2, tilt);
         dataBlock.setDoubleValue(3, zoom);
-        CamPtzGeoPointingProcess.log.debug("Computed PTZ = [{},{},{}]", pan, tilt, zoom);
-            
+                    
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();
         eventHandler.publishEvent(new DataEvent(latestRecordTime, this, dataBlock));
         
+        // HACK to also send the command to camera directly
+        if (useSps)
+            sendToSps(pan, tilt, zoom);
+        else
+            sendToSensor(pan, tilt, zoom);
+    }
+    
+    
+    private void sendToSensor(double pan, double tilt, double zoom)
+    {
+        if (commandData == null)
+        {
+            commandData = controlInput.getCommandDescription().createDataBlock();
+            commandID = ((DataChoice)controlInput.getCommandDescription()).getComponentIndex("ptzPos");
+        }
+        
+        try
+        {
+            commandData.setIntValue(0, commandID);
+            commandData.setDoubleValue(1, pan);
+            commandData.setDoubleValue(2, tilt);
+            commandData.setDoubleValue(3, zoom);
+            controlInput.execCommand(commandData);
+        }
+        catch (Exception e)
+        {
+            CamPtzGeoPointingProcess.log.error("Error while sending command to PTZ camera", e);
+        }
+    }
+    
+    
+    private void sendToSps(double pan, double tilt, double zoom)
+    {
         try
         {
             SubmitRequest subReq;
             
-            // HACK: for now, send tasking requests to SPS directly from here
             SWEData taskParams = new SWEData();
             taskParams.setElementType(dtResp.getTaskingParameters());
             taskParams.setEncoding(new TextEncodingImpl());
@@ -142,8 +205,8 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
             
             // generate pan command
             ptzParams.renewDataBlock();
-            ptzParams.setSelectedItem("pan");
-            ptzParams.getComponent("pan").getData().setDoubleValue(-pan);
+            ptzParams.setSelectedItem("ptz");
+            ptzParams.getComponent("pan").getData().setDoubleValue(pan);
             taskParams.addData(ptzParams.getData());
             
             // send request

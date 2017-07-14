@@ -28,7 +28,9 @@ import org.sensorhub.api.processing.StreamProcessConfig;
  * @since Aug 9, 2015
  */
 public class CamPtzGeoPointingConfig extends StreamProcessConfig
-{
+{    
+    @DisplayInfo(desc="Unique identifier of PTZ camera")
+    public String camSensorUID;
     
     @DisplayInfo(desc="Camera location when camera is static (lat, lon, alt as in EPSG:4979)")
     public double[] fixedCameraPosLLA;    
@@ -36,8 +38,18 @@ public class CamPtzGeoPointingConfig extends StreamProcessConfig
     @DisplayInfo(desc="Camera reference orientation in ENU frame when camera is static (pitch, roll, yaw in deg)")
     public double[] fixedCameraRotENU;
     
-    public String camSpsEndpointUrl;
+    @DisplayInfo(desc="Camera focal length at zoom factor 0 (in mm)")
+    public double cameraMinFocalLength = 4.5;
     
-    public String camSensorUID;
+    @DisplayInfo(desc="Camera focal length at zoom factor 1 (in mm)")
+    public double cameraMaxFocalLength = 135.0;
+    
+    @DisplayInfo(desc="Camera sensor size (in mm)")
+    public double cameraSensorSize = 8.47;
+    
+    @DisplayInfo(desc="Desired distance visible in image (in m)")
+    public double desiredViewSize = 20;
 
+    @DisplayInfo(desc="SPS endpoint for tasking camera")
+    public String camSpsEndpointUrl;
 }

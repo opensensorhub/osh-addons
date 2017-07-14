@@ -24,13 +24,13 @@ public class CamPtzGeoPointingDescriptor implements IModuleProvider
     @Override
     public String getModuleName()
     {
-        return "TruPulse Target Geolocation Process";
+        return "Camera GeoPointing Process";
     }
 
     @Override
     public String getModuleDescription()
     {
-        return "Process for geolocation TruPulse range finder target";
+        return "Process for pointing PTZ cameras to a given location";
     }
 
     @Override

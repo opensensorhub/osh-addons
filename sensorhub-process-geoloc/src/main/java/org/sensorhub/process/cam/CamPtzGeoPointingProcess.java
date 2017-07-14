@@ -15,6 +15,11 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.process.cam;
 
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.algo.geoloc.GeoTransforms;
@@ -65,6 +70,7 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
     protected DataQueue cameraLocQueue;
     protected DataQueue cameraRotQueue;
     protected DataQueue targetLocQueue;
+    protected ExecutorService threadPool;
     
     
     @Override
@@ -157,11 +163,32 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
     {
         super.start();
         camPtzOutput.start();
+        threadPool = new ThreadPoolExecutor(1, 1, 10000L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
     }
     
     
     @Override
-    protected void process(DataEvent lastEvent) throws ProcessException
+    protected synchronized void process(final DataEvent lastEvent) throws ProcessException
+    {        
+        try
+        {
+            threadPool.execute(new Runnable() {
+                @Override
+                public void run()
+                {
+                    processInThread(lastEvent);
+                    log.info("PTZ pointing done");
+                }            
+            });
+        }
+        catch (RejectedExecutionException e)
+        {
+            log.error("PTZ geo-pointing process already running");
+        }
+    }
+    
+    
+    protected void processInThread(DataEvent lastEvent)
     {
         try
         {
@@ -216,7 +243,8 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
                 
                 // compute LOS from camera to target
                 Vect3d los = targetPosEcef.sub(lastCamPosEcef);
-                los.normalize();
+                double dist = los.norm();
+                los.scale(1./dist); // normalize
                 
                 // transform LOS to ENU frame
                 nadirPointing.getRotationMatrixENUToECEF(lastCamPosEcef, ecefRot);
@@ -230,15 +258,26 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
                 
                 // compute PTZ values
                 double pan = Math.toDegrees(Math.atan2(los.y, los.x));
-                double xyProj = Math.sqrt(los.x*los.x + los.y*los.y); 
+                double xyProj = Math.sqrt(los.x*los.x + los.y*los.y);
                 double tilt = Math.toDegrees(Math.atan2(los.z, xyProj));
                 
+                // compute zoom value
+                log.debug("Distance to target = {}", dist);
+                double sensorSize = config.cameraSensorSize/1000.;
+                double minFocal = config.cameraMinFocalLength;
+                double maxFocal = config.cameraMaxFocalLength;
+                double desiredFocal = dist*sensorSize/config.desiredViewSize*1000.;                
+                double zoom = (desiredFocal - minFocal) / (maxFocal - minFocal);
+                zoom = Math.min(Math.max(zoom, 0.), 1.);
+                log.debug("Computed PTZ = [{},{},{}]", pan, tilt, zoom);
+                
                 // send to PTZ output
-                camPtzOutput.sendPtz(time, pan, tilt, 1.0);
+                camPtzOutput.sendPtz(time, pan, tilt, zoom);
             }
         }
-        catch (InterruptedException e)
+        catch (Exception e)
         {
+            log.error("Error computing PTZ position", e);
         }
     }
     
