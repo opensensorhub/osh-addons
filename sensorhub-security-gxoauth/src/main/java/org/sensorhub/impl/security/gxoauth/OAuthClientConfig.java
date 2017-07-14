@@ -12,7 +12,7 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.security.oauth;
+package org.sensorhub.impl.security.gxoauth;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.security.SecurityModuleConfig;
