@@ -205,7 +205,7 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
             
             // generate pan command
             ptzParams.renewDataBlock();
-            ptzParams.setSelectedItem("ptz");
+            ptzParams.setSelectedItem("pan");
             ptzParams.getComponent("pan").getData().setDoubleValue(pan);
             taskParams.addData(ptzParams.getData());
             
