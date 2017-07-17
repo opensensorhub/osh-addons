@@ -56,6 +56,9 @@ public class DahuaCameraConfig extends SensorConfig
     
     @DisplayInfo(desc="Camera geographic position")
     public PositionConfig position = new PositionConfig();
+        
+    @DisplayInfo(desc="Set to true if this OSH node has exclusive control of the camera")
+    public boolean exclusiveControl = true;
     
 
     public class VideoConfig extends BasicVideoConfig

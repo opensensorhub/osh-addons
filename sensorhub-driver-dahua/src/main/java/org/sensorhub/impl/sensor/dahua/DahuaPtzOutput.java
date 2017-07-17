@@ -185,7 +185,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
                 }
                 else if (tokens[0].trim().equalsIgnoreCase("status.Postion[1]"))
                 {
-                    tilt = Float.parseFloat(tokens[1]);
+                    tilt = -Float.parseFloat(tokens[1]);
                     ptzData.setFloatValue(2, tilt);
                 }
                 else if (tokens[0].trim().equalsIgnoreCase("status.Postion[2]"))
@@ -221,7 +221,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
     public double getAverageSamplingPeriod()
     {
         // generating 1 record per second for PTZ settings
-        return 1.0;
+        return 10.0;
     }
 
 
