@@ -210,7 +210,11 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
                     tilt = -data.getDoubleValue() + tilt;
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RZOOM))
                     zoom = data.getDoubleValue() + zoom;
-        	}        		
+        	}
+        	
+        	// limit values
+        	if (pan < 0)
+        	    pan += 360.0;
         	       	
         	// send request to absolute pan/tilt/zoom positions
             URL optionsURL = new URL(parentSensor.getHostUrl() + 
@@ -220,6 +224,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
                 parentSensor.ptzDataInterface.pan = (float)pan;
                 parentSensor.ptzDataInterface.tilt = (float)tilt;
                 parentSensor.ptzDataInterface.zoom = (float)zoom;
+                parentSensor.ptzDataInterface.sendPtzStatus();
             }
             
             // add BufferReader and read first line; if "Error", read second line and log error

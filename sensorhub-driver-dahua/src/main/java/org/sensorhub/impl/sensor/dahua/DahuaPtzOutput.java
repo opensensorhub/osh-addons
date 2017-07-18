@@ -132,18 +132,24 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
         try
         {
             getSettingsUrl = new URL(parentSensor.getHostUrl() + "/ptz.cgi?action=getStatus");
+	        final long samplingPeriod = (long)(getAverageSamplingPeriod()*1000);
 	        
 	        TimerTask timerTask = new TimerTask()
 	        {
 	            @Override
 	            public void run()
 	            {
-	            	requestPtzStatus();
+	            	synchronized (DahuaPtzOutput.this)
+	            	{
+	            	    // only update if control module hasn't pushed an update recently
+	            	    if (System.currentTimeMillis() - latestRecordTime >= samplingPeriod)
+	            	        requestPtzStatus();
+	            	}
                 }
 	        };
 	
 	        timer = new Timer();
-	        timer.scheduleAtFixedRate(timerTask, 0, (long)(getAverageSamplingPeriod()*1000));
+	        timer.scheduleAtFixedRate(timerTask, 0, samplingPeriod);
 	    }
 	    catch (Exception e)
 	    {
@@ -161,17 +167,6 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
             is = getSettingsUrl.openStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 
-            // generate new data block
-            DataBlock ptzData;
-            if (latestRecord == null)
-                ptzData = ptzDataStruct.createDataBlock();
-            else
-                ptzData = latestRecord.renew();
-            
-            // set sampling time
-            double time = System.currentTimeMillis() / 1000.;
-            ptzData.setDoubleValue(0, time);
-
             String line;
             while ((line = reader.readLine()) != null)
             {
@@ -179,29 +174,18 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
                 String[] tokens = line.split("=");
 
                 if (tokens[0].trim().equalsIgnoreCase("status.Postion[0]"))
-                {
-                    pan = Float.parseFloat(tokens[1]);
-                    ptzData.setFloatValue(1, pan);
-                }
+                    pan = Float.parseFloat(tokens[1]);                    
                 else if (tokens[0].trim().equalsIgnoreCase("status.Postion[1]"))
-                {
-                    tilt = -Float.parseFloat(tokens[1]);
-                    ptzData.setFloatValue(2, tilt);
-                }
+                    tilt = -Float.parseFloat(tokens[1]);                    
                 else if (tokens[0].trim().equalsIgnoreCase("status.Postion[2]"))
-                {
                     zoom = Float.parseFloat(tokens[1]);
-                    ptzData.setFloatValue(3, zoom);
-                }
             }
-
-            latestRecord = ptzData;
-            latestRecordTime = System.currentTimeMillis();
-            eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, DahuaPtzOutput.this, latestRecord)); 
+            
+            sendPtzStatus();            
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            getParentModule().getLogger().error("Error requesting PTZ status", e);
         }
         finally
         {
@@ -214,6 +198,28 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
             {
             }
         }
+    }
+    
+    
+    protected synchronized void sendPtzStatus()
+    {
+        // generate new data block
+        DataBlock ptzData;
+        if (latestRecord == null)
+            ptzData = ptzDataStruct.createDataBlock();
+        else
+            ptzData = latestRecord.renew();
+        
+        // set sampling time
+        double time = System.currentTimeMillis() / 1000.;
+        ptzData.setDoubleValue(0, time);
+        ptzData.setFloatValue(1, pan);
+        ptzData.setFloatValue(2, tilt);
+        ptzData.setFloatValue(3, zoom);
+        
+        latestRecord = ptzData;
+        latestRecordTime = System.currentTimeMillis();
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, DahuaPtzOutput.this, latestRecord));
     }
 
     
