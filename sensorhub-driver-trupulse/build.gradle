@@ -1,0 +1,27 @@
+description = 'TruPulse 360R Range Finder'
+ext.details = 'Driver for TruPulse 360R Laser Range Finder with inclination and azimuth'
+version = '1.0.0'
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-process-geoloc:1.0.0'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.trupulse.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'mikebotts'
+      name 'Mike Botts'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'http://www.botts-inc.com' 
+    }
+  }
+}
