@@ -1,4 +1,4 @@
-package org.sensorhub.test.comm.trek1000;
+package org.sensorhub.test.sensor.trek1000;
 
 import static org.junit.Assert.*;
 
@@ -12,15 +12,15 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.comm.trek1000.Trek1000Config;
-import org.sensorhub.impl.comm.trek1000.Trek1000Sensor;
+import org.sensorhub.impl.sensor.trek1000.Trek1000Config;
+import org.sensorhub.impl.sensor.trek1000.Trek1000Sensor;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.SWEUtils;
 
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataComponent;
 
-public class TestTrek1000 implements IEventListener
+public class TestTrek1000Rxtx implements IEventListener
 {
 	Trek1000Sensor driver;
 	Trek1000Config config;

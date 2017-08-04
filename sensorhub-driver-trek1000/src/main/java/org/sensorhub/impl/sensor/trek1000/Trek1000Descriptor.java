@@ -12,48 +12,17 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.comm.trek1000;
+package org.sensorhub.impl.sensor.trek1000;
 
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
-/**
- * <p>
- * Implementation of DecaWave's Trek1000 sensor. This particular class stores 
- * descriptor attributes.
- * </p>
- * 
- * @author Joshua Wolfe <developer.wolfe@gmail.com>
- * @since July 20, 2017
- */
-public class Trek1000Descriptor implements IModuleProvider
+
+public class Trek1000Descriptor extends JarModuleProvider implements IModuleProvider
 {
-	@Override
-	public String getModuleName()
-	{
-		return "DecaWave TREK1000 Serial Sensor";
-	}
-
-	@Override
-	public String getModuleDescription()
-	{
-		return "Serial communication provider for DevaWave\'s TREK1000 sensor using OSH\'s RXTX library";
-	}
-
-	@Override
-	public String getModuleVersion()
-	{
-		return "0.1";
-	}
-
-	@Override
-	public String getProviderName()
-	{
-		return "Botts Innovative Research";
-	}
-
-	@Override
+    @Override
 	public Class<? extends IModule<?>> getModuleClass()
 	{
 		return Trek1000Sensor.class;

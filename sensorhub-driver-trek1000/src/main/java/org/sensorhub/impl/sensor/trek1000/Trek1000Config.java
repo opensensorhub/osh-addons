@@ -12,7 +12,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.comm.trek1000;
+package org.sensorhub.impl.sensor.trek1000;
 
 import java.util.ArrayList;
 import java.util.HashMap;

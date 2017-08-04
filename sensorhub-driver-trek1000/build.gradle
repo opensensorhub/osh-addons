@@ -9,13 +9,13 @@ dependencies {
 // exclude tests requiring connection to the sensor
 // these have to be run manually
 test {
-  exclude '**/TestDecawaveDriverRxtx.class'
+  exclude '**/TestTrek1000Rxtx.class'
 }
 
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
     instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.trek1000.Activator'
   }
 }

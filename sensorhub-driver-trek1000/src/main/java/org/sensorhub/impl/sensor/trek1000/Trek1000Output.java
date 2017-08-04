@@ -1,4 +1,4 @@
-package org.sensorhub.impl.comm.trek1000;
+package org.sensorhub.impl.sensor.trek1000;
 
 import java.io.IOException;
 import java.io.InputStream;
