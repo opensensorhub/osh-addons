@@ -1,2 +1,0 @@
-### LaserTechnology TruPulse Laser RangeFinder
-Sensor adaptor classes supporting the TruPulse Laser RangeFinder output through Bluetooth interface. Provides triggered output of RangeFinder including distance to Line-of-Sight target, inclination, and azimuth relative to magnetic North. Processing also supports calculation of geoposition (lat-long-alt) of target based on instrument position provided by an Android device, for instance.
