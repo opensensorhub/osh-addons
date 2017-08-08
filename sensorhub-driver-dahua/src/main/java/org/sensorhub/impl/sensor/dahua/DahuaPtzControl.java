@@ -175,6 +175,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         double pan = parentSensor.ptzDataInterface.pan;
         double tilt = parentSensor.ptzDataInterface.tilt;
         double zoom = parentSensor.ptzDataInterface.zoom;
+        System.out.println("zoom: " + zoom);
         
         try
         {
@@ -190,9 +191,18 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         	// all 3 ptz components together
         	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PTZ_POS))
         	{
+//        		System.out.println("Got all 3 PTZ parameters...");
         		pan = data.getDoubleValue(0);
         	    tilt = -data.getDoubleValue(1);
-        	    zoom = data.getDoubleValue(2);    		
+
+        	    if (!Double.isNaN(data.getDoubleValue(2)))
+        	    {
+        	    	zoom = data.getDoubleValue(2);
+        	    }
+        	    else
+        	    {
+        	    	zoom = zoom/120;
+        	    }
         	}
         	
         	// individual component command
@@ -204,8 +214,10 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
                     tilt = -data.getDoubleValue();
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_ZOOM))
                     zoom = data.getDoubleValue(); 
-                else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RPAN))
+                else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RPAN)) {
                     pan = data.getDoubleValue() + pan;
+                    zoom = zoom/120.0; // Added by LAB Aug 07, 2017
+                }
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RTILT))
                     tilt = -data.getDoubleValue() + tilt;
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RZOOM))
@@ -227,6 +239,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
                 parentSensor.ptzDataInterface.sendPtzStatus();
             }
             
+            System.out.println("url: " + optionsURL);
             // add BufferReader and read first line; if "Error", read second line and log error
             InputStream is = optionsURL.openStream();
             is.close();
