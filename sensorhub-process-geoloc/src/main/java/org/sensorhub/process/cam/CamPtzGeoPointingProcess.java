@@ -132,6 +132,7 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
         targetLocInput.setName("targetLocation");
         targetLocInput.addField("time", fac.newTimeStampIsoUTC());
         targetLocInput.addField("loc", fac.newLocationVectorLLA(null));
+        targetLocInput.addField("keepZoom", fac.newBoolean("http://sensorml.com/ont/swe/property/KeepZoom", "Keep Zoom", null));
         inputs.put(targetLocInput.getName(), targetLocInput);
         
         // create outputs
@@ -232,7 +233,8 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
                 double time = dataBlk.getDoubleValue(0);
                 double lat = dataBlk.getDoubleValue(1);
                 double lon = dataBlk.getDoubleValue(2);
-                double alt = dataBlk.getDoubleValue(3);                
+                double alt = dataBlk.getDoubleValue(3);  
+                boolean isKeepZoom = dataBlk.getBooleanValue(4);
                 log.debug("Target pos = [{},{},{}]" , lat, lon, alt);
                 
                 // convert to radians and then ECEF
@@ -258,6 +260,8 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
                 
                 // compute PTZ values
                 double pan = Math.toDegrees(Math.atan2(los.y, los.x));
+                if (pan < 0)
+                	pan += 360.0;
                 double xyProj = Math.sqrt(los.x*los.x + los.y*los.y);
                 double tilt = Math.toDegrees(Math.atan2(los.z, xyProj));
                 
@@ -266,10 +270,19 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
                 double sensorSize = config.cameraSensorSize/1000.;
                 double minFocal = config.cameraMinFocalLength;
                 double maxFocal = config.cameraMaxFocalLength;
-                double desiredFocal = dist*sensorSize/config.desiredViewSize*1000.;                
+                double desiredFocal = dist*sensorSize/config.desiredViewSize*1000.;   
                 double zoom = (desiredFocal - minFocal) / (maxFocal - minFocal);
                 zoom = Math.min(Math.max(zoom, 0.), 1.);
                 log.debug("Computed PTZ = [{},{},{}]", pan, tilt, zoom);
+                System.out.println("Computed PTZ = [" + pan + "," + tilt + "," + zoom + "]");
+                
+                if (isKeepZoom)
+                {
+                	// set zoom to previous zoom factor
+                	System.out.println("Keeping current zoom factor");
+                	System.out.println("setting zoom to NaN");
+                	zoom = Double.NaN;
+                }
                 
                 // send to PTZ output
                 camPtzOutput.sendPtz(time, pan, tilt, zoom);
