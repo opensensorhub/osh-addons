@@ -173,26 +173,6 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
     {        
         try
         {
-            threadPool.execute(new Runnable() {
-                @Override
-                public void run()
-                {
-                    processInThread(lastEvent);
-                    log.info("PTZ pointing done");
-                }            
-            });
-        }
-        catch (RejectedExecutionException e)
-        {
-            log.error("PTZ geo-pointing process already running");
-        }
-    }
-    
-    
-    protected void processInThread(DataEvent lastEvent)
-    {
-        try
-        {
             if (cameraLocQueue != null && cameraLocQueue.isDataAvailable())
             {
                 // data received is LLA in degrees
@@ -227,66 +207,90 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
             }
             
             else if (lastCamPosSet && lastCamRotSet && targetLocQueue.isDataAvailable())
-            {
+            {            
                 // data received is LLA in degrees
                 DataBlock dataBlk = targetLocQueue.get();
-                double time = dataBlk.getDoubleValue(0);
-                double lat = dataBlk.getDoubleValue(1);
-                double lon = dataBlk.getDoubleValue(2);
-                double alt = dataBlk.getDoubleValue(3);  
-                boolean isKeepZoom = dataBlk.getBooleanValue(4);
+                final double time = dataBlk.getDoubleValue(0);
+                final double lat = dataBlk.getDoubleValue(1);
+                final double lon = dataBlk.getDoubleValue(2);
+                final double alt = dataBlk.getDoubleValue(3);  
+                final boolean keepZoom = dataBlk.getBooleanValue(4);
                 log.debug("Target pos = [{},{},{}]" , lat, lon, alt);
                 
-                // convert to radians and then ECEF
-                llaTarget.y = Math.toRadians(lat);
-                llaTarget.x = Math.toRadians(lon);
-                llaTarget.z = alt;
-                geoConv.LLAtoECEF(llaTarget, targetPosEcef);
-                
-                // compute LOS from camera to target
-                Vect3d los = targetPosEcef.sub(lastCamPosEcef);
-                double dist = los.norm();
-                los.scale(1./dist); // normalize
-                
-                // transform LOS to ENU frame
-                nadirPointing.getRotationMatrixENUToECEF(lastCamPosEcef, ecefRot);
-                ecefRot.transpose();
-                los.rotate(ecefRot);
-                
-                // transform LOS to camera frame
-                los.rotateZ(-lastCamRotEnu.z);
-                //los.rotateY(lastCameraRotEnu.y);
-                //los.rotateX(lastCameraRotEnu.x);
-                
-                // compute PTZ values
-                double pan = Math.toDegrees(Math.atan2(los.y, los.x));
-                if (pan < 0)
-                	pan += 360.0;
-                double xyProj = Math.sqrt(los.x*los.x + los.y*los.y);
-                double tilt = Math.toDegrees(Math.atan2(los.z, xyProj));
-                
-                // compute zoom value
-                log.debug("Distance to target = {}", dist);
-                double sensorSize = config.cameraSensorSize/1000.;
-                double minFocal = config.cameraMinFocalLength;
-                double maxFocal = config.cameraMaxFocalLength;
-                double desiredFocal = dist*sensorSize/config.desiredViewSize*1000.;   
-                double zoom = (desiredFocal - minFocal) / (maxFocal - minFocal);
-                zoom = Math.min(Math.max(zoom, 0.), 1.);
-                log.debug("Computed PTZ = [{},{},{}]", pan, tilt, zoom);
-                System.out.println("Computed PTZ = [" + pan + "," + tilt + "," + zoom + "]");
-                
-                if (isKeepZoom)
-                {
-                	// set zoom to previous zoom factor
-                	System.out.println("Keeping current zoom factor");
-                	System.out.println("setting zoom to NaN");
-                	zoom = Double.NaN;
-                }
-                
-                // send to PTZ output
-                camPtzOutput.sendPtz(time, pan, tilt, zoom);
+                threadPool.execute(new Runnable() {
+                    @Override
+                    public void run()
+                    {
+                        processInThread(time, lat, lon, alt, keepZoom);
+                        log.info("PTZ pointing done");
+                    }            
+                });
             }
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+        catch (RejectedExecutionException e)
+        {
+            log.error("PTZ geo-pointing process already running");
+        }
+    }
+    
+    
+    protected void processInThread(double time, double lat, double lon, double alt, boolean keepZoom)
+    {
+        try
+        {
+            // convert to radians and then ECEF
+            llaTarget.y = Math.toRadians(lat);
+            llaTarget.x = Math.toRadians(lon);
+            llaTarget.z = alt;
+            geoConv.LLAtoECEF(llaTarget, targetPosEcef);
+            
+            // compute LOS from camera to target
+            Vect3d los = targetPosEcef.sub(lastCamPosEcef);
+            double dist = los.norm();
+            los.scale(1./dist); // normalize
+            
+            // transform LOS to ENU frame
+            nadirPointing.getRotationMatrixENUToECEF(lastCamPosEcef, ecefRot);
+            ecefRot.transpose();
+            los.rotate(ecefRot);
+            
+            // transform LOS to camera frame
+            los.rotateZ(-lastCamRotEnu.z);
+            //los.rotateY(lastCameraRotEnu.y);
+            //los.rotateX(lastCameraRotEnu.x);
+            
+            // compute PTZ values
+            double pan = Math.toDegrees(Math.atan2(los.y, los.x));
+            if (pan < 0)
+            	pan += 360.0;
+            double xyProj = Math.sqrt(los.x*los.x + los.y*los.y);
+            double tilt = Math.toDegrees(Math.atan2(los.z, xyProj));
+            
+            // compute zoom value
+            log.debug("Distance to target = {}", dist);
+            double sensorSize = config.cameraSensorSize/1000.;
+            double minFocal = config.cameraMinFocalLength;
+            double maxFocal = config.cameraMaxFocalLength;
+            double desiredFocal = dist*sensorSize/config.desiredViewSize*1000.;   
+            double zoom = (desiredFocal - minFocal) / (maxFocal - minFocal);
+            zoom = Math.min(Math.max(zoom, 0.), 1.);
+            log.debug("Computed PTZ = [{},{},{}]", pan, tilt, zoom);
+            System.out.println("Computed PTZ = [" + pan + "," + tilt + "," + zoom + "]");
+            
+            if (keepZoom)
+            {
+            	// set zoom to previous zoom factor
+            	System.out.println("Keeping current zoom factor");
+            	System.out.println("setting zoom to NaN");
+            	zoom = Double.NaN;
+            }
+            
+            // send to PTZ output
+            camPtzOutput.sendPtz(time, pan, tilt, zoom);
         }
         catch (Exception e)
         {
