@@ -15,17 +15,17 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.trek1000;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-
+import java.util.List;
+import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.sensor.PositionConfig.LLALocation;
 import org.sensorhub.api.sensor.SensorConfig;
 
+
 /**
  * <p>
- * Implementation of the Trek1000 sensor. This particular class stores 
- * configuration parameters.
+ * Configuration parameters for Trek1000 driver
  * </p>
  * 
  * @author Joshua Wolfe <developer.wolfe@gmail.com>
@@ -33,17 +33,13 @@ import org.sensorhub.api.sensor.SensorConfig;
  */
 public class Trek1000Config extends SensorConfig
 {
-	@DisplayInfo(label="Sensor ID", desc="Unique ID for sensor")
-	public String sensorId = null;
+	@DisplayInfo(desc="Serial number used as suffix to generate unique identifier URI")
+	public String serialNumber = null;
 	
-	@Required
-	@DisplayInfo(desc="Serial port of connected anchor")
-	public String serialPort = null;
-
-	@DisplayInfo(desc="Baud rate of connected anchor")
-	public int baudRate = 9600;
+	@DisplayInfo(desc="Communication settings to connect to NMEA GPS data stream")
+    public CommProviderConfig<?> commSettings;
 	
 	@Required
 	@DisplayInfo(desc="Anchor locations in the form of [latitude, longitude]")
-	public ArrayList<LLALocation> anchorLocations = new ArrayList<LLALocation>();
+	public List<LLALocation> anchorLocations = new ArrayList<>();
 }

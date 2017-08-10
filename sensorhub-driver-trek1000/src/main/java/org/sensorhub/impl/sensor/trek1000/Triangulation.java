@@ -20,7 +20,7 @@ public class Triangulation
 	private double best_3derror;
 	private double best_gdoprate;
 			
-	public class Vec3d
+	protected static class Vec3d
 	{
 		public double x;
 		public double y;
@@ -288,7 +288,7 @@ public class Triangulation
 		ez = cross(ex, ey); // unit vector ez with respect to p1 (new coordinate system)
 		
 		x = (r1*r1 - r2*r2) / (2*h) + h /2;
-		y = (r1*r1 - r2*r2) / (2*h) + h /2;
+		y = (r1*r1 - r3*r3 + i*i) / (2*j) + j / 2 - x * i / j;
 		z = r1*r1 - x*x - y*y;
 		if ( z < -maxzero)
 		{
@@ -311,13 +311,19 @@ public class Triangulation
 		/* result1 = p1 + x ex + y ey + z ez */
 		if (result1 != null)
 		{
-			result1 = vsum(t2, vmul(ez, z));
+			t2 = vsum(t2, vmul(ez, z));
+			result1.x = t2.x;
+			result1.y = t2.y;
+			result1.z = t2.z;
 		}
 
-		/* result1 = p1 + x ex + y ey - z ez */
+		/* result2 = p1 + x ex + y ey - z ez */
 		if (result2 != null)
 		{
-			result2 = vsum(t2, vmul(ez, -z));
+		    t2 = vsum(t2, vmul(ez, -z));
+            result2.x = t2.x;
+            result2.y = t2.y;
+            result2.z = t2.z;
 		}
 
 		/*********** END OF FINDING TWO POINTS FROM THE FIRST THREE SPHERES **********/
@@ -654,7 +660,7 @@ public class Triangulation
 		if (trilateration_errcounter >= 4) return -1; else return trilateration_mode34;
 	}
 
-	public int GetLocation(Vec3d best_solution, int use4thAnchor, Vec3d[] anchorArray, int[] distanceArray)
+	public int getLocation(Vec3d best_solution, int use4thAnchor, Vec3d[] anchorArray, int[] distanceArray)
 	{
 
 		Vec3d o1 = new Vec3d(0, 0, 0), o2 = new Vec3d(0, 0, 0), 
