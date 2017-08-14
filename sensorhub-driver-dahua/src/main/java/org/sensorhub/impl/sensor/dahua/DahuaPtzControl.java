@@ -55,9 +55,9 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
     double maxPan = 360.0;
     double minTilt = 0.0;
     double maxTilt = 90.0;
-    double minZoom = 1.0;
+    double minZoom = 0.0;
   //TODO: Determine max zoom for Dahua cameras
-    double maxZoom = 10000.0;  // can't retrieve max zoom from Dahua so set max bounds high 
+    double maxZoom = 1.0;  // can't retrieve max zoom from Dahua so set max bounds high 
     
     // Since Dahua doesn't allow you to retrieve current PTZ positions, save the last state here and push to the output module
 //    double pan = 0.0;
@@ -175,7 +175,6 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         double pan = parentSensor.ptzDataInterface.pan;
         double tilt = parentSensor.ptzDataInterface.tilt;
         double zoom = parentSensor.ptzDataInterface.zoom;
-        System.out.println("zoom: " + zoom);
         
         try
         {
@@ -193,16 +192,9 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         	{
 //        		System.out.println("Got all 3 PTZ parameters...");
         		pan = data.getDoubleValue(0);
-        	    tilt = -data.getDoubleValue(1);
-
+        	    tilt = data.getDoubleValue(1);
         	    if (!Double.isNaN(data.getDoubleValue(2)))
-        	    {
         	    	zoom = data.getDoubleValue(2);
-        	    }
-        	    else
-        	    {
-        	    	zoom = zoom/120;
-        	    }
         	}
         	
         	// individual component command
@@ -211,17 +203,17 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         	    if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PAN))
                     pan = data.getDoubleValue();
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_TILT))
-                    tilt = -data.getDoubleValue();
+                    tilt = data.getDoubleValue();
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_ZOOM))
                     zoom = data.getDoubleValue(); 
-                else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RPAN)) {
+                else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RPAN))
                     pan = data.getDoubleValue() + pan;
-                    zoom = zoom/120.0; // Added by LAB Aug 07, 2017
-                }
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RTILT))
-                    tilt = -data.getDoubleValue() + tilt;
+                    tilt = data.getDoubleValue() + tilt;
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RZOOM))
                     zoom = data.getDoubleValue() + zoom;
+        	    
+        	    System.out.println("Going to pan=" + pan + ", tilt= " + tilt + ", zoom=" + zoom);
         	}
         	
         	// limit values
@@ -230,11 +222,12 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         	       	
         	// send request to absolute pan/tilt/zoom positions
             URL optionsURL = new URL(parentSensor.getHostUrl() + 
-            		"/ptz.cgi?action=start&channel=0&code=PositionABS&arg1=" + pan + "&arg2=" + tilt + "&arg3=" + zoom*120);
+            		"/ptz.cgi?action=start&channel=0&code=PositionABS&arg1=" + pan + "&arg2=" + (-tilt) + "&arg3=" + zoom*120);
             if (!alwaysRequestPtzStatus)
             {
                 parentSensor.ptzDataInterface.pan = (float)pan;
                 parentSensor.ptzDataInterface.tilt = (float)tilt;
+                System.out.println("sending tilt status: " + tilt);
                 parentSensor.ptzDataInterface.zoom = (float)zoom;
                 parentSensor.ptzDataInterface.sendPtzStatus();
             }

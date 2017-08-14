@@ -80,8 +80,8 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
         double maxPan = 360.0;
         double minTilt = 0.0;
         double maxTilt = 90.0;
-        double minZoom = 1.0;
-        double maxZoom = 10000.0;  // can't retrieve zoom range for Dahua; set high
+        double minZoom = 0.0;
+        double maxZoom = 1.0;  // can't retrieve zoom range for Dahua; set high
     	
         // figure out pan and tilt ranges
         try
@@ -178,7 +178,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
                 else if (tokens[0].trim().equalsIgnoreCase("status.Postion[1]"))
                     tilt = -Float.parseFloat(tokens[1]);                    
                 else if (tokens[0].trim().equalsIgnoreCase("status.Postion[2]"))
-                    zoom = Float.parseFloat(tokens[1]);
+                    zoom = (float)(Double.parseDouble(tokens[1])/120.0);
             }
             
             sendPtzStatus();            
