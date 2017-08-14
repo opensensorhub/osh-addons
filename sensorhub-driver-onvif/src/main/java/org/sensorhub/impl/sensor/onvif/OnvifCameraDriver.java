@@ -66,8 +66,6 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     String longName;
     String imageSize;
     
-    String connection;
-    
     public OnvifCameraDriver() {
     }
 
@@ -89,40 +87,43 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         super.init();
         
         if (hostIp == null) {
-        	throw new SensorHubException("No host IP address provided in config");
+			throw new SensorHubException("No host IP address provided in config");
         }
 
         try {
-        	if (user == null || password == null)
+			if (user == null || password == null) {
 				camera = new OnvifDevice(hostIp);
-        	else
+			} else {
 				camera = new OnvifDevice(hostIp, user, password);
+			}
 
-			camera.getSoap().setLogging(false);
+			camera.getSoap().setLogging(true);
 		} catch (ConnectException e) {
-        	throw new SensorHubException("Exception occured when connecting to camera");
+			throw new SensorHubException("Exception occured when connecting to camera");
 		} catch (SOAPException e) {
-        	throw new SensorHubException("Exception occured when calling XML Web service over SOAP");
+			throw new SensorHubException("Exception occured when calling XML Web service over SOAP");
+		} catch (Exception e) {
+			throw new SensorHubException(e.toString());
 		}
         
         List<Profile> profiles = camera.getDevices().getProfiles();
         
         if (profiles == null || profiles.isEmpty()) {
-        	throw new SensorHubException("Camera does not have any profiles to use");
+			throw new SensorHubException("Camera does not have any profiles to use");
         }
         
         for (Profile p: profiles) {
-        	String token = p.getToken();
-        	if (camera.getPtz().isAbsoluteMoveSupported(token) &&
-        		camera.getPtz().isRelativeMoveSupported(token) &&
-        		camera.getPtz().isPtzOperationsSupported(token)) {
-        		profile = p;
-        		break;
-        	}
-        }
-        
-        if (profile == null) {
-        	throw new SensorHubException("Camera does not have any profiles capable of PTZ");
+			String token = p.getToken();
+			if (camera.getPtz().isAbsoluteMoveSupported(token) &&
+				camera.getPtz().isRelativeMoveSupported(token) &&
+				camera.getPtz().isPtzOperationsSupported(token)) {
+				profile = p;
+				break;
+			}
+		}
+
+		if (profile == null) {
+			throw new SensorHubException("Camera does not have any profiles capable of PTZ");
         }
         
         serialNumber = camera.getDevices().getDeviceInformation().getSerialNumber().trim();
@@ -142,29 +143,29 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         Mpeg4Configuration mpeg4Config = profile.getVideoEncoderConfiguration().getMPEG4();
         
         if (config.enableH264 && h264Config == null) {
-        	throw new SensorException("Cannot connect to H264 stream - H264 not supported");
+			throw new SensorException("Cannot connect to H264 stream - H264 not supported");
         } else if(config.enableMPEG4 && mpeg4Config == null) {
-        	throw new SensorException("Cannot connect to MPEG4 stream - MPEG4 not supported");
+			throw new SensorException("Cannot connect to MPEG4 stream - MPEG4 not supported");
         }
         
         // add H264 video output
         if (config.enableH264) {
-        	String outputName = videoOutName + videoOutNum++;
-        	h264VideoOutput = new RTPVideoOutput<OnvifCameraDriver>(this, outputName);
-            h264VideoOutput.init(profile.getVideoSourceConfiguration().getBounds().getWidth(), 
-            					 profile.getVideoSourceConfiguration().getBounds().getHeight());
-            // TODO: check the difference between the above and what's below
-            //profile.getVideoEncoderConfiguration().getResolution().getWidth();
-            //profile.getVideoEncoderConfiguration().getResolution().getHeight();
-        	addOutput(h264VideoOutput, false);
+			String outputName = videoOutName + videoOutNum++;
+			h264VideoOutput = new RTPVideoOutput<OnvifCameraDriver>(this, outputName);
+			h264VideoOutput.init(profile.getVideoSourceConfiguration().getBounds().getWidth(), 
+								profile.getVideoSourceConfiguration().getBounds().getHeight());
+			// TODO: check the difference between the above and what's below
+			//profile.getVideoEncoderConfiguration().getResolution().getWidth();
+			//profile.getVideoEncoderConfiguration().getResolution().getHeight();
+			addOutput(h264VideoOutput, false);
         }
 
         // add MPEG4 video output
         if (config.enableMPEG4) {
-        	String outputName = videoOutName + videoOutNum++;
-        	mpeg4VideoOutput = new OnvifVideoOutput(this, outputName);
-        	mpeg4VideoOutput.init();
-        	addOutput(h264VideoOutput, false);
+			String outputName = videoOutName + videoOutNum++;
+			mpeg4VideoOutput = new OnvifVideoOutput(this, outputName);
+			mpeg4VideoOutput.init();
+			addOutput(h264VideoOutput, false);
         }
 
         // add PTZ output
@@ -180,20 +181,20 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 
     @Override
     public void start() throws SensorHubException {
-    	// Validate connection to camera
-    	if (camera == null)
-        	throw new SensorHubException("Exception occured when connecting to camera");
-    	
-    	// start video output
-    	if (mpeg4VideoOutput != null)
-    		mpeg4VideoOutput.start();
+		// Validate connection to camera
+		if (camera == null)
+			throw new SensorHubException("Exception occured when connecting to camera");
 
-    	// start PTZ output
-    	if (ptzPosOutput != null && ptzControlInterface != null) {
+		// start video output
+		if (mpeg4VideoOutput != null)
+			mpeg4VideoOutput.start();
+
+		// start PTZ output
+		if (ptzPosOutput != null && ptzControlInterface != null) {
 			ptzPosOutput .start();
 			ptzControlInterface.start();
-    	}
-    }
+		}
+	}
 
     @Override
     protected void updateSensorDescription() {
@@ -209,56 +210,15 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 
             IdentifierList identifierList = smlFac.newIdentifierList();
             sensorDescription.addIdentification(identifierList);
-
-            /*
-            Term term;
-            term = smlFac.newTerm();
-            term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
-            term.setLabel("Manufacturer Name");
-            term.setValue("Axis");
-            identifierList.addIdentifier2(term);
-
-            if (modelNumber != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
-                term.setLabel("Model Number");
-                term.setValue(modelNumber);
-                identifierList.addIdentifier2(term);
-            }
-
-            if (serialNumber != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
-                term.setLabel("Serial Number");
-                term.setValue(serialNumber);
-                identifierList.addIdentifier2(term);
-            }
-
-            if (longName != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("LongName"));
-                term.setLabel("Long Name");
-                term.setValue(longName);
-                identifierList.addIdentifier2(term);
-            }
-
-            if (shortName != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
-                term.setLabel("Short Name");
-                term.setValue(shortName);
-                identifierList.addIdentifier2(term);
-            }
-            */
         }
     }
 
     @Override
     public boolean isConnected() {
-        if (connection == null)
+        if (camera == null)
             return false;
 
-        return false;//connection.isConnected();
+        return true;
     }
 
     @Override
@@ -266,9 +226,6 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 
     @Override
     public void cleanup() {}
-
-    protected void setAuth() {
-    }
 
     protected String getHostUrl() {
         return hostIp;

@@ -1,5 +1,5 @@
-description = 'Axis Video Camera'
-ext.details = 'Driver for IP video cameras from Axis (with PTZ tasking support)'
+description = 'ONVIF Video Camera'
+ext.details = 'Driver for IP video cameras using the ONFIV standard'
 version = '0.0.1'
 
 dependencies {
@@ -14,7 +14,11 @@ dependencies {
     exclude group: 'commons-cli', module: 'commons-cli'
     exclude group: 'commons-httpclient', module: 'commons-httpclient'
   }
+<<<<<<< HEAD
   compile fileTree(dir: 'lib', include: ['*.jar'])
+=======
+  compile fileTree(dir: 'lib', include: '*.jar')
+>>>>>>> 1f58228628edb3d98bb273acde544ce6913dec9e
 
   testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
 }
