@@ -66,8 +66,6 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     String longName;
     String imageSize;
     
-    String connection;
-    
     public OnvifCameraDriver() {
     }
 
@@ -179,8 +177,6 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         ptzControlInterface = new OnvifPtzControl(this);
         addControlInput(ptzControlInterface);
         ptzControlInterface.init();
-        
-        connection = profile.getName();
     }
 
     @Override
@@ -214,47 +210,6 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 
             IdentifierList identifierList = smlFac.newIdentifierList();
             sensorDescription.addIdentification(identifierList);
-
-            /*
-            Term term;
-            term = smlFac.newTerm();
-            term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
-            term.setLabel("Manufacturer Name");
-            term.setValue("Axis");
-            identifierList.addIdentifier2(term);
-
-            if (modelNumber != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
-                term.setLabel("Model Number");
-                term.setValue(modelNumber);
-                identifierList.addIdentifier2(term);
-            }
-
-            if (serialNumber != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
-                term.setLabel("Serial Number");
-                term.setValue(serialNumber);
-                identifierList.addIdentifier2(term);
-            }
-
-            if (longName != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("LongName"));
-                term.setLabel("Long Name");
-                term.setValue(longName);
-                identifierList.addIdentifier2(term);
-            }
-
-            if (shortName != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
-                term.setLabel("Short Name");
-                term.setValue(shortName);
-                identifierList.addIdentifier2(term);
-            }
-            */
         }
     }
 
