@@ -14,6 +14,7 @@ dependencies {
     exclude group: 'commons-cli', module: 'commons-cli'
     exclude group: 'commons-httpclient', module: 'commons-httpclient'
   }
+  compile fileTree(dir: 'lib', include: ['*.jar'])
 
   testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
 }
