@@ -183,10 +183,11 @@ public class VideoCamHelper extends SWEHelper
         commandData.addItem(TASKING_RTILT, q);
 
         // Relative Zoom
-        Count c = newCount();
-        c.setDefinition(getPropertyUri("RelativeZoomFactor"));
-        c.setLabel("Relative Zoom Factor");
-        commandData.addItem(TASKING_RZOOM, c);
+        q = newQuantity(DataType.FLOAT);
+        q.getUom().setCode("1");
+        q.setDefinition(getPropertyUri("RelativeZoomFactor"));
+        q.setLabel("Relative Zoom Factor");
+        commandData.addItem(TASKING_RZOOM, q);
 
         // PTZ Preset Positions
         Text preset = newText();
