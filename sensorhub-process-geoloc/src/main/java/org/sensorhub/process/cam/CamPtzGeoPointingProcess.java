@@ -283,8 +283,6 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
             if (keepZoom)
             {
             	// set zoom to previous zoom factor
-            	System.out.println("Keeping current zoom factor");
-            	System.out.println("setting zoom to NaN");
             	zoom = Double.NaN;
             }
             
