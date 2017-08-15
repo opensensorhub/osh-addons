@@ -178,7 +178,6 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
         
         try
         {
-        	System.out.println("sending PTZ [" + pan + "," + tilt + "," + zoom + "]");
             commandData.setIntValue(0, commandID);
             commandData.setDoubleValue(1, pan);
             commandData.setDoubleValue(2, tilt);

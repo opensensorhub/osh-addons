@@ -279,7 +279,6 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
             double zoom = (desiredFocal - minFocal) / (maxFocal - minFocal);
             zoom = Math.min(Math.max(zoom, 0.), 1.);
             log.debug("Computed PTZ = [{},{},{}]", pan, tilt, zoom);
-            System.out.println("Computed PTZ = [" + pan + "," + tilt + "," + zoom + "]");
             
             if (keepZoom)
             {
