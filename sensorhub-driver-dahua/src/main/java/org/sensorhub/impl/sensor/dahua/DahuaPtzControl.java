@@ -227,12 +227,10 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
             {
                 parentSensor.ptzDataInterface.pan = (float)pan;
                 parentSensor.ptzDataInterface.tilt = (float)tilt;
-                System.out.println("sending tilt status: " + tilt);
                 parentSensor.ptzDataInterface.zoom = (float)zoom;
                 parentSensor.ptzDataInterface.sendPtzStatus();
             }
             
-            System.out.println("url: " + optionsURL);
             // add BufferReader and read first line; if "Error", read second line and log error
             InputStream is = optionsURL.openStream();
             is.close();
