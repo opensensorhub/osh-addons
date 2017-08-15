@@ -142,7 +142,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
 	            	synchronized (DahuaPtzOutput.this)
 	            	{
 	            	    // only update if control module hasn't pushed an update recently
-	            	    if (System.currentTimeMillis() - latestRecordTime >= samplingPeriod)
+	            	    if (System.currentTimeMillis() - latestRecordTime >= samplingPeriod/2)
 	            	        requestPtzStatus();
 	            	}
                 }
@@ -211,14 +211,15 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
             ptzData = latestRecord.renew();
         
         // set sampling time
-        double time = System.currentTimeMillis() / 1000.;
+        long now = System.currentTimeMillis();
+        double time = now / 1000.;
         ptzData.setDoubleValue(0, time);
         ptzData.setFloatValue(1, pan);
         ptzData.setFloatValue(2, tilt);
         ptzData.setFloatValue(3, zoom);
         
         latestRecord = ptzData;
-        latestRecordTime = System.currentTimeMillis();
+        latestRecordTime = now;
         eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, DahuaPtzOutput.this, latestRecord));
     }
 
