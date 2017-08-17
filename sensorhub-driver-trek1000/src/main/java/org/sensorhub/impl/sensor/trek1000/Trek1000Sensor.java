@@ -19,8 +19,10 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.sensor.PositionConfig.LLALocation;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.trek1000.Triangulation.Vec3d;
@@ -65,9 +67,16 @@ public class Trek1000Sensor extends AbstractSensorModule<Trek1000Config>
         generateXmlID("TREK1000_", config.serialNumber);
         
         // init anchor positions
-        anchorLocations[0] = new Vec3d(0, 0, 0);
-        anchorLocations[1] = new Vec3d(-1.2, 0, 0);
-        anchorLocations[2] = new Vec3d(-1.2, 1.2, 0);        
+        if (config.anchorLocations == null || config.anchorLocations.size() < 3)
+            throw new SensorException("At least 3 anchor locations must be specified");            
+            
+        for (int i=0; i<3; i++) 
+        {
+            LLALocation configLocation = config.anchorLocations.get(i);
+            anchorLocations[i] = new Vec3d(configLocation.lon,
+                                           configLocation.lat,
+                                           configLocation.alt);
+        }
 
         // init main data interfaces
         rangeOutput = new RangeOutput(this);

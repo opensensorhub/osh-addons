@@ -664,8 +664,8 @@ public class Triangulation
 	{
 
 		Vec3d o1 = new Vec3d(0, 0, 0), o2 = new Vec3d(0, 0, 0), 
-				p1 = new Vec3d(0, 0, 0), p2 = new Vec3d(0, 0, 0), 
-				p3 = new Vec3d(0, 0, 0), p4 = new Vec3d(0, 0, 0);
+		p1 = new Vec3d(0, 0, 0), p2 = new Vec3d(0, 0, 0), 
+		p3 = new Vec3d(0, 0, 0), p4 = new Vec3d(0, 0, 0);
 		double r1 = 0, r2 = 0, r3 = 0, r4 = 0;
 		int combination = 0;
 		int result;
