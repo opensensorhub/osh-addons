@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
+import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.Quantity;
 import org.vast.swe.SWEHelper;
 
@@ -37,7 +38,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     private static double FEET_TO_METERS = 0.304800610;
     private static double YARDS_TO_METERS = 0.9144;
     
-    DataComponent laserData;
+    DataComponent lrfData;
     DataEncoding dataEncoding;
     BufferedReader msgReader;
     boolean sendData;
@@ -52,7 +53,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     @Override
     public String getName()
     {
-        return "rangeData";
+        return lrfData.getName();
     }
 
 
@@ -61,29 +62,39 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
         SWEHelper fac = new SWEHelper();
         
         // build SWE Common record structure
-        laserData = fac.newDataRecord(5);
-        laserData.setName(getName());
-        laserData.setDefinition("http://sensorml.com/ont/swe/property/LaserRangeData");
+        lrfData = getOutputDescription();
+     
+        // also generate encoding definition as text block
+        dataEncoding = fac.newTextEncoding(",", "\n");        
+    }
+    
+    
+    public static DataRecord getOutputDescription()
+    {
+        SWEHelper fac = new SWEHelper();
+        
+        DataRecord lrfData = fac.newDataRecord(5);
+        lrfData.setName("rangeData");
+        lrfData.setDefinition("http://sensorml.com/ont/swe/property/LaserRangeData");
         
         // add time, horizontalDistance, azimuth, inclination, and slopeDistance
-        laserData.addComponent("time", fac.newTimeStampIsoUTC());        
-        laserData.addComponent("horizDistance", fac.newQuantity(SWEHelper.getPropertyUri("HorizontalDistance"), "Horizontal Distance", null, "m"));
-        laserData.addComponent("slopeDistance", fac.newQuantity(SWEHelper.getPropertyUri("LineOfSightDistance"), "Line-of-Sight Distance", null, "m"));
+        lrfData.addComponent("time", fac.newTimeStampIsoUTC());        
+        lrfData.addComponent("horizDistance", fac.newQuantity(SWEHelper.getPropertyUri("HorizontalDistance"), "Horizontal Distance", null, "m"));
+        lrfData.addComponent("slopeDistance", fac.newQuantity(SWEHelper.getPropertyUri("LineOfSightDistance"), "Line-of-Sight Distance", null, "m"));
         
         // for azimuth (trueHeading), we also specify a reference frame
         Quantity q = fac.newQuantity(SWEHelper.getPropertyUri("TrueHeading"), "True Heading", null, "deg");
         q.setReferenceFrame("http://sensorml.com/ont/swe/property/NED");
         q.setAxisID("z");
-        laserData.addComponent("azimuth", q);
+        lrfData.addComponent("azimuth", q);
         
         // for inclination, we also specify a reference frame
         q = fac.newQuantity(SWEHelper.getPropertyUri("Inclination"), "Inclination", null, "deg");
         q.setReferenceFrame("http://sensorml.com/ont/swe/property/NED");
         q.setAxisID("y");
-        laserData.addComponent("inclination", q);
-     
-        // also generate encoding definition as text block
-        dataEncoding = fac.newTextEncoding(",", "\n");        
+        lrfData.addComponent("inclination", q);
+        
+        return lrfData;
     }
     
 
@@ -160,7 +171,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     	    // create and populate datablock
             DataBlock dataBlock;
             if (latestRecord == null)
-                dataBlock = laserData.createDataBlock();
+                dataBlock = lrfData.createDataBlock();
             else
                 dataBlock = latestRecord.renew();
             
@@ -253,7 +264,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     @Override
     public DataComponent getRecordDescription()
     {
-        return laserData;
+        return lrfData;
     }
 
 

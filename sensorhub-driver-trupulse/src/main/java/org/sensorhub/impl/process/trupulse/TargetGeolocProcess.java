@@ -22,19 +22,12 @@ import org.sensorhub.algo.geoloc.GeoTransforms;
 import org.sensorhub.algo.geoloc.NadirPointing;
 import org.sensorhub.algo.vecmath.Mat3d;
 import org.sensorhub.algo.vecmath.Vect3d;
-import org.sensorhub.api.common.Event;
-import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.processing.DataSourceConfig;
 import org.sensorhub.api.processing.ProcessException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.processing.AbstractStreamProcess;
-import org.sensorhub.impl.sensor.trupulse.TruPulseConfig;
 import org.sensorhub.impl.sensor.trupulse.TruPulseOutput;
-import org.sensorhub.impl.sensor.trupulse.TruPulseSensor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.process.DataQueue;
@@ -104,9 +97,7 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
         sensorLocInput.addField("loc", fac.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC));
         inputs.put(sensorLocInput.getName(), sensorLocInput);
         
-        TruPulseOutput sensorOutput = new TruPulseOutput(null);
-        sensorOutput.init();
-        rangeMeasInput = sensorOutput.getRecordDescription();
+        rangeMeasInput = TruPulseOutput.getOutputDescription();
         inputs.put(rangeMeasInput.getName(), rangeMeasInput);
         
         // create outputs
@@ -195,47 +186,5 @@ public class TargetGeolocProcess extends AbstractStreamProcess<TargetGeolocConfi
     public boolean isCompatibleDataSource(DataSourceConfig dataSource)
     {
         return true;
-    }
-    
-    
-    public static void main(String[] args) throws Exception
-    {
-        TargetGeolocProcess p = new TargetGeolocProcess();
-        TargetGeolocConfig processConf = new TargetGeolocConfig();
-        processConf.fixedPosLLA = new double[] {45.0, 0.0, 0.0};
-        p.init(processConf);
-        p.sensorLocQueue = new DataQueue();
-        p.rangeMeasQueue = new DataQueue();
-        
-        TruPulseSensor sensor = new TruPulseSensor();
-        TruPulseConfig sensorConf = new TruPulseConfig();
-        sensor.init(sensorConf);
-        ISensorDataInterface sensorOutput = sensor.getAllOutputs().values().iterator().next();
-        DataComponent outputDef = sensorOutput.getRecordDescription();
-                
-        IStreamingDataInterface processOutput = p.getAllOutputs().values().iterator().next();
-        IEventListener l = new IEventListener() {
-            public void handleEvent(Event<?> e)
-            {
-                DataBlock data = ((DataEvent)e).getRecords()[0];
-                double lat = data.getDoubleValue(1);
-                double lon = data.getDoubleValue(2);
-                double alt = data.getDoubleValue(3);
-                System.out.println("Target Loc = " + lat + "," + lon + "," + alt);
-            }
-        };
-        processOutput.registerListener(l);
-        
-        DataBlock dataBlk = outputDef.createDataBlock();
-        long now = System.currentTimeMillis();
-        double range = 1000.0;
-        double az = 90.0;
-        double inc = 45.0;
-        dataBlk.setDoubleValue(0, now / 1000.);
-        dataBlk.setDoubleValue(2, range);
-        dataBlk.setDoubleValue(3, az);
-        dataBlk.setDoubleValue(4, inc);
-        p.rangeMeasQueue.add(dataBlk);
-        p.process(new SensorDataEvent(now, sensorOutput, dataBlk));
     }
 }
