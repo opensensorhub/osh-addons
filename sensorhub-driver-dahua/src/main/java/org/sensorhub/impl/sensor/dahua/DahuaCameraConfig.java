@@ -57,6 +57,9 @@ public class DahuaCameraConfig extends SensorConfig
     @DisplayInfo(desc="Camera geographic position")
     public PositionConfig position = new PositionConfig();
         
+    @DisplayInfo(desc="Maximum time without receiving frame before attempting to reconnect")
+    public double maxFrameDelay = 1.0;
+    
     @DisplayInfo(desc="Set to true if this OSH node has exclusive control of the camera")
     public boolean exclusiveControl = true;
     

@@ -57,7 +57,7 @@ public class DahuaVideoOutput extends RTPVideoOutput<DahuaCameraDriver>
         super.start(config.video, config.rtsp, config.connection.connectTimeout);
                 
         // start watchdog thread to detect disconnections
-        final long maxFramePeriod = 10000 / config.video.frameRate;
+        final long maxFramePeriod = (long)(config.maxFrameDelay * 1000);
         lastFrameTime = Long.MAX_VALUE;
         TimerTask checkFrameTask = new TimerTask()
         {
