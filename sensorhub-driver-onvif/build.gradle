@@ -14,19 +14,15 @@ dependencies {
     exclude group: 'commons-cli', module: 'commons-cli'
     exclude group: 'commons-httpclient', module: 'commons-httpclient'
   }
-<<<<<<< HEAD
-  compile fileTree(dir: 'lib', include: ['*.jar'])
-=======
-  compile fileTree(dir: 'lib', include: '*.jar')
->>>>>>> 1f58228628edb3d98bb273acde544ce6913dec9e
 
+  compile fileTree(dir: 'lib', include: ['*.jar'])
   testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
 }
 
 // exclude tests requiring connection to the sensor
 // these have to be run manually
 test {
-  exclude '**/TestAxisCameraDriver.class'
+  exclude '**/TestOnvifCameraDriver.class'
 }
 
 // add info to OSGi manifest
