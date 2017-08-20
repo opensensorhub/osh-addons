@@ -162,7 +162,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
                 if (val.length() > 0 && unit.length() > 0)
                 {
                     sd = Double.parseDouble(val);
-                    sd = convert(hd, unit);
+                    sd = convert(sd, unit);
                 }
                 
                 gotHvMsg = true;
