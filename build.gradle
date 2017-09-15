@@ -2,7 +2,6 @@ apply from: gradle.oshCoreDir + '/common.gradle'
 version = oshCoreVersion
 description = 'OSH Security Add-ons'
 
-
 subprojects {
   // add project dependency to proper configuration depending on version
   // this is used to build different zip distributions
@@ -15,14 +14,12 @@ subprojects {
   }
 }
 
-
 // create one configuration for each distribution
 configurations {
   stable
   dev
 }
- 
-  
+
 // distributions content
 distributions {
   dev {
@@ -30,7 +27,7 @@ distributions {
     contents {
       into('lib') {
         from project.configurations.dev
-      } 
+      }
     }
   }
 
@@ -39,7 +36,7 @@ distributions {
     contents {
       into('lib') {
         from project.configurations.stable
-      } 
+      }
     }
   }
 }
