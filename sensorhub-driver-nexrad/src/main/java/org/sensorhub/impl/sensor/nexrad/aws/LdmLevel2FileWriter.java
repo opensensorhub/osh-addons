@@ -21,6 +21,7 @@ import com.google.common.io.Files;
  * @author T
  * @date Mar 28, 2016
  */
+@Deprecated  // Moved this functionality to AwsNedxradUtil- remove on next code cleanup
 public class LdmLevel2FileWriter implements ChunkHandler {
 	private String level2Path ;
 	private static final int BUFFER_SIZE = 8192;

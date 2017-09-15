@@ -29,7 +29,7 @@ public class MetarDataPoller {
 		this.server = server;
 		this.path = path;
 	}
-	
+	 
 	/**
 	 * 
 	 * @return the last available data record

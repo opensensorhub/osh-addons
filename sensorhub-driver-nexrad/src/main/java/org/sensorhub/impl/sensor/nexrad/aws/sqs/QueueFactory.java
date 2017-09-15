@@ -47,7 +47,7 @@ public class QueueFactory
 	public static void main(String[] args) {
 		listQueues();
 		
-		deleteQueue("https://sqs.us-west-2.amazonaws.com/384286541835/NexradQueue_SensorHub_00016");
+	deleteQueue("https://sqs.us-west-2.amazonaws.com/384286541835/NexradQueue_SensorHub_00024");
 	}
 	
 	public static void listQueues() {
@@ -70,8 +70,13 @@ public class QueueFactory
 
 	public static void deleteQueue(String queueUrl) {
 		if (sqs != null && queueUrl != null) {
-			sqs.deleteQueue(new DeleteQueueRequest(queueUrl));
-			System.out.println("Deleted the queue.");
+			try {
+				sqs.deleteQueue(new DeleteQueueRequest(queueUrl));
+				System.out.println("Deleted queue: " + queueUrl);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 //			sqs.shutdown();
 		}
 	}
