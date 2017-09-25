@@ -15,12 +15,13 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.test.impl.sensor.weatherStation;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
-import net.opengis.sensorml.v20.AbstractProcess;
-import net.opengis.swe.v20.DataComponent;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,6 +36,9 @@ import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.AsciiDataWriter;
 import org.vast.swe.SWEUtils;
+
+import net.opengis.sensorml.v20.AbstractProcess;
+import net.opengis.swe.v20.DataComponent;
 
 
 public class TestWeatherStation implements IEventListener
