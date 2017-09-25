@@ -1,0 +1,105 @@
+{"DecodeFlightRouteResult":{"next_offset":-1,"data":[{"name":"KSJC","type":"Origin Airport","latitude":37.3629924,"longitude":-121.9286208},{"name":"SJC","type":"VOR-DME (NAVAID)","latitude":37.3747222,"longitude":-121.9446667},{"name":"BMRNG","type":"Reporting Point","latitude":37.6169722,"longitude":-121.9658056},{"name":"SYRAH","type":"RNAV","latitude":37.9910500,"longitude":-121.1030889},{"name":"JSICA","type":"RNAV","latitude":38.5205167,"longitude":-117.2868167},{"name":"KITTN","type":"Waypoint (RNAV)","latitude":38.3289528,"longitude":-114.9614639},{"name":"HASSL","type":"Waypoint (RNAV)","latitude":37.5700222,"longitude":-110.8835083},{"name":"CNX","type":"VOR-TAC (NAVAID)","latitude":34.3669444,"longitude":-105.6780556},{"name":"YORUB","type":"Waypoint (RNAV)","latitude":32.9311389,"longitude":-104.2336861},{"name":"UCOKA","type":"Waypoint","latitude":31.3166667,"longitude":-100.0833333},{"name":"DILLO","type":"Waypoint","latitude":30.7963333,"longitude":-98.7871944},{"name":"SZAGI","type":"Waypoint","latitude":30.7591667,"longitude":-98.4320556},{"name":"LAIKS","type":"Waypoint","latitude":30.6460556,"longitude":-98.1455833},{"name":"BOYZZ","type":"Waypoint","latitude":30.5616111,"longitude":-97.9332500},{"name":"HOUKM","type":"Waypoint","latitude":30.3876667,"longitude":-97.7786667},{"name":"KAUS","type":"Destination Airport","latitude":30.1945278,"longitude":-97.6698889}]}}
+
+{
+  "DecodeFlightRouteResult": {
+    "next_offset": -1,
+    "data": [
+      {
+        "name": "KSJC",
+        "type": "Origin Airport",
+        "latitude": 37.3629924,
+        "longitude": -121.9286208
+      },
+      {
+        "name": "SJC",
+        "type": "VOR-DME (NAVAID)",
+        "latitude": 37.3747222,
+        "longitude": -121.9446667
+      },
+      {
+        "name": "BMRNG",
+        "type": "Reporting Point",
+        "latitude": 37.6169722,
+        "longitude": -121.9658056
+      },
+      {
+        "name": "SYRAH",
+        "type": "RNAV",
+        "latitude": 37.9910500,
+        "longitude": -121.1030889
+      },
+      {
+        "name": "JSICA",
+        "type": "RNAV",
+        "latitude": 38.5205167,
+        "longitude": -117.2868167
+      },
+      {
+        "name": "KITTN",
+        "type": "Waypoint (RNAV)",
+        "latitude": 38.3289528,
+        "longitude": -114.9614639
+      },
+      {
+        "name": "HASSL",
+        "type": "Waypoint (RNAV)",
+        "latitude": 37.5700222,
+        "longitude": -110.8835083
+      },
+      {
+        "name": "CNX",
+        "type": "VOR-TAC (NAVAID)",
+        "latitude": 34.3669444,
+        "longitude": -105.6780556
+      },
+      {
+        "name": "YORUB",
+        "type": "Waypoint (RNAV)",
+        "latitude": 32.9311389,
+        "longitude": -104.2336861
+      },
+      {
+        "name": "UCOKA",
+        "type": "Waypoint",
+        "latitude": 31.3166667,
+        "longitude": -100.0833333
+      },
+      {
+        "name": "DILLO",
+        "type": "Waypoint",
+        "latitude": 30.7963333,
+        "longitude": -98.7871944
+      },
+      {
+        "name": "SZAGI",
+        "type": "Waypoint",
+        "latitude": 30.7591667,
+        "longitude": -98.4320556
+      },
+      {
+        "name": "LAIKS",
+        "type": "Waypoint",
+        "latitude": 30.6460556,
+        "longitude": -98.1455833
+      },
+      {
+        "name": "BOYZZ",
+        "type": "Waypoint",
+        "latitude": 30.5616111,
+        "longitude": -97.9332500
+      },
+      {
+        "name": "HOUKM",
+        "type": "Waypoint",
+        "latitude": 30.3876667,
+        "longitude": -97.7786667
+      },
+      {
+        "name": "KAUS",
+        "type": "Destination Airport",
+        "latitude": 30.1945278,
+        "longitude": -97.6698889
+      }
+    ]
+  }
+}
