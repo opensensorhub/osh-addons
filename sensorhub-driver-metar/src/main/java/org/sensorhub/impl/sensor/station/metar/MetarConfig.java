@@ -15,9 +15,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.station.metar;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
 
@@ -35,5 +32,10 @@ public class MetarConfig extends SensorConfig
     public String emwinRoot;
 	public String metarStationMapPath;
 	
+	//  For realtime
 	public String aviationWeatherUrl;
+	
+	//  For archive
+	public String archiveServerUrl;
+	public String archiveServerPath;
 }

@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimerTask;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
@@ -37,12 +36,15 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 	MetarOutput metarInterface;
 	private MetarStationMap map;
 	
-	//   For Emwin operation
+	//   For Emwin operation- deprecate these
 	private DirectoryWatcher watcher;
 	private Thread watcherThread;
 	
+	boolean isRealtime = false;
+	
 	//  For aviationWeather operation
 	
+	//  For realtime
 	
 	public MetarSensor()
 	{
@@ -63,7 +65,16 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 
 		this.metarInterface = new MetarOutput(this);        
 		addOutput(metarInterface, false);
-		metarInterface.init();        
+		metarInterface.init();
+		
+		if(config.aviationWeatherUrl != null) {
+			isRealtime = true;
+		} else if(config.archiveServerUrl != null) {
+			isRealtime = false;
+		} else {
+			throw new SensorHubException("MetarSensor.init() failed. Must specify either aviationWeatherUrl or archiveServerUrl");
+		}
+		
 	}
 
 

@@ -18,16 +18,17 @@ package org.sensorhub.impl.sensor.station;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+
+import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.vast.swe.SWEHelper;
+
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
-import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.station.metar.MetarDataPoller;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.vast.swe.SWEHelper;
 
 
 /**

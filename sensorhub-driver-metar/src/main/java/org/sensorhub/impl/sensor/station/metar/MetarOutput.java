@@ -16,8 +16,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.station.metar;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.station.Station;
 import org.vast.swe.SWEHelper;
 
 import net.opengis.swe.v20.DataBlock;
@@ -43,11 +40,9 @@ import net.opengis.swe.v20.DataRecord;
  * 
  * @author Tony Cook
  *
- *  	DataPoller queries station service at POLLING_INTERVAL and checks for new record.  
- *      If record time is greater than latestRecord.time, we update latestRecord and latestBlock
- *      and send event to bus.  
+ *  	aviationTimerTas polls aviation csv Metar file at POLLING_INTERVAL and checks for new records.  
  */
-public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IMultiSourceDataInterface, FileListener
+public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IMultiSourceDataInterface
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toSeconds(20);
 	private static final int AVERAGE_POLLING_PERIOD = (int)TimeUnit.MINUTES.toMillis(1);
@@ -193,6 +188,7 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IM
 		return latestRecords.get(entityID);
 	}
 	
+	// Realtime 
 	class AviationTimerTask extends TimerTask {
 		String serverUrl;
 		
@@ -202,7 +198,7 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IM
 		
 		@Override
 		public void run() {
-			MetarAviationWeatherReader reader = new MetarAviationWeatherReader("https://aviationweather.gov/adds/dataserver_current/current/metars.cache.csv");
+			MetarAviationWeatherReader reader = new MetarAviationWeatherReader(serverUrl);
 			try {
 				List<Metar> metars = reader.read();
 				for(Metar metar: metars) {
@@ -221,39 +217,6 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IM
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
-			}
-		}
-	}
-	
-	// 	The Emwin way- going away soon
-	@Override
-	public void newFile(Path p) throws IOException {
-		System.err.println("New File: " + p);
-		//  Check format of file name to make sure it is a complete file
-		String fname = p.getFileName().toString();
-		if(!MetarUtil.isEmwinMetarFile(fname))
-			return;
-		
-		MetarParserNew mp = new MetarParserNew();
-		List<Metar> metars = new ArrayList<>();
-		
-		List<String> lines = MetarUtil.cleanFile(p);
-
-		for(String l: lines) {
-			try {
-				Metar metar = mp.parseMetar(l);
-				System.err.println(metar);
-				metar.timeUtc = MetarParserNew.computeTimeUtc(metar.dateString);
-				metars.add(metar);
-				// TODO Fix the time!!
-				latestUpdateTimes.put(metar.stationID, metar.timeUtc);
-				latestRecordTime = System.currentTimeMillis();
-				String stationUID = MetarSensor.STATION_UID_PREFIX + metar.stationID;
-				latestRecord = metarRecordToDataBlock(metar.stationID, metar);
-				latestRecords.put(stationUID, latestRecord);      
-			} catch (Exception e) {
-//				e.printStackTrace(System.err);
-				throw new IOException(e);
 			}
 		}
 	}
