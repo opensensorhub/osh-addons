@@ -113,7 +113,7 @@ public class NldnSensor extends AbstractSensorModule<NldnConfig> implements File
 //			}
 			System.err.println("*** Reading: " + fn);
 			NldnReader reader = new NldnReader(p.toString());
-			NldnRecord rec = reader.createMeshRecord();
+			NldnRecord rec = reader.readNldn();
 			if(rec == null) {
 				throw new IOException("MeshReader returned null mesh record");
 			}

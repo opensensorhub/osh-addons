@@ -111,7 +111,7 @@ public class MeshSensor extends AbstractSensorModule<MeshConfig> implements File
 //			}
 			System.err.println("*** Reading: " + fn);
 			MeshReader reader = new MeshReader(p.toString());
-			MeshRecord rec = reader.createMeshRecord();
+			MeshRecord rec = reader.readMesh();
 			if(rec == null) {
 				throw new IOException("MeshReader returned null mesh record");
 			}

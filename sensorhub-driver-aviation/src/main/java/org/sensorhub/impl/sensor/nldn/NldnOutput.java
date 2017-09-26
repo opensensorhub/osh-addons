@@ -26,6 +26,7 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEHelper;
 
+import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
@@ -68,33 +69,40 @@ public class NldnOutput extends AbstractSensorOutput<NldnSensor>
 	{
 		SWEHelper fac = new SWEHelper();
 
+		//  Top level structure:
+		//	 time, numPts, lat[], lon[], mesh[]
+
 		// SWE Common data structure
-		nldnRecordStruct = fac.newDataRecord(6);
+		nldnRecordStruct = fac.newDataRecord(5);
 		nldnRecordStruct.setName(getName());
 		nldnRecordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/nldn"); // ??
 
 		// time 
 		nldnRecordStruct.addField("time", fac.newTimeStampIsoUTC());
-		//  Array sizes
-		nldnRecordStruct.addComponent("lonSize", 
-				fac.newQuantity("http://sensorml.com/ont/swe/property/NumberOfSamples", "lonSize", "nummber of longitude points", "", DataType.INT));
-		nldnRecordStruct.addComponent("latSize", 
-				fac.newQuantity("http://sensorml.com/ont/swe/property/NumberOfSamples", "latSize", "nummber of latitude points", "", DataType.INT));
-
-		//  lon array 
-		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.FLOAT);
-		DataArray lonArr = fac.newDataArray(X_SIZE);
-		lonArr.setElementType("Longitude", lonQuant);
-		nldnRecordStruct.addComponent("LongitudeArray", lonArr);
+	
+		//  num of points
+		Count numPoints = fac.newCount(DataType.INT);
+		numPoints.setDefinition("http://sensorml.com/ont/swe/property/NumberOfSamples"); 
+		numPoints.setId("NUM_POINTS");
+		nldnRecordStruct.addComponent("numPoints",numPoints);
 		
 		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Latitude", null, "deg", DataType.FLOAT);
-		DataArray latArr = fac.newDataArray(Y_SIZE);
+		DataArray latArr = fac.newDataArray();
 		latArr.setElementType("Latitude", latQuant);
+		latArr.setElementCount(numPoints);
 		nldnRecordStruct.addComponent("LatitudeArray", latArr);
 
-		Quantity nldnQuant = fac.newQuantity("http://earthcastwx.com/ont/swe/property/mesh", "Maximum Estimated Hail Size", null, "mm", DataType.FLOAT);
-		DataArray nldnArr = fac.newDataArray(NUM_POINTS);
+		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.FLOAT);
+		DataArray lonArr = fac.newDataArray();
+		lonArr.setElementType("Longitude", lonQuant);
+		lonArr.setElementCount(numPoints);
+		nldnRecordStruct.addComponent("LongitudeArray", lonArr);
+		
+
+		Quantity nldnQuant = fac.newQuantity("http://earthcastwx.com/ont/swe/property/nldn", "Lightning Data", null, "?", DataType.FLOAT);
+		DataArray nldnArr = fac.newDataArray();
 		nldnArr.setElementType("NLDN", nldnQuant);
+		nldnArr.setElementCount(numPoints);
 		nldnRecordStruct.addComponent("nldnArray", nldnArr);
 		
 		// default encoding is text
@@ -107,22 +115,29 @@ public class NldnOutput extends AbstractSensorOutput<NldnSensor>
 	
 	public void sendMeasurement(NldnRecord rec)
 	{                
+		//  sequential arrays
+		float [] lats = rec.getLats();
+		float [] lons = rec.getLons();
+		float [] vals = rec.getValues();
+		
+		int numPts = lats.length;
+		// update array sizes
+		DataArray latArr = (DataArray)nldnRecordStruct.getComponent(2);
+		DataArray lonArr = (DataArray)nldnRecordStruct.getComponent(3);
+		DataArray nldnArr = (DataArray)nldnRecordStruct.getComponent(4);
+		latArr.updateSize(numPts);
+		lonArr.updateSize(numPts);
+		nldnArr.updateSize(numPts);
+
 		// build data block from Mesh Record
 		DataBlock dataBlock = nldnRecordStruct.createDataBlock();
 		dataBlock.setDoubleValue(0, rec.timeUtc);
-		dataBlock.setIntValue(1, X_SIZE);
-		dataBlock.setIntValue(2, Y_SIZE);
-
-		float [] nldn = new float[NUM_POINTS];
-		for(int j=0; j<Y_SIZE; j++) {
-			for(int i=0, idx=0; i<X_SIZE; i++) {
-				nldn[idx++] = rec.nldn[j][i];
-			}			
-		}
-		Object  obj  = dataBlock.getUnderlyingObject();
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[3].setUnderlyingObject(rec.lon);
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[4].setUnderlyingObject(rec.lat);
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[5].setUnderlyingObject(nldn);
+		dataBlock.setIntValue(1, numPts);
+		
+		
+		((DataBlockMixed)dataBlock).getUnderlyingObject()[2].setUnderlyingObject(lats);
+		((DataBlockMixed)dataBlock).getUnderlyingObject()[3].setUnderlyingObject(lons);
+		((DataBlockMixed)dataBlock).getUnderlyingObject()[4].setUnderlyingObject(vals);
 
 		// update latest record and send event
 		latestRecord = dataBlock;

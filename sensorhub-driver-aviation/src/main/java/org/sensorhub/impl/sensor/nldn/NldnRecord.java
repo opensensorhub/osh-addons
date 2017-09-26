@@ -1,48 +1,53 @@
 package org.sensorhub.impl.sensor.nldn;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class NldnRecord
 {
-	float [] lat;
-	float [] lon;
 	long timeUtc;
-	String tstr; //?/
-	double alt;
-	float [][] nldn;
+	List<NldnPoint> points = new ArrayList<>();
+
+	class NldnPoint {
+		public NldnPoint(float lat, float lon, float val) {
+			this.lat = lat;
+			this.lon = lon;
+			this.value = val;
+		}
+
+		float lat;
+		float lon;
+		float value;
+	}
 	
-	public float [] getLat() {
-		return lat;
+	public void addMeshPoint(NldnPoint pt) {
+		points.add(pt);
 	}
-	public void setLat(float [] lat) {
-		this.lat = lat;
+	
+	public float [] getLats() {
+		float [] lats = new float[points.size()];
+		int i=0;
+		for (NldnPoint pt: points) {
+			lats[i++] = pt.lat;
+		}
+		return lats;
 	}
-	public float[] getLon() {
-		return lon;
+	
+	public float [] getLons() {
+		float [] lons = new float[points.size()];
+		int i=0;
+		for (NldnPoint pt: points) {
+			lons[i++] = pt.lon;
+		}
+		return lons;
 	}
-	public void setLon(float[] lon) {
-		this.lon = lon;
-	}
-	public long getTimeUtc() {
-		return timeUtc;
-	}
-	public void setTimeUtc(long timeUtc) {
-		this.timeUtc = timeUtc;
-	}
-	public String getTstr() {
-		return tstr;
-	}
-	public void setTstr(String tstr) {
-		this.tstr = tstr;
-	}
-	public double getAlt() {
-		return alt;
-	}
-	public void setAlt(double alt) {
-		this.alt = alt;
-	}
-	public float[][] getMesh() {
-		return nldn;
-	}
-	public void setMesh(float[][] mesh) {
-		this.nldn = mesh;
+
+	public float [] getValues() {
+		float [] vals = new float[points.size()];
+		int i=0;
+		for (NldnPoint pt: points) {
+			vals[i++] = pt.value;
+		}
+		return vals;
 	}
 }

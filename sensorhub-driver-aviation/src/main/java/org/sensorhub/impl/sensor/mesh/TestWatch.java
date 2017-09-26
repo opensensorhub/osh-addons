@@ -45,7 +45,7 @@ public class TestWatch implements FileListener
 		}
 		System.err.println("*** Read: " + fn);
 		MeshReader reader = new MeshReader(p.toString());
-		MeshRecord rec = reader.createMeshRecord();
+		MeshRecord rec = reader.readMesh();
 		if(rec == null) {
 			throw new IOException("MeshReader returned null mesh record");
 		}

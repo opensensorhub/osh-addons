@@ -16,16 +16,15 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.mesh;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEHelper;
 
+import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
@@ -50,7 +49,6 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 
 	DataRecord meshRecordStruct;
 	DataEncoding meshEncoding;	
-	private MeshReader reader;
 	
 	public MeshOutput(MeshSensor parentSensor) throws IOException
 	{
@@ -69,38 +67,42 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 		SWEHelper fac = new SWEHelper();
 
 		//  Add top level structure
-		//	 time, alt, lat[],  lon[], mesh[][]
+		//	 time, numPts, lat[], lon[], mesh[]
 
 		// SWE Common data structure
-		meshRecordStruct = fac.newDataRecord(6);
+		meshRecordStruct = fac.newDataRecord(5);
 		meshRecordStruct.setName(getName());
 		meshRecordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/mesh"); // ??
 
 		// time 
 		meshRecordStruct.addField("time", fac.newTimeStampIsoUTC());
-		//  array sizes
-		meshRecordStruct.addComponent("lonSize", 
-				fac.newQuantity("http://sensorml.com/ont/swe/property/NumberOfSamples", "lonSize", "nummber of longitude points", "", DataType.INT));
-		meshRecordStruct.addComponent("latSize", 
-				fac.newQuantity("http://sensorml.com/ont/swe/property/NumberOfSamples", "latSize", "nummber of latitude points", "", DataType.INT));
-
-		//  lon array 
-		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.FLOAT);
-		DataArray lonArr = fac.newDataArray(X_SIZE);
-		lonArr.setElementType("Longitude", lonQuant);
-		meshRecordStruct.addComponent("LongitudeArray", lonArr);
+		
+		//  num of points
+		Count numPoints = fac.newCount(DataType.INT);
+		numPoints.setDefinition("http://sensorml.com/ont/swe/property/NumberOfSamples"); 
+		numPoints.setId("NUM_POINTS");
+		meshRecordStruct.addComponent("numPoints",numPoints);
 		
 		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Latitude", null, "deg", DataType.FLOAT);
-		DataArray latArr = fac.newDataArray(Y_SIZE);
+		DataArray latArr = fac.newDataArray();
 		latArr.setElementType("Latitude", latQuant);
+		latArr.setElementCount(numPoints);
 		meshRecordStruct.addComponent("LatitudeArray", latArr);
 
-		Quantity meshQuant = fac.newQuantity("http://earthcastwx.com/ont/swe/property/mesh", "Maximum Estimated Hail Size", null, "mm", DataType.FLOAT);
-		DataArray meshArr = fac.newDataArray(NUM_POINTS);
-		meshArr.setElementType("MESH", meshQuant);
-		meshRecordStruct.addComponent("meshArray", meshArr);
+		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.FLOAT);
+		DataArray lonArr = fac.newDataArray();
+		lonArr.setElementType("Longitude", lonQuant);
+		lonArr.setElementCount(numPoints);
+		meshRecordStruct.addComponent("LongitudeArray", lonArr);
 		
-		// default encoding is text
+
+		Quantity meshQuant = fac.newQuantity("http://earthcastwx.com/ont/swe/property/mesh", "Maximum Estimated Hail Size", null, "mm", DataType.FLOAT);
+		DataArray meshArr = fac.newDataArray();
+		meshArr.setElementType("MESH", meshQuant);
+		meshArr.setElementCount(numPoints);
+		meshRecordStruct.addComponent("meshArray", meshArr);
+//		
+//		// default encoding is text
 		meshEncoding = fac.newTextEncoding(",", "\n");
 	}
 
@@ -110,22 +112,29 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 	
 	public void sendMeasurement(MeshRecord rec)
 	{                
+		//  sequential arrays
+		float [] lats = rec.getLats();
+		float [] lons = rec.getLons();
+		float [] vals = rec.getValues();
+		
+		int numPts = lats.length;
+		// update array sizes
+		DataArray latArr = (DataArray)meshRecordStruct.getComponent(2);
+		DataArray lonArr = (DataArray)meshRecordStruct.getComponent(3);
+		DataArray meshArr = (DataArray)meshRecordStruct.getComponent(4);
+		latArr.updateSize(numPts);
+		lonArr.updateSize(numPts);
+		meshArr.updateSize(numPts);
+
 		// build data block from Mesh Record
 		DataBlock dataBlock = meshRecordStruct.createDataBlock();
 		dataBlock.setDoubleValue(0, rec.timeUtc);
-		dataBlock.setIntValue(1, X_SIZE);
-		dataBlock.setIntValue(2, Y_SIZE);
+		dataBlock.setIntValue(1, numPts);
 		
-		float [] mesh = new float[NUM_POINTS];
-		for(int j=0; j<Y_SIZE; j++) {
-			for(int i=0, idx=0; i<X_SIZE; i++) {
-				mesh[idx++] = rec.mesh[j][i];
-			}			
-		}
-		Object  obj  = dataBlock.getUnderlyingObject();
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[3].setUnderlyingObject(rec.lon);
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[4].setUnderlyingObject(rec.lat);
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[5].setUnderlyingObject(mesh);
+		
+		((DataBlockMixed)dataBlock).getUnderlyingObject()[2].setUnderlyingObject(lats);
+		((DataBlockMixed)dataBlock).getUnderlyingObject()[3].setUnderlyingObject(lons);
+		((DataBlockMixed)dataBlock).getUnderlyingObject()[4].setUnderlyingObject(vals);
 
 		// update latest record and send event
 		latestRecord = dataBlock;

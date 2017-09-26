@@ -1,47 +1,54 @@
 package org.sensorhub.impl.sensor.mesh;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MeshRecord
 {
-	float [] lat;
-	float [] lon;
 	long timeUtc;
-	String tstr; //?/
-	double alt;
-	float [][] mesh;
-	public float [] getLat() {
-		return lat;
+	List<MeshPoint> points = new ArrayList<>();
+
+	class MeshPoint {
+		public MeshPoint(float lat, float lon, float val) {
+			this.lat = lat;
+			this.lon = lon;
+			this.value = val;
+		}
+
+		float lat;
+		float lon;
+		float value;
 	}
-	public void setLat(float [] lat) {
-		this.lat = lat;
+	
+	public void addMeshPoint(MeshPoint pt) {
+		points.add(pt);
 	}
-	public float[] getLon() {
-		return lon;
+	
+	public float [] getLats() {
+		float [] lats = new float[points.size()];
+		int i=0;
+		for (MeshPoint pt: points) {
+			lats[i++] = pt.lat;
+		}
+		return lats;
 	}
-	public void setLon(float[] lon) {
-		this.lon = lon;
+	
+	public float [] getLons() {
+		float [] lons = new float[points.size()];
+		int i=0;
+		for (MeshPoint pt: points) {
+			lons[i++] = pt.lon;
+		}
+		return lons;
 	}
-	public long getTimeUtc() {
-		return timeUtc;
+
+	public float [] getValues() {
+		float [] meshs = new float[points.size()];
+		int i=0;
+		for (MeshPoint pt: points) {
+			meshs[i++] = pt.value;
+		}
+		return meshs;
 	}
-	public void setTimeUtc(long timeUtc) {
-		this.timeUtc = timeUtc;
-	}
-	public String getTstr() {
-		return tstr;
-	}
-	public void setTstr(String tstr) {
-		this.tstr = tstr;
-	}
-	public double getAlt() {
-		return alt;
-	}
-	public void setAlt(double alt) {
-		this.alt = alt;
-	}
-	public float[][] getMesh() {
-		return mesh;
-	}
-	public void setMesh(float[][] mesh) {
-		this.mesh = mesh;
-	}
+
 }
