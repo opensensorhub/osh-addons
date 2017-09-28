@@ -21,7 +21,7 @@ import org.sensorhub.api.sensor.SensorConfig;
 public class FltawareConfig extends SensorConfig
 {
     
-    @DisplayInfo(desc="Max Estimated Hail Size Config params")
+    @DisplayInfo(desc="Earthcast FlightAware Firehose feed")
     public String dataPath;
     
     
