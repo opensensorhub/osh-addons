@@ -25,7 +25,10 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.data.DataBlockFloat;
 import org.vast.data.DataBlockMixed;
+import org.vast.data.DataBlockParallel;
+import org.vast.data.DataBlockString;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
@@ -57,7 +60,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 	Map<String, Long> latestUpdateTimes;
 	Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
 
-	
+
 	public FlightPlanOutput(FltawareSensor parentSensor) 
 	{
 		super(parentSensor);
@@ -75,56 +78,43 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 	{
 		SWEHelper fac = new SWEHelper();
 		GeoPosHelper geoHelper = new GeoPosHelper();
-		
+
 		//  Add top level structure for flight plan
 		//	 time, flightId, numWaypoints, String[] icaoCode, String [] type, lat[], lon[]
+		//	 time, flightId, numWaypoints, Waypt [] 
 
 		// SWE Common data structure
-		recordStruct = fac.newDataRecord(7);
+		recordStruct = fac.newDataRecord(4);
 		recordStruct.setName(getName());
 		recordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/flightPlan"); // ??
-		
-        recordStruct.addComponent("time", fac.newTimeStampIsoGPS());
 
-        // flightIds
-		recordStruct.addField("flightId", fac.newText("", "flightId", "Internally generated flight desc (flightNum_DestAirport"));
-        
+		recordStruct.addComponent("time", fac.newTimeStampIsoGPS());
+
+		// flightIds
+		recordStruct.addComponent("flightId", fac.newText("", "flightId", "Internally generated flight desc (flightNum_DestAirport"));
+
 		//  num of points
 		Count numPoints = fac.newCount(DataType.INT);
 		numPoints.setDefinition("http://sensorml.com/ont/swe/property/NumberOfSamples"); 
 		numPoints.setId("NUM_POINTS");
 		recordStruct.addComponent("numPoints",numPoints);
-		
-		
-		
-		//  icaoCodes
+
+
+		DataComponent waypt = fac.newDataRecord();
 		Text code = fac.newText("http://sensorml.com/ont/swe/property/code", "icaoCode", "Typically, ICAO airline code plus IATA/ticketing flight number");
-		DataArray codeArr = fac.newDataArray();
-		codeArr.setElementType("icaoCode", code);
-		codeArr.setElementCount(numPoints);
-		recordStruct.addComponent("CodeArray", codeArr);
-
-		//  icaoCodes
-		Text type = fac.newText("http://sensorml.com/ont/swe/property/type", "icaoCode", "Type (Waypoint/Navaid/etc.)" );
-		DataArray typeArr = fac.newDataArray();
-		typeArr.setElementType("type", type);
-		typeArr.setElementCount(numPoints);
-		recordStruct.addComponent("TypeArray", typeArr);
-		
-		
+		waypt.addComponent(name, code);
+		Text type = fac.newText("http://sensorml.com/ont/swe/property/type", "type", "Type (Waypoint/Navaid/etc.)" );
+		waypt.addComponent(name, type);
 		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Latitude", null, "deg", DataType.FLOAT);
-		DataArray latArr = fac.newDataArray();
-		latArr.setElementType("Latitude", latQuant);
-		latArr.setElementCount(numPoints);
-		recordStruct.addComponent("LatitudeArray", latArr);
-
+		waypt.addComponent(name, latQuant);
 		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.FLOAT);
-		DataArray lonArr = fac.newDataArray();
-		lonArr.setElementType("Longitude", lonQuant);
-		lonArr.setElementCount(numPoints);
-		recordStruct.addComponent("LongitudeArray", lonArr);
-		
-        
+		waypt.addComponent(name, lonQuant);
+
+		DataArray ptArr = fac.newDataArray();
+		ptArr.setElementType("point", waypt);
+		ptArr.setElementCount(numPoints);
+		recordStruct.addComponent("points", ptArr);
+
 		// default encoding is text
 		encoding = fac.newTextEncoding(",", "\n");
 	}
@@ -132,37 +122,31 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 	public void start() throws SensorHubException {
 		// Nothing to do 
 	}
-	
-	public void sendFlightPlan(FlightPlan plan)
-	{                
-		//  sequential arrays
-		float [] lats = plan.getLats();
-		float [] lons = plan.getLons();
-		String [] names = plan.getNames();
-		String [] types = plan.getTypes();
-		
-		int numPts = lats.length;
-		// update array sizes
-		DataArray nameArr = (DataArray)recordStruct.getComponent(3);
-		DataArray typeArr = (DataArray)recordStruct.getComponent(4);
-		DataArray latArr = (DataArray)recordStruct.getComponent(5);
-		DataArray lonArr = (DataArray)recordStruct.getComponent(6);
-		nameArr.updateSize(numPts);
-		typeArr.updateSize(numPts);
-		latArr.updateSize(numPts);
-		lonArr.updateSize(numPts);
 
-		// build data block from Mesh Record
+	public void sendFlightPlan(FlightPlan plan)
+	{
+
+		int numPts = plan.waypoints.size();
+
+		DataArray ptArr = (DataArray)recordStruct.getComponent(3);
+		ptArr.updateSize(numPts);
 		DataBlock dataBlock = recordStruct.createDataBlock();
+
 		dataBlock.setDoubleValue(0, plan.time);
 		dataBlock.setStringValue(1, plan.flightId);
-		
 		dataBlock.setIntValue(2, numPts);
+		DataBlock arr = ((DataBlockMixed)dataBlock).getUnderlyingObject()[3];
+		DataBlockParallel parr = (DataBlockParallel)arr;
+		DataBlockString names = (DataBlockString)parr.getUnderlyingObject()[0];
+		DataBlockString types = (DataBlockString)parr.getUnderlyingObject()[1];
+		DataBlockFloat lats = (DataBlockFloat)parr.getUnderlyingObject()[2];
+		DataBlockFloat  lons = (DataBlockFloat)parr.getUnderlyingObject()[3];
+		names.setUnderlyingObject(plan.getNames());
+		types.setUnderlyingObject(plan.getTypes());
+		lats.setUnderlyingObject(plan.getLats());
+		lons.setUnderlyingObject(plan.getLons());
 		
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[3].setUnderlyingObject(names);
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[4].setUnderlyingObject(types);
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[5].setUnderlyingObject(lats);
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[6].setUnderlyingObject(lons);
+//		((DataBlockMixed)dataBlock).getUnderlyingObject()[3].setUnderlyingObject();
 
 		// update latest record and send event
 		latestRecord = dataBlock;
@@ -172,6 +156,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 		latestRecords.put(flightUid, latestRecord);   
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPlanOutput.this, dataBlock));
 	}
+
 
 	public double getAverageSamplingPeriod()
 	{
@@ -209,14 +194,14 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 
 	@Override
 	public DataBlock getLatestRecord(String entityID) {
-//		for(Map.Entry<String, DataBlock> dbe: latestRecords.entrySet()) {
-//			String key = dbe.getKey();
-//			DataBlock val = dbe.getValue();
-//			System.err.println(key + " : " + val);
-//		}
+		//		for(Map.Entry<String, DataBlock> dbe: latestRecords.entrySet()) {
+		//			String key = dbe.getKey();
+		//			DataBlock val = dbe.getValue();
+		//			System.err.println(key + " : " + val);
+		//		}
 		DataBlock b = latestRecords.get(entityID);
 		return b;
 	}
-	
+
 
 }
