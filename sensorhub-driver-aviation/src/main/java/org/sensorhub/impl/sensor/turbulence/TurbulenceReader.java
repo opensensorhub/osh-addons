@@ -1,16 +1,21 @@
 package org.sensorhub.impl.sensor.turbulence;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.List;
 
+import org.sensorhub.impl.sensor.mesh.UcarUtil;
+
+import ucar.ma2.Array;
+import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import ucar.nc2.dataset.NetcdfDataset;
-import ucar.nc2.dt.GridDatatype;
+import ucar.nc2.dt.GridCoordSystem;
 import ucar.nc2.dt.GridDataset.Gridset;
+import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
-import ucar.nc2.geotiff.GeoTiff;
+import ucar.unidata.geoloc.LatLonPoint;
+import ucar.unidata.geoloc.ProjectionImpl;
 
 /**
  * 
@@ -41,22 +46,90 @@ int LambertConformal_Projection;
 
 public class TurbulenceReader
 {
+	// TODO allow var names to be set in config
+	private static final String ALT_VAR = "altitude_above_msl";
+	private static final String TURB_VAR = "Turbulence_Potential_Forecast_Index_altitude_above_msl";
+	private static final String TIME_VAR = "time";
+	private static final String X_VAR = "x";
+	private static final String Y_VAR = "y";
+
 	GridDataset	dataset;
-	
+	Variable crsVar;
+	private NetcdfFile ncFile;
+	private ProjectionImpl proj;
+	private GridCoordSystem gcs;
+	private float [] lats;
+	private float [] lons;
+	private Variable turbVar;
+
 	public TurbulenceReader(String path) throws IOException {
 		dataset = GridDataset.open(path);
+		ncFile = dataset.getNetcdfFile();
+		gcs = dataset.getGrids().get(0).getCoordinateSystem();
+		proj = gcs.getProjection();
+		toLatLon();
+		loadTurb();
+	}
+
+	public void toLatLon() throws IOException {
+		UcarUtil.toLatLon(ncFile, dataset, X_VAR, Y_VAR, lats, lons);
+	}
+
+	private void loadTurb() {
+		turbVar = ncFile.findVariable(TURB_VAR);
+//		Array turbArr4d = turbVar.read();
+//		System.err.println("1");
+//		Array turbArr3d = turbArr4d.reduce();
+//		System.err.println("2");
+
 	}
 	
-	public double [] getProfile(double lat, double lon) {
+	public float [] getProfile(double lat, double lon) throws IOException, InvalidRangeException {
 		//  Convert LatLon coord to spherical mercator proj. (or use gdal to convert entire file to 4326?
+		int [] result = null;
+		int[] idx = gcs.findXYindexFromLatLon(lat, lon, null);
+		if(idx == null || idx[0] == - 1 ||  idx[1] == -1) {
+			throw new IOException("Projection toLatLon failed");
+		}
+		System.err.println("XY index = " + idx[0] + "," + idx[1]);
+		// And actual lat lon of that point (if we need to know how far we are from the requested lat/lon)
+//		LatLonPoint actualLL = gcs.getLatLon(idx[0], idx[1]);
+//		System.err.println("Actual LL: " + actualLL.getLatitude() + "," + actualLL.getLongitude());
 		
-		//  slice data as appropriate- will need multiple slices to interpolate
-		
+//		System.err.println(turbArr3d);
+		//(time=1, altitude_above_msl=52, y=674, x=902);
+		int[] origin = new int[] {0, 0, idx[1], idx[0]};
+		int[] size = new int[] {1, 52, 1, 1};
+		Array profArr = turbVar.read(origin, size);
+		Array profReduce = profArr.reduce();
+		float [] prof = (float []) profReduce.copyTo1DJavaArray();
+		for(int i=0; i<prof.length; i++) {
+			System.err.println("prof[" + i + "] = " + prof[i]);
+		}
+		//
+		//		  Array data2D = data3D.reduce();
+
+		//		//		System.err.println(meshArr);
+		//		Array meshReduce = meshArr.reduce();
+		//		float [][] mesh  = (float [][])meshReduce.copyToNDJavaArray();
+		//		int width = ax.getShape()[0];
+		//		int height = ay.getShape()[0];
+		//		for(int  j=0; j<height; j++) {
+		//			for(int i=0; i<width; i++) {
+		//				//				System.err.println(i + "," + j + "," + mesh[j][i]);
+		//				if(mesh[j][i] != 0) {
+		//					LatLonPoint llpt = proj.projToLatLon(projx[i], projy[j]);
+		//					MeshPoint meshPt = meshRec.new MeshPoint((float)llpt.getLatitude(), (float)llpt.getLongitude(), mesh[j][i]);
+		//					meshRec.addMeshPoint(meshPt);
+		//				}
+		//			}
+		//		}
+
 		// interpolate
-		
+
 		return null;
 	}
-	
+
 	public void dumpInfo() throws Exception {
 		NetcdfDataset ncDataset = dataset.getNetcdfDataset();
 		NetcdfFile ncFile = dataset.getNetcdfFile();
@@ -69,25 +142,13 @@ public class TurbulenceReader
 	}
 
 	public static void main(String[] args) throws Exception {
-		TurbulenceReader reader = new TurbulenceReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201709071815.grb2");
+		TurbulenceReader reader = new TurbulenceReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710041430.grb2");
 		reader.dumpInfo();
-	}
-	
-	public static void main_tiff(String[] args) throws Exception {
-		String path = "C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201709071815.tiff";
-//		String path = "C:/Users/tcook/root/sensorHub/geoserver/time_geotiff/MRMS_MergedReflectivityQComposite_00.00_20170726-172841.grib2";
-		GeoTiff gt = new GeoTiff(path);
-		gt.read();
-		gt.showInfo(new PrintWriter(System.err));
-	}
-	
-	public static void main_(String[] args) throws Exception {
-//		String path = "C:/Data/sensorhub/delta/edr/DeltaEdr.20170816.2010.nc";
-		String path = "C:/Data/sensorhub/delta/ECT_NCST_DELTA_GTGTURB_6_5km.201708042145.grb2";
-		NetcdfFile f = NetcdfFile.open(path);
-		List<Variable> vars = f.getVariables();
-		for(Variable var: vars) {
-			System.err.println(var);
+		for(int i=0;i<100;i++ ) {
+			System.err.println(i);
+			double lat = 30. + Math.random() * 10;
+			double lon = -90. + Math.random() * 10;
+			reader.getProfile(lat, lon);
 		}
 	}
 }

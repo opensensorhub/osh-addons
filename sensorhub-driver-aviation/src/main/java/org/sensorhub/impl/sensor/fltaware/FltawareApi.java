@@ -60,7 +60,7 @@ public class FltawareApi
 		}
 		if(url.endsWith("&"))
 			url = url.substring(0, url.length() - 1);
-//		System.err.println(url);
+		System.err.println(url);
 		HttpGet request = new HttpGet(url);
 		String auth = user + ":" + passwd;
 		byte[] encodedAuth = Base64.encodeBase64(auth.getBytes(Charset.forName("ISO-8859-1")));
@@ -101,6 +101,7 @@ public class FltawareApi
 	 */
 	public FlightPlan getFlightPlan(String id) throws ClientProtocolException, IOException {
 		String json = invokeNew(DecodeFlightRoute_URL + "faFlightID=" + id);
+		System.err.println(DecodeFlightRoute_URL + "faFlightID=" + id);
 		if(json.contains("error")) {
 			System.err.println("FlightPlan.getFlightPlan(): Whoops: " + json);
 			return null;
@@ -128,14 +129,26 @@ public class FltawareApi
 		System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.commons.httpclient", "debug");
 
 		FltawareApi api = new FltawareApi("drgregswilson", "2809b6196a2cfafeb89db0a00b117ac67e876220");
-		FlightPlan plan = api.getFlightPlan("SWA669-1507008391-airline-0721");
+		
+		
+//		String jsone = api.invokeNew(Enroute_URL, "airport=KSMF");
+//		System.err.println(jsone);
+		
+		String json = api.invokeNew(FlightInfoEx_URL, "ident=DAL1260", "howMany=2");
+//		System.err.println(FlightInfoEx_URL + "ident=DAL1260");
+		System.err.println(json);
+
+		FlightPlan plan = api.getFlightPlan("DAL1260-1507094760-airline-353");
+//		plan.dump();
 //		System.err.println(decodedInfo);
 		System.err.println(plan);
 
-//		String json = api.invokeNew(Enroute_URL, "airport=KAUS", "howMany=10","filter=airline");
-//		String json = api.invokeNew(FlightInfoEx_URL, "ident=SWA669");
-//		String json = api.invokeNew(Enroute_URL_test);
-//		System.err.println(json);
+		 plan = api.getFlightPlan("DAL1487-1506921959-airline-0651");
+		plan.dump();
+//		System.err.println(decodedInfo);
+		System.err.println(plan);
+
+		//		String json = api.invokeNew(Enroute_URL, "airport=KAUS", "howMany=10","filter=airline");
 		
 		
 //		json = api.invokeNew(InFlightInfo_URL, "ident=DAL1323");

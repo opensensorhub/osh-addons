@@ -25,7 +25,7 @@ public class TurbulenceDescriptor extends JarModuleProvider implements IModulePr
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return Turbulence.class;
+        return TurbulenceSensor.class;
     }
 
     

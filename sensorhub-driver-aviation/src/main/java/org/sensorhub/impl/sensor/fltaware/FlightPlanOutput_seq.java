@@ -48,7 +48,7 @@ import net.opengis.swe.v20.Text;
  * TODO- add zulu time output somewhere
  *
  */
-public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> implements IMultiSourceDataInterface  
+public class FlightPlanOutput_seq extends AbstractSensorOutput<FltawareSensor> implements IMultiSourceDataInterface  
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = 1; //(int)TimeUnit.SECONDS.toSeconds(5);
 
@@ -58,7 +58,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 	Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
 
 	
-	public FlightPlanOutput(FltawareSensor parentSensor) 
+	public FlightPlanOutput_seq(FltawareSensor parentSensor) 
 	{
 		super(parentSensor);
 		latestUpdateTimes = new HashMap<String, Long>();
@@ -94,8 +94,6 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 		numPoints.setDefinition("http://sensorml.com/ont/swe/property/NumberOfSamples"); 
 		numPoints.setId("NUM_POINTS");
 		recordStruct.addComponent("numPoints",numPoints);
-		
-		
 		
 		//  icaoCodes
 		Text code = fac.newText("http://sensorml.com/ont/swe/property/code", "icaoCode", "Typically, ICAO airline code plus IATA/ticketing flight number");
@@ -170,7 +168,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 		String flightUid = FltawareSensor.AIRCRAFT_UID_PREFIX + plan.flightId;
 		latestUpdateTimes.put(flightUid, plan.time);
 		latestRecords.put(flightUid, latestRecord);   
-		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPlanOutput.this, dataBlock));
+		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPlanOutput_seq.this, dataBlock));
 	}
 
 	public double getAverageSamplingPeriod()

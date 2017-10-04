@@ -41,6 +41,13 @@ public class FlightPlan
 		}
 	}
 	
+	public void dump() {
+		for(Waypoint w: waypoints) {
+			System.err.println(w);
+		}
+		
+	}
+	
 	class Waypoint {
 		String name;
 		String type;
@@ -54,6 +61,9 @@ public class FlightPlan
 			this.lon = lon;
 		}
 
+		public String toString() {
+			return name + "," + type + "," + lat + "," + lon;
+		}
 	}
 
 	public float [] getLats() {

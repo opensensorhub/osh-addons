@@ -13,7 +13,7 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.fltaware;
+package org.sensorhub.impl.sensor.turbulence;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -25,6 +25,8 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.sensor.fltaware.FlightPlan;
+import org.sensorhub.impl.sensor.fltaware.FltawareSensor;
 import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
@@ -48,7 +50,7 @@ import net.opengis.swe.v20.Text;
  * TODO- add zulu time output somewhere
  *
  */
-public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> implements IMultiSourceDataInterface  
+public class TurbulenceOutput extends AbstractSensorOutput<TurbulenceSensor> implements IMultiSourceDataInterface  
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = 1; //(int)TimeUnit.SECONDS.toSeconds(5);
 
@@ -58,7 +60,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 	Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
 
 	
-	public FlightPlanOutput(FltawareSensor parentSensor) 
+	public TurbulenceOutput(TurbulenceSensor parentSensor) 
 	{
 		super(parentSensor);
 		latestUpdateTimes = new HashMap<String, Long>();
@@ -68,7 +70,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 	@Override
 	public String getName()
 	{
-		return "FlightPlan data";
+		return "Turbulence profile data";
 	}
 
 	protected void init()
@@ -94,8 +96,6 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 		numPoints.setDefinition("http://sensorml.com/ont/swe/property/NumberOfSamples"); 
 		numPoints.setId("NUM_POINTS");
 		recordStruct.addComponent("numPoints",numPoints);
-		
-		
 		
 		//  icaoCodes
 		Text code = fac.newText("http://sensorml.com/ont/swe/property/code", "icaoCode", "Typically, ICAO airline code plus IATA/ticketing flight number");
@@ -133,44 +133,8 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 		// Nothing to do 
 	}
 	
-	public void sendFlightPlan(FlightPlan plan)
+	public void sendProfileData()
 	{                
-		//  sequential arrays
-		float [] lats = plan.getLats();
-		float [] lons = plan.getLons();
-		String [] names = plan.getNames();
-		String [] types = plan.getTypes();
-		
-		int numPts = lats.length;
-		// update array sizes
-		DataArray nameArr = (DataArray)recordStruct.getComponent(3);
-		DataArray typeArr = (DataArray)recordStruct.getComponent(4);
-		DataArray latArr = (DataArray)recordStruct.getComponent(5);
-		DataArray lonArr = (DataArray)recordStruct.getComponent(6);
-		nameArr.updateSize(numPts);
-		typeArr.updateSize(numPts);
-		latArr.updateSize(numPts);
-		lonArr.updateSize(numPts);
-
-		// build data block from Mesh Record
-		DataBlock dataBlock = recordStruct.createDataBlock();
-		dataBlock.setDoubleValue(0, plan.time);
-		dataBlock.setStringValue(1, plan.flightId);
-		
-		dataBlock.setIntValue(2, numPts);
-		
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[3].setUnderlyingObject(names);
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[4].setUnderlyingObject(types);
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[5].setUnderlyingObject(lats);
-		((DataBlockMixed)dataBlock).getUnderlyingObject()[6].setUnderlyingObject(lons);
-
-		// update latest record and send event
-		latestRecord = dataBlock;
-		latestRecordTime = System.currentTimeMillis();
-		String flightUid = FltawareSensor.AIRCRAFT_UID_PREFIX + plan.flightId;
-		latestUpdateTimes.put(flightUid, plan.time);
-		latestRecords.put(flightUid, latestRecord);   
-		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPlanOutput.this, dataBlock));
 	}
 
 	public double getAverageSamplingPeriod()
@@ -196,7 +160,8 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 	@Override
 	public Collection<String> getEntityIDs()
 	{
-		return parentSensor.getEntityIDs();
+//		return parentSensor.getEntityIDs();
+		return null;
 	}
 
 

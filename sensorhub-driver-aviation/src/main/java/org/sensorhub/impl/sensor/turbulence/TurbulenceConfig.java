@@ -15,13 +15,13 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.turbulence;
 
 import org.sensorhub.api.config.DisplayInfo;
-import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.api.sensor.SensorConfig;
 
 
-public class TurbulenceConfig extends ModuleConfig
+public class TurbulenceConfig extends SensorConfig
 {
     
-    @DisplayInfo(desc="DEscription of configuration field to show in UI")
+    @DisplayInfo(desc="Vertical Cross Section Turbulence config")
     public String configOption;
     
     

@@ -15,10 +15,10 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.turbulence;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.module.AbstractModule;
+import org.sensorhub.impl.sensor.AbstractSensorModule;
 
 
-public class Turbulence extends AbstractModule<TurbulenceConfig>
+public class TurbulenceSensor extends AbstractSensorModule<TurbulenceConfig>
 {
 
     @Override
@@ -27,11 +27,15 @@ public class Turbulence extends AbstractModule<TurbulenceConfig>
         
     }
 
-
     @Override
     public void stop() throws SensorHubException
     {
 
     }
 
+	@Override
+	public boolean isConnected() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }
