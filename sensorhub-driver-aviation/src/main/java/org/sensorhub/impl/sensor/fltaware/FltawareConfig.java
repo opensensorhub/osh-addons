@@ -22,7 +22,6 @@ public class FltawareConfig extends SensorConfig
 {
     
     @DisplayInfo(desc="Earthcast FlightAware Firehose feed")
-    public String dataPath;
-    
-    
+    public String userName;
+    public String password;
 }

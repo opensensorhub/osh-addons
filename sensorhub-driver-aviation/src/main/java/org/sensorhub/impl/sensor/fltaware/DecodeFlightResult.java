@@ -1,5 +1,7 @@
 package org.sensorhub.impl.sensor.fltaware;
 
+import org.sensorhub.impl.sensor.fltaware.FlightPlan.Waypoint;
+
 public class DecodeFlightResult extends FlightAwareResult
 {
 	Result DecodeFlightRouteResult = new Result();  // Gson class name doesn't matter, just the variable name.  And Case matters!!!

@@ -14,48 +14,112 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fltaware;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.http.client.ClientProtocolException;
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.data.FoiEvent;
+import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.vast.sensorML.SMLHelper;
+
+import net.opengis.gml.v32.AbstractFeature;
+import net.opengis.gml.v32.impl.GMLFactory;
+import net.opengis.sensorml.v20.AbstractProcess;
+import net.opengis.sensorml.v20.PhysicalSystem;
 
 /**
  * 
  * @author tcook
- * @since Sep 13, 2017
+ * @since oCT 1, 2017
  * 
- * TODO:  Need a thread that monitors the watcherThread and restarts it if it dies
  *
  */
-public class FltawareSensor extends AbstractSensorModule<FltawareConfig> 
+public class FltawareSensor extends AbstractSensorModule<FltawareConfig> implements IMultiSourceDataProducer, FlightObjectListener
 {
-	FlightPlanOutput fltawareInterface;
+	FlightPlanOutput flightPlanOutput;
+	FlightPositionOutput flightPositionOutput;
 	Thread watcherThread;
+	private FltawareApi api;
 
+	// Helpers
+	SMLHelper smlFac = new SMLHelper();
+	GMLFactory gmlFac = new GMLFactory(true);
+	
+	// Dynamically created FOIs
+	Set<String> foiIDs;
+	Map<String, AbstractFeature> aircraftFois;
+	Map<String, AbstractFeature> aircraftDesc;
+	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
+	static final String AIRCRAFT_UID_PREFIX = SENSOR_UID_PREFIX + "flightPlan:";
+
+	static final Logger log = LoggerFactory.getLogger(FltawareSensor.class);
+	
+	public FltawareSensor() {
+		this.foiIDs = new LinkedHashSet<String>();
+		this.aircraftFois = new LinkedHashMap<String, AbstractFeature>();
+		this.aircraftDesc = new LinkedHashMap<String, AbstractFeature>();
+	}
+	
+	@Override
+	protected void updateSensorDescription()
+	{
+		synchronized (sensorDescLock)
+		{
+			super.updateSensorDescription();
+			sensorDescription.setDescription("Delta FlightPlan networK");
+		}
+	}
+	
 	@Override
 	public void init() throws SensorHubException
 	{
 		super.init();
 
-		System.err.println("dataPath: " + config.dataPath);
+//		api = new FltawareApi(config.userName, config.password);
+		api = new FltawareApi("drgregswilson", "2809b6196a2cfafeb89db0a00b117ac67e876220");
+		
 		// IDs
 		this.uniqueID = "urn:osh:sensor:earthcast:flightPlan";
 		this.xmlID = "EarthcastFltaware";
 
-		// Initialize interface
-		this.fltawareInterface = new FlightPlanOutput(this);
+		// Initialize Outputs
+		this.flightPlanOutput = new FlightPlanOutput(this);
 
-		addOutput(fltawareInterface, false);
-		fltawareInterface.init();
+		addOutput(flightPlanOutput, false);
+		flightPlanOutput.init();
+
+		this.flightPositionOutput = new FlightPositionOutput(this);
+		flightPositionOutput.init();
+		addOutput(flightPositionOutput, false);
 	}
 
 	@Override
 	public void start() throws SensorHubException
 	{
-//		String dummyPlan = {"pitr":"1506547848","type":"flightplan","ident":"DAL1646","aircrafttype":"MD90","alt":"31000","dest":"KCMH","edt":"1506544980","eta":"1506548880","facility_hash":"4d2c96d17587e273143d08a2c8c6952808763061","facility_name":"Indianapolis Center","fdt":"1506543720","hexid":"ACFC4B","id":"DAL1646-1506317145-airline-0176","orig":"KATL","reg":"N936DN","route":"KATL.PADGT2.SMTTH.Q67.JONEN..HNN.BREMN5.KCMH/2148","speed":"457","status":"A","waypoints":[{"lat":33.64000,"lon":-84.43000},{"lat":33.68000,"lon":-84.18000},{"lat":33.85000,"lon":-84.18000},{"lat":33.94000,"lon":-84.23000},{"lat":34.14000,"lon":-84.33000},{"lat":34.15000,"lon":-84.33000},{"lat":34.30000,"lon":-84.40000},{"lat":34.71000,"lon":-84.30000},{"lat":34.77000,"lon":-84.29000},{"lat":35.12000,"lon":-84.20000},{"lat":35.28000,"lon":-84.16000},{"lat":35.91000,"lon":-84.01000},{"lat":36.68000,"lon":-83.46000},{"lat":36.76000,"lon":-83.39000},{"lat":36.99000,"lon":-83.23000},{"lat":37.25000,"lon":-83.03000},{"lat":37.85000,"lon":-82.63000},{"lat":37.99000,"lon":-82.55000},{"lat":38.07000,"lon":-82.49000},{"lat":38.32000,"lon":-82.32000},{"lat":38.75000,"lon":-82.03000},{"lat":38.86000,"lon":-82.07000},{"lat":38.91000,"lon":-82.09000},{"lat":38.94000,"lon":-82.10000},{"lat":39.42000,"lon":-82.29000},{"lat":39.48000,"lon":-82.32000},{"lat":39.51000,"lon":-82.33000},{"lat":39.59000,"lon":-82.36000},{"lat":39.63000,"lon":-82.38000},{"lat":39.70000,"lon":-82.40000},{"lat":39.78000,"lon":-82.53000},{"lat":39.88000,"lon":-82.70000},{"lat":39.93000,"lon":-82.78000},{"lat":39.98000,"lon":-82.87000},{"lat":40.00000,"lon":-82.89000}],"ete":"3900"}
-		//  The Fltaware Firehose process should be on? OR do we start it here.  Needs to run 24/7, but if not here then we missing data
-		FlightObject obj = FlightObject.getSampleFlightPlan();
-		fltawareInterface.sendMeasurement(obj);
+		//  Push sample flight plan
+//		FlightPlan plan = FlightPlan.getSamplePlan();
+//		flightPlanOutput.sendFlightPlan(plan);
+		
+		// Start Firehose feed- 
+        String machineName = "firehose.flightaware.com";
+    	String userName = "drgregswilson";
+    	String password = "2809b6196a2cfafeb89db0a00b117ac67e876220";
+        FlightAwareClient client = new FlightAwareClient(machineName, userName, password);
+        client.messageTypes.add("flightplan");
+        client.addListener(this);
+        Thread thread = new Thread(client);
+        thread.start();
 	}
-
 
 	@Override
 	public void stop() throws SensorHubException
@@ -63,10 +127,124 @@ public class FltawareSensor extends AbstractSensorModule<FltawareConfig>
 
 	}
 
-
 	@Override
 	public boolean isConnected() {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	@Override
+	public void processMessage(FlightObject obj) {
+
+	}	
+
+	private void addFoi(long recordTime, String flightId) {
+		String uid = AIRCRAFT_UID_PREFIX + flightId;
+		String description = "Delta Flight Plan for: " + flightId;
+
+		// generate small SensorML for FOI (in this case the system is the FOI)
+		PhysicalSystem foi = smlFac.newPhysicalSystem();
+		foi.setId(flightId);
+		foi.setUniqueIdentifier(uid);
+//		System.err.println("MetarSensor station/uid: " + station + "/" + uid);
+		foi.setName(flightId);
+		foi.setDescription(description);
+
+		foiIDs.add(uid);
+		aircraftFois.put(flightId, foi);
+
+        // send event
+        long now = System.currentTimeMillis();
+        eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
+        
+        log.debug("New vehicle added as FOI: {} ; aircraftFois.size = {}", uid, aircraftFois.size());
+	}
+	
+	@Override
+	public void processMessage(FlightObject obj, String message) {
+		// call api and get flightplan
+		// obj.id
+		if(!obj.type.equals("flightplan")) {
+			System.err.println("FlightAwareSensor does not yet support: " + obj.type);
+			return;
+		}
+
+		try {
+			FlightPlan plan = api.getFlightPlan(obj.id);
+			if(plan == null) {
+				return;
+			}
+//			plan.time = obj.getClock();  // Use pitr?
+			plan.time = System.currentTimeMillis() / 1000;
+//			System.err.println(message);
+//			System.err.println(plan);
+			if(plan != null) {
+				// Check to see if existing entry with this flightId
+				AbstractFeature foi = aircraftFois.get(plan.flightId);
+				// should we replace if it is already there?  Shouldn't matter as long as data is changing
+				if(foi == null)
+					addFoi(plan.time, plan.flightId);
+				flightPlanOutput.sendFlightPlan(plan);
+			}
+		} catch (ClientProtocolException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} 
+	}
+
+	@Override
+	public Collection<String> getEntityIDs()
+	{
+		return Collections.unmodifiableCollection(aircraftFois.keySet());
+	}
+
+
+	@Override
+	public AbstractFeature getCurrentFeatureOfInterest()
+	{
+		return null;
+	}
+
+
+	@Override
+	public AbstractProcess getCurrentDescription(String entityID)
+	{
+//		return aircraftDesc.get(entityID);
+		return null;
+	}
+
+
+	@Override
+	public double getLastDescriptionUpdate(String entityID)
+	{
+		return 0;
+	}
+
+
+	@Override
+	public AbstractFeature getCurrentFeatureOfInterest(String entityID)
+	{
+		return aircraftFois.get(entityID);
+	}
+
+
+	@Override
+	public Collection<? extends AbstractFeature> getFeaturesOfInterest()
+	{
+		return Collections.unmodifiableCollection(aircraftFois.values());
+	}
+
+
+	@Override
+	public Collection<String> getFeaturesOfInterestIDs()
+	{
+		return Collections.unmodifiableCollection(foiIDs);
+	}
+
+	@Override
+	public Collection<String> getEntitiesWithFoi(String foiID)
+	{
+		return Arrays.asList(foiID);
 	}
 }

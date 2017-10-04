@@ -29,18 +29,22 @@ public class FltawareApi
 	private final static String InFlightInfo_URL = BASE_URL + "InFlightInfo?";
 	//	private final static String API_URL = "http://flightxml.flightaware.com/json/FlightXML2/FlightInfoEx?ident=SKW3300";
 	// Not working with faFlightId or ident
-	private final static String DecodeFlightRoute_URL = BASE_URL + "DecodeFlightRoute?faFlightID=SKW3300-1506267900-schedule-0000";
+	private final static String DecodeFlightRoute_URL = BASE_URL + "DecodeFlightRoute?"; // faFlightID=DAL1323-1506576332-airline-0231";
 	//	private final static String API_URL = "http://flightxml.flightaware.com/json/FlightXML2/DecodeFlightRoute?ident=SWA1878&departureTime=1506101700";
 	private final static String GetFlightID_URL = BASE_URL + "GetFlightID?ident=SWA1878&departureTime=1506101700";
-	private final static String Enroute_URL = BASE_URL + "Enroute?airport=KAUS&howMany=10&filter=airline";
+	private final static String Enroute_URL = BASE_URL + "Enroute?";
+//	private final static String Enroute_URL_test = BASE_URL + "Enroute?airport=KAUS&howMany=10&filter=airline";
 	private final static String Scheduled_URL = BASE_URL + "Scheduled?airport=KAUS&howMany=10&filter=airline";
 	private final static String AirlineInfo_URL = BASE_URL + "AirlineInfo?airlineCode=DAL";
-	String user = "drgregswilson";
+	private final static String FlightInfoEx_URL = BASE_URL + "FlightInfoEx?";
+	String user; // = "drgregswilson";
 	//	String euser = "earthcast";
-	String passwd = "2809b6196a2cfafeb89db0a00b117ac67e876220";
+	String passwd; // = "2809b6196a2cfafeb89db0a00b117ac67e876220";
 	static Log log = LogFactory.getLog(Class.class);
 
-	public FltawareApi() {
+	public FltawareApi(String user, String passwd) {
+		this.user = user;
+		this.passwd = passwd;
 	}
 
 	public static String toJson(Object object) {
@@ -52,10 +56,11 @@ public class FltawareApi
 
 	public String invokeNew(String url, String ... args) throws ClientProtocolException, IOException {
 		for(String arg: args) {
-			url = url + arg + ",";
+			url = url + arg + "&";
 		}
-		if(url.endsWith(","))
+		if(url.endsWith("&"))
 			url = url.substring(0, url.length() - 1);
+//		System.err.println(url);
 		HttpGet request = new HttpGet(url);
 		String auth = user + ":" + passwd;
 		byte[] encodedAuth = Base64.encodeBase64(auth.getBytes(Charset.forName("ISO-8859-1")));
@@ -67,8 +72,8 @@ public class FltawareApi
 
 		int statusCode = response.getStatusLine().getStatusCode();
 		String resp = EntityUtils.toString(response.getEntity());
-		System.err.println(statusCode);
-		System.err.println(resp);
+//		System.err.println(statusCode);
+//		System.err.println(resp);
 		return resp;
 	}
 
@@ -86,6 +91,33 @@ public class FltawareApi
 		FlightAwareResult info = gson.fromJson(json, clazz);
 		return info;
 	}
+	
+	/**
+	 * 
+	 * @param id - faFlightId used to retrieve plan
+	 * @return
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 */
+	public FlightPlan getFlightPlan(String id) throws ClientProtocolException, IOException {
+		String json = invokeNew(DecodeFlightRoute_URL + "faFlightID=" + id);
+		if(json.contains("error")) {
+			System.err.println("FlightPlan.getFlightPlan(): Whoops: " + json);
+			return null;
+		}
+		DecodeFlightResult decodedInfo = (DecodeFlightResult)fromJson(json, DecodeFlightResult.class);
+		
+		FlightPlan plan = new FlightPlan(decodedInfo);
+		plan.faFlightId = id;
+		int dashIdx = id.indexOf('-'); 
+		if(dashIdx == -1) {
+			System.err.println("FltawareApi.getFltPlan(): Don't understand faFlightId: " + id);
+		}
+		String ident = id.substring(0, dashIdx);
+		plan.flightId = ident + "_" + plan.destinationAirport;
+//		plan.time = comes from firehose only
+		return plan;
+	}
 
 	public static void main(String[] args) throws Exception {
 		log.warn("Logging Works");
@@ -95,16 +127,22 @@ public class FltawareApi
 		System.setProperty("org.apache.commons.logging.simplelog.log.httpclient.wire", "debug");
 		System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.commons.httpclient", "debug");
 
-		FltawareApi api = new FltawareApi();
-		String json = api.invokeNew(DecodeFlightRoute_URL); 
-		DecodeFlightResult decodedInfo = (DecodeFlightResult)api.fromJson(json, DecodeFlightResult.class);
-		System.err.println(decodedInfo);
+		FltawareApi api = new FltawareApi("drgregswilson", "2809b6196a2cfafeb89db0a00b117ac67e876220");
+		FlightPlan plan = api.getFlightPlan("SWA669-1507008391-airline-0721");
+//		System.err.println(decodedInfo);
+		System.err.println(plan);
 
-		json = api.invokeNew(InFlightInfo_URL, "ident=SWA5437");
-		InFlightInfo info = (InFlightInfo) api.fromJson(json, InFlightInfo.class);
-		Instant depTime = Instant.ofEpochSecond(info.InFlightInfoResult.departureTime);
-		System.err.println(info.InFlightInfoResult.ident + " departed from: " + info.InFlightInfoResult.destination + " at " + depTime);
-		api.printJson(json);
+//		String json = api.invokeNew(Enroute_URL, "airport=KAUS", "howMany=10","filter=airline");
+//		String json = api.invokeNew(FlightInfoEx_URL, "ident=SWA669");
+//		String json = api.invokeNew(Enroute_URL_test);
+//		System.err.println(json);
+		
+		
+//		json = api.invokeNew(InFlightInfo_URL, "ident=DAL1323");
+//		InFlightInfo info = (InFlightInfo) api.fromJson(json, InFlightInfo.class);
+//		Instant depTime = Instant.ofEpochSecond(info.InFlightInfoResult.departureTime);
+//		System.err.println(info.InFlightInfoResult.ident + " departed from: " + info.InFlightInfoResult.destination + " at " + depTime);
+//		api.printJson(json);
 //				List<Waypoint> waypoints = info.createWaypoints();
 //				for(Waypoint p: waypoints) 
 //					System.err.println(p);
