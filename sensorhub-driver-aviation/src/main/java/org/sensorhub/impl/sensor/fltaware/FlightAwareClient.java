@@ -110,6 +110,7 @@ public class FlightAwareClient implements Runnable {
             }
 
             //done, close everything
+           	// TODO move to finally
             writer.close();
             reader.close();
             inputStream.close();
@@ -117,6 +118,9 @@ public class FlightAwareClient implements Runnable {
 
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+//            ssl_socket.close();
+        	
         }
     }
 }

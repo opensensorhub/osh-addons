@@ -42,6 +42,9 @@ public class FltawareApi
 	String passwd; // = "2809b6196a2cfafeb89db0a00b117ac67e876220";
 	static Log log = LogFactory.getLog(Class.class);
 
+	public FltawareApi() {
+		this("drgregswilson", "2809b6196a2cfafeb89db0a00b117ac67e876220");
+	}	
 	public FltawareApi(String user, String passwd) {
 		this.user = user;
 		this.passwd = passwd;
