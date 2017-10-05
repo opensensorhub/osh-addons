@@ -50,7 +50,8 @@ public class FltawareSensor extends AbstractSensorModule<FltawareConfig> impleme
 	FlightPositionOutput flightPositionOutput;
 	Thread watcherThread;
 	private FltawareApi api;
-
+	FlightAwareClient client;
+	
 	// Helpers
 	SMLHelper smlFac = new SMLHelper();
 	GMLFactory gmlFac = new GMLFactory(true);
@@ -61,7 +62,7 @@ public class FltawareSensor extends AbstractSensorModule<FltawareConfig> impleme
 	Map<String, AbstractFeature> aircraftDesc;
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
 	static final String AIRCRAFT_UID_PREFIX = SENSOR_UID_PREFIX + "flightPlan:";
-
+	
 	static final Logger log = LoggerFactory.getLogger(FltawareSensor.class);
 	
 	public FltawareSensor() {
@@ -114,7 +115,7 @@ public class FltawareSensor extends AbstractSensorModule<FltawareConfig> impleme
         String machineName = "firehose.flightaware.com";
     	String userName = "drgregswilson";
     	String password = "2809b6196a2cfafeb89db0a00b117ac67e876220";
-        FlightAwareClient client = new FlightAwareClient(machineName, userName, password);
+        client = new FlightAwareClient(machineName, userName, password);
         client.messageTypes.add("flightplan");
         client.addListener(this);
         Thread thread = new Thread(client);
@@ -124,7 +125,9 @@ public class FltawareSensor extends AbstractSensorModule<FltawareConfig> impleme
 	@Override
 	public void stop() throws SensorHubException
 	{
-
+	    if (client != null)
+	        client.stop();
+	    client = null;
 	}
 
 	@Override
