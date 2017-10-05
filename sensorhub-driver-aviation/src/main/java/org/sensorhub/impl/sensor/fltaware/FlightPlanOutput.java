@@ -101,14 +101,14 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 
 
 		DataComponent waypt = fac.newDataRecord();
-		Text code = fac.newText("http://sensorml.com/ont/swe/property/code", "icaoCode", "Typically, ICAO airline code plus IATA/ticketing flight number");
-		waypt.addComponent(name, code);
-		Text type = fac.newText("http://sensorml.com/ont/swe/property/type", "type", "Type (Waypoint/Navaid/etc.)" );
-		waypt.addComponent(name, type);
-		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Latitude", null, "deg", DataType.FLOAT);
-		waypt.addComponent(name, latQuant);
+		Text code = fac.newText("http://sensorml.com/ont/swe/property/code", "ICAO Code", "Typically, ICAO airline code plus IATA/ticketing flight number");
+		waypt.addComponent("code", code);
+		Text type = fac.newText("http://sensorml.com/ont/swe/property/type", "Type", "Type (Waypoint/Navaid/etc.)" );
+		waypt.addComponent("type", type);
+		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Geodetic Latitude", null, "deg", DataType.FLOAT);
+		waypt.addComponent("lat", latQuant);
 		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.FLOAT);
-		waypt.addComponent(name, lonQuant);
+		waypt.addComponent("lon", lonQuant);
 
 		DataArray ptArr = fac.newDataArray();
 		ptArr.setElementType("point", waypt);
