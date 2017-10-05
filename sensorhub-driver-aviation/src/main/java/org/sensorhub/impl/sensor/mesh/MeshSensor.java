@@ -63,8 +63,6 @@ public class MeshSensor extends AbstractSensorModule<MeshConfig> implements File
 	public void start() throws SensorHubException
 	{
 		// Start listening for new files
-		meshInterface.start();
-		
 		try {
 			watcher = new DirectoryWatcher(Paths.get(config.dataPath), StandardWatchEventKinds.ENTRY_CREATE);
 			watcherThread = new Thread(watcher);

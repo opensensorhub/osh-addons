@@ -95,23 +95,23 @@ public class MeshReader
 	private static final String TIME_VAR = "time";
 	private static final String X_VAR = "x";
 	private static final String Y_VAR = "y";
-	
+
 	GridDataset	dataset;
 	Variable crsVar;
 	private NetcdfFile ncFile;
 	private ProjectionImpl proj;
-//	double [] lat;
-//	double [] lon;
-//	long timeUtc;
-//	String tstr; //?/
-//	double alt;
-//	float [][] mesh;
+	//	double [] lat;
+	//	double [] lon;
+	//	long timeUtc;
+	//	String tstr; //?/
+	//	double alt;
+	//	float [][] mesh;
 
 	public MeshReader(String path) throws IOException {
 		dataset = GridDataset.open(path);
 		ncFile = dataset.getNetcdfFile();
-	    GridCoordSystem gcs =  dataset.getGrids().get(0).getCoordinateSystem();
-	    proj = gcs.getProjection();
+		GridCoordSystem gcs =  dataset.getGrids().get(0).getCoordinateSystem();
+		proj = gcs.getProjection();
 	}
 
 	// Make this a Util method
@@ -119,7 +119,7 @@ public class MeshReader
 		List<GridDatatype> gridTypes = dataset.getGrids();
 		List<Gridset> gridSets = dataset.getGridsets();
 		List<Variable> vars = ncFile.getVariables();
-		
+
 		crsVar = ncFile.findVariable("LambertConformal_Projection");
 		for(Variable var: vars) {
 			System.err.println(var);
@@ -129,39 +129,39 @@ public class MeshReader
 	public double readAlt() throws IOException {
 		Variable valt = ncFile.findVariable(ALT_VAR);
 		Array altArr = valt.read();
-//		System.err.println(altArr);
+		//		System.err.println(altArr);
 		double alt = altArr.getDouble(0);
 		return alt;
 	}
-	
-//	public float[][] readMesh() throws IOException {
+
+	//	public float[][] readMesh() throws IOException {
 	public MeshRecord readMesh() throws IOException {
 		MeshRecord meshRec = new MeshRecord();
 		// time
 		meshRec.timeUtc = readTime();
 
 		//  Proj info
-	    Variable vx = ncFile.findVariable(X_VAR);
-	    Variable vy = ncFile.findVariable(Y_VAR);
-	    Array ax = vx.read();
-	    Array ay = vy.read();
-//	    int[] shapeX = ax.getShape();  // 902
-//	    int[] shapeY = ay.getShape();  // 674
-	    float [] projx = (float [] )ax.getStorage();
-	    float [] projy =  (float [] )ay.getStorage();
+		Variable vx = ncFile.findVariable(X_VAR);
+		Variable vy = ncFile.findVariable(Y_VAR);
+		Array ax = vx.read();
+		Array ay = vy.read();
+		//	    int[] shapeX = ax.getShape();  // 902
+		//	    int[] shapeY = ay.getShape();  // 674
+		float [] projx = (float [] )ax.getStorage();
+		float [] projy =  (float [] )ay.getStorage();
 
 		Variable vmesh= ncFile.findVariable(MESH_VAR);
 		Array meshArr = vmesh.read();
-//		System.err.println(meshArr);
+		//		System.err.println(meshArr);
 		Array meshReduce = meshArr.reduce();
 		float [][] mesh  = (float [][])meshReduce. copyToNDJavaArray();
 		int width = ax.getShape()[0];
 		int height = ay.getShape()[0];
 		for(int  j=0; j<height; j++) {
 			for(int i=0; i<width; i++) {
-//				System.err.println(i + "," + j + "," + mesh[j][i]);
+				//				System.err.println(i + "," + j + "," + mesh[j][i]);
 				if(mesh[j][i] != 0) {
-		    	    LatLonPoint llpt = proj.projToLatLon(projx[i], projy[j]);
+					LatLonPoint llpt = proj.projToLatLon(projx[i], projy[j]);
 					MeshPoint meshPt = meshRec.new MeshPoint((float)llpt.getLatitude(), (float)llpt.getLongitude(), mesh[j][i]);
 					meshRec.addMeshPoint(meshPt);
 				}
@@ -169,7 +169,7 @@ public class MeshReader
 		}
 		return meshRec;
 	}
-	
+
 	/**
 	 * Base Time is stored in the "units field of the time var, NOT the actual storage. 
 	 * Need to extract it and possible add "minutes offset" value in storage (so far always 0)
@@ -184,58 +184,21 @@ public class MeshReader
 		String tstr = uArr[2];
 		Array atime = vtime.read();
 		double timeMin = atime.getDouble(0);
-//		System.err.println(timeMin);
+		//		System.err.println(timeMin);
 		Instant instant = Instant.parse( tstr );
 		long time = instant.getEpochSecond();
 		long timeUtc = time + ((long)timeMin * TimeUnit.MINUTES.toSeconds(1L) );
 		return timeUtc;
 	}
-	
-	/**
-	 * Convert all the X/Y to lat/lon for OSH processing
-	 * @param x
-	 * @param y
-	 * @throws IOException
-	 */
-	public void toLatLon(MeshRecordFull rec) throws IOException {
-	    GridCoordSystem gcs =  dataset.getGrids().get(0).getCoordinateSystem();
-	    ProjectionImpl proj = gcs.getProjection();
-	    Variable vx = ncFile.findVariable(X_VAR);
-	    Variable vy = ncFile.findVariable(Y_VAR);
-	    Array ax = vx.read();
-	    Array ay = vy.read();
-//	    int[] shapeX = ax.getShape();  // 902
-//	    int[] shapeY = ay.getShape();  // 674
-	    float [] projx = (float [] )ax.getStorage();
-	    float [] projy =  (float [] )ay.getStorage();
-	    rec.lat = new float[projy.length];
-	    rec.lon = new float[projx.length];
-	    
-	    for (int j=0; j<projy.length; j++)
-	       for (int i=0; i<projx.length; i++){
-	    	  LatLonPoint pt = proj.projToLatLon(projx[i], projy[j]);
-	    	  rec.lat[j] = (float)pt.getLatitude();
-	    	  rec.lon[i] = (float)pt.getLongitude();
-//	    	  System.err.println(lat[j] + "," + lon[i]);
-	    }        
-	}
-	
-	public static void main(String[] args) throws Exception {
-		MeshReader reader = new MeshReader("C:/Data/sensorhub/delta/MESH/ECT_NCST_DELTA_MESH_6_5km.201709182110.grb2");
-//		MeshReader reader = new MeshReader("C:/Data/sensorhub/delta/NLDN/ECT_NCST_DELTA_NLDN_CG_6_5km.201709140035.grb2");
-		
-				reader.dumpInfo();
-				MeshRecord rec = reader.readMesh();
-				System.err.println(rec);
 
-//		reader.toLatLon();
-//		reader.readTime();
-//		reader.readAlt();
-//		reader.readMesh();
-		
-		//		NetcdfFile ncFile = NetcdfFile.open("C:/Data/sensorhub/delta/MESH/ECT_NCST_DELTA_MESH_6_5km.201709111220.nc");
-		//		UcarUtil.dumpAttributeInfo(ncFile);
-		//		UcarUtil.dumpVariableInfo(ncFile);
+	public static void main(String[] args) throws Exception {
+		MeshReader reader = new MeshReader("C:/Data/sensorhub/delta/MESH/ECT_NCST_DELTA_MESH_6_5km.201709261530.grb2");
+		//		MeshReader reader = new MeshReader("C:/Data/sensorhub/delta/NLDN/ECT_NCST_DELTA_NLDN_CG_6_5km.201709140035.grb2");
+
+		reader.dumpInfo();
+		MeshRecord rec = reader.readMesh();
+		System.err.println(rec);
+
 	}
 
 }
