@@ -26,6 +26,7 @@ public class FlightAwareClient implements Runnable {
     private static final boolean useCompression = false;
     List<String> messageTypes = new ArrayList<>();
     List<FlightObjectListener> listeners = new ArrayList<>();
+    volatile boolean started;
     
     public static void main(String[] args) {
         String machineName = "firehose.flightaware.com";
@@ -53,7 +54,8 @@ public class FlightAwareClient implements Runnable {
 
     @Override
 	public void run() {
-    	System.out.println(" Sttarting FlightAware Client");
+    	System.out.println("Starting FlightAware Client");
+    	started = true;
         try {
             SSLSocket ssl_socket;
             ssl_socket = (SSLSocket) SSLSocketFactory.getDefault().createSocket(serverUrl, 1501);
@@ -84,7 +86,7 @@ public class FlightAwareClient implements Runnable {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             String message = null;
 //            int limit = 1000; //limit number messages for testing
-           	while ((message = reader.readLine()) != null) {
+           	while (started && (message = reader.readLine()) != null) {
                 //parse message with gson
                 try {
 					FlightObject flight = gson.fromJson(message, FlightObject.class);
@@ -104,8 +106,7 @@ public class FlightAwareClient implements Runnable {
 					}
 //                System.out.println(flight);
 				} catch (JsonSyntaxException e) {
-					// TODO Auto-generated catch block
-					System.err.println(e.getMessage());   
+					e.printStackTrace();   
 				}
             }
 
@@ -118,5 +119,9 @@ public class FlightAwareClient implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }    
+    
+    public void stop() {
+        started = false;
     }
 }
