@@ -20,7 +20,7 @@ import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class MeshDescriptor extends JarModuleProvider implements IModuleProvider
+public class FltawareDescriptor extends JarModuleProvider implements IModuleProvider
 {
     @Override
     public Class<? extends IModule<?>> getModuleClass()
