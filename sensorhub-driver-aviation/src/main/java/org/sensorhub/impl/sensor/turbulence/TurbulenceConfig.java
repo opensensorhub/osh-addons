@@ -24,5 +24,6 @@ public class TurbulenceConfig extends SensorConfig
     @DisplayInfo(desc="Vertical Cross Section Turbulence config")
     public String configOption;
     
-    
+    @DisplayInfo(desc="Location of realtime Turb feed")
+    public String dataPath;
 }

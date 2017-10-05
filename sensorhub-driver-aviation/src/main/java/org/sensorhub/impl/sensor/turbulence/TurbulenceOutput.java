@@ -15,18 +15,16 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.turbulence;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.fltaware.FlightPlan;
-import org.sensorhub.impl.sensor.fltaware.FltawareSensor;
+import org.vast.data.DataBlockList;
 import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
@@ -39,7 +37,6 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
-import net.opengis.swe.v20.Text;
 
 
 /**
@@ -50,7 +47,7 @@ import net.opengis.swe.v20.Text;
  * TODO- add zulu time output somewhere
  *
  */
-public class TurbulenceOutput extends AbstractSensorOutput<TurbulenceSensor> implements IMultiSourceDataInterface  
+public class TurbulenceOutput extends AbstractSensorOutput<TurbulenceSensor> //implements IMultiSourceDataInterface  
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = 1; //(int)TimeUnit.SECONDS.toSeconds(5);
 
@@ -58,6 +55,8 @@ public class TurbulenceOutput extends AbstractSensorOutput<TurbulenceSensor> imp
 	DataEncoding encoding;	
 	Map<String, Long> latestUpdateTimes;
 	Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
+
+	private DataRecord profileStruct;
 
 	
 	public TurbulenceOutput(TurbulenceSensor parentSensor) 
@@ -73,68 +72,138 @@ public class TurbulenceOutput extends AbstractSensorOutput<TurbulenceSensor> imp
 		return "Turbulence profile data";
 	}
 
+	protected void initNumPointsPlusArray()
+	{
+		SWEHelper fac = new SWEHelper();
+		
+		//  Add top level structure for flight plan
+		//	 numPoints?   array of time, lat, lon, numPoints, float[] turbVal
+		recordStruct = fac.newDataRecord(2);  // 1 big array
+		recordStruct.setName(getName());
+		recordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/turbulenceProfile"); // ??
+
+		// SWE Common data structure
+		//  num of points- can client infer this or do we have to iunclude?
+		Count numPoints = fac.newCount(DataType.INT);
+		numPoints.setId("NUM_POINTS");
+		recordStruct.addComponent("numPoints",numPoints);
+
+		// profiles == time, lat, lon, numPoints, float[]
+		DataComponent profiles = fac.newDataRecord();
+		
+		//  turbARr = [] of profiles
+		DataArray turbArr = fac.newDataArray();
+		turbArr.setElementType("Turbulence Profiles", profiles);
+		turbArr.setElementCount(numPoints);
+		recordStruct.addComponent("Turbulence Profile", turbArr);
+		
+		profiles.addComponent("time", fac.newTimeStampIsoGPS());
+		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Latitude", null, "deg", DataType.DOUBLE);
+		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitde", "Longitde", null, "deg", DataType.DOUBLE);
+		profiles.addComponent("Latitude", latQuant);
+		profiles.addComponent("Longitude", lonQuant);
+
+		//  Vertical Profile
+		Count turbulencePoints = fac.newCount(DataType.INT);
+		turbulencePoints.setDefinition("http://sensorml.com/ont/swe/property/NumberOfSamples"); 
+		turbulencePoints.setId("PROFILE_POINTS");
+		profiles.addComponent("numTurbulencePoints",turbulencePoints);
+		
+		//  Turb values
+		Quantity valuesQuant = fac.newQuantity("http://earthcastwx.com/ont/swe/property/TurbulenceVales", "Turbulence Profile Values", null, "", DataType.FLOAT);
+		DataArray valuesArr = fac.newDataArray();
+		valuesArr.setElementType("Turbulence", valuesQuant);
+		valuesArr.setElementCount(turbulencePoints);
+		profiles.addComponent("Turbulence Profile", valuesArr);
+
+		encoding = fac.newTextEncoding(",", "\n");
+	}
+
 	protected void init()
 	{
 		SWEHelper fac = new SWEHelper();
 		GeoPosHelper geoHelper = new GeoPosHelper();
 		
-		//  Add top level structure for flight plan
-		//	 time, flightId, numWaypoints, String[] icaoCode, String [] type, lat[], lon[]
-
-		// SWE Common data structure
-		recordStruct = fac.newDataRecord(7);
+		//  wrap in Array with no size? is this legal
+		recordStruct = fac.newDataRecord(2); 
 		recordStruct.setName(getName());
-		recordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/flightPlan"); // ??
+		recordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/turbulenceProfile"); // ??
 		
-        recordStruct.addComponent("time", fac.newTimeStampIsoGPS());
+		Count numProfiles = fac.newCount(DataType.INT);
+		numProfiles.setId("NUM_PROFILES");
+		recordStruct.addComponent("NumProfiles",numProfiles);
+		
+		profileStruct = fac.newDataRecord(5); 
+		profileStruct.setName(getName());
+		profileStruct.setDefinition("http://earthcastwx.com/ont/swe/property/turbulenceProfile"); // ??
 
-        // flightIds
-		recordStruct.addField("flightId", fac.newText("", "flightId", "Internally generated flight desc (flightNum_DestAirport"));
-        
-		//  num of points
+		//  
+		DataArray profileArr = fac.newDataArray();
+		profileArr.setElementType("Turbulence", profileStruct);
+		profileArr.setElementCount(numProfiles);
+		recordStruct.addComponent("Profiles", profileArr);
+		
+		//	 time, lat, lon, numPoints, float[] turbVal
+		profileStruct.addComponent("time", fac.newTimeStampIsoGPS());
+		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Latitude", null, "deg", DataType.FLOAT);
+		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitde", "Longitde", null, "deg", DataType.FLOAT);
+		profileStruct.addComponent("Latitude", latQuant);
+		profileStruct.addComponent("Longitude", lonQuant);
+
+		//  Vertical Profile
 		Count numPoints = fac.newCount(DataType.INT);
 		numPoints.setDefinition("http://sensorml.com/ont/swe/property/NumberOfSamples"); 
-		numPoints.setId("NUM_POINTS");
-		recordStruct.addComponent("numPoints",numPoints);
+		numPoints.setId("PROFILE_POINTS");
+		profileStruct.addComponent("numTurbulencePoints",numPoints);
 		
-		//  icaoCodes
-		Text code = fac.newText("http://sensorml.com/ont/swe/property/code", "icaoCode", "Typically, ICAO airline code plus IATA/ticketing flight number");
-		DataArray codeArr = fac.newDataArray();
-		codeArr.setElementType("icaoCode", code);
-		codeArr.setElementCount(numPoints);
-		recordStruct.addComponent("CodeArray", codeArr);
+		//  Turb values
+		Quantity valuesQuant = fac.newQuantity("http://earthcastwx.com/ont/swe/property/TurbulenceVales", "Turbulence Profile Values", null, "", DataType.FLOAT);
+		DataArray valuesArr = fac.newDataArray();
+		valuesArr.setElementType("Turbulence", valuesQuant);
+		//  DataArrayImpl.579
+		//             elementCount.setValue((Count)sizeComponent);  //  (Count)sizeComponent == 0 
+		numPoints.setValue(52);
+		valuesArr.setElementCount(numPoints);
+		profileStruct.addComponent("Turbulence Profile", valuesArr);
 
-		//  icaoCodes
-		Text type = fac.newText("http://sensorml.com/ont/swe/property/type", "icaoCode", "Type (Waypoint/Navaid/etc.)" );
-		DataArray typeArr = fac.newDataArray();
-		typeArr.setElementType("type", type);
-		typeArr.setElementCount(numPoints);
-		recordStruct.addComponent("TypeArray", typeArr);
-		
-		
-		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Latitude", null, "deg", DataType.FLOAT);
-		DataArray latArr = fac.newDataArray();
-		latArr.setElementType("Latitude", latQuant);
-		latArr.setElementCount(numPoints);
-		recordStruct.addComponent("LatitudeArray", latArr);
-
-		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.FLOAT);
-		DataArray lonArr = fac.newDataArray();
-		lonArr.setElementType("Longitude", lonQuant);
-		lonArr.setElementCount(numPoints);
-		recordStruct.addComponent("LongitudeArray", lonArr);
-		
-        
-		// default encoding is text
 		encoding = fac.newTextEncoding(",", "\n");
 	}
 
 	public void start() throws SensorHubException {
-		// Nothing to do 
+		//  
 	}
 	
-	public void sendProfileData()
-	{                
+	public void sendProfiles(List<TurbulenceRecord> recs)
+	{
+		DataArray profileArr = (DataArray)recordStruct.getComponent(1);
+		profileArr.updateSize(recs.size());
+		DataBlock bigBlock = recordStruct.createDataBlock();
+		bigBlock.setIntValue(0, recs.size());
+		DataBlock profileBlock = ((DataBlockMixed)bigBlock).getUnderlyingObject()[1];
+		
+		// build data block from Mesh Record
+		int idx = 0;
+		for(TurbulenceRecord rec: recs) {
+			DataArray turbArr = (DataArray)profileStruct.getComponent(4);
+			turbArr.updateSize(rec.turbulence.length);
+			DataBlock dataBlock = profileStruct.createDataBlock();
+
+			dataBlock.setDoubleValue(0, rec.time);
+			dataBlock.setDoubleValue(1, rec.lat);
+			dataBlock.setDoubleValue(2, rec.lon);
+			dataBlock.setIntValue(3 , rec.turbulence.length);
+			((DataBlockMixed)dataBlock).getUnderlyingObject()[4].setUnderlyingObject(rec.turbulence);
+			Object o = ((DataBlockList)profileBlock).getUnderlyingObject();
+			LinkedList<DataBlock> ll = (LinkedList<DataBlock>) o;
+			ll.set(idx++, dataBlock);
+		}
+//		DataBlock dbObj = ((DataBlockMixed)bigBlock).getUnderlyingObject()[1];
+//		dbObj.setUnderlyingObject(obj);
+		
+		// update latest record and send event
+		latestRecord = bigBlock;
+		latestRecordTime = System.currentTimeMillis();
+		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, TurbulenceOutput.this, bigBlock)); 	
 	}
 
 	public double getAverageSamplingPeriod()
@@ -156,32 +225,32 @@ public class TurbulenceOutput extends AbstractSensorOutput<TurbulenceSensor> imp
 		return encoding;
 	}
 
-
-	@Override
-	public Collection<String> getEntityIDs()
-	{
-//		return parentSensor.getEntityIDs();
-		return null;
-	}
-
-
-	@Override
-	public Map<String, DataBlock> getLatestRecords()
-	{
-		return Collections.unmodifiableMap(latestRecords);
-	}
-
-
-	@Override
-	public DataBlock getLatestRecord(String entityID) {
-//		for(Map.Entry<String, DataBlock> dbe: latestRecords.entrySet()) {
-//			String key = dbe.getKey();
-//			DataBlock val = dbe.getValue();
-//			System.err.println(key + " : " + val);
-//		}
-		DataBlock b = latestRecords.get(entityID);
-		return b;
-	}
+//
+//	@Override
+//	public Collection<String> getEntityIDs()
+//	{
+////		return parentSensor.getEntityIDs();
+//		return null;
+//	}
+//
+//
+//	@Override
+//	public Map<String, DataBlock> getLatestRecords()
+//	{
+//		return Collections.unmodifiableMap(latestRecords);
+//	}
+//
+//
+//	@Override
+//	public DataBlock getLatestRecord(String entityID) {
+////		for(Map.Entry<String, DataBlock> dbe: latestRecords.entrySet()) {
+////			String key = dbe.getKey();
+////			DataBlock val = dbe.getValue();
+////			System.err.println(key + " : " + val);
+////		}
+//		DataBlock b = latestRecords.get(entityID);
+//		return b;
+//	}
 	
 
 }

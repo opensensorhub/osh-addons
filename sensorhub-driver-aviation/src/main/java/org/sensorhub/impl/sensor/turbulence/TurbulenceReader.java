@@ -1,8 +1,14 @@
 package org.sensorhub.impl.sensor.turbulence;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import org.sensorhub.impl.sensor.fltaware.FlightAwareClient;
+import org.sensorhub.impl.sensor.fltaware.FlightPlan;
+import org.sensorhub.impl.sensor.fltaware.FltawareApi;
 import org.sensorhub.impl.sensor.mesh.UcarUtil;
 
 import ucar.ma2.Array;
@@ -14,7 +20,6 @@ import ucar.nc2.dt.GridCoordSystem;
 import ucar.nc2.dt.GridDataset.Gridset;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
-import ucar.unidata.geoloc.LatLonPoint;
 import ucar.unidata.geoloc.ProjectionImpl;
 
 /**
@@ -77,13 +82,28 @@ public class TurbulenceReader
 
 	private void loadTurb() {
 		turbVar = ncFile.findVariable(TURB_VAR);
-//		Array turbArr4d = turbVar.read();
-//		System.err.println("1");
-//		Array turbArr3d = turbArr4d.reduce();
-//		System.err.println("2");
+		//		Array turbArr4d = turbVar.read();
+		//		System.err.println("1");
+		//		Array turbArr3d = turbArr4d.reduce();
+		//		System.err.println("2");
 
 	}
-	
+
+	public List<TurbulenceRecord>  getTurbulence(float [] lat, float [] lon) throws IOException, InvalidRangeException {
+		List<TurbulenceRecord> recs = new ArrayList<>();
+			
+		for(int i=0; i<lat.length; i++) {
+			TurbulenceRecord rec = new TurbulenceRecord();
+			rec.time = readTime(); 
+			rec.lat = lat[i];
+			rec.lon = lon[i];
+			rec.turbulence = getProfile(lat[i], lon[i]);
+			recs.add(rec);
+		}
+
+		return recs;
+	}
+
 	public float [] getProfile(double lat, double lon) throws IOException, InvalidRangeException {
 		//  Convert LatLon coord to spherical mercator proj. (or use gdal to convert entire file to 4326?
 		int [] result = null;
@@ -91,12 +111,11 @@ public class TurbulenceReader
 		if(idx == null || idx[0] == - 1 ||  idx[1] == -1) {
 			throw new IOException("Projection toLatLon failed");
 		}
-		System.err.println("XY index = " + idx[0] + "," + idx[1]);
+//		System.err.println("XY index = " + idx[0] + "," + idx[1]);
 		// And actual lat lon of that point (if we need to know how far we are from the requested lat/lon)
-//		LatLonPoint actualLL = gcs.getLatLon(idx[0], idx[1]);
-//		System.err.println("Actual LL: " + actualLL.getLatitude() + "," + actualLL.getLongitude());
-		
-//		System.err.println(turbArr3d);
+		//		LatLonPoint actualLL = gcs.getLatLon(idx[0], idx[1]);
+		//		System.err.println("Actual LL: " + actualLL.getLatitude() + "," + actualLL.getLongitude());
+
 		//(time=1, altitude_above_msl=52, y=674, x=902);
 		int[] origin = new int[] {0, 0, idx[1], idx[0]};
 		int[] size = new int[] {1, 52, 1, 1};
@@ -104,31 +123,29 @@ public class TurbulenceReader
 		Array profReduce = profArr.reduce();
 		float [] prof = (float []) profReduce.copyTo1DJavaArray();
 		for(int i=0; i<prof.length; i++) {
-			System.err.println("prof[" + i + "] = " + prof[i]);
+//			System.err.println("prof[" + i + "] = " + prof[i]);
+			if(Float.isNaN(prof[i]))  // play nice
+				prof[i] = 0.0f;
 		}
-		//
-		//		  Array data2D = data3D.reduce();
 
-		//		//		System.err.println(meshArr);
-		//		Array meshReduce = meshArr.reduce();
-		//		float [][] mesh  = (float [][])meshReduce.copyToNDJavaArray();
-		//		int width = ax.getShape()[0];
-		//		int height = ay.getShape()[0];
-		//		for(int  j=0; j<height; j++) {
-		//			for(int i=0; i<width; i++) {
-		//				//				System.err.println(i + "," + j + "," + mesh[j][i]);
-		//				if(mesh[j][i] != 0) {
-		//					LatLonPoint llpt = proj.projToLatLon(projx[i], projy[j]);
-		//					MeshPoint meshPt = meshRec.new MeshPoint((float)llpt.getLatitude(), (float)llpt.getLongitude(), mesh[j][i]);
-		//					meshRec.addMeshPoint(meshPt);
-		//				}
-		//			}
-		//		}
-
-		// interpolate
-
-		return null;
+		return prof;
 	}
+
+	public long readTime() throws IOException {
+		Variable vtime = ncFile.findVariable(TIME_VAR);
+		String ustr = vtime.getUnitsString();
+		String [] uArr = ustr.split(" ");
+		String tstr = uArr[2];
+		Array atime = vtime.read();
+		double timeMin = atime.getDouble(0);
+		//		System.err.println(timeMin);
+		Instant instant = Instant.parse( tstr );
+		long time = instant.getEpochSecond();
+		long timeUtc = time + ((long)timeMin * TimeUnit.MINUTES.toSeconds(1L) );
+		return timeUtc;
+	}
+
+
 
 	public void dumpInfo() throws Exception {
 		NetcdfDataset ncDataset = dataset.getNetcdfDataset();
@@ -142,13 +159,21 @@ public class TurbulenceReader
 	}
 
 	public static void main(String[] args) throws Exception {
-		TurbulenceReader reader = new TurbulenceReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710041430.grb2");
+		TurbulenceReader reader = new TurbulenceReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710042230.grb2");
 		reader.dumpInfo();
-		for(int i=0;i<100;i++ ) {
-			System.err.println(i);
-			double lat = 30. + Math.random() * 10;
-			double lon = -90. + Math.random() * 10;
-			reader.getProfile(lat, lon);
-		}
+		FltawareApi api = new FltawareApi();
+		FlightPlan plan = api.getFlightPlan("DAL1487-1506921959-airline-0651");
+
+//		reader.dumpInfo();
+//		List<TurbulenceRecord> recs = reader.getTurbulence(plan.getLats(), plan.getLons());
+//		for(TurbulenceRecord r: recs)
+//			System.err.println(r);
+		
+//		for(int i=0;i<100;i++ ) {
+//			System.err.println(i);
+//			double lat = 30. + Math.random() * 10;
+//			double lon = -90. + Math.random() * 10;
+//			reader.getProfile(lat, lon);
+//		}
 	}
 }
