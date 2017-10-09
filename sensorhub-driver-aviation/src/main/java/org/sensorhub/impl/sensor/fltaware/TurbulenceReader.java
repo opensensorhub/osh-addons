@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.impl.sensor.fltaware.FlightPlan;
-import org.sensorhub.impl.sensor.fltaware.FltawareApi;
+import org.sensorhub.impl.sensor.fltaware.FlightAwareApi;
 import org.sensorhub.impl.sensor.mesh.UcarUtil;
 
 import ucar.ma2.Array;
@@ -207,7 +207,7 @@ public class TurbulenceReader
 	public static void main_(String[] args) throws Exception {
 		TurbulenceReader reader = new TurbulenceReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710082130.grb2");
 		reader.dumpInfo();
-		FltawareApi api = new FltawareApi();
+		FlightAwareApi api = new FlightAwareApi();
 		FlightPlan plan = api.getFlightPlan("DAL1487-1506921959-airline-0651");
 
 //		reader.dumpInfo();

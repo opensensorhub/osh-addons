@@ -18,7 +18,7 @@ import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
 
-public class FltawareConfig extends SensorConfig
+public class FlightAwareConfig extends SensorConfig
 {
     
     @DisplayInfo(desc="Earthcast FlightAware Firehose feed")

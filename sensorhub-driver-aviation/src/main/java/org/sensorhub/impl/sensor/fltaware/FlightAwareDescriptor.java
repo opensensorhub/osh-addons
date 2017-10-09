@@ -20,18 +20,18 @@ import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class FltawareDescriptor extends JarModuleProvider implements IModuleProvider
+public class FlightAwareDescriptor extends JarModuleProvider implements IModuleProvider
 {
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return FltawareSensor.class;
+        return FlgihtAwareSensor.class;
     }
 
     
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return FltawareConfig.class;
+        return FlightAwareConfig.class;
     }
 }

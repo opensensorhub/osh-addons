@@ -18,14 +18,14 @@ import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Vector;
 
-public class FlightPositionOutput extends AbstractSensorOutput<FltawareSensor>  
+public class FlightPositionOutput extends AbstractSensorOutput<FlgihtAwareSensor>  
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = 1; //(int)TimeUnit.SECONDS.toSeconds(5);
 
 	DataRecord recordStruct;
 	DataEncoding encoding;	
 	
-	public FlightPositionOutput(FltawareSensor parentSensor) 
+	public FlightPositionOutput(FlgihtAwareSensor parentSensor) 
 	{
 		super(parentSensor);
 	}

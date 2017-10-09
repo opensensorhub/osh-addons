@@ -60,7 +60,7 @@ import ucar.ma2.InvalidRangeException;
  * TODO- add zulu time output somewhere
  *
  */
-public class TurbulenceOutput extends AbstractSensorOutput<FltawareSensor> implements IMultiSourceDataInterface, FileListener  
+public class TurbulenceOutput extends AbstractSensorOutput<FlgihtAwareSensor> implements IMultiSourceDataInterface, FileListener  
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = 1; //(int)TimeUnit.SECONDS.toSeconds(5);
 
@@ -79,7 +79,7 @@ public class TurbulenceOutput extends AbstractSensorOutput<FltawareSensor> imple
 	private TurbulenceReader reader;
 
 
-	public TurbulenceOutput(FltawareSensor parentSensor) 
+	public TurbulenceOutput(FlgihtAwareSensor parentSensor) 
 	{
 		super(parentSensor);
 		latestUpdateTimes = new HashMap<String, Long>();
@@ -235,7 +235,7 @@ public class TurbulenceOutput extends AbstractSensorOutput<FltawareSensor> imple
 		// update latest record and send event
 		latestRecord = bigBlock;
 		latestRecordTime = System.currentTimeMillis();
-		String flightUid = FltawareSensor.TURBULENCE_UID_PREFIX + plan.oshFlightId;
+		String flightUid = FlgihtAwareSensor.TURBULENCE_UID_PREFIX + plan.oshFlightId;
 		latestUpdateTimes.put(flightUid, plan.time);
 		latestRecords.put(flightUid, latestRecord);   
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, TurbulenceOutput.this, bigBlock));
