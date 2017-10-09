@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.FlightAware;
+package org.sensorhub.impl.sensor.flightAware;
 
 public interface FlightObjectListener
 {

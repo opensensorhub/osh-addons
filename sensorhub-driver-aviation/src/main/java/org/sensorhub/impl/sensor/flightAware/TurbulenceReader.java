@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.FlightAware;
+package org.sensorhub.impl.sensor.flightAware;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.sensorhub.impl.sensor.FlightAware.FlightAwareApi;
-import org.sensorhub.impl.sensor.FlightAware.FlightPlan;
+import org.sensorhub.impl.sensor.flightAware.FlightAwareApi;
+import org.sensorhub.impl.sensor.flightAware.FlightPlan;
 import org.sensorhub.impl.sensor.mesh.UcarUtil;
 
 import ucar.ma2.Array;

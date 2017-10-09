@@ -12,26 +12,18 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.FlightAware;
+package org.sensorhub.impl.sensor.flightAware;
 
-import org.sensorhub.api.module.IModule;
-import org.sensorhub.api.module.IModuleProvider;
-import org.sensorhub.api.module.ModuleConfig;
-import org.sensorhub.impl.module.JarModuleProvider;
+import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.sensor.SensorConfig;
 
 
-public class FlightAwareDescriptor extends JarModuleProvider implements IModuleProvider
+public class FlightAwareConfig extends SensorConfig
 {
-    @Override
-    public Class<? extends IModule<?>> getModuleClass()
-    {
-        return FlightAwareSensor.class;
-    }
-
     
-    @Override
-    public Class<? extends ModuleConfig> getModuleConfigClass()
-    {
-        return FlightAwareConfig.class;
-    }
+    @DisplayInfo(desc="Earthcast FlightAware Firehose feed")
+    public String userName;
+    public String password;
+    
+    public String turbulencePath;
 }

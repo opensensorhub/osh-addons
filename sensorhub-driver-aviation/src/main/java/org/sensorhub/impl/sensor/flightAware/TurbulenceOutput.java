@@ -13,7 +13,7 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.FlightAware;
+package org.sensorhub.impl.sensor.flightAware;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -32,7 +32,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.FlightAware.FlightPlan;
+import org.sensorhub.impl.sensor.flightAware.FlightPlan;
 import org.sensorhub.impl.sensor.mesh.DirectoryWatcher;
 import org.sensorhub.impl.sensor.mesh.FileListener;
 import org.vast.data.DataBlockList;

@@ -13,7 +13,7 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.FlightAware;
+package org.sensorhub.impl.sensor.flightAware;
 
 import java.util.Collection;
 import java.util.Collections;

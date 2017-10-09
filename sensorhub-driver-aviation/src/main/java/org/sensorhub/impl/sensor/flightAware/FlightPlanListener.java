@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.FlightAware;
+package org.sensorhub.impl.sensor.flightAware;
 
 //  May or may not use this
 public interface FlightPlanListener

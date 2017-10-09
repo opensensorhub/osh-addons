@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.FlightAware;
+package org.sensorhub.impl.sensor.flightAware;
 
 import java.io.BufferedReader;
 import java.io.IOException;
