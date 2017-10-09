@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.fltaware;
+package org.sensorhub.impl.sensor.FlightAware;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -60,7 +60,7 @@ public class FlightAwareApi
 		}
 		if(url.endsWith("&"))
 			url = url.substring(0, url.length() - 1);
-		System.err.println(url);
+//		System.err.println(url);
 		HttpGet request = new HttpGet(url);
 		String auth = user + ":" + passwd;
 		byte [] encodedAuth = Base64.encodeBase64(auth.getBytes(Charset.forName("ISO-8859-1")));
@@ -71,6 +71,9 @@ public class FlightAwareApi
 		HttpResponse response = client.execute(request);
 
 		int statusCode = response.getStatusLine().getStatusCode();
+		if(statusCode >= 400) {
+			// doSomething
+		}
 		String resp = EntityUtils.toString(response.getEntity());
 //		System.err.println(statusCode);
 //		System.err.println(resp);

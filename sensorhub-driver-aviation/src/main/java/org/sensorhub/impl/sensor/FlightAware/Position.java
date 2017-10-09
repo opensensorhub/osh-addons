@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.fltaware;
+package org.sensorhub.impl.sensor.FlightAware;
 
 //{
 //	   "pitr":"1506541790",

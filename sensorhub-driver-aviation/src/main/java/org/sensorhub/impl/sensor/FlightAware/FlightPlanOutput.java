@@ -13,7 +13,7 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.fltaware;
+package org.sensorhub.impl.sensor.FlightAware;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -51,7 +51,7 @@ import net.opengis.swe.v20.Text;
  * TODO- add zulu time output somewhere
  *
  */
-public class FlightPlanOutput extends AbstractSensorOutput<FlgihtAwareSensor> implements IMultiSourceDataInterface  
+public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareSensor> implements IMultiSourceDataInterface  
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = 1; //(int)TimeUnit.SECONDS.toSeconds(5);
 
@@ -61,7 +61,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlgihtAwareSensor> im
 	Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
 
 
-	public FlightPlanOutput(FlgihtAwareSensor parentSensor) 
+	public FlightPlanOutput(FlightAwareSensor parentSensor) 
 	{
 		super(parentSensor);
 		latestUpdateTimes = new HashMap<String, Long>();
@@ -150,7 +150,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlgihtAwareSensor> im
 		// update latest record and send event
 		latestRecord = dataBlock;
 		latestRecordTime = System.currentTimeMillis();
-		String flightUid = FlgihtAwareSensor.FLIGHT_PLAN_UID_PREFIX + plan.oshFlightId;
+		String flightUid = FlightAwareSensor.FLIGHT_PLAN_UID_PREFIX + plan.oshFlightId;
 		latestUpdateTimes.put(flightUid, plan.time);
 		latestRecords.put(flightUid, latestRecord);   
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPlanOutput.this, dataBlock));

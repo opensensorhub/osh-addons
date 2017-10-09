@@ -1,9 +1,9 @@
-package org.sensorhub.impl.sensor.fltaware;
+package org.sensorhub.impl.sensor.FlightAware;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.sensorhub.impl.sensor.fltaware.DecodeFlightResult.Result;
+import org.sensorhub.impl.sensor.FlightAware.DecodeFlightResult.Result;
 
 /**
  * 

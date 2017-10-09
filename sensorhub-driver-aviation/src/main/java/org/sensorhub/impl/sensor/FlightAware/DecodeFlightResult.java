@@ -1,6 +1,6 @@
-package org.sensorhub.impl.sensor.fltaware;
+package org.sensorhub.impl.sensor.FlightAware;
 
-import org.sensorhub.impl.sensor.fltaware.FlightPlan.Waypoint;
+import org.sensorhub.impl.sensor.FlightAware.FlightPlan.Waypoint;
 
 public class DecodeFlightResult extends FlightAwareResult
 {

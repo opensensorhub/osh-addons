@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.fltaware;
+package org.sensorhub.impl.sensor.FlightAware;
 
 public class TurbulenceRecord
 {

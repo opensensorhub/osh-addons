@@ -13,7 +13,7 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.fltaware;
+package org.sensorhub.impl.sensor.FlightAware;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -32,7 +32,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.fltaware.FlightPlan;
+import org.sensorhub.impl.sensor.FlightAware.FlightPlan;
 import org.sensorhub.impl.sensor.mesh.DirectoryWatcher;
 import org.sensorhub.impl.sensor.mesh.FileListener;
 import org.vast.data.DataBlockList;
@@ -60,7 +60,7 @@ import ucar.ma2.InvalidRangeException;
  * TODO- add zulu time output somewhere
  *
  */
-public class TurbulenceOutput extends AbstractSensorOutput<FlgihtAwareSensor> implements IMultiSourceDataInterface, FileListener  
+public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> implements IMultiSourceDataInterface, FileListener  
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = 1; //(int)TimeUnit.SECONDS.toSeconds(5);
 
@@ -79,7 +79,7 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlgihtAwareSensor> im
 	private TurbulenceReader reader;
 
 
-	public TurbulenceOutput(FlgihtAwareSensor parentSensor) 
+	public TurbulenceOutput(FlightAwareSensor parentSensor) 
 	{
 		super(parentSensor);
 		latestUpdateTimes = new HashMap<String, Long>();
@@ -113,9 +113,9 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlgihtAwareSensor> im
 
 		//  turbARr = [] of profiles
 		DataArray turbArr = fac.newDataArray();
-		turbArr.setElementType("Turbulence Profiles", profiles);
+		turbArr.setElementType("TurbulenceProfiles", profiles);
 		turbArr.setElementCount(numPoints);
-		recordStruct.addComponent("Turbulence Profile", turbArr);
+		recordStruct.addComponent("TurbulenceProfiles", turbArr);
 
 		profiles.addComponent("time", fac.newTimeStampIsoGPS());
 		Text code = fac.newText("http://sensorml.com/ont/swe/property/code", "ICAO Code", "Typically, ICAO airline code plus IATA/ticketing flight number");
@@ -136,7 +136,7 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlgihtAwareSensor> im
 		DataArray valuesArr = fac.newDataArray();
 		valuesArr.setElementType("Turbulence", valuesQuant);
 		valuesArr.setElementCount(turbulencePoints);
-		profiles.addComponent("Turbulence Profile", valuesArr);
+		profiles.addComponent("TurbulenceProfile", valuesArr);
 
 		encoding = fac.newTextEncoding(",", "\n");
 	}
@@ -146,7 +146,7 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlgihtAwareSensor> im
 		SWEHelper fac = new SWEHelper();
 		GeoPosHelper geoHelper = new GeoPosHelper();
 
-		//  wrap in Array with no size? is this legal
+		//  NumProfiles, Profiles []
 		recordStruct = fac.newDataRecord(2); 
 		recordStruct.setName(getName());
 		recordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/turbulenceProfile"); // ??
@@ -235,7 +235,7 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlgihtAwareSensor> im
 		// update latest record and send event
 		latestRecord = bigBlock;
 		latestRecordTime = System.currentTimeMillis();
-		String flightUid = FlgihtAwareSensor.TURBULENCE_UID_PREFIX + plan.oshFlightId;
+		String flightUid = FlightAwareSensor.TURBULENCE_UID_PREFIX + plan.oshFlightId;
 		latestUpdateTimes.put(flightUid, plan.time);
 		latestRecords.put(flightUid, latestRecord);   
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, TurbulenceOutput.this, bigBlock));

@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.fltaware;
+package org.sensorhub.impl.sensor.FlightAware;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -171,7 +171,7 @@ public class FlightObject
 		return Long.parseLong(clock);
 	}
 
-	public String getInternalId() {
+	public String getOshFlightId() {
 		return ident + "_" + dest; 
 	}
 	

@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.fltaware;
+package org.sensorhub.impl.sensor.FlightAware;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,7 +13,7 @@ public class FlightPlanPublisher implements FlightObjectListener
 {
 	Map<String, FlightPlan> planMap;
 	List<FlightPlanListener> planListeners;
-	FltawareApi api;
+	FlightAwareApi api;
 	
 	public FlightPlanPublisher() {
 		planMap = new LinkedHashMap<>();
