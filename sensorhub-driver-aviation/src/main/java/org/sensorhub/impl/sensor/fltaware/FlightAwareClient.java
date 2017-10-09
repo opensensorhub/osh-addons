@@ -16,7 +16,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 
-public class FlightAwareClient implements Runnable {
+public class FlightAwareClient implements Runnable 
+{
 
 	private String serverUrl;
 	String userName = "drgregswilson";
@@ -27,6 +28,23 @@ public class FlightAwareClient implements Runnable {
     List<String> messageTypes = new ArrayList<>();
     List<FlightObjectListener> listeners = new ArrayList<>();
     volatile boolean started;
+
+    private static FlightAwareClient instance;
+    
+    private FlightAwareClient(){}
+    
+    public static synchronized FlightAwareClient getInstance(){
+        if(instance == null){
+            instance = new FlightAwareClient();
+        }
+        return instance;
+    }
+    
+    public FlightAwareClient(String serverUrl, String uname, String pwd) {
+    	this.serverUrl = serverUrl;
+    	this.userName = uname;
+    	this.password = pwd;
+    }    
     
     public static void main(String[] args) {
         String machineName = "firehose.flightaware.com";
@@ -38,12 +56,6 @@ public class FlightAwareClient implements Runnable {
         thread.start();
     }
 
-    public FlightAwareClient(String serverUrl, String uname, String pwd) {
-    	this.serverUrl = serverUrl;
-    	this.userName = uname;
-    	this.password = pwd;
-    }
-    
     public void addListener(FlightObjectListener l) {
     	listeners.add(l);
     }
@@ -85,9 +97,9 @@ public class FlightAwareClient implements Runnable {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             String message = null;
-//            int limit = 1000; //limit number messages for testing
-           	while (started && (message = reader.readLine()) != null) {
-                //parse message with gson
+            int testMax = 10, cnt = 0;
+//           	while (started && (message = reader.readLine()) != null && cnt < testMax) {
+         	while (started && (message = reader.readLine()) != null) {
                 try {
 					FlightObject flight = gson.fromJson(message, FlightObject.class);
 					boolean match = false;
@@ -102,9 +114,9 @@ public class FlightAwareClient implements Runnable {
 //					System.err.println(message);
 					
 					for(FlightObjectListener l: listeners) {
-						l.processMessage(flight, message);
+						l.processMessage(flight);
 					}
-//                System.out.println(flight);
+					cnt++;
 				} catch (JsonSyntaxException e) {
 					e.printStackTrace();   
 				}

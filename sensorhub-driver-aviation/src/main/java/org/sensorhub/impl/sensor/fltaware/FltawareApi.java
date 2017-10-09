@@ -2,8 +2,6 @@ package org.sensorhub.impl.sensor.fltaware;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.time.Instant;
-import java.util.List;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
@@ -15,7 +13,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.sensorhub.impl.sensor.fltaware.InFlightInfo.Waypoint;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -66,7 +63,7 @@ public class FltawareApi
 		System.err.println(url);
 		HttpGet request = new HttpGet(url);
 		String auth = user + ":" + passwd;
-		byte[] encodedAuth = Base64.encodeBase64(auth.getBytes(Charset.forName("ISO-8859-1")));
+		byte [] encodedAuth = Base64.encodeBase64(auth.getBytes(Charset.forName("ISO-8859-1")));
 		String authHeader = "Basic " + new String(encodedAuth);
 		request.setHeader(HttpHeaders.AUTHORIZATION, authHeader);
 
@@ -89,7 +86,7 @@ public class FltawareApi
 		System.err.println(json);
 	}
 
-	public FlightAwareResult fromJson(String json, Class<? extends FlightAwareResult> clazz) {
+	public static FlightAwareResult fromJson(String json, Class<? extends FlightAwareResult> clazz) {
 		Gson gson = new Gson();
 		FlightAwareResult info = gson.fromJson(json, clazz);
 		return info;
@@ -118,7 +115,7 @@ public class FltawareApi
 			System.err.println("FltawareApi.getFltPlan(): Don't understand faFlightId: " + id);
 		}
 		String ident = id.substring(0, dashIdx);
-		plan.flightId = ident + "_" + plan.destinationAirport;
+		plan.oshFlightId = ident + "_" + plan.destinationAirport;
 //		plan.time = comes from firehose only
 		return plan;
 	}

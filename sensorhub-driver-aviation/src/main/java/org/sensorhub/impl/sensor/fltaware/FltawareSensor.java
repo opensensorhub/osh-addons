@@ -14,6 +14,8 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fltaware;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,10 +46,11 @@ import net.opengis.sensorml.v20.PhysicalSystem;
  * 
  *
  */
-public class FltawareSensor extends AbstractSensorModule<FltawareConfig> implements IMultiSourceDataProducer, FlightObjectListener
+public class FltawareSensor extends AbstractSensorModule<FltawareConfig> implements IMultiSourceDataProducer, FlightObjectListener //, FlightPlanListener
 {
 	FlightPlanOutput flightPlanOutput;
 	FlightPositionOutput flightPositionOutput;
+	TurbulenceOutput turbulenceOutput;
 	Thread watcherThread;
 	private FltawareApi api;
 	FlightAwareClient client;
@@ -58,16 +61,19 @@ public class FltawareSensor extends AbstractSensorModule<FltawareConfig> impleme
 	
 	// Dynamically created FOIs
 	Set<String> foiIDs;
-	Map<String, AbstractFeature> aircraftFois;
+	Map<String, AbstractFeature> flightAwareFois;
 	Map<String, AbstractFeature> aircraftDesc;
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
-	static final String AIRCRAFT_UID_PREFIX = SENSOR_UID_PREFIX + "flightPlan:";
+	static final String FLIGHT_PLAN_UID_PREFIX = SENSOR_UID_PREFIX + "flightPlan:";
+	static final String FLIGHT_POSITION_UID_PREFIX = SENSOR_UID_PREFIX + "flightPosition:";
+	static final String TURBULENCE_UID_PREFIX = SENSOR_UID_PREFIX + "turbulence:";
 	
 	static final Logger log = LoggerFactory.getLogger(FltawareSensor.class);
+	private BufferedWriter writer;
 	
 	public FltawareSensor() {
 		this.foiIDs = new LinkedHashSet<String>();
-		this.aircraftFois = new LinkedHashMap<String, AbstractFeature>();
+		this.flightAwareFois = new LinkedHashMap<String, AbstractFeature>();
 		this.aircraftDesc = new LinkedHashMap<String, AbstractFeature>();
 	}
 	
@@ -77,7 +83,7 @@ public class FltawareSensor extends AbstractSensorModule<FltawareConfig> impleme
 		synchronized (sensorDescLock)
 		{
 			super.updateSensorDescription();
-			sensorDescription.setDescription("Delta FlightPlan networK");
+			sensorDescription.setDescription("Delta FlightPlan network");
 		}
 	}
 	
@@ -90,36 +96,50 @@ public class FltawareSensor extends AbstractSensorModule<FltawareConfig> impleme
 		api = new FltawareApi("drgregswilson", "2809b6196a2cfafeb89db0a00b117ac67e876220");
 		
 		// IDs
-		this.uniqueID = "urn:osh:sensor:earthcast:flightPlan";
+		this.uniqueID = "urn:osh:sensor:earthcast:flightAware";
 		this.xmlID = "EarthcastFltaware";
 
 		// Initialize Outputs
+		// FlightPlan
 		this.flightPlanOutput = new FlightPlanOutput(this);
-
 		addOutput(flightPlanOutput, false);
 		flightPlanOutput.init();
 
-		this.flightPositionOutput = new FlightPositionOutput(this);
-		flightPositionOutput.init();
-		addOutput(flightPositionOutput, false);
+		//  FlightPosition
+//		this.flightPositionOutput = new FlightPositionOutput(this);
+//		flightPositionOutput.init();
+//		addOutput(flightPositionOutput, false);
+		
+		// Turbulence
+		this.turbulenceOutput= new TurbulenceOutput(this);
+		addOutput(turbulenceOutput, false);
+		turbulenceOutput.init();
+		
+		//  Temp so I can collect flightIds
+		try {
+			writer = new BufferedWriter(new FileWriter("C:/Data/sensorhub/delta/flights.txt"));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public void start() throws SensorHubException
 	{
-		//  Push sample flight plan
-//		FlightPlan plan = FlightPlan.getSamplePlan();
-//		flightPlanOutput.sendFlightPlan(plan);
-		
 		// Start Firehose feed- 
         String machineName = "firehose.flightaware.com";
-    	String userName = "drgregswilson";
+        // config me!
+        String userName = "drgregswilson";
     	String password = "2809b6196a2cfafeb89db0a00b117ac67e876220";
         client = new FlightAwareClient(machineName, userName, password);
         client.messageTypes.add("flightplan");
         client.addListener(this);
         Thread thread = new Thread(client);
         thread.start();
+        
+        //  start Turbulence output, which will start FileListener
+        turbulenceOutput.start(config.turbulencePath);
 	}
 
 	@Override
@@ -132,17 +152,11 @@ public class FltawareSensor extends AbstractSensorModule<FltawareConfig> impleme
 
 	@Override
 	public boolean isConnected() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
-	@Override
-	public void processMessage(FlightObject obj) {
-
-	}	
-
-	private void addFoi(long recordTime, String flightId) {
-		String uid = AIRCRAFT_UID_PREFIX + flightId;
+	private void addFlightPlanFoi(String flightId, long recordTime) {
+		String uid = FLIGHT_PLAN_UID_PREFIX + flightId;
 		String description = "Delta Flight Plan for: " + flightId;
 
 		// generate small SensorML for FOI (in this case the system is the FOI)
@@ -150,21 +164,50 @@ public class FltawareSensor extends AbstractSensorModule<FltawareConfig> impleme
 		foi.setId(flightId);
 		foi.setUniqueIdentifier(uid);
 //		System.err.println("MetarSensor station/uid: " + station + "/" + uid);
-		foi.setName(flightId);
+		foi.setName(flightId + " FlightPlan");
 		foi.setDescription(description);
 
 		foiIDs.add(uid);
-		aircraftFois.put(flightId, foi);
+		flightAwareFois.put(uid, foi);
 
         // send event
         long now = System.currentTimeMillis();
         eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
         
-        log.debug("New vehicle added as FOI: {} ; aircraftFois.size = {}", uid, aircraftFois.size());
+        log.debug("New FlightPlan added as FOI: {} ; aircraftFois.size = {}", uid, flightAwareFois.size());
+        try {
+			writer.write(flightId + "\n");
+			writer.flush();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private void addTurbulenceFoi(String flightId, long recordTime) {
+		String uid = TURBULENCE_UID_PREFIX + flightId;
+		String description = "Delta Turbulence data for: " + flightId;
+
+		// generate small SensorML for FOI (in this case the system is the FOI)
+		PhysicalSystem foi = smlFac.newPhysicalSystem();
+		foi.setId(flightId);
+		foi.setUniqueIdentifier(uid);
+//		System.err.println("MetarSensor station/uid: " + station + "/" + uid);
+		foi.setName(flightId + " Turbulence");
+		foi.setDescription(description);
+
+		foiIDs.add(uid);
+		flightAwareFois.put(uid, foi);
+
+        // send event
+        long now = System.currentTimeMillis();
+        eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
+        
+        log.debug("New vehicle added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
 	}
 	
 	@Override
-	public void processMessage(FlightObject obj, String message) {
+	public void processMessage(FlightObject obj) {
 		// call api and get flightplan
 		// obj.id
 		if(!obj.type.equals("flightplan")) {
@@ -179,15 +222,20 @@ public class FltawareSensor extends AbstractSensorModule<FltawareConfig> impleme
 			}
 //			plan.time = obj.getClock();  // Use pitr?
 			plan.time = System.currentTimeMillis() / 1000;
-//			System.err.println(message);
 //			System.err.println(plan);
 			if(plan != null) {
-				// Check to see if existing entry with this flightId
-				AbstractFeature foi = aircraftFois.get(plan.flightId);
+				// Check to see if existing FlightPlan entry with this flightId
+				AbstractFeature fpFoi = flightAwareFois.get(FLIGHT_PLAN_UID_PREFIX + plan.oshFlightId);
 				// should we replace if it is already there?  Shouldn't matter as long as data is changing
-				if(foi == null)
-					addFoi(plan.time, plan.flightId);
+				if(fpFoi == null)
+					addFlightPlanFoi(plan.oshFlightId, plan.time);
 				flightPlanOutput.sendFlightPlan(plan);
+				
+				//  And Turbulence- only adding FOI
+				AbstractFeature turbFoi = flightAwareFois.get(TURBULENCE_UID_PREFIX + plan.oshFlightId);
+				if(turbFoi == null)
+					addTurbulenceFoi(TURBULENCE_UID_PREFIX + plan.oshFlightId, plan.time);
+				turbulenceOutput.addFlightPlan(TURBULENCE_UID_PREFIX + plan.oshFlightId, plan);
 			}
 		} catch (ClientProtocolException e) {
 			e.printStackTrace();
@@ -199,7 +247,7 @@ public class FltawareSensor extends AbstractSensorModule<FltawareConfig> impleme
 	@Override
 	public Collection<String> getEntityIDs()
 	{
-		return Collections.unmodifiableCollection(aircraftFois.keySet());
+		return Collections.unmodifiableCollection(flightAwareFois.keySet());
 	}
 
 
@@ -228,14 +276,14 @@ public class FltawareSensor extends AbstractSensorModule<FltawareConfig> impleme
 	@Override
 	public AbstractFeature getCurrentFeatureOfInterest(String entityID)
 	{
-		return aircraftFois.get(entityID);
+		return flightAwareFois.get(entityID);
 	}
 
 
 	@Override
 	public Collection<? extends AbstractFeature> getFeaturesOfInterest()
 	{
-		return Collections.unmodifiableCollection(aircraftFois.values());
+		return Collections.unmodifiableCollection(flightAwareFois.values());
 	}
 
 

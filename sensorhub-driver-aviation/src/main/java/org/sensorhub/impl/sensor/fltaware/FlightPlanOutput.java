@@ -125,7 +125,6 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 
 	public void sendFlightPlan(FlightPlan plan)
 	{
-
 		int numPts = plan.waypoints.size();
 
 		DataArray ptArr = (DataArray)recordStruct.getComponent(3);
@@ -133,7 +132,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 		DataBlock dataBlock = recordStruct.createDataBlock();
 
 		dataBlock.setDoubleValue(0, plan.time);
-		dataBlock.setStringValue(1, plan.flightId);
+		dataBlock.setStringValue(1, plan.oshFlightId);
 		dataBlock.setIntValue(2, numPts);
 		DataBlock arr = ((DataBlockMixed)dataBlock).getUnderlyingObject()[3];
 		DataBlockParallel parr = (DataBlockParallel)arr;
@@ -151,7 +150,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FltawareSensor> imple
 		// update latest record and send event
 		latestRecord = dataBlock;
 		latestRecordTime = System.currentTimeMillis();
-		String flightUid = FltawareSensor.AIRCRAFT_UID_PREFIX + plan.flightId;
+		String flightUid = FltawareSensor.FLIGHT_PLAN_UID_PREFIX + plan.oshFlightId;
 		latestUpdateTimes.put(flightUid, plan.time);
 		latestRecords.put(flightUid, latestRecord);   
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPlanOutput.this, dataBlock));
