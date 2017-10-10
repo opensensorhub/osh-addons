@@ -104,7 +104,7 @@ public class FlightAwareApi
 	 */
 	public FlightPlan getFlightPlan(String id) throws ClientProtocolException, IOException {
 		String json = invokeNew(DecodeFlightRoute_URL + "faFlightID=" + id);
-		System.err.println(DecodeFlightRoute_URL + "faFlightID=" + id);
+//		System.err.println(DecodeFlightRoute_URL + "faFlightID=" + id);
 		if(json.contains("error")) {
 			System.err.println("FlightPlan.getFlightPlan(): Whoops: " + json);
 			return null;

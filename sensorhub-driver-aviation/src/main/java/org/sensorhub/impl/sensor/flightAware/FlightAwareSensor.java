@@ -105,10 +105,10 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		addOutput(flightPlanOutput, false);
 		flightPlanOutput.init();
 
-		//  FlightPosition
-		//		this.flightPositionOutput = new FlightPositionOutput(this);
-		//		flightPositionOutput.init();
-		//		addOutput(flightPositionOutput, false);
+//		FlightPosition
+		this.flightPositionOutput = new FlightPositionOutput(this);
+		flightPositionOutput.init();
+		addOutput(flightPositionOutput, false);
 
 		// Turbulence
 		this.turbulenceOutput= new TurbulenceOutput(this);
@@ -116,12 +116,12 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		turbulenceOutput.init();
 
 		//  Temp so I can collect flightIds
-		try {
-			writer = new BufferedWriter(new FileWriter("C:/Data/sensorhub/delta/flights.txt"));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//		try {
+//			writer = new BufferedWriter(new FileWriter("C:/Data/sensorhub/delta/flights.txt"));
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 	}
 
 	@Override
@@ -130,10 +130,9 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		// Start Firehose feed- 
 		String machineName = "firehose.flightaware.com";
 		// config me!
-		String userName = "drgregswilson";
-		String password = "2809b6196a2cfafeb89db0a00b117ac67e876220";
-		client = new FlightAwareClient(machineName, userName, password);
+		client = new FlightAwareClient(machineName, config.userName, config.password);
 		client.messageTypes.add("flightplan");
+		client.messageTypes.add("position");
 		client.addListener(this);
 		Thread thread = new Thread(client);
 		thread.start();
@@ -174,14 +173,14 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		long now = System.currentTimeMillis();
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
-//		log.debug("New FlightPlan added as FOI: {} ; aircraftFois.size = {}", uid, flightAwareFois.size());
-		try {
-			writer.write(flightId + "\n");
-			writer.flush();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		log.debug("New FlightPlan added as FOI: {} ; aircraftFois.size = {}", uid, flightAwareFois.size());
+//		try {
+//			writer.write(flightId + "\n");
+//			writer.flush();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 	}
 
 	private void addPositionFoi(String flightId, long recordTime) {
@@ -204,6 +203,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
 		log.debug("New Position added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
+		System.err.println("New Position added as FOI: {} ; flightAwareFois.size = {} : "+  uid + ":  " + flightAwareFois.size());
 	}
 
 	private void addTurbulenceFoi(String flightId, long recordTime) {
@@ -225,7 +225,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		long now = System.currentTimeMillis();
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
-//		log.debug("New TurbulenceProfile added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
+		log.debug("New TurbulenceProfile added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
 	}
 
 	@Override
@@ -282,7 +282,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	private void processPosition(FlightObject obj) {
 		// Check to see if existing FlightPlan entry with this flightId
 		if(obj.ident == null || obj.dest == null || obj.ident.length() == 0 || obj.dest.length() == 0) {
-			logger.error("Cannot construct oshFlightId. Missing ident or dest in FlightObject");
+			logger.trace("Cannot construct oshFlightId. Missing ident or dest in FlightObject");
 			return;
 		}
 

@@ -31,13 +31,18 @@ public class FlightPlan
 	}
 	
 	public FlightPlan(DecodeFlightResult result) {
+		String prevName = "";
 		for(Result.Data d: result.DecodeFlightRouteResult.data) {
-			waypoints.add(new Waypoint(d.name.trim() ,  d.type.trim() , (float)d.latitude,(float) d.longitude));
+			String name = d.name.trim();
+			if(prevName.equals(name))
+				continue;  // catch duplicate waypts 
+			waypoints.add(new Waypoint(name ,  d.type.trim() , (float)d.latitude,(float) d.longitude));
 			if (d.type.equalsIgnoreCase("Origin Airport")) {
-				originAirport = d.name;
+				originAirport = name;
 			} else if (d.type.equalsIgnoreCase("Destination Airport")) {
-				destinationAirport = d.name;
+				destinationAirport = name;
 			}  
+			prevName = name;
 		}
 	}
 	

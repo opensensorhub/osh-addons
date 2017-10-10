@@ -149,7 +149,7 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 		//  NumProfiles, Profiles []
 		recordStruct = fac.newDataRecord(2); 
 		recordStruct.setName(getName());
-		recordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/turbulenceProfile"); // ??
+		recordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/turbulence"); // ??
 
 		Count numProfiles = fac.newCount(DataType.INT);
 		numProfiles.setId("NUM_PROFILES");
@@ -157,7 +157,7 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 
 		profileStruct = fac.newDataRecord(6); 
 		profileStruct.setName(getName());
-		profileStruct.setDefinition("http://earthcastwx.com/ont/swe/property/turbulenceProfile"); // ??
+		profileStruct.setDefinition("http://earthcastwx.com/ont/swe/property/turbulenceProfiles"); // ??
 
 		//  
 		DataArray profileArr = fac.newDataArray();
@@ -319,7 +319,8 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 		
 		// Construct new latestRecord for this id
 		try {
-			List<TurbulenceRecord> recs = reader.getTurbulence(plan.getLats(), plan.getLons(), plan.getNames());
+//			List<TurbulenceRecord> recs = reader.getTurbulence(plan.getLats(), plan.getLons(), plan.getNames());
+			List<TurbulenceRecord> recs = reader.getTurbulence(plan);
 			if(recs == null) {
 				log.info("TurbOutput.getLatest():  Reading turb data failed.");
 				return null;

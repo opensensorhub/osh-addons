@@ -34,7 +34,7 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareSensor
 	DataRecord recordStruct;
 	DataEncoding encoding;	
 
-	Map<String, Long> latestUpdateTimes;
+	Map<String, Long> latestUpdateTimes = new LinkedHashMap<>();
 	Map<String, DataBlock> latestRecords = new LinkedHashMap<>();  // key is position uid
 
 	public FlightPositionOutput(FlightAwareSensor parentSensor) 
@@ -58,15 +58,14 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareSensor
 		//	 time, flightId, faFlightId, locationVec, heading, airspeed?
 
 		// SWE Common data structure
-		recordStruct = fac.newDataRecord(8);
+		recordStruct = fac.newDataRecord(7);
 		recordStruct.setName(getName());
 		recordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/flightPosition"); // ??
 
 		recordStruct.addComponent("time", fac.newTimeStampIsoGPS());
 
-		// flightIds
+		// oshFlightId
 		recordStruct.addField("flightId", fac.newText("", "flightId", "Internally generated flight desc (flightNum_DestAirport"));
-		recordStruct.addField("faFlightId", fac.newText("", "flightId", "FlightAware flightId- not sure we will need this"));
 
 		//  location
 		Vector locVector = geoHelper.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
@@ -94,13 +93,12 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareSensor
 		DataBlock dataBlock = recordStruct.createDataBlock();
 		dataBlock.setDoubleValue(0, obj.getClock());
 		dataBlock.setStringValue(1, obj.getOshFlightId());
-		dataBlock.setStringValue(2, obj.id);
 
-		dataBlock.setDoubleValue(3, obj.getValue(obj.lat));
-		dataBlock.setDoubleValue(4, obj.getValue(obj.lon));
-		dataBlock.setDoubleValue(5, obj.getValue(obj.alt));
-		dataBlock.setDoubleValue(6, obj.getValue(obj.heading));
-		dataBlock.setDoubleValue(7, obj.getValue(obj.speed));
+		dataBlock.setDoubleValue(2, obj.getValue(obj.lat));
+		dataBlock.setDoubleValue(3, obj.getValue(obj.lon));
+		dataBlock.setDoubleValue(4, obj.getValue(obj.alt));
+		dataBlock.setDoubleValue(5, obj.getValue(obj.heading));
+		dataBlock.setDoubleValue(6, obj.getValue(obj.speed));
 
 		// update latest record and send event
 		latestRecord = dataBlock;
@@ -148,7 +146,8 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareSensor
 	@Override
 	public DataBlock getLatestRecord(String entityID) {
 		//  Can't really generate this one
-		return latestRecords.get(entityID);
+		DataBlock b =  latestRecords.get(entityID);
+		return b;
 	}
 
 }
