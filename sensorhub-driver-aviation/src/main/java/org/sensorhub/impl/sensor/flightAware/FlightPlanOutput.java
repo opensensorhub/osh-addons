@@ -153,6 +153,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareSensor> im
 		String flightUid = FlightAwareSensor.FLIGHT_PLAN_UID_PREFIX + plan.oshFlightId;
 		latestUpdateTimes.put(flightUid, plan.time);
 		latestRecords.put(flightUid, latestRecord);   
+//		DataBlock b = latestRecords.get("DAL2152_KSLC");
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPlanOutput.this, dataBlock));
 	}
 

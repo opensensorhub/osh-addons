@@ -1,15 +1,19 @@
 package org.sensorhub.impl.sensor.flightAware;
 
 import java.awt.Point;
-import java.awt.geom.Point2D;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.chrono.ChronoZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.impl.sensor.flightAware.FlightPlan.Waypoint;
-import org.sensorhub.impl.sensor.mesh.UcarUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ucar.ma2.Array;
 import ucar.ma2.InvalidRangeException;
@@ -55,6 +59,7 @@ public class TurbulenceReader
 	// TODO allow var names to be set in config
 	private static final String ALT_VAR = "altitude_above_msl";
 	private static final String TURB_VAR = "Turbulence_Potential_Forecast_Index_altitude_above_msl";
+//	private static final String TIME_VAR = "forecast_reference_time";
 	private static final String TIME_VAR = "time";
 	private static final String X_VAR = "x";
 	private static final String Y_VAR = "y";
@@ -64,8 +69,6 @@ public class TurbulenceReader
 	private NetcdfFile ncFile;
 	private ProjectionImpl proj;
 	private GridCoordSystem gcs;
-//	private float [] lats;
-//	private float [] lons;
 	private Variable turbVar;
 	private float [][][] turbData;
 	private Array transArr;
@@ -74,12 +77,15 @@ public class TurbulenceReader
 	private List<Integer> wayptIndices = new ArrayList<>();  // when we create full path, need to create these so they can be included in response 
 	long time = 0L;
 
+	static final Logger log = LoggerFactory.getLogger(TurbulenceReader.class);
+	
 	public TurbulenceReader(String path) throws IOException {
 		dataset = GridDataset.open(path);
 		ncFile = dataset.getNetcdfFile();
 		gcs = dataset.getGrids().get(0).getCoordinateSystem();
 		proj = gcs.getProjection();
-		time = readTime();
+//		time = readTime();
+		time = computeTime(path);
 		
 	    Variable vx = ncFile.findVariable(X_VAR);
 	    Variable vy = ncFile.findVariable(Y_VAR);
@@ -149,6 +155,9 @@ public class TurbulenceReader
 		List<Point> path = getPathIndices(plan.getLats(), plan.getLons());
 		List<TurbulenceRecord> recs = new ArrayList<>();
 		List<Waypoint> waypoints = plan.waypoints;
+		if(plan.oshFlightId.equals("DAL2152_KSLC"))
+			System.err.println("Gotcha!");
+
 		int pointCnt = 0;
 		int waypointCnt = 0;
 		Integer wayptIdx = wayptIndices.get(waypointCnt);
@@ -188,7 +197,33 @@ public class TurbulenceReader
 		return timeUtc;
 	}
 
-
+	// ECT_NCST_DELTA_GTGTURB_6_5km.201710181800.grb2
+	public long computeTime(String filename) throws IOException {
+		int dotIdx = filename.indexOf('.');
+		if(dotIdx == -1) {
+			log.error("Could not compute timestamp from filename: {}.  Using timestamp from time variable", filename);
+			return readTime();
+		}
+		String datestr = filename.substring(dotIdx + 1);
+		String yrs = datestr.substring(0,4);
+		String mons = datestr.substring(4,6);
+		String days = datestr.substring(6,8);
+		String hrs = datestr.substring(8,10);
+		String mins = datestr.substring(10,12);
+		int yr = Integer.parseInt(yrs);
+		int mon = Integer.parseInt(mons);
+		int day = Integer.parseInt(days);
+		int hr = Integer.parseInt(hrs);
+		int min = Integer.parseInt(mins);
+		//  Surely there is an easier way to get the timestamp... 
+		//  partial issue is that ZonedDateTime can't seem to see toEpochMilli() method, 
+		//  likely due to clash with joda time dependencies
+		LocalDateTime date = LocalDateTime.of(yr, mon, day, hr, min);
+		ZonedDateTime gmtDate = ZonedDateTime.of(date, ZoneId.of("UTC"));
+		Instant instant = Instant.from(gmtDate);
+		long time = instant.toEpochMilli();
+		return time/1000;
+	}
 
 	public void dumpInfo() throws Exception {
 		NetcdfDataset ncDataset = dataset.getNetcdfDataset();
@@ -226,7 +261,7 @@ public class TurbulenceReader
 		for(int i=0; i<lat.length; i++) {
 			int[] idx = gcs.findXYindexFromLatLon(lat[i], lon[i], null);
 			if(idx == null || idx[0] == - 1 ||  idx[1] == -1) {
-				throw new IOException("Projection fromLatLon failed");
+				throw new IOException("Projection fromLatLon failed. Point in path is off the available grid: " + lat[i] + "," + lon[i]);
 			}
 			pts[i] = new Point(idx[0], idx[1]);
 //			System.err.println(" *** " + pts[i].x + "," + pts[i].y + " : " + lat[i] + "," + lon[i]);
@@ -305,14 +340,15 @@ public class TurbulenceReader
 //		List<Point> path = reader.getPathIndices(lat, lon);
 	}
 	
-	public static void main(String[] args) throws Exception {
-		TurbulenceReader reader = new TurbulenceReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710082130.grb2");
+	public static void main_(String[] args) throws Exception {
+		TurbulenceReader reader = new TurbulenceReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710171930.grb2");
 		reader.ingestFullFile();
 		FlightAwareApi api = new FlightAwareApi();
 //		FlightPlan plan = api.getFlightPlan("DAL1487-1506921959-airline-0651");
 		FlightPlan plan = FlightPlan.getSamplePlan();
 
 		List<TurbulenceRecord> recs = reader.getTurbulence(plan);
+		reader.dumpInfo();
 	}
 	
 	
@@ -322,7 +358,7 @@ public class TurbulenceReader
 		FlightAwareApi api = new FlightAwareApi();
 		FlightPlan plan = api.getFlightPlan("DAL1487-1506921959-airline-0651");
 
-		//		reader.dumpInfo();
+				reader.dumpInfo();
 		List<TurbulenceRecord> recs = reader.getTurbulence(plan.getLats(), plan.getLons());
 		for(TurbulenceRecord r: recs)
 			System.err.println(r);

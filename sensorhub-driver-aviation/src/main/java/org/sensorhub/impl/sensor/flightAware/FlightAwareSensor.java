@@ -105,7 +105,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		addOutput(flightPlanOutput, false);
 		flightPlanOutput.init();
 
-//		FlightPosition
+		//		FlightPosition
 		this.flightPositionOutput = new FlightPositionOutput(this);
 		flightPositionOutput.init();
 		addOutput(flightPositionOutput, false);
@@ -116,12 +116,12 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		turbulenceOutput.init();
 
 		//  Temp so I can collect flightIds
-//		try {
-//			writer = new BufferedWriter(new FileWriter("C:/Data/sensorhub/delta/flights.txt"));
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+		//		try {
+		//			writer = new BufferedWriter(new FileWriter("C:/Data/sensorhub/delta/flights.txt"));
+		//		} catch (IOException e) {
+		//			// TODO Auto-generated catch block
+		//			e.printStackTrace();
+		//		}
 	}
 
 	@Override
@@ -174,13 +174,13 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
 		log.debug("New FlightPlan added as FOI: {} ; aircraftFois.size = {}", uid, flightAwareFois.size());
-//		try {
-//			writer.write(flightId + "\n");
-//			writer.flush();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+		//		try {
+		//			writer.write(flightId + "\n");
+		//			writer.flush();
+		//		} catch (IOException e) {
+		//			// TODO Auto-generated catch block
+		//			e.printStackTrace();
+		//		}
 	}
 
 	private void addPositionFoi(String flightId, long recordTime) {
@@ -203,7 +203,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
 		log.debug("New Position added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
-		System.err.println("New Position added as FOI: {} ; flightAwareFois.size = {} : "+  uid + ":  " + flightAwareFois.size());
+//		System.err.println("New Position added as FOI: {} ; flightAwareFois.size = {} : "+  uid + ":  " + flightAwareFois.size());
 	}
 
 	private void addTurbulenceFoi(String flightId, long recordTime) {
@@ -220,6 +220,10 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 
 		foiIDs.add(uid);
 		flightAwareFois.put(uid, foi);
+//		for(Map.Entry<String, AbstractFeature> entry: flightAwareFois.entrySet()) {
+//			if(entry.getKey().endsWith("DAL2941_KATL"))
+//				System.err.println(entry.getKey());
+//		}
 
 		// send event
 		long now = System.currentTimeMillis();
@@ -262,8 +266,11 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 				// Check to see if existing FlightPlan entry with this flightId
 				AbstractFeature fpFoi = flightAwareFois.get(FLIGHT_PLAN_UID_PREFIX + plan.oshFlightId);
 				// should we replace if it is already there?  Shouldn't matter as long as data is changing
-				if(fpFoi == null)
+				if(fpFoi == null) {
+					if(plan.oshFlightId.equals("DAL2152_KSLC"))
+						System.err.println("Gotcha!");
 					addFlightPlanFoi(plan.oshFlightId, plan.time);
+				}
 				flightPlanOutput.sendFlightPlan(plan);
 
 				//  And Turbulence- only adding FOI
@@ -282,8 +289,19 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	private void processPosition(FlightObject obj) {
 		// Check to see if existing FlightPlan entry with this flightId
 		if(obj.ident == null || obj.dest == null || obj.ident.length() == 0 || obj.dest.length() == 0) {
-			logger.trace("Cannot construct oshFlightId. Missing ident or dest in FlightObject");
-			return;
+//			logger.debug("Cannot construct oshFlightId. Missing ident or dest in FlightObject");
+			// Plan from FltAware did not contain dest airport.  Pull it from API
+			FlightPlan plan = null;
+			try {
+				plan = api.getFlightPlan(obj.id);
+			} catch (Exception e) {
+				e.printStackTrace(System.err);
+			}
+			if(plan == null || plan.destinationAirport == null || plan.destinationAirport.length() == 0) {
+				logger.debug("STILL Cannot construct oshFlightId. Missing dest in FlightPlan");
+				return;
+			}
+			obj.dest = plan.destinationAirport;
 		}
 
 		String oshFlightId = obj.getOshFlightId();
@@ -291,6 +309,8 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		// should we replace if it is already there?  Shouldn't matter as long as data is changing
 		if(posFoi == null)
 			addPositionFoi(oshFlightId, obj.getClock());
+		if(oshFlightId.equals("DAL719_KGRB"))
+			System.err.println("Whoa nelly");
 		flightPositionOutput.sendPosition(obj, oshFlightId);
 	}
 

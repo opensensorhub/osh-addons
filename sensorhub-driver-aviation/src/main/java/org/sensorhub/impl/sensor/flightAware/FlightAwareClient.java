@@ -16,7 +16,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 
-public class FlightAwareClient implements Runnable 
+public class FlightAwareClient implements FlightObjectListener, Runnable 
 {
 
 	private String serverUrl;
@@ -51,7 +51,8 @@ public class FlightAwareClient implements Runnable
     	String userName = "drgregswilson";
     	String password = "2809b6196a2cfafeb89db0a00b117ac67e876220";
         FlightAwareClient client = new FlightAwareClient(machineName, userName, password);
-        client.messageTypes.add("flightplan");
+        client.messageTypes.add("position");
+        client.addListener(client);
         Thread thread = new Thread(client);
         thread.start();
     }
@@ -80,7 +81,8 @@ public class FlightAwareClient implements Runnable
                 initiation_command += " compression gzip";
             }
             
-            initiation_command += " filter \"DAL\"";
+//            initiation_command += " filter \"DAL\"";
+            initiation_command += " filter \"SWA\"";
             initiation_command += "\n";
 
             //  initiate connection with flight aware server
@@ -101,6 +103,7 @@ public class FlightAwareClient implements Runnable
 //           	while (started && (message = reader.readLine()) != null && cnt < testMax) {
          	while (started && (message = reader.readLine()) != null) {
                 try {
+//                	System.err.println(message);
 					FlightObject flight = gson.fromJson(message, FlightObject.class);
 					boolean match = false;
 					for(String msg: messageTypes) {
@@ -117,8 +120,9 @@ public class FlightAwareClient implements Runnable
 						l.processMessage(flight);
 					}
 					cnt++;
-				} catch (JsonSyntaxException e) {
-					e.printStackTrace();   
+				} catch (Exception e) {
+					e.printStackTrace();  
+					continue;
 				}
             }
 
@@ -136,4 +140,10 @@ public class FlightAwareClient implements Runnable
     public void stop() {
         started = false;
     }
+
+	@Override
+	public void processMessage(FlightObject obj) {
+		if(obj.id.startsWith("SWA1763"))
+			System.err.println(obj);
+	}
 }

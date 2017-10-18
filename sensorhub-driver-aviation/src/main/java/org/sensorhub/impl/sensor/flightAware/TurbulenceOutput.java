@@ -77,6 +77,8 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 	private DataRecord profileStruct;
 
 	private TurbulenceReader reader;
+	private static String OS = System.getProperty("os.name").toLowerCase();
+
 
 
 	public TurbulenceOutput(FlightAwareSensor parentSensor) 
@@ -209,6 +211,10 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 
 	public DataBlock sendProfiles(List<TurbulenceRecord> recs, FlightPlan plan)
 	{
+		if(plan.oshFlightId.equals("DAL2152_KSLC"))
+			System.err.println("Gotcha!");
+
+
 		DataArray profileArr = (DataArray)recordStruct.getComponent(1);
 		profileArr.updateSize(recs.size());
 		DataBlock bigBlock = recordStruct.createDataBlock();
@@ -250,6 +256,15 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 		String fn = p.getFileName().toString().toLowerCase();
 		if(!fn.contains("gtgturb") || !fn.endsWith(".grb2")) {
 			return;
+		}
+
+		if(OS.contains("win")) {
+			try {
+				Thread.sleep(200L);
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 		}
 
 		try {
@@ -303,8 +318,8 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 	@Override
 	public DataBlock getLatestRecord(String entityID) {
 		DataBlock b = latestRecords.get(entityID);
-		if(b != null)
-			return b;
+		//		if(b != null)
+		//			return b;
 
 		//  get FlightPlan
 		FlightPlan plan = availableFlightPlans.get(entityID);
@@ -316,10 +331,10 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 		if(reader == null) {
 			log.info("TurbOutput.getLatest():  No New data yet. Fix me!!!");
 		}
-		
+
 		// Construct new latestRecord for this id
 		try {
-//			List<TurbulenceRecord> recs = reader.getTurbulence(plan.getLats(), plan.getLons(), plan.getNames());
+			//			List<TurbulenceRecord> recs = reader.getTurbulence(plan.getLats(), plan.getLons(), plan.getNames());
 			List<TurbulenceRecord> recs = reader.getTurbulence(plan);
 			if(recs == null) {
 				log.info("TurbOutput.getLatest():  Reading turb data failed.");

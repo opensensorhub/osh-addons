@@ -1,5 +1,7 @@
 package org.sensorhub.impl.sensor.flightAware;
 
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -126,9 +128,14 @@ public class FlightObject
 		b.append("  orig: " + orig + "\n");
 		b.append("  dest: " + dest + "\n");
 		b.append("  clock: " + clock + "\n");
+		b.append("  time: " + getTimeStr() + "\n");
 		b.append("  heading: " + heading + "\n");
 		b.append("  groundspeed: " + gs + "\n");
 		b.append("  speed: " + speed + "\n");
+		b.append("  lat: " + lat + "\n");
+		b.append("  lon: " + lon + "\n");
+		b.append("  alt: " + alt + "\n");
+		b.append("  altChange: " + altChange + "\n");
 //		b.append("  waypoints: \n");
 //		if(waypoints.size() > 0) {
 //			int cnt = 0;
@@ -171,6 +178,15 @@ public class FlightObject
 		return Long.parseLong(clock);
 	}
 
+	public long getTimeMs() {
+		return  Long.parseLong(clock);
+	}
+
+	public String getTimeStr() {
+		Instant instant = Instant.ofEpochMilli(getTimeMs() * 1000);
+		return instant.toString();
+	}
+	
 	public String getOshFlightId() {
 		return ident + "_" + dest; 
 	}
