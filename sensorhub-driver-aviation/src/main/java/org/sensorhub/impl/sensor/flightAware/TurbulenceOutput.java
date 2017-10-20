@@ -27,12 +27,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.felix.framework.Logger;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.flightAware.FlightPlan;
 import org.sensorhub.impl.sensor.mesh.DirectoryWatcher;
 import org.sensorhub.impl.sensor.mesh.FileListener;
 import org.vast.data.DataBlockList;
@@ -211,10 +209,6 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 
 	public DataBlock sendProfiles(List<TurbulenceRecord> recs, FlightPlan plan)
 	{
-		if(plan.oshFlightId.equals("DAL2152_KSLC"))
-			System.err.println("Gotcha!");
-
-
 		DataArray profileArr = (DataArray)recordStruct.getComponent(1);
 		profileArr.updateSize(recs.size());
 		DataBlock bigBlock = recordStruct.createDataBlock();
@@ -258,15 +252,18 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 			return;
 		}
 
-		if(OS.contains("win")) {
-			try {
-				Thread.sleep(200L);
-			} catch (InterruptedException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
+//		if(OS.contains("win")) {
+		// adding short delay for all platforms now
+		try {
+			Thread.sleep(200L);
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
+//		}
 
+		// Account for failure of new TurbReader
+		//  and multithread this
 		try {
 			reader = new TurbulenceReader(p.toString());
 			//  load 'em up
@@ -321,13 +318,15 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 		//		if(b != null)
 		//			return b;
 
-		//  get FlightPlan
+		//  get FlightPlan- *should* be updating in FltAware
 		FlightPlan plan = availableFlightPlans.get(entityID);
+//		FlightPlan plan = parentSensor.
 		if (plan == null) {
 			log.info("TurbOutput.getLatest():  Should have data for this plan but we don't. Cannot compute turbulence");
 			return null;
 		}
 
+//		TurbulenceReader prevReader = reader;
 		if(reader == null) {
 			log.info("TurbOutput.getLatest():  No New data yet. Fix me!!!");
 		}

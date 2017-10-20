@@ -93,6 +93,7 @@ public class MeshReader
 	private static final String ALT_VAR = "altitude_above_msl";
 	private static final String MESH_VAR = "MESH_altitude_above_msl";
 	private static final String TIME_VAR = "time";
+//	private static final String TIME_VAR = "reftime";
 	private static final String X_VAR = "x";
 	private static final String Y_VAR = "y";
 
@@ -182,7 +183,7 @@ public class MeshReader
 		String ustr = vtime.getUnitsString();
 		String [] uArr = ustr.split(" ");
 		String tstr = uArr[2];
-		Array atime = vtime.read();
+		Array atime = vtime.	read();
 		double timeMin = atime.getDouble(0);
 		//		System.err.println(timeMin);
 		Instant instant = Instant.parse( tstr );
@@ -192,10 +193,13 @@ public class MeshReader
 	}
 
 	public static void main(String[] args) throws Exception {
-		MeshReader reader = new MeshReader("C:/Data/sensorhub/delta/MESH/ECT_NCST_DELTA_MESH_6_5km.201709261530.grb2");
+		MeshReader reader = new MeshReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710180130.grb2");
+//		reader.readTime();
+//		MeshReader reader = new MeshReader("C:/Data/sensorhub/delta/MESH/ECT_NCST_DELTA_NLDN_CG_6_5km.201710180100.grb2");
 		//		MeshReader reader = new MeshReader("C:/Data/sensorhub/delta/NLDN/ECT_NCST_DELTA_NLDN_CG_6_5km.201709140035.grb2");
 
 		reader.dumpInfo();
+		reader.readTime();
 		MeshRecord rec = reader.readMesh();
 		System.err.println(rec);
 

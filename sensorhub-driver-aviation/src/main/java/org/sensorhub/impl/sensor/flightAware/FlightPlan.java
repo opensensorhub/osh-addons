@@ -1,5 +1,6 @@
 package org.sensorhub.impl.sensor.flightAware;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -155,6 +156,11 @@ public class FlightPlan
 
 	public void setTime(long time) {
 		this.time = time;
+	}
+
+	public String getTimeStr() {
+		Instant instant = Instant.ofEpochMilli(time * 1000);
+		return instant.toString();
 	}
 
 	public String getOshFlightId() {

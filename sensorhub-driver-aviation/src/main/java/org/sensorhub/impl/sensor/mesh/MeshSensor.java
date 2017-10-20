@@ -68,7 +68,6 @@ public class MeshSensor extends AbstractSensorModule<MeshConfig> implements File
 			watcherThread = new Thread(watcher);
 			watcher.addListener(this);
 			watcherThread.start();
-			System.err.println("****** past run");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

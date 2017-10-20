@@ -81,8 +81,8 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
                 initiation_command += " compression gzip";
             }
             
-//            initiation_command += " filter \"DAL\"";
-            initiation_command += " filter \"SWA\"";
+            initiation_command += " filter \"DAL\"";
+//            initiation_command += " filter \"SWA\"";
             initiation_command += "\n";
 
             //  initiate connection with flight aware server
@@ -143,7 +143,7 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 
 	@Override
 	public void processMessage(FlightObject obj) {
-		if(obj.id.startsWith("SWA1763"))
+		if(obj.id.startsWith("DAL915"))
 			System.err.println(obj);
 	}
 }

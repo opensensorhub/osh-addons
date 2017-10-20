@@ -15,8 +15,9 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.flightAware;
 
 import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,6 +45,12 @@ import net.opengis.sensorml.v20.PhysicalSystem;
  * @author tcook
  * @since oCT 1, 2017
  * 
+ * TODO:   
+ * java.util.ConcurrentModificationException: null
+        at java.util.LinkedHashMap$LinkedHashIterator.nextNode(LinkedHashMap.java:719) ~[na:1.8.0_131]
+        at java.util.LinkedHashMap$LinkedValueIterator.next(LinkedHashMap.java:747) ~[na:1.8.0_131]
+        at java.util.Collections$UnmodifiableCollection$1.next(Collections.java:1042) ~[na:1.8.0_131]
+        at org.sensorhub.impl.service.sos.FoiUtils.updateFois(FoiUtils.java:51) ~[s
  *
  */
 public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> implements IMultiSourceDataProducer, FlightObjectListener //, FlightPlanListener
@@ -91,9 +98,13 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	public void init() throws SensorHubException
 	{
 		super.init();
-
-		//		api = new FltawareApi(config.userName, config.password);
-		api = new FlightAwareApi("drgregswilson", "2809b6196a2cfafeb89db0a00b117ac67e876220");
+		//  never gets to constructor...
+		try {
+			api = new FlightAwareApi(config.userName, config.password);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace(System.err);
+		}
 
 		// IDs
 		this.uniqueID = "urn:osh:sensor:earthcast:flightAware";
@@ -102,7 +113,9 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		// Initialize Outputs
 		// FlightPlan
 		this.flightPlanOutput = new FlightPlanOutput(this);
+
 		addOutput(flightPlanOutput, false);
+
 		flightPlanOutput.init();
 
 		//		FlightPosition
@@ -112,6 +125,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 
 		// Turbulence
 		this.turbulenceOutput= new TurbulenceOutput(this);
+
 		addOutput(turbulenceOutput, false);
 		turbulenceOutput.init();
 
@@ -249,7 +263,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 			processPosition(obj);
 			break;
 		default:
-			logger.error("Unknown message slipped through somehow: " + obj.type);
+			log.error("Unknown message slipped through somehow: " + obj.type);
 		}
 	}
 
@@ -267,8 +281,6 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 				AbstractFeature fpFoi = flightAwareFois.get(FLIGHT_PLAN_UID_PREFIX + plan.oshFlightId);
 				// should we replace if it is already there?  Shouldn't matter as long as data is changing
 				if(fpFoi == null) {
-					if(plan.oshFlightId.equals("DAL2152_KSLC"))
-						System.err.println("Gotcha!");
 					addFlightPlanFoi(plan.oshFlightId, plan.time);
 				}
 				flightPlanOutput.sendFlightPlan(plan);
@@ -289,7 +301,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	private void processPosition(FlightObject obj) {
 		// Check to see if existing FlightPlan entry with this flightId
 		if(obj.ident == null || obj.dest == null || obj.ident.length() == 0 || obj.dest.length() == 0) {
-//			logger.debug("Cannot construct oshFlightId. Missing ident or dest in FlightObject");
+//			log.debug("Cannot construct oshFlightId. Missing ident or dest in FlightObject");
 			// Plan from FltAware did not contain dest airport.  Pull it from API
 			FlightPlan plan = null;
 			try {
@@ -298,7 +310,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 				e.printStackTrace(System.err);
 			}
 			if(plan == null || plan.destinationAirport == null || plan.destinationAirport.length() == 0) {
-				logger.debug("STILL Cannot construct oshFlightId. Missing dest in FlightPlan");
+				log.debug("STILL Cannot construct oshFlightId. Missing dest in FlightPlan");
 				return;
 			}
 			obj.dest = plan.destinationAirport;

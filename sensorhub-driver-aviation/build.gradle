@@ -5,10 +5,15 @@ version = '0.1.0'
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
 // UCAR NetCDF dependencies
-  compile 'edu.ucar:cdm:4.6.9'
-  compile 'edu.ucar:grib:4.6.9'
+  compile 'edu.ucar:cdm:4.6.10'
+  compile 'edu.ucar:grib:4.6.10'
 //  compile 'edu.ucar:netcdfAll:4.6.9'
-  compile 'org.slf4j:slf4j-jdk14:1.7.21'
+  //compile 'org.slf4j:slf4j-jdk14:1.7.21'
+  
+  compile('org.sensorhub:sensorhub-service-swe:[0.1,2.0)') {
+	  exclude group: 'joda-time', module: 'joda-time:1.5.2'
+   }
+
 }
 
 // add info to OSGi manifest

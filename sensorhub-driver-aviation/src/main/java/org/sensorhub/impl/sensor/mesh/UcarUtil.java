@@ -26,8 +26,7 @@ public class UcarUtil
 	 * @param y
 	 * @throws IOException
 	 */
-	public static void toLatLon(NetcdfFile ncFile, GridDataset dataset, 
-				String xvar, String yvar, float [] lat, float [] lon) throws IOException {
+	public static float[][] toLatLon(NetcdfFile ncFile, GridDataset dataset, String xvar, String yvar) throws IOException {
 	    GridCoordSystem gcs =  dataset.getGrids().get(0).getCoordinateSystem();
 	    ProjectionImpl proj = gcs.getProjection();
 	    Variable vx = ncFile.findVariable(xvar);
@@ -36,16 +35,17 @@ public class UcarUtil
 	    Array ay = vy.read();
 	    float [] projx = (float [] )ax.getStorage();
 	    float [] projy =  (float [] )ay.getStorage();
-	    lat = new float[projy.length];
-	    lon = new float[projx.length];
-	    
+	    float [] lats = new float[projy.length];
+	    float [] lons = new float[projx.length];
+	    float [][] latLons = {lats, lons}; 
 	    for (int j=0; j<projy.length; j++)
 	       for (int i=0; i<projx.length; i++){
 	    	  LatLonPoint pt = proj.projToLatLon(projx[i], projy[j]);
-	    	  lat[j] = (float)pt.getLatitude();
-	    	  lon[i] = (float)pt.getLongitude();
-//	    	  System.err.println(lat[j] + "," + lon[i]);
+	    	  lats[j] = (float)pt.getLatitude();
+	    	  lons[i] = (float)pt.getLongitude();
+//	    	  System.err.println(projx[i] + "," + projy[j] + " ==> " + lon[i] + "," + lat[j]);
 	    }        
+	    return latLons;
 	}
 
 	public static List<String> getVariableNames(NetcdfFile file) {

@@ -54,12 +54,12 @@ int LambertConformal_Projection;
  *
  */
 
-public class TurbulenceReader
+public class TurbulenceReaderOrig
 {
 	// TODO allow var names to be set in config
 	private static final String ALT_VAR = "altitude_above_msl";
 	private static final String TURB_VAR = "Turbulence_Potential_Forecast_Index_altitude_above_msl";
-	//	private static final String TIME_VAR = "forecast_reference_time";
+//	private static final String TIME_VAR = "forecast_reference_time";
 	private static final String TIME_VAR = "time";
 	private static final String X_VAR = "x";
 	private static final String Y_VAR = "y";
@@ -77,29 +77,29 @@ public class TurbulenceReader
 	private List<Integer> wayptIndices = new ArrayList<>();  // when we create full path, need to create these so they can be included in response 
 	long time = 0L;
 
-	static final Logger log = LoggerFactory.getLogger(TurbulenceReader.class);
-
-	public TurbulenceReader(String path) throws IOException {
+	static final Logger log = LoggerFactory.getLogger(TurbulenceReaderOrig.class);
+	
+	public TurbulenceReaderOrig(String path) throws IOException {
 		dataset = GridDataset.open(path);
 		ncFile = dataset.getNetcdfFile();
 		gcs = dataset.getGrids().get(0).getCoordinateSystem();
 		proj = gcs.getProjection();
-		//		time = readTime();
+//		time = readTime();
 		time = computeTime(path);
+		
+	    Variable vx = ncFile.findVariable(X_VAR);
+	    Variable vy = ncFile.findVariable(Y_VAR);
+	    Array ax = vx.read();
+	    Array ay = vy.read();
+	    projx = (float [] )ax.getStorage();
+	    projy =  (float [] )ay.getStorage();
 
-		Variable vx = ncFile.findVariable(X_VAR);
-		Variable vy = ncFile.findVariable(Y_VAR);
-		Array ax = vx.read();
-		Array ay = vy.read();
-		projx = (float [] )ax.getStorage();
-		projy =  (float [] )ay.getStorage();
-
-		//		float[][] latLons = UcarUtil.toLatLon(ncFile, dataset, X_VAR, Y_VAR);
-		//		lats = latLons[0];
-		//		lons = latLons[1];
-		//		System.err.println(lats);
+//		float[][] latLons = UcarUtil.toLatLon(ncFile, dataset, X_VAR, Y_VAR);
+//		lats = latLons[0];
+//		lons = latLons[1];
+//		System.err.println(lats);
 	}
-
+	
 	public void ingestFullFile() throws IOException {
 		turbVar = ncFile.findVariable(TURB_VAR);
 		if (turbVar == null)
@@ -110,15 +110,15 @@ public class TurbulenceReader
 		Array turbArr3d = turbArr4d.reduce();
 		transArr = turbArr3d.transpose(0, 2);
 		int []shape = transArr.getShape();
-		//		System.err.println(shape[0] + "  " + shape[1] + " " + shape[2]);
+//		System.err.println(shape[0] + "  " + shape[1] + " " + shape[2]);
 
 		turbData = (float[][][])transArr.copyToNDJavaArray();
-		//		removeNaNs();
+//		removeNaNs();
 	}
 
 	public void removeNaNs() {
 		int []shape = transArr.getShape();
-		//		System.err.println(shape[0] + "  " + shape[1] + " " + shape[2]);
+//		System.err.println(shape[0] + "  " + shape[1] + " " + shape[2]);
 
 		for(int x=0; x<shape[0]; x++) {
 			for(int y=0; y<shape[1]; y++) {
@@ -130,73 +130,53 @@ public class TurbulenceReader
 		}
 	}
 
-	//	public List<TurbulenceRecord>  getTurbulence(float [] lat, float [] lon) throws IOException, InvalidRangeException {
-	//		return getTurbulence(lat, lon, null);
-	//	}
-	//
-	//	public List<TurbulenceRecord>  getTurbulence(float [] lat, float [] lon, String [] names) throws IOException, InvalidRangeException {
-	//		List<TurbulenceRecord> recs = new ArrayList<>();
-	//		for(int i=0; i<lat.length; i++) {
-	//			TurbulenceRecord rec = new TurbulenceRecord();
-	//			rec.time = readTime(); 
-	//			rec.lat = lat[i];
-	//			rec.lon = lon[i];
-	//			rec.turbulence = getProfileT(lat[i], lon[i]);
-	//			if(names != null)
-	//				rec.waypointName = names[i];
-	////			System.err.println(rec.lat + "," + rec.lon + ":" + rec.turbulence[0] );
-	//			recs.add(rec);
-	//		}
-	//
-	//		return recs;
-	//	}
-	//
-	public int findWaypoint(Point[] projWaypt, Point point) {
-		for(int i=0; i<projWaypt.length; i++) {
-			if(point.equals(projWaypt[i]))
-				return i;
-		}
-		return -1;
-	}
-
+//	public List<TurbulenceRecord>  getTurbulence(float [] lat, float [] lon) throws IOException, InvalidRangeException {
+//		return getTurbulence(lat, lon, null);
+//	}
+//
+//	public List<TurbulenceRecord>  getTurbulence(float [] lat, float [] lon, String [] names) throws IOException, InvalidRangeException {
+//		List<TurbulenceRecord> recs = new ArrayList<>();
+//		for(int i=0; i<lat.length; i++) {
+//			TurbulenceRecord rec = new TurbulenceRecord();
+//			rec.time = readTime(); 
+//			rec.lat = lat[i];
+//			rec.lon = lon[i];
+//			rec.turbulence = getProfileT(lat[i], lon[i]);
+//			if(names != null)
+//				rec.waypointName = names[i];
+////			System.err.println(rec.lat + "," + rec.lon + ":" + rec.turbulence[0] );
+//			recs.add(rec);
+//		}
+//
+//		return recs;
+//	}
+//
 	public List<TurbulenceRecord>  getTurbulence(FlightPlan plan) throws IOException, InvalidRangeException {
-		Point [] points = getProjectedWaypoints(plan.getLats(), plan.getLons());
-		List<Point> path = getPathIndices(points);
+		List<Point> path = getPathIndices(plan.getLats(), plan.getLons());
 		List<TurbulenceRecord> recs = new ArrayList<>();
 		List<Waypoint> waypoints = plan.waypoints;
 
-		//		int pointCnt = 0;
-		//		int waypointCnt = 0;
-		//		Integer wayptIdx = wayptIndices.get(waypointCnt);
+		int pointCnt = 0;
+		int waypointCnt = 0;
+		Integer wayptIdx = wayptIndices.get(waypointCnt);
 		System.err.println("** Starting path loop for id, time, numWaypts" + plan.oshFlightId + "," + plan.getTimeStr() + "," + plan.waypoints.size());
-		for(Point pathPt: path) {
+		for(Point pt: path) {
 			TurbulenceRecord rec = new TurbulenceRecord();
 			rec.time = time;
-			LatLonPoint ll = proj.projToLatLon(projx[pathPt.x], projy[pathPt.y]);
+			LatLonPoint ll = proj.projToLatLon(projx[pt.x], projy[pt.y]);
 			rec.lat = ll.getLatitude();
 			rec.lon = ll.getLongitude();
-			rec.turbulence = turbData[pathPt.x][pathPt.y];
-			int waypointIndexSafe = findWaypoint(points, pathPt);
-//			System.err.println(pathPt);
-			if(waypointIndexSafe >=0) {
-				if(waypointIndexSafe < waypoints.size()) {
-					Waypoint waypt = plan.waypoints.get(waypointIndexSafe);
-					rec.waypointName = waypt.name;
-//					System.err.println("\twaypt: " + waypointIndexSafe + "," + waypt.name);
-				} else {
-					log.debug("Waypoint index out of range: idx, id" , waypointIndexSafe, plan.oshFlightId);
-				}
+			rec.turbulence = turbData[pt.x][pt.y];
+			if(wayptIdx == pointCnt) {
+				Waypoint waypt = plan.waypoints.get(waypointCnt);
+				rec.waypointName = waypt.name;
+//				System.err.println(waypt.name + ", " + waypt.type);
+				if(++waypointCnt < wayptIndices.size())
+					wayptIdx = wayptIndices.get(waypointCnt);
 			}
-			//			if(wayptIdx == pointCnt) {
-			//				Waypoint waypt = plan.waypoints.get(waypointCnt);
-			//				rec.waypointName = waypt.name;
-			////				System.err.println(waypt.name + ", " + waypt.type);
-			//				if(++waypointCnt < wayptIndices.size())
-			//					wayptIdx = wayptIndices.get(waypointCnt);
-			//			}
-			//			System.err.println(rec.lat + "," + rec.lon + " : " + rec.turbulence[0] );
+//			System.err.println(rec.lat + "," + rec.lon + " : " + rec.turbulence[0] );
 			recs.add(rec);
-			//			pointCnt++;
+			pointCnt++;
 		}
 
 		return recs;
@@ -256,33 +236,16 @@ public class TurbulenceReader
 		}
 	}
 
-	//	public float [] getProfileT(double lat, double lon) throws IOException, InvalidRangeException {
-	//		//  Convert LatLon coord to spherical mercator proj. (or use gdal to convert entire file to 4326?
-	//		int [] result = null;
-	//		int[] idx = gcs.findXYindexFromLatLon(lat, lon, null);
-	//		if(idx == null || idx[0] == - 1 ||  idx[1] == -1) {
-	//			throw new IOException("Projection toLatLon failed");
-	//		}
-	//		return turbData[idx[0]][idx[1]];
-	//
-	//	}
-
-	public Point []  getProjectedWaypoints(float [] lat, float [] lon) throws IOException {
-		Point [] pts = new Point [lat.length];
-
-		//  Translate the input data into XY indexes
-		for(int i=0; i<lat.length; i++) {
-			int[] idx = gcs.findXYindexFromLatLon(lat[i], lon[i], null);
-			if(idx == null || idx[0] == - 1 ||  idx[1] == -1) {
-				throw new IOException("Projection fromLatLon failed. Point in path is off the available grid: " + lat[i] + "," + lon[i]);
-			}
-			pts[i] = new Point(idx[0], idx[1]);
-			//			System.err.println(" *** " + pts[i].x + "," + pts[i].y + " : " + lat[i] + "," + lon[i]);
-		}
-		return pts;
-	}
-
-
+//	public float [] getProfileT(double lat, double lon) throws IOException, InvalidRangeException {
+//		//  Convert LatLon coord to spherical mercator proj. (or use gdal to convert entire file to 4326?
+//		int [] result = null;
+//		int[] idx = gcs.findXYindexFromLatLon(lat, lon, null);
+//		if(idx == null || idx[0] == - 1 ||  idx[1] == -1) {
+//			throw new IOException("Projection toLatLon failed");
+//		}
+//		return turbData[idx[0]][idx[1]];
+//
+//	}
 
 	/**
 	 * 
@@ -291,20 +254,33 @@ public class TurbulenceReader
 	 * @return  a List of x/y indices of all points between and including first lat/lon to last lat/lon
 	 * @throws IOException
 	 */
-	public List<Point> getPathIndices(Point [] pts) throws IOException {
+	public List<Point> getPathIndices(float [] lat, float [] lon) throws IOException {
+		Point [] pts = new Point [lat.length];
+		
+		//  Translate the input data into XY indexes
+		for(int i=0; i<lat.length; i++) {
+			int[] idx = gcs.findXYindexFromLatLon(lat[i], lon[i], null);
+			if(idx == null || idx[0] == - 1 ||  idx[1] == -1) {
+				throw new IOException("Projection fromLatLon failed. Point in path is off the available grid: " + lat[i] + "," + lon[i]);
+			}
+			pts[i] = new Point(idx[0], idx[1]);
+//			System.err.println(" *** " + pts[i].x + "," + pts[i].y + " : " + lat[i] + "," + lon[i]);
+		}
+
 		//  Build new list between each point
 		List<Point> path = new ArrayList<>();
 		Point prevPt = new Point(Integer.MIN_VALUE, Integer.MIN_VALUE);
 		int cnt = 0;
 		for(int i=0; i<pts.length-1; i++) {
 			Point waypt = new Point(pts[i].x, pts[i].y);
-			if(!waypt.equals(prevPt)) {
-				wayptIndices.add(cnt);
+			wayptIndices.add(cnt);
+//			if(!prevPt.equals(waypt)) {
 				path.add(waypt);  // add the actual point
 				cnt++;
-			}
+//			}
+			//  distance
 			double d = Math.sqrt( Math.pow((double)(pts[i+1].x - pts[i].x), 2.0) + Math.pow((double)(pts[i+1].y - pts[i].y), 2.0) );
-			//			System.err.println("\t\t" + pts[i].x + "," + pts[i].y + " - " + pts[i+1].x + "," + pts[i+1].y + ";   disatnce = " + d);
+//			System.err.println("\t\t" + pts[i].x + "," + pts[i].y + " - " + pts[i+1].x + "," + pts[i+1].y + ";   disatnce = " + d);
 			// deltas
 			double  delx = Math.abs(pts[i+1].x - pts[i].x);
 			double  dely = Math.abs(pts[i+1].y - pts[i].y);
@@ -314,13 +290,13 @@ public class TurbulenceReader
 			while (idx<d && sanityCnt++ < sanity) {
 				if(sanityCnt > sanity)
 					throw new IOException("TurbulenceReader went off the tracks tryign to generate full path");
-
+				
 				double t = idx/d;
 				double x = (1.0 - t) * pts[i].x + t*pts[i+1].x;
 				double y = (1.0 - t) * pts[i].y + t*pts[i+1].y;
 				ix = (int)Math.round(x);
 				iy = (int)Math.round(y);
-				//				System.err.println(ix + "," + iy + " .. " + x + "," + y);
+//				System.err.println(ix + "," + iy + " .. " + x + "," + y);
 				Point p = new Point(ix, iy);
 				if(!p.equals(prevPt)) {
 					path.add(p);
@@ -332,63 +308,61 @@ public class TurbulenceReader
 		}
 		//  Add last waypointIndex
 		Point waypt = new Point(pts[pts.length - 1].x, pts[pts.length - 1].y);
-		if(!waypt.equals(prevPt)) {
-			wayptIndices.add(cnt);
+		wayptIndices.add(cnt);
+		// And last point if it is different
+//		if(!prevPt.equals(waypt)) {
 			path.add(waypt);  // add the actual point
 			cnt++;
-		}
-
-		//		for(Point p: path)
-		//			System.err.println(p);
+//		}
+		
+//		for(Point p: path)
+//			System.err.println(p);
 		return path;
 	}
 
 	public static  void testFill()  throws Exception {
 		// TODO Auto-generated method stub
-		TurbulenceReader reader = new TurbulenceReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710082130.grb2");
+		TurbulenceReaderOrig reader = new TurbulenceReaderOrig("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710082130.grb2");
 		//		reader.ingestFullFile();
 		//		reader.removeNaNs();
-		//		double [] lat = {30.0, 32.0, 34.0, 36.0, 38.0, 40.0};
-		//		double [] lon = {-95., -95., -95., -95., -95., -95.};
+//		double [] lat = {30.0, 32.0, 34.0, 36.0, 38.0, 40.0};
+//		double [] lon = {-95., -95., -95., -95., -95., -95.};
 
-		//				double [] lat = {30.0, 30.0, 30.0, 30.0, 30.0, 30.0};
-		//				double [] lon = {-90., -92., -94., -96., -98., -100.};
+//				double [] lat = {30.0, 30.0, 30.0, 30.0, 30.0, 30.0};
+//				double [] lon = {-90., -92., -94., -96., -98., -100.};
 		//
-		double [] lat = {30.0, 32.0, 34.0, 36.0, 38.0, 40.0};
-		double [] lon = {-90., -92., -94., -96., -98., -100.};
+				double [] lat = {30.0, 32.0, 34.0, 36.0, 38.0, 40.0};
+				double [] lon = {-90., -92., -94., -96., -98., -100.};
 
-		//		double [] lat = {30.0, 30.001, 30.002, 30.003, 30.004, 30.005};
-		//		double [] lon = {-90.0, -90.001, -90.002, -90.003, -90.004, -90.005};
+//		double [] lat = {30.0, 30.001, 30.002, 30.003, 30.004, 30.005};
+//		double [] lon = {-90.0, -90.001, -90.002, -90.003, -90.004, -90.005};
 
-		//		List<Point> path = reader.getPathIndices(lat, lon);
+//		List<Point> path = reader.getPathIndices(lat, lon);
 	}
-
+	
 	public static void main(String[] args) throws Exception {
-		TurbulenceReader reader = new TurbulenceReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710192115.grb2");
+		TurbulenceReaderOrig reader = new TurbulenceReaderOrig("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710191915.grb2");
 		reader.ingestFullFile();
 		FlightAwareApi api = new FlightAwareApi();
 		FlightPlan plan = api.getFlightPlan("DAL2520-1508217988-airline-0410");
-		//		FlightPlan plan = FlightPlan.getSamplePlan();
+//		FlightPlan plan = FlightPlan.getSamplePlan();
 
 		List<TurbulenceRecord> recs = reader.getTurbulence(plan);
-		for(TurbulenceRecord rec:recs) {
-			System.err.println(rec.lat + "," + rec.lon + "," + rec.waypointName);
-		}
-		//		reader.dumpInfo();
+		reader.dumpInfo();
 	}
-
-
+	
+	
 	public static void mainWaypointsOnly(String[] args) throws Exception {
-		TurbulenceReader reader = new TurbulenceReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710082130.grb2");
+		TurbulenceReaderOrig reader = new TurbulenceReaderOrig("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710082130.grb2");
 		reader.dumpInfo();
 		FlightAwareApi api = new FlightAwareApi();
-		FlightPlan plan = api.getFlightPlan("DAL74-1508217988-airline-0137");
+		FlightPlan plan = api.getFlightPlan("DAL1487-1506921959-airline-0651");
 
-		reader.dumpInfo();
-		//		List<TurbulenceRecord> recs = reader.getTurbulence(plan.getLats(), plan.getLons());
-		//		for(TurbulenceRecord r: recs)
-		//			System.err.println(r);
-		//
+				reader.dumpInfo();
+//		List<TurbulenceRecord> recs = reader.getTurbulence(plan.getLats(), plan.getLons());
+//		for(TurbulenceRecord r: recs)
+//			System.err.println(r);
+//
 		//		for(int i=0;i<100;i++ ) {
 		//			System.err.println(i);
 		//			double lat = 30. + Math.random() * 10;

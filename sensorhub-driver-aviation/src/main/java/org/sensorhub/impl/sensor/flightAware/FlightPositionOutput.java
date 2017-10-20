@@ -1,31 +1,23 @@
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
-import net.opengis.swe.v20.Count;
-import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
-import net.opengis.swe.v20.DataType;
-import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Vector;
-import ucar.ma2.InvalidRangeException;
 
 public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareSensor> implements IMultiSourceDataInterface  
 {
