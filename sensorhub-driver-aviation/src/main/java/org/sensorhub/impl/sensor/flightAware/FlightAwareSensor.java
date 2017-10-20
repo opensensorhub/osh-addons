@@ -197,7 +197,10 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		//		}
 	}
 
-	private void addPositionFoi(String flightId, long recordTime) {
+	protected void addPositionFoi(String flightId, long recordTime) {
+		AbstractFeature posFoi = flightAwareFois.get(FLIGHT_POSITION_UID_PREFIX + flightId);
+		if(posFoi != null)
+			return ; // This position already has an FOI
 		String uid = FLIGHT_POSITION_UID_PREFIX + flightId;
 		String description = "Delta FlightPosition data for: " + flightId;
 
@@ -214,12 +217,14 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 
 		// send event
 		long now = System.currentTimeMillis();
+		//  Should be good to send positionTime as startTime of FoiEvent since...
+	    // @param startTime time at which observation of the FoI started (julian time in seconds, base 1970)
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
 		log.debug("New Position added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
-//		System.err.println("New Position added as FOI: {} ; flightAwareFois.size = {} : "+  uid + ":  " + flightAwareFois.size());
+		//		System.err.println("New Position added as FOI: {} ; flightAwareFois.size = {} : "+  uid + ":  " + flightAwareFois.size());
 	}
-
+	
 	private void addTurbulenceFoi(String flightId, long recordTime) {
 		String uid = TURBULENCE_UID_PREFIX + flightId;
 		String description = "Delta Turbulence data for: " + flightId;
@@ -234,10 +239,6 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 
 		foiIDs.add(uid);
 		flightAwareFois.put(uid, foi);
-//		for(Map.Entry<String, AbstractFeature> entry: flightAwareFois.entrySet()) {
-//			if(entry.getKey().endsWith("DAL2941_KATL"))
-//				System.err.println(entry.getKey());
-//		}
 
 		// send event
 		long now = System.currentTimeMillis();
@@ -268,62 +269,67 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	}
 
 	private void processFlightPlan(FlightObject obj) {
-		try {
-			FlightPlan plan = api.getFlightPlan(obj.id);
-			if(plan == null) {
-				return;
-			}
-			//			plan.time = obj.getClock();  // Use pitr?
-			plan.time = System.currentTimeMillis() / 1000;
-			//			System.err.println(plan);
-			if(plan != null) {
-				// Check to see if existing FlightPlan entry with this flightId
-				AbstractFeature fpFoi = flightAwareFois.get(FLIGHT_PLAN_UID_PREFIX + plan.oshFlightId);
-				// should we replace if it is already there?  Shouldn't matter as long as data is changing
-				if(fpFoi == null) {
-					addFlightPlanFoi(plan.oshFlightId, plan.time);
-				}
-				flightPlanOutput.sendFlightPlan(plan);
+		//			FlightPlan plan = api.getFlightPlan(obj.id);
+		//			if(plan == null) {
+		//				return;
+		//			}
+		//			plan.time = obj.getClock();  // Use pitr?
+		//			plan.time = System.currentTimeMillis() / 1000;
+		//			System.err.println(plan);
+		//			if(plan != null) {
+		// Check to see if existing FlightPlan entry with this flightId
+		String oshFlightId = obj.getOshFlightId();
+		AbstractFeature fpFoi = flightAwareFois.get(FLIGHT_PLAN_UID_PREFIX + oshFlightId);
+		// should we replace if it is already there?  Shouldn't matter as long as data is changing
+		if(fpFoi == null) {
+			//					addFlightPlanFoi(plan.oshFlightId, plan.time);
+			addFlightPlanFoi(oshFlightId, System.currentTimeMillis()/1000);
+		}
+		//				flightPlanOutput.sendFlightPlan(plan);
 
-				//  And Turbulence- only adding FOI
-				AbstractFeature turbFoi = flightAwareFois.get(TURBULENCE_UID_PREFIX + plan.oshFlightId);
-				if(turbFoi == null)
-					addTurbulenceFoi(TURBULENCE_UID_PREFIX + plan.oshFlightId, plan.time);
-				turbulenceOutput.addFlightPlan(TURBULENCE_UID_PREFIX + plan.oshFlightId, plan);
-			}
-		} catch (ClientProtocolException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} 	
+		//  And Turbulence- only adding FOI
+		AbstractFeature turbFoi = flightAwareFois.get(TURBULENCE_UID_PREFIX + oshFlightId);
+		if(turbFoi == null)
+			addTurbulenceFoi(TURBULENCE_UID_PREFIX + oshFlightId, System.currentTimeMillis()/1000) ;
+		//				turbulenceOutput.addFlightPlan(TURBULENCE_UID_PREFIX + oshFlightId, plan);
+		//			}
+		//		} catch (ClientProtocolException e) {
+		//			e.printStackTrace();
+		//		} catch (IOException e) {
+		//			e.printStackTrace();
+		//		} 	
+		Thread thread = new Thread(new ProcessPlanThread(obj, flightPlanOutput, turbulenceOutput, TURBULENCE_UID_PREFIX ));
+		thread.start();
 	}
 
 	private void processPosition(FlightObject obj) {
 		// Check to see if existing FlightPlan entry with this flightId
-		if(obj.ident == null || obj.dest == null || obj.ident.length() == 0 || obj.dest.length() == 0) {
-//			log.debug("Cannot construct oshFlightId. Missing ident or dest in FlightObject");
-			// Plan from FltAware did not contain dest airport.  Pull it from API
-			FlightPlan plan = null;
-			try {
-				plan = api.getFlightPlan(obj.id);
-			} catch (Exception e) {
-				e.printStackTrace(System.err);
-			}
-			if(plan == null || plan.destinationAirport == null || plan.destinationAirport.length() == 0) {
-				log.debug("STILL Cannot construct oshFlightId. Missing dest in FlightPlan");
-				return;
-			}
-			obj.dest = plan.destinationAirport;
-		}
-
-		String oshFlightId = obj.getOshFlightId();
-		AbstractFeature posFoi = flightAwareFois.get(FLIGHT_POSITION_UID_PREFIX + oshFlightId);
-		// should we replace if it is already there?  Shouldn't matter as long as data is changing
-		if(posFoi == null)
-			addPositionFoi(oshFlightId, obj.getClock());
-		if(oshFlightId.equals("DAL719_KGRB"))
-			System.err.println("Whoa nelly");
-		flightPositionOutput.sendPosition(obj, oshFlightId);
+		// The call to the API needs to be threaded also, and will need to publish the oshFlightId
+//		if(obj.ident == null || obj.dest == null || obj.ident.length() == 0 || obj.dest.length() == 0) {
+//			//			log.debug("Cannot construct oshFlightId. Missing ident or dest in FlightObject");
+//			// Plan from FltAware did not contain dest airport.  Pull it from API
+//			FlightPlan plan = null;
+//			try {
+//				plan = api.getFlightPlan(obj.id);
+//			} catch (Exception e) {
+//				e.printStackTrace(System.err);
+//			}
+//			if(plan == null || plan.destinationAirport == null || plan.destinationAirport.length() == 0) {
+//				log.debug("STILL Cannot construct oshFlightId. Missing dest in FlightPlan");
+//				return;
+//			}
+//			obj.dest = plan.destinationAirport;
+//		}
+		// Just kick off the thread- it takes care of adding FOI if new position
+		Thread thread = new Thread(new ProcessPositionThread(obj, flightPositionOutput, FLIGHT_POSITION_UID_PREFIX ));
+		thread.start();
+		
+//		String oshFlightId = obj.getOshFlightId();
+//		AbstractFeature posFoi = flightAwareFois.get(FLIGHT_POSITION_UID_PREFIX + oshFlightId);
+//		// should we replace if it is already there?  Shouldn't matter as long as data is changing
+//		if(posFoi == null)
+//			addPositionFoi(oshFlightId, obj.getClock());
+//		flightPositionOutput.sendPosition(obj, oshFlightId);
 	}
 
 	@Override

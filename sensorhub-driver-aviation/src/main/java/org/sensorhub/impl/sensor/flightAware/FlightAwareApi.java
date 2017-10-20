@@ -137,11 +137,11 @@ public class FlightAwareApi
 //		String jsone = api.invokeNew(Enroute_URL, "airport=KSMF");
 //		System.err.println(jsone);
 		
-		String json = api.invokeNew(FlightInfoEx_URL, "ident=DAL1260", "howMany=2");
+		String json = api.invokeNew(FlightInfoEx_URL, "ident=DAL33", "howMany=2");
 //		System.err.println(FlightInfoEx_URL + "ident=DAL1260");
 		System.err.println(json);
 
-		FlightPlan plan = api.getFlightPlan("DAL1260-1507094760-airline-353");
+		FlightPlan plan = api.getFlightPlan("DAL33-1508477255-airline-0479");
 //		plan.dump();
 //		System.err.println(decodedInfo);
 		System.err.println(plan);

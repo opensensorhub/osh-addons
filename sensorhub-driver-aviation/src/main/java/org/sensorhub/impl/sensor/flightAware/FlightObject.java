@@ -187,8 +187,11 @@ public class FlightObject
 		return instant.toString();
 	}
 	
+	// Need to add null checking where this is called
 	public String getOshFlightId() {
-		return ident + "_" + dest; 
+		if(ident == null || dest == null)
+			return null;
+		return ident + "_" + dest;
 	}
 	
 	public double getValue (String s) {

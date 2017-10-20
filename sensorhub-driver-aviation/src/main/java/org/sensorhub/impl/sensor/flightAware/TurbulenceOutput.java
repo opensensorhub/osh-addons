@@ -343,7 +343,7 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 			return bigBlock;
 		} catch (IOException | InvalidRangeException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.err.println(e.getMessage());
 		}
 
 		return null;

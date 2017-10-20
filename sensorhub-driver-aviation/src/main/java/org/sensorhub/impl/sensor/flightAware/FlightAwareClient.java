@@ -143,7 +143,7 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 
 	@Override
 	public void processMessage(FlightObject obj) {
-		if(obj.id.startsWith("DAL915"))
+//		if(obj.id.startsWith("DAL915"))
 			System.err.println(obj);
 	}
 }
