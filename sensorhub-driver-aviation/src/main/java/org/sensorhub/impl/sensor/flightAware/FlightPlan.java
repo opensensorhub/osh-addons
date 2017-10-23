@@ -14,8 +14,6 @@ import org.sensorhub.impl.sensor.flightAware.DecodeFlightResult.Result;
  *
  * @author tcook
  * @since Sep 27, 2017
- * 
- * 
  *
  */
 

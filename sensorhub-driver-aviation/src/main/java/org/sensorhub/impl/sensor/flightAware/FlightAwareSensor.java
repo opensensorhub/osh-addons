@@ -49,7 +49,8 @@ import net.opengis.sensorml.v20.PhysicalSystem;
         at org.sensorhub.impl.service.sos.FoiUtils.updateFois(FoiUtils.java:51) ~[s
  *
  */
-public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> implements IMultiSourceDataProducer, FlightObjectListener //, FlightPlanListener
+public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> implements IMultiSourceDataProducer, // FlightObjectListener //, FlightPlanListener
+	FlightPlanListener, PositionListener
 {
 	FlightPlanOutput flightPlanOutput;
 	FlightPositionOutput flightPositionOutput;
@@ -119,17 +120,23 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	@Override
 	public void start() throws SensorHubException
 	{
-		// Start Firehose feed- 
+		// Configure Firehose feed- 
 		String machineName = "firehose.flightaware.com";
-		// config me!
 		client = new FlightAwareClient(machineName, config.userName, config.password);
 		client.messageTypes.add("flightplan");
 		client.messageTypes.add("position");
-		client.addListener(this);
+		
+		//  And message Converter
+		FlightAwareConverter converter = new FlightAwareConverter() ;
+		client.addListener(converter);
+		converter.addPlanListener(this);
+		converter.addPositionListener(this);
+		
+		// Start firehose feed
 		Thread thread = new Thread(client);
 		thread.start();
 
-		//  start Turbulence output, which will start FileListener
+		//  start Turbulence output, which will start FileListener for GTGTURB files
 		turbulenceOutput.start(config.turbulencePath);
 	}
 
@@ -212,52 +219,83 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
 		log.debug("New TurbulenceProfile added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
-//		AbstractFeature f = flightAwareFois.get("urn:osh:sensor:aviation:flightPosition:DAL2622_KATL");
-//		System.err.println(f);
 	}
 
 	@Override
-	public void processMessage(FlightObject obj) {
-		// call api and get flightplan
-		if(!obj.type.equals("flightplan") && !obj.type.equals("position") ) {
-			log.warn("FlightAwareSensor does not yet support: " + obj.type);
+	public void newPosition(FlightObject pos) {
+		//  Should never send null plan
+		if(pos == null) {
 			return;
 		}
-
-		switch(obj.type) {
-		case "flightplan":
-			processFlightPlan(obj);
-			break;
-		case "position":
-			processPosition(obj);
-			break;
-		default:
-			log.error("Unknown message slipped through somehow: " + obj.type);
-		}
+		addPositionFoi(pos.getOshFlightId(), pos.getClock());
+		flightPositionOutput.sendPosition(pos, pos.getOshFlightId());
 	}
 
+	@Override
+	public void newFlightPlan(FlightPlan plan) {
+		//  Should never send null plan
+		if(plan == null) {
+			return;
+		}
+		// Add new FlightPlan FOI if new
+		String oshFlightId = plan.getOshFlightId();
+		AbstractFeature fpFoi = flightAwareFois.get(FLIGHT_PLAN_UID_PREFIX + oshFlightId);
+		if(fpFoi == null) 
+			addFlightPlanFoi(oshFlightId, System.currentTimeMillis()/1000);
+
+		//  And Turbulence FOI if new
+		AbstractFeature turbFoi = flightAwareFois.get(TURBULENCE_UID_PREFIX + oshFlightId);
+		if(turbFoi == null)
+			addTurbulenceFoi(oshFlightId, System.currentTimeMillis()/1000) ;
+
+		// send new data to outputs
+		flightPlanOutput.sendFlightPlan(plan);
+		turbulenceOutput.addFlightPlan(TURBULENCE_UID_PREFIX + plan.oshFlightId, plan);
+	}
+	
+//	@Override
+//	public void processMessage(FlightObject obj) {
+//		// call api and get flightplan
+//		if(!obj.type.equals("flightplan") && !obj.type.equals("position") ) {
+//			log.warn("FlightAwareSensor does not yet support: " + obj.type);
+//			return;
+//		}
+//
+//		switch(obj.type) {
+//		case "flightplan":
+//			processFlightPlan(obj);
+//			break;
+//		case "position":
+//			processPosition(obj);
+//			break;
+//		default:
+//			log.error("Unknown message slipped through somehow: " + obj.type);
+//		}
+//	}
+
+	// One issue here is FOI gets added even if Processing plan fails
 	private void processFlightPlan(FlightObject obj) {
 		// Check to see if existing FlightPlan entry with this flightId
 		String oshFlightId = obj.getOshFlightId();
 		AbstractFeature fpFoi = flightAwareFois.get(FLIGHT_PLAN_UID_PREFIX + oshFlightId);
-		// should we replace if it is already there?  Shouldn't matter as long as data is changing
+		// add flightPlan FOI if new
 		if(fpFoi == null) {
 			addFlightPlanFoi(oshFlightId, System.currentTimeMillis()/1000);
 		}
 
-		//  And Turbulence- only adding FOI
+		//  And Turbulence FOI if new
 		AbstractFeature turbFoi = flightAwareFois.get(TURBULENCE_UID_PREFIX + oshFlightId);
 		if(turbFoi == null)
 			addTurbulenceFoi(oshFlightId, System.currentTimeMillis()/1000) ;
 
 		// kick off processing thread
-		Thread thread = new Thread(new ProcessPlanThread(obj, flightPlanOutput, turbulenceOutput, TURBULENCE_UID_PREFIX ));
+		Thread thread = new Thread(new ProcessPlanThreadFAS(obj, flightPlanOutput, turbulenceOutput, TURBULENCE_UID_PREFIX ));
 		thread.start();
 	}
 
 	private void processPosition(FlightObject obj) {
 		// Just kick off the thread- it takes care of adding FOI if new position
-		Thread thread = new Thread(new ProcessPositionThread(obj, flightPositionOutput, FLIGHT_POSITION_UID_PREFIX ));
+		Thread thread = new Thread(new ProcessPositionThreadFAS(obj, flightPositionOutput, FLIGHT_POSITION_UID_PREFIX ));
 		thread.start();
 	}
 

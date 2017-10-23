@@ -20,7 +20,7 @@ package org.sensorhub.impl.sensor.flightAware;
 //	   "altChange":"C",
 //	   "air_ground":"A"
 //	}
-
+@Deprecated //Position is basically FlightObject with an oshFlightId added, so this isn't needed
 public class Position
 {
 	public String type;

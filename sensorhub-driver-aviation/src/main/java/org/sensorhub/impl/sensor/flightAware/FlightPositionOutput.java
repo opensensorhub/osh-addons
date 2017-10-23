@@ -69,7 +69,7 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareSensor
 		recordStruct.addField("heading", fac.newQuantity("http://sensorml.com/ont/swe/property/Heading", "Heading", null, "deg"));
 
 		// airspeed
-		recordStruct.addField("airspeed", fac.newQuantity("http://sensorml.com/ont/swe/property/AirSpeed", "AirSpeed", null, "kts"));
+		recordStruct.addField("airspeed", fac.newQuantity("http://sensorml.com/ont/swe/property/GroundSpeed", "GroundSpeed", null, "kts"));
 
 		// default encoding is text
 		encoding = fac.newTextEncoding(",", "\n");
@@ -90,7 +90,7 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareSensor
 		dataBlock.setDoubleValue(3, obj.getValue(obj.lon));
 		dataBlock.setDoubleValue(4, obj.getValue(obj.alt));
 		dataBlock.setDoubleValue(5, obj.getValue(obj.heading));
-		dataBlock.setDoubleValue(6, obj.getValue(obj.speed));
+		dataBlock.setDoubleValue(6, obj.getValue(obj.gs));
 
 		// update latest record and send event
 		latestRecord = dataBlock;

@@ -199,9 +199,7 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 			watcherThread = new Thread(watcher);
 			watcher.addListener(this);
 			watcherThread.start();
-			System.err.println("****** past run");
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			throw new SensorHubException("TurbulenceSensor could not create DirectoryWatcher...", e);
 		}
@@ -318,22 +316,21 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 		//		if(b != null)
 		//			return b;
 
-		//  get FlightPlan- *should* be updating in FltAware
+		//  get FlightPlan- *should* be updating in FltAware 
+		//  every time newFlightPlan() is called there
 		FlightPlan plan = availableFlightPlans.get(entityID);
-//		FlightPlan plan = parentSensor.
 		if (plan == null) {
 			log.info("TurbOutput.getLatest():  Should have data for this plan but we don't. Cannot compute turbulence");
 			return null;
 		}
 
-//		TurbulenceReader prevReader = reader;
 		if(reader == null) {
-			log.info("TurbOutput.getLatest():  No New data yet. Fix me!!!");
+			log.debug("TurbOutput.getLatest():  No New data yet. Fix me!!!");
+			return null;
 		}
 
 		// Construct new latestRecord for this id
 		try {
-			//			List<TurbulenceRecord> recs = reader.getTurbulence(plan.getLats(), plan.getLons(), plan.getNames());
 			List<TurbulenceRecord> recs = reader.getTurbulence(plan);
 			if(recs == null) {
 				log.info("TurbOutput.getLatest():  Reading turb data failed.");
@@ -342,7 +339,6 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 			DataBlock bigBlock = sendProfiles(recs, plan);
 			return bigBlock;
 		} catch (IOException | InvalidRangeException e) {
-			// TODO Auto-generated catch block
 			System.err.println(e.getMessage());
 		}
 

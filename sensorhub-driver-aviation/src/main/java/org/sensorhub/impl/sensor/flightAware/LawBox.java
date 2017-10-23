@@ -11,7 +11,9 @@ for the specific language governing rights and limitations under the License.
 Copyright (C) 2017 Botts Innovative Research, Inc. All Rights Reserved.
 
 ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.lawBox;
+package org.sensorhub.impl.sensor.flightAware;
+
+import org.sensorhub.impl.sensor.lawBox.LatLonAlt;
 
 public class LawBox
 {
