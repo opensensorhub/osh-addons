@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.lawBox;
+package org.sensorhub.impl.sensor.flightAware.geom;
 
 import java.awt.geom.Rectangle2D;
 import java.text.DecimalFormat;

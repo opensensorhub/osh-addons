@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.lawBox;
+package org.sensorhub.impl.sensor.flightAware.geom;
 
 /**
  * <p>Title: LatLonAlt.java</p>

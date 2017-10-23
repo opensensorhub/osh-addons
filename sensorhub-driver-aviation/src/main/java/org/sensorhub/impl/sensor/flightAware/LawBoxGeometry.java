@@ -16,10 +16,10 @@ package org.sensorhub.impl.sensor.flightAware;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.sensorhub.impl.sensor.lawBox.GeoUtil;
-import org.sensorhub.impl.sensor.lawBox.LatLon;
-import org.sensorhub.impl.sensor.lawBox.LatLonAlt;
-import org.sensorhub.impl.sensor.lawBox.GeoConstants.Units;
+import org.sensorhub.impl.sensor.flightAware.geom.GeoUtil;
+import org.sensorhub.impl.sensor.flightAware.geom.LatLon;
+import org.sensorhub.impl.sensor.flightAware.geom.LatLonAlt;
+import org.sensorhub.impl.sensor.flightAware.geom.GeoConstants.Units;
 
 /**
  * 

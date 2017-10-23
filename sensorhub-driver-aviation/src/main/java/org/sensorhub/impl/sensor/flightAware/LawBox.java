@@ -13,7 +13,7 @@ Copyright (C) 2017 Botts Innovative Research, Inc. All Rights Reserved.
 ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.flightAware;
 
-import org.sensorhub.impl.sensor.lawBox.LatLonAlt;
+import org.sensorhub.impl.sensor.flightAware.geom.LatLonAlt;
 
 public class LawBox
 {

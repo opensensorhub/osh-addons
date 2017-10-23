@@ -1,6 +1,6 @@
-package org.sensorhub.impl.sensor.lawBox;
+package org.sensorhub.impl.sensor.flightAware.geom;
 
-import org.sensorhub.impl.sensor.lawBox.GeoConstants.Units;
+import org.sensorhub.impl.sensor.flightAware.geom.GeoConstants.Units;
 
 /**
  * <p>Title: GeoUtil.java</p>
