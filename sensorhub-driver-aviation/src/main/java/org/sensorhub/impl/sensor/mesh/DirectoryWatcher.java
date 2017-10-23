@@ -24,7 +24,6 @@ public class DirectoryWatcher implements Runnable
 	WatchService watcher;
 	Path path;
 
-
 	public DirectoryWatcher(Path path, Kind<?> ... eventKinds) throws IOException {
 		watcher = path.getFileSystem().newWatchService();
 		path.register(watcher, eventKinds);

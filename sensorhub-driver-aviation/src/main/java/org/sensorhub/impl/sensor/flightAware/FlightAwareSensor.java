@@ -15,9 +15,6 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.flightAware;
 
 import java.io.BufferedWriter;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,7 +23,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.http.client.ClientProtocolException;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.FoiEvent;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
@@ -59,7 +55,6 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	FlightPositionOutput flightPositionOutput;
 	TurbulenceOutput turbulenceOutput;
 	Thread watcherThread;
-	private FlightAwareApi api;
 	FlightAwareClient client;
 
 	// Helpers
@@ -97,15 +92,6 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	@Override
 	public void init() throws SensorHubException
 	{
-		super.init();
-		//  never gets to constructor...
-		try {
-			api = new FlightAwareApi(config.userName, config.password);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace(System.err);
-		}
-
 		// IDs
 		this.uniqueID = "urn:osh:sensor:earthcast:flightAware";
 		this.xmlID = "EarthcastFltaware";
@@ -128,14 +114,6 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 
 		addOutput(turbulenceOutput, false);
 		turbulenceOutput.init();
-
-		//  Temp so I can collect flightIds
-		//		try {
-		//			writer = new BufferedWriter(new FileWriter("C:/Data/sensorhub/delta/flights.txt"));
-		//		} catch (IOException e) {
-		//			// TODO Auto-generated catch block
-		//			e.printStackTrace();
-		//		}
 	}
 
 	@Override
@@ -176,7 +154,6 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		PhysicalSystem foi = smlFac.newPhysicalSystem();
 		foi.setId(flightId);
 		foi.setUniqueIdentifier(uid);
-		//		System.err.println("MetarSensor station/uid: " + station + "/" + uid);
 		foi.setName(flightId + " FlightPlan");
 		foi.setDescription(description);
 
@@ -188,13 +165,6 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
 		log.debug("New FlightPlan added as FOI: {} ; aircraftFois.size = {}", uid, flightAwareFois.size());
-		//		try {
-		//			writer.write(flightId + "\n");
-		//			writer.flush();
-		//		} catch (IOException e) {
-		//			// TODO Auto-generated catch block
-		//			e.printStackTrace();
-		//		}
 	}
 
 	protected void addPositionFoi(String flightId, long recordTime) {
@@ -204,11 +174,10 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		String uid = FLIGHT_POSITION_UID_PREFIX + flightId;
 		String description = "Delta FlightPosition data for: " + flightId;
 
-		// generate small SensorML for FOI (in this case the system is the FOI)
+		// generate small SensorML for FOI
 		PhysicalSystem foi = smlFac.newPhysicalSystem();
 		foi.setId(flightId);
 		foi.setUniqueIdentifier(uid);
-		//		System.err.println("MetarSensor station/uid: " + station + "/" + uid);
 		foi.setName(flightId + " Position");
 		foi.setDescription(description);
 
@@ -222,18 +191,16 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
 		log.debug("New Position added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
-		//		System.err.println("New Position added as FOI: {} ; flightAwareFois.size = {} : "+  uid + ":  " + flightAwareFois.size());
 	}
 	
 	private void addTurbulenceFoi(String flightId, long recordTime) {
 		String uid = TURBULENCE_UID_PREFIX + flightId;
 		String description = "Delta Turbulence data for: " + flightId;
 
-		// generate small SensorML for FOI (in this case the system is the FOI)
+		// generate small SensorML for FOI
 		PhysicalSystem foi = smlFac.newPhysicalSystem();
 		foi.setId(flightId);
 		foi.setUniqueIdentifier(uid);
-		//		System.err.println("MetarSensor station/uid: " + station + "/" + uid);
 		foi.setName(flightId + " Turbulence");
 		foi.setDescription(description);
 
@@ -245,14 +212,15 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
 		log.debug("New TurbulenceProfile added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
+//		AbstractFeature f = flightAwareFois.get("urn:osh:sensor:aviation:flightPosition:DAL2622_KATL");
+//		System.err.println(f);
 	}
 
 	@Override
 	public void processMessage(FlightObject obj) {
 		// call api and get flightplan
-		// obj.id
 		if(!obj.type.equals("flightplan") && !obj.type.equals("position") ) {
-			System.err.println("FlightAwareSensor does not yet support: " + obj.type);
+			log.warn("FlightAwareSensor does not yet support: " + obj.type);
 			return;
 		}
 
@@ -269,67 +237,28 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	}
 
 	private void processFlightPlan(FlightObject obj) {
-		//			FlightPlan plan = api.getFlightPlan(obj.id);
-		//			if(plan == null) {
-		//				return;
-		//			}
-		//			plan.time = obj.getClock();  // Use pitr?
-		//			plan.time = System.currentTimeMillis() / 1000;
-		//			System.err.println(plan);
-		//			if(plan != null) {
 		// Check to see if existing FlightPlan entry with this flightId
 		String oshFlightId = obj.getOshFlightId();
 		AbstractFeature fpFoi = flightAwareFois.get(FLIGHT_PLAN_UID_PREFIX + oshFlightId);
 		// should we replace if it is already there?  Shouldn't matter as long as data is changing
 		if(fpFoi == null) {
-			//					addFlightPlanFoi(plan.oshFlightId, plan.time);
 			addFlightPlanFoi(oshFlightId, System.currentTimeMillis()/1000);
 		}
-		//				flightPlanOutput.sendFlightPlan(plan);
 
 		//  And Turbulence- only adding FOI
 		AbstractFeature turbFoi = flightAwareFois.get(TURBULENCE_UID_PREFIX + oshFlightId);
 		if(turbFoi == null)
-			addTurbulenceFoi(TURBULENCE_UID_PREFIX + oshFlightId, System.currentTimeMillis()/1000) ;
-		//				turbulenceOutput.addFlightPlan(TURBULENCE_UID_PREFIX + oshFlightId, plan);
-		//			}
-		//		} catch (ClientProtocolException e) {
-		//			e.printStackTrace();
-		//		} catch (IOException e) {
-		//			e.printStackTrace();
-		//		} 	
+			addTurbulenceFoi(oshFlightId, System.currentTimeMillis()/1000) ;
+
+		// kick off processing thread
 		Thread thread = new Thread(new ProcessPlanThread(obj, flightPlanOutput, turbulenceOutput, TURBULENCE_UID_PREFIX ));
 		thread.start();
 	}
 
 	private void processPosition(FlightObject obj) {
-		// Check to see if existing FlightPlan entry with this flightId
-		// The call to the API needs to be threaded also, and will need to publish the oshFlightId
-//		if(obj.ident == null || obj.dest == null || obj.ident.length() == 0 || obj.dest.length() == 0) {
-//			//			log.debug("Cannot construct oshFlightId. Missing ident or dest in FlightObject");
-//			// Plan from FltAware did not contain dest airport.  Pull it from API
-//			FlightPlan plan = null;
-//			try {
-//				plan = api.getFlightPlan(obj.id);
-//			} catch (Exception e) {
-//				e.printStackTrace(System.err);
-//			}
-//			if(plan == null || plan.destinationAirport == null || plan.destinationAirport.length() == 0) {
-//				log.debug("STILL Cannot construct oshFlightId. Missing dest in FlightPlan");
-//				return;
-//			}
-//			obj.dest = plan.destinationAirport;
-//		}
 		// Just kick off the thread- it takes care of adding FOI if new position
 		Thread thread = new Thread(new ProcessPositionThread(obj, flightPositionOutput, FLIGHT_POSITION_UID_PREFIX ));
 		thread.start();
-		
-//		String oshFlightId = obj.getOshFlightId();
-//		AbstractFeature posFoi = flightAwareFois.get(FLIGHT_POSITION_UID_PREFIX + oshFlightId);
-//		// should we replace if it is already there?  Shouldn't matter as long as data is changing
-//		if(posFoi == null)
-//			addPositionFoi(oshFlightId, obj.getClock());
-//		flightPositionOutput.sendPosition(obj, oshFlightId);
 	}
 
 	@Override
@@ -349,7 +278,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	@Override
 	public AbstractProcess getCurrentDescription(String entityID)
 	{
-		//		return aircraftDesc.get(entityID);
+		// TODO
 		return null;
 	}
 

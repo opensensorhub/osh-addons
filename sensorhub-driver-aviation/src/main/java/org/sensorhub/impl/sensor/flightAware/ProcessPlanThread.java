@@ -45,19 +45,10 @@ public class ProcessPlanThread implements Runnable
 			plan.time = System.currentTimeMillis() / 1000;
 			//			System.err.println(plan);
 			if(plan != null) {
-				// Deal with FOI at sensor level
-				// Check to see if existing FlightPlan entry with this flightId
-//				AbstractFeature fpFoi = flightAwareFois.get(FLIGHT_PLAN_UID_PREFIX + plan.oshFlightId);
-				// should we replace if it is already there?  Shouldn't matter as long as data is changing
-//				if(fpFoi == null) {
-//					addFlightPlanFoi(plan.oshFlightId, plan.time);
-//				}
 				flightPlanOutput.sendFlightPlan(plan);
 
 				//  And Turbulence- only adding FOI
-//				AbstractFeature turbFoi = flightAwareFois.get(TURBULENCE_UID_PREFIX + plan.oshFlightId);
 //				if(turbFoi == null)
-//					addTurbulenceFoi(TURBULENCE_UID_PREFIX + plan.oshFlightId, plan.time);
 				turbulenceOutput.addFlightPlan(toUid + plan.oshFlightId, plan);
 			}
 		} catch (ClientProtocolException e) {
