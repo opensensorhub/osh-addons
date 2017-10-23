@@ -13,18 +13,14 @@ Copyright (C) 2017 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.io.IOException;
-
-import org.apache.http.client.ClientProtocolException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import net.opengis.gml.v32.AbstractFeature;
 
 public class ProcessPositionThread implements Runnable
 {
 	FlightObject obj;
-	private FlightAwareApi api;
+	private FlightAwareApi api = new FlightAwareApi();
+
 	FlightPositionOutput flightPositionOutput;
 	TurbulenceOutput turbulenceOutput;
 	String toUid;
@@ -35,8 +31,6 @@ public class ProcessPositionThread implements Runnable
 		this.obj = obj;
 		this.flightPositionOutput = fpo;
 		this.toUid = uid;
-
-		api = new FlightAwareApi();
 	}
 
 	@Override
@@ -46,6 +40,7 @@ public class ProcessPositionThread implements Runnable
 			// Position message from FltAware did not contain dest airport.  Try to pull it from API
 			try {
 				plan = api.getFlightPlan(obj.id);
+				//getParentModule().
 			} catch (Exception e) {
 				e.printStackTrace(System.err);
 			}

@@ -20,7 +20,7 @@ import org.apache.http.client.ClientProtocolException;
 public class ProcessPlanThread implements Runnable
 {
 	FlightObject obj;
-	private FlightAwareApi api;
+	FlightAwareApi api;
 	FlightPlanOutput flightPlanOutput;
 	TurbulenceOutput turbulenceOutput;
 	String toUid;
@@ -41,14 +41,12 @@ public class ProcessPlanThread implements Runnable
 			if(plan == null) {
 				return;
 			}
-			//			plan.time = obj.getClock();  // Use pitr?
+			//	plan.time = obj.getClock();  // Use pitr?
 			plan.time = System.currentTimeMillis() / 1000;
-			//			System.err.println(plan);
 			if(plan != null) {
 				flightPlanOutput.sendFlightPlan(plan);
 
-				//  And Turbulence- only adding FOI
-//				if(turbFoi == null)
+				//  And Turbulence
 				turbulenceOutput.addFlightPlan(toUid + plan.oshFlightId, plan);
 			}
 		} catch (ClientProtocolException e) {
