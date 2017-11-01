@@ -1,10 +1,13 @@
 package org.sensorhub.impl.sensor.nldn;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.sensorhub.impl.sensor.mesh.EarthcastUtil;
 import org.sensorhub.impl.sensor.nldn.NldnRecord.NldnPoint;
 
 import ucar.ma2.Array;
@@ -108,8 +111,10 @@ public class NldnReader
 	Variable crsVar;
 	private NetcdfFile ncFile;
 	private ProjectionImpl proj;
-
+	Path filepath;
+	
 	public NldnReader(String path) throws IOException {
+		filepath = Paths.get(path);
 		dataset = GridDataset.open(path);
 		ncFile = dataset.getNetcdfFile();
 		GridCoordSystem gcs =  dataset.getGrids().get(0).getCoordinateSystem();
@@ -147,7 +152,7 @@ public class NldnReader
 	public NldnRecord readNldn() throws IOException {
 		NldnRecord nldnRec = new NldnRecord();
 		// time
-		nldnRec.timeUtc = readTime();
+		nldnRec.timeUtc = EarthcastUtil.computeTime(filepath.getFileName().toString());
 
 		//  Proj info
 		Variable vx = ncFile.findVariable(X_VAR);
@@ -184,6 +189,7 @@ public class NldnReader
   			:units = "Minute since 2017-08-04T21:46:39Z";
 	 * @throws IOException
 	 */
+	@Deprecated // Use timestamp encoded in filename
 	public long readTime() throws IOException {
 		Variable vtime = ncFile.findVariable(TIME_VAR);
 		String ustr = vtime.getUnitsString();
@@ -200,8 +206,9 @@ public class NldnReader
 
 	public static void main(String[] args) throws Exception {
 		//		MeshReader reader = new MeshReader("C:/Data/sensorhub/delta/MESH/ECT_NCST_DELTA_MESH_6_5km.201709111220.grb2");
-		NldnReader reader = new NldnReader("C:/Data/sensorhub/delta/NLDN/ECT_NCST_DELTA_NLDN_CG_6_5km.201709142030.grb2");
-		System.err.println(reader.readNldn());
+		NldnReader reader = new NldnReader("C:/home/tcook/osh/mesh/data/NLDN/ECT_NCST_DELTA_NLDN_CG_6_5km.201710251830.grb2");
+		NldnRecord r = reader.readNldn();
+		System.err.println(r.timeUtc);
 
 		//				MeshRecord rec = reader.createMeshRecord();
 

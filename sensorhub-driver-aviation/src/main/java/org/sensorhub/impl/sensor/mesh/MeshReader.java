@@ -1,6 +1,8 @@
 package org.sensorhub.impl.sensor.mesh;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -101,6 +103,7 @@ public class MeshReader
 	Variable crsVar;
 	private NetcdfFile ncFile;
 	private ProjectionImpl proj;
+	Path filepath;
 	//	double [] lat;
 	//	double [] lon;
 	//	long timeUtc;
@@ -109,6 +112,7 @@ public class MeshReader
 	//	float [][] mesh;
 
 	public MeshReader(String path) throws IOException {
+		this.filepath = Paths.get(path);
 		dataset = GridDataset.open(path);
 		ncFile = dataset.getNetcdfFile();
 		GridCoordSystem gcs =  dataset.getGrids().get(0).getCoordinateSystem();
@@ -139,7 +143,7 @@ public class MeshReader
 	public MeshRecord readMesh() throws IOException {
 		MeshRecord meshRec = new MeshRecord();
 		// time
-		meshRec.timeUtc = readTime();
+		meshRec.timeUtc = EarthcastUtil.computeTime(filepath.getFileName().toString());
 
 		//  Proj info
 		Variable vx = ncFile.findVariable(X_VAR);
@@ -178,6 +182,7 @@ public class MeshReader
   			:units = "Minute since 2017-08-04T21:46:39Z";
 	 * @throws IOException
 	 */
+	@Deprecated // Use timestamp encoded filename. Time in time var is not reliable
 	public long readTime() throws IOException {
 		Variable vtime = ncFile.findVariable(TIME_VAR);
 		String ustr = vtime.getUnitsString();
@@ -193,15 +198,15 @@ public class MeshReader
 	}
 
 	public static void main(String[] args) throws Exception {
-		MeshReader reader = new MeshReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710180130.grb2");
+		MeshReader reader = new MeshReader("C:/home/tcook/osh/mesh/data/MESH/ECT_NCST_DELTA_MESH_6_5km.201710251830.grb2");
 //		reader.readTime();
 //		MeshReader reader = new MeshReader("C:/Data/sensorhub/delta/MESH/ECT_NCST_DELTA_NLDN_CG_6_5km.201710180100.grb2");
 		//		MeshReader reader = new MeshReader("C:/Data/sensorhub/delta/NLDN/ECT_NCST_DELTA_NLDN_CG_6_5km.201709140035.grb2");
 
 		reader.dumpInfo();
-		reader.readTime();
+//		reader.readTime();
 		MeshRecord rec = reader.readMesh();
-		System.err.println(rec);
+		System.err.println(rec.timeUtc);
 
 	}
 
