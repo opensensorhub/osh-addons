@@ -2,6 +2,7 @@ package org.sensorhub.impl.sensor.flightAware;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.Instant;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
@@ -133,20 +134,18 @@ public class FlightAwareApi
 
 		FlightAwareApi api = new FlightAwareApi("drgregswilson", "2809b6196a2cfafeb89db0a00b117ac67e876220");
 		
-		
-//		String jsone = api.invokeNew(Enroute_URL, "airport=KSMF");
-//		System.err.println(jsone);
-		
-		String json = api.invokeNew(FlightInfoEx_URL, "ident=DAL33", "howMany=2");
-//		System.err.println(FlightInfoEx_URL + "ident=DAL1260");
+		String json;
+		json = api.invokeNew(InFlightInfo_URL, "ident=DAL1174");
 		System.err.println(json);
+		InFlightInfo info = (InFlightInfo) api.fromJson(json, InFlightInfo.class);
+		Instant depTime = Instant.ofEpochSecond(info.InFlightInfoResult.departureTime);
+		System.err.println(info.InFlightInfoResult.ident + " departed from: " + info.InFlightInfoResult.destination + " at " + depTime);
+		
+//		json = api.invokeNew(FlightInfoEx_URL, "ident=DAL1174", "howMany=2");
+//		System.err.println(FlightInfoEx_URL + "ident=DAL1260");
+//		System.err.println(json);
 
-		FlightPlan plan = api.getFlightPlan("DAL33-1508477255-airline-0479");
-//		plan.dump();
-//		System.err.println(decodedInfo);
-		System.err.println(plan);
-
-		 plan = api.getFlightPlan("DAL1487-1506921959-airline-0651");
+		FlightPlan plan = api.getFlightPlan("DAL1174-1508650008-airline-0465");
 		plan.dump();
 //		System.err.println(decodedInfo);
 		System.err.println(plan);

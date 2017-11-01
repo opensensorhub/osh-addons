@@ -14,12 +14,17 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,6 +32,8 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.FoiEvent;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.mesh.DirectoryWatcher;
+import org.sensorhub.impl.sensor.mesh.FileListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.sensorML.SMLHelper;
@@ -35,6 +42,7 @@ import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
+import ucar.ma2.InvalidRangeException;
 
 /**
  * 
@@ -49,13 +57,13 @@ import net.opengis.sensorml.v20.PhysicalSystem;
         at org.sensorhub.impl.service.sos.FoiUtils.updateFois(FoiUtils.java:51) ~[s
  *
  */
-public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> implements IMultiSourceDataProducer, // FlightObjectListener //, FlightPlanListener
-	FlightPlanListener, PositionListener
+public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> implements IMultiSourceDataProducer,
+	FlightPlanListener, PositionListener, FileListener
 {
 	FlightPlanOutput flightPlanOutput;
 	FlightPositionOutput flightPositionOutput;
 	TurbulenceOutput turbulenceOutput;
-	Thread watcherThread;
+	LawBoxOutput lawBoxOutput;
 	FlightAwareClient client;
 
 	// Helpers
@@ -66,18 +74,26 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	Set<String> foiIDs;
 	Map<String, AbstractFeature> flightAwareFois;
 	Map<String, AbstractFeature> aircraftDesc;
+	Map<String, FlightObject> flightPositions;
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
 	static final String FLIGHT_PLAN_UID_PREFIX = SENSOR_UID_PREFIX + "flightPlan:";
 	static final String FLIGHT_POSITION_UID_PREFIX = SENSOR_UID_PREFIX + "flightPosition:";
 	static final String TURBULENCE_UID_PREFIX = SENSOR_UID_PREFIX + "turbulence:";
+	static final String LAWBOX_UID_PREFIX = SENSOR_UID_PREFIX + "lawbox:";
+
+	// Listen for and ingest new Turbulence files so we can populate both 
+	// TurbulenceOutput and LawBoxOutput 
+	private TurbulenceReader turbReader;
+	Thread watcherThread;
+	private DirectoryWatcher watcher;
 
 	static final Logger log = LoggerFactory.getLogger(FlightAwareSensor.class);
-	private BufferedWriter writer;
 
 	public FlightAwareSensor() {
 		this.foiIDs = new LinkedHashSet<String>();
 		this.flightAwareFois = new LinkedHashMap<String, AbstractFeature>();
 		this.aircraftDesc = new LinkedHashMap<String, AbstractFeature>();
+		this.flightPositions = new LinkedHashMap<String, FlightObject>();
 	}
 
 	@Override
@@ -100,21 +116,23 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		// Initialize Outputs
 		// FlightPlan
 		this.flightPlanOutput = new FlightPlanOutput(this);
-
 		addOutput(flightPlanOutput, false);
-
 		flightPlanOutput.init();
 
-		//		FlightPosition
+		// FlightPosition
 		this.flightPositionOutput = new FlightPositionOutput(this);
-		flightPositionOutput.init();
 		addOutput(flightPositionOutput, false);
+		flightPositionOutput.init();
 
 		// Turbulence
 		this.turbulenceOutput= new TurbulenceOutput(this);
-
 		addOutput(turbulenceOutput, false);
 		turbulenceOutput.init();
+
+		// LawBox
+		this.lawBoxOutput= new LawBoxOutput(this);
+		addOutput(lawBoxOutput, false);
+		lawBoxOutput.init();
 	}
 
 	@Override
@@ -125,19 +143,33 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		client = new FlightAwareClient(machineName, config.userName, config.password);
 		client.messageTypes.add("flightplan");
 		client.messageTypes.add("position");
-		
+
 		//  And message Converter
 		FlightAwareConverter converter = new FlightAwareConverter() ;
 		client.addListener(converter);
 		converter.addPlanListener(this);
 		converter.addPositionListener(this);
-		
+
 		// Start firehose feed
 		Thread thread = new Thread(client);
 		thread.start();
 
 		//  start Turbulence output, which will start FileListener for GTGTURB files
-		turbulenceOutput.start(config.turbulencePath);
+//		turbulenceOutput.start(config.turbulencePath);
+		startTurbulenceListener();
+	}
+
+	private void startTurbulenceListener() throws SensorHubException {
+		try {
+			watcher = new DirectoryWatcher(Paths.get(config.turbulencePath), StandardWatchEventKinds.ENTRY_CREATE);
+			watcherThread = new Thread(watcher);
+			watcher.addListener(this);
+			watcherThread.start();
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new SensorHubException("TurbulenceSensor could not create DirectoryWatcher...", e);
+		}
+
 	}
 
 	@Override
@@ -194,12 +226,12 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		// send event
 		long now = System.currentTimeMillis();
 		//  Should be good to send positionTime as startTime of FoiEvent since...
-	    // @param startTime time at which observation of the FoI started (julian time in seconds, base 1970)
+		// @param startTime time at which observation of the FoI started (julian time in seconds, base 1970)
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
 		log.debug("New Position added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
 	}
-	
+
 	private void addTurbulenceFoi(String flightId, long recordTime) {
 		String uid = TURBULENCE_UID_PREFIX + flightId;
 		String description = "Delta Turbulence data for: " + flightId;
@@ -221,14 +253,49 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		log.debug("New TurbulenceProfile added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
 	}
 
+	private void addLawBoxFoi(String flightId, long recordTime) {
+		AbstractFeature lawboxFoi = flightAwareFois.get(LAWBOX_UID_PREFIX + flightId);
+		if(lawboxFoi != null)
+			return ; // This position already has an FOI
+		String uid = LAWBOX_UID_PREFIX + flightId;
+		String description = "Delta LawBox data for: " + flightId;
+
+		// generate small SensorML for FOI
+		PhysicalSystem foi = smlFac.newPhysicalSystem();
+		foi.setId(flightId);
+		foi.setUniqueIdentifier(uid);
+		foi.setName(flightId + " LawBox");
+		foi.setDescription(description);
+
+		foiIDs.add(uid);
+		flightAwareFois.put(uid, foi);
+
+		// send event
+		long now = System.currentTimeMillis();
+		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
+
+		log.debug("New LawBox added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
+	}
+
 	@Override
 	public void newPosition(FlightObject pos) {
-		//  Should never send null plan
+		//  Should never send null pos, but check it anyway
 		if(pos == null) {
 			return;
 		}
-		addPositionFoi(pos.getOshFlightId(), pos.getClock());
-		flightPositionOutput.sendPosition(pos, pos.getOshFlightId());
+		// Check for and add Pos and LawBox FOIs if they aren't already in cache
+		String oshFlightId = pos.getOshFlightId();
+		addPositionFoi(oshFlightId, pos.getClock());
+		addLawBoxFoi(oshFlightId, pos.getClock());
+		FlightObject prevPos = flightPositions.get(oshFlightId);
+		if(prevPos != null) {
+			Double prevAlt = prevPos.getAltitude();
+			Double newAlt = pos.getAltitude();
+			if(prevAlt != null && newAlt != null) 
+				pos.verticalChange = prevAlt - newAlt;
+		}
+		flightPositions.put(oshFlightId, pos);
+		flightPositionOutput.sendPosition(pos, oshFlightId);
 	}
 
 	@Override
@@ -252,51 +319,50 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		flightPlanOutput.sendFlightPlan(plan);
 		turbulenceOutput.addFlightPlan(TURBULENCE_UID_PREFIX + plan.oshFlightId, plan);
 	}
-	
-//	@Override
-//	public void processMessage(FlightObject obj) {
-//		// call api and get flightplan
-//		if(!obj.type.equals("flightplan") && !obj.type.equals("position") ) {
-//			log.warn("FlightAwareSensor does not yet support: " + obj.type);
-//			return;
-//		}
-//
-//		switch(obj.type) {
-//		case "flightplan":
-//			processFlightPlan(obj);
-//			break;
-//		case "position":
-//			processPosition(obj);
-//			break;
-//		default:
-//			log.error("Unknown message slipped through somehow: " + obj.type);
-//		}
-//	}
 
-	// One issue here is FOI gets added even if Processing plan fails
-	private void processFlightPlan(FlightObject obj) {
-		// Check to see if existing FlightPlan entry with this flightId
-		String oshFlightId = obj.getOshFlightId();
-		AbstractFeature fpFoi = flightAwareFois.get(FLIGHT_PLAN_UID_PREFIX + oshFlightId);
-		// add flightPlan FOI if new
-		if(fpFoi == null) {
-			addFlightPlanFoi(oshFlightId, System.currentTimeMillis()/1000);
+	public List<TurbulenceRecord> getTurbulence(FlightPlan plan) throws IOException, InvalidRangeException {
+		if(turbReader == null) {
+			log.debug("FlightAwareSensor turbulenceReader is null.  No data yet.");
+			return new ArrayList<TurbulenceRecord>();
+		}
+		return turbReader.getTurbulence(plan);
+	}
+	
+	public LawBox getLawBox(String flightUid) throws IOException {
+		// Need FlightPos
+		FlightObject pos = flightPositions.get(flightUid);
+		if(pos == null) {
+			log.debug("FlightPosition not available in getLawBox() for: {}", flightUid);
+			return null;
+		}
+		LawBox lawBox = turbReader.getLawBox(pos);
+		return lawBox;
+	}
+		
+	/**
+	 * Wheenever we get a new turb file, load the whole thing into memory for now
+	 */
+	@Override
+	public void newFile(Path p) throws IOException {
+		String fn = p.getFileName().toString().toLowerCase();
+		if(!fn.contains("gtgturb") || !fn.endsWith(".grb2")) {
+			return;
 		}
 
-		//  And Turbulence FOI if new
-		AbstractFeature turbFoi = flightAwareFois.get(TURBULENCE_UID_PREFIX + oshFlightId);
-		if(turbFoi == null)
-			addTurbulenceFoi(oshFlightId, System.currentTimeMillis()/1000) ;
+		//  adding short delay for all platforms now- windows was consistently 
+		//  trying to open the file after creation but before it was fully copied.
+		try {
+			Thread.sleep(200L);
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
 
-		// kick off processing thread
-		Thread thread = new Thread(new ProcessPlanThreadFAS(obj, flightPlanOutput, turbulenceOutput, TURBULENCE_UID_PREFIX ));
-		thread.start();
-	}
-
-	private void processPosition(FlightObject obj) {
-		// Just kick off the thread- it takes care of adding FOI if new position
-		Thread thread = new Thread(new ProcessPositionThreadFAS(obj, flightPositionOutput, FLIGHT_POSITION_UID_PREFIX ));
-		thread.start();
+		// Account for failure of new TurbReader
+		try {
+			turbReader = new TurbulenceReader(p.toString());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override

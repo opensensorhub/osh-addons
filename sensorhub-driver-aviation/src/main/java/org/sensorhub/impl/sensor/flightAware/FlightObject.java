@@ -101,7 +101,10 @@ public class FlightObject
 	public String ete;
 	public String fdt;
 	List<Waypoint> waypoints = new ArrayList<>();
-
+	
+	// Adding for LawBox support
+	Double verticalChange;  //feet per mminute
+	
 	class Waypoint {
 		public Waypoint(float lat, float lon) {
 			this.lat = lat;
@@ -207,6 +210,36 @@ public class FlightObject
 			return 0.0;
 		}
 		
+	}
+	
+	private static Double getBigDouble(String s) {
+		if(s == null)
+			return null;  // missing?
+		try {
+			return Double.parseDouble(s);
+		} catch (NumberFormatException e) {
+			return null;
+		}
+	}
+	
+	public Double getLatitude() {
+		return getBigDouble(lat);
+	}
+	
+	public Double getLongtiude() {
+		return getBigDouble(lon);
+	}
+	
+	public Double getAltitude() {
+		return getBigDouble(alt);
+	}
+	
+	public Double getGroundSpeed() {
+		return getBigDouble(gs);
+	}
+	
+	public Double getHeading() {
+		return getBigDouble(heading);
 	}
 	
 	public static FlightObject getSampleFlightPlan() {

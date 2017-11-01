@@ -15,6 +15,8 @@ package org.sensorhub.impl.sensor.flightAware;
 
 import org.sensorhub.impl.sensor.flightAware.geom.LatLonAlt;
 
+import com.vividsolutions.jts.geom.Coordinate;
+
 public class LawBox
 {
 	LatLonAlt brTopLla;
@@ -25,10 +27,43 @@ public class LawBox
 	LatLonAlt frBottomLla;
 	LatLonAlt flTopLla;
 	LatLonAlt flBottomLla; 
-
+	LawBoxGeometry geom;
+	Float maxTurb;
+	Coordinate maxCoordXYZ;
+	LatLonAlt maxCoordLla;  // harmonize with my container LatLon classes
+	FlightObject position;
+	int changeFlag;
+	
+	public LawBox(FlightObject position) {
+		this.position = position;
+		this.geom = new LawBoxGeometry(position);
+	}
+	
+	public LawBox(LawBoxGeometry geometry) {
+		this.geom = geometry;
+	}
+	
+	public void computeBox() {
+		geom.computeBox(this);
+	}
+	
+	public double []  getBoundary() {
+		// assert br,bl,fr,fl non null
+		double [] boundary = new double[] {
+				blTopLla.lat, blTopLla.lon,
+				brTopLla.lat, brTopLla.lon,
+				frTopLla.lat, frTopLla.lon,
+				flTopLla.lat, flTopLla.lon
+		};
+		
+		
+		return boundary;
+	}
+	
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
+		b.append(position.getTimeStr() + "\n");
 		b.append("brTop:" + brTopLla + "\n");
 		b.append("blTop:" + blTopLla + "\n");
 		b.append("flTop:" + flTopLla + "\n");
@@ -36,7 +71,9 @@ public class LawBox
 		b.append("brBottom:" + brBottomLla + "\n");
 		b.append("blBottom:" + blBottomLla + "\n");
 		b.append("flBottom:" + flBottomLla + "\n");
-		b.append("frBottom:" + frBottomLla);
+		b.append("frBottom:" + frBottomLla + "\n");
+		b.append("MaxTurb = " + maxTurb + "\n");
+		b.append("MaxCoordLL = " + maxCoordLla + "\n");
 		
 		return b.toString();
 	}

@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
@@ -58,13 +59,12 @@ import ucar.ma2.InvalidRangeException;
  * TODO- add zulu time output somewhere
  *
  */
-public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> implements IMultiSourceDataInterface, FileListener  
+public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> implements IMultiSourceDataInterface //, FileListener  
 {
-	private static final int AVERAGE_SAMPLING_PERIOD = 1; //(int)TimeUnit.SECONDS.toSeconds(5);
+	private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toSeconds(15); 
 
 	Thread watcherThread;
 	private DirectoryWatcher watcher;
-	Path latestTurbPath;
 
 	DataRecord recordStruct;
 	DataEncoding encoding;	
@@ -74,10 +74,7 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 
 	private DataRecord profileStruct;
 
-	private TurbulenceReader reader;
-	private static String OS = System.getProperty("os.name").toLowerCase();
-
-
+//	private TurbulenceReader reader;
 
 	public TurbulenceOutput(FlightAwareSensor parentSensor) 
 	{
@@ -125,6 +122,8 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 		profiles.addComponent("Latitude", latQuant);
 		profiles.addComponent("Longitude", lonQuant);
 
+		// TODO, add alt? altitude level of each profile point?
+		
 		//  Vertical Profile
 		Count turbulencePoints = fac.newCount(DataType.INT);
 		turbulencePoints.setDefinition("http://sensorml.com/ont/swe/property/NumberOfSamples"); 
@@ -193,17 +192,17 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 		encoding = fac.newTextEncoding(",", "\n");
 	}
 
-	public void start(String dataPath) throws SensorHubException {
-		try {
-			watcher = new DirectoryWatcher(Paths.get(dataPath), StandardWatchEventKinds.ENTRY_CREATE);
-			watcherThread = new Thread(watcher);
-			watcher.addListener(this);
-			watcherThread.start();
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new SensorHubException("TurbulenceSensor could not create DirectoryWatcher...", e);
-		}
-	}
+//	public void start(String dataPath) throws SensorHubException {
+//		try {
+//			watcher = new DirectoryWatcher(Paths.get(dataPath), StandardWatchEventKinds.ENTRY_CREATE);
+//			watcherThread = new Thread(watcher);
+//			watcher.addListener(this);
+//			watcherThread.start();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//			throw new SensorHubException("TurbulenceSensor could not create DirectoryWatcher...", e);
+//		}
+//	}
 
 	public DataBlock sendProfiles(List<TurbulenceRecord> recs, FlightPlan plan)
 	{
@@ -238,38 +237,6 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 		latestRecords.put(flightUid, latestRecord);   
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, TurbulenceOutput.this, bigBlock));
 		return bigBlock;
-	}
-
-	/**
-	 * Wheenever we get a new turb file, load the whole thing into memory for now
-	 */
-	@Override
-	public void newFile(Path p) throws IOException {
-		String fn = p.getFileName().toString().toLowerCase();
-		if(!fn.contains("gtgturb") || !fn.endsWith(".grb2")) {
-			return;
-		}
-
-//		if(OS.contains("win")) {
-		// adding short delay for all platforms now
-		try {
-			Thread.sleep(200L);
-		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-//		}
-
-		// Account for failure of new TurbReader
-		//  and multithread this
-		try {
-			reader = new TurbulenceReader(p.toString());
-			//  load 'em up
-			reader.ingestFullFile();
-			reader.removeNaNs();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 
 	public void addFlightPlan(String uid, FlightPlan newPlan) {
@@ -318,20 +285,17 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 
 		//  get FlightPlan- *should* be updating in FltAware 
 		//  every time newFlightPlan() is called there
+		//  Since FlightAwareSensor is now listening for Turb files
 		FlightPlan plan = availableFlightPlans.get(entityID);
 		if (plan == null) {
 			log.info("TurbOutput.getLatest():  Should have data for this plan but we don't. Cannot compute turbulence");
 			return null;
 		}
 
-		if(reader == null) {
-			log.debug("TurbOutput.getLatest():  No New data yet. Fix me!!!");
-			return null;
-		}
-
 		// Construct new latestRecord for this id
 		try {
-			List<TurbulenceRecord> recs = reader.getTurbulence(plan);
+//			List<TurbulenceRecord> recs = reader.getTurbulence(plan);
+			List<TurbulenceRecord> recs = parentSensor.getTurbulence(plan);
 			if(recs == null) {
 				log.info("TurbOutput.getLatest():  Reading turb data failed.");
 				return null;

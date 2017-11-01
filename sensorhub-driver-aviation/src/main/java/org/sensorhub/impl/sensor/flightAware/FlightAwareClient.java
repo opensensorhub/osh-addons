@@ -51,7 +51,7 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
     	String userName = "drgregswilson";
     	String password = "2809b6196a2cfafeb89db0a00b117ac67e876220";
         FlightAwareClient client = new FlightAwareClient(machineName, userName, password);
-        client.messageTypes.add("position");
+        client.messageTypes.add("flightplan position");
         client.addListener(client);
         Thread thread = new Thread(client);
         thread.start();

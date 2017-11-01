@@ -13,9 +13,6 @@ Copyright (C) 2017 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

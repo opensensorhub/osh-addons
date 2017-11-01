@@ -21,7 +21,7 @@ import net.opengis.swe.v20.Vector;
 
 public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareSensor> implements IMultiSourceDataInterface  
 {
-	private static final int AVERAGE_SAMPLING_PERIOD = 1; //(int)TimeUnit.SECONDS.toSeconds(5);
+	private static final int AVERAGE_SAMPLING_PERIOD = 30;
 
 	DataRecord recordStruct;
 	DataEncoding encoding;	
@@ -57,7 +57,7 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareSensor
 		recordStruct.addComponent("time", fac.newTimeStampIsoGPS());
 
 		// oshFlightId
-		recordStruct.addField("flightId", fac.newText("", "flightId", "Internally generated flight desc (flightNum_DestAirport"));
+		recordStruct.addField("flightId", fac.newText("http://earthcastwx.com/ont/swe/property/flightId", "flightId", "Internally generated flight desc (flightNum_DestAirport"));
 
 		//  location
 		Vector locVector = geoHelper.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
@@ -69,7 +69,7 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareSensor
 		recordStruct.addField("heading", fac.newQuantity("http://sensorml.com/ont/swe/property/Heading", "Heading", null, "deg"));
 
 		// airspeed
-		recordStruct.addField("airspeed", fac.newQuantity("http://sensorml.com/ont/swe/property/GroundSpeed", "GroundSpeed", null, "kts"));
+		recordStruct.addField("groundSpeed", fac.newQuantity("http://sensorml.com/ont/swe/property/GroundSpeed", "GroundSpeed", null, "kts"));
 
 		// default encoding is text
 		encoding = fac.newTextEncoding(",", "\n");

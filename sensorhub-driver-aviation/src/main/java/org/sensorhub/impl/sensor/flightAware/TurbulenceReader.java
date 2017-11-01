@@ -1,19 +1,27 @@
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.awt.Point;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.chrono.ChronoZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.impl.sensor.flightAware.FlightPlan.Waypoint;
+import org.sensorhub.impl.sensor.flightAware.geom.GribUtil;
+import org.sensorhub.impl.sensor.flightAware.geom.LatLonAlt;
+import org.sensorhub.impl.sensor.mesh.EarthcastUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.vividsolutions.jts.algorithm.locate.IndexedPointInAreaLocator;
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.Location;
+import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.PrecisionModel;
 
 import ucar.ma2.Array;
 import ucar.ma2.InvalidRangeException;
@@ -54,12 +62,11 @@ int LambertConformal_Projection;
  *
  */
 
-public class TurbulenceReader
+public class TurbulenceReader 
 {
 	// TODO allow var names to be set in config
 	private static final String ALT_VAR = "altitude_above_msl";
 	private static final String TURB_VAR = "Turbulence_Potential_Forecast_Index_altitude_above_msl";
-	//	private static final String TIME_VAR = "forecast_reference_time";
 	private static final String TIME_VAR = "time";
 	private static final String X_VAR = "x";
 	private static final String Y_VAR = "y";
@@ -68,25 +75,43 @@ public class TurbulenceReader
 	Variable crsVar;
 	private NetcdfFile ncFile;
 	private ProjectionImpl proj;
-	private GridCoordSystem gcs;
+	GridCoordSystem gridCoordSystem;
 	private Variable turbVar;
 	private float [][][] turbData;
 	private Array transArr;
 	float [] projx;
 	float [] projy;
-	private List<Integer> wayptIndices = new ArrayList<>();  // when we create full path, need to create these so they can be included in response 
 	long time = 0L;
 
 	static final Logger log = LoggerFactory.getLogger(TurbulenceReader.class);
 
+
 	public TurbulenceReader(String path) throws IOException {
+		initFile(path);
+	}
+
+	public TurbulenceReader() {
+	}
+
+	/**
+	 * Load all the data into memory that we will need to perform
+	 * on the fly computation of Turbulence profiles
+	 * 
+	 * @param path 
+	 * @throws IOException
+	 */
+	public void initFile(String path) throws IOException {
 		dataset = GridDataset.open(path);
 		ncFile = dataset.getNetcdfFile();
-		gcs = dataset.getGrids().get(0).getCoordinateSystem();
-		proj = gcs.getProjection();
-		//		time = readTime();
-		time = computeTime(path);
+		//  Get projection info
+		gridCoordSystem = dataset.getGrids().get(0).getCoordinateSystem();
+		proj = gridCoordSystem.getProjection();
+		//	Compute time based on filename- this is the preferred method
+		//  as the time in the time variable may not be accurate
+		Path p = Paths.get(path);
+		time = EarthcastUtil.computeTime(p.getFileName().toString());
 
+		//  load XY variable info- we'll need this to do any forward/reverse projection
 		Variable vx = ncFile.findVariable(X_VAR);
 		Variable vy = ncFile.findVariable(Y_VAR);
 		Array ax = vx.read();
@@ -94,13 +119,14 @@ public class TurbulenceReader
 		projx = (float [] )ax.getStorage();
 		projy =  (float [] )ay.getStorage();
 
-		//		float[][] latLons = UcarUtil.toLatLon(ncFile, dataset, X_VAR, Y_VAR);
-		//		lats = latLons[0];
-		//		lons = latLons[1];
-		//		System.err.println(lats);
+		//  and load TurbulenceData
+		loadTurbulenceData();
+
+		// remove NaNs here for now.  JSON does not like them
+		removeNaNs();
 	}
 
-	public void ingestFullFile() throws IOException {
+	private void loadTurbulenceData() throws IOException {
 		turbVar = ncFile.findVariable(TURB_VAR);
 		if (turbVar == null)
 			throw new IOException("TurbulenceReader could not find turbulence variable: " + TURB_VAR);
@@ -110,13 +136,11 @@ public class TurbulenceReader
 		Array turbArr3d = turbArr4d.reduce();
 		transArr = turbArr3d.transpose(0, 2);
 		int []shape = transArr.getShape();
-		//		System.err.println(shape[0] + "  " + shape[1] + " " + shape[2]);
 
 		turbData = (float[][][])transArr.copyToNDJavaArray();
-		//		removeNaNs();
 	}
 
-	public void removeNaNs() {
+	private void removeNaNs() {
 		int []shape = transArr.getShape();
 		//		System.err.println(shape[0] + "  " + shape[1] + " " + shape[2]);
 
@@ -130,119 +154,138 @@ public class TurbulenceReader
 		}
 	}
 
-	//	public List<TurbulenceRecord>  getTurbulence(float [] lat, float [] lon) throws IOException, InvalidRangeException {
-	//		return getTurbulence(lat, lon, null);
-	//	}
-	//
-	//	public List<TurbulenceRecord>  getTurbulence(float [] lat, float [] lon, String [] names) throws IOException, InvalidRangeException {
-	//		List<TurbulenceRecord> recs = new ArrayList<>();
-	//		for(int i=0; i<lat.length; i++) {
-	//			TurbulenceRecord rec = new TurbulenceRecord();
-	//			rec.time = readTime(); 
-	//			rec.lat = lat[i];
-	//			rec.lon = lon[i];
-	//			rec.turbulence = getProfileT(lat[i], lon[i]);
-	//			if(names != null)
-	//				rec.waypointName = names[i];
-	////			System.err.println(rec.lat + "," + rec.lon + ":" + rec.turbulence[0] );
-	//			recs.add(rec);
-	//		}
-	//
-	//		return recs;
-	//	}
-	//
-	public int findWaypoint(Point[] projWaypt, Point point) {
+	private int findWaypoint(Coordinate [] projWaypt, Coordinate point) {
 		for(int i=0; i<projWaypt.length; i++) {
-			if(point.equals(projWaypt[i]))
+			if(point.equals2D(projWaypt[i]))
 				return i;
 		}
 		return -1;
 	}
 
 	public List<TurbulenceRecord>  getTurbulence(FlightPlan plan) throws IOException, InvalidRangeException {
-		Point [] points = getProjectedWaypoints(plan.getLats(), plan.getLons());
-		List<Point> path = getPathIndices(points);
+		Coordinate [] waypointsXY = GribUtil.getProjectedWaypoints(gridCoordSystem, plan.getLats(), plan.getLons());
+		Coordinate [] path = GribUtil.getPathIndices(gridCoordSystem, plan.getLats(), plan.getLons());
 		List<TurbulenceRecord> recs = new ArrayList<>();
 		List<Waypoint> waypoints = plan.waypoints;
 
-		//		int pointCnt = 0;
-		//		int waypointCnt = 0;
-		//		Integer wayptIdx = wayptIndices.get(waypointCnt);
-		System.err.println("** Starting path loop for id, time, numWaypts" + plan.oshFlightId + "," + plan.getTimeStr() + "," + plan.waypoints.size());
-		for(Point pathPt: path) {
+		for(Coordinate pathPt: path) {
 			TurbulenceRecord rec = new TurbulenceRecord();
 			rec.time = time;
-			LatLonPoint ll = proj.projToLatLon(projx[pathPt.x], projy[pathPt.y]);
+			LatLonPoint ll = proj.projToLatLon(projx[(int)pathPt.x], projy[(int)pathPt.y]);
 			rec.lat = ll.getLatitude();
 			rec.lon = ll.getLongitude();
-			rec.turbulence = turbData[pathPt.x][pathPt.y];
-			int waypointIndexSafe = findWaypoint(points, pathPt);
-//			System.err.println(pathPt);
-			if(waypointIndexSafe >=0) {
+			rec.turbulence = turbData[(int)pathPt.x][(int)pathPt.y];
+			int waypointIndexSafe = findWaypoint(waypointsXY, pathPt);
+			if(waypointIndexSafe >= 0) {
 				if(waypointIndexSafe < waypoints.size()) {
 					Waypoint waypt = plan.waypoints.get(waypointIndexSafe);
 					rec.waypointName = waypt.name;
-//					System.err.println("\twaypt: " + waypointIndexSafe + "," + waypt.name);
+					//					System.err.println("\twaypt: " + waypointIndexSafe + "," + waypt.name);
 				} else {
 					log.debug("Waypoint index out of range: idx, id" , waypointIndexSafe, plan.oshFlightId);
 				}
 			}
-			//			if(wayptIdx == pointCnt) {
-			//				Waypoint waypt = plan.waypoints.get(waypointCnt);
-			//				rec.waypointName = waypt.name;
-			////				System.err.println(waypt.name + ", " + waypt.type);
-			//				if(++waypointCnt < wayptIndices.size())
-			//					wayptIdx = wayptIndices.get(waypointCnt);
-			//			}
-			//			System.err.println(rec.lat + "," + rec.lon + " : " + rec.turbulence[0] );
 			recs.add(rec);
-			//			pointCnt++;
 		}
 
 		return recs;
 	}
 
-	public long readTime() throws IOException {
-		Variable vtime = ncFile.findVariable(TIME_VAR);
-		String ustr = vtime.getUnitsString();
-		String [] uArr = ustr.split(" ");
-		String tstr = uArr[2];
+	private float []  readAlt() throws IOException {
+		Variable vtime = ncFile.findVariable(ALT_VAR);
 		Array atime = vtime.read();
-		double timeMin = atime.getDouble(0);
-		//		System.err.println(timeMin);
-		Instant instant = Instant.parse( tstr );
-		long time = instant.getEpochSecond();
-		long timeUtc = time + ((long)timeMin * TimeUnit.MINUTES.toSeconds(1L) );
-		return timeUtc;
+		float [] alt = (float [])atime.copyTo1DJavaArray();
+		return alt;
+	}
+
+	//	brTop:29.83344563844328, -100.0, 12000.0
+	//	blTop:30.16655436155672, -100.0, 12000.0
+	//	flTop:30.135117172238807, -97.11580280188991, 12000.0
+	//	frTop:29.802008449125367, -97.11580280188991, 12000.0
+	//	brBottom:29.83344563844328, -100.0, 8000.0
+	//	blBottom:30.16655436155672, -100.0, 8000.0
+	//	flBottom:30.135117172238807, -97.11580280188991, 8000.0
+	//	frBottom:29.802008449125367, -97.11580280188991, 8000.0
+	//	public LawBox getLawBox(FlightObject pos) throws IOException {
+	public LawBox getLawBox(FlightObject pos) throws IOException {
+		//		LawBoxGeometry geom = new LawBoxGeometry(pos);
+		LawBox lawBox = new LawBox(pos);
+		lawBox.computeBox();
+		System.err.println(pos);
+		System.err.println(lawBox);
+		
+		// to XY for 4 corners
+		Coordinate br = GribUtil.latLonToXY(gridCoordSystem, lawBox.brBottomLla);
+		Coordinate bl = GribUtil.latLonToXY(gridCoordSystem, lawBox.blBottomLla);
+		Coordinate fr = GribUtil.latLonToXY(gridCoordSystem, lawBox.frBottomLla);
+		Coordinate fl = GribUtil.latLonToXY(gridCoordSystem, lawBox.flBottomLla);
+		System.err.println(br);
+		System.err.println(bl);
+		System.err.println(fr);
+		System.err.println(fl);
+
+		//  Check every pixel that could possibly be in the polygon defined by the four cornesr
+		PrecisionModel pm = new PrecisionModel(1.0);
+		GeometryFactory fac = new GeometryFactory(pm);
+		Coordinate [] corners = new Coordinate[] {br, fr, fl, bl, br};
+		Polygon poly = fac.createPolygon(corners);
+		int minx = (int)GribUtil.min(corners, Coordinate.X);
+		int miny = (int)GribUtil.min(corners, Coordinate.Y);
+		int maxx = (int)GribUtil.max(corners, Coordinate.X);
+		int maxy = (int)GribUtil.max(corners, Coordinate.Y);
+		System.err.println(minx + "," + miny + " ==> " + maxx + "," + maxy);
+		int bottom = getLevel((int)lawBox.brBottomLla.alt);
+		int top = getLevel((int)lawBox.brTopLla.alt);
+
+		// 
+		lawBox.maxTurb = 0.f;
+		Coordinate maxCoord;
+		IndexedPointInAreaLocator ipl = new IndexedPointInAreaLocator(poly);
+		for(int y = miny; y<=maxy; y++) {
+			for(int x = minx; x<=maxx; x++) {
+				Coordinate c = new Coordinate(x,y);
+				Point p = fac.createPoint(c);
+				int loc = ipl.locate(c);
+//				System.err.println(c.x + "," + c.y + " : " + l);
+				if(!(loc == Location.BOUNDARY || loc == Location.INTERIOR))
+					continue;
+				for(int z = bottom; z <= top; z++) {
+					System.err.println(c.x + "," + c.y + "," + z + " : " + turbData[(int)c.x][(int)c.y][z]);
+					if(turbData[(int)c.x][(int)c.y][z] > lawBox.maxTurb) {
+						lawBox.maxTurb = turbData[(int)c.x][(int)c.y][z];
+						lawBox.maxCoordXYZ = new Coordinate((int)c.x, (int)c.y, (int)z);
+						System.err.println("new max: " + lawBox.maxTurb + " @ " + lawBox.maxCoordXYZ);
+					}
+				}
+
+			}			
+		}
+		LatLonPoint ll = gridCoordSystem.getLatLon((int)lawBox.maxCoordXYZ.x, (int)lawBox.maxCoordXYZ.y);
+		lawBox.maxCoordLla = new LatLonAlt(ll.getLatitude(), ll.getLongitude(), getAltitude((int)lawBox.maxCoordXYZ.z));
+		System.err.println("Final maxTurb, maxLoc: " + lawBox.maxTurb + "," + lawBox.maxCoordLla);
+		return lawBox;
+	}
+
+	//  Alt is stored in meters natively
+	//  level 0 = 0 m
+	//  level 1 = 30 m
+	//  level 2 = ... = 1 kft
+	int getLevel(int altFeet) {
+		if (altFeet < 97)  return 0;
+		if (altFeet < 997)  return 1;
+		return (altFeet/1000) + 1;
+	}
+
+	int getAltitude(int level) {
+		// take from actual alt variable, but for now, it is fixed
+		if(level == 0)  return 0;
+		if(level == 1)  return 100;
+		return (level - 1) * 1000;
 	}
 
 	// ECT_NCST_DELTA_GTGTURB_6_5km.201710181800.grb2
-	public long computeTime(String filename) throws IOException {
-		log.debug("computeTime called for " + filename);
-		int dotIdx = filename.indexOf('.');
-		if(dotIdx == -1) {
-			log.error("Could not compute timestamp from filename: {}.  Using timestamp from time variable", filename);
-			return readTime();
-		}
-		String datestr = filename.substring(dotIdx + 1);
-		String yrs = datestr.substring(0,4);
-		String mons = datestr.substring(4,6);
-		String days = datestr.substring(6,8);
-		String hrs = datestr.substring(8,10);
-		String mins = datestr.substring(10,12);
-		int yr = Integer.parseInt(yrs);
-		int mon = Integer.parseInt(mons);
-		int day = Integer.parseInt(days);
-		int hr = Integer.parseInt(hrs);
-		int min = Integer.parseInt(mins);
-		//  Surely there is an easier way to get the timestamp... 
-		//  partial issue is that ZonedDateTime can't seem to see toEpochMilli() method, 
-		//  likely due to clash with joda time dependencies
-		LocalDateTime date = LocalDateTime.of(yr, mon, day, hr, min);
-		ZonedDateTime gmtDate = ZonedDateTime.of(date, ZoneId.of("UTC"));
-		Instant instant = Instant.from(gmtDate);
-		long time = instant.toEpochMilli();
-		return time/1000;
+	public GridCoordSystem getGridCoordSystem() {
+		return gridCoordSystem;
 	}
 
 	public void dumpInfo() throws Exception {
@@ -256,116 +299,17 @@ public class TurbulenceReader
 		}
 	}
 
-	//	public float [] getProfileT(double lat, double lon) throws IOException, InvalidRangeException {
-	//		//  Convert LatLon coord to spherical mercator proj. (or use gdal to convert entire file to 4326?
-	//		int [] result = null;
-	//		int[] idx = gcs.findXYindexFromLatLon(lat, lon, null);
-	//		if(idx == null || idx[0] == - 1 ||  idx[1] == -1) {
-	//			throw new IOException("Projection toLatLon failed");
-	//		}
-	//		return turbData[idx[0]][idx[1]];
-	//
-	//	}
-
-	public Point []  getProjectedWaypoints(float [] lat, float [] lon) throws IOException {
-		Point [] pts = new Point [lat.length];
-
-		//  Translate the input data into XY indexes
-		for(int i=0; i<lat.length; i++) {
-			int[] idx = gcs.findXYindexFromLatLon(lat[i], lon[i], null);
-			if(idx == null || idx[0] == - 1 ||  idx[1] == -1) {
-				throw new IOException("Projection fromLatLon failed. Point in path is off the available grid: " + lat[i] + "," + lon[i]);
-			}
-			pts[i] = new Point(idx[0], idx[1]);
-			//			System.err.println(" *** " + pts[i].x + "," + pts[i].y + " : " + lat[i] + "," + lon[i]);
-		}
-		return pts;
-	}
-
-
-
-	/**
-	 * 
-	 * @param lat - array of wayPoint latitudes
-	 * @param lon - array of wayPoint longitudes
-	 * @return  a List of x/y indices of all points between and including first lat/lon to last lat/lon
-	 * @throws IOException
-	 */
-	public List<Point> getPathIndices(Point [] pts) throws IOException {
-		//  Build new list between each point
-		List<Point> path = new ArrayList<>();
-		Point prevPt = new Point(Integer.MIN_VALUE, Integer.MIN_VALUE);
-		int cnt = 0;
-		for(int i=0; i<pts.length-1; i++) {
-			Point waypt = new Point(pts[i].x, pts[i].y);
-			if(!waypt.equals(prevPt)) {
-				wayptIndices.add(cnt);
-				path.add(waypt);  // add the actual point
-				cnt++;
-			}
-			double d = Math.sqrt( Math.pow((double)(pts[i+1].x - pts[i].x), 2.0) + Math.pow((double)(pts[i+1].y - pts[i].y), 2.0) );
-			//			System.err.println("\t\t" + pts[i].x + "," + pts[i].y + " - " + pts[i+1].x + "," + pts[i+1].y + ";   disatnce = " + d);
-			// deltas
-			double  delx = Math.abs(pts[i+1].x - pts[i].x);
-			double  dely = Math.abs(pts[i+1].y - pts[i].y);
-			double idx = 1.0;
-			int ix = Integer.MIN_VALUE, iy = Integer.MIN_VALUE;
-			int sanityCnt = 0, sanity = 1000;  // *should* never happen, but let's ensure no infinite loop
-			while (idx<d && sanityCnt++ < sanity) {
-				if(sanityCnt > sanity)
-					throw new IOException("TurbulenceReader went off the tracks tryign to generate full path");
-
-				double t = idx/d;
-				double x = (1.0 - t) * pts[i].x + t*pts[i+1].x;
-				double y = (1.0 - t) * pts[i].y + t*pts[i+1].y;
-				ix = (int)Math.round(x);
-				iy = (int)Math.round(y);
-				//				System.err.println(ix + "," + iy + " .. " + x + "," + y);
-				Point p = new Point(ix, iy);
-				if(!p.equals(prevPt)) {
-					path.add(p);
-					cnt++;
-				}
-				prevPt = p;
-				idx += 1.0;  //  what should increment be?
-			}
-		}
-		//  Add last waypointIndex
-		Point waypt = new Point(pts[pts.length - 1].x, pts[pts.length - 1].y);
-		if(!waypt.equals(prevPt)) {
-			wayptIndices.add(cnt);
-			path.add(waypt);  // add the actual point
-			cnt++;
-		}
-
-		//		for(Point p: path)
-		//			System.err.println(p);
-		return path;
-	}
-
 	public static  void testFill()  throws Exception {
 		// TODO Auto-generated method stub
 		TurbulenceReader reader = new TurbulenceReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710082130.grb2");
-		//		reader.ingestFullFile();
-		//		reader.removeNaNs();
-		//		double [] lat = {30.0, 32.0, 34.0, 36.0, 38.0, 40.0};
-		//		double [] lon = {-95., -95., -95., -95., -95., -95.};
-
-		//				double [] lat = {30.0, 30.0, 30.0, 30.0, 30.0, 30.0};
-		//				double [] lon = {-90., -92., -94., -96., -98., -100.};
-		//
 		double [] lat = {30.0, 32.0, 34.0, 36.0, 38.0, 40.0};
 		double [] lon = {-90., -92., -94., -96., -98., -100.};
-
-		//		double [] lat = {30.0, 30.001, 30.002, 30.003, 30.004, 30.005};
-		//		double [] lon = {-90.0, -90.001, -90.002, -90.003, -90.004, -90.005};
-
-		//		List<Point> path = reader.getPathIndices(lat, lon);
 	}
 
-	public static void main(String[] args) throws Exception {
-		TurbulenceReader reader = new TurbulenceReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710192115.grb2");
-		reader.ingestFullFile();
+	public static void testProf(String[] args) throws Exception {
+		TurbulenceReader reader = new TurbulenceReader("C:/home/tcook/osh/mesh/data/GTGTURB/ECT_NCST_DELTA_GTGTURB_6_5km.201710251815.grb2");
+		reader.readAlt();
+		//		reader.loadTurbulenceData();
 		FlightAwareApi api = new FlightAwareApi();
 		FlightPlan plan = api.getFlightPlan("DAL2520-1508217988-airline-0410");
 		//		FlightPlan plan = FlightPlan.getSamplePlan();
@@ -374,26 +318,63 @@ public class TurbulenceReader
 		for(TurbulenceRecord rec:recs) {
 			System.err.println(rec.lat + "," + rec.lon + "," + rec.waypointName);
 		}
-		//		reader.dumpInfo();
+		reader.dumpInfo();
+	}
+
+	public static void testGeom(String[] args) throws Exception {
+		Coordinate [] carr = new Coordinate[] {
+				new Coordinate(0,0,0),
+				new Coordinate(10,0,0),
+				new Coordinate(10,10,0),
+				new Coordinate(0,10,0),
+				new Coordinate(0,0,0)
+		};
+		PrecisionModel pm = new PrecisionModel(1.0);
+		GeometryFactory fac = new GeometryFactory(pm);
+		Polygon poly = fac.createPolygon(carr);
+	
+		IndexedPointInAreaLocator ipl = new IndexedPointInAreaLocator(poly);
+		System.err.println(Location.BOUNDARY + " " + Location.INTERIOR + " " + Location.EXTERIOR + " " + Location.NONE);
+		for (int i = -2; i<=12; i++) {
+			for (int j = -2; j<=12; j++) {
+				Point p = fac.createPoint(new Coordinate(j,i));
+				boolean contains = poly.contains(p);
+				boolean within = p.within(poly);
+				int loc  = ipl.locate(new Coordinate(j,i));
+				if(loc == Location.BOUNDARY || loc == Location.INTERIOR)
+					System.err.println( j + "," + i + " : " + contains + " : " + within + " : " + loc);
+			}
+		}
+
+
+
 	}
 
 
-	public static void mainWaypointsOnly(String[] args) throws Exception {
-		TurbulenceReader reader = new TurbulenceReader("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710082130.grb2");
-		reader.dumpInfo();
-		FlightAwareApi api = new FlightAwareApi();
-		FlightPlan plan = api.getFlightPlan("DAL74-1508217988-airline-0137");
+	public static void main(String[] args) throws Exception {
+		//		double lat = 25.;
+		//		double lon = -100.;
+		double lat = 45.0;
+		double lon = -75.;
+		double alt = 10_000.;
+		double groundSpeed = 300.;
+		double verticalRate = -8000;
+		double heading = 225.;
 
-		reader.dumpInfo();
-		//		List<TurbulenceRecord> recs = reader.getTurbulence(plan.getLats(), plan.getLons());
-		//		for(TurbulenceRecord r: recs)
-		//			System.err.println(r);
-		//
-		//		for(int i=0;i<100;i++ ) {
-		//			System.err.println(i);
-		//			double lat = 30. + Math.random() * 10;
-		//			double lon = -90. + Math.random() * 10;
-		//			reader.getProfile(lat, lon);
-		//		}
+		LawBoxGeometry lbGeom = new LawBoxGeometry(lat, lon, alt, groundSpeed, verticalRate, heading);
+		TurbulenceReader reader = new TurbulenceReader("C:/home/tcook/osh/mesh/data/GTGTURB/ECT_NCST_DELTA_GTGTURB_6_5km.201710251815.grb2");
+		FlightObject obj = new FlightObject();
+		obj.clock = "" + System.currentTimeMillis()/1000;
+		obj.lat="32.43";
+		obj.lon="-88.89";
+		obj.alt = "32000";
+		obj.gs = "350";
+		obj.heading = "235";
+		obj.verticalChange = 2000.;
+		
+		LawBox box = reader.getLawBox(obj);
+		System.err.println(box);
+
 	}
+
 }

@@ -1,14 +1,18 @@
 package org.sensorhub.impl.sensor.flightAware;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
@@ -22,16 +26,17 @@ import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Vector;
+import ucar.ma2.InvalidRangeException;
 
 public class LawBoxOutput extends AbstractSensorOutput<FlightAwareSensor> implements IMultiSourceDataInterface  
 {
-	private static final int AVERAGE_SAMPLING_PERIOD = 1; //(int)TimeUnit.SECONDS.toSeconds(5);
+	private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toSeconds(15); 
 
 	DataRecord recordStruct;
 	DataEncoding encoding;	
 
 	Map<String, Long> latestUpdateTimes = new LinkedHashMap<>();
-	Map<String, DataBlock> latestRecords = new LinkedHashMap<>();  // key is position uid
+	Map<String, DataBlock> latestRecords = new LinkedHashMap<>();  //
 
 	public LawBoxOutput(FlightAwareSensor parentSensor) 
 	{
@@ -50,81 +55,95 @@ public class LawBoxOutput extends AbstractSensorOutput<FlightAwareSensor> implem
 		SWEHelper fac = new SWEHelper();
 		GeoPosHelper geoHelper = new GeoPosHelper();
 
-		//  Add top level structure for flight plan
-		//	 time, flightId, <planeLoc>, lawBox corners (array of lla), turbHazard loacations array of [lla], maxHazard, incr/decr
+		//  Output structure for flight plan
+		//	 time, flightId, lawBox corners (array of 4 latLon pairs), lawBoxLowerAlt, llawBoxUpperAlt, turbHazard location (single LatLonAlt for now), maxHazardVal, incr/decr flag
 
 		// SWE Common data structure
-		recordStruct = fac.newDataRecord(7);
+		recordStruct = fac.newDataRecord(8);
 		recordStruct.setName(getName());
 		recordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/LawBox"); // ??
 
 		recordStruct.addComponent("time", fac.newTimeStampIsoGPS());
 
 		// oshFlightId
-		recordStruct.addField("flightId", fac.newText("", "flightId", "Internally generated flight desc (flightNum_DestAirport"));
+		recordStruct.addField("flightId", fac.newText("http://earthcastwx.com/ont/swe/property/flightId", "flightId", "Internally generated flight desc (flightNum_DestAirport"));
 
 		//  LaxBox corners
-		Vector boxCorners = geoHelper.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
-		boxCorners.setLabel("LawBoxCorners");
-		boxCorners.setDescription("Corners computed based on plane location and criteria set by Delta (encoded in LaxBoxGeometry class)");
-		Count numCorners = fac.newCount(DataType.INT);
-		numCorners.setValue(8);
-		recordStruct.addComponent("NumberOfCornerPoints", numCorners);
-		DataArray cornerArr = fac.newDataArray();
-		cornerArr.setElementType("BoxCorner", boxCorners);
-		cornerArr.setElementCount(numCorners);
-		recordStruct.addComponent("LawBoxCOrners", cornerArr);
+		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Latitude", null, "deg", DataType.DOUBLE);
+		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.DOUBLE);
+		DataRecord cornerRec = fac.newDataRecord(2);
+		cornerRec.setName("LawBoxCorner");
+		cornerRec.addComponent("latitude", latQuant);
+		cornerRec.addComponent("longitude", lonQuant);
 		
+//		recordStruct.addComponent("NumberOfCornerPoints", numCorners);
+		DataArray cornerArr = fac.newDataArray(4);
+		cornerArr.setDescription("Corners computed based on plane location and criteria set by Delta (encoded in LaxBoxGeometry class)");
+		cornerArr.setElementType("BoxCorner", cornerRec);
+//		cornerArr.setElementCount(numCorners);
+		recordStruct.addComponent("LawBoxCorners", cornerArr);
 
-		// Array of Turbulence Locations where turb exceeds thersh
+		// Vertical lower and upper altitude of LawBox
+		recordStruct.addField("LawBoxLowerAltitude", fac.newQuantity("http://earthcastwx.com/ont/swe/property/altitude", "LawBoxLowerCorner", null, "feet"));
+		recordStruct.addField("LawBoxUpperAltitude", fac.newQuantity("http://earthcastwx.com/ont/swe/property/altitude", "LawBoxLowerCorner", null, "feet"));
+
+
+		// Single Location of max Turb value in LawBox
 		Vector turbVector = geoHelper.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
 		turbVector.setLabel("Turbulence Hazard Location");
-		turbVector.setDescription("Location where turbulence exceeds threshold");
+		turbVector.setDescription("Location of max turbulence value exceeding threshold");
+		recordStruct.addComponent("MaxTurbulenceLocation", turbVector);
 
-		Count numTurbValues = fac.newCount(DataType.INT);
-		numTurbValues.setId("NUM_TURB_VALUES");
-		recordStruct.addComponent("numPoints",numTurbValues);
-		
-		DataArray turbArr = fac.newDataArray();
-		turbArr.setElementType("LocationVector", turbVector);
-		turbArr.setElementCount(numTurbValues);
-		recordStruct.addComponent("TurbulenceHazardArray", turbArr);		
-		
-		// Turbulence MAX location and value
-		Vector turbMaxVector = geoHelper.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
-		turbVector.setLabel("Turbulence Maximum Hazard Location");
-		turbVector.setDescription("Location of Maximum turbulence");
-		recordStruct.addField("turbulenceHazardValue", fac.newQuantity("http://earthcastwx.com/ont/swe/property/TurbulenceMaxHazardValue", "Turbulence", null, ""));
+		// Turbulence max value
+		Quantity maxTurbValue = fac.newQuantity("http://earthcastwx.com/ont/swe/property/TurbulenceMaxHazardValue", "Turbulence", null, "");
+		recordStruct.addField("MaxTurbulenceValue", maxTurbValue);
 
 		// Turbulence increasing/decreasing
 		//  +1 = increasing, -1 = decreasing, 0 = no change
-		recordStruct.addField("turbulenceChangeFlag", fac.newQuantity("http://earthcastwx.com/ont/swe/property/TurbulenceChangeFlag", "AirSpeed", null, ""));
+		recordStruct.addField("turbulenceChangeFlag", fac.newQuantity("http://earthcastwx.com/ont/swe/property/TurbulenceChangeFlag", "TurbulenceChangeFlag", null, ""));
+		
+		encoding = fac.newTextEncoding(",", "\n");
+
 	}
 
 	public void start() throws SensorHubException {
 		// Nothing to do 
 	}
 
-	public void sendLawBox()
+	public DataBlock sendLawBox(LawBox lawBox)
 	{                
-//		// build data block from FlightObject Record
-//		DataBlock dataBlock = recordStruct.createDataBlock();
-//		dataBlock.setDoubleValue(0, obj.getClock());
-//		dataBlock.setStringValue(1, obj.getOshFlightId());
-//
-//		dataBlock.setDoubleValue(2, obj.getValue(obj.lat));
-//		dataBlock.setDoubleValue(3, obj.getValue(obj.lon));
-//		dataBlock.setDoubleValue(4, obj.getValue(obj.alt));
-//		dataBlock.setDoubleValue(5, obj.getValue(obj.heading));
-//		dataBlock.setDoubleValue(6, obj.getValue(obj.speed));
-//
-//		// update latest record and send event
-//		latestRecord = dataBlock;
-//		latestRecordTime = System.currentTimeMillis();
-//		String flightUid = FlightAwareSensor.FLIGHT_POSITION_UID_PREFIX + oshFlightId;
-//		latestUpdateTimes.put(flightUid, obj.getClock());
-//		latestRecords.put(flightUid, latestRecord);   
-//		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, LawBoxOutput.this, dataBlock));        	
+		//		// build data block from FlightObject Record
+		//	 time, flightId, lawBox corners (array of 4 latLonALt Vectors), lawBoxLowerAlt, lawBoxUpperAlt 
+		//      turbHazard loacation (single LatLonAlt for now), maxHazardVal, incr/decr flag
+		DataBlock dataBlock = recordStruct.createDataBlock();
+		dataBlock.setDoubleValue(0, lawBox.position.getClock());
+		dataBlock.setStringValue(1, lawBox.position.getOshFlightId());
+
+		((DataBlockMixed)dataBlock).getUnderlyingObject()[2].setUnderlyingObject(lawBox.getBoundary());
+
+		dataBlock.setDoubleValue(10, lawBox.brBottomLla.alt);
+		dataBlock.setDoubleValue(11, lawBox.brTopLla.alt);
+		double [] maxLla = new double [] {
+			lawBox.maxCoordLla.lat,
+			lawBox.maxCoordLla.lon,				
+			lawBox.maxCoordLla.alt				
+		};
+		((DataBlockMixed)dataBlock).getUnderlyingObject()[5].setUnderlyingObject(maxLla);
+//		dataBlock.setDoubleValue(5, lawBox.maxCoordLla.lat);
+//		dataBlock.setDoubleValue(6, lawBox.maxCoordLla.lon);
+//		dataBlock.setDoubleValue(7, lawBox.maxCoordLla.alt);
+		dataBlock.setDoubleValue(15, lawBox.maxTurb);
+		dataBlock.setDoubleValue(16, lawBox.changeFlag);
+		//
+		//		// update latest record and send event
+		latestRecord = dataBlock;
+		latestRecordTime = System.currentTimeMillis();
+		String flightUid = FlightAwareSensor.FLIGHT_POSITION_UID_PREFIX + lawBox.position.getOshFlightId();
+		latestUpdateTimes.put(flightUid, lawBox.position.getClock());
+		latestRecords.put(flightUid, latestRecord);   
+		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, LawBoxOutput.this, dataBlock));
+
+		return dataBlock;
 	}
 
 	public double getAverageSamplingPeriod()
@@ -163,9 +182,28 @@ public class LawBoxOutput extends AbstractSensorOutput<FlightAwareSensor> implem
 
 	@Override
 	public DataBlock getLatestRecord(String entityID) {
-		//  Can't really generate this one
-		DataBlock b =  latestRecords.get(entityID);
-		return b;
-	}
+		DataBlock b = latestRecords.get(entityID);
+		//		if(b != null)
+		//			return b;
 
+		LawBox lawBox = null;
+		try {
+			int lastColon = entityID.lastIndexOf(':');
+			if(lastColon == -1) {
+				log.error("Malformed entityID in getLatestRecord.");
+				return null;
+			}
+			String oshFlighId = entityID.substring(lastColon + 1);
+			lawBox = parentSensor.getLawBox(oshFlighId);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if(lawBox == null) {
+			log.info("LawBoxOutput.getLatest():  Error Reading lawBox.");
+			return null;
+		}
+		DataBlock latestBlock = sendLawBox(lawBox);
+		return latestBlock;
+	}
 }

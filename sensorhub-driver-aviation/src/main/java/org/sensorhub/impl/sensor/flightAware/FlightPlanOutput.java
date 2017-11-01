@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
@@ -53,7 +54,7 @@ import net.opengis.swe.v20.Text;
  */
 public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareSensor> implements IMultiSourceDataInterface  
 {
-	private static final int AVERAGE_SAMPLING_PERIOD = 1; //(int)TimeUnit.SECONDS.toSeconds(5);
+	private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toMillis(15); 
 
 	DataRecord recordStruct;
 	DataEncoding encoding;	
@@ -91,7 +92,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareSensor> im
 		recordStruct.addComponent("time", fac.newTimeStampIsoGPS());
 
 		// flightIds
-		recordStruct.addComponent("flightId", fac.newText("", "flightId", "Internally generated flight desc (flightNum_DestAirport"));
+		recordStruct.addComponent("flightId", fac.newText("http://earthcastwx.com/ont/swe/property/flightId", "flightId", "Internally generated flight desc (flightNum_DestAirport"));
 
 		//  num of points
 		Count numPoints = fac.newCount(DataType.INT);
