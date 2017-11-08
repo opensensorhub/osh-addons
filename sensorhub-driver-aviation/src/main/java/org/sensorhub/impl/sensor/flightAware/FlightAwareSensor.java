@@ -79,7 +79,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	static final String FLIGHT_PLAN_UID_PREFIX = SENSOR_UID_PREFIX + "flightPlan:";
 	static final String FLIGHT_POSITION_UID_PREFIX = SENSOR_UID_PREFIX + "flightPosition:";
 	static final String TURBULENCE_UID_PREFIX = SENSOR_UID_PREFIX + "turbulence:";
-	static final String LAWBOX_UID_PREFIX = SENSOR_UID_PREFIX + "lawbox:";
+	static final String LAWBOX_UID_PREFIX = SENSOR_UID_PREFIX + "lawBox:";
 
 	// Listen for and ingest new Turbulence files so we can populate both 
 	// TurbulenceOutput and LawBoxOutput 
@@ -155,7 +155,6 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		thread.start();
 
 		//  start Turbulence output, which will start FileListener for GTGTURB files
-//		turbulenceOutput.start(config.turbulencePath);
 		startTurbulenceListener();
 	}
 
@@ -169,7 +168,6 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 			e.printStackTrace();
 			throw new SensorHubException("TurbulenceSensor could not create DirectoryWatcher...", e);
 		}
-
 	}
 
 	@Override
@@ -289,10 +287,17 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		addLawBoxFoi(oshFlightId, pos.getClock());
 		FlightObject prevPos = flightPositions.get(oshFlightId);
 		if(prevPos != null) {
+			// Calc vert change in ft/minute
+			Long prevTime = prevPos.getClock() ;
+			Long newTime = pos.getClock() ;
 			Double prevAlt = prevPos.getAltitude();
 			Double newAlt = pos.getAltitude();
-			if(prevAlt != null && newAlt != null) 
-				pos.verticalChange = prevAlt - newAlt;
+//			System.err.println(" ??? " + oshFlightId + ":" + prevAlt + "," + newAlt + "," + prevTime + "," + newTime);
+			if(prevAlt != null && newAlt != null && prevTime != null && newTime != null && (!prevTime.equals(newTime)) ) {
+				// check math here!!!
+				pos.verticalChange = (newAlt - prevAlt)/( (newTime - prevTime)/60.);
+//				System.err.println(" ***  " + oshFlightId + ":" + prevAlt + "," + newAlt + "," + prevTime + "," + newTime + " ==> " + pos.verticalChange);
+			}
 		}
 		flightPositions.put(oshFlightId, pos);
 		flightPositionOutput.sendPosition(pos, oshFlightId);
