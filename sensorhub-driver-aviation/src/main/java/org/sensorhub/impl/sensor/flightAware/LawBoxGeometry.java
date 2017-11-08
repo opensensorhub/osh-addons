@@ -50,7 +50,9 @@ public class LawBoxGeometry
 	Double verticalRate;  //  negative is descent
 	Double lat; 
 	Double lon;
-	String icaoCode;
+	String origIcao;  // if present, fix length 
+	Double origLat, origLon;
+	String destIcao;  // if present, fix length to max 100 mi w/i 100 mi
 	Double destLat, destLon;
 	Double heading;
 
@@ -75,7 +77,7 @@ public class LawBoxGeometry
 	}
 
 	public void setIcaoCode(String icaoCode) {
-		this.icaoCode = icaoCode;
+		this.origIcao = icaoCode;
 	}
 
 	public void setDestLat(Double destLat) {
@@ -132,7 +134,9 @@ public class LawBoxGeometry
 		LatLon fl = GeoUtil.getEndpoint(forwardLl.lat, forwardLl.lon, heading - 90., WIDTH, Units.NAUTICAL_MILES);
 
 		double topAlt = alt + up;
+		if(topAlt > 50_000.)  topAlt = 50_000;
 		double bottomAlt = alt - down;
+		if(bottomAlt < 0.)  bottomAlt = 0.;
 		lawBox.brTopLla = new LatLonAlt(br.lat, br.lon, topAlt); 
 		lawBox.brBottomLla = new LatLonAlt(br.lat, br.lon, bottomAlt); 
 		lawBox.blTopLla = new LatLonAlt(bl.lat, bl.lon, topAlt); 
@@ -147,7 +151,7 @@ public class LawBoxGeometry
 	public static void main(String[] args) throws Exception {
 		double lat = 30.;
 		double lon = -100.;
-		double alt = 10_000.;
+		double alt = 2_000.;
 		double groundSpeed = 300.;
 		double verticalRate = -8000;
 		double heading = 90.;

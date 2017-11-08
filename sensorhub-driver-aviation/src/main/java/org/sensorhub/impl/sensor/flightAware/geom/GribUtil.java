@@ -78,9 +78,9 @@ public class GribUtil
 		GeometryFactory geometryFactory = new GeometryFactory(pm);
 		
 		LineString line = geometryFactory.createLineString(coords);
-		System.err.println(line);
+//		System.err.println(line);
 		LineString l2 = (LineString)Densifier.densify(line, 1.);
-		System.err.println(l2);
+//		System.err.println(l2);
 		
 		return l2.getCoordinates();
 	}
@@ -97,9 +97,9 @@ public class GribUtil
 		GeometryFactory geometryFactory = new GeometryFactory(pm);
 		
 		LineString line = geometryFactory.createLineString(new Coordinate[] {start, stop});
-		System.err.println(line);
+		//System.err.println(line);
 		LineString l2 = (LineString)Densifier.densify(line, 1.);
-		System.err.println(l2);
+		//System.err.println(l2);
 		
 		return l2.getCoordinates();
 	}

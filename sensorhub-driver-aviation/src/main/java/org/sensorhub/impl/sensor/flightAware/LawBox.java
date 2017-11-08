@@ -63,7 +63,8 @@ public class LawBox
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
-		b.append(position.getTimeStr() + "\n");
+		if(position != null)
+			b.append(position.getTimeStr() + "\n");
 		b.append("brTop:" + brTopLla + "\n");
 		b.append("blTop:" + blTopLla + "\n");
 		b.append("flTop:" + flTopLla + "\n");

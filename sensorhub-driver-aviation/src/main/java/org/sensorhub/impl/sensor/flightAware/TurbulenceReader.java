@@ -211,18 +211,18 @@ public class TurbulenceReader
 		//		LawBoxGeometry geom = new LawBoxGeometry(pos);
 		LawBox lawBox = new LawBox(pos);
 		lawBox.computeBox();
-		System.err.println(pos);
-		System.err.println(lawBox);
+//		System.err.println(pos);
+//		System.err.println(lawBox);
 		
 		// to XY for 4 corners
 		Coordinate br = GribUtil.latLonToXY(gridCoordSystem, lawBox.brBottomLla);
 		Coordinate bl = GribUtil.latLonToXY(gridCoordSystem, lawBox.blBottomLla);
 		Coordinate fr = GribUtil.latLonToXY(gridCoordSystem, lawBox.frBottomLla);
 		Coordinate fl = GribUtil.latLonToXY(gridCoordSystem, lawBox.flBottomLla);
-		System.err.println(br);
-		System.err.println(bl);
-		System.err.println(fr);
-		System.err.println(fl);
+//		System.err.println(br);
+//		System.err.println(bl);
+//		System.err.println(fr);
+//		System.err.println(fl);
 
 		//  Check every pixel that could possibly be in the polygon defined by the four cornesr
 		PrecisionModel pm = new PrecisionModel(1.0);
@@ -233,7 +233,7 @@ public class TurbulenceReader
 		int miny = (int)GribUtil.min(corners, Coordinate.Y);
 		int maxx = (int)GribUtil.max(corners, Coordinate.X);
 		int maxy = (int)GribUtil.max(corners, Coordinate.Y);
-		System.err.println(minx + "," + miny + " ==> " + maxx + "," + maxy);
+//		System.err.println(minx + "," + miny + " ==> " + maxx + "," + maxy);
 		int bottom = getLevel((int)lawBox.brBottomLla.alt);
 		int top = getLevel((int)lawBox.brTopLla.alt);
 
@@ -250,11 +250,11 @@ public class TurbulenceReader
 				if(!(loc == Location.BOUNDARY || loc == Location.INTERIOR))
 					continue;
 				for(int z = bottom; z <= top; z++) {
-					System.err.println(c.x + "," + c.y + "," + z + " : " + turbData[(int)c.x][(int)c.y][z]);
+//					System.err.println(c.x + "," + c.y + "," + z + " : " + turbData[(int)c.x][(int)c.y][z]);
 					if(turbData[(int)c.x][(int)c.y][z] > lawBox.maxTurb) {
 						lawBox.maxTurb = turbData[(int)c.x][(int)c.y][z];
 						lawBox.maxCoordXYZ = new Coordinate((int)c.x, (int)c.y, (int)z);
-						System.err.println("new max: " + lawBox.maxTurb + " @ " + lawBox.maxCoordXYZ);
+//						System.err.println("new max: " + lawBox.maxTurb + " @ " + lawBox.maxCoordXYZ);
 					}
 				}
 
@@ -262,7 +262,7 @@ public class TurbulenceReader
 		}
 		LatLonPoint ll = gridCoordSystem.getLatLon((int)lawBox.maxCoordXYZ.x, (int)lawBox.maxCoordXYZ.y);
 		lawBox.maxCoordLla = new LatLonAlt(ll.getLatitude(), ll.getLongitude(), getAltitude((int)lawBox.maxCoordXYZ.z));
-		System.err.println("Final maxTurb, maxLoc: " + lawBox.maxTurb + "," + lawBox.maxCoordLla);
+//		System.err.println("Final maxTurb, maxLoc: " + lawBox.maxTurb + "," + lawBox.maxCoordLla);
 		return lawBox;
 	}
 
@@ -345,9 +345,6 @@ public class TurbulenceReader
 					System.err.println( j + "," + i + " : " + contains + " : " + within + " : " + loc);
 			}
 		}
-
-
-
 	}
 
 

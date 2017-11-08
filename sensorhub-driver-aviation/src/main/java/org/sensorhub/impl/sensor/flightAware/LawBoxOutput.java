@@ -138,7 +138,7 @@ public class LawBoxOutput extends AbstractSensorOutput<FlightAwareSensor> implem
 		//		// update latest record and send event
 		latestRecord = dataBlock;
 		latestRecordTime = System.currentTimeMillis();
-		String flightUid = FlightAwareSensor.FLIGHT_POSITION_UID_PREFIX + lawBox.position.getOshFlightId();
+		String flightUid = FlightAwareSensor.LAWBOX_UID_PREFIX + lawBox.position.getOshFlightId();
 		latestUpdateTimes.put(flightUid, lawBox.position.getClock());
 		latestRecords.put(flightUid, latestRecord);   
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, LawBoxOutput.this, dataBlock));
@@ -183,9 +183,7 @@ public class LawBoxOutput extends AbstractSensorOutput<FlightAwareSensor> implem
 	@Override
 	public DataBlock getLatestRecord(String entityID) {
 		DataBlock b = latestRecords.get(entityID);
-		//		if(b != null)
-		//			return b;
-
+	
 		LawBox lawBox = null;
 		try {
 			int lastColon = entityID.lastIndexOf(':');
@@ -203,6 +201,19 @@ public class LawBoxOutput extends AbstractSensorOutput<FlightAwareSensor> implem
 			log.info("LawBoxOutput.getLatest():  Error Reading lawBox.");
 			return null;
 		}
+		if(b != null) {
+			//  If requests are spaced out, this way of computing will not be reliable
+			//  Needs to be done for every active flight every time pos updates
+			Double prevTurb = b.getDoubleValue(15);
+			int prevMag = (int)(prevTurb * 10.0); 
+			int newMag = (int)(lawBox.maxTurb * 10.0);
+			if (prevMag == newMag) {
+				lawBox.changeFlag = 0;
+			} else {
+				lawBox.changeFlag = (newMag > prevMag) ? 1 : -1;				
+			}
+		}
+
 		DataBlock latestBlock = sendLawBox(lawBox);
 		return latestBlock;
 	}

@@ -82,53 +82,28 @@ public class UcarUtil
 		}
 	}
 	
-	public static void dumpVariableInfo(NetcdfFile file) throws IOException {
-		List<ucar.nc2.Variable> vars = file.getVariables();
-		Attribute att = file.findGlobalAttribute("time_coverage_start");
-		System.err.println(att);
-		att = file.findGlobalAttribute("time_coverage_end");
-		System.err.println(att);
-		System.err.println("==========   VARS  =================");
-
-		Array  azimuthArr;
-		Array reflArr;
-		Array gridXarr;
-		Array gridYarr;
-		float [][] reflData;
-		float [][] azimuthData;
-		double [] gridXdata;
-		double [] gridYdata;
-		for(ucar.nc2.Variable var : vars) {
-			System.err.println(var.getShortName());
-			System.err.println(var.getDescription());
-			List<ucar.nc2.Dimension> dims = var.getDimensions();
-			System.err.print("Dims: ");
-			for(Dimension dim: dims){
-				System.err.print(dim);
-			}
-			System.err.println("\ntype = " + var.getDataType());
-			System.err.println("rank = " + var.getRank());
-			System.err.println(var.getShortName());
-			if(var.getShortName().startsWith("azim")) {
-				azimuthArr = var.read();
-				azimuthData = (float [][])azimuthArr.copyToNDJavaArray();
-				System.err.println("-------------------");
-
-			}
-			if(var.getShortName().equals("BaseReflectivity")) {
-				reflArr = var.read();
-				reflData = (float [][])reflArr.copyToNDJavaArray();
-				System.err.println("-------------------");
-
-			}
-			System.err.println("-------------------");
-		}
+	private static Object  readVar(NetcdfFile ncFile, String varName) throws IOException {
+		Variable vtime = ncFile.findVariable(varName);
+		Array atime = vtime.read();
+		float [] alt = (float [])atime.copyTo1DJavaArray();
+		return alt;
 	}
+
 	
 	public static void main(String[] args) throws Exception {
-		NetcdfDataset ds = NetcdfDataset.openDataset("C:/Data/sensorhub/delta/gtgturb/ECT_NCST_DELTA_GTGTURB_6_5km.201710041430.grb2");
-		dumpAttributeInfo(ds);
-		List<String> vnames = getVariableNames(ds);
+//		NetcdfDataset ds = NetcdfDataset.openDataset("C:/Data/sensorhub/delta/CLDTOP/ECT_NCST_DELTA_CLDTOP_6_5km.201711021840.grb2");
+		NetcdfFile ncFile = NetcdfFile.open("C:/Data/sensorhub/delta/CLDTOP/ECT_NCST_DELTA_CLDTOP_6_5km.201711021930.grb2");
+		List<String> vnames = getVariableNames(ncFile);
+//		readVar(ncFile, "");
+//		readVar(ncFile, "altitude_above_msl");
+		float [] ctops = (float []) readVar(ncFile, "MergedReflectivityQComposite_altitude_above_msl");
+		float min = Float.MAX_VALUE;
+		float max = Float.MIN_VALUE;
+		for(float f: ctops) {
+			if(f < min)  min = f;
+			if(f > max)  max = f;
+		}
+		System.err.println(min + "  " + max);
 		for(String s: vnames)
 			System.err.println(s);
 	}
