@@ -27,6 +27,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimerTask;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.FoiEvent;
@@ -65,6 +66,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	TurbulenceOutput turbulenceOutput;
 	LawBoxOutput lawBoxOutput;
 	FlightAwareClient client;
+	FlightAwareClientMonitor clientMonitor;
 
 	// Helpers
 	SMLHelper smlFac = new SMLHelper();
@@ -153,6 +155,8 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		// Start firehose feed
 		Thread thread = new Thread(client);
 		thread.start();
+		
+//		clientMonitor = new FlightAwareClientMonitor(client);
 
 		//  start Turbulence output, which will start FileListener for GTGTURB files
 		startTurbulenceListener();
@@ -173,6 +177,9 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	@Override
 	public void stop() throws SensorHubException
 	{
+		if(clientMonitor != null)
+			clientMonitor.cancel();
+		
 		if (client != null)
 			client.stop();
 		client = null;
@@ -369,7 +376,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 			e.printStackTrace();
 		}
 	}
-
+	
 	@Override
 	public Collection<String> getEntityIDs()
 	{
