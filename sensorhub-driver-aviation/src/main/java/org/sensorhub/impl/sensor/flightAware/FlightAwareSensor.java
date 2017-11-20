@@ -113,7 +113,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	{
 		// IDs
 		this.uniqueID = "urn:osh:sensor:earthcast:flightAware";
-		this.xmlID = "EarthcastFltaware";
+		this.xmlID = "Earthcast";
 
 		// Initialize Outputs
 		// FlightPlan
@@ -206,6 +206,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 
 		// send event
 		long now = System.currentTimeMillis();
+		// TODO:  Check all recordTime and make sure in seconds and NOT ms!!!!
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
 		log.debug("New FlightPlan added as FOI: {} ; aircraftFois.size = {}", uid, flightAwareFois.size());

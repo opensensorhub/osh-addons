@@ -65,14 +65,16 @@ public class LawBox
 		StringBuilder b = new StringBuilder();
 		if(position != null)
 			b.append(position.getTimeStr() + "\n");
-		b.append("brTop:" + brTopLla + "\n");
-		b.append("blTop:" + blTopLla + "\n");
-		b.append("flTop:" + flTopLla + "\n");
-		b.append("frTop:" + frTopLla + "\n");
-		b.append("brBottom:" + brBottomLla + "\n");
-		b.append("blBottom:" + blBottomLla + "\n");
-		b.append("flBottom:" + flBottomLla + "\n");
-		b.append("frBottom:" + frBottomLla + "\n");
+		b.append("brTop: " + brTopLla + "\n");
+		b.append("blTop: " + blTopLla + "\n");
+		b.append("flTop: " + flTopLla + "\n");
+		b.append("frTop: " + frTopLla + "\n");
+		b.append("brBottom: " + brBottomLla + "\n");
+		b.append("blBottom: " + blBottomLla + "\n");
+		b.append("flBottom: " + flBottomLla + "\n");
+		b.append("frBottom: " + frBottomLla + "\n");
+		b.append("lowerBound: " + brBottomLla.alt + "\n");
+		b.append("upperBound: " + brTopLla.alt + "\n");
 		b.append("MaxTurb = " + maxTurb + "\n");
 		b.append("MaxCoordLL = " + maxCoordLla + "\n");
 		
