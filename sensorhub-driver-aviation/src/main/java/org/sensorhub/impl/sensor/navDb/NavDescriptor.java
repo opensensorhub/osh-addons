@@ -25,7 +25,7 @@ public class NavDescriptor extends JarModuleProvider implements IModuleProvider
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return NavSensor.class;
+        return NavDriver.class;
     }
 
     

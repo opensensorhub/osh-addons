@@ -42,15 +42,15 @@ import net.opengis.swe.v20.Text;
  * @author Tony Cook
  *
  */
-public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMultiSourceDataInterface 
+public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements IMultiSourceDataInterface 
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = 1;
 
-	DataRecord navStruct;
+	DataRecord struct;
 	DataEncoding encoding;	
 	Map<String, DataBlock> records = new LinkedHashMap<>();  // key is navDbEntry uid
 
-	public NavOutput(NavDriver parentSensor) throws IOException
+	public WaypointOutput(NavDriver parentSensor) throws IOException
 	{
 		super(parentSensor);
 	}
@@ -59,7 +59,7 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 	@Override
 	public String getName()
 	{
-		return "NavOutput";
+		return "WayptOutput";
 	}
 
 	protected void init()
@@ -69,21 +69,20 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 		//	 Structure is {id, name, lat, lon}
 
 		// SWE Common data structure
-		navStruct = fac.newDataRecord(4);
-		navStruct.setName(getName());
-//		navStruct.setDefinition("http://earthcastwx.com/ont/swe/property/xxx/BobsAirports"); // ??
-		navStruct.setDefinition("http://earthcastwx.com/ont/swe/property/airports"); // ??
+		struct = fac.newDataRecord(4);
+		struct.setName(getName());
+		struct.setDefinition("http://earthcastwx.com/ont/swe/property/waypoints"); // ??
 
-		Text id = fac.newText("http://sensorml.com/ont/swe/property/icaoCode", "ICAO Code", "ICAO airline code");
-		navStruct.addComponent("code", id);
+		Text id = fac.newText("http://sensorml.com/ont/swe/property/wayPtCode", "Waypt Code", "");
+		struct.addComponent("code", id);
 		//		Text type = fac.newText("http://sensorml.com/ont/swe/property/type", "Type", "Type (Waypoint/Navaid/etc.)" );
 		//		waypt.addComponent("type", type);
 		Text name = fac.newText("http://sensorml.com/ont/swe/property/name", "Name", "Long name" );
-		navStruct.addComponent("name", name);
+		struct.addComponent("name", name);
 		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Geodetic Latitude", null, "deg", DataType.DOUBLE);
-		navStruct.addComponent("lat", latQuant);
+		struct.addComponent("lat", latQuant);
 		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.DOUBLE);
-		navStruct.addComponent("lon", lonQuant);
+		struct.addComponent("lon", lonQuant);
 
 		// default encoding is text
 		encoding = fac.newTextEncoding(",", "\n");
@@ -133,17 +132,17 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 	{                
 
 		for(NavDbEntry rec: recs) {
-			DataBlock dataBlock = navStruct.createDataBlock();
+			DataBlock dataBlock = struct.createDataBlock();
 
 			dataBlock.setStringValue(0, rec.id);
 			dataBlock.setStringValue(1, rec.name);
 			dataBlock.setDoubleValue(2, rec.lat);
 			dataBlock.setDoubleValue(3, rec.lon);
 			// Do I need a map here
-			String uid = NavDriver.AIRPORTS_UID_PREFIX + rec.id;
+			String uid = NavDriver.WAYPOINTS_UID_PREFIX + rec.id;
 			records.put(uid, dataBlock);   
 			long time = System.currentTimeMillis();
-			eventHandler.publishEvent(new SensorDataEvent(time, uid, NavOutput.this, dataBlock));
+			eventHandler.publishEvent(new SensorDataEvent(time, uid, WaypointOutput.this, dataBlock));
 		}
 	}
 
@@ -156,7 +155,7 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 	@Override 
 	public DataComponent getRecordDescription()
 	{
-		return navStruct;
+		return struct;
 	}
 
 

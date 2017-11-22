@@ -42,7 +42,7 @@ import net.opengis.swe.v20.Text;
  * @author Tony Cook
  *
  */
-public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMultiSourceDataInterface 
+public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMultiSourceDataInterface 
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = 1;
 
@@ -50,7 +50,7 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 	DataEncoding encoding;	
 	Map<String, DataBlock> records = new LinkedHashMap<>();  // key is navDbEntry uid
 
-	public NavOutput(NavDriver parentSensor) throws IOException
+	public NavaidOutput(NavDriver parentSensor) throws IOException
 	{
 		super(parentSensor);
 	}
@@ -59,7 +59,7 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 	@Override
 	public String getName()
 	{
-		return "NavOutput";
+		return "NavaidOutput";
 	}
 
 	protected void init()
@@ -71,10 +71,9 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 		// SWE Common data structure
 		navStruct = fac.newDataRecord(4);
 		navStruct.setName(getName());
-//		navStruct.setDefinition("http://earthcastwx.com/ont/swe/property/xxx/BobsAirports"); // ??
-		navStruct.setDefinition("http://earthcastwx.com/ont/swe/property/airports"); // ??
+		navStruct.setDefinition("http://earthcastwx.com/ont/swe/property/navaids"); // ??
 
-		Text id = fac.newText("http://sensorml.com/ont/swe/property/icaoCode", "ICAO Code", "ICAO airline code");
+		Text id = fac.newText("http://sensorml.com/ont/swe/property/code", "navaid Code", "");
 		navStruct.addComponent("code", id);
 		//		Text type = fac.newText("http://sensorml.com/ont/swe/property/type", "Type", "Type (Waypoint/Navaid/etc.)" );
 		//		waypt.addComponent("type", type);
@@ -140,10 +139,10 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 			dataBlock.setDoubleValue(2, rec.lat);
 			dataBlock.setDoubleValue(3, rec.lon);
 			// Do I need a map here
-			String uid = NavDriver.AIRPORTS_UID_PREFIX + rec.id;
+			String uid = NavDriver.NAVAID_UID_PREFIX + rec.id;
 			records.put(uid, dataBlock);   
 			long time = System.currentTimeMillis();
-			eventHandler.publishEvent(new SensorDataEvent(time, uid, NavOutput.this, dataBlock));
+			eventHandler.publishEvent(new SensorDataEvent(time, uid, NavaidOutput.this, dataBlock));
 		}
 	}
 

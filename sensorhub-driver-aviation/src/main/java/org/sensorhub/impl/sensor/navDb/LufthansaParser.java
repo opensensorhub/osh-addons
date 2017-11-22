@@ -54,6 +54,7 @@ public class LufthansaParser
 	}
 
 	private static NavDbEntry parseAirport(String l) {
+		String region = l.substring(1,4);
 		String icao = l.substring(6, 10);
 		String lats = l.substring(32,41);
 		String lons = l.substring(41,51);
@@ -68,10 +69,12 @@ public class LufthansaParser
 		}
 		NavDbEntry airport = new NavDbEntry(Type.AIRPORT, icao, lat, lon);
 		airport.name = name;
+		airport.region = region;
 		return airport;
 	}
 
 	private static NavDbEntry parseWaypoint(String l) {
+		String region = l.substring(1,4);
 		String icao = l.substring(13, 18);
 		String lats = l.substring(32,41);
 		String lons = l.substring(41,51);
@@ -86,10 +89,12 @@ public class LufthansaParser
 		}
 		NavDbEntry waypoint = new NavDbEntry(Type.WAYPOINT, icao, lat, lon);
 		waypoint.name = name;
+		waypoint.region = region;
 		return waypoint;
 	}
 
 	private static NavDbEntry parseNavaid(String l) {
+		String region = l.substring(1,4);
 		String icao = l.substring(13, 17);
 		String lats = l.substring(32,41);
 		String lons = l.substring(41,51);
@@ -105,11 +110,12 @@ public class LufthansaParser
 
 		NavDbEntry navaid = new NavDbEntry(Type.NAVAID, icao, lat, lon);
 		navaid.name = name;
+		navaid.region = region;
 		return navaid;
 	}
 
 
-	public static List<NavDbEntry> getNavDbEntries(Path dbPath, List<String> regions,  Type ...types ) throws IOException {
+	public static List<NavDbEntry> getNavDbEntries(Path dbPath) throws IOException {
 		BufferedReader br = new BufferedReader(new FileReader(dbPath.toString()));
 		List<NavDbEntry> entries = new ArrayList<>();
 		int lineCnt = 1;
@@ -168,11 +174,30 @@ public class LufthansaParser
 			//				continue;
 //			System.err.println(entry.id+ "," + entry.name);
 			entries.add(entry);
-
-
 		}
 		return entries;
 	}
+	
+	public static List<NavDbEntry> filterEntries(List<NavDbEntry> entries, List<String> regions) throws IOException {
+		List<NavDbEntry> filtered = new ArrayList<>();
+		for(NavDbEntry e: entries) {
+			if(regions.contains(e.region))
+				filtered.add(e);
+		}
+		
+		return filtered;
+	}	
+
+	public static List<NavDbEntry> filterEntries(List<NavDbEntry> entries, Type t) throws IOException {
+		List<NavDbEntry> filtered = new ArrayList<>();
+		for(NavDbEntry e: entries) {
+			if(e.type == t)
+				filtered.add(e);
+		}
+		
+		return filtered;
+	}	
+
 
 	public static List<String> getDeltaIcaos(String filterPath) throws FileNotFoundException, IOException {
 		List<String> delta = new ArrayList<>();
@@ -189,11 +214,11 @@ public class LufthansaParser
 
 	public static List<NavDbEntry> getDeltaAirports(String dbPath, String deltaPath) throws Exception {
 		List<String> regions = new ArrayList<>();
-		List<NavDbEntry> airports = getNavDbEntries(Paths.get(dbPath), regions, Type.AIRPORT);
+		List<NavDbEntry> airports = getNavDbEntries(Paths.get(dbPath));
 		List<String> icaos = getDeltaIcaos(deltaPath);
 		List<NavDbEntry> deltaAirports = new ArrayList<>();
 		for(NavDbEntry a: airports) {
-			if(icaos.contains(a.id)) {
+			if(icaos.contains(a.id) && a.type == Type.AIRPORT) {
 				//				System.err.println( a);
 				deltaAirports.add(a);
 			}
@@ -203,8 +228,18 @@ public class LufthansaParser
 
 	public static void main(String[] args) throws Exception {
 		Path dbPath = Paths.get("C:/Users/tcook/root/sensorHub/delta/data/navDb/Lufthansa_ARINC424_1710_test.dat");
-		List<NavDbEntry> es = getNavDbEntries(dbPath, new ArrayList<String>());
-		for(NavDbEntry e:es)
+//		List<NavDbEntry> es = getNavDbEntries(dbPath);
+//		List<String> regs = new ArrayList<String>();
+//		regs.add("USA");
+//		List<NavDbEntry> ft = filterEntries(es, regs);
+//		List<NavDbEntry> tt = filterEntries(ft, Type.WAYPOINT);
+//		for(NavDbEntry e: tt)
+//			System.err.println(e);
+
+		Path deltaPath = Paths.get("C:/Users/tcook/root/sensorHub/delta/data/navDb/DeltaAirportFilter.csv");
+		List<NavDbEntry> ds = getDeltaAirports(dbPath.toString(), deltaPath.toString());
+		for(NavDbEntry e: ds)
 			System.err.println(e);
+		
 	}
 }

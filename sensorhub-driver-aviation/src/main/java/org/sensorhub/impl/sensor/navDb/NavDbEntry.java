@@ -24,6 +24,7 @@ public class NavDbEntry
 	Double lon;
 	String latStr;
 	String lonStr;
+	String region;  // Three char region id
 	
 	public NavDbEntry(Type type, String id, double lat, double lon) throws NumberFormatException{
 		this.type  = type;
@@ -36,6 +37,6 @@ public class NavDbEntry
 	
 	@Override
 	public String toString() {
-		return type + "," + icao + "," + id + ","  + name + "," + lat + "," + lon;
+		return type + "," + region + "," + icao + "," + id + ","  + name + "," + lat + "," + lon;
 	}
 }
