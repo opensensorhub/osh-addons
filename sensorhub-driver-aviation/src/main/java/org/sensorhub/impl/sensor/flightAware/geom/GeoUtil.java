@@ -15,6 +15,68 @@ import org.sensorhub.impl.sensor.flightAware.geom.GeoConstants.Units;
 
 public class GeoUtil
 {
+	public static void main(String[] args) {
+		LatLon ll1 = new LatLon(35.0,-90.0);
+		LatLon ll2 = new LatLon(35.0, -100.0);
+
+		double distance = distance(ll1.lat, ll1.lon, ll2.lat, ll2.lon);
+		double jdistanceOrig = jdistanceOrig(ll1.lat, ll1.lon, ll2.lat, ll2.lon);
+		double jdistanceNew = jdistanceNew(ll1.lat, ll1.lon, ll2.lat, ll2.lon);
+
+		System.err.println("Distance     = " + distance);
+		System.err.println("JDistancOrig = " + jdistanceOrig);
+		System.err.println("JDistancNew = " + jdistanceNew);
+
+		ll1 = new LatLon(35.0, -90.0);
+		ll2 = new LatLon(45.0, -90.0);
+
+		distance = distance(ll1.lat, ll1.lon, ll2.lat, ll2.lon);
+		jdistanceOrig = jdistanceOrig(ll1.lat, ll1.lon, ll2.lat, ll2.lon);
+		jdistanceNew = jdistanceNew(ll1.lat, ll1.lon, ll2.lat, ll2.lon);
+
+		System.err.println("\nDistance     = " + distance);
+		System.err.println("JDistancOrig = " + jdistanceOrig);
+		System.err.println("JDistancNew = " + jdistanceNew);
+
+
+	}
+
+	public static double jdistanceOrig(double lat1, double lon1, double lat2, double lon2) {
+		lat1 = lat1 * Math.PI / 180;
+		lat2 = lat2 * Math.PI / 180;
+
+		double latDelta = (lat2 - lat1) * Math.PI / 180;
+		double lonDelta = (lon2 - lon1) * Math.PI / 180;
+
+		double a = (Math.sin(latDelta / 2) * Math.sin(latDelta / 2)) +
+				Math.cos(lat1) * Math.cos(lat2) *
+				(Math.sin(lonDelta / 2) * Math.sin(lonDelta / 2));
+		double  c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+		double distance = GeoConstants.EARTH_RADIUS_MILES * c;
+
+		return distance;
+	}
+
+	public static double jdistanceNew(double lat1, double lon1, double lat2, double lon2) {
+		lat1 = lat1 * Math.PI / 180;
+		lat2 = lat2 * Math.PI / 180;
+		lon1 = lon1 * Math.PI / 180;
+		lon2 = lon2 * Math.PI / 180;
+
+		double latDelta = (lat2 - lat1);
+		double lonDelta = (lon2 - lon1);
+
+		double a = (Math.sin(latDelta / 2) * Math.sin(latDelta / 2)) +
+				Math.cos(lat1) * Math.cos(lat2) *
+				(Math.sin(lonDelta / 2) * Math.sin(lonDelta / 2));
+		double  c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+		double distance = GeoConstants.EARTH_RADIUS_MILES * c;
+
+		return distance;
+	}
+
 	public static double distance(double lat1, double lon1, double lat2, double lon2, GeoConstants.Units units) {
 		double lat1r = Math.toRadians(lat1);
 		double lon1r = Math.toRadians(lon1);
@@ -42,39 +104,39 @@ public class GeoUtil
 	public static BboxXY getBoundingBox(double latCenter, double lonCenter, double radiusMiles) {
 		return getBoundingBox(latCenter, lonCenter, radiusMiles, GeoConstants.Units.STATUTE_MILES);
 	}
-	
+
 	public static BboxXY getBoundingBox(double latCenter, double lonCenter, double radius, GeoConstants.Units units) {
 		//  compute four cardinal directions and construct Bbox from this info
 		LatLon northLL = getEndpoint(latCenter, lonCenter, 0.0, radius, units);
 		LatLon eastLL = getEndpoint(latCenter, lonCenter, 90.0, radius, units);
 		LatLon southLL = getEndpoint(latCenter, lonCenter, 180.0, radius, units);
 		LatLon westLL = getEndpoint(latCenter, lonCenter, 270.0, radius,units);
-		
+
 		BboxXY bbox = new BboxXY(westLL.lon, southLL.lat, eastLL.lon, northLL.lat);
 		return bbox;
 	}
-	
+
 	public static LatLon getEndpoint(double lat, double lon, double bearing, double distance, GeoConstants.Units units) {
 		double bearingR = Math.toRadians(bearing);
 		double latR = Math.toRadians(lat);
 		double lonR = Math.toRadians(lon);
-		
+
 		// convert to Km
 		double distanceKm = GeoConstants.toKm(distance, units);
 		// normalize
 		double distanceNorm = distanceKm/GeoConstants.EARTH_RADIUS_KM;
-		
+
 		//lat2 = math.asin( math.sin(lat1)*math.cos(d/R) +  math.cos(lat1)*math.sin(d/R)*math.cos(brng))
 		double latEndR = Math.asin( Math.sin(latR) * Math.cos(distanceNorm) + Math.cos(latR) * Math.sin(distanceNorm) * Math.cos(bearingR ) );
 
 		//lon2 = lon1 + math.atan2(math.sin(brng)*math.sin(d/R)*math.cos(lat1), math.cos(d/R)-math.sin(lat1)*math.sin(lat2))
 		double lonEndR = Math.atan2(Math.sin(bearingR) * Math.sin(distanceNorm) * Math.cos(latR), Math.cos(distanceNorm) - Math.sin(latR) * Math.sin(latEndR) );
 		lonEndR += lonR;
-		
+
 		return new LatLon(Math.toDegrees(latEndR), Math.toDegrees(lonEndR));
 	}
-	
-	
+
+
 	public static double getBearing(double lat1, double lon1, double lat2, double lon2) {
 		lat1 = Math.toRadians(lat1);
 		lat2 = Math.toRadians(lat2);
@@ -85,7 +147,7 @@ public class GeoUtil
 		double bearing = Math.toDegrees(Math.atan2(y, x));
 		return bearing;
 	}
-	
+
 	/**
 	 * Given a lat-lon center point and a distance, return the smallest radius that encloses all cardinal points 
 	 * that are the given distance away from the center point. 
@@ -101,16 +163,16 @@ public class GeoUtil
 		LatLon eastLL = getEndpoint(latCenter, lonCenter, 90.0, distance, units);
 		LatLon southLL = getEndpoint(latCenter, lonCenter, 180.0, distance, units);
 		LatLon westLL = getEndpoint(latCenter, lonCenter, 270.0, distance,units);
-		
+
 		double delNorth = Math.abs(northLL.lat - latCenter);
 		double delSouth = Math.abs(southLL.lat - latCenter);
 		double delEast = Math.abs(eastLL.lon - lonCenter);
 		double delWest = Math.abs(westLL.lon - lonCenter);
-		
+
 		double disEw = distance(eastLL.lat, eastLL.lon, latCenter, lonCenter, Units.STATUTE_MILES);
 		double disNs = distance(latCenter + delEast, lonCenter , latCenter, lonCenter, Units.STATUTE_MILES);
 		System.err.println("Distance: " + disNs + " : " + disEw);
-		
+
 		//  in order to ensure our value to Mongo geoWithin function doesn't miss any points, 
 		//  need to just the largest of the 4 values above.
 		//  Of course, this means Mongo will return points that are outside of the distance radius, so they will ahve to be filtered out.
@@ -124,16 +186,16 @@ public class GeoUtil
 		if(ll.lon < -180.0 || ll.lon > 180.0)  return false;
 		return true;
 	}
-	
+
 	public static long test(int numPoints) {
 		LatLon [] ll = new LatLon[numPoints];
 		LatLon test = new LatLon(35.0, -85.0);
-		
+
 		for(int i=0;i< numPoints; i++ ) {
 			double random = Math.random();
 			ll[i] = new LatLon(90.0 * random, -180.0*random);
 		}
-		
+
 		long t1 = System.currentTimeMillis();
 		int match = 0;
 		double thresh = 1000.0;
@@ -147,29 +209,29 @@ public class GeoUtil
 		return t2 - t1;
 	}
 
-	public static void main(String[] args) {
-//		GeoUtil.test(1000000);
+	public static void main_(String[] args) {
+		//		GeoUtil.test(1000000);
 
-//		LatLon ll = new LatLon(16.42, -92);
-//		LatLon ll2 = getEndpoint(ll.lat, ll.lon, 202, 70, Units.STATUTE_MILES);
-//		System.err.println(ll2);
-//		
-		LatLon ll1 = new LatLon( 30.0,-90.000005);
-		LatLon ll2 = new LatLon(30.0, -90.0);
+		//		LatLon ll = new LatLon(16.42, -92);
+		//		LatLon ll2 = getEndpoint(ll.lat, ll.lon, 202, 70, Units.STATUTE_MILES);
+		//		System.err.println(ll2);
+		//		
+		LatLon ll1 = new LatLon( 30.0,-90.10);
+		LatLon ll2 = new LatLon(30.0, -90.11);
 		double distance = distance(ll1.lat, ll1.lon, ll2.lat, ll2.lon, Units.STATUTE_MILES);
-		distance *= GeoConstants.STATUTEMILES_TO_FEET;
+		//		distance *= GeoConstants.STATUTEMILES_TO_FEET;
 		System.err.println("Distance = " + distance);
-		System.err.println("Bearing = " + getBearing(ll1.lat, ll1.lon, ll2.lat, ll2.lon));
-		
-		LatLon testLL = new LatLon( 42.2801,-85.6454);
-		BboxXY bbox = getBoundingBox(testLL.lat, testLL.lon, 40);
-		System.err.println(bbox);
-		System.err.println(bbox.minX + "," + bbox.minY + "," + bbox.maxX + "," +  bbox.maxY);
-		
-//		LatLon testLL = new LatLon( 45.0, -100.0);
-//		double radius = getRadiusRadians(testLL.lat, testLL.lon, 25.0, Units.STATUTE_MILES);
-//		System.err.println(radius);
-		
+		//		System.err.println("Bearing = " + getBearing(ll1.lat, ll1.lon, ll2.lat, ll2.lon));
+		//		
+		//		LatLon testLL = new LatLon( 42.2801,-85.6454);
+		//		BboxXY bbox = getBoundingBox(testLL.lat, testLL.lon, 40);
+		//		System.err.println(bbox);
+		//		System.err.println(bbox.minX + "," + bbox.minY + "," + bbox.maxX + "," +  bbox.maxY);
+
+		//		LatLon testLL = new LatLon( 45.0, -100.0);
+		//		double radius = getRadiusRadians(testLL.lat, testLL.lon, 25.0, Units.STATUTE_MILES);
+		//		System.err.println(radius);
+
 	}
 
 }

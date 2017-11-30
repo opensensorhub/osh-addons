@@ -31,7 +31,7 @@ public class NavDbEntry
 		this.id = id.trim();
 		this.lat = lat;
 		this.lon = lon;
-		if(type == Type.AIRPORT)
+		if(type == Type.AIRPORT || type == Type.WAYPOINT)
 			icao = id;
 	}
 	

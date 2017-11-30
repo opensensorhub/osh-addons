@@ -89,57 +89,6 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareSensor> im
 		return "Turbulence profile data";
 	}
 
-	protected void initNumPointsPlusArray()
-	{
-		SWEHelper fac = new SWEHelper();
-
-		//  Add top level structure for flight plan
-		//	 numPoints?   array of time, lat, lon, numPoints, float[] turbVal
-		recordStruct = fac.newDataRecord(2);  // 1 big array
-		recordStruct.setName(getName());
-		recordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/turbulenceProfile"); // ??
-
-		// SWE Common data structure
-		//  num of points- can client infer this or do we have to iunclude?
-		Count numPoints = fac.newCount(DataType.INT);
-		numPoints.setId("NUM_POINTS");
-		recordStruct.addComponent("numPoints",numPoints);
-
-		// profiles == time, lat, lon, numPoints, float[]
-		DataComponent profiles = fac.newDataRecord();
-
-		//  turbARr = [] of profiles
-		DataArray turbArr = fac.newDataArray();
-		turbArr.setElementType("TurbulenceProfiles", profiles);
-		turbArr.setElementCount(numPoints);
-		recordStruct.addComponent("TurbulenceProfiles", turbArr);
-
-		profiles.addComponent("time", fac.newTimeStampIsoGPS());
-		Text code = fac.newText("http://sensorml.com/ont/swe/property/code", "ICAO Code", "Typically, ICAO airline code plus IATA/ticketing flight number");
-		profiles.addComponent("WaypointName", code);
-		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Latitude", null, "deg", DataType.DOUBLE);
-		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitde", "Longitde", null, "deg", DataType.DOUBLE);
-		profiles.addComponent("Latitude", latQuant);
-		profiles.addComponent("Longitude", lonQuant);
-
-		// TODO, add alt? altitude level of each profile point?
-		
-		//  Vertical Profile
-		Count turbulencePoints = fac.newCount(DataType.INT);
-		turbulencePoints.setDefinition("http://sensorml.com/ont/swe/property/NumberOfSamples"); 
-		turbulencePoints.setId("PROFILE_POINTS");
-		profiles.addComponent("numTurbulencePoints",turbulencePoints);
-
-		//  Turb values
-		Quantity valuesQuant = fac.newQuantity("http://earthcastwx.com/ont/swe/property/TurbulenceValues", "Turbulence Profile Values", null, "", DataType.FLOAT);
-		DataArray valuesArr = fac.newDataArray();
-		valuesArr.setElementType("Turbulence", valuesQuant);
-		valuesArr.setElementCount(turbulencePoints);
-		profiles.addComponent("TurbulenceProfile", valuesArr);
-
-		encoding = fac.newTextEncoding(",", "\n");
-	}
-
 	protected void init()
 	{
 		SWEHelper fac = new SWEHelper();

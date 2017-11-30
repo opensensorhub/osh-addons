@@ -69,7 +69,7 @@ public class FlightPlan
 			return name + "," + type + "," + lat + "," + lon;
 		}
 	}
-
+	
 	public float [] getLats() {
 		float[] lats = new float[waypoints.size()];
 		int i=0;
