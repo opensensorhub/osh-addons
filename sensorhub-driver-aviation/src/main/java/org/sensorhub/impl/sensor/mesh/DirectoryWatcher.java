@@ -40,14 +40,13 @@ public class DirectoryWatcher implements Runnable
 
 	@Override
 	public void run()  { //, InterruptedException {
-		while (true) {
+		while (!Thread.currentThread().isInterrupted()) {
 			WatchKey watchKey;
 			try {
 				watchKey = watcher.take();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				continue;
+			    Thread.currentThread().interrupt();
+			    continue;
 			} 
 			List<WatchEvent<?>> events = watchKey.pollEvents();
 
