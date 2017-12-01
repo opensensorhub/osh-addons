@@ -59,7 +59,7 @@ public class DirectoryWatcher implements Runnable
 				WatchEvent<Path> ev = (WatchEvent<Path>) event;
 				Path filename = ev.context();
 
-				System.out.println(kind.name() + ": " + filename);
+				//System.out.println(kind.name() + ": " + filename);
 
 //				if (kind == StandardWatchEventKinds.ENTRY_CREATE ) {
 					for(FileListener l: listeners) {
