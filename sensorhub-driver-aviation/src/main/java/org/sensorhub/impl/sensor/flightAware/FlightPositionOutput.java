@@ -19,7 +19,7 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.Vector;
 
-public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareSensor> implements IMultiSourceDataInterface  
+public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver> implements IMultiSourceDataInterface  
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = 30;
 
@@ -29,7 +29,7 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareSensor
 	Map<String, Long> latestUpdateTimes = new LinkedHashMap<>();
 	Map<String, DataBlock> latestRecords = new LinkedHashMap<>();  // key is position uid
 
-	public FlightPositionOutput(FlightAwareSensor parentSensor) 
+	public FlightPositionOutput(FlightAwareDriver parentSensor) 
 	{
 		super(parentSensor);
 	}
@@ -95,7 +95,7 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareSensor
 		// update latest record and send event
 		latestRecord = dataBlock;
 		latestRecordTime = System.currentTimeMillis();
-		String flightUid = FlightAwareSensor.FLIGHT_POSITION_UID_PREFIX + oshFlightId;
+		String flightUid = FlightAwareDriver.FLIGHT_POSITION_UID_PREFIX + oshFlightId;
 		latestUpdateTimes.put(flightUid, obj.getClock());
 		latestRecords.put(flightUid, latestRecord);   
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPositionOutput.this, dataBlock));        	

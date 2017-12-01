@@ -14,6 +14,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -25,21 +27,18 @@ public class FlightAwareApi
 	private final static String BASE_URL = "http://flightxml.flightaware.com/json/FlightXML2/";
 	private final static String METAR_URL = BASE_URL + "MetarEx?airport=KAUS&startTime=0&howMany=1&offset=0";
 	private final static String InFlightInfo_URL = BASE_URL + "InFlightInfo?";
-	//	private final static String API_URL = "http://flightxml.flightaware.com/json/FlightXML2/FlightInfoEx?ident=SKW3300";
-	// Not working with faFlightId or ident
 	private final static String DecodeFlightRoute_URL = BASE_URL + "DecodeFlightRoute?"; // faFlightID=DAL1323-1506576332-airline-0231";
-	//	private final static String API_URL = "http://flightxml.flightaware.com/json/FlightXML2/DecodeFlightRoute?ident=SWA1878&departureTime=1506101700";
 	private final static String GetFlightID_URL = BASE_URL + "GetFlightID?ident=SWA1878&departureTime=1506101700";
 	private final static String Enroute_URL = BASE_URL + "Enroute?";
-//	private final static String Enroute_URL_test = BASE_URL + "Enroute?airport=KAUS&howMany=10&filter=airline";
 	private final static String Scheduled_URL = BASE_URL + "Scheduled?airport=KAUS&howMany=10&filter=airline";
 	private final static String AirlineInfo_URL = BASE_URL + "AirlineInfo?airlineCode=DAL";
 	private final static String FlightInfoEx_URL = BASE_URL + "FlightInfoEx?";
 	String user; // = "drgregswilson";
 	//	String euser = "earthcast";
 	String passwd; // = "2809b6196a2cfafeb89db0a00b117ac67e876220";
-	static Log log = LogFactory.getLog(Class.class);
+	static final Logger log = LoggerFactory.getLogger(FlightAwareApi.class);
 
+	@Deprecated //  Should always pass these in from config
 	public FlightAwareApi() {
 		this("drgregswilson", "2809b6196a2cfafeb89db0a00b117ac67e876220");
 	}	
@@ -51,7 +50,6 @@ public class FlightAwareApi
 	public static String toJson(Object object) {
 		Gson gson = new  GsonBuilder().setPrettyPrinting().create();
 		String json =  gson.toJson(object);
-		System.out.println(json);
 		return json;
 	}
 
@@ -107,7 +105,7 @@ public class FlightAwareApi
 		String json = invokeNew(DecodeFlightRoute_URL + "faFlightID=" + id);
 //		System.err.println(DecodeFlightRoute_URL + "faFlightID=" + id);
 		if(json.contains("error")) {
-			System.err.println("FlightPlan.getFlightPlan(): Whoops: " + json);
+			log.debug("FlightPlan.getFlightPlan(): Whoops for faFlightId  {} : {}", id,json);
 			return null;
 		}
 		DecodeFlightResult decodedInfo = (DecodeFlightResult)fromJson(json, DecodeFlightResult.class);
@@ -116,7 +114,7 @@ public class FlightAwareApi
 		plan.faFlightId = id;
 		int dashIdx = id.indexOf('-'); 
 		if(dashIdx == -1) {
-			System.err.println("FltawareApi.getFltPlan(): Don't understand faFlightId: " + id);
+			log.debug("FltawareApi.getFltPlan(): Don't understand faFlightId: {} ", id);
 		}
 		String ident = id.substring(0, dashIdx);
 		plan.oshFlightId = ident + "_" + plan.destinationAirport;
@@ -149,8 +147,6 @@ public class FlightAwareApi
 		plan.dump();
 //		System.err.println(decodedInfo);
 		System.err.println(plan);
-
-		//		String json = api.invokeNew(Enroute_URL, "airport=KAUS", "howMany=10","filter=airline");
 		
 		
 //		json = api.invokeNew(InFlightInfo_URL, "ident=DAL1323");

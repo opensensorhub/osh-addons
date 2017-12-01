@@ -52,7 +52,7 @@ import net.opengis.swe.v20.Text;
  * TODO- add zulu time output somewhere
  *
  */
-public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareSensor> implements IMultiSourceDataInterface  
+public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> implements IMultiSourceDataInterface  
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toMillis(15); 
 
@@ -62,7 +62,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareSensor> im
 	Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
 
 
-	public FlightPlanOutput(FlightAwareSensor parentSensor) 
+	public FlightPlanOutput(FlightAwareDriver parentSensor) 
 	{
 		super(parentSensor);
 		latestUpdateTimes = new HashMap<String, Long>();
@@ -151,7 +151,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareSensor> im
 		// update latest record and send event
 		latestRecord = dataBlock;
 		latestRecordTime = System.currentTimeMillis();
-		String flightUid = FlightAwareSensor.FLIGHT_PLAN_UID_PREFIX + plan.oshFlightId;
+		String flightUid = FlightAwareDriver.FLIGHT_PLAN_UID_PREFIX + plan.oshFlightId;
 		latestUpdateTimes.put(flightUid, plan.time);
 		latestRecords.put(flightUid, latestRecord);   
 //		DataBlock b = latestRecords.get("DAL2152_KSLC");

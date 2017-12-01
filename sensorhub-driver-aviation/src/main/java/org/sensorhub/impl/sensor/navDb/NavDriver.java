@@ -45,6 +45,8 @@ import net.opengis.sensorml.v20.AbstractProcess;
  * @author tcook
  * @since Nov, 2017
  * 
+ * TODO: clean up and remove redundant code
+ * 
  */
 public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMultiSourceDataProducer  
 {
@@ -171,6 +173,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 			List<NavDbEntry> es = LufthansaParser.getNavDbEntries(Paths.get(config.navDbPath));
 			List<String> regs = new ArrayList<String>();
 			regs.add("USA");
+			regs.add("CAN");
 			List<NavDbEntry> fregs = LufthansaParser.filterEntries(es, regs);
 			List<NavDbEntry> ftype = LufthansaParser.filterEntries(fregs, Type.NAVAID);
 			//  add FOIS, one per airport
@@ -209,6 +212,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 			List<NavDbEntry> es = LufthansaParser.getNavDbEntries(Paths.get(config.navDbPath));
 			List<String> regs = new ArrayList<String>();
 			regs.add("USA");
+			regs.add("CAN");
 			List<NavDbEntry> freg = LufthansaParser.filterEntries(es, regs);
 			List<NavDbEntry> ftype = LufthansaParser.filterEntries(freg, Type.WAYPOINT);
 			//  add FOIS, one per airport

@@ -28,7 +28,7 @@ import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Vector;
 import ucar.ma2.InvalidRangeException;
 
-public class LawBoxOutput extends AbstractSensorOutput<FlightAwareSensor> implements IMultiSourceDataInterface  
+public class LawBoxOutput extends AbstractSensorOutput<FlightAwareDriver> implements IMultiSourceDataInterface  
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toSeconds(15); 
 
@@ -38,7 +38,7 @@ public class LawBoxOutput extends AbstractSensorOutput<FlightAwareSensor> implem
 	Map<String, Long> latestUpdateTimes = new LinkedHashMap<>();
 	Map<String, DataBlock> latestRecords = new LinkedHashMap<>();  //
 
-	public LawBoxOutput(FlightAwareSensor parentSensor) 
+	public LawBoxOutput(FlightAwareDriver parentSensor) 
 	{
 		super(parentSensor);
 	}
@@ -138,7 +138,7 @@ public class LawBoxOutput extends AbstractSensorOutput<FlightAwareSensor> implem
 		//		// update latest record and send event
 		latestRecord = dataBlock;
 		latestRecordTime = System.currentTimeMillis();
-		String flightUid = FlightAwareSensor.LAWBOX_UID_PREFIX + lawBox.position.getOshFlightId();
+		String flightUid = FlightAwareDriver.LAWBOX_UID_PREFIX + lawBox.position.getOshFlightId();
 		latestUpdateTimes.put(flightUid, lawBox.position.getClock());
 		latestRecords.put(flightUid, latestRecord);   
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, LawBoxOutput.this, dataBlock));

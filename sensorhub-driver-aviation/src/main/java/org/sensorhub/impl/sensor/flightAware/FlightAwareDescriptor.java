@@ -25,7 +25,7 @@ public class FlightAwareDescriptor extends JarModuleProvider implements IModuleP
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return FlightAwareSensor.class;
+        return FlightAwareDriver.class;
     }
 
     

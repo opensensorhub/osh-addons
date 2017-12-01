@@ -78,7 +78,7 @@ public class LufthansaParser
 		if(l.contains("DLREY"))
 			System.err.println("b");
 		String region = l.substring(1,4);
-		String id = l.substring(13, 18);
+		String id = l.substring(13, 18).trim();
 		String lats = l.substring(32,41);
 		String lons = l.substring(41,51);
 		String name = l.substring(98,122).trim();
@@ -100,7 +100,7 @@ public class LufthansaParser
 	private static NavDbEntry parseTerminalWaypoint(String l) {
  		String region = l.substring(1,4);
 		String icao = l.substring(6, 10);
-		String id= l.substring(13, 18);
+		String id= l.substring(13, 18).trim();
 		String lats = l.substring(32,41);
 		String lons = l.substring(41,51);
 		String name = l.substring(98,122).trim();
@@ -122,7 +122,7 @@ public class LufthansaParser
 
 	private static NavDbEntry parseNavaid(String l) {
 		String region = l.substring(1,4);
-		String icao = l.substring(13, 17);
+		String icao = l.substring(13, 17).trim();
 		String lats = l.substring(32,41);
 		String lons = l.substring(41,51);
 		String name = l.substring(93,123).trim();
@@ -138,6 +138,7 @@ public class LufthansaParser
 		NavDbEntry navaid = new NavDbEntry(Type.NAVAID, icao, lat, lon);
 		navaid.name = name;
 		navaid.region = region;
+		navaid.id = icao;
 		return navaid;
 	}
 
@@ -271,8 +272,10 @@ public class LufthansaParser
 		Path deltaPath = Paths.get("C:/Users/tcook/root/sensorHub/delta/data/navDb/DeltaAirportFilter.csv");
 //		List<NavDbEntry> ds = getDeltaAirports(dbPath.toString(), deltaPath.toString());
 		List<NavDbEntry> ds =  getNavDbEntries(dbPath);
-		for(NavDbEntry e: ds)
-			System.err.println(e);
+		for(NavDbEntry e: ds) {
+			if(e.type == Type.WAYPOINT)
+				System.err.println(e.id + "," + e.name + "," + e.lat + "," + e.lon);
+		}
 		
 	}
 }

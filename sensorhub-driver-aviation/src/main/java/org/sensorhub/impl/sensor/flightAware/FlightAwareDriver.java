@@ -48,22 +48,18 @@ import ucar.ma2.InvalidRangeException;
 /**
  * 
  * @author tcook
- * @since oCT 1, 2017
+ * @since Oct 1, 2017
  * 
  * TODO:   
- * java.util.ConcurrentModificationException: null
-        at java.util.LinkedHashMap$LinkedHashIterator.nextNode(LinkedHashMap.java:719) ~[na:1.8.0_131]
-        at java.util.LinkedHashMap$LinkedValueIterator.next(LinkedHashMap.java:747) ~[na:1.8.0_131]
-        at java.util.Collections$UnmodifiableCollection$1.next(Collections.java:1042) ~[na:1.8.0_131]
-        at org.sensorhub.impl.service.sos.FoiUtils.updateFois(FoiUtils.java:51) ~[s
- *
+ *		Separate FlightPlan and Turbulence- leaving most of the code in for now until 
+ *      I get a chance to clean it up
  */
-public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> implements IMultiSourceDataProducer,
+public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> implements IMultiSourceDataProducer,
 	FlightPlanListener, PositionListener, FileListener
 {
 	FlightPlanOutput flightPlanOutput;
 	FlightPositionOutput flightPositionOutput;
-	TurbulenceOutput turbulenceOutput;
+//	TurbulenceOutput turbulenceOutput;
 	LawBoxOutput lawBoxOutput;
 	FlightAwareClient client;
 	FlightAwareClientMonitor clientMonitor;
@@ -83,19 +79,18 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 	static final String TURBULENCE_UID_PREFIX = SENSOR_UID_PREFIX + "turbulence:";
 	static final String LAWBOX_UID_PREFIX = SENSOR_UID_PREFIX + "lawBox:";
 
-	// Listen for and ingest new Turbulence files so we can populate both 
-	// TurbulenceOutput and LawBoxOutput 
+	// Listen for and ingest new Turbulence files so we can populate LawBoxOutput 
 	private TurbulenceReader turbReader;
 	Thread watcherThread;
 	private DirectoryWatcher watcher;
 
-	static final Logger log = LoggerFactory.getLogger(FlightAwareSensor.class);
+	static final Logger log = LoggerFactory.getLogger(FlightAwareDriver.class);
 
-	public FlightAwareSensor() {
+	public FlightAwareDriver() {
 		this.foiIDs = new LinkedHashSet<String>();
-		this.flightAwareFois = new LinkedHashMap<String, AbstractFeature>();
-		this.aircraftDesc = new LinkedHashMap<String, AbstractFeature>();
-		this.flightPositions = new LinkedHashMap<String, FlightObject>();
+		this.flightAwareFois = Collections.synchronizedMap(new LinkedHashMap<String, AbstractFeature>());
+		this.aircraftDesc = Collections.synchronizedMap(new LinkedHashMap<String, AbstractFeature>());
+		this.flightPositions = Collections.synchronizedMap(new LinkedHashMap<String, FlightObject>());
 	}
 
 	@Override
@@ -104,7 +99,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		synchronized (sensorDescLock)
 		{
 			super.updateSensorDescription();
-			sensorDescription.setDescription("Delta FlightPlan network");
+			sensorDescription.setDescription("Delta FlightAware feed");
 		}
 	}
 
@@ -127,9 +122,9 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		flightPositionOutput.init();
 
 		// Turbulence
-		this.turbulenceOutput= new TurbulenceOutput(this);
-		addOutput(turbulenceOutput, false);
-		turbulenceOutput.init();
+//		this.turbulenceOutput= new TurbulenceOutput(this);
+//		addOutput(turbulenceOutput, false);
+//		turbulenceOutput.init();
 
 		// LawBox
 		this.lawBoxOutput= new LawBoxOutput(this);
@@ -143,7 +138,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		// Configure Firehose feed- 
 		String machineName = "firehose.flightaware.com";
 		client = new FlightAwareClient(machineName, config.userName, config.password);
-		client.messageTypes.add("flightplan");
+//		client.messageTypes.add("flightplan");
 		client.messageTypes.add("position");
 
 		//  And message Converter
@@ -156,7 +151,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		Thread thread = new Thread(client);
 		thread.start();
 		
-//		clientMonitor = new FlightAwareClientMonitor(client);
+		clientMonitor = new FlightAwareClientMonitor(client);
 
 		//  start Turbulence output, which will start FileListener for GTGTURB files
 		startTurbulenceListener();
@@ -209,7 +204,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		// TODO:  Check all recordTime and make sure in seconds and NOT ms!!!!
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
-		log.debug("New FlightPlan added as FOI: {} ; aircraftFois.size = {}", uid, flightAwareFois.size());
+		log.trace("New FlightPlan added as FOI: {} ; aircraftFois.size = {}", uid, flightAwareFois.size());
 	}
 
 	protected void addPositionFoi(String flightId, long recordTime) {
@@ -235,7 +230,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		// @param startTime time at which observation of the FoI started (julian time in seconds, base 1970)
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
-		log.debug("New Position added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
+		log.trace("New Position added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
 	}
 
 	private void addTurbulenceFoi(String flightId, long recordTime) {
@@ -256,7 +251,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		long now = System.currentTimeMillis();
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
-		log.debug("New TurbulenceProfile added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
+		log.trace("New TurbulenceProfile added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
 	}
 
 	private void addLawBoxFoi(String flightId, long recordTime) {
@@ -280,7 +275,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 		long now = System.currentTimeMillis();
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
-		log.debug("New LawBox added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
+		log.trace("New LawBox added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
 	}
 
 	@Override
@@ -330,7 +325,7 @@ public class FlightAwareSensor extends AbstractSensorModule<FlightAwareConfig> i
 
 		// send new data to outputs
 		flightPlanOutput.sendFlightPlan(plan);
-		turbulenceOutput.addFlightPlan(TURBULENCE_UID_PREFIX + plan.oshFlightId, plan);
+//		turbulenceOutput.addFlightPlan(TURBULENCE_UID_PREFIX + plan.oshFlightId, plan);
 	}
 
 	public List<TurbulenceRecord> getTurbulence(FlightPlan plan) throws IOException, InvalidRangeException {

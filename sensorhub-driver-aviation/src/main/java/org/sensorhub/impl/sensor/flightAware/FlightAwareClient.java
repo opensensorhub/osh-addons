@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -24,9 +25,9 @@ import com.google.gson.GsonBuilder;
 public class FlightAwareClient implements FlightObjectListener, Runnable 
 {
 	private String serverUrl;
-	String userName = "drgregswilson";
-	String password = "2809b6196a2cfafeb89db0a00b117ac67e876220";
-	private SSLSocket ssl_socket = null;  // Class var or thread var here?
+	String userName;
+	String password;
+	private SSLSocket ssl_socket = null;  // 
 	private static final boolean useCompression = false;
 	List<FlightObjectListener> listeners = new ArrayList<>();
 	List<String> messageTypes = new ArrayList<>();
@@ -35,9 +36,13 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 
 	private static FlightAwareClient instance;
 	//  Warn us if messages start stacking up- note sys clock dependence
+	//  Allow configuration of these values
 	private static final long MESSAGE_TIMER_CHECK_PERIOD = 120;
 	private static final long MESSAGE_LATENCY_WARN_LIMIT = 120; //TimeUnit.MINUTES.toSeconds(1);
 	private static final long MESSAGE_LATENCY_RESTART_LIMIT = 180; // TimeUnit.MINUTES.toSeconds(2);  // experiment with these
+//	private static final long MESSAGE_TIMER_CHECK_PERIOD = 20;
+//	private static final long MESSAGE_LATENCY_WARN_LIMIT = 10; //TimeUnit.MINUTES.toSeconds(1);
+//	private static final long MESSAGE_LATENCY_RESTART_LIMIT = 20; // TimeUnit.MINUTES.toSeconds(2);  // experiment with these
 	private MessageTimeThread messageTimeThread;
 
 	static final Logger log = LoggerFactory.getLogger(FlightAwareClient.class);
@@ -81,11 +86,8 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 	}
 
 	public void startMessageTimeThread() {
-//		Timer timer = new Timer(true);
-//		timer.scheduleAtFixedRate(messageTimeThread, 10000L, MESSAGE_TIMER_CHECK_PERIOD );
 		ScheduledExecutorService scheduledThreadPool = Executors.newScheduledThreadPool(5);
 		scheduledThreadPool.scheduleWithFixedDelay(messageTimeThread, 10, MESSAGE_TIMER_CHECK_PERIOD, TimeUnit.SECONDS);
-
 	}
 
 	private void initiateConnection() {
@@ -140,7 +142,7 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 							l.processMessage(flight);
 						}
 					}
-					// simulate message timeout
+//					 simulate message timeout
 //					if(cnt++ > 10) {
 //						Thread.sleep(150_000L);
 //					}
