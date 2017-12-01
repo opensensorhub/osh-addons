@@ -16,7 +16,7 @@ package org.sensorhub.impl.sensor.flightAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProcessPositionThread implements Runnable
+public class ProcessPositionThreadFAS implements Runnable
 {
 	FlightObject obj;
 	private FlightAwareApi api = new FlightAwareApi();
@@ -27,7 +27,7 @@ public class ProcessPositionThread implements Runnable
 	static final Logger log = LoggerFactory.getLogger(ProcessPositionThread.class);
 
 
-	public ProcessPositionThread(FlightObject obj, FlightPositionOutput fpo, String uid) {
+	public ProcessPositionThreadFAS(FlightObject obj, FlightPositionOutput fpo, String uid) {
 		this.obj = obj;
 		this.flightPositionOutput = fpo;
 		this.toUid = uid;

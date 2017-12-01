@@ -17,7 +17,7 @@ import java.io.IOException;
 
 import org.apache.http.client.ClientProtocolException;
 
-public class ProcessPlanThread implements Runnable
+public class ProcessPlanThreadFAS implements Runnable
 {
 	FlightObject obj;
 	FlightAwareApi api;
@@ -25,7 +25,7 @@ public class ProcessPlanThread implements Runnable
 	TurbulenceOutput turbulenceOutput;
 	String toUid;
 	
-	public ProcessPlanThread(FlightObject obj, FlightPlanOutput fpo, TurbulenceOutput to, String uid) {
+	public ProcessPlanThreadFAS(FlightObject obj, FlightPlanOutput fpo, TurbulenceOutput to, String uid) {
 		this.obj = obj;
 		this.flightPlanOutput = fpo;
 		this.turbulenceOutput = to;
