@@ -15,15 +15,13 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.nldn;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.DataBlockMixed;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 
 import net.opengis.swe.v20.Count;
@@ -50,10 +48,10 @@ public class NldnOutput extends AbstractSensorOutput<NldnSensor>
 	private static final int NUM_POINTS = X_SIZE * Y_SIZE;
 
 	DataRecord nldnRecordStruct;
-	DataEncoding nldnEncoding;	
-	private NldnReader reader;
+	DataEncoding nldnEncoding;
 	
-	public NldnOutput(NldnSensor parentSensor) throws IOException
+	
+	public NldnOutput(NldnSensor parentSensor)
 	{
 		super(parentSensor);
 	}
@@ -62,8 +60,9 @@ public class NldnOutput extends AbstractSensorOutput<NldnSensor>
 	@Override
 	public String getName()
 	{
-		return "NldnSensor";
+		return "nldnData";
 	}
+	
 
 	protected void init()
 	{
@@ -82,7 +81,7 @@ public class NldnOutput extends AbstractSensorOutput<NldnSensor>
 	
 		//  num of points
 		Count numPoints = fac.newCount(DataType.INT);
-		numPoints.setDefinition("http://sensorml.com/ont/swe/property/NumberOfSamples"); 
+		numPoints.setDefinition(SWEConstants.DEF_NUM_POINTS); 
 		numPoints.setId("NUM_POINTS");
 		nldnRecordStruct.addComponent("numPoints",numPoints);
 		
@@ -108,10 +107,7 @@ public class NldnOutput extends AbstractSensorOutput<NldnSensor>
 		// default encoding is text
 		nldnEncoding = fac.newTextEncoding(",", "\n");
 	}
-
-	public void start() throws SensorHubException {
-		// Nothing to do 
-	}
+	
 	
 	public void sendMeasurement(NldnRecord rec)
 	{                
@@ -144,6 +140,7 @@ public class NldnOutput extends AbstractSensorOutput<NldnSensor>
 		latestRecordTime = System.currentTimeMillis();
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, NldnOutput.this, dataBlock));        
 	}
+	
 
 	public double getAverageSamplingPeriod()
 	{

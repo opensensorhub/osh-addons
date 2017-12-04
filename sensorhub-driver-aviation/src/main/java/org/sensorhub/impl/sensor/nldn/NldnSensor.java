@@ -15,15 +15,17 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.nldn;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
-
+import java.util.regex.Pattern;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.mesh.DirectoryWatcher;
 import org.sensorhub.impl.sensor.mesh.FileListener;
+
 
 /**
  * 
@@ -35,93 +37,123 @@ import org.sensorhub.impl.sensor.mesh.FileListener;
  */
 public class NldnSensor extends AbstractSensorModule<NldnConfig> implements FileListener
 {
-	NldnOutput meshInterface;
+    static final Pattern DATA_FILE_REGEX = Pattern.compile(".*NLDN.*grb2");
+    
+    NldnOutput meshInterface;
 	Thread watcherThread;
-	private DirectoryWatcher watcher;
+	DirectoryWatcher watcher;
+	
 
 	@Override
 	public void init() throws SensorHubException
 	{
 		super.init();
 
-		System.err.println("dataPath: " + config.dataPath);
-		// IDs
 		this.uniqueID = "urn:osh:sensor:earthcast:nldn";
-		this.xmlID = "EarthcastNLDN";
+		this.xmlID = "ECT_NLDN";
 
-		// Initialize interface
-		try {
-			this.meshInterface = new NldnOutput(this);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new SensorHubException("Cannot instantiate NldnOutput", e);
-		}        
+		// initialize outputs
+        this.meshInterface = new NldnOutput(this);
 		addOutput(meshInterface, false);
 		meshInterface.init();
 	}
+	
 
 	@Override
 	public void start() throws SensorHubException
 	{
-		// Start listening for new files
-		meshInterface.start();
-		
-		try {
-			watcher = new DirectoryWatcher(Paths.get(config.dataPath), StandardWatchEventKinds.ENTRY_CREATE);
-			watcherThread = new Thread(watcher);
-			watcher.addListener(this);
-			watcherThread.start();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new SensorHubException("NldnSensor could not create DirectoryWatcher...", e);
-		}
+	    startDirectoryWatcher();
+	    readLatestDataFile();
 	}
 
 
-	@Override
-	public void stop() throws SensorHubException
-	{
-
-	}
-
-
-	@Override
-	public boolean isConnected() {
-		// TODO Auto-generated method stub
-		return false;
-	}
+    @Override
+    public void stop() throws SensorHubException
+    {
+        if (watcherThread != null)
+            watcherThread.interrupt();
+    }
 
 
-	@Override
-	public void newFile(Path p) throws IOException {
-		try {
-			String fn = p.getFileName().toString().toLowerCase();
-			if(!fn.contains("nldn") || !fn.endsWith(".grb2")) {
-				return;
-			}
-			File sourceFile = p.toFile();
-//			while(!sourceFile.renameTo(sourceFile)) {
-//				// Cannot read from file, windows still working on it.
-//				try {
-//					Thread.sleep(10);
-//				} catch (InterruptedException e) {
-//					e.printStackTrace();
-//				}
-//			}
-			System.err.println("*** Reading: " + fn);
-			NldnReader reader = new NldnReader(p.toString());
-			NldnRecord rec = reader.readNldn();
-			if(rec == null) {
-				throw new IOException("MeshReader returned null mesh record");
-			}
-			System.err.println("*** Send: " + rec.timeUtc);
-			meshInterface.sendMeasurement(rec);
-		} catch (Exception e) {
-			//  Catch any errors so the watcher thread stays alive-
-			
-			e.printStackTrace(System.err);
-		}
-	}
+    @Override
+    public boolean isConnected()
+    {
+        return true;
+    }
+
+
+    private void startDirectoryWatcher() throws SensorHubException
+    {
+        try
+        {
+            watcher = new DirectoryWatcher(Paths.get(config.dataPath), StandardWatchEventKinds.ENTRY_CREATE);
+            watcherThread = new Thread(watcher);
+            watcher.addListener(this);
+            watcherThread.start();
+            getLogger().info("Watching directory {} for data updates", config.dataPath);
+        }
+        catch (IOException e)
+        {
+            throw new SensorHubException("Error creating directory watcher on " + config.dataPath, e);
+        }
+    }
+    
+    
+    private void readLatestDataFile() throws SensorHubException
+    {
+        // list all available NLDN data files
+        File dir = new File(config.dataPath);
+        File[] turbFiles = dir.listFiles(new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return DATA_FILE_REGEX.matcher(name).matches();
+            }
+        });        
+        
+        // skip if nothing is available
+        if (turbFiles.length == 0)
+        {
+            getLogger().warn("No NLDN data file available");
+            return;
+        }
+        
+        // get the one with latest time stamp
+        File latestFile = turbFiles[0];
+        for (File f: turbFiles)
+        {
+            if (f.lastModified() > latestFile.lastModified())
+                latestFile = f;
+        }
+        
+        // trigger reader
+        newFile(latestFile.toPath());
+    }
+
+
+	/*
+     * called whenever we get a new NLDN file
+     */
+    @Override
+    public void newFile(Path p)
+    {
+        // only continue when it's a new turbulence GRIB file
+        if (!DATA_FILE_REGEX.matcher(p.getFileName().toString()).matches())
+            return;
+        
+        // try to read file with NldnReader
+        try
+        {
+            getLogger().info("Loading new NLDN data file: {}", p);
+            
+            NldnReader reader = new NldnReader(p.toString());
+            NldnRecord rec = reader.readNldn();
+            if (rec == null)
+                throw new IOException("NldnReader returned null record");
+            
+            meshInterface.sendMeasurement(rec);
+        }
+        catch (Exception e)
+        {
+            getLogger().error("Error reading NLDN data file: {}", p, e);
+        }
+    }
 }

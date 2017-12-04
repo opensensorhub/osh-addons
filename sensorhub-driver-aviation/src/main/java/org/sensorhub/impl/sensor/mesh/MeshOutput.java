@@ -50,7 +50,8 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 	DataRecord meshRecordStruct;
 	DataEncoding meshEncoding;	
 	
-	public MeshOutput(MeshSensor parentSensor) throws IOException
+	
+	public MeshOutput(MeshSensor parentSensor)
 	{
 		super(parentSensor);
 	}
@@ -61,6 +62,7 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 	{
 		return "MeshSensor";
 	}
+	
 
 	protected void init()
 	{
@@ -105,10 +107,7 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 //		// default encoding is text
 		meshEncoding = fac.newTextEncoding(",", "\n");
 	}
-
-	public void start() throws SensorHubException {
-		// Nothing to do 
-	}
+	
 	
 	public void sendMeasurement(MeshRecord rec)
 	{                
@@ -141,6 +140,7 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 		latestRecordTime = System.currentTimeMillis();
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, MeshOutput.this, dataBlock));        
 	}
+	
 
 	public double getAverageSamplingPeriod()
 	{
