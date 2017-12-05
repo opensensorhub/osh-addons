@@ -152,9 +152,9 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 				foiIDs.add(uid);
 				navEntryFois.put(uid, airportFoi);
 
-				// send event
-				long now = System.currentTimeMillis();
-				eventHandler.publishEvent(new FoiEvent(now, uid, this, airportFoi, now/1000L));
+				// no need to send event since we do all this on startup
+//				long now = System.currentTimeMillis();
+//				eventHandler.publishEvent(new FoiEvent(now, uid, this, airportFoi, now/1000L));
 //				log.debug(uid);
 			}
 
@@ -193,9 +193,9 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 				foiIDs.add(uid);
 				navEntryFois.put(uid, navaidFoi);
 
-				// send event
-				long now = System.currentTimeMillis();
-				eventHandler.publishEvent(new FoiEvent(now, uid, this, navaidFoi, now/1000L));
+				// no need to send event since we do all this on startup
+//				long now = System.currentTimeMillis();
+//				eventHandler.publishEvent(new FoiEvent(now, uid, this, navaidFoi, now/1000L));
 //				log.debug(uid);
 			}
 
@@ -233,9 +233,9 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 				foiIDs.add(uid);
 				navEntryFois.put(uid, wyptFoi);
 
-				// send event
-				long now = System.currentTimeMillis();
-				eventHandler.publishEvent(new FoiEvent(now, uid, this, wyptFoi, now/1000L));
+				// no need to send event since we do all this on startup
+//				long now = System.currentTimeMillis();
+//				eventHandler.publishEvent(new FoiEvent(now, uid, this, wyptFoi, now/1000L));
 //				log.debug(uid);
 			}
 
