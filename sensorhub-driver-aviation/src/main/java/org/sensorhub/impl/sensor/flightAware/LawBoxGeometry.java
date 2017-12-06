@@ -129,6 +129,9 @@ public class LawBoxGeometry
 			}
 		}
 
+		if(groundSpeed == null) {
+			return MAX_LENGTH;
+		}
 		double length = groundSpeed / 2.;  // nautical miles
 		if(length < MIN_LENGTH)  return MIN_LENGTH;
 		if(length > MAX_LENGTH)  return MAX_LENGTH;
@@ -187,7 +190,7 @@ public class LawBoxGeometry
 	//	public LawBox computeBox() {
 	public void computeBox(LawBox lawBox) {
 		// Need at least location to compute anything
-		assert lat != null &&  lon != null && alt != null;
+//		assert lat != null &&  lon != null && alt != null;
 
 		double length = getLength(); // nautical miles!
 		double up = getUp();

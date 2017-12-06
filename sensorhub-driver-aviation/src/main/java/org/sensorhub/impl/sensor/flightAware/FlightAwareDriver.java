@@ -138,8 +138,8 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		// Configure Firehose feed- 
 		String machineName = "firehose.flightaware.com";
 		client = new FlightAwareClient(machineName, config.userName, config.password);
-//		client.messageTypes.add("flightplan");
-		client.messageTypes.add("position");
+		for(String mt: config.messageTypes)
+			client.messageTypes.add(mt);
 
 		//  And message Converter
 		FlightAwareConverter converter = new FlightAwareConverter() ;
@@ -204,7 +204,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		// TODO:  Check all recordTime and make sure in seconds and NOT ms!!!!
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
-		log.trace("New FlightPlan added as FOI: {} ; aircraftFois.size = {}", uid, flightAwareFois.size());
+		log.debug("New FlightPlan added as FOI: {} ; aircraftFois.size = {}", uid, flightAwareFois.size());
 	}
 
 	protected void addPositionFoi(String flightId, long recordTime) {
@@ -230,7 +230,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		// @param startTime time at which observation of the FoI started (julian time in seconds, base 1970)
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
-		log.trace("New Position added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
+		log.debug("New Position added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
 	}
 
 	private void addTurbulenceFoi(String flightId, long recordTime) {
