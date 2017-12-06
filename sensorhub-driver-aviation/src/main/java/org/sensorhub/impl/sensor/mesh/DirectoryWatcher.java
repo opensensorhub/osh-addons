@@ -40,14 +40,13 @@ public class DirectoryWatcher implements Runnable
 
 	@Override
 	public void run()  { //, InterruptedException {
-		while (true) {
+		while (!Thread.currentThread().isInterrupted()) {
 			WatchKey watchKey;
 			try {
 				watchKey = watcher.take();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				continue;
+			    Thread.currentThread().interrupt();
+			    continue;
 			} 
 			List<WatchEvent<?>> events = watchKey.pollEvents();
 
@@ -59,7 +58,7 @@ public class DirectoryWatcher implements Runnable
 				WatchEvent<Path> ev = (WatchEvent<Path>) event;
 				Path filename = ev.context();
 
-				System.out.println(kind.name() + ": " + filename);
+				//System.out.println(kind.name() + ": " + filename);
 
 //				if (kind == StandardWatchEventKinds.ENTRY_CREATE ) {
 					for(FileListener l: listeners) {
