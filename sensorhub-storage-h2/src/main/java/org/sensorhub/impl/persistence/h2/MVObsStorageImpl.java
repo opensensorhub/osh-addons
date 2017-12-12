@@ -37,6 +37,7 @@ import org.sensorhub.api.persistence.IStorageModule;
 import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.utils.FileUtils;
+import org.vast.util.Asserts;
 import org.vast.util.Bbox;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.AbstractTimeGeometricPrimitive;
@@ -48,20 +49,49 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 
 
+/**
+ * <p>
+ * Implementation of Observation storage using H2 MVStore
+ * </p>
+ * <p>
+ * The following maps are created in the MVStore:<br/>
+ * - "@descHistory" contains process descriptions indexed by time<br/>
+ * - "@recordStores" contains the definition and names of each record store<br/>
+ * </p>
+ * <p>
+ * Features of Interest and records indexing is handled by other classes:<br/>
+ * - {@link MVFeatureStoreImpl}<br/>
+ * - {@link MVTimeSeriesImpl}<br/>
+ * </p>
+ *
+ * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @since Dec 10, 2017
+ */
 public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements IObsStorageModule<MVStorageConfig>
 {
-    private final static String DESC_HISTORY_MAP_NAME = ":desc";
-    private final static String RECORD_STORE_INFO_MAP_NAME = ":rsInfo";
+    private static final String DESC_HISTORY_MAP_NAME = "@descHistory";
+    private static final String RECORD_STORE_INFO_MAP_NAME = "@recordStores";
+    
     MVStore mvStore;
     MVMap<Double, AbstractProcess> processDescMap;
     MVMap<String, IRecordStoreInfo> rsInfoMap;
     Map<String, MVTimeSeriesImpl> recordStores;
     MVFeatureStoreImpl featureStore;
+    private String producerID;
     
     
     public MVObsStorageImpl()
     {
-        this.recordStores = new LinkedHashMap<String, MVTimeSeriesImpl>();
+        this.recordStores = new LinkedHashMap<>();
+    }
+    
+    
+    protected MVObsStorageImpl(MVStore mvStore, String producerID)
+    {
+        Asserts.checkNotNull(mvStore, MVStore.class);
+                
+        this.mvStore = mvStore;
+        this.producerID = producerID;
     }
 
 
@@ -70,27 +100,30 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     {
         try
         {
-            // check file path is valid
-            if (!FileUtils.isSafeFilePath(config.storagePath))
-                throw new StorageException("Storage path contains illegal characters: " + config.storagePath);
+            if (mvStore == null)
+            {
+                // check file path is valid
+                if (!FileUtils.isSafeFilePath(config.storagePath))
+                    throw new StorageException("Storage path contains illegal characters: " + config.storagePath);
+                
+                MVStore.Builder builder = new MVStore.Builder()
+                                          .fileName(config.storagePath);
+                
+                if (config.memoryCacheSize > 0)
+                    builder = builder.cacheSize(config.memoryCacheSize/1024);
+                                          
+                if (config.autoCommitBufferSize > 0)
+                    builder = builder.autoCommitBufferSize(config.autoCommitBufferSize);
+                
+                if (config.useCompression)
+                    builder = builder.compress();
+                
+                this.mvStore = builder.open();
+                //this.mvStore.setAutoCommitDelay(100000);
+                //this.mvStore.setRetentionTime(100);
+            }
             
-            MVStore.Builder builder = new MVStore.Builder()
-                                      .fileName(config.storagePath);
-            
-            if (config.memoryCacheSize > 0)
-                builder = builder.cacheSize(config.memoryCacheSize/1024);
-                                      
-            if (config.autoCommitBufferSize > 0)
-                builder = builder.autoCommitBufferSize(config.autoCommitBufferSize);
-            
-            if (config.useCompression)
-                builder = builder.compress();
-            
-            this.mvStore = builder.open();
-            //this.mvStore.setAutoCommitDelay(100000);
-            //this.mvStore.setRetentionTime(100);
-            
-            // create description map
+            // open description history map
             this.processDescMap = mvStore.openMap(DESC_HISTORY_MAP_NAME, new MVMap.Builder<Double, AbstractProcess>().valueType(new KryoDataType()));
             
             // create feature store
@@ -110,8 +143,12 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     
     private void loadRecordStore(IRecordStoreInfo rsInfo)
     {
-        MVTimeSeriesImpl recordStore = new MVTimeSeriesImpl(mvStore,
-                rsInfo.getName(),
+        String mapName = rsInfo.getName();
+        if (producerID != null)
+            mapName = producerID + ":" + mapName;            
+            
+        MVTimeSeriesImpl recordStore = new MVTimeSeriesImpl(this,
+                mapName,
                 rsInfo.getRecordDescription(),
                 rsInfo.getRecommendedEncoding());
         
@@ -131,24 +168,9 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
 
 
     @Override
-    public void backup(OutputStream os) throws IOException
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-
-    @Override
-    public void restore(InputStream is) throws IOException
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-
-    @Override
     public void commit()
     {
+        checkOpen();
         mvStore.commit();
     }
 
@@ -156,12 +178,27 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public void rollback()
     {
+        checkOpen();
+        mvStore.rollback();
+    }
+
+
+    @Override
+    public synchronized void backup(OutputStream os) throws IOException
+    {
         // TODO Auto-generated method stub
     }
 
 
     @Override
-    public void sync(IStorageModule<?> storage) throws StorageException
+    public synchronized void restore(InputStream is) throws IOException
+    {
+        // TODO Auto-generated method stub
+    }
+
+
+    @Override
+    public synchronized void sync(IStorageModule<?> storage) throws StorageException
     {
         // TODO Auto-generated method stub
     }
@@ -187,6 +224,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public AbstractProcess getLatestDataSourceDescription()
     {
+        checkOpen();
         if (processDescMap.isEmpty())
             return null;
         
@@ -197,9 +235,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public List<AbstractProcess> getDataSourceDescriptionHistory(double startTime, double endTime)
     {
-        RangeCursor<Double, AbstractProcess> cursor = new RangeCursor<Double, AbstractProcess>(processDescMap, startTime, endTime);
+        checkOpen();
+        RangeCursor<Double, AbstractProcess> cursor = new RangeCursor<>(processDescMap, startTime, endTime);
         
-        ArrayList<AbstractProcess> descList = new ArrayList<AbstractProcess>();
+        ArrayList<AbstractProcess> descList = new ArrayList<>();
         while (cursor.hasNext())
         {
             cursor.next();
@@ -213,6 +252,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public AbstractProcess getDataSourceDescriptionAtTime(double time)
     {
+        checkOpen();
         Double key = processDescMap.floorKey(time);
         if (key != null)
             return processDescMap.get(key);
@@ -221,8 +261,9 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     }
     
     
-    protected boolean storeDataSourceDescription(AbstractProcess process, double time, boolean update)
+    protected synchronized boolean storeDataSourceDescription(AbstractProcess process, double time, boolean update)
     {
+        checkOpen();
         if (update)
         {
             AbstractProcess oldProcess = processDescMap.replace(time, process);
@@ -236,8 +277,9 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     }
     
     
-    protected boolean storeDataSourceDescription(AbstractProcess process, boolean update)
+    protected synchronized boolean storeDataSourceDescription(AbstractProcess process, boolean update)
     {
+        checkOpen();
         boolean ok = false;
             
         if (process.getNumValidTimes() > 0)
@@ -274,23 +316,25 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
 
 
     @Override
-    public void updateDataSourceDescription(AbstractProcess process)
+    public synchronized void updateDataSourceDescription(AbstractProcess process)
     {
         storeDataSourceDescription(process, true);
     }
 
 
     @Override
-    public void removeDataSourceDescription(double time)
+    public synchronized void removeDataSourceDescription(double time)
     {
+        checkOpen();
         processDescMap.remove(time);
     }
 
 
     @Override
-    public void removeDataSourceDescriptionHistory(double startTime, double endTime)
+    public synchronized void removeDataSourceDescriptionHistory(double startTime, double endTime)
     {
-        RangeCursor<Double, AbstractProcess> cursor = new RangeCursor<Double, AbstractProcess>(processDescMap, startTime, endTime);
+        checkOpen();
+        RangeCursor<Double, AbstractProcess> cursor = new RangeCursor<>(processDescMap, startTime, endTime);
         
         while (cursor.hasNext())
             processDescMap.remove(cursor.next());
@@ -300,13 +344,15 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public Map<String, ? extends IRecordStoreInfo> getRecordStores()
     {
+        checkOpen();
         return Collections.unmodifiableMap(rsInfoMap);
     }
 
 
     @Override
-    public void addRecordStore(String name, DataComponent recordStructure, DataEncoding recommendedEncoding)
+    public synchronized void addRecordStore(String name, DataComponent recordStructure, DataEncoding recommendedEncoding)
     {
+        checkOpen();
         DataStreamInfo rsInfo = new DataStreamInfo(name, recordStructure, recommendedEncoding);
         rsInfoMap.put(name, rsInfo);
         loadRecordStore(rsInfo);
@@ -316,6 +362,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public int getNumRecords(String recordType)
     {
+        checkOpen();
         return recordStores.get(recordType).getNumRecords();
     }
 
@@ -323,6 +370,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public double[] getRecordsTimeRange(String recordType)
     {
+        checkOpen();
         return recordStores.get(recordType).getDataTimeRange();
     }
 
@@ -363,28 +411,28 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
 
 
     @Override
-    public void storeRecord(DataKey key, DataBlock data)
+    public synchronized void storeRecord(DataKey key, DataBlock data)
     {
         recordStores.get(key.recordType).store(key, data);
     }
 
 
     @Override
-    public void updateRecord(DataKey key, DataBlock data)
+    public synchronized void updateRecord(DataKey key, DataBlock data)
     {
         recordStores.get(key.recordType).update(key, data);
     }
 
 
     @Override
-    public void removeRecord(DataKey key)
+    public synchronized void removeRecord(DataKey key)
     {
         recordStores.get(key.recordType).remove(key);
     }
 
 
     @Override
-    public int removeRecords(IDataFilter filter)
+    public synchronized int removeRecords(IDataFilter filter)
     {
         return recordStores.get(filter.getRecordType()).remove(filter);
     }
@@ -419,7 +467,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
 
 
     @Override
-    public void storeFoi(String producerID, AbstractFeature foi)
+    public synchronized void storeFoi(String producerID, AbstractFeature foi)
     {
         featureStore.store(foi);
     }
@@ -436,5 +484,11 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public boolean isWriteSupported()
     {
         return true;
+    }
+    
+    
+    protected void checkOpen()
+    {
+        Asserts.checkState(mvStore != null, "Storage is not open");
     }
 }

@@ -31,8 +31,7 @@ public class TestMVObsStorage extends AbstractTestObsStorage<MVObsStorageImpl>
     public void init() throws Exception
     {
         MVStorageConfig config = new MVStorageConfig();
-        config.autoStart = true;
-        config.memoryCacheSize = 10*1024;
+        config.memoryCacheSize = 1024;
         dbFile = File.createTempFile("testdb", ".dat");
         dbFile.deleteOnExit();
         config.storagePath = dbFile.getAbsolutePath();
@@ -52,8 +51,10 @@ public class TestMVObsStorage extends AbstractTestObsStorage<MVObsStorageImpl>
     
     
     @After
-    public void cleanup()
+    public void cleanup() throws Exception
     {
+        storage.stop();
+        System.out.println("DB file size was " + dbFile.length()/1024 + "KB");
         dbFile.delete();
     }
     

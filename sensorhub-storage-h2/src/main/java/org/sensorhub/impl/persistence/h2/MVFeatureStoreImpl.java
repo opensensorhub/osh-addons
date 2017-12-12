@@ -23,9 +23,11 @@ import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.Page;
 import org.h2.mvstore.rtree.MVRTreeMap;
+import org.h2.mvstore.rtree.MVRTreeMap.RTreeCursor;
 import org.h2.mvstore.rtree.SpatialKey;
 import org.sensorhub.api.persistence.IFeatureFilter;
 import org.sensorhub.api.persistence.IFeatureStorage;
+import org.sensorhub.impl.persistence.IteratorWrapper;
 import org.vast.util.Bbox;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
@@ -35,14 +37,17 @@ import net.opengis.gml.v32.AbstractFeature;
 
 public class MVFeatureStoreImpl implements IFeatureStorage
 {
+    private static final String FEATURE_ID_MAP_NAME = "@feature_id";
+    private static final String SPATIAL_INDEX_MAP_NAME = "@feature_bbox";
+    
     MVMap<String, AbstractFeature> idIndex;
     MVRTreeMap<String> spatialIndex;
     
     
     public MVFeatureStoreImpl(MVStore mvStore)
     {
-        idIndex = mvStore.openMap(":fid", new MVMap.Builder<String, AbstractFeature>().valueType(new KryoDataType()));
-        spatialIndex = mvStore.openMap(":frt", new MVRTreeMap.Builder<String>().dimensions(3));
+        idIndex = mvStore.openMap(FEATURE_ID_MAP_NAME, new MVMap.Builder<String, AbstractFeature>().valueType(new KryoDataType()));
+        spatialIndex = mvStore.openMap(SPATIAL_INDEX_MAP_NAME, new MVRTreeMap.Builder<String>().dimensions(3));
     }
     
     
@@ -153,45 +158,26 @@ public class MVFeatureStoreImpl implements IFeatureStorage
             
             // iterate through spatial index using bounding rectangle
             Envelope env = roi.getEnvelopeInternal();
-            SpatialKey bbox = new SpatialKey(0, (float)env.getMinX(), (float)env.getMinY(), Float.NEGATIVE_INFINITY,
-                                                (float)env.getMaxX(), (float)env.getMaxY(), Float.POSITIVE_INFINITY);
-            final Iterator<SpatialKey> geoIt = spatialIndex.findContainedKeys(bbox);
+            SpatialKey bbox = new SpatialKey(0, (float)env.getMinX(), (float)env.getMaxX(),
+                                                (float)env.getMinY(), (float)env.getMaxY(),
+                                                Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
+            final RTreeCursor geoCursor = spatialIndex.findIntersectingKeys(bbox);
             
             // wrap with iterator to filter on exact polygon geometry using JTS
-            Iterator<AbstractFeature> it =  new Iterator<AbstractFeature>()
+            return new IteratorWrapper<SpatialKey, AbstractFeature>(geoCursor)
             {
-                AbstractFeature nextFeature;
-                
-                public boolean hasNext()
-                {
-                    return (nextFeature != null);
+                @Override
+                public AbstractFeature process(SpatialKey key)
+                {                    
+                    String fid = spatialIndex.get(key);
+                    AbstractFeature f = idIndex.get(fid);
+                    Geometry geom = (Geometry)f.getLocation();
+                    if (geom != null && roi.intersects(geom))
+                        return f;
+                    else
+                        return null;
                 }
-
-                public AbstractFeature next()
-                {
-                    AbstractFeature currentFeature = nextFeature;
-                    nextFeature = null;
-                    
-                    while (nextFeature == null && geoIt.hasNext())
-                    {
-                        String fid = spatialIndex.get(geoIt.next());
-                        AbstractFeature f = idIndex.get(fid);
-                        Geometry geom = (Geometry)f.getLocation();
-                        if (geom != null && roi.intersects(geom))
-                            nextFeature = f;
-                    }
-                    
-                    return currentFeature;
-                }
-
-                public void remove()
-                {
-                    throw new UnsupportedOperationException();
-                } 
             };
-            
-            it.next();
-            return it;
         }
                 
         // else return all features
@@ -223,9 +209,14 @@ public class MVFeatureStoreImpl implements IFeatureStorage
     }
     
     
-    public void store(AbstractFeature f)
+    public synchronized void store(AbstractFeature foi)
     {
-        
+        AbstractFeature oldFoi = idIndex.put(foi.getUniqueIdentifier(), foi);
+        if (oldFoi == null && foi.getLocation() != null)
+        {
+            SpatialKey rect = GeomUtils.getBoundingRectangle(foi.getLocation());
+            spatialIndex.put(rect, foi.getUniqueIdentifier());
+        }
     }
 
 }

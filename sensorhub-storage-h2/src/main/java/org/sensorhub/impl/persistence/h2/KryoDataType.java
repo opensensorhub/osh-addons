@@ -15,10 +15,12 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.persistence.h2;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 import org.h2.mvstore.WriteBuffer;
 import org.h2.mvstore.type.DataType;
 import org.objenesis.strategy.StdInstantiatorStrategy;
-import org.vast.data.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy;
 import com.esotericsoftware.kryo.io.Input;
@@ -30,6 +32,7 @@ import net.opengis.OgcPropertyList;
 public class KryoDataType implements DataType
 {
     ThreadLocal<KryoInstance> kryoLocal;
+    Map<Integer, Class<?>> registeredClasses = new HashMap<>();
     int averageSize;
     
     
@@ -39,7 +42,7 @@ public class KryoDataType implements DataType
         Output output;
         Input input;
         
-        KryoInstance(int averageSize)
+        KryoInstance(Map<Integer, Class<?>> registeredClasses, int averageSize)
         {
             kryo = new Kryo();
             
@@ -53,22 +56,8 @@ public class KryoDataType implements DataType
             
             // pre-register data block classes to reduce storage size
             // don't change the order to stay compatible with old storage files!!
-            kryo.register(DataBlockBoolean.class);
-            kryo.register(DataBlockByte.class);
-            kryo.register(DataBlockUByte.class);
-            kryo.register(DataBlockShort.class);
-            kryo.register(DataBlockUShort.class);
-            kryo.register(DataBlockInt.class);
-            kryo.register(DataBlockUInt.class);
-            kryo.register(DataBlockLong.class);
-            kryo.register(DataBlockFloat.class);
-            kryo.register(DataBlockDouble.class);
-            kryo.register(DataBlockString.class);
-            kryo.register(AbstractDataBlock[].class);
-            kryo.register(DataBlockTuple.class);
-            kryo.register(DataBlockParallel.class);
-            kryo.register(DataBlockMixed.class);
-            kryo.register(DataBlockCompressed.class);
+            for (Entry<Integer, Class<?>> entry: registeredClasses.entrySet())                
+                kryo.register(entry.getValue(), entry.getKey());            
             
             input = new Input();
             output = new Output(averageSize);
@@ -82,14 +71,16 @@ public class KryoDataType implements DataType
     }
     
     
-    public KryoDataType(final int averageObjectSize)
+    public KryoDataType(final int averageSize)
     {
-        this.averageSize = averageObjectSize;
+        this.averageSize = averageSize;
+        this.registeredClasses = new HashMap<>();
+        
         this.kryoLocal = new ThreadLocal<KryoInstance>()
         {
             public KryoInstance initialValue()
             {
-                return new KryoInstance(averageObjectSize);
+                return new KryoInstance(registeredClasses, averageSize);
             }
         };
     }

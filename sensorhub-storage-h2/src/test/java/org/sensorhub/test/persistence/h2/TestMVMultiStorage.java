@@ -17,12 +17,12 @@ package org.sensorhub.test.persistence.h2;
 import java.io.File;
 import org.junit.After;
 import org.junit.Before;
-import org.sensorhub.impl.persistence.h2.MVObsStorageImpl;
+import org.sensorhub.impl.persistence.h2.MVMultiStorageImpl;
 import org.sensorhub.impl.persistence.h2.MVStorageConfig;
-import org.sensorhub.test.persistence.AbstractTestBasicStorage;
+import org.sensorhub.test.persistence.AbstractTestMultiObsStorage;
 
 
-public class TestMVBasicStorage extends AbstractTestBasicStorage<MVObsStorageImpl>
+public class TestMVMultiStorage extends AbstractTestMultiObsStorage<MVMultiStorageImpl>
 {
     File dbFile;
     
@@ -36,7 +36,7 @@ public class TestMVBasicStorage extends AbstractTestBasicStorage<MVObsStorageImp
         dbFile.deleteOnExit();
         config.storagePath = dbFile.getAbsolutePath();
         
-        storage = new MVObsStorageImpl();
+        storage = new MVMultiStorageImpl();
         storage.init(config);
         storage.start();
     }
