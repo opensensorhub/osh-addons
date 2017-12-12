@@ -44,7 +44,7 @@ class MVFoiTimesStoreImpl
     {
         FeatureTimesDataType()
         {
-            // pre-register used types
+            // pre-register used types with Kryo
             registeredClasses.put(10, FeatureEntry.class);
             registeredClasses.put(11, FoiTimePeriod.class);
         }

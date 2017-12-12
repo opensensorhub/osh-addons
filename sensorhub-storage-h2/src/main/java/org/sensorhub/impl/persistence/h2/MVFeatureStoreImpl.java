@@ -61,8 +61,15 @@ public class MVFeatureStoreImpl implements IFeatureStorage
     @Override
     public int getNumMatchingFeatures(IFeatureFilter filter)
     {
-        // TODO Auto-generated method stub
-        return 0;
+        int count = 0;
+        Iterator<String> it = getFeatureIDs(filter);
+        while (it.hasNext())
+        {
+            it.next();
+            count++;
+        }
+        
+        return count;
     }
 
 
@@ -93,16 +100,19 @@ public class MVFeatureStoreImpl implements IFeatureStorage
         
         return new Iterator<String>()
         {
+            @Override
             public boolean hasNext()
             {
                 return it.hasNext();
             }
 
+            @Override
             public String next()
             {
-                return (String)it.next().getUniqueIdentifier();
+                return it.next().getUniqueIdentifier();
             }
 
+            @Override
             public void remove()
             {
                 throw new UnsupportedOperationException();
@@ -118,7 +128,7 @@ public class MVFeatureStoreImpl implements IFeatureStorage
         Collection<String> foiIDs = filter.getFeatureIDs();
         if (foiIDs != null && !foiIDs.isEmpty())
         {
-            final Set<String> ids = new LinkedHashSet<String>();
+            final Set<String> ids = new LinkedHashSet<>();
             ids.addAll(filter.getFeatureIDs());
             final Iterator<String> idsIt = ids.iterator();
             
@@ -127,11 +137,13 @@ public class MVFeatureStoreImpl implements IFeatureStorage
             {
                 AbstractFeature nextFeature;
                 
+                @Override
                 public boolean hasNext()
                 {
                     return (nextFeature != null);
                 }
 
+                @Override
                 public AbstractFeature next()
                 {
                     AbstractFeature currentFeature = nextFeature;
@@ -141,6 +153,7 @@ public class MVFeatureStoreImpl implements IFeatureStorage
                     return currentFeature;
                 }
 
+                @Override
                 public void remove()
                 {
                     throw new UnsupportedOperationException();

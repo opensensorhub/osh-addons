@@ -69,7 +69,7 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
     {
         DataBlockDataType()
         {
-            // pre-register all data block types
+            // pre-register all data block types with Kryo
             registeredClasses.put(10, DataBlockBoolean.class);
             registeredClasses.put(11, DataBlockByte.class);
             registeredClasses.put(12, DataBlockUByte.class);
