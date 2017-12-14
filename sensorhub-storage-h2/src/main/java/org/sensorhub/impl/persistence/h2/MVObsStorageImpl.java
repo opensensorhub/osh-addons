@@ -21,9 +21,9 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
 import org.sensorhub.api.common.SensorHubException;
@@ -75,22 +75,22 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     MVStore mvStore;
     MVMap<Double, AbstractProcess> processDescMap;
     MVMap<String, IRecordStoreInfo> rsInfoMap;
-    Map<String, MVTimeSeriesImpl> recordStores;
+    Map<String, MVTimeSeriesImpl> recordStores = new ConcurrentHashMap<>();
     MVFeatureStoreImpl featureStore;
     private String producerID;
     
     
     public MVObsStorageImpl()
     {
-        this.recordStores = new LinkedHashMap<>();
     }
     
     
-    protected MVObsStorageImpl(MVStore mvStore, String producerID)
+    protected MVObsStorageImpl(MVObsStorageImpl parentStore, String producerID)
     {
-        Asserts.checkNotNull(mvStore, MVStore.class);
+        Asserts.checkNotNull(parentStore, "Parent");
                 
-        this.mvStore = mvStore;
+        this.mvStore = parentStore.mvStore;
+        this.featureStore = parentStore.featureStore;
         this.producerID = producerID;
     }
 
@@ -118,41 +118,48 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
                 if (config.useCompression)
                     builder = builder.compress();
                 
-                this.mvStore = builder.open();
-                //this.mvStore.setAutoCommitDelay(100000);
-                //this.mvStore.setRetentionTime(100);
+                mvStore = builder.open();
+                mvStore.setVersionsToKeep(0);
             }
-            
+                        
             // open description history map
-            this.processDescMap = mvStore.openMap(DESC_HISTORY_MAP_NAME, new MVMap.Builder<Double, AbstractProcess>().valueType(new KryoDataType()));
+            String mapName = getFullMapName(DESC_HISTORY_MAP_NAME);
+            processDescMap = mvStore.openMap(mapName, new MVMap.Builder<Double, AbstractProcess>().valueType(new KryoDataType()));
             
             // create feature store
-            this.featureStore = new MVFeatureStoreImpl(mvStore);
+            if (featureStore == null)
+                featureStore = new MVFeatureStoreImpl(mvStore);
             
             // load all record stores
-            this.rsInfoMap = mvStore.openMap(RECORD_STORE_INFO_MAP_NAME, new MVMap.Builder<String, IRecordStoreInfo>().valueType(new KryoDataType()));
+            mapName = getFullMapName(RECORD_STORE_INFO_MAP_NAME);
+            rsInfoMap = mvStore.openMap(mapName, new MVMap.Builder<String, IRecordStoreInfo>().valueType(new KryoDataType()));
             for (IRecordStoreInfo rsInfo: rsInfoMap.values())
                 loadRecordStore(rsInfo);
         }
         catch (Exception e)
         {
-            throw new StorageException("Error while opening storage " + config.name, e);
+            throw new StorageException("Error while initializing storage", e);
         }
     }
     
     
     private void loadRecordStore(IRecordStoreInfo rsInfo)
     {
-        String mapName = rsInfo.getName();
-        if (producerID != null)
-            mapName = producerID + ":" + mapName;            
-            
         MVTimeSeriesImpl recordStore = new MVTimeSeriesImpl(this,
-                mapName,
+                rsInfo.getName(),
                 rsInfo.getRecordDescription(),
                 rsInfo.getRecommendedEncoding());
         
         recordStores.put(rsInfo.getName(), recordStore);
+    }
+    
+    
+    protected String getFullMapName(String baseName)
+    {
+        if (producerID != null)
+            return baseName + ":" + producerID;
+        else
+            return baseName;
     }
 
 
@@ -163,6 +170,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         {
             mvStore.close();
             mvStore = null;
+            processDescMap = null;
+            rsInfoMap = null;
+            recordStores.clear();
+            featureStore = null;
         }
     }
 
@@ -280,8 +291,9 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     protected synchronized boolean storeDataSourceDescription(AbstractProcess process, boolean update)
     {
         checkOpen();
-        boolean ok = false;
-            
+        Asserts.checkNotNull(process, AbstractProcess.class);
+        
+        boolean ok = false;            
         if (process.getNumValidTimes() > 0)
         {
             // we add the description in index for each validity period/instant
@@ -353,6 +365,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public synchronized void addRecordStore(String name, DataComponent recordStructure, DataEncoding recommendedEncoding)
     {
         checkOpen();
+        Asserts.checkNotNull(name, "name");
+        Asserts.checkNotNull(recordStructure, DataComponent.class);
+        Asserts.checkNotNull(recommendedEncoding, DataEncoding.class);
+        
         DataStreamInfo rsInfo = new DataStreamInfo(name, recordStructure, recommendedEncoding);
         rsInfoMap.put(name, rsInfo);
         loadRecordStore(rsInfo);
@@ -363,6 +379,8 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public int getNumRecords(String recordType)
     {
         checkOpen();
+        Asserts.checkNotNull(recordType, "recordType");
+        
         return recordStores.get(recordType).getNumRecords();
     }
 
@@ -371,6 +389,8 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public double[] getRecordsTimeRange(String recordType)
     {
         checkOpen();
+        Asserts.checkNotNull(recordType, "recordType");
+        
         return recordStores.get(recordType).getDataTimeRange();
     }
 
@@ -378,6 +398,9 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public Iterator<double[]> getRecordsTimeClusters(String recordType)
     {
+        checkOpen();
+        Asserts.checkNotNull(recordType, "recordType");
+        
         return recordStores.get(recordType).getRecordsTimeClusters();
     }
 
@@ -385,6 +408,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public DataBlock getDataBlock(DataKey key)
     {
+        checkOpen();
+        Asserts.checkNotNull(key, DataKey.class);
+        Asserts.checkNotNull(key.recordType, "recordType");
+        
         return recordStores.get(key.recordType).getDataBlock(key);
     }
 
@@ -392,6 +419,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public Iterator<DataBlock> getDataBlockIterator(IDataFilter filter)
     {
+        checkOpen();
+        Asserts.checkNotNull(filter, IDataFilter.class);
+        Asserts.checkNotNull(filter.getRecordType(), "recordType");
+        
         return recordStores.get(filter.getRecordType()).getDataBlockIterator(filter);
     }
 
@@ -399,6 +430,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter)
     {
+        checkOpen();
+        Asserts.checkNotNull(filter, IDataFilter.class);
+        Asserts.checkNotNull(filter.getRecordType(), "recordType");
+        
         return recordStores.get(filter.getRecordType()).getRecordIterator(filter);
     }
 
@@ -406,6 +441,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public int getNumMatchingRecords(IDataFilter filter, long maxCount)
     {
+        checkOpen();
+        Asserts.checkNotNull(filter, IDataFilter.class);
+        Asserts.checkNotNull(filter.getRecordType(), "recordType");
+        
         return recordStores.get(filter.getRecordType()).getNumMatchingRecords(filter, maxCount);
     }
 
@@ -413,6 +452,11 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public synchronized void storeRecord(DataKey key, DataBlock data)
     {
+        checkOpen();
+        Asserts.checkNotNull(key, DataKey.class);
+        Asserts.checkNotNull(data, DataBlock.class);
+        Asserts.checkNotNull(key.recordType, "recordType");
+        
         recordStores.get(key.recordType).store(key, data);
     }
 
@@ -420,6 +464,11 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public synchronized void updateRecord(DataKey key, DataBlock data)
     {
+        checkOpen();
+        Asserts.checkNotNull(key, DataKey.class);
+        Asserts.checkNotNull(data, DataBlock.class);
+        Asserts.checkNotNull(key.recordType, "recordType");
+        
         recordStores.get(key.recordType).update(key, data);
     }
 
@@ -427,6 +476,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public synchronized void removeRecord(DataKey key)
     {
+        checkOpen();
+        Asserts.checkNotNull(key, DataKey.class);
+        Asserts.checkNotNull(key.recordType, "recordType");
+        
         recordStores.get(key.recordType).remove(key);
     }
 
@@ -434,6 +487,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public synchronized int removeRecords(IDataFilter filter)
     {
+        checkOpen();
+        Asserts.checkNotNull(filter, IDataFilter.class);
+        Asserts.checkNotNull(filter.getRecordType(), "recordType");
+        
         return recordStores.get(filter.getRecordType()).remove(filter);
     }
 
@@ -441,6 +498,9 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public int getNumFois(IFoiFilter filter)
     {
+        checkOpen();
+        Asserts.checkNotNull(filter, IFoiFilter.class);
+        
         return featureStore.getNumFeatures();
     }
 
@@ -455,6 +515,9 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public Iterator<String> getFoiIDs(IFoiFilter filter)
     {
+        checkOpen();
+        Asserts.checkNotNull(filter, IFoiFilter.class);
+        
         return featureStore.getFeatureIDs(filter);
     }
 
@@ -462,6 +525,9 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public Iterator<AbstractFeature> getFois(IFoiFilter filter)
     {
+        checkOpen();
+        Asserts.checkNotNull(filter, IFoiFilter.class);
+        
         return featureStore.getFeatures(filter);
     }
 
@@ -469,6 +535,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public synchronized void storeFoi(String producerID, AbstractFeature foi)
     {
+        checkOpen();
+        Asserts.checkNotNull(producerID, "producerID");
+        Asserts.checkNotNull(foi, AbstractFeature.class);
+        
         featureStore.store(foi);
     }
 

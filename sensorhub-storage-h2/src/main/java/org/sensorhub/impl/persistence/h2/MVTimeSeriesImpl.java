@@ -55,7 +55,7 @@ import net.opengis.swe.v20.DataEncoding;
 
 public class MVTimeSeriesImpl implements IRecordStoreInfo
 {
-    private static final String RECORDS_MAP_NAME = "@records:";
+    private static final String RECORDS_MAP_NAME = "@records";
     static final double[] ALL_TIMES = new double[] {Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY};
     
     MVMap<Double, DataBlock> recordIndex;
@@ -144,14 +144,16 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
     }
     
     
-    public MVTimeSeriesImpl(MVObsStorageImpl parentStore, String name, DataComponent recordDescription, DataEncoding recommendedEncoding)
+    public MVTimeSeriesImpl(MVObsStorageImpl parentStore, String seriesName, DataComponent recordDescription, DataEncoding recommendedEncoding)
     {
         this.parentStore = parentStore;
         this.recordDescription = recordDescription;
         this.recommendedEncoding = recommendedEncoding;
         
-        String mapName = RECORDS_MAP_NAME + name;
+        String mapName = parentStore.getFullMapName(RECORDS_MAP_NAME) + ":" + seriesName;
         this.recordIndex = parentStore.mvStore.openMap(mapName, new MVMap.Builder<Double, DataBlock>().valueType(new DataBlockDataType()));
+        
+        mapName = parentStore.getFullMapName("") + ":" + seriesName;
         this.foiTimesStore = new MVFoiTimesStoreImpl(parentStore.mvStore, mapName);
     }
     
