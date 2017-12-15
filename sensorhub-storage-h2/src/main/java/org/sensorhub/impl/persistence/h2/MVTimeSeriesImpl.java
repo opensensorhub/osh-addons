@@ -58,6 +58,7 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
     private static final String RECORDS_MAP_NAME = "@records";
     static final double[] ALL_TIMES = new double[] {Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY};
     
+    String name;
     MVMap<Double, DataBlock> recordIndex;
     MVObsStorageImpl parentStore;
     MVFoiTimesStoreImpl foiTimesStore;
@@ -69,7 +70,7 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
     {
         DataBlockDataType()
         {
-            // pre-register all data block types with Kryo
+            // pre-register known types with Kryo
             registeredClasses.put(10, DataBlockBoolean.class);
             registeredClasses.put(11, DataBlockByte.class);
             registeredClasses.put(12, DataBlockUByte.class);
@@ -146,6 +147,7 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
     
     public MVTimeSeriesImpl(MVObsStorageImpl parentStore, String seriesName, DataComponent recordDescription, DataEncoding recommendedEncoding)
     {
+        this.name = seriesName;
         this.parentStore = parentStore;
         this.recordDescription = recordDescription;
         this.recommendedEncoding = recommendedEncoding;
@@ -161,7 +163,7 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
     @Override
     public String getName()
     {
-        return recordIndex.getName();
+        return name;
     }
 
 

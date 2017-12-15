@@ -90,7 +90,6 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         Asserts.checkNotNull(parentStore, "Parent");
                 
         this.mvStore = parentStore.mvStore;
-        this.featureStore = parentStore.featureStore;
         this.producerID = producerID;
     }
 
@@ -127,8 +126,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
             processDescMap = mvStore.openMap(mapName, new MVMap.Builder<Double, AbstractProcess>().valueType(new KryoDataType()));
             
             // create feature store
-            if (featureStore == null)
-                featureStore = new MVFeatureStoreImpl(mvStore);
+            featureStore = new MVFeatureStoreImpl(mvStore, producerID);
             
             // load all record stores
             mapName = getFullMapName(RECORD_STORE_INFO_MAP_NAME);
@@ -357,7 +355,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public Map<String, ? extends IRecordStoreInfo> getRecordStores()
     {
         checkOpen();
-        return Collections.unmodifiableMap(rsInfoMap);
+        return Collections.unmodifiableMap(recordStores);
     }
 
 

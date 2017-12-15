@@ -28,6 +28,8 @@ import org.h2.mvstore.rtree.SpatialKey;
 import org.sensorhub.api.persistence.IFeatureFilter;
 import org.sensorhub.api.persistence.IFeatureStorage;
 import org.sensorhub.impl.persistence.IteratorWrapper;
+import org.vast.ogc.gml.GenericFeatureImpl;
+import org.vast.ogc.om.SamplingPoint;
 import org.vast.util.Bbox;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
@@ -44,10 +46,28 @@ public class MVFeatureStoreImpl implements IFeatureStorage
     MVRTreeMap<String> spatialIndex;
     
     
-    public MVFeatureStoreImpl(MVStore mvStore)
+    static class FeatureDataType extends KryoDataType
     {
-        idIndex = mvStore.openMap(FEATURE_ID_MAP_NAME, new MVMap.Builder<String, AbstractFeature>().valueType(new KryoDataType()));
-        spatialIndex = mvStore.openMap(SPATIAL_INDEX_MAP_NAME, new MVRTreeMap.Builder<String>().dimensions(3));
+        FeatureDataType()
+        {
+            // pre-register known types with Kryo
+            registeredClasses.put(10, GenericFeatureImpl.class);
+            registeredClasses.put(11, SamplingPoint.class);
+        }
+    }
+    
+    
+    public MVFeatureStoreImpl(MVStore mvStore, String producerID)
+    {
+        String mapName = FEATURE_ID_MAP_NAME;
+        if (producerID != null)
+            mapName += ":" + producerID;
+        idIndex = mvStore.openMap(mapName, new MVMap.Builder<String, AbstractFeature>().valueType(new FeatureDataType()));
+        
+        mapName = SPATIAL_INDEX_MAP_NAME;
+        if (producerID != null)
+            mapName += ":" + producerID;
+        spatialIndex = mvStore.openMap(mapName, new MVRTreeMap.Builder<String>().dimensions(3));
     }
     
     
