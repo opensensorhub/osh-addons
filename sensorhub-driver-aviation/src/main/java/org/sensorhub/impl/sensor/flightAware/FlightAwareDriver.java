@@ -14,6 +14,8 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimerTask;
-
+import java.util.regex.Pattern;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.FoiEvent;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
@@ -40,7 +42,6 @@ import org.sensorhub.impl.sensor.navDb.NavDbEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.sensorML.SMLHelper;
-
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.AbstractProcess;
@@ -59,7 +60,9 @@ import ucar.ma2.InvalidRangeException;
 public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> implements IMultiSourceDataProducer,
 	FlightPlanListener, PositionListener, FileListener
 {
-	FlightPlanOutput flightPlanOutput;
+    static final Pattern DATA_FILE_REGEX = Pattern.compile(".*GTGTURB.*grb2");
+    
+    FlightPlanOutput flightPlanOutput;
 	FlightPositionOutput flightPositionOutput;
 //	TurbulenceOutput turbulenceOutput;
 	LawBoxOutput lawBoxOutput;
@@ -172,21 +175,54 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		
 		clientMonitor = new FlightAwareClientMonitor(client);
 
-		//  start Turbulence output, which will start FileListener for GTGTURB files
-		startTurbulenceListener();
+		startDirectoryWatcher();
+		readLatestDataFile();
 	}
+    
+    private void readLatestDataFile() throws SensorHubException
+    {
+        // list all available GTGTURB data files
+        File dir = new File(config.turbulencePath);
+        File[] turbFiles = dir.listFiles(new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return DATA_FILE_REGEX.matcher(name).matches();
+            }
+        });        
+        
+        // skip if nothing is available
+        if (turbFiles.length == 0)
+        {
+            getLogger().warn("No turbulence data file available");
+            return;
+        }
+        
+        // get the one with latest time stamp
+        File latestFile = turbFiles[0];
+        for (File f: turbFiles)
+        {
+            if (f.lastModified() > latestFile.lastModified())
+                latestFile = f;
+        }
+        
+        // trigger reader
+        newFile(latestFile.toPath());
+    }
 
-	private void startTurbulenceListener() throws SensorHubException {
-		try {
-			watcher = new DirectoryWatcher(Paths.get(config.turbulencePath), StandardWatchEventKinds.ENTRY_CREATE);
-			watcherThread = new Thread(watcher);
-			watcher.addListener(this);
-			watcherThread.start();
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new SensorHubException("TurbulenceSensor could not create DirectoryWatcher...", e);
-		}
-	}
+    private void startDirectoryWatcher() throws SensorHubException
+    {
+        try
+        {
+            watcher = new DirectoryWatcher(Paths.get(config.turbulencePath), StandardWatchEventKinds.ENTRY_CREATE);
+            watcherThread = new Thread(watcher);
+            watcher.addListener(this);
+            watcherThread.start();
+            getLogger().info("Watching directory {} for data updates", config.turbulencePath);
+        }
+        catch (IOException e)
+        {
+            throw new SensorHubException("Error creating directory watcher on " + config.turbulencePath, e);
+        }
+    }
 
 	@Override
 	public void stop() throws SensorHubException
@@ -374,32 +410,41 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		LawBox lawBox = turbReader.getLawBox(pos, orig, dest);
 		return lawBox;
 	}
-		
-	/**
-	 * Wheenever we get a new turb file, load the whole thing into memory for now
-	 */
-	@Override
-	public void newFile(Path p) throws IOException {
-		String fn = p.getFileName().toString().toLowerCase();
-		if(!fn.contains("gtgturb") || !fn.endsWith(".grb2")) {
-			return;
-		}
 
-		//  adding short delay for all platforms now- windows was consistently 
-		//  trying to open the file after creation but before it was fully copied.
-		try {
-			Thread.sleep(200L);
-		} catch (InterruptedException e1) {
-			e1.printStackTrace();
-		}
-
-		// Account for failure of new TurbReader
-		try {
-			turbReader = new TurbulenceReader(p.toString());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+    /*
+     * called whenever we get a new turb file
+     */
+    @Override
+    public void newFile(Path p)
+    {
+        // only continue when it's a new turbulence GRIB file
+        if (!DATA_FILE_REGEX.matcher(p.getFileName().toString()).matches())
+            return;
+        
+        //  adding short delay for all platforms now- windows was consistently 
+        //  trying to open the file after creation but before it was fully copied.
+        try
+        {
+            Thread.sleep(1000L);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+        
+        // try to read file with TurbReader
+        try
+        {
+            getLogger().info("Loading new turbulence data file: {}", p);
+            
+            // load the whole thing into memory for now
+            turbReader = new TurbulenceReader(p.toString());
+        }
+        catch (Exception e)
+        {
+            getLogger().error("Error reading turbulence data file: {}", p, e);
+        }
+    }
 	
 	@Override
 	public Collection<String> getEntityIDs()
