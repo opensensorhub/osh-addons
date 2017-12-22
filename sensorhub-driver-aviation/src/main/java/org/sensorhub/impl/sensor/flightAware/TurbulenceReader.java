@@ -3,15 +3,15 @@ package org.sensorhub.impl.sensor.flightAware;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.impl.sensor.flightAware.FlightPlan.Waypoint;
 import org.sensorhub.impl.sensor.flightAware.geom.GribUtil;
 import org.sensorhub.impl.sensor.flightAware.geom.LatLonAlt;
 import org.sensorhub.impl.sensor.mesh.EarthcastUtil;
+import org.sensorhub.impl.sensor.mesh.UcarUtil;
+import org.sensorhub.impl.sensor.navDb.NavDbEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +66,8 @@ public class TurbulenceReader
 {
 	// TODO allow var names to be set in config
 	private static final String ALT_VAR = "altitude_above_msl";
-	private static final String TURB_VAR = "Turbulence_Potential_Forecast_Index_altitude_above_msl";
+//	private static final String TURB_VAR = "Turbulence_Potential_Forecast_Index_altitude_above_msl";
+	private static final String TURB_VAR = "Clear_air_turbulence_CAT_altitude_above_msl";
 	private static final String TIME_VAR = "time";
 	private static final String X_VAR = "x";
 	private static final String Y_VAR = "y";
@@ -103,6 +104,8 @@ public class TurbulenceReader
 	public void initFile(String path) throws IOException {
 		dataset = GridDataset.open(path);
 		ncFile = dataset.getNetcdfFile();
+		List<String> vn = UcarUtil.getVariableNames(ncFile);
+		for(String n: vn)  System.err.println(n);
 		//  Get projection info
 		gridCoordSystem = dataset.getGrids().get(0).getCoordinateSystem();
 		proj = gridCoordSystem.getProjection();
@@ -126,8 +129,17 @@ public class TurbulenceReader
 		removeNaNs();
 	}
 
+	private Variable findTurbulence() {
+		List<Variable> vars = ncFile.getVariables();
+		for (Variable v: vars)
+			if(v.getShortName().toLowerCase().contains("turbulence"))
+				return v;
+		return null;
+	}
+	
 	private void loadTurbulenceData() throws IOException {
-		turbVar = ncFile.findVariable(TURB_VAR);
+//		turbVar = ncFile.findVariable(TURB_VAR);
+		turbVar = findTurbulence();
 		if (turbVar == null)
 			throw new IOException("TurbulenceReader could not find turbulence variable: " + TURB_VAR);
 
@@ -206,11 +218,23 @@ public class TurbulenceReader
 	//	blBottom:30.16655436155672, -100.0, 8000.0
 	//	flBottom:30.135117172238807, -97.11580280188991, 8000.0
 	//	frBottom:29.802008449125367, -97.11580280188991, 8000.0
-	//	public LawBox getLawBox(FlightObject pos) throws IOException {
 	public LawBox getLawBox(FlightObject pos) throws IOException {
+		return getLawBox(pos, null, null);
+	}
+
+		
+	/**
+	 * 
+	 * @param pos
+	 * @param origin (can be null)
+	 * @param destination (can be null)
+	 * @return  LawBox object based on airports
+	 * @throws IOException
+	 */
+	public LawBox getLawBox(FlightObject pos, NavDbEntry origin, NavDbEntry destination) throws IOException {
 		//		LawBoxGeometry geom = new LawBoxGeometry(pos);
 		LawBox lawBox = new LawBox(pos);
-		lawBox.computeBox();
+		lawBox.computeBox(origin, destination);
 //		System.err.println(pos);
 //		System.err.println(lawBox);
 		
@@ -359,7 +383,7 @@ public class TurbulenceReader
 		double heading = 225.;
 
 		LawBoxGeometry lbGeom = new LawBoxGeometry(lat, lon, alt, groundSpeed, verticalRate, heading);
-		TurbulenceReader reader = new TurbulenceReader("C:/home/tcook/osh/mesh/data/GTGTURB/ECT_NCST_DELTA_GTGTURB_6_5km.201710251815.grb2");
+		TurbulenceReader reader = new TurbulenceReader("C:/home/tcook/osh/mesh/data/ECT_NCST_DELTA_GTGTURB_6_5km.201712190815.grb2");
 		FlightObject obj = new FlightObject();
 		obj.clock = "" + System.currentTimeMillis()/1000;
 		obj.lat="32.43";
