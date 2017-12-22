@@ -13,13 +13,14 @@ Copyright (C) 2017 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.util.ArrayList;
 import java.util.List;
 
+import org.sensorhub.impl.sensor.flightAware.geom.GeoConstants.Units;
 import org.sensorhub.impl.sensor.flightAware.geom.GeoUtil;
 import org.sensorhub.impl.sensor.flightAware.geom.LatLon;
 import org.sensorhub.impl.sensor.flightAware.geom.LatLonAlt;
-import org.sensorhub.impl.sensor.flightAware.geom.GeoConstants.Units;
+import org.sensorhub.impl.sensor.navDb.LufthansaParser;
+import org.sensorhub.impl.sensor.navDb.NavDbEntry;
 
 /**
  * 
@@ -50,9 +51,11 @@ public class LawBoxGeometry
 	Double verticalRate;  //  negative is descent
 	Double lat; 
 	Double lon;
-	String origIcao;  // if present, fix length 
-	Double origLat, origLon;
-	String destIcao;  // if present, fix length to max 100 mi w/i 100 mi
+//	String origIcao;  // if present, fix length 
+//	Double origLat, origLon;
+	NavDbEntry origin;
+	NavDbEntry destination;
+//	String destIcao;  // if present, fix length to max 100 mi w/i 100 mi
 	Double destLat, destLon;
 	Double heading;
 
@@ -63,10 +66,16 @@ public class LawBoxGeometry
 	public static final double MAX_VERTICAL = 10000.0;  // feet
 	public static final double MIN_LOWER_BOUND = 1000.0;  // feet
 	public static final double MAX_UPPER_BOUND = 50000.0;  // feet
-
+	  
 	public LawBoxGeometry(FlightObject pos) {
 		// Note- Sensor or Output will need to provide vert rate
 		this(pos.getLatitude(), pos.getLongtiude(), pos.getAltitude(), pos.getGroundSpeed(), pos.verticalChange, pos.getHeading());
+		if(pos.orig != null) {
+			
+		}
+		if(pos.dest != null) {
+			
+		}
 	}
 
 	public LawBoxGeometry(Double lat, Double lon, Double alt, Double groundSpeed, Double verticalRate, Double heading) {
@@ -77,53 +86,37 @@ public class LawBoxGeometry
 		this.verticalRate = verticalRate;
 		this.heading = heading;
 	}
-
-	public void setIcaoCode(String icaoCode) {
-		this.origIcao = icaoCode;
+	
+//	public void setIcaoCode(String icaoCode) {
+//		this.origIcao = icaoCode;
+//	}
+//
+//	public void setDestLat(Double destLat) {
+//		this.destLat = destLat;
+//	}
+//
+//	public void setDestLon(Double destLon) {
+//		this.destLon = destLon;
+//	}
+//
+	private boolean hasOrigin() {
+		return origin != null;
 	}
 
-	public void setDestLat(Double destLat) {
-		this.destLat = destLat;
-	}
-
-	public void setDestLon(Double destLon) {
-		this.destLon = destLon;
-	}
-
-	private boolean hasOrigLocation() {
-		return origLat != null && origLon != null;
-	}
-
-	private boolean hasDestLocation() {
-		return destLat != null && destLon != null;
-	}
-
-	private Double distanceToOrig() {
-		if(!hasOrigLocation())  return  null; 
-		Double distance = GeoUtil.distance(lat, lon, origLat, origLon,  Units.NAUTICAL_MILES);
-		if(distance < 200.) 
-			return (distance > 100.) ? 100. : distance;
-		return null;
-	}
-
-	private Double distanceToDest() {
-		if(!hasDestLocation())  return  null; 
-		Double distance = GeoUtil.distance(lat, lon, origLat, origLon,  Units.NAUTICAL_MILES);
-		if(distance < 200.) 
-			return (distance > 100.) ? 100. : distance;
-		return null;
+	private boolean hasDestination() {
+		return destination != null;
 	}
 
 	private double getLength() {
-		if(hasDestLocation()) {
-			double distance = GeoUtil.distance(lat, lon, destLat, destLon,  Units.NAUTICAL_MILES);
+		if(hasDestination()) {
+			Double distance = GeoUtil.distance(lat, lon, destination.lat, destination.lon,  Units.NAUTICAL_MILES);
 			if(distance < 200.) {
 				return (distance < 100.) ? 100. : distance;
 			}
 		}
 
-		if(hasOrigLocation()) {
-			double distance = GeoUtil.distance(lat, lon, origLat, origLon,  Units.NAUTICAL_MILES);
+		if(hasOrigin()) {
+			Double distance = GeoUtil.distance(lat, lon, origin.lat, origin.lon,  Units.NAUTICAL_MILES);
 			if(distance < 200.) {
 				return (distance < 100.) ? 100. : distance;
 			}
@@ -139,15 +132,15 @@ public class LawBoxGeometry
 	}
 
 	private double getUp() {
-		if(hasDestLocation()) {
-			double distance = GeoUtil.distance(lat, lon, destLat, destLon,  Units.NAUTICAL_MILES);
+		if(hasDestination()) {
+			Double distance = GeoUtil.distance(lat, lon, destination.lat, destination.lon,  Units.NAUTICAL_MILES);
 			if(distance <= 200.) {
 				return 2_000;
 			}
 		}
 
-		if(hasOrigLocation()) {
-			double distance = GeoUtil.distance(lat, lon, origLat, origLon,  Units.NAUTICAL_MILES);
+		if(hasOrigin()) {
+			Double distance = GeoUtil.distance(lat, lon, origin.lat, origin.lon,  Units.NAUTICAL_MILES);
 			if(distance <= 100.) {
 				return 10_000;
 			}
@@ -162,15 +155,15 @@ public class LawBoxGeometry
 	}
 
 	private double getDown() {
-		if(hasDestLocation()) {
-			double distance = GeoUtil.distance(lat, lon, destLat, destLon,  Units.NAUTICAL_MILES);
+		if(hasDestination()) {
+			Double distance = GeoUtil.distance(lat, lon, destination.lat, destination.lon,  Units.NAUTICAL_MILES);
 			if(distance <= 200.) {
 				return 10_000;
 			}
 		}
 
-		if(hasOrigLocation()) {
-			double distance = GeoUtil.distance(lat, lon, origLat, origLon,  Units.NAUTICAL_MILES);
+		if(hasOrigin()) {
+			Double distance = GeoUtil.distance(lat, lon, origin.lat, origin.lon,  Units.NAUTICAL_MILES);
 			if(distance <= 100.) {
 				return 2_000;
 			}
@@ -184,11 +177,18 @@ public class LawBoxGeometry
 		return val;
 	}
 
+	public void computeBox(LawBox lawBox) {
+		computeBox(lawBox, null, null);
+	}
+	
 	//	Length = Speed/2.  Minimum 100nm, max 250nm
 	//			Width = 10nm (+/- 5nm either side of plane)
 	//			Height = Vertical rate x2 in direction of vert change, x1 in other direction.  Minimum dimension +/- 2,000ft, maximum in one direction is +10,000ft
 	//	public LawBox computeBox() {
-	public void computeBox(LawBox lawBox) {
+	public void computeBox(LawBox lawBox, NavDbEntry origin, NavDbEntry destination) {
+		this.origin = origin;
+		this.destination = destination;
+		
 		// Need at least location to compute anything
 //		assert lat != null &&  lon != null && alt != null;
 
@@ -228,10 +228,10 @@ public class LawBoxGeometry
 		double heading = 90.;
 
 		LawBoxGeometry lbGeom = new LawBoxGeometry(lat, lon, alt, groundSpeed, verticalRate, heading);
-		lbGeom.origLat = 2.1;
-		lbGeom.origLon = -110.1;
-		lbGeom.destLat = 31.9;
-		lbGeom.destLon = -101.1;
+//		lbGeom.origLat = 2.1;
+//		lbGeom.origLon = -110.1;
+//		lbGeom.destLat = 31.9;
+//		lbGeom.destLon = -101.1;
 		LawBox box = new LawBox(lbGeom);
 		box.computeBox();
 		System.err.println(box);

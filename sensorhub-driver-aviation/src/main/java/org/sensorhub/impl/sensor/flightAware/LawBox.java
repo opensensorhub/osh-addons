@@ -14,6 +14,7 @@ Copyright (C) 2017 Botts Innovative Research, Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.flightAware;
 
 import org.sensorhub.impl.sensor.flightAware.geom.LatLonAlt;
+import org.sensorhub.impl.sensor.navDb.NavDbEntry;
 
 import com.vividsolutions.jts.geom.Coordinate;
 
@@ -33,6 +34,8 @@ public class LawBox
 	LatLonAlt maxCoordLla;  // harmonize with my container LatLon classes
 	FlightObject position;
 	int changeFlag;
+//	Double origLat, origLon;
+//	Double destLat, destLon;
 	
 	public LawBox(FlightObject position) {
 		this.position = position;
@@ -47,6 +50,10 @@ public class LawBox
 		geom.computeBox(this);
 	}
 	
+	public void computeBox(NavDbEntry origin, NavDbEntry destination) {
+		geom.computeBox(this, origin, destination);
+	}
+	
 	public double []  getBoundary() {
 		// assert br,bl,fr,fl non null
 		double [] boundary = new double[] {
@@ -59,7 +66,7 @@ public class LawBox
 		
 		return boundary;
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
