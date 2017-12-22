@@ -2,11 +2,8 @@ package org.sensorhub.impl.sensor.flightAware;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.time.Instant;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -122,6 +119,31 @@ public class FlightAwareApi
 		return plan;
 	}
 
+	// ident is tail number
+	//  @TODO
+	public FlightPlan getFlightPosition(String ident) throws ClientProtocolException, IOException {
+		String json = invokeNew(InFlightInfo_URL+ "ident=" + ident);
+//		System.err.println(DecodeFlightRoute_URL + "faFlightID=" + id);
+		if(json.contains("error")) {
+			log.debug("FlightPlan.getFlightPosition(): Whoops for flight ident{} : {}", ident,json);
+			return null;
+		}
+//		DecodeFlightResult decodedInfo = (DecodeFlightResult)fromJson(json, DecodeFlightResult.class);
+//		
+//		FlightPosition pos = new FlightPosition();
+//		//pos.ident = id;
+//		int dashIdx = id.indexOf('-'); 
+//		if(dashIdx == -1) {
+//			log.debug("FltawareApi.getFltPlan(): Don't understand faFlightId: {} ", id);
+//		}
+//		String ident = id.substring(0, dashIdx);
+//		plan.oshFlightId = ident + "_" + plan.destinationAirport;
+////		plan.time = comes from firehose only
+//		return plan;
+		return null;
+	}
+
+	
 	public static void main(String[] args) throws Exception {
 		log.warn("Logging Works");
 		System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");

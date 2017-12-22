@@ -35,6 +35,8 @@ import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.mesh.DirectoryWatcher;
 import org.sensorhub.impl.sensor.mesh.FileListener;
+import org.sensorhub.impl.sensor.navDb.LufthansaParser;
+import org.sensorhub.impl.sensor.navDb.NavDbEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.sensorML.SMLHelper;
@@ -84,6 +86,10 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	Thread watcherThread;
 	private DirectoryWatcher watcher;
 
+	// Adding Airports- needed for computing LawBox when position is close to an airport 
+	// Should pull these from storage.  
+	Map<String, NavDbEntry> airportMap;
+	
 	static final Logger log = LoggerFactory.getLogger(FlightAwareDriver.class);
 
 	public FlightAwareDriver() {
@@ -91,8 +97,23 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		this.flightAwareFois = Collections.synchronizedMap(new LinkedHashMap<String, AbstractFeature>());
 		this.aircraftDesc = Collections.synchronizedMap(new LinkedHashMap<String, AbstractFeature>());
 		this.flightPositions = Collections.synchronizedMap(new LinkedHashMap<String, FlightObject>());
+		this.airportMap = Collections.synchronizedMap(new LinkedHashMap<String, NavDbEntry>());
 	}
 
+	private void loadAirports() {
+		 try {
+			List<NavDbEntry> airports = LufthansaParser.getDeltaAirports(config.navDbPath, config.deltaAirportsPath);
+			for(NavDbEntry a: airports) {
+				airportMap.put(a.icao, a);
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			log.debug(e.getMessage());
+		}
+	}
+	
+	
 	@Override
 	protected void updateSensorDescription()
 	{
@@ -121,11 +142,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		addOutput(flightPositionOutput, false);
 		flightPositionOutput.init();
 
-		// Turbulence
-//		this.turbulenceOutput= new TurbulenceOutput(this);
-//		addOutput(turbulenceOutput, false);
-//		turbulenceOutput.init();
-
 		// LawBox
 		this.lawBoxOutput= new LawBoxOutput(this);
 		addOutput(lawBoxOutput, false);
@@ -146,6 +162,9 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		client.addListener(converter);
 		converter.addPlanListener(this);
 		converter.addPositionListener(this);
+
+		//  Load airportsMap so we can look up airport locations for LawBox
+		loadAirports();
 
 		// Start firehose feed
 		Thread thread = new Thread(client);
@@ -343,7 +362,16 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 			log.debug("FlightPosition not available in getLawBox() for: {}", flightUid);
 			return null;
 		}
-		LawBox lawBox = turbReader.getLawBox(pos);
+		NavDbEntry orig = null;
+		NavDbEntry dest = null;
+		if(pos.orig != null)
+			orig = airportMap.get(pos.orig);
+		if(pos.dest != null)
+			dest = airportMap.get(pos.dest);
+		
+		// Probably a better way to handle this- orig and dest airports have to be 
+		//  passed down a couple of classes to do the computation. 
+		LawBox lawBox = turbReader.getLawBox(pos, orig, dest);
 		return lawBox;
 	}
 		

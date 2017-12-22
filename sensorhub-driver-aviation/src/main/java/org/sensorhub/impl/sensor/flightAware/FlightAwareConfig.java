@@ -28,4 +28,8 @@ public class FlightAwareConfig extends SensorConfig
     public String turbulencePath;
     
     public String [] messageTypes;  // Types of FA messages to listen for
+    
+    // TODO- NavDbDriver and FlightAwareDriver should share this somehow
+    public String navDbPath;
+    public String deltaAirportsPath;
 }
