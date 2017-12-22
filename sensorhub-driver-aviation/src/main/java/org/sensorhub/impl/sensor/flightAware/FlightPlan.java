@@ -168,5 +168,9 @@ public class FlightPlan
 	public void setOshFlightId(String oshFlightId) {
 		this.oshFlightId = oshFlightId;
 	}
+	
+	public void addWaypoint(String code, float lat, float lon) {
+	    this.waypoints.add(new Waypoint(code, null, lat, lon));
+	}
 
 }
