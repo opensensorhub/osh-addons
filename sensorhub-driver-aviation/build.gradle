@@ -2,24 +2,25 @@ description = 'Earthcast Weather and Aircraft products'
 ext.details = 'Earthcast Weather and Aircraft products'
 version = '0.2.0'
 
+rootProject.allprojects {
+  repositories {
+    maven { url 'https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases' }
+  }
+}
+
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-// UCAR NetCDF dependencies
+  // UCAR NetCDF dependencies
   //compile 'edu.ucar:cdm:4.6.10'
-  //compile 'edu.ucar:grib:4.6.10'
-  compile 'edu.ucar:netcdfAll:4.6.10'
+  compile 'edu.ucar:grib:4.6.10'
+  //compile 'edu.ucar:netcdfAll:4.6.10'
   //compile 'org.slf4j:slf4j-jdk14:1.7.21'
-  
-  compile('org.sensorhub:sensorhub-service-swe:[0.1,2.0)') {
-	  exclude group: 'joda-time', module: 'joda-time:1.5.2'
-   }
-
 }
 
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Georobotix'
+    instruction 'Bundle-Vendor', 'GeoRobotix Inc'
     instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.turbulence.Turbulence'
   }
 }
@@ -30,7 +31,7 @@ ext.pom >>= {
     developer {
       id 'TheRestOfMe'
       name 'Tony Cook'
-      organization 'Georobotix'
+      organization 'GeoRobotix'
       organizationUrl 'https://opensensorhub.org/' 
     }
   }
