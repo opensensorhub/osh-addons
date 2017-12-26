@@ -61,6 +61,7 @@ public class LawBoxGeometry
 
 	public static final double MIN_LENGTH = 100.0;  // all are nautical miles
 	public static final double MAX_LENGTH = 250.0;
+	public static final double PROXIMAL_AIRPORT_LENGTH = 25.0;  //  Distance from Orig/Dest airport 
 	public static final double WIDTH = 10.0;  // fixed
 	public static final double MIN_VERTICAL = 2000.0;  // feet
 	public static final double MAX_VERTICAL = 10000.0;  // feet
@@ -111,14 +112,14 @@ public class LawBoxGeometry
 		if(hasDestination()) {
 			Double distance = GeoUtil.distance(lat, lon, destination.lat, destination.lon,  Units.NAUTICAL_MILES);
 			if(distance < 200.) {
-				return (distance < 100.) ? 100. : distance;
+				return (distance < PROXIMAL_AIRPORT_LENGTH) ? PROXIMAL_AIRPORT_LENGTH : distance;
 			}
 		}
 
 		if(hasOrigin()) {
 			Double distance = GeoUtil.distance(lat, lon, origin.lat, origin.lon,  Units.NAUTICAL_MILES);
 			if(distance < 200.) {
-				return (distance < 100.) ? 100. : distance;
+				return (distance < PROXIMAL_AIRPORT_LENGTH) ? PROXIMAL_AIRPORT_LENGTH : distance;
 			}
 		}
 
