@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,7 +44,6 @@ import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
-import ucar.ma2.InvalidRangeException;
 
 /**
  * 
@@ -63,7 +61,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     
     FlightPlanOutput flightPlanOutput;
 	FlightPositionOutput flightPositionOutput;
-//	TurbulenceOutput turbulenceOutput;
 	LawBoxOutput lawBoxOutput;
 	FlightAwareClient client;
 	FlightAwareClientMonitor clientMonitor;
@@ -279,25 +276,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		log.debug("New Position added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
 	}
 
-	private void addTurbulenceFoi(String flightId, long recordTime) {
-		String uid = TURBULENCE_UID_PREFIX + flightId;
-		String description = "Delta Turbulence data for: " + flightId;
-
-		// generate small SensorML for FOI
-		PhysicalSystem foi = smlFac.newPhysicalSystem();
-		foi.setId(flightId);
-		foi.setUniqueIdentifier(uid);
-		foi.setName(flightId + " Turbulence");
-		foi.setDescription(description);
-		flightAwareFois.put(uid, foi);
-
-		// send event
-		long now = System.currentTimeMillis();
-		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
-
-		log.trace("New TurbulenceProfile added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
-	}
-
 	private void addLawBoxFoi(String flightId, long recordTime) {
 		AbstractFeature lawboxFoi = flightAwareFois.get(LAWBOX_UID_PREFIX + flightId);
 		if(lawboxFoi != null)
@@ -360,22 +338,8 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		if(fpFoi == null) 
 			addFlightPlanFoi(oshFlightId, System.currentTimeMillis()/1000);
 
-		//  And Turbulence FOI if new
-		AbstractFeature turbFoi = flightAwareFois.get(TURBULENCE_UID_PREFIX + oshFlightId);
-		if(turbFoi == null)
-			addTurbulenceFoi(oshFlightId, System.currentTimeMillis()/1000) ;
-
 		// send new data to outputs
 		flightPlanOutput.sendFlightPlan(plan);
-//		turbulenceOutput.addFlightPlan(TURBULENCE_UID_PREFIX + plan.oshFlightId, plan);
-	}
-
-	public List<TurbulenceRecord> getTurbulence(FlightPlan plan) throws IOException, InvalidRangeException {
-		if(turbReader == null) {
-			log.debug("FlightAwareSensor turbulenceReader is null.  No data yet.");
-			return new ArrayList<>();
-		}
-		return turbReader.getTurbulence(plan);
 	}
 	
 	public LawBox getLawBox(String flightUid) throws IOException {
