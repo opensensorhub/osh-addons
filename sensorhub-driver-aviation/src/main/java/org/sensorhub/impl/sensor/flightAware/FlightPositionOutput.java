@@ -2,8 +2,8 @@ package org.sensorhub.impl.sensor.flightAware;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
@@ -26,8 +26,8 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 	DataRecord recordStruct;
 	DataEncoding encoding;	
 
-	Map<String, Long> latestUpdateTimes = new LinkedHashMap<>();
-	Map<String, DataBlock> latestRecords = new LinkedHashMap<>();  // key is position uid
+	Map<String, Long> latestUpdateTimes = new ConcurrentHashMap<>();
+	Map<String, DataBlock> latestRecords = new ConcurrentHashMap<>();  // key is position uid
 
 	public FlightPositionOutput(FlightAwareDriver parentSensor) 
 	{

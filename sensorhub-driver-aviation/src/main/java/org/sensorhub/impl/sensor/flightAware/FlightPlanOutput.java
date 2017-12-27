@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
@@ -58,14 +59,13 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
 
 	DataRecord recordStruct;
 	DataEncoding encoding;	
-	Map<String, Long> latestUpdateTimes;
-	Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
+	Map<String, Long> latestUpdateTimes = new ConcurrentHashMap<>();
+	Map<String, DataBlock> latestRecords = new ConcurrentHashMap<>();
 
 
 	public FlightPlanOutput(FlightAwareDriver parentSensor) 
 	{
 		super(parentSensor);
-		latestUpdateTimes = new HashMap<String, Long>();
 	}
 
 

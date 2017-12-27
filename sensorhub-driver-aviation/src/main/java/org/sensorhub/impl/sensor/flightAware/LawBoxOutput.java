@@ -3,9 +3,8 @@ package org.sensorhub.impl.sensor.flightAware;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
@@ -17,7 +16,6 @@ import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
-import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
@@ -26,7 +24,6 @@ import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Vector;
-import ucar.ma2.InvalidRangeException;
 
 public class LawBoxOutput extends AbstractSensorOutput<FlightAwareDriver> implements IMultiSourceDataInterface  
 {
@@ -35,8 +32,8 @@ public class LawBoxOutput extends AbstractSensorOutput<FlightAwareDriver> implem
 	DataRecord recordStruct;
 	DataEncoding encoding;	
 
-	Map<String, Long> latestUpdateTimes = new LinkedHashMap<>();
-	Map<String, DataBlock> latestRecords = new LinkedHashMap<>();  //
+	Map<String, Long> latestUpdateTimes = new ConcurrentHashMap<>();
+	Map<String, DataBlock> latestRecords = new ConcurrentHashMap<>();  //
 
 	public LawBoxOutput(FlightAwareDriver parentSensor) 
 	{

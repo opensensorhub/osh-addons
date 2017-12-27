@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
@@ -69,8 +70,8 @@ public class TurbulenceOutput extends AbstractSensorOutput<FlightAwareDriver> im
 	DataRecord recordStruct;
 	DataEncoding encoding;	
 	Map<String, Long> latestUpdateTimes;
-	Map<String, DataBlock> latestRecords = new LinkedHashMap<>();  // key is full turb uid
-	Map<String, FlightPlan> availableFlightPlans = new LinkedHashMap<>();  // key is full turb uid
+	Map<String, DataBlock> latestRecords = new ConcurrentHashMap<>();  // key is full turb uid
+	Map<String, FlightPlan> availableFlightPlans = new ConcurrentHashMap<>();  // key is full turb uid
 
 	private DataRecord profileStruct;
 
