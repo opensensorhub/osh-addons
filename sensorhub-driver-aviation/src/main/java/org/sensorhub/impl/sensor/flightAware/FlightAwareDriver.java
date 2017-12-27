@@ -24,12 +24,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.regex.Pattern;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.FoiEvent;
@@ -74,7 +73,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	GMLFactory gmlFac = new GMLFactory(true);
 
 	// Dynamically created FOIs
-	Set<String> foiIDs;
 	Map<String, AbstractFeature> flightAwareFois;
 	Map<String, AbstractFeature> aircraftDesc;
 	Map<String, FlightObject> flightPositions;
@@ -85,7 +83,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	static final String LAWBOX_UID_PREFIX = SENSOR_UID_PREFIX + "lawBox:";
 
 	// Listen for and ingest new Turbulence files so we can populate LawBoxOutput 
-	private TurbulenceReader turbReader;
+	volatile TurbulenceReader turbReader;
 	Thread watcherThread;
 	private DirectoryWatcher watcher;
 
@@ -96,11 +94,10 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	static final Logger log = LoggerFactory.getLogger(FlightAwareDriver.class);
 
 	public FlightAwareDriver() {
-		this.foiIDs = new LinkedHashSet<String>();
-		this.flightAwareFois = Collections.synchronizedMap(new LinkedHashMap<String, AbstractFeature>());
-		this.aircraftDesc = Collections.synchronizedMap(new LinkedHashMap<String, AbstractFeature>());
-		this.flightPositions = Collections.synchronizedMap(new LinkedHashMap<String, FlightObject>());
-		this.airportMap = Collections.synchronizedMap(new LinkedHashMap<String, NavDbEntry>());
+		this.flightAwareFois = new ConcurrentSkipListMap<>();
+		this.aircraftDesc = new ConcurrentHashMap<>();
+		this.flightPositions = new ConcurrentHashMap<>();
+		this.airportMap = new HashMap<>();
 	}
 
 	private void loadAirports() {
@@ -110,9 +107,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 				airportMap.put(a.icao, a);
 			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			log.debug(e.getMessage());
+			log.debug("Error loading airports", e);
 		}
 	}
 	
@@ -250,8 +245,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		foi.setUniqueIdentifier(uid);
 		foi.setName(flightId + " FlightPlan");
 		foi.setDescription(description);
-
-		foiIDs.add(uid);
 		flightAwareFois.put(uid, foi);
 
 		// send event
@@ -275,8 +268,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		foi.setUniqueIdentifier(uid);
 		foi.setName(flightId + " Position");
 		foi.setDescription(description);
-
-		foiIDs.add(uid);
 		flightAwareFois.put(uid, foi);
 
 		// send event
@@ -298,8 +289,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		foi.setUniqueIdentifier(uid);
 		foi.setName(flightId + " Turbulence");
 		foi.setDescription(description);
-
-		foiIDs.add(uid);
 		flightAwareFois.put(uid, foi);
 
 		// send event
@@ -322,8 +311,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		foi.setUniqueIdentifier(uid);
 		foi.setName(flightId + " LawBox");
 		foi.setDescription(description);
-
-		foiIDs.add(uid);
 		flightAwareFois.put(uid, foi);
 
 		// send event
@@ -386,7 +373,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	public List<TurbulenceRecord> getTurbulence(FlightPlan plan) throws IOException, InvalidRangeException {
 		if(turbReader == null) {
 			log.debug("FlightAwareSensor turbulenceReader is null.  No data yet.");
-			return new ArrayList<TurbulenceRecord>();
+			return new ArrayList<>();
 		}
 		return turbReader.getTurbulence(plan);
 	}
@@ -407,8 +394,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		
 		// Probably a better way to handle this- orig and dest airports have to be 
 		//  passed down a couple of classes to do the computation. 
-		LawBox lawBox = turbReader.getLawBox(pos, orig, dest);
-		return lawBox;
+		return turbReader.getLawBox(pos, orig, dest);
 	}
 
     /*
@@ -463,7 +449,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	@Override
 	public AbstractProcess getCurrentDescription(String entityID)
 	{
-		// TODO
 		return null;
 	}
 
@@ -492,7 +477,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	@Override
 	public Collection<String> getFeaturesOfInterestIDs()
 	{
-		return Collections.unmodifiableCollection(foiIDs);
+		return Collections.unmodifiableCollection(flightAwareFois.keySet());
 	}
 
 	@Override
