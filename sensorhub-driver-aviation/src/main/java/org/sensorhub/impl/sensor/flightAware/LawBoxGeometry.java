@@ -13,14 +13,13 @@ Copyright (C) 2017 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.util.List;
-
 import org.sensorhub.impl.sensor.flightAware.geom.GeoConstants.Units;
 import org.sensorhub.impl.sensor.flightAware.geom.GeoUtil;
 import org.sensorhub.impl.sensor.flightAware.geom.LatLon;
 import org.sensorhub.impl.sensor.flightAware.geom.LatLonAlt;
-import org.sensorhub.impl.sensor.navDb.LufthansaParser;
 import org.sensorhub.impl.sensor.navDb.NavDbEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -68,6 +67,8 @@ public class LawBoxGeometry
 	public static final double MIN_LOWER_BOUND = 1000.0;  // feet
 	public static final double MAX_UPPER_BOUND = 50000.0;  // feet
 	  
+	static final Logger log = LoggerFactory.getLogger(LawBoxGeometry.class);
+	
 	public LawBoxGeometry(FlightObject pos) {
 		// Note- Sensor or Output will need to provide vert rate
 		this(pos.getLatitude(), pos.getLongtiude(), pos.getAltitude(), pos.getGroundSpeed(), pos.verticalChange, pos.getHeading());
@@ -109,8 +110,10 @@ public class LawBoxGeometry
 	}
 
 	private double getLength() {
+		log.debug("LawBox orig, dest: {}{}", origin ,destination);
 		if(hasDestination()) {
 			Double distance = GeoUtil.distance(lat, lon, destination.lat, destination.lon,  Units.NAUTICAL_MILES);
+			log.debug("LawBox distance {} ", distance);
 			if(distance < 200.) {
 				return (distance < PROXIMAL_AIRPORT_LENGTH) ? PROXIMAL_AIRPORT_LENGTH : distance;
 			}
@@ -194,6 +197,7 @@ public class LawBoxGeometry
 //		assert lat != null &&  lon != null && alt != null;
 
 		double length = getLength(); // nautical miles!
+		log.debug("LawBox length: {}", length);
 		double up = getUp();
 		double down = getDown();
 
