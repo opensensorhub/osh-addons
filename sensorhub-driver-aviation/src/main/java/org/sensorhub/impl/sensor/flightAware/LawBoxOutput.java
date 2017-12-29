@@ -192,16 +192,27 @@ public class LawBoxOutput extends AbstractSensorOutput<FlightAwareDriver> implem
 			lawBox = parentSensor.getLawBox(oshFlighId);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			e.printStackTrace(System.err);
+			log.debug("Error constructin lawBox for{} " + entityID);
+			log.debug(e.getMessage());
+			return null;
 		}
 		if(lawBox == null) {
 			log.info("LawBoxOutput.getLatest():  Error Reading lawBox.");
+			System.err.println("LawBoxOutput.getLatest():  Error Reading lawBox.");
 			return null;
 		}
 		if(b != null) {
 			//  If requests are spaced out, this way of computing will not be reliable
 			//  Needs to be done for every active flight every time pos updates
 			Double prevTurb = b.getDoubleValue(15);
+			Double prevTime = b.getDoubleValue(0);
+			//  Check to see if time has changed
+			if(prevTime == lawBox.position.getClock()) {
+				log.info("LawBoxOutput.getLatest():  Position not updated since previous request for: {}", entityID);
+				System.err.println("LawBoxOutput.getLatest():  Position not updated since previous request for: " + entityID);
+				return b;
+			}
 			int prevMag = (int)(prevTurb * 10.0); 
 			int newMag = (int)(lawBox.maxTurb * 10.0);
 			if (prevMag == newMag) {
@@ -209,6 +220,7 @@ public class LawBoxOutput extends AbstractSensorOutput<FlightAwareDriver> implem
 			} else {
 				lawBox.changeFlag = (newMag > prevMag) ? 1 : -1;				
 			}
+			System.err.println(prevTurb + "  "  + "  " +  prevMag + "  " + lawBox.maxTurb + "  " +  newMag + "  "  + lawBox.changeFlag);
 		}
 
 		DataBlock latestBlock = sendLawBox(lawBox);
