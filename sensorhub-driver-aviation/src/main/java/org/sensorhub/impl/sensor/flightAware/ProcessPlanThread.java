@@ -17,6 +17,15 @@ import java.io.IOException;
 
 import org.apache.http.client.ClientProtocolException;
 
+/**
+ *   Process Flight Plan messages from FlightAware firehose feed.
+ *   Note that because of the way FlightAware feed and API work, 
+ *   we have to pull some info from the Firehose message (airports, departTime, issueTime)
+ *   and some from the API (actual waypoints) 
+ *
+ * @author tcook
+ *
+ */
 public class ProcessPlanThread implements Runnable
 {
 	FlightObject obj;
@@ -36,8 +45,14 @@ public class ProcessPlanThread implements Runnable
 			if(plan == null) {
 				return;
 			}
-			//	plan.time = obj.getClock();  // Use pitr?
-			plan.time = System.currentTimeMillis() / 1000;
+			//  By convention, I am using message receive time as issueTime
+			//  Flight Aware does not include it in feed
+			plan.issueTime = System.currentTimeMillis() / 1000;
+			if(obj.orig != null)
+				plan.originAirport = obj.orig;
+			if(obj.dest != null)
+				plan.destinationAirport = obj.dest;
+			plan.departureTime = obj.getDepartureTime();
 			converter.newFlightPlan(plan);
 		} catch (ClientProtocolException e) {
 			e.printStackTrace();

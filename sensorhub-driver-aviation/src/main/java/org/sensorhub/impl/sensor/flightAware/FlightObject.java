@@ -90,8 +90,8 @@ public class FlightObject
 	public String heading;
 	public String lat;
 	public String lon;
-	public String orig; // 	ICAO airport code, waypoint, or latitude/longitude pair
-	public String dest; // 	ICAO airport code, waypoint, or latitude/longitude pair
+	public String orig = ""; // 	ICAO airport code, waypoint, or latitude/longitude pair
+	public String dest = ""; // 	ICAO airport code, waypoint, or latitude/longitude pair
 	public String reg;
 	public String squawk;
 	public String updateType;
@@ -104,6 +104,15 @@ public class FlightObject
 	
 	// Adding for LawBox support
 	Double verticalChange;  //feet per mminute
+	
+	public Long getDepartureTime() {
+		if(edt != null)
+			return Long.parseLong(edt);
+		if(fdt != null)
+			return Long.parseLong(fdt);
+		
+		return null;
+	}
 	
 	class Waypoint {
 		public Waypoint(float lat, float lon) {
@@ -242,75 +251,6 @@ public class FlightObject
 		return getBigDouble(heading);
 	}
 	
-	public static FlightObject getSampleFlightPlan() {
-		FlightObject obj = new FlightObject() ;
-		obj.clock = "" + System.currentTimeMillis()/1000;
-		obj.ident = "DAL2224";
-		obj.dest = "KSAT";
-		obj.addWaypoints( 29.53,-98.47);
-		obj.addWaypoints( 29.56,-98.37);
-		obj.addWaypoints( 29.57,-98.35);
-		obj.addWaypoints( 29.58,-98.31);
-		obj.addWaypoints( 29.59,-98.31);
-		obj.addWaypoints( 29.62,-98.21);
-		obj.addWaypoints( 29.67,-98.04);
-		obj.addWaypoints( 29.68,-98.01);
-		obj.addWaypoints( 29.71,-97.86);
-		obj.addWaypoints( 29.71,-97.83);
-		obj.addWaypoints( 29.71,-97.81);
-		obj.addWaypoints( 29.71,-97.80);
-		obj.addWaypoints( 29.71,-97.76);
-		obj.addWaypoints( 29.70,-97.50);
-		obj.addWaypoints( 29.69,-97.40);
-		obj.addWaypoints( 29.69,-97.28);
-		obj.addWaypoints( 29.69,-97.27);
-		obj.addWaypoints( 29.68,-97.09);
-		obj.addWaypoints( 29.67,-96.99);
-		obj.addWaypoints( 29.67,-96.88);
-		obj.addWaypoints( 29.66,-96.72);
-		obj.addWaypoints( 29.66,-96.62);
-		obj.addWaypoints( 29.64,-96.41);
-		obj.addWaypoints( 29.62,-96.01);
-		obj.addWaypoints( 29.64,-95.73);
-		obj.addWaypoints( 29.64,-95.67);
-		obj.addWaypoints( 29.66,-95.28);
-		obj.addWaypoints( 29.70,-95.08);
-		obj.addWaypoints( 29.84,-94.47);
-		obj.addWaypoints( 30.14,-93.11);
-		obj.addWaypoints( 30.27,-92.47);
-		obj.addWaypoints( 30.42,-91.65);
-		obj.addWaypoints( 30.49,-91.29);
-		obj.addWaypoints( 30.61,-90.87);
-		obj.addWaypoints( 30.77,-90.33);
-		obj.addWaypoints( 31.07,-89.32);
-		obj.addWaypoints( 31.47,-87.89);
-		obj.addWaypoints( 31.52,-87.81);
-		obj.addWaypoints( 31.53,-87.79);
-		obj.addWaypoints( 32.33,-86.45);
-		obj.addWaypoints( 32.45,-86.24);
-		obj.addWaypoints( 32.57,-86.03);
-		obj.addWaypoints( 32.64,-85.92);
-		obj.addWaypoints( 32.66,-85.89);
-		obj.addWaypoints( 32.87,-85.52);
-		obj.addWaypoints( 32.92,-85.43);
-		obj.addWaypoints( 32.96,-85.36);
-		obj.addWaypoints( 33.17,-85.01);
-		obj.addWaypoints( 33.34,-84.82);
-		obj.addWaypoints( 33.35,-84.81);
-		obj.addWaypoints( 33.41,-84.77);
-		obj.addWaypoints( 33.73,-84.58);
-		obj.addWaypoints( 33.73,-84.43);
-		obj.addWaypoints( 33.73,-84.31);
-		obj.addWaypoints( 33.73,-84.14);
-		obj.addWaypoints( 33.73,-84.04);
-		obj.addWaypoints( 33.73,-84.06);
-		obj.addWaypoints( 33.68,-84.25);
-		obj.addWaypoints( 33.66,-84.35);
-		obj.addWaypoints( 33.64,-84.43);
-		
-		return obj;
-	}
-		
 	public String toTabbedString() {
 		String result;
 		//if any field is missing in the received message,

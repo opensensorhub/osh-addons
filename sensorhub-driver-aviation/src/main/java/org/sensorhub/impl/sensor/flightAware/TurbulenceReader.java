@@ -105,7 +105,7 @@ public class TurbulenceReader
 		dataset = GridDataset.open(path);
 		ncFile = dataset.getNetcdfFile();
 		List<String> vn = UcarUtil.getVariableNames(ncFile);
-		for(String n: vn)  System.err.println(n);
+//		for(String n: vn)  System.err.println(n);
 		//  Get projection info
 		gridCoordSystem = dataset.getGrids().get(0).getCoordinateSystem();
 		proj = gridCoordSystem.getProjection();
@@ -127,6 +127,10 @@ public class TurbulenceReader
 
 		// remove NaNs here for now.  JSON does not like them
 		removeNaNs();
+		
+		// temporary
+		float [] alt = readAlt();
+//		for(float a:alt)  System.err.println(a);
 	}
 
 	private Variable findTurbulence() {
@@ -191,7 +195,7 @@ public class TurbulenceReader
 			if(waypointIndexSafe >= 0) {
 				if(waypointIndexSafe < waypoints.size()) {
 					Waypoint waypt = plan.waypoints.get(waypointIndexSafe);
-					rec.waypointName = waypt.name;
+					rec.waypointName = waypt.code;
 					//					System.err.println("\twaypt: " + waypointIndexSafe + "," + waypt.name);
 				} else {
 					log.debug("Waypoint index out of range: idx, id" , waypointIndexSafe, plan.oshFlightId);
@@ -383,7 +387,8 @@ public class TurbulenceReader
 		double heading = 225.;
 
 		LawBoxGeometry lbGeom = new LawBoxGeometry(lat, lon, alt, groundSpeed, verticalRate, heading);
-		TurbulenceReader reader = new TurbulenceReader("C:/home/tcook/osh/mesh/data/ECT_NCST_DELTA_GTGTURB_6_5km.201712190815.grb2");
+		TurbulenceReader reader = new TurbulenceReader("C:/home/tcook/osh/mesh/data/ECT_NCST_DELTA_GTGTURB_6_5km.201712261745.grb2");
+//		TurbulenceReader reader = new TurbulenceReader("C:/Users/tcook/root/sensorHub/delta/data/turb/GTG3/ECT_NCST_DELTA_GTGTURB_6_5km.201712261715.tiff");
 		FlightObject obj = new FlightObject();
 		obj.clock = "" + System.currentTimeMillis()/1000;
 		obj.lat="32.43";
