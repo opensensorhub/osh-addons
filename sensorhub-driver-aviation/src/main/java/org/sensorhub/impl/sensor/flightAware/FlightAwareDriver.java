@@ -63,7 +63,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	FlightPositionOutput flightPositionOutput;
 	LawBoxOutput lawBoxOutput;
 	FlightAwareClient client;
-	FlightAwareClientMonitor clientMonitor;
 
 	// Helpers
 	SMLHelper smlFac = new SMLHelper();
@@ -167,8 +166,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		Thread thread = new Thread(client);
 		thread.start();
 		
-		clientMonitor = new FlightAwareClientMonitor(client);
-
 		startDirectoryWatcher();
 		readLatestDataFile();
 	}
@@ -221,9 +218,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	@Override
 	public void stop() throws SensorHubException
 	{
-		if(clientMonitor != null)
-			clientMonitor.cancel();
-		
 		if (client != null)
 			client.stop();
 		client = null;
