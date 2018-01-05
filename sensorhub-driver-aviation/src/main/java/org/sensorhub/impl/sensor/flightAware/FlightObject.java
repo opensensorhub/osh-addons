@@ -195,6 +195,7 @@ public class FlightObject
 	}
 
 	public String getTimeStr() {
+		if(clock == null)  return "";
 		Instant instant = Instant.ofEpochMilli(getTimeMs() * 1000);
 		return instant.toString();
 	}
