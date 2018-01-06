@@ -135,7 +135,7 @@ public class LawBoxOutput extends AbstractSensorOutput<FlightAwareDriver> implem
 		//		// update latest record and send event
 		latestRecord = dataBlock;
 		latestRecordTime = System.currentTimeMillis();
-		String flightUid = FlightAwareDriver.LAWBOX_UID_PREFIX + lawBox.position.getOshFlightId();
+		String flightUid = FlightAwareDriver.FLIGHT_UID_PREFIX + lawBox.position.getOshFlightId();
 		latestUpdateTimes.put(flightUid, lawBox.position.getClock());
 		latestRecords.put(flightUid, latestRecord);   
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, LawBoxOutput.this, dataBlock));

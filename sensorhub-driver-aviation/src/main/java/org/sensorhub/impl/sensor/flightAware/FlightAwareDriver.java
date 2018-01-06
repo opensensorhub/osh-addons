@@ -69,14 +69,11 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	GMLFactory gmlFac = new GMLFactory(true);
 
 	// Dynamically created FOIs
-	Map<String, AbstractFeature> flightAwareFois;
+	Map<String, AbstractFeature> flightFois;
 	Map<String, AbstractFeature> aircraftDesc;
 	Map<String, FlightObject> flightPositions;
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
-	static final String FLIGHT_PLAN_UID_PREFIX = SENSOR_UID_PREFIX + "flight:";
-	static final String FLIGHT_POSITION_UID_PREFIX = SENSOR_UID_PREFIX + "flightPosition:";
-	static final String TURBULENCE_UID_PREFIX = SENSOR_UID_PREFIX + "turbulence:";
-	static final String LAWBOX_UID_PREFIX = SENSOR_UID_PREFIX + "lawBox:";
+	static final String FLIGHT_UID_PREFIX = "urn:osh:aviation:flight:";
 
 	// Listen for and ingest new Turbulence files so we can populate LawBoxOutput 
 	volatile TurbulenceReader turbReader;
@@ -90,7 +87,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	static final Logger log = LoggerFactory.getLogger(FlightAwareDriver.class);
 
 	public FlightAwareDriver() {
-		this.flightAwareFois = new ConcurrentSkipListMap<>();
+		this.flightFois = new ConcurrentSkipListMap<>();
 		this.aircraftDesc = new ConcurrentHashMap<>();
 		this.flightPositions = new ConcurrentHashMap<>();
 		this.airportMap = new HashMap<>();
@@ -228,70 +225,28 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		return false;
 	}
 
-	private void addFlightPlanFoi(String flightId, long recordTime) {
-		String uid = FLIGHT_PLAN_UID_PREFIX + flightId;
-		String description = "Delta Flight Plan for: " + flightId;
-
+	private void ensureFlightFoi(String flightId, long recordTime) {
+						
+	    String uid = FLIGHT_UID_PREFIX + flightId;
+	    
+	    // skip if FOI already exists
+		AbstractFeature fpFoi = flightFois.get(uid);
+        if (fpFoi != null) 
+            return;
+        
 		// generate small SensorML for FOI (in this case the system is the FOI)
 		PhysicalSystem foi = smlFac.newPhysicalSystem();
 		foi.setId(flightId);
 		foi.setUniqueIdentifier(uid);
-		foi.setName(flightId + " FlightPlan");
-		foi.setDescription(description);
-		flightAwareFois.put(uid, foi);
+		foi.setName(flightId + " Flight");
+		flightFois.put(uid, foi);
 
 		// send event
 		long now = System.currentTimeMillis();
 		// TODO:  Check all recordTime and make sure in seconds and NOT ms!!!!
 		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
 
-		log.debug("New FlightPlan added as FOI: {} ; aircraftFois.size = {}", uid, flightAwareFois.size());
-	}
-
-	protected void addPositionFoi(String flightId, long recordTime) {
-		AbstractFeature posFoi = flightAwareFois.get(FLIGHT_POSITION_UID_PREFIX + flightId);
-		if(posFoi != null)
-			return ; // This position already has an FOI
-		String uid = FLIGHT_POSITION_UID_PREFIX + flightId;
-		String description = "Delta FlightPosition data for: " + flightId;
-
-		// generate small SensorML for FOI
-		PhysicalSystem foi = smlFac.newPhysicalSystem();
-		foi.setId(flightId);
-		foi.setUniqueIdentifier(uid);
-		foi.setName(flightId + " Position");
-		foi.setDescription(description);
-		flightAwareFois.put(uid, foi);
-
-		// send event
-		long now = System.currentTimeMillis();
-		//  Should be good to send positionTime as startTime of FoiEvent since...
-		// @param startTime time at which observation of the FoI started (julian time in seconds, base 1970)
-		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
-
-		log.debug("New Position added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
-	}
-
-	private void addLawBoxFoi(String flightId, long recordTime) {
-		AbstractFeature lawboxFoi = flightAwareFois.get(LAWBOX_UID_PREFIX + flightId);
-		if(lawboxFoi != null)
-			return ; // This position already has an FOI
-		String uid = LAWBOX_UID_PREFIX + flightId;
-		String description = "Delta LawBox data for: " + flightId;
-
-		// generate small SensorML for FOI
-		PhysicalSystem foi = smlFac.newPhysicalSystem();
-		foi.setId(flightId);
-		foi.setUniqueIdentifier(uid);
-		foi.setName(flightId + " LawBox");
-		foi.setDescription(description);
-		flightAwareFois.put(uid, foi);
-
-		// send event
-		long now = System.currentTimeMillis();
-		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
-
-		log.trace("New LawBox added as FOI: {} ; flightAwareFois.size = {}", uid, flightAwareFois.size());
+		log.trace("New FOI added: {}; Num FOIs = {}", uid, flightFois.size());
 	}
 
 	@Override
@@ -302,8 +257,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		}
 		// Check for and add Pos and LawBox FOIs if they aren't already in cache
 		String oshFlightId = pos.getOshFlightId();
-		addPositionFoi(oshFlightId, pos.getClock());
-		addLawBoxFoi(oshFlightId, pos.getClock());
+		ensureFlightFoi(oshFlightId, pos.getClock());
 		FlightObject prevPos = flightPositions.get(oshFlightId);
 		if(prevPos != null) {
 			// Calc vert change in ft/minute
@@ -330,9 +284,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		}
 		// Add new FlightPlan FOI if new
 		String oshFlightId = plan.getOshFlightId();
-		AbstractFeature fpFoi = flightAwareFois.get(FLIGHT_PLAN_UID_PREFIX + oshFlightId);
-		if(fpFoi == null) 
-			addFlightPlanFoi(oshFlightId, System.currentTimeMillis()/1000);
+		ensureFlightFoi(oshFlightId, System.currentTimeMillis()/1000);
 
 		// send new data to outputs
 		flightPlanOutput.sendFlightPlan(plan);
@@ -395,7 +347,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	@Override
 	public Collection<String> getEntityIDs()
 	{
-		return Collections.unmodifiableCollection(flightAwareFois.keySet());
+		return Collections.unmodifiableCollection(flightFois.keySet());
 	}
 
 
@@ -423,21 +375,21 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	@Override
 	public AbstractFeature getCurrentFeatureOfInterest(String entityID)
 	{
-		return flightAwareFois.get(entityID);
+		return flightFois.get(entityID);
 	}
 
 
 	@Override
 	public Collection<? extends AbstractFeature> getFeaturesOfInterest()
 	{
-		return Collections.unmodifiableCollection(flightAwareFois.values());
+		return Collections.unmodifiableCollection(flightFois.values());
 	}
 
 
 	@Override
 	public Collection<String> getFeaturesOfInterestIDs()
 	{
-		return Collections.unmodifiableCollection(flightAwareFois.keySet());
+		return Collections.unmodifiableCollection(flightFois.keySet());
 	}
 
 	@Override

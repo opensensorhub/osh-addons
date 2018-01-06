@@ -95,7 +95,7 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		// update latest record and send event
 		latestRecord = dataBlock;
 		latestRecordTime = System.currentTimeMillis();
-		String flightUid = FlightAwareDriver.FLIGHT_POSITION_UID_PREFIX + oshFlightId;
+		String flightUid = FlightAwareDriver.FLIGHT_UID_PREFIX + oshFlightId;
 		latestUpdateTimes.put(flightUid, obj.getClock());
 		latestRecords.put(flightUid, latestRecord);   
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPositionOutput.this, dataBlock));        	

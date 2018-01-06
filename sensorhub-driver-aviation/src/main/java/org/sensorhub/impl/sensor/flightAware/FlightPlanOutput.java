@@ -150,11 +150,39 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
             waypointData.setDoubleValue(i++, waypt.alt);  //Not present in FA API DecodeFlightRoute response
         }
         
+        // skip if same as last record for a given foi
+        if (isDuplicate(flightId, data))
+            return;
+        
         // update latest record and send event
         latestRecord = data;
         latestRecordTime = msgTime;
         latestRecords.put(flightId, latestRecord);
         eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, flightId, this, data));
+	}
+	
+	
+	protected boolean isDuplicate(String flightId, DataBlock newRec)
+	{
+	    DataBlock oldRec = latestRecords.get(flightId);
+	    
+	    // we're sure it's not duplicate if we never received anything
+	    // or if the data blocks have different sizes
+	    if (oldRec == null || oldRec.getAtomCount() != newRec.getAtomCount())
+	        return false;
+	    
+	    // compare all fields except the first (issue time)
+	    // because it's always set to current time
+	    for (int i=1; i<newRec.getAtomCount(); i++)
+	    {
+	        String oldVal = oldRec.getStringValue(i);
+	        String newVal = newRec.getStringValue(i);	        
+	        if (oldVal != null && !oldVal.equals(newVal))
+	            return false;	        
+	    }
+	    
+	    parentSensor.getLogger().debug("Duplicate flight plan received for flight {}", flightId);
+	    return true;
 	}
 
 
@@ -204,9 +232,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
 			return null;
 		}
 		String flightId = entityId.substring(lastColonIdx + 1);
-		System.err.println(flightId);
-		DataBlock b = latestRecords.get(flightId);
-		return b;
+		return latestRecords.get(flightId);
 	}
 
 

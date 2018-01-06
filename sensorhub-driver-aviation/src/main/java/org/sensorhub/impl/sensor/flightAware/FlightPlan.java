@@ -27,7 +27,7 @@ public class FlightPlan
 	List<Waypoint> waypoints = new ArrayList<>();
 	String originAirport = "";
 	String destinationAirport = "";
-	public static final String UNKOWN = "UNK";
+	public static final String UNKOWN = "UKN";
 	double departureTime = Double.NaN;
 	double arrivalTime = Double.NaN;
 
