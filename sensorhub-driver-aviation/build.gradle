@@ -1,6 +1,6 @@
 description = 'Earthcast Weather and Aircraft products'
 ext.details = 'Earthcast Weather and Aircraft products'
-version = '0.3.0'
+version = '0.3.1'
 
 rootProject.allprojects {
   repositories {
