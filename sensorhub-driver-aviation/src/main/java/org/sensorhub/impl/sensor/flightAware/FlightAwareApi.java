@@ -9,6 +9,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
@@ -63,17 +64,17 @@ public class FlightAwareApi
 		String authHeader = "Basic " + new String(encodedAuth);
 		request.setHeader(HttpHeaders.AUTHORIZATION, authHeader);
 
-		HttpClient client = HttpClientBuilder.create().build();
-		HttpResponse response = client.execute(request);
-
-		int statusCode = response.getStatusLine().getStatusCode();
-		if(statusCode >= 400) {
-			// doSomething
+		try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+		    HttpResponse response = client.execute(request);
+		    int statusCode = response.getStatusLine().getStatusCode();
+    		if(statusCode >= 400) {
+    			// doSomething
+    		}
+    		String resp = EntityUtils.toString(response.getEntity());
+    //		System.err.println(statusCode);
+    //		System.err.println(resp);
+    		return resp;
 		}
-		String resp = EntityUtils.toString(response.getEntity());
-//		System.err.println(statusCode);
-//		System.err.println(resp);
-		return resp;
 	}
 
 	public void printJson(String json) {
