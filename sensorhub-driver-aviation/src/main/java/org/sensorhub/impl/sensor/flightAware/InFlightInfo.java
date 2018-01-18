@@ -58,7 +58,7 @@ public class InFlightInfo extends FlightAwareResult
 		String type;
 		String suffix;
 		String origin;
-		String destination;
+		public String destination;
 		String timeout;
 		long timestamp;
 		long departureTime;
