@@ -185,5 +185,15 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 		DataBlock b =  records.get(entityID);
 		return b;
 	}
+	
+	
+	/*
+	 * Override so SOS service never times out
+	 */
+	@Override
+    public long getLatestRecordTime()
+    {
+        return System.currentTimeMillis();
+    }
 
 }

@@ -115,6 +115,7 @@ public class FlightAwareApi
 		}
 		String ident = id.substring(0, dashIdx);
 		plan.oshFlightId = ident + "_" + plan.destinationAirport;
+		plan.flightNumber = ident;
 //		plan.time = comes from firehose only
 		return plan;
 	}

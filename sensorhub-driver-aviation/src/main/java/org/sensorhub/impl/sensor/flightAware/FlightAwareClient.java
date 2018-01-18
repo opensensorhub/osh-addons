@@ -11,7 +11,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -31,6 +30,7 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 	private static final boolean useCompression = false;
 	List<FlightObjectListener> listeners = new ArrayList<>();
 	List<String> messageTypes = new ArrayList<>();
+	List<String> filterAirlines = new ArrayList<>();
 	volatile boolean started;
 	long lastMessageTime = 0L;
 
@@ -39,7 +39,9 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 	//  Allow configuration of these values
 	private static final long MESSAGE_TIMER_CHECK_PERIOD = 120;
 	private static final long MESSAGE_LATENCY_WARN_LIMIT = 120; //TimeUnit.MINUTES.toSeconds(1);
-	private static final long MESSAGE_LATENCY_RESTART_LIMIT = 180; // TimeUnit.MINUTES.toSeconds(2);  // experiment with these
+	private static final long MESSAGE_LATENCY_RESTART_LIMIT = 180; // TimeUnit.MINUTES.toSeconds(2);  
+	
+	//  Use the following to debug disconnect/reconnetct code
 //	private static final long MESSAGE_TIMER_CHECK_PERIOD = 20;
 //	private static final long MESSAGE_LATENCY_WARN_LIMIT = 10; //TimeUnit.MINUTES.toSeconds(1);
 //	private static final long MESSAGE_LATENCY_RESTART_LIMIT = 20; // TimeUnit.MINUTES.toSeconds(2);  // experiment with these
@@ -66,12 +68,16 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 		startMessageTimeThread();
 	}    
 
+	//  Used for standalone testing, but need to yank the creds out of here
 	public static void main(String[] args) {
 		String machineName = "firehose.flightaware.com";
-		String userName = "drgregswilson";
-		String password = "2809b6196a2cfafeb89db0a00b117ac67e876220";
+		String userName = "ryanwilson";
+		String password = "e3a518f7eb02b9aae13f049480bcfaa2d50c8183";
 		FlightAwareClient client = new FlightAwareClient(machineName, userName, password);
-		client.messageTypes.add("flightplan position");
+		client.addMessageType("flightplan");
+//		client.addMessageType("position");
+		client.addAirline("SWA");
+//		client.addAirline("AAL");
 		client.addListener(client);
 		Thread thread = new Thread(client);
 		thread.start();
@@ -90,8 +96,32 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 		scheduledThreadPool.scheduleWithFixedDelay(messageTimeThread, 10, MESSAGE_TIMER_CHECK_PERIOD, TimeUnit.SECONDS);
 	}
 
-	private void initiateConnection() {
-		
+	private String  buildInitiationCommand() {
+		String initiationCmd = "live username " + userName + " password " + password;
+
+		if (useCompression) {
+			initiationCmd += " compression gzip";
+		}
+
+		if(filterAirlines.size() > 0) {
+			StringBuilder b = new StringBuilder();
+			b.append(" filter \"");
+			for(String code: filterAirlines)
+				b.append(code + " ");  
+			b.append("\"");
+			initiationCmd += b.toString();
+		}
+		if(messageTypes.size() > 0) {
+			StringBuilder b = new StringBuilder();
+			b.append(" events \"");
+			for(String type: messageTypes)
+				b.append(type + " ");  
+			b.append("\"");
+			initiationCmd += b.toString();
+		}
+		initiationCmd += "\n";
+
+		return initiationCmd;
 	}
 	
 	@Override
@@ -102,30 +132,19 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 		InputStream inputStream = null;
 		BufferedReader reader = null;
 		try {
-			//            SSLSocket ssl_socket;
 			ssl_socket = (SSLSocket) SSLSocketFactory.getDefault().createSocket(serverUrl, 1501);
 			// enable certifcate validation:
 			SSLParameters sslParams = new SSLParameters();
 			sslParams.setEndpointIdentificationAlgorithm("HTTPS");
 			ssl_socket.setSSLParameters(sslParams);
-			String initiation_command = "live username " + userName + " password " + password;
-
-			if (useCompression) {
-				initiation_command += " compression gzip";
-			}
-
-			initiation_command += " filter \"DAL\"";
-			initiation_command += "\n";
 
 			//  initiate connection with flight aware server
 			writer = new OutputStreamWriter(ssl_socket.getOutputStream(), "UTF8");
-			writer.write(initiation_command);
+			String initiationCmd = buildInitiationCommand();
+			writer.write(initiationCmd);
 			writer.flush();
 
 			inputStream = ssl_socket.getInputStream();
-			if (useCompression) {
-				inputStream = new java.util.zip.GZIPInputStream(inputStream);
-			}
 
 			// read messages from FlightAware
 			reader = new BufferedReader(new InputStreamReader(inputStream));
@@ -137,10 +156,8 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 //					System.err.println(message);
 					FlightObject flight = gson.fromJson(message, FlightObject.class);
 					lastMessageTime = Long.parseLong(flight.pitr);
-					if(messageTypes.contains(flight.type)) {
-						for(FlightObjectListener l: listeners) {
-							l.processMessage(flight);
-						}
+					for(FlightObjectListener l: listeners) {
+						l.processMessage(flight);
 					}
 //					 simulate message timeout
 //					if(cnt++ > 10) {
@@ -222,13 +239,13 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 		@Override
 		public void run() {
 			long sysTime = System.currentTimeMillis() / 1000;
-			log.error("MessageTimeThread.run() entered");
+			log.debug("MessageTimeThread.run() entered");
 			if(sysTime - lastMessageTime > MESSAGE_LATENCY_RESTART_LIMIT) {
 				client.restartThread();
 			} else 	if(sysTime - lastMessageTime > MESSAGE_LATENCY_WARN_LIMIT) {
 				log.error("Messages getting old: deltaTime seconds = {}", sysTime - lastMessageTime);
 			}
-			log.error("MessageTimeThread.run() exit");
+			log.debug("MessageTimeThread.run() exit");
 		}
 	}
 
@@ -245,4 +262,12 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 	public long getLastMessageTime() {
 		return lastMessageTime;
 	}
+	
+	public void addAirline(String airline) {
+		filterAirlines.add(airline);
+	}
+	public void addMessageType(String messageType) {
+		messageTypes.add(messageType);
+	}
+
 }

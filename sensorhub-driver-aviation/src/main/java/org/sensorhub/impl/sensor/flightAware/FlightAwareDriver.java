@@ -63,7 +63,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	FlightPositionOutput flightPositionOutput;
 	LawBoxOutput lawBoxOutput;
 	FlightAwareClient client;
-	FlightAwareClientMonitor clientMonitor;
 
 	// Helpers
 	SMLHelper smlFac = new SMLHelper();
@@ -74,7 +73,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	Map<String, AbstractFeature> aircraftDesc;
 	Map<String, FlightObject> flightPositions;
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
-	static final String FLIGHT_PLAN_UID_PREFIX = SENSOR_UID_PREFIX + "flightPlan:";
+	static final String FLIGHT_PLAN_UID_PREFIX = SENSOR_UID_PREFIX + "flight:";
 	static final String FLIGHT_POSITION_UID_PREFIX = SENSOR_UID_PREFIX + "flightPosition:";
 	static final String TURBULENCE_UID_PREFIX = SENSOR_UID_PREFIX + "turbulence:";
 	static final String LAWBOX_UID_PREFIX = SENSOR_UID_PREFIX + "lawBox:";
@@ -150,7 +149,9 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		String machineName = "firehose.flightaware.com";
 		client = new FlightAwareClient(machineName, config.userName, config.password);
 		for(String mt: config.messageTypes)
-			client.messageTypes.add(mt);
+			client.addMessageType(mt);
+		for(String airline: config.airlines)
+			client.addAirline(airline);
 
 		//  And message Converter
 		FlightAwareConverter converter = new FlightAwareConverter() ;
@@ -165,8 +166,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		Thread thread = new Thread(client);
 		thread.start();
 		
-		clientMonitor = new FlightAwareClientMonitor(client);
-
 		startDirectoryWatcher();
 		readLatestDataFile();
 	}
@@ -219,9 +218,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	@Override
 	public void stop() throws SensorHubException
 	{
-		if(clientMonitor != null)
-			clientMonitor.cancel();
-		
 		if (client != null)
 			client.stop();
 		client = null;
@@ -392,7 +388,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
         }
         catch (Exception e)
         {
-            getLogger().error("Error reading turbulence data file: {}", p, e);
+            log.error("Error reading turbulence data file: {}", p, e);
         }
     }
 	
