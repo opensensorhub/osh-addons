@@ -357,6 +357,15 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         checkOpen();
         return Collections.unmodifiableMap(recordStores);
     }
+    
+    
+    protected MVTimeSeriesImpl getRecordStore(String recordType)
+    {
+        MVTimeSeriesImpl timeSeries = recordStores.get(recordType);
+        if (timeSeries == null)
+            throw new IllegalArgumentException("No time series with name " + recordType);
+        return timeSeries;
+    }
 
 
     @Override
@@ -379,7 +388,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         checkOpen();
         Asserts.checkNotNull(recordType, "recordType");
         
-        return recordStores.get(recordType).getNumRecords();
+        return getRecordStore(recordType).getNumRecords();
     }
 
 
@@ -389,7 +398,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         checkOpen();
         Asserts.checkNotNull(recordType, "recordType");
         
-        return recordStores.get(recordType).getDataTimeRange();
+        return getRecordStore(recordType).getDataTimeRange();
     }
 
 
@@ -399,7 +408,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         checkOpen();
         Asserts.checkNotNull(recordType, "recordType");
         
-        return recordStores.get(recordType).getRecordsTimeClusters();
+        return getRecordStore(recordType).getRecordsTimeClusters();
     }
 
 
@@ -410,7 +419,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         Asserts.checkNotNull(key, DataKey.class);
         Asserts.checkNotNull(key.recordType, "recordType");
         
-        return recordStores.get(key.recordType).getDataBlock(key);
+        return getRecordStore(key.recordType).getDataBlock(key);
     }
 
 
@@ -421,7 +430,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         Asserts.checkNotNull(filter, IDataFilter.class);
         Asserts.checkNotNull(filter.getRecordType(), "recordType");
         
-        return recordStores.get(filter.getRecordType()).getDataBlockIterator(filter);
+        return getRecordStore(filter.getRecordType()).getDataBlockIterator(filter);
     }
 
 
@@ -432,7 +441,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         Asserts.checkNotNull(filter, IDataFilter.class);
         Asserts.checkNotNull(filter.getRecordType(), "recordType");
         
-        return recordStores.get(filter.getRecordType()).getRecordIterator(filter);
+        return getRecordStore(filter.getRecordType()).getRecordIterator(filter);
     }
 
 
@@ -443,7 +452,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         Asserts.checkNotNull(filter, IDataFilter.class);
         Asserts.checkNotNull(filter.getRecordType(), "recordType");
         
-        return recordStores.get(filter.getRecordType()).getNumMatchingRecords(filter, maxCount);
+        return getRecordStore(filter.getRecordType()).getNumMatchingRecords(filter, maxCount);
     }
 
 
@@ -455,7 +464,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         Asserts.checkNotNull(data, DataBlock.class);
         Asserts.checkNotNull(key.recordType, "recordType");
         
-        recordStores.get(key.recordType).store(key, data);
+        getRecordStore(key.recordType).store(key, data);
     }
 
 
@@ -467,7 +476,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         Asserts.checkNotNull(data, DataBlock.class);
         Asserts.checkNotNull(key.recordType, "recordType");
         
-        recordStores.get(key.recordType).update(key, data);
+        getRecordStore(key.recordType).update(key, data);
     }
 
 
@@ -478,7 +487,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         Asserts.checkNotNull(key, DataKey.class);
         Asserts.checkNotNull(key.recordType, "recordType");
         
-        recordStores.get(key.recordType).remove(key);
+        getRecordStore(key.recordType).remove(key);
     }
 
 
@@ -489,7 +498,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         Asserts.checkNotNull(filter, IDataFilter.class);
         Asserts.checkNotNull(filter.getRecordType(), "recordType");
         
-        return recordStores.get(filter.getRecordType()).remove(filter);
+        return getRecordStore(filter.getRecordType()).remove(filter);
     }
 
 
