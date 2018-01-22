@@ -46,9 +46,14 @@ public class RangeCursor<K, V> extends IteratorWrapper<K, K>
     @Override
     protected void preloadNext()
     {
-        next = it.next();
-        if (map.getKeyType().compare(next, to) > 0)
-            next = null;
+        next = null;
+        
+        if (it.hasNext())
+        {
+            next = it.next();
+            if (map.getKeyType().compare(next, to) > 0)
+                next = null;
+        }
     }
     
     

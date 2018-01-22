@@ -33,8 +33,6 @@ import org.vast.util.Asserts;
 import org.vast.util.Bbox;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.swe.v20.DataBlock;
-import net.opengis.swe.v20.DataComponent;
-import net.opengis.swe.v20.DataEncoding;
 
 
 /**
@@ -165,7 +163,6 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
         try
         {
             obsStore = new MVObsStorageImpl(this, producerID);
-            obsStore.start();
             obsStores.put(producerID, obsStore);
             return obsStore;
         }
@@ -203,36 +200,16 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
         checkOpen();
         Asserts.checkNotNull(producerID, "producerID");
         
-        dataStoreInfoMap.put(producerID, "");
+        dataStoreInfoMap.putIfAbsent(producerID, "");
         return loadDataStore(producerID);
-    }
-
-
-    @Override
-    public void addRecordStore(String name, DataComponent recordStructure, DataEncoding recommendedEncoding)
-    {
-        super.addRecordStore(name, recordStructure, recommendedEncoding);
-        
-        // also add record type to all data stores
-        for (MVObsStorageImpl dataStore: obsStores.values())
-            dataStore.addRecordStore(name, recordStructure, recommendedEncoding);
     }
 
 
     @Override
     public int getNumRecords(String recordType)
     {
-        checkOpen();
-        Asserts.checkNotNull(recordType, "recordType");
-        
-        int numRecords = 0;        
-        for (MVObsStorageImpl dataStore: obsStores.values())
-        {
-            if (dataStore.getRecordStores().containsKey(recordType))
-                numRecords += dataStore.getNumRecords(recordType);
-        }
-        
-        return numRecords;
+        checkOpen();        
+        return getRecordStore(recordType).getNumRecords();
     }
 
 
@@ -404,18 +381,30 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
     {
         checkOpen();
         Asserts.checkNotNull(filter, IDataFilter.class);
+        Collection<String> producerIDs = filter.getProducerIDs();
+        int numDeleted = 0;
+        
+        // may need to remove records with no producer ID
+        if (producerIDs == null)
+            super.removeRecords(filter);
         
         // use producer list from filter or use all producers
-        Collection<String> producerIDs = filter.getProducerIDs();
         if (producerIDs == null || producerIDs.isEmpty())
             producerIDs = this.getProducerIDs();
-        
-        int numDeleted = 0;        
+                
         for (String producerID: producerIDs) {
             int count = getDataStore(producerID).removeRecords(filter);
             numDeleted += count;
         }
+        
         return numDeleted;
+    }
+
+
+    @Override
+    public Bbox getFoisSpatialExtent()
+    {
+        return featureStore.getFeaturesSpatialExtent();
     }
 
 
@@ -424,11 +413,11 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
     {
         checkOpen();
         Asserts.checkNotNull(filter, IFoiFilter.class);
-        
-        // use producer list from filter or use all producers
         Collection<String> producerIDs = filter.getProducerIDs();
+        
+        // if all producers are selected, delegate to main store
         if (producerIDs == null || producerIDs.isEmpty())
-            producerIDs = this.getProducerIDs();
+            return super.getNumFois(filter);
         
         int numFois = 0;
         for (String producerID: producerIDs)
@@ -439,34 +428,17 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
 
 
     @Override
-    public Bbox getFoisSpatialExtent()
-    {
-        Bbox bbox = new Bbox();
-        for (String producerID: getProducerIDs())
-        {
-            Bbox entityBbox = getDataStore(producerID).getFoisSpatialExtent();
-            if (entityBbox != null)
-                bbox.add(entityBbox);
-        }
-        
-        if (bbox.isNull())
-            return null;
-        return bbox;
-    }
-
-
-    @Override
     public Iterator<String> getFoiIDs(final IFoiFilter filter)
     {
         checkOpen();
         Asserts.checkNotNull(filter, IFoiFilter.class);
-        
-        // use producer list from filter or use all producers
         Collection<String> producerIDs = filter.getProducerIDs();
-        if (producerIDs == null || producerIDs.isEmpty())
-            producerIDs = this.getProducerIDs();
         
-        // we're forced to temporarily hold the whole set in memory to remove duplicates
+        // if all producers are selected, delegate to main store
+        if (producerIDs == null || producerIDs.isEmpty())
+            return super.getFoiIDs(filter);
+        
+        // otherwise we're forced to temporarily hold the whole set in memory to remove duplicates
         LinkedHashSet<String> foiIDs = new LinkedHashSet<>();
         for (String producerID: producerIDs)
         {
@@ -484,11 +456,11 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
     {
         checkOpen();
         Asserts.checkNotNull(filter, IFoiFilter.class);
+        Collection<String> producerIDs = filter.getProducerIDs();
         
         // use producer list from filter or use all producers
-        Collection<String> producerIDs = filter.getProducerIDs();
         if (producerIDs == null || producerIDs.isEmpty())
-            producerIDs = this.getProducerIDs();
+            return super.getFois(filter);
         
         // we're forced to temporarily hold the whole set in memory to remove duplicates
         LinkedHashSet<AbstractFeature> fois = new LinkedHashSet<>();
@@ -507,7 +479,6 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
     public void storeFoi(String producerID, AbstractFeature foi)
     {
         checkOpen();
-        Asserts.checkNotNull(producerID, "producerID");
         Asserts.checkNotNull(foi, AbstractFeature.class);
         
         if (producerID == null)

@@ -16,20 +16,22 @@ package org.sensorhub.impl.persistence.h2;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import org.h2.mvstore.Cursor;
 import org.h2.mvstore.MVMap;
+import org.sensorhub.api.persistence.DataFilter;
 import org.sensorhub.api.persistence.DataKey;
 import org.sensorhub.api.persistence.FeatureFilter;
 import org.sensorhub.api.persistence.IDataFilter;
 import org.sensorhub.api.persistence.IDataRecord;
 import org.sensorhub.api.persistence.IFeatureFilter;
 import org.sensorhub.api.persistence.IObsFilter;
-import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.api.persistence.ObsFilter;
 import org.sensorhub.api.persistence.ObsKey;
+import org.sensorhub.impl.persistence.IteratorWrapper;
 import org.sensorhub.impl.persistence.h2.MVFoiTimesStoreImpl.FoiTimePeriod;
 import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockBoolean;
@@ -47,19 +49,21 @@ import org.vast.data.DataBlockTuple;
 import org.vast.data.DataBlockUByte;
 import org.vast.data.DataBlockUInt;
 import org.vast.data.DataBlockUShort;
+import org.vast.util.Asserts;
+import com.google.common.collect.Sets;
 import com.vividsolutions.jts.geom.Polygon;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 
 
-public class MVTimeSeriesImpl implements IRecordStoreInfo
+public class MVTimeSeriesImpl
 {
     private static final String RECORDS_MAP_NAME = "@records";
     static final double[] ALL_TIMES = new double[] {Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY};
     
     String name;
-    MVMap<Double, DataBlock> recordIndex;
+    MVMap<ProducerTimeKey, DataBlock> recordIndex;
     MVObsStorageImpl parentStore;
     MVFoiTimesStoreImpl foiTimesStore;
     DataComponent recordDescription;
@@ -91,93 +95,53 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
     }
     
     
-    class IteratorWithFoi implements Iterator<IDataRecord>
+    class IteratorWithFoi extends IteratorWrapper<IDataRecord, IDataRecord>
     {
-        Iterator<FoiTimePeriod> periodIt; 
-        Iterator<IDataRecord> recordIt;
-        IDataRecord nextRecord;
+        Iterator<FoiTimePeriod> periodIt;
         String currentFoiID;
         boolean preloadValue;
         
         IteratorWithFoi(Set<FoiTimePeriod>foiTimePeriods, boolean preloadValue)
         {
+            super(Collections.EMPTY_LIST.iterator());
             this.periodIt = foiTimePeriods.iterator();
             this.preloadValue = preloadValue;
-            next();
         }
 
         @Override
-        public final boolean hasNext()
+        public void preloadNext()
         {
-            return nextRecord != null;
-        }
-
-        @Override
-        public final IDataRecord next()
-        {
-            IDataRecord rec = nextRecord;
+            next = null;
             
-            if ((recordIt == null || !recordIt.hasNext()) && periodIt.hasNext())
+            if ((it == null || !it.hasNext()) && periodIt.hasNext())
             {
                 // process next time range
                 FoiTimePeriod nextPeriod = periodIt.next();
-                currentFoiID = nextPeriod.uid;
-                recordIt = getEntryIterator(nextPeriod.start, nextPeriod.stop);
+                currentFoiID = nextPeriod.foiID;
+                it = getEntryIterator(nextPeriod.producerID, nextPeriod.start, nextPeriod.stop);
             }
             
             // continue processing time range
-            if (recordIt != null && recordIt.hasNext())
+            if (it != null && it.hasNext())
             {
-                nextRecord = recordIt.next();
-                ((ObsKey)nextRecord.getKey()).foiID = currentFoiID;
+                next = it.next();
+                ((ObsKey)next.getKey()).foiID = currentFoiID;
             }
-            else
-                nextRecord = null;
-            
-            return rec;
-        }
-    
-        @Override
-        public final void remove()
-        {
-            recordIt.remove();
         }
     }
     
     
-    public MVTimeSeriesImpl(MVObsStorageImpl parentStore, String seriesName, DataComponent recordDescription, DataEncoding recommendedEncoding)
+    public MVTimeSeriesImpl(MVObsStorageImpl parentStore, String seriesName)
     {
         this.name = seriesName;
         this.parentStore = parentStore;
-        this.recordDescription = recordDescription;
-        this.recommendedEncoding = recommendedEncoding;
         
-        String mapName = parentStore.getFullMapName(RECORDS_MAP_NAME) + ":" + seriesName;
-        this.recordIndex = parentStore.mvStore.openMap(mapName, new MVMap.Builder<Double, DataBlock>().valueType(new DataBlockDataType()));
+        String mapName = RECORDS_MAP_NAME + ":" + seriesName;        
+        this.recordIndex = parentStore.mvStore.openMap(mapName, new MVMap.Builder<ProducerTimeKey, DataBlock>()
+                .keyType(new ProducerKeyDataType())
+                .valueType(new DataBlockDataType()));
         
-        mapName = parentStore.getFullMapName("") + ":" + seriesName;
-        this.foiTimesStore = new MVFoiTimesStoreImpl(parentStore.mvStore, mapName);
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return name;
-    }
-
-
-    @Override
-    public DataComponent getRecordDescription()
-    {
-        return recordDescription;
-    }
-
-
-    @Override
-    public DataEncoding getRecommendedEncoding()
-    {
-        return recommendedEncoding;
+        this.foiTimesStore = new MVFoiTimesStoreImpl(parentStore.mvStore, seriesName);
     }
     
     
@@ -185,11 +149,54 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
     {
         return recordIndex.size();
     }
+    
+    
+    int getNumRecords(final String producerID)
+    {        
+        if (producerID != null)
+        {
+            DataFilter filter = new DataFilter(name) {
+                public Set<String> getProducerIDs()
+                {
+                    return Sets.newHashSet(producerID);
+                }
+            };
+            
+            return getNumMatchingRecords(filter, Long.MAX_VALUE);
+        }
+        else
+            return getNumRecords();
+    }
 
 
     DataBlock getDataBlock(DataKey key)
     {
-        return recordIndex.get(key.timeStamp);
+        return recordIndex.get(new ProducerTimeKey(key.producerID, key.timeStamp));
+    }
+    
+    
+    String getProducerID(IDataFilter filter)
+    {
+        String producerID = null;
+        if (filter.getProducerIDs() != null)
+        {
+            Asserts.checkArgument(filter.getProducerIDs().size() <= 1, "Filter must contain exactly one producer ID");
+            producerID = filter.getProducerIDs().iterator().next();
+        }
+        
+        return producerID;
+    }
+    
+    
+    ProducerTimeKey[] getKeyRange(IDataFilter filter)
+    {
+        String producerID = getProducerID(filter);
+        double[] timeRange = getTimeRange(filter);
+        
+        return new ProducerTimeKey[] {
+            new ProducerTimeKey(producerID, timeRange[0]),
+            new ProducerTimeKey(producerID, timeRange[1])
+        };
     }
 
 
@@ -198,15 +205,14 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
         if (!(filter instanceof ObsFilter))
         {
             // efficiently count records if only time filter is used
-            double[] timeRange = getTimeRange(filter);
-            
-            Double t0 = recordIndex.ceilingKey(timeRange[0]);
-            Double t1 = recordIndex.floorKey(timeRange[1]);
+            ProducerTimeKey[] keys = getKeyRange(filter);
+            ProducerTimeKey t0 = recordIndex.ceilingKey(keys[0]);
+            ProducerTimeKey t1 = recordIndex.floorKey(keys[1]);
             if (t0 == null || t1 == null)
                 return 0;
             
             long i0 = recordIndex.getKeyIndex(t0);
-            long i1 = recordIndex.getKeyIndex(t1);        
+            long i1 = recordIndex.getKeyIndex(t1);
             return (int)Math.min(i1-i0+1, maxCount);
         }
         else
@@ -261,7 +267,7 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
 
     void store(DataKey key, DataBlock data)
     {
-        recordIndex.putIfAbsent(key.timeStamp, data);
+        recordIndex.putIfAbsent(new ProducerTimeKey(key.producerID, key.timeStamp), data);
         
         if (key instanceof ObsKey)
         {
@@ -270,7 +276,7 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
             if (foiID != null)
             {
                 double timeStamp = key.timeStamp;
-                foiTimesStore.updateFoiPeriod(foiID, timeStamp);
+                foiTimesStore.updateFoiPeriod(key.producerID, foiID, timeStamp);
             }
         }
     }
@@ -278,56 +284,52 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
 
     void update(DataKey key, DataBlock data)
     {
-        recordIndex.replace(key.timeStamp, data);
+        recordIndex.replace(new ProducerTimeKey(key.producerID, key.timeStamp), data);
     }
 
 
     void remove(DataKey key)
     {
-        recordIndex.remove(key.timeStamp);
+        recordIndex.remove(new ProducerTimeKey(key.producerID, key.timeStamp));
     }
 
 
     int remove(IDataFilter filter)
     {
         // remove records
-        double[] timeRange = filter.getTimeStampRange();
-        final RangeCursor<Double, DataBlock> cursor = new RangeCursor<>(recordIndex, timeRange[0], timeRange[1]);        
         int count = 0;
-        while (cursor.hasNext())
+        Iterator<IDataRecord> it = getEntryIterator(filter, false);
+        while (it.hasNext())
         {
-            // TODO would be nice if cursor remove() was implemented to avoid a get by key everytime
-            recordIndex.remove(cursor.next());
+            it.next();
+            it.remove();
             count++;
         }
         
-        // remove FOI times
-        if (filter instanceof IObsFilter)
-        {
-            for (String foidID: ((IObsFilter)filter).getFoiIDs())
-            {
-                // completely remove FOI times if no more records will be left
-                if (filter.getTimeStampRange() == null) // || time range contains all foi time ranges
-                    foiTimesStore.remove(foidID);
-            }
-        }
+        // TODO remove FOI times once we have the time -> observed FOI index        
         
         return count;
     }
 
 
-    double[] getDataTimeRange()
+    double[] getDataTimeRange(String producerID)
     {
-        if (recordIndex.isEmpty())
-            return new double[] { Double.NaN, Double.NaN };
+        ProducerTimeKey beforeAll = new ProducerTimeKey(producerID, Double.NEGATIVE_INFINITY);
+        ProducerTimeKey afterAll = new ProducerTimeKey(producerID, Double.POSITIVE_INFINITY);
+        ProducerTimeKey first = recordIndex.ceilingKey(beforeAll);
+        ProducerTimeKey last = recordIndex.floorKey(afterAll);
         
-        return new double[] {recordIndex.firstKey(), recordIndex.lastKey()};
+        if (first == null || last == null)
+            return new double[] { Double.NaN, Double.NaN };
+        else
+            return new double[] {first.timeStamp, last.timeStamp};
     }
     
     
-    public Iterator<double[]> getRecordsTimeClusters()
+    Iterator<double[]> getRecordsTimeClusters(String producerID)
     {
-        final Cursor<Double, DataBlock> cursor = recordIndex.cursor(Double.NEGATIVE_INFINITY);
+        ProducerTimeKey beforeAll = new ProducerTimeKey(producerID, Double.NEGATIVE_INFINITY);
+        final Cursor<ProducerTimeKey, DataBlock> cursor = recordIndex.cursor(beforeAll);
         
         return new Iterator<double[]>()
         {
@@ -345,7 +347,7 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
                 
                 while (cursor.hasNext())
                 {
-                    double recTime = cursor.next();
+                    double recTime = cursor.next().timeStamp;
                     
                     if (Double.isNaN(lastTime))
                     {
@@ -383,10 +385,12 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
     }
     
     
-    private Iterator<IDataRecord> getEntryIterator(double begin, double end)
+    private Iterator<IDataRecord> getEntryIterator(final String producerID, double begin, double end)
     {
-        final RangeCursor<Double, DataBlock> cursor = new RangeCursor<>(recordIndex, begin, end);
-        final String recordType = getName();
+        final ProducerTimeKey beginKey = new ProducerTimeKey(producerID, begin);
+        final ProducerTimeKey endKey = new ProducerTimeKey(producerID, end);
+        final RangeCursor<ProducerTimeKey, DataBlock> cursor = new RangeCursor<>(recordIndex, beginKey, endKey);
+        final String recordType = this.name;
         
         return new Iterator<IDataRecord>()
         {
@@ -398,7 +402,7 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
             public final IDataRecord next()
             {
                 cursor.next();
-                final ObsKey key = new ObsKey(recordType, null, cursor.getKey());
+                final ObsKey key = new ObsKey(recordType, producerID, null, cursor.getKey().timeStamp);
                 final DataBlock val = cursor.getValue();
                 
                 return new IDataRecord()
@@ -417,7 +421,8 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
 
             public final void remove()
             {
-                cursor.remove();
+                //cursor.remove(); // not supported
+                recordIndex.remove(cursor.getKey());
             }
         };
     }
@@ -425,15 +430,18 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
     
     private IteratorWithFoi getEntryIterator(IDataFilter filter, boolean preloadValue)
     {
+        String producerID = getProducerID(filter);
+        
         // get time periods for matching FOIs
-        Set<FoiTimePeriod> foiTimePeriods = getFoiTimePeriods(filter);
+        Set<FoiTimePeriod> foiTimePeriods = getFoiTimePeriods(producerID, filter);
             
         // if no FOIs have been added just process whole time range
         if (foiTimePeriods == null)
         {
-            double[] timeRange = filter.getTimeStampRange();
             double start = Double.NEGATIVE_INFINITY;
             double stop = Double.POSITIVE_INFINITY;
+            
+            double[] timeRange = filter.getTimeStampRange();
             if (timeRange != null)
             {
                 start = filter.getTimeStampRange()[0];
@@ -441,7 +449,7 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
             }
             
             foiTimePeriods = new HashSet<>();
-            foiTimePeriods.add(new FoiTimePeriod(null, start, stop));
+            foiTimePeriods.add(new FoiTimePeriod(producerID, null, start, stop));
         }
         
         // scan through each time range sequentially
@@ -450,7 +458,7 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
     }
     
     
-    private Set<FoiTimePeriod> getFoiTimePeriods(final IDataFilter filter)
+    private Set<FoiTimePeriod> getFoiTimePeriods(String producerID, final IDataFilter filter)
     {
         // extract FOI filters if any
         Collection<String> foiIDs = null;
@@ -469,11 +477,13 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
         {
             IFeatureFilter foiFilter = new FeatureFilter()
             {
-                public Collection<String> getFeatureIDs()
+                @Override
+                public Set<String> getFeatureIDs()
                 {
                     return ((IObsFilter)filter).getFoiIDs();
                 }
 
+                @Override
                 public Polygon getRoi()
                 {
                     return ((IObsFilter) filter).getRoi();
@@ -498,7 +508,7 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
             return null;
         
         // get time periods for list of FOIs
-        Set<FoiTimePeriod> foiTimes = foiTimesStore.getSortedFoiTimes(foiIDs);
+        Set<FoiTimePeriod> foiTimes = foiTimesStore.getSortedFoiTimes(producerID, foiIDs);
         
         // trim periods to filter time range if specified
         double[] timeRange = filter.getTimeStampRange();
@@ -523,6 +533,12 @@ public class MVTimeSeriesImpl implements IRecordStoreInfo
         }
         
         return foiTimes;
+    }
+    
+    
+    Iterator<String> getFoiIDs(String producerID)
+    {
+        return foiTimesStore.getFoiIDs(producerID);
     }
 
 }

@@ -16,8 +16,6 @@ package org.sensorhub.impl.persistence.h2;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import org.h2.mvstore.Cursor;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
@@ -57,17 +55,10 @@ public class MVFeatureStoreImpl implements IFeatureStorage
     }
     
     
-    public MVFeatureStoreImpl(MVStore mvStore, String producerID)
+    public MVFeatureStoreImpl(MVStore mvStore)
     {
-        String mapName = FEATURE_ID_MAP_NAME;
-        if (producerID != null)
-            mapName += ":" + producerID;
-        idIndex = mvStore.openMap(mapName, new MVMap.Builder<String, AbstractFeature>().valueType(new FeatureDataType()));
-        
-        mapName = SPATIAL_INDEX_MAP_NAME;
-        if (producerID != null)
-            mapName += ":" + producerID;
-        spatialIndex = mvStore.openMap(mapName, new MVRTreeMap.Builder<String>().dimensions(3));
+        idIndex = mvStore.openMap(FEATURE_ID_MAP_NAME, new MVMap.Builder<String, AbstractFeature>().valueType(new FeatureDataType()));
+        spatialIndex = mvStore.openMap(SPATIAL_INDEX_MAP_NAME, new MVRTreeMap.Builder<String>().dimensions(3));
     }
     
     
@@ -114,7 +105,7 @@ public class MVFeatureStoreImpl implements IFeatureStorage
     public Iterator<String> getFeatureIDs(IFeatureFilter filter)
     {
         // could we optimize implementation to avoid loading whole feature objects?
-        // -> not worth it since with spatial filter we need to read geometries anyway
+        // only possible w/o spatial filter otherwise we need to read geometries anyway
         
         final Iterator<AbstractFeature> it = getFeatures(filter);
         
@@ -139,56 +130,42 @@ public class MVFeatureStoreImpl implements IFeatureStorage
             }            
         };
     }
+    
+    
+    private boolean intersectsRoi(Polygon roi, AbstractFeature f)
+    {
+        Geometry geom = (Geometry)f.getLocation();
+        return geom != null && roi.intersects(geom);
+    }
 
 
     @Override
     public Iterator<AbstractFeature> getFeatures(IFeatureFilter filter)
     {
+        final Polygon roi = filter.getRoi();
+        
         // case of requesting by IDs
         Collection<String> foiIDs = filter.getFeatureIDs();
         if (foiIDs != null && !foiIDs.isEmpty())
         {
-            final Set<String> ids = new LinkedHashSet<>();
-            ids.addAll(filter.getFeatureIDs());
-            final Iterator<String> idsIt = ids.iterator();
-            
-            // return iterator protected against concurrent writes
-            Iterator<AbstractFeature> it = new Iterator<AbstractFeature>()
+            return new IteratorWrapper<String, AbstractFeature>(foiIDs.iterator())
             {
-                AbstractFeature nextFeature;
-                
                 @Override
-                public boolean hasNext()
-                {
-                    return (nextFeature != null);
-                }
-
-                @Override
-                public AbstractFeature next()
-                {
-                    AbstractFeature currentFeature = nextFeature;
-                    nextFeature = null;                        
-                    while (nextFeature == null && idsIt.hasNext())
-                        nextFeature = idIndex.get(idsIt.next());                                            
-                    return currentFeature;
-                }
-
-                @Override
-                public void remove()
-                {
-                    throw new UnsupportedOperationException();
+                public AbstractFeature process(String fid)
+                {                    
+                    AbstractFeature f = idIndex.get(fid);
+                    
+                    if (roi == null || intersectsRoi(roi, f))
+                        return f;
+                    else
+                        return null;
                 }
             };
-            
-            it.next();
-            return it;
         }
             
         // case of ROI
-        else if (filter.getRoi() != null)
+        else if (roi != null)
         {
-            final Polygon roi = filter.getRoi();
-            
             // iterate through spatial index using bounding rectangle
             Envelope env = roi.getEnvelopeInternal();
             SpatialKey bbox = new SpatialKey(0, (float)env.getMinX(), (float)env.getMaxX(),
@@ -204,8 +181,8 @@ public class MVFeatureStoreImpl implements IFeatureStorage
                 {                    
                     String fid = spatialIndex.get(key);
                     AbstractFeature f = idIndex.get(fid);
-                    Geometry geom = (Geometry)f.getLocation();
-                    if (geom != null && roi.intersects(geom))
+                    
+                    if (intersectsRoi(roi, f))
                         return f;
                     else
                         return null;

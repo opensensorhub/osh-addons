@@ -19,10 +19,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
@@ -63,6 +66,10 @@ import net.opengis.swe.v20.DataEncoding;
  * - {@link MVFeatureStoreImpl}<br/>
  * - {@link MVTimeSeriesImpl}<br/>
  * </p>
+ * <p>
+ * This class is used at a top-level store but also as a nested datastore
+ * inside a multi-producer storage.
+ * </p>
  *
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Dec 10, 2017
@@ -73,64 +80,67 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     private static final String RECORD_STORE_INFO_MAP_NAME = "@recordStores";
     
     MVStore mvStore;
-    MVMap<Double, AbstractProcess> processDescMap;
     MVMap<String, IRecordStoreInfo> rsInfoMap;
     Map<String, MVTimeSeriesImpl> recordStores = new ConcurrentHashMap<>();
+    MVMap<ProducerTimeKey, AbstractProcess> processDescMap;
     MVFeatureStoreImpl featureStore;
-    private String producerID;
+    private final String producerID;
     
     
     public MVObsStorageImpl()
     {
+        this.producerID = null;
     }
     
     
     protected MVObsStorageImpl(MVObsStorageImpl parentStore, String producerID)
     {
-        Asserts.checkNotNull(parentStore, "Parent");
-                
+        Asserts.checkNotNull(parentStore, "Parent");                
         this.mvStore = parentStore.mvStore;
         this.producerID = producerID;
+        this.processDescMap = parentStore.processDescMap;
+        this.featureStore = parentStore.featureStore;
+        this.rsInfoMap = parentStore.rsInfoMap;
+        this.recordStores = parentStore.recordStores;
     }
 
 
     @Override
     public synchronized void start() throws SensorHubException
     {
+        Asserts.checkState(mvStore == null, "Cannot start a nested ObsStorage instance");
+        
         try
         {
-            if (mvStore == null)
-            {
-                // check file path is valid
-                if (!FileUtils.isSafeFilePath(config.storagePath))
-                    throw new StorageException("Storage path contains illegal characters: " + config.storagePath);
-                
-                MVStore.Builder builder = new MVStore.Builder()
-                                          .fileName(config.storagePath);
-                
-                if (config.memoryCacheSize > 0)
-                    builder = builder.cacheSize(config.memoryCacheSize/1024);
-                                          
-                if (config.autoCommitBufferSize > 0)
-                    builder = builder.autoCommitBufferSize(config.autoCommitBufferSize);
-                
-                if (config.useCompression)
-                    builder = builder.compress();
-                
-                mvStore = builder.open();
-                mvStore.setVersionsToKeep(0);
-            }
+            // check file path is valid
+            if (!FileUtils.isSafeFilePath(config.storagePath))
+                throw new StorageException("Storage path contains illegal characters: " + config.storagePath);
+            
+            MVStore.Builder builder = new MVStore.Builder()
+                                      .fileName(config.storagePath);
+            
+            if (config.memoryCacheSize > 0)
+                builder = builder.cacheSize(config.memoryCacheSize/1024);
+                                      
+            if (config.autoCommitBufferSize > 0)
+                builder = builder.autoCommitBufferSize(config.autoCommitBufferSize);
+            
+            if (config.useCompression)
+                builder = builder.compress();
+            
+            mvStore = builder.open();
+            mvStore.setVersionsToKeep(0);
                         
             // open description history map
-            String mapName = getFullMapName(DESC_HISTORY_MAP_NAME);
-            processDescMap = mvStore.openMap(mapName, new MVMap.Builder<Double, AbstractProcess>().valueType(new KryoDataType()));
+            processDescMap = mvStore.openMap(DESC_HISTORY_MAP_NAME, new MVMap.Builder<ProducerTimeKey, AbstractProcess>()
+                    .keyType(new ProducerKeyDataType())
+                    .valueType(new KryoDataType()));
             
             // create feature store
-            featureStore = new MVFeatureStoreImpl(mvStore, producerID);
+            featureStore = new MVFeatureStoreImpl(mvStore);
             
             // load all record stores
-            mapName = getFullMapName(RECORD_STORE_INFO_MAP_NAME);
-            rsInfoMap = mvStore.openMap(mapName, new MVMap.Builder<String, IRecordStoreInfo>().valueType(new KryoDataType()));
+            rsInfoMap = mvStore.openMap(RECORD_STORE_INFO_MAP_NAME, new MVMap.Builder<String, IRecordStoreInfo>().valueType(new KryoDataType()));
             for (IRecordStoreInfo rsInfo: rsInfoMap.values())
                 loadRecordStore(rsInfo);
         }
@@ -143,21 +153,8 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     
     private void loadRecordStore(IRecordStoreInfo rsInfo)
     {
-        MVTimeSeriesImpl recordStore = new MVTimeSeriesImpl(this,
-                rsInfo.getName(),
-                rsInfo.getRecordDescription(),
-                rsInfo.getRecommendedEncoding());
-        
+        MVTimeSeriesImpl recordStore = new MVTimeSeriesImpl(this, rsInfo.getName());        
         recordStores.put(rsInfo.getName(), recordStore);
-    }
-    
-    
-    protected String getFullMapName(String baseName)
-    {
-        if (producerID != null)
-            return baseName + ":" + producerID;
-        else
-            return baseName;
     }
 
 
@@ -233,11 +230,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public AbstractProcess getLatestDataSourceDescription()
     {
-        checkOpen();
-        if (processDescMap.isEmpty())
-            return null;
-        
-        return processDescMap.get(processDescMap.lastKey());
+        return getDataSourceDescriptionAtTime(Double.POSITIVE_INFINITY);
     }
 
 
@@ -245,7 +238,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public List<AbstractProcess> getDataSourceDescriptionHistory(double startTime, double endTime)
     {
         checkOpen();
-        RangeCursor<Double, AbstractProcess> cursor = new RangeCursor<>(processDescMap, startTime, endTime);
+        
+        ProducerTimeKey startKey = new ProducerTimeKey(producerID, startTime);
+        ProducerTimeKey endKey = new ProducerTimeKey(producerID, endTime);
+        RangeCursor<ProducerTimeKey, AbstractProcess> cursor = new RangeCursor<>(processDescMap, startKey, endKey);
         
         ArrayList<AbstractProcess> descList = new ArrayList<>();
         while (cursor.hasNext())
@@ -262,7 +258,9 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public AbstractProcess getDataSourceDescriptionAtTime(double time)
     {
         checkOpen();
-        Double key = processDescMap.floorKey(time);
+        
+        ProducerTimeKey key = new ProducerTimeKey(producerID, time);
+        key = processDescMap.floorKey(key);
         if (key != null)
             return processDescMap.get(key);
         else
@@ -273,14 +271,16 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     protected synchronized boolean storeDataSourceDescription(AbstractProcess process, double time, boolean update)
     {
         checkOpen();
+        
+        ProducerTimeKey key = new ProducerTimeKey(producerID, time);
         if (update)
         {
-            AbstractProcess oldProcess = processDescMap.replace(time, process);
+            AbstractProcess oldProcess = processDescMap.replace(key, process);
             return (oldProcess != null);
         }
         else
         {
-            AbstractProcess oldProcess = processDescMap.putIfAbsent(time, process);
+            AbstractProcess oldProcess = processDescMap.putIfAbsent(key, process);
             return (oldProcess == null);
         }
     }
@@ -344,7 +344,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public synchronized void removeDataSourceDescriptionHistory(double startTime, double endTime)
     {
         checkOpen();
-        RangeCursor<Double, AbstractProcess> cursor = new RangeCursor<>(processDescMap, startTime, endTime);
+        
+        ProducerTimeKey startKey = new ProducerTimeKey(producerID, startTime);
+        ProducerTimeKey endKey = new ProducerTimeKey(producerID, endTime);
+        RangeCursor<ProducerTimeKey, AbstractProcess> cursor = new RangeCursor<>(processDescMap, startKey, endKey);
         
         while (cursor.hasNext())
             processDescMap.remove(cursor.next());
@@ -355,12 +358,14 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public Map<String, ? extends IRecordStoreInfo> getRecordStores()
     {
         checkOpen();
-        return Collections.unmodifiableMap(recordStores);
+        return Collections.unmodifiableMap(rsInfoMap);
     }
     
     
     protected MVTimeSeriesImpl getRecordStore(String recordType)
     {
+        Asserts.checkNotNull(recordType, "recordType");
+        
         MVTimeSeriesImpl timeSeries = recordStores.get(recordType);
         if (timeSeries == null)
             throw new IllegalArgumentException("No time series with name " + recordType);
@@ -386,9 +391,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public int getNumRecords(String recordType)
     {
         checkOpen();
-        Asserts.checkNotNull(recordType, "recordType");
-        
-        return getRecordStore(recordType).getNumRecords();
+        return getRecordStore(recordType).getNumRecords(producerID);
     }
 
 
@@ -396,9 +399,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public double[] getRecordsTimeRange(String recordType)
     {
         checkOpen();
-        Asserts.checkNotNull(recordType, "recordType");
-        
-        return getRecordStore(recordType).getDataTimeRange();
+        return getRecordStore(recordType).getDataTimeRange(producerID);
     }
 
 
@@ -406,9 +407,51 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public Iterator<double[]> getRecordsTimeClusters(String recordType)
     {
         checkOpen();
-        Asserts.checkNotNull(recordType, "recordType");
+        //return getRecordStore(recordType).getRecordsTimeClusters(producerID);
+        return Arrays.asList(new double[2]).iterator();
+    }
+    
+    
+    protected void checkProducerID(String reqProducerID)
+    {
+        Asserts.checkArgument(reqProducerID.equals(producerID),
+                "Invalid producer ID {}", reqProducerID);
+    }
+    
+    
+    protected void checkProducerID(Set<String> reqProducerIDs)
+    {
+        Asserts.checkArgument(reqProducerIDs.size() == 1,
+                "No more than one producer ID can be requested");
+        checkProducerID(reqProducerIDs.iterator().next());
+    }
+    
+    
+    protected void ensureProducerID(DataKey key)
+    {
+        Asserts.checkNotNull(key, DataKey.class);
         
-        return getRecordStore(recordType).getRecordsTimeClusters();
+        if (producerID == null)
+            key.producerID = null;
+        else if (key.producerID == null)
+            key.producerID = producerID;
+        else
+            checkProducerID(key.producerID);
+    }
+    
+    
+    protected IDataFilter ensureProducerID(IDataFilter filter)
+    {
+        Asserts.checkNotNull(filter, IDataFilter.class);
+        
+        if (producerID == null)
+            filter = new ProducerObsFilter(null, filter);
+        else if (filter.getProducerIDs() == null || filter.getProducerIDs().isEmpty())
+            filter = new ProducerObsFilter(producerID, filter);
+        else
+            checkProducerID(filter.getProducerIDs());
+        
+        return filter;
     }
 
 
@@ -416,8 +459,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public DataBlock getDataBlock(DataKey key)
     {
         checkOpen();
-        Asserts.checkNotNull(key, DataKey.class);
-        Asserts.checkNotNull(key.recordType, "recordType");
+        ensureProducerID(key);
         
         return getRecordStore(key.recordType).getDataBlock(key);
     }
@@ -427,8 +469,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public Iterator<DataBlock> getDataBlockIterator(IDataFilter filter)
     {
         checkOpen();
-        Asserts.checkNotNull(filter, IDataFilter.class);
-        Asserts.checkNotNull(filter.getRecordType(), "recordType");
+        filter = ensureProducerID(filter);
         
         return getRecordStore(filter.getRecordType()).getDataBlockIterator(filter);
     }
@@ -438,8 +479,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter)
     {
         checkOpen();
-        Asserts.checkNotNull(filter, IDataFilter.class);
-        Asserts.checkNotNull(filter.getRecordType(), "recordType");
+        filter = ensureProducerID(filter);
         
         return getRecordStore(filter.getRecordType()).getRecordIterator(filter);
     }
@@ -449,8 +489,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public int getNumMatchingRecords(IDataFilter filter, long maxCount)
     {
         checkOpen();
-        Asserts.checkNotNull(filter, IDataFilter.class);
-        Asserts.checkNotNull(filter.getRecordType(), "recordType");
+        filter = ensureProducerID(filter);
         
         return getRecordStore(filter.getRecordType()).getNumMatchingRecords(filter, maxCount);
     }
@@ -460,9 +499,8 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public synchronized void storeRecord(DataKey key, DataBlock data)
     {
         checkOpen();
-        Asserts.checkNotNull(key, DataKey.class);
+        ensureProducerID(key);
         Asserts.checkNotNull(data, DataBlock.class);
-        Asserts.checkNotNull(key.recordType, "recordType");
         
         getRecordStore(key.recordType).store(key, data);
     }
@@ -472,9 +510,8 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public synchronized void updateRecord(DataKey key, DataBlock data)
     {
         checkOpen();
-        Asserts.checkNotNull(key, DataKey.class);
+        ensureProducerID(key);
         Asserts.checkNotNull(data, DataBlock.class);
-        Asserts.checkNotNull(key.recordType, "recordType");
         
         getRecordStore(key.recordType).update(key, data);
     }
@@ -484,8 +521,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public synchronized void removeRecord(DataKey key)
     {
         checkOpen();
-        Asserts.checkNotNull(key, DataKey.class);
-        Asserts.checkNotNull(key.recordType, "recordType");
+        ensureProducerID(key);
         
         getRecordStore(key.recordType).remove(key);
     }
@@ -495,8 +531,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public synchronized int removeRecords(IDataFilter filter)
     {
         checkOpen();
-        Asserts.checkNotNull(filter, IDataFilter.class);
-        Asserts.checkNotNull(filter.getRecordType(), "recordType");
+        filter = ensureProducerID(filter);
         
         return getRecordStore(filter.getRecordType()).remove(filter);
     }
@@ -517,6 +552,29 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     {
         return featureStore.getFeaturesSpatialExtent();
     }
+    
+    
+    protected IFoiFilter getProducerFoiFilter(IFoiFilter filter)
+    {
+        // check producer ID if there is one specified
+        if (filter.getProducerIDs() != null && !filter.getProducerIDs().isEmpty())
+            checkProducerID(filter.getProducerIDs());
+        
+        // retrieve all FOIs associated with this producer
+        LinkedHashSet<String> foiIDs = new LinkedHashSet<>();
+        for (MVTimeSeriesImpl recordStore: recordStores.values())
+        {
+            Iterator<String> it = recordStore.getFoiIDs(producerID);
+            while (it.hasNext())
+                foiIDs.add(it.next());
+        }
+        
+        // also keep those of the original filter
+        if (filter.getFeatureIDs() != null)
+            foiIDs.addAll(filter.getFeatureIDs());
+        
+        return new ProducerFoiFilter(foiIDs, filter);
+    }
 
 
     @Override
@@ -524,6 +582,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     {
         checkOpen();
         Asserts.checkNotNull(filter, IFoiFilter.class);
+        
+        // if producer specific, add producer FOI IDs to filter
+        if (producerID != null)
+            filter = getProducerFoiFilter(filter);
         
         return featureStore.getFeatureIDs(filter);
     }
@@ -535,6 +597,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         checkOpen();
         Asserts.checkNotNull(filter, IFoiFilter.class);
         
+        // if producer specific, add producer FOI IDs to filter
+        if (producerID != null)
+            filter = getProducerFoiFilter(filter);
+        
         return featureStore.getFeatures(filter);
     }
 
@@ -543,7 +609,6 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public synchronized void storeFoi(String producerID, AbstractFeature foi)
     {
         checkOpen();
-        Asserts.checkNotNull(producerID, "producerID");
         Asserts.checkNotNull(foi, AbstractFeature.class);
         
         featureStore.store(foi);
