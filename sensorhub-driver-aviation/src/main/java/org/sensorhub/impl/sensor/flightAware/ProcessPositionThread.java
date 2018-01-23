@@ -30,22 +30,27 @@ public class ProcessPositionThread implements Runnable
 
 	@Override
 	public void run() {
-		FlightPlan plan = null;
-		if(obj.ident == null || obj.dest == null || obj.ident.length() == 0 || obj.dest.length() == 0) {
+		String dest = null;
+		if(obj.ident == null || obj.ident.length() == 0) {
+			log.debug("obj.ident is empty or null.  Cannot construct oshFlightId for Position");
+			return;
+		}
+		if(obj.dest == null || obj.dest.length() == 0) {
 			// Position message from FltAware did not contain dest airport.  Try to pull it from API
 			try {
-				plan = api.getFlightPlan(obj.id);
+				String json = api.invokeNew(FlightAwareApi.InFlightInfo_URL, "ident=" + obj.ident);
+				InFlightInfo info = (InFlightInfo) FlightAwareApi.fromJson(json, InFlightInfo.class);
+				dest = info.InFlightInfoResult.destination;
 				//getParentModule().
 			} catch (Exception e) {
 				e.printStackTrace(System.err);
 			}
-			if(plan == null || plan.destinationAirport == null || plan.destinationAirport.length() == 0) {
-				log.debug("STILL Cannot construct oshFlightId for Position. Missing dest in FlightPlan");
+			if(dest == null || dest.length() == 0) {
+				log.debug("STILL Cannot construct oshFlightId for Position. Missing dest in Position and InFlightInfo API response for: {}", obj.ident );
 				return;
 			}
-			obj.dest = plan.destinationAirport;
+			obj.dest = dest;
 		}
-//		String oshFlightId = obj.getOshFlightId();
 		converter.newFlightPosition(obj);
 	}
 

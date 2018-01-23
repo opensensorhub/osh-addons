@@ -24,7 +24,7 @@ public class FlightAwareApi
 {  
 	private final static String BASE_URL = "http://flightxml.flightaware.com/json/FlightXML2/";
 	private final static String METAR_URL = BASE_URL + "MetarEx?airport=KAUS&startTime=0&howMany=1&offset=0";
-	private final static String InFlightInfo_URL = BASE_URL + "InFlightInfo?";
+	public final static String InFlightInfo_URL = BASE_URL + "InFlightInfo?";
 	private final static String DecodeFlightRoute_URL = BASE_URL + "DecodeFlightRoute?"; // faFlightID=DAL1323-1506576332-airline-0231";
 	private final static String GetFlightID_URL = BASE_URL + "GetFlightID?ident=SWA1878&departureTime=1506101700";
 	private final static String Enroute_URL = BASE_URL + "Enroute?";
@@ -163,15 +163,12 @@ public class FlightAwareApi
 //		Instant depTime = Instant.ofEpochSecond(info.InFlightInfoResult.departureTime);
 //		System.err.println(info.InFlightInfoResult.ident + " departed from: " + info.InFlightInfoResult.destination + " at " + depTime);
 		
-		json = api.invokeNew(FlightInfoEx_URL, "ident=DAL1174", "howMany=10");
-//		System.err.println(FlightInfoEx_URL + "ident=DAL1260");
+		json = api.invokeNew(InFlightInfo_URL, "ident=DAL129");
 		System.err.println(json);
+		InFlightInfo info = (InFlightInfo) fromJson(json, InFlightInfo.class);
+//		System.err.println(FlightInfoEx_URL + "ident=DAL1260");
+		System.err.println(info.InFlightInfoResult.destination);
 
-		FlightPlan plan = api.getFlightPlan("DAL1174-1509863152-airline-0474");
-		plan.dump();
-//		System.err.println(decodedInfo);
-		System.err.println(plan);
-		
 		
 //		json = api.invokeNew(InFlightInfo_URL, "ident=DAL1323");
 //		InFlightInfo info = (InFlightInfo) api.fromJson(json, InFlightInfo.class);

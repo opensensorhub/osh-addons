@@ -186,5 +186,15 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 		DataBlock b =  records.get(entityID);
 		return b;
 	}
+    
+    
+    /*
+     * Override so SOS service never times out
+     */
+    @Override
+    public long getLatestRecordTime()
+    {
+        return System.currentTimeMillis();
+    }
 
 }
