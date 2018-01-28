@@ -1,5 +1,5 @@
 package org.sensorhub.impl.ndbc;
 
-public class ObsSiteLoader {
+public class BuoyLoader {
 
 }
