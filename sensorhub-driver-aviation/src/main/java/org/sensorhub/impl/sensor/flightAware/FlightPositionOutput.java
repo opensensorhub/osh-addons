@@ -38,7 +38,7 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 	@Override
 	public String getName()
 	{
-		return "FlightPosition Data";
+		return "flightPos";
 	}
 
 	protected void init()
@@ -94,10 +94,9 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 
 		// update latest record and send event
 		latestRecord = dataBlock;
+		latestRecords.put(oshFlightId, latestRecord);
 		latestRecordTime = System.currentTimeMillis();
-		String flightUid = FlightAwareDriver.FLIGHT_UID_PREFIX + oshFlightId;
-		latestUpdateTimes.put(flightUid, obj.getClock());
-		latestRecords.put(flightUid, latestRecord);   
+        latestUpdateTimes.put(oshFlightId, obj.getClock());
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPositionOutput.this, dataBlock));        	
 	}
 
@@ -136,10 +135,9 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 
 
 	@Override
-	public DataBlock getLatestRecord(String entityID) {
-		//  Can't really generate this one
-		DataBlock b =  latestRecords.get(entityID);
-		return b;
+	public DataBlock getLatestRecord(String entityID)
+	{
+		return latestRecords.get(entityID);
 	}
 
 }

@@ -2,17 +2,9 @@ description = 'Earthcast Weather and Aircraft products'
 ext.details = 'Earthcast Weather and Aircraft products'
 version = '0.3.2'
 
-rootProject.allprojects {
-  repositories {
-    maven { url 'https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases' }
-  }
-}
-
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  // UCAR NetCDF dependencies
-  //compile 'edu.ucar:cdm:4.6.10'
-  compile 'edu.ucar:grib:4.6.10'
+  compile project(':sensorhub-utils-grid')
   testRuntime 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
   testRuntime 'org.sensorhub:sensorhub-storage-perst:' + oshCoreVersion
   testRuntime 'org.sensorhub:sensorhub-webui-core:' + oshCoreVersion

@@ -103,7 +103,7 @@ public class FlightObject
 	List<Waypoint> waypoints = new ArrayList<>();
 	
 	// Adding for LawBox support
-	Double verticalChange;  //feet per mminute
+	public double verticalChange;  //feet per mminute
 	
 	public Long getDepartureTime() {
 		if(edt != null)
