@@ -1,0 +1,34 @@
+description = 'Gridded Dataset Utilities'
+ext.details = 'Various utilities for handling grid formats based on Unidata library'
+version = '0.3.2'
+
+rootProject.allprojects {
+  repositories {
+    maven { url 'https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases' }
+  }
+}
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile 'edu.ucar:grib:4.6.10'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'GeoRobotix Inc'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.turbulence.Turbulence'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'TheRestOfMe'
+      name 'Tony Cook'
+      organization 'GeoRobotix'
+      organizationUrl 'https://opensensorhub.org/' 
+    }
+  }
+}
