@@ -191,14 +191,11 @@ class MVFoiTimesStoreImpl
                 FeatureEntry entry = cursor.getValue();
                 int nPeriods = entry.timePeriods.size();
                 if (entry.timePeriods.get(nPeriods-1)[1] > latestTime)
-                    lastFoi = getKey(producerID, entry.uid);
+                    lastFoi = entry.uid;
             }
-            
-            if (lastFoi != null)
-                lastFois.put(producerID, lastFoi);
         }
         
-        // created new entry if needed
+        // create new entry if needed
         String key = getKey(producerID, foiID);
         FeatureEntry entry = idIndex.get(key);
         if (entry == null)

@@ -113,7 +113,7 @@ public class MVTimeSeriesImpl
         {
             next = null;
             
-            if ((it == null || !it.hasNext()) && periodIt.hasNext())
+            while ((it == null || !it.hasNext()) && periodIt.hasNext())
             {
                 // process next time range
                 FoiTimePeriod nextPeriod = periodIt.next();
