@@ -14,15 +14,29 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.ndbc;
 
+import java.util.Date;
+
 import org.sensorhub.api.config.DisplayInfo;
-import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.api.persistence.ObsStorageConfig;
+import org.sensorhub.impl.ndbc.BuoyEnums.ObsParam;
 
 
-public class NDBCConfig extends ModuleConfig
+public class NDBCConfig extends ObsStorageConfig
 {
+    @DisplayInfo(desc="Only data matching this filter will be accessible through this storage instance")
+    public DataFilter exposeFilter = new DataFilter();
     
-    @DisplayInfo(desc="DEscription of configuration field to show in UI")
-    public String configOption;
-    
-    
+    public NDBCConfig()
+    {
+        exposeFilter.stationIds.add("0Y2W3");
+        exposeFilter.parameters.add(ObsParam.AIR_PRESSURE_AT_SEA_LEVEL);
+        exposeFilter.endTime = new Date(new Date().getTime()/86400000*86400000);
+        exposeFilter.startTime = new Date(exposeFilter.endTime.getTime()-3600*24*30*1000);
+    }
+
+	@Override
+	public void setStorageIdentifier(String name) {
+		// TODO Auto-generated method stub
+		
+	}
 }
