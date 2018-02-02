@@ -164,7 +164,7 @@ public class FlightAwareClient implements FlightObjectListener, Runnable
 //						Thread.sleep(150_000L);
 //					}
 				} catch (Exception e) {
-					e.printStackTrace();
+					log.error("Cannot read JSON: {}", message, e);
 					continue;
 				}
 				

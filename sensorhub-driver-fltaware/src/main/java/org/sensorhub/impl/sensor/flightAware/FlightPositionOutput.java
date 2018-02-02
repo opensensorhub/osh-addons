@@ -69,7 +69,10 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		recordStruct.addField("heading", fac.newQuantity("http://sensorml.com/ont/swe/property/Heading", "Heading", null, "deg"));
 
 		// airspeed
-		recordStruct.addField("groundSpeed", fac.newQuantity("http://sensorml.com/ont/swe/property/GroundSpeed", "GroundSpeed", null, "kts"));
+		recordStruct.addField("groundSpeed", fac.newQuantity("http://sensorml.com/ont/swe/property/GroundSpeed", "GroundSpeed", null, "[kn_i]"));
+		
+		// vertical rate
+        recordStruct.addField("verticalRate", fac.newQuantity("http://sensorml.com/ont/swe/property/VerticalRate", "VerticalRate", null, "[ft_i]/min"));
 
 		// default encoding is text
 		encoding = fac.newTextEncoding(",", "\n");
@@ -81,16 +84,18 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 
 	public void sendPosition(FlightObject obj, String oshFlightId)
 	{                
-		// build data block from FlightObject Record
+		int i = 0;
+		
+	    // build data block from FlightObject Record
 		DataBlock dataBlock = recordStruct.createDataBlock();
-		dataBlock.setDoubleValue(0, obj.getClock());
-		dataBlock.setStringValue(1, obj.getOshFlightId());
-
-		dataBlock.setDoubleValue(2, obj.getValue(obj.lat));
-		dataBlock.setDoubleValue(3, obj.getValue(obj.lon));
-		dataBlock.setDoubleValue(4, obj.getValue(obj.alt));
-		dataBlock.setDoubleValue(5, obj.getValue(obj.heading));
-		dataBlock.setDoubleValue(6, obj.getValue(obj.gs));
+		dataBlock.setDoubleValue(i++, obj.getClock());
+		dataBlock.setStringValue(i++, obj.getOshFlightId());
+		dataBlock.setDoubleValue(i++, obj.getValue(obj.lat));
+		dataBlock.setDoubleValue(i++, obj.getValue(obj.lon));
+		dataBlock.setDoubleValue(i++, obj.getValue(obj.alt));
+		dataBlock.setDoubleValue(i++, obj.getValue(obj.heading));
+		dataBlock.setDoubleValue(i++, obj.getValue(obj.gs));
+        dataBlock.setDoubleValue(i++, obj.verticalChange);
 
 		// update latest record and send event
 		latestRecord = dataBlock;

@@ -1,20 +1,17 @@
-description = 'Earthcast Weather and Aircraft products'
-ext.details = 'Earthcast Weather and Aircraft products'
+description = 'Gridded Storm Weather Datasets'
+ext.details = 'Adaptor for gridded datasets of extreme weather events as lightning and hail'
 version = '0.3.2'
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   compile project(':sensorhub-utils-grid')
-  testRuntime 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
-  testRuntime 'org.sensorhub:sensorhub-storage-perst:' + oshCoreVersion
-  testRuntime 'org.sensorhub:sensorhub-webui-core:' + oshCoreVersion
 }
 
 // add info to OSGi manifest
 jar {
   manifest {
     instruction 'Bundle-Vendor', 'GeoRobotix Inc'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.turbulence.Turbulence'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.mesh.Activator'
   }
 }
 

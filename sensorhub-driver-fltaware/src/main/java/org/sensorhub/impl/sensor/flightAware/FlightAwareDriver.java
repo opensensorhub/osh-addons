@@ -17,8 +17,6 @@ package org.sensorhub.impl.sensor.flightAware;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -26,8 +24,6 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.FoiEvent;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.navDb.LufthansaParser;
-import org.sensorhub.impl.sensor.navDb.NavDbEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.sensorML.SMLHelper;
@@ -58,10 +54,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	Map<String, FlightObject> flightPositions;
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
 	static final String FLIGHT_UID_PREFIX = "urn:osh:aviation:flight:";
-
-	// Adding Airports- needed for computing LawBox when position is close to an airport 
-	// Should pull these from storage.  
-	Map<String, NavDbEntry> airportMap;
 	
 	static final Logger log = LoggerFactory.getLogger(FlightAwareDriver.class);
 
@@ -69,18 +61,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		this.flightFois = new ConcurrentSkipListMap<>();
 		this.aircraftDesc = new ConcurrentHashMap<>();
 		this.flightPositions = new ConcurrentHashMap<>();
-		this.airportMap = new HashMap<>();
-	}
-
-	private void loadAirports() {
-		 try {
-			List<NavDbEntry> airports = LufthansaParser.getDeltaAirports(config.navDbPath, config.deltaAirportsPath);
-			for(NavDbEntry a: airports) {
-				airportMap.put(a.icao, a);
-			}
-		} catch (Exception e) {
-			log.debug("Error loading airports", e);
-		}
 	}
 	
 	
@@ -129,9 +109,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		client.addListener(converter);
 		converter.addPlanListener(this);
 		converter.addPositionListener(this);
-
-		//  Load airportsMap so we can look up airport locations for LawBox
-		loadAirports();
 
 		// Start firehose feed
 		Thread thread = new Thread(client);
