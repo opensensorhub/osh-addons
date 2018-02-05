@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
@@ -21,7 +20,11 @@ import net.opengis.swe.v20.Vector;
 
 public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver> implements IMultiSourceDataInterface  
 {
-	private static final int AVERAGE_SAMPLING_PERIOD = 30;
+    static final String DEF_FLIGHTPOS_REC = SWEHelper.getPropertyUri("aero/FlightPosition");
+    static final String DEF_VERTICAL_RATE = SWEHelper.getPropertyUri("areo/VerticalRate");
+    static final String DEF_GROUND_SPEED = SWEHelper.getPropertyUri("GroundSpeed");
+    static final String DEF_HEADING = SWEHelper.getPropertyUri("TrueHeading");
+    private static final int AVERAGE_SAMPLING_PERIOD = 30;
 
 	DataRecord recordStruct;
 	DataEncoding encoding;	
@@ -46,18 +49,15 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		SWEHelper fac = new SWEHelper();
 		GeoPosHelper geoHelper = new GeoPosHelper();
 
-		//  Add top level structure for flight plan
-		//	 time, flightId, faFlightId, locationVec, heading, airspeed?
-
 		// SWE Common data structure
 		recordStruct = fac.newDataRecord(7);
 		recordStruct.setName(getName());
-		recordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/flightPosition"); // ??
+		recordStruct.setDefinition(DEF_FLIGHTPOS_REC);
 
 		recordStruct.addComponent("time", fac.newTimeStampIsoGPS());
 
 		// oshFlightId
-		recordStruct.addField("flightId", fac.newText("http://earthcastwx.com/ont/swe/property/flightId", "flightId", "Internally generated flight desc (flightNum_DestAirport"));
+		recordStruct.addField("flightId", fac.newText(ENTITY_ID_URI, "Flight ID", null));
 
 		//  location
 		Vector locVector = geoHelper.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
@@ -66,20 +66,16 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		recordStruct.addComponent("location", locVector);
 
 		//  heading
-		recordStruct.addField("heading", fac.newQuantity("http://sensorml.com/ont/swe/property/Heading", "Heading", null, "deg"));
+		recordStruct.addField("heading", fac.newQuantity(DEF_HEADING, "True Heading", null, "deg"));
 
 		// airspeed
-		recordStruct.addField("groundSpeed", fac.newQuantity("http://sensorml.com/ont/swe/property/GroundSpeed", "GroundSpeed", null, "[kn_i]"));
+		recordStruct.addField("groundSpeed", fac.newQuantity(DEF_GROUND_SPEED, "Ground Speed", null, "[kn_i]"));
 		
 		// vertical rate
-        recordStruct.addField("verticalRate", fac.newQuantity("http://sensorml.com/ont/swe/property/VerticalRate", "VerticalRate", null, "[ft_i]/min"));
+        recordStruct.addField("verticalRate", fac.newQuantity(DEF_VERTICAL_RATE, "Vertical Rate", null, "[ft_i]/min"));
 
 		// default encoding is text
 		encoding = fac.newTextEncoding(",", "\n");
-	}
-
-	public void start() throws SensorHubException {
-		// Nothing to do 
 	}
 
 	public void sendPosition(FlightObject obj, String oshFlightId)
