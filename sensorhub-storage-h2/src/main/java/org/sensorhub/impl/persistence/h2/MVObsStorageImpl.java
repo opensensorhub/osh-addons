@@ -566,7 +566,11 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         {
             Iterator<String> it = recordStore.getFoiIDs(producerID);
             while (it.hasNext())
-                foiIDs.add(it.next());
+            {
+                String key = it.next();
+                String foiID = key.replaceFirst(producerID, "");
+                foiIDs.add(foiID);
+            }
         }
         
         // also keep those of the original filter

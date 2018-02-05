@@ -14,8 +14,8 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.persistence.h2;
 
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.Set;
 import org.h2.mvstore.Cursor;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
@@ -145,7 +145,7 @@ public class MVFeatureStoreImpl implements IFeatureStorage
         final Polygon roi = filter.getRoi();
         
         // case of requesting by IDs
-        Collection<String> foiIDs = filter.getFeatureIDs();
+        Set<String> foiIDs = filter.getFeatureIDs();
         if (foiIDs != null && !foiIDs.isEmpty())
         {
             return new IteratorWrapper<String, AbstractFeature>(foiIDs.iterator())
@@ -155,6 +155,7 @@ public class MVFeatureStoreImpl implements IFeatureStorage
                 {                    
                     AbstractFeature f = idIndex.get(fid);
                     
+                     // also filter through ROI if specified
                     if (roi == null || intersectsRoi(roi, f))
                         return f;
                     else
