@@ -23,8 +23,8 @@ import java.nio.file.StandardWatchEventKinds;
 import java.util.regex.Pattern;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.mesh.DirectoryWatcher;
-import org.sensorhub.impl.sensor.mesh.FileListener;
+import org.sensorhub.impl.utils.grid.DirectoryWatcher;
+import org.sensorhub.impl.utils.grid.FileListener;
 
 
 /**

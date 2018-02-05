@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
+import org.sensorhub.impl.utils.grid.DirectoryWatcher;
+import org.sensorhub.impl.utils.grid.FileListener;
 
 public class TestWatch implements FileListener
 {

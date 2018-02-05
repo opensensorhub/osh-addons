@@ -7,9 +7,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.sensorhub.impl.sensor.mesh.EarthcastUtil;
 import org.sensorhub.impl.sensor.nldn.NldnRecord.NldnPoint;
-
+import org.sensorhub.impl.utils.grid.EarthcastUtil;
 import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
