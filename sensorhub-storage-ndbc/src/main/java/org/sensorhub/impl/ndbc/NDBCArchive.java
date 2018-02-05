@@ -3,11 +3,16 @@ package org.sensorhub.impl.ndbc;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Map.Entry;
 
 import org.sensorhub.api.common.SensorHubException;
@@ -16,14 +21,18 @@ import org.sensorhub.api.persistence.IDataFilter;
 import org.sensorhub.api.persistence.IDataRecord;
 import org.sensorhub.api.persistence.IFoiFilter;
 import org.sensorhub.api.persistence.IMultiSourceStorage;
+import org.sensorhub.api.persistence.IObsFilter;
 import org.sensorhub.api.persistence.IObsStorage;
 import org.sensorhub.api.persistence.IObsStorageModule;
 import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.api.persistence.IStorageModule;
 import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.impl.module.AbstractModule;
+import org.sensorhub.impl.persistence.FilterUtils;
+import org.sensorhub.impl.persistence.FilteredIterator;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Bbox;
+import org.vast.util.DateTimeFormat;
 
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.sensorml.v20.AbstractProcess;
@@ -120,253 +129,315 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         for (RecordStore rs: dataStores.values())
             systemDesc.addOutput(rs.getName(), rs.getRecordDescription());
     }
+    
+	@Override
+	public AbstractProcess getLatestDataSourceDescription()
+	{
+		return systemDesc;
+	}
+	
+    @Override
+    public List<AbstractProcess> getDataSourceDescriptionHistory(double startTime, double endTime)
+    {
+        return Arrays.<AbstractProcess>asList(systemDesc);
+    }
+    
+	@Override
+	public AbstractProcess getDataSourceDescriptionAtTime(double time)
+	{
+		return systemDesc;
+	}
+
+    @Override
+    public Map<String, ? extends IRecordStoreInfo> getRecordStores()
+    {
+        return Collections.unmodifiableMap(dataStores);
+    }
 
 
-	public void stop() throws SensorHubException
-    {        
+    @Override
+    public int getNumMatchingRecords(IDataFilter filter, long maxCount)
+    {
+//        // compute rough estimate here
+//        DataFilter usgsFilter = getUsgsFilter(filter);
+//        long dt = usgsFilter.endTime.getTime() - usgsFilter.startTime.getTime();
+//        long samplingPeriod = 15*60*1000; // shortest sampling period seems to be 15min
+//        int numSites = usgsFilter.siteIds.isEmpty() ? fois.size() : usgsFilter.siteIds.size();
+//        return (int)(numSites * dt / samplingPeriod);
+    	return 1;
+    }
+
+
+    @Override
+    public int getNumRecords(String recordType)
+    {
+//        long dt = config.exposeFilter.endTime.getTime() - config.exposeFilter.startTime.getTime();
+//        long samplingPeriod = 15*60*1000; // shortest sampling period seems to be 15min
+//        int numSites = fois.size();
+//        return (int)(numSites * dt / samplingPeriod);
+        return 1;
+    }
+
+
+    @Override
+    public double[] getRecordsTimeRange(String recordType)
+    {
+        double startTime = config.exposeFilter.startTime.getTime() / 1000.;
+        double endTime = config.exposeFilter.endTime.getTime() / 1000.;
+        return new double[] {startTime, endTime};
+    }
+
+
+    @Override
+    public Iterator<double[]> getRecordsTimeClusters(String recordType)
+    {
+        return Arrays.asList(getRecordsTimeRange(recordType)).iterator();
+    }
+
+
+    @Override
+    public DataBlock getDataBlock(DataKey key)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+
+    @Override
+    public Iterator<DataBlock> getDataBlockIterator(IDataFilter filter)
+    {
+        final Iterator<? extends IDataRecord> it = getRecordIterator(filter);
+        
+        return new Iterator<DataBlock>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+//                return it.hasNext();
+                return false;
+            }
+
+            @Override
+            public DataBlock next()
+            {
+                return it.next().getData();
+            }
+        };
+    }
+
+    @Override
+    public int getNumFois(IFoiFilter filter)
+    {
+        if (filter == null)
+            return fois.size();
+        
+        Iterator<AbstractFeature> it = getFois(filter);
+        
+        int count = 0;
+        while (it.hasNext())
+        {
+            it.next();
+            count++;
+        }
+        
+        return count;
+    }
+
+
+    @Override
+    public Bbox getFoisSpatialExtent()
+    {
+        return foiExtent.copy();
+    }
+
+
+    @Override
+    public Iterator<String> getFoiIDs(IFoiFilter filter)
+    {
+        final Iterator<AbstractFeature> it = getFois(filter);
+        
+        return new Iterator<String>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return it.hasNext();
+            }
+
+            @Override
+            public String next()
+            {
+                return it.next().getUniqueIdentifier();
+            }
+        };
+    }
+
+
+    @Override
+    public Iterator<AbstractFeature> getFois(final IFoiFilter filter)
+    {
+        Iterator<AbstractFeature> it = fois.values().iterator();
+        
+        return new FilteredIterator<AbstractFeature>(it)
+        {
+            @Override
+            protected boolean accept(AbstractFeature f)
+            {
+                return FilterUtils.isFeatureSelected(filter, f);
+            }
+        };
+    }
+
+
+    @Override
+    public Collection<String> getProducerIDs()
+    {
+        return Collections.unmodifiableSet(fois.keySet());
+    }
+
+
+    @Override
+    public IObsStorage getDataStore(String producerID)
+    {
+        return this;
+    }
+    
+    
+    @Override
+    public boolean isReadSupported()
+    {
+        return true;
+    }
+    
+    
+    @Override
+    public boolean isWriteSupported()
+    {
+        return false;
+    }
+
+
+    @Override
+    public IObsStorage addDataStore(String producerID)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void storeDataSourceDescription(AbstractProcess process)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void updateDataSourceDescription(AbstractProcess process)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void removeDataSourceDescription(double time)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void removeDataSourceDescriptionHistory(double startTime, double endTime)
+    {
+        throw new UnsupportedOperationException();
+    }
+    
+
+    @Override
+    public void addRecordStore(String name, DataComponent recordStructure, DataEncoding recommendedEncoding)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void storeRecord(DataKey key, DataBlock data)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void updateRecord(DataKey key, DataBlock data)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void removeRecord(DataKey key)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public int removeRecords(IDataFilter filter)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void storeFoi(String producerID, AbstractFeature foi)
+    {
+        throw new UnsupportedOperationException();
+    }
+    
+    
+    @Override
+    public void backup(OutputStream os) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void restore(InputStream is) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void commit()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void rollback()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void sync(IStorageModule<?> storage) throws StorageException
+    {
+        throw new UnsupportedOperationException();
     }
 
 
 	@Override
-	public void backup(OutputStream os) throws IOException {
+	public void stop() throws SensorHubException {
 		// TODO Auto-generated method stub
 		
-	}
-
-
-	@Override
-	public void restore(InputStream is) throws IOException {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void commit() {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void rollback() {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void sync(IStorageModule<?> storage) throws StorageException {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public AbstractProcess getLatestDataSourceDescription() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public List<AbstractProcess> getDataSourceDescriptionHistory(double startTime, double endTime) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public AbstractProcess getDataSourceDescriptionAtTime(double time) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public void storeDataSourceDescription(AbstractProcess process) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void updateDataSourceDescription(AbstractProcess process) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void removeDataSourceDescription(double time) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void removeDataSourceDescriptionHistory(double startTime, double endTime) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public Map<String, ? extends IRecordStoreInfo> getRecordStores() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public void addRecordStore(String name, DataComponent recordStructure, DataEncoding recommendedEncoding) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public int getNumRecords(String recordType) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-
-	@Override
-	public double[] getRecordsTimeRange(String recordType) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public Iterator<double[]> getRecordsTimeClusters(String recordType) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public DataBlock getDataBlock(DataKey key) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public Iterator<DataBlock> getDataBlockIterator(IDataFilter filter) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 
 	@Override
 	public Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public int getNumMatchingRecords(IDataFilter filter, long maxCount) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-
-	@Override
-	public void storeRecord(DataKey key, DataBlock data) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void updateRecord(DataKey key, DataBlock data) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public void removeRecord(DataKey key) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public int removeRecords(IDataFilter filter) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-
-	@Override
-	public boolean isReadSupported() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-
-	@Override
-	public boolean isWriteSupported() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-
-	@Override
-	public int getNumFois(IFoiFilter filter) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-
-	@Override
-	public Bbox getFoisSpatialExtent() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public Iterator<String> getFoiIDs(IFoiFilter filter) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public Iterator<AbstractFeature> getFois(IFoiFilter filter) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public void storeFoi(String producerID, AbstractFeature foi) {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public Collection<String> getProducerIDs() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public IObsStorage getDataStore(String producerID) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public IObsStorage addDataStore(String producerID) {
 		// TODO Auto-generated method stub
 		return null;
 	}
