@@ -103,7 +103,7 @@ public class MVTimeSeriesImpl
         
         IteratorWithFoi(Set<FoiTimePeriod>foiTimePeriods, boolean preloadValue)
         {
-            super(Collections.EMPTY_LIST.iterator());
+            super(Collections.<IDataRecord>emptyList().iterator());
             this.periodIt = foiTimePeriods.iterator();
             this.preloadValue = preloadValue;
         }
@@ -156,6 +156,7 @@ public class MVTimeSeriesImpl
         if (producerID != null)
         {
             DataFilter filter = new DataFilter(name) {
+                @Override
                 public Set<String> getProducerIDs()
                 {
                     return Sets.newHashSet(producerID);
@@ -237,17 +238,20 @@ public class MVTimeSeriesImpl
         
         return new Iterator<DataBlock>()
         {
+            @Override
             public final boolean hasNext()
             {
                 return it.hasNext();
             }
 
+            @Override
             public final DataBlock next()
             {
                 IDataRecord rec = it.next();
                 return rec.getData();
             }
 
+            @Override
             public final void remove()
             {
                 it.remove();
@@ -335,11 +339,13 @@ public class MVTimeSeriesImpl
         {
             double lastTime = Double.NaN;
             
+            @Override
             public boolean hasNext()
             {
                 return cursor.hasNext();
             }
 
+            @Override
             public double[] next()
             {
                 double[] clusterTimeRange = new double[2];
@@ -368,8 +374,10 @@ public class MVTimeSeriesImpl
                 return clusterTimeRange;
             }
 
+            @Override
             public void remove()
-            {               
+            {
+                throw new UnsupportedOperationException();
             }    
         };
     }
@@ -394,11 +402,13 @@ public class MVTimeSeriesImpl
         
         return new Iterator<IDataRecord>()
         {
+            @Override
             public final boolean hasNext()
             {
                 return cursor.hasNext();
             }
 
+            @Override
             public final IDataRecord next()
             {
                 cursor.next();
@@ -419,6 +429,7 @@ public class MVTimeSeriesImpl
                 };
             }
 
+            @Override
             public final void remove()
             {
                 //cursor.remove(); // not supported
