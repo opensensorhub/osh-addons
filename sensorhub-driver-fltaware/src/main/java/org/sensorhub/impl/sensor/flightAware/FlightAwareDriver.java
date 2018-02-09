@@ -78,7 +78,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	public void init() throws SensorHubException
 	{
 		// IDs
-		this.uniqueID = SENSOR_UID_PREFIX + ":flightAware";
+		this.uniqueID = SENSOR_UID_PREFIX + "flightAware";
 		this.xmlID = "Earthcast";
 
 		// Initialize Outputs
