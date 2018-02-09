@@ -13,59 +13,64 @@ Copyright (C) 2017 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 
 public class ProcessPositionThread implements Runnable
 {
     static final Logger log = LoggerFactory.getLogger(ProcessPositionThread.class);
     
     FlightObject obj;
-	private FlightAwareApi api = new FlightAwareApi();
+	FlightAwareApi api;
 	FlightAwareConverter converter;
-	Cache<String, String> idToDestinationCode;
 	
 	public ProcessPositionThread(FlightAwareConverter converter, FlightObject obj) {
 		this.obj = obj;
 		this.converter = converter;
-		
-		idToDestinationCode = CacheBuilder.newBuilder()
-    	       .maximumSize(10000)
-    	       .expireAfterWrite(24, TimeUnit.HOURS)
-    	       .build();
+		this.api = new FlightAwareApi(converter.user, converter.passwd);
 	}
 
 	@Override
 	public void run() {
 		String dest = null;
-		if(obj.ident == null || obj.ident.length() == 0) {
-			log.debug("obj.ident is empty or null.  Cannot construct oshFlightId for Position");
+		if (obj.ident == null || obj.ident.length() == 0) {
+			log.error("obj.ident is empty or null.  Cannot construct oshFlightId for Position");
 			return;
 		}
 		
-		obj.dest = idToDestinationCode.getIfPresent(obj.id);
-		if(obj.dest == null || obj.dest.length() == 0) {
-			log.debug("No destination airport associated to position. Fetching from Flight Aware API...");
-			// Position message from FltAware did not contain dest airport.  Try to pull it from API
-			try {
-				String json = api.invokeNew(FlightAwareApi.InFlightInfo_URL, "ident=" + obj.ident);
-				InFlightInfo info = (InFlightInfo) FlightAwareApi.fromJson(json, InFlightInfo.class);
-				dest = info.InFlightInfoResult.destination;
-				//getParentModule().
-			} catch (Exception e) {
-				e.printStackTrace(System.err);
-			}
-			if(dest == null || dest.length() == 0) {
-				log.error("STILL Cannot construct oshFlightId for Position. Missing dest in Position and InFlightInfo API response for: {}", obj.ident );
-				return;
-			}
-			
-			obj.dest = dest;
-			idToDestinationCode.put(obj.id, obj.dest);
-		}
+		if (obj.dest == null || obj.dest.length() == 0) {		    
+		    // Position message from FlightAware did not contain dest airport
+		    log.trace("Position message without destination for flight {}", obj.ident);
+		    
+		    // try to fetch from cache
+		    obj.dest = converter.idToDestinationCache.getIfPresent(obj.id);  
+		    
+		    // if not in cache, try to pull it from FlightAware API
+		    if (obj.dest == null)
+		    {
+		        String json = null;
+		        try {
+    				json = api.invokeNew(FlightAwareApi.InFlightInfo_URL, "ident=" + obj.ident);
+    				InFlightInfo info = (InFlightInfo) FlightAwareApi.fromJson(json, InFlightInfo.class);
+    				dest = info.InFlightInfoResult.destination;
+    				log.trace("Fetched destination of flight {} from FA API: {}", obj.ident, dest);
+    			} catch (Exception e) {
+    				log.error("Cannot get InFlightInfo for flight {} from FA API. Error: {}", obj.ident, json, e);
+    			}
+		        
+    			if(dest == null || dest.length() == 0) {
+    				log.error("STILL Cannot construct oshFlightId for Position. Missing dest in InFlightInfo response");
+    				return;
+    			}
+    			
+    			obj.dest = dest;
+    			converter.idToDestinationCache.put(obj.id, obj.dest);
+		    }
+		    else
+		        log.trace("Fetched destination of flight {} from cache: {}", obj.ident, obj.dest);
+		}		    
+		
+        log.trace("Done processing flight {}", obj.getOshFlightId());
 		converter.newFlightPosition(obj);
 	}
 

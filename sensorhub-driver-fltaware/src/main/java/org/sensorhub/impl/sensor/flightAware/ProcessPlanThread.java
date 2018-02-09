@@ -35,7 +35,7 @@ public class ProcessPlanThread implements Runnable
 	public ProcessPlanThread(FlightAwareConverter converter, FlightObject obj) {
 		this.converter = converter;
 		this.obj = obj;
-		api = new FlightAwareApi();
+		this.api = new FlightAwareApi(converter.user, converter.passwd);
 	}
 	
 	@Override

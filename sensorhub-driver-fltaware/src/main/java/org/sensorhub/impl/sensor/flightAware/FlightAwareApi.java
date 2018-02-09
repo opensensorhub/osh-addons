@@ -22,7 +22,9 @@ import com.google.gson.JsonParser;
 
 public class FlightAwareApi
 {  
-	private final static String BASE_URL = "http://flightxml.flightaware.com/json/FlightXML2/";
+    static final Logger log = LoggerFactory.getLogger(FlightAwareApi.class);
+    
+    private final static String BASE_URL = "http://flightxml.flightaware.com/json/FlightXML2/";
 	private final static String METAR_URL = BASE_URL + "MetarEx?airport=KAUS&startTime=0&howMany=1&offset=0";
 	public final static String InFlightInfo_URL = BASE_URL + "InFlightInfo?";
 	private final static String DecodeFlightRoute_URL = BASE_URL + "DecodeFlightRoute?"; // faFlightID=DAL1323-1506576332-airline-0231";
@@ -31,15 +33,11 @@ public class FlightAwareApi
 	private final static String Scheduled_URL = BASE_URL + "Scheduled?airport=KAUS&howMany=10&filter=airline";
 	private final static String AirlineInfo_URL = BASE_URL + "AirlineInfo?airlineCode=DAL";
 	private final static String FlightInfoEx_URL = BASE_URL + "FlightInfoEx?";
-	String user; // = "drgregswilson";
-	//	String euser = "earthcast";
-	String passwd; // = "2809b6196a2cfafeb89db0a00b117ac67e876220";
-	static final Logger log = LoggerFactory.getLogger(FlightAwareApi.class);
-
-	@Deprecated //  Should always pass these in from config
-	public FlightAwareApi() {
-		this("drgregswilson", "2809b6196a2cfafeb89db0a00b117ac67e876220");
-	}	
+	
+	String user;
+    String passwd;
+    
+    
 	public FlightAwareApi(String user, String passwd) {
 		this.user = user;
 		this.passwd = passwd;

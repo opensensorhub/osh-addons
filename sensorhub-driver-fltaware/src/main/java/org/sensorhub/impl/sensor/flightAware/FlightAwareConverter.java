@@ -15,9 +15,13 @@ package org.sensorhub.impl.sensor.flightAware;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 public class FlightAwareConverter implements FlightObjectListener
 {
@@ -25,6 +29,20 @@ public class FlightAwareConverter implements FlightObjectListener
 	//  Do I really need to retain in maps?  Or just let listener classes deal with that
     List<FlightPlanListener> planListeners = new ArrayList<>();
     List<PositionListener> positionListeners = new ArrayList<>();
+    Cache<String, String> idToDestinationCache;
+    ExecutorService exec = Executors.newFixedThreadPool(2);
+    String user;
+    String passwd;
+    
+    public FlightAwareConverter(String user, String pwd) {
+        this.user = user;
+        this.passwd = pwd;
+        this.idToDestinationCache = CacheBuilder.newBuilder()
+               .maximumSize(10000)
+               .concurrencyLevel(2)
+               .expireAfterWrite(24, TimeUnit.HOURS)
+               .build();
+    }    
 
     public void addPlanListener(FlightPlanListener l) {
     	planListeners.add(l);
@@ -51,16 +69,14 @@ public class FlightAwareConverter implements FlightObjectListener
 		}
 
 		switch(obj.type) {
-		case "flightplan":
-			Thread thread = new Thread(new ProcessPlanThread(this, obj));
-			thread.start();
-			break;
-		case "position":
-			Thread posThread = new Thread(new ProcessPositionThread(this, obj));
-			posThread.start();
-			break;
-		default:
-			log.error("Unknown message slipped through somehow: " + obj.type);
+    		case "flightplan":
+    		    exec.execute(new ProcessPlanThread(this, obj));
+    			break;
+    		case "position":
+    		    exec.execute(new ProcessPositionThread(this, obj));
+    			break;
+    		default:
+    			log.error("Unknown message slipped through somehow: " + obj.type);
 		}
 	}
 

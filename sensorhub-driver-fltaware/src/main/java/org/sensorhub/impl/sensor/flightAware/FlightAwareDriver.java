@@ -105,7 +105,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 			client.addAirline(airline);
 
 		//  And message Converter
-		FlightAwareConverter converter = new FlightAwareConverter() ;
+		FlightAwareConverter converter = new FlightAwareConverter(config.userName, config.password) ;
 		client.addListener(converter);
 		converter.addPlanListener(this);
 		converter.addPositionListener(this);
