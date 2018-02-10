@@ -438,7 +438,71 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 
 	@Override
 	public Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
-		// TODO Auto-generated method stub
+		final String recType = filter.getRecordType();
+		RecordStore rs = dataStores.get(recType); 
+		
+		// prepare loader to fetch data from USGS web service
+        final ObsRecordLoader loader = new ObsRecordLoader(this, rs.getRecordDescription());
+        final DataFilter ndbcFilter = getNdbcFilter(filter);
+        System.out.println("NumStations: " + ndbcFilter.stationIds.size());
+        System.out.println("Station: " + ndbcFilter.stationIds.toString());
+        System.out.println("Params: " + ndbcFilter.parameters.toString());
+        
+        ArrayList<BuoyDataRecord> records = new ArrayList<BuoyDataRecord>();
+        
+        loader.sendRequest();
+        DataBlock data = loader.getDataBlock();
+        DataKey key = new DataKey(recType, data.getDoubleValue(0));
+        records.add(new BuoyDataRecord(key, data));
+        Collections.sort(records);
+        
+        System.out.println("loader: " + loader.data.toString());
+        System.out.println("loaderTime: " + loader.data.getDoubleValue(0));
+        System.out.println("loaderStationID: " + loader.data.getStringValue(1));
+        System.out.println("loaderData[0]: " + loader.data.getStringValue(2));
+        
 		return null;
 	}
+	
+    protected DataFilter getNdbcFilter(IDataFilter filter)
+    {
+        DataFilter ndbcFilter = new DataFilter();  
+        
+        // keep only site IDs that are in both request and config
+//        if (filter.getProducerIDs() != null)
+//        	ndbcFilter.stationIds.addAll(filter.getProducerIDs());
+        if (getProducerIDs() != null)
+        	ndbcFilter.stationIds.addAll(getProducerIDs());
+        
+        if (filter instanceof IObsFilter)
+        {
+            Collection<String> fois = ((IObsFilter) filter).getFoiIDs();
+            if (fois != null)
+            {
+                for (String foiID: fois)
+                	ndbcFilter.stationIds.add(foiID.substring(ObsStationLoader.FOI_UID_PREFIX.length()));
+            }
+        }
+        if (!config.exposeFilter.stationIds.isEmpty())
+        	ndbcFilter.stationIds.retainAll(config.exposeFilter.stationIds);
+                    
+        // use config params
+        ndbcFilter.parameters.addAll(config.exposeFilter.parameters);
+        
+        // init time filter
+        long configStartTime = config.exposeFilter.startTime.getTime();
+        long configEndTime = config.exposeFilter.endTime.getTime();
+        long filterStartTime = Long.MIN_VALUE;
+        long filterEndTime = Long.MAX_VALUE;
+        if (filter.getTimeStampRange() != null)
+        {
+            filterStartTime = (long)(filter.getTimeStampRange()[0] * 1000);
+            filterEndTime = (long)(filter.getTimeStampRange()[1] * 1000);
+        }
+        
+        ndbcFilter.startTime = new Date(Math.min(configEndTime, Math.max(configStartTime, filterStartTime)));
+        ndbcFilter.endTime = new Date(Math.min(configEndTime, Math.max(configStartTime, filterEndTime)));
+        
+        return ndbcFilter;
+    }
 }
