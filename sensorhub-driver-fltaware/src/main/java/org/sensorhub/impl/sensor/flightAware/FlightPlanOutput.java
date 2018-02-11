@@ -113,7 +113,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
 		
         // renew datablock
         waypointArray.updateSize(plan.waypoints.size());
-        DataBlock data = dataStruct.createDataBlock();
+        DataBlock dataBlk = dataStruct.createDataBlock();
         
         // flight UID
         String flightId = plan.getOshFlightId();
@@ -129,14 +129,14 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         
         // set datablock values
         int i = 0;        
-        data.setDoubleValue(i++, plan.issueTime);
-        data.setStringValue(i++, flightId);
-        data.setStringValue(i++, plan.flightNumber);
-        data.setStringValue(i++, plan.originAirport);
-        data.setStringValue(i++, plan.destinationAirport);
-        data.setDoubleValue(i++, plan.departureTime);
-        data.setIntValue(i++, plan.waypoints.size());
-        AbstractDataBlock waypointData = ((DataBlockMixed)data).getUnderlyingObject()[i];
+        dataBlk.setDoubleValue(i++, plan.issueTime);
+        dataBlk.setStringValue(i++, flightId);
+        dataBlk.setStringValue(i++, plan.flightNumber);
+        dataBlk.setStringValue(i++, plan.originAirport);
+        dataBlk.setStringValue(i++, plan.destinationAirport);
+        dataBlk.setDoubleValue(i++, plan.departureTime);
+        dataBlk.setIntValue(i++, plan.waypoints.size());
+        AbstractDataBlock waypointData = ((DataBlockMixed)dataBlk).getUnderlyingObject()[i];
         i = 0;
         for (Waypoint waypt: plan.waypoints)
         {
@@ -149,14 +149,14 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         }
         
         // skip if same as last record for a given foi
-        if (isDuplicate(flightId, data))
+        if (isDuplicate(flightId, dataBlk))
             return;
         
         // update latest record and send event
-        latestRecord = data;
+        latestRecord = dataBlk;
         latestRecordTime = msgTime;
-        latestRecords.put(flightId, latestRecord);
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, flightId, this, data));
+        latestRecords.put(flightId, dataBlk);
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, flightId, this, dataBlk));
 	}
 	
 	

@@ -83,22 +83,22 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		int i = 0;
 		
 	    // build data block from FlightObject Record
-		DataBlock dataBlock = recordStruct.createDataBlock();
-		dataBlock.setDoubleValue(i++, obj.getClock());
-		dataBlock.setStringValue(i++, obj.getOshFlightId());
-		dataBlock.setDoubleValue(i++, obj.getValue(obj.lat));
-		dataBlock.setDoubleValue(i++, obj.getValue(obj.lon));
-		dataBlock.setDoubleValue(i++, obj.getValue(obj.alt));
-		dataBlock.setDoubleValue(i++, obj.getValue(obj.heading));
-		dataBlock.setDoubleValue(i++, obj.getValue(obj.gs));
-        dataBlock.setDoubleValue(i++, obj.verticalChange);
+		DataBlock dataBlk = recordStruct.createDataBlock();
+		dataBlk.setDoubleValue(i++, obj.getClock());
+		dataBlk.setStringValue(i++, obj.getOshFlightId());
+		dataBlk.setDoubleValue(i++, obj.getValue(obj.lat));
+		dataBlk.setDoubleValue(i++, obj.getValue(obj.lon));
+		dataBlk.setDoubleValue(i++, obj.getValue(obj.alt));
+		dataBlk.setDoubleValue(i++, obj.getValue(obj.heading));
+		dataBlk.setDoubleValue(i++, obj.getValue(obj.gs));
+        dataBlk.setDoubleValue(i++, obj.verticalChange);
 
 		// update latest record and send event
-		latestRecord = dataBlock;
-		latestRecords.put(oshFlightId, latestRecord);
+		latestRecord = dataBlk;
+		latestRecords.put(oshFlightId, dataBlk);
 		latestRecordTime = System.currentTimeMillis();
         latestUpdateTimes.put(oshFlightId, obj.getClock());
-		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPositionOutput.this, dataBlock));        	
+		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPositionOutput.this, dataBlk));        	
 	}
 
 	public double getAverageSamplingPeriod()
