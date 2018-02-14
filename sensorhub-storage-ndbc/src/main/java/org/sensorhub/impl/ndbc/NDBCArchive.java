@@ -96,7 +96,12 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 //    		System.out.println(buoy.getId());
 //    	}
     }
-
+	
+	@Override
+	public void stop() throws SensorHubException {
+		// TODO Auto-generated method stub
+		
+	}
 
     protected void loadFois()  throws SensorHubException {
     	// request and parse station info
@@ -158,24 +163,24 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     @Override
     public int getNumMatchingRecords(IDataFilter filter, long maxCount)
     {
-//        // compute rough estimate here
-//        DataFilter usgsFilter = getUsgsFilter(filter);
-//        long dt = usgsFilter.endTime.getTime() - usgsFilter.startTime.getTime();
-//        long samplingPeriod = 15*60*1000; // shortest sampling period seems to be 15min
-//        int numSites = usgsFilter.siteIds.isEmpty() ? fois.size() : usgsFilter.siteIds.size();
-//        return (int)(numSites * dt / samplingPeriod);
-    	return 1;
+        // compute rough estimate here
+        DataFilter ndbcFilter = getNdbcFilter(filter);
+        long dt = ndbcFilter.endTime.getTime() - ndbcFilter.startTime.getTime();
+        long samplingPeriod = 15*60*1000; // shortest sampling period seems to be 15min
+        int numSites = ndbcFilter.stationIds.isEmpty() ? fois.size() : ndbcFilter.stationIds.size();
+        return (int)(numSites * dt / samplingPeriod);
+//    	return 1;
     }
 
 
     @Override
     public int getNumRecords(String recordType)
     {
-//        long dt = config.exposeFilter.endTime.getTime() - config.exposeFilter.startTime.getTime();
-//        long samplingPeriod = 15*60*1000; // shortest sampling period seems to be 15min
-//        int numSites = fois.size();
-//        return (int)(numSites * dt / samplingPeriod);
-        return 1;
+        long dt = config.exposeFilter.endTime.getTime() - config.exposeFilter.startTime.getTime();
+        long samplingPeriod = 15*60*1000; // shortest sampling period seems to be 15min
+        int numSites = fois.size();
+        return (int)(numSites * dt / samplingPeriod);
+//        return 1;
     }
 
 
@@ -213,8 +218,8 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
             @Override
             public boolean hasNext()
             {
-//                return it.hasNext();
-                return false;
+                return it.hasNext();
+//                return false;
             }
 
             @Override
@@ -223,6 +228,160 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
                 return it.next().getData();
             }
         };
+    }
+    
+	@Override
+	public Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
+		final String recType = filter.getRecordType();
+		RecordStore rs = dataStores.get(recType); 
+		
+		// prepare loader to fetch data from USGS web service
+        final ObsRecordLoader loader = new ObsRecordLoader(this, rs.getRecordDescription());
+        final DataFilter ndbcFilter = getNdbcFilter(filter);
+        
+//        ArrayList<BuoyDataRecord> records = new ArrayList<BuoyDataRecord>();
+//        DataBlock data = loader.getDataBlock();
+//        DataKey key = new DataKey(recType, data.getDoubleValue(0));
+//        records.add(new BuoyDataRecord(key, data));
+//        Collections.sort(records);
+//        IDataRecord current = records.get(0);
+        
+        // request observations by batch and iterates through them sequentially
+        final long endTime = ndbcFilter.endTime.getTime();
+        final long batchLength = 8*3600*1000; // 8 hours        
+        class BatchIterator implements Iterator<IDataRecord>
+        {                
+            Iterator<BuoyDataRecord> batchIt;
+            IDataRecord next;
+            long nextBatchStartTime = ndbcFilter.startTime.getTime();
+            
+            BatchIterator()
+            {
+                preloadNext();
+            }
+            
+            protected IDataRecord preloadNext()
+            {
+                IDataRecord current = next;
+                next = null;
+                
+                // retrieve next batch if needed
+                if ((batchIt == null || !batchIt.hasNext()) && nextBatchStartTime <= endTime)
+                {
+                	ndbcFilter.startTime = new Date(nextBatchStartTime);
+                    
+                    // adjust batch length to avoid a very small batch at the end
+                    long timeGap = 1000; // gap to avoid duplicated obs
+                    long adjBatchLength = batchLength;
+                    long timeLeft = endTime - nextBatchStartTime;
+                    if (((double)timeLeft) / batchLength < 1.5)
+                        adjBatchLength = timeLeft+timeGap;
+                    ndbcFilter.endTime = new Date(Math.min(nextBatchStartTime+adjBatchLength-timeGap, endTime));
+                    batchIt = nextBatch(loader, ndbcFilter, recType).iterator();
+                    nextBatchStartTime += adjBatchLength;
+                }
+                                
+                if (batchIt != null && batchIt.hasNext())
+                    next = batchIt.next();
+                
+                return current;
+            }
+            
+            @Override
+            public boolean hasNext()
+            {
+                return (next != null);
+            }
+            
+
+            @Override
+            public IDataRecord next()
+            {
+                if (!hasNext())
+                    throw new NoSuchElementException();
+                return preloadNext();
+            }
+        };
+        
+        return new BatchIterator();
+	}
+	
+    protected DataFilter getNdbcFilter(IDataFilter filter)
+    {
+        DataFilter ndbcFilter = new DataFilter();  
+        
+        // keep only site IDs that are in both request and config
+//        if (filter.getProducerIDs() != null)
+//        	ndbcFilter.stationIds.addAll(filter.getProducerIDs());
+        if (getProducerIDs() != null)
+        	ndbcFilter.stationIds.addAll(getProducerIDs());
+        
+        if (filter instanceof IObsFilter)
+        {
+            Collection<String> fois = ((IObsFilter) filter).getFoiIDs();
+            if (fois != null)
+            {
+                for (String foiID: fois)
+                	ndbcFilter.stationIds.add(foiID.substring(ObsStationLoader.FOI_UID_PREFIX.length()));
+            }
+        }
+        if (!config.exposeFilter.stationIds.isEmpty())
+        	ndbcFilter.stationIds.retainAll(config.exposeFilter.stationIds);
+                    
+        // use config params
+        ndbcFilter.parameters.addAll(config.exposeFilter.parameters);
+        
+        // init time filter
+        long configStartTime = config.exposeFilter.startTime.getTime();
+        long configEndTime = config.exposeFilter.endTime.getTime();
+        long filterStartTime = Long.MIN_VALUE;
+        long filterEndTime = Long.MAX_VALUE;
+        if (filter.getTimeStampRange() != null)
+        {
+            filterStartTime = (long)(filter.getTimeStampRange()[0] * 1000);
+            filterEndTime = (long)(filter.getTimeStampRange()[1] * 1000);
+        }
+        
+        ndbcFilter.startTime = new Date(Math.min(configEndTime, Math.max(configStartTime, filterStartTime)));
+        ndbcFilter.endTime = new Date(Math.min(configEndTime, Math.max(configStartTime, filterEndTime)));
+        
+        return ndbcFilter;
+    }
+    
+    protected Collection<BuoyDataRecord> nextBatch(ObsRecordLoader loader, DataFilter filter, String recType)
+    {
+        try
+        {
+            ArrayList<BuoyDataRecord> records = new ArrayList<BuoyDataRecord>();
+            
+            // log batch time range
+            if (getLogger().isDebugEnabled())
+            {
+                DateTimeFormat timeFormat = new DateTimeFormat();
+                getLogger().debug("Next batch is {} - {}",
+                                  timeFormat.formatIso(filter.startTime.getTime()/1000., 0),
+                                  timeFormat.formatIso(filter.endTime.getTime()/1000., 0));
+            }
+            
+            // request and parse next batch
+            loader.sendRequest(filter);
+            while (loader.hasNext())
+            {
+                DataBlock data = loader.next();
+                if (data == null)
+                    break;
+                DataKey key = new DataKey(recType, data.getDoubleValue(0));
+                records.add(new BuoyDataRecord(key, data));
+            }
+            
+            // sort by timestamps
+            Collections.sort(records);
+            return records;
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Error while sending request for instantaneous values");
+        }
     }
 
     @Override
@@ -320,6 +479,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     @Override
     public IObsStorage addDataStore(String producerID)
     {
+    	System.out.println("...adding buoy DataStore...");
         throw new UnsupportedOperationException();
     }
 
@@ -426,83 +586,5 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     public void sync(IStorageModule<?> storage) throws StorageException
     {
         throw new UnsupportedOperationException();
-    }
-
-
-	@Override
-	public void stop() throws SensorHubException {
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	@Override
-	public Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
-		final String recType = filter.getRecordType();
-		RecordStore rs = dataStores.get(recType); 
-		
-		// prepare loader to fetch data from USGS web service
-        final ObsRecordLoader loader = new ObsRecordLoader(this, rs.getRecordDescription());
-        final DataFilter ndbcFilter = getNdbcFilter(filter);
-        System.out.println("NumStations: " + ndbcFilter.stationIds.size());
-        System.out.println("Station: " + ndbcFilter.stationIds.toString());
-        System.out.println("Params: " + ndbcFilter.parameters.toString());
-        
-        ArrayList<BuoyDataRecord> records = new ArrayList<BuoyDataRecord>();
-        
-        loader.sendRequest();
-        DataBlock data = loader.getDataBlock();
-        DataKey key = new DataKey(recType, data.getDoubleValue(0));
-        records.add(new BuoyDataRecord(key, data));
-        Collections.sort(records);
-        
-        System.out.println("loader: " + loader.data.toString());
-        System.out.println("loaderTime: " + loader.data.getDoubleValue(0));
-        System.out.println("loaderStationID: " + loader.data.getStringValue(1));
-        System.out.println("loaderData[0]: " + loader.data.getStringValue(2));
-        
-		return null;
-	}
-	
-    protected DataFilter getNdbcFilter(IDataFilter filter)
-    {
-        DataFilter ndbcFilter = new DataFilter();  
-        
-        // keep only site IDs that are in both request and config
-//        if (filter.getProducerIDs() != null)
-//        	ndbcFilter.stationIds.addAll(filter.getProducerIDs());
-        if (getProducerIDs() != null)
-        	ndbcFilter.stationIds.addAll(getProducerIDs());
-        
-        if (filter instanceof IObsFilter)
-        {
-            Collection<String> fois = ((IObsFilter) filter).getFoiIDs();
-            if (fois != null)
-            {
-                for (String foiID: fois)
-                	ndbcFilter.stationIds.add(foiID.substring(ObsStationLoader.FOI_UID_PREFIX.length()));
-            }
-        }
-        if (!config.exposeFilter.stationIds.isEmpty())
-        	ndbcFilter.stationIds.retainAll(config.exposeFilter.stationIds);
-                    
-        // use config params
-        ndbcFilter.parameters.addAll(config.exposeFilter.parameters);
-        
-        // init time filter
-        long configStartTime = config.exposeFilter.startTime.getTime();
-        long configEndTime = config.exposeFilter.endTime.getTime();
-        long filterStartTime = Long.MIN_VALUE;
-        long filterEndTime = Long.MAX_VALUE;
-        if (filter.getTimeStampRange() != null)
-        {
-            filterStartTime = (long)(filter.getTimeStampRange()[0] * 1000);
-            filterEndTime = (long)(filter.getTimeStampRange()[1] * 1000);
-        }
-        
-        ndbcFilter.startTime = new Date(Math.min(configEndTime, Math.max(configStartTime, filterStartTime)));
-        ndbcFilter.endTime = new Date(Math.min(configEndTime, Math.max(configStartTime, filterEndTime)));
-        
-        return ndbcFilter;
     }
 }
