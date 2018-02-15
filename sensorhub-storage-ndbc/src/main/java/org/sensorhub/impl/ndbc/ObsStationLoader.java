@@ -26,7 +26,7 @@ import net.opengis.gml.v32.impl.GMLFactory;
  */
 public class ObsStationLoader
 {
-    static final String STN_INFO_URL = NDBCArchive.BASE_USGS_URL + "/stations.shtml";
+    static final String STN_INFO_URL = NDBCArchive.BASE_NDBC_URL + "/stations.shtml";
     static final String FOI_UID_PREFIX = NDBCArchive.UID_PREFIX + "station:wmo:";
     static final String AREA_UID_PREFIX = NDBCArchive.UID_PREFIX + "region:";
     
@@ -40,6 +40,9 @@ public class ObsStationLoader
     
     public void loadStations(Map<String, AbstractFeature> fois) throws IOException
     {
+    	// java key store file with certificate to access https site with station info 
+    	// MUST USE ABSOLUTE PATH TO JKS FILE!
+//    	System.setProperty("javax.net.ssl.trustStore", "/home/lee/Keys/ndbcnoaagov.jks");
     	Document doc = Jsoup.connect(STN_INFO_URL).get();
     	Elements stn = doc.getElementsByClass("stndata"); // Grab the <tr> elements of class "stndata"
     	

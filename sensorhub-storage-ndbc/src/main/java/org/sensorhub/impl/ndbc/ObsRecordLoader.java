@@ -2,21 +2,26 @@ package org.sensorhub.impl.ndbc;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Set;
-
 import org.sensorhub.impl.module.AbstractModule;
+import org.sensorhub.impl.ndbc.BuoyEnums.ObsParam;
+import org.vast.util.Bbox;
+import org.vast.util.DateTimeFormat;
+
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 
 public class ObsRecordLoader implements Iterator<DataBlock> {
+	static final String BASE_URL = NDBCArchive.BASE_NDBC_URL + "/sos/server.php?request=GetObservation&service=SOS&version=1.0.0";
 	AbstractModule<?> module;
 	DataFilter filter;
 	BufferedReader reader;
+	String requestURL;
 	ParamValueParser[] paramReaders;
 	DataBlock data;
 	DataBlock templateRecord, nextRecord;
@@ -28,108 +33,139 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         
     }
     
+    protected String buildInstantValuesRequest(DataFilter filter)
+    {
+        StringBuilder buf = new StringBuilder(BASE_URL);
+        
+        // site ids
+        if (!filter.stationIds.isEmpty())
+        {
+            buf.append("&offering=");
+            for (String id: filter.stationIds)
+                buf.append("urn:ioos:station:wmo:").append(id).append(',');
+            buf.setCharAt(buf.length()-1, '&');
+        }
+        
+//        // state codes
+//        else if (!filter.stateCodes.isEmpty())
+//        {
+//            buf.append("stateCd=");
+//            for (StateCode state: filter.stateCodes)
+//                buf.append(state.name()).append(',');
+//            buf.setCharAt(buf.length()-1, '&');
+//        }
+        
+//        // county codes
+//        else if (!filter.countyCodes.isEmpty())
+//        {
+//            buf.append("countyCd=");
+//            for (String countyCd: filter.countyCodes)
+//            	buf.append(countyCd).append(',');
+//            buf.setCharAt(buf.length()-1, '&');
+//        }            
+        
+//        // site bbox
+//        else if (filter.siteBbox != null && !filter.siteBbox.isNull())
+//        {
+//            Bbox bbox = filter.siteBbox;
+//            buf.append("bbox=")
+//               .append(bbox.getMinX()).append(",")
+//               .append(bbox.getMaxY()).append(",")
+//               .append(bbox.getMaxX()).append(",")
+//               .append(bbox.getMinY()).append("&");
+//        }
+        
+//        // site types
+//        if (!filter.siteTypes.isEmpty())
+//        {
+//            buf.append("siteType=");
+//            for (SiteType type: filter.siteTypes)
+//                buf.append(type.name()).append(',');
+//            buf.setCharAt(buf.length()-1, '&');
+//        }
+        
+        // parameters
+        if (!filter.parameters.isEmpty())
+        {
+            buf.append("observedProperty=");
+            for (ObsParam param: filter.parameters)
+                buf.append(param.toString().toLowerCase()).append(',');
+            buf.setCharAt(buf.length()-1, '&');
+        }
+        
+        buf.append("responseformat=text/csv"); // output type
+        
+        // time range
+        DateTimeFormat timeFormat = new DateTimeFormat();
+        if (filter.startTime != null)
+            buf.append("&eventtime=")
+               .append(timeFormat.formatIso(filter.startTime.getTime()/1000., 0));
+        if (filter.endTime != null)
+            buf.append("/")
+               .append(timeFormat.formatIso(filter.endTime.getTime()/1000., 0));
+        
+        return buf.toString();
+    }
+    
     public void sendRequest(DataFilter filter) throws IOException {
-    	module.getLogger().debug("Requesting observations from: " + " some ndbc url");
+    	requestURL = buildInstantValuesRequest(filter);
+    	System.out.println("Requesting observations from: " + requestURL);
+    	module.getLogger().debug("Requesting observations from: " + requestURL);
+    	URL url = new URL(requestURL);
+    	
+    	reader = new BufferedReader(new InputStreamReader(url.openStream()));
+
     	this.filter = filter;
     	
     	// preload first record
         nextRecord = null;
         preloadNext();
-        
-//    	data.setDoubleValue(0, System.currentTimeMillis());
-//    	data.setStringValue(1, "0Y2W3");
-//    	data.setDoubleValue(2, 23.4);
-//    	data.setDoubleValue(3, 12.3);
     }
     
-    protected void parseHeader() throws IOException
-    {
-        // skip header comments
-        String line;
-        while ((line = reader.readLine()) != null)
-        {
-            line = line.trim();
-            if (!line.startsWith("#"))
-                break;
-        }
-        
-        // parse field names and prepare corresponding readers
-        String[] fieldNames = line.split("\t");
-//        initParamReaders(filter.parameters, fieldNames);
-        
-        // skip field sizes
-        reader.readLine();
-    }
-    
-//    protected void initParamReaders(Set<ObsParam> params, String[] fieldNames)
-//    {
-//        ArrayList<ParamValueParser> readers = new ArrayList<ParamValueParser>();
-//        int i = 0;
-//        
-//        // always add time stamp and site ID readers
-//        readers.add(new TimeStampParser(2, i++));
-//        readers.add(new SiteNumParser(1, i++));
-//        
-//        // create a reader for each selected param
-//        for (ObsParam param: params)
-//        {
-//            // look for field with same param code
-//            int fieldIndex = -1;
-//            for (int j = 0; j < fieldNames.length; j++)
-//            {
-//                if (fieldNames[j].endsWith(param.getCode()))
-//                {
-//                    fieldIndex = j;
-//                    break;
-//                }
-//            }
-//            
-//            readers.add(new FloatValueParser(fieldIndex, i++));
-//        }  
-//        
-//        paramReaders = readers.toArray(new ParamValueParser[0]);
-//    }
     
     protected DataBlock preloadNext()
     {
-//        try
-//        {
+        try
+        {
             DataBlock currentRecord = nextRecord;        
             nextRecord = null;
             
-//            String line;
-//            while ((line = reader.readLine()) != null)
-//            {  
-//                line = line.trim();
+            String line;
+            System.out.println("");
+            while ((line = reader.readLine()) != null)
+            {                
+                line = line.trim();
+                System.out.println(line);
                 
                 // parse section header when data for next site begins
-//                if (line.startsWith("#"))
-//                {
+                if (line.startsWith("#"))
+                {
 //                    parseHeader();
-//                    line = reader.readLine();
-//                    if (line == null || line.trim().isEmpty())
-//                        return null;
-//                }
+                    line = reader.readLine();
+                    if (line == null || line.trim().isEmpty())
+                        return null;
+                }
                 
-//                String[] fields = line.split("\t");
-//                nextRecord = templateRecord.renew();
+                String[] fields = line.split("\t");
+                nextRecord = templateRecord.renew();
                 
                 // read all requested fields to datablock
-//                for (ParamValueParser reader: paramReaders)
-//                    reader.parse(fields, nextRecord);
+                for (ParamValueParser reader: paramReaders)
+                    reader.parse(fields, nextRecord);
                 
-//                break;
-//            }
+                break;
+            }
             
             return currentRecord;
-//        }
-//        catch (IOException e)
-//        {
-//            module.getLogger().error("Error while reading tabular data", e);
-//        }
+        }
+        catch (IOException e)
+        {
+            module.getLogger().error("Error while reading tabular data", e);
+        }
         
-//        return null;
+        return null;
     }
+    
     
     @Override
     public boolean hasNext()
@@ -261,15 +297,5 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
                 throw new IOException("Invalid numeric value " + tokens[fromIndex], e);
             }
         }
-    }
-    
-    public DataBlock getDataBlock() {
-    	return data;
-    }
-    public void postData() {
-    	System.out.println("Posting Data...");
-//    	data.setDoubleValue(0, 1517545558);
-//    	data.setStringValue(1, "0001A");
-//    	data.setDoubleValue(2, 15);
     }
 }

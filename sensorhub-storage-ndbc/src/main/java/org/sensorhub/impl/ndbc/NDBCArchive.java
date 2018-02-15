@@ -43,7 +43,7 @@ import net.opengis.swe.v20.DataEncoding;
 
 public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStorageModule<NDBCConfig>, IMultiSourceStorage<IObsStorage>
 {
-	static final String BASE_USGS_URL = "http://sdf.ndbc.noaa.gov";
+	static final String BASE_NDBC_URL = "http://sdf.ndbc.noaa.gov";
 	static final String UID_PREFIX = "urn:ioos:";
 	
 	Map<String, RecordStore> dataStores = new LinkedHashMap<>();
@@ -58,18 +58,19 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		for (Entry<String, AbstractFeature> entry : fois.entrySet()) {
     		System.out.println(entry.getKey() + " | " + entry.getValue().getUniqueIdentifier() + " | " + entry.getValue().getName() + " | " + entry.getValue().getLocation());
     	}
+		System.out.println("");
 		
 		initRecordStores();
 		for (Entry<String, RecordStore> entry : dataStores.entrySet()) {
-    		System.out.println(entry.getKey());
-    		System.out.println(entry.getValue().getRecordDescription());
+//    		System.out.println(entry.getKey());
+//    		System.out.println(entry.getValue().getRecordDescription());
     	}
 		
 		initSensorNetworkDescription();
 		
 		RecordStore rs = dataStores.get("buoyData");
 		final ObsRecordLoader loader = new ObsRecordLoader(this, rs.getRecordDescription());
-		loader.postData();
+//		loader.postData();
 		
 //    	Document doc = Jsoup.connect("http://sdf.ndbc.noaa.gov/stations.shtml").get();
 //    	Elements stn = doc.getElementsByClass("stndata"); // Grab the <tr> elements of class "stndata"
