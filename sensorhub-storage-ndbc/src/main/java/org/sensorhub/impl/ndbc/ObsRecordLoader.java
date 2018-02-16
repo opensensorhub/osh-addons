@@ -279,7 +279,6 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
      */
     static class TimeStampParser extends ParamValueParser
     {
-//        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm z");
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         StringBuilder buf = new StringBuilder();
         
@@ -306,7 +305,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
     }
     
     /*
-     * Parser for time stamp field, including time zone
+     * Parser for buoy depth field, in meters
      */
     static class BuoyDepthParser extends ParamValueParser
     {        
