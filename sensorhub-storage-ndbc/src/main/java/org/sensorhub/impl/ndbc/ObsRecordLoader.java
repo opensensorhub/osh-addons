@@ -6,8 +6,11 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Set;
+
 import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.ndbc.BuoyEnums.ObsParam;
 import org.vast.util.Bbox;
@@ -29,6 +32,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
     public ObsRecordLoader(AbstractModule<?> module, DataComponent recordDesc)
     {
         this.module = module;
+        this.templateRecord = recordDesc.createDataBlock();
         this.data = recordDesc.createDataBlock();
         
     }
@@ -122,6 +126,58 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         preloadNext();
     }
     
+//    protected void parseHeader() throws IOException
+//    {
+//        // skip header comments
+//        String line;
+//        while ((line = reader.readLine()) != null)
+//        {
+//            line = line.trim();
+//            if (!line.startsWith("#"))
+//                break;
+//        }
+//        
+//        // parse field names and prepare corresponding readers
+//        String[] fieldNames = line.split("\t");
+//        initParamReaders(filter.parameters, fieldNames);
+//        
+//        // skip field sizes
+//        reader.readLine();
+//    }
+    
+    protected void initParamReaders(Set<ObsParam> params, String[] fieldNames)
+    {
+        ArrayList<ParamValueParser> readers = new ArrayList<ParamValueParser>();
+        int i = 0;
+        
+        // always add time stamp and site ID readers
+        readers.add(new TimeStampParser(4, i++));
+        readers.add(new StationIdParser(0, i++));
+        readers.add(new BuoyDepthParser(5, i++));
+        
+        // create a reader for each selected param
+        for (ObsParam param: params)
+        {
+        	System.out.println("param = " + param);
+            // look for field with same param code
+            int fieldIndex = -1;
+            for (int j = 0; j < fieldNames.length; j++)
+            {
+            	System.out.println("field name = " + fieldNames[j]);
+                if (fieldNames[j].contains(param.toString().toLowerCase()))
+                {
+                    fieldIndex = j;
+                    System.out.println(fieldNames[j] + " = ind " + fieldIndex);
+                    break;
+                }
+            }
+            
+            readers.add(new FloatValueParser(fieldIndex, i++));
+        }  
+        
+        paramReaders = readers.toArray(new ParamValueParser[0]);
+    }
+    
     
     protected DataBlock preloadNext()
     {
@@ -137,16 +193,18 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
                 line = line.trim();
                 System.out.println(line);
                 
-                // parse section header when data for next site begins
-                if (line.startsWith("#"))
+                // parse header
+                if (line.startsWith("station_id,sensor_id"))
                 {
-//                    parseHeader();
+                	String[] fieldNames = line.split(",");
+                	initParamReaders(filter.parameters, fieldNames);
                     line = reader.readLine();
                     if (line == null || line.trim().isEmpty())
                         return null;
                 }
-                
-                String[] fields = line.split("\t");
+                String[] fields = line.split(",");
+                for (int k = 0; k < fields.length; k ++)
+                	System.out.println(fields[k]);
                 nextRecord = templateRecord.renew();
                 
                 // read all requested fields to datablock
@@ -221,7 +279,8 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
      */
     static class TimeStampParser extends ParamValueParser
     {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm z");
+//        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm z");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         StringBuilder buf = new StringBuilder();
         
         public TimeStampParser(int fromIndex, int toIndex)
@@ -233,8 +292,6 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         {
             buf.setLength(0);
             buf.append(tokens[fromIndex].trim());
-            buf.append(' ');
-            buf.append(tokens[fromIndex+1].trim());
             
             try
             {
@@ -249,11 +306,40 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
     }
     
     /*
+     * Parser for time stamp field, including time zone
+     */
+    static class BuoyDepthParser extends ParamValueParser
+    {        
+        public BuoyDepthParser(int fromIndex, int toIndex)
+        {
+            super(fromIndex, toIndex);
+        }
+        
+        public void parse(String[] tokens, DataBlock data) throws IOException
+        {
+            try
+            {
+                float f = Float.NaN;
+                
+                String val = tokens[fromIndex].trim();
+                if (!val.isEmpty())
+                    f = Float.parseFloat(val);
+                
+                data.setFloatValue(toIndex, f);
+            }
+            catch (NumberFormatException e)
+            {
+                throw new IOException("Invalid numeric value " + tokens[fromIndex], e);
+            }
+        }
+    }
+    
+    /*
      * Parser for station ID
      */
-    static class SiteNumParser extends ParamValueParser
+    static class StationIdParser extends ParamValueParser
     {
-        public SiteNumParser(int fromIndex, int toIndex)
+        public StationIdParser(int fromIndex, int toIndex)
         {
             super(fromIndex, toIndex);
         }
@@ -261,8 +347,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         public void parse(String[] tokens, DataBlock data)
         {
             String val = tokens[fromIndex].trim();
-//            data.setStringValue(toIndex, val);
-            data.setStringValue(toIndex, "AA001");
+            data.setStringValue(toIndex, val);
         }
     }
     
@@ -285,12 +370,11 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
                 if (fromIndex >= 0)
                 {
                     String val = tokens[fromIndex].trim();
-                    if (!val.isEmpty() && !val.startsWith("*"))
+                    if (!val.isEmpty())
                         f = Float.parseFloat(val);
                 }
                 
-//                data.setFloatValue(toIndex, f);
-                data.setFloatValue(toIndex, 95.234f);
+                data.setFloatValue(toIndex, f);
             }
             catch (NumberFormatException e)
             {

@@ -29,6 +29,7 @@ public class RecordStore  implements IRecordStoreInfo {
         
         dataStruct.addField("time", helper.newTimeStampIsoUTC());
         dataStruct.addField("station", helper.newText("http://sensorml.com/ont/swe/property/StationID", "Station ID", null));
+        dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
         dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
         
         for (ObsParam param: parameters)
