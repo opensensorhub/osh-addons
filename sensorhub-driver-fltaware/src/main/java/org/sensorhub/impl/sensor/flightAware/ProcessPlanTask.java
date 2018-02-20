@@ -26,13 +26,13 @@ import org.apache.http.client.ClientProtocolException;
  * @author tcook
  *
  */
-public class ProcessPlanThread implements Runnable
+public class ProcessPlanTask implements Runnable
 {
 	FlightObject obj;
 	FlightAwareApi api;
-	FlightAwareConverter converter;
+	MessageHandler converter;
 	
-	public ProcessPlanThread(FlightAwareConverter converter, FlightObject obj) {
+	public ProcessPlanTask(MessageHandler converter, FlightObject obj) {
 		this.converter = converter;
 		this.obj = obj;
 		this.api = new FlightAwareApi(converter.user, converter.passwd);

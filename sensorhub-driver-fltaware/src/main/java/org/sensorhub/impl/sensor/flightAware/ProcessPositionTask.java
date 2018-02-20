@@ -16,15 +16,15 @@ package org.sensorhub.impl.sensor.flightAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProcessPositionThread implements Runnable
+public class ProcessPositionTask implements Runnable
 {
-    static final Logger log = LoggerFactory.getLogger(ProcessPositionThread.class);
+    static final Logger log = LoggerFactory.getLogger(ProcessPositionTask.class);
     
     FlightObject obj;
 	FlightAwareApi api;
-	FlightAwareConverter converter;
+	MessageHandler converter;
 	
-	public ProcessPositionThread(FlightAwareConverter converter, FlightObject obj) {
+	public ProcessPositionTask(MessageHandler converter, FlightObject obj) {
 		this.obj = obj;
 		this.converter = converter;
 		this.api = new FlightAwareApi(converter.user, converter.passwd);
@@ -40,7 +40,7 @@ public class ProcessPositionThread implements Runnable
 		
 		if (obj.dest == null || obj.dest.length() == 0) {		    
 		    // Position message from FlightAware did not contain dest airport
-		    log.trace("Position message without destination for flight {}", obj.ident);
+		    log.trace("{}: Position message without destination", obj.ident);
 		    
 		    // try to fetch from cache
 		    obj.dest = converter.idToDestinationCache.getIfPresent(obj.id);  
@@ -53,9 +53,9 @@ public class ProcessPositionThread implements Runnable
     				json = api.invokeNew(FlightAwareApi.InFlightInfo_URL, "ident=" + obj.ident);
     				InFlightInfo info = (InFlightInfo) FlightAwareApi.fromJson(json, InFlightInfo.class);
     				dest = info.InFlightInfoResult.destination;
-    				log.trace("Fetched destination of flight {} from FA API: {}", obj.ident, dest);
+    				log.trace("{}: Fetched destination from FA API: {}", obj.ident, dest);
     			} catch (Exception e) {
-    				log.error("Cannot get InFlightInfo for flight {} from FA API. Error: {}", obj.ident, json, e);
+    				log.error("{}: Cannot get InFlightInfo for from FA API. Error: {}", obj.ident, json, e);
     			}
 		        
     			if(dest == null || dest.length() == 0) {
@@ -67,10 +67,9 @@ public class ProcessPositionThread implements Runnable
     			converter.idToDestinationCache.put(obj.id, obj.dest);
 		    }
 		    else
-		        log.trace("Fetched destination of flight {} from cache: {}", obj.ident, obj.dest);
+		        log.trace("{}: Fetched destination from cache: {}", obj.ident, obj.dest);
 		}		    
 		
-        log.trace("Done processing flight {}", obj.getOshFlightId());
 		converter.newFlightPosition(obj);
 	}
 

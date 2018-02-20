@@ -14,23 +14,46 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.config.DisplayInfo.FieldType;
+import org.sensorhub.api.config.DisplayInfo.FieldType.Type;
+import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.api.sensor.SensorConfig;
 
 
 public class FlightAwareConfig extends SensorConfig
-{
+{    
+    enum Mode {
+        FIREHOSE_ONLY,
+        PUBSUB_ONLY,
+        PUBSUB_THEN_FIREHOSE,
+        FIREHOSE_THEN_PUBSUB
+    }
     
-    @DisplayInfo(desc="Earthcast FlightAware Firehose feed")
+    @DisplayInfo(desc="Type of connection")
+    public Mode connectionType = Mode.FIREHOSE_ONLY;
+    
+    @DisplayInfo(desc="Maximum number of connection retries")
+    public int maxRetries = 5;
+    
+    @DisplayInfo(desc="FlightAware Firehose hostname")
+    public String hostname = "firehose.flightaware.com";
+    
+    @DisplayInfo(desc="FlightAware Firehose user name")
     public String userName;
+    
+    @DisplayInfo(desc="FlightAware Firehose API key")
+    @FieldType(Type.PASSWORD)
     public String password;
     
-    public String turbulencePath;
+    @DisplayInfo(desc="Types of FA messages to listen for")
+    public List<String> messageTypes = new ArrayList<>();
     
-    public String [] messageTypes;  // Types of FA messages to listen for
-    public String [] airlines;  // Types of FA messages to listen for
+    @DisplayInfo(desc="Airline codes to listen for")
+    public List<String> airlines = new ArrayList<>();
     
-    // TODO- NavDbDriver and FlightAwareDriver should share this somehow
-    public String navDbPath;
-    public String deltaAirportsPath;
+    @DisplayInfo(desc="Pub/sub configuration")
+    public ModuleConfig pubSubConfig;
 }
