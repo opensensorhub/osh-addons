@@ -98,13 +98,13 @@ public class FlightAwareClient implements Runnable
 			
     		try {
     			String message = null;
-    			int cnt = 0;
+    			//int cnt = 0;
     			while (started && (message = reader.readLine()) != null) {
     			    msgHandler.handle(message);
-    				//  simulate connection closed by peer
+    				/*//  simulate connection closed by peer
     				if(++cnt >= 400) {
     					throw new EOFException("Test closed by peer");
-    				}
+    				}*/
     			}    			
     		} catch (IOException e) {
                 if (started)
