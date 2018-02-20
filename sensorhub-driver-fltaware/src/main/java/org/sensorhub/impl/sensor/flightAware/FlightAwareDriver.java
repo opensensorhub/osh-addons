@@ -14,6 +14,7 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
+import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,6 +27,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.comm.IMessageQueuePush;
 import org.sensorhub.api.comm.IMessageQueuePush.MessageListener;
+import org.sensorhub.api.comm.MessageQueueConfig;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.FoiEvent;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
@@ -90,7 +92,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
             {
                 long sysTime = System.currentTimeMillis();
                 long lastMsgRecvTime = msgHandler.getLastMessageReceiveTime();
-                long lastMsgTime = msgHandler.getLastMessageTime();
+                long lastMsgTime = msgHandler.getLastMessageTime()*1000;
                 long lastMsgDelta = sysTime - lastMsgRecvTime;
                 long lastMsgAge = sysTime - lastMsgTime;
                 
@@ -107,7 +109,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                     }
                     
                     retriesLeft--;
-                    if (config.connectionType != Mode.PUBSUB_ONLY)
+                    if (config.connectionType != Mode.PUBSUB)
                         startWithFirehose();
                     else
                         startWithPubSub();
@@ -126,7 +128,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                     }
                     
                     retriesLeft--;
-                    if (config.connectionType != Mode.FIREHOSE_ONLY)
+                    if (config.connectionType != Mode.FIREHOSE)
                         startWithPubSub();
                     else
                         startWithFirehose();
@@ -143,7 +145,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                 // if messages getting old
                 else if (lastMsgAge > MESSAGE_LATENCY_WARN_LIMIT)
                 {
-                    getLogger().warn("Messages getting old. Last dated {}s ago", lastMsgAge);
+                    getLogger().warn("Messages getting old. Last dated {}s ago", lastMsgAge/1000);
                 }
             }
         }
@@ -194,7 +196,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	public void start() throws SensorHubException
 	{
 	    // if configured to use firehose only, connect to firehose now
-        if (config.connectionType == Mode.FIREHOSE_ONLY || config.connectionType == Mode.FIREHOSE_THEN_PUBSUB)
+        if (config.connectionType == Mode.FIREHOSE || config.connectionType == Mode.FIREHOSE_THEN_PUBSUB)
             startWithFirehose();
         else
             startWithPubSub();
@@ -263,11 +265,17 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	
 	private void connectToPubSub(boolean publishOnly)
 	{
-	    // load message queue implementation
 	    try
 	    {
-            msgQueue = (IMessageQueuePush)SensorHub.getInstance().getModuleRegistry().loadClass(config.pubSubConfig.moduleClass);
-            msgQueue.init(config.pubSubConfig);
+	        // generate full subscription name
+	        MessageQueueConfig pubSubConfig = config.pubSubConfig;
+            String prefix = pubSubConfig.subscriptionName == null ? "" : pubSubConfig.subscriptionName + "-";
+            String hostname = InetAddress.getLocalHost().getHostName().toLowerCase() + "-";
+            pubSubConfig.subscriptionName = hostname + prefix + pubSubConfig.topicName;
+            
+            // load message queue implementation
+	        msgQueue = (IMessageQueuePush)SensorHub.getInstance().getModuleRegistry().loadClass(pubSubConfig.moduleClass);
+            msgQueue.init(pubSubConfig);
             
             if (!publishOnly)
             {
@@ -290,7 +298,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
             connected = false;
             msgQueue.start();
         }
-	    catch (SensorHubException e)
+	    catch (Exception e)
 	    {
             throw new IllegalStateException("Cannot load message queue implementation", e);
         }

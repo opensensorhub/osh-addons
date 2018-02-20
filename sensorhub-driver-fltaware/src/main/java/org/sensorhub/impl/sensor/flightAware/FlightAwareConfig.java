@@ -16,24 +16,24 @@ package org.sensorhub.impl.sensor.flightAware;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.sensorhub.api.comm.MessageQueueConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.FieldType;
 import org.sensorhub.api.config.DisplayInfo.FieldType.Type;
-import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.api.sensor.SensorConfig;
 
 
 public class FlightAwareConfig extends SensorConfig
 {    
     enum Mode {
-        FIREHOSE_ONLY,
-        PUBSUB_ONLY,
+        FIREHOSE,
+        PUBSUB,
         PUBSUB_THEN_FIREHOSE,
         FIREHOSE_THEN_PUBSUB
     }
     
     @DisplayInfo(desc="Type of connection")
-    public Mode connectionType = Mode.FIREHOSE_ONLY;
+    public Mode connectionType = Mode.FIREHOSE;
     
     @DisplayInfo(desc="Maximum number of connection retries")
     public int maxRetries = 5;
@@ -55,5 +55,5 @@ public class FlightAwareConfig extends SensorConfig
     public List<String> airlines = new ArrayList<>();
     
     @DisplayInfo(desc="Pub/sub configuration")
-    public ModuleConfig pubSubConfig;
+    public MessageQueueConfig pubSubConfig;
 }
