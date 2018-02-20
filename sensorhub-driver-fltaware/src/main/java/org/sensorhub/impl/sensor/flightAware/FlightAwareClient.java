@@ -1,6 +1,7 @@
 package org.sensorhub.impl.sensor.flightAware;
 
 import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -101,12 +102,13 @@ public class FlightAwareClient implements Runnable
     			while (started && (message = reader.readLine()) != null) {
     			    msgHandler.handle(message);
     				//  simulate connection closed by peer
-    //				if(++cnt%40  == 0 ) {
-    //					throw new SSLException("Test closed by peer");
-    //				}
+    				if(++cnt >= 400) {
+    					throw new EOFException("Test closed by peer");
+    				}
     			}    			
     		} catch (IOException e) {
-                log.error("Error processing Firehose message. Disconnecting...", e);         
+                if (started)
+                    log.error("Error processing Firehose message", e);         
             }
 		} finally {
 		    try {
@@ -139,19 +141,19 @@ public class FlightAwareClient implements Runnable
 
 	public synchronized void stop() {
 		started = false;
+		
+		// force close from here
+        try {
+            if(!ssl_socket.isClosed())
+                ssl_socket.close();
+        } catch (IOException e) {
+            log.error("Error closing Firehose client socket", e);
+        }
 	}
 
 	public synchronized void restart() {
 		log.info("Restarting Firehose client thread");
 		stop();
-
-		// force close from here
-		try {
-			if(!ssl_socket.isClosed())
-				ssl_socket.close();
-		} catch (IOException e) {
-			log.error("Error closing Firehose client socket", e);
-		}
 		
 		//  wait until ssl_socket is closed before restarting
 		while(!ssl_socket.isClosed()) {

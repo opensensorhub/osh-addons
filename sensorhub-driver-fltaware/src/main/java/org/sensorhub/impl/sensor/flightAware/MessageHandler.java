@@ -72,10 +72,6 @@ public class MessageHandler
             // also notify raw object listeners
             newFlightObject(obj);
             
-//           simulate message timeout
-//          if(cnt++ > 10) {
-//              Thread.sleep(150_000L);
-//          }
         } catch (Exception e) {
             log.error("Cannot read JSON\n{}", message, e);
             return;
@@ -94,6 +90,10 @@ public class MessageHandler
                 log.warn("Unsupported message type: {}", obj.type);
                 break;
         }
+    }
+    
+    public void stop() {
+        exec.shutdownNow();
     }
 
     public void addObjectListener(FlightObjectListener l) {

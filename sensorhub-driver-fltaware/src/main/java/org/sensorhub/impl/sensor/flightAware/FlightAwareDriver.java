@@ -118,7 +118,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                 // if connection to firehose didn't succeed
                 else if (firehoseClient != null && !firehoseClient.isStarted())
                 {
-                    getLogger().error("Could not connect to Firehose");
+                    getLogger().error("Lost connection to Firehose");
                     stop();
                     
                     if (retriesLeft <= 0)
@@ -134,19 +134,24 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                         startWithFirehose();
                 }
                 
-                // if initially connected but no message received for some time
-                else if (lastMsgDelta > MESSAGE_RECEIVE_TIMEOUT)
+                else
                 {
-                    getLogger().error("No message received in the last {}s", MESSAGE_RECEIVE_TIMEOUT/1000);                        
-                    if (firehoseClient != null)
-                        firehoseClient.restart();
-                }
-                
-                // if messages getting old
-                else if (lastMsgAge > MESSAGE_LATENCY_WARN_LIMIT)
-                {
-                    getLogger().warn("Messages getting old. Last dated {}s ago", lastMsgAge/1000);
-                }
+                    retriesLeft = config.maxRetries;
+                    
+                    // if initially connected but no message received for some time
+                    if (lastMsgDelta > MESSAGE_RECEIVE_TIMEOUT)
+                    {
+                        getLogger().error("No message received in the last {}s", MESSAGE_RECEIVE_TIMEOUT/1000);                        
+                        if (firehoseClient != null)
+                            firehoseClient.restart();
+                    }
+                    
+                    // if messages getting old
+                    else if (lastMsgAge > MESSAGE_LATENCY_WARN_LIMIT)
+                    {
+                        getLogger().warn("Messages getting old. Last dated {}s ago", lastMsgAge/1000);
+                    }
+                }                    
             }
         }
     }
@@ -205,7 +210,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 
     private void startWithFirehose()
     {
-        getLogger().info("Connecting to Firehose channel");
+        getLogger().info("Connecting to Firehose channel...");
         timer = Executors.newSingleThreadScheduledExecutor();
         
         // connect to pub/sub channel for publishing only
@@ -243,7 +248,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     {
         Asserts.checkNotNull(config.pubSubConfig, "PubSubConfig");
         
-        getLogger().info("Connecting to Pub/Sub channel");
+        getLogger().info("Connecting to Pub/Sub channel...");
         timer = Executors.newSingleThreadScheduledExecutor();
         
         // create message handler
@@ -268,7 +273,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	    try
 	    {
 	        // generate full subscription name
-	        MessageQueueConfig pubSubConfig = config.pubSubConfig;
+	        MessageQueueConfig pubSubConfig = (MessageQueueConfig)config.pubSubConfig.clone();
             String prefix = pubSubConfig.subscriptionName == null ? "" : pubSubConfig.subscriptionName + "-";
             String hostname = InetAddress.getLocalHost().getHostName().toLowerCase() + "-";
             pubSubConfig.subscriptionName = hostname + prefix + pubSubConfig.topicName;
@@ -309,18 +314,14 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	public void stop()
 	{
 		if (timer != null) {
-		    try
-            {
-		        timer.shutdownNow();
-		        timer.awaitTermination(5, TimeUnit.SECONDS);
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-            }
-		    
-		    timer = null;
+		    timer.shutdownNow();
+            timer = null;
 		}
+        
+        if (msgHandler != null) {
+            msgHandler.stop();
+            msgHandler = null;
+        }
         
         if (msgQueue != null) {
             msgQueue.stop();
@@ -330,7 +331,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	    if (firehoseClient != null) {
 			firehoseClient.stop();
 			firehoseClient = null;
-	    }		
+	    }
 	}
 	
 
