@@ -2,8 +2,6 @@ package org.sensorhub.impl.ndbc;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Map.Entry;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;

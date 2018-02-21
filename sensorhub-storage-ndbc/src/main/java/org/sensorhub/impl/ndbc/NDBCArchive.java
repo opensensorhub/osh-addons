@@ -13,8 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Map.Entry;
-
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataKey;
 import org.sensorhub.api.persistence.IDataFilter;
@@ -55,21 +53,21 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	public void start() throws SensorHubException
     {
 		loadFois();
-		for (Entry<String, AbstractFeature> entry : fois.entrySet()) {
-    		System.out.println(entry.getKey() + " | " + entry.getValue().getUniqueIdentifier() + " | " + entry.getValue().getName() + " | " + entry.getValue().getLocation());
-    	}
-		System.out.println("");
+//		for (Entry<String, AbstractFeature> entry : fois.entrySet()) {
+//    		System.out.println(entry.getKey() + " | " + entry.getValue().getUniqueIdentifier() + " | " + entry.getValue().getName() + " | " + entry.getValue().getLocation());
+//    	}
+//		System.out.println("");
 		
 		initRecordStores();
-		for (Entry<String, RecordStore> entry : dataStores.entrySet()) {
+//		for (Entry<String, RecordStore> entry : dataStores.entrySet()) {
 //    		System.out.println(entry.getKey());
 //    		System.out.println(entry.getValue().getRecordDescription());
-    	}
+//    	}
 		
 		initSensorNetworkDescription();
 		
-		RecordStore rs = dataStores.get("buoyData");
-		final ObsRecordLoader loader = new ObsRecordLoader(this, rs.getRecordDescription());
+//		RecordStore rs = dataStores.get("buoyData");
+//		final ObsRecordLoader loader = new ObsRecordLoader(this, rs.getRecordDescription());
 //		loader.postData();
 		
 //    	Document doc = Jsoup.connect("http://sdf.ndbc.noaa.gov/stations.shtml").get();
