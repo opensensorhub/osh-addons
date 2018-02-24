@@ -1,6 +1,7 @@
 package org.sensorhub.impl.ndbc;
 
 import java.util.Set;
+import java.util.StringJoiner;
 
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.persistence.IRecordStoreInfo;
@@ -35,7 +36,6 @@ public class RecordStore  implements IRecordStoreInfo {
         for (ObsParam param: parameters)
         {
             String paramName = param.name().toLowerCase();
-            
             DataComponent c = helper.newQuantity(
                     getDefUri(param),
                     getLabel(param),
@@ -44,7 +44,7 @@ public class RecordStore  implements IRecordStoreInfo {
                     DataType.FLOAT);
             
             dataStruct.addComponent(paramName, c);
-        }        
+        }
         
         // use text encoding with default separators
         encoding = helper.newTextEncoding();
@@ -59,7 +59,14 @@ public class RecordStore  implements IRecordStoreInfo {
     
     protected String getLabel(ObsParam param)
     {
-        return param.toString();
+    	String[] label_arr = param.toString().toLowerCase().split("_");
+    	StringJoiner joiner = new StringJoiner(" ");
+    	String temp = "";
+    	for (int i = 0; i < label_arr.length; i++) {
+    		temp = label_arr[i].substring(0, 1).toUpperCase() + label_arr[i].substring(1);
+    		joiner.add(temp);
+    	}
+        return joiner.toString();
     }
     
     

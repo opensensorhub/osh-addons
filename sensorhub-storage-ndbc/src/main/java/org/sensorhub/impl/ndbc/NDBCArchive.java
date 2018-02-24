@@ -123,20 +123,20 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 			Document doc = db.parse(new URL(capUrl).openStream());
 			
 			NodeList nList = doc.getElementsByTagName("sos:ObservationOffering");
-			System.out.println("Length: " + nList.getLength());
+//			System.out.println("Length: " + nList.getLength());
 			for (int i = 0; i < nList.getLength(); i++)
 			{
 				Node nNode = nList.item(i);
 				if (nNode.getNodeType() == Node.ELEMENT_NODE)
 				{
 					Element eElement = (Element) nNode;
-					System.out.println("id: " + eElement.getAttribute("gml:id"));
-					System.out.println("desc: " + eElement.getElementsByTagName("gml:description").item(0).getTextContent());
-					System.out.println("name: " + eElement.getElementsByTagName("gml:name").item(0).getTextContent());
+//					System.out.println("id: " + eElement.getAttribute("gml:id"));
+//					System.out.println("desc: " + eElement.getElementsByTagName("gml:description").item(0).getTextContent());
+//					System.out.println("name: " + eElement.getElementsByTagName("gml:name").item(0).getTextContent());
 					
 					NodeList pList = eElement.getElementsByTagName("sos:procedure");
 					Element pElement = (Element) pList.item(0);
-					System.out.println("proc: " + pElement.getAttribute("xlink:href"));
+//					System.out.println("proc: " + pElement.getAttribute("xlink:href"));
 					
 					// Repeat for sos:observedProperty
 					NodeList obsList = eElement.getElementsByTagName("sos:observedProperty");
@@ -146,10 +146,10 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 						if (obsNode.getNodeType() ==  Node.ELEMENT_NODE)
 						{
 							Element obsElement = (Element) obsNode;
-							System.out.println("obsProp: " + obsElement.getAttribute("xlink:href"));
+//							System.out.println("obsProp: " + obsElement.getAttribute("xlink:href"));
 						}
 					}
-					System.out.println("");
+//					System.out.println("");
 				}
 			}
 		}
