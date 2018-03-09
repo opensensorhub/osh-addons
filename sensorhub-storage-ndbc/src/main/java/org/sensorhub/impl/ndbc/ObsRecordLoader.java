@@ -158,21 +158,29 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         // create a reader for each selected param
         for (ObsParam param: params)
         {
-        	System.out.println("param = " + param);
-            // look for field with same param code
-            int fieldIndex = -1;
-            for (int j = 0; j < fieldNames.length; j++)
-            {
-            	System.out.println("field name = " + fieldNames[j]);
-                if (fieldNames[j].contains(param.toString().toLowerCase()))
-                {
-                    fieldIndex = j;
-                    System.out.println(fieldNames[j] + " = ind " + fieldIndex);
-                    break;
-                }
-            }
-            
-            readers.add(new FloatValueParser(fieldIndex, i++));
+        	if (param == ObsParam.WINDS) {
+        		readers.add(new FloatValueParser(6, i++));
+        		readers.add(new FloatValueParser(7, i++));
+        		readers.add(new FloatValueParser(8, i++));
+//        		readers.add(new FloatValueParser(9, i++)); // ignore upward_air_velocity for now; no placeholder value is given
+        	}
+        	else {
+//	        	System.out.println("param = " + param);
+	            // look for field with same param code
+	            int fieldIndex = -1;
+	            for (int j = 0; j < fieldNames.length; j++)
+	            {
+//	            	System.out.println("field name = " + fieldNames[j]);
+	                if (fieldNames[j].contains(param.toString().toLowerCase()))
+	                {
+	                    fieldIndex = j;
+//	                    System.out.println(fieldNames[j] + " = ind " + fieldIndex);
+	                    break;
+	                }
+	            }
+	            
+	            readers.add(new FloatValueParser(fieldIndex, i++));
+        	}
         }  
         
         paramReaders = readers.toArray(new ParamValueParser[0]);
@@ -187,7 +195,6 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
             nextRecord = null;
             
             String line;
-            System.out.println("");
             while ((line = reader.readLine()) != null)
             {                
                 line = line.trim();
@@ -204,7 +211,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
                 }
                 String[] fields = line.split(",");
                 for (int k = 0; k < fields.length; k ++)
-                	System.out.println(fields[k]);
+//                	System.out.println(fields[k]);
                 nextRecord = templateRecord.renew();
                 
                 // read all requested fields to datablock

@@ -36,14 +36,51 @@ public class RecordStore  implements IRecordStoreInfo {
         for (ObsParam param: parameters)
         {
             String paramName = param.name().toLowerCase();
-            DataComponent c = helper.newQuantity(
-                    getDefUri(param),
-                    getLabel(param),
-                    getDesc(param),
-                    getUom(param),
-                    DataType.FLOAT);
             
-            dataStruct.addComponent(paramName, c);
+            DataComponent c;
+            switch (paramName) {
+            	case "winds":
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("wind_from_direction"),
+            				"Wind From Direction",
+            				"NDBC Buoy Station Wind From Direction",
+            				"deg",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("wind_from_direction", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("wind_speed"),
+            				"Wind Speed",
+            				"NDBC Buoy Station Wind Speed",
+            				"[m/s]",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("wind_speed", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("wind_speed_of_gust"),
+            				"Wind Speed of Gust",
+            				"NDBC Buoy Station Wind Speed of Gust",
+            				"[m/s]",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("wind_speed_of_gust", c);
+            		
+            		// ignore upward air velocity for now; no placeholder value is given
+//            		c = helper.newQuantity(SWEHelper.getPropertyUri("upward_air_velocity"),
+//            				"Wind Upward Air Velocity",
+//            				"NDBC Buoy Station Upward Air Velocity",
+//            				"[m/s]",
+//            				DataType.FLOAT);
+//            		dataStruct.addComponent("upward_air_velocity", c);
+            		break;
+            	default:
+            		c = helper.newQuantity(getDefUri(param), getLabel(param), getDesc(param), getUom(param), DataType.FLOAT);
+            		dataStruct.addComponent(paramName, c);
+            }
+//            DataComponent c = helper.newQuantity(
+//                    getDefUri(param),
+//                    getLabel(param),
+//                    getDesc(param),
+//                    getUom(param),
+//                    DataType.FLOAT);
+            
+//            dataStruct.addComponent(paramName, c);
         }
         
         // use text encoding with default separators
