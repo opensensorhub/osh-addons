@@ -52,7 +52,7 @@ import net.opengis.swe.v20.DataEncoding;
 
 public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStorageModule<NDBCConfig>, IMultiSourceStorage<IObsStorage>
 {
-	static final String BASE_NDBC_URL = "http://sdf.ndbc.noaa.gov";
+	static final String BASE_NDBC_URL = "https://sdf.ndbc.noaa.gov";
 	static final String UID_PREFIX = "urn:ioos:";
 	
 	Map<String, RecordStore> dataStores = new LinkedHashMap<>();
@@ -183,7 +183,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         SMLHelper helper = new SMLHelper();
         systemDesc = helper.newPhysicalSystem();
         systemDesc.setUniqueIdentifier(UID_PREFIX + "network");
-        systemDesc.setName("USGS Water Data Network");
+        systemDesc.setName("NDBC Buoy Data Network");
         systemDesc.setDescription("NDBC automated sensor network collecting buoy data at " + getNumFois(null) + " stations across the US");
         
         // add outputs

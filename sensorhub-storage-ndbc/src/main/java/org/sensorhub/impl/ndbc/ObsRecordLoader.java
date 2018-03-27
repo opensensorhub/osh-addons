@@ -153,19 +153,50 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         // always add time stamp and site ID readers
         readers.add(new TimeStampParser(4, i++));
         readers.add(new StationIdParser(0, i++));
-        readers.add(new BuoyDepthParser(5, i++));
+//        readers.add(new BuoyDepthParser(5, i++));
         
         // create a reader for each selected param
         for (ObsParam param: params)
         {
         	if (param == ObsParam.WINDS) {
-        		readers.add(new FloatValueParser(6, i++));
-        		readers.add(new FloatValueParser(7, i++));
-        		readers.add(new FloatValueParser(8, i++));
-//        		readers.add(new FloatValueParser(9, i++)); // ignore upward_air_velocity for now; no placeholder value is given
+        		readers.add(new BuoyDepthParser(5, i++)); // buoy depth
+        		readers.add(new FloatValueParser(6, i++)); // wind from direction (deg)
+        		readers.add(new FloatValueParser(7, i++)); // wind speed (m/s)
+        		readers.add(new FloatValueParser(8, i++)); // wind speed of gust (m/s)
+        		readers.add(new FloatValueParser(9, i++)); // upward air velocity
+        	}
+        	else if (param == ObsParam.WAVES) {
+        		readers.add(new FloatValueParser(5, i++)); // sea surface wave significant height (m)
+        		readers.add(new FloatValueParser(6, i++)); // sea surface wave peak period (s)
+        		readers.add(new FloatValueParser(7, i++)); // sea surface wave mean period (s)
+        		readers.add(new FloatValueParser(8, i++)); // sea surface swell wave significant height (m)
+        		readers.add(new FloatValueParser(9, i++)); // sea surface swell wave period (s)
+        		readers.add(new FloatValueParser(10, i++)); // sea surface wind wave significant height (m)
+        		readers.add(new FloatValueParser(11, i++)); // sea surface wind wave period (s)
+        		readers.add(new FloatValueParser(12, i++)); // sea water temperature (degC)
+        		readers.add(new FloatValueParser(13, i++)); // sea surface wave to direction (deg)
+        		readers.add(new FloatValueParser(14, i++)); // sea surface swell wave to direction (deg)
+        		readers.add(new FloatValueParser(15, i++)); // sea surface wind wave to direction (deg)
+        		
+        		
+        		// Ingnoring the below parameters for now
+        		// To include them, we need to replace all semicolons in "line" to commas
+        		
+//        		readers.add(new FloatValueParser(16, i++)); // number of frequencies (count)
+//        		readers.add(new FloatValueParser(17, i++)); // center frequencies (Hz)
+        		// delimiter changes from comma to semicolon here...
+//        		readers.add(new FloatValueParser(18, i++)); // bandwidths (Hz)
+//        		readers.add(new FloatValueParser(19, i++)); // spectral energy (m^2/Hz)
+//        		readers.add(new FloatValueParser(20, i++)); // mean wave direction (deg)
+//        		readers.add(new FloatValueParser(21, i++)); // principle wave direction (deg)
+//        		readers.add(new FloatValueParser(22, i++)); // polar coordinate r1 (1)
+//        		readers.add(new FloatValueParser(23, i++)); // polar coordinate r2 (1)
+//        		readers.add(new FloatValueParser(24, i++)); // calculation method
+//        		readers.add(new FloatValueParser(25, i++)); // sampling rate (Hz)
         	}
         	else {
 //	        	System.out.println("param = " + param);
+        		readers.add(new BuoyDepthParser(5, i++));
 	            // look for field with same param code
 	            int fieldIndex = -1;
 	            for (int j = 0; j < fieldNames.length; j++)
@@ -198,7 +229,6 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
             while ((line = reader.readLine()) != null)
             {                
                 line = line.trim();
-                System.out.println(line);
                 
                 // parse header
                 if (line.startsWith("station_id,sensor_id"))
@@ -209,8 +239,26 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
                     if (line == null || line.trim().isEmpty())
                         return null;
                 }
+                
+                if (line.endsWith(","))
+                	line = line + "NaN";
+                
+                if (line.contains(",,"))
+                {
+                	while (line.contains(",,"))
+                	{
+	            		System.out.println("Before...");
+	            		System.out.println(line);
+	            		line = line.replaceAll(",,", ",NaN,");
+	            		System.out.println("New...");
+	            		System.out.println(line);
+                	}
+                }
+                
+                System.out.println(line);
+                
                 String[] fields = line.split(",");
-                for (int k = 0; k < fields.length; k ++)
+//                for (int k = 0; k < fields.length; k ++)
 //                	System.out.println(fields[k]);
                 nextRecord = templateRecord.renew();
                 
@@ -376,8 +424,8 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
                 if (fromIndex >= 0)
                 {
                     String val = tokens[fromIndex].trim();
-                    if (!val.isEmpty())
-                        f = Float.parseFloat(val);
+                    if (!val.isEmpty() && val!= "NaN")
+                    	f = Float.parseFloat(val);
                 }
                 
                 data.setFloatValue(toIndex, f);
