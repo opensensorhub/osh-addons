@@ -20,20 +20,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.FoiEvent;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.navDb.NavDbEntry.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.sensorML.SMLHelper;
+
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.Point;
@@ -54,8 +55,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	WaypointOutput wyptOutput;
 	NavaidOutput navaidOutput;
 	Set<String> foiIDs;
-	Map<String, AbstractFeature> navEntryFois;
-	//	AbstractFeature airportFoi;
+	Multimap<String, AbstractFeature> navEntryFois;
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
 	static final String AIRPORTS_UID_PREFIX = SENSOR_UID_PREFIX + "airports:";
 	static final String WAYPOINTS_UID_PREFIX = SENSOR_UID_PREFIX + "waypoints:";
@@ -64,7 +64,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 
 	public NavDriver() {
 		this.foiIDs = new LinkedHashSet<String>();
-		this.navEntryFois = new LinkedHashMap<String, AbstractFeature>();
+		this.navEntryFois = LinkedListMultimap.create();
 	}
 
 	@Override
@@ -151,11 +151,6 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 
 				foiIDs.add(uid);
 				navEntryFois.put(uid, airportFoi);
-
-				// no need to send event since we do all this on startup
-//				long now = System.currentTimeMillis();
-//				eventHandler.publishEvent(new FoiEvent(now, uid, this, airportFoi, now/1000L));
-//				log.debug(uid);
 			}
 
 			//  Send to output
@@ -171,15 +166,11 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	{
 		try {
 			List<NavDbEntry> es = LufthansaParser.getNavDbEntries(Paths.get(config.navDbPath));
-			List<String> regs = new ArrayList<String>();
-			regs.add("USA");
-			regs.add("CAN");
-			List<NavDbEntry> fregs = LufthansaParser.filterEntries(es, regs);
-			List<NavDbEntry> ftype = LufthansaParser.filterEntries(fregs, Type.NAVAID);
+			List<NavDbEntry> navaids = LufthansaParser.filterEntries(es, Type.NAVAID);
 			//  add FOIS, one per airport
 			SMLHelper smlFac = new SMLHelper();
 			GMLFactory gmlFac = new GMLFactory(true);
-			for(NavDbEntry navaid: ftype) {
+			for(NavDbEntry navaid: navaids) {
 				AbstractFeature navaidFoi = smlFac.newPhysicalSystem();
 				navaidFoi.setId(navaid.id);
 				String uid = NAVAID_UID_PREFIX + navaid.id;
@@ -192,15 +183,10 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 
 				foiIDs.add(uid);
 				navEntryFois.put(uid, navaidFoi);
-
-				// no need to send event since we do all this on startup
-//				long now = System.currentTimeMillis();
-//				eventHandler.publishEvent(new FoiEvent(now, uid, this, navaidFoi, now/1000L));
-//				log.debug(uid);
 			}
 
 			//  Send to output
-			navaidOutput.sendEntries(ftype);
+			navaidOutput.sendEntries(navaids);
 		} catch (Exception e) {
 			throw new SensorHubException("Error parsing NavDB File.  Cannot load.");
 		} 
@@ -209,38 +195,27 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	public void startWaypt() throws SensorHubException
 	{
 		try {
-			List<NavDbEntry> es = LufthansaParser.getNavDbEntries(Paths.get(config.navDbPath));
-			List<String> regs = new ArrayList<String>();
-			regs.add("USA");
-			regs.add("CAN");
-			List<NavDbEntry> freg = LufthansaParser.filterEntries(es, regs);
-			List<NavDbEntry> ftype = LufthansaParser.filterEntries(freg, Type.WAYPOINT);
-			//  add FOIS, one per airport
+			List<NavDbEntry> entries = LufthansaParser.getNavDbEntries(Paths.get(config.navDbPath));
+			List<NavDbEntry> waypts = LufthansaParser.filterEntries(entries, Type.WAYPOINT);
 			SMLHelper smlFac = new SMLHelper();
 			GMLFactory gmlFac = new GMLFactory(true);
-			for(NavDbEntry wypt: ftype) {
-
+			for(NavDbEntry waypt: waypts) {
 				AbstractFeature wyptFoi = smlFac.newPhysicalSystem();
-				wyptFoi.setId(wypt.id);
-				String uid = WAYPOINTS_UID_PREFIX + wypt.id;
+				wyptFoi.setId(waypt.id);
+				String uid = WAYPOINTS_UID_PREFIX + waypt.id;
 				wyptFoi.setUniqueIdentifier(uid);
-				wyptFoi.setName(wypt.name);
-				wyptFoi.setDescription("Navaid Foi for " + wypt.name);
+				wyptFoi.setName(waypt.name);
+				wyptFoi.setDescription("Navaid Foi for " + waypt.name);
 				Point location = gmlFac.newPoint();
-				location.setPos(new double [] {wypt.lat, wypt.lon});
+				location.setPos(new double [] {waypt.lat, waypt.lon});
 				wyptFoi.setLocation(location);
 
 				foiIDs.add(uid);
 				navEntryFois.put(uid, wyptFoi);
-
-				// no need to send event since we do all this on startup
-//				long now = System.currentTimeMillis();
-//				eventHandler.publishEvent(new FoiEvent(now, uid, this, wyptFoi, now/1000L));
-//				log.debug(uid);
 			}
 
 			//  Send to output
-			wyptOutput.sendEntries(ftype);
+			wyptOutput.sendEntries(waypts);
 		} catch (Exception e) {
 			throw new SensorHubException("Error parsing NavDB File.  Cannot load.");
 		} 	
@@ -288,7 +263,9 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	@Override
 	public AbstractFeature getCurrentFeatureOfInterest(String entityID)
 	{
-		return navEntryFois.get(entityID);
+		Collection <AbstractFeature> fois = navEntryFois.get(entityID);
+		Iterator<AbstractFeature>  it = fois.iterator();
+		return it.next();
 	}
 
 

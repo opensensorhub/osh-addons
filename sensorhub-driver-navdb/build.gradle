@@ -1,6 +1,6 @@
 description = 'Navigation Database'
 ext.details = 'Adaptor for aeronautical navigation database provider in ARINC 424 format'
-version = '0.3.2'
+version = '0.4.0'
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion

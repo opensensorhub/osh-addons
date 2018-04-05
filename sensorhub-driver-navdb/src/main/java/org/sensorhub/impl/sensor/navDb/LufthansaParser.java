@@ -20,9 +20,15 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
+import org.sensorhub.impl.sensor.navDb.FlightPlanGson.Waypoint;
 import org.sensorhub.impl.sensor.navDb.NavDbEntry.Type;
+
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 
 public class LufthansaParser
 {
@@ -65,6 +71,7 @@ public class LufthansaParser
 			lat = parseCoordString(lats);
 			lon = parseCoordString(lons);
 		} catch (NumberFormatException e) {
+			System.err.println("ParseAIR EX: " + l);
 			return null;
 		}
 		NavDbEntry airport = new NavDbEntry(Type.AIRPORT, icao, lat, lon);
@@ -75,8 +82,6 @@ public class LufthansaParser
 	}
 
 	private static NavDbEntry parseWaypoint(String l) {
-		if(l.contains("DLREY"))
-			System.err.println("b");
 		String region = l.substring(1,4);
 		String id = l.substring(13, 18).trim();
 		String lats = l.substring(32,41);
@@ -88,7 +93,7 @@ public class LufthansaParser
 			lat = parseCoordString(lats);
 			lon = parseCoordString(lons);
 		} catch (NumberFormatException e) {
-			System.err.println(e);
+			System.err.println("ParseWP EX: " + l);
 			return null;
 		}
 		NavDbEntry waypoint = new NavDbEntry(Type.WAYPOINT, id, lat, lon);
@@ -98,7 +103,7 @@ public class LufthansaParser
 	}
 
 	private static NavDbEntry parseTerminalWaypoint(String l) {
- 		String region = l.substring(1,4);
+		String region = l.substring(1,4);
 		String icao = l.substring(6, 10);
 		String id= l.substring(13, 18).trim();
 		String lats = l.substring(32,41);
@@ -110,7 +115,7 @@ public class LufthansaParser
 			lat = parseCoordString(lats);
 			lon = parseCoordString(lons);
 		} catch (NumberFormatException e) {
-			System.err.println(e);
+			System.err.println("ParseTWP EX: " + l);
 			return null;
 		}
 		NavDbEntry waypoint = new NavDbEntry(Type.WAYPOINT, icao, lat, lon);
@@ -132,6 +137,7 @@ public class LufthansaParser
 			lat = parseCoordString(lats);
 			lon = parseCoordString(lons);
 		} catch (NumberFormatException e) {
+//			System.err.println("ParseNV EX: " + l);
 			return null;
 		}
 
@@ -157,13 +163,11 @@ public class LufthansaParser
 				break;
 			//			if(!regions.isEmpty())  check region if desired;
 			NavDbEntry entry = null;
-//			System.err.println(line);
-
 			switch(line.charAt(4)) {
 			case 'P':
-				//				continuationNum = line.charAt(21);
-				//				if(!(continuationNum == '1'))
-				//					continue;
+				//  if character at 5 is not blank, this is NOT primary airport rec. Skip it
+				if(line.charAt(5) != ' ')
+					continue;
 				String icao = line.substring(6, 10);
 				char subCode = line.charAt(12);
 				if(subCode == 'C') {
@@ -202,22 +206,18 @@ public class LufthansaParser
 			if(entry == null)
 				continue;
 
-			// check for new ID- may  should also check type, since if id stays same
-			//			if(prevId.equals(entry.id))
-			//				continue;
-//			System.err.println(entry.id+ "," + entry.name);
 			entries.add(entry);
 		}
 		return entries;
 	}
-	
+
 	public static List<NavDbEntry> filterEntries(List<NavDbEntry> entries, List<String> regions) throws IOException {
 		List<NavDbEntry> filtered = new ArrayList<>();
 		for(NavDbEntry e: entries) {
 			if(regions.contains(e.region))
 				filtered.add(e);
 		}
-		
+
 		return filtered;
 	}	
 
@@ -227,7 +227,7 @@ public class LufthansaParser
 			if(e.type == t)
 				filtered.add(e);
 		}
-		
+
 		return filtered;
 	}	
 
@@ -252,30 +252,10 @@ public class LufthansaParser
 		List<NavDbEntry> deltaAirports = new ArrayList<>();
 		for(NavDbEntry a: airports) {
 			if(icaos.contains(a.id) && a.type == Type.AIRPORT) {
-				//				System.err.println( a);
 				deltaAirports.add(a);
 			}
 		}
 		return deltaAirports;
 	}
 
-	public static void main(String[] args) throws Exception {
-		Path dbPath = Paths.get("C:/Users/tcook/root/sensorHub/delta/data/navDb/Lufthansa_ARINC424_1710_test.dat");
-//		List<NavDbEntry> es = getNavDbEntries(dbPath);
-//		List<String> regs = new ArrayList<String>();
-//		regs.add("USA");
-//		List<NavDbEntry> ft = filterEntries(es, regs);
-//		List<NavDbEntry> tt = filterEntries(ft, Type.WAYPOINT);
-//		for(NavDbEntry e: tt)
-//			System.err.println(e);
-
-		Path deltaPath = Paths.get("C:/Users/tcook/root/sensorHub/delta/data/navDb/DeltaAirportFilter.csv");
-//		List<NavDbEntry> ds = getDeltaAirports(dbPath.toString(), deltaPath.toString());
-		List<NavDbEntry> ds =  getNavDbEntries(dbPath);
-		for(NavDbEntry e: ds) {
-			if(e.type == Type.WAYPOINT)
-				System.err.println(e.id + "," + e.name + "," + e.lat + "," + e.lon);
-		}
-		
-	}
 }
