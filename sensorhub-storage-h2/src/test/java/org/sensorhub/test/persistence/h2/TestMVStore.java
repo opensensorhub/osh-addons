@@ -38,7 +38,7 @@ public class TestMVStore
         
         MVStore.Builder builder = new MVStore.Builder()
                 .fileName(fileName)
-                .cacheSize(128)
+                .cacheSize(1)
                 .autoCommitBufferSize(256);
         MVStore mvStore = builder.open();
         mvStore.setRetentionTime(1000);
@@ -64,8 +64,7 @@ public class TestMVStore
         }
         
         mvStore.close();
-        System.out.format("Inserts done. %d rec/s\n", 1000*numRecords/(System.currentTimeMillis()-t0));
-        System.out.println();
+        System.out.format("Inserts done. %d rec/s\n\n", 1000*numRecords/(System.currentTimeMillis()-t0));
         
         mvStore = builder.open();
         map1 = mvStore.openMap("map1");
@@ -79,8 +78,18 @@ public class TestMVStore
             if (key%printInterval == 0)
                 System.out.println(key);
         }
-        System.out.format("Cursor read done. %d rec/s\n", 1000*numRecords/(System.currentTimeMillis()-t0));
-        System.out.println();
+        System.out.format("Cursor read done. %d rec/s\n\n", 1000*numRecords/(System.currentTimeMillis()-t0));
+                
+        // sequential read
+        t0 = System.currentTimeMillis();
+        for (int i=0; i<numRecords; i++)
+        {
+            int key = i;
+            Record rec = map1.get(key);
+            if (i%printInterval == 0)
+                System.out.println(i);
+        }
+        System.out.format("Sequential read done. %d rec/s\n\n", 1000*numRecords/(System.currentTimeMillis()-t0));
         
         // random read
         t0 = System.currentTimeMillis();
@@ -91,7 +100,7 @@ public class TestMVStore
             if (i%printInterval == 0)
                 System.out.println(i);
         }
-        System.out.format("Random read done. %d rec/s\n", 1000*numRecords/(System.currentTimeMillis()-t0));
+        System.out.format("Random read done. %d rec/s\n\n", 1000*numRecords/(System.currentTimeMillis()-t0));
         
         /*System.out.println((map1.getKeyIndex(1000)-map1.getKeyIndex(100)));
         
