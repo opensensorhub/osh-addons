@@ -87,7 +87,7 @@ class MVFoiTimesStoreImpl
     {
         public int compare(FoiTimePeriod p0, FoiTimePeriod p1)
         {
-            return (int)Math.signum(p0.start - p1.start);
+            return Double.compare(p0.start, p1.start);
         }        
     }    
     
