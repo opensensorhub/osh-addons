@@ -53,8 +53,6 @@ import org.vast.util.Asserts;
 import com.google.common.collect.Sets;
 import com.vividsolutions.jts.geom.Polygon;
 import net.opengis.swe.v20.DataBlock;
-import net.opengis.swe.v20.DataComponent;
-import net.opengis.swe.v20.DataEncoding;
 
 
 public class MVTimeSeriesImpl
@@ -66,8 +64,6 @@ public class MVTimeSeriesImpl
     MVMap<ProducerTimeKey, DataBlock> recordIndex;
     MVObsStorageImpl parentStore;
     MVFoiTimesStoreImpl foiTimesStore;
-    DataComponent recordDescription;
-    DataEncoding recommendedEncoding;
     
     
     static class DataBlockDataType extends KryoDataType
