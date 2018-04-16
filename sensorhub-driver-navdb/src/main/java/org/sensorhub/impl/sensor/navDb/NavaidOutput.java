@@ -48,7 +48,8 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 
 	DataRecord navStruct;
 	DataEncoding encoding;	
-	Map<String, DataBlock> records = new LinkedHashMap<>();  // key is navDbEntry uid
+	Map<String, DataBlock> globalRecords = new LinkedHashMap<>();  // key is navDbEntry uid
+	Map<String, DataBlock> domesticRecords = new LinkedHashMap<>();  // US & CAN only
 
 	public NavaidOutput(NavDriver parentSensor) throws IOException
 	{
@@ -140,7 +141,9 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 			dataBlock.setDoubleValue(3, rec.lon);
 			// Do I need a map here
 			String uid = NavDriver.NAVAID_UID_PREFIX + rec.id;
-			records.put(uid, dataBlock);   
+			globalRecords.put(uid, dataBlock);
+			if("USA".equals(rec.region) || "CAN".equals("rec.region"))
+				domesticRecords.put(uid, dataBlock);
 			long time = System.currentTimeMillis();
 			eventHandler.publishEvent(new SensorDataEvent(time, uid, NavaidOutput.this, dataBlock));
 		}
@@ -175,14 +178,13 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 	@Override
 	public Map<String, DataBlock> getLatestRecords()
 	{
-		return Collections.unmodifiableMap(records);
+		return Collections.unmodifiableMap(domesticRecords);
 	}
 
 
 	@Override
 	public DataBlock getLatestRecord(String entityID) {
-		//  Can't really generate this one
-		DataBlock b =  records.get(entityID);
+		DataBlock b =  globalRecords.get(entityID);
 		return b;
 	}
 	
