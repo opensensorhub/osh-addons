@@ -68,7 +68,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
 //            buf.setCharAt(buf.length()-1, '&');
 //        }            
         
-//        // site bbox
+        // site bbox
 //        else if (filter.siteBbox != null && !filter.siteBbox.isNull())
 //        {
 //            Bbox bbox = filter.siteBbox;
@@ -78,6 +78,16 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
 //               .append(bbox.getMaxX()).append(",")
 //               .append(bbox.getMinY()).append("&");
 //        }
+
+        
+        // site bbox
+        if (filter.MinLon != null && filter.MinLat != null && filter.MaxLon != null && filter.MaxLat != null)
+        {
+            System.out.println("MinLon: " + filter.MinLon);
+            System.out.println("MinLat: " + filter.MinLat);
+            System.out.println("MaxLon: " + filter.MaxLon);
+            System.out.println("MaxLat: " + filter.MaxLat);
+        }
         
 //        // site types
 //        if (!filter.siteTypes.isEmpty())

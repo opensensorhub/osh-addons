@@ -19,6 +19,7 @@ import java.util.Date;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.persistence.ObsStorageConfig;
 import org.sensorhub.impl.ndbc.BuoyEnums.ObsParam;
+import org.vast.util.Bbox;
 
 
 public class NDBCConfig extends ObsStorageConfig
