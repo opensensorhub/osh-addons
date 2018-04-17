@@ -20,15 +20,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-
-import org.sensorhub.impl.sensor.navDb.FlightPlanGson.Waypoint;
 import org.sensorhub.impl.sensor.navDb.NavDbEntry.Type;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 
 public class LufthansaParser
 {
