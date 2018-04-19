@@ -163,6 +163,8 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         // always add time stamp and site ID readers
         readers.add(new TimeStampParser(4, i++));
         readers.add(new StationIdParser(0, i++));
+        readers.add(new FloatValueParser(2, i++)); // buoy loc lat
+        readers.add(new FloatValueParser(3, i++)); // buoy loc lon
 //        readers.add(new BuoyDepthParser(5, i++));
         
         // create a reader for each selected param

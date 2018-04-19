@@ -6,7 +6,9 @@ import java.util.StringJoiner;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.impl.ndbc.BuoyEnums.ObsParam;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -21,6 +23,7 @@ public class RecordStore  implements IRecordStoreInfo {
     public RecordStore(String name, Set<ObsParam> parameters)
     {
         SWEHelper helper = new SWEHelper();
+        GeoPosHelper geo = new GeoPosHelper();
         
         // TODO sort params by code?        
         
@@ -30,6 +33,7 @@ public class RecordStore  implements IRecordStoreInfo {
         
         dataStruct.addField("time", helper.newTimeStampIsoUTC());
         dataStruct.addField("station", helper.newText("http://sensorml.com/ont/swe/property/StationID", "Station ID", null));
+        dataStruct.addComponent("location", geo.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC));
 //        dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
         dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
         
