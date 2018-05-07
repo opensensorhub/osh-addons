@@ -48,16 +48,30 @@ public class ObsStationLoader
         	GMLFactory gmlFac = new GMLFactory(true);
             SamplingPoint station = new SamplingPoint();
             
+            // Get Buoy ID
             station.setId(stn.get(i).select("td").get(0).text());
             station.setUniqueIdentifier(FOI_UID_PREFIX + stn.get(i).select("td").get(0).text());
             station.setName("NDBC Buoy Station " + stn.get(i).select("td").get(0).text());
-            station.setDescription(stn.get(i).select("td").get(1).text());
+            
+            String[] paramsArr;
+            paramsArr = stn.get(i).select("td").get(5).text().trim().split("<br>");
+            
+            String offeredParams = "";
+            for (int q = 0; q < paramsArr.length; q++)
+            	offeredParams += paramsArr[q];
+            offeredParams = offeredParams.substring(0, offeredParams.length() - 1);
+            
+            station.setDescription(stn.get(i).select("td").get(1).text() + "->" + offeredParams);
     		
+            // Get Buoy Location 
         	Point stnLoc = gmlFac.newPoint();
             stnLoc.setSrsDimension(2);
             stnLoc.setSrsName(SWEHelper.getEpsgUri(4269)); // NAD83
             stnLoc.setPos(new double[] {Double.parseDouble(stn.get(i).select("td").get(3).text()), Double.parseDouble(stn.get(i).select("td").get(4).text())});
             station.setShape(stnLoc);
+            
+//            System.out.println(stn.get(i).select("td"));
+//            System.out.println("");
             
             fois.put(stn.get(i).select("td").get(0).text(), station);
     	}

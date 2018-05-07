@@ -14,11 +14,14 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.jsoup.Jsoup;
+import org.jsoup.select.Elements;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataKey;
 import org.sensorhub.api.persistence.IDataFilter;
@@ -59,16 +62,21 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     Map<String, AbstractFeature> fois = new LinkedHashMap<>();
     Bbox foiExtent = new Bbox();
     PhysicalSystem systemDesc;
+    BuoyStation buoy;
+    Map<String, BuoyStation> buoyMatrix = new LinkedHashMap<>();
 	
 	@Override
 	public void start() throws SensorHubException
     {
 		getCapabilities();
 		loadFois();
+		
 //		for (Entry<String, AbstractFeature> entry : fois.entrySet()) {
-//    		System.out.println(entry.getKey() + " | " + entry.getValue().getUniqueIdentifier() + " | " + entry.getValue().getName() + " | " + entry.getValue().getLocation());
+//    		System.out.println(entry.getKey() + " | " + entry.getValue().getUniqueIdentifier() + " | " + entry.getValue().getName() + " | " + entry.getValue().getLocation() + " | " + entry.getValue().getDescription());
+//    		System.out.println(entry.getValue().getDescription().split("->")[1].split(" ").length);
 //    	}
 //		System.out.println("");
+		
 		
 		initRecordStores();
 //		for (Entry<String, RecordStore> entry : dataStores.entrySet()) {
