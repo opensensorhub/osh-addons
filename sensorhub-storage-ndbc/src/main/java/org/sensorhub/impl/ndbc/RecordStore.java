@@ -21,6 +21,7 @@ public class RecordStore  implements IRecordStoreInfo {
     DataEncoding encoding;
     
     public RecordStore(String name, Set<ObsParam> parameters)
+//    public RecordStore(String name, Set<String> stnId, Map<String, String[]> sensors)
     {
         SWEHelper helper = new SWEHelper();
         GeoPosHelper geo = new GeoPosHelper();
@@ -34,46 +35,239 @@ public class RecordStore  implements IRecordStoreInfo {
         dataStruct.addField("time", helper.newTimeStampIsoUTC());
         dataStruct.addField("station", helper.newText("http://sensorml.com/ont/swe/property/StationID", "Station ID", null));
         dataStruct.addComponent("location", geo.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC));
-//        dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
         dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
         
+//        String[] sensorOfferings = sensors.get("48211");
+//        for (int k = 0; k < sensors.get(stnId).length; k++)
+//        if (!(sensorOfferings.length == 1 && "Waves".equals(sensorOfferings[0])))
+//        	dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
+        
+//        for (int k = 0; k < sensorOfferings.length; k++)
         for (ObsParam param: parameters)
         {
-            String paramName = param.name().toLowerCase();
-            
+        	String paramName = param.name().toLowerCase();
+        	
             DataComponent c;
+//            switch (sensorOfferings[k]) {
             switch (paramName) {
-            	case "winds":
+            
+	        	case "air_pressure_at_sea_level":
+	        		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
+	        		c = helper.newQuantity(SWEHelper.getPropertyUri("air_pressure_at_sea_level"),
+	        				"Air Pressure at Sea Level",
+	        				"NDBC Buoy Station Air Pressure at Sea Level",
+	        				"hPa",
+	        				DataType.FLOAT);
+	        		dataStruct.addComponent("air_pressure_at_sea_level", c);
+	        		break;
+        		
+            	case "air_temperature":
             		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
-            		c = helper.newQuantity(SWEHelper.getPropertyUri("wind_from_direction"),
-            				"Wind From Direction",
-            				"NDBC Buoy Station Wind From Direction",
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("air_temperature"),
+            				"Air Temperature",
+            				"NDBC Buoy Station Air Temperature",
+            				"degC",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("air_temperature", c);
+            		break;
+            		
+            	case "currents":
+            		dataStruct.addComponent("bin", helper.newQuantity("http://sensorml.com/ont/swe/property/Bin", "Bin", null, "count", DataType.FLOAT));
+            		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("direction_of_sea_water_velocity"),
+            				"Direction of Sea Water Velocity",
+            				"NDBC Buoy Station Direction of Sea Water Velocity",
             				"deg",
             				DataType.FLOAT);
-            		dataStruct.addComponent("wind_from_direction", c);
+            		dataStruct.addComponent("direction_of_sea_water_velocity", c);
             		
-            		c = helper.newQuantity(SWEHelper.getPropertyUri("wind_speed"),
-            				"Wind Speed",
-            				"NDBC Buoy Station Wind Speed",
-            				"[m/s]",
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("sea_water_speed"),
+            				"Sea Water Speed",
+            				"NDBC Buoy Station Sea Water Speed",
+            				"cm/s",
             				DataType.FLOAT);
-            		dataStruct.addComponent("wind_speed", c);
+            		dataStruct.addComponent("sea_water_speed", c);
             		
-            		c = helper.newQuantity(SWEHelper.getPropertyUri("wind_speed_of_gust"),
-            				"Wind Speed of Gust",
-            				"NDBC Buoy Station Wind Speed of Gust",
-            				"[m/s]",
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("upward_sea_water_velocity"),
+            				"Upward Sea Water Velocity",
+            				"NDBC Buoy Station Upward Sea Water Velocity",
+            				"cm/s",
             				DataType.FLOAT);
-            		dataStruct.addComponent("wind_speed_of_gust", c);
+            		dataStruct.addComponent("upward_sea_water_velocity", c);
             		
-            		// ignore upward air velocity for now; no placeholder value is given
-            		c = helper.newQuantity(SWEHelper.getPropertyUri("upward_air_velocity"),
-            				"Wind Upward Air Velocity",
-            				"NDBC Buoy Station Upward Air Velocity",
-            				"[m/s]",
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("error_velocity"),
+            				"Error Velocity",
+            				"NDBC Buoy Station Error Velocity",
+            				"cm/s",
             				DataType.FLOAT);
-            		dataStruct.addComponent("upward_air_velocity", c);
+            		dataStruct.addComponent("error_velocity", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("platform_orientation"),
+            				"Platform Orientation",
+            				"NDBC Buoy Station Platform Orientation",
+            				"deg",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("platform_orientation", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("platform_pitch_angle"),
+            				"Platform Pitch Angle",
+            				"NDBC Buoy Station Platform Pitch Angle",
+            				"deg",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("platform_pitch_angle", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("platform_roll_angle"),
+            				"Platform Roll Angle",
+            				"NDBC Buoy Station Platform Roll Angle",
+            				"deg",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("platform_roll_angle", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("currens_sea_water_temperature"),
+            				"Sea Water Temperature",
+            				"NDBC Buoy Station Sea Water Temperature",
+            				"degC",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("currents_sea_water_temperature", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("pct_good_3_beam"),
+            				"Percent Good 3 Beam",
+            				"NDBC Buoy Station Percent Good 3 Beam",
+            				"%",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("pct_good_3_beam", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("pct_good_4_beam"),
+            				"Percent Good 4 Beam",
+            				"NDBC Buoy Station Percent Good 4 Beam",
+            				"%",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("pct_good_4_beam", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("pct_rejected"),
+            				"Percent Rejected",
+            				"NDBC Buoy Station Percent Rejected",
+            				"%",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("pct_rejected", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("pct_bad"),
+            				"Percent Bad",
+            				"NDBC Buoy Station Percent Bad",
+            				"%",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("pct_bad", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("echo_intensity_beam1"),
+            				"Echo Intensity Beam 1",
+            				"NDBC Buoy Station Echo Intensity Beam 1",
+            				"count",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("echo_intensity_beam1", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("echo_intensity_beam2"),
+            				"Echo Intensity Beam 2",
+            				"NDBC Buoy Station Echo Intensity Beam 2",
+            				"count",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("echo_intensity_beam2", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("echo_intensity_beam3"),
+            				"Echo Intensity Beam 3",
+            				"NDBC Buoy Station Echo Intensity Beam 3",
+            				"count",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("echo_intensity_beam3", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("echo_intensity_beam4"),
+            				"Echo Intensity Beam 4",
+            				"NDBC Buoy Station Echo Intensity Beam 4",
+            				"count",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("echo_intensity_beam4", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("correlation_magnitude_beam1"),
+            				"Correlation Magnitude Beam 1",
+            				"NDBC Buoy Station Correlation Magnitude Beam 1",
+            				"count",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("correlation_magnitude_beam1", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("correlation_magnitude_beam2"),
+            				"Correlation Magnitude Beam 2",
+            				"NDBC Buoy Station Correlation Magnitude Beam 2",
+            				"count",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("correlation_magnitude_beam2", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("correlation_magnitude_beam3"),
+            				"Correlation Magnitude Beam 3",
+            				"NDBC Buoy Station Correlation Magnitude Beam 3",
+            				"count",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("correlation_magnitude_beam3", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("correlation_magnitude_beam4"),
+            				"Correlation Magnitude Beam 4",
+            				"NDBC Buoy Station Correlation Magnitude Beam 4",
+            				"count",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("correlation_magnitude_beam4", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("quality_flags"),
+            				"Quality Flags",
+            				"NDBC Buoy Station Quality Flags",
+            				"",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("quality_flags", c);
             		break;
+            		
+            	case "sea_floor_depth_below_sea_surface":
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("sea_floor_depth_below_sea_surface"),
+            				"Sea Floor Depth Below Sea Surface",
+            				"NDBC Buoy Station Sea Floor Depth Below Sea Surface",
+            				"m",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("sea_floor_depth_below_sea_surface", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("averaging_interval"),
+            				"Water Level Averaging Interval",
+            				"NDBC Buoy Station Water Level Averaging Interval",
+            				"s",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("averaging_interval", c);
+            		break;
+            		
+            	case "sea_water_electrical_conductivity":
+            		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("sea_water_electrical_conductivity"),
+            				"Sea Water Electrical Conductivity",
+            				"NDBC Buoy Station Sea Water Electrical Conductivity",
+            				"mS/cm",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("sea_water_electrical_conductivity", c);
+            		break;
+            		
+            	case "sea_water_salinity":
+            		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("sea_water_salinity"),
+            				"Sea Water Salinity",
+            				"NDBC Buoy Station Sea Station Salinity",
+            				"psu",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("sea_water_salinity", c);
+            		break;
+        		
+	        	case "sea_water_temperature":
+	        		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
+	        		c = helper.newQuantity(SWEHelper.getPropertyUri("sea_water_temperature"),
+	        				"Sea Water Temperature",
+	        				"NDBC Buoy Station Sea Water Temperature",
+	        				"degC",
+	        				DataType.FLOAT);
+	        		dataStruct.addComponent("sea_water_temperature", c);
+	        		break;
+	    		
             	case "waves":
             		c = helper.newQuantity(SWEHelper.getPropertyUri("sea_surface_wave_significant_height"),
             				"Sea Surface Wave Significant Height",
@@ -124,12 +318,12 @@ public class RecordStore  implements IRecordStoreInfo {
             				DataType.FLOAT);
             		dataStruct.addComponent("sea_surface_wind_wave_period", c);
             		
-            		c = helper.newQuantity(SWEHelper.getPropertyUri("sea_water_temperature"),
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("waves_sea_water_temperature"),
             				"Sea Water Temperature",
             				"NDBC Buoy Station Sea Water Temperature",
             				"degC",
             				DataType.FLOAT);
-            		dataStruct.addComponent("sea_water_temperature", c);
+            		dataStruct.addComponent("waves_sea_water_temperature", c);
             		
             		c = helper.newQuantity(SWEHelper.getPropertyUri("sea_surface_wave_to_direction"),
             				"Sea Surface Wave To Direction",
@@ -151,6 +345,7 @@ public class RecordStore  implements IRecordStoreInfo {
             				"deg",
             				DataType.FLOAT);
             		dataStruct.addComponent("sea_surface_wind_wave_to_direction", c);
+            		break;
             		
             		// Ingnoring the below parameters for now
             		// To include them, we need to replace all semicolons in "line" to commas
@@ -224,20 +419,39 @@ public class RecordStore  implements IRecordStoreInfo {
 //            				"Hz",
 //            				DataType.FLOAT);
 //            		dataStruct.addComponent("sampling_rate", c);
-            		break;
-            	default:
+            		
+            	case "winds":
             		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
-            		c = helper.newQuantity(getDefUri(param), getLabel(param), getDesc(param), getUom(param), DataType.FLOAT);
-            		dataStruct.addComponent(paramName, c);
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("wind_from_direction"),
+            				"Wind From Direction",
+            				"NDBC Buoy Station Wind From Direction",
+            				"deg",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("wind_from_direction", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("wind_speed"),
+            				"Wind Speed",
+            				"NDBC Buoy Station Wind Speed",
+            				"[m/s]",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("wind_speed", c);
+            		
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("wind_speed_of_gust"),
+            				"Wind Speed of Gust",
+            				"NDBC Buoy Station Wind Speed of Gust",
+            				"[m/s]",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("wind_speed_of_gust", c);
+            		
+            		// ignore upward air velocity for now; no placeholder value is given
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("upward_air_velocity"),
+            				"Wind Upward Air Velocity",
+            				"NDBC Buoy Station Upward Air Velocity",
+            				"[m/s]",
+            				DataType.FLOAT);
+            		dataStruct.addComponent("upward_air_velocity", c);
+            		break;
             }
-//            DataComponent c = helper.newQuantity(
-//                    getDefUri(param),
-//                    getLabel(param),
-//                    getDesc(param),
-//                    getUom(param),
-//                    DataType.FLOAT);
-            
-//            dataStruct.addComponent(paramName, c);
         }
         
         // use text encoding with default separators
@@ -262,41 +476,6 @@ public class RecordStore  implements IRecordStoreInfo {
     	}
         return joiner.toString();
     }
-    
-    
-    protected String getDesc(ObsParam param)
-    {
-        return "NDBC Buoy Station " + param.toString();
-    }
-    
-    
-    protected String getUom(ObsParam param)
-    {
-        switch (param)
-        {
-            case AIR_PRESSURE_AT_SEA_LEVEL:
-                return "hPa";                
-            case AIR_TEMPERATURE:
-                return "Cel";
-            case CURRENTS:
-                return "[m/s]";
-            case SEA_FLOOR_DEPTH_BELOW_SEA_SURFACE:
-                return "m";
-            case SEA_WATER_ELECTRICAL_CONDUCTIVITY:
-                return "mS/cm";
-            case SEA_WATER_SALINITY:
-                return "psu";
-            case SEA_WATER_TEMPERATURE:
-            	return "Cel";
-            case WAVES:
-            	return "1";
-            case WINDS:
-            	return "1";
-        }
-        
-        return null;
-    }
-    
     
     @Override
     public String getName()

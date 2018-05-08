@@ -13,22 +13,8 @@ public class DataFilter {
     @DisplayInfo(desc="List of station identifiers")
     public Set<String> stationIds = new LinkedHashSet<>();
     
-//    @DisplayInfo(desc="Geographic region (BBOX)")
-//    public Bbox siteBbox = new Bbox();
-    
-    // Try something else...maybe a Set<> like stationIds...
     @DisplayInfo(desc="Geographic region (BBOX)")
-    public Double MinLon = null;
-    
-    @DisplayInfo(desc="Geographic region (BBOX)")
-    public Double MinLat = null;
-    
-    @DisplayInfo(desc="Geographic region (BBOX)")
-    public Double MaxLon = null;
-    
-    @DisplayInfo(desc="Geographic region (BBOX)")
-    public Double MaxLat = null;
-    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    public Bbox siteBbox = new Bbox();
     
     @DisplayInfo(desc="Observed parameters")
     public Set<ObsParam> parameters = new LinkedHashSet<>();

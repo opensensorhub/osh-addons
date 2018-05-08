@@ -37,6 +37,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         
     }
     
+//    protected String buildInstantValuesRequest(DataFilter filter, Map<String, String[]> sensorOfferings)
     protected String buildInstantValuesRequest(DataFilter filter)
     {
         StringBuilder buf = new StringBuilder(BASE_URL);
@@ -50,53 +51,16 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
             buf.setCharAt(buf.length()-1, '&');
         }
         
-//        // state codes
-//        else if (!filter.stateCodes.isEmpty())
-//        {
-//            buf.append("stateCd=");
-//            for (StateCode state: filter.stateCodes)
-//                buf.append(state.name()).append(',');
-//            buf.setCharAt(buf.length()-1, '&');
-//        }
-        
-//        // county codes
-//        else if (!filter.countyCodes.isEmpty())
-//        {
-//            buf.append("countyCd=");
-//            for (String countyCd: filter.countyCodes)
-//            	buf.append(countyCd).append(',');
-//            buf.setCharAt(buf.length()-1, '&');
-//        }            
-        
         // site bbox
-//        else if (filter.siteBbox != null && !filter.siteBbox.isNull())
-//        {
-//            Bbox bbox = filter.siteBbox;
-//            buf.append("bbox=")
-//               .append(bbox.getMinX()).append(",")
-//               .append(bbox.getMaxY()).append(",")
-//               .append(bbox.getMaxX()).append(",")
-//               .append(bbox.getMinY()).append("&");
-//        }
-
-        
-        // site bbox
-        if (filter.MinLon != null && filter.MinLat != null && filter.MaxLon != null && filter.MaxLat != null)
+        else if (filter.siteBbox != null && !filter.siteBbox.isNull())
         {
-            System.out.println("MinLon: " + filter.MinLon);
-            System.out.println("MinLat: " + filter.MinLat);
-            System.out.println("MaxLon: " + filter.MaxLon);
-            System.out.println("MaxLat: " + filter.MaxLat);
+            Bbox bbox = filter.siteBbox;
+            buf.append("&offering=urn:ioos:network:noaa.nws.ndbc:all&featureofinterest=BBOX:")
+               .append(bbox.getMinX()).append(",")
+               .append(bbox.getMinY()).append(",")
+               .append(bbox.getMaxX()).append(",")
+               .append(bbox.getMaxY()).append("&");
         }
-        
-//        // site types
-//        if (!filter.siteTypes.isEmpty())
-//        {
-//            buf.append("siteType=");
-//            for (SiteType type: filter.siteTypes)
-//                buf.append(type.name()).append(',');
-//            buf.setCharAt(buf.length()-1, '&');
-//        }
         
         // parameters
         if (!filter.parameters.isEmpty())
@@ -121,6 +85,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         return buf.toString();
     }
     
+//    public void sendRequest(DataFilter filter, Map<String, String[]> sensorOfferings) throws IOException {
     public void sendRequest(DataFilter filter) throws IOException {
     	requestURL = buildInstantValuesRequest(filter);
     	System.out.println("Requesting observations from: " + requestURL);
@@ -136,46 +101,48 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         preloadNext();
     }
     
-//    protected void parseHeader() throws IOException
-//    {
-//        // skip header comments
-//        String line;
-//        while ((line = reader.readLine()) != null)
-//        {
-//            line = line.trim();
-//            if (!line.startsWith("#"))
-//                break;
-//        }
-//        
-//        // parse field names and prepare corresponding readers
-//        String[] fieldNames = line.split("\t");
-//        initParamReaders(filter.parameters, fieldNames);
-//        
-//        // skip field sizes
-//        reader.readLine();
-//    }
-    
     protected void initParamReaders(Set<ObsParam> params, String[] fieldNames)
     {
         ArrayList<ParamValueParser> readers = new ArrayList<ParamValueParser>();
         int i = 0;
         
-        // always add time stamp and site ID readers
+        // always add time stamp, site ID, and location readers
         readers.add(new TimeStampParser(4, i++));
         readers.add(new StationIdParser(0, i++));
         readers.add(new FloatValueParser(2, i++)); // buoy loc lat
         readers.add(new FloatValueParser(3, i++)); // buoy loc lon
-//        readers.add(new BuoyDepthParser(5, i++));
         
         // create a reader for each selected param
         for (ObsParam param: params)
         {
-        	if (param == ObsParam.WINDS) {
-        		readers.add(new BuoyDepthParser(5, i++)); // buoy depth
-        		readers.add(new FloatValueParser(6, i++)); // wind from direction (deg)
-        		readers.add(new FloatValueParser(7, i++)); // wind speed (m/s)
-        		readers.add(new FloatValueParser(8, i++)); // wind speed of gust (m/s)
-        		readers.add(new FloatValueParser(9, i++)); // upward air velocity
+        	if (param == ObsParam.CURRENTS) {
+        		readers.add(new FloatValueParser(5, i++)); // bin
+        		readers.add(new BuoyDepthParser(6, i++)); // buoy depth
+        		readers.add(new FloatValueParser(7, i++)); // direction of sea water velocity (deg)
+        		readers.add(new FloatValueParser(8, i++)); // sea water speed (cm/s)
+        		readers.add(new FloatValueParser(9, i++)); // upward sea water velocity (cm/s)
+        		readers.add(new FloatValueParser(10, i++)); // error velocity (cm/s)
+        		readers.add(new FloatValueParser(11, i++)); // platform orientation (deg)
+        		readers.add(new FloatValueParser(12, i++)); // platform pitch angle (deg)
+        		readers.add(new FloatValueParser(13, i++)); // platform roll angle (deg)
+        		readers.add(new FloatValueParser(14, i++)); // sea water temperature (degC)
+        		readers.add(new FloatValueParser(15, i++)); // percent good 3 beam (%)
+        		readers.add(new FloatValueParser(16, i++)); // percent good 4 beam (%)
+        		readers.add(new FloatValueParser(17, i++)); // percent rejected (%)
+        		readers.add(new FloatValueParser(18, i++)); // percent bad (%)
+        		readers.add(new FloatValueParser(19, i++)); // echo intensity beam 1 (count)
+        		readers.add(new FloatValueParser(20, i++)); // echo intensity beam 2 (count)
+        		readers.add(new FloatValueParser(21, i++)); // echo intensity beam 3 (count)
+        		readers.add(new FloatValueParser(22, i++)); // echo intensity beam 4 (count)
+        		readers.add(new FloatValueParser(23, i++)); // correlation magnitude beam 1 (count)
+        		readers.add(new FloatValueParser(24, i++)); // correlation magnitude beam 2 (count)
+        		readers.add(new FloatValueParser(25, i++)); // correlation magnitude beam 3 (count)
+        		readers.add(new FloatValueParser(26, i++)); // correlation magnitude beam 4 (count)
+        		readers.add(new FloatValueParser(27, i++)); // quality flags (au)
+        	}
+        	else if (param == ObsParam.SEA_FLOOR_DEPTH_BELOW_SEA_SURFACE) {
+        		readers.add(new FloatValueParser(5, i++)); // sea floor depth below sea surface (m)
+        		readers.add(new FloatValueParser(6, i++)); // averaging interval
         	}
         	else if (param == ObsParam.WAVES) {
         		readers.add(new FloatValueParser(5, i++)); // sea surface wave significant height (m)
@@ -189,7 +156,6 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         		readers.add(new FloatValueParser(13, i++)); // sea surface wave to direction (deg)
         		readers.add(new FloatValueParser(14, i++)); // sea surface swell wave to direction (deg)
         		readers.add(new FloatValueParser(15, i++)); // sea surface wind wave to direction (deg)
-        		
         		
         		// Ingnoring the below parameters for now
         		// To include them, we need to replace all semicolons in "line" to commas
@@ -205,6 +171,13 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
 //        		readers.add(new FloatValueParser(23, i++)); // polar coordinate r2 (1)
 //        		readers.add(new FloatValueParser(24, i++)); // calculation method
 //        		readers.add(new FloatValueParser(25, i++)); // sampling rate (Hz)
+        	}
+        	else if (param == ObsParam.WINDS) {
+        		readers.add(new BuoyDepthParser(5, i++)); // buoy depth
+        		readers.add(new FloatValueParser(6, i++)); // wind from direction (deg)
+        		readers.add(new FloatValueParser(7, i++)); // wind speed (m/s)
+        		readers.add(new FloatValueParser(8, i++)); // wind speed of gust (m/s)
+        		readers.add(new FloatValueParser(9, i++)); // upward air velocity
         	}
         	else {
 //	        	System.out.println("param = " + param);
@@ -259,19 +232,13 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
                 {
                 	while (line.contains(",,"))
                 	{
-	            		System.out.println("Before...");
-	            		System.out.println(line);
 	            		line = line.replaceAll(",,", ",NaN,");
-	            		System.out.println("New...");
-	            		System.out.println(line);
                 	}
                 }
                 
-                System.out.println(line);
+//                System.out.println(line);
                 
                 String[] fields = line.split(",");
-//                for (int k = 0; k < fields.length; k ++)
-//                	System.out.println(fields[k]);
                 nextRecord = templateRecord.renew();
                 
                 // read all requested fields to datablock

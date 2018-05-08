@@ -36,11 +36,9 @@ public class ObsStationLoader
         this.module = module;
     }
     
+//    public void loadStations(Map<String, AbstractFeature> fois, Map<String, String[]> sensors) throws IOException
     public void loadStations(Map<String, AbstractFeature> fois) throws IOException
     {
-    	// java key store file with certificate to access https site with station info 
-    	// MUST USE ABSOLUTE PATH TO JKS FILE!
-//    	System.setProperty("javax.net.ssl.trustStore", "/home/lee/Keys/ndbcnoaagov.jks");
     	Document doc = Jsoup.connect(STN_INFO_URL).get();
     	Elements stn = doc.getElementsByClass("stndata"); // Grab the <tr> elements of class "stndata"
     	
@@ -53,15 +51,13 @@ public class ObsStationLoader
             station.setUniqueIdentifier(FOI_UID_PREFIX + stn.get(i).select("td").get(0).text());
             station.setName("NDBC Buoy Station " + stn.get(i).select("td").get(0).text());
             
-            String[] paramsArr;
-            paramsArr = stn.get(i).select("td").get(5).text().trim().split("<br>");
-            
-            String offeredParams = "";
-            for (int q = 0; q < paramsArr.length; q++)
-            	offeredParams += paramsArr[q];
-            offeredParams = offeredParams.substring(0, offeredParams.length() - 1);
-            
-            station.setDescription(stn.get(i).select("td").get(1).text() + "->" + offeredParams);
+//            String[] paramsArrTemp = stn.get(i).select("td").get(5).text().trim().split("<br>");
+//            String[] paramsArr = paramsArrTemp[0].split(" ");
+//            String offeredParams = "";
+//            for (int q = 0; q < paramsArr.length; q++)
+//            	offeredParams += paramsArr[q];
+//            offeredParams = offeredParams.substring(0, offeredParams.length() - 1);
+//            station.setDescription(stn.get(i).select("td").get(1).text() + "->" + offeredParams);
     		
             // Get Buoy Location 
         	Point stnLoc = gmlFac.newPoint();
@@ -70,10 +66,8 @@ public class ObsStationLoader
             stnLoc.setPos(new double[] {Double.parseDouble(stn.get(i).select("td").get(3).text()), Double.parseDouble(stn.get(i).select("td").get(4).text())});
             station.setShape(stnLoc);
             
-//            System.out.println(stn.get(i).select("td"));
-//            System.out.println("");
-            
             fois.put(stn.get(i).select("td").get(0).text(), station);
+//            sensors.put(stn.get(i).select("td").get(0).text(), paramsArr);
     	}
     }
 }

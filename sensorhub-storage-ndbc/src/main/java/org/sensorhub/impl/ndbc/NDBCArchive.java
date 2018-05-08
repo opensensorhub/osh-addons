@@ -3,7 +3,6 @@ package org.sensorhub.impl.ndbc;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.StringReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,14 +13,11 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.jsoup.Jsoup;
-import org.jsoup.select.Elements;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataKey;
 import org.sensorhub.api.persistence.IDataFilter;
@@ -44,8 +40,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
@@ -62,15 +56,13 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     Map<String, AbstractFeature> fois = new LinkedHashMap<>();
     Bbox foiExtent = new Bbox();
     PhysicalSystem systemDesc;
-    BuoyStation buoy;
-    Map<String, BuoyStation> buoyMatrix = new LinkedHashMap<>();
-	
+    Map<String, String[]> sensorOfferings = new LinkedHashMap<>();
+
 	@Override
 	public void start() throws SensorHubException
     {
-		getCapabilities();
+//		getCapabilities();
 		loadFois();
-		
 //		for (Entry<String, AbstractFeature> entry : fois.entrySet()) {
 //    		System.out.println(entry.getKey() + " | " + entry.getValue().getUniqueIdentifier() + " | " + entry.getValue().getName() + " | " + entry.getValue().getLocation() + " | " + entry.getValue().getDescription());
 //    		System.out.println(entry.getValue().getDescription().split("->")[1].split(" ").length);
@@ -78,6 +70,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 //		System.out.println("");
 		
 		
+//		initRecordStores(sensorOfferings);
 		initRecordStores();
 //		for (Entry<String, RecordStore> entry : dataStores.entrySet()) {
 //    		System.out.println(entry.getKey());
@@ -85,35 +78,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 //    	}
 		
 		initSensorNetworkDescription();
-		
-//		RecordStore rs = dataStores.get("buoyData");
-//		final ObsRecordLoader loader = new ObsRecordLoader(this, rs.getRecordDescription());
-//		loader.postData();
-		
-//    	Document doc = Jsoup.connect("http://sdf.ndbc.noaa.gov/stations.shtml").get();
-//    	Elements stn = doc.getElementsByClass("stndata"); // Grab the <tr> elements of class "stndata"
-//    	List<BuoyStation> stations = new ArrayList<BuoyStation>();
-//    	
-//    	for (int i = 0; i < stn.size(); i++) {
-//        	BuoyStation bs = new BuoyStation();
-//    		bs.setId(stn.get(i).select("td").get(0).text());
-//    		bs.setName(stn.get(i).select("td").get(1).text());
-//    		bs.setOwner(stn.get(i).select("td").get(2).text());
-//    		
-//        	LocationLatLon bsLoc = new LocationLatLon();
-//    		bsLoc.setLat(Double.parseDouble(stn.get(i).select("td").get(3).text()));
-//    		bsLoc.setLon(Double.parseDouble(stn.get(i).select("td").get(4).text()));
-//    		
-//    		bs.setLoc(bsLoc);
-//        	String[] sensorStr = new String[stn.get(i).select("td").get(5).text().split(" ").length];
-//        	for (int k = 0; k < stn.get(i).select("td").get(5).text().split(" ").length; k++)
-//        		sensorStr[k] = stn.get(i).select("td").get(5).text().split(" ")[k].trim();
-//        	bs.setSensor(sensorStr);
-//        	stations.add(bs); // Got the stations that are currently reporting
-//    	}
-//    	for (BuoyStation buoy : stations) {
-//    		System.out.println(buoy.getId());
-//    	}
     }
 	
 	@Override
@@ -172,6 +136,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         try
         {
             ObsStationLoader parser = new ObsStationLoader(this);
+//            parser.loadStations(fois, sensorOfferings);
             parser.loadStations(fois);
         }
         catch (Exception e)
@@ -180,9 +145,11 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         }
 	}
     
+//    protected void initRecordStores(Map<String, String[]> sensorOfferings) throws SensorHubException
     protected void initRecordStores() throws SensorHubException
     {
         RecordStore rs = new RecordStore("buoyData", config.exposeFilter.parameters);
+//        RecordStore rs = new RecordStore("buoyData", config.exposeFilter.stationIds, sensorOfferings);
         dataStores.put(rs.getName(), rs);
     }
     
@@ -303,13 +270,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         final ObsRecordLoader loader = new ObsRecordLoader(this, rs.getRecordDescription());
         final DataFilter ndbcFilter = getNdbcFilter(filter);
         
-//        ArrayList<BuoyDataRecord> records = new ArrayList<BuoyDataRecord>();
-//        DataBlock data = loader.getDataBlock();
-//        DataKey key = new DataKey(recType, data.getDoubleValue(0));
-//        records.add(new BuoyDataRecord(key, data));
-//        Collections.sort(records);
-//        IDataRecord current = records.get(0);
-        
         // request observations by batch and iterates through them sequentially
         final long endTime = ndbcFilter.endTime.getTime();
         final long batchLength = 8*3600*1000; // 8 hours        
@@ -375,10 +335,8 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         DataFilter ndbcFilter = new DataFilter();  
         
         // keep only site IDs that are in both request and config
-//        if (filter.getProducerIDs() != null)
-//        	ndbcFilter.stationIds.addAll(filter.getProducerIDs());
-        if (getProducerIDs() != null)
-        	ndbcFilter.stationIds.addAll(getProducerIDs());
+        if (filter.getProducerIDs() != null)
+        	ndbcFilter.stationIds.addAll(filter.getProducerIDs());
         
         if (filter instanceof IObsFilter)
         {
@@ -394,6 +352,10 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
                     
         // use config params
         ndbcFilter.parameters.addAll(config.exposeFilter.parameters);
+        ndbcFilter.siteBbox.setMinX(config.exposeFilter.siteBbox.getMinX());
+        ndbcFilter.siteBbox.setMinY(config.exposeFilter.siteBbox.getMinY());
+        ndbcFilter.siteBbox.setMaxX(config.exposeFilter.siteBbox.getMaxX());
+        ndbcFilter.siteBbox.setMaxY(config.exposeFilter.siteBbox.getMaxY());
         
         // init time filter
         long configStartTime = config.exposeFilter.startTime.getTime();
