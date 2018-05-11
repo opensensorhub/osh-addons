@@ -3,7 +3,6 @@ package org.sensorhub.impl.ndbc;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -14,9 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataKey;
@@ -36,10 +32,6 @@ import org.sensorhub.impl.persistence.FilteredIterator;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Bbox;
 import org.vast.util.DateTimeFormat;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
@@ -61,22 +53,8 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	@Override
 	public void start() throws SensorHubException
     {
-//		getCapabilities();
 		loadFois();
-//		for (Entry<String, AbstractFeature> entry : fois.entrySet()) {
-//    		System.out.println(entry.getKey() + " | " + entry.getValue().getUniqueIdentifier() + " | " + entry.getValue().getName() + " | " + entry.getValue().getLocation() + " | " + entry.getValue().getDescription());
-//    		System.out.println(entry.getValue().getDescription().split("->")[1].split(" ").length);
-//    	}
-//		System.out.println("");
-		
-		
-//		initRecordStores(sensorOfferings);
 		initRecordStores();
-//		for (Entry<String, RecordStore> entry : dataStores.entrySet()) {
-//    		System.out.println(entry.getKey());
-//    		System.out.println(entry.getValue().getRecordDescription());
-//    	}
-		
 		initSensorNetworkDescription();
     }
 	
@@ -85,58 +63,12 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		// TODO Auto-generated method stub
 		
 	}
-
-	protected void getCapabilities() throws SensorHubException {
-		try
-		{
-			String capUrl = BASE_NDBC_URL + "/sos/server.php?request=GetCapabilities&service=SOS";
-			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-			DocumentBuilder db = dbf.newDocumentBuilder();
-			Document doc = db.parse(new URL(capUrl).openStream());
-			
-			NodeList nList = doc.getElementsByTagName("sos:ObservationOffering");
-//			System.out.println("Length: " + nList.getLength());
-			for (int i = 0; i < nList.getLength(); i++)
-			{
-				Node nNode = nList.item(i);
-				if (nNode.getNodeType() == Node.ELEMENT_NODE)
-				{
-					Element eElement = (Element) nNode;
-//					System.out.println("id: " + eElement.getAttribute("gml:id"));
-//					System.out.println("desc: " + eElement.getElementsByTagName("gml:description").item(0).getTextContent());
-//					System.out.println("name: " + eElement.getElementsByTagName("gml:name").item(0).getTextContent());
-					
-					NodeList pList = eElement.getElementsByTagName("sos:procedure");
-					Element pElement = (Element) pList.item(0);
-//					System.out.println("proc: " + pElement.getAttribute("xlink:href"));
-					
-					// Repeat for sos:observedProperty
-					NodeList obsList = eElement.getElementsByTagName("sos:observedProperty");
-					for (int k = 0; k < obsList.getLength(); k++)
-					{
-						Node obsNode = obsList.item(k);
-						if (obsNode.getNodeType() ==  Node.ELEMENT_NODE)
-						{
-							Element obsElement = (Element) obsNode;
-//							System.out.println("obsProp: " + obsElement.getAttribute("xlink:href"));
-						}
-					}
-//					System.out.println("");
-				}
-			}
-		}
-		catch (Exception e)
-		{
-			throw new SensorHubException("Error reading capabilities information", e);
-		}
-	}
 	
     protected void loadFois()  throws SensorHubException {
     	// request and parse station info
         try
         {
             ObsStationLoader parser = new ObsStationLoader(this);
-//            parser.loadStations(fois, sensorOfferings);
             parser.loadStations(fois);
         }
         catch (Exception e)
@@ -145,11 +77,9 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         }
 	}
     
-//    protected void initRecordStores(Map<String, String[]> sensorOfferings) throws SensorHubException
     protected void initRecordStores() throws SensorHubException
     {
         RecordStore rs = new RecordStore("buoyData", config.exposeFilter.parameters);
-//        RecordStore rs = new RecordStore("buoyData", config.exposeFilter.stationIds, sensorOfferings);
         dataStores.put(rs.getName(), rs);
     }
     

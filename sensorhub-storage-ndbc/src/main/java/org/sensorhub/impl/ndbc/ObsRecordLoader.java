@@ -85,7 +85,6 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         return buf.toString();
     }
     
-//    public void sendRequest(DataFilter filter, Map<String, String[]> sensorOfferings) throws IOException {
     public void sendRequest(DataFilter filter) throws IOException {
     	requestURL = buildInstantValuesRequest(filter);
     	System.out.println("Requesting observations from: " + requestURL);
@@ -180,17 +179,14 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         		readers.add(new FloatValueParser(9, i++)); // upward air velocity
         	}
         	else {
-//	        	System.out.println("param = " + param);
         		readers.add(new BuoyDepthParser(5, i++));
 	            // look for field with same param code
 	            int fieldIndex = -1;
 	            for (int j = 0; j < fieldNames.length; j++)
 	            {
-//	            	System.out.println("field name = " + fieldNames[j]);
 	                if (fieldNames[j].contains(param.toString().toLowerCase()))
 	                {
 	                    fieldIndex = j;
-//	                    System.out.println(fieldNames[j] + " = ind " + fieldIndex);
 	                    break;
 	                }
 	            }
@@ -235,8 +231,6 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
 	            		line = line.replaceAll(",,", ",NaN,");
                 	}
                 }
-                
-//                System.out.println(line);
                 
                 String[] fields = line.split(",");
                 nextRecord = templateRecord.renew();

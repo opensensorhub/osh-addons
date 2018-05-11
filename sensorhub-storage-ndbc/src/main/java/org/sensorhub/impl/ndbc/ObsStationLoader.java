@@ -35,8 +35,7 @@ public class ObsStationLoader
     {
         this.module = module;
     }
-    
-//    public void loadStations(Map<String, AbstractFeature> fois, Map<String, String[]> sensors) throws IOException
+
     public void loadStations(Map<String, AbstractFeature> fois) throws IOException
     {
     	Document doc = Jsoup.connect(STN_INFO_URL).get();
@@ -50,14 +49,6 @@ public class ObsStationLoader
             station.setId(stn.get(i).select("td").get(0).text());
             station.setUniqueIdentifier(FOI_UID_PREFIX + stn.get(i).select("td").get(0).text());
             station.setName("NDBC Buoy Station " + stn.get(i).select("td").get(0).text());
-            
-//            String[] paramsArrTemp = stn.get(i).select("td").get(5).text().trim().split("<br>");
-//            String[] paramsArr = paramsArrTemp[0].split(" ");
-//            String offeredParams = "";
-//            for (int q = 0; q < paramsArr.length; q++)
-//            	offeredParams += paramsArr[q];
-//            offeredParams = offeredParams.substring(0, offeredParams.length() - 1);
-//            station.setDescription(stn.get(i).select("td").get(1).text() + "->" + offeredParams);
     		
             // Get Buoy Location 
         	Point stnLoc = gmlFac.newPoint();
@@ -67,7 +58,6 @@ public class ObsStationLoader
             station.setShape(stnLoc);
             
             fois.put(stn.get(i).select("td").get(0).text(), station);
-//            sensors.put(stn.get(i).select("td").get(0).text(), paramsArr);
     	}
     }
 }

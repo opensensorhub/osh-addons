@@ -21,7 +21,6 @@ public class RecordStore  implements IRecordStoreInfo {
     DataEncoding encoding;
     
     public RecordStore(String name, Set<ObsParam> parameters)
-//    public RecordStore(String name, Set<String> stnId, Map<String, String[]> sensors)
     {
         SWEHelper helper = new SWEHelper();
         GeoPosHelper geo = new GeoPosHelper();
@@ -37,18 +36,11 @@ public class RecordStore  implements IRecordStoreInfo {
         dataStruct.addComponent("location", geo.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC));
         dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
         
-//        String[] sensorOfferings = sensors.get("48211");
-//        for (int k = 0; k < sensors.get(stnId).length; k++)
-//        if (!(sensorOfferings.length == 1 && "Waves".equals(sensorOfferings[0])))
-//        	dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
-        
-//        for (int k = 0; k < sensorOfferings.length; k++)
         for (ObsParam param: parameters)
         {
         	String paramName = param.name().toLowerCase();
         	
             DataComponent c;
-//            switch (sensorOfferings[k]) {
             switch (paramName) {
             
 	        	case "air_pressure_at_sea_level":
