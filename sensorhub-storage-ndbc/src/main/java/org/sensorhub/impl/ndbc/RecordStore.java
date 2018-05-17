@@ -32,7 +32,7 @@ public class RecordStore  implements IRecordStoreInfo {
         dataStruct.setName(name);
         
         dataStruct.addField("time", helper.newTimeStampIsoUTC());
-        dataStruct.addField("station", helper.newText("http://sensorml.com/ont/swe/property/StationID", "Station ID", null));
+        dataStruct.addField("station", helper.newText("http://sensorml.com/ont/swe/property/station_id", "Station ID", null));
         dataStruct.addComponent("location", geo.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC));
         dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
         
@@ -44,7 +44,7 @@ public class RecordStore  implements IRecordStoreInfo {
             switch (paramName) {
             
 	        	case "air_pressure_at_sea_level":
-	        		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
+	        		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/buoy_depth", "Buoy Depth", null, "m", DataType.FLOAT));
 	        		c = helper.newQuantity(SWEHelper.getPropertyUri("air_pressure_at_sea_level"),
 	        				"Air Pressure at Sea Level",
 	        				"NDBC Buoy Station Air Pressure at Sea Level",
@@ -54,7 +54,7 @@ public class RecordStore  implements IRecordStoreInfo {
 	        		break;
         		
             	case "air_temperature":
-            		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
+            		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/buoy_depth", "Buoy Depth", null, "m", DataType.FLOAT));
             		c = helper.newQuantity(SWEHelper.getPropertyUri("air_temperature"),
             				"Air Temperature",
             				"NDBC Buoy Station Air Temperature",
@@ -64,8 +64,8 @@ public class RecordStore  implements IRecordStoreInfo {
             		break;
             		
             	case "currents":
-            		dataStruct.addComponent("bin", helper.newQuantity("http://sensorml.com/ont/swe/property/Bin", "Bin", null, "count", DataType.FLOAT));
-            		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
+            		dataStruct.addComponent("bin", helper.newQuantity("http://sensorml.com/ont/swe/property/bin", "Bin", null, "count", DataType.FLOAT));
+            		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/buoy_depth", "Buoy Depth", null, "m", DataType.FLOAT));
             		c = helper.newQuantity(SWEHelper.getPropertyUri("direction_of_sea_water_velocity"),
             				"Direction of Sea Water Velocity",
             				"NDBC Buoy Station Direction of Sea Water Velocity",
@@ -115,7 +115,7 @@ public class RecordStore  implements IRecordStoreInfo {
             				DataType.FLOAT);
             		dataStruct.addComponent("platform_roll_angle", c);
             		
-            		c = helper.newQuantity(SWEHelper.getPropertyUri("currens_sea_water_temperature"),
+            		c = helper.newQuantity(SWEHelper.getPropertyUri("currents_sea_water_temperature"),
             				"Sea Water Temperature",
             				"NDBC Buoy Station Sea Water Temperature",
             				"degC",
@@ -231,7 +231,7 @@ public class RecordStore  implements IRecordStoreInfo {
             		break;
             		
             	case "sea_water_electrical_conductivity":
-            		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
+            		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/buoy_depth", "Buoy Depth", null, "m", DataType.FLOAT));
             		c = helper.newQuantity(SWEHelper.getPropertyUri("sea_water_electrical_conductivity"),
             				"Sea Water Electrical Conductivity",
             				"NDBC Buoy Station Sea Water Electrical Conductivity",
@@ -241,7 +241,7 @@ public class RecordStore  implements IRecordStoreInfo {
             		break;
             		
             	case "sea_water_salinity":
-            		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
+            		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/buoy_depth", "Buoy Depth", null, "m", DataType.FLOAT));
             		c = helper.newQuantity(SWEHelper.getPropertyUri("sea_water_salinity"),
             				"Sea Water Salinity",
             				"NDBC Buoy Station Sea Station Salinity",
@@ -251,7 +251,7 @@ public class RecordStore  implements IRecordStoreInfo {
             		break;
         		
 	        	case "sea_water_temperature":
-	        		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
+	        		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/buoy_depth", "Buoy Depth", null, "m", DataType.FLOAT));
 	        		c = helper.newQuantity(SWEHelper.getPropertyUri("sea_water_temperature"),
 	        				"Sea Water Temperature",
 	        				"NDBC Buoy Station Sea Water Temperature",
@@ -413,7 +413,7 @@ public class RecordStore  implements IRecordStoreInfo {
 //            		dataStruct.addComponent("sampling_rate", c);
             		
             	case "winds":
-            		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/BuoyDepth", "Buoy Depth", null, "m", DataType.FLOAT));
+            		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/buoy_depth", "Buoy Depth", null, "m", DataType.FLOAT));
             		c = helper.newQuantity(SWEHelper.getPropertyUri("wind_from_direction"),
             				"Wind From Direction",
             				"NDBC Buoy Station Wind From Direction",
