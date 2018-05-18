@@ -87,7 +87,6 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
     
     public void sendRequest(DataFilter filter) throws IOException {
     	requestURL = buildInstantValuesRequest(filter);
-    	System.out.println("Requesting observations from: " + requestURL);
     	module.getLogger().debug("Requesting observations from: " + requestURL);
     	URL url = new URL(requestURL);
     	

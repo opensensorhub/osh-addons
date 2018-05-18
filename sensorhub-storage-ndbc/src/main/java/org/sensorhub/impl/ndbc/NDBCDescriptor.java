@@ -15,17 +15,16 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.ndbc;
 
 import org.sensorhub.api.module.IModule;
-import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.module.JarModuleProvider;
 
 
-public class NDBCDescriptor extends JarModuleProvider implements IModuleProvider
+public class NDBCDescriptor extends JarModuleProvider
 {
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return CachedStorageConfig.class;
+        return NDBCArchive.class;
     }
 
     

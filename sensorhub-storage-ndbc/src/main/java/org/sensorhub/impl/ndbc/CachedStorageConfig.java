@@ -14,24 +14,16 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.ndbc;
 
-import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.module.AbstractModule;
+import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.persistence.StorageConfig;
 
 
-public class CachedStorageConfig extends AbstractModule<NDBCConfig>
+public class CachedStorageConfig extends NDBCConfig
 {
-
-    @Override
-    public void start() throws SensorHubException
-    {
-        
-    }
-
-
-    @Override
-    public void stop() throws SensorHubException
-    {
-
-    }
-
+    @DisplayInfo(label="Cache Config", desc="Configuration of underlying storage used for caching NDBC database")
+    public StorageConfig cacheConfig;
+    
+    
+    @DisplayInfo(desc="Data matching this filter will be preloaded into storage")
+    public DataFilter preloadFilter = new DataFilter();
 }

@@ -69,7 +69,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         try
         {
             ObsStationLoader parser = new ObsStationLoader(this);
-            parser.loadStations(fois);
+            parser.loadStations(fois, config.exposeFilter);
         }
         catch (Exception e)
         {
@@ -87,7 +87,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     {
         SMLHelper helper = new SMLHelper();
         systemDesc = helper.newPhysicalSystem();
-        systemDesc.setUniqueIdentifier(UID_PREFIX + "network");
+        systemDesc.setUniqueIdentifier(UID_PREFIX + "network:" + config.exposeFilter.parameters.iterator().next().toString().toLowerCase());
         systemDesc.setName("NDBC Buoy Data Network");
         systemDesc.setDescription("NDBC automated sensor network collecting buoy data at " + getNumFois(null) + " stations across the US");
         
@@ -196,13 +196,13 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		final String recType = filter.getRecordType();
 		RecordStore rs = dataStores.get(recType); 
 		
-		// prepare loader to fetch data from USGS web service
+		// prepare loader to fetch data from NDBC web service
         final ObsRecordLoader loader = new ObsRecordLoader(this, rs.getRecordDescription());
         final DataFilter ndbcFilter = getNdbcFilter(filter);
         
-        // request observations by batch and iterates through them sequentially
+        // request observations by batch and iterate through them sequentially
         final long endTime = ndbcFilter.endTime.getTime();
-        final long batchLength = 8*3600*1000; // 8 hours        
+        final long batchLength = 31*24*3600*1000; // 31 days        
         class BatchIterator implements Iterator<IDataRecord>
         {                
             Iterator<BuoyDataRecord> batchIt;
