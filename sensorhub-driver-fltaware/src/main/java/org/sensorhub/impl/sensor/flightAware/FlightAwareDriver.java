@@ -210,7 +210,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 
     private void startWithFirehose()
     {
-        getLogger().info("Connecting to Firehose channel...");
+        reportStatus("Connecting to Firehose channel...");
         timer = Executors.newSingleThreadScheduledExecutor();
         
         // connect to pub/sub channel for publishing only
@@ -226,7 +226,19 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
         msgHandler.addPositionListener(this);
         
         // configure firehose feed
-        firehoseClient = new FlightAwareClient(config.hostname, config.userName, config.password, msgHandler);
+        firehoseClient = new FlightAwareClient(config.hostname, config.userName, config.password, new IMessageHandler() {
+            @Override
+            public void handle(String msg)
+            {
+                if (!connected)
+                {
+                    reportStatus("Connected to Firehose channel");
+                    connected = true;
+                }
+                
+                msgHandler.handle(msg);                
+            }            
+        });
         for(String mt: config.messageTypes)
             firehoseClient.addMessageType(mt);
         for(String airline: config.airlines)
@@ -248,7 +260,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     {
         Asserts.checkNotNull(config.pubSubConfig, "PubSubConfig");
         
-        getLogger().info("Connecting to Pub/Sub channel...");
+        reportStatus("Connecting to Pub/Sub channel...");
         timer = Executors.newSingleThreadScheduledExecutor();
         
         // create message handler
@@ -290,7 +302,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                     {
                         if (!connected)
                         {
-                            getLogger().info("Connected to Pub/Sub channel");
+                            reportStatus("Connected to Pub/Sub channel");
                             connected = true;
                         }
                         

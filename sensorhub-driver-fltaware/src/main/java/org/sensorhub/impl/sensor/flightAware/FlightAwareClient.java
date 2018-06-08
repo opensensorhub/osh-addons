@@ -1,7 +1,6 @@
 package org.sensorhub.impl.sensor.flightAware;
 
 import java.io.BufferedReader;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -26,11 +25,11 @@ public class FlightAwareClient implements Runnable
 	private SSLSocket ssl_socket = null;
 	List<String> messageTypes = new ArrayList<>();
 	List<String> filterAirlines = new ArrayList<>();
-	MessageHandler msgHandler;
+	IMessageHandler msgHandler;
 	volatile boolean started;
     
 
-	public FlightAwareClient(String serverUrl, String uname, String pwd, MessageHandler msgHandler) {
+	public FlightAwareClient(String serverUrl, String uname, String pwd, IMessageHandler msgHandler) {
 		this.serverUrl = serverUrl;
 		this.userName = uname;
 		this.password = pwd;

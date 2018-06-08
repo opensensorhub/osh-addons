@@ -28,7 +28,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 
-public class MessageHandler
+public class MessageHandler implements IMessageHandler
 {
 	static final Logger log = LoggerFactory.getLogger(MessageHandler.class);
 	static final String POSITION_MSG_TYPE = "position";
