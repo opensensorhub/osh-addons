@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.sensorhub.impl.sensor.navDb.NavDbEntry.Type;
 
-
 public class LufthansaParser
 {
 	// DDMMSS.SS or DDDMMSS.ss
@@ -155,7 +154,6 @@ public class LufthansaParser
 			String line = br.readLine();
 			if(line == null)
 				break;
-			//			if(!regions.isEmpty())  check region if desired;
 			NavDbEntry entry = null;
 			switch(line.charAt(4)) {
 			case 'P':
