@@ -146,11 +146,12 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                             firehoseClient.restart();
                     }
                     
-                    // if messages getting old
+                    // if messages getting old (usually when we can't keep up)
                     else if (lastMsgAge > MESSAGE_LATENCY_WARN_LIMIT)
-                    {
                         getLogger().warn("Messages getting old. Last dated {}s ago", lastMsgAge/1000);
-                    }
+                    
+                    else
+                        getLogger().info("FA connection OK: Last message received on {}", lastMsgRecvTime);
                 }                    
             }
         }
