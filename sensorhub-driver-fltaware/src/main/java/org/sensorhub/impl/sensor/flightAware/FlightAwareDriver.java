@@ -151,7 +151,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                         getLogger().warn("Messages getting old. Last dated {}s ago", lastMsgAge/1000);
                     
                     else
-                        getLogger().info("FA connection OK: Last message received {}s ago", lastMsgDelta);
+                        getLogger().info("FA connection OK: Last message received {}s ago", lastMsgDelta/1000);
                 }                    
             }
         }
