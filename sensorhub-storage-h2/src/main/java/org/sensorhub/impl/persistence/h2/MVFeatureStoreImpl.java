@@ -225,7 +225,8 @@ public class MVFeatureStoreImpl implements IFeatureStorage
         AbstractFeature oldFoi = idIndex.put(foi.getUniqueIdentifier(), foi);
         if (oldFoi == null && foi.getLocation() != null)
         {
-            SpatialKey rect = GeomUtils.getBoundingRectangle(foi.getLocation());
+            int hashID = foi.getUniqueIdentifier().hashCode();
+            SpatialKey rect = GeomUtils.getBoundingRectangle(hashID, foi.getLocation());
             spatialIndex.put(rect, foi.getUniqueIdentifier());
         }
     }

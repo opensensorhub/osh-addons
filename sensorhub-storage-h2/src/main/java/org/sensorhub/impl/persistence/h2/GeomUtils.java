@@ -14,7 +14,6 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.persistence.h2;
 
-import java.util.Random;
 import org.h2.mvstore.rtree.SpatialKey;
 import net.opengis.gml.v32.AbstractGeometry;
 import net.opengis.gml.v32.LineString;
@@ -27,9 +26,9 @@ public class GeomUtils
     static final String GEOM_DIM_ERROR = "Only 2D and 3D geometries are supported";
     
     
-    public static SpatialKey getBoundingRectangle(AbstractGeometry geom)
+    public static SpatialKey getBoundingRectangle(int hashID, AbstractGeometry geom)
     {
-        double[] bboxCoords = null;
+        float[] minMaxCoords = null;
         int numDims = -1;
         
         // get geom dimension if specified
@@ -51,50 +50,36 @@ public class GeomUtils
         if (geom instanceof Point)
         {
             double[] pos = ((Point)geom).getPos();
-            numDims = pos.length;
-            
-            if (pos.length == 2)
-                bboxCoords = new double[] {pos[0], pos[1], pos[0], pos[1]};
-            else if (pos.length == 3)
-                bboxCoords = new double[] {pos[0], pos[1], pos[2], pos[0], pos[1], pos[2]};
-            else
-                throw new IllegalArgumentException(GEOM_DIM_ERROR);
+            minMaxCoords = getBoundingRectangle(numDims, pos);
         }
         
         // case of polylines
         else if (geom instanceof LineString)
         {
             double[] posList = ((LineString)geom).getPosList();
-            bboxCoords = getBoundingRectangle(numDims, posList);
+            minMaxCoords = getBoundingRectangle(numDims, posList);
         }
         
         // case of polygons
         else if (geom instanceof Polygon)
         {
             double[] posList = ((Polygon)geom).getExterior().getPosList();
-            bboxCoords = getBoundingRectangle(numDims, posList);
+            minMaxCoords = getBoundingRectangle(numDims, posList);
         }
         
-        if (bboxCoords != null)
-        {
-            SpatialKey key = new SpatialKey(new Random().nextLong(), new float[numDims*2]);
-            for (int i=0; i<numDims; i++)
-            {
-                key.setMin(i, (float)bboxCoords[i]);
-                key.setMax(i, (float)bboxCoords[i+numDims]);
-            }
-            
-            return key;
-        }
-            
-        return null;
+        if (minMaxCoords != null)
+            return new SpatialKey(hashID, minMaxCoords);
+        else
+            return null;
     }
     
     
-    public static double[] getBoundingRectangle(int numDims, double[] geomCoords)
+    public static float[] getBoundingRectangle(int numDims, double[] geomCoords)
     {
         int numPoints = geomCoords.length / numDims;
-        double[] bboxCoords = new double[2*numDims];
+        float[] minMaxCoords = new float[2*numDims];
+        minMaxCoords[4] = 0.0f;
+        minMaxCoords[5] = 0.0f;
         
         // try to guess number of dimensions if not specified
         if (numDims < 2 && geomCoords.length % 2 == 0)
@@ -108,23 +93,27 @@ public class GeomUtils
             for (int i = 0; i < numDims; i++, c++)
             {
                 double val = geomCoords[c];
-                int imax = i + numDims;
+                int imin = i*2;
+                int imax = imin+1;
+                
+                float downVal = Math.nextDown((float)val);
+                float upVal = Math.nextUp((float)val);
                 
                 if (p == 0)
                 {
-                    bboxCoords[i] = val;
-                    bboxCoords[imax] = val;
+                    minMaxCoords[imin] = downVal;
+                    minMaxCoords[imax] = upVal;
                 }
                 else
                 {
-                    if (val < bboxCoords[i])
-                        bboxCoords[i] = val;
-                    if (val > bboxCoords[imax])
-                        bboxCoords[imax] = val;
+                    if (downVal < minMaxCoords[imin])
+                        minMaxCoords[imin] = downVal;
+                    if (upVal > minMaxCoords[imax])
+                        minMaxCoords[imax] = upVal;
                 }
             }
         }
         
-        return bboxCoords;
+        return minMaxCoords;
     }
 }
