@@ -33,7 +33,7 @@ public class KryoDataType implements DataType
 {
     ThreadLocal<KryoInstance> kryoLocal;
     Map<Integer, Class<?>> registeredClasses = new HashMap<>();
-    int averageSize;
+    int averageRecordSize, maxRecordSize;
     
     
     static class KryoInstance
@@ -42,7 +42,7 @@ public class KryoDataType implements DataType
         Output output;
         Input input;
         
-        KryoInstance(Map<Integer, Class<?>> registeredClasses, int averageSize)
+        KryoInstance(Map<Integer, Class<?>> registeredClasses, int bufferSize, int maxBufferSize)
         {
             kryo = new Kryo();
             
@@ -57,30 +57,30 @@ public class KryoDataType implements DataType
             // pre-register data block classes to reduce storage size
             // don't change the order to stay compatible with old storage files!!
             for (Entry<Integer, Class<?>> entry: registeredClasses.entrySet())                
-                kryo.register(entry.getValue(), entry.getKey());            
+                kryo.register(entry.getValue(), entry.getKey());
             
             input = new Input();
-            output = new Output(averageSize);
+            output = new Output(bufferSize, maxBufferSize);
         }
     }
     
     
     public KryoDataType()
     {
-        this(10000);
+        this(10*1024*1024);
     }
     
     
-    public KryoDataType(final int averageSize)
+    public KryoDataType(final int maxRecordSize)
     {
-        this.averageSize = averageSize;
+        this.maxRecordSize = maxRecordSize;
         this.registeredClasses = new HashMap<>();
         
         this.kryoLocal = new ThreadLocal<KryoInstance>()
         {
             public KryoInstance initialValue()
             {
-                return new KryoInstance(registeredClasses, averageSize);
+                return new KryoInstance(registeredClasses, 2*averageRecordSize, maxRecordSize);
             }
         };
     }
@@ -89,7 +89,7 @@ public class KryoDataType implements DataType
     @Override
     public int compare(Object a, Object b)
     {
-        // don't care cause we don't use this for keys
+        // don't care since we won't use this for keys
         return 0;
     }
 
@@ -97,26 +97,43 @@ public class KryoDataType implements DataType
     @Override
     public int getMemory(Object obj)
     {
-        return averageSize;
+        initRecordSize(obj);
+        return averageRecordSize;
     }
 
 
     @Override
     public void write(WriteBuffer buff, Object obj)
     {
+        initRecordSize(obj);
+        
         KryoInstance kryoI = kryoLocal.get();
         Kryo kryo = kryoI.kryo;
-        Output output = kryoI.output;
-        
+        Output output = kryoI.output;        
         output.setPosition(0);
         
         //kryo.writeObjectOrNull(output, obj, objectType);
-        kryo.writeClassAndObject(output, obj);        
+        kryo.writeClassAndObject(output, obj);
         buff.put(output.getBuffer(), 0, output.position());
         
         // adjust the average size using an exponential moving average
         int size = output.position();
-        averageSize = (size + 15 * averageSize) / 16;
+        averageRecordSize = (size + averageRecordSize*4) / 5;
+    }
+    
+    
+    protected void initRecordSize(Object obj)
+    {
+        if (averageRecordSize <= 0)
+        {
+            KryoInstance kryoI = kryoLocal.get();
+            Kryo kryo = kryoI.kryo;
+            Output output = kryoI.output;
+            output.setPosition(0);
+            kryo.writeClassAndObject(output, obj);
+            averageRecordSize = output.position();
+            output.setBuffer(new byte[averageRecordSize*2], maxRecordSize);
+        }
     }
 
 
