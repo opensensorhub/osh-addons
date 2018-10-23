@@ -178,7 +178,7 @@ class MVFoiTimesStoreImpl
     void updateFoiPeriod(final String producerID, final String foiID, double timeStamp)
     {
         // if lastFois doesn't have it (after restart)
-        // add producer FOI for which we last received data
+        // add to producer FOI for which we last received data
         String lastFoi = lastFois.get(producerID);
         if (lastFoi == null)
         {
@@ -202,9 +202,9 @@ class MVFoiTimesStoreImpl
             entry = new FeatureEntry(foiID);
         
         // if same foi, keep growing period
-        if (foiID.equals(lastFoi))
+        int numPeriods = entry.timePeriods.size();
+        if (foiID.equals(lastFoi) && numPeriods > 0)
         {
-            int numPeriods = entry.timePeriods.size();
             double[] lastPeriod = entry.timePeriods.get(numPeriods-1);
             double currentEndTime = lastPeriod[1];
             if (timeStamp > currentEndTime)

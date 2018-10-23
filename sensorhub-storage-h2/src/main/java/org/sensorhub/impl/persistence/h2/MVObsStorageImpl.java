@@ -336,7 +336,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     public synchronized void removeDataSourceDescription(double time)
     {
         checkOpen();
-        processDescMap.remove(time);
+        processDescMap.remove(new ProducerTimeKey(producerID, time));
     }
 
 
