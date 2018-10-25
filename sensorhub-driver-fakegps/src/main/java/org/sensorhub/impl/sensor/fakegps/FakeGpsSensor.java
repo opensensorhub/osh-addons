@@ -42,6 +42,9 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
     {
         super.init();
         
+        if (config.googleApiKey == null || config.googleApiKey.isEmpty())
+            throw new SensorHubException("A Google API key with access to the Directions API must be provided in the configuration");
+        
         // generate IDs
         generateUniqueID("urn:osh:sensor:simgps:", null);
         generateXmlID("GPS_SENSOR_", null);

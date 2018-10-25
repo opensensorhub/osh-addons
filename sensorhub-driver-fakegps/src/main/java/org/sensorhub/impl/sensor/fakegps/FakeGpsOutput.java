@@ -30,8 +30,8 @@ import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.helper.GeoPosHelper;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 
@@ -126,7 +126,8 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         try
         {
             // request directions using Google API
-            URL dirRequest = new URL(config.googleApiUrl + "?origin=" + startLat + "," + startLong +
+            URL dirRequest = new URL(config.googleApiUrl + "?key=" + config.googleApiKey +
+                    "&origin=" + startLat + "," + startLong +
                     "&destination=" + endLat + "," + endLong + ((config.walkingMode) ? "&mode=walking" : ""));
             log.debug("Google API request: " + dirRequest);
             InputStream is = new BufferedInputStream(dirRequest.openStream());
@@ -134,12 +135,20 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             // parse JSON track
             JsonParser reader = new JsonParser();
             JsonElement root = reader.parse(new InputStreamReader(is));
-            //System.out.println(root);
-            JsonArray routes = root.getAsJsonObject().get("routes").getAsJsonArray();
-            if (routes.size() == 0)
-                throw new Exception("No route available");
+            JsonObject rootObj = root.getAsJsonObject();
             
-            JsonElement polyline = routes.get(0).getAsJsonObject().get("overview_polyline");
+            //System.out.println(root);
+            JsonElement routes = rootObj.get("routes");
+            if (routes == null || !routes.isJsonArray() || routes.getAsJsonArray().size() == 0)
+            {
+                String errorMsg = "No route available";
+                JsonElement errorField = rootObj.get("error_message");
+                if (errorField != null)
+                    errorMsg = errorField.getAsString();
+                throw new Exception(errorMsg);
+            }
+            
+            JsonElement polyline = routes.getAsJsonArray().get(0).getAsJsonObject().get("overview_polyline");
             String encodedData = polyline.getAsJsonObject().get("points").getAsString();
             
             // decode polyline data
