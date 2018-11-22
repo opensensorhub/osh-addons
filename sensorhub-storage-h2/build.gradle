@@ -4,7 +4,7 @@ version = oshCoreVersion
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile 'com.h2database:h2-mvstore:1.4.196'
+  compile 'com.h2database:h2-mvstore:1.4.197'
   compile 'com.esotericsoftware:kryo:4.0.0'
   testCompile group:'org.sensorhub', name:'sensorhub-core', version:oshCoreVersion, configuration: 'testArtifacts'
 }
