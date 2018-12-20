@@ -26,7 +26,7 @@ import org.sensorhub.api.sensor.PositionConfig.LLALocation;
 
 public class KinectConfig extends SensorConfig {
 	
-	private KinectDeviceParams deviceParams;
+	private KinectDeviceParams deviceParams = new KinectDeviceParams();
 
 	@DisplayInfo(desc = "Kinect geographic position")
 	public PositionConfig position = new PositionConfig();
@@ -63,7 +63,6 @@ public class KinectConfig extends SensorConfig {
 	
 	public KinectConfig() {
 
-		deviceParams = new KinectDeviceParams();
 	}
 	
     @Override
