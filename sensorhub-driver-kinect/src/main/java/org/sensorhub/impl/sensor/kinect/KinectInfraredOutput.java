@@ -6,76 +6,19 @@ import org.openkinect.freenect.Device;
 import org.openkinect.freenect.FrameMode;
 import org.openkinect.freenect.VideoHandler;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
+import org.vast.data.DataBlockByte;
+import org.vast.data.DataBlockList;
 
 import net.opengis.swe.v20.DataBlock;
-import net.opengis.swe.v20.DataComponent;
-import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.DataStream;
 
-class KinectInfraredOutput extends AbstractSensorOutput<KinectSensor> {
-
-	private Device device = null;
-
-	private DataEncoding encoding;
-
-	private DataComponent data;
+class KinectInfraredOutput extends KinectVideoOutput {
 
 	public KinectInfraredOutput(KinectSensor parentSensor, Device kinectDevice) {
 
-		super(parentSensor);
-
-		device = kinectDevice;
+		super(parentSensor, kinectDevice);
 	}
 
 	@Override
-	public DataComponent getRecordDescription() {
-
-		return data;
-	}
-
-	@Override
-	public DataEncoding getRecommendedEncoding() {
-
-		return encoding;
-	}
-
-	@Override
-	public double getAverageSamplingPeriod() {
-
-		return device.getVideoMode().framerate;
-	}
-
-	@Override
-	protected void stop() {
-
-		device.stopVideo();
-	}
-
-	public void init() throws SensorException {
-
-		device.setVideoFormat(parentSensor.getDeviceParams().getInfraredVideoFormat(), 
-				parentSensor.getDeviceParams().getInfraredVideoResolution());
-
-        try {
-
-            VideoCamHelper videoCamHelper = new VideoCamHelper();
-
-            // build output structure
-            DataStream videoStream = videoCamHelper.newVideoOutputRGB(getName(), device.getVideoMode().width, device.getVideoMode().height);
-            
-            data = videoStream.getElementType();
-            
-            encoding = videoStream.getEncoding();
-            
-        } catch (Exception e) {
-        	
-            throw new SensorException("Error while initializing video output", e);
-        }
-	}
-
 	public void start() {
 		
 		device.startVideo(new VideoHandler() {
@@ -83,15 +26,31 @@ class KinectInfraredOutput extends AbstractSensorOutput<KinectSensor> {
 			@Override
 			public void onFrameReceived(FrameMode mode, ByteBuffer frame, int timestamp) {
 				
-				DataBlock dataBlock = data.createDataBlock();
+				DataBlock dataBlock = videoStream.createDataBlock();
 				
-				dataBlock.setUnderlyingObject(frame.array());
+				byte[] pixels = new byte[parentSensor.getDeviceParams().getFrameWidth() * parentSensor.getDeviceParams().getFrameHeight()];
+				
+				for (short height = 0; height < parentSensor.getDeviceParams().getFrameHeight(); ++height) {
+					
+					for (short width = 0; width < parentSensor.getDeviceParams().getFrameWidth(); ++width) {
+					
+						int offset = (width + height * parentSensor.getDeviceParams().getFrameWidth());
+						
+						pixels[offset] = frame.get(offset);
+					}
+				}
+				
+				DataBlockByte blockByte = new DataBlockByte();
+				blockByte.setUnderlyingObject(pixels);
+	            ((DataBlockList)dataBlock).getUnderlyingObject().add(blockByte);
 				
 		        latestRecord = dataBlock;
 		        
 		        latestRecordTime = System.currentTimeMillis();
 		        
-		        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, KinectInfraredOutput.this, dataBlock));        
+		        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, KinectInfraredOutput.this, dataBlock));      
+		        
+				frame.position(0);
 			}
 		});		
 	}

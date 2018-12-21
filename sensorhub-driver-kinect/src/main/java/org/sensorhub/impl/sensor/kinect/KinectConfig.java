@@ -16,13 +16,11 @@ package org.sensorhub.impl.sensor.kinect;
 
 import org.openkinect.freenect.DepthFormat;
 import org.openkinect.freenect.LedStatus;
-import org.openkinect.freenect.Resolution;
-import org.openkinect.freenect.VideoFormat;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.PositionConfig;
-import org.sensorhub.api.sensor.SensorConfig;
 import org.sensorhub.api.sensor.PositionConfig.EulerOrientation;
 import org.sensorhub.api.sensor.PositionConfig.LLALocation;
+import org.sensorhub.api.sensor.SensorConfig;
 
 public class KinectConfig extends SensorConfig {
 	
@@ -34,32 +32,32 @@ public class KinectConfig extends SensorConfig {
 	@DisplayInfo(desc = "Serial number of KINECT device")
 	public String serialNumber = "075440104338";
 	
+//	@DisplayInfo(desc = "The width of the image frame supported by this version of the Kinect device")
+//	public int frameWidth = deviceParams.getFrameWidth();
+//
+//	@DisplayInfo(desc = "The height of the image frame supported by this version of the Kinect device")
+//	public int frameHeight = deviceParams.getFrameHeight();
+
+//	@DisplayInfo(desc = "The video format of the camera on the KINECT device")
+//	public VideoFormat videoFormat = deviceParams.getVideoFormat();
 	
-
-	@DisplayInfo(desc = "The video format of the camera on the KINECT device")
-	public VideoFormat videoFormat = deviceParams.getCameraVideoFormat();
-	
-	@DisplayInfo(desc = "The video resolution of the camera on the KINECT device")
-	public Resolution videoResolution = deviceParams.getCameraVideoResolution();
-
-	@DisplayInfo(desc = "The format of the IR sensor on the KINECT device")
-	public VideoFormat irFormat = deviceParams.getInfraredVideoFormat();
-
-	@DisplayInfo(desc = "The resolution of the IR sensor on the KINECT device")
-	public Resolution irResolution = deviceParams.getInfraredVideoResolution();
+//	@DisplayInfo(desc = "The video resolution of the camera on the KINECT device")
+//	public Resolution videoResolution = deviceParams.getVideoResolution();
 
 	@DisplayInfo(desc = "The format of the depth sensor on the KINECT device")
 	public DepthFormat depthFormat = deviceParams.getDepthFormat();
 
-	@DisplayInfo(desc = "The resolution of the depth sensor on the KINECT device")
-	public Resolution depthResolution = deviceParams.getDepthSensorResolution();
+//	@DisplayInfo(desc = "The resolution of the depth sensor on the KINECT device")
+//	public Resolution depthResolution = deviceParams.getDepthSensorResolution();
 	
 	@DisplayInfo(desc = "Tilt angle of the Kinect")
 	public double tiltAngle = deviceParams.getTiltAngle();
+	
+	@DisplayInfo(desc = "The mode of operation for the camera of the Kinect")
+	public KinectDeviceParams.VideoMode videoMode = deviceParams.getVideoMode();
 
 	@DisplayInfo(desc = "LED status indicator of the Kinect")
 	public LedStatus ledStatus = deviceParams.getLedStatus();
-
 	
 	public KinectConfig() {
 

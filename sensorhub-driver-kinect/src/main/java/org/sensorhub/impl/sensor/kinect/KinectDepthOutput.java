@@ -7,7 +7,6 @@ import org.openkinect.freenect.Device;
 import org.openkinect.freenect.FrameMode;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.VectorHelper;
 
@@ -26,8 +25,6 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 
 	private DataComponent pointCloudFrameData;
 	
-	private static final int IMAGE_BUFFER_WIDTH = 640;
-	private static final int IMAGE_BUFFER_HEIGHT = 480;
 	private static final int NUM_DATA_COMPONENTS = 3;
 	private static final int IDX_TIME_DATA_COMPONENT = 0;
 	private static final int IDX_POINT_COUNT_DATA_COMPONENT = 1;
@@ -110,12 +107,10 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 	
 	public void init() {
 
-		device.setDepthFormat(parentSensor.getDeviceParams().getDepthFormat(), 
-				parentSensor.getDeviceParams().getDepthSensorResolution());
+		device.setDepthFormat(parentSensor.getDeviceParams().getDepthFormat());
 
 		VectorHelper factory = new VectorHelper();
 
-		
 		pointCloudFrameData = factory.newDataRecord(NUM_DATA_COMPONENTS);
 		pointCloudFrameData.setDescription(STR_MODEL_DESCRIPTION);
 		pointCloudFrameData.setDefinition(STR_MODEL_DEFINITION);
@@ -145,28 +140,43 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 			
 			@Override
 			public void onFrameReceived(FrameMode mode, ByteBuffer frame, int timestamp) {
-			    
-				short[][][] pointCloudData = new short[IMAGE_BUFFER_HEIGHT][IMAGE_BUFFER_WIDTH][EuclideanCoords.NUM_DIMENSIONS.valueOf()];
-
-				for (short height = 0; height < IMAGE_BUFFER_HEIGHT; ++height) {
-					
-					for (short width = 0; width < IMAGE_BUFFER_WIDTH; ++width) {
-					
-						pointCloudData[height][width][EuclideanCoords.X.valueOf()] = width;
-						pointCloudData[height][width][EuclideanCoords.Y.valueOf()] = height;
-						pointCloudData[height][width][EuclideanCoords.Z.valueOf()] = frame.getShort(height * IMAGE_BUFFER_HEIGHT + width);
-					}
+				
+				if (frame == null) {
+					System.out.println("Kinect - received null frame");
 				}
 				
+				if (mode == null) {
+					System.out.println("Kinect - received null mode");
+				}
+				else
+					System.out.println("Kinect - mode.bytes = " + mode.bytes);
+			    
+				int[][][] pointCloudData = new int[parentSensor.getDeviceParams().getFrameWidth()][parentSensor.getDeviceParams().getFrameHeight()][EuclideanCoords.NUM_DIMENSIONS.valueOf()];
+
+				for (int height = 0; height < parentSensor.getDeviceParams().getFrameHeight(); ++height) {
+					
+					for (int width = 0; width < parentSensor.getDeviceParams().getFrameWidth(); ++width) {
+					
+						pointCloudData[width][height][EuclideanCoords.X.valueOf()] = width;
+						pointCloudData[width][height][EuclideanCoords.Y.valueOf()] = height;
+						int lo = frame.get(width + height * parentSensor.getDeviceParams().getFrameWidth()) & 255;
+						int hi = frame.get(width + height * parentSensor.getDeviceParams().getFrameWidth()) & 255;
+						pointCloudData[width][height][EuclideanCoords.Z.valueOf()] = (hi << 8 | lo) & 2047;
+					}
+				}
+								
 				DataBlock dataBlock = pointCloudFrameData.createDataBlock();
-				dataBlock.setIntValue(IDX_POINT_COUNT_DATA_COMPONENT, IMAGE_BUFFER_HEIGHT * IMAGE_BUFFER_WIDTH);
+				dataBlock.setIntValue(IDX_POINT_COUNT_DATA_COMPONENT, parentSensor.getDeviceParams().getFrameWidth() * parentSensor.getDeviceParams().getFrameHeight());
 				dataBlock.setDoubleValue(IDX_TIME_DATA_COMPONENT, 0);
-				((DataBlockMixed)dataBlock).getUnderlyingObject()[IDX_POINTS_COMPONENT].setUnderlyingObject(pointCloudData);
+//				((DataBlockMixed)dataBlock).getUnderlyingObject()[IDX_POINTS_COMPONENT].setUnderlyingObject(pointCloudData);
+//				(DataBlockInt)(dataBlock.getUnderlyingObject()[IDX_POINTS_COMPONENT]).setUnderlyingObject(pointCloudData);
 				
 		        // update latest record and send event
 		        latestRecord = dataBlock;
 		        latestRecordTime = System.currentTimeMillis();
-		        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, KinectDepthOutput.this, dataBlock));        
+		        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, KinectDepthOutput.this, dataBlock));       
+		        
+				frame.position(0);
 			}
 		});
 	}

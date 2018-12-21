@@ -29,9 +29,8 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 	private static final String ERR_NO_KINECT_DEVICES_FOUND_STR = ": No Kinect devices found";
 
-	private KinectInfraredOutput irInterface;
 	private KinectDepthOutput depthInterface;
-	private KinectCameraOutput cameraInterface;
+	private KinectVideoOutput cameraInterface;
 
 	private static boolean isConnected = false;
 	
@@ -55,18 +54,20 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 			kinectDevice = kinectContext.openDevice(0);
 
 			generateUniqueID("urn:osh:sensor:kinect:", config.serialNumber);
+			
 			generateXmlID("KINECT_", config.serialNumber);
 
-			irInterface = new KinectInfraredOutput(this, kinectDevice);
-			addOutput(irInterface, false);
-			irInterface.init();
+			if (KinectDeviceParams.VideoMode.CAMERA == deviceParams.getVideoMode()) {
 
-			depthInterface = new KinectDepthOutput(this, kinectDevice);
-			addOutput(depthInterface, false);
-			depthInterface.init();
-
-			cameraInterface = new KinectCameraOutput(this, kinectDevice);
+				cameraInterface = new KinectVideoOutput(this, kinectDevice);
+			}
+			else {
+				
+				cameraInterface = new KinectInfraredOutput(this, kinectDevice);
+			}
+			
 			addOutput(cameraInterface, false);
+			
 			cameraInterface.init();
 		}
 	}
@@ -98,11 +99,6 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 			cameraInterface.start();
 		}
 
-		if (null != irInterface) {
-
-			irInterface.start();
-		}
-
 		if (null != depthInterface) {
 
 			depthInterface.start();
@@ -117,16 +113,13 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 			cameraInterface.stop();
 		}
 
-		if (null != irInterface) {
-
-			irInterface.stop();
-		}
-
 		if (null != depthInterface) {
 
 			depthInterface.stop();
 		}
 
+		kinectDevice.close();
+		
 		kinectContext.shutdown();
 
 		isConnected = false;
@@ -147,20 +140,20 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 		
 		if (null != cameraInterface) {
 
-			cameraInterface.stop();
-			cameraInterface.init();
-			cameraInterface.start();
+			cameraInterface.stop();			
 		}
-	}
-	
-	protected void updatedInfraredParams() throws SensorException {
-		
-		if (null != irInterface) {
 
-			irInterface.stop();
-			irInterface.init();
-			irInterface.start();
+		if (KinectDeviceParams.VideoMode.CAMERA == deviceParams.getVideoMode()) {
+
+			cameraInterface = new KinectVideoOutput(this, kinectDevice);
 		}
+		else {
+			
+			cameraInterface = new KinectInfraredOutput(this, kinectDevice);
+		}
+		
+		cameraInterface.init();
+		cameraInterface.start();
 	}
 	
 	protected void updatedDepthParams() {

@@ -7,93 +7,103 @@ import org.openkinect.freenect.VideoFormat;
 
 class KinectDeviceParams {
 	
-	private VideoFormat cameraVideoFormat = VideoFormat.BAYER;
-	private Resolution cameraResolution = Resolution.LOW;
+	private VideoFormat videoFormat = VideoFormat.IR_10BIT;
+//	private Resolution videoResolution = Resolution.LOW;
 	
-	private VideoFormat infraredVideoFormat = VideoFormat.IR_10BIT;
-	private Resolution infraredResolution = Resolution.LOW;
-	
-	private DepthFormat depthFormat = DepthFormat.MM;
+	private DepthFormat depthFormat = DepthFormat.D11BIT;
 	private Resolution depthResolution = Resolution.LOW;
 	
 	private LedStatus ledStatus = LedStatus.GREEN;
     
 	private double tiltAngle = 0.0;
+	
+	private int frameWidth = 640;
+	
+	private int frameheight = 480;
+	
+	enum VideoMode {
+		CAMERA(0),
+		IR(1);
+
+		private int value;
+		
+		private VideoMode(int value) {
+			
+			this.value = value;
+		}
+		
+		public int valueOf() {
+			
+			return value;
+		}
+	}
+	
+	private VideoMode videoMode = VideoMode.IR;
 		
 	public KinectDeviceParams() {
 		
 	}
 	
-	public void setCameraOutputParams(int formatValue, int resValue) {
+	public VideoMode getVideoMode() {
 		
-		VideoFormat format = VideoFormat.fromInt(formatValue);
+		return videoMode;
+	}
+	
+	public void setVideoMode(int value) {
 		
-		if (null != format) {
+		videoMode = VideoMode.CAMERA;
+		videoFormat = VideoFormat.RGB;
 		
-			cameraVideoFormat = format;
-		}
-		
-		Resolution resolution = Resolution.fromInt(resValue);
-		
-		if (null != resolution) {
+		if (value == VideoMode.IR.valueOf()) {
 			
-			cameraResolution = resolution;
+			videoMode = VideoMode.IR;
+			videoFormat = VideoFormat.IR_10BIT;
 		}
 	}
 	
-	public VideoFormat getCameraVideoFormat() {
+//	public void setCameraOutputParams(int formatValue, int resValue) {
+//		
+//		VideoFormat format = VideoFormat.fromInt(formatValue);
+//		
+//		if (null != format) {
+//		
+//			videoFormat = format;
+//		}
+//		
+//		Resolution resolution = Resolution.fromInt(resValue);
+//		
+//		if (null != resolution) {
+//			
+//			videoResolution = resolution;
+//		}
+//	}
+	
+	public VideoFormat getVideoFormat() {
 		
-		return cameraVideoFormat;
+		return videoFormat;
 	}
 	
-	public Resolution getCameraVideoResolution() {
-		
-		return cameraResolution;
-	}
-	
-	public void setInfraredOuptutParams(int formatValue, int resValue) {
-		
-		VideoFormat format = VideoFormat.fromInt(formatValue);
-		
-		if (null != format) {
-		
-			infraredVideoFormat = format;
-		}
+//	public Resolution getVideoResolution() {
+//		
+//		return videoResolution;
+//	}
 
-		Resolution resolution = Resolution.fromInt(resValue);
-		
-		if (null != resolution) {
-			
-			infraredResolution = resolution;
-		}
-	}
-	
-	public VideoFormat getInfraredVideoFormat() {
-		
-		return infraredVideoFormat;
-	}
-	
-	public Resolution getInfraredVideoResolution() {
-		
-		return infraredResolution;
-	}
-
-	public void setDepthOutputParams(int formatValue, int resValue) {
-		
-		DepthFormat format = DepthFormat.fromInt(formatValue);
-		
-		if (null != format) {
-		
-			depthFormat = format;
-		}
-		
-		Resolution resolution = Resolution.fromInt(resValue);
-		
-		if (null != resolution) {
-			
-			depthResolution = resolution;
-		}
-	}
+//	public void setDepthOutputParams(int formatValue, int resValue) {
+//		
+//		DepthFormat format = DepthFormat.fromInt(formatValue);
+//		
+//		if (null != format) {
+//		
+//			depthFormat = format;
+//		}
+//		
+//		Resolution resolution = Resolution.fromInt(resValue);
+//		
+//		if (null != resolution) {
+//			
+//			depthResolution = resolution;
+//		}
+//	}
 	
 	public DepthFormat getDepthFormat() {
 		
@@ -128,5 +138,25 @@ class KinectDeviceParams {
 	public LedStatus getLedStatus() {
 		
 		return ledStatus;
+	}
+	
+	public int getFrameWidth() {
+		
+		return frameWidth;
+	}
+	
+	public void setFrameWidth(int width) {
+		
+		frameWidth = width;
+	}
+	
+	public int getFrameHeight() {
+		
+		return frameheight;
+	}
+	
+	public void setFrameHeight(int height) {
+		
+		frameheight = height;
 	}
 }
