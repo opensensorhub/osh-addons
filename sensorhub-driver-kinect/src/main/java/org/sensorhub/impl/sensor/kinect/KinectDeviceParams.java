@@ -2,16 +2,17 @@ package org.sensorhub.impl.sensor.kinect;
 
 import org.openkinect.freenect.DepthFormat;
 import org.openkinect.freenect.LedStatus;
-import org.openkinect.freenect.Resolution;
 import org.openkinect.freenect.VideoFormat;
 
 class KinectDeviceParams {
 	
+	private boolean depthEnabled = true;
+	
+	private boolean irEnabled = true;
+
 	private VideoFormat videoFormat = VideoFormat.IR_8BIT;
-	private Resolution videoResolution = Resolution.LOW;
 	
 	private DepthFormat depthFormat = DepthFormat.D11BIT;
-	private Resolution depthResolution = Resolution.LOW;
 	
 	private LedStatus ledStatus = LedStatus.GREEN;
     
@@ -20,45 +21,29 @@ class KinectDeviceParams {
 	private int frameWidth = 640;
 	
 	private int frameheight = 480;
-	
-	enum VideoMode {
-		CAMERA(0),
-		IR(1);
-
-		private int value;
-		
-		private VideoMode(int value) {
-			
-			this.value = value;
-		}
-		
-		public int valueOf() {
-			
-			return value;
-		}
-	}
-	
-	private VideoMode videoMode = VideoMode.IR;
 		
 	public KinectDeviceParams() {
 		
 	}
 	
-	public VideoMode getVideoMode() {
+	public boolean getIrEnabled() {
 		
-		return videoMode;
+		return irEnabled;
 	}
 	
-	public void setVideoMode(int value) {
+	public void toggleIrEnabled() {
 		
-		videoMode = VideoMode.CAMERA;
-		videoFormat = VideoFormat.RGB;
+		irEnabled = !irEnabled;
+	}
+	
+	public boolean getDepthEnabled() {
 		
-		if (value == VideoMode.IR.valueOf()) {
-			
-			videoMode = VideoMode.IR;
-			videoFormat = VideoFormat.IR_10BIT;
-		}
+		return depthEnabled;
+	}
+	
+	public void toggleDepthEnabled() {
+		
+		depthEnabled = !depthEnabled;
 	}
 	
 	public VideoFormat getVideoFormat() {
@@ -66,22 +51,12 @@ class KinectDeviceParams {
 		return videoFormat;
 	}
 	
-	public Resolution getVideoResolution() {
-		
-		return videoResolution;
-	}
-	
 	public DepthFormat getDepthFormat() {
 		
 		return depthFormat;
 	}
 
-	public Resolution getDepthSensorResolution() {
-		
-		return depthResolution;
-	}
-
-	public void setTiltParams(double angle) {
+	public void setTiltAngle(double angle) {
 		
 		tiltAngle = angle;
 	}
@@ -111,18 +86,8 @@ class KinectDeviceParams {
 		return frameWidth;
 	}
 	
-	public void setFrameWidth(int width) {
-		
-		frameWidth = width;
-	}
-	
 	public int getFrameHeight() {
 		
 		return frameheight;
-	}
-	
-	public void setFrameHeight(int height) {
-		
-		frameheight = height;
 	}
 }

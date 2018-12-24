@@ -19,7 +19,6 @@ import org.openkinect.freenect.Device;
 import org.openkinect.freenect.Freenect;
 import org.openkinect.freenect.LedStatus;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.vast.sensorML.SMLHelper;
 
@@ -30,11 +29,11 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 	private static final String ERR_NO_KINECT_DEVICES_FOUND_STR = ": No Kinect devices found";
 
-	private KinectDepthOutput depthInterface;
-	private KinectVideoOutput cameraInterface;
+	private KinectDepthOutput depthInterface = null;
+	private KinectVideoOutput cameraInterface = null;
 
 	private static boolean isConnected = false;
-	
+
 	private KinectDeviceParams deviceParams = new KinectDeviceParams();
 
 	@Override
@@ -55,27 +54,32 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 			kinectDevice = kinectContext.openDevice(0);
 
 			generateUniqueID("urn:osh:sensor:kinect:", config.serialNumber);
-			
+
 			generateXmlID("KINECT_", config.serialNumber);
 
-			if (KinectDeviceParams.VideoMode.CAMERA == deviceParams.getVideoMode()) {
+			if (deviceParams.getDepthEnabled()) {
 
-				cameraInterface = new KinectVideoOutput(this, kinectDevice);
+				depthInterface = new KinectDepthOutput(this, kinectDevice);
+
+				addOutput(depthInterface, false);
+
+				depthInterface.init();
+
+			} else {
+
+				if (false == deviceParams.getIrEnabled()) {
+
+					cameraInterface = new KinectVideoOutput(this, kinectDevice);
+					
+				} else {
+
+					cameraInterface = new KinectInfraredOutput(this, kinectDevice);
+				}
+
+				addOutput(cameraInterface, false);
+
+				cameraInterface.init();
 			}
-			else {
-				
-				cameraInterface = new KinectInfraredOutput(this, kinectDevice);
-			}
-			
-			addOutput(cameraInterface, false);
-			
-			depthInterface = new KinectDepthOutput(this, kinectDevice);
-			
-			addOutput(depthInterface, false);
-			
-			cameraInterface.init();
-			
-			depthInterface.init();
 		}
 	}
 
@@ -104,15 +108,15 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 		// Set Led to configured setting
 		kinectDevice.setLed(deviceParams.getLedStatus());
 
-		if (null != cameraInterface) {
+		if ((null != depthInterface) && (deviceParams.getDepthEnabled())) {
+
+			depthInterface.start();
+
+		} else if (null != cameraInterface) {
 
 			cameraInterface.start();
 		}
 
-		if (null != depthInterface) {
-
-			depthInterface.start();
-		}
 	}
 
 	@Override
@@ -130,9 +134,9 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 		// Turn off LED
 		kinectDevice.setLed(LedStatus.OFF);
-		
+
 		kinectDevice.close();
-		
+
 		kinectContext.shutdown();
 
 		isConnected = false;
@@ -143,39 +147,9 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 		return isConnected;
 	}
-	
+
 	protected KinectDeviceParams getDeviceParams() {
-		
+
 		return deviceParams;
-	}
-	
-	protected void updatedCameraParams() throws SensorException {
-		
-		if (null != cameraInterface) {
-
-			cameraInterface.stop();			
-		}
-
-		if (KinectDeviceParams.VideoMode.CAMERA == deviceParams.getVideoMode()) {
-
-			cameraInterface = new KinectVideoOutput(this, kinectDevice);
-		}
-		else {
-			
-			cameraInterface = new KinectInfraredOutput(this, kinectDevice);
-		}
-		
-		cameraInterface.init();
-		cameraInterface.start();
-	}
-	
-	protected void updatedDepthParams() {
-		
-		if (null != depthInterface) {
-
-			depthInterface.stop();
-			depthInterface.init();
-			depthInterface.start();
-		}
 	}
 }

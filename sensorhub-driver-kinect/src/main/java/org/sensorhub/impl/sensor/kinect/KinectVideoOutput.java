@@ -60,10 +60,7 @@ class KinectVideoOutput extends AbstractSensorOutput<KinectSensor>{
 	
 	public void init() throws SensorException {
 
-		device.setVideoFormat(parentSensor.getDeviceParams().getVideoFormat(), 
-				parentSensor.getDeviceParams().getVideoResolution());
-
-//		device.setVideoFormat(parentSensor.getDeviceParams().getVideoFormat());
+		device.setVideoFormat(parentSensor.getDeviceParams().getVideoFormat());
 
         try {
 
