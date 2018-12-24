@@ -7,8 +7,8 @@ import org.openkinect.freenect.VideoFormat;
 
 class KinectDeviceParams {
 	
-	private VideoFormat videoFormat = VideoFormat.IR_10BIT;
-//	private Resolution videoResolution = Resolution.LOW;
+	private VideoFormat videoFormat = VideoFormat.IR_8BIT;
+	private Resolution videoResolution = Resolution.LOW;
 	
 	private DepthFormat depthFormat = DepthFormat.D11BIT;
 	private Resolution depthResolution = Resolution.LOW;
@@ -61,49 +61,15 @@ class KinectDeviceParams {
 		}
 	}
 	
-//	public void setCameraOutputParams(int formatValue, int resValue) {
-//		
-//		VideoFormat format = VideoFormat.fromInt(formatValue);
-//		
-//		if (null != format) {
-//		
-//			videoFormat = format;
-//		}
-//		
-//		Resolution resolution = Resolution.fromInt(resValue);
-//		
-//		if (null != resolution) {
-//			
-//			videoResolution = resolution;
-//		}
-//	}
-	
 	public VideoFormat getVideoFormat() {
 		
 		return videoFormat;
 	}
 	
-//	public Resolution getVideoResolution() {
-//		
-//		return videoResolution;
-//	}
-
-//	public void setDepthOutputParams(int formatValue, int resValue) {
-//		
-//		DepthFormat format = DepthFormat.fromInt(formatValue);
-//		
-//		if (null != format) {
-//		
-//			depthFormat = format;
-//		}
-//		
-//		Resolution resolution = Resolution.fromInt(resValue);
-//		
-//		if (null != resolution) {
-//			
-//			depthResolution = resolution;
-//		}
-//	}
+	public Resolution getVideoResolution() {
+		
+		return videoResolution;
+	}
 	
 	public DepthFormat getDepthFormat() {
 		

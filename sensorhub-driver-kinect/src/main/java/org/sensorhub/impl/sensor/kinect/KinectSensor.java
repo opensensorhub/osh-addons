@@ -17,6 +17,7 @@ package org.sensorhub.impl.sensor.kinect;
 import org.openkinect.freenect.Context;
 import org.openkinect.freenect.Device;
 import org.openkinect.freenect.Freenect;
+import org.openkinect.freenect.LedStatus;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -68,7 +69,13 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 			
 			addOutput(cameraInterface, false);
 			
+			depthInterface = new KinectDepthOutput(this, kinectDevice);
+			
+			addOutput(depthInterface, false);
+			
 			cameraInterface.init();
+			
+			depthInterface.init();
 		}
 	}
 
@@ -94,6 +101,9 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 	@Override
 	public void start() throws SensorHubException {
 
+		// Set Led to configured setting
+		kinectDevice.setLed(deviceParams.getLedStatus());
+
 		if (null != cameraInterface) {
 
 			cameraInterface.start();
@@ -118,6 +128,9 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 			depthInterface.stop();
 		}
 
+		// Turn off LED
+		kinectDevice.setLed(LedStatus.OFF);
+		
 		kinectDevice.close();
 		
 		kinectContext.shutdown();

@@ -14,8 +14,8 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.kinect;
 
-import org.openkinect.freenect.DepthFormat;
-import org.openkinect.freenect.LedStatus;
+//import org.openkinect.freenect.DepthFormat;
+//import org.openkinect.freenect.LedStatus;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.PositionConfig;
 import org.sensorhub.api.sensor.PositionConfig.EulerOrientation;
@@ -24,7 +24,7 @@ import org.sensorhub.api.sensor.SensorConfig;
 
 public class KinectConfig extends SensorConfig {
 	
-	private KinectDeviceParams deviceParams = new KinectDeviceParams();
+//	private KinectDeviceParams deviceParams = new KinectDeviceParams();
 
 	@DisplayInfo(desc = "Kinect geographic position")
 	public PositionConfig position = new PositionConfig();
@@ -44,20 +44,20 @@ public class KinectConfig extends SensorConfig {
 //	@DisplayInfo(desc = "The video resolution of the camera on the KINECT device")
 //	public Resolution videoResolution = deviceParams.getVideoResolution();
 
-	@DisplayInfo(desc = "The format of the depth sensor on the KINECT device")
-	public DepthFormat depthFormat = deviceParams.getDepthFormat();
+//	@DisplayInfo(desc = "The format of the depth sensor on the KINECT device")
+//	public DepthFormat depthFormat = deviceParams.getDepthFormat();
 
 //	@DisplayInfo(desc = "The resolution of the depth sensor on the KINECT device")
 //	public Resolution depthResolution = deviceParams.getDepthSensorResolution();
 	
-	@DisplayInfo(desc = "Tilt angle of the Kinect")
-	public double tiltAngle = deviceParams.getTiltAngle();
+//	@DisplayInfo(desc = "Tilt angle of the Kinect")
+//	public double tiltAngle = deviceParams.getTiltAngle();
 	
-	@DisplayInfo(desc = "The mode of operation for the camera of the Kinect")
-	public KinectDeviceParams.VideoMode videoMode = deviceParams.getVideoMode();
+//	@DisplayInfo(desc = "The mode of operation for the camera of the Kinect")
+//	public KinectDeviceParams.VideoMode videoMode = deviceParams.getVideoMode();
 
-	@DisplayInfo(desc = "LED status indicator of the Kinect")
-	public LedStatus ledStatus = deviceParams.getLedStatus();
+//	@DisplayInfo(desc = "LED status indicator of the Kinect")
+//	public LedStatus ledStatus = deviceParams.getLedStatus();
 	
 	public KinectConfig() {
 
