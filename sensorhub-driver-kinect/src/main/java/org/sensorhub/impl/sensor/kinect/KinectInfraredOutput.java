@@ -28,13 +28,13 @@ class KinectInfraredOutput extends KinectVideoOutput {
 				
 				DataBlock dataBlock = videoStream.createDataBlock();
 				
-				byte[] pixels = new byte[parentSensor.getDeviceParams().getFrameWidth() * parentSensor.getDeviceParams().getFrameHeight()];
+				byte[] pixels = new byte[getParentModule().getConfiguration().frameWidth * getParentModule().getConfiguration().frameHeight];
 				
-				for (short height = 0; height < parentSensor.getDeviceParams().getFrameHeight(); ++height) {
+				for (short height = 0; height < getParentModule().getConfiguration().frameHeight; ++height) {
 					
-					for (short width = 0; width < parentSensor.getDeviceParams().getFrameWidth(); ++width) {
+					for (short width = 0; width < getParentModule().getConfiguration().frameWidth; ++width) {
 					
-						int offset = (width + height * parentSensor.getDeviceParams().getFrameWidth());
+						int offset = (width + height * getParentModule().getConfiguration().frameWidth);
 						
 						pixels[offset] = frame.get(offset);
 					}

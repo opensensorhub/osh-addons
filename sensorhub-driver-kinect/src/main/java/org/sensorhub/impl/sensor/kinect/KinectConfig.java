@@ -14,8 +14,9 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.kinect;
 
-//import org.openkinect.freenect.DepthFormat;
-//import org.openkinect.freenect.LedStatus;
+import org.openkinect.freenect.DepthFormat;
+import org.openkinect.freenect.LedStatus;
+import org.openkinect.freenect.VideoFormat;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.PositionConfig;
 import org.sensorhub.api.sensor.PositionConfig.EulerOrientation;
@@ -24,40 +25,48 @@ import org.sensorhub.api.sensor.SensorConfig;
 
 public class KinectConfig extends SensorConfig {
 	
-//	private KinectDeviceParams deviceParams = new KinectDeviceParams();
-
 	@DisplayInfo(desc = "Kinect geographic position")
 	public PositionConfig position = new PositionConfig();
 
 	@DisplayInfo(desc = "Serial number of KINECT device")
 	public String serialNumber = "075440104338";
 	
-//	@DisplayInfo(desc = "The width of the image frame supported by this version of the Kinect device")
-//	public int frameWidth = deviceParams.getFrameWidth();
-//
-//	@DisplayInfo(desc = "The height of the image frame supported by this version of the Kinect device")
-//	public int frameHeight = deviceParams.getFrameHeight();
-
-//	@DisplayInfo(desc = "The video format of the camera on the KINECT device")
-//	public VideoFormat videoFormat = deviceParams.getVideoFormat();
+	@DisplayInfo(desc = "Reduces the number of points in the cloud by this factor")
+	public int pointCloudDecimationFactor = 10;
+		
+	@DisplayInfo(desc = "Mode of operation of the Kinect")
+	public Mode videoMode = Mode.DEPTH;
 	
+	@DisplayInfo(desc = "The width of the image frame supported by this version of the Kinect device")
+	public final int frameWidth = 640;
+
+	@DisplayInfo(desc = "The height of the image frame supported by this version of the Kinect device")
+	public final int frameHeight = 480;
+
+	@DisplayInfo(desc = "The video format of the ir camera on the KINECT device")
+	public final VideoFormat irFormat = VideoFormat.IR_8BIT;
+
+	@DisplayInfo(desc = "The video format of the camera on the KINECT device")
+	public final VideoFormat rgbFormat = VideoFormat.RGB;
+
 //	@DisplayInfo(desc = "The video resolution of the camera on the KINECT device")
 //	public Resolution videoResolution = deviceParams.getVideoResolution();
 
-//	@DisplayInfo(desc = "The format of the depth sensor on the KINECT device")
-//	public DepthFormat depthFormat = deviceParams.getDepthFormat();
-
-//	@DisplayInfo(desc = "The resolution of the depth sensor on the KINECT device")
-//	public Resolution depthResolution = deviceParams.getDepthSensorResolution();
+	@DisplayInfo(desc = "The format of the depth sensor on the KINECT device")
+	public final DepthFormat depthFormat = DepthFormat.D11BIT;
 	
-//	@DisplayInfo(desc = "Tilt angle of the Kinect")
-//	public double tiltAngle = deviceParams.getTiltAngle();
-	
-//	@DisplayInfo(desc = "The mode of operation for the camera of the Kinect")
-//	public KinectDeviceParams.VideoMode videoMode = deviceParams.getVideoMode();
+	@DisplayInfo(desc = "Tilt angle of the Kinect")
+	public double tiltAngle = 0.0;
 
-//	@DisplayInfo(desc = "LED status indicator of the Kinect")
-//	public LedStatus ledStatus = deviceParams.getLedStatus();
+	@DisplayInfo(desc = "LED status indicator of the Kinect")
+	public LedStatus ledStatus = LedStatus.GREEN;
+	
+	enum Mode {
+		
+		DEPTH,
+		VIDEO,
+		IR
+	};
 	
 	public KinectConfig() {
 

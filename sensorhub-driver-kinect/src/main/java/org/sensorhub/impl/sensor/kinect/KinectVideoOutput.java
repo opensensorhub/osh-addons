@@ -60,14 +60,21 @@ class KinectVideoOutput extends AbstractSensorOutput<KinectSensor>{
 	
 	public void init() throws SensorException {
 
-		device.setVideoFormat(parentSensor.getDeviceParams().getVideoFormat());
+		if (KinectConfig.Mode.IR == getParentModule().getConfiguration().videoMode) { 
+			
+			device.setVideoFormat(getParentModule().getConfiguration().irFormat);
+			
+		} else {
+
+			device.setVideoFormat(getParentModule().getConfiguration().rgbFormat);
+		}
 
         try {
 
             VideoCamHelper videoCamHelper = new VideoCamHelper();
 
             videoStream = videoCamHelper.newVideoOutputRGB(getName(),
-            		parentSensor.getDeviceParams().getFrameWidth(), parentSensor.getDeviceParams().getFrameHeight());
+            		getParentModule().getConfiguration().frameWidth, getParentModule().getConfiguration().frameHeight);
                                     
         } catch (Exception e) {
         	
@@ -84,13 +91,13 @@ class KinectVideoOutput extends AbstractSensorOutput<KinectSensor>{
 				
 				DataBlock dataBlock = videoStream.createDataBlock();
 				
-				byte[] pixels = new byte[BYTES_PER_PIXEL *parentSensor.getDeviceParams().getFrameWidth() * parentSensor.getDeviceParams().getFrameHeight()];
+				byte[] pixels = new byte[BYTES_PER_PIXEL * getParentModule().getConfiguration().frameWidth * getParentModule().getConfiguration().frameHeight];
 				
-				for (short height = 0; height < parentSensor.getDeviceParams().getFrameHeight(); ++height) {
+				for (short height = 0; height < getParentModule().getConfiguration().frameHeight; ++height) {
 					
-					for (short width = 0; width < parentSensor.getDeviceParams().getFrameWidth(); ++width) {
+					for (short width = 0; width < getParentModule().getConfiguration().frameWidth; ++width) {
 					
-						int offset = BYTES_PER_PIXEL * (width + height * parentSensor.getDeviceParams().getFrameWidth());
+						int offset = BYTES_PER_PIXEL * (width + height * getParentModule().getConfiguration().frameWidth);
 
 						// Kinect reports in BGRA
 						byte r = frame.get(offset + 2);

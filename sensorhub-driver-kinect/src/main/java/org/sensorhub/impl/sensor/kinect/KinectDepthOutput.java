@@ -8,10 +8,10 @@ import org.openkinect.freenect.FrameMode;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.DataBlockMixed;
+import org.vast.data.TextEncodingImpl;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.VectorHelper;
 
-import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
@@ -20,58 +20,52 @@ import net.opengis.swe.v20.Vector;
 
 class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 
+	private static final int NUM_DATA_COMPONENTS = 2;
+	private static final int IDX_TIME_DATA_COMPONENT = 0;
+	private static final int IDX_POINTS_COMPONENT = 1;
+	private static final double MM_PER_M = 1000.0;
+	private static final double MS_PER_S = 1000.0;
+
+	private static final String STR_POINT_UNITS_OF_MEASURE = new String("m");
+	private static final String STR_POINT_DEFINITION = new String(SWEHelper.getPropertyUri("Distance"));
+	private static final String STR_POINT_REFERENCE_FRAME = new String("Volume which extends in front of and "
+			+ "beyond the Kinect depth sensor with the X-component being the width, Y-component being "
+			+ "the height, and the Z-component being the depth or distance from the sensor's receptor surface.");
+	private static final String STR_POINT_DESCRIPTION = new String(
+			"A 3-dimensional point, part of the raw point cloud data retrieved from Kinect depth sensor.");
+
+	private static final String STR_POINT_NAME = new String("Point");
+
+	private static final String STR_MODEL_NAME = new String("Point Cloud Model");
+	private static final String STR_MODEL_DEFINITION = new String(SWEHelper.getPropertyUri("DepthPointCloud"));
+	private static final String STR_MODEL_DESCRIPTION = new String("Point Cloud Data read from Kinect Depth Sensor");
+
+	private static final String STR_TIME_DATA_COMPONENT = new String("time");
+	private static final String STR_POINT_DATA_COMPONENT = new String("points");
+
+	private static final int NUM_DATA_ELEMENTS_PER_POINT = 3;
+
 	private Device device = null;
 
 	private DataEncoding encoding;
 
 	private DataComponent pointCloudFrameData;
 
-	private static final int NUM_DATA_COMPONENTS = 3;
-	private static final int IDX_TIME_DATA_COMPONENT = 0;
-	private static final int IDX_POINT_COUNT_DATA_COMPONENT = 1;
-	private static final int IDX_POINTS_COMPONENT = 2;
-	private static final double MM_PER_M = 1000.0;
+	private int numPoints = 0;
 
-	private enum EuclideanCoords {
-		X(0), Y(1), Z(2), NUM_DIMENSIONS(3);
-
-		private int value;
-
-		private EuclideanCoords(int value) {
-
-			this.value = value;
-		}
-
-		public int valueOf() {
-
-			return value;
-		}
-	}
-
-	private static final String STR_POINT_UNITS_OF_MEASURE = new String("meters (m)");
-	private static final String STR_POINT_DEFINITION = new String("A 3-dimensional point in space");
-	private static final String STR_POINT_REFERENCE_FRAME = new String("Volume which extends in front of and "
-			+ "beyond the Kinect depth sensor with the X-component being the width, Y-component being "
-			+ "the height, and the Z-component being the depth or distance from the sensor's receptor surface.");
-	private static final String STR_POINT_DESCRIPTION = new String(
-			"A 3-dimensional point, part of the raw " + "point cloud data retrieved from Kinect depth sensor.");
-
-	private static final String STR_POINT = new String("Point");
-	private static final String STR_POINT_COUNT_ID = new String("NUM_POINTS");
-
-	private static final String STR_MODEL_NAME = new String("Point Cloud Model");
-	private static final String STR_MODEL_DESCRIPTION = new String("");
-	private static final String STR_MODEL_DEFINITION = new String("");
-
-	private static final String STR_TIME_DATA_COMPONENT = new String("time");
-	private static final String STR_POINT_COUNT_DATA_COMPONENT = STR_POINT_COUNT_ID.toLowerCase();
-	private static final String STR_POINT_DATA_COMPONENT = new String("points");
+	private int decimationFactor = 0;
 
 	public KinectDepthOutput(KinectSensor parentSensor, Device kinectDevice) {
 
 		super(parentSensor);
 
 		device = kinectDevice;
+
+		numPoints = getParentModule().getConfiguration().frameWidth * getParentModule().getConfiguration().frameHeight;
+		
+		decimationFactor = getParentModule().getConfiguration().pointCloudDecimationFactor;
+
+		numPoints /= decimationFactor;
 	}
 
 	@Override
@@ -100,12 +94,13 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 
 	@Override
 	public String getName() {
+		
 		return STR_MODEL_NAME;
 	}
 
 	public void init() {
 
-		device.setDepthFormat(parentSensor.getDeviceParams().getDepthFormat());
+		device.setDepthFormat(getParentModule().getConfiguration().depthFormat);
 
 		VectorHelper factory = new VectorHelper();
 
@@ -118,18 +113,14 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 				STR_POINT_UNITS_OF_MEASURE);
 		point.setDescription(STR_POINT_DESCRIPTION);
 
-		Count numPoints = factory.newCount();
-		numPoints.setId(STR_POINT_COUNT_ID);
-
-		DataArray pointArray = factory.newDataArray();
-		pointArray.setElementType(STR_POINT, point);
-		pointArray.setElementCount(numPoints);
+		DataArray pointArray = factory.newDataArray(numPoints);
+		pointArray.setElementType(STR_POINT_NAME, point);
 
 		pointCloudFrameData.addComponent(STR_TIME_DATA_COMPONENT, factory.newTimeStampIsoUTC());
-		pointCloudFrameData.addComponent(STR_POINT_COUNT_DATA_COMPONENT, numPoints);
 		pointCloudFrameData.addComponent(STR_POINT_DATA_COMPONENT, pointArray);
 
-		encoding = SWEHelper.getDefaultBinaryEncoding(pointCloudFrameData);
+		encoding = SWEHelper.getDefaultEncoding(pointCloudFrameData);
+		encoding = new TextEncodingImpl();
 	}
 
 	public void start() {
@@ -139,40 +130,31 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 			@Override
 			public void onFrameReceived(FrameMode mode, ByteBuffer frame, int timestamp) {
 
-				int numPoints = parentSensor.getDeviceParams().getFrameWidth()
-						* parentSensor.getDeviceParams().getFrameHeight() * EuclideanCoords.NUM_DIMENSIONS.valueOf();
-				
-				double[] pointCloudData = new double[numPoints];
+				double[] pointCloudData = new double[numPoints * NUM_DATA_ELEMENTS_PER_POINT];
 
-				for (int height = 0; height < parentSensor.getDeviceParams().getFrameHeight(); ++height) {
+				int count = 0;
 
-					for (int width = 0; width < parentSensor.getDeviceParams().getFrameWidth(); ++width) {
+				for (int height = 0; height < getParentModule().getConfiguration().frameHeight; height += decimationFactor) {
 
-						int offset = EuclideanCoords.NUM_DIMENSIONS.valueOf()
-								* (width + height * parentSensor.getDeviceParams().getFrameWidth());
+					for (int width = 0; width < getParentModule().getConfiguration().frameWidth; width += decimationFactor) {
 
-//						pointCloudData[width][height][EuclideanCoords.X.valueOf()] = (double) width;
-//						pointCloudData[width][height][EuclideanCoords.Y.valueOf()] = (double) height;
-						int lo = frame.get(width + height * parentSensor.getDeviceParams().getFrameWidth()) & 255;
-						int hi = frame.get(width + height * parentSensor.getDeviceParams().getFrameWidth()) & 255;
-//						pointCloudData[width][height][EuclideanCoords.Z
-//								.valueOf()] = (double) (((hi << 8 | lo) & 2047) / MM_PER_M);
-						
-						pointCloudData[offset] = (double) width;
-						pointCloudData[++offset] = (double) height;
-						pointCloudData[++offset] = (double) (((hi << 8 | lo) & 2047) / MM_PER_M);
+						int lo = frame.get(width + height * getParentModule().getConfiguration().frameWidth) & 255;
+						int hi = frame.get(width + height * getParentModule().getConfiguration().frameWidth) & 255;
+
+						pointCloudData[count] = (double) width;
+						pointCloudData[++count] = (double) height;
+						pointCloudData[++count] = (double) (((hi << 8 | lo) & 2047) / MM_PER_M);
 					}
 				}
 
 				DataBlock dataBlock = pointCloudFrameData.createDataBlock();
-				dataBlock.setDoubleValue(IDX_TIME_DATA_COMPONENT, timestamp / 1000.0);
-				dataBlock.setIntValue(IDX_POINT_COUNT_DATA_COMPONENT, numPoints);
+				dataBlock.setDoubleValue(IDX_TIME_DATA_COMPONENT, timestamp / MS_PER_S);
 				((DataBlockMixed) dataBlock).getUnderlyingObject()[IDX_POINTS_COMPONENT]
 						.setUnderlyingObject(pointCloudData);
 
 				// update latest record and send event
 				latestRecord = dataBlock;
-				latestRecordTime = System.currentTimeMillis();
+				latestRecordTime = timestamp;
 				eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, KinectDepthOutput.this, dataBlock));
 
 				frame.position(0);
