@@ -48,7 +48,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     public FakeGpsOutput(FakeGpsSensor parentSensor)
     {
         super(parentSensor);
-        trajPoints = new ArrayList<double[]>();
+        trajPoints = new ArrayList<>();
     }
 
 

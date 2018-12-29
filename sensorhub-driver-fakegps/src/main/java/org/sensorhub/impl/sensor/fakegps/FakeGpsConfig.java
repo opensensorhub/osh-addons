@@ -20,7 +20,6 @@ import org.sensorhub.api.sensor.SensorConfig;
 public class FakeGpsConfig extends SensorConfig
 {    
     public String googleApiUrl = "https://maps.googleapis.com/maps/api/directions/json";
-    
     public String googleApiKey = null;
     
     // use these to add specific start and stop locations

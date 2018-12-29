@@ -17,7 +17,7 @@ package org.sensorhub.impl.sensor.avl;
 
 public class SimulatedVehicleConfig
 {
-    String vehicleID;
+    public String vehicleID;
     
     // if start/stop location values are null a random location is generated
     public Double startLat = null;  // in degrees
