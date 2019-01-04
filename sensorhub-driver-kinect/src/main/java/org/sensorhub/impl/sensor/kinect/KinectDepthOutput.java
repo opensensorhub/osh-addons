@@ -119,7 +119,6 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 		pointCloudFrameData.addComponent(STR_TIME_DATA_COMPONENT, factory.newTimeStampIsoUTC());
 		pointCloudFrameData.addComponent(STR_POINT_DATA_COMPONENT, pointArray);
 
-		encoding = SWEHelper.getDefaultEncoding(pointCloudFrameData);
 		encoding = new TextEncodingImpl();
 	}
 
