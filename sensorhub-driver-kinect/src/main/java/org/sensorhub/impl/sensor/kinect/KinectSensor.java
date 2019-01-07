@@ -63,13 +63,13 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 	private KinectDepthOutput depthInterface = null;
 
 	/**
-	 * Manages and produces the output from the video or IR sensor converting the data to
-	 * a usable format for publishing and consumption.
+	 * Manages and produces the output from the video or IR sensor converting the
+	 * data to a usable format for publishing and consumption.
 	 */
 	private KinectVideoOutput cameraInterface = null;
 
 	/**
-	 * Flag to indicate the device is connected.  Used in state management.
+	 * Flag to indicate the device is connected. Used in state management.
 	 */
 	private static boolean isConnected = false;
 
@@ -79,9 +79,9 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 	private Mode mode = Mode.DEPTH;
 
 	/**
-	 * The status of the LED indicator on the device, by default it is to blink green.
-	 * This is the mode in which the LED operates when first connected through USB to the 
-	 * computing platform.
+	 * The status of the LED indicator on the device, by default it is to blink
+	 * green. This is the mode in which the LED operates when first connected
+	 * through USB to the computing platform.
 	 */
 	private LedStatus ledStatus = LedStatus.BLINK_GREEN;
 
@@ -202,24 +202,27 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 	@Override
 	public void stop() throws SensorHubException {
 
-		if (null != cameraInterface) {
+		if (isConnected) {
+			
+			if (null != cameraInterface) {
 
-			cameraInterface.stop();
+				cameraInterface.stop();
+			}
+
+			if (null != depthInterface) {
+
+				depthInterface.stop();
+			}
+
+			// Turn off LED
+			kinectDevice.setLed(LedStatus.OFF);
+
+			kinectDevice.close();
+
+			kinectContext.shutdown();
+
+			isConnected = false;
 		}
-
-		if (null != depthInterface) {
-
-			depthInterface.stop();
-		}
-
-		// Turn off LED
-		kinectDevice.setLed(LedStatus.OFF);
-
-		kinectDevice.close();
-
-		kinectContext.shutdown();
-
-		isConnected = false;
 	}
 
 	@Override
