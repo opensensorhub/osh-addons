@@ -38,19 +38,19 @@ public class KinectConfig extends SensorConfig {
 	public Mode videoMode = Mode.DEPTH;
 	
 	@DisplayInfo(desc = "The width of the image frame supported by this version of the Kinect device")
-	public final int frameWidth = 640;
+	public int frameWidth = 640;
 
 	@DisplayInfo(desc = "The height of the image frame supported by this version of the Kinect device")
-	public final int frameHeight = 480;
+	public int frameHeight = 480;
 
 	@DisplayInfo(desc = "The video format of the ir camera on the KINECT device")
-	public final VideoFormat irFormat = VideoFormat.IR_8BIT;
+	public VideoFormat irFormat = VideoFormat.IR_8BIT;
 
 	@DisplayInfo(desc = "The video format of the camera on the KINECT device")
-	public final VideoFormat rgbFormat = VideoFormat.RGB;
+	public VideoFormat rgbFormat = VideoFormat.RGB;
 
 //	@DisplayInfo(desc = "The video resolution of the camera on the KINECT device")
-//	public Resolution videoResolution = deviceParams.getVideoResolution();
+//	public Resolution resolution = Resolution.HIGH;
 
 	@DisplayInfo(desc = "The format of the depth sensor on the KINECT device")
 	public final DepthFormat depthFormat = DepthFormat.D11BIT;

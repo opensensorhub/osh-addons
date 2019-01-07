@@ -14,58 +14,97 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.kinect;
 
-import com.sun.jna.*;
-import java.io.IOException;
-
 import org.openkinect.freenect.Context;
 import org.openkinect.freenect.Device;
 import org.openkinect.freenect.Freenect;
 import org.openkinect.freenect.LedStatus;
-import org.openkinect.freenect.LogHandler;
-import org.openkinect.freenect.LogLevel;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.kinect.KinectConfig.Mode;
 import org.vast.sensorML.SMLHelper;
 
+import com.sun.jna.Native;
+import com.sun.jna.NativeLibrary;
+
+/**
+ * Driver implementation supporting Microsoft Kinect Model 1414. The Kinect
+ * device supports RGB Video, IR, and Depth point cloud sensors. This driver
+ * allows for the usage of a Kinect device in a single mode of operation where
+ * the modes are one of "video", "IR", or "depth". Upon connecting to the device
+ * and starting the driver the LED indicator on the device is turned on to solid
+ * green and turned off when the driver is stopped from the OSH Admin interface.
+ * 
+ * @author Nicolas "Nick" Garay <nick.garay@botts-inc.com>
+ *         <nicolas.garay@icloud.com>
+ * @since January 7, 2019
+ *
+ */
 public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
+	/**
+	 * Error string for condition where no Kinect devices found to connect to.
+	 */
 	private static final String ERR_STR_NO_KINECT_DEVICES_FOUND = ": No Kinect devices found";
 
+	/**
+	 * The context by which the driver establishes a connection with the device.
+	 */
 	private static Context kinectContext = null;
-	
+
+	/**
+	 * Device handle by which the driver interacts with the connected device.
+	 */
 	private static Device kinectDevice = null;
 
+	/**
+	 * Manages and produces the output from the depth sensor converting the data to
+	 * a usable format for publishing and consumption.
+	 */
 	private KinectDepthOutput depthInterface = null;
-	
+
+	/**
+	 * Manages and produces the output from the video or IR sensor converting the data to
+	 * a usable format for publishing and consumption.
+	 */
 	private KinectVideoOutput cameraInterface = null;
 
+	/**
+	 * Flag to indicate the device is connected.  Used in state management.
+	 */
 	private static boolean isConnected = false;
-	
+
+	/**
+	 * The mode of operation for the device, by default it is DEPTH.
+	 */
 	private Mode mode = Mode.DEPTH;
-	
+
+	/**
+	 * The status of the LED indicator on the device, by default it is to blink green.
+	 * This is the mode in which the LED operates when first connected through USB to the 
+	 * computing platform.
+	 */
 	private LedStatus ledStatus = LedStatus.BLINK_GREEN;
 
-	/** 
-	 * This static load block informs JNA to load the freenect lib from the JAR file using 
-	 * the registered class loader (org.sensorhub.utils.NativeClassLoader).
-	 * It subsequently registers the instance of the library binding it with the Freenect class
-	 * containing the native interface calls.
+	/**
+	 * This static load block informs JNA to load the freenect lib from the JAR file
+	 * using the registered class loader (org.sensorhub.utils.NativeClassLoader). It
+	 * subsequently registers the instance of the library binding it with the
+	 * Freenect class containing the native interface calls.
 	 */
 	static {
-		
-		try {
-			
-			NativeLibrary instance = NativeLibrary.getInstance("freenect", ClassLoader.getSystemClassLoader());
-			
-			System.err.println("Loaded " + instance.getName() + " from " + instance.getFile().getCanonicalPath());
-			
-			Native.register(org.openkinect.freenect.Freenect.class, instance);
-			
-		} catch (IOException e) {
-			
-			throw new AssertionError(e);
-		}
+
+//		try {
+
+		NativeLibrary instance = NativeLibrary.getInstance("freenect", ClassLoader.getSystemClassLoader());
+
+//			System.err.println("Loaded " + instance.getName() + " from " + instance.getFile().getCanonicalPath());
+
+		Native.register(org.openkinect.freenect.Freenect.class, instance);
+
+//		} catch (IOException e) {
+//			
+//			throw new AssertionError(e);
+//		}
 	}
 
 	@Override
@@ -73,26 +112,19 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 		super.init();
 
-		System.out.println("===> Initializing Kinect context");
-
 		kinectContext = Freenect.createContext();
-		kinectContext.setLogHandler(new LogHandler() {
-			public void onMessage(Device dev, LogLevel level, String msg) {
-			
-				System.out.println(msg);
-			}
-		});
-
-		System.out.println("===> Context initialized");
+//		kinectContext.setLogHandler(new LogHandler() {
+//			public void onMessage(Device dev, LogLevel level, String msg) {
+//			
+//				System.out.println(msg);
+//			}
+//		});
 
 		isConnected = true;
-		
+
 		mode = getConfiguration().videoMode;
-		
+
 		ledStatus = getConfiguration().ledStatus;
-		
-		System.out.println("===> LED STATUS = " + ledStatus);
-		System.out.println("===> Num Devices = " + kinectContext.numDevices());
 
 		if (0 == kinectContext.numDevices()) {
 
@@ -106,15 +138,11 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 			generateXmlID("KINECT_", config.serialNumber);
 
-			System.out.println("===> MODE = " + mode);
-
 			if (Mode.DEPTH == mode) {
 
 				depthInterface = new KinectDepthOutput(this, kinectDevice);
 
 				depthInterface.init();
-
-				System.out.println("===> Depth interface initialized");
 
 				addOutput(depthInterface, false);
 
@@ -123,15 +151,13 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 				if (Mode.IR == mode) {
 
 					cameraInterface = new KinectVideoOutput(this, kinectDevice);
-					
+
 				} else {
 
 					cameraInterface = new KinectInfraredOutput(this, kinectDevice);
 				}
 
 				cameraInterface.init();
-
-				System.out.println("===> Camera interface initialized");
 
 				addOutput(cameraInterface, false);
 			}
@@ -160,12 +186,8 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 	@Override
 	public void start() throws SensorHubException {
 
-		System.out.println("===> Setting LED STATUS");
-
 		// Set Led to configured setting
 		kinectDevice.setLed(ledStatus);
-
-		System.out.println("===> Starting output interface");
 
 		if ((null != depthInterface) && (Mode.DEPTH == mode)) {
 
@@ -175,8 +197,6 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 			cameraInterface.start();
 		}
-
-		System.out.println("===> Started output interface");
 	}
 
 	@Override
