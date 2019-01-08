@@ -29,7 +29,7 @@ import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.Vector;
+import net.opengis.swe.v20.Quantity;
 
 class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 
@@ -40,23 +40,24 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 	private static final double MS_PER_S = 1000.0;
 
 	private static final String STR_POINT_UNITS_OF_MEASURE = new String("m");
+
 	private static final String STR_POINT_DEFINITION = new String(SWEHelper.getPropertyUri("Distance"));
-	private static final String STR_POINT_REFERENCE_FRAME = new String("Volume which extends in front of and "
-			+ "beyond the Kinect depth sensor with the X-component being the width, Y-component being "
-			+ "the height, and the Z-component being the depth or distance from the sensor's receptor surface.");
+
 	private static final String STR_POINT_DESCRIPTION = new String(
-			"A 3-dimensional point, part of the raw point cloud data retrieved from Kinect depth sensor.");
+			"A measure of distance from the sensor, the raw point cloud data retrieved from Kinect depth sensor.");
 
 	private static final String STR_POINT_NAME = new String("Point");
 
+	private static final String STR_POINT_LABEL = new String("Distance");
+
 	private static final String STR_MODEL_NAME = new String("Point Cloud Model");
+
 	private static final String STR_MODEL_DEFINITION = new String(SWEHelper.getPropertyUri("DepthPointCloud"));
+
 	private static final String STR_MODEL_DESCRIPTION = new String("Point Cloud Data read from Kinect Depth Sensor");
 
 	private static final String STR_TIME_DATA_COMPONENT = new String("time");
 	private static final String STR_POINT_DATA_COMPONENT = new String("points");
-
-	private static final int NUM_DATA_ELEMENTS_PER_POINT = 3;
 
 	private Device device = null;
 
@@ -68,17 +69,25 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 
 	private int decimationFactor = 0;
 
+	private long lastPublishTimeMillis = System.currentTimeMillis();
+	
+	private long samplingTimeMillis = 1000;
+
 	public KinectDepthOutput(KinectSensor parentSensor, Device kinectDevice) {
 
 		super(parentSensor);
 
 		device = kinectDevice;
-
-		numPoints = getParentModule().getConfiguration().frameWidth * getParentModule().getConfiguration().frameHeight;
 		
+		samplingTimeMillis = (long)(getParentModule().getConfiguration().samplingTime * MS_PER_S);
+
 		decimationFactor = getParentModule().getConfiguration().pointCloudDecimationFactor;
 
-		numPoints /= decimationFactor;
+		if (decimationFactor > 0) {
+
+			numPoints = (getParentModule().getConfiguration().frameWidth / decimationFactor)
+					* (getParentModule().getConfiguration().frameHeight / decimationFactor);
+		}
 	}
 
 	@Override
@@ -107,11 +116,19 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 
 	@Override
 	public String getName() {
-		
+
 		return STR_MODEL_NAME;
 	}
 
 	public void init() {
+
+		decimationFactor = getParentModule().getConfiguration().pointCloudDecimationFactor;
+
+		if (decimationFactor > 0) {
+
+			numPoints = (getParentModule().getConfiguration().frameWidth / decimationFactor)
+					* (getParentModule().getConfiguration().frameHeight / decimationFactor);
+		}
 
 		device.setDepthFormat(getParentModule().getConfiguration().depthFormat);
 
@@ -122,14 +139,13 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 		pointCloudFrameData.setDefinition(STR_MODEL_DEFINITION);
 		pointCloudFrameData.setName(STR_MODEL_NAME);
 
-		Vector point = factory.newLocationVectorXYZ(STR_POINT_DEFINITION, STR_POINT_REFERENCE_FRAME,
+		Quantity point = factory.newQuantity(STR_POINT_DEFINITION, STR_POINT_LABEL, STR_POINT_DESCRIPTION,
 				STR_POINT_UNITS_OF_MEASURE);
-		point.setDescription(STR_POINT_DESCRIPTION);
 
 		DataArray pointArray = factory.newDataArray(numPoints);
 		pointArray.setElementType(STR_POINT_NAME, point);
 
-		pointCloudFrameData.addComponent(STR_TIME_DATA_COMPONENT, factory.newTimeStampIsoUTC());
+		pointCloudFrameData.addComponent(STR_TIME_DATA_COMPONENT, factory.newTimeStampIsoGPS());
 		pointCloudFrameData.addComponent(STR_POINT_DATA_COMPONENT, pointArray);
 
 		encoding = new TextEncodingImpl();
@@ -142,34 +158,41 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 			@Override
 			public void onFrameReceived(FrameMode mode, ByteBuffer frame, int timestamp) {
 
-				double[] pointCloudData = new double[numPoints * NUM_DATA_ELEMENTS_PER_POINT];
+				if ((System.currentTimeMillis()
+						- lastPublishTimeMillis) > samplingTimeMillis) {
 
-				int count = 0;
+					double[] pointCloudData = new double[numPoints];
 
-				for (int height = 0; height < getParentModule().getConfiguration().frameHeight; height += decimationFactor) {
+					int currentPoint = 0;
 
-					for (int width = 0; width < getParentModule().getConfiguration().frameWidth; width += decimationFactor) {
+					for (int x = 0; x < getParentModule().getConfiguration().frameWidth; x += decimationFactor) {
 
-						int lo = frame.get(width + height * getParentModule().getConfiguration().frameWidth) & 255;
-						int hi = frame.get(width + height * getParentModule().getConfiguration().frameWidth) & 255;
+						for (int y = 0; y < getParentModule().getConfiguration().frameHeight; y += decimationFactor) {
 
-						pointCloudData[count] = (double) width;
-						pointCloudData[++count] = (double) height;
-						pointCloudData[++count] = (double) (((hi << 8 | lo) & 2047) / MM_PER_M);
+							int index = (x + y * getParentModule().getConfiguration().frameWidth);
+							int point = frame.get(index);
+							int lo = point & 255;
+							int hi = point & 255;
+
+							pointCloudData[currentPoint] = (double) (((hi << 8 | lo) & 2047) / MM_PER_M);
+							++currentPoint;
+						}
 					}
+
+					DataBlock dataBlock = pointCloudFrameData.createDataBlock();
+					dataBlock.setDoubleValue(IDX_TIME_DATA_COMPONENT, System.currentTimeMillis() / MS_PER_S);
+					((DataBlockMixed) dataBlock).getUnderlyingObject()[IDX_POINTS_COMPONENT]
+							.setUnderlyingObject(pointCloudData);
+
+					// update latest record and send event
+					latestRecord = dataBlock;
+					latestRecordTime = System.currentTimeMillis();
+					eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, KinectDepthOutput.this, dataBlock));
+
+					frame.position(0);
+
+					lastPublishTimeMillis = System.currentTimeMillis();
 				}
-
-				DataBlock dataBlock = pointCloudFrameData.createDataBlock();
-				dataBlock.setDoubleValue(IDX_TIME_DATA_COMPONENT, timestamp / MS_PER_S);
-				((DataBlockMixed) dataBlock).getUnderlyingObject()[IDX_POINTS_COMPONENT]
-						.setUnderlyingObject(pointCloudData);
-
-				// update latest record and send event
-				latestRecord = dataBlock;
-				latestRecordTime = timestamp;
-				eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, KinectDepthOutput.this, dataBlock));
-
-				frame.position(0);
 			}
 		});
 	}

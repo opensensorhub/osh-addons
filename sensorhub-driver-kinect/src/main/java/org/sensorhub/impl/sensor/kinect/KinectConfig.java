@@ -52,7 +52,7 @@ public class KinectConfig extends SensorConfig {
 //	public Resolution resolution = Resolution.HIGH;
 
 	@DisplayInfo(desc = "The format of the depth sensor on the KINECT device")
-	public final DepthFormat depthFormat = DepthFormat.D11BIT;
+	public DepthFormat depthFormat = DepthFormat.D11BIT;
 	
 	@DisplayInfo(desc = "Tilt angle of the Kinect")
 	public double tiltAngle = 0.0;
@@ -60,7 +60,10 @@ public class KinectConfig extends SensorConfig {
 	@DisplayInfo(desc = "LED status indicator of the Kinect")
 	public LedStatus ledStatus = LedStatus.GREEN;
 	
-	enum Mode {
+	@DisplayInfo(desc = "The time in seconds between frame updates for depth sensor data")
+	public int samplingTime = 5;
+	
+	public enum Mode {
 		
 		DEPTH,
 		VIDEO,
