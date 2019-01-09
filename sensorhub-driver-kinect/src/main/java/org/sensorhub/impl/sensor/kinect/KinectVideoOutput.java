@@ -30,7 +30,7 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataStream;
 
-class KinectVideoOutput extends AbstractSensorOutput<KinectSensor>{
+class KinectVideoOutput extends AbstractSensorOutput<KinectSensor> {
 
 	protected Device device = null;
 
@@ -73,14 +73,7 @@ class KinectVideoOutput extends AbstractSensorOutput<KinectSensor>{
 	
 	public void init() throws SensorException {
 
-		if (KinectConfig.Mode.IR == getParentModule().getConfiguration().videoMode) { 
-			
-			device.setVideoFormat(getParentModule().getConfiguration().irFormat);
-			
-		} else {
-
-			device.setVideoFormat(getParentModule().getConfiguration().rgbFormat);
-		}
+		device.setVideoFormat(getParentModule().getConfiguration().rgbFormat);
 
         try {
 
@@ -104,13 +97,13 @@ class KinectVideoOutput extends AbstractSensorOutput<KinectSensor>{
 				
 				DataBlock dataBlock = videoStream.createDataBlock();
 				
-				byte[] pixels = new byte[BYTES_PER_PIXEL * getParentModule().getConfiguration().frameWidth * getParentModule().getConfiguration().frameHeight];
+				byte[] channelData = new byte[BYTES_PER_PIXEL * getParentModule().getConfiguration().frameWidth * getParentModule().getConfiguration().frameHeight];
 				
-				for (short height = 0; height < getParentModule().getConfiguration().frameHeight; ++height) {
+				for (short y = 0; y < getParentModule().getConfiguration().frameHeight; ++y) {
+
+					for (short x = 0; x < getParentModule().getConfiguration().frameWidth; ++x) {
 					
-					for (short width = 0; width < getParentModule().getConfiguration().frameWidth; ++width) {
-					
-						int offset = BYTES_PER_PIXEL * (width + height * getParentModule().getConfiguration().frameWidth);
+						int offset = BYTES_PER_PIXEL * (x + y * getParentModule().getConfiguration().frameWidth);
 
 						// Kinect reports in BGRA
 						byte r = frame.get(offset + 2);
@@ -118,14 +111,14 @@ class KinectVideoOutput extends AbstractSensorOutput<KinectSensor>{
 						byte b = frame.get(offset + 0);
 						
 						// Transpose as RGB
-						pixels[offset + 0] = r;
-						pixels[offset + 1] = g;
-						pixels[offset + 2] = b;
+						channelData[offset + 0] = r;
+						channelData[offset + 1] = g;
+						channelData[offset + 2] = b;
 					}
 				}
-				
+								
 				DataBlockByte blockByte = new DataBlockByte();
-				blockByte.setUnderlyingObject(pixels);
+				blockByte.setUnderlyingObject(channelData);
 	            ((DataBlockList)dataBlock).getUnderlyingObject().add(blockByte);
 				
 		        latestRecord = dataBlock;

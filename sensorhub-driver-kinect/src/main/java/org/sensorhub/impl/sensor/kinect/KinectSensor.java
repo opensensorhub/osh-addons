@@ -62,10 +62,16 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 	private KinectDepthOutput depthInterface = null;
 
 	/**
-	 * Manages and produces the output from the video or IR sensor converting the
+	 * Manages and produces the output from the video sensor converting the
 	 * data to a usable format for publishing and consumption.
 	 */
 	private KinectVideoOutput cameraInterface = null;
+
+	/**
+	 * Manages and produces the output from the IR sensor converting the
+	 * data to a usable format for publishing and consumption.
+	 */
+	private KinectInfraredOutput irInterface = null;
 
 	/**
 	 * Flag to indicate the device is connected. Used in state management.
@@ -83,6 +89,8 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 	 * through USB to the computing platform.
 	 */
 	private LedStatus ledStatus = LedStatus.BLINK_GREEN;
+	
+	private double tiltAngle = 0.0;
 
 	/**
 	 * This static load block informs JNA to load the freenect lib from the JAR file
@@ -92,18 +100,9 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 	 */
 	static {
 
-//		try {
-
 		NativeLibrary instance = NativeLibrary.getInstance("freenect", ClassLoader.getSystemClassLoader());
 
-//			System.err.println("Loaded " + instance.getName() + " from " + instance.getFile().getCanonicalPath());
-
 		Native.register(org.openkinect.freenect.Freenect.class, instance);
-
-//		} catch (IOException e) {
-//			
-//			throw new AssertionError(e);
-//		}
 	}
 
 	@Override
@@ -112,18 +111,23 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 		super.init();
 
 		kinectContext = Freenect.createContext();
-//		kinectContext.setLogHandler(new LogHandler() {
-//			public void onMessage(Device dev, LogLevel level, String msg) {
-//			
-//				System.out.println(msg);
-//			}
-//		});
 
 		isConnected = true;
 
 		mode = getConfiguration().videoMode;
 
 		ledStatus = getConfiguration().ledStatus;
+		
+		tiltAngle = getConfiguration().tiltAngle;
+		
+		if (tiltAngle < -27.0) {
+			
+			tiltAngle = -27.0;
+			
+		} else if (tiltAngle > 27.0) {
+			
+			tiltAngle = 27.0;
+		}
 
 		if (0 == kinectContext.numDevices()) {
 
@@ -145,20 +149,21 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 				addOutput(depthInterface, false);
 
-			} else {
+			} else if (Mode.VIDEO == mode) {
 
-				if (Mode.IR == mode) {
-
-					cameraInterface = new KinectVideoOutput(this, kinectDevice);
-
-				} else {
-
-					cameraInterface = new KinectInfraredOutput(this, kinectDevice);
-				}
+				cameraInterface = new KinectVideoOutput(this, kinectDevice);
 
 				cameraInterface.init();
 
 				addOutput(cameraInterface, false);
+
+			} else {
+
+				irInterface = new KinectInfraredOutput(this, kinectDevice);
+
+				irInterface.init();
+
+				addOutput(irInterface, false);
 			}
 		}
 	}
@@ -187,14 +192,23 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 		// Set Led to configured setting
 		kinectDevice.setLed(ledStatus);
+		
+		kinectDevice.setTiltAngle(tiltAngle);
 
-		if ((null != depthInterface) && (Mode.DEPTH == mode)) {
+		if ((Mode.DEPTH == mode) && (null != depthInterface)) {
 
 			depthInterface.start();
 
-		} else if (null != cameraInterface) {
+		} else if ((Mode.VIDEO == mode) && (null != cameraInterface)) {
 
 			cameraInterface.start();
+			
+		} else {
+			
+			if (null != irInterface) {
+				
+				irInterface.start();
+			}
 		}
 	}
 
@@ -202,6 +216,11 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 	public void stop() throws SensorHubException {
 
 		if (isConnected) {
+
+			if (null != irInterface) {
+
+				irInterface.stop();
+			}
 			
 			if (null != cameraInterface) {
 

@@ -70,7 +70,7 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 	private int decimationFactor = 0;
 
 	private long lastPublishTimeMillis = System.currentTimeMillis();
-	
+
 	private long samplingTimeMillis = 1000;
 
 	public KinectDepthOutput(KinectSensor parentSensor, Device kinectDevice) {
@@ -78,8 +78,8 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 		super(parentSensor);
 
 		device = kinectDevice;
-		
-		samplingTimeMillis = (long)(getParentModule().getConfiguration().samplingTime * MS_PER_S);
+
+		samplingTimeMillis = (long) (getParentModule().getConfiguration().samplingTime * MS_PER_S);
 
 		decimationFactor = getParentModule().getConfiguration().pointCloudDecimationFactor;
 
@@ -158,23 +158,22 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 			@Override
 			public void onFrameReceived(FrameMode mode, ByteBuffer frame, int timestamp) {
 
-				if ((System.currentTimeMillis()
-						- lastPublishTimeMillis) > samplingTimeMillis) {
+				if ((System.currentTimeMillis() - lastPublishTimeMillis) > samplingTimeMillis) {
 
 					double[] pointCloudData = new double[numPoints];
 
 					int currentPoint = 0;
 
-					for (int x = 0; x < getParentModule().getConfiguration().frameWidth; x += decimationFactor) {
-
-						for (int y = 0; y < getParentModule().getConfiguration().frameHeight; y += decimationFactor) {
+					for (int y = 0; y < getParentModule().getConfiguration().frameHeight; y += decimationFactor) {
+	
+						for (int x = 0; x < getParentModule().getConfiguration().frameWidth; x += decimationFactor) {
 
 							int index = (x + y * getParentModule().getConfiguration().frameWidth);
-							int point = frame.get(index);
-							int lo = point & 255;
-							int hi = point & 255;
 
-							pointCloudData[currentPoint] = (double) (((hi << 8 | lo) & 2047) / MM_PER_M);
+							int depthValue = frame.getShort(index);
+
+							pointCloudData[currentPoint] = rawDepthToMeters(depthValue);
+
 							++currentPoint;
 						}
 					}
@@ -195,5 +194,50 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 				}
 			}
 		});
+	}
+
+	/**
+	 * Converts raw depth data to meters.
+	 * 
+	 * http://graphics.stanford.edu/~mdfisher/Kinect.html
+	 */
+	private double rawDepthToMeters(int depthValue) {
+
+		double result = 0.0;
+
+		if (depthValue < 2047) {
+
+			result = (double) (1.0 / (depthValue * -0.0030711016 + 3.3309495161));
+		}
+
+		return result;
+	}
+
+	/**
+	 * Converts raw depth data to world vector with reference as the sensor face.
+	 * 
+	 * http://graphics.stanford.edu/~mdfisher/Kinect.html
+	 */
+	private double[] depthToWorld(int x, int y, int depthValue) {
+
+		final double fx_d = 1.0 / 5.9421434211923247e+02;
+
+		final double fy_d = 1.0 / 5.9104053696870778e+02;
+
+		final double cx_d = 3.3930780975300314e+02;
+
+		final double cy_d = 2.4273913761751615e+02;
+
+		double[] result = new double[3];
+
+		final double depth = rawDepthToMeters(depthValue);
+
+		result[0] = ((x - cx_d) * depth * fx_d);
+
+		result[1] = ((y - cy_d) * depth * fy_d);
+
+		result[2] = depth;
+
+		return result;
 	}
 }
