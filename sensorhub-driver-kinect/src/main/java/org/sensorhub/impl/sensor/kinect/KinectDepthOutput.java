@@ -36,7 +36,6 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 	private static final int NUM_DATA_COMPONENTS = 2;
 	private static final int IDX_TIME_DATA_COMPONENT = 0;
 	private static final int IDX_POINTS_COMPONENT = 1;
-	private static final double MM_PER_M = 1000.0;
 	private static final double MS_PER_S = 1000.0;
 
 	private static final String STR_POINT_UNITS_OF_MEASURE = new String("m");
@@ -170,7 +169,7 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 
 							int index = (x + y * getParentModule().getConfiguration().frameWidth);
 
-							int depthValue = frame.getShort(index);
+							int depthValue = frame.get(index);
 
 							pointCloudData[currentPoint] = rawDepthToMeters(depthValue);
 

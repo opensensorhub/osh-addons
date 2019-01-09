@@ -44,8 +44,6 @@ public class KinectDisplayFrame extends JFrame {
 
 		if (KinectConfig.Mode.DEPTH == mode) {
 
-			System.out.println("drawFrame ====> DEPTH");
-
 			img = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
 
 	        DataBlock frameBlock = ((DataBlockMixed)data).getUnderlyingObject()[1];
@@ -66,8 +64,6 @@ public class KinectDisplayFrame extends JFrame {
 			byte[] destArray = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
 
 			System.arraycopy(depthData, 0, destArray, 0, frameData.length);
-
-			System.out.println(frameData.length + " " + depthData.length + " " + destArray.length);
 			
 			getContentPane().getGraphics().drawImage(img, 0, 0, width, height, null);
 			
