@@ -10,7 +10,6 @@ for the specific language governing rights and limitations under the License.
 Copyright (C) 2019 Botts Innovative Research, Inc. All Rights Reserved. 
 
 ******************************* END LICENSE BLOCK ***************************/
-
 package org.sensorhub.impl.sensor.kinect;
 
 import java.nio.ByteBuffer;
@@ -28,27 +27,29 @@ import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.Quantity;
+import net.opengis.swe.v20.Vector;
 
-class KinectDepthOutput extends KinectOutputInterface {
+public class KinectDepthMappedOutput extends KinectDepthOutput {
 
 	private static final int NUM_DATA_COMPONENTS = 2;
 	private static final int IDX_TIME_DATA_COMPONENT = 0;
 	private static final int IDX_POINTS_COMPONENT = 1;
 	private static final double MS_PER_S = 1000.0;
+	private static final int IDX_X_COORD_COMPONENT = 0;
+	private static final int IDX_Y_COORD_COMPONENT = 1;
+	private static final int IDX_Z_COORD_COMPONENT = 2;
+	private static final int DIMENSIONS = 3;
 
-	private static final String STR_NAME = new String("Kinect Depth");
+	private static final String STR_NAME = new String("Kinect Depth - Camera Model Mapped");
 
 	private static final String STR_POINT_UNITS_OF_MEASURE = new String("m");
 
 	private static final String STR_POINT_DEFINITION = new String(SWEHelper.getPropertyUri("Distance"));
 
 	private static final String STR_POINT_DESCRIPTION = new String(
-			"A measure of distance from the sensor, the raw point cloud data retrieved from Kinect depth sensor.");
+			"A measure of distance from the sensor, the raw point cloud data retrieved from Kinect depth sensor in XYZ coordinates.");
 
 	private static final String STR_POINT_NAME = new String("Point");
-
-	private static final String STR_POINT_LABEL = new String("Distance");
 
 	private static final String STR_MODEL_NAME = new String("Point Cloud Model");
 
@@ -71,10 +72,10 @@ class KinectDepthOutput extends KinectOutputInterface {
 
 	private long samplingTimeMillis = 1000;
 
-	public KinectDepthOutput(KinectSensor parentSensor, Device kinectDevice) {
+	public KinectDepthMappedOutput(KinectSensor parentSensor, Device kinectDevice) {
 
 		super(parentSensor, kinectDevice);
-		
+
 		name = STR_NAME;
 
 		samplingTimeMillis = (long) (getParentModule().getConfiguration().samplingTime * MS_PER_S);
@@ -122,11 +123,11 @@ class KinectDepthOutput extends KinectOutputInterface {
 		pointCloudFrameData.setDefinition(STR_MODEL_DEFINITION);
 		pointCloudFrameData.setName(STR_MODEL_NAME);
 
-		Quantity point = factory.newQuantity(STR_POINT_DEFINITION, STR_POINT_LABEL, STR_POINT_DESCRIPTION,
+		Vector vector = factory.newLocationVectorXYZ(STR_POINT_DEFINITION, STR_POINT_DESCRIPTION,
 				STR_POINT_UNITS_OF_MEASURE);
 
 		DataArray pointArray = factory.newDataArray(numPoints);
-		pointArray.setElementType(STR_POINT_NAME, point);
+		pointArray.setElementType(STR_POINT_NAME, vector);
 
 		pointCloudFrameData.addComponent(STR_TIME_DATA_COMPONENT, factory.newTimeStampIsoGPS());
 		pointCloudFrameData.addComponent(STR_POINT_DATA_COMPONENT, pointArray);
@@ -144,7 +145,7 @@ class KinectDepthOutput extends KinectOutputInterface {
 
 				if ((System.currentTimeMillis() - lastPublishTimeMillis) > samplingTimeMillis) {
 
-					double[] pointCloudData = new double[numPoints];
+					double[] pointCloudData = new double[numPoints * DIMENSIONS];
 
 					int currentPoint = 0;
 
@@ -155,8 +156,12 @@ class KinectDepthOutput extends KinectOutputInterface {
 							int index = (x + y * getParentModule().getConfiguration().frameWidth);
 
 							int depthValue = frame.get(index);
+							
+							double[] coordinates = depthToWorld(x, y, depthValue);
 
-							pointCloudData[currentPoint] = rawDepthToMeters(depthValue);
+							pointCloudData[currentPoint + IDX_X_COORD_COMPONENT] = coordinates[IDX_X_COORD_COMPONENT];
+							pointCloudData[currentPoint + IDX_Y_COORD_COMPONENT] = coordinates[IDX_Y_COORD_COMPONENT];
+							pointCloudData[currentPoint + IDX_Z_COORD_COMPONENT] = coordinates[IDX_Z_COORD_COMPONENT];
 
 							++currentPoint;
 						}
@@ -170,7 +175,7 @@ class KinectDepthOutput extends KinectOutputInterface {
 					// update latest record and send event
 					latestRecord = dataBlock;
 					latestRecordTime = System.currentTimeMillis();
-					eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, KinectDepthOutput.this, dataBlock));
+					eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, KinectDepthMappedOutput.this, dataBlock));
 
 					frame.position(0);
 
@@ -181,21 +186,30 @@ class KinectDepthOutput extends KinectOutputInterface {
 	}
 
 	/**
-	 * Converts raw depth data to meters.
+	 * Converts raw depth data to world vector with reference as the sensor face.
 	 * 
 	 * http://graphics.stanford.edu/~mdfisher/Kinect.html
 	 */
-	protected double rawDepthToMeters(int depthValue) {
+	private double[] depthToWorld(int x, int y, int depthValue) {
 
-		double result = 0.0;
+		final double fx_d = 1.0 / 5.9421434211923247e+02;
 
-		if (depthValue < 2047) {
+		final double fy_d = 1.0 / 5.9104053696870778e+02;
 
-			result = (double) (1.0 / (depthValue * -0.0030711016 + 3.3309495161));
-		}
+		final double cx_d = 3.3930780975300314e+02;
+
+		final double cy_d = 2.4273913761751615e+02;
+
+		double[] result = new double[3];
+
+		final double depth = rawDepthToMeters(depthValue);
+
+		result[IDX_X_COORD_COMPONENT] = ((x - cx_d) * depth * fx_d);
+
+		result[IDX_Y_COORD_COMPONENT] = ((y - cy_d) * depth * fy_d);
+
+		result[IDX_Z_COORD_COMPONENT] = depth;
 
 		return result;
 	}
-
-
 }

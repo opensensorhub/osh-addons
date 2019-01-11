@@ -9,6 +9,10 @@ import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.kinect.KinectConfig;
 import org.sensorhub.impl.sensor.kinect.KinectConfig.Mode;
+import org.vast.data.DataBlockMixed;
+
+import net.opengis.swe.v20.DataBlock;
+
 import org.sensorhub.impl.sensor.kinect.KinectSensor;
 
 public class TestKinectDriver implements IEventListener {
@@ -22,6 +26,8 @@ public class TestKinectDriver implements IEventListener {
 	private int frameCount;
 
 	private KinectDisplayFrame displayFrame;
+
+	private Object syncObject = new Object();
 
 	@Before
 	public void init() throws Exception {
@@ -50,7 +56,7 @@ public class TestKinectDriver implements IEventListener {
 
 		config.videoMode = Mode.DEPTH;
 		config.samplingTime = 0;
-		config.pointCloudScaleDownFactor = 10;
+		config.pointCloudScaleDownFactor = 1;
 
 		driver.setConfiguration(config);
 		driver.requestInit(false);
@@ -66,15 +72,70 @@ public class TestKinectDriver implements IEventListener {
 		di.registerListener(this);
 
 		// start capture and wait until we receive the first frame
-		synchronized (this) {
+		synchronized (syncObject) {
 
 			while (frameCount < MAX_FRAMES) {
 
-				this.wait();
+				syncObject.wait();
 			}
 		}
 
 		di.unregisterListener(this);
+	}
+
+	@Test
+	public void testDepthCameraMapped() throws Exception {
+
+		config.videoMode = Mode.DEPTH;
+		config.samplingTime = 0;
+		config.pointCloudScaleDownFactor = 10;
+		config.useCameraModel = true;
+
+		driver.setConfiguration(config);
+		driver.requestInit(false);
+		driver.requestStart();
+
+		// register listener on data interface
+		ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+
+		assertTrue("No video output", di != null);
+
+		IEventListener listener = new IEventListener() {
+
+			@Override
+			public void handleEvent(Event<?> e) {
+
+				assertTrue(e instanceof SensorDataEvent);
+				SensorDataEvent newDataEvent = (SensorDataEvent) e;
+
+				DataBlock frameBlock = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[1];
+
+				double[] frameData = (double[]) frameBlock.getUnderlyingObject();
+
+				assertTrue(frameData.length == (3 * (config.frameWidth / config.pointCloudScaleDownFactor)
+						* ((config.frameHeight / config.pointCloudScaleDownFactor))));
+
+				++frameCount;
+
+				synchronized (syncObject) {
+
+					syncObject.notify();
+				}
+			}
+		};
+
+		di.registerListener(listener);
+
+		// start capture and wait until we receive the first frame
+		synchronized (syncObject) {
+
+			while (frameCount < MAX_FRAMES) {
+
+				syncObject.wait();
+			}
+		}
+
+		di.unregisterListener(listener);
 	}
 
 	@Test
@@ -96,11 +157,11 @@ public class TestKinectDriver implements IEventListener {
 		di.registerListener(this);
 
 		// start capture and wait until we receive the first frame
-		synchronized (this) {
-			
+		synchronized (syncObject) {
+
 			while (frameCount < MAX_FRAMES) {
 
-				this.wait();
+				syncObject.wait();
 			}
 		}
 
@@ -126,17 +187,17 @@ public class TestKinectDriver implements IEventListener {
 		di.registerListener(this);
 
 		// start capture and wait until we receive the first frame
-		synchronized (this) {
-			
+		synchronized (syncObject) {
+
 			while (frameCount < MAX_FRAMES) {
 
-				this.wait();
+				syncObject.wait();
 			}
 		}
 
 		di.unregisterListener(this);
 	}
-	
+
 	@Test
 	public void testRgbMjpeg() throws Exception {
 
@@ -157,11 +218,11 @@ public class TestKinectDriver implements IEventListener {
 		di.registerListener(this);
 
 		// start capture and wait until we receive the first frame
-		synchronized (this) {
-			
+		synchronized (syncObject) {
+
 			while (frameCount < MAX_FRAMES) {
 
-				this.wait();
+				syncObject.wait();
 			}
 		}
 
@@ -176,11 +237,11 @@ public class TestKinectDriver implements IEventListener {
 
 		displayFrame.drawFrame(newDataEvent.getRecords()[0]);
 
-		frameCount++;
+		++frameCount;
 
-		synchronized (this) {
+		synchronized (syncObject) {
 
-			this.notify();
+			syncObject.notify();
 		}
 	}
 }

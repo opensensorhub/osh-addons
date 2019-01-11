@@ -137,13 +137,21 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 			if (Mode.DEPTH == mode) {
 
-				outputInterface = new KinectDepthOutput(this, kinectDevice);
+				if (getConfiguration().useCameraModel) {
+
+					outputInterface = new KinectDepthMappedOutput(this, kinectDevice);
+					
+				} else {
+					
+					outputInterface = new KinectDepthOutput(this, kinectDevice);
+				}
 
 			} else if (Mode.VIDEO == mode) {
 
 				if (getConfiguration().jpegVideoOutput) {
 
 					outputInterface = new KinectVideoOutputMJPEG(this, kinectDevice);
+					
 				} else {
 
 					outputInterface = new KinectVideoOutput(this, kinectDevice);
