@@ -43,7 +43,13 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 	/**
 	 * Error string for condition where no Kinect devices found to connect to.
 	 */
-	private static final String ERR_STR_NO_KINECT_DEVICES_FOUND = ": No Kinect devices found";
+	private static final String ERR_STR_NO_KINECT_DEVICES_FOUND = new String(": No Kinect devices found");
+
+	/**
+	 * 
+	 */
+	private static final String STR_SENSOR_DESCRIPTION = new String(
+			"Kinect sensor providing IR, RGB, and Point Cloud data from device camera and depth sensor");
 
 	/**
 	 * The context by which the driver establishes a connection with the device.
@@ -56,22 +62,10 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 	private static Device kinectDevice = null;
 
 	/**
-	 * Manages and produces the output from the depth sensor converting the data to
-	 * a usable format for publishing and consumption.
+	 * Manages and produces the output from the sensor converting the data to a
+	 * usable format for publishing and consumption.
 	 */
-	private KinectDepthOutput depthInterface = null;
-
-	/**
-	 * Manages and produces the output from the video sensor converting the
-	 * data to a usable format for publishing and consumption.
-	 */
-	private KinectVideoOutput cameraInterface = null;
-
-	/**
-	 * Manages and produces the output from the IR sensor converting the
-	 * data to a usable format for publishing and consumption.
-	 */
-	private KinectInfraredOutput irInterface = null;
+	KinectOutputInterface outputInterface = null;
 
 	/**
 	 * Flag to indicate the device is connected. Used in state management.
@@ -89,7 +83,7 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 	 * through USB to the computing platform.
 	 */
 	private LedStatus ledStatus = LedStatus.BLINK_GREEN;
-	
+
 	private double tiltAngle = 0.0;
 
 	/**
@@ -117,15 +111,15 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 		mode = getConfiguration().videoMode;
 
 		ledStatus = getConfiguration().ledStatus;
-		
+
 		tiltAngle = getConfiguration().tiltAngle;
-		
+
 		if (tiltAngle < -27.0) {
-			
+
 			tiltAngle = -27.0;
-			
+
 		} else if (tiltAngle > 27.0) {
-			
+
 			tiltAngle = 27.0;
 		}
 
@@ -143,28 +137,26 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 			if (Mode.DEPTH == mode) {
 
-				depthInterface = new KinectDepthOutput(this, kinectDevice);
-
-				depthInterface.init();
-
-				addOutput(depthInterface, false);
+				outputInterface = new KinectDepthOutput(this, kinectDevice);
 
 			} else if (Mode.VIDEO == mode) {
 
-				cameraInterface = new KinectVideoOutput(this, kinectDevice);
+				if (getConfiguration().jpegVideoOutput) {
 
-				cameraInterface.init();
+					outputInterface = new KinectVideoOutputMJPEG(this, kinectDevice);
+				} else {
 
-				addOutput(cameraInterface, false);
+					outputInterface = new KinectVideoOutput(this, kinectDevice);
+				}
 
 			} else {
 
-				irInterface = new KinectInfraredOutput(this, kinectDevice);
-
-				irInterface.init();
-
-				addOutput(irInterface, false);
+				outputInterface = new KinectInfraredOutput(this, kinectDevice);
 			}
+
+			outputInterface.init();
+
+			addOutput(outputInterface, false);
 		}
 	}
 
@@ -177,8 +169,7 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 			if (!sensorDescription.isSetDescription()) {
 
-				sensorDescription.setDescription(
-						"Kinect sensor providing IR, RGB, and Point Cloud data from device camera and depth sensor");
+				sensorDescription.setDescription(STR_SENSOR_DESCRIPTION);
 			}
 
 			SMLHelper helper = new SMLHelper(sensorDescription);
@@ -192,23 +183,12 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 		// Set Led to configured setting
 		kinectDevice.setLed(ledStatus);
-		
+
 		kinectDevice.setTiltAngle(tiltAngle);
 
-		if ((Mode.DEPTH == mode) && (null != depthInterface)) {
+		if (null != outputInterface) {
 
-			depthInterface.start();
-
-		} else if ((Mode.VIDEO == mode) && (null != cameraInterface)) {
-
-			cameraInterface.start();
-			
-		} else {
-			
-			if (null != irInterface) {
-				
-				irInterface.start();
-			}
+			outputInterface.start();
 		}
 	}
 
@@ -217,19 +197,9 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 		if (isConnected) {
 
-			if (null != irInterface) {
+			if (null != outputInterface) {
 
-				irInterface.stop();
-			}
-			
-			if (null != cameraInterface) {
-
-				cameraInterface.stop();
-			}
-
-			if (null != depthInterface) {
-
-				depthInterface.stop();
+				outputInterface.stop();
 			}
 
 			// Turn off LED

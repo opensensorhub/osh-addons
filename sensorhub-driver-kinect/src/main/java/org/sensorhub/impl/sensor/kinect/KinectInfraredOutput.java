@@ -20,7 +20,6 @@ import org.openkinect.freenect.FrameMode;
 import org.openkinect.freenect.VideoHandler;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.vast.data.DataBlockByte;
 import org.vast.data.DataBlockList;
@@ -30,19 +29,19 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataStream;
 
-class KinectInfraredOutput extends AbstractSensorOutput<KinectSensor> {
+class KinectInfraredOutput extends KinectOutputInterface {
 
-	protected Device device = null;
+	private static final String ERR_STR = new String("Error while initializing IR output");
+
+	private static final String STR_NAME = new String("Kinect IR Camera");
 
 	protected DataStream irStream;
 
 	public KinectInfraredOutput(KinectSensor parentSensor, Device kinectDevice) {
 
-		super(parentSensor);
+		super(parentSensor, kinectDevice);
 
-		device = kinectDevice;
-
-		name = "Kinect IR Camera";
+		name = STR_NAME;
 	}
 
 	@Override
@@ -58,17 +57,6 @@ class KinectInfraredOutput extends AbstractSensorOutput<KinectSensor> {
 	}
 
 	@Override
-	public double getAverageSamplingPeriod() {
-
-		return device.getVideoMode().framerate;
-	}
-
-	@Override
-	protected void stop() {
-
-		device.stopVideo();
-	}
-
 	public void init() throws SensorException {
 
 		device.setVideoFormat(getParentModule().getConfiguration().irFormat);
@@ -82,10 +70,11 @@ class KinectInfraredOutput extends AbstractSensorOutput<KinectSensor> {
 
 		} catch (Exception e) {
 
-			throw new SensorException("Error while initializing ir output", e);
+			throw new SensorException(ERR_STR, e);
 		}
 	}
 
+	@Override
 	public void start() {
 
 		device.startVideo(new VideoHandler() {

@@ -31,7 +31,7 @@ public class KinectConfig extends SensorConfig {
 	public String serialNumber = "075440104338";
 	
 	@DisplayInfo(desc = "Reduces the number of points in the cloud by this factor")
-	public int pointCloudDecimationFactor = 10;
+	public int pointCloudScaleDownFactor = 10;
 		
 	@DisplayInfo(desc = "Mode of operation of the Kinect")
 	public Mode videoMode = Mode.DEPTH;
@@ -47,6 +47,12 @@ public class KinectConfig extends SensorConfig {
 
 	@DisplayInfo(desc = "The video format of the camera on the KINECT device")
 	public VideoFormat rgbFormat = VideoFormat.RGB;
+
+	@DisplayInfo(desc = "Indicate that the video output is encoded as JPEG frames instead of RGB frames")
+	public boolean jpegVideoOutput = false;
+
+	@DisplayInfo(desc = "Indicate that the IR output is encoded as JPEG frames")
+	public boolean jpegInfraredOutput = false;
 
 //	@DisplayInfo(desc = "The video resolution of the camera on the KINECT device")
 //	public Resolution resolution = Resolution.HIGH;

@@ -19,7 +19,6 @@ import org.openkinect.freenect.DepthHandler;
 import org.openkinect.freenect.Device;
 import org.openkinect.freenect.FrameMode;
 import org.sensorhub.api.sensor.SensorDataEvent;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.DataBlockMixed;
 import org.vast.data.TextEncodingImpl;
 import org.vast.swe.SWEHelper;
@@ -31,12 +30,14 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.Quantity;
 
-class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
+class KinectDepthOutput extends KinectOutputInterface {
 
 	private static final int NUM_DATA_COMPONENTS = 2;
 	private static final int IDX_TIME_DATA_COMPONENT = 0;
 	private static final int IDX_POINTS_COMPONENT = 1;
 	private static final double MS_PER_S = 1000.0;
+
+	private static final String STR_NAME = new String("Kinect Depth");
 
 	private static final String STR_POINT_UNITS_OF_MEASURE = new String("m");
 
@@ -58,15 +59,13 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 	private static final String STR_TIME_DATA_COMPONENT = new String("time");
 	private static final String STR_POINT_DATA_COMPONENT = new String("points");
 
-	private Device device = null;
-
 	private DataEncoding encoding;
 
 	private DataComponent pointCloudFrameData;
 
 	private int numPoints = 0;
 
-	private int decimationFactor = 0;
+	private int scaleDownFactor = 0;
 
 	private long lastPublishTimeMillis = System.currentTimeMillis();
 
@@ -74,18 +73,18 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 
 	public KinectDepthOutput(KinectSensor parentSensor, Device kinectDevice) {
 
-		super(parentSensor);
-
-		device = kinectDevice;
+		super(parentSensor, kinectDevice);
+		
+		name = STR_NAME;
 
 		samplingTimeMillis = (long) (getParentModule().getConfiguration().samplingTime * MS_PER_S);
 
-		decimationFactor = getParentModule().getConfiguration().pointCloudDecimationFactor;
+		scaleDownFactor = getParentModule().getConfiguration().pointCloudScaleDownFactor;
 
-		if (decimationFactor > 0) {
+		if (scaleDownFactor > 0) {
 
-			numPoints = (getParentModule().getConfiguration().frameWidth / decimationFactor)
-					* (getParentModule().getConfiguration().frameHeight / decimationFactor);
+			numPoints = (getParentModule().getConfiguration().frameWidth / scaleDownFactor)
+					* (getParentModule().getConfiguration().frameHeight / scaleDownFactor);
 		}
 	}
 
@@ -102,32 +101,17 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 	}
 
 	@Override
-	public double getAverageSamplingPeriod() {
-
-		return device.getDepthMode().framerate;
-	}
-
-	@Override
-	protected void stop() {
-
-		device.stopDepth();
-	}
-
-	@Override
-	public String getName() {
-
-		return STR_MODEL_NAME;
-	}
-
 	public void init() {
 
-		decimationFactor = getParentModule().getConfiguration().pointCloudDecimationFactor;
+		scaleDownFactor = getParentModule().getConfiguration().pointCloudScaleDownFactor;
 
-		if (decimationFactor > 0) {
+		if (scaleDownFactor <= 0) {
 
-			numPoints = (getParentModule().getConfiguration().frameWidth / decimationFactor)
-					* (getParentModule().getConfiguration().frameHeight / decimationFactor);
+			scaleDownFactor = 1;
 		}
+
+		numPoints = (getParentModule().getConfiguration().frameWidth / scaleDownFactor)
+				* (getParentModule().getConfiguration().frameHeight / scaleDownFactor);
 
 		device.setDepthFormat(getParentModule().getConfiguration().depthFormat);
 
@@ -150,6 +134,7 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 		encoding = new TextEncodingImpl();
 	}
 
+	@Override
 	public void start() {
 
 		device.startDepth(new DepthHandler() {
@@ -163,9 +148,9 @@ class KinectDepthOutput extends AbstractSensorOutput<KinectSensor> {
 
 					int currentPoint = 0;
 
-					for (int y = 0; y < getParentModule().getConfiguration().frameHeight; y += decimationFactor) {
-	
-						for (int x = 0; x < getParentModule().getConfiguration().frameWidth; x += decimationFactor) {
+					for (int y = 0; y < getParentModule().getConfiguration().frameHeight; y += scaleDownFactor) {
+
+						for (int x = 0; x < getParentModule().getConfiguration().frameWidth; x += scaleDownFactor) {
 
 							int index = (x + y * getParentModule().getConfiguration().frameWidth);
 

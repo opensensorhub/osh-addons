@@ -17,7 +17,7 @@ public class TestKinectDriver implements IEventListener {
 
 	private KinectSensor driver = null;
 
-	private static final int MAX_FRAMES = 1000;
+	private static final int MAX_FRAMES = 100;
 
 	private int frameCount;
 
@@ -28,7 +28,7 @@ public class TestKinectDriver implements IEventListener {
 
 		config = new KinectConfig();
 
-		config.tiltAngle = 20.0;
+		config.tiltAngle = 0.0;
 
 		driver = new KinectSensor();
 
@@ -50,13 +50,13 @@ public class TestKinectDriver implements IEventListener {
 
 		config.videoMode = Mode.DEPTH;
 		config.samplingTime = 0;
-		config.pointCloudDecimationFactor = 1;
+		config.pointCloudScaleDownFactor = 10;
 
 		driver.setConfiguration(config);
 		driver.requestInit(false);
 		driver.requestStart();
 
-		displayFrame.initialize("Depth Test", config.frameWidth, config.frameHeight, Mode.DEPTH);
+		displayFrame.initialize("Depth Test", config, Mode.DEPTH, false);
 
 		// register listener on data interface
 		ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
@@ -82,7 +82,7 @@ public class TestKinectDriver implements IEventListener {
 
 		config.videoMode = Mode.VIDEO;
 
-		displayFrame.initialize("RGB Test", config.frameWidth, config.frameHeight, Mode.VIDEO);
+		displayFrame.initialize("RGB Test", config.frameWidth, config.frameHeight, Mode.VIDEO, false);
 
 		driver.setConfiguration(config);
 		driver.requestInit(false);
@@ -112,7 +112,38 @@ public class TestKinectDriver implements IEventListener {
 
 		config.videoMode = Mode.IR;
 
-		displayFrame.initialize("IR Test", config.frameWidth, config.frameHeight, Mode.IR);
+		displayFrame.initialize("IR Test", config.frameWidth, config.frameHeight, Mode.IR, false);
+
+		driver.setConfiguration(config);
+		driver.requestInit(false);
+		driver.requestStart();
+
+		// register listener on data interface
+		ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+
+		assertTrue("No video output", di != null);
+
+		di.registerListener(this);
+
+		// start capture and wait until we receive the first frame
+		synchronized (this) {
+			
+			while (frameCount < MAX_FRAMES) {
+
+				this.wait();
+			}
+		}
+
+		di.unregisterListener(this);
+	}
+	
+	@Test
+	public void testRgbMjpeg() throws Exception {
+
+		config.videoMode = Mode.VIDEO;
+		config.jpegVideoOutput = true;
+
+		displayFrame.initialize("MJPEG Test", config.frameWidth, config.frameHeight, Mode.VIDEO, true);
 
 		driver.setConfiguration(config);
 		driver.requestInit(false);

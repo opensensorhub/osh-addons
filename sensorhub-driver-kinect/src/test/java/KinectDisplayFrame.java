@@ -1,9 +1,17 @@
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Iterator;
 
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import javax.swing.JFrame;
 
 import org.sensorhub.impl.sensor.kinect.KinectConfig;
+import org.sensorhub.impl.sensor.kinect.KinectConfig.Mode;
 import org.vast.data.DataBlockList;
 import org.vast.data.DataBlockMixed;
 
@@ -25,15 +33,30 @@ public class KinectDisplayFrame extends JFrame {
 	private int width = 0;
 
 	private int height = 0;
+	
+	private boolean isJPEG = false;
+
+	private int scaleFactor = 1;
 
 	public KinectDisplayFrame() {
 	}
 
-	public void initialize(String title, int width, int height, KinectConfig.Mode mode) {
+	public void initialize(String title, KinectConfig config, Mode mode, boolean isJPEG) {
+
+		if (config.pointCloudScaleDownFactor > 0) {
+			
+			scaleFactor = config.pointCloudScaleDownFactor;
+		}
+		
+		initialize(title, config.frameWidth, config.frameHeight, mode, isJPEG);
+	}
+
+	public void initialize(String title, int width, int height, KinectConfig.Mode mode, boolean isJPEG) {
 
 		this.mode = mode;
 		this.width = width;
 		this.height = height;
+		this.isJPEG = isJPEG;
 
 		setSize(width, height);
 		setTitle(STR_TITLE + title);
@@ -44,7 +67,7 @@ public class KinectDisplayFrame extends JFrame {
 
 		if (KinectConfig.Mode.DEPTH == mode) {
 
-			img = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
+			img = new BufferedImage(width/scaleFactor, height/scaleFactor, BufferedImage.TYPE_BYTE_GRAY);
 
 	        DataBlock frameBlock = ((DataBlockMixed)data).getUnderlyingObject()[1];
 
@@ -83,17 +106,44 @@ public class KinectDisplayFrame extends JFrame {
 
 		} else {
 			
-			img = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+			if (isJPEG) {
+				
+				img = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
 
-			DataBlock frameBlock = ((DataBlockList) data).getUnderlyingObject().get(0);
+				DataBlock frameBlock = ((DataBlockList) data).getUnderlyingObject().get(0);
 
-			byte[] frameData = (byte[]) frameBlock.getUnderlyingObject();
+				byte[] frameData = (byte[]) frameBlock.getUnderlyingObject();
 
-			byte[] destArray = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+		        // uncompress JPEG data
+		        try
+		        {
+		            InputStream imageStream = new ByteArrayInputStream(frameData);                               
+		            ImageInputStream input = ImageIO.createImageInputStream(imageStream); 
+		            Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
+		            ImageReader reader = readers.next();
+		            reader.setInput(input);
+		            BufferedImage rgbImage = reader.read(0);
+		            getContentPane().getGraphics().drawImage(rgbImage, 0, 0, null);
+		            
+		        } catch (IOException e1) {
+		        	
+		            throw new RuntimeException(e1);
+		        }
+		        
+			} else {
 
-			System.arraycopy(frameData, 0, destArray, 0, frameData.length);
+				img = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
 
-			getContentPane().getGraphics().drawImage(img, 0, 0, width, height, null);
+				DataBlock frameBlock = ((DataBlockList) data).getUnderlyingObject().get(0);
+
+				byte[] frameData = (byte[]) frameBlock.getUnderlyingObject();
+
+				byte[] destArray = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+
+				System.arraycopy(frameData, 0, destArray, 0, frameData.length);
+
+				getContentPane().getGraphics().drawImage(img, 0, 0, width, height, null);
+			}
 		}
 	}
 }

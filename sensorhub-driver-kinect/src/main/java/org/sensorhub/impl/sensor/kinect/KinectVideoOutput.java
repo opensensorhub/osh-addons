@@ -20,7 +20,6 @@ import org.openkinect.freenect.FrameMode;
 import org.openkinect.freenect.VideoHandler;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.vast.data.DataBlockByte;
 import org.vast.data.DataBlockList;
@@ -30,21 +29,21 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataStream;
 
-class KinectVideoOutput extends AbstractSensorOutput<KinectSensor> {
-
-	protected Device device = null;
+class KinectVideoOutput extends KinectOutputInterface {
+	
+	private static final String ERR_STR = new String("Error while initializing RGB video output");
+	
+	private static final String STR_NAME = new String("Kinect Camera (RGB)");
+			
+	protected static final int BYTES_PER_PIXEL = 3;
 
 	protected DataStream videoStream;
-	
-	protected static final int BYTES_PER_PIXEL = 3;
 
 	public KinectVideoOutput(KinectSensor parentSensor, Device kinectDevice) {
 		
-		super(parentSensor);
+		super(parentSensor, kinectDevice);
 		
-		device = kinectDevice;
-		
-		name = "Kinect Camera";
+		name = STR_NAME;
 	}
 
 	@Override
@@ -58,19 +57,8 @@ class KinectVideoOutput extends AbstractSensorOutput<KinectSensor> {
 
 		return videoStream.getEncoding();
 	}
-
-	@Override
-	public double getAverageSamplingPeriod() {
-
-		return device.getVideoMode().framerate;
-	}
-
-	@Override
-	protected void stop() {
-
-		device.stopVideo();
-	}
 	
+	@Override
 	public void init() throws SensorException {
 
 		device.setVideoFormat(getParentModule().getConfiguration().rgbFormat);
@@ -84,10 +72,11 @@ class KinectVideoOutput extends AbstractSensorOutput<KinectSensor> {
                                     
         } catch (Exception e) {
         	
-            throw new SensorException("Error while initializing video output", e);
+            throw new SensorException(ERR_STR, e);
         }
 	}
 
+	@Override
 	public void start() {
 		
 		device.startVideo(new VideoHandler() {
@@ -98,25 +87,9 @@ class KinectVideoOutput extends AbstractSensorOutput<KinectSensor> {
 				DataBlock dataBlock = videoStream.createDataBlock();
 				
 				byte[] channelData = new byte[BYTES_PER_PIXEL * getParentModule().getConfiguration().frameWidth * getParentModule().getConfiguration().frameHeight];
+
+				getChannelData(frame, channelData);
 				
-				for (short y = 0; y < getParentModule().getConfiguration().frameHeight; ++y) {
-
-					for (short x = 0; x < getParentModule().getConfiguration().frameWidth; ++x) {
-					
-						int offset = BYTES_PER_PIXEL * (x + y * getParentModule().getConfiguration().frameWidth);
-
-						// Kinect reports in BGRA
-						byte r = frame.get(offset + 2);
-						byte g = frame.get(offset + 1);
-						byte b = frame.get(offset + 0);
-						
-						// Transpose as RGB
-						channelData[offset + 0] = r;
-						channelData[offset + 1] = g;
-						channelData[offset + 2] = b;
-					}
-				}
-								
 				DataBlockByte blockByte = new DataBlockByte();
 				blockByte.setUnderlyingObject(channelData);
 	            ((DataBlockList)dataBlock).getUnderlyingObject().add(blockByte);
@@ -130,5 +103,26 @@ class KinectVideoOutput extends AbstractSensorOutput<KinectSensor> {
 				frame.position(0);
 			}
 		});		
+	}
+	
+	protected void getChannelData(ByteBuffer frame, byte[] channelData) {
+		
+		for (short y = 0; y < getParentModule().getConfiguration().frameHeight; ++y) {
+
+			for (short x = 0; x < getParentModule().getConfiguration().frameWidth; ++x) {
+			
+				int offset = BYTES_PER_PIXEL * (x + y * getParentModule().getConfiguration().frameWidth);
+
+				// Kinect reports in BGRA
+				byte r = frame.get(offset + 2);
+				byte g = frame.get(offset + 1);
+				byte b = frame.get(offset + 0);
+				
+				// Transpose as RGB
+				channelData[offset + 0] = r;
+				channelData[offset + 1] = g;
+				channelData[offset + 2] = b;
+			}
+		}
 	}
 }
