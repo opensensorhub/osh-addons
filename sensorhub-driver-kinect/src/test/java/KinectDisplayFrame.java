@@ -36,16 +36,16 @@ public class KinectDisplayFrame extends JFrame {
 	
 	private boolean isJPEG = false;
 
-	private int scaleFactor = 1;
+	private double scaleFactor = 1.0;
 
 	public KinectDisplayFrame() {
 	}
 
 	public void initialize(String title, KinectConfig config, Mode mode, boolean isJPEG) {
 
-		if (config.pointCloudScaleDownFactor > 0) {
+		if ((config.pointCloudScaleFactor > 0) && (config.pointCloudScaleFactor <= 1.0)){
 			
-			scaleFactor = config.pointCloudScaleDownFactor;
+			scaleFactor = config.pointCloudScaleFactor;
 		}
 		
 		initialize(title, config.frameWidth, config.frameHeight, mode, isJPEG);
@@ -67,7 +67,7 @@ public class KinectDisplayFrame extends JFrame {
 
 		if (KinectConfig.Mode.DEPTH == mode) {
 
-			img = new BufferedImage(width/scaleFactor, height/scaleFactor, BufferedImage.TYPE_BYTE_GRAY);
+			img = new BufferedImage((int)(width * scaleFactor), (int)(height * scaleFactor), BufferedImage.TYPE_BYTE_GRAY);
 
 	        DataBlock frameBlock = ((DataBlockMixed)data).getUnderlyingObject()[1];
 

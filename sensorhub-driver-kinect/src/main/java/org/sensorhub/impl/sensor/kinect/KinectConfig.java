@@ -30,8 +30,9 @@ public class KinectConfig extends SensorConfig {
 	@DisplayInfo(desc = "Serial number of KINECT device")
 	public String serialNumber = "075440104338";
 	
-	@DisplayInfo(desc = "Reduces the number of points in the cloud by this factor")
-	public int pointCloudScaleDownFactor = 10;
+	@DisplayInfo(desc = "Scales the resolution of the point cloud frame.\nValid values are in the range of (0, 1.0] where "
+			+ "a value of 1.0 is indicative of full resolution, otherwise the number of points is calculated as:\n\nnumPoints = (width * scale) * (height * scale)")
+	public double pointCloudScaleFactor = 1;
 		
 	@DisplayInfo(desc = "Mode of operation of the Kinect")
 	public Mode videoMode = Mode.DEPTH;

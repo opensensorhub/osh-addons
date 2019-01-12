@@ -66,8 +66,6 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 
 	private int numPoints = 0;
 
-	private int scaleDownFactor = 0;
-
 	private long lastPublishTimeMillis = System.currentTimeMillis();
 
 	private long samplingTimeMillis = 1000;
@@ -80,13 +78,7 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 
 		samplingTimeMillis = (long) (getParentModule().getConfiguration().samplingTime * MS_PER_S);
 
-		scaleDownFactor = getParentModule().getConfiguration().pointCloudScaleDownFactor;
-
-		if (scaleDownFactor > 0) {
-
-			numPoints = (getParentModule().getConfiguration().frameWidth / scaleDownFactor)
-					* (getParentModule().getConfiguration().frameHeight / scaleDownFactor);
-		}
+		numPoints = computeNumPoints();
 	}
 
 	@Override
@@ -104,15 +96,7 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 	@Override
 	public void init() {
 
-		scaleDownFactor = getParentModule().getConfiguration().pointCloudScaleDownFactor;
-
-		if (scaleDownFactor <= 0) {
-
-			scaleDownFactor = 1;
-		}
-
-		numPoints = (getParentModule().getConfiguration().frameWidth / scaleDownFactor)
-				* (getParentModule().getConfiguration().frameHeight / scaleDownFactor);
+		numPoints = computeNumPoints();
 
 		device.setDepthFormat(getParentModule().getConfiguration().depthFormat);
 
@@ -149,14 +133,16 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 
 					int currentPoint = 0;
 
-					for (int y = 0; y < getParentModule().getConfiguration().frameHeight; y += scaleDownFactor) {
+					int skipStep = (int)(1/scaleFactor);
+					
+					for (int y = 0; y < getParentModule().getConfiguration().frameHeight; y += skipStep) {
 
-						for (int x = 0; x < getParentModule().getConfiguration().frameWidth; x += scaleDownFactor) {
+						for (int x = 0; x < getParentModule().getConfiguration().frameWidth; x += skipStep) {
 
 							int index = (x + y * getParentModule().getConfiguration().frameWidth);
 
 							int depthValue = frame.get(index);
-							
+
 							double[] coordinates = depthToWorld(x, y, depthValue);
 
 							pointCloudData[currentPoint + IDX_X_COORD_COMPONENT] = coordinates[IDX_X_COORD_COMPONENT];
@@ -175,7 +161,8 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 					// update latest record and send event
 					latestRecord = dataBlock;
 					latestRecordTime = System.currentTimeMillis();
-					eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, KinectDepthMappedOutput.this, dataBlock));
+					eventHandler.publishEvent(
+							new SensorDataEvent(latestRecordTime, KinectDepthMappedOutput.this, dataBlock));
 
 					frame.position(0);
 

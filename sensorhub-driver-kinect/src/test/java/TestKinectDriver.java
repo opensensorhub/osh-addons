@@ -56,7 +56,7 @@ public class TestKinectDriver implements IEventListener {
 
 		config.videoMode = Mode.DEPTH;
 		config.samplingTime = 0;
-		config.pointCloudScaleDownFactor = 1;
+		config.pointCloudScaleFactor = .1;
 
 		driver.setConfiguration(config);
 		driver.requestInit(false);
@@ -88,7 +88,7 @@ public class TestKinectDriver implements IEventListener {
 
 		config.videoMode = Mode.DEPTH;
 		config.samplingTime = 0;
-		config.pointCloudScaleDownFactor = 10;
+		config.pointCloudScaleFactor = .1;
 		config.useCameraModel = true;
 
 		driver.setConfiguration(config);
@@ -112,8 +112,8 @@ public class TestKinectDriver implements IEventListener {
 
 				double[] frameData = (double[]) frameBlock.getUnderlyingObject();
 
-				assertTrue(frameData.length == (3 * (config.frameWidth / config.pointCloudScaleDownFactor)
-						* ((config.frameHeight / config.pointCloudScaleDownFactor))));
+				assertTrue(frameData.length == (int)(3 * (config.frameWidth * config.pointCloudScaleFactor)
+						* ((config.frameHeight * config.pointCloudScaleFactor))));
 
 				++frameCount;
 

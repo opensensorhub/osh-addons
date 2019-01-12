@@ -65,11 +65,11 @@ class KinectDepthOutput extends KinectOutputInterface {
 
 	private int numPoints = 0;
 
-	private int scaleDownFactor = 0;
-
 	private long lastPublishTimeMillis = System.currentTimeMillis();
 
 	private long samplingTimeMillis = 1000;
+
+	protected double scaleFactor = 1;
 
 	public KinectDepthOutput(KinectSensor parentSensor, Device kinectDevice) {
 
@@ -79,13 +79,7 @@ class KinectDepthOutput extends KinectOutputInterface {
 
 		samplingTimeMillis = (long) (getParentModule().getConfiguration().samplingTime * MS_PER_S);
 
-		scaleDownFactor = getParentModule().getConfiguration().pointCloudScaleDownFactor;
-
-		if (scaleDownFactor > 0) {
-
-			numPoints = (getParentModule().getConfiguration().frameWidth / scaleDownFactor)
-					* (getParentModule().getConfiguration().frameHeight / scaleDownFactor);
-		}
+		numPoints = computeNumPoints();
 	}
 
 	@Override
@@ -103,15 +97,7 @@ class KinectDepthOutput extends KinectOutputInterface {
 	@Override
 	public void init() {
 
-		scaleDownFactor = getParentModule().getConfiguration().pointCloudScaleDownFactor;
-
-		if (scaleDownFactor <= 0) {
-
-			scaleDownFactor = 1;
-		}
-
-		numPoints = (getParentModule().getConfiguration().frameWidth / scaleDownFactor)
-				* (getParentModule().getConfiguration().frameHeight / scaleDownFactor);
+		numPoints = computeNumPoints();
 
 		device.setDepthFormat(getParentModule().getConfiguration().depthFormat);
 
@@ -147,10 +133,12 @@ class KinectDepthOutput extends KinectOutputInterface {
 					double[] pointCloudData = new double[numPoints];
 
 					int currentPoint = 0;
+					
+					int skipStep = (int)(1/scaleFactor);
 
-					for (int y = 0; y < getParentModule().getConfiguration().frameHeight; y += scaleDownFactor) {
+					for (int y = 0; y < getParentModule().getConfiguration().frameHeight; y += skipStep) {
 
-						for (int x = 0; x < getParentModule().getConfiguration().frameWidth; x += scaleDownFactor) {
+						for (int x = 0; x < getParentModule().getConfiguration().frameWidth; x += skipStep) {
 
 							int index = (x + y * getParentModule().getConfiguration().frameWidth);
 
@@ -197,5 +185,20 @@ class KinectDepthOutput extends KinectOutputInterface {
 		return result;
 	}
 
+	protected int computeNumPoints() {
+		
+		int numPoints = getParentModule().getConfiguration().frameWidth
+				* getParentModule().getConfiguration().frameHeight;
+		
+		scaleFactor = getParentModule().getConfiguration().pointCloudScaleFactor;
 
+		if ((scaleFactor > 0) && (scaleFactor <= 1.0)) {
+
+			numPoints = (int) ((getParentModule().getConfiguration().frameWidth * scaleFactor)
+					* (getParentModule().getConfiguration().frameHeight * scaleFactor));
+
+		}
+		
+		return numPoints;
+	}
 }
