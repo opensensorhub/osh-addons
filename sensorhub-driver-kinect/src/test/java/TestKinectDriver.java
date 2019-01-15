@@ -34,7 +34,7 @@ public class TestKinectDriver implements IEventListener {
 
 		config = new KinectConfig();
 
-		config.tiltAngle = 0.0;
+		config.tiltAngle = Math.random() * 27.0;
 
 		driver = new KinectSensor();
 
@@ -202,9 +202,40 @@ public class TestKinectDriver implements IEventListener {
 	public void testRgbMjpeg() throws Exception {
 
 		config.videoMode = Mode.VIDEO;
-		config.jpegVideoOutput = true;
+		config.jpegOutput = true;
 
 		displayFrame.initialize("MJPEG Test", config.frameWidth, config.frameHeight, Mode.VIDEO, true);
+
+		driver.setConfiguration(config);
+		driver.requestInit(false);
+		driver.requestStart();
+
+		// register listener on data interface
+		ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+
+		assertTrue("No video output", di != null);
+
+		di.registerListener(this);
+
+		// start capture and wait until we receive the first frame
+		synchronized (syncObject) {
+
+			while (frameCount < MAX_FRAMES) {
+
+				syncObject.wait();
+			}
+		}
+
+		di.unregisterListener(this);
+	}
+	
+	@Test
+	public void testIrMjpeg() throws Exception {
+
+		config.videoMode = Mode.IR;
+		config.jpegOutput = true;
+
+		displayFrame.initialize("IR MJPEG Test", config.frameWidth, config.frameHeight, Mode.IR, true);
 
 		driver.setConfiguration(config);
 		driver.requestInit(false);

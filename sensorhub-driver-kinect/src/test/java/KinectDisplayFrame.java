@@ -91,18 +91,45 @@ public class KinectDisplayFrame extends JFrame {
 			getContentPane().getGraphics().drawImage(img, 0, 0, width, height, null);
 			
 		} else if (KinectConfig.Mode.IR == mode) {
+			
+			if(isJPEG) {
 
-			img = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
+				img = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
 
-			DataBlock frameBlock = ((DataBlockList) data).getUnderlyingObject().get(0);
+				DataBlock frameBlock = ((DataBlockList) data).getUnderlyingObject().get(0);
 
-			byte[] frameData = (byte[]) frameBlock.getUnderlyingObject();
+				byte[] frameData = (byte[]) frameBlock.getUnderlyingObject();
 
-			byte[] destArray = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+		        // uncompress JPEG data
+		        try
+		        {
+		            InputStream imageStream = new ByteArrayInputStream(frameData);                               
+		            ImageInputStream input = ImageIO.createImageInputStream(imageStream); 
+		            Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
+		            ImageReader reader = readers.next();
+		            reader.setInput(input);
+		            BufferedImage image = reader.read(0);
+		            getContentPane().getGraphics().drawImage(image, 0, 0, null);
+		            
+		        } catch (IOException e1) {
+		        	
+		            throw new RuntimeException(e1);
+		        }
+		        
+			} else {
+				
+				img = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
 
-			System.arraycopy(frameData, 0, destArray, 0, frameData.length);
+				DataBlock frameBlock = ((DataBlockList) data).getUnderlyingObject().get(0);
 
-			getContentPane().getGraphics().drawImage(img, 0, 0, width, height, null);
+				byte[] frameData = (byte[]) frameBlock.getUnderlyingObject();
+
+				byte[] destArray = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+
+				System.arraycopy(frameData, 0, destArray, 0, frameData.length);
+
+				getContentPane().getGraphics().drawImage(img, 0, 0, width, height, null);
+			}
 
 		} else {
 			
@@ -122,8 +149,8 @@ public class KinectDisplayFrame extends JFrame {
 		            Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
 		            ImageReader reader = readers.next();
 		            reader.setInput(input);
-		            BufferedImage rgbImage = reader.read(0);
-		            getContentPane().getGraphics().drawImage(rgbImage, 0, 0, null);
+		            BufferedImage image = reader.read(0);
+		            getContentPane().getGraphics().drawImage(image, 0, 0, null);
 		            
 		        } catch (IOException e1) {
 		        	

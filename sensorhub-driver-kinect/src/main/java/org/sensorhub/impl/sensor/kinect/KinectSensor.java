@@ -148,7 +148,7 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 			} else if (Mode.VIDEO == mode) {
 
-				if (getConfiguration().jpegVideoOutput) {
+				if (getConfiguration().jpegOutput) {
 
 					outputInterface = new KinectVideoOutputMJPEG(this, kinectDevice);
 					
@@ -159,7 +159,14 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 			} else {
 
-				outputInterface = new KinectInfraredOutput(this, kinectDevice);
+				if (getConfiguration().jpegOutput) {
+					
+					outputInterface = new KinectInfraredOutputMJPEG(this, kinectDevice);
+					
+				} else {
+					
+					outputInterface = new KinectInfraredOutput(this, kinectDevice);
+				}
 			}
 
 			outputInterface.init();

@@ -41,7 +41,7 @@ class KinectDepthOutput extends KinectOutputInterface {
 
 	private static final String STR_POINT_UNITS_OF_MEASURE = new String("m");
 
-	private static final String STR_POINT_DEFINITION = new String(SWEHelper.getPropertyUri("Distance"));
+	private static final String STR_POINT_DEFINITION = SWEHelper.getPropertyUri("Distance");
 
 	private static final String STR_POINT_DESCRIPTION = new String(
 			"A measure of distance from the sensor, the raw point cloud data retrieved from Kinect depth sensor.");
@@ -52,7 +52,7 @@ class KinectDepthOutput extends KinectOutputInterface {
 
 	private static final String STR_MODEL_NAME = new String("Point Cloud Model");
 
-	private static final String STR_MODEL_DEFINITION = new String(SWEHelper.getPropertyUri("DepthPointCloud"));
+	private static final String STR_MODEL_DEFINITION = SWEHelper.getPropertyUri("DepthPointCloud");
 
 	private static final String STR_MODEL_DESCRIPTION = new String("Point Cloud Data read from Kinect Depth Sensor");
 

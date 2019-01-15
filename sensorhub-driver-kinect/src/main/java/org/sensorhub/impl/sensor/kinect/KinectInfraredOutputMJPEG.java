@@ -33,15 +33,15 @@ import org.vast.data.DataBlockList;
 
 import net.opengis.swe.v20.DataBlock;
 
-class KinectVideoOutputMJPEG extends KinectVideoOutput {
+class KinectInfraredOutputMJPEG extends KinectInfraredOutput {
 
-	private static final String STR_NAME = new String("Kinect Camera (MJPEG)");
+	private static final String STR_NAME = new String("Kinect IR Camera (MJPEG)");
 
 	private static final String STR_JPG_FORMAT_SPECIFIER = new String("jpg");
-	
-	private static final String ERR_STR = new String("Error while initializing MJPEG video output");
 
-	public KinectVideoOutputMJPEG(KinectSensor parentSensor, Device kinectDevice) {
+	private static final String ERR_STR = new String("Error while initializing IR output");
+
+	public KinectInfraredOutputMJPEG(KinectSensor parentSensor, Device kinectDevice) {
 
 		super(parentSensor, kinectDevice);
 
@@ -51,14 +51,15 @@ class KinectVideoOutputMJPEG extends KinectVideoOutput {
 	@Override
 	public void init() throws SensorException {
 
-		device.setVideoFormat(getParentModule().getConfiguration().rgbFormat);
+		device.setVideoFormat(getParentModule().getConfiguration().irFormat);
 
 		try {
 
-			VideoCamHelper videoCamHelper = new VideoCamHelper();
-
-			videoStream = videoCamHelper.newVideoOutputMJPEG(getName(), getParentModule().getConfiguration().frameWidth,
-					getParentModule().getConfiguration().frameHeight);
+			VideoCamHelper irHelper = new VideoCamHelper();
+			
+            irStream = irHelper.newVideoOutputMJPEG(STR_NAME,
+            		getParentModule().getConfiguration().frameWidth, 
+            		getParentModule().getConfiguration().frameHeight);
 
 		} catch (Exception e) {
 
@@ -74,10 +75,10 @@ class KinectVideoOutputMJPEG extends KinectVideoOutput {
 			@Override
 			public void onFrameReceived(FrameMode mode, ByteBuffer frame, int timestamp) {
 
-				DataBlock dataBlock = videoStream.createDataBlock();
+				DataBlock dataBlock = irStream.createDataBlock();
 
 				BufferedImage bufferedImage = new BufferedImage(getParentModule().getConfiguration().frameWidth,
-						getParentModule().getConfiguration().frameHeight, BufferedImage.TYPE_3BYTE_BGR);
+						getParentModule().getConfiguration().frameHeight, BufferedImage.TYPE_BYTE_GRAY);
 
 				byte[] channelData = ((DataBufferByte) bufferedImage.getRaster().getDataBuffer()).getData();
 				
@@ -106,7 +107,7 @@ class KinectVideoOutputMJPEG extends KinectVideoOutput {
 					latestRecordTime = System.currentTimeMillis();
 
 					eventHandler.publishEvent(
-							new SensorDataEvent(latestRecordTime, KinectVideoOutputMJPEG.this, dataBlock));
+							new SensorDataEvent(latestRecordTime, KinectInfraredOutputMJPEG.this, dataBlock));
 
 				} catch (IOException e) {
 
@@ -118,5 +119,18 @@ class KinectVideoOutputMJPEG extends KinectVideoOutput {
 				}
 			}
 		});
+	}
+	
+	protected void getChannelData(ByteBuffer frame, byte[] channelData) {
+		
+		for (short y = 0; y < getParentModule().getConfiguration().frameHeight; ++y) {
+
+			for (short x = 0; x < getParentModule().getConfiguration().frameWidth; ++x) {
+			
+				int offset = (x + y * getParentModule().getConfiguration().frameWidth);
+
+				channelData[offset] = frame.get(offset);
+			}
+		}
 	}
 }

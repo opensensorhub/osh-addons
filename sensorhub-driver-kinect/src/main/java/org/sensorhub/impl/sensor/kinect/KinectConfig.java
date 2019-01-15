@@ -49,8 +49,8 @@ public class KinectConfig extends SensorConfig {
 	@DisplayInfo(desc = "The video format of the camera on the KINECT device")
 	public VideoFormat rgbFormat = VideoFormat.RGB;
 
-	@DisplayInfo(desc = "Indicate that the video output is encoded as JPEG frames instead of RGB frames")
-	public boolean jpegVideoOutput = false;
+	@DisplayInfo(desc = "Indicate that the output is encoded as JPEG frames.")
+	public boolean jpegOutput = false;
 
 	@DisplayInfo(desc = "Indicate that the point cloud depth uses camera model calculations")
 	public boolean useCameraModel = false;

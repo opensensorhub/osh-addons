@@ -63,10 +63,11 @@ class KinectInfraredOutput extends KinectOutputInterface {
 
 		try {
 
-			VideoCamHelper videoCamHelper = new VideoCamHelper();
-
-            irStream = videoCamHelper.newVideoOutputRGB(getName(),
-            		getParentModule().getConfiguration().frameWidth, getParentModule().getConfiguration().frameHeight);
+			VideoCamHelper irHelper = new VideoCamHelper();
+			
+            irStream = irHelper.newGrayscaleOutput(getName(),
+            		getParentModule().getConfiguration().frameWidth, 
+            		getParentModule().getConfiguration().frameHeight);
 
 		} catch (Exception e) {
 
@@ -87,18 +88,12 @@ class KinectInfraredOutput extends KinectOutputInterface {
 				byte[] channelData = new byte[getParentModule().getConfiguration().frameWidth
 						* getParentModule().getConfiguration().frameHeight];
 
-				for (short y = 0; y < getParentModule().getConfiguration().frameHeight; ++y) {
-
-					for (short x = 0; x < getParentModule().getConfiguration().frameWidth; ++x) {
-
-						int offset = (x + y * getParentModule().getConfiguration().frameWidth);
-
-						channelData[offset] = frame.get(offset);
-					}
-				}
+				getChannelData(frame, channelData);
 
 				DataBlockByte blockByte = new DataBlockByte();
+				
 				blockByte.setUnderlyingObject(channelData);
+				
 				((DataBlockList)dataBlock).getUnderlyingObject().add(blockByte);
 
 				latestRecord = dataBlock;
@@ -110,5 +105,18 @@ class KinectInfraredOutput extends KinectOutputInterface {
 				frame.position(0);
 			}
 		});
+	}
+	
+	protected void getChannelData(ByteBuffer frame, byte[] channelData) {
+		
+		for (short y = 0; y < getParentModule().getConfiguration().frameHeight; ++y) {
+
+			for (short x = 0; x < getParentModule().getConfiguration().frameWidth; ++x) {
+			
+				int offset = (x + y * getParentModule().getConfiguration().frameWidth);
+
+				channelData[offset] = frame.get(offset);
+			}
+		}
 	}
 }

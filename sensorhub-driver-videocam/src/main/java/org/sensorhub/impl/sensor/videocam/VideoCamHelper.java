@@ -16,6 +16,11 @@ Developer are Copyright (C) 2016 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.videocam;
 
 import java.util.Collection;
+
+import org.vast.cdm.common.CDMException;
+import org.vast.swe.SWEConstants;
+import org.vast.swe.SWEHelper;
+
 import net.opengis.swe.v20.AllowedTokens;
 import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.BinaryBlock;
@@ -23,7 +28,6 @@ import net.opengis.swe.v20.BinaryComponent;
 import net.opengis.swe.v20.BinaryEncoding;
 import net.opengis.swe.v20.ByteEncoding;
 import net.opengis.swe.v20.ByteOrder;
-import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataRecord;
@@ -32,8 +36,6 @@ import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Text;
 import net.opengis.swe.v20.Time;
-import org.vast.cdm.common.CDMException;
-import org.vast.swe.SWEHelper;
 
 
 /**
@@ -48,7 +50,9 @@ import org.vast.swe.SWEHelper;
 public class VideoCamHelper extends SWEHelper
 {
     public static final String DEF_VIDEOFRAME = getPropertyUri("VideoFrame");
-    
+
+    public static final String DEF_GRAYSCALE_FRAME = getPropertyUri("GrayscaleFrame");
+
     // PTZ tasking commands
     public static final String TASKING_PAN = "pan";
     public static final String TASKING_TILT = "tilt";
@@ -276,5 +280,46 @@ public class VideoCamHelper extends SWEHelper
     public DataStream newVideoOutputH264(String name, int width, int height)
     {
         return newVideoOutputCODEC(name, width, height, "H264");
+    }
+    
+    
+    public DataArray newGrayscaleImage(int width, int height) {
+    	
+        DataArray imgArray = newDataArray(height);
+        imgArray.setDefinition(SWEConstants.DEF_IMAGE);
+        DataArray imgRow = newDataArray(width);
+                
+        DataRecord imgPixel = newDataRecord(3);
+
+        imgPixel.addComponent("intensity", newCount(DataType.BYTE));
+        
+        imgRow.addComponent("pixel", imgPixel);
+        imgArray.setElementType("row", imgRow);
+        return imgArray;    	
+    }
+    
+    public DataRecord newGrayscaleFrame(String name, String definition, int width, int height) {
+    	
+        Time timeStamp = newTimeStampIsoUTC();        
+        DataArray imgArr = newGrayscaleImage(width, height);
+        imgArr.setName("img");
+        
+        DataRecord dataStruct = wrapWithTimeStamp(timeStamp, imgArr);
+        dataStruct.setName(name);
+        dataStruct.setDefinition(definition);
+        
+        return dataStruct;
+    }
+    
+    public DataStream newGrayscaleOutput(String name, String definition, int width, int height) {
+    	
+        DataRecord dataStruct = newGrayscaleFrame(name, definition, width, height);
+        BinaryEncoding dataEnc = SWEHelper.getDefaultBinaryEncoding(dataStruct);        
+        return newDataStream(dataStruct, dataEnc);    	
+    }
+    
+    public DataStream newGrayscaleOutput(String name, int width, int height) {
+    	
+    	return newGrayscaleOutput(name, DEF_GRAYSCALE_FRAME, width, height);
     }
 }
