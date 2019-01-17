@@ -21,8 +21,7 @@ import org.openkinect.freenect.VideoHandler;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
-import org.vast.data.DataBlockByte;
-import org.vast.data.DataBlockList;
+import org.vast.data.DataBlockMixed;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
@@ -84,15 +83,21 @@ class KinectVideoOutput extends KinectOutputInterface {
 			@Override
 			public void onFrameReceived(FrameMode mode, ByteBuffer frame, int timestamp) {
 				
-				DataBlock dataBlock = videoStream.createDataBlock();
+				DataBlock dataBlock = videoStream.getElementType().createDataBlock();
 				
 				byte[] channelData = new byte[BYTES_PER_PIXEL * getParentModule().getConfiguration().frameWidth * getParentModule().getConfiguration().frameHeight];
 
 				getChannelData(frame, channelData);
+
+				double samplingTime = System.currentTimeMillis() / MS_PER_S;
 				
-				DataBlockByte blockByte = new DataBlockByte();
-				blockByte.setUnderlyingObject(channelData);
-	            ((DataBlockList)dataBlock).getUnderlyingObject().add(blockByte);
+				dataBlock.setDoubleValue(IDX_TIME_DATA_COMPONENT, samplingTime);
+						
+				((DataBlockMixed) dataBlock).getUnderlyingObject()[IDX_PAYLOAD_DATA_COMPONENT].setUnderlyingObject(channelData);
+
+//				DataBlockByte blockByte = new DataBlockByte();
+//				blockByte.setUnderlyingObject(channelData);
+//	            ((DataBlockList)dataBlock).getUnderlyingObject().add(blockByte);
 				
 		        latestRecord = dataBlock;
 		        

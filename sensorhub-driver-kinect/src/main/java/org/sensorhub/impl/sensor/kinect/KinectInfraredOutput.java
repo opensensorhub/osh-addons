@@ -21,8 +21,7 @@ import org.openkinect.freenect.VideoHandler;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
-import org.vast.data.DataBlockByte;
-import org.vast.data.DataBlockList;
+import org.vast.data.DataBlockMixed;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
@@ -64,10 +63,9 @@ class KinectInfraredOutput extends KinectOutputInterface {
 		try {
 
 			VideoCamHelper irHelper = new VideoCamHelper();
-			
-            irStream = irHelper.newGrayscaleOutput(getName(),
-            		getParentModule().getConfiguration().frameWidth, 
-            		getParentModule().getConfiguration().frameHeight);
+
+			irStream = irHelper.newGrayscaleOutput(getName(), getParentModule().getConfiguration().frameWidth,
+					getParentModule().getConfiguration().frameHeight);
 
 		} catch (Exception e) {
 
@@ -83,19 +81,19 @@ class KinectInfraredOutput extends KinectOutputInterface {
 			@Override
 			public void onFrameReceived(FrameMode mode, ByteBuffer frame, int timestamp) {
 
-				DataBlock dataBlock = irStream.createDataBlock();
+				DataBlock dataBlock = irStream.getElementType().createDataBlock();
 
 				byte[] channelData = new byte[getParentModule().getConfiguration().frameWidth
 						* getParentModule().getConfiguration().frameHeight];
 
 				getChannelData(frame, channelData);
 
-				DataBlockByte blockByte = new DataBlockByte();
+				double samplingTime = System.currentTimeMillis() / MS_PER_S;
 				
-				blockByte.setUnderlyingObject(channelData);
+				dataBlock.setDoubleValue(IDX_TIME_DATA_COMPONENT, samplingTime);
+						
+				((DataBlockMixed) dataBlock).getUnderlyingObject()[IDX_PAYLOAD_DATA_COMPONENT].setUnderlyingObject(channelData);
 				
-				((DataBlockList)dataBlock).getUnderlyingObject().add(blockByte);
-
 				latestRecord = dataBlock;
 
 				latestRecordTime = System.currentTimeMillis();
@@ -106,13 +104,13 @@ class KinectInfraredOutput extends KinectOutputInterface {
 			}
 		});
 	}
-	
+
 	protected void getChannelData(ByteBuffer frame, byte[] channelData) {
-		
+
 		for (short y = 0; y < getParentModule().getConfiguration().frameHeight; ++y) {
 
 			for (short x = 0; x < getParentModule().getConfiguration().frameWidth; ++x) {
-			
+
 				int offset = (x + y * getParentModule().getConfiguration().frameWidth);
 
 				channelData[offset] = frame.get(offset);

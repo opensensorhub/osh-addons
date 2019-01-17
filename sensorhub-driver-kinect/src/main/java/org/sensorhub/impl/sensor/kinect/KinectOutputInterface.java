@@ -19,6 +19,11 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 
 public abstract class KinectOutputInterface extends AbstractSensorOutput<KinectSensor> {
 
+	protected static final int NUM_DATA_COMPONENTS = 2;
+	protected static final int IDX_TIME_DATA_COMPONENT = 0;
+	protected static final int IDX_PAYLOAD_DATA_COMPONENT = 1;
+	protected static final double MS_PER_S = 1000.0;
+
 	protected Device device = null;
 	
 	public KinectOutputInterface(KinectSensor parentSensor, Device kinectDevice) {

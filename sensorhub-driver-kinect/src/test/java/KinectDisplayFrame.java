@@ -12,7 +12,6 @@ import javax.swing.JFrame;
 
 import org.sensorhub.impl.sensor.kinect.KinectConfig;
 import org.sensorhub.impl.sensor.kinect.KinectConfig.Mode;
-import org.vast.data.DataBlockList;
 import org.vast.data.DataBlockMixed;
 
 import net.opengis.swe.v20.DataBlock;
@@ -33,7 +32,7 @@ public class KinectDisplayFrame extends JFrame {
 	private int width = 0;
 
 	private int height = 0;
-	
+
 	private boolean isJPEG = false;
 
 	private double scaleFactor = 1.0;
@@ -43,11 +42,11 @@ public class KinectDisplayFrame extends JFrame {
 
 	public void initialize(String title, KinectConfig config, Mode mode, boolean isJPEG) {
 
-		if ((config.pointCloudScaleFactor > 0) && (config.pointCloudScaleFactor <= 1.0)){
-			
+		if ((config.pointCloudScaleFactor > 0) && (config.pointCloudScaleFactor <= 1.0)) {
+
 			scaleFactor = config.pointCloudScaleFactor;
 		}
-		
+
 		initialize(title, config.frameWidth, config.frameHeight, mode, isJPEG);
 	}
 
@@ -67,62 +66,58 @@ public class KinectDisplayFrame extends JFrame {
 
 		if (KinectConfig.Mode.DEPTH == mode) {
 
-			img = new BufferedImage((int)(width * scaleFactor), (int)(height * scaleFactor), BufferedImage.TYPE_BYTE_GRAY);
+			img = new BufferedImage((int) (width * scaleFactor), (int) (height * scaleFactor),
+					BufferedImage.TYPE_BYTE_GRAY);
 
-	        DataBlock frameBlock = ((DataBlockMixed)data).getUnderlyingObject()[1];
+			DataBlock frameBlock = ((DataBlockMixed) data).getUnderlyingObject()[1];
 
 			double[] frameData = (double[]) frameBlock.getUnderlyingObject();
-			
+
 			byte[] depthData = new byte[frameData.length];
-			
+
 			for (int idx = 0; idx < depthData.length; ++idx) {
-				
-				depthData[idx] = (byte)(frameData[idx] * (2047 / 255));
-				
-				short dataValue = (short) (((1/frameData[idx]) - 3.3309495161) / -0.0030711016);
-								
+
+				depthData[idx] = (byte) (frameData[idx] * (2047 / 255));
+
+				short dataValue = (short) (((1 / frameData[idx]) - 3.3309495161) / -0.0030711016);
+
 				depthData[idx] = (byte) ((dataValue >> 8) & 255);
 			}
 
 			byte[] destArray = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
 
 			System.arraycopy(depthData, 0, destArray, 0, frameData.length);
-			
+
 			getContentPane().getGraphics().drawImage(img, 0, 0, width, height, null);
-			
+
 		} else if (KinectConfig.Mode.IR == mode) {
-			
-			if(isJPEG) {
+
+			if (isJPEG) {
 
 				img = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
 
-				DataBlock frameBlock = ((DataBlockList) data).getUnderlyingObject().get(0);
+				byte[] frameData = (byte[]) ((DataBlockMixed) data).getUnderlyingObject()[1].getUnderlyingObject();
 
-				byte[] frameData = (byte[]) frameBlock.getUnderlyingObject();
+				// uncompress JPEG data
+				try {
+					InputStream imageStream = new ByteArrayInputStream(frameData);
+					ImageInputStream input = ImageIO.createImageInputStream(imageStream);
+					Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
+					ImageReader reader = readers.next();
+					reader.setInput(input);
+					BufferedImage image = reader.read(0);
+					getContentPane().getGraphics().drawImage(image, 0, 0, null);
 
-		        // uncompress JPEG data
-		        try
-		        {
-		            InputStream imageStream = new ByteArrayInputStream(frameData);                               
-		            ImageInputStream input = ImageIO.createImageInputStream(imageStream); 
-		            Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
-		            ImageReader reader = readers.next();
-		            reader.setInput(input);
-		            BufferedImage image = reader.read(0);
-		            getContentPane().getGraphics().drawImage(image, 0, 0, null);
-		            
-		        } catch (IOException e1) {
-		        	
-		            throw new RuntimeException(e1);
-		        }
-		        
+				} catch (IOException e1) {
+
+					throw new RuntimeException(e1);
+				}
+
 			} else {
-				
+
 				img = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
 
-				DataBlock frameBlock = ((DataBlockList) data).getUnderlyingObject().get(0);
-
-				byte[] frameData = (byte[]) frameBlock.getUnderlyingObject();
+				byte[] frameData = (byte[]) ((DataBlockMixed) data).getUnderlyingObject()[1].getUnderlyingObject();
 
 				byte[] destArray = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
 
@@ -132,38 +127,33 @@ public class KinectDisplayFrame extends JFrame {
 			}
 
 		} else {
-			
+
 			if (isJPEG) {
-				
+
 				img = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
 
-				DataBlock frameBlock = ((DataBlockList) data).getUnderlyingObject().get(0);
+				byte[] frameData = (byte[]) ((DataBlockMixed) data).getUnderlyingObject()[1].getUnderlyingObject();
 
-				byte[] frameData = (byte[]) frameBlock.getUnderlyingObject();
+				// uncompress JPEG data
+				try {
+					InputStream imageStream = new ByteArrayInputStream(frameData);
+					ImageInputStream input = ImageIO.createImageInputStream(imageStream);
+					Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
+					ImageReader reader = readers.next();
+					reader.setInput(input);
+					BufferedImage image = reader.read(0);
+					getContentPane().getGraphics().drawImage(image, 0, 0, null);
 
-		        // uncompress JPEG data
-		        try
-		        {
-		            InputStream imageStream = new ByteArrayInputStream(frameData);                               
-		            ImageInputStream input = ImageIO.createImageInputStream(imageStream); 
-		            Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
-		            ImageReader reader = readers.next();
-		            reader.setInput(input);
-		            BufferedImage image = reader.read(0);
-		            getContentPane().getGraphics().drawImage(image, 0, 0, null);
-		            
-		        } catch (IOException e1) {
-		        	
-		            throw new RuntimeException(e1);
-		        }
-		        
+				} catch (IOException e1) {
+
+					throw new RuntimeException(e1);
+				}
+
 			} else {
 
 				img = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
 
-				DataBlock frameBlock = ((DataBlockList) data).getUnderlyingObject().get(0);
-
-				byte[] frameData = (byte[]) frameBlock.getUnderlyingObject();
+				byte[] frameData = (byte[]) ((DataBlockMixed) data).getUnderlyingObject()[1].getUnderlyingObject();
 
 				byte[] destArray = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
 

@@ -32,10 +32,10 @@ import net.opengis.swe.v20.Quantity;
 
 class KinectDepthOutput extends KinectOutputInterface {
 
-	private static final int NUM_DATA_COMPONENTS = 2;
-	private static final int IDX_TIME_DATA_COMPONENT = 0;
-	private static final int IDX_POINTS_COMPONENT = 1;
-	private static final double MS_PER_S = 1000.0;
+//	private static final int NUM_DATA_COMPONENTS = 2;
+//	private static final int IDX_TIME_DATA_COMPONENT = 0;
+//	private static final int IDX_PAYLOAD_DATA_COMPONENT = 1;
+//	private static final double MS_PER_S = 1000.0;
 
 	private static final String STR_NAME = new String("Kinect Depth");
 
@@ -74,7 +74,7 @@ class KinectDepthOutput extends KinectOutputInterface {
 	public KinectDepthOutput(KinectSensor parentSensor, Device kinectDevice) {
 
 		super(parentSensor, kinectDevice);
-		
+
 		name = STR_NAME;
 
 		samplingTimeMillis = (long) (getParentModule().getConfiguration().samplingTime * MS_PER_S);
@@ -133,8 +133,8 @@ class KinectDepthOutput extends KinectOutputInterface {
 					double[] pointCloudData = new double[numPoints];
 
 					int currentPoint = 0;
-					
-					int skipStep = (int)(1/scaleFactor);
+
+					int skipStep = (int) (1 / scaleFactor);
 
 					for (int y = 0; y < getParentModule().getConfiguration().frameHeight; y += skipStep) {
 
@@ -151,13 +151,19 @@ class KinectDepthOutput extends KinectOutputInterface {
 					}
 
 					DataBlock dataBlock = pointCloudFrameData.createDataBlock();
-					dataBlock.setDoubleValue(IDX_TIME_DATA_COMPONENT, System.currentTimeMillis() / MS_PER_S);
-					((DataBlockMixed) dataBlock).getUnderlyingObject()[IDX_POINTS_COMPONENT]
+					
+					double samplingTime = System.currentTimeMillis() / MS_PER_S;
+					
+					dataBlock.setDoubleValue(IDX_TIME_DATA_COMPONENT, samplingTime);
+					
+					((DataBlockMixed) dataBlock).getUnderlyingObject()[IDX_PAYLOAD_DATA_COMPONENT]
 							.setUnderlyingObject(pointCloudData);
 
 					// update latest record and send event
 					latestRecord = dataBlock;
+					
 					latestRecordTime = System.currentTimeMillis();
+					
 					eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, KinectDepthOutput.this, dataBlock));
 
 					frame.position(0);
@@ -186,10 +192,10 @@ class KinectDepthOutput extends KinectOutputInterface {
 	}
 
 	protected int computeNumPoints() {
-		
+
 		int numPoints = getParentModule().getConfiguration().frameWidth
 				* getParentModule().getConfiguration().frameHeight;
-		
+
 		scaleFactor = getParentModule().getConfiguration().pointCloudScaleFactor;
 
 		if ((scaleFactor > 0) && (scaleFactor <= 1.0)) {
@@ -198,7 +204,7 @@ class KinectDepthOutput extends KinectOutputInterface {
 					* (getParentModule().getConfiguration().frameHeight * scaleFactor));
 
 		}
-		
+
 		return numPoints;
 	}
 }

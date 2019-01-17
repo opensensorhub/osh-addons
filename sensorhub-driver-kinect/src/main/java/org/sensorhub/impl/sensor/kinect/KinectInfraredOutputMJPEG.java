@@ -28,8 +28,7 @@ import org.openkinect.freenect.VideoHandler;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
-import org.vast.data.DataBlockByte;
-import org.vast.data.DataBlockList;
+import org.vast.data.DataBlockMixed;
 
 import net.opengis.swe.v20.DataBlock;
 
@@ -75,7 +74,7 @@ class KinectInfraredOutputMJPEG extends KinectInfraredOutput {
 			@Override
 			public void onFrameReceived(FrameMode mode, ByteBuffer frame, int timestamp) {
 
-				DataBlock dataBlock = irStream.createDataBlock();
+				DataBlock dataBlock = irStream.getElementType().createDataBlock();
 
 				BufferedImage bufferedImage = new BufferedImage(getParentModule().getConfiguration().frameWidth,
 						getParentModule().getConfiguration().frameHeight, BufferedImage.TYPE_BYTE_GRAY);
@@ -96,11 +95,12 @@ class KinectInfraredOutputMJPEG extends KinectInfraredOutput {
 
 					byte[] newImage = byteStream.toByteArray();
 
-					DataBlockByte blockByte = new DataBlockByte();
+					double samplingTime = System.currentTimeMillis() / MS_PER_S;
 					
-					blockByte.setUnderlyingObject(newImage);
-					
-					((DataBlockList) dataBlock).getUnderlyingObject().add(blockByte);
+//					dataBlock.setDoubleValue(IDX_TIME_DATA_COMPONENT, samplingTime);
+					dataBlock.setDoubleValue(samplingTime);
+
+					((DataBlockMixed) dataBlock).getUnderlyingObject()[IDX_PAYLOAD_DATA_COMPONENT].setUnderlyingObject(newImage);
 
 					latestRecord = dataBlock;
 
@@ -119,18 +119,5 @@ class KinectInfraredOutputMJPEG extends KinectInfraredOutput {
 				}
 			}
 		});
-	}
-	
-	protected void getChannelData(ByteBuffer frame, byte[] channelData) {
-		
-		for (short y = 0; y < getParentModule().getConfiguration().frameHeight; ++y) {
-
-			for (short x = 0; x < getParentModule().getConfiguration().frameWidth; ++x) {
-			
-				int offset = (x + y * getParentModule().getConfiguration().frameWidth);
-
-				channelData[offset] = frame.get(offset);
-			}
-		}
 	}
 }
