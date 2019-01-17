@@ -97,7 +97,6 @@ class KinectInfraredOutputMJPEG extends KinectInfraredOutput {
 
 					double samplingTime = System.currentTimeMillis() / MS_PER_S;
 					
-//					dataBlock.setDoubleValue(IDX_TIME_DATA_COMPONENT, samplingTime);
 					dataBlock.setDoubleValue(samplingTime);
 
 					((DataBlockMixed) dataBlock).getUnderlyingObject()[IDX_PAYLOAD_DATA_COMPONENT].setUnderlyingObject(newImage);

@@ -95,11 +95,7 @@ class KinectVideoOutput extends KinectOutputInterface {
 						
 				((DataBlockMixed) dataBlock).getUnderlyingObject()[IDX_PAYLOAD_DATA_COMPONENT].setUnderlyingObject(channelData);
 
-//				DataBlockByte blockByte = new DataBlockByte();
-//				blockByte.setUnderlyingObject(channelData);
-//	            ((DataBlockList)dataBlock).getUnderlyingObject().add(blockByte);
-				
-		        latestRecord = dataBlock;
+				latestRecord = dataBlock;
 		        
 		        latestRecordTime = System.currentTimeMillis();
 		        

@@ -100,10 +100,6 @@ class KinectVideoOutputMJPEG extends KinectVideoOutput {
 							
 					((DataBlockMixed) dataBlock).getUnderlyingObject()[IDX_PAYLOAD_DATA_COMPONENT].setUnderlyingObject(newImage);
 
-//					DataBlockByte blockByte = new DataBlockByte();
-//					blockByte.setUnderlyingObject(newImage);				
-//					((DataBlockList) dataBlock).getUnderlyingObject().add(blockByte);
-
 					latestRecord = dataBlock;
 
 					latestRecordTime = System.currentTimeMillis();
