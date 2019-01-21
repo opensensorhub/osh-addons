@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataKey;
@@ -87,9 +88,9 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     {
         SMLHelper helper = new SMLHelper();
         systemDesc = helper.newPhysicalSystem();
-        systemDesc.setUniqueIdentifier(UID_PREFIX + "network:" + config.exposeFilter.parameters.iterator().next().toString().toLowerCase());
+        systemDesc.setUniqueIdentifier(UID_PREFIX + "network:ndbc:buoy"); // + config.exposeFilter.parameters.iterator().next().toString().toLowerCase());
         systemDesc.setName("NDBC Buoy Data Network");
-        systemDesc.setDescription("NDBC automated sensor network collecting buoy data at " + getNumFois(null) + " stations across the US");
+        systemDesc.setDescription("NDBC automated sensor network for realtime and archive buoy data"); // + getNumFois(null) + " stations across the US");
         
         // add outputs
         for (RecordStore rs: dataStores.values())
@@ -127,7 +128,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         // compute rough estimate here
         DataFilter ndbcFilter = getNdbcFilter(filter);
         long dt = ndbcFilter.endTime.getTime() - ndbcFilter.startTime.getTime();
-        long samplingPeriod = 15*60*1000; // shortest sampling period seems to be 15min
+        long samplingPeriod = TimeUnit.MINUTES.toMillis(15); // shortest sampling period seems to be 15min
         int numSites = ndbcFilter.stationIds.isEmpty() ? fois.size() : ndbcFilter.stationIds.size();
         return (int)(numSites * dt / samplingPeriod);
 //    	return 1;
@@ -138,7 +139,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     public int getNumRecords(String recordType)
     {
         long dt = config.exposeFilter.endTime.getTime() - config.exposeFilter.startTime.getTime();
-        long samplingPeriod = 15*60*1000; // shortest sampling period seems to be 15min
+        long samplingPeriod = TimeUnit.MINUTES.toMillis(15); // shortest sampling period seems to be 15min
         int numSites = fois.size();
         return (int)(numSites * dt / samplingPeriod);
 //        return 1;
@@ -202,7 +203,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         
         // request observations by batch and iterate through them sequentially
         final long endTime = ndbcFilter.endTime.getTime();
-        final long batchLength = 31*24*3600*1000; // 31 days        
+        final long batchLength = TimeUnit.DAYS.toMillis(31); // 31 days        
         class BatchIterator implements Iterator<IDataRecord>
         {                
             Iterator<BuoyDataRecord> batchIt;

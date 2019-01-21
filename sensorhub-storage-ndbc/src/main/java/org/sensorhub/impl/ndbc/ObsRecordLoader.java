@@ -63,15 +63,17 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         }
         
         // parameters
-        if (!filter.parameters.isEmpty())
-        {
-            buf.append("observedProperty=");
-            for (ObsParam param: filter.parameters)
-                buf.append(param.toString().toLowerCase()).append(',');
-            buf.setCharAt(buf.length()-1, '&');
-        }
+        if (!filter.parameters.isEmpty()) {
+			buf.append("&observedProperty=");
+			int idx = 0;
+			for (ObsParam param : filter.parameters) {
+				buf.append(param.toString().toLowerCase()); //.append(',');
+				if(++idx < filter.parameters.size())
+					buf.append(",");
+			}
+		}
         
-        buf.append("responseformat=text/csv"); // output type
+        buf.append("&responseformat=text/csv"); // output type
         
         // time range
         DateTimeFormat timeFormat = new DateTimeFormat();
