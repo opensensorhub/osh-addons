@@ -45,27 +45,25 @@ public class ObsStationLoader {
 		//  We want all stations
 		buf.append("&offering=urn:ioos:network:noaa.nws.ndbc:all");
 		// site bbox
-//		filter.siteBbox = new Bbox(-79.7620,40.4960,-71.8562,45.0128);
 		if (filter.siteBbox != null && !filter.siteBbox.isNull()) {
 			Bbox bbox = filter.siteBbox;
 			buf.append("&featureofinterest=BBOX:").append(bbox.getMinX())
 					.append(",").append(bbox.getMinY()).append(",").append(bbox.getMaxX()).append(",")
 					.append(bbox.getMaxY());
 		} 
-		// parameters - need a least 1 specified to get any station data back, so should we force here?
-//		buf.append("&observedProperty=sea_water_temperature");
-		if (!filter.parameters.isEmpty()) {
-			buf.append("&observedProperty=");
-			int idx = 0;
-			for (ObsParam param : filter.parameters) {
-				buf.append(param.toString().toLowerCase()); //.append(',');
-				if(++idx < filter.parameters.size())
-					buf.append(",");
-			}
+
+		//  Filter parameters MUST contain at least one property.  
+		//  For getting station list, we need to specify a single property, so pick the first
+		//  NOTE: for robustness, we can get all the buoy IDs, lat-lons, and time ranges from Caps doc:
+		//  	https://sdf.ndbc.noaa.gov/sos/server.php?request=GetCapabilities&service=SOS
+		if(filter.parameters.size() == 0) {
+			throw new IOException("DataFilter must contain at list one parameter in Set<ObsParam> parameters");
 		}
+		ObsParam param = filter.parameters.iterator().next();
+		buf.append("&observedProperty=" + param.toString().toLowerCase());
 
 		buf.append("&responseformat=text/csv&eventtime=latest"); // output type
-		module.getLogger().debug("Requesting observations from: " + buf.toString());
+		module.getLogger().debug("Requesting stations from: " + buf.toString());
 		URL url = new URL(buf.toString());
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
@@ -87,13 +85,11 @@ public class ObsStationLoader {
 			OffsetDateTime time = OffsetDateTime.parse(dateStr);
 			OffsetDateTime now = OffsetDateTime.now();
 			
-//			System.err.println(time + " : " + now + ": " + time.compareTo(now.minusDays(7)));
 			if(time.compareTo(now.minusDays(AGE_THRESHOLD_DAYS)) < 0)
 				continue;
 			
 			GMLFactory gmlFac = new GMLFactory(true);
 			SamplingPoint station = new SamplingPoint();
-			System.err.println(line);
 			
 			// Get Buoy ID
 			station.setId(idArr[idArr.length - 1]);
@@ -107,7 +103,7 @@ public class ObsStationLoader {
 			stnLoc.setPos(new double[] { Double.parseDouble(token[2]), Double.parseDouble(token[3]) });
 			station.setShape(stnLoc);
 			
-			System.err.println("Adding FOI: " + station.getUniqueIdentifier() + " : " + station.getId() + " : " + stnLoc);
+			module.getLogger().debug("Adding FOI: " + station.getUniqueIdentifier() + " : " + station.getId() + " : " + stnLoc);
 			
 			fois.put(idArr[idArr.length - 1], station);
 		}

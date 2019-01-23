@@ -436,7 +436,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     @Override
     public IObsStorage addDataStore(String producerID)
     {
-    	System.out.println("...adding buoy DataStore...");
         throw new UnsupportedOperationException();
     }
 
