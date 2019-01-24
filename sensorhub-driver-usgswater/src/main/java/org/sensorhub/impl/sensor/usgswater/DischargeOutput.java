@@ -102,7 +102,7 @@ public class DischargeOutput extends AbstractSensorOutput <USGSWaterDriver> impl
 //    		latestUpdateTimes.put(rec.getSiteCode(), rec.getTimeStamp());
     		latestRecordTime = System.currentTimeMillis();
     		latestRecord = dataBlock;
-    		latestRecords.put(rec.getSiteCode(), latestRecord); 
+    		latestRecords.put(USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), latestRecord); 
     		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, rec.getSiteCode(), DischargeOutput.this, dataBlock));
     	}
     }
@@ -146,6 +146,7 @@ public class DischargeOutput extends AbstractSensorOutput <USGSWaterDriver> impl
     @Override
     public DataBlock getLatestRecord(String entityID)
     {
+    	DataBlock block = latestRecords.get(entityID);
         return latestRecords.get(entityID);
     }
 

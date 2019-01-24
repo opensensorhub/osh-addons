@@ -101,7 +101,7 @@ public class WaterTempCelsiusOutput extends AbstractSensorOutput <USGSWaterDrive
     		
     		latestRecordTime = System.currentTimeMillis();
     		latestRecord = dataBlock;
-    		latestRecords.put(rec.getSiteCode(), latestRecord); 
+    		latestRecords.put(USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), latestRecord); 
     		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, rec.getSiteCode(), WaterTempCelsiusOutput.this, dataBlock));
     	}
     }
@@ -146,6 +146,9 @@ public class WaterTempCelsiusOutput extends AbstractSensorOutput <USGSWaterDrive
     @Override
     public DataBlock getLatestRecord(String entityID)
     {
+    	for(Map.Entry<String, DataBlock> entry: latestRecords.entrySet()) {
+    		System.err.println(entry.getKey());
+    	}
         return latestRecords.get(entityID);
     }
 

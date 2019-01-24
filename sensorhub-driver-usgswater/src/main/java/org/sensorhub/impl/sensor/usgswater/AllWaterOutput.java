@@ -181,7 +181,7 @@ public class AllWaterOutput extends AbstractSensorOutput <USGSWaterDriver> imple
 
     		latestRecordTime = System.currentTimeMillis();
     		latestRecord = dataBlock;
-    		latestRecords.put(rec.getSiteCode(), latestRecord); 
+    		latestRecords.put(USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), latestRecord); 
     		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, rec.getSiteCode(), AllWaterOutput.this, dataBlock));
     	}
     }

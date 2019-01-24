@@ -101,7 +101,7 @@ public class GageHeightOutput extends AbstractSensorOutput <USGSWaterDriver> imp
     		
     		latestRecordTime = System.currentTimeMillis();
     		latestRecord = dataBlock;
-    		latestRecords.put(rec.getSiteCode(), latestRecord); 
+    		latestRecords.put(USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), latestRecord); 
     		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, rec.getSiteCode(), GageHeightOutput.this, dataBlock));
     	}
     }
