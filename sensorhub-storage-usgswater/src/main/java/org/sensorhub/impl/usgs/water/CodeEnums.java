@@ -18,14 +18,36 @@ package org.sensorhub.impl.usgs.water;
 public class CodeEnums
 {
     /**
-     * US state codes
+     * US state codes- updated to be FIPS code compliant, which is what USGS is using
      */
     public enum StateCode
     {
-        AL, AK, AZ, AR, CA, CO, CT, DE, DC, FL, GA, HI, ID, IL, IN, IA, KS, KY,
-        LA, ME, MD, MA, MI, MN, MS, MO, MT, NE, NV, NH, NJ, NM, NY, NC, ND, OH,
-        OK, OR, PA, PR, RI, SC, SD, TN, TX, UT, VT, VA, VI, WA, WV, WI, WY
+        AL("01"), AK("02"), AZ("04"), AR("05"), CA("06"), CO("08"), CT("09"), DE("10"), DC("11"), FL("12"), 
+        GA("13"), HI("15"), ID("16"), IL("17"), IN("18"), IA("19"), KS("20"), KY("21"), LA("22"), ME("23"), 
+        MD("24"), MA("25"), MI("26"), MN("27"), MS("28"), MO("29"), MT("30"), NE("31"), NV("32"), NH("33"), 
+        NJ("34"), NM("35"), NY("36"), NC("37"), ND("38"), OH("39"), OK("40"), OR("41"), PA("42"), PR("43"), 
+        RI("44"), SC("45"), SD("46"), TN("47"), TX("48"), UT("49"), VT("50"), VA("51"), VI("52"), WA("53"),
+        WV("54"), WI("55"), WY("56");
+        
+    	final String fipsCode;
+    	
+        StateCode(String fips) {
+            this.fipsCode = fips;
+        }
+        
+        public static StateCode get(String fips) {
+        	for(StateCode sc: StateCode.values()) {
+        		if(sc.fipsCode.equals(fips))
+        			return sc;
+        	}
+        	return null;	
+        }
     }
+
+    public static void main(String[] args) {
+		System.err.println(StateCode.AL);
+		System.err.println(StateCode.get("36"));
+	}
     
     
     /**

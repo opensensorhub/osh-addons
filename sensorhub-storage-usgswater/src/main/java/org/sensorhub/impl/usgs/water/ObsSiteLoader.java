@@ -183,9 +183,12 @@ public class ObsSiteLoader
                     site.setShape(siteLoc);
                     
                     // sampled features (state and county)
-                    site.setSampledFeatureUID(AREA_UID_PREFIX + StateCode.values()[stateCd-1]);
-                    //site.setSampledFeatureUID(AREA_UID_PREFIX + countyCd);
+                    String stateStr = stateCd<10 ? "0" + stateCd : stateCd + "";
                     
+                    site.setSampledFeatureUID(AREA_UID_PREFIX + StateCode.get(stateStr));
+                    
+                    //site.setSampledFeatureUID(AREA_UID_PREFIX + countyCd);
+                    module.getLogger().debug("Sample FOI ID: " + site.getSampledFeatureUID());
                     fois.put(id, site);                
                 }
                 catch (Exception e)
