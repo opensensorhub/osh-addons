@@ -146,9 +146,6 @@ public class WaterTempCelsiusOutput extends AbstractSensorOutput <USGSWaterDrive
     @Override
     public DataBlock getLatestRecord(String entityID)
     {
-    	for(Map.Entry<String, DataBlock> entry: latestRecords.entrySet()) {
-    		System.err.println(entry.getKey());
-    	}
         return latestRecords.get(entityID);
     }
 

@@ -27,7 +27,7 @@ public class USGSWaterConfig extends SensorConfig {
 //    	exposeFilter.siteIds.add("03574500");
 //    	exposeFilter.siteIds.add("03574100");
 //    	exposeFilter.siteIds.add("03575100");
-    	exposeFilter.stateCodes.add(StateCode.AK);
+//    	exposeFilter.stateCodes.add(StateCode.NY);
 //    	exposeFilter.countyCodes.add("01003");
 //    	exposeFilter.countyCodes.add("01089");
         exposeFilter.parameters.add(ObsParam.DISCHARGE);

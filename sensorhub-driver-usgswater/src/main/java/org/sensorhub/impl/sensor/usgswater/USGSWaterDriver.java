@@ -173,7 +173,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
         	pHOut.init();
         }
         // COMMENT OUT FOR NOW
-//        if (!config.exposeFilter.parameters.isEmpty())
+//        if (config.exposeFilter.parameters.isEmpty())
 //        {
 //        	this.allOut = new AllWaterOutput(this);
 //        	addOutput(allOut, false);
@@ -564,6 +564,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     
     private int getAverageSamplingPeriod() {
 		return 5*60;
+//		return 30;
 	}
 
 	protected void loadFois() throws SensorHubException
