@@ -72,14 +72,16 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
     @Override
     public void start() throws SensorHubException
     {
-        dataInterface.start();        
+        if (dataInterface != null)
+            dataInterface.start();        
     }
     
 
     @Override
     public void stop() throws SensorHubException
     {
-        dataInterface.stop();
+        if (dataInterface != null)
+            dataInterface.stop();
     }
     
 

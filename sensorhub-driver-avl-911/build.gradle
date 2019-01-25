@@ -6,6 +6,12 @@ dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
 }
 
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+test {
+  exclude '**/TestAvlDriverSimu.class'
+}
+
 // add info to OSGi manifest
 jar {
   manifest {

@@ -22,6 +22,7 @@ import org.sensorhub.api.comm.CommProviderConfig;
 public class SimulatedProviderConfig extends CommProviderConfig<Object>
 {
     public String googleApiUrl = "http://maps.googleapis.com/maps/api/directions/json";
+    public String googleApiKey = null;
     
     // vehicle configurations
     List<SimulatedVehicleConfig> vehicles = new ArrayList<SimulatedVehicleConfig>();

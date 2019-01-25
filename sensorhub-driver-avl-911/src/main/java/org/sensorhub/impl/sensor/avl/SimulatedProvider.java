@@ -68,7 +68,7 @@ public class SimulatedProvider extends AbstractModule<SimulatedProviderConfig> i
     class TrajectoryGenerator
     {
         SimulatedVehicleConfig config;
-        List<double[]> trajPoints = new ArrayList<double[]>();
+        List<double[]> trajPoints = new ArrayList<>();
         double currentTrackPos;
                 
         public TrajectoryGenerator(SimulatedVehicleConfig config)
@@ -128,7 +128,8 @@ public class SimulatedProvider extends AbstractModule<SimulatedProviderConfig> i
                 synchronized(lock)
                 {
                     // request directions using Google API
-                    URL dirRequest = new URL(mainConfig.googleApiUrl + "?origin=" + startLat + "," + startLong +
+                    URL dirRequest = new URL(mainConfig.googleApiUrl + "?key=" + mainConfig.googleApiKey +
+                            "?origin=" + startLat + "," + startLong +
                             "&destination=" + endLat + "," + endLong);
                     log.debug("Google API request: " + dirRequest);
                     InputStream is = new BufferedInputStream(dirRequest.openStream());
@@ -259,7 +260,7 @@ public class SimulatedProvider extends AbstractModule<SimulatedProviderConfig> i
             }
             catch (IOException e)
             {
-                throw new RuntimeException("Error while writing to piped stream", e);
+                throw new IllegalStateException("Error while writing to piped stream", e);
             }
         }
     }
@@ -268,6 +269,9 @@ public class SimulatedProvider extends AbstractModule<SimulatedProviderConfig> i
     @Override
     public synchronized void start() throws SensorHubException
     {
+        if (config.googleApiKey == null || config.googleApiKey.isEmpty())
+            throw new SensorHubException("A Google API key with access to the Directions API must be provided in the configuration");
+        
         if (timer != null)
             return;
         timer = Executors.newScheduledThreadPool(1);
@@ -284,7 +288,7 @@ public class SimulatedProvider extends AbstractModule<SimulatedProviderConfig> i
         }
         
         // create 1 traj generator per vehicle
-        vehicleTrajs = new ArrayList<TrajectoryGenerator>();
+        vehicleTrajs = new ArrayList<>();
         for (SimulatedVehicleConfig config: getConfiguration().vehicles)
         {
             TrajectoryGenerator trajGen = new TrajectoryGenerator(config);

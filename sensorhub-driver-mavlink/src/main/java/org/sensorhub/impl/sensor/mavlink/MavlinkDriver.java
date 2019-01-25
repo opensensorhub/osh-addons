@@ -23,6 +23,7 @@ import java.util.Timer;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.mavlink.MavlinkConfig.MsgTypes;
 import com.MAVLink.MAVLinkPacket;
@@ -177,12 +178,11 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
             cmdOut = new BufferedOutputStream(commProvider.getOutputStream());
             
             // send heartbeat
-            msg_heartbeat hb = new msg_heartbeat();
-            sendCommand(hb.pack());
+            sendHeartbeat();
         }
         catch (IOException e)
         {
-            throw new RuntimeException("Error while initializing communications ", e);
+            throw new SensorException("Error while initializing communications ", e);
         }
         
         // set ardupilot parameters
@@ -200,7 +200,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
         }
         catch (Exception e)
         {
-            throw new RuntimeException("Error while setting UAV parameters ", e);
+            throw new SensorException("Error while setting UAV parameters ", e);
         }
         
         // start main measurement thread
@@ -221,16 +221,31 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
     }
     
     
+    private void sendHeartbeat()
+    {
+        try
+        {
+            msg_heartbeat hb = new msg_heartbeat();
+            hb.type = 6;
+            hb.autopilot = 8;
+            sendCommand(hb.pack());
+        }
+        catch (IOException e)
+        {
+        }
+    }
+    
+    
     private void setTelemetryRates() throws IOException
     {
         getLogger().info("Setting Telemetry Update Rate");
         setParam("SR1_RAW_SENS", 0);
-        setParam("SR1_EXT_STAT", 0);
+        //setParam("SR1_EXT_STAT", 0);
         setParam("SR1_RC_CHAN", 0);
         setParam("SR1_RAW_CTRL", 0);
         setParam("SR1_POSITION", 10);
         setParam("SR1_EXTRA1", 10);
-        setParam("SR1_EXTRA2", 0);
+        //setParam("SR1_EXTRA2", 0);
         setParam("SR1_EXTRA3", 10);
     }
     
@@ -300,6 +315,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
     {
         synchronized (cmdOut)
         {
+            pkt.compid = 0;
             pkt.generateCRC();
             byte[] cmdData = pkt.encodePacket();
             cmdOut.write(cmdData);
@@ -326,14 +342,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
                         }
                         
                         // send heartbeat
-                        try
-                        {
-                            msg_heartbeat hb = new msg_heartbeat();
-                            sendCommand(hb.pack());
-                        }
-                        catch (IOException e)
-                        {
-                        }
+                        sendHeartbeat();
                     }
                 }, 
                 0L, Math.min(MAX_MSG_PERIOD, 1000L) 

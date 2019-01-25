@@ -51,6 +51,7 @@ public class TestFakeGpsDriver implements IEventListener
         config.centerLatitude = 34.7300;
         config.centerLongitude = -86.5850;
         config.areaSize = 0.1;
+        config.googleApiKey = "ENTER_YOUR_API_KEY_HERE";
         
         driver = new FakeGpsSensor();
         driver.init(config);

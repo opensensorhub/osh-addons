@@ -39,7 +39,8 @@ public class TestAvlDriverSimu implements IEventListener
     AVLConfig config;
     AsciiDataWriter writer;
     int sampleCount = 0;
-
+    String googleApiKey = "";
+    
         
     @Before
     public void init() throws Exception
