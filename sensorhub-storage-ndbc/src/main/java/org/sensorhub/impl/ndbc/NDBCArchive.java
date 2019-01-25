@@ -43,7 +43,8 @@ import net.opengis.swe.v20.DataEncoding;
 public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStorageModule<NDBCConfig>, IMultiSourceStorage<IObsStorage>
 {
 	static final String BASE_NDBC_URL = "https://sdf.ndbc.noaa.gov";
-	static final String UID_PREFIX = "urn:ioos:";
+	static final String IOOS_UID_PREFIX = "urn:ioos:";
+	static final String OSH_UID_PREFIX = "urn:nys:ndbc";
 	
 	Map<String, RecordStore> dataStores = new LinkedHashMap<>();
     Map<String, AbstractFeature> fois = new LinkedHashMap<>();
@@ -88,7 +89,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     {
         SMLHelper helper = new SMLHelper();
         systemDesc = helper.newPhysicalSystem();
-        systemDesc.setUniqueIdentifier(UID_PREFIX + "network:ndbc:buoy"); // + config.exposeFilter.parameters.iterator().next().toString().toLowerCase());
+        systemDesc.setUniqueIdentifier(OSH_UID_PREFIX + "network:ndbc:buoy"); // + config.exposeFilter.parameters.iterator().next().toString().toLowerCase());
         systemDesc.setName("NDBC Buoy Data Network");
         systemDesc.setDescription("NDBC automated sensor network for realtime and archive buoy data"); // + getNumFois(null) + " stations across the US");
         
