@@ -188,7 +188,7 @@ public class ObsSiteLoader
                     site.setSampledFeatureUID(AREA_UID_PREFIX + StateCode.get(stateStr));
                     
                     //site.setSampledFeatureUID(AREA_UID_PREFIX + countyCd);
-                    module.getLogger().debug("Sample FOI ID: " + site.getSampledFeatureUID());
+                    module.getLogger().debug("Sample FOI ID: " + site.getUniqueIdentifier());
                     fois.put(id, site);                
                 }
                 catch (Exception e)
