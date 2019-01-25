@@ -1,0 +1,27 @@
+description = 'Simulated CBRN Sensor'
+ext.details = 'Demo sensor outputting pseudo random CBRN measurements'
+version = '1.0.0'
+
+dependencies {
+    compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+}
+
+// add info to OSGi manifest
+jar {
+    manifest {
+        instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
+        instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.simulatedcbrn.Activator'
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'chainreaction31'
+            name 'Ian Patterson'
+            organization 'Botts Innovative Research, Inc.'
+            organizationUrl 'http://www.botts-inc.com'
+        }
+    }
+}
