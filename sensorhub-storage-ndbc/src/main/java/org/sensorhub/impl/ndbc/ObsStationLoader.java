@@ -28,7 +28,7 @@ import net.opengis.gml.v32.impl.GMLFactory;
  */
 public class ObsStationLoader {
 	static final String STN_INFO_URL = NDBCArchive.BASE_NDBC_URL + "/stations.shtml";
-	static final String FOI_UID_PREFIX = NDBCArchive.UID_PREFIX + "station:wmo:";
+	static final String FOI_UID_PREFIX = NDBCArchive.IOOS_UID_PREFIX + "station:wmo:";
 	static final String BASE_URL = NDBCArchive.BASE_NDBC_URL
 			+ "/sos/server.php?request=GetObservation&service=SOS&version=1.0.0&";
 	static final int AGE_THRESHOLD_DAYS = 7;  // configurable
