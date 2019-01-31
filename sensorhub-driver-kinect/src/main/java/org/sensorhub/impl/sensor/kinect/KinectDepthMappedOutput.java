@@ -31,10 +31,6 @@ import net.opengis.swe.v20.Vector;
 
 public class KinectDepthMappedOutput extends KinectDepthOutput {
 
-	private static final int NUM_DATA_COMPONENTS = 2;
-	private static final int IDX_TIME_DATA_COMPONENT = 0;
-	private static final int IDX_POINTS_COMPONENT = 1;
-	private static final double MS_PER_S = 1000.0;
 	private static final int IDX_X_COORD_COMPONENT = 0;
 	private static final int IDX_Y_COORD_COMPONENT = 1;
 	private static final int IDX_Z_COORD_COMPONENT = 2;
@@ -46,8 +42,9 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 
 	private static final String STR_POINT_DEFINITION = SWEHelper.getPropertyUri("Distance");
 
-	private static final String STR_POINT_DESCRIPTION = new String(
-			"A measure of distance from the sensor, the raw point cloud data retrieved from Kinect depth sensor in XYZ coordinates.");
+//	private static final String STR_POINT_REF_FRAME = new String(
+//			"A measure of distance from the sensor, the raw point cloud data retrieved from Kinect depth sensor in XYZ coordinates.");
+	private static final String STR_POINT_REF_FRAME = new String("#DEPTH_SENSOR_FRAME");
 
 	private static final String STR_POINT_NAME = new String("Point");
 
@@ -107,7 +104,7 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 		pointCloudFrameData.setDefinition(STR_MODEL_DEFINITION);
 		pointCloudFrameData.setName(STR_MODEL_NAME);
 
-		Vector vector = factory.newLocationVectorXYZ(STR_POINT_DEFINITION, STR_POINT_DESCRIPTION,
+		Vector vector = factory.newLocationVectorXYZ(STR_POINT_DEFINITION, STR_POINT_REF_FRAME,
 				STR_POINT_UNITS_OF_MEASURE);
 
 		DataArray pointArray = factory.newDataArray(numPoints);
@@ -155,7 +152,7 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 
 					DataBlock dataBlock = pointCloudFrameData.createDataBlock();
 					dataBlock.setDoubleValue(IDX_TIME_DATA_COMPONENT, System.currentTimeMillis() / MS_PER_S);
-					((DataBlockMixed) dataBlock).getUnderlyingObject()[IDX_POINTS_COMPONENT]
+					((DataBlockMixed) dataBlock).getUnderlyingObject()[IDX_PAYLOAD_DATA_COMPONENT]
 							.setUnderlyingObject(pointCloudData);
 
 					// update latest record and send event

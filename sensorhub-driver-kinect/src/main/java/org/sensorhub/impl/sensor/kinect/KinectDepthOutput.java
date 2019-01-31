@@ -32,11 +32,6 @@ import net.opengis.swe.v20.Quantity;
 
 class KinectDepthOutput extends KinectOutputInterface {
 
-//	private static final int NUM_DATA_COMPONENTS = 2;
-//	private static final int IDX_TIME_DATA_COMPONENT = 0;
-//	private static final int IDX_PAYLOAD_DATA_COMPONENT = 1;
-//	private static final double MS_PER_S = 1000.0;
-
 	private static final String STR_NAME = new String("Kinect Depth");
 
 	private static final String STR_POINT_UNITS_OF_MEASURE = new String("m");
