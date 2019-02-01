@@ -190,9 +190,9 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 
 		result[IDX_X_COORD_COMPONENT] = ((x - cx_d) * depth * fx_d);
 
-		result[IDX_Y_COORD_COMPONENT] = ((y - cy_d) * depth * fy_d);
+		result[IDX_Z_COORD_COMPONENT] = ((y - cy_d) * depth * fy_d);
 
-		result[IDX_Z_COORD_COMPONENT] = depth;
+		result[IDX_Y_COORD_COMPONENT] = depth;
 
 		return result;
 	}
