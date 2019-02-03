@@ -231,13 +231,20 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
             @Override
             public void handle(String msg)
             {
+                try {
+                    msgHandler.handle(msg);
+                }
+                catch (IllegalStateException e) {
+                    clearStatus();
+                    reportError("Cannot connect to Firehose", e);
+                    return;
+                }
+                
                 if (!connected)
                 {
                     reportStatus("Connected to Firehose channel");
                     connected = true;
                 }
-                
-                msgHandler.handle(msg);                
             }            
         });
         for(String mt: config.messageTypes)
@@ -246,6 +253,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
             firehoseClient.addAirline(airline);
         
         // start firehose feed
+        connected = false;
         firehoseClient.start();
         
         // start watchdog thread
@@ -421,7 +429,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     @Override
     public boolean isConnected()
     {
-        return false;
+        return connected;
     }
     
 	

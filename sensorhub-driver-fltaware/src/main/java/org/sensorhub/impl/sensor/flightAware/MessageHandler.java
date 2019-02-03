@@ -74,6 +74,8 @@ public class MessageHandler implements IMessageHandler
             
         } catch (Exception e) {
             log.error("Cannot read JSON\n{}", message, e);
+            if (lastMessageTime == 0L)
+                throw new IllegalStateException(message);
             return;
         }
     }
