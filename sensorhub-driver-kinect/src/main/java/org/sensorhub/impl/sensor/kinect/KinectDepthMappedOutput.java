@@ -138,15 +138,13 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 
 							int index = (x + y * getParentModule().getConfiguration().frameWidth);
 
-							int depthValue = frame.get(index);
+							int depthValue = frame.getShort(index);
 
 							double[] coordinates = depthToWorld(x, y, depthValue);
 
-							pointCloudData[currentPoint + IDX_X_COORD_COMPONENT] = coordinates[IDX_X_COORD_COMPONENT];
-							pointCloudData[currentPoint + IDX_Y_COORD_COMPONENT] = coordinates[IDX_Y_COORD_COMPONENT];
-							pointCloudData[currentPoint + IDX_Z_COORD_COMPONENT] = coordinates[IDX_Z_COORD_COMPONENT];
-
-							++currentPoint;
+							pointCloudData[currentPoint++] = coordinates[IDX_X_COORD_COMPONENT];
+							pointCloudData[currentPoint++] = coordinates[IDX_Y_COORD_COMPONENT];
+							pointCloudData[currentPoint++] = coordinates[IDX_Z_COORD_COMPONENT];
 						}
 					}
 
@@ -190,9 +188,9 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 
 		result[IDX_X_COORD_COMPONENT] = ((x - cx_d) * depth * fx_d);
 
-		result[IDX_Z_COORD_COMPONENT] = ((y - cy_d) * depth * fy_d);
+		result[IDX_Y_COORD_COMPONENT] = ((y - cy_d) * depth * fy_d);
 
-		result[IDX_Y_COORD_COMPONENT] = depth;
+		result[IDX_Z_COORD_COMPONENT] = depth;
 
 		return result;
 	}

@@ -137,7 +137,7 @@ class KinectDepthOutput extends KinectOutputInterface {
 
 							int index = (x + y * getParentModule().getConfiguration().frameWidth);
 
-							int depthValue = frame.get(index);
+							int depthValue = frame.getShort(index);
 
 							pointCloudData[currentPoint] = rawDepthToMeters(depthValue);
 
@@ -178,7 +178,7 @@ class KinectDepthOutput extends KinectOutputInterface {
 
 		double result = 0.0;
 
-		if (depthValue < 2047) {
+		if (depthValue <= 2047) {
 
 			result = (double) (1.0 / (depthValue * -0.0030711016 + 3.3309495161));
 		}
