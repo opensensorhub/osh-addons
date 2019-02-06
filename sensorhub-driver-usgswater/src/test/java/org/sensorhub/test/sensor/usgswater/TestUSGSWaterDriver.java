@@ -30,6 +30,8 @@ import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.usgswater.USGSWaterConfig;
 import org.sensorhub.impl.sensor.usgswater.USGSWaterDriver;
+import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
+import org.sensorhub.impl.usgs.water.CodeEnums.StateCode;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.AsciiDataWriter;
@@ -51,6 +53,9 @@ public class TestUSGSWaterDriver implements IEventListener
     {
         config = new USGSWaterConfig();
         config.id = UUID.randomUUID().toString();
+        config.exposeFilter.stateCodes.add(StateCode.NY);
+        config.exposeFilter.parameters.add(ObsParam.DISCHARGE);
+        config.exposeFilter.parameters.add(ObsParam.GAGE_HEIGHT);
         
         driver = new USGSWaterDriver();
         driver.init(config);

@@ -17,6 +17,7 @@ package org.sensorhub.test.usgs.water;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Set;
 import org.junit.Test;
 import org.sensorhub.api.persistence.IDataFilter;
 import org.sensorhub.api.persistence.IDataRecord;
@@ -32,6 +33,7 @@ import org.vast.ogc.om.SamplingPoint;
 import org.vast.swe.fast.TextDataWriter;
 import org.vast.util.Bbox;
 import org.vast.util.DateTimeFormat;
+import com.google.common.collect.Sets;
 import com.vividsolutions.jts.geom.Polygon;
 import net.opengis.gml.v32.AbstractFeature;
 
@@ -59,7 +61,7 @@ public class TestWebArchiveConnector
         /////////////////
         IFoiFilter filter = new IFoiFilter() {
             @Override
-            public Collection<String> getFeatureIDs()
+            public Set<String> getFeatureIDs()
             {
                 return null;//Arrays.asList("urn:usgs:water:site:02465000");
             }
@@ -71,7 +73,7 @@ public class TestWebArchiveConnector
             }
 
             @Override
-            public Collection<String> getProducerIDs()
+            public Set<String> getProducerIDs()
             {
                 return null;
             }
@@ -104,9 +106,9 @@ public class TestWebArchiveConnector
             }
 
             @Override
-            public Collection<String> getProducerIDs()
+            public Set<String> getProducerIDs()
             {
-                return Arrays.asList("02362000");
+                return Sets.newHashSet("02362000");
             }
 
             @Override
@@ -116,9 +118,9 @@ public class TestWebArchiveConnector
             }
 
             @Override
-            public Collection<String> getFoiIDs()
+            public Set<String> getFoiIDs()
             {
-                return Arrays.asList("urn:usgs:water:site:02423555");
+                return Sets.newHashSet("urn:usgs:water:site:02423555");
             }
 
             @Override
