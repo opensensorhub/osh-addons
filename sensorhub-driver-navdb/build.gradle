@@ -12,7 +12,7 @@ dependencies {
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'GeoRobotix Inc'
+    instruction 'Bundle-Vendor', 'Botts Innovative Research Inc.'
     instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.turbulence.Turbulence'
   }
 }
@@ -23,8 +23,8 @@ ext.pom >>= {
     developer {
       id 'TheRestOfMe'
       name 'Tony Cook'
-      organization 'GeoRobotix'
-      organizationUrl 'https://opensensorhub.org/' 
+      organization 'Botts Innovative Research Inc.'
+      organizationUrl 'http://www.botts-inc.com' 
     }
   }
 }
