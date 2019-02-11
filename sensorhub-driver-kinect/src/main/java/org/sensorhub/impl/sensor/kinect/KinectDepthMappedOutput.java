@@ -132,11 +132,11 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 
 					int skipStep = (int)(1/scaleFactor);
 					
-					for (int y = 0; y < getParentModule().getConfiguration().frameHeight; y += skipStep) {
+					for (int y = 0; y < frameHeight; y += skipStep) {
 
-						for (int x = 0; x < getParentModule().getConfiguration().frameWidth; x += skipStep) {
+						for (int x = 0; x < frameWidth; x += skipStep) {
 
-							int index = (x + y * getParentModule().getConfiguration().frameWidth);
+							int index = (x + y * frameWidth);
 
 							int depthValue = frame.getShort(index);
 
