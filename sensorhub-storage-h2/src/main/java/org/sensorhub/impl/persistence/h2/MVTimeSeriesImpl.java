@@ -29,7 +29,6 @@ import org.sensorhub.api.persistence.IDataFilter;
 import org.sensorhub.api.persistence.IDataRecord;
 import org.sensorhub.api.persistence.IFeatureFilter;
 import org.sensorhub.api.persistence.IObsFilter;
-import org.sensorhub.api.persistence.ObsFilter;
 import org.sensorhub.api.persistence.ObsKey;
 import org.sensorhub.impl.persistence.IteratorWrapper;
 import org.sensorhub.impl.persistence.h2.MVFoiTimesStoreImpl.FoiTimePeriod;
@@ -199,7 +198,7 @@ public class MVTimeSeriesImpl
 
     int getNumMatchingRecords(IDataFilter filter, long maxCount)
     {
-        if (!(filter instanceof ObsFilter))
+        if (!(filter instanceof IObsFilter))
         {
             // efficiently count records if only time filter is used
             ProducerTimeKey[] keys = getKeyRange(filter);
