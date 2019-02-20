@@ -1,18 +1,15 @@
 package org.sensorhub.impl.sensor.gamma;
 
 import java.io.IOException;
-import net.opengis.sensorml.v20.IdentifierList;
-import net.opengis.sensorml.v20.Term;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.gamma.GammaOutput;
-import org.sensorhub.impl.sensor.gamma.GammaConfig;
-import org.vast.sensorML.SMLFactory;
+import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEHelper;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+
 
 public class GammaSensor extends AbstractSensorModule<GammaConfig>
 { 
@@ -82,54 +79,21 @@ public class GammaSensor extends AbstractSensorModule<GammaConfig>
         synchronized (sensorDescLock)
         {
         	super.updateSensorDescription();
+        	SMLHelper helper = new SMLHelper(sensorDescription);
         	
         	// set identifiers in SensorML
-            SMLFactory smlFac = new SMLFactory();
             sensorDescription.setId("GAMMA_DETECTOR");
             sensorDescription.setDescription("Gamma Detector Module");
-                
-          
-            IdentifierList identifierList = smlFac.newIdentifierList();
-            sensorDescription.addIdentification(identifierList);
-            Term term;
-            
-            term = smlFac.newTerm();
-            term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
-            term.setLabel("Manufacturer Name");
-            term.setValue("Health Physics Intruments");
-            identifierList.addIdentifier2(term);
+            helper.addIdentifier("Manufacturer Name", SWEHelper.getPropertyUri("Manufacturer"), "Health Physics Intruments");
             
             if (config.modelNumber != null)
             {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
-                term.setLabel("Model Number");
-                term.setValue(config.modelNumber);
-                identifierList.addIdentifier2(term);
+                helper.addIdentifier("Short Name", SWEHelper.getPropertyUri("ShortName"), "Gamma Detector " + config.modelNumber);
+                helper.addIdentifier("Model Number", SWEHelper.getPropertyUri("ModelNumber"), config.modelNumber);
             }
             
             if (config.serialNumber != null)
-            {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
-                term.setLabel("Serial Number");
-                term.setValue(config.serialNumber);
-                identifierList.addIdentifier2(term);
-            }
-            
-            // Long Name
-            term = smlFac.newTerm();
-            term.setDefinition(SWEHelper.getPropertyUri("LongName"));
-            term.setLabel("Long Name");
-            term.setValue("Model " + config.modelNumber + " Gamma Detector #" + config.serialNumber);
-            identifierList.addIdentifier2(term);
-
-            // Short Name
-            term = smlFac.newTerm();
-            term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
-            term.setLabel("Short Name");
-            term.setValue("Gamma Detector Model " + config.modelNumber);
-            identifierList.addIdentifier2(term);
+                helper.addIdentifier("Serial Number", SWEHelper.getPropertyUri("SerialNumber"), config.serialNumber);
         }
     }
 

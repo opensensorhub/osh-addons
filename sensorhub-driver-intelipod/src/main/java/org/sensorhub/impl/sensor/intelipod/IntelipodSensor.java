@@ -20,17 +20,11 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import net.opengis.sensorml.v20.IdentifierList;
-import net.opengis.sensorml.v20.Term;
-
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.intelipod.IntelipodOutput;
-import org.sensorhub.impl.sensor.intelipod.IntelipodConfig;
-import org.vast.sensorML.SMLFactory;
+import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEHelper;
-import ch.qos.logback.core.Context;
 
 
 /**
@@ -56,7 +50,6 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
     BufferedReader input;
     OutputStream output;
     String inputLine = null;
-    String modelNumber = null;
     String serialNumber = null;
     boolean started = false;
     
@@ -112,56 +105,21 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
     {
         synchronized (sensorDescLock)
         {
-        	System.out.println("Updating Sensor Description...");
-        	// set identifiers in SensorML
-            SMLFactory smlFac = new SMLFactory();            
-
+            super.updateSensorDescription();
+            SMLHelper helper = new SMLHelper(sensorDescription);
+            
+            // set identifiers in SensorML
             if (!sensorDescription.isSetDescription())
                 sensorDescription.setDescription("Venti Intelipod Sensor");
-          
-            IdentifierList identifierList = smlFac.newIdentifierList();
-            sensorDescription.addIdentification(identifierList);
-
-            Term term;            
-            term = smlFac.newTerm();
-            term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
-            term.setLabel("Manufacturer Name");
-            term.setValue("Venti");
-            identifierList.addIdentifier2(term);
+                        
+            helper.addIdentifier("Manufacturer Name", SWEHelper.getPropertyUri("Manufacturer"), "Venti");
             
-            if (modelNumber != null)
+            if (config.serialNumber != null)
             {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
-                term.setLabel("Model Number");
-                term.setValue(modelNumber);
-                identifierList.addIdentifier2(term);
+                helper.addIdentifier("Short Name", SWEHelper.getPropertyUri("ShortName"), "Intelipod " + config.serialNumber);
+                helper.addIdentifier("Serial Number", SWEHelper.getPropertyUri("SerialNumber"), config.serialNumber);
             }
-            
-            if (serialNumber != null)
-            {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
-                term.setLabel("Serial Number");
-                term.setValue(serialNumber);
-                identifierList.addIdentifier2(term);
-            }
-            
-            // Long Name
-            term = smlFac.newTerm();
-            term.setDefinition(SWEHelper.getPropertyUri("LongName"));
-            term.setLabel("Long Name");
-            term.setValue("Intelipod " + modelNumber + " #" + serialNumber);
-            identifierList.addIdentifier2(term);
-
-            // Short Name
-            term = smlFac.newTerm();
-            term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
-            term.setLabel("Short Name");
-            term.setValue("Intelipod " + modelNumber);
-            identifierList.addIdentifier2(term);
         }
-        System.out.println("Done Updating Sensor Description");
     }
     
     

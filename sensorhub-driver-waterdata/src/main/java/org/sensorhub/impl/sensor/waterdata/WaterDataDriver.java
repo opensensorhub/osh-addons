@@ -16,11 +16,11 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.waterdata;
 
 import net.opengis.sensorml.v20.IdentifierList;
-import net.opengis.sensorml.v20.Term;
 import org.sensorhub.impl.module.RobustConnection;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.api.common.SensorHubException;
 import org.vast.sensorML.SMLFactory;
+import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEHelper;
 
 
@@ -39,10 +39,6 @@ public class WaterDataDriver extends AbstractSensorModule <WaterDataConfig> {
     WaterDataOutput waterOut;
     
     String jsonURL;
-    String serialNumber;
-    String modelNumber;
-    String longName;
-    String shortName;
     
     public WaterDataDriver() {
 
@@ -92,45 +88,9 @@ public class WaterDataDriver extends AbstractSensorModule <WaterDataConfig> {
 
             IdentifierList identifierList = smlFac.newIdentifierList();
             sensorDescription.addIdentification(identifierList);
-
-            Term term;
-            term = smlFac.newTerm();
-            term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
-            term.setLabel("Manufacturer Name");
-            term.setValue("USGS");
-            identifierList.addIdentifier2(term);
-
-            if (modelNumber != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
-                term.setLabel("Model Number");
-                term.setValue(modelNumber);
-                identifierList.addIdentifier2(term);
-            }
-
-            if (serialNumber != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
-                term.setLabel("Serial Number");
-                term.setValue(serialNumber);
-                identifierList.addIdentifier2(term);
-            }
-
-            if (longName != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("LongName"));
-                term.setLabel("Long Name");
-                term.setValue(longName);
-                identifierList.addIdentifier2(term);
-            }
-
-            if (shortName != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
-                term.setLabel("Short Name");
-                term.setValue(shortName);
-                identifierList.addIdentifier2(term);
-            }
+            
+            SMLHelper helper = new SMLHelper(sensorDescription);
+            helper.addIdentifier("Operator", SWEHelper.getPropertyUri("Operator"), "USGS");
         }
     }
 

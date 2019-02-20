@@ -127,7 +127,7 @@ public class TestMavlinkDriverSolo implements IEventListener
         try
         {
             //System.out.print("\nNew data received from sensor " + newDataEvent.getSensorId());
-            writer.setDataComponents(newDataEvent.getRecordDescription());
+            writer.setDataComponents(newDataEvent.getSource().getRecordDescription());
             writer.reset();
             writer.write(newDataEvent.getRecords()[0]);
             writer.flush();
