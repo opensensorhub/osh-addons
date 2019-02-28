@@ -1,0 +1,28 @@
+description = 'Gridded Storm Weather Datasets'
+ext.details = 'Adaptor for gridded datasets of extreme weather events as lightning and hail'
+version = '0.3.2'
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile project(':sensorhub-utils-grid')
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Botts Innovative Research Inc.'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.mesh.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'TheRestOfMe'
+      name 'Tony Cook'
+      organization 'Botts Innovative Research Inc.'
+      organizationUrl 'http://www.botts-inc.com' 
+    }
+  }
+}
