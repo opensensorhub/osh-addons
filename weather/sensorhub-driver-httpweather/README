@@ -1,0 +1,31 @@
+This is a driver written originally to take measurements from a METEOBRIDGE connected weather station. It provides an HTTP endpoint (piggy-backing on the HTTP server within Open Sensor Hub) which allows a client to submit readings using a parameterised HTTP GET request. This driver was written and provided by Environment Systems (http://www.envsys.co.uk).
+
+Though it was originally written with METEOBRIDGE in mind, in fact the driver can take measurements from any device that is capable of submitting results as HTTP requests, using the appropriate GET parameters.
+
+Parameters that the server is set to receieve and publish can be configured in the driver configuration screen. Each setting has a corresponding HTTP GET parameter, which are detailed below:
+
+"Setting Name"          - "Parameter Name"
+Internal Temperature    - intemp
+External Temperature    - outtemp
+External Humidity       - outhum
+Wind Speed              - windspeed
+Wind Direction          - winddir
+Average Wind Speed      - avgwindspeed
+Rain Rate               - rain
+Sunrise Time            - sunrise
+Sunset Time             - sunset
+Station Pressure        - pressure
+Sea Pressure            - seapressure
+UV Index                - uvindex
+Solar Radiation         - solarradiation
+Head Index              - heatindex
+Dew Point               - dewpoint 
+Wind Chill              - windchill
+
+In order to log a measurement, an HTTP request must be sent, matching the enabled config, to the Open Sensor Hub IP and port number with the http weather endpoint (URL Base from the config screen) appended.
+
+For Example, if your OSH is configured at localhost:8080/sensorhub/admin, you have enabled the http weather driver, enabled external and internal temperature settings, and the 'URL Base' setting reads 'b1ebd705-c013-49cb-b137-652cf658d072' you would send the following request to log a measurement:
+
+http://localhost:8080/sensorhub/httpweather/b1ebd705-c013-49cb-b137-652cf658d072?intemp=21.0&outtemp=16.0
+
+NB: The unit tests for this module require running an HTTP server on port 8080. If this port is unavailable, e.g., in use by Tomcat, you will see Bind Exception errors when trying to run the tests.

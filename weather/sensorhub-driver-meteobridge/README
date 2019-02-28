@@ -1,0 +1,34 @@
+This is a driver for METEOBRIDGE (http://www.meteobridge.com/wiki/index.php/Home) connected devices for Open Sensor Hub developed by Environment Systems (http://www.envsys.co.uk) and released under the Mozilla Public License 2.0 (https://www.mozilla.org/en-US/MPL/2.0/)
+
+This driver connects to the meteobridge telnet interface to extract the current live readings as XML according to http://www.meteobridge.com/wiki/index.php/Add-On_Services
+
+Currently, the following sensor ids and attributes are supported. Select from these which you would like to enable in the Open Sensor Hub configuration for the driver:
+
+Sensor: TH
+ID: th0
+Attributes: temp, hum, dew, heatindex (Temperature, Humidity, Dew-point and Heat Index)
+
+ID: thb0
+Attributes: temp, hum, dew, press, seapress (Temperature, Humidity, Dew-point, station pressure, sea pressure)
+
+Sensor: WIND
+ID: wind0
+Attributes: wind, avgwind, dir, chill, gust (Wind speed, average wind speed, direction, chill, gust-factor)
+
+Sensor: RAIN
+ID: rain0
+Attributes: rate, total (Rain rate, total rain fall)
+
+Sensor: UV
+ID: uv0
+Attributes: index (UV Index)
+
+Sensor: SOLAR
+id: sol0
+Attributes: rad, evo (Radiation, Evapotranspiration)
+
+
+
+
+
+

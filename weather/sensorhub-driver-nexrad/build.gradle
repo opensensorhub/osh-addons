@@ -1,0 +1,52 @@
+description = 'Nexrad Doppler Radar Network'
+ext.details = 'Driver for Nexrad Doppler radars, supporting both Level II and Level III products'
+version = '1.0.0-SNAPSHOT'
+
+rootProject.allprojects {
+  repositories {
+    maven { url 'https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases' }
+  }
+}
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile 'org.apache.httpcomponents:httpclient:4.4.1'
+  compile 'com.amazonaws:aws-java-sdk-sqs:1.10.50'
+  compile 'com.amazonaws:aws-java-sdk-sns:1.10.50'
+  compile 'com.amazonaws:aws-java-sdk-s3:1.10.50'
+  compile 'org.apache.commons:commons-compress:1.5'
+  compile 'commons-io:commons-io:2.5'
+  compile 'joda-time:joda-time:2.9.2'
+  compile 'com.google.guava:guava:19.0'
+
+// UCAR NetCDF dependencies
+  compile 'edu.ucar:cdm:4.6.9'
+  compile 'edu.ucar:grib:4.6.9'
+  compile 'org.slf4j:slf4j-jdk14:1.7.21'
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+test {
+  exclude '**/TestNexrad.class'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.nexrad.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'TheRestOfMe'
+      name 'Tony Cook'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'http://www.botts-inc.com' 
+    }   
+  }
+}

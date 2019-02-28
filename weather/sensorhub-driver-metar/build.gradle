@@ -1,0 +1,42 @@
+description = 'METAR Weather Sensor Network'
+ext.details = 'Driver for METAR weather station network through Anything Weather server'
+version = '1.0.0'
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile 'org.apache.httpcomponents:httpclient:4.3.6'
+  compile 'joda-time:joda-time:2.7'
+  compile 'com.opencsv:opencsv:3.8'
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+test {
+  exclude '**/TestWeatherStation.class'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.station.metar.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'TheRestOfMe'
+      name 'Tony Cook'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'http://www.botts-inc.com' 
+    }
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com' 
+    }    
+  }
+}
