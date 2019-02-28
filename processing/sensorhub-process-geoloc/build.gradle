@@ -1,0 +1,33 @@
+description = 'Common Geolocation Functions'
+ext.details = 'Common geolocation algorithms and process blocks'
+version = '1.0.0'
+
+dependencies {
+  compile project(':sensorhub-process-vecmath')
+  compile 'org.vast.opengis:ogc-services-sps:' + oshCoreVersion
+}
+
+test {
+  exclude '**/TestRayIntersectTerrainProcess.class'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Activator', 'org.sensorhub.process.geoloc.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com' 
+    }
+  }
+}
+
