@@ -1,0 +1,24 @@
+rootProject.name = 'osh-addons'
+gradle.ext.oshCoreDir = "$rootDir/core"
+
+// include osh-core build only if not part of larger build
+// this is needed to avoid nested composite builds
+// comment this to build against published artifacts
+if (gradle.parent == null)
+  includeBuild gradle.oshCoreDir
+
+// include all folders with build.gradle as subprojects
+FileTree subprojects = fileTree(rootDir).exclude('core').include('**/build.gradle')
+subprojects.files.each { File f ->
+  File projectFolder = f.parentFile
+  if (projectFolder != rootDir) {
+    String parentName = ':' + projectFolder.parentFile.name
+    String projectName = ':' + projectFolder.name
+    String fullName = ':' + rootDir.toPath().relativize(projectFolder.toPath()).toString().replace('/', ':')
+    include fullName
+    //println fullName
+    //println projectFolder
+    //println rootDir.toPath().relativize(projectFolder.toPath())
+    //project(projectName).projectDir = projectFolder
+  }
+}

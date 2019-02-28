@@ -4,7 +4,7 @@ version = '1.0.0'
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile project(':sensorhub-driver-videocam')
+  compile project(':sensors:video:sensorhub-driver-videocam')
   compile group: 'net.java.dev.jna', name: 'jna', version: '5.1.0'
   embedded 'org.openkinect:freenect:1.0'
 }

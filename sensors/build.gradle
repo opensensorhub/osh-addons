@@ -1,6 +1,4 @@
-apply from: gradle.oshCoreDir + '/common.gradle'
-version = oshCoreVersion
-description = 'OSH Example Sensor Modules'
+description = 'OSH Sensor Driver Add-ons'
 
 
 subprojects {  

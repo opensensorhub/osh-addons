@@ -1,6 +1,6 @@
 ### OpenSensorHub Add-ons
 
-This repository contains source code for various OpenSensorHub add-on modules including sensor drivers, database connectors, processing algorithms, additional services, etc.
+This repository contains various OpenSensorHub add-on modules including sensor drivers, database connectors, processing algorithms, additional services, etc.
 
 Please clone this repository with the `--recursive` option (`git clone --recursive`) as it contains submodules.
 

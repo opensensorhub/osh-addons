@@ -4,7 +4,7 @@ version = '0.3.2'
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile project(':sensorhub-utils-grid')
+  compile project(':sensors:weather:sensorhub-utils-grid')
 }
 
 // add info to OSGi manifest

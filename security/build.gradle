@@ -1,6 +1,5 @@
-apply from: gradle.oshCoreDir + '/common.gradle'
-version = oshCoreVersion
 description = 'OSH Security Add-ons'
+
 
 subprojects {
   // add project dependency to proper configuration depending on version
