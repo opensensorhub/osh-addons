@@ -1,0 +1,39 @@
+description = 'Elastic search Storage'
+ext.details = 'Storage based on Elastic search database'
+version = '1.0.0-SNAPSHOT'
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile 'org.elasticsearch.client:transport:5.3.1'
+  compile 'com.esotericsoftware:kryo:4.0.0'
+  compile 'org.locationtech.spatial4j:spatial4j:0.6'
+  
+  testCompile 'org.apache.logging.log4j:log4j-api:2.7'
+  testCompile 'org.apache.logging.log4j:log4j-core:2.7'
+  testCompile group:'org.sensorhub', name:'sensorhub-core', version:oshCoreVersion, configuration: 'testArtifacts'
+}
+
+// only run tests using mock DB automatically
+// exclude tests requiring connection to the database; these have to be run manually
+test {
+  exclude '**/integration/*.class'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Activator', 'org.sensorhub.process.math.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'mdhsl'
+      name 'Mathieu Dhainaut'
+    }
+  }
+}
+
