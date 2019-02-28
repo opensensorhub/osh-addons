@@ -1,0 +1,33 @@
+description = 'Domoticz Smart Home'
+ext.details = 'Driver for connecting to Domoticz Home Automation System'
+version = '0.1.0-SNAPSHOT'
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+test {
+  exclude '**/TestDomoticzDriver.class'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.domoticz.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'labutler'
+      name 'Lee Butler'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'http://www.botts-inc.com' 
+    }
+  }
+}
