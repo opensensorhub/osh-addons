@@ -1,0 +1,28 @@
+description = 'USGS Water Data Driver'
+ext.details = 'Connector to retrieve live observations from USGS water stations'
+version = '0.1.0'
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile project(':sensorhub-storage-usgswater')
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.usgswater.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'labutler'
+      name 'Lee Butler'
+      organization 'Botts Innovative Research Inc.'
+      organizationUrl 'http://www.botts-inc.com'
+    }
+  }
+}
