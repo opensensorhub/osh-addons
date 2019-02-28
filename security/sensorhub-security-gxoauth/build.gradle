@@ -1,0 +1,35 @@
+description = 'GEOAxIS Implementation of OAuth2 Authentication'
+ext.details = 'Provides federated authentication through OAuth2 providers such as Google, Twitter, etc.'
+version = '0.9.0'
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile 'org.apache.oltu.oauth2:org.apache.oltu.oauth2.client:1.0.1'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Activator', 'org.sensorhub.process.math.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com'
+    }
+    developer {
+      id 'theastrowolfe'
+      name 'Joshua Wolfe'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'http://www.botts-inc.com'
+    }
+  }
+}
+
