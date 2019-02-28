@@ -1,0 +1,28 @@
+description = 'Comm Relay Service'
+ext.details = 'Service for relaying a data stream between incoming and outgoing communication providers'
+version = '1.0.0'
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Activator', 'org.sensorhub.process.math.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com' 
+    }
+  }
+}
+
