@@ -1,13 +1,13 @@
 # OSH for Video
 
-This repository contains various add-on modules for handling everything that has to do with video, including support for various video cameras, live video streaming and playback.
+This folder contains various add-on modules for handling everything that has to do with video, including support for various video cameras, live video streaming and playback.
 
 ### Video Camera Drivers
   - [sensorhub-driver-rtpcam](sensorhub-driver-rtpcam)
   - [sensorhub-driver-axis](sensorhub-driver-axis)
   - [sensorhub-driver-dahua](sensorhub-driver-dahua) 
   - [sensorhub-driver-onvif](sensorhub-driver-onvif)
-  - [sensorhub-driver-virb-xe](sensorhub-driver-virb-xe)  
+  - [sensorhub-driver-virb-xe](sensorhub-driver-virb-xe)
   - [sensorhub-driver-v4l](sensorhub-driver-v4l)
 
 ### Helper Classes

@@ -1,16 +1,3 @@
-# persistence
+# OSH Persistence
 
-This repository contains source code for persistence/storage modules.
-
-There are other DB implementations to investigate:
-
-Object DB:
-
-  * MapDB
-  * Berkeley DB
-
-
-Distributed DB:
-
-  * GeoWave
-  * Ignite
+This folder contains add-on modules for persistence/storage modules.
