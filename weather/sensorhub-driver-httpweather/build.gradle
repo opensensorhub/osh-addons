@@ -1,0 +1,28 @@
+group = 'uk.co.envsys'
+description = 'Generic HTTP Weather Driver'
+ext.details = 'Provides HTTP endpoint for weather stations to push measurements to'
+version = '0.1-SNAPSHOT'
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Environment Systems'
+    instruction 'Bundle-Activator', 'uk.co.envsys.sensorhub.sensor.httpweather.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'sebastianclarke'
+      name 'Sebastian Clarke'
+      organization 'Environment Systems'
+      organizationUrl 'http://www.envsys.co.uk' 
+    } 
+  }
+}
