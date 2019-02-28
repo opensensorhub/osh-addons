@@ -1,0 +1,18 @@
+description = 'RXTX Serial Comm Provider'
+ext.details = 'Serial communication provider based on RXTX library'
+
+def thisProjectDir = projectDir
+rootProject.allprojects {
+  repositories {
+    maven { url "file:///$thisProjectDir/libs" }
+  }
+}
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  embedded 'gnu.io:rxtx:2.2-pre1'
+}
+
+test {
+  exclude '**/TestRxtxSerialCommProvider.class'
+}

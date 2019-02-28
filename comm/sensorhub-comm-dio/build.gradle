@@ -1,0 +1,13 @@
+description = 'Device I/O Comm Providers'
+ext.details = 'Direct device communication using JDK Device I/O library (UART, I2C, SPI, GPIO)'
+
+rootProject.allprojects {
+  repositories {
+    maven { url "https://raw.github.com/eurotech/kura_addons/mvn-repo" }
+  }
+}
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile 'jdk:jdk.dio:1.0.1'
+}
