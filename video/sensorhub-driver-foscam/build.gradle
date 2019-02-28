@@ -1,0 +1,35 @@
+description = 'Foscam Cameras'
+ext.details = 'Driver for Foscam video cameras using IP protocol'
+version = '1.0.0'
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile project(':sensorhub-driver-rtpcam')
+  testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+test {
+  exclude '**/TestFoscamCameraDriver.class'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.fakegps.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'labutler'
+      name 'Lee Butler'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'http://www.botts-inc.com' 
+    }
+  }
+}

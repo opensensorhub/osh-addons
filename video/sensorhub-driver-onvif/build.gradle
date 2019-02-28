@@ -1,0 +1,46 @@
+description = 'ONVIF Video Camera'
+ext.details = 'Driver for IP video cameras using the ONFIV standard'
+version = '0.0.1'
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile project(':sensorhub-driver-rtpcam')
+  compile group: 'org.apache.cxf.services.ws-discovery', name: 'cxf-services-ws-discovery-api', version: '3.1.11'
+  compile group: 'org.apache.cxf.services.ws-discovery', name: 'cxf-services-ws-discovery-service', version: '3.1.11'
+  compile group: 'org.apache.cxf', name: 'cxf-rt-transports-http-jetty', version: '3.1.11'
+  compile group: 'org.apache.cxf', name: 'cxf-rt-bindings-soap', version: '3.1.11'
+  compile('net.sf.jipcam:jipcam:0.9.1') {
+    exclude group: 'javax.servlet', module: 'servlet-api'
+    exclude group: 'commons-cli', module: 'commons-cli'
+    exclude group: 'commons-httpclient', module: 'commons-httpclient'
+  }
+
+  compile fileTree(dir: 'lib', include: ['*.jar'])
+  testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+test {
+  exclude '**/TestOnvifCameraDriver.class'
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.axis.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'theastrowolfe'
+      name 'Joshua Wolfe'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'http://www.botts-inc.com' 
+    }
+  }
+}

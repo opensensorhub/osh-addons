@@ -1,0 +1,39 @@
+description = 'Kinect Driver'
+ext.details = 'An OpenSensorHub driver for the Microsoft Kinect using the OpenKinect freenect library and Java wrappers'
+version = '1.0.0'
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile project(':sensorhub-driver-videocam')
+  compile group: 'net.java.dev.jna', name: 'jna', version: '5.1.0'
+  embedded 'org.openkinect:freenect:1.0'
+}
+
+def thisProjectDir = projectDir
+rootProject.allprojects {
+  repositories {
+    mavenCentral()
+    maven { url "file:///$thisProjectDir/libs" }
+  }
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
+    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.kinect.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'nickgaray'
+      name 'Nicolas Garay'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'http://www.botts-inc.net' 
+    }
+  }
+}
+

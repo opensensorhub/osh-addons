@@ -1,0 +1,35 @@
+description = 'SOS Extensions for Video'
+ext.details = 'Sensor Observation Service extensions for supporting video'
+version = '1.1.0'
+
+rootProject.allprojects {
+  repositories {
+    maven { url "http://52north.org/maven/repo/releases" }
+  }
+}
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    instruction 'Bundle-Vendor', 'Sensia Software LLC'
+    instruction 'Bundle-Activator', 'org.sensorhub.process.math.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com' 
+    }
+  }
+}
+
