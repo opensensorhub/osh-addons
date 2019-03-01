@@ -22,6 +22,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.common.IEventHandler;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.api.data.IDataProducer;
 import org.sensorhub.api.data.IDataProducerModule;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.impl.SensorHub;
@@ -165,7 +166,7 @@ public class SatelliteStateOutput implements IStreamingDataInterface
 
 
     @Override
-    public IDataProducerModule<?> getParentModule()
+    public IDataProducer<?> getProducer()
     {
         return parentProcess;
     }

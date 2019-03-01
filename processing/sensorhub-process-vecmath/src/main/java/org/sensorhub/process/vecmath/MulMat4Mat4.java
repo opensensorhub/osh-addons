@@ -24,8 +24,9 @@ package org.sensorhub.process.vecmath;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.Quantity;
 import org.sensorhub.algo.vecmath.Mat4d;
-import org.vast.process.SMLException;
-import org.vast.sensorML.ExecutableProcessImpl;
+import org.sensorhub.api.processing.OSHProcessInfo;
+import org.vast.process.ExecutableProcessImpl;
+import org.vast.process.ProcessException;
 
 
 /**
@@ -37,16 +38,20 @@ import org.vast.sensorML.ExecutableProcessImpl;
  * @author Alex Robin & Gregoire Berthiau
  * @since Jan 16, 2008
  */
-public class MulMat4Mat4_Process extends ExecutableProcessImpl
+public class MulMat4Mat4 extends ExecutableProcessImpl
 {
-    private DataArray mat1, mat2, resultMat;
+    public static final OSHProcessInfo INFO = new OSHProcessInfo("mulMV4", "Matrix4 Multiply", "Multiply 2 4x4 matrices", MulMat4Mat4.class);
+    private DataArray mat1;
+    private DataArray mat2;
+    private DataArray resultMat;
     private Quantity scalar;
     private Mat4d m1;
     private Mat4d m2;
 	
     
-    public MulMat4Mat4_Process()
+    public MulMat4Mat4()
     {
+        super(INFO);
         VecMathHelper sweHelper = new VecMathHelper();
         
         // create input M1
@@ -69,15 +74,16 @@ public class MulMat4Mat4_Process extends ExecutableProcessImpl
     
     
     @Override
-    public void init() throws SMLException
+    public void init() throws ProcessException
     {
+        super.init();
         m1 = new Mat4d();
         m2 = new Mat4d();
     }
     
 
     @Override
-    public void execute() throws SMLException
+    public void execute() throws ProcessException
     {
         // read input matrix data
         VecMathHelper.toMat4d(mat1.getData(), m1);

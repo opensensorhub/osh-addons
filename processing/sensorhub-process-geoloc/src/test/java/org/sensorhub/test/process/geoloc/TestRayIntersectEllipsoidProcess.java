@@ -19,7 +19,7 @@ import net.opengis.swe.v20.DataBlock;
 import org.junit.Test;
 import org.sensorhub.algo.geoloc.Ellipsoid;
 import org.sensorhub.algo.vecmath.Vect3d;
-import org.sensorhub.process.geoloc.RayIntersectEllipsoid_Process;
+import org.sensorhub.process.geoloc.RayIntersectEllipsoid;
 import org.sensorhub.process.vecmath.VecMathHelper;
 import org.vast.sensorML.SMLUtils;
 import org.vast.sensorML.SimpleProcessImpl;
@@ -28,12 +28,10 @@ import org.vast.sensorML.SimpleProcessImpl;
 public class TestRayIntersectEllipsoidProcess
 {
     
-    private RayIntersectEllipsoid_Process createProcess() throws Exception
+    private RayIntersectEllipsoid createProcess() throws Exception
     {
-        RayIntersectEllipsoid_Process p = new RayIntersectEllipsoid_Process();
+        RayIntersectEllipsoid p = new RayIntersectEllipsoid();
         p.init();
-        p.createNewInputBlocks();
-        p.createNewOutputBlocks();
                 
         // serialize
         SimpleProcessImpl wp = new SimpleProcessImpl();
@@ -44,7 +42,7 @@ public class TestRayIntersectEllipsoidProcess
     }
     
     
-    private DataBlock execProcess(RayIntersectEllipsoid_Process p, Vect3d orig, Vect3d dir) throws Exception
+    private DataBlock execProcess(RayIntersectEllipsoid p, Vect3d orig, Vect3d dir) throws Exception
     {
         VecMathHelper.fromVect3d(orig, p.getInputList().getComponent("rayOrigin").getData());
         VecMathHelper.fromVect3d(dir, p.getInputList().getComponent("rayDirection").getData());
@@ -56,7 +54,7 @@ public class TestRayIntersectEllipsoidProcess
     @Test
     public void testIntersectFromOutside() throws Exception
     {
-        RayIntersectEllipsoid_Process p = createProcess();
+        RayIntersectEllipsoid p = createProcess();
         DataBlock intersectPos;
         
         // straight down from above lat0, lon0
@@ -76,7 +74,7 @@ public class TestRayIntersectEllipsoidProcess
     @Test
     public void testIntersectFromInside() throws Exception
     {
-        RayIntersectEllipsoid_Process p = createProcess();
+        RayIntersectEllipsoid p = createProcess();
         DataBlock intersectPos;
         
         // from earth center to lat0, lon0

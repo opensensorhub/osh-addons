@@ -154,7 +154,7 @@ public class TLEOutput implements IStreamingDataInterface, TLEProvider
 
 
     @Override
-    public IDataProducerModule<?> getParentModule()
+    public IDataProducerModule<?> getProducer()
     {
         return parentProcess;
     }

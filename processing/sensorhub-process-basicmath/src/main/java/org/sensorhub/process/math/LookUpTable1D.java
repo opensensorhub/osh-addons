@@ -21,9 +21,10 @@
 package org.sensorhub.process.math;
 
 import net.opengis.swe.v20.DataBlock;
-import org.vast.data.*;
-import org.vast.process.*;
-import org.vast.sensorML.ExecutableProcessImpl;
+import org.sensorhub.api.processing.OSHProcessInfo;
+import org.vast.data.DataValue;
+import org.vast.process.ExecutableProcessImpl;
+import org.vast.process.ProcessException;
 
 
 /**
@@ -36,9 +37,10 @@ import org.vast.sensorML.ExecutableProcessImpl;
  * @author Alexandre Robin
  * @date Sep 2, 2005
  */
-public class LookUpTable1D_Process extends ExecutableProcessImpl
+public class LookUpTable1D extends ExecutableProcessImpl
 {
-	DataValue inputVar;
+    public static final OSHProcessInfo INFO = new OSHProcessInfo("lookUpTable1D", "Look-up Table 1D", null, LookUpTable1D.class);
+    DataValue inputVar;
     DataValue[] outputVars;
     DataValue inputGain, outputGain, inputBias, outputBias;
     DataBlock tableData;
@@ -50,14 +52,16 @@ public class LookUpTable1D_Process extends ExecutableProcessImpl
     int lastTupleIndex = 0;
     
     
-    public LookUpTable1D_Process()
+    public LookUpTable1D()
     {
-    	
+    	super(INFO);
     }
 
     
-    public void init() throws SMLException
+    public void init() throws ProcessException
     {
+        super.init();
+        
         try
         {
             // input mapping
@@ -90,7 +94,7 @@ public class LookUpTable1D_Process extends ExecutableProcessImpl
             tupleSize = paramData.getComponent("table").getComponent(0).getComponentCount();          
             tableSize = tableData.getAtomCount()/(tupleSize);
             if (tupleSize != outputVars.length+1)
-                throw new SMLException("table and output should have the same size");
+                throw new ProcessException("table and output should have the same size");
 
             // read interpolation method
             DataValue interp = (DataValue)paramData.getComponent("interpolationMethod");
@@ -116,7 +120,7 @@ public class LookUpTable1D_Process extends ExecutableProcessImpl
         }
         catch (Exception e)
         {
-            throw new SMLException(IO_ERROR_MSG, e);
+            throw new ProcessException(IO_ERROR_MSG, e);
         }
     }
     
@@ -124,7 +128,7 @@ public class LookUpTable1D_Process extends ExecutableProcessImpl
     /**
      * Executes process algorithm on inputs and set output data
      */
-    public void execute() throws SMLException
+    public void execute() throws ProcessException
     {
     	double input = inputVar.getData().getDoubleValue(); 	
     	

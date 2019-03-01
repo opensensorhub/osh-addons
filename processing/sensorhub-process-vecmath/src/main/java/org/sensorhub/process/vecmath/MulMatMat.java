@@ -21,12 +21,11 @@
 
 package org.sensorhub.process.vecmath;
 
-import net.opengis.sensorml.v20.Settings;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.Quantity;
-import org.vast.process.SMLException;
-import org.vast.sensorML.ExecutableProcessImpl;
-import org.vast.sensorML.SMLHelper;
+import org.sensorhub.api.processing.OSHProcessInfo;
+import org.vast.process.ExecutableProcessImpl;
+import org.vast.process.ProcessException;
 
 
 /**
@@ -38,15 +37,21 @@ import org.vast.sensorML.SMLHelper;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @date Jan 16, 2008
  */
-public class MulMatMat_Process extends ExecutableProcessImpl
+public class MulMatMat extends ExecutableProcessImpl
 {
-    private DataArray mat1, mat2, resultMat;
+    public static final OSHProcessInfo INFO = new OSHProcessInfo("mulMM", "Matrix Multiply", "Multiply 2 matrices", MulMatMat.class);
+    private DataArray mat1;
+    private DataArray mat2;
+    private DataArray resultMat;
     private Quantity scalar;
-    private int m1Rows, m1Cols, m2Cols;
+    private int m1Rows;
+    private int m1Cols;
+    private int m2Cols;
 	
     
-    public MulMatMat_Process()
+    public MulMatMat()
     {
+        super(INFO);
         VecMathHelper sweHelper = new VecMathHelper();
         
         // create input M1
@@ -69,8 +74,10 @@ public class MulMatMat_Process extends ExecutableProcessImpl
     
     
     @Override
-    public void init() throws SMLException
+    public void init() throws ProcessException
     {
+        super.init();
+        
         /*m1Rows = 4;
         m1Cols = 4;
         m2Cols = 4;
@@ -87,7 +94,6 @@ public class MulMatMat_Process extends ExecutableProcessImpl
         ((DataArray)resultMat.getElementType()).updateSize(m2Cols);
         resultMat.renewDataBlock();*/
         
-        SMLHelper.applyConfig(wrapperProcess, (Settings)wrapperProcess.getConfiguration());
         m1Rows = mat1.getComponentCount();
         m1Cols = mat1.getElementType().getComponentCount();
         m2Cols = mat2.getElementType().getComponentCount();
@@ -100,7 +106,7 @@ public class MulMatMat_Process extends ExecutableProcessImpl
     
 
     @Override
-    public void execute() throws SMLException
+    public void execute() throws ProcessException
     {
         // get reference matrix data
         final double[] mat1Data = (double[])mat1.getData().getUnderlyingObject();

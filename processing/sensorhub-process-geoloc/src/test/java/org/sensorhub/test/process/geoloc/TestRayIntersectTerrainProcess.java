@@ -20,7 +20,7 @@ import org.junit.Test;
 import org.sensorhub.algo.geoloc.GeoTransforms;
 import org.sensorhub.algo.geoloc.SRTMUtil;
 import org.sensorhub.algo.vecmath.Vect3d;
-import org.sensorhub.process.geoloc.RayIntersectTerrain_Process;
+import org.sensorhub.process.geoloc.RayIntersectTerrain;
 import org.sensorhub.process.vecmath.VecMathHelper;
 import org.vast.sensorML.SMLUtils;
 import org.vast.sensorML.SimpleProcessImpl;
@@ -31,17 +31,15 @@ public class TestRayIntersectTerrainProcess
     static String srtmRoot = "/media/alex/Backup500/Data/SRTM/US/1arcsec";
     
     
-    private RayIntersectTerrain_Process createProcess() throws Exception
+    private RayIntersectTerrain createProcess() throws Exception
     {
-        RayIntersectTerrain_Process p = new RayIntersectTerrain_Process();
+        RayIntersectTerrain p = new RayIntersectTerrain();
         
         // set params        
         p.getParameterList().getComponent("srtmDataPath").getData().setStringValue(srtmRoot);
         
         // prepare for exec
         p.init();
-        p.createNewInputBlocks();
-        p.createNewOutputBlocks();
                 
         // serialize
         SimpleProcessImpl wp = new SimpleProcessImpl();
@@ -52,7 +50,7 @@ public class TestRayIntersectTerrainProcess
     }
     
     
-    private DataBlock execProcess(RayIntersectTerrain_Process p, Vect3d orig, Vect3d dir) throws Exception
+    private DataBlock execProcess(RayIntersectTerrain p, Vect3d orig, Vect3d dir) throws Exception
     {
         VecMathHelper.fromVect3d(orig, p.getInputList().getComponent("rayOrigin").getData());
         VecMathHelper.fromVect3d(dir, p.getInputList().getComponent("rayDirection").getData());
@@ -64,7 +62,7 @@ public class TestRayIntersectTerrainProcess
     @Test
     public void testIntersectFromOutside() throws Exception
     {
-        RayIntersectTerrain_Process p = createProcess();
+        RayIntersectTerrain p = createProcess();
         DataBlock intersectPos;
         
         GeoTransforms geoConv = new GeoTransforms();

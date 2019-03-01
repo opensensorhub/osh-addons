@@ -20,7 +20,7 @@ import org.sensorhub.algo.geoloc.GeoTransforms;
 import org.sensorhub.algo.vecmath.Mat4d;
 import org.sensorhub.algo.vecmath.Quat4d;
 import org.sensorhub.algo.vecmath.Vect3d;
-import org.sensorhub.process.geoloc.ECEFPositionMatrix_Process;
+import org.sensorhub.process.geoloc.ECEFPosMatrix;
 import org.sensorhub.process.vecmath.VecMathHelper;
 import org.vast.sensorML.SMLUtils;
 import org.vast.sensorML.SimpleProcessImpl;
@@ -29,14 +29,12 @@ import org.vast.sensorML.SimpleProcessImpl;
 public class TestECEFPosMatrixProcess
 {
     
-    private ECEFPositionMatrix_Process createProcess() throws Exception
+    private ECEFPosMatrix createProcess() throws Exception
     {
-        ECEFPositionMatrix_Process p = new ECEFPositionMatrix_Process();
+        ECEFPosMatrix p = new ECEFPosMatrix();
         
         // prepare for exec
         p.init();
-        p.createNewInputBlocks();
-        p.createNewOutputBlocks();
                 
         // serialize
         SimpleProcessImpl wp = new SimpleProcessImpl();
@@ -47,7 +45,7 @@ public class TestECEFPosMatrixProcess
     }
     
     
-    private Mat4d execProcess(ECEFPositionMatrix_Process p, Vect3d loc, Quat4d dir) throws Exception
+    private Mat4d execProcess(ECEFPosMatrix p, Vect3d loc, Quat4d dir) throws Exception
     {
         VecMathHelper.fromVect3d(loc, p.getInputList().getComponent("platformLoc").getData());
         VecMathHelper.fromQuat4d(dir, p.getInputList().getComponent("platformAtt").getData());
@@ -70,7 +68,7 @@ public class TestECEFPosMatrixProcess
     @Test
     public void testMatrixHorizontal() throws Exception
     {
-        ECEFPositionMatrix_Process p = createProcess();
+        ECEFPosMatrix p = createProcess();
         
         GeoTransforms geoConv = new GeoTransforms();
         Mat4d posMat;

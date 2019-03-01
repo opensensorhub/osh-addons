@@ -24,9 +24,9 @@ import org.junit.Test;
 import org.sensorhub.algo.vecmath.Mat3d;
 import org.sensorhub.algo.vecmath.Mat4d;
 import org.sensorhub.algo.vecmath.Vect3d;
-import org.sensorhub.process.vecmath.MulMat3Mat3_Process;
-import org.sensorhub.process.vecmath.MulMat3Vec3_Process;
-import org.sensorhub.process.vecmath.MulMatMat_Process;
+import org.sensorhub.process.vecmath.MulMat3Mat3;
+import org.sensorhub.process.vecmath.MulMat3Vec3;
+import org.sensorhub.process.vecmath.MulMatMat;
 import org.sensorhub.process.vecmath.VecMathHelper;
 import org.vast.sensorML.SMLUtils;
 import org.vast.sensorML.SimpleProcessImpl;
@@ -39,10 +39,8 @@ public class TestVecmathProcess
     @Test
     public void testMulM3V3() throws Exception
     {
-        MulMat3Vec3_Process p = new MulMat3Vec3_Process();
+        MulMat3Vec3 p = new MulMat3Vec3();
         p.init();
-        p.createNewInputBlocks();
-        p.createNewOutputBlocks();
                 
         // serialize
         SimpleProcessImpl wp = new SimpleProcessImpl();
@@ -67,10 +65,8 @@ public class TestVecmathProcess
     @Test
     public void testMulM3M3() throws Exception
     {
-        MulMat3Mat3_Process p = new MulMat3Mat3_Process();
+        MulMat3Mat3 p = new MulMat3Mat3();
         p.init();
-        p.createNewInputBlocks();
-        p.createNewOutputBlocks();
         
         // serialize
         SimpleProcessImpl wp = new SimpleProcessImpl();
@@ -94,7 +90,7 @@ public class TestVecmathProcess
     @Test
     public void testMulMM() throws Exception
     {
-        MulMatMat_Process p = new MulMatMat_Process();
+        MulMatMat p = new MulMatMat();
                 
         // configure process
         SimpleProcessImpl wp = new SimpleProcessImpl();
@@ -122,9 +118,8 @@ public class TestVecmathProcess
         config.addSetValue(m2Cols);  
         
         wp.setExecutableImpl(p);
+        new SMLUtils(SMLUtils.V2_0).applyConfig(wp, true);
         p.init();
-        p.createNewInputBlocks();
-        p.createNewOutputBlocks();
         
         // serialize
         new SMLUtils(SMLUtils.V2_0).writeProcess(System.out, wp, true);

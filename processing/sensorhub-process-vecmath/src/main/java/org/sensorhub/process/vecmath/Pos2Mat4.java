@@ -27,24 +27,30 @@ import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Text;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.algo.vecmath.Mat4d;
-import org.vast.process.SMLException;
-import org.vast.sensorML.ExecutableProcessImpl;
+import org.sensorhub.api.processing.OSHProcessInfo;
+import org.vast.process.ExecutableProcessImpl;
+import org.vast.process.ProcessException;
 import org.vast.swe.helper.VectorHelper;
 
 
 /**
  * <p>
- * Construct a 3D matrix from the euler rotation angles about the 3 axis
- * in the specified order
+ * Construct a 4x4 homogeneous matrix from the euler rotation angles about
+ * translation vector and the euler angles taken in the specified order
  * </p>
  *
  * @author Alexandre Robin & Gregoire Berthiau
  * @date Mar 7, 2007
  */
-public class Pos2Mat4_Process extends ExecutableProcessImpl
+public class Pos2Mat4 extends ExecutableProcessImpl
 {
-    private Quantity txData, tyData, tzData;
-    private Quantity r1Data, r2Data, r3Data;
+    public static final OSHProcessInfo INFO = new OSHProcessInfo("pos2Mat4", "Pos 2 Matrix", "Rotation/translation to homogeneous matrix conversion", Pos2Mat4.class);
+    private Quantity txData;
+    private Quantity tyData;
+    private Quantity tzData;
+    private Quantity r1Data;
+    private Quantity r2Data;
+    private Quantity r3Data;
     private Text orderParam;
     private DataArray outputMatrix;
     private char[] rotAxes = {'X','Y','Z'};
@@ -52,8 +58,9 @@ public class Pos2Mat4_Process extends ExecutableProcessImpl
     private Mat4d newMatrix;
     
     
-    public Pos2Mat4_Process()
+    public Pos2Mat4()
     {
+        super(INFO);
         VectorHelper vecHelper = new VectorHelper();
         
         // create location input
@@ -92,8 +99,10 @@ public class Pos2Mat4_Process extends ExecutableProcessImpl
     
    
     @Override
-    public void init() throws SMLException
+    public void init() throws ProcessException
     {
+        super.init();
+        
         String orderString = orderParam.getValue();
         for (int i = 0; i < 3; i++)
             rotAxes[i] = orderString.charAt(i);
@@ -104,7 +113,7 @@ public class Pos2Mat4_Process extends ExecutableProcessImpl
     
     
     @Override
-    public void execute() throws SMLException
+    public void execute() throws ProcessException
     {
         double tx = 0.0;
         double ty = 0.0;

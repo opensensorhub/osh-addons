@@ -19,7 +19,7 @@ import net.opengis.swe.v20.DataBlock;
 import org.junit.Test;
 import org.sensorhub.algo.geoloc.Ellipsoid;
 import org.sensorhub.algo.vecmath.Vect3d;
-import org.sensorhub.process.geoloc.LLAToECEF_Process;
+import org.sensorhub.process.geoloc.LLAToECEF;
 import org.sensorhub.process.vecmath.VecMathHelper;
 import org.vast.sensorML.SMLUtils;
 import org.vast.sensorML.SimpleProcessImpl;
@@ -28,12 +28,10 @@ import org.vast.sensorML.SimpleProcessImpl;
 public class TestLLAToECEFProcess
 {
     
-    private LLAToECEF_Process createProcess() throws Exception
+    private LLAToECEF createProcess() throws Exception
     {
-        LLAToECEF_Process p = new LLAToECEF_Process();
+        LLAToECEF p = new LLAToECEF();
         p.init();
-        p.createNewInputBlocks();
-        p.createNewOutputBlocks();
                 
         // serialize
         SimpleProcessImpl wp = new SimpleProcessImpl();
@@ -44,7 +42,7 @@ public class TestLLAToECEFProcess
     }
     
     
-    private DataBlock execProcess(LLAToECEF_Process p, Vect3d ecef) throws Exception
+    private DataBlock execProcess(LLAToECEF p, Vect3d ecef) throws Exception
     {
         VecMathHelper.fromVect3d(ecef, p.getInputList().getComponent(0).getData());
         p.execute();
@@ -63,7 +61,7 @@ public class TestLLAToECEFProcess
     @Test
     public void testConversion() throws Exception
     {
-        LLAToECEF_Process p = createProcess();
+        LLAToECEF p = createProcess();
         DataBlock ecefPos;
         
         // lat0, lon0

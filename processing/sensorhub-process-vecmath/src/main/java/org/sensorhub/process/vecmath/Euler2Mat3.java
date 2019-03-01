@@ -27,8 +27,9 @@ import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Text;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.algo.vecmath.Mat3d;
-import org.vast.process.SMLException;
-import org.vast.sensorML.ExecutableProcessImpl;
+import org.sensorhub.api.processing.OSHProcessInfo;
+import org.vast.process.ExecutableProcessImpl;
+import org.vast.process.ProcessException;
 
 
 /**
@@ -40,9 +41,12 @@ import org.vast.sensorML.ExecutableProcessImpl;
  * @author Alexandre Robin & Gregoire Berthiau
  * @date Mar 7, 2007
  */
-public class Euler2Mat3_Process extends ExecutableProcessImpl
+public class Euler2Mat3 extends ExecutableProcessImpl
 {
-    private Quantity r1Data, r2Data, r3Data;
+    public static final OSHProcessInfo INFO = new OSHProcessInfo("euler2Mat3", "Euler 2 Matrix", "Euler angles to rotation matrix conversion", Euler2Mat3.class);
+    private Quantity r1Data;
+    private Quantity r2Data;
+    private Quantity r3Data;
     private Text orderParam;
     private DataArray outputMatrix;
     private char[] rotAxes = {'X','Y','Z'};
@@ -50,8 +54,9 @@ public class Euler2Mat3_Process extends ExecutableProcessImpl
     private Mat3d rotM = new Mat3d();
     
     
-    public Euler2Mat3_Process()
+    public Euler2Mat3()
     {
+        super(INFO);
         VecMathHelper sweHelper = new VecMathHelper();
         
         // create euler input
@@ -81,8 +86,9 @@ public class Euler2Mat3_Process extends ExecutableProcessImpl
     
    
     @Override
-    public void init() throws SMLException
+    public void init() throws ProcessException
     {
+        super.init();        
         String orderString = orderParam.getValue();
         for (int i = 0; i < 3; i++)
             rotAxes[i] = orderString.charAt(i);
@@ -90,7 +96,7 @@ public class Euler2Mat3_Process extends ExecutableProcessImpl
     
     
     @Override
-    public void execute() throws SMLException
+    public void execute() throws ProcessException
     {
         rotValues[0] = r1Data.getData().getDoubleValue();
         rotValues[1] = r2Data.getData().getDoubleValue();

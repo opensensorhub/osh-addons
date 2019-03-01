@@ -25,8 +25,9 @@ import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.algo.vecmath.Mat3d;
 import org.sensorhub.algo.vecmath.Vect3d;
-import org.vast.process.SMLException;
-import org.vast.sensorML.ExecutableProcessImpl;
+import org.sensorhub.api.processing.OSHProcessInfo;
+import org.vast.process.ExecutableProcessImpl;
+import org.vast.process.ProcessException;
 
 
 /**
@@ -37,17 +38,19 @@ import org.vast.sensorML.ExecutableProcessImpl;
  * @author Alexandre Robin & Gregoire Berthiau
  * @date Mar 7, 2007
  */
-public class MulMat3Vec3_Process extends ExecutableProcessImpl
+public class MulMat3Vec3 extends ExecutableProcessImpl
 {
-	private DataArray mat;
+    public static final OSHProcessInfo INFO = new OSHProcessInfo("mulMV3", "Matrix Vector Multiply", "Multiply 3x3 matrix by 3D vector", MulMat3Vec3.class);
+    private DataArray mat;
     private Vector vect;
     private Vector vres;
     private Mat3d m;
     private Vect3d v;
     
     
-    public MulMat3Vec3_Process()
+    public MulMat3Vec3()
     {
+        super(INFO);
         VecMathHelper sweHelper = new VecMathHelper();
         
         // create matrix input M
@@ -65,15 +68,16 @@ public class MulMat3Vec3_Process extends ExecutableProcessImpl
 
     
     @Override
-    public void init() throws SMLException
+    public void init() throws ProcessException
     {
+        super.init();
         m = new Mat3d();
         v = new Vect3d();
     }
     
 
     @Override
-    public void execute() throws SMLException
+    public void execute() throws ProcessException
     {
         VecMathHelper.toMat3d(mat.getData(), m);
         VecMathHelper.toVect3d(vect.getData(), v);

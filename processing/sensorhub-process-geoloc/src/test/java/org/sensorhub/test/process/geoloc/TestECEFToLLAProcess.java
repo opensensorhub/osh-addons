@@ -20,7 +20,7 @@ import org.junit.Test;
 import org.sensorhub.algo.geoloc.Ellipsoid;
 import org.sensorhub.algo.geoloc.GeoTransforms;
 import org.sensorhub.algo.vecmath.Vect3d;
-import org.sensorhub.process.geoloc.ECEFToLLA_Process;
+import org.sensorhub.process.geoloc.ECEFToLLA;
 import org.sensorhub.process.vecmath.VecMathHelper;
 import org.vast.sensorML.SMLUtils;
 import org.vast.sensorML.SimpleProcessImpl;
@@ -29,12 +29,10 @@ import org.vast.sensorML.SimpleProcessImpl;
 public class TestECEFToLLAProcess
 {
     
-    private ECEFToLLA_Process createProcess() throws Exception
+    private ECEFToLLA createProcess() throws Exception
     {
-        ECEFToLLA_Process p = new ECEFToLLA_Process();
+        ECEFToLLA p = new ECEFToLLA();
         p.init();
-        p.createNewInputBlocks();
-        p.createNewOutputBlocks();
                 
         // serialize
         SimpleProcessImpl wp = new SimpleProcessImpl();
@@ -45,7 +43,7 @@ public class TestECEFToLLAProcess
     }
     
     
-    private DataBlock execProcess(ECEFToLLA_Process p, Vect3d ecef) throws Exception
+    private DataBlock execProcess(ECEFToLLA p, Vect3d ecef) throws Exception
     {
         VecMathHelper.fromVect3d(ecef, p.getInputList().getComponent(0).getData());
         p.execute();
@@ -64,7 +62,7 @@ public class TestECEFToLLAProcess
     @Test
     public void testConversion() throws Exception
     {
-        ECEFToLLA_Process p = createProcess();
+        ECEFToLLA p = createProcess();
         DataBlock llaPos;
         
         // lat0, lon0
