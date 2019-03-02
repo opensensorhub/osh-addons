@@ -12,13 +12,9 @@ FileTree subprojects = fileTree(rootDir).exclude('core').include('**/build.gradl
 subprojects.files.each { File f ->
   File projectFolder = f.parentFile
   if (projectFolder != rootDir) {
-    String parentName = ':' + projectFolder.parentFile.name
     String projectName = ':' + projectFolder.name
-    String fullName = ':' + rootDir.toPath().relativize(projectFolder.toPath()).toString().replace('/', ':')
-    include fullName
-    //println fullName
-    //println projectFolder
-    //println rootDir.toPath().relativize(projectFolder.toPath())
-    //project(projectName).projectDir = projectFolder
+    //String projectName = ':' + rootDir.toPath().relativize(projectFolder.toPath()).toString().replace('/', ':')
+    include projectName
+    project(projectName).projectDir = projectFolder
   }
 }

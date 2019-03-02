@@ -11,9 +11,9 @@ rootProject.allprojects {
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile project(':sensors:video:sensorhub-driver-videocam')
+  compile project(':sensorhub-driver-videocam')
   embedded 'edu.jcu:v4l4j:0.9.1'
-  testCompile project(path: ':sensors:video:sensorhub-driver-videocam', configuration: 'testArtifacts')
+  testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
 }
 
 // exclude tests requiring connection to the sensor

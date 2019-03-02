@@ -3,7 +3,7 @@ ext.details = 'Algorithms used for satellite navigation (TLEs, ephemeris, etc...
 version = '1.0.0'
 
 dependencies {
-  compile project(':processing:sensorhub-process-geoloc')
+  compile project(':sensorhub-process-geoloc')
 }
 
 // add info to OSGi manifest

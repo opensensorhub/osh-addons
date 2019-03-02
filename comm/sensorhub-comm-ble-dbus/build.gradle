@@ -9,6 +9,6 @@ rootProject.allprojects {
 }
 
 dependencies {
-  compile project(':comm:sensorhub-comm-ble')
+  compile project(':sensorhub-comm-ble')
   embedded 'org.freedesktop:dbus:2.8'
 }

@@ -4,13 +4,13 @@ version = '1.0.0'
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile project(':sensors:video:sensorhub-driver-rtpcam')
+  compile project(':sensorhub-driver-rtpcam')
   compile('net.sf.jipcam:jipcam:0.9.1') {
     exclude group: 'javax.servlet', module: 'servlet-api'
     exclude group: 'commons-cli', module: 'commons-cli'
     exclude group: 'commons-httpclient', module: 'commons-httpclient'
   }
-  testCompile project(path: ':sensors:video:sensorhub-driver-videocam', configuration: 'testArtifacts')
+  testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
 }
 
 // exclude tests requiring connection to the sensor
