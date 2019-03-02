@@ -4,8 +4,8 @@ version = '1.0.0'
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  testCompile project(':comm:sensorhub-comm-rxtx')
-  testCompile project(':comm:sensorhub-comm-dio')
+  testCompile project(':sensorhub-comm-rxtx')
+  testCompile project(':sensorhub-comm-dio')
 }
 
 // exclude tests requiring connection to the sensor

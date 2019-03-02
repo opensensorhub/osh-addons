@@ -10,7 +10,7 @@ rootProject.allprojects {
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile project(':comm:sensorhub-comm-dio')
+  compile project(':sensorhub-comm-dio')
 }
 
 // exclude tests requiring connection to the sensor
