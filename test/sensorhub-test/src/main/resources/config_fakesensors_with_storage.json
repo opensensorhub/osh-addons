@@ -1,0 +1,182 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "httpPort": 8181,
+    "httpsPort": 0,
+    "staticDocRootUrl": "web",
+    "servletsRootUrl": "/sensorhub",
+    "maxRequestsPerSecond": 20,
+    "authMethod": "NONE",
+    "keyStorePath": ".keystore/ssl_keys",
+    "trustStorePath": ".keystore/ssl_trust",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "name": "HTTP Server",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "customPanels": [],
+    "customForms": [],
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
+    "googleApiUrl": "http://maps.googleapis.com/maps/api/directions/json",
+    "centerLatitude": 34.73,
+    "centerLongitude": -86.585,
+    "areaSize": 0.1,
+    "vehicleSpeed": 200.0,
+    "walkingMode": false,
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsSensor",
+    "name": "Fake GPS Sensor",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherConfig",
+    "serialNumber": "0123456879",
+    "location": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig$LLALocation",
+      "lat": 34.8038,
+      "lon": -86.7228,
+      "alt": 0.0
+    },
+    "sensorML": "base_description.xml",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "moduleClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor",
+    "name": "Fake Weather Sensor",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "storagePath": "gps_obs.dat",
+      "memoryCacheSize": 1024,
+      "objectCacheSize": 100,
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "autoStart": false
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "GPS Sensor Storage",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "storagePath": "weather_obs.dat",
+      "memoryCacheSize": 1024,
+      "objectCacheSize": 100,
+      "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+      "autoStart": false
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Weather Data Storage",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "enableTransactional": true,
+    "maxObsCount": 100,
+    "maxRecordCount": 100000,
+    "dataProviders": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+        "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:mysos:offering02",
+        "name": "Fake GPS",
+        "description": "Fake GPS sensor",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+        "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:mysos:offering03",
+        "name": "Fake Weather",
+        "description": "Fake Weather sensor",
+        "enabled": true
+      }
+    ],
+    "dataConsumers": [],
+    "customFormats": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/mp4",
+        "className": "org.sensorhub.impl.service.sos.video.MP4Serializer"
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/x-motion-jpeg",
+        "className": "org.sensorhub.impl.service.sos.video.MJPEGSerializer"
+      }
+    ],
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": true,
+      "requireAuth": false
+    },
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": [
+        "SensorHub",
+        "Video"
+      ],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumbers": [
+          "+33 5 23 56 89 78"
+        ],
+        "faxNumbers": [
+          "+33 5 23 56 89 77"
+        ],
+        "deliveryPoints": [
+          "12 rue Voltaire"
+        ],
+        "city": "Toulouse",
+        "postalCode": "30000",
+        "country": "France",
+        "emails": [
+          "admin@sensiasoft.com"
+        ],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/sos",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "name": "SOS Service",
+    "autoStart": true
+  }
+]

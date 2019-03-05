@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<Configure id="osh-server" class="org.eclipse.jetty.server.Server">
+  <Ref refid="osh-http">    
+    <Set name="port">8181</Set>
+  </Ref>
+  <Ref refid="osh-static">
+    <Set name="contextPath">/</Set>
+  </Ref>
+  <Ref refid="osh-servlets">        
+    <Call name="addFilter">
+      <Arg>org.eclipse.jetty.servlets.DoSFilter</Arg>
+      <Arg>/*</Arg>
+      <Arg>
+        <Call class="java.util.EnumSet" name="of">
+          <Arg>
+            <Call class="javax.servlet.DispatcherType" name="valueOf">
+              <Arg>REQUEST</Arg>
+            </Call>
+          </Arg>
+        </Call>
+      </Arg>      
+      <Call name="setInitParameter">
+        <Arg>maxRequestsPerSec</Arg>
+        <Arg>20</Arg>
+      </Call>
+      <Call name="setInitParameter">
+        <Arg>delayMs</Arg>
+        <Arg>100</Arg>
+      </Call>
+      <Call name="setInitParameter">
+        <Arg>remotePort</Arg>
+        <Arg>true</Arg>
+      </Call>
+    </Call>
+  </Ref>
+</Configure>

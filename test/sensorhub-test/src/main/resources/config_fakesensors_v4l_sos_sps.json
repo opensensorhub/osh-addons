@@ -1,0 +1,425 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "httpPort": 8181,
+    "staticDocRootUrl": "web",
+    "servletsRootUrl": "/sensorhub",
+    "maxRequestsPerSecond": 20,
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "name": "HTTP Server",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "customPanels": [],
+    "customForms": [],
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
+    "googleApiUrl": "http://maps.googleapis.com/maps/api/directions/json",
+    "centerLatitude": 34.73,
+    "centerLongitude": -86.585,
+    "areaSize": 0.1,
+    "vehicleSpeed": 200.0,
+    "walkingMode": false,
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsSensor",
+    "name": "Fake GPS Sensor",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherConfig",
+    "serialNumber": "0123456879",
+    "stationLat": 34.8038,
+    "stationLon": -86.7228,
+    "stationAlt": 0.0,
+    "sensorML": "base_description.xml",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "moduleClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor",
+    "name": "Fake Weather Sensor",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 1024,
+      "storagePath": "gps_obs.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "enabled": false
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "GPS Sensor Storage",
+    "enabled": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 1024,
+      "storagePath": "weather_obs.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+      "enabled": false
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Weather Data Storage",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "enableTransactional": true,
+    "maxObsCount": 100,
+    "maxRecordCount": 100000,
+    "dataProviders": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+        "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
+        "hiddenOutputs": [],
+        "activateNotifications": false,
+        "liveDataTimeout": 10.0,
+        "enabled": true,
+        "uri": "urn:mysos:offering02",
+        "name": "Fake GPS",
+        "description": "Fake GPS sensor",
+        "maxFois": 10
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+        "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2",
+        "hiddenOutputs": [],
+        "activateNotifications": false,
+        "liveDataTimeout": 10.0,
+        "enabled": true,
+        "uri": "urn:mysos:offering03",
+        "name": "Fake Weather",
+        "description": "Fake Weather sensor",
+        "maxFois": 10
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "75db962a-26bb-4e72-8682-8b0ec4345530",
+        "storageID": "eb5a9252-1f96-433b-9026-88fc0cf2abed",
+        "hiddenOutputs": [],
+        "activateNotifications": false,
+        "liveDataTimeout": 10.0,
+        "enabled": true,
+        "uri": "urn:osh:video",
+        "maxFois": 10
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "2cfbc6c1-b81a-4df6-bc48-e2ff06c0a3fd",
+        "storageID": "70b7081b-cc9a-494b-96fb-74874d18497c",
+        "hiddenOutputs": [],
+        "activateNotifications": false,
+        "liveDataTimeout": 10.0,
+        "enabled": true,
+        "uri": "urn:osh:solo-video",
+        "maxFois": 10
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "664aa798-95dc-45cb-b245-50c040c6b35f",
+        "hiddenOutputs": [],
+        "activateNotifications": false,
+        "liveDataTimeout": 10.0,
+        "enabled": true,
+        "uri": "urn:osh:solo-nav",
+        "maxFois": 10
+      }
+    ],
+    "dataConsumers": [],
+    "customFormats": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/mp4",
+        "className": "org.sensorhub.impl.service.sos.video.MP4Serializer"
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/x-motion-jpeg",
+        "className": "org.sensorhub.impl.service.sos.video.MJPEGSerializer"
+      }
+    ],
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": [
+        "SensorHub",
+        "Video"
+      ],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumbers": [
+          "+33 5 23 56 89 78"
+        ],
+        "faxNumbers": [
+          "+33 5 23 56 89 77"
+        ],
+        "deliveryPoints": [
+          "12 rue Voltaire"
+        ],
+        "city": "Toulouse",
+        "postalCode": "30000",
+        "country": "France",
+        "emails": [
+          "admin@sensiasoft.com"
+        ],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/sos",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "name": "SOS Service",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.v4l.V4LCameraConfig",
+    "serialNumber": "neo01",
+    "deviceName": "/dev/video0",
+    "defaultParams": {
+      "objClass": "org.sensorhub.impl.sensor.v4l.V4LCameraParams",
+      "doCapture": true,
+      "imgFormat": "JPEG",
+      "imgWidth": 640,
+      "imgHeight": 480,
+      "frameRate": 30
+    },
+    "position": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig",
+      "location": {
+        "objClass": "org.sensorhub.api.sensor.PositionConfig$LLALocation",
+        "lat": 43.604,
+        "lon": 1.444,
+        "alt": 150.0
+      },
+      "orientation": {
+        "objClass": "org.sensorhub.api.sensor.PositionConfig$EulerOrientation",
+        "heading": 15.2,
+        "pitch": 0.0,
+        "roll": 0.0
+      }
+    },
+    "id": "75db962a-26bb-4e72-8682-8b0ec4345530",
+    "moduleClass": "org.sensorhub.impl.sensor.v4l.V4LCameraDriver",
+    "name": "V4L Camera",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sps.SPSServiceConfig",
+    "connectors": [
+      {
+        "objClass": "org.sensorhub.impl.service.sps.SensorConnectorConfig",
+        "sensorID": "75db962a-26bb-4e72-8682-8b0ec4345530",
+        "hiddenCommands": [],
+        "enabled": true,
+        "uri": "urn:osh:video"
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sps.SensorConnectorConfig",
+        "sensorID": "664aa798-95dc-45cb-b245-50c040c6b35f",
+        "hiddenCommands": [],
+        "enabled": true,
+        "uri": "urn:osh:solo-control"
+      }
+    ],
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "voiceNumbers": [],
+        "faxNumbers": [],
+        "deliveryPoints": [],
+        "emails": [],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/sps",
+    "id": "f3408b58-fb68-4e2d-8f93-2001b3b986b6",
+    "moduleClass": "org.sensorhub.impl.service.sps.SPSService",
+    "name": "SPS Service",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 1024,
+      "storagePath": "video.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+      "enabled": false
+    },
+    "dataSourceID": "75db962a-26bb-4e72-8682-8b0ec4345530",
+    "minCommitPeriod": 1000,
+    "processEvents": true,
+    "id": "eb5a9252-1f96-433b-9026-88fc0cf2abed",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Video Storage",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.rtpcam.RTPCameraConfig",
+    "cameraID": "solo:12345",
+    "rtsp": {
+      "objClass": "org.sensorhub.impl.sensor.rtpcam.RTSPConfig",
+      "localUdpPort": 5600,
+      "onlyConnectRtsp": true,
+      "remotePort": 5502,
+      "remoteHost": "10.1.1.1",
+      "localAddress": "AUTO"
+    },
+    "connection": {
+      "objClass": "org.sensorhub.impl.comm.RobustIPConnectionConfig",
+      "checkReachability": true,
+      "connectTimeout": 3000,
+      "reconnectPeriod": 10000,
+      "reconnectAttempts": 0
+    },
+    "video": {
+      "objClass": "org.sensorhub.impl.sensor.rtpcam.RTPCameraConfig$VideoConfig",
+      "frameWidth": 1280,
+      "frameHeight": 720,
+      "frameRate": 30,
+      "grayscale": false
+    },
+    "position": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig"
+    },
+    "id": "2cfbc6c1-b81a-4df6-bc48-e2ff06c0a3fd",
+    "moduleClass": "org.sensorhub.impl.sensor.rtpcam.RTPCameraDriver",
+    "name": "Solo Camera",
+    "enabled": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.mavlink.MavlinkConfig",
+    "vehicleID": "solo:12345",
+    "activeMessages": [
+      "GLOBAL_POSITION",
+      "GPS_STATUS",
+      "ATTITUDE",
+      "BATTERY_STATUS",
+      "GIMBAL_REPORT"
+    ],
+    "activeCommands": [
+      "TAKEOFF",
+      "GOTO_LLA",
+      "HEADING",
+      "ORBIT",
+      "RTL",
+      "LAND",
+      "MOUNT_TARGET"
+    ],
+    "commSettings": {
+      "objClass": "org.sensorhub.impl.comm.UDPCommProviderConfig",
+      "protocol": {
+        "objClass": "org.sensorhub.impl.comm.UDPConfig",
+        "remotePort": 14560,
+        "localPort": 14550,
+        "remoteHost": "10.1.1.10",
+        "localAddress": "AUTO"
+      },
+      "moduleClass": "org.sensorhub.impl.comm.UDPCommProvider",
+      "enabled": false
+    },
+    "id": "53159834-8393-4a09-beb0-127c8a5a9dec",
+    "moduleClass": "org.sensorhub.impl.sensor.mavlink.MavlinkDriver",
+    "name": "Solo Telemetry",
+    "enabled": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 1024,
+      "storagePath": "solo-video.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "enabled": false
+    },
+    "dataSourceID": "2cfbc6c1-b81a-4df6-bc48-e2ff06c0a3fd",
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "70b7081b-cc9a-494b-96fb-74874d18497c",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Solo Video DataStore",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.mavlink.MavlinkConfig",
+    "vehicleID": "solo:12345",
+    "activeMessages": [
+      "GLOBAL_POSITION",
+      "ATTITUDE",
+      "BATTERY_STATUS"
+    ],
+    "activeCommands": [
+      "TAKEOFF",
+      "GOTO_LLA",
+      "HEADING",
+      "RTL",
+      "LAND",
+      "MOUNT_TARGET"
+    ],
+    "commSettings": {
+      "objClass": "org.sensorhub.impl.comm.UDPCommProviderConfig",
+      "protocol": {
+        "objClass": "org.sensorhub.impl.comm.UDPConfig",
+        "remotePort": 0,
+        "localPort": 14551,
+        "remoteHost": "localhost",
+        "localAddress": "AUTO"
+      },
+      "moduleClass": "org.sensorhub.impl.comm.UDPCommProvider",
+      "enabled": false
+    },
+    "id": "664aa798-95dc-45cb-b245-50c040c6b35f",
+    "moduleClass": "org.sensorhub.impl.sensor.mavlink.MavlinkDriver",
+    "name": "SITL Telemetry",
+    "enabled": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 1024,
+      "storagePath": "solo-nav.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "enabled": false
+    },
+    "dataSourceID": "53159834-8393-4a09-beb0-127c8a5a9dec",
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "32530f7f-0678-41bc-8f18-3d9d0de05ffd",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Solo Nav Storage",
+    "enabled": true
+  }
+]

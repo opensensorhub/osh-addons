@@ -1,0 +1,426 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "httpPort": 8181,
+    "httpsPort": 0,
+    "staticDocRootUrl": "web",
+    "servletsRootUrl": "/sensorhub",
+    "maxRequestsPerSecond": 20,
+    "authMethod": "NONE",
+    "keyStorePath": ".keystore/ssl_keys",
+    "trustStorePath": ".keystore/ssl_trust",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "name": "HTTP Server",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "customPanels": [
+      {
+        "objClass": "org.sensorhub.ui.CustomUIConfig",
+        "configClass": "org.sensorhub.api.sensor.SensorConfig",
+        "uiClass": "org.sensorhub.ui.SensorAdminPanel"
+      }
+    ],
+    "customForms": [],
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "enableTransactional": true,
+    "maxObsCount": 100,
+    "maxRecordCount": 100000,
+    "dataProviders": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "c7984492-eb70-4902-94dd-72776219d794",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:osh:dahua1",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "2d03f855-6b84-41de-a36e-628d21a100e4",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:osh:dahua2",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "53486f4b-a5d7-4234-9aa0-85a470a321b2",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:osh:dahua3",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "2369c616-d0ae-4fb1-913d-188de2ea300a",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:osh:dahua4",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "e1590f74-a1ad-4ee2-a7fd-15546a956b44",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:osh:dahua-cityhall",
+        "enabled": true
+      }
+    ],
+    "dataConsumers": [],
+    "customFormats": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/mp4",
+        "className": "org.sensorhub.impl.service.sos.video.MP4Serializer"
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/x-motion-jpeg",
+        "className": "org.sensorhub.impl.service.sos.video.MJPEGSerializer"
+      }
+    ],
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": false,
+      "requireAuth": true
+    },
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": [
+        "SensorHub",
+        "Video"
+      ],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumbers": [],
+        "faxNumbers": [],
+        "deliveryPoints": [],
+        "city": "Toulouse",
+        "postalCode": "30000",
+        "country": "France",
+        "emails": [],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/sos",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "name": "SOS Service",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.comm.zeroconf.IpNetworkConfig",
+    "networkInterface": "enx00e04c680132",
+    "zeroConfHostName": "OSH",
+    "id": "1fe8b447-cacd-4a00-ac53-6f8353e03ef2",
+    "moduleClass": "org.sensorhub.impl.comm.zeroconf.IpCommNetwork",
+    "name": "New IP Network (ZeroConf)",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraConfig",
+    "http": {
+      "objClass": "org.sensorhub.impl.comm.HTTPConfig",
+      "remotePort": 80,
+      "user": "admin",
+      "password": "alex6342",
+      "enableTLS": false,
+      "remoteHost": "2J0225PZA17C451.local",
+      "localAddress": "AUTO"
+    },
+    "rtsp": {
+      "objClass": "org.sensorhub.impl.sensor.rtpcam.RTSPConfig",
+      "videoPath": "/cam/realmonitor?channel=1&subtype=0",
+      "localUdpPort": 20000,
+      "onlyConnectRtsp": false,
+      "remotePort": 554,
+      "user": "admin",
+      "password": "alex6342",
+      "enableTLS": false,
+      "remoteHost": "2J0225PZA17C451.local",
+      "localAddress": "AUTO"
+    },
+    "connection": {
+      "objClass": "org.sensorhub.impl.comm.RobustIPConnectionConfig",
+      "checkReachability": true,
+      "connectTimeout": 3000,
+      "reconnectPeriod": 10000,
+      "reconnectAttempts": 0
+    },
+    "video": {
+      "objClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraConfig$VideoConfig",
+      "resolution": "HD_720P",
+      "frameRate": 30,
+      "grayscale": false
+    },
+    "ptz": {
+      "objClass": "org.sensorhub.impl.sensor.videocam.ptz.PtzConfig",
+      "presets": [
+        {
+          "objClass": "org.sensorhub.impl.sensor.videocam.ptz.PtzPreset",
+          "name": "Home",
+          "pan": 0.0,
+          "tilt": 0.0,
+          "zoom": 0.0
+        }
+      ]
+    },
+    "position": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig"
+    },
+    "id": "c7984492-eb70-4902-94dd-72776219d794",
+    "moduleClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraDriver",
+    "name": "Dahua 1",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraConfig",
+    "http": {
+      "objClass": "org.sensorhub.impl.comm.HTTPConfig",
+      "remotePort": 80,
+      "user": "admin",
+      "password": "alex6342",
+      "enableTLS": false,
+      "remoteHost": "2J0225PZA17C455.local",
+      "localAddress": "AUTO"
+    },
+    "rtsp": {
+      "objClass": "org.sensorhub.impl.sensor.rtpcam.RTSPConfig",
+      "videoPath": "/cam/realmonitor?channel=1&subtype=0",
+      "localUdpPort": 20010,
+      "onlyConnectRtsp": false,
+      "remotePort": 554,
+      "user": "admin",
+      "password": "alex6342",
+      "enableTLS": false,
+      "remoteHost": "2J0225PZA17C455.local",
+      "localAddress": "AUTO"
+    },
+    "connection": {
+      "objClass": "org.sensorhub.impl.comm.RobustIPConnectionConfig",
+      "checkReachability": true,
+      "connectTimeout": 3000,
+      "reconnectPeriod": 10000,
+      "reconnectAttempts": 0
+    },
+    "video": {
+      "objClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraConfig$VideoConfig",
+      "resolution": "HD_720P",
+      "frameRate": 30,
+      "grayscale": false
+    },
+    "ptz": {
+      "objClass": "org.sensorhub.impl.sensor.videocam.ptz.PtzConfig",
+      "presets": [
+        {
+          "objClass": "org.sensorhub.impl.sensor.videocam.ptz.PtzPreset",
+          "name": "Home",
+          "pan": 0.0,
+          "tilt": 0.0,
+          "zoom": 0.0
+        }
+      ]
+    },
+    "position": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig"
+    },
+    "id": "2d03f855-6b84-41de-a36e-628d21a100e4",
+    "moduleClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraDriver",
+    "name": "Dahua 2",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraConfig",
+    "http": {
+      "objClass": "org.sensorhub.impl.comm.HTTPConfig",
+      "remotePort": 80,
+      "user": "admin",
+      "password": "alex6342",
+      "enableTLS": false,
+      "remoteHost": "2J0225PZA17C457.local",
+      "localAddress": "AUTO"
+    },
+    "rtsp": {
+      "objClass": "org.sensorhub.impl.sensor.rtpcam.RTSPConfig",
+      "videoPath": "/cam/realmonitor?channel=1&subtype=0",
+      "localUdpPort": 20020,
+      "onlyConnectRtsp": false,
+      "remotePort": 554,
+      "user": "admin",
+      "password": "alex6342",
+      "enableTLS": false,
+      "remoteHost": "2J0225PZA17C457.local",
+      "localAddress": "AUTO"
+    },
+    "connection": {
+      "objClass": "org.sensorhub.impl.comm.RobustIPConnectionConfig",
+      "checkReachability": true,
+      "connectTimeout": 3000,
+      "reconnectPeriod": 10000,
+      "reconnectAttempts": 0
+    },
+    "video": {
+      "objClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraConfig$VideoConfig",
+      "resolution": "HD_720P",
+      "frameRate": 30,
+      "grayscale": false
+    },
+    "ptz": {
+      "objClass": "org.sensorhub.impl.sensor.videocam.ptz.PtzConfig",
+      "presets": [
+        {
+          "objClass": "org.sensorhub.impl.sensor.videocam.ptz.PtzPreset",
+          "name": "Home",
+          "pan": 0.0,
+          "tilt": 0.0,
+          "zoom": 0.0
+        }
+      ]
+    },
+    "position": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig"
+    },
+    "id": "53486f4b-a5d7-4234-9aa0-85a470a321b2",
+    "moduleClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraDriver",
+    "name": "Dahua 3",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraConfig",
+    "http": {
+      "objClass": "org.sensorhub.impl.comm.HTTPConfig",
+      "remotePort": 80,
+      "user": "admin",
+      "password": "alex6342",
+      "enableTLS": false,
+      "remoteHost": "1F00928PAK00070.local",
+      "localAddress": "AUTO"
+    },
+    "rtsp": {
+      "objClass": "org.sensorhub.impl.sensor.rtpcam.RTSPConfig",
+      "videoPath": "/cam/realmonitor?channel=1&subtype=0",
+      "localUdpPort": 20030,
+      "onlyConnectRtsp": false,
+      "remotePort": 554,
+      "user": "admin",
+      "password": "alex6342",
+      "enableTLS": false,
+      "remoteHost": "1F00928PAK00070.local",
+      "localAddress": "AUTO"
+    },
+    "connection": {
+      "objClass": "org.sensorhub.impl.comm.RobustIPConnectionConfig",
+      "checkReachability": true,
+      "connectTimeout": 3000,
+      "reconnectPeriod": 10000,
+      "reconnectAttempts": 0
+    },
+    "video": {
+      "objClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraConfig$VideoConfig",
+      "resolution": "HD_720P",
+      "frameRate": 30,
+      "grayscale": false
+    },
+    "ptz": {
+      "objClass": "org.sensorhub.impl.sensor.videocam.ptz.PtzConfig",
+      "presets": [
+        {
+          "objClass": "org.sensorhub.impl.sensor.videocam.ptz.PtzPreset",
+          "name": "Home",
+          "pan": 0.0,
+          "tilt": 0.0,
+          "zoom": 0.0
+        }
+      ]
+    },
+    "position": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig"
+    },
+    "id": "2369c616-d0ae-4fb1-913d-188de2ea300a",
+    "moduleClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraDriver",
+    "name": "Dahua 4",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraConfig",
+    "http": {
+      "objClass": "org.sensorhub.impl.comm.HTTPConfig",
+      "remotePort": 80,
+      "user": "admin",
+      "password": "admin",
+      "enableTLS": false,
+      "remoteHost": "172.31.255.1",
+      "localAddress": "AUTO"
+    },
+    "rtsp": {
+      "objClass": "org.sensorhub.impl.sensor.rtpcam.RTSPConfig",
+      "videoPath": "/cam/realmonitor?channel=1&subtype=0",
+      "localUdpPort": 20100,
+      "onlyConnectRtsp": false,
+      "remotePort": 554,
+      "user": "admin",
+      "password": "admin",
+      "enableTLS": false,
+      "remoteHost": "172.31.255.1",
+      "localAddress": "AUTO"
+    },
+    "connection": {
+      "objClass": "org.sensorhub.impl.comm.RobustIPConnectionConfig",
+      "checkReachability": true,
+      "connectTimeout": 3000,
+      "reconnectPeriod": 10000,
+      "reconnectAttempts": 0
+    },
+    "video": {
+      "objClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraConfig$VideoConfig",
+      "resolution": "HD_720P",
+      "frameRate": 30,
+      "grayscale": false
+    },
+    "ptz": {
+      "objClass": "org.sensorhub.impl.sensor.videocam.ptz.PtzConfig",
+      "presets": [
+        {
+          "objClass": "org.sensorhub.impl.sensor.videocam.ptz.PtzPreset",
+          "name": "Home",
+          "pan": 0.0,
+          "tilt": 0.0,
+          "zoom": 0.0
+        }
+      ]
+    },
+    "position": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig"
+    },
+    "id": "e1590f74-a1ad-4ee2-a7fd-15546a956b44",
+    "moduleClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraDriver",
+    "name": "Dahua CityHall",
+    "autoStart": false
+  }
+]

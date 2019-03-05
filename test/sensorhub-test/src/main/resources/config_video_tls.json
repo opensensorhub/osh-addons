@@ -1,0 +1,103 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "httpPort": 8181,
+    "staticDocRootUrl": "web",
+    "servletsRootUrl": "/sensorhub",
+    "maxRequestsPerSecond": 20,
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "name": "HTTP Server",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "customPanels": [
+      {
+        "objClass": "org.sensorhub.ui.CustomUIConfig",
+        "configClass": "org.sensorhub.api.sensor.SensorConfig",
+        "uiClass": "org.sensorhub.ui.SensorAdminPanel"
+      }
+    ],
+    "customForms": [],
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "enableTransactional": true,
+    "maxObsCount": 100,
+    "maxRecordCount": 100000,
+    "dataProviders": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.StorageDataProviderConfig",
+        "storageID": "5cb4569c-9e08-4fa1-1458-000000000000",
+        "hiddenOutputs": [],
+        "activateNotifications": false,
+        "liveDataTimeout": 10.0,
+        "enabled": true,
+        "uri": "urn:osh:axis",
+        "maxFois": 10
+      }
+    ],
+    "dataConsumers": [],
+    "customFormats": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/mp4",
+        "className": "org.sensorhub.impl.service.sos.video.MP4Serializer"
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/x-motion-jpeg",
+        "className": "org.sensorhub.impl.service.sos.video.MJPEGSerializer"
+      }
+    ],
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": [
+        "SensorHub",
+        "Video"
+      ],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumbers": [],
+        "faxNumbers": [],
+        "deliveryPoints": [],
+        "city": "Toulouse",
+        "postalCode": "30000",
+        "country": "France",
+        "emails": [],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/sos",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "name": "SOS Service",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+    "memoryCacheSize": 1024,
+    "objectCacheSize": 100,
+    "storagePath": "/home/alex/Datasets/android_tls/urn_android_device_a0e0eac2fea3f614.dat",
+    "id": "5cb4569c-9e08-4fa1-1458-000000000000",
+    "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+    "name": "Android Data Storage for Toulouse Drive",
+    "autoStart": true
+  }
+]

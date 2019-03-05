@@ -1,0 +1,164 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "httpPort": 8181,
+    "httpsPort": 0,
+    "staticDocRootUrl": "web",
+    "servletsRootUrl": "/sensorhub",
+    "maxRequestsPerSecond": 25,
+    "authMethod": "NONE",
+    "keyStorePath": ".keystore/ssl_keys",
+    "trustStorePath": ".keystore/ssl_trust",
+    "id": "9b357b97-26fd-4216-b597-dccfe6f3e383",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "name": "HTTP Server",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "customPanels": [],
+    "customForms": [],
+    "id": "f843291f-a926-43c4-8a49-a6a8ac2f8c97",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.comm.zeroconf.IpNetworkConfig",
+    "networkInterface": "wlan0",
+    "zeroConfHostName": "OSH",
+    "id": "3e6eeb1a-99af-42a5-936a-ff94972085ea",
+    "moduleClass": "org.sensorhub.impl.comm.zeroconf.IpCommNetwork",
+    "name": "ZeroConf",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "enableTransactional": true,
+    "maxObsCount": 100,
+    "maxRecordCount": 100000,
+    "newStorageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "storagePath": "db.dat",
+      "memoryCacheSize": 1024,
+      "objectCacheSize": 100,
+      "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+      "autoStart": false
+    },
+    "dataProviders": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d9a5aca4-69ba-45d3-8446-02202beb9c80",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:osh:uwb",
+        "enabled": true
+      }
+    ],
+    "dataConsumers": [],
+    "customFormats": [],
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": false,
+      "requireAuth": true
+    },
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "title": "Field Node SOS Server",
+      "description": "SOS hosting all data collected from local sensors and UAV",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "individualName": "Alex Robin",
+        "organizationName": "Sensiasoft",
+        "positionName": "CTO",
+        "voiceNumbers": [],
+        "faxNumbers": [],
+        "deliveryPoints": [],
+        "city": "Huntsville",
+        "administrativeArea": "AL",
+        "country": "USA",
+        "emails": [],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/sos",
+    "id": "d1050494-dfc4-4318-8592-530984056cd6",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "name": "SOS Service",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.trek1000.Trek1000Config",
+    "serialNumber": "EVB110870",
+    "commSettings": {
+      "objClass": "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig",
+      "protocol": {
+        "objClass": "org.sensorhub.impl.comm.UARTConfig",
+        "portName": "/dev/ttyACM0",
+        "baudRate": 9600,
+        "dataBits": 8,
+        "stopBits": 1,
+        "parity": "PARITY_NONE",
+        "receiveTimeout": -1,
+        "receiveThreshold": 1
+      },
+      "moduleClass": "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider",
+      "autoStart": false
+    },
+    "anchorLocations": [
+      {
+        "objClass": "org.sensorhub.api.sensor.PositionConfig$LLALocation",
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      {
+        "objClass": "org.sensorhub.api.sensor.PositionConfig$LLALocation",
+        "lat": 0.0,
+        "lon": 7.9,
+        "alt": 0.0
+      },
+      {
+        "objClass": "org.sensorhub.api.sensor.PositionConfig$LLALocation",
+        "lat": 11.9,
+        "lon": 0.0,
+        "alt": 0.0
+      }
+    ],
+    "id": "d9a5aca4-69ba-45d3-8446-02202beb9c80",
+    "moduleClass": "org.sensorhub.impl.sensor.trek1000.Trek1000Sensor",
+    "name": "UWB Positioning",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.client.sost.SOSTClientConfig",
+    "sensorID": "d9a5aca4-69ba-45d3-8446-02202beb9c80",
+    "sos": {
+      "objClass": "org.sensorhub.impl.comm.HTTPConfig",
+      "resourcePath": "/sensorhub/sos",
+      "remotePort": 8181,
+      "enableTLS": false,
+      "remoteHost": "botts-geo.com",
+      "localAddress": "AUTO"
+    },
+    "connection": {
+      "objClass": "org.sensorhub.impl.client.sost.SOSTClientConfig$SOSConnectionConfig",
+      "usePersistentConnection": false,
+      "maxQueueSize": 10,
+      "maxConnectErrors": 10,
+      "checkReachability": true,
+      "connectTimeout": 10000,
+      "reconnectPeriod": 10000,
+      "reconnectAttempts": 3
+    },
+    "id": "55f7626b-6101-4220-869f-4774bdf8b6ee",
+    "moduleClass": "org.sensorhub.impl.client.sost.SOSTClient",
+    "name": "UWB Upload",
+    "autoStart": false
+  }
+]

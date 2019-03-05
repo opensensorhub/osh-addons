@@ -1,0 +1,95 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "name": "HTTP Server",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "httpPort": 8181,
+    "servletsRootUrl": "/sensorhub",
+    "staticDocRootUrl": "web"
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.avl.AVLConfig",
+    "id": "d136b6ea-3950-4691-bf56-ac893e5fbb22",
+    "name": "AVL Data Stream",
+    "moduleClass": "org.sensorhub.impl.sensor.avl.AVLDriver",
+    "enabled": false,
+    "sensorML": null,
+    "hiddenIO": null,
+    "fleetID": "911:fleet",
+    "agencyName": "Huntsville Fire Department",
+    "commSettings":
+    {
+        "objClass": "org.sensorhub.impl.sensor.avl.MultipleFilesProviderConfig",
+        "dataFolder": "../../osh-sensors/sensorhub-driver-avl-911/src/test/resources"
+    }
+  }, 
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "id": "d136b6ea-3950-4691-1234-ac893e5fbb22",
+    "name": "AVL Data Storage",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "enabled": true,
+    "dataSourceID": "d136b6ea-3950-4691-bf56-ac893e5fbb22",
+    "storageConfig":    
+    {
+      "objClass": "org.sensorhub.impl.persistence.es.ESBasicStorageConfig",
+      "moduleClass": "org.sensorhub.impl.persistence.es.ESMultiSourceStorageImpl",
+      "memoryCacheSize": 1024,
+      "storagePath": "elasticsearch",
+      "nodeUrls": ["localhost:9300"]
+    }
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "name": "SOS Service",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "enabled": true,
+    "endPoint": "/sos",
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "dataProviders" : [
+       {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "AVL 911",
+           "description": "AVL location and status data for 911 vehicles",
+           "uri": "urn:mysos:avl",
+           "liveDataTimeout": 3600,
+           "sensorID": "d136b6ea-3950-4691-bf56-ac893e5fbb22",
+           "storageID": "d136b6ea-3950-4691-1234-ac893e5fbb22"
+       }
+    ],
+    "ogcCapabilitiesInfo": {
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": ["SensorHub", "Video"],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumbers": ["+33 5 23 56 89 78"],
+        "faxNumbers": ["+33 5 23 56 89 77"],
+        "deliveryPoints": ["12 rue Voltaire"],
+        "city": "Toulouse",
+        "administrativeArea": null,
+        "postalCode": "30000",
+        "country": "France",
+        "emails": ["admin@sensiasoft.com"],
+        "website": null,
+        "hoursOfService": null,
+        "contactInstructions": null
+      }
+    }
+  }
+]

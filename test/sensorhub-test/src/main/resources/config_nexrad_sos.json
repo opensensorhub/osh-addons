@@ -1,0 +1,79 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "name": "HTTP Server",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "httpPort": 8282,
+    "servletsRootUrl": "/sensorhub",
+    "staticDocRootUrl": "web"
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.nexrad.NexradConfig",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d79",
+    "name": "Nexrad 88D Network",
+    "moduleClass": "org.sensorhub.impl.sensor.nexrad.NexradSensor",
+    "enabled": true,
+    "sensorML": null,
+    "autoActivate": true,
+    "enableHistory": false,
+    "hiddenIO": null,
+    "rootFolder" : "/home/alex/tmp/nexrad-data",
+    "numThreads" : 3,
+    "queueIdleTimeMinutes" : 120,
+    "queueName" : "NexradQueue_SensorHub_00016",
+    "siteIds": [  "KLIX" ]
+  },
+   
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "name": "SOS Service",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "enabled": true,
+    "endPoint": "/sos",
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "dataProviders" : [
+       {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "Nexrad Level II",
+           "description": "Real-time data from AWS Nexrad Level II",
+           "uri": "urn:mysos:nexrad",
+           "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d79",
+           "liveDataTimeout": 600
+       }
+    ],
+    "ogcCapabilitiesInfo": {
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": ["SensorHub", "Weather", "Nexrad"],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumbers": ["+33 5 23 56 89 78"],
+        "faxNumbers": ["+33 5 23 56 89 77"],
+        "deliveryPoints": ["12 rue Voltaire"],
+        "city": "Toulouse",
+        "administrativeArea": null,
+        "postalCode": "30000",
+        "country": "France",
+        "emails": ["admin@sensiasoft.com"],
+        "website": null,
+        "hoursOfService": null,
+        "contactInstructions": null
+      }
+    }
+  }
+]
