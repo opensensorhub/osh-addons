@@ -1,0 +1,176 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "name": "HTTP Server",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "httpPort": 8181,
+    "servletsRootUrl": "/sensorhub",
+    "staticDocRootUrl": "web"
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "name": "Fake GPS Sensor",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsSensor",
+    "enabled": true,
+    "sensorML": null,
+    "autoActivate": true,
+    "enableHistory": false,
+    "hiddenIO": null,
+    "centerLatitude": 34.7300,
+    "centerLongitude": -86.5850,
+    "areaSize": 0.1,
+    "vehicleSpeed": 200
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherConfig",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "name": "Fake Weather Sensor",
+    "enabled": true,
+    "moduleClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor",
+    "sensorML": null,
+    "autoActivate": true,
+    "enableHistory": false,
+    "hiddenIO": null
+  }, 
+  {
+    "objClass": "org.sensorhub.impl.processing.SMLStreamProcessConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffade895bdc1",
+    "name": "Weather Processing",
+    "moduleClass": "org.sensorhub.impl.processing.SMLStreamProcess",
+    "enabled": true,
+    "sensorML": "file:/media/Data/Projects/Workspace_OGC/sensorhub/lib-sensorml/sensorml-core/target/test-classes/org/vast/sensorML/test/examples_v20/LinearInterpolator.xml",
+    "dataSources":
+    [    
+      {
+        "objClass": "org.sensorhub.api.processing.StreamingDataSourceConfig",
+        "producerID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+        "inputConnections":
+        [
+          {
+             "source": "weather/temperature",
+             "destination": "x"
+          }
+        ]
+      }
+    ]
+  }, 
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
+    "name": "GPS Sensor Storage",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "enabled": true,
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "storageConfig":    
+    {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "memoryCacheSize": 1024,
+      "storagePath": "gps_obs.dat"
+    }
+  }, 
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2",
+    "name": "Weather Data Storage",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "enabled": true,
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "storageConfig":    
+    {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "memoryCacheSize": 1024,
+      "storagePath": "weather_obs.dat"
+    }
+  }, 
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc3",
+    "name": "Processed Weather Data Storage",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "enabled": true,
+    "dataSourceID": "5cb05c9c-9e08-4fa1-8731-ffade895bdc1",
+    "storageConfig":    
+    {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "memoryCacheSize": 1024,
+      "storagePath": "processed_weather.dat"
+    }
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "name": "SOS Service",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "enabled": true,
+    "endPoint": "/sos",
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "dataProviders" :
+    [
+       {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "Fake GPS",
+           "description": "Fake GPS sensor",
+           "uri": "urn:mysos:offering02",
+           "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+           "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1"
+       },
+       {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "Fake Weather",
+           "description": "Fake Weather sensor",
+           "uri": "urn:mysos:offering03",
+           "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",           
+           "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2"
+       },
+       {
+           "objClass": "org.sensorhub.impl.service.sos.StreamProcessProviderConfig",
+           "enabled": true,
+           "name": "Processed Temperature",
+           "description": "Temperature obtained from weather sensor and processed with affine transform",
+           "uri": "urn:mysos:offering04",
+           "processID": "5cb05c9c-9e08-4fa1-8731-ffade895bdc1",           
+           "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc3"
+       }
+    ],
+    "ogcCapabilitiesInfo": 
+    {
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": ["SensorHub", "Video"],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider":
+      {
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumber": "+33 5 23 56 89 78",
+        "faxNumber": "+33 5 23 56 89 77",
+        "deliveryPoint": "12 rue Voltaire",
+        "city": "Toulouse",
+        "administrativeArea": null,
+        "postalCode": "30000",
+        "country": "France",
+        "email": "admin@sensiasoft.com",
+        "website": null,
+        "hoursOfService": null,
+        "contactInstructions": null
+      }
+    }
+  }
+]

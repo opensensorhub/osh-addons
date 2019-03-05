@@ -1,0 +1,98 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "name": "HTTP Server",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "httpPort": 8181,
+    "servletsRootUrl": "/sensorhub",
+    "staticDocRootUrl": "web"
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.station.metar.MetarConfig",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "name": "METAR Weather Station Network",
+    "moduleClass": "org.sensorhub.impl.sensor.station.metar.MetarSensor",
+    "enabled": true,
+    "sensorML": "metar.xml",
+    "stationIDs": [ "3467", "3567", "3188", "2896", "1423", "4111" ]
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
+    "name": "METAR Weather Data Storage",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "enabled": true,
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "storageConfig":    
+    {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.MultiEntityStorageImpl",
+      "memoryCacheSize": 1024,
+      "storagePath": "metar_obs.dat"
+    }
+  }, 
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "name": "SOS Service",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "enabled": true,
+    "endPoint": "/sos",
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "dataProviders" : [
+       {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "Metar Stations",
+           "description": "Live stream from weather stations of the METAR network",
+           "uri": "urn:mysos:metar01",
+           "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+           "liveDataTimeout": 3600.0,
+           "maxFois": 10
+       },
+       {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "Metar Stations",
+           "description": "Weather stations from the METAR network",
+           "uri": "urn:mysos:metar02",
+           "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+           "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
+           "liveDataTimeout": 3600.0,
+           "maxFois": 10
+       }
+    ],
+    "ogcCapabilitiesInfo": {
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": ["SensorHub", "Weather", "METAR"],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumber": "+33 5 23 56 89 78",
+        "faxNumber": "+33 5 23 56 89 77",
+        "deliveryPoint": "12 rue Voltaire",
+        "city": "Toulouse",
+        "administrativeArea": null,
+        "postalCode": "30000",
+        "country": "France",
+        "email": "admin@sensiasoft.com",
+        "website": null,
+        "hoursOfService": null,
+        "contactInstructions": null
+      }
+    }
+  }
+]

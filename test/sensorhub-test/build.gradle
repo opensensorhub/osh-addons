@@ -1,0 +1,45 @@
+apply plugin: 'java'
+description = 'Main Test Project'
+targetCompatibility = 1.7
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
+  compile 'org.sensorhub:sensorhub-storage-perst:' + oshCoreVersion
+  compile 'org.sensorhub:sensorhub-webui-core:' + oshCoreVersion
+  compile project(':sensorhub-comm-ip-zeroconf')
+  compile project(':sensorhub-comm-rxtx')
+  compile project(':sensorhub-service-video')
+  compile project(':sensorhub-security-oauth')
+  compile project(':sensorhub-storage-h2')
+  compile project(':sensorhub-storage-es')
+  compile project(':sensorhub-driver-fakegps')
+  compile project(':sensorhub-driver-fakeweather')
+  compile project(':sensorhub-driver-ahrs')
+  compile project(':sensorhub-driver-angelsensor')
+  compile project(':sensorhub-driver-avl-911')
+  compile project(':sensorhub-driver-axis')
+  compile project(':sensorhub-driver-bno055')
+  compile project(':sensorhub-driver-dahua')
+  compile project(':sensorhub-driver-fakecam')
+  compile project(':sensorhub-driver-fakegps')
+  compile project(':sensorhub-driver-fakeweather')
+  compile project(':sensorhub-driver-gamma')
+  compile project(':sensorhub-driver-gps-nmea')
+  compile project(':sensorhub-driver-mavlink')
+  compile project(':sensorhub-driver-mti')
+  compile project(':sensorhub-driver-plume')
+  compile project(':sensorhub-driver-rtpcam')
+  compile project(':sensorhub-driver-v4l')
+  compile project(':sensorhub-driver-vectornav')
+  compile project(':sensorhub-driver-virb-xe')
+  compile project(':sensorhub-driver-domoticz')
+  compile project(':sensorhub-driver-trek1000')
+  compile project(':sensorhub-driver-usgswater')
+  compile project(':sensorhub-storage-usgswater')
+  compile project(':sensorhub-storage-ndbc')
+  //compile project(':sensorhub-service-remoteadmin')
+  compile project(':sensorhub-process-basicmath')
+  compile project(':sensorhub-process-vecmath')
+  compile project(':sensorhub-process-geoloc')
+}

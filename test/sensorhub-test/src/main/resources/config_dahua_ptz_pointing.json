@@ -1,0 +1,136 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "httpPort": 8181,
+    "httpsPort": 0,
+    "staticDocRootUrl": "web",
+    "servletsRootUrl": "/sensorhub",
+    "maxRequestsPerSecond": 10,
+    "authMethod": "NONE",
+    "keyStorePath": ".keystore/ssl_keys",
+    "trustStorePath": ".keystore/ssl_trust",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "name": "HTTP Server",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "customPanels": [],
+    "customForms": [],
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
+    "googleApiUrl": "http://maps.googleapis.com/maps/api/directions/json",
+    "startLatitude": 34.728252,
+    "startLongitude": -86.587177,
+    "stopLatitude": 34.730171,
+    "stopLongitude": -86.588563,
+    "centerLatitude": 34.73,
+    "centerLongitude": -86.585,
+    "areaSize": 0.1,
+    "vehicleSpeed": 40.0,
+    "walkingMode": false,
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsSensor",
+    "name": "Fake GPS Sensor",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraConfig",
+    "http": {
+      "objClass": "org.sensorhub.impl.comm.HTTPConfig",
+      "remotePort": 80,
+      "user": "admin",
+      "password": "admin",
+      "enableTLS": false,
+      "remoteHost": "172.31.255.1",
+      "localAddress": "AUTO"
+    },
+    "rtsp": {
+      "objClass": "org.sensorhub.impl.sensor.rtpcam.RTSPConfig",
+      "videoPath": "/cam/realmonitor?channel=1&subtype=0",
+      "localUdpPort": 20100,
+      "onlyConnectRtsp": false,
+      "remotePort": 554,
+      "user": "admin",
+      "password": "admin",
+      "enableTLS": false,
+      "remoteHost": "172.31.255.1",
+      "localAddress": "AUTO"
+    },
+    "connection": {
+      "objClass": "org.sensorhub.impl.comm.RobustIPConnectionConfig",
+      "checkReachability": true,
+      "connectTimeout": 5000,
+      "reconnectPeriod": 10000,
+      "reconnectAttempts": 0
+    },
+    "video": {
+      "objClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraConfig$VideoConfig",
+      "resolution": "HD_720P",
+      "frameRate": 30,
+      "grayscale": false
+    },
+    "ptz": {
+      "objClass": "org.sensorhub.impl.sensor.videocam.ptz.PtzConfig",
+      "presets": [
+        {
+          "objClass": "org.sensorhub.impl.sensor.videocam.ptz.PtzPreset",
+          "name": "Home",
+          "pan": 0.0,
+          "tilt": 0.0,
+          "zoom": 0.0
+        }
+      ]
+    },
+    "position": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig"
+    },
+    "id": "e1590f74-a1ad-4ee2-a7fd-15546a956b44",
+    "moduleClass": "org.sensorhub.impl.sensor.dahua.DahuaCameraDriver",
+    "name": "Dahua CityHall",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.process.cam.CamPtzGeoPointingConfig",
+    "camSensorUID": "urn:dahua:cam:WT1J033A7PAN00005",
+    "fixedCameraPosLLA": [
+      34.728588,
+      -86.586524,
+      240.0
+    ],
+    "fixedCameraRotENU": [
+      0.0,
+      0.0,
+      66.0
+    ],
+    "cameraMaxFocal": 135.0,
+    "cameraMinFocalLength": 4.5,
+    "cameraSensorSize": 8.47,
+    "desiredViewSize": 60.0,
+    "dataSources": [
+      {
+        "objClass": "org.sensorhub.api.processing.StreamingDataSourceConfig",
+        "producerID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+        "decimFactor": 0,
+        "inputConnections": [
+          {
+            "objClass": "org.sensorhub.api.processing.DataSourceConfig$InputLinkConfig",
+            "source": "gpsLocation",
+            "destination": "targetLocation"
+          }
+        ]
+      }
+    ],
+    "id": "5cb4569c-9e08-4fa1-1458-fead58900051",
+    "moduleClass": "org.sensorhub.process.cam.CamPtzGeoPointingProcess",
+    "name": "Camera Geo-Pointing Process",
+    "autoStart": false
+  }
+]

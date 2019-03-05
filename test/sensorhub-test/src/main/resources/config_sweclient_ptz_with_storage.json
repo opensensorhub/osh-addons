@@ -1,0 +1,243 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "httpPort": 8181,
+    "staticDocRootUrl": "web",
+    "servletsRootUrl": "/sensorhub",
+    "maxRequestsPerSecond": 10,
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "name": "HTTP Server",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "customPanels": [],
+    "customForms": [],
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
+    "googleApiUrl": "http://maps.googleapis.com/maps/api/directions/json",
+    "centerLatitude": 34.73,
+    "centerLongitude": -86.585,
+    "areaSize": 0.1,
+    "vehicleSpeed": 200.0,
+    "walkingMode": false,
+    "autoActivate": true,
+    "enableHistory": false,
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsSensor",
+    "name": "Fake GPS Sensor",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherConfig",
+    "serialNumber": "0123456879",
+    "centerLatitude": 34.8038,
+    "centerLongitude": -86.7228,
+    "centerAltitude": 0.0,
+    "sensorML": "base_description.xml",
+    "autoActivate": true,
+    "enableHistory": false,
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "moduleClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor",
+    "name": "Fake Weather Sensor",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 1024,
+      "storagePath": "gps_obs.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "enabled": false
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "minCommitPeriod": 10000,
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "GPS Sensor Storage",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 1024,
+      "storagePath": "weather_obs.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "enabled": false
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "minCommitPeriod": 10000,
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Weather Data Storage",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "enableTransactional": true,
+    "dataProviders": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+        "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
+        "hiddenOutputs": [],
+        "activateNotifications": false,
+        "liveDataTimeout": 10.0,
+        "enabled": true,
+        "uri": "urn:mysos:offering02",
+        "name": "Fake GPS",
+        "description": "Fake GPS sensor",
+        "maxFois": 10
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+        "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2",
+        "hiddenOutputs": [],
+        "activateNotifications": false,
+        "liveDataTimeout": 10.0,
+        "enabled": true,
+        "uri": "urn:mysos:offering03",
+        "name": "Fake Weather",
+        "description": "Fake Weather sensor",
+        "maxFois": 10
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+        "hiddenOutputs": [],
+        "activateNotifications": false,
+        "liveDataTimeout": 10.0,
+        "enabled": true,
+        "uri": "test",
+        "maxFois": 10
+      }
+    ],
+    "dataConsumers": [],
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": [
+        "SensorHub",
+        "Video"
+      ],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumbers": [
+          "+33 5 23 56 89 78"
+        ],
+        "faxNumbers": [
+          "+33 5 23 56 89 77"
+        ],
+        "deliveryPoints": [
+          "12 rue Voltaire"
+        ],
+        "city": "Toulouse",
+        "postalCode": "30000",
+        "country": "France",
+        "emails": [
+          "admin@sensiasoft.com"
+        ],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/sos",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "name": "SOS Service",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.swe.SWEVirtualSensorConfig",
+    "sensorUID": "urn:android:device:8b65f9d7048a345a",
+    "sosEndpointUrl": "http://botts-geo.com:8080/sensorhub/sos",
+    "observedProperties": [
+      "http://sensorml.com/ont/swe/property/Location"
+    ],
+    "sosUseWebsockets": true,
+    "autoActivate": true,
+    "enableHistory": true,
+    "id": "fd4b917b-c707-4ecf-8086-e11135358d17",
+    "moduleClass": "org.sensorhub.impl.sensor.swe.SWEVirtualSensor",
+    "name": "Nexus9 Data",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.process.cam.CamPtzGeoPointingConfig",
+    "fixedCameraPosLLA": [
+      43.6173,
+      1.4237,
+      161.0
+    ],
+    "fixedCameraRotENU": [
+      0.0,
+      0.0,
+      90.0
+    ],
+    "camSpsEndpointUrl": "http://bottsgeo.simple-url.com:2015/sensorhub/sps",
+    "camSensorUID": "d136b6ea-3951-4691-bf56-c84ec7d89d72",
+    "dataSources": [
+      {
+        "objClass": "org.sensorhub.api.processing.StreamingDataSourceConfig",
+        "producerID": "fd4b917b-c707-4ecf-8086-e11135358d17",
+        "decimFactor": 0,
+        "inputConnections": [
+          {
+            "objClass": "org.sensorhub.api.processing.DataSourceConfig$InputLinkConfig",
+            "source": "output1",
+            "destination": "camLocation"
+          }
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.api.processing.StreamingDataSourceConfig",
+        "producerID": "06f16ad4-c7ed-401e-a924-5c43cae888ce",
+        "decimFactor": 0,
+        "inputConnections": [
+          {
+            "objClass": "org.sensorhub.api.processing.DataSourceConfig$InputLinkConfig",
+            "source": "output1",
+            "destination": "targetLocation"
+          }
+        ]
+      }
+    ],
+    "id": "5cb4569c-9e08-4fa1-1458-fead58900051",
+    "moduleClass": "org.sensorhub.impl.process.cam.CamPtzGeoPointingProcess",
+    "name": "Camera Geo-Pointing Process",
+    "enabled": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.swe.SWEVirtualSensorConfig",
+    "sensorUID": "5cb4569c-9e08-4fa1-1458-fead589eff51",
+    "sosEndpointUrl": "http://botts-geo.com:8080/sensorhub/sos",
+    "observedProperties": [
+      "http://sensorml.com/ont/swe/property/TargetLocation"
+    ],
+    "sosUseWebsockets": true,
+    "autoActivate": true,
+    "enableHistory": true,
+    "id": "06f16ad4-c7ed-401e-a924-5c43cae888ce",
+    "moduleClass": "org.sensorhub.impl.sensor.swe.SWEVirtualSensor",
+    "name": "Trupulse Target Location",
+    "enabled": true
+  }
+]

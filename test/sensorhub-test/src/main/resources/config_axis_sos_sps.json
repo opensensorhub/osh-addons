@@ -1,0 +1,158 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "name": "HTTP Server",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "httpPort": 8181,
+    "servletsRootUrl": "/sensorhub",
+    "staticDocRootUrl": "web"
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "enabled": true,
+    "customPanels": [
+        {
+            "objClass": "org.sensorhub.ui.CustomUIConfig",
+            "configClass": "org.sensorhub.api.sensor.SensorConfig",
+            "uiClass": "org.sensorhub.ui.SensorAdminPanel"
+        }
+    ]
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "name": "Fake GPS Sensor",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsSensor",
+    "enabled": false,
+    "sensorML": null,
+    "autoActivate": true,
+    "enableHistory": false,
+    "hiddenIO": null,
+    "centerLatitude": 34.7300,
+    "centerLongitude": -86.5850,
+    "areaSize": 0.1,
+    "vehicleSpeed": 200
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.axis.AxisCameraConfig",
+    "id": "d136b6ea-3951-4691-bf56-c84ec7d89d72",
+    "name": "Axis Camera",
+    "moduleClass": "org.sensorhub.impl.sensor.axis.AxisCameraDriver",
+    "enabled": true,
+    "sensorML": null,
+    "autoActivate": true,
+    "enableHistory": false,
+    "hiddenIO": null,
+    "ipAddress": "bottsgeo.simple-url.com:80"
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "name": "SOS Service",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "enabled": true,
+    "endPoint": "/sos",
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "enableTransactional": true,
+    "dataProviders" : [
+       {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "Fake GPS",
+           "description": "Fake GPS sensor",
+           "uri": "urn:mysos:offering01",
+           "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72"
+       },
+       {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "Axis Camera #1",
+           "description": "Axis Camera in Patrol Car",
+           "uri": "urn:mysos:offering02",
+           "sensorID": "d136b6ea-3951-4691-bf56-c84ec7d89d72"
+       }
+    ],
+    "ogcCapabilitiesInfo": {
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": ["SensorHub", "Video"],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumber": "+33 5 23 56 89 78",
+        "faxNumber": "+33 5 23 56 89 77",
+        "deliveryPoint": "12 rue Voltaire",
+        "city": "Toulouse",
+        "administrativeArea": null,
+        "postalCode": "30000",
+        "country": "France",
+        "email": "admin@sensiasoft.com",
+        "website": null,
+        "hoursOfService": null,
+        "contactInstructions": null
+      }
+    }
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sps.SPSServiceConfig",
+    "id": "5cb05c9c-9e08-4fa1-8563-ff41e246bdc1",
+    "name": "SPS Service",
+    "moduleClass": "org.sensorhub.impl.service.sps.SPSService",
+    "enabled": true,
+    "endPoint": "/sps",
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "connectors" : [
+        {
+           "objClass": "org.sensorhub.impl.service.sps.SensorConnectorConfig",
+           "enabled": true,
+           "name": "Axis Camera #1",
+           "description": "Axis Camera in Patrol Car",
+           "uri": "urn:mysos:offering02",
+           "sensorID": "d136b6ea-3951-4691-bf56-c84ec7d89d72"
+       }
+    ],
+    "ogcCapabilitiesInfo": {
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": ["SensorHub", "Video"],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumber": "+33 5 23 56 89 78",
+        "faxNumber": "+33 5 23 56 89 77",
+        "deliveryPoint": "12 rue Voltaire",
+        "city": "Toulouse",
+        "administrativeArea": null,
+        "postalCode": "30000",
+        "country": "France",
+        "email": "admin@sensiasoft.com",
+        "website": null,
+        "hoursOfService": null,
+        "contactInstructions": null
+      }
+    }
+  },
+  {
+    "objClass": "org.sensorhub.impl.client.sost.SOSTClientConfig",
+    "id": "8ac89c00-ade0-11e4-ab27-0800200c9a66",
+    "name": "SOS-T Client for Axis Cam",
+    "moduleClass": "org.sensorhub.impl.client.sost.SOSTClient",
+    "enabled": true,
+    "sosEndpointUrl": "http://localhost:8181/sensorhub/sos",
+    "sensorID": "d136b6ea-3951-4691-bf56-c84ec7d89d72",
+    "usePersistentConnection": true
+  }
+]

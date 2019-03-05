@@ -1,0 +1,210 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "httpPort": 8282,
+    "httpsPort": 0,
+    "staticDocRootUrl": "web",
+    "servletsRootUrl": "/sensorhub",
+    "authMethod": "NONE",
+    "keyStorePath": ".keystore/ssl_keys",
+    "trustStorePath": ".keystore/ssl_trust",
+    "enableCORS": true,
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "name": "HTTP Server",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "customPanels": [],
+    "customForms": [],
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "enableTransactional": true,
+    "maxObsCount": 100,
+    "maxRecordCount": 100000,
+    "newStorageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 1024,
+      "objectCacheSize": 100,
+      "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+      "autoStart": false
+    },
+    "dataProviders": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "urn:android:device:8da1108737a56ced",
+        "storageID": "urn:android:device:8da1108737a56ced#storage",
+        "excludedOutputs": [],
+        "liveDataTimeout": 600.0,
+        "maxFois": 10,
+        "offeringID": "urn:android:device:8da1108737a56ced-sos",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "urn:osh:sensor:simweather:0123456879",
+        "storageID": "urn:osh:sensor:simweather:0123456879#storage",
+        "excludedOutputs": [],
+        "liveDataTimeout": 600.0,
+        "maxFois": 10,
+        "offeringID": "urn:osh:sensor:simweather:0123456879-sos",
+        "enabled": true
+      }
+    ],
+    "dataConsumers": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorConsumerConfig",
+        "sensorID": "urn:android:device:8da1108737a56ced",
+        "storageID": "urn:android:device:8da1108737a56ced#storage",
+        "offeringID": "urn:android:device:8da1108737a56ced-sos",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorConsumerConfig",
+        "sensorID": "urn:osh:sensor:simweather:0123456879",
+        "storageID": "urn:osh:sensor:simweather:0123456879#storage",
+        "offeringID": "urn:osh:sensor:simweather:0123456879-sos",
+        "enabled": true
+      }
+    ],
+    "customFormats": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/mp4",
+        "className": "org.sensorhub.impl.service.sos.video.MP4Serializer"
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/x-motion-jpeg",
+        "className": "org.sensorhub.impl.service.sos.video.MJPEGSerializer"
+      }
+    ],
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": false,
+      "requireAuth": false
+    },
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "title": "Test SOS-T Service",
+      "description": "An SOS-T service that can receive data from any sensor",
+      "keywords": [
+        "SensorHub",
+        "SOS-T"
+      ],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumbers": [],
+        "faxNumbers": [],
+        "deliveryPoints": [],
+        "city": "Toulouse",
+        "postalCode": "30000",
+        "country": "France",
+        "emails": [],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/sos",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "name": "SOS Service",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "storagePath": "urn_android_device_8da1108737a56ced.dat",
+      "memoryCacheSize": 1024,
+      "objectCacheSize": 100,
+      "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+      "autoStart": false
+    },
+    "dataSourceID": "urn:android:device:8da1108737a56ced",
+    "excludedOutputs": [],
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "urn:android:device:8da1108737a56ced#storage",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Android Sensors [Mate20 Pro Alex] Storage",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.swe.SWETransactionalSensorConfig",
+    "id": "urn:android:device:8da1108737a56ced",
+    "moduleClass": "org.sensorhub.impl.sensor.swe.SWETransactionalSensor",
+    "name": "Android Sensors [Mate20 Pro Alex]",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.swe.SWETransactionalSensorConfig",
+    "id": "urn:osh:sensor:simweather:0123456879",
+    "moduleClass": "org.sensorhub.impl.sensor.swe.SWETransactionalSensor",
+    "name": "Fake Weather Sensor",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "storagePath": "urn_osh_sensor_simweather_0123456879.dat",
+      "memoryCacheSize": 1024,
+      "objectCacheSize": 100,
+      "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+      "autoStart": false
+    },
+    "dataSourceID": "urn:osh:sensor:simweather:0123456879",
+    "excludedOutputs": [],
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "urn:osh:sensor:simweather:0123456879#storage",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Fake Weather Sensor Storage",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.usgs.water.USGSWaterDataConfig",
+    "exposeFilter": {
+      "objClass": "org.sensorhub.impl.usgs.water.DataFilter",
+      "siteIds": [],
+      "stateCodes": [
+        "AL"
+      ],
+      "countyCodes": [],
+      "siteBbox": {
+        "objClass": "org.vast.util.Bbox",
+        "minX": 0.0,
+        "maxX": 0.0,
+        "minY": 0.0,
+        "maxY": 0.0,
+        "minZ": NaN,
+        "maxZ": NaN
+      },
+      "siteTypes": [],
+      "parameters": [
+        "DISCHARGE"
+      ],
+      "startTime": "2019-03-17T20:03:47.296+0100",
+      "endTime": "2019-02-26T02:00:00.000+0100"
+    },
+    "id": "00067b3f-2854-4d64-b2cd-883d5a514ffa",
+    "moduleClass": "org.sensorhub.impl.usgs.water.USGSWaterDataArchive",
+    "name": "New USGSWaterDataArchive",
+    "autoStart": false
+  }
+]
