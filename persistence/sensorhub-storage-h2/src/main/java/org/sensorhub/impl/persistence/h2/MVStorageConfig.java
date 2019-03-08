@@ -18,6 +18,7 @@ import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.persistence.ObsStorageConfig;
 import org.sensorhub.utils.FileUtils;
+import com.google.common.base.Strings;
 
 
 /**
@@ -30,6 +31,8 @@ import org.sensorhub.utils.FileUtils;
  */
 public class MVStorageConfig extends ObsStorageConfig
 {
+    static final String STORAGE_ID_VAR = "${STORAGE_ID}";
+    
     
     @Required
     @DisplayInfo(desc="Path to database file")
@@ -51,6 +54,11 @@ public class MVStorageConfig extends ObsStorageConfig
     @Override
     public void setStorageIdentifier(String name)
     {
-        storagePath = FileUtils.safeFileName(name) + ".dat";        
+        String fileName = FileUtils.safeFileName(name);
+        
+        if (!Strings.isNullOrEmpty(storagePath) && storagePath.contains(STORAGE_ID_VAR))
+            storagePath = storagePath.replace(STORAGE_ID_VAR, fileName);
+        else
+            storagePath = fileName + ".dat";
     }
 }
