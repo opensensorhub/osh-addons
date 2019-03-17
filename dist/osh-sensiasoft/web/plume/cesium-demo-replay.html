@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <!-- Make the application on mobile take up the full browser screen and disable user scaling. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+  <title>Plume Release Demo</title>
+  <script src="https://cesiumjs.org/Cesium/Build/Cesium/Cesium.js"></script>
+  <style>
+      @import url(https://cesiumjs.org/Cesium/Build/Cesium/Widgets/widgets.css);
+      #cesiumContainer {
+          width: 1024px; height: 768px; margin: auto; padding: 0; overflow: hidden; display: inline-block;
+      }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <script>
+    var viewer = new Cesium.Viewer('cesiumContainer', {targetFrameRate: 10});
+    
+    var camTarget = Cesium.Cartesian3.fromDegrees(-86.5, 34.7, 50.0);
+    var camPos = new Cesium.HeadingPitchRange(Cesium.Math.toRadians(-10), Cesium.Math.toRadians(-30), 20000.0);
+    viewer.camera.lookAt(camTarget, camPos);
+    viewer.clock.shouldAnimate = false;
+    viewer.clock.multiplier = 5;
+    
+    // use current location to build absolute URL from relative path
+    var currentUrl = window.location;
+    var oldPoints;
+    
+    // query plume data from SOS using websockets
+    var ws1 = new WebSocket("ws://" + currentUrl.host + "/sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:plume&observedProperty=http://sensorml.com/ont/swe/property/LagrangianPlumeModel&temporalFilter=phenomenonTime,2015-09-10T21:09:19Z/2015-09-11T02:59:19Z&replaySpeed=300");
+    ws1.binaryType = 'arraybuffer';
+    ws1.onmessage = function (event) {
+      
+        var data = new DataView(event.data);
+        
+        var timeStamp = data.getFloat64(0, false); // read double time stamp as big endian
+        var nPoints = data.getInt32(8, false);
+        var pos = 12;
+        
+        var points = new Cesium.PointPrimitiveCollection();
+        for (i = 0; i < nPoints; i++) {
+        
+            var lat = data.getFloat64(pos, false);
+            var lon = data.getFloat64(pos + 8, false);
+            var alt = data.getFloat64(pos + 16, false);
+            pos += 24;
+            
+            // add marker at target location
+            points.add({
+		  position : Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+		  color : Cesium.Color.YELLOW,
+		  pixelSize : 3
+	    });
+        }
+	    
+        // set cesium clock to plume step time
+        var julianDate = Cesium.JulianDate.fromDate(new Date(timeStamp*1000));
+        viewer.clock.currentTime = julianDate;
+        
+        if (oldPoints != null)
+            viewer.scene.primitives.remove(oldPoints);
+	viewer.scene.primitives.add(points);
+	oldPoints = points;
+    }
+
+    ws1.onerror = function (event) {
+        ws2.close();
+    }
+  
+  </script>
+</body>
+</html>

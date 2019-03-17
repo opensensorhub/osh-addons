@@ -1,0 +1,334 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. 
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the License.
+ *
+ * The Initial Developer is Terravolv, Inc. Portions created by the Initial
+ * Developer are Copyright (C) 2014-2015 the Initial Developer. All Rights Reserved.
+ */
+
+.divIcon {
+  font-size:16px;
+  font-weight:bold;
+  color:#000;
+  width:auto;
+  height:auto;
+  min-width:100px;
+  min-height:40px;
+  max-width:300px;
+  max-height: 200px;
+  background-color:rgba(255, 255, 255, 0.1);
+}
+
+#dbg {
+ width:100%;
+ height: 100px;
+ border: 1px solid blue;
+ /*background-color: #ffff99;
+ color: #000099;*/
+ background-color: #000;
+ color: #fff;
+ overflow-x:scroll;
+ overflow-y:scroll;
+ display:block;
+}
+
+#map { 
+  width: 100%; 
+  /*height: 620px; */
+  height: 820px;
+  border: 1px solid black; 
+}
+
+#patrolmancam {
+  background-color:#fff;
+  position: absolute; 
+  width:402px; 
+  height:330px; 
+  top: 10%; 
+  left:10%; 
+  border:1px solid gray;
+  padding:5px;display:none;
+}
+
+#policecarcam {
+  background-color:#fff;
+  position: absolute; 
+  top: 50%; left:50%; 
+  border:1px solid gray;
+  padding-left:10px;
+  display:none;
+  width:525px;
+  height:270px;
+  padding-top:10px;
+  padding-bottom:10px; 
+  padding-right:10px;
+}
+
+#policecar_cam_header_container { 
+  white-space:nowrap;
+  font-family:Arial;
+  font-size:14px;
+  margin-bottom:20px; width:590px;
+}
+
+#patrolman_cam_header_container {
+  white-space:nowrap;
+  font-family:Arial;
+  font-size:14px;
+}
+
+#policecarcam_header_left {   
+  width:69%;  
+  float:left;  
+  border:0px;  
+  white-space:nowrap;
+}
+
+#policecarcam_header_right {  
+  border:0px;  
+  float:right;  
+  width:29%;  
+  text-align:right;  
+  display:inline-block; 
+  white-space:nowrap; visibility:hidden;
+}
+
+#policecarcam_video_left {   
+  width:356px;  
+  float:left;  
+  border:0px;  
+  white-space:nowrap;
+}
+
+#policecarcam_video_right {  
+  border:0px;  
+  float:right; 
+  width:165px;  
+  text-align:right;  
+  display:inline-block;
+}
+
+#weather_winddirection {
+  display:none; 
+  position: absolute; 
+  left:75%; 
+  top: 5px; 
+  right:5px; 
+  bottom:25px;  
+  width: 150px; 
+  height:188px; 
+  border: 1px black dashed; 
+  background-color:#fff
+}
+
+#weather_windspeed{
+  display:none; 
+  position: absolute; 
+  left:55%; 
+  top: 290px; 
+  right:5px; 
+  bottom:25px;  
+  width: 600px; 
+  height:300px; 
+  border: 1px black dashed; 
+  background-color:#fff
+}
+
+#dataObjectSelector {
+  position: absolute; 
+  left:50px; 
+  top: 10px; 
+  right: 10px;
+}
+
+#dataObjectsTree {
+  margin-top:0; 
+  width:250px; 
+  height: 345px;
+}
+
+#menuContent {
+  display:none;
+  background-color: #fff;
+  position: absolute;
+}
+
+#patrolmancam_header_left {  
+  width:69%;  
+  float:left;  
+  border:0px;  
+  white-space:nowrap;
+}
+
+#patrolmancam_header_right {  
+  border:0px;  
+  float:right;  
+  width:29%;  
+  text-align:right; 
+  display:inline-block; 
+  white-space:nowrap; 
+  visibility:hidden;
+}
+
+#ptz_container {
+  border: 0px dashed #f00;
+  height: 162px;
+  text-align: justify;
+  -ms-text-justify: distribute-all-lines;
+  text-justify: distribute-all-lines;
+  margin:0px;
+  padding:0px;
+  width: 165px;
+}
+.box {
+  width: 50px;
+  height: 50px;
+  padding: 0px;
+  margin: 0px;
+  vertical-align: top;
+  display: inline-block;
+  *display: inline;
+  zoom: 1
+}
+#ptz_container:after {
+  content:"";
+  width: 100%;
+  display: inline-block;
+  font-size: 0;
+  line-height: 0
+}
+.box {
+  background: #ccc;
+  border:1px solid #fff;
+  margin-bottom:1px;
+  padding:0px;
+}
+
+.box:hover { cursor: pointer;}
+
+.marker-popup { width: 250px;  }
+
+.navigation {
+  list-style: none;
+  padding: 0;
+  width: 165px; 
+  height: 40px; 
+  margin: 0px auto;
+  background: #f0f0f0;
+  border:1px solid #fff;
+  position: relative; 
+  z-index: 100;
+}
+
+.navigation, .navigation a.main {
+  border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+}
+
+.navigation:hover, .navigation:hover a.main {
+  border-radius: 4px 4px 0 0;
+  -webkit-border-radius: 4px 4px 0 0;
+  -moz-border-radius: 4px 4px 0 0;
+}
+
+.navigation a.main {
+  display: block; 
+  height: 40px;
+  font: bold 15px/40px arial, sans-serif; 
+  text-align: center; 
+  text-decoration: none; 
+  color: #000;
+  -webkit-transition: 0.2s ease-in-out;
+  -o-transition: 0.2s ease-in-out;
+  transition: 0.2s ease-in-out;
+  position: relative;
+  z-index: 100;
+}
+
+.navigation:hover a.main {
+  color: rgba(255,255,255,0.6);
+  background: rgba(0,0,0,0.04);
+}
+
+.navigation li { 
+  width: 165px; 
+  height: 40px;
+  background: #F7F7F7;
+  font: normal 12px/40px arial, sans-serif !important; 
+  color: #999;
+  text-align: center;
+  margin: 0;
+  -webkit-transform-origin: 50% 0%;
+  -o-transform-origin: 50% 0%;
+  transform-origin: 50% 0%;
+  -webkit-transform: perspective(350px) rotateX(-90deg);
+  -o-transform: perspective(350px) rotateX(-90deg);
+  transform: perspective(350px) rotateX(-90deg);
+  box-shadow: 0px 2px 10px rgba(0,0,0,0.05);
+  -webkit-box-shadow: 0px 2px 10px rgba(0,0,0,0.05);
+  -moz-box-shadow: 0px 2px 10px rgba(0,0,0,0.05);
+}
+
+.navigation li:nth-child(even) { background: #F5F5F5; }
+.navigation li:nth-child(odd) { background: #EFEFEF; }
+
+.navigation li.n1 { 
+  -webkit-transition: 0.2s linear 0.8s;
+  -o-transition: 0.2s linear 0.8s;
+  transition: 0.2s linear 0.8s;
+}
+.navigation li.n2 {
+  -webkit-transition: 0.2s linear 0.6s;
+  -o-transition: 0.2s linear 0.6s;
+  transition: 0.2s linear 0.6s;
+}
+.navigation li.n3 {
+  -webkit-transition: 0.2s linear 0.4s;
+  -o-transition: 0.2s linear 0.4s;
+  transition: 0.2s linear 0.4s;
+}
+.navigation li.n4 { 
+  -webkit-transition:0.2s linear 0.2s;
+  -o-transition:0.2s linear 0.2s;
+  transition:0.2s linear 0.2s;
+}
+.navigation li.n5 {
+  border-radius: 0px 0px 4px 4px;
+  -webkit-transition: 0.2s linear 0s;
+  -o-transition: 0.2s linear 0s;
+  transition: 0.2s linear 0s;
+}
+
+.navigation:hover li {
+  -webkit-transform: perspective(350px) rotateX(0deg);
+  -o-transform: perspective(350px) rotateX(0deg);
+  transform: perspective(350px) rotateX(0deg);
+  -webkit-transition:0.2s linear 0s;
+  -o-transition:0.2s linear 0s;
+  transition:0.2s linear 0s;
+}
+.navigation:hover .n2 {
+  -webkit-transition-delay: 0.2s;
+  -o-transition-delay: 0.2s;
+  transition-delay: 0.2s;
+}
+.navigation:hover .n3 {
+  -webkit-transition-delay: 0.4s;
+  -o-transition-delay: 0.4s;
+  transition-delay: 0.4s;
+}
+.navigation:hover .n4 {
+  transition-delay: 0.6s;
+  -o-transition-delay: 0.6s;
+  transition-delay: 0.6s;
+}
+.navigation:hover .n5 {
+  -webkit-transition-delay: 0.8s;
+  -o-transition-delay: 0.8s;
+  transition-delay: 0.8s;
+}

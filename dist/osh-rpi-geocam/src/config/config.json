@@ -1,0 +1,200 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "httpPort": 8181,
+    "staticDocRootUrl": "web",
+    "servletsRootUrl": "/sensorhub",
+    "maxRequestsPerSecond": 100,
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "name": "HTTP Server",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "customPanels": [],
+    "customForms": [],
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "enableTransactional": true,
+    "maxObsCount": 100,
+    "maxRecordCount": 100000,
+    "dataProviders": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-5648-af56-12be-456efb8ad200",
+        "hiddenOutputs": [],
+        "activateNotifications": false,
+        "liveDataTimeout": 10.0,
+        "enabled": true,
+        "uri": "urn:osh:geocam",
+        "maxFois": 10
+      }
+    ],
+    "dataConsumers": [],
+    "customFormats": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/mp4",
+        "className": "org.sensorhub.impl.service.sos.video.MP4Serializer"
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/x-motion-jpeg",
+        "className": "org.sensorhub.impl.service.sos.video.MJPEGSerializer"
+      }
+    ],
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "title": "Test SOS-T Service",
+      "description": "An SOS-T service that can receive data from any sensor",
+      "keywords": [
+        "SensorHub",
+        "SOS-T"
+      ],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumbers": [],
+        "faxNumbers": [],
+        "deliveryPoints": [],
+        "city": "Toulouse",
+        "postalCode": "30000",
+        "country": "France",
+        "emails": [],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/sos",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "name": "SOS Service",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.SensorSystemConfig",
+    "id": "d136b6ea-5648-af56-12be-456efb8ad200",
+    "name": "GeoCam System",
+    "moduleClass": "org.sensorhub.impl.sensor.SensorSystem",
+    "enabled": true,
+    "sensorML": null,
+    "enableHistory": false,
+    "uniqueID": "geocam:200",
+    "sensors":
+    [
+      {
+        "name": "gps",
+        "config":
+          {
+            "objClass": "org.sensorhub.impl.sensor.nmea.gps.NMEAGpsConfig",
+            "commSettings": {
+              "objClass": "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig",
+              "moduleClass": "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider",
+              "protocol": {
+                "objClass": "org.sensorhub.impl.comm.UARTConfig",
+                "portName": "/dev/ttyUSB0",
+                "baudRate": 9600,
+                "dataBits": 8,
+                "stopBits": 1,
+                "parity": "PARITY_NONE",
+                "receiveTimeout": -1,
+                "receiveThreshold": 1
+              }
+            },
+            "activeSentences": [
+              "GGA", "GSA"
+            ],
+            "id": "d795beff-0a50-4d72-8744-d679e7ad85fe",
+            "moduleClass": "org.sensorhub.impl.sensor.nmea.gps.NMEAGpsSensor",
+            "name": "GPS Sensor",
+            "enabled": false
+          }
+       },
+       {
+        "name": "orient",
+        "config":
+          {
+            "objClass": "org.sensorhub.impl.sensor.bno055.Bno055Config",
+            "commSettings": {
+              "objClass": "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig",
+              "moduleClass": "org.sensorhub.impl.comm.rxtx.RxtxSerialCommProvider",
+              "protocol": {
+                "objClass": "org.sensorhub.impl.comm.UARTConfig",
+                "portName": "/dev/ttyAMA0",
+                "baudRate": 115200,
+                "dataBits": 8,
+                "stopBits": 1,
+                "parity": "PARITY_NONE",
+                "receiveTimeout": -1,
+                "receiveThreshold": 1
+              }
+            },
+            "decimFactor": 10,
+            "id": "b7b61422-22ed-4aee-a037-548dd8322043",
+            "moduleClass": "org.sensorhub.impl.sensor.bno055.Bno055Sensor",
+            "name": "Orientation Sensor",
+            "enabled": false
+          }
+      },
+      {
+        "name": "cam",
+        "config":
+          {
+            "objClass": "org.sensorhub.impl.sensor.v4l.V4LCameraConfig",
+            "deviceName": "/dev/video0",
+            "frameStorageCapacity": 0,
+            "defaultParams": {
+              "objClass": "org.sensorhub.impl.sensor.v4l.V4LCameraParams",
+              "doCapture": true,
+              "imgFormat": "YUYV",
+              "imgWidth": 640,
+              "imgHeight": 480,
+              "frameRate": 30
+            },
+            "id": "9f867e12-c46a-4bcc-93ed-4b53dd13635e",
+            "moduleClass": "org.sensorhub.impl.sensor.v4l.V4LCameraDriver",
+            "name": "Video Camera",
+            "enabled": false
+          }
+      }
+    ]
+  },
+  {
+    "objClass": "org.sensorhub.impl.client.sost.SOSTClientConfig",
+    "sensorID": "d136b6ea-5648-af56-12be-456efb8ad200",
+    "sos": {
+      "objClass": "org.sensorhub.impl.comm.HTTPConfig",
+      "remoteHost": "192.168.0.12",
+      "resourcePath": "/sensorhub/sos",
+      "remotePort": 8181,
+      "localAddress": "AUTO"
+    },
+    "connection": {
+      "objClass": "org.sensorhub.impl.client.sost.SOSTClientConfig$SOSConnectionConfig",
+      "usePersistentConnection": true,
+      "maxQueueSize": 100,
+      "maxConnectErrors": 10,
+      "checkReachability": true,
+      "connectTimeout": 3000,
+      "reconnectPeriod": 10000,
+      "reconnectAttempts": 5
+    },
+    "id": "fb3752c3-24c0-4a5e-b0e9-7475c0ac1b9c",
+    "moduleClass": "org.sensorhub.impl.client.sost.SOSTClient",
+    "name": "SOS-T Client",
+    "enabled": true
+  }
+]

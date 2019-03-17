@@ -1,0 +1,18 @@
+// this an example of java policy file with security permissions required for DIO library.
+
+// policy for DIO framework
+grant {        
+        permission jdk.dio.adc.ADCPermission "*:*";
+        permission jdk.dio.atcmd.ATPermission "*:*";
+        permission jdk.dio.counter.CounterPermission "*:*";
+        permission jdk.dio.dac.DACPermission "*:*";
+        permission jdk.dio.generic.GenericPermission "*:*";
+        permission jdk.dio.gpio.GPIOPinPermission "*:*", "open,setdirection";
+        permission jdk.dio.gpio.GPIOPortPermission "*:*";
+        permission jdk.dio.i2cbus.I2CPermission "*:*";
+        permission jdk.dio.pwm.PWMPermission "*:*";
+        permission jdk.dio.spibus.SPIPermission "*:*";
+        permission jdk.dio.uart.UARTPermission "*:*";
+        permission jdk.dio.watchdog.WatchdogTimerPermission "*:*";
+        permission jdk.dio.DeviceMgmtPermission "*:*", "open";
+};

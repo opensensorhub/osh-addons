@@ -1,0 +1,6 @@
+rootProject.name = 'osh-sensiasoft'
+def repoRootDir = "$rootDir/../.."
+gradle.ext.oshCoreDir = "$repoRootDir/core"
+
+includeBuild gradle.ext.oshCoreDir
+includeBuild repoRootDir
