@@ -31,6 +31,7 @@ import org.vast.swe.SWEHelper;
 
 public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
 {
+    private static String OUTPUT_NAME = "rangeData";
     private static String MSG_PREFIX = "$PLTIT";
     private static String MSG_TYPE_HV = "HV";
     //private static String MSG_TYPE_HT = "HT";
@@ -53,7 +54,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     @Override
     public String getName()
     {
-        return lrfData.getName();
+        return OUTPUT_NAME;
     }
 
 
@@ -74,7 +75,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
         SWEHelper fac = new SWEHelper();
         
         DataRecord lrfData = fac.newDataRecord(5);
-        lrfData.setName("rangeData");
+        lrfData.setName(OUTPUT_NAME);
         lrfData.setDefinition("http://sensorml.com/ont/swe/property/LaserRangeData");
         
         // add time, horizontalDistance, azimuth, inclination, and slopeDistance
