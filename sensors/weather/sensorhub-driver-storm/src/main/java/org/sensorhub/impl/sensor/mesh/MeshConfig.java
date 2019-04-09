@@ -21,7 +21,7 @@ import org.sensorhub.api.sensor.SensorConfig;
 public class MeshConfig extends SensorConfig
 {
     
-    @DisplayInfo(desc="Max Estimated Hail Size Config params")
+    @DisplayInfo(desc="Directory to search for MESH data files")
     public String dataPath;
     
     
