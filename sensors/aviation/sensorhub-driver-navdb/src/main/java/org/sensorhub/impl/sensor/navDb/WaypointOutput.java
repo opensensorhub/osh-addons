@@ -128,9 +128,10 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 	}
 
 	public void sendEntries(List<NavDbEntry> recs)
-	{                
-
-		for(NavDbEntry rec: recs) {
+	{
+		records.clear();
+		
+	    for(NavDbEntry rec: recs) {
 			DataBlock dataBlock = struct.createDataBlock();
 
 			dataBlock.setStringValue(0, rec.id);
@@ -140,8 +141,8 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 			// Do I need a map here
 			String uid = NavDriver.WAYPOINTS_UID_PREFIX + rec.id;
 			records.put(uid, dataBlock);   
-			long time = System.currentTimeMillis();
-			eventHandler.publishEvent(new SensorDataEvent(time, uid, WaypointOutput.this, dataBlock));
+			//long time = System.currentTimeMillis();
+			//eventHandler.publishEvent(new SensorDataEvent(time, uid, WaypointOutput.this, dataBlock));
 		}
 	}
 
@@ -165,24 +166,23 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 	}
 
 	@Override
-	public Collection<String> getEntityIDs()
+	public synchronized Collection<String> getEntityIDs()
 	{
-		return parentSensor.getEntityIDs();
+	    return parentSensor.getEntityIDs();
 	}
 
 
 	@Override
-	public Map<String, DataBlock> getLatestRecords()
+	public synchronized Map<String, DataBlock> getLatestRecords()
 	{
-		return Collections.unmodifiableMap(records);
+	    return Collections.unmodifiableMap(records);
 	}
 
 
 	@Override
-	public DataBlock getLatestRecord(String entityID) {
-		//  Can't really generate this one
-		DataBlock b =  records.get(entityID);
-		return b;
+	public synchronized DataBlock getLatestRecord(String entityID)
+	{
+	    return records.get(entityID);
 	}
     
     

@@ -130,7 +130,8 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 
 	public void sendEntries(List<NavDbEntry> recs)
 	{                
-
+	    records.clear();
+	    
 		for(NavDbEntry rec: recs) {
 			DataBlock dataBlock = navStruct.createDataBlock();
 
@@ -141,8 +142,8 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 			// Do I need a map here
 			String uid = NavDriver.AIRPORTS_UID_PREFIX + rec.id;
 			records.put(uid, dataBlock);   
-			long time = System.currentTimeMillis();
-			eventHandler.publishEvent(new SensorDataEvent(time, uid, NavOutput.this, dataBlock));
+			//long time = System.currentTimeMillis();
+			//eventHandler.publishEvent(new SensorDataEvent(time, uid, NavOutput.this, dataBlock));
 		}
 	}
 
@@ -166,24 +167,23 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 	}
 
 	@Override
-	public Collection<String> getEntityIDs()
+	public synchronized Collection<String> getEntityIDs()
 	{
-		return parentSensor.getEntityIDs();
+	    return parentSensor.getEntityIDs();
 	}
 
 
 	@Override
-	public Map<String, DataBlock> getLatestRecords()
+	public synchronized Map<String, DataBlock> getLatestRecords()
 	{
 		return Collections.unmodifiableMap(records);
 	}
 
 
 	@Override
-	public DataBlock getLatestRecord(String entityID) {
-		//  Can't really generate this one
-		DataBlock b =  records.get(entityID);
-		return b;
+	public synchronized DataBlock getLatestRecord(String entityID)
+	{
+	    return records.get(entityID);
 	}
     
     

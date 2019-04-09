@@ -130,7 +130,9 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 
 	public void sendEntries(List<NavDbEntry> recs)
 	{                
-
+	    domesticRecords.clear();
+	    globalRecords.clear();
+	    
 		for(NavDbEntry rec: recs) {
 			DataBlock dataBlock = navStruct.createDataBlock();
 
@@ -143,8 +145,8 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 			globalRecords.put(uid, dataBlock);
 			if("USA".equals(rec.region) || "CAN".equals("rec.region"))
 				domesticRecords.put(uid, dataBlock);
-			long time = System.currentTimeMillis();
-			eventHandler.publishEvent(new SensorDataEvent(time, uid, NavaidOutput.this, dataBlock));
+			//long time = System.currentTimeMillis();
+			//eventHandler.publishEvent(new SensorDataEvent(time, uid, NavaidOutput.this, dataBlock));
 		}
 	}
 
@@ -168,23 +170,23 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 	}
 
 	@Override
-	public Collection<String> getEntityIDs()
+	public synchronized Collection<String> getEntityIDs()
 	{
-		return parentSensor.getEntityIDs();
+	    return parentSensor.getEntityIDs();
 	}
 
 
 	@Override
-	public Map<String, DataBlock> getLatestRecords()
+	public synchronized Map<String, DataBlock> getLatestRecords()
 	{
-		return Collections.unmodifiableMap(domesticRecords);
+	    return Collections.unmodifiableMap(domesticRecords);
 	}
 
 
 	@Override
-	public DataBlock getLatestRecord(String entityID) {
-		DataBlock b =  globalRecords.get(entityID);
-		return b;
+	public synchronized DataBlock getLatestRecord(String entityID)
+	{
+	    return globalRecords.get(entityID);
 	}
 	
 	

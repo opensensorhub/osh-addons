@@ -19,7 +19,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import org.sensorhub.impl.sensor.navDb.NavDbEntry.Type;
@@ -225,7 +224,7 @@ public class LufthansaParser
 	}	
 
 
-	public static List<String> getDeltaIcaos(String filterPath) throws FileNotFoundException, IOException {
+	public static List<String> getSelectedAirportIcaos(String filterPath) throws FileNotFoundException, IOException {
 		List<String> delta = new ArrayList<>();
 		try(BufferedReader br= new BufferedReader(new FileReader(filterPath))) {
 			while(true) {
@@ -238,10 +237,9 @@ public class LufthansaParser
 		return delta;
 	}
 
-	public static List<NavDbEntry> getDeltaAirports(String dbPath, String deltaPath) throws Exception {
-		List<String> regions = new ArrayList<>();
-		List<NavDbEntry> airports = getNavDbEntries(Paths.get(dbPath));
-		List<String> icaos = getDeltaIcaos(deltaPath);
+	public static List<NavDbEntry> getDeltaAirports(Path dbPath, String deltaPath) throws Exception {
+		List<NavDbEntry> airports = getNavDbEntries(dbPath);
+		List<String> icaos = getSelectedAirportIcaos(deltaPath);
 		List<NavDbEntry> deltaAirports = new ArrayList<>();
 		for(NavDbEntry a: airports) {
 			if(icaos.contains(a.id) && a.type == Type.AIRPORT) {
