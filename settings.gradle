@@ -1,6 +1,9 @@
 rootProject.name = 'osh-addons'
 gradle.ext.oshCoreDir = "$rootDir/../osh-core"
 
+if (!new File(gradle.oshCoreDir).exists())
+    throw new GradleException('Repository osh-core is missing. Please clone it from https://github.com/opensensorhub/osh-core')
+
 // include osh-core build only if not part of larger build
 // this is needed to avoid nested composite builds
 // comment this to build against published artifacts
