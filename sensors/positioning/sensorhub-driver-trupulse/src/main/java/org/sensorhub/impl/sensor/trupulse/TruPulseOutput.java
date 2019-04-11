@@ -41,6 +41,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     
     DataComponent lrfData;
     DataEncoding dataEncoding;
+    Thread readThread;
     BufferedReader msgReader;
     boolean sendData;
     
@@ -228,7 +229,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
         }
         
         // start main measurement thread
-        Thread t = new Thread(new Runnable()
+        readThread = new Thread(new Runnable()
         {
             public void run()
             {
@@ -238,7 +239,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
                 }
             }
         });
-        t.start();
+        readThread.start();
     }
 
 
@@ -246,10 +247,10 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     {
         sendData = false;
         
-        if (msgReader != null)
+        if (readThread != null)
         {
-            try { msgReader.close(); }
-            catch (IOException e) { }
+            readThread.interrupt();
+            readThread = null;
             msgReader = null;
         }
     }
