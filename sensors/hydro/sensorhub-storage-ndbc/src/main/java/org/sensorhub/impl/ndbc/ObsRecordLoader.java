@@ -6,11 +6,12 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
-
+import java.util.TimeZone;
 import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.ndbc.BuoyEnums.ObsParam;
 import org.vast.util.Bbox;
@@ -314,6 +315,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         public TimeStampParser(int fromIndex, int toIndex)
         {
             super(fromIndex, toIndex);
+            dateFormat.setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
         }
         
         public void parse(String[] tokens, DataBlock data) throws IOException

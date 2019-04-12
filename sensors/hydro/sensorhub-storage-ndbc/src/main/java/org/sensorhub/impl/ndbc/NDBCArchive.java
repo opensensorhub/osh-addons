@@ -202,13 +202,13 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         final DataFilter ndbcFilter = getNdbcFilter(filter);
         
         // request observations by batch and iterate through them sequentially
-        final long endTime = ndbcFilter.endTime.getTime();
-        final long batchLength = TimeUnit.DAYS.toMillis(31); // 31 days        
+        final long batchLength = TimeUnit.DAYS.toMillis(31); // 31 days
+        final long endTime = ((long)Math.ceil(ndbcFilter.endTime.getTime()/1000.))*1000; // round to next second
         class BatchIterator implements Iterator<IDataRecord>
         {                
             Iterator<BuoyDataRecord> batchIt;
             IDataRecord next;
-            long nextBatchStartTime = ndbcFilter.startTime.getTime();
+            long nextBatchStartTime = ndbcFilter.startTime.getTime()/1000*1000; // round to previous second
             
             BatchIterator()
             {
