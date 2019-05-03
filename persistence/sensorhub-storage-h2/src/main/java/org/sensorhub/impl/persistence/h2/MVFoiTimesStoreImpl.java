@@ -87,7 +87,10 @@ class MVFoiTimesStoreImpl
     {
         public int compare(FoiTimePeriod p0, FoiTimePeriod p1)
         {
-            return Double.compare(p0.start, p1.start);
+            int comp = Double.compare(p0.start, p1.start);
+            if (comp == 0)
+                comp = Double.compare(p0.stop, p1.stop);
+            return comp;
         }        
     }    
     
