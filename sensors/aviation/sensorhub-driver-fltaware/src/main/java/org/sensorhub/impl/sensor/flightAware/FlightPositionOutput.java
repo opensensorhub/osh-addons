@@ -39,6 +39,7 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
     static final String DEF_GROUND_SPEED = SWEHelper.getPropertyUri("GroundSpeed");
     static final String DEF_HEADING = SWEHelper.getPropertyUri("TrueHeading");
     private static final int AVERAGE_SAMPLING_PERIOD = 30;
+    private static final String INVALID_ALT_MSG = ": Invalid altitude detected.";
 
 	DataRecord recordStruct;
 	DataEncoding encoding;	
@@ -96,17 +97,33 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 	{                
 		int i = 0;
 		
-	    // build data block from FlightObject Record
+		// build data block from FlightObject Record
 		DataBlock dataBlk = recordStruct.createDataBlock();
 		dataBlk.setDoubleValue(i++, obj.getClock());
 		dataBlk.setStringValue(i++, obj.getOshFlightId());
 		dataBlk.setDoubleValue(i++, obj.getValue(obj.lat));
-		dataBlk.setDoubleValue(i++, obj.getValue(obj.lon));
-		dataBlk.setDoubleValue(i++, obj.getValue(obj.alt));
+		dataBlk.setDoubleValue(i++, obj.getValue(obj.lon));		
+		
+		// fix altitude if 0
+        double alt = obj.getValue(obj.alt);
+        if (alt <= 0)
+        {
+            DataBlock lastData = latestRecords.get(oshFlightId);
+            if (lastData != null)
+            {
+                double lastAlt = lastData.getDoubleValue(i);
+                parentSensor.getLogger().debug("{}{} Using last value = {}", obj.getOshFlightId(), INVALID_ALT_MSG, lastAlt);
+                alt = lastAlt;
+            }
+            else
+                parentSensor.getLogger().debug("{}{} No previous value available", obj.getOshFlightId(), INVALID_ALT_MSG);
+        }
+		dataBlk.setDoubleValue(i++, alt);
+		
 		dataBlk.setDoubleValue(i++, obj.getValue(obj.heading));
 		dataBlk.setDoubleValue(i++, obj.getValue(obj.gs));
         dataBlk.setDoubleValue(i++, obj.verticalChange);
-
+        
 		// update latest record and send event
 		latestRecord = dataBlk;
 		latestRecords.put(oshFlightId, dataBlk);
