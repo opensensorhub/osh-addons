@@ -17,13 +17,12 @@ package org.sensorhub.impl.sensor.navDb;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEHelper;
 
@@ -47,8 +46,8 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 
 	DataRecord navStruct;
 	DataEncoding encoding;	
-	Map<String, DataBlock> globalRecords = new LinkedHashMap<>();  // key is navDbEntry uid
-	Map<String, DataBlock> domesticRecords = new LinkedHashMap<>();  // US & CAN only
+	Map<String, DataBlock> globalRecords = new ConcurrentSkipListMap <>();  // key is navDbEntry uid
+	Map<String, DataBlock> domesticRecords = new ConcurrentSkipListMap <>();  // US & CAN only
 
 	public NavaidOutput(NavDriver parentSensor) throws IOException
 	{
@@ -177,14 +176,14 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 
 
 	@Override
-	public synchronized Map<String, DataBlock> getLatestRecords()
+	public Map<String, DataBlock> getLatestRecords()
 	{
 	    return Collections.unmodifiableMap(domesticRecords);
 	}
 
 
 	@Override
-	public synchronized DataBlock getLatestRecord(String entityID)
+	public DataBlock getLatestRecord(String entityID)
 	{
 	    return globalRecords.get(entityID);
 	}
