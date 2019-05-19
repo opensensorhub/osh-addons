@@ -58,8 +58,8 @@ public class MessageHandler implements IMessageHandler
                .expireAfterWrite(24, TimeUnit.HOURS)
                .build();
         
-        this.queue = new LinkedBlockingQueue<>(1000);
-        this.exec = new ThreadPoolExecutor(2, 2, 1, TimeUnit.SECONDS, queue);
+        this.queue = new LinkedBlockingQueue<>(10000);
+        this.exec = new ThreadPoolExecutor(2, 4, 1, TimeUnit.SECONDS, queue);
     }
     
     public void handle(String message) {
