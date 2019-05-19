@@ -17,13 +17,12 @@ package org.sensorhub.impl.sensor.navDb;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEHelper;
 
@@ -47,7 +46,7 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 
 	DataRecord struct;
 	DataEncoding encoding;	
-	Map<String, DataBlock> records = new LinkedHashMap<>();  // key is navDbEntry uid
+	Map<String, DataBlock> records = new ConcurrentSkipListMap <>();  // key is navDbEntry uid
 
 	public WaypointOutput(NavDriver parentSensor) throws IOException
 	{
@@ -166,21 +165,21 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 	}
 
 	@Override
-	public synchronized Collection<String> getEntityIDs()
+	public Collection<String> getEntityIDs()
 	{
 	    return parentSensor.getEntityIDs();
 	}
 
 
 	@Override
-	public synchronized Map<String, DataBlock> getLatestRecords()
+	public Map<String, DataBlock> getLatestRecords()
 	{
 	    return Collections.unmodifiableMap(records);
 	}
 
 
 	@Override
-	public synchronized DataBlock getLatestRecord(String entityID)
+	public DataBlock getLatestRecord(String entityID)
 	{
 	    return records.get(entityID);
 	}

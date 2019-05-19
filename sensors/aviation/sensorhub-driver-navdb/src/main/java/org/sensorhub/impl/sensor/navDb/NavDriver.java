@@ -23,9 +23,9 @@ import java.nio.file.StandardWatchEventKinds;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Pattern;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
@@ -68,7 +68,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	static final String NAVAID_UID_PREFIX = SENSOR_UID_PREFIX + "navaids:";
 
 	public NavDriver() {
-		this.foiIDs = new LinkedHashSet<>();
+		this.foiIDs = new ConcurrentSkipListSet<>();
 		//this.navEntryFois = LinkedListMultimap.create();
 	}
 
@@ -92,8 +92,8 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 		super.init();
 		
 		// IDs
-		this.uniqueID = "urn:osh:sensor:earthcast:navDb";
-		this.xmlID = "NavDb";
+		this.uniqueID = "urn:osh:sensor:aviation:navDb";
+		this.xmlID = "NAVDB";
 
 		// Initialize Outputs
 		try {
