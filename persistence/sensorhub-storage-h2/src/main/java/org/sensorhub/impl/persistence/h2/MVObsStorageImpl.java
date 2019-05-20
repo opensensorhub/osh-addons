@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.persistence.DataFilter;
 import org.sensorhub.api.persistence.DataKey;
 import org.sensorhub.api.persistence.IDataFilter;
 import org.sensorhub.api.persistence.IDataRecord;
@@ -384,6 +385,34 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         DataStreamInfo rsInfo = new DataStreamInfo(name, recordStructure, recommendedEncoding);
         rsInfoMap.put(name, rsInfo);
         loadRecordStore(rsInfo);
+    }
+    
+    
+    public synchronized void upgradeRecordStore(String name, DataComponent recordStructure, DataEncoding recommendedEncoding, boolean deleteRecords)
+    {
+        checkOpen();
+        Asserts.checkNotNull(name, "name");
+        Asserts.checkNotNull(recordStructure, DataComponent.class);
+        Asserts.checkNotNull(recommendedEncoding, DataEncoding.class);
+        
+        DataStreamInfo rsInfo = new DataStreamInfo(name, recordStructure, recommendedEncoding);
+        rsInfoMap.put(name, rsInfo);
+        
+        // remove old records if requested
+        // usually needed if old records are not compatible with new data structure
+        if (deleteRecords)
+            recordStores.get(name).remove(new DataFilter(name));
+        
+        mvStore.commit();
+    }
+    
+    
+    public synchronized void removeRecordStore(String name)
+    {
+        rsInfoMap.remove(name);
+        MVTimeSeriesImpl rsStore = recordStores.remove(name);
+        rsStore.delete();
+        mvStore.commit();
     }
 
 

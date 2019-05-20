@@ -231,4 +231,10 @@ class MVFoiTimesStoreImpl
         String key = getKey(producerID, foiID);
         idIndex.remove(key);
     }
+    
+    
+    void delete()
+    {
+        idIndex.getStore().removeMap(idIndex);
+    }
 }

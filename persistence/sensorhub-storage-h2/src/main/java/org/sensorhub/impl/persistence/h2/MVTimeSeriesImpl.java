@@ -546,5 +546,12 @@ public class MVTimeSeriesImpl
     {
         return foiTimesStore.getFoiIDs(producerID);
     }
+    
+    
+    void delete()
+    {
+        foiTimesStore.delete();
+        recordIndex.getStore().removeMap(recordIndex);
+    }
 
 }
