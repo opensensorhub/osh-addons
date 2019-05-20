@@ -19,7 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.TreeMap;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
@@ -46,7 +46,7 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 
 	DataRecord struct;
 	DataEncoding encoding;	
-	Map<String, DataBlock> records = new ConcurrentSkipListMap <>();  // key is navDbEntry uid
+	Map<String, DataBlock> records = new TreeMap<>();  // key is navDbEntry uid
 
 	public WaypointOutput(NavDriver parentSensor) throws IOException
 	{
@@ -128,22 +128,25 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 
 	public void sendEntries(List<NavDbEntry> recs)
 	{
-		records.clear();
-		
-	    for(NavDbEntry rec: recs) {
+	    Map<String, DataBlock> newRecords = new TreeMap<>();
+        
+        for(NavDbEntry rec: recs) {
 			DataBlock dataBlock = struct.createDataBlock();
 
 			dataBlock.setStringValue(0, rec.id);
 			dataBlock.setStringValue(1, rec.name);
 			dataBlock.setDoubleValue(2, rec.lat);
 			dataBlock.setDoubleValue(3, rec.lon);
-			// Do I need a map here
-			String uid = NavDriver.WAYPOINTS_UID_PREFIX + rec.id;
-			records.put(uid, dataBlock);   
+			
+			newRecords.put(rec.id, dataBlock);   
 			//long time = System.currentTimeMillis();
 			//eventHandler.publishEvent(new SensorDataEvent(time, uid, WaypointOutput.this, dataBlock));
 		}
+        
+        // switch to new records atomically
+        records = newRecords;
 	}
+	
 
 	public double getAverageSamplingPeriod()
 	{
@@ -163,6 +166,7 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 	{
 		return encoding;
 	}
+	
 
 	@Override
 	public Collection<String> getEntityIDs()

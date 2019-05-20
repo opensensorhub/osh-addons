@@ -19,7 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.TreeMap;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
@@ -46,8 +46,8 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 
 	DataRecord navStruct;
 	DataEncoding encoding;	
-	Map<String, DataBlock> globalRecords = new ConcurrentSkipListMap <>();  // key is navDbEntry uid
-	Map<String, DataBlock> domesticRecords = new ConcurrentSkipListMap <>();  // US & CAN only
+	Map<String, DataBlock> globalRecords = new TreeMap<>();  // key is navDbEntry uid
+	Map<String, DataBlock> domesticRecords = new TreeMap<>();  // US & CAN only
 
 	public NavaidOutput(NavDriver parentSensor) throws IOException
 	{
@@ -129,8 +129,8 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 
 	public void sendEntries(List<NavDbEntry> recs)
 	{                
-	    domesticRecords.clear();
-	    globalRecords.clear();
+	    Map<String, DataBlock> newDomesticRecords = new TreeMap<>();
+	    Map<String, DataBlock> newGlobalRecords = new TreeMap<>();
 	    
 		for(NavDbEntry rec: recs) {
 			DataBlock dataBlock = navStruct.createDataBlock();
@@ -139,15 +139,19 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 			dataBlock.setStringValue(1, rec.name);
 			dataBlock.setDoubleValue(2, rec.lat);
 			dataBlock.setDoubleValue(3, rec.lon);
-			// Do I need a map here
-			String uid = NavDriver.NAVAID_UID_PREFIX + rec.id;
-			globalRecords.put(uid, dataBlock);
+			
+			newGlobalRecords.put(rec.id, dataBlock);
 			if("USA".equals(rec.region) || "CAN".equals("rec.region"))
-				domesticRecords.put(uid, dataBlock);
+			    newDomesticRecords.put(rec.id, dataBlock);
 			//long time = System.currentTimeMillis();
 			//eventHandler.publishEvent(new SensorDataEvent(time, uid, NavaidOutput.this, dataBlock));
 		}
+		
+		// switch to new records atomically
+        globalRecords = newGlobalRecords;
+		domesticRecords = newDomesticRecords;
 	}
+	
 
 	public double getAverageSamplingPeriod()
 	{
@@ -167,6 +171,7 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 	{
 		return encoding;
 	}
+	
 
 	@Override
 	public Collection<String> getEntityIDs()

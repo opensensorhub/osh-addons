@@ -15,7 +15,6 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.navDb;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -213,7 +212,7 @@ public class LufthansaParser
 		return filtered;
 	}	
 
-	public static List<NavDbEntry> filterEntries(List<NavDbEntry> entries, Type t) throws IOException {
+	public static List<NavDbEntry> filterEntries(List<NavDbEntry> entries, Type t) {
 		List<NavDbEntry> filtered = new ArrayList<>();
 		for(NavDbEntry e: entries) {
 			if(e.type == t)
@@ -221,32 +220,5 @@ public class LufthansaParser
 		}
 
 		return filtered;
-	}	
-
-
-	public static List<String> getSelectedAirportIcaos(String filterPath) throws FileNotFoundException, IOException {
-		List<String> delta = new ArrayList<>();
-		try(BufferedReader br= new BufferedReader(new FileReader(filterPath))) {
-			while(true) {
-				String l = br.readLine();
-				if(l==null)  break;
-				String icao = l.substring(0, 4);
-				delta.add(icao);
-			}
-		}
-		return delta;
 	}
-
-	public static List<NavDbEntry> getDeltaAirports(Path dbPath, String deltaPath) throws Exception {
-		List<NavDbEntry> airports = getNavDbEntries(dbPath);
-		List<String> icaos = getSelectedAirportIcaos(deltaPath);
-		List<NavDbEntry> deltaAirports = new ArrayList<>();
-		for(NavDbEntry a: airports) {
-			if(icaos.contains(a.id) && a.type == Type.AIRPORT) {
-				deltaAirports.add(a);
-			}
-		}
-		return deltaAirports;
-	}
-
 }
