@@ -129,6 +129,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	@Override
 	public void start() throws SensorHubException
 	{
+	    loading.set(false);
 	    startDirectoryWatcher();
         readLatestDataFile();
 	}
@@ -228,6 +229,8 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
         {
             getLogger().error("Cannot read Nav DB File", e);
         }
+        
+        loading.set(false);
     }
     
 
