@@ -94,13 +94,11 @@ public class MVTimeSeriesImpl
     {
         Iterator<FoiTimePeriod> periodIt;
         String currentFoiID;
-        boolean preloadValue;
         
-        IteratorWithFoi(Set<FoiTimePeriod>foiTimePeriods, boolean preloadValue)
+        IteratorWithFoi(Set<FoiTimePeriod>foiTimePeriods)
         {
             super(Collections.<IDataRecord>emptyList().iterator());
             this.periodIt = foiTimePeriods.iterator();
-            this.preloadValue = preloadValue;
         }
 
         @Override
@@ -187,7 +185,7 @@ public class MVTimeSeriesImpl
     ProducerTimeKey[] getKeyRange(IDataFilter filter)
     {
         String producerID = getProducerID(filter);
-        double[] timeRange = getTimeRange(filter);
+        double[] timeRange = getTimeRange(producerID, filter);
         
         return new ProducerTimeKey[] {
             new ProducerTimeKey(producerID, timeRange[0]),
@@ -378,11 +376,21 @@ public class MVTimeSeriesImpl
     }
     
     
-    private double[] getTimeRange(IDataFilter filter)
+    private double[] getTimeRange(String producerID, IDataFilter filter)
     {
         double[] timeRange = filter.getTimeStampRange();
         if (timeRange != null)
-            return timeRange;
+        {
+            // special case when requesting latest record
+            if (timeRange[0] == Double.POSITIVE_INFINITY && timeRange[1] == Double.POSITIVE_INFINITY)
+            {
+                ProducerTimeKey afterAll = new ProducerTimeKey(producerID, Double.POSITIVE_INFINITY);
+                ProducerTimeKey lastProducerKey = recordIndex.floorKey(afterAll);
+                return new double[] {lastProducerKey.timeStamp, lastProducerKey.timeStamp};
+            }
+            else
+                return timeRange;
+        }
         else
             return ALL_TIMES;
     }
@@ -444,23 +452,14 @@ public class MVTimeSeriesImpl
         // if no FOIs have been added just process whole time range
         if (foiTimePeriods == null)
         {
-            double start = Double.NEGATIVE_INFINITY;
-            double stop = Double.POSITIVE_INFINITY;
-            
-            double[] timeRange = filter.getTimeStampRange();
-            if (timeRange != null)
-            {
-                start = filter.getTimeStampRange()[0];
-                stop = filter.getTimeStampRange()[1];
-            }
-            
+            double[] timeRange = getTimeRange(producerID, filter); 
             foiTimePeriods = new HashSet<>();
-            foiTimePeriods.add(new FoiTimePeriod(producerID, null, start, stop));
+            foiTimePeriods.add(new FoiTimePeriod(producerID, null, timeRange[0], timeRange[1]));
         }
         
         // scan through each time range sequentially
         // but wrap the process with a single iterator
-        return new IteratorWithFoi(foiTimePeriods, preloadValue);
+        return new IteratorWithFoi(foiTimePeriods);
     }
     
     
@@ -517,7 +516,7 @@ public class MVTimeSeriesImpl
         Set<FoiTimePeriod> foiTimes = foiTimesStore.getSortedFoiTimes(producerID, foiIDs);
         
         // trim periods to filter time range if specified
-        double[] timeRange = filter.getTimeStampRange();
+        double[] timeRange = getTimeRange(producerID, filter);
         if (timeRange != null)
         {
             Iterator<FoiTimePeriod> it = foiTimes.iterator();
