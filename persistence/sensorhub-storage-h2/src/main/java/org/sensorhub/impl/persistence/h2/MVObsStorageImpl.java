@@ -94,6 +94,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     }
     
     
+    /*
+     * Constructor used to create a nested MVObsStorage within a MVMultiStorage
+     * In this case, we share maps between all producers
+     */
     protected MVObsStorageImpl(MVObsStorageImpl parentStore, String producerID)
     {
         Asserts.checkNotNull(parentStore, "Parent");                
@@ -154,7 +158,12 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     
     private void loadRecordStore(IRecordStoreInfo rsInfo)
     {
-        MVTimeSeriesImpl recordStore = new MVTimeSeriesImpl(this, rsInfo.getName());        
+        MVTimeSeriesImpl recordStore;        
+        if (config.indexObsLocation)
+            recordStore = new MVTimeSeriesImpl(this, rsInfo);
+        else
+            recordStore = new MVTimeSeriesImpl(this, rsInfo.getName());
+        
         recordStores.put(rsInfo.getName(), recordStore);
     }
 
@@ -164,6 +173,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     {
         if (mvStore != null) 
         {
+            // make sure cached data is flushed
+            for (MVTimeSeriesImpl recordStore: recordStores.values())
+                recordStore.close();
+            
             mvStore.close();
             mvStore = null;
             processDescMap = null;

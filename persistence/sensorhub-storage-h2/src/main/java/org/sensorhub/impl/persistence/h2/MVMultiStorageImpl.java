@@ -163,6 +163,7 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
         try
         {
             obsStore = new MVObsStorageImpl(this, producerID);
+            obsStore.init(config);
             obsStores.put(producerID, obsStore);
             return obsStore;
         }
