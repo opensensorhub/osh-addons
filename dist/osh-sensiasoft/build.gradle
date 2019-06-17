@@ -12,6 +12,7 @@ dependencies {
   compile 'org.sensorhub:sensorhub-driver-fakeweather:[0.1,2.0)'
   compile 'org.sensorhub:sensorhub-driver-avl-911:[0.1,2.0)'
   compile 'org.sensorhub:sensorhub-driver-plume:[0.1,2.0)'
+  compile 'org.sensorhub:sensorhub-storage-usgswater:[0.1,2.0)'
   compile 'org.sensorhub:sensorhub-process-vecmath:[0.1,2.0)'
   compile 'org.sensorhub:sensorhub-process-geoloc:[0.1,2.0)'
   compile 'org.sensorhub:sensorhub-process-sat:[0.1,2.0)'
