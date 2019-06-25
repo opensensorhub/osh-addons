@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -443,14 +442,14 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         checkOpen();
         return getRecordStore(recordType).getDataTimeRange(producerID);
     }
-
-
+    
+    
     @Override
-    public Iterator<double[]> getRecordsTimeClusters(String recordType)
+    public int[] getEstimatedRecordCounts(String recordType, double[] timeStamps)
     {
-        checkOpen();
-        //return getRecordStore(recordType).getRecordsTimeClusters(producerID);
-        return Arrays.asList(new double[2]).iterator();
+        Asserts.checkNotNull(timeStamps);
+        Asserts.checkArgument(timeStamps.length >= 2, "At least 2 time stamps must be provided");
+        return getRecordStore(recordType).getEstimatedRecordCounts(producerID, timeStamps);
     }
     
     

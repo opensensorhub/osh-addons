@@ -67,6 +67,7 @@ import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.api.persistence.IStorageModule;
 import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.impl.module.AbstractModule;
+import org.sensorhub.impl.persistence.StorageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,8 +89,6 @@ import net.opengis.swe.v20.DataEncoding;
  * @since 2017
  */
 public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> implements IRecordStorageModule<ESBasicStorageConfig> {
-	private static final int TIME_RANGE_CLUSTER_SCROLL_FETCH_SIZE = 5000;
-    
 	protected static final double MAX_TIME_CLUSTER_DELTA = 60.0;
 
 	protected static final String RECORD_TYPE_FIELD_NAME = "recordType";
@@ -509,62 +508,12 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		}
 		
 		return result;
-	}
-
-	@Override
-	public Iterator<double[]> getRecordsTimeClusters(String recordType) {
-		// build response
-		final SearchRequestBuilder scrollReq = client.prepareSearch(indexName).setTypes(RS_DATA_IDX_NAME)
-				//TOCHECK
-				//.addSort(SortOrder.ASC)
-				.addSort(TIMESTAMP_FIELD_NAME, SortOrder.ASC)
-		        .setScroll(new TimeValue(config.pingTimeout))
-		        .setRequestCache(true)
-		        .setQuery(QueryBuilders.termQuery(RECORD_TYPE_FIELD_NAME, recordType))
-		        .setFetchSource(new String[]{TIMESTAMP_FIELD_NAME}, new String[]{}); // get only the timestamp
-		    	
-        // wrap the request into custom ES Scroll iterator
-		final Iterator<SearchHit> searchHitsIterator = new ESIterator(client, scrollReq,
-				TIME_RANGE_CLUSTER_SCROLL_FETCH_SIZE); //max of scrollFetchSize hits will be returned for each scroll
-				
-		return new Iterator<double[]>() {
-			Double lastTime = Double.NaN;
-			
-			@Override
-			public boolean hasNext() {
-				return searchHitsIterator.hasNext();
-			}
-
-			@Override
-			public double[] next() {
-				double[] clusterTimeRange = new double[2];
-                clusterTimeRange[0] = lastTime;
-                
-                SearchHit nextSearchHit = null;
-                double recTime;
-                double dt;
-                
-				while (searchHitsIterator.hasNext()) {
-					nextSearchHit = searchHitsIterator.next();
-					recTime = (double) nextSearchHit.getSource().get(TIMESTAMP_FIELD_NAME);
-
-					synchronized (this) {
-						if (Double.isNaN(lastTime)) {
-							clusterTimeRange[0] = recTime;
-							lastTime = recTime;
-						} else {
-							 dt = recTime - lastTime;
-							lastTime = recTime;
-							if (dt > MAX_TIME_CLUSTER_DELTA)
-								break;
-						}
-					}
-					clusterTimeRange[1] = recTime;
-				}
-				return clusterTimeRange;
-			}
-		};
-	}
+	}    
+    
+    @Override
+    public int[] getEstimatedRecordCounts(String recordType, double[] timeStamps) {
+        return StorageUtils.computeDefaultRecordCounts(this, recordType, timeStamps);
+    }
 
 	@Override
 	public DataBlock getDataBlock(DataKey key) {

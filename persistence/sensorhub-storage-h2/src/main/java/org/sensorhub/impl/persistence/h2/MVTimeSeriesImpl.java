@@ -425,6 +425,44 @@ public class MVTimeSeriesImpl
     }
     
     
+    int[] getEstimatedRecordCounts(String producerID, double[] timeStamps)
+    {
+        int[] bins = new int[timeStamps.length];
+        
+        boolean first = true;
+        long lastKeyIndex = 0;        
+        double lastKeyTime = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < timeStamps.length; i++)
+        {
+            double time = timeStamps[i];
+            
+            // skip bin if last key already too high for this slot
+            if (lastKeyTime > time)
+                continue;
+            
+            ProducerTimeKey timeKey = new ProducerTimeKey(producerID, time);
+            ProducerTimeKey key = (i == 0) ? recordIndex.ceilingKey(timeKey) : recordIndex.floorKey(timeKey);
+            
+            // we're done if no more keys can be found for this producer
+            if (key == null || !key.producerID.equals(producerID))
+                break;
+            
+            long keyIndex = recordIndex.getKeyIndex(key);
+            if (i > 0)
+            {
+                int count = (int)(keyIndex - lastKeyIndex);
+                bins[i-1] = count + (first ? 1 : 0);
+                first = false;
+            }
+            
+            lastKeyIndex = keyIndex;
+            lastKeyTime = key.timeStamp;
+        }
+                
+        return bins;
+    }
+    
+    
     private double[] getTimeRange(String producerID, IDataFilter filter)
     {
         double[] timeRange = filter.getTimeStampRange();
