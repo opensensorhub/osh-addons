@@ -21,6 +21,7 @@ import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -155,7 +156,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
 	}
 
 	protected void initParamReaders(Set<ObsParam> params, String[] fieldNames) {
-		ArrayList<ParamValueParser> readers = new ArrayList<ParamValueParser>();
+		ArrayList<ParamValueParser> readers = new ArrayList<>();
 		int i = 0;
 
 		// always add time stamp and site ID readers
@@ -310,14 +311,14 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
 			try {
 				float f = Float.NaN;
 
-				if (fromIndex >= 0) {
+				if (fromIndex >= 0 && fromIndex < tokens.length) {
 					String val = tokens[fromIndex].trim();
 					if (!val.isEmpty() && !val.startsWith("*"))
 						try {
 							f = Float.parseFloat(val);
 						} catch (NumberFormatException e) {
 							//  If value is non-numeric, leave field as NaN
-							logger.error("NumberFormatException: " + e.getMessage());
+							logger.trace("Special value: {}", val);
 						}
 				}
 
