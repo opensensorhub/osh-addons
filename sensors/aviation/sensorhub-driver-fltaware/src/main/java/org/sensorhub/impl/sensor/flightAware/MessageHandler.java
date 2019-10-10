@@ -34,6 +34,7 @@ public class MessageHandler implements IMessageHandler
 	static final Logger log = LoggerFactory.getLogger(MessageHandler.class);
 	static final String POSITION_MSG_TYPE = "position";
 	static final String FLIGHTPLAN_MSG_TYPE = "flightplan";
+    static final String ARRIVAL_MSG_TYPE = "arrival";
 	static final long MESSAGE_LATENCY_WARN_LIMIT = 30000L; // in ms
 	
 	Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -47,7 +48,9 @@ public class MessageHandler implements IMessageHandler
     String passwd;
     volatile long lastMessageReceiveTime = 0L;
     volatile long lastMessageTime = 0L;
-    
+    long startTime = System.currentTimeMillis()/1000;
+    int msgCount = 0;
+    boolean liveStarted = false;
     
     public MessageHandler(String user, String pwd) {
         this.user = user;
@@ -61,14 +64,25 @@ public class MessageHandler implements IMessageHandler
         this.queue = new LinkedBlockingQueue<>(10000);
         this.exec = new ThreadPoolExecutor(2, 4, 1, TimeUnit.SECONDS, queue);
     }
-    
+        
     public void handle(String message) {
         try {
             lastMessageReceiveTime = System.currentTimeMillis();
-            
             FlightObject obj = gson.fromJson(message, FlightObject.class);
             lastMessageTime = Long.parseLong(obj.pitr);            
             processMessage(obj);
+            
+            log.trace("message count: {}, queue size: {}", ++msgCount, queue.size());
+            log.trace("time lag: {}", System.currentTimeMillis()/1000-lastMessageTime);
+            if (!liveStarted && lastMessageTime >= startTime)
+            {
+                liveStarted = true;
+                log.info("Starting live feed");
+            }
+            else if (msgCount == 1)
+            {
+                log.info("Replaying historical feed");
+            }
             
             // also notify raw object listeners
             newFlightObject(obj);
@@ -87,7 +101,11 @@ public class MessageHandler implements IMessageHandler
                 exec.execute(new ProcessPlanTask(this, obj));
                 break;
             case POSITION_MSG_TYPE:
-                exec.execute(new ProcessPositionTask(this, obj));
+                if (lastMessageTime >= startTime) // skip older position messages
+                    exec.execute(new ProcessPositionTask(this, obj));
+                break;
+            case ARRIVAL_MSG_TYPE:
+                //log.info("{}_{} arrived at {}", obj.ident, obj.dest, Instant.ofEpochSecond(Long.parseLong(obj.aat)));
                 break;
             default:
                 log.warn("Unsupported message type: {}", obj.type);

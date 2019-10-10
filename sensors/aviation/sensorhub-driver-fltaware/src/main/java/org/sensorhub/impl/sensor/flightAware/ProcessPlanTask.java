@@ -14,9 +14,8 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.io.IOException;
-
-import org.apache.http.client.ClientProtocolException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *   Process Flight Plan messages from FlightAware firehose feed.
@@ -29,20 +28,28 @@ import org.apache.http.client.ClientProtocolException;
  */
 public class ProcessPlanTask implements Runnable
 {
-	FlightObject obj;
+    static final Logger log = LoggerFactory.getLogger(ProcessPlanTask.class);
+    
+    FlightObject obj;
 	FlightAwareApi api;
 	MessageHandler converter;
 	
 	public ProcessPlanTask(MessageHandler converter, FlightObject obj) {
 		this.converter = converter;
 		this.obj = obj;
-		this.api = new FlightAwareApi(converter.user, converter.passwd);
+		//this.api = new FlightAwareApi(converter.user, converter.passwd);
 	}
 	
 	@Override
 	public void run() {
 		try {
-			FlightPlan plan = api.getFlightPlan(obj.id);
+		    
+		    // save flight destination airport so we can look it up
+		    // when it's missing from position messages
+		    log.debug("New flight plan: {} to {} (fid={})", obj.ident, obj.dest, obj.id);
+		    converter.idToDestinationCache.put(obj.id, obj.dest);
+		    
+			/*FlightPlan plan = api.getFlightPlan(obj.id);
 			if(plan == null) {
 				return;
 			}
@@ -54,11 +61,9 @@ public class ProcessPlanTask implements Runnable
 			if(obj.dest != null)
 				plan.destinationAirport = obj.dest;
 			plan.departureTime = obj.getDepartureTime();
-			converter.newFlightPlan(plan);
-		} catch (ClientProtocolException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+			converter.newFlightPlan(plan);*/
+		} catch (Exception e) {
+			log.error("Error while decoding flight plan", e);
 		} 	
 	}
 
