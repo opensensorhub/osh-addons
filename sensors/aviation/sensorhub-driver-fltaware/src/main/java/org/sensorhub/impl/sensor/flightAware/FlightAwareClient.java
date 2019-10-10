@@ -50,8 +50,11 @@ public class FlightAwareClient implements Runnable
 		this.msgHandler = msgHandler;
 	}
 
-	private String  buildInitiationCommand() {
-		String initiationCmd = "live username " + userName + " password " + password;
+	private String  buildInitiationCommand() 
+	{
+	    long pitr = System.currentTimeMillis()/1000 - 3600*4;
+		//String initiationCmd = "live username " + userName + " password " + password;
+	    String initiationCmd = "pitr " + pitr + " username " + userName + " password " + password;
 
 		if (USE_COMPRESSION) {
 			initiationCmd += " compression gzip";
