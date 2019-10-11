@@ -14,6 +14,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.stream.Collectors;
 import org.joda.time.DateTimeZone;
@@ -24,8 +25,12 @@ import org.sensorhub.api.datastore.ObsData;
 import org.sensorhub.api.datastore.ObsFilter;
 import org.sensorhub.api.datastore.ObsKey;
 import org.sensorhub.impl.sensor.VirtualSensorProxy;
+import org.vast.data.DataBlockDouble;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
+import de.fraunhofer.iosb.ilt.frostserver.model.Datastream;
+import de.fraunhofer.iosb.ilt.frostserver.model.FeatureOfInterest;
+import de.fraunhofer.iosb.ilt.frostserver.model.MultiDatastream;
 import de.fraunhofer.iosb.ilt.frostserver.model.Observation;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.AbstractDatastream;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
@@ -36,6 +41,7 @@ import de.fraunhofer.iosb.ilt.frostserver.path.EntityPathElement;
 import de.fraunhofer.iosb.ilt.frostserver.path.EntityType;
 import de.fraunhofer.iosb.ilt.frostserver.path.ResourcePath;
 import de.fraunhofer.iosb.ilt.frostserver.query.Query;
+import de.fraunhofer.iosb.ilt.frostserver.util.NoSuchEntityException;
 import net.opengis.swe.v20.DataBlock;
 
 
@@ -50,6 +56,8 @@ import net.opengis.swe.v20.DataBlock;
 @SuppressWarnings("rawtypes")
 public class ObservationEntityHandler implements IResourceHandler<Observation>
 {
+    static final String NOT_FOUND_MESSAGE = "Cannot find observation with id #";
+    
     OSHPersistenceManager pm;
     STASecurity securityHandler;
     IObsStore obsReadStore;
@@ -60,14 +68,14 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     ObservationEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.obsReadStore = pm.obsDbRegistry.getObservationStore();
+        this.obsReadStore = pm.obsDbRegistry.getFederatedObsDatabase().getObservationStore();
         this.obsWriteStore = pm.obsDatabase != null ? pm.obsDatabase.getObservationStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
     }
     
     
     @Override
-    public ResourceId create(Entity entity)
+    public ResourceId create(Entity entity) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_insert_obs);
         Asserts.checkArgument(entity instanceof Observation);
@@ -87,21 +95,31 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         Instant phenomenonTime = Instant.parse(obs.getPhenomenonTime().asISO8601());
         FeatureId foi = ObsKey.NO_FOI;
         if (obs.getFeatureOfInterest() != null)
-            foi = new FeatureId(((ResourceId)obs.getFeatureOfInterest().getId()).internalID);
+        {
+            ResourceId foiId = (ResourceId)obs.getFeatureOfInterest().getId();
+            foi = new FeatureId(pm.toLocalID(foiId.internalID));
+        }
+        
+        // generate OSH obs
+        DataStreamInfo dsInfo = obsReadStore.getDataStreams().get(dsId.internalID);
+        if (dsInfo == null)
+            throw new NoSuchEntityException(DatastreamEntityHandler.NOT_FOUND_MESSAGE + dsId);
         ObsData obsData = toObsData(obs);
         
         // push obs to proxy
-        DataStreamInfo dsInfo = obsStore.getDataStreams().get(dsId.internalID);
         VirtualSensorProxy proxy = pm.sensorHandler.getProcedureProxy(dsInfo.getProcedure().getUniqueID());
-        proxy.publishNewRecord(dsInfo.getOutputName(), obsData.getResult());
+        //proxy.publishNewRecord(dsInfo.getOutputName(), obsData.getResult());
         
         // add observation to data store
-        ObsKey key = ObsKey.builder()
-            .withPhenomenonTime(phenomenonTime)
-            .withDataStream(dsId.internalID)
-            .withFoi(foi)
-            .build();
-        obsStore.put(key, obsData);
+        if (obsWriteStore != null)
+        {
+            ObsKey key = ObsKey.builder()
+                .withPhenomenonTime(phenomenonTime)
+                .withDataStream(pm.toLocalID(dsId.internalID))
+                .withFoi(foi)
+                .build();
+            obsWriteStore.put(key, obsData);
+        }
         
         // generate datastream ID
         return new ObsResourceId(dsId.internalID, foi.getInternalID(), phenomenonTime.toEpochMilli());
@@ -109,48 +127,78 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     
 
     @Override
-    public boolean update(Entity entity)
-    {
-        securityHandler.checkPermission(securityHandler.sta_update_obs);
-        return false;
-    }
-    
-    
-    public boolean patch(ResourceId id, JsonPatch patch)
+    public boolean update(Entity entity) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_update_obs);
         throw new UnsupportedOperationException("Patch not supported");
     }
     
     
-    public boolean delete(ResourceId id)
+    public boolean patch(ResourceId id, JsonPatch patch) throws NoSuchEntityException
+    {
+        securityHandler.checkPermission(securityHandler.sta_update_obs);
+        throw new UnsupportedOperationException("Patch not supported");
+    }
+    
+    
+    public boolean delete(ResourceId id) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_delete_obs);
+        
+        if (obsWriteStore != null)
+        {
+            ObsData obs = obsWriteStore.remove(toLocalKey(id));
+            if (obs == null)
+                throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
+            
+            return true;
+        }
+        
         return false;
-    }
+    }    
     
 
     @Override
-    public Observation getById(ResourceId id, Query q)
+    public Observation getById(ResourceId id, Query q) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_read_obs);
+                
+        ObsKey key = toPublicKey(id);
+        ObsData obs = obsReadStore.get(key);
+        if (obs == null)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
+        
+        return toFrostObservation(key, obs, q);
+    }
+    
+    
+    /*
+     * Create a local DB obs key from the entity ID
+     */
+    protected ObsKey toLocalKey(ResourceId id)
+    {
         ObsResourceId obsId = (ObsResourceId)id;
         
-        DataStreamInfo dsInfo = obsStore.getDataStreams().get(obsId.dataStreamID);
-        if (dsInfo == null)
-            return null;
+        return ObsKey.builder()
+            .withDataStream(pm.toLocalID(obsId.dataStreamID))
+            .withFoi(new FeatureId(pm.toLocalID(obsId.foiID)))
+            .withPhenomenonTime(Instant.ofEpochMilli(id.internalID))
+            .build();
+    }
+    
+    
+    /*
+     * Create a public obs key from the entity ID
+     */
+    protected ObsKey toPublicKey(ResourceId id)
+    {
+        ObsResourceId obsId = (ObsResourceId)id;
         
-        ObsKey key = ObsKey.builder()
+        return ObsKey.builder()
             .withDataStream(obsId.dataStreamID)
             .withFoi(new FeatureId(obsId.foiID))
             .withPhenomenonTime(Instant.ofEpochMilli(id.internalID))
             .build();
-        
-        ObsData obs = obsStore.get(key);
-        if (obs == null)
-            return null;
-        
-        return toFrostObservation(key, obs, q);
     }
     
 
@@ -165,7 +213,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
         
         // collect result to entity set
-        return obsStore.selectEntries(filter)
+        return obsReadStore.selectEntries(filter)
             .skip(skip)
             .limit(limit)
             .map(e -> toFrostObservation(e.getKey(), e.getValue(), q))
@@ -177,7 +225,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     {
         ObsFilter.Builder builder = ObsFilter.builder();
         
-        EntityPathElement idElt = path.getIdentifiedElement();        
+        EntityPathElement idElt = path.getIdentifiedElement();
         if (idElt != null)
         {
             if (idElt.getEntityType() == EntityType.DATASTREAM ||
@@ -197,13 +245,25 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         if (q.getFilter() != null)
             q.getFilter().accept(visitor);*/
         
-        return builder.build();            
+        return builder.build();
     }
     
     
     protected ObsData toObsData(Observation obs)
     {
-        return null;
+        double val = ((BigDecimal)obs.getResult()).doubleValue();
+        DataBlockDouble result = new DataBlockDouble(1);
+        result.setDoubleValue(val);
+        
+        return ObsData.builder()
+            .withResult(result)
+            .build();
+    }
+    
+    
+    protected void addToDataBlock(Object obj)
+    {
+        
     }
     
     
@@ -227,19 +287,27 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             obs.setResultTime(TimeInstant.create(key.getResultTime().toEpochMilli(), DateTimeZone.UTC));
         
         // FOI
-        //if (ObsKey.NO_FOI.equals(key.getFoiID()))
-        //    obs.setFeatureOfInterest(new FeatureOfInterest(new ResourceId(key.getFoiID().getInternalID())));
+        if (!ObsKey.NO_FOI.equals(key.getFoiID()))
+        {
+            FeatureOfInterest foi = new FeatureOfInterest(new ResourceId(key.getFoiID().getInternalID()));
+            foi.setExportObject(false);
+            obs.setFeatureOfInterest(foi);
+        }
         
         // result
         DataBlock data = obsData.getResult();
         if (data.getAtomCount() == 2)
         {
-            //obs.setDatastream(new Datastream(new ResourceId(key.getDataStreamID())));
+            Datastream ds = new Datastream(new ResourceId(key.getDataStreamID()));
+            ds.setExportObject(false);
+            obs.setDatastream(ds);
             obs.setResult(getResultValue(data, 1));
         }
         else
         {
-            //obs.setMultiDatastream(new MultiDatastream(new ResourceId(key.getDataStreamID())));
+            MultiDatastream ds = new MultiDatastream(new ResourceId(key.getDataStreamID()));
+            ds.setExportObject(false);
+            obs.setMultiDatastream(ds);
             Object[] result = new Object[data.getAtomCount()-1];
             for (int i = 1; i < data.getAtomCount(); i++)
                 result[i-1] = getResultValue(data, i);

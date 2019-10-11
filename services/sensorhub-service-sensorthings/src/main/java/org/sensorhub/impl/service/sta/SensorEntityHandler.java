@@ -23,6 +23,7 @@ import org.sensorhub.api.datastore.DataStreamFilter;
 import org.sensorhub.api.datastore.DataStreamInfo;
 import org.sensorhub.api.datastore.FeatureId;
 import org.sensorhub.api.datastore.FeatureKey;
+import org.sensorhub.api.datastore.IHistoricalObsDatabase;
 import org.sensorhub.api.datastore.ProcedureFilter;
 import org.sensorhub.api.procedure.IProcedureDescriptionStore;
 import org.sensorhub.api.procedure.IProcedureWithState;
@@ -44,6 +45,7 @@ import de.fraunhofer.iosb.ilt.frostserver.path.NavigationProperty;
 import de.fraunhofer.iosb.ilt.frostserver.path.ResourcePath;
 import de.fraunhofer.iosb.ilt.frostserver.query.Expand;
 import de.fraunhofer.iosb.ilt.frostserver.query.Query;
+import de.fraunhofer.iosb.ilt.frostserver.util.NoSuchEntityException;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.DocumentList;
 
@@ -58,9 +60,12 @@ import net.opengis.sensorml.v20.DocumentList;
  */
 public class SensorEntityHandler implements IResourceHandler<Sensor>
 {
+    static final String NOT_FOUND_MESSAGE = "Cannot find sensor with id #";
+    
     OSHPersistenceManager pm;
     IProcedureDescriptionStore procReadStore;
     IProcedureDescriptionStore procWriteStore;
+    IHistoricalObsDatabase mainObsDatabase;
     STASecurity securityHandler;
     int maxPageSize = 100;
     String groupUID;
@@ -69,7 +74,8 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     SensorEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.procReadStore = pm.obsDbRegistry.getProcedureStore();
+        this.mainObsDatabase = pm.obsDbRegistry.getFederatedObsDatabase();
+        this.procReadStore = mainObsDatabase.getProcedureStore();
         this.procWriteStore = pm.obsDatabase != null ? pm.obsDatabase.getProcedureStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
         this.groupUID = pm.service.getProcedureGroupUID();
@@ -77,7 +83,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     
     
     @Override
-    public ResourceId create(@SuppressWarnings("rawtypes") Entity entity)
+    public ResourceId create(@SuppressWarnings("rawtypes") Entity entity) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_insert_sensor);
         Asserts.checkArgument(entity instanceof Sensor);
@@ -120,7 +126,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     
 
     @Override
-    public boolean update(@SuppressWarnings("rawtypes") Entity entity)
+    public boolean update(@SuppressWarnings("rawtypes") Entity entity) throws NoSuchEntityException
     {
         Asserts.checkArgument(entity instanceof Sensor);
         securityHandler.checkPermission(securityHandler.sta_update_sensor);
@@ -140,14 +146,14 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     }
     
     
-    public boolean patch(ResourceId id, JsonPatch patch)
+    public boolean patch(ResourceId id, JsonPatch patch) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_update_sensor);
         throw new UnsupportedOperationException("Patch not supported");
     }
     
     
-    public boolean delete(ResourceId id)
+    public boolean delete(ResourceId id) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_delete_sensor);
         
@@ -157,11 +163,11 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         // remove from registry
         proc.delete();
         
-        // also delete procedure and all attached datastreams from DB
+        // delete procedure and all attached datastreams from DB
         if (procWriteStore != null)
         {
             FeatureKey procKey = procWriteStore.remove(proc.getUniqueIdentifier());
-            pm.obsDbRegistry.getObservationStore().getDataStreams().removeEntries(DataStreamFilter.builder()
+            mainObsDatabase.getObservationStore().getDataStreams().removeEntries(DataStreamFilter.builder()
                 .withProcedures(procKey.getInternalID())
                 .build());
         }
@@ -171,19 +177,19 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     
 
     @Override
-    public Sensor getById(ResourceId id, Query q)
+    public Sensor getById(ResourceId id, Query q) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_read_sensor);
         
-        Asserts.checkArgument(id.internalID > 0, "IDs must be > 0");
-        
-        FeatureKey key = FeatureKey.builder()
+        AbstractProcess proc = procReadStore.get(FeatureKey.builder()
             .withInternalID(id.internalID)
             .withLatestValidTime()
-            .build();
+            .build());
         
-        AbstractProcess proc = procReadStore.get(key);
-        return proc != null ? toFrostSensor(id.internalID, proc, q) : null;
+        if (proc == null)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
+        else
+            return toFrostSensor(id.internalID, proc, q);
     }
     
 
@@ -222,13 +228,13 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 idElt.getEntityType() == EntityType.MULTIDATASTREAM)
             {
                 ResourceId dsId = (ResourceId)idElt.getId();
-                DataStreamInfo dsInfo = pm.obsDbRegistry.getObservationStore().getDataStreams().get(dsId.internalID);
+                DataStreamInfo dsInfo = mainObsDatabase.getObservationStore().getDataStreams().get(dsId.internalID);
                 builder.withInternalIDs(dsInfo.getProcedure().getInternalID());
             }
             else if (idElt.getEntityType() == EntityType.OBSERVATION)
             {
                 ObsResourceId obsId = (ObsResourceId)idElt.getId();
-                DataStreamInfo dsInfo = pm.obsDbRegistry.getObservationStore().getDataStreams().get(obsId.dataStreamID);
+                DataStreamInfo dsInfo = mainObsDatabase.getObservationStore().getDataStreams().get(obsId.dataStreamID);
                 builder.withInternalIDs(dsInfo.getProcedure().getInternalID());
             }
         }
@@ -331,7 +337,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     }
     
     
-    protected VirtualSensorProxy getProcedureProxy(long internalID)
+    protected VirtualSensorProxy getProcedureProxy(long internalID) throws NoSuchEntityException
     {
         Asserts.checkArgument(internalID > 0, "IDs must be > 0");
         
@@ -341,19 +347,23 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         
         FeatureId procID = procReadStore.getFeatureID(key);
         if (procID == null)
-            throw new IllegalArgumentException("Sensor " + internalID + " not found");
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + internalID);
         
         return getProcedureProxy(procID.getUniqueID());
     }
     
     
-    protected VirtualSensorProxy getProcedureProxy(String uniqueID)
+    protected VirtualSensorProxy getProcedureProxy(String uniqueID) throws NoSuchEntityException
     {
         IProcedureWithState proxy = pm.procRegistry.get(uniqueID);
         if (proxy == null)
         {
             // retrieve description from database
             AbstractProcess sml = procReadStore.getLatestVersion(uniqueID);
+            /*IDataStreamStore dsStore = pm.obsDbRegistry.getObservationStore().getDataStreams();
+            dsStore.select(DataStreamFilter.builder()
+                .withProcedures(uniqueID)
+                .build());*/
             
             // create and register new proxy
             proxy = new VirtualSensorProxy(sml, groupUID);

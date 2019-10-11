@@ -34,6 +34,7 @@ import de.fraunhofer.iosb.ilt.frostserver.path.EntityPathElement;
 import de.fraunhofer.iosb.ilt.frostserver.path.EntityType;
 import de.fraunhofer.iosb.ilt.frostserver.path.ResourcePath;
 import de.fraunhofer.iosb.ilt.frostserver.query.Query;
+import de.fraunhofer.iosb.ilt.frostserver.util.NoSuchEntityException;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.AbstractGeometry;
 
@@ -48,7 +49,7 @@ import net.opengis.gml.v32.AbstractGeometry;
  */
 public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
 {
-    static final String SENSOR_UID_PREFIX = "urn:osh:sta:";
+    static final String NOT_FOUND_MESSAGE = "Cannot find feature of interest with id #";
     static final String GEOJSON_FORMAT = "application/vnd.geo+json";
         
     OSHPersistenceManager pm;
@@ -62,7 +63,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     FoiEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.foiReadStore = pm.obsDbRegistry.getFoiStore();
+        this.foiReadStore = pm.obsDbRegistry.getFederatedObsDatabase().getFoiStore();
         this.foiWriteStore = pm.obsDatabase != null ? pm.obsDatabase.getFoiStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
         this.groupUID = pm.service.getProcedureGroupUID();
@@ -70,7 +71,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     
     
     @Override
-    public ResourceId create(@SuppressWarnings("rawtypes") Entity entity)
+    public ResourceId create(@SuppressWarnings("rawtypes") Entity entity) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_insert_foi);
         Asserts.checkArgument(entity instanceof FeatureOfInterest);
@@ -78,7 +79,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         
         // generate unique ID from name
         Asserts.checkArgument(!Strings.isNullOrEmpty(foi.getName()), "Feature name must be set");
-        String uid = groupUID + ":" + foi.getName().toLowerCase().replaceAll("\\s+", "_");
+        String uid = groupUID + ":foi:" + foi.getName().toLowerCase().replaceAll("\\s+", "_");
         
         // store feature description in DB
         if (foiWriteStore != null)
@@ -92,7 +93,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     
 
     @Override
-    public boolean update(@SuppressWarnings("rawtypes") Entity entity)
+    public boolean update(@SuppressWarnings("rawtypes") Entity entity) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_update_foi);
         Asserts.checkArgument(entity instanceof FeatureOfInterest);
@@ -104,10 +105,10 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
             .withInternalID(id.internalID)
             .build());
         if (fid == null)
-            return false;
-        String uid = fid.getUniqueID();
-        
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
+                
         // store feature description in DB
+        String uid = fid.getUniqueID();
         if (foiWriteStore != null)
         {
             //foiWriteStore.addVersion(toGmlFeature(foi, uid));
@@ -123,14 +124,14 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     }
     
     
-    public boolean patch(ResourceId id, JsonPatch patch)
+    public boolean patch(ResourceId id, JsonPatch patch) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_update_foi);
         throw new UnsupportedOperationException("Patch not supported");
     }
     
     
-    public boolean delete(ResourceId id)
+    public boolean delete(ResourceId id) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_delete_foi);
         
@@ -139,7 +140,11 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
             AbstractFeature f = foiWriteStore.remove(FeatureKey.builder()
                 .withInternalID(pm.toLocalID(id.internalID))
                 .build());
-            return f != null;
+            
+            if (f == null)
+                throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
+            
+            return true;
         }
         
         return false;
@@ -147,7 +152,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     
 
     @Override
-    public FeatureOfInterest getById(ResourceId id, Query q)
+    public FeatureOfInterest getById(ResourceId id, Query q) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_read_foi);
         
@@ -155,7 +160,10 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
             .withInternalID(id.internalID)
             .build());
         
-        return foi != null ? toFrostFoi(id.internalID, foi, q) : null;
+        if (foi == null)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
+        else
+            return toFrostFoi(id.internalID, foi, q);
     }
     
 

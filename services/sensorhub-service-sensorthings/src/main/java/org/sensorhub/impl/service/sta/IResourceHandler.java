@@ -19,6 +19,7 @@ import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.EntitySet;
 import de.fraunhofer.iosb.ilt.frostserver.path.ResourcePath;
 import de.fraunhofer.iosb.ilt.frostserver.query.Query;
+import de.fraunhofer.iosb.ilt.frostserver.util.NoSuchEntityException;
 
 
 /**
@@ -38,19 +39,19 @@ public interface IResourceHandler<T extends Entity>
     static final String DESCRIPTION_PROPERTY = "description";
         
     
-    public ResourceId create(Entity<?> entity);
+    public ResourceId create(Entity<?> entity) throws NoSuchEntityException;
     
     
-    public boolean update(Entity<?> entity);
+    public boolean update(Entity<?> entity) throws NoSuchEntityException;
     
     
-    public boolean patch(ResourceId id, JsonPatch patch);
+    public boolean patch(ResourceId id, JsonPatch patch) throws NoSuchEntityException;
     
     
-    public boolean delete(ResourceId id);
+    public boolean delete(ResourceId id) throws NoSuchEntityException;
     
     
-    public T getById(ResourceId id, Query q);
+    public T getById(ResourceId id, Query q) throws NoSuchEntityException;
     
     
     public EntitySet<?> queryCollection(ResourcePath path, Query q);

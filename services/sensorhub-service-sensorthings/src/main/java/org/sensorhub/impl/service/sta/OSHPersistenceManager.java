@@ -17,7 +17,7 @@ package org.sensorhub.impl.service.sta;
 import java.io.IOException;
 import java.io.Writer;
 import org.sensorhub.api.datastore.IHistoricalObsDatabase;
-import org.sensorhub.api.datastore.IObsDatabaseRegistry;
+import org.sensorhub.api.datastore.IDatabaseRegistry;
 import org.sensorhub.api.procedure.IProcedureRegistry;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
@@ -55,7 +55,7 @@ public class OSHPersistenceManager implements PersistenceManager
     DatastreamEntityHandler dataStreamHandler;
     ObservationEntityHandler observationHandler;
     IProcedureRegistry procRegistry;
-    IObsDatabaseRegistry obsDbRegistry;
+    IDatabaseRegistry obsDbRegistry;
     IHistoricalObsDatabase obsDatabase;
     
     
@@ -139,14 +139,21 @@ public class OSHPersistenceManager implements PersistenceManager
     public Entity get(EntityType entityType, Id id)
     {
         Asserts.checkNotNull(id, Id.class);
+        Asserts.checkArgument(((ResourceId)id).internalID > 0, "Invalid ID. Entity IDs must be > 0");
         
-        Entity result = getHandler(entityType).getById((ResourceId)id, null);
-        return result.getEntityType() == entityType ? result : null;
+        try
+        {
+            Entity result = getHandler(entityType).getById((ResourceId)id, null);
+            return (result != null && result.getEntityType() == entityType) ? result : null;
+        }
+        catch (NoSuchEntityException e)
+        {
+            return null;
+        }
     }
 
 
     @Override
-    @SuppressWarnings({ "rawtypes" })
     public Object get(ResourcePath path, Query q)
     {
         // case of request by ID
@@ -154,8 +161,7 @@ public class OSHPersistenceManager implements PersistenceManager
         {
             EntityType entityType = ((EntityPathElement)path.getMainElement()).getEntityType();
             Id id = ((EntityPathElement)path.getMainElement()).getId();
-            Entity result = getHandler(entityType).getById((ResourceId)id, q);
-            return (result != null && result.getEntityType() == entityType) ? result : null;
+            return get(entityType, id);
         }
         
         // case of relationship to a single entity

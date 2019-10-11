@@ -159,7 +159,8 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
         staSettings.setProperty(TAG_TEMP_PATH, "/tmp");
         staSettings.setProperty(PREFIX_PERSISTENCE+TAG_IMPLEMENTATION_CLASS, OSHPersistenceManager.class.getCanonicalName());
         staSettings.setProperty(PREFIX_PERSISTENCE+SERVICE_INSTANCE_ID, Integer.toString(System.identityHashCode(this)));
-        
+        //staSettings.setProperty(TAG_USE_ABSOLUTE_NAVIGATION_LINKS, "false");
+            
         // deploy ourself to HTTP server
         httpServer.deployServlet(servlet, config.endPoint + "/v1.0/*");
         servlet.getServletContext().setAttribute(TAG_CORE_SETTINGS, new CoreSettings(staSettings));

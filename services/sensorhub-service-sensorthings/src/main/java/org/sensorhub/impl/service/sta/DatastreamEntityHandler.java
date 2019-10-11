@@ -45,6 +45,7 @@ import de.fraunhofer.iosb.ilt.frostserver.path.NavigationProperty;
 import de.fraunhofer.iosb.ilt.frostserver.path.Property;
 import de.fraunhofer.iosb.ilt.frostserver.path.ResourcePath;
 import de.fraunhofer.iosb.ilt.frostserver.query.Query;
+import de.fraunhofer.iosb.ilt.frostserver.util.NoSuchEntityException;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.Category;
 import net.opengis.swe.v20.Count;
@@ -68,6 +69,7 @@ import net.opengis.swe.v20.Vector;
 @SuppressWarnings("rawtypes")
 public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastream>
 {
+    static final String NOT_FOUND_MESSAGE = "Cannot find datastream with id #";
     static final String UCUM_URI_PREFIX = "http://unitsofmeasure.org/ucum.html#";
         
     OSHPersistenceManager pm;
@@ -80,14 +82,14 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     DatastreamEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.dataStreamReadStore = pm.obsDbRegistry.getObservationStore().getDataStreams();
+        this.dataStreamReadStore = pm.obsDbRegistry.getFederatedObsDatabase().getObservationStore().getDataStreams();
         this.dataStreamWriteStore = pm.obsDatabase != null ? pm.obsDatabase.getObservationStore().getDataStreams() : null;
         this.securityHandler = pm.service.getSecurityHandler();
     }
     
     
     @Override
-    public ResourceId create(Entity entity)
+    public ResourceId create(Entity entity) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_insert_datastream);
         Asserts.checkArgument(entity instanceof AbstractDatastream);
@@ -126,14 +128,14 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             dataStreamWriteStore.add(dsInfo);
         }
         
-        return dataStreamReadStore.getLastKey(
+        return dataStreamReadStore.getLatestVersionKey(
             sensorProxy.getUniqueIdentifier(),
             recordStruct.getName());
     }
     
 
     @Override
-    public boolean update(Entity entity)
+    public boolean update(Entity entity) throws NoSuchEntityException
     {
         Asserts.checkArgument(entity instanceof AbstractDatastream);
         AbstractDatastream<?> dataStream = (AbstractDatastream<?>)entity;
@@ -144,7 +146,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         ResourceId dsId = (ResourceId)entity.getId();
         DataStreamInfo oldDsInfo = dataStreamReadStore.get(dsId.internalID);
         if (oldDsInfo == null)
-            return false;
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + dsId);
         
         // get sensor proxy from registry
         long sensorId = oldDsInfo.getProcedure().getInternalID();
@@ -173,14 +175,14 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     }
     
     
-    public boolean patch(ResourceId id, JsonPatch patch)
+    public boolean patch(ResourceId id, JsonPatch patch) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_update_sensor);
         throw new UnsupportedOperationException("Patch not supported");
     }
     
     
-    public boolean delete(ResourceId id)
+    public boolean delete(ResourceId id) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_delete_datastream);
         
@@ -193,31 +195,36 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         // also update sensor description in registry
         if (dsInfo != null)
         {    
-            VirtualSensorProxy sensorProxy = tryGetProcedureProxy(dsInfo.getProcedure().getInternalID());
+            // need to convert to public ID if internalID was coming from write store
+            long procID = dsInfo.getProcedure().getInternalID();
+            if (dataStreamWriteStore != null)
+                procID = pm.toPublicID(procID);
+            
+            VirtualSensorProxy sensorProxy = tryGetProcedureProxy(procID);
             AbstractProcess sensorDesc = sensorProxy.getCurrentDescription();
             sensorDesc.getOutputList().remove(dsInfo.getOutputName());
             sensorProxy.updateDescription(sensorDesc);
             return true;
         };
         
-        return false;
+        throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
     }
     
     
-    protected VirtualSensorProxy tryGetProcedureProxy(long sensorId)
+    protected VirtualSensorProxy tryGetProcedureProxy(long sensorId) throws NoSuchEntityException
     {
         return pm.sensorHandler.getProcedureProxy(sensorId);
     }
     
 
     @Override
-    public AbstractDatastream getById(ResourceId id, Query q)
+    public AbstractDatastream getById(ResourceId id, Query q) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_read_datastream);
         
         DataStreamInfo dsInfo = dataStreamReadStore.get(id.internalID);
         if (dsInfo == null)
-            return null;
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
 
         return toFrostDatastream(id.internalID, dsInfo, q);
     }

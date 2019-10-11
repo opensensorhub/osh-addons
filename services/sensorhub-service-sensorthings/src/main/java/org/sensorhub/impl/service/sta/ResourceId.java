@@ -70,7 +70,7 @@ public class ResourceId implements Id
     @Override
     public String toString()
     {
-        return getUrl();
+        return getValue().toString();
     }
 
 
