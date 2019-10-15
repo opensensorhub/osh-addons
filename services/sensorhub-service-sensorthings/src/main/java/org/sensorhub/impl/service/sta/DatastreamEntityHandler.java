@@ -34,6 +34,7 @@ import de.fraunhofer.iosb.ilt.frostserver.model.Datastream;
 import de.fraunhofer.iosb.ilt.frostserver.model.MultiDatastream;
 import de.fraunhofer.iosb.ilt.frostserver.model.ObservedProperty;
 import de.fraunhofer.iosb.ilt.frostserver.model.Sensor;
+import de.fraunhofer.iosb.ilt.frostserver.model.Thing;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.AbstractDatastream;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.EntitySet;
@@ -69,8 +70,9 @@ import net.opengis.swe.v20.Vector;
 @SuppressWarnings("rawtypes")
 public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastream>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find datastream with id #";
+    static final String NOT_FOUND_MESSAGE = "Cannot find Datastream with id #";
     static final String UCUM_URI_PREFIX = "http://unitsofmeasure.org/ucum.html#";
+    static final String BAD_LINK_THING = "A new Datastream SHALL link to an Thing entity";
         
     OSHPersistenceManager pm;
     IDataStreamStore dataStreamReadStore;
@@ -82,8 +84,9 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     DatastreamEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.dataStreamReadStore = pm.obsDbRegistry.getFederatedObsDatabase().getObservationStore().getDataStreams();
-        this.dataStreamWriteStore = pm.obsDatabase != null ? pm.obsDatabase.getObservationStore().getDataStreams() : null;
+        this.dataStreamWriteStore = pm.database != null ? pm.database.getDataStreamStore() : null;
+        var federatedDataStreamStore = pm.obsDbRegistry.getFederatedObsDatabase().getObservationStore().getDataStreams();
+        this.dataStreamReadStore = new STAFederatedDataStreamStoreWrapper(pm.database, federatedDataStreamStore);
         this.securityHandler = pm.service.getSecurityHandler();
     }
     
@@ -95,20 +98,66 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         Asserts.checkArgument(entity instanceof AbstractDatastream);
         AbstractDatastream<?> dataStream = (AbstractDatastream<?>)entity;
         
-        // check sensor is present
-        Sensor sensor = dataStream.getSensor();
-        if (sensor == null)
-            throw new IllegalArgumentException("A new Datastream SHALL link to an Sensor entity");
-        ResourceId sensorId = (ResourceId)dataStream.getSensor().getId();
+        // check thing and sensor associations
+        ResourceId thingId = handleThingAssoc(dataStream);
+        ResourceId sensorId = handleSensorAssoc(dataStream);
+        
+        // retrieve sensor proxy
         VirtualSensorProxy sensorProxy = tryGetProcedureProxy(sensorId.internalID);
         
         // add data stream
-        Long key = addDatastream(sensorId.internalID, sensorProxy, dataStream);
+        Long key = addDatastream(thingId.internalID, sensorId.internalID, sensorProxy, dataStream);
         return new ResourceId(key);
     }
     
     
-    protected Long addDatastream(Long sensorID, VirtualSensorProxy sensorProxy, AbstractDatastream dataStream)
+    protected ResourceId handleThingAssoc(AbstractDatastream<?> dataStream) throws NoSuchEntityException
+    {
+        ResourceId thingId;
+        
+        Thing thing = dataStream.getThing();
+        Asserts.checkArgument(thing != null, BAD_LINK_THING);
+        
+        if (thing.getName() == null)
+        {
+            thingId = (ResourceId)thing.getId();
+            Asserts.checkArgument(thingId != null, BAD_LINK_THING);
+            pm.thingHandler.checkThingID(thingId.internalID);
+        }
+        else
+        {
+            // deep insert
+            thingId = pm.thingHandler.create(thing);
+        }
+        
+        return thingId;
+    }
+    
+    
+    protected ResourceId handleSensorAssoc(AbstractDatastream<?> dataStream) throws NoSuchEntityException
+    {
+        ResourceId sensorId;
+        
+        Sensor sensor = dataStream.getSensor();
+        Asserts.checkArgument(sensor != null, BAD_LINK_THING);
+        
+        if (sensor.getName() == null)
+        {
+            sensorId = (ResourceId)sensor.getId();
+            Asserts.checkArgument(sensorId != null, BAD_LINK_THING);
+            pm.sensorHandler.checkSensorID(sensorId.internalID);
+        }
+        else
+        {
+            // deep insert
+            sensorId = pm.sensorHandler.create(sensor);
+        }
+        
+        return sensorId;
+    }
+    
+    
+    protected Long addDatastream(long thingID, long sensorID, VirtualSensorProxy sensorProxy, AbstractDatastream dataStream)
     {
         // add output to virtual sensor in registry
         DataRecord recordStruct = toSweCommon(dataStream);
@@ -117,7 +166,8 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         if (dataStreamWriteStore != null)
         {
             // also create data stream entry in database
-            DataStreamInfo dsInfo = DataStreamInfo.builder()
+            DataStreamInfo dsInfo = new STADataStream.Builder()
+                .withThing(thingID)
                 .withProcedure(new FeatureId(
                     pm.toLocalID(sensorID),
                     sensorProxy.getUniqueIdentifier()))
@@ -164,7 +214,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 .build();
             
             // check name wasn't changed
-            Asserts.checkArgument(dsInfo.getOutputName().equals(oldDsInfo.getOutputName()), "Cannot change a data stream name");
+            Asserts.checkArgument(dsInfo.getOutputName().equals(oldDsInfo.getOutputName()), "Cannot change a datastream name");
             dataStreamWriteStore.put(pm.toLocalID(dsId.internalID), dsInfo);
         }
         
@@ -231,6 +281,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     
 
     @Override
+    @SuppressWarnings("unchecked")
     public EntitySet<?> queryCollection(ResourcePath path, Query q)
     {
         securityHandler.checkPermission(securityHandler.sta_read_datastream);
@@ -239,24 +290,31 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         int skip = q.getSkip(0);
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
         
-        return dataStreamReadStore.selectEntries(filter)
+        var entitySet = dataStreamReadStore.selectEntries(filter)
             .filter(e -> e.getValue().getRecommendedEncoding() instanceof TextEncoding)
             .skip(skip)
-            .limit(limit)
+            .limit(limit+1) // request limit+1 elements to handle paging
             .map(e -> toFrostDatastream(e.getKey(), e.getValue(), q))
             .filter(ds -> ds.getEntityType() == path.getMainElementType())
             .collect(Collectors.toCollection(EntitySetImpl::new));
+        
+        return FrostUtils.handlePaging(entitySet, path, q, limit);
     }
     
     
     protected DataStreamFilter getFilter(ResourcePath path, Query q)
     {
-        DataStreamFilter.Builder builder = DataStreamFilter.builder();
+        STADataStreamFilter.Builder builder = new STADataStreamFilter.Builder();
         
         EntityPathElement idElt = path.getIdentifiedElement();
         if (idElt != null)
         {
-            if (idElt.getEntityType() == EntityType.SENSOR)
+            if (idElt.getEntityType() == EntityType.THING)
+            {
+                ResourceId thingId = (ResourceId)idElt.getId();
+                builder.withThings(thingId.internalID);
+            }
+            else if (idElt.getEntityType() == EntityType.SENSOR)
             {
                 ResourceId sensorId = (ResourceId)idElt.getId();
                 builder.withProcedures(sensorId.internalID);
@@ -268,9 +326,9 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             }
         }
         
-        /*SensorFilterVisitor visitor = new SensorFilterVisitor(builder);
+        DatastreamFilterVisitor visitor = new DatastreamFilterVisitor(builder);
         if (q.getFilter() != null)
-            q.getFilter().accept(visitor);*/
+            q.getFilter().accept(visitor);
         
         return builder.build();            
     }
@@ -378,13 +436,11 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         if (isScalarOutput(rec))
         {
             Datastream simpleDs = new Datastream();
-            DataComponent comp = rec.getComponent(1);
-            
+            DataComponent comp = rec.getComponent(1);            
             simpleDs.setObservationType(toObsType(comp));
             simpleDs.setUnitOfMeasurement(toUom(comp));
             if (select.isEmpty() || select.contains(NavigationProperty.OBSERVEDPROPERTY))
-                simpleDs.setObservedProperty(toObservedProperty(comp, Collections.emptySet()));
-            
+                simpleDs.setObservedProperty(toObservedProperty(comp, Collections.emptySet()));            
             dataStream = simpleDs;
         }
         else
@@ -400,11 +456,18 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         dataStream.setName(rec.getLabel() != null ? 
             rec.getLabel() : StringUtils.capitalize(rec.getName()));
         dataStream.setDescription(rec.getDescription());
-        if (select.isEmpty() || select.contains(NavigationProperty.SENSOR))
-        {
-            ResourceId sensorId = new ResourceId(dsInfo.getProcedure().getInternalID());
-            dataStream.setSensor(new Sensor(sensorId));
-        }
+        
+        // link to Thing
+        long thingID =  dsInfo instanceof STADataStream ? ((STADataStream)dsInfo).getThingID() : STADatabase.HUB_THING_ID;      
+        Thing thing = new Thing(new ResourceId(thingID));
+        thing.setExportObject(false);
+        dataStream.setThing(thing);
+        
+        // link to Sensor
+        ResourceId sensorId = new ResourceId(dsInfo.getProcedure().getInternalID());
+        Sensor sensor = new Sensor(sensorId);
+        sensor.setExportObject(false);   
+        dataStream.setSensor(sensor);
         
         return dataStream;
     }

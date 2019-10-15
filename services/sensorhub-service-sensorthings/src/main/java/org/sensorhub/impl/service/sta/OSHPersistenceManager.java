@@ -16,7 +16,6 @@ package org.sensorhub.impl.service.sta;
 
 import java.io.IOException;
 import java.io.Writer;
-import org.sensorhub.api.datastore.IHistoricalObsDatabase;
 import org.sensorhub.api.datastore.IDatabaseRegistry;
 import org.sensorhub.api.procedure.IProcedureRegistry;
 import org.vast.util.Asserts;
@@ -50,17 +49,18 @@ public class OSHPersistenceManager implements PersistenceManager
     STAService service;
     STASecurity securityHandler;
     ResourceIdManager idManager = new ResourceIdManager();
+    ThingEntityHandler thingHandler;
     SensorEntityHandler sensorHandler;
     FoiEntityHandler foiHandler;
     DatastreamEntityHandler dataStreamHandler;
     ObservationEntityHandler observationHandler;
     IProcedureRegistry procRegistry;
     IDatabaseRegistry obsDbRegistry;
-    IHistoricalObsDatabase obsDatabase;
+    ISTADatabase database;
     
     
     public OSHPersistenceManager()
-    {        
+    {
     }
 
 
@@ -90,7 +90,9 @@ public class OSHPersistenceManager implements PersistenceManager
     {
         Asserts.checkNotNull(entityType, EntityType.class);
         
-        if (entityType == EntityType.SENSOR)
+        if (entityType == EntityType.THING)
+            return thingHandler;
+        else if (entityType == EntityType.SENSOR)
             return sensorHandler;
         else if (entityType == EntityType.FEATUREOFINTEREST)
             return foiHandler;
@@ -105,8 +107,8 @@ public class OSHPersistenceManager implements PersistenceManager
     
     protected long toPublicID(long internalID)
     {
-        if (obsDatabase != null)
-            return obsDbRegistry.getPublicID(obsDatabase.getDatabaseID(), internalID);
+        if (database != null)
+            return obsDbRegistry.getPublicID(database.getDatabaseID(), internalID);
         else
             return internalID;
     }
@@ -114,8 +116,8 @@ public class OSHPersistenceManager implements PersistenceManager
     
     protected long toLocalID(long publicID)
     {
-        if (obsDatabase != null)
-            return obsDbRegistry.getLocalID(obsDatabase.getDatabaseID(), publicID);
+        if (database != null)
+            return obsDbRegistry.getLocalID(database.getDatabaseID(), publicID);
         else
             return publicID;
     }
@@ -139,7 +141,6 @@ public class OSHPersistenceManager implements PersistenceManager
     public Entity get(EntityType entityType, Id id)
     {
         Asserts.checkNotNull(id, Id.class);
-        Asserts.checkArgument(((ResourceId)id).internalID > 0, "Invalid ID. Entity IDs must be > 0");
         
         try
         {
@@ -228,10 +229,11 @@ public class OSHPersistenceManager implements PersistenceManager
         // connect to registries
         this.procRegistry = service.getParentHub().getProcedureRegistry();
         this.obsDbRegistry = service.getParentHub().getDatabaseRegistry();
-        this.obsDatabase = service.getDatabase();
+        this.database = service.database;
         
         // setup all handlers
         this.securityHandler = service.getSecurityHandler();
+        this.thingHandler = new ThingEntityHandler(this);
         this.sensorHandler = new SensorEntityHandler(this);
         this.foiHandler = new FoiEntityHandler(this);
         this.dataStreamHandler = new DatastreamEntityHandler(this);

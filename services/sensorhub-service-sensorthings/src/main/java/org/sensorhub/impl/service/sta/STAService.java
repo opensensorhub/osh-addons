@@ -16,17 +16,14 @@ package org.sensorhub.impl.service.sta;
 
 import java.util.HashMap;
 import java.util.Properties;
-import java.util.Set;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.datastore.IHistoricalObsDatabase;
 import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.module.ModuleEvent;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.api.service.IServiceModule;
 import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.service.HttpServer;
-import com.google.common.collect.Sets;
 import de.fraunhofer.iosb.ilt.frostserver.http.common.ServletV1P0;
 import de.fraunhofer.iosb.ilt.frostserver.settings.CoreSettings;
 import static de.fraunhofer.iosb.ilt.frostserver.settings.CoreSettings.*;
@@ -50,7 +47,7 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
     static final String DEFAULT_GROUP_UID = "urn:osh:sta";
     
     ServletV1P0 servlet;
-    IHistoricalObsDatabase obsDatabase;
+    ISTADatabase database;
     
     
     @Override
@@ -93,8 +90,9 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
             getParentHub().getProcedureRegistry().register(new VirtualSensorProxy(procGroup));
         }*/
         
-        if (config.databaseID != null)
-            initDatabase();
+        // init database
+        // TODO load database implementation class dynamically
+        this.database = new STADatabase(this, config.dbConfig);
         
         // deploy servlet
         servlet = new ServletV1P0();
@@ -110,28 +108,6 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
             return config.virtualSensorGroup.uid;
         else
             return DEFAULT_GROUP_UID;        
-    }
-    
-    
-    protected IHistoricalObsDatabase getDatabase()
-    {
-        return obsDatabase;
-    }
-    
-    
-    protected void initDatabase()
-    {
-        // retrieve handle of database used for writing
-        try
-        {
-            obsDatabase = (IHistoricalObsDatabase)getParentHub().getModuleRegistry().getModuleById(config.databaseID);
-            Set<String> wildcardUID = Sets.newHashSet(getProcedureGroupUID()+"*");
-            getParentHub().getDatabaseRegistry().register(wildcardUID, obsDatabase);
-        }
-        catch (SensorHubException e)
-        {
-            throw new IllegalArgumentException("Cannot find STA database", e);
-        }
     }
     
     

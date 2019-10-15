@@ -44,6 +44,8 @@ public class ResourceIdManager implements IdManager<String>
         
         if (input.contains(ObsResourceId.ID_SEPARATOR))
             return new ObsResourceId(input);
+        //if (input.length() > 10)
+        //    return new EncodedObsResourceId(input);
         else
             return new ResourceId(input);
     }

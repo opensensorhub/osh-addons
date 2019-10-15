@@ -49,7 +49,7 @@ import net.opengis.gml.v32.AbstractGeometry;
  */
 public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find feature of interest with id #";
+    static final String NOT_FOUND_MESSAGE = "Cannot find FeatureOfInterest with id #";
     static final String GEOJSON_FORMAT = "application/vnd.geo+json";
         
     OSHPersistenceManager pm;
@@ -64,7 +64,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     {
         this.pm = pm;
         this.foiReadStore = pm.obsDbRegistry.getFederatedObsDatabase().getFoiStore();
-        this.foiWriteStore = pm.obsDatabase != null ? pm.obsDatabase.getFoiStore() : null;
+        this.foiWriteStore = pm.database != null ? pm.database.getFoiStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
         this.groupUID = pm.service.getProcedureGroupUID();
     }
@@ -176,17 +176,19 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         int skip = q.getSkip(0);
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
         
-        return foiReadStore.selectEntries(filter)
+        var entitySet = foiReadStore.selectEntries(filter)
             .skip(skip)
-            .limit(limit)
+            .limit(limit+1) // request limit+1 elements to handle paging
             .map(e -> toFrostFoi(e.getKey().getInternalID(), e.getValue(), q))
             .collect(Collectors.toCollection(EntitySetImpl::new));
+        
+        return FrostUtils.handlePaging(entitySet, path, q, limit);
     }
     
     
     protected FoiFilter getFilter(ResourcePath path, Query q)
     {
-        FoiFilter.Builder builder = FoiFilter.builder()
+        FoiFilter.Builder builder = new FoiFilter.Builder()
             .validAtTime(Instant.now());
         
         EntityPathElement idElt = path.getIdentifiedElement();

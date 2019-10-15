@@ -46,10 +46,10 @@ public class STAServiceConfig extends ServiceConfig
     public int maxObsCount = 1000;
     
     
-    @DisplayInfo(desc="ID of database module to use for persisting new resources. "
-        + "Note that persistence is disabled if none is provided, but new sensors are still registered"
-        + "with the procedure registry and events dispatched to the event bus")
-    public String databaseID = null;
+    @DisplayInfo(label="Database Config", desc="Configuration of database for persisting entities. "
+        + "If none is provided, only live sensors are exposed and no new Sensor or Thing entities can "
+        + "be created.")
+    public STADatabaseConfig dbConfig = new STADatabaseConfig();
     
     
     @DisplayInfo(desc="Metadata of procedure group that will be created to contain all sensors "

@@ -8,6 +8,7 @@ repositories {
   
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile 'org.sensorhub:sensorhub-datastore-h2:' + oshCoreVersion
   compile 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.Core:1.10.1'
   compile 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.HTTP.Common:1.10.1'
 }

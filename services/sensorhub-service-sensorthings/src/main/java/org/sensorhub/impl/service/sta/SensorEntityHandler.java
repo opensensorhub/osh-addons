@@ -60,12 +60,12 @@ import net.opengis.sensorml.v20.DocumentList;
  */
 public class SensorEntityHandler implements IResourceHandler<Sensor>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find sensor with id #";
+    static final String NOT_FOUND_MESSAGE = "Cannot find Sensor with id #";
     
     OSHPersistenceManager pm;
     IProcedureDescriptionStore procReadStore;
     IProcedureDescriptionStore procWriteStore;
-    IHistoricalObsDatabase mainObsDatabase;
+    IHistoricalObsDatabase federatedDatabase;
     STASecurity securityHandler;
     int maxPageSize = 100;
     String groupUID;
@@ -74,9 +74,9 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     SensorEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.mainObsDatabase = pm.obsDbRegistry.getFederatedObsDatabase();
-        this.procReadStore = mainObsDatabase.getProcedureStore();
-        this.procWriteStore = pm.obsDatabase != null ? pm.obsDatabase.getProcedureStore() : null;
+        this.federatedDatabase = pm.obsDbRegistry.getFederatedObsDatabase();
+        this.procReadStore = federatedDatabase.getProcedureStore();
+        this.procWriteStore = pm.database != null ? pm.database.getProcedureStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
         this.groupUID = pm.service.getProcedureGroupUID();
     }
@@ -108,11 +108,11 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 sensorID = key.getInternalID();
             }
             
-            // parse attached data streams if any
+            /*// parse attached data streams if any
             for (Datastream ds: sensor.getDatastreams())
                 pm.dataStreamHandler.addDatastream(sensorID, proxy, ds);
             for (MultiDatastream ds: sensor.getMultiDatastreams())
-                pm.dataStreamHandler.addDatastream(sensorID, proxy, ds);
+                pm.dataStreamHandler.addDatastream(sensorID, proxy, ds);*/
             
             // register new sensor
             FeatureId procID = pm.procRegistry.register(proxy);
@@ -167,7 +167,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         if (procWriteStore != null)
         {
             FeatureKey procKey = procWriteStore.remove(proc.getUniqueIdentifier());
-            mainObsDatabase.getObservationStore().getDataStreams().removeEntries(DataStreamFilter.builder()
+            federatedDatabase.getObservationStore().getDataStreams().removeEntries(new DataStreamFilter.Builder()
                 .withProcedures(procKey.getInternalID())
                 .build());
         }
@@ -202,18 +202,20 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         int skip = q.getSkip(0);
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
         
-        return procReadStore.selectEntries(filter)
-            .peek(e -> System.out.println(e.getValue().getUniqueIdentifier() + ": " + e.getValue().getValidTime()))
+        var entitySet = procReadStore.selectEntries(filter)
+            //.peek(e -> System.out.println(e.getValue().getUniqueIdentifier() + ": " + e.getValue().getValidTime()))
             .skip(skip)
-            .limit(limit)
+            .limit(limit+1) // request limit+1 elements to handle paging
             .map(e -> toFrostSensor(e.getKey().getInternalID(), e.getValue(), q))
             .collect(Collectors.toCollection(EntitySetImpl::new));
+        
+        return FrostUtils.handlePaging(entitySet, path, q, limit);
     }
     
     
     protected ProcedureFilter getFilter(ResourcePath path, Query q)
     {
-        ProcedureFilter.Builder builder = ProcedureFilter.builder()
+        ProcedureFilter.Builder builder = new ProcedureFilter.Builder()
             .validAtTime(Instant.now());
             //.withValidTimeDuring(Instant.MIN, Instant.MAX);
         
@@ -228,13 +230,13 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 idElt.getEntityType() == EntityType.MULTIDATASTREAM)
             {
                 ResourceId dsId = (ResourceId)idElt.getId();
-                DataStreamInfo dsInfo = mainObsDatabase.getObservationStore().getDataStreams().get(dsId.internalID);
+                DataStreamInfo dsInfo = federatedDatabase.getObservationStore().getDataStreams().get(dsId.internalID);
                 builder.withInternalIDs(dsInfo.getProcedure().getInternalID());
             }
             else if (idElt.getEntityType() == EntityType.OBSERVATION)
             {
                 ObsResourceId obsId = (ObsResourceId)idElt.getId();
-                DataStreamInfo dsInfo = mainObsDatabase.getObservationStore().getDataStreams().get(obsId.dataStreamID);
+                DataStreamInfo dsInfo = federatedDatabase.getObservationStore().getDataStreams().get(obsId.dataStreamID);
                 builder.withInternalIDs(dsInfo.getProcedure().getInternalID());
             }
         }
@@ -361,7 +363,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
             // retrieve description from database
             AbstractProcess sml = procReadStore.getLatestVersion(uniqueID);
             /*IDataStreamStore dsStore = pm.obsDbRegistry.getObservationStore().getDataStreams();
-            dsStore.select(DataStreamFilter.builder()
+            dsStore.select(new DataStreamFilter.Builder()
                 .withProcedures(uniqueID)
                 .build());*/
             
@@ -374,6 +376,17 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
             throw new IllegalArgumentException("Sensor " + uniqueID + " cannot be modified");
         
         return (VirtualSensorProxy)proxy;
+    }
+    
+    
+    protected void checkSensorID(long sensorID) throws NoSuchEntityException
+    {
+        boolean hasSensor = procReadStore.containsKey(FeatureKey.builder()
+                .withInternalID(sensorID)
+                .build());
+        
+        if (!hasSensor)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + sensorID);
     }
 
 }

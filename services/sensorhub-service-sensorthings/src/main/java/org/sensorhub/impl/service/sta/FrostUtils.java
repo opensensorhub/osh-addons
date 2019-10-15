@@ -21,14 +21,18 @@ import org.vast.ogc.om.SamplingCurve;
 import org.vast.ogc.om.SamplingPoint;
 import org.vast.swe.SWEConstants;
 import org.vast.util.Asserts;
+import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
+import de.fraunhofer.iosb.ilt.frostserver.model.core.EntitySet;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Id;
 import de.fraunhofer.iosb.ilt.frostserver.path.EntityPathElement;
 import de.fraunhofer.iosb.ilt.frostserver.path.EntitySetPathElement;
 import de.fraunhofer.iosb.ilt.frostserver.path.EntityType;
 import de.fraunhofer.iosb.ilt.frostserver.path.ResourcePath;
+import de.fraunhofer.iosb.ilt.frostserver.query.Query;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.LinearRing;
 import net.opengis.gml.v32.impl.GMLFactory;
+
 
 /**
  * <p>
@@ -69,6 +73,28 @@ public class FrostUtils
         linkedPath.setIdentifiedElement(new EntityPathElement(linkedId, linkedType, linkedPath.getLastElement()));
         linkedPath.addPathElement(linkedPath.getIdentifiedElement());
         return linkedPath;
+    }
+    
+    
+    public static <T extends Entity<T>> EntitySet<T> handlePaging(EntitySet<T> entitySet, ResourcePath path, Query query, int limit)
+    {
+        if (entitySet.size() > limit)
+        {
+            // generate next link
+            int oldSkip = query.getSkip(0);
+            int top = limit;
+            int newSkip = oldSkip + top;
+            query.setSkip(newSkip);
+            String nextLink = path.toString() + "?" + query.toString(false);
+            query.setSkip(oldSkip);            
+            entitySet.setNextLink(nextLink);
+            
+            // remove last element since we got limit+1 elements
+            var entityList = entitySet.asList();
+            entityList.remove(entityList.size()-1);
+        }
+        
+        return entitySet;
     }
     
     

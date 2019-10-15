@@ -14,7 +14,8 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.vast.util.Asserts;
+import java.nio.ByteBuffer;
+import org.h2.mvstore.DataUtils;
 
 
 /**
@@ -23,50 +24,67 @@ import org.vast.util.Asserts;
  * </p>
  *
  * @author Alex Robin
- * @date Sep 25, 2019
+ * @date Oct 11, 2019
  */
-public class ObsResourceId extends ResourceId
+public class EncodedObsResourceId extends ResourceId
 {
     static final String ID_SEPARATOR = ":";
     static final String ID_FORMAT = "%d:%d:%d";
     static final String URL_FORMAT = "'%d:%d:%d'";
     
     long dataStreamID;
-    long foiID;
-    
+    long foiID;    
     long packedID;
     
     
-    public ObsResourceId(long dataStreamID, long foiID, long timeStampMillis)
+    public EncodedObsResourceId(long dataStreamID, long foiID, long timeStampMillis)
     {
         super(timeStampMillis);
         this.dataStreamID = dataStreamID;
         this.foiID = foiID;
+        encode();        
     }
     
 
-    public ObsResourceId(String idString)
+    public EncodedObsResourceId(String idString)
     {
-        String[] ids = idString.substring(1, idString.length()-1).split(ID_SEPARATOR);
-        Asserts.checkArgument(ids.length == 3);
-        this.dataStreamID = Long.parseLong(ids[0]);
-        this.foiID = Long.parseLong(ids[1]);
-        this.internalID = Long.parseLong(ids[2]);
-        Asserts.checkArgument(dataStreamID > 0, BAD_ID_MSG);
-        Asserts.checkArgument(foiID >= 0, BAD_ID_MSG);
+        this.packedID = Long.parseLong(idString);
+        decode();
+    }
+    
+    
+    private void encode()
+    {
+        ByteBuffer buf = ByteBuffer.allocate(8);
+        DataUtils.writeVarLong(buf, dataStreamID);
+        DataUtils.writeVarLong(buf, foiID);
+        DataUtils.writeVarLong(buf, internalID);
+        buf.flip();
+        this.packedID = buf.getLong();
+    }
+    
+    
+    private void decode()
+    {
+        ByteBuffer buf = ByteBuffer.allocate(8);
+        buf.putLong(this.packedID);
+        buf.flip();
+        this.dataStreamID = DataUtils.readVarLong(buf);
+        this.foiID = DataUtils.readVarLong(buf);
+        this.internalID = DataUtils.readVarLong(buf);
     }
     
     
     @Override
     public Object getValue()
     {
-        return String.format(ID_FORMAT, dataStreamID, foiID, internalID);
+        return packedID;
     }
 
 
     @Override
     public String getUrl()
     {
-        return String.format(URL_FORMAT, dataStreamID, foiID, internalID);
+        return String.format("'%d'", packedID);
     }
 }

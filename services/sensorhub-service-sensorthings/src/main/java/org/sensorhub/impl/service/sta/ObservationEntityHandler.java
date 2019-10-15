@@ -69,7 +69,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     {
         this.pm = pm;
         this.obsReadStore = pm.obsDbRegistry.getFederatedObsDatabase().getObservationStore();
-        this.obsWriteStore = pm.obsDatabase != null ? pm.obsDatabase.getObservationStore() : null;
+        this.obsWriteStore = pm.database != null ? pm.database.getObservationStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
     }
     
@@ -213,17 +213,19 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
         
         // collect result to entity set
-        return obsReadStore.selectEntries(filter)
+        var entitySet = obsReadStore.selectEntries(filter)
             .skip(skip)
-            .limit(limit)
+            .limit(limit+1) // request limit+1 elements to handle paging
             .map(e -> toFrostObservation(e.getKey(), e.getValue(), q))
             .collect(Collectors.toCollection(EntitySetImpl::new));
+        
+        return FrostUtils.handlePaging(entitySet, path, q, limit);
     }
     
     
     protected ObsFilter getFilter(ResourcePath path, Query q)
     {
-        ObsFilter.Builder builder = ObsFilter.builder();
+        ObsFilter.Builder builder = new ObsFilter.Builder();
         
         EntityPathElement idElt = path.getIdentifiedElement();
         if (idElt != null)
