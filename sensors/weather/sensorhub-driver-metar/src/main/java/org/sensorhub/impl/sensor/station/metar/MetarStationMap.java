@@ -3,6 +3,7 @@ package org.sensorhub.impl.sensor.station.metar;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 
@@ -44,7 +45,8 @@ public class MetarStationMap {
 		System.err.println("MMap file: " + mapPath);
 		map = new HashMap<>();
 		
-		CSVReader reader = new CSVReader(new FileReader(mapPath));
+		URL url = ClassLoader.getSystemClassLoader().getResource(mapPath);
+		CSVReader reader = new CSVReader(new FileReader(url.getFile()));
 		try {
 			String [] line;
 			reader.readNext(); // skip hdr line

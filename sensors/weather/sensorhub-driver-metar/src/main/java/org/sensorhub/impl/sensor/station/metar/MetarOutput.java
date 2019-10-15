@@ -115,23 +115,35 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IM
 		int index = 0;
 		dataBlock.setDoubleValue(index++, rec.timeUtc);
 		dataBlock.setStringValue(index++, stationID);
-		dataBlock.setDoubleValue(index++, rec.getTemperature());
-		dataBlock.setDoubleValue(index++, rec.getDewPoint());
-        dataBlock.setDoubleValue(index++, rec.getRelativeHumidity());
-		dataBlock.setDoubleValue(index++, rec.pressure);
-		dataBlock.setDoubleValue(index++, rec.getWindSpeed());
-		dataBlock.setDoubleValue(index++, rec.windDirection);
-		dataBlock.setDoubleValue(index++, rec.windGust);
-		dataBlock.setDoubleValue(index++, rec.hourlyPrecipInches);
-		dataBlock.setIntValue(index++, 0);  // todo cloudHeight
+		setDoubleValue(dataBlock, index++, rec.getTempFahrenheit());
+		setDoubleValue(dataBlock, index++, rec.getDewpointFahrenheit());
+        setDoubleValue(dataBlock, index++, rec.getRelativeHumidity());
+		setDoubleValue(dataBlock, index++, rec.pressure);
+		setDoubleValue(dataBlock, index++, rec.getWindSpeed());
+		setIntValue(dataBlock, index++, rec.windDirection);
+		setDoubleValue(dataBlock, index++, rec.windGust);
+		setDoubleValue(dataBlock, index++, rec.hourlyPrecipInches);
+		setIntValue(dataBlock, index++, 0);  // todo cloudHeight
 //		dataBlock.setIntValue(index++, (int)Math.round(rec.getVisibilityMiles() * 5280.0));
 		dataBlock.setStringValue(index++, rec.getPresentWeathers());
-		dataBlock.setStringValue(index++, rec.getSkyConditions());
+		dataBlock.setStringValue(index++, rec.getSkyConditionsAsString());
 		dataBlock.setStringValue(index++, rec.getRunwayVisualRanges());
 
 		return dataBlock;
 	}
 
+	private void setDoubleValue(DataBlock block, int index, Double value) {
+		if(value != null)
+			block.setDoubleValue(index, value);
+		index++;
+	}
+	
+	private void setIntValue(DataBlock block, int index, Integer value) {
+		if(value != null)
+			block.setIntValue(index, value);
+		index++;
+	}
+	
 	protected void stop()
 	{
 		if (timer != null)
@@ -203,12 +215,21 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IM
 				List<Metar> metars = reader.read();
 				for(Metar metar: metars) {
 					try {
-						metar.timeUtc = MetarParserNew.computeTimeUtc(metar.dateString);
+						boolean keepMetar = false;
+						for(String stationId: parentSensor.getConfiguration().stationIds) {
+							if(stationId.equalsIgnoreCase(metar.stationId)) {
+								keepMetar = true;
+								break;
+							}
+						}
+						if(!keepMetar)
+							continue;
+						metar.timeUtc = MetarUtil.computeTimeUtc(metar.dateString);
 						// TODO Fix the time!!
-						latestUpdateTimes.put(metar.stationID, metar.timeUtc);
+						latestUpdateTimes.put(metar.stationId, metar.timeUtc);
 						latestRecordTime = System.currentTimeMillis();
-						String stationUID = MetarSensor.STATION_UID_PREFIX + metar.stationID;
-						latestRecord = metarRecordToDataBlock(metar.stationID, metar);
+						String stationUID = MetarSensor.STATION_UID_PREFIX + metar.stationId;
+						latestRecord = metarRecordToDataBlock(metar.stationId, metar);
 						latestRecords.put(stationUID, latestRecord);   
 					} catch (Exception e) {
 						e.printStackTrace(System.err);
