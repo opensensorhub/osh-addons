@@ -59,8 +59,9 @@ public class MetarAviationWeatherReader
 				if(commaIdx == -1)  continue;
 				String rawText = inline.substring(0, commaIdx);
 				Metar metar = parser.parseMetar(rawText);
-				metars.add(metar);
-				System.err.println(metar);
+				if(metar != null)
+					metars.add(metar);
+//				System.err.println(metar);
 			} 
 		}
 		System.err.println(metars.size());

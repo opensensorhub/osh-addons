@@ -43,12 +43,13 @@ public class MetarDataPoller {
 			Metar rec = new Metar();
 			String [] vals = (lines[1]+",END").split(",");
 			Station station = new Station();
-			rec.stationID = vals[0];
+			rec.stationId = vals[0];
 //			rec.setTimeStringUtc(vals[4].replace(" ",	"T")+ "Z");
 //			DateTime dt = new DateTime(rec.getTimeStringUtc());
 //			rec.setTimeUtc(dt.getMillis());
-			rec.setTemperatureC(parseDouble(vals[6]));
-			rec.setDewPointC(parseDouble(vals[7]));
+			// TODO: AW archive serves these as degrees F- adjust Metar class accordingly 
+			//			rec.temperature = parseDouble(vals[6]);
+//			rec.dewPoint = parseDouble(vals[7]);
 //			rec.setRelativeHumidity(parseDouble(vals[8]));
 			rec.setWindSpeed(parseDouble(vals[9]));
 			rec.windDirection = (int)parseDouble(vals[10]);
