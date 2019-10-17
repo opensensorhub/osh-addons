@@ -1,7 +1,6 @@
 ### SensorThings API Add-on for OSH
 
 This module deploys a servlet implementing OGC SensorThings API v1.0.
-
 It currently complies with the following conformance classes of the standard:
 
 - A.1 SensorThings Read (Core)
@@ -42,14 +41,14 @@ The service comes with a built-in embedded database based on H2 MVStore, but the
 ```
 ...
   "dbConfig": {
-	  "objClass": "org.sensorhub.impl.service.sta.STADatabaseConfig",
-	  "moduleClass": "org.sensorhub.impl.service.sta.MVSTADatabase",
-	  "databaseID": 3,
+    "objClass": "org.sensorhub.impl.service.sta.STADatabaseConfig",
+    "moduleClass": "org.sensorhub.impl.service.sta.MVSTADatabase",
+    "databaseID": 3,
     "storagePath": "sta_db.dat",
-	  "memoryCacheSize": 1024,
-	  "autoCommitBufferSize": 1024,
-	  "useCompression": false
-	}
+    "memoryCacheSize": 1024,
+    "autoCommitBufferSize": 1024,
+    "useCompression": false
+  }
 ...
 ```
 
