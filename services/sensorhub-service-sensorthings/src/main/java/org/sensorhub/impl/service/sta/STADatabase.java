@@ -14,6 +14,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
+import java.time.Instant;
 import java.util.Set;
 import javax.xml.namespace.QName;
 import org.h2.mvstore.MVStore;
@@ -49,15 +50,18 @@ import com.google.common.collect.Sets;
 public class STADatabase implements ISTADatabase
 {
     final static String THING_STORE_NAME = "thing_store";
+    final static String LOCATION_STORE_NAME = "location_store";
     final static String OBS_PROP_STORE_NAME = "obsprop_store";
     final static long HUB_THING_ID = 1;
     
     STAService service;
     STADatabaseConfig config;
+    MVStore mvStore;
     IDatabaseRegistry dbRegistry;
     IHistoricalObsDatabase obsDatabase;
     MVFeatureStoreImpl thingStore;
-    MVObsPropStoreImpl obsPropStore;
+    STALocationStoreImpl locationStore;
+    STAObsPropStoreImpl obsPropStore;
     STADataStreamStoreImpl dataStreamStore;
     
     
@@ -71,8 +75,6 @@ public class STADatabase implements ISTADatabase
 
     public void init()
     {
-        MVStore mvStore = null;
-        
         // init embedded obs database or use external one
         try
         {
@@ -113,20 +115,28 @@ public class STADatabase implements ISTADatabase
         else
             thingStore = MVFeatureStoreImpl.open(mvStore, THING_STORE_NAME);
         
+        // open location data store
+        if (H2Utils.getDataStoreInfo(mvStore, LOCATION_STORE_NAME) == null)
+        {
+            locationStore = STALocationStoreImpl.create(this, MVDataStoreInfo.builder()
+                .withName(LOCATION_STORE_NAME)
+                .build());
+        }
+        else
+            locationStore = STALocationStoreImpl.open(this, LOCATION_STORE_NAME);
+        
         // open observed property data store
         if (H2Utils.getDataStoreInfo(mvStore, OBS_PROP_STORE_NAME) == null)
         {
-            obsPropStore = MVObsPropStoreImpl.create(mvStore, MVDataStoreInfo.builder()
+            obsPropStore = STAObsPropStoreImpl.create(this, MVDataStoreInfo.builder()
                 .withName(OBS_PROP_STORE_NAME)
                 .build());
         }
         else
-            obsPropStore = MVObsPropStoreImpl.open(mvStore, THING_STORE_NAME);
+            obsPropStore = STAObsPropStoreImpl.open(this, THING_STORE_NAME);
 
         // init datastream store wrapper
-        this.dataStreamStore = new STADataStreamStoreImpl(
-            this,
-            mvStore,
+        this.dataStreamStore = new STADataStreamStoreImpl(this,
             obsDatabase.getObservationStore().getDataStreams());
                 
         // load default hub thing
@@ -135,11 +145,7 @@ public class STADatabase implements ISTADatabase
         hubThing.setUniqueIdentifier(uid);
         hubThing.setName("SensorHub Node");
         hubThing.setDescription("All sensors connected to this SensorHub");
-        thingStore.put(FeatureKey.builder()
-                .withInternalID(1)
-                .withUniqueID(uid)
-                .build(),
-            hubThing);
+        thingStore.put(new FeatureKey(1, uid, Instant.EPOCH), hubThing);
     }
     
     
@@ -218,6 +224,13 @@ public class STADatabase implements ISTADatabase
 
 
     @Override
+    public ILocationStore getThingLocationStore()
+    {
+        return locationStore;
+    }
+
+
+    @Override
     public IFeatureStore<FeatureKey, ObservedProperty> getObservedPropertyDataStore()
     {
         return obsPropStore;
@@ -230,6 +243,19 @@ public class STADatabase implements ISTADatabase
         obsDatabase.commit();
         thingStore.commit();
         obsPropStore.commit();
+    }
+    
+    
+    public MVStore getMVStore()
+    {
+        return mvStore;
+    }
+
+
+    @Override
+    public void close()
+    {
+        mvStore.close();        
     }
 
 }

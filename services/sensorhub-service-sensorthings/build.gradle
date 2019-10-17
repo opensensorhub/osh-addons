@@ -2,8 +2,10 @@ description = 'SensorThings API'
 ext.details = 'Implementation of OGC SensorThing API based on FROST server'
 version = '0.1.0'
 
-repositories {
+rootProject.allprojects {
+  repositories {
     maven { url "https://dl.bintray.com/fraunhoferiosb/Maven" }
+  }
 }
   
 dependencies {

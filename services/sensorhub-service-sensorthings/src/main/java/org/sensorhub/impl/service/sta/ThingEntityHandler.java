@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import org.sensorhub.api.datastore.DataStreamInfo;
 import org.sensorhub.api.datastore.FeatureFilter;
-import org.sensorhub.api.datastore.FeatureId;
 import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.datastore.IFeatureStore;
 import org.sensorhub.api.datastore.IHistoricalObsDatabase;
@@ -38,7 +37,6 @@ import de.fraunhofer.iosb.ilt.frostserver.path.EntityType;
 import de.fraunhofer.iosb.ilt.frostserver.path.ResourcePath;
 import de.fraunhofer.iosb.ilt.frostserver.query.Query;
 import de.fraunhofer.iosb.ilt.frostserver.util.NoSuchEntityException;
-import net.opengis.gml.v32.AbstractFeature;
 
 
 /**
@@ -51,9 +49,9 @@ import net.opengis.gml.v32.AbstractFeature;
  */
 public class ThingEntityHandler implements IResourceHandler<Thing>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find Thing with id #";
-    static final String GEOJSON_FORMAT = "application/vnd.geo+json";
-        
+    static final String NOT_FOUND_MESSAGE = "Cannot find 'Thing' entity with ID #";
+    static final String MISSING_ASSOC = "Missing reference to 'Thing' entity";
+    
     OSHPersistenceManager pm;
     IFeatureStore<FeatureKey, GenericFeature> thingDataStore;
     IHistoricalObsDatabase federatedDatabase;
@@ -83,10 +81,14 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         Asserts.checkArgument(!Strings.isNullOrEmpty(thing.getName()), "Thing name must be set");
         String uid = groupUID + ":thing:" + thing.getName().toLowerCase().replaceAll("\\s+", "_");
         
-        // store feature description in DB
         if (thingDataStore != null)
         {
+            // store feature description in DB
             FeatureKey key = thingDataStore.add(toGmlFeature(thing, uid));
+            
+            // handle associations / deep inserts with locations
+            pm.locationHandler.handleLocationAssoc(key.getInternalID(), thing.getLocations());
+            
             return new ResourceId(key.getInternalID());
         }
         
@@ -105,19 +107,18 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         {
             // retrieve UID of existing feature
             ResourceId id = (ResourceId)entity.getId();
-            FeatureId fid = thingDataStore.getFeatureID(FeatureKey.builder()
-                .withInternalID(id.internalID)
-                .build());
+            var fid = thingDataStore.getFeatureID(new FeatureKey(id.internalID));
             if (fid == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
             // store feature description in DB
             String uid = fid.getUniqueID();
-            thingDataStore.put(FeatureKey.builder()
-                    .withInternalID(fid.getInternalID())
-                    .withUniqueID(uid)
-                    .build(),
-                toGmlFeature(thing, uid));
+            var key = new FeatureKey(fid.getInternalID(), uid, Instant.EPOCH);
+            thingDataStore.put(key, toGmlFeature(thing, uid));
+            
+            // handle associations / deep inserts with locations
+            pm.locationHandler.handleLocationAssoc(key.getInternalID(), thing.getLocations());
+            
             return true;
         }
         
@@ -138,10 +139,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         
         if (thingDataStore != null)
         {
-            AbstractFeature f = thingDataStore.remove(FeatureKey.builder()
-                .withInternalID(id.internalID)
-                .build());
-            
+            var f = thingDataStore.remove(new FeatureKey(id.internalID));
             if (f == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
             
@@ -159,14 +157,11 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         
         if (thingDataStore != null)
         {
-            GenericFeature thing = thingDataStore.get(FeatureKey.builder()
-                .withInternalID(id.internalID)
-                .build());
-            
+            var thing = thingDataStore.get(new FeatureKey(id.internalID));            
             if (thing == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
-            else
-                return toFrostThing(id.internalID, thing, q);
+            
+            return toFrostThing(id.internalID, thing, q);
         }
         
         return null;
@@ -262,16 +257,34 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     }
     
     
+    protected ResourceId handleThingAssoc(Thing thing) throws NoSuchEntityException
+    {
+        Asserts.checkArgument(thing != null, MISSING_ASSOC);
+        ResourceId thingId;
+        
+        if (thing.getName() == null)
+        {
+            thingId = (ResourceId)thing.getId();
+            Asserts.checkArgument(thingId != null, MISSING_ASSOC);
+            checkThingID(thingId.internalID);
+        }
+        else
+        {
+            // deep insert
+            thingId = create(thing);
+        }
+        
+        return thingId;
+    }
+    
+    
     protected void checkThingID(long thingID) throws NoSuchEntityException
     {
         boolean hasThing = thingID == STADatabase.HUB_THING_ID;
         
         if (thingDataStore != null)
-        {
-            hasThing = thingDataStore.containsKey(FeatureKey.builder()
-                .withInternalID(thingID)
-                .build());
-        }
+            hasThing = thingDataStore.containsKey(new FeatureKey(thingID));
+        
         if (!hasThing)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + thingID);
     }

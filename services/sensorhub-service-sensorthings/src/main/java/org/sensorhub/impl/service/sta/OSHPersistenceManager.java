@@ -54,6 +54,8 @@ public class OSHPersistenceManager implements PersistenceManager
     FoiEntityHandler foiHandler;
     DatastreamEntityHandler dataStreamHandler;
     ObservationEntityHandler observationHandler;
+    LocationEntityHandler locationHandler;
+    HistoricalLocationEntityHandler historicalLocationHandler;
     IProcedureRegistry procRegistry;
     IDatabaseRegistry obsDbRegistry;
     ISTADatabase database;
@@ -100,6 +102,10 @@ public class OSHPersistenceManager implements PersistenceManager
             return dataStreamHandler;
         else if (entityType == EntityType.OBSERVATION)
             return observationHandler;
+        else if (entityType == EntityType.LOCATION)
+            return locationHandler;
+        else if (entityType == EntityType.HISTORICALLOCATION)
+            return historicalLocationHandler;
         
         throw new UnsupportedOperationException("No support for " + entityType.entityName + " resources yet");
     }
@@ -238,6 +244,8 @@ public class OSHPersistenceManager implements PersistenceManager
         this.foiHandler = new FoiEntityHandler(this);
         this.dataStreamHandler = new DatastreamEntityHandler(this);
         this.observationHandler = new ObservationEntityHandler(this);
+        this.locationHandler = new LocationEntityHandler(this);
+        this.historicalLocationHandler = new HistoricalLocationEntityHandler(this);
     }
 
 

@@ -37,6 +37,7 @@ public interface IResourceHandler<T extends Entity>
     static final String ID_PROPERTY = "id";
     static final String NAME_PROPERTY = "name";
     static final String DESCRIPTION_PROPERTY = "description";
+    static final String GEOJSON_FORMAT = "application/vnd.geo+json";
         
     
     public ResourceId create(Entity<?> entity) throws NoSuchEntityException;

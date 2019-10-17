@@ -56,7 +56,7 @@ import net.opengis.swe.v20.DataBlock;
 @SuppressWarnings("rawtypes")
 public class ObservationEntityHandler implements IResourceHandler<Observation>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find observation with id #";
+    static final String NOT_FOUND_MESSAGE = "Cannot find 'Observation' entity with ID #";
     
     OSHPersistenceManager pm;
     STASecurity securityHandler;
@@ -113,11 +113,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         // add observation to data store
         if (obsWriteStore != null)
         {
-            ObsKey key = ObsKey.builder()
-                .withPhenomenonTime(phenomenonTime)
-                .withDataStream(pm.toLocalID(dsId.internalID))
-                .withFoi(foi)
-                .build();
+            ObsKey key = new ObsKey(pm.toLocalID(dsId.internalID), foi, phenomenonTime);
             obsWriteStore.put(key, obsData);
         }
         
@@ -177,13 +173,11 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
      */
     protected ObsKey toLocalKey(ResourceId id)
     {
-        ObsResourceId obsId = (ObsResourceId)id;
-        
-        return ObsKey.builder()
-            .withDataStream(pm.toLocalID(obsId.dataStreamID))
-            .withFoi(new FeatureId(pm.toLocalID(obsId.foiID)))
-            .withPhenomenonTime(Instant.ofEpochMilli(id.internalID))
-            .build();
+        ObsResourceId obsId = (ObsResourceId)id;        
+        return new ObsKey(
+            pm.toLocalID(obsId.dataStreamID),
+            new FeatureId(pm.toLocalID(obsId.foiID)),
+            Instant.ofEpochMilli(id.internalID));
     }
     
     
@@ -194,11 +188,10 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     {
         ObsResourceId obsId = (ObsResourceId)id;
         
-        return ObsKey.builder()
-            .withDataStream(obsId.dataStreamID)
-            .withFoi(new FeatureId(obsId.foiID))
-            .withPhenomenonTime(Instant.ofEpochMilli(id.internalID))
-            .build();
+        return new ObsKey(
+            obsId.dataStreamID,
+            new FeatureId(obsId.foiID),
+            Instant.ofEpochMilli(id.internalID));
     }
     
 
@@ -255,11 +248,8 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     {
         double val = ((BigDecimal)obs.getResult()).doubleValue();
         DataBlockDouble result = new DataBlockDouble(1);
-        result.setDoubleValue(val);
-        
-        return ObsData.builder()
-            .withResult(result)
-            .build();
+        result.setDoubleValue(val);        
+        return new ObsData(result);
     }
     
     

@@ -19,6 +19,7 @@ import java.util.List;
 import org.geojson.LngLatAlt;
 import org.vast.ogc.om.SamplingCurve;
 import org.vast.ogc.om.SamplingPoint;
+import org.vast.ogc.om.SamplingSurface;
 import org.vast.swe.SWEConstants;
 import org.vast.util.Asserts;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
@@ -30,6 +31,7 @@ import de.fraunhofer.iosb.ilt.frostserver.path.EntityType;
 import de.fraunhofer.iosb.ilt.frostserver.path.ResourcePath;
 import de.fraunhofer.iosb.ilt.frostserver.query.Query;
 import net.opengis.gml.v32.AbstractFeature;
+import net.opengis.gml.v32.AbstractGeometry;
 import net.opengis.gml.v32.LinearRing;
 import net.opengis.gml.v32.impl.GMLFactory;
 
@@ -98,11 +100,37 @@ public class FrostUtils
     }
     
     
-    public static AbstractFeature toGmlFeature(org.geojson.GeoJsonObject geojson)
+    public static AbstractFeature toSamplingFeature(org.geojson.GeoJsonObject geojson)
     {
-        GMLFactory fac = new GMLFactory();
         if (geojson instanceof org.geojson.Feature)
             geojson = ((org.geojson.Feature)geojson).getGeometry();
+        
+        if (geojson instanceof org.geojson.Point)
+        {
+            SamplingPoint sf = new SamplingPoint();
+            sf.setGeometry(toGmlGeometry(geojson));
+            return sf;
+        }
+        else if (geojson instanceof org.geojson.LineString)
+        {
+            SamplingCurve sf = new SamplingCurve();
+            sf.setGeometry(toGmlGeometry(geojson));
+            return sf;
+        }
+        else if (geojson instanceof org.geojson.Polygon)
+        {
+            SamplingSurface sf = new SamplingSurface();
+            sf.setGeometry(toGmlGeometry(geojson));
+            return sf;
+        }
+        else
+            throw new IllegalArgumentException("Unsupported geometry: " + geojson.getClass().getSimpleName());
+    }
+    
+    
+    public static AbstractGeometry toGmlGeometry(org.geojson.GeoJsonObject geojson)
+    {
+        GMLFactory fac = new GMLFactory();
         
         if (geojson instanceof org.geojson.Point)
         {
@@ -114,9 +142,7 @@ public class FrostUtils
                 new double[] {coords.getLatitude(), coords.getLongitude(), coords.getAltitude()} :
                 new double[] {coords.getLatitude(), coords.getLongitude()});            
             
-            SamplingPoint sf = new SamplingPoint();
-            sf.setGeometry(p);
-            return sf;
+            return p;
         }
         else if (geojson instanceof org.geojson.LineString)
         {
@@ -127,9 +153,7 @@ public class FrostUtils
             setGeomSrs(line, coords.get(0));
             line.setPosList(toPosList(coords, line.getSrsDimension()));
             
-            SamplingCurve sf = new SamplingCurve();
-            sf.setGeometry(line);
-            return sf;
+            return line;
         }
         else if (geojson instanceof org.geojson.Polygon)
         {

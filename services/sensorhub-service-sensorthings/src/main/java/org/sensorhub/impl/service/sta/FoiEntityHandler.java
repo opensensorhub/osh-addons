@@ -49,8 +49,7 @@ import net.opengis.gml.v32.AbstractGeometry;
  */
 public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find FeatureOfInterest with id #";
-    static final String GEOJSON_FORMAT = "application/vnd.geo+json";
+    static final String NOT_FOUND_MESSAGE = "Cannot find 'FeatureOfInterest' entity with ID #";
         
     OSHPersistenceManager pm;
     IFoiStore foiReadStore;
@@ -101,9 +100,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         
         // retrieve UID of existing feature
         ResourceId id = (ResourceId)entity.getId();
-        FeatureId fid = foiReadStore.getFeatureID(FeatureKey.builder()
-            .withInternalID(id.internalID)
-            .build());
+        FeatureId fid = foiReadStore.getFeatureID(new FeatureKey(id.internalID));
         if (fid == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
@@ -112,10 +109,8 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         if (foiWriteStore != null)
         {
             //foiWriteStore.addVersion(toGmlFeature(foi, uid));
-            foiWriteStore.put(FeatureKey.builder()
-                    .withInternalID(pm.toLocalID(fid.getInternalID()))
-                    .withUniqueID(uid)
-                    .build(),
+            foiWriteStore.put(
+                new FeatureKey(pm.toLocalID(fid.getInternalID()), uid, Instant.EPOCH),
                 toGmlFeature(foi, uid));
             return true;
         }
@@ -137,9 +132,8 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         
         if (foiWriteStore != null)
         {
-            AbstractFeature f = foiWriteStore.remove(FeatureKey.builder()
-                .withInternalID(pm.toLocalID(id.internalID))
-                .build());
+            var key = new FeatureKey(pm.toLocalID(id.internalID));
+            var f = foiWriteStore.remove(key);
             
             if (f == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
@@ -156,9 +150,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     {
         securityHandler.checkPermission(securityHandler.sta_read_foi);
         
-        AbstractFeature foi = foiReadStore.get(FeatureKey.builder()
-            .withInternalID(id.internalID)
-            .build());
+        var foi = foiReadStore.get(new FeatureKey(id.internalID));
         
         if (foi == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
@@ -218,7 +210,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         
         AbstractFeature f;
         if (geojson != null)
-            f = FrostUtils.toGmlFeature(geojson);
+            f = FrostUtils.toSamplingFeature(geojson);
         else
             f = new GenericFeatureImpl(new QName("Feature"));
         

@@ -70,7 +70,7 @@ import net.opengis.swe.v20.Vector;
 @SuppressWarnings("rawtypes")
 public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastream>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find Datastream with id #";
+    static final String NOT_FOUND_MESSAGE = "Cannot find 'Datastream' entity with ID #";
     static final String UCUM_URI_PREFIX = "http://unitsofmeasure.org/ucum.html#";
     static final String BAD_LINK_THING = "A new Datastream SHALL link to an Thing entity";
         
@@ -99,8 +99,8 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         AbstractDatastream<?> dataStream = (AbstractDatastream<?>)entity;
         
         // check thing and sensor associations
-        ResourceId thingId = handleThingAssoc(dataStream);
-        ResourceId sensorId = handleSensorAssoc(dataStream);
+        ResourceId thingId = pm.thingHandler.handleThingAssoc(dataStream.getThing());
+        ResourceId sensorId = pm.sensorHandler.handleSensorAssoc(dataStream.getSensor());
         
         // retrieve sensor proxy
         VirtualSensorProxy sensorProxy = tryGetProcedureProxy(sensorId.internalID);
@@ -108,52 +108,6 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         // add data stream
         Long key = addDatastream(thingId.internalID, sensorId.internalID, sensorProxy, dataStream);
         return new ResourceId(key);
-    }
-    
-    
-    protected ResourceId handleThingAssoc(AbstractDatastream<?> dataStream) throws NoSuchEntityException
-    {
-        ResourceId thingId;
-        
-        Thing thing = dataStream.getThing();
-        Asserts.checkArgument(thing != null, BAD_LINK_THING);
-        
-        if (thing.getName() == null)
-        {
-            thingId = (ResourceId)thing.getId();
-            Asserts.checkArgument(thingId != null, BAD_LINK_THING);
-            pm.thingHandler.checkThingID(thingId.internalID);
-        }
-        else
-        {
-            // deep insert
-            thingId = pm.thingHandler.create(thing);
-        }
-        
-        return thingId;
-    }
-    
-    
-    protected ResourceId handleSensorAssoc(AbstractDatastream<?> dataStream) throws NoSuchEntityException
-    {
-        ResourceId sensorId;
-        
-        Sensor sensor = dataStream.getSensor();
-        Asserts.checkArgument(sensor != null, BAD_LINK_THING);
-        
-        if (sensor.getName() == null)
-        {
-            sensorId = (ResourceId)sensor.getId();
-            Asserts.checkArgument(sensorId != null, BAD_LINK_THING);
-            pm.sensorHandler.checkSensorID(sensorId.internalID);
-        }
-        else
-        {
-            // deep insert
-            sensorId = pm.sensorHandler.create(sensor);
-        }
-        
-        return sensorId;
     }
     
     

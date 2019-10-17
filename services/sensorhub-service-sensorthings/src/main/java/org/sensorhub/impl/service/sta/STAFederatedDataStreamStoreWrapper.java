@@ -58,7 +58,7 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     {
         if (filter instanceof STADataStreamFilter)
         {
-            var thingFilter = ((STADataStreamFilter)filter).getThingFilter();
+            var thingFilter = ((STADataStreamFilter)filter).getThings();
             if (thingFilter != null && staDataStreamStore != null)
                 return staDataStreamStore.selectEntries(filter)
                     .map(e -> new AbstractMap.SimpleEntry<>(database.toPublicID(e.getKey()), e.getValue()));

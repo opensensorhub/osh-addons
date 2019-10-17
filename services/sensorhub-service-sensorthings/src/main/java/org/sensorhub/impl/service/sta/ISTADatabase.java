@@ -74,6 +74,12 @@ public interface ISTADatabase extends IHistoricalObsDatabase
     
     
     /**
+     * @return The data store handling Location and HistoricalLocation entities
+     */
+    ILocationStore getThingLocationStore();
+    
+    
+    /**
      * @return The data store handling ObservedProperty entities
      */
     IFeatureStore<FeatureKey, ObservedProperty> getObservedPropertyDataStore();
@@ -83,5 +89,8 @@ public interface ISTADatabase extends IHistoricalObsDatabase
     
     
     public long toLocalID(long publicID);
+    
+    
+    public void close();
     
 }

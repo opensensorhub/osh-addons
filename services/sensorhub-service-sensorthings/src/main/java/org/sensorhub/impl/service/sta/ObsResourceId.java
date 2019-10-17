@@ -34,8 +34,6 @@ public class ObsResourceId extends ResourceId
     long dataStreamID;
     long foiID;
     
-    long packedID;
-    
     
     public ObsResourceId(long dataStreamID, long foiID, long timeStampMillis)
     {

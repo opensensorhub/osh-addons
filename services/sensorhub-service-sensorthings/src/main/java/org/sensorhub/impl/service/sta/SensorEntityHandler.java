@@ -60,7 +60,8 @@ import net.opengis.sensorml.v20.DocumentList;
  */
 public class SensorEntityHandler implements IResourceHandler<Sensor>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find Sensor with id #";
+    static final String NOT_FOUND_MESSAGE = "Cannot find 'Sensor' entity with ID #";
+    static final String MISSING_ASSOC = "Missing reference to 'Sensor' entity";
     
     OSHPersistenceManager pm;
     IProcedureDescriptionStore procReadStore;
@@ -181,10 +182,8 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     {
         securityHandler.checkPermission(securityHandler.sta_read_sensor);
         
-        AbstractProcess proc = procReadStore.get(FeatureKey.builder()
-            .withInternalID(id.internalID)
-            .withLatestValidTime()
-            .build());
+        var key = FeatureKey.latest(id.internalID);
+        AbstractProcess proc = procReadStore.get(key);
         
         if (proc == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
@@ -343,11 +342,8 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     {
         Asserts.checkArgument(internalID > 0, "IDs must be > 0");
         
-        FeatureKey key = FeatureKey.builder()
-            .withInternalID(internalID)
-            .build();
-        
-        FeatureId procID = procReadStore.getFeatureID(key);
+        var key = new FeatureKey(internalID);        
+        var procID = procReadStore.getFeatureID(key);
         if (procID == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + internalID);
         
@@ -379,12 +375,30 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     }
     
     
+    protected ResourceId handleSensorAssoc(Sensor sensor) throws NoSuchEntityException
+    {
+        Asserts.checkArgument(sensor != null, MISSING_ASSOC);
+        ResourceId sensorId;        
+                
+        if (sensor.getName() == null)
+        {
+            sensorId = (ResourceId)sensor.getId();
+            Asserts.checkArgument(sensorId != null, MISSING_ASSOC);
+            checkSensorID(sensorId.internalID);
+        }
+        else
+        {
+            // deep insert
+            sensorId = create(sensor);
+        }
+        
+        return sensorId;
+    }
+    
+    
     protected void checkSensorID(long sensorID) throws NoSuchEntityException
     {
-        boolean hasSensor = procReadStore.containsKey(FeatureKey.builder()
-                .withInternalID(sensorID)
-                .build());
-        
+        boolean hasSensor = procReadStore.containsKey(new FeatureKey(sensorID));        
         if (!hasSensor)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + sensorID);
     }

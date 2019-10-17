@@ -115,8 +115,18 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
     public void stop()
     {
         // undeploy servlet
-        undeploy();
-        servlet = null;
+        if (servlet != null)
+        {
+            undeploy();
+            servlet = null;
+        }
+        
+        // close database
+        if (database != null)
+        {
+            database.close();
+            database = null;
+        }
         
         serviceInstances.remove(System.identityHashCode(this));
         

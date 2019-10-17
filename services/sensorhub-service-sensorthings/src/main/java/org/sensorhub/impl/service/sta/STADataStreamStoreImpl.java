@@ -17,7 +17,6 @@ package org.sensorhub.impl.service.sta;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.Map;
@@ -28,18 +27,16 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.MVBTreeMap;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.RangeCursor;
-import org.h2.mvstore.WriteBuffer;
-import org.h2.mvstore.type.DataType;
 import org.sensorhub.api.datastore.DataStreamFilter;
 import org.sensorhub.api.datastore.DataStreamInfo;
 import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.datastore.IDataStreamStore;
 import org.sensorhub.api.datastore.IFeatureStore;
 import org.sensorhub.impl.datastore.h2.MVVoidDataType;
+import org.sensorhub.impl.service.sta.STADataStreamStoreTypes.*;
 import org.vast.ogc.gml.GenericFeature;
 
 
@@ -52,7 +49,7 @@ import org.vast.ogc.gml.GenericFeature;
  * @author Alex Robin
  * @date Oct 14, 2019
  */
-public class STADataStreamStoreImpl implements IDataStreamStore
+class STADataStreamStoreImpl implements IDataStreamStore
 {
     private static final String THING_DATASTREAM_MAP_NAME = "@thing_dstreams";
     
@@ -62,85 +59,9 @@ public class STADataStreamStoreImpl implements IDataStreamStore
     MVBTreeMap<MVDataStreamThingKey, Boolean> thingDataStreamIndex;
     
     
-    static class MVDataStreamThingKey
+    STADataStreamStoreImpl(STADatabase database, IDataStreamStore delegateStore)
     {
-        long thingID;
-        long dataStreamID;
-        
-        MVDataStreamThingKey(long thingID, long dsID)
-        {
-            this.thingID = thingID;
-            this.dataStreamID = dsID;
-        }
-    }
-    
-    
-    static class MVDataStreamThingKeyDataType implements DataType
-    {
-        private static final int MEM_SIZE = 8+8;
-        
-        
-        @Override
-        public int compare(Object objA, Object objB)
-        {
-            MVDataStreamThingKey a = (MVDataStreamThingKey)objA;
-            MVDataStreamThingKey b = (MVDataStreamThingKey)objB;
-            
-            // first compare thing internal ID
-            int comp = Long.compare(a.thingID, b.thingID);
-            if (comp != 0)
-                return comp;
-            
-            // then compare datastream ID
-            return Long.compare(a.dataStreamID, b.dataStreamID);
-        }
-        
-
-        @Override
-        public int getMemory(Object obj)
-        {
-            return MEM_SIZE;
-        }
-        
-
-        @Override
-        public void write(WriteBuffer wbuf, Object obj)
-        {
-            MVDataStreamThingKey key = (MVDataStreamThingKey)obj;
-            wbuf.putVarLong(key.thingID);
-            wbuf.putVarLong(key.dataStreamID);
-        }
-        
-
-        @Override
-        public void write(WriteBuffer wbuf, Object[] obj, int len, boolean key)
-        {
-            for (int i=0; i<len; i++)
-                write(wbuf, obj[i]);
-        }
-        
-
-        @Override
-        public Object read(ByteBuffer buff)
-        {
-            long thingID = DataUtils.readVarLong(buff);
-            long dsID = DataUtils.readVarLong(buff);
-            return new MVDataStreamThingKey(thingID, dsID);
-        }
-        
-
-        @Override
-        public void read(ByteBuffer buff, Object[] obj, int len, boolean key)
-        {
-            for (int i=0; i<len; i++)
-                obj[i] = read(buff);        
-        }
-    }
-    
-    
-    STADataStreamStoreImpl(STADatabase database, MVStore mvStore, IDataStreamStore delegateStore)
-    {
-        this.mvStore = mvStore;
+        this.mvStore = database.getMVStore();
         this.thingStore = database.getThingStore();
         this.delegateStore = delegateStore;
         
@@ -259,7 +180,7 @@ public class STADataStreamStoreImpl implements IDataStreamStore
     {
         if (filter instanceof STADataStreamFilter)
         {
-            var thingFilter = ((STADataStreamFilter)filter).getThingFilter();
+            var thingFilter = ((STADataStreamFilter)filter).getThings();
             if (thingFilter != null)
             {
                 TreeSet<Long> datastreamIDs = thingStore.selectKeys(thingFilter)

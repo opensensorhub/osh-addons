@@ -14,21 +14,19 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.datastore.DataStreamFilter;
 import org.sensorhub.api.datastore.FeatureFilter;
 
 
 /**
  * <p>
- * Immutable filter object for SensorThings Datastream entities.<br/>
- * There is an implicit AND between all filter parameters.<br/>
- * This adds the possibility to filter based on the parent Thing.
+ * Immutable filter object for SensorThings Location entities.<br/>
+ * There is an implicit AND between all filter parameters.
  * </p>
  *
  * @author Alex Robin
- * @date Oct 14, 2019
+ * @date Oct 16, 2019
  */
-class STADataStreamFilter extends DataStreamFilter
+class STALocationFilter extends FeatureFilter
 {
     protected FeatureFilter things;
     
@@ -39,27 +37,27 @@ class STADataStreamFilter extends DataStreamFilter
     }
     
     
-    public static class Builder extends DataStreamFilterBuilder<Builder, STADataStreamFilter>
+    public static class Builder extends FeatureFilterBuilder<STALocationFilter.Builder, STALocationFilter>
     {
         protected Builder()
         {
-            this.instance = new STADataStreamFilter();
+            this.instance = new STALocationFilter();
         }
         
         
-        public Builder withThings(FeatureFilter filter)
+        public STALocationFilter.Builder withThings(FeatureFilter filter)
         {
-            ((STADataStreamFilter)instance).things = filter;
+            ((STALocationFilter)instance).things = filter;
             return this;
         }
 
 
-        public Builder withThings(Long... thingIDs)
+        public STALocationFilter.Builder withThings(Long... thingIDs)
         {
-            ((STADataStreamFilter)instance).things = new FeatureFilter.Builder()
+            ((STALocationFilter)instance).things = new FeatureFilter.Builder()
                 .withInternalIDs(thingIDs)
                 .build();
             return this;
         }
-    }
+    }        
 }
