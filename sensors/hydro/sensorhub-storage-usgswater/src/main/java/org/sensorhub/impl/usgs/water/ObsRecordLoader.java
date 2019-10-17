@@ -21,15 +21,19 @@ import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
+
 import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
 import org.sensorhub.impl.usgs.water.CodeEnums.SiteType;
 import org.sensorhub.impl.usgs.water.CodeEnums.StateCode;
+import org.slf4j.Logger;
 import org.vast.util.Bbox;
 import org.vast.util.DateTimeFormat;
+
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 
@@ -152,7 +156,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
 	}
 
 	protected void initParamReaders(Set<ObsParam> params, String[] fieldNames) {
-		ArrayList<ParamValueParser> readers = new ArrayList<ParamValueParser>();
+		ArrayList<ParamValueParser> readers = new ArrayList<>();
 		int i = 0;
 
 		// always add time stamp and site ID readers
@@ -170,7 +174,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
 				}
 			}
 
-			readers.add(new FloatValueParser(fieldIndex, i++));
+			readers.add(new FloatValueParser(fieldIndex, i++, module.getLogger()));
 		}
 
 		paramReaders = readers.toArray(new ParamValueParser[0]);
@@ -297,18 +301,25 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
 	 * Parser for floating point value
 	 */
 	static class FloatValueParser extends ParamValueParser {
-		public FloatValueParser(int fromIndex, int toIndex) {
+		Logger logger;
+		public FloatValueParser(int fromIndex, int toIndex, Logger logger) {
 			super(fromIndex, toIndex);
+			this.logger = logger;
 		}
 
 		public void parse(String[] tokens, DataBlock data) throws IOException {
 			try {
 				float f = Float.NaN;
 
-				if (fromIndex >= 0) {
+				if (fromIndex >= 0 && fromIndex < tokens.length) {
 					String val = tokens[fromIndex].trim();
 					if (!val.isEmpty() && !val.startsWith("*"))
-						f = Float.parseFloat(val);
+						try {
+							f = Float.parseFloat(val);
+						} catch (NumberFormatException e) {
+							//  If value is non-numeric, leave field as NaN
+							logger.trace("Special value: {}", val);
+						}
 				}
 
 				data.setFloatValue(toIndex, f);

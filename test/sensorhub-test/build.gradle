@@ -27,6 +27,7 @@ dependencies {
   compile project(':sensorhub-driver-gamma')
   compile project(':sensorhub-driver-gps-nmea')
   compile project(':sensorhub-driver-mavlink')
+  compile project(':sensorhub-driver-metar')
   compile project(':sensorhub-driver-mti')
   compile project(':sensorhub-driver-plume')
   compile project(':sensorhub-driver-rtpcam')

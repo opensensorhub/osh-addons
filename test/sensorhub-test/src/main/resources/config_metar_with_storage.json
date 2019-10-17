@@ -21,7 +21,9 @@
     "moduleClass": "org.sensorhub.impl.sensor.station.metar.MetarSensor",
     "enabled": true,
     "sensorML": "metar.xml",
-    "stationIDs": [ "3467", "3567", "3188", "2896", "1423", "4111" ]
+    "metarStationMapPath" : "metarStations.csv",
+    "aviationWeatherUrl" : "https://aviationweather.gov/adds/dataserver_current/current/metars.cache.csv",
+    "stationIds": [ "KCPS", "KBLV", "KALN" ]
   },
   {
     "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",

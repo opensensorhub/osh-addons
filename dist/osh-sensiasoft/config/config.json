@@ -80,7 +80,7 @@
   },
   {
     "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
-    "googleApiUrl": "http://maps.googleapis.com/maps/api/directions/json",
+    "googleApiUrl": "https://maps.googleapis.com/maps/api/directions/json",
     "googleApiKey": "ENTER_YOUR_API_KEY_HERE",
     "centerLatitude": 34.73,
     "centerLongitude": -86.585,
@@ -494,6 +494,29 @@
     "autoStart": true
   },
   {
+    "objClass": "org.sensorhub.impl.usgs.water.USGSWaterDataConfig",
+    "exposeFilter": {
+      "objClass": "org.sensorhub.impl.usgs.water.DataFilter",
+      "siteTypes": [],
+      "siteIds": [],
+      "stateCodes": [
+        "NY"
+      ],
+      "countyCodes": [],
+      "parameters": [
+        "GAGE_HEIGHT",
+        "WATER_TEMP",
+        "DISCHARGE"
+      ],
+      "startTime": "2019-01-18T00:00:00Z",
+      "endTime": "2100-12-31T00:00:00Z"
+    },
+    "id": "5e55d292-4d6c-4554-a561-2c106d9a26af",
+    "moduleClass": "org.sensorhub.impl.usgs.water.USGSWaterDataArchive",
+    "name": "USGS Water Data Archive",
+    "autoStart": true
+  },
+  {
     "objClass": "org.sensorhub.impl.sensor.plume.PlumeConfig",
     "dataPath": "/home/ubuntu/data/plume/PARTICLE.OUT_12Zrel_350m",
     "id": "d136b6ea-3950-4691-bf56-ac893e5fcc44",
@@ -709,6 +732,14 @@
         "liveDataTimeout": 10.0,
         "maxFois": 10,
         "offeringID": "urn:android:device:a0e0eac2fea3f614-sos",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.StorageDataProviderConfig",
+        "storageID": "5e55d292-4d6c-4554-a561-2c106d9a26af",
+        "hiddenOutputs": [],
+        "maxFois": 0,
+        "offeringID": "urn:mysos:usgs:water",
         "enabled": true
       }
     ],

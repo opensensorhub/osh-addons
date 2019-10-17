@@ -16,7 +16,6 @@ package org.sensorhub.impl.persistence.h2;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -41,7 +40,14 @@ class MVFoiTimesStoreImpl
     private static final String FOI_TIMES_MAP_NAME = "@foiTimes";
     
     MVMap<String, FeatureEntry> idIndex;
-    Map<String, String> lastFois = new HashMap<>(); // last FOI for each producer
+    Map<String, FoiInfo> lastFois = new HashMap<>(); // last FOI for each producer
+    
+    
+    static class FoiInfo
+    {
+        String uid;
+        double lastTimeStamp;
+    }
     
     
     static class FeatureTimesDataType extends KryoDataType
@@ -63,36 +69,7 @@ class MVFoiTimesStoreImpl
         {
             this.uid = uid;
         }
-    }
-    
-    
-    static class FoiTimePeriod
-    {
-        String producerID;
-        String foiID;
-        double start;
-        double stop;
-        
-        FoiTimePeriod(String producerID, String foiID, double start, double stop)
-        {
-            this.producerID = producerID;
-            this.foiID = foiID;
-            this.start = start;
-            this.stop = stop;
-        }
-    }
-    
-    
-    static class FoiTimePeriodComparator implements Comparator<FoiTimePeriod>
-    {
-        public int compare(FoiTimePeriod p0, FoiTimePeriod p1)
-        {
-            int comp = Double.compare(p0.start, p1.start);
-            if (comp == 0)
-                comp = Double.compare(p0.stop, p1.stop);
-            return comp;
-        }        
-    }    
+    }   
     
     
     MVFoiTimesStoreImpl(MVStore mvStore, String seriesName)
@@ -141,10 +118,10 @@ class MVFoiTimesStoreImpl
     }
     
     
-    Set<FoiTimePeriod> getSortedFoiTimes(final String producerID, final Collection<String> foiIDs)
+    Set<ObsTimePeriod> getSortedFoiTimes(final String producerID, final Collection<String> foiIDs)
     {
         // create set with custom comparator for sorting FoiTimePeriod objects
-        TreeSet<FoiTimePeriod> foiTimes = new TreeSet<>(new FoiTimePeriodComparator());
+        TreeSet<ObsTimePeriod> foiTimes = new TreeSet<>(new ObsTimePeriod.Comparator());
         
         // TODO handle case of overlaping FOI periods?
         
@@ -159,7 +136,7 @@ class MVFoiTimesStoreImpl
                 
                 // add each period to sorted set
                 for (double[] timePeriod: fEntry.timePeriods)
-                    foiTimes.add(new FoiTimePeriod(producerID, foiID, timePeriod[0], timePeriod[1]));
+                    foiTimes.add(new ObsTimePeriod(producerID, foiID, timePeriod[0], timePeriod[1]));
             }
         }
         else // no filtering on FOI ID -> select them all
@@ -170,7 +147,7 @@ class MVFoiTimesStoreImpl
                 
                 // add each period to sorted set
                 for (double[] timePeriod: fEntry.timePeriods)
-                    foiTimes.add(new FoiTimePeriod(producerID, foiID, timePeriod[0], timePeriod[1]));
+                    foiTimes.add(new ObsTimePeriod(producerID, foiID, timePeriod[0], timePeriod[1]));
             }
         }
         
@@ -180,49 +157,72 @@ class MVFoiTimesStoreImpl
     
     void updateFoiPeriod(final String producerID, final String foiID, double timeStamp)
     {
-        // if lastFois doesn't have it (after restart)
-        // add to producer FOI for which we last received data
-        String lastFoi = lastFois.get(producerID);
+        // if lastFois has no value for producer (first update or after restart)
+        // look for latest FOI observed by this producer
+        FoiInfo lastFoi = lastFois.get(producerID);
         if (lastFoi == null)
         {
+            lastFoi = new FoiInfo();
+            lastFois.put(producerID, lastFoi);
+            
             String firstKey = getKey(producerID, "");
             Cursor<String, FeatureEntry> cursor = idIndex.cursor(firstKey);
-            
+                        
             double latestTime = Double.NEGATIVE_INFINITY;
             while (cursor.hasNext() && cursor.next().startsWith(firstKey))
             {
                 FeatureEntry entry = cursor.getValue();
                 int nPeriods = entry.timePeriods.size();
-                if (entry.timePeriods.get(nPeriods-1)[1] > latestTime)
-                    lastFoi = entry.uid;
+                double foiStopTime = entry.timePeriods.get(nPeriods-1)[1];
+                if (foiStopTime > latestTime)
+                {
+                    lastFoi.uid = entry.uid;
+                    latestTime = foiStopTime;
+                }
             }
+            
+            if (latestTime == Double.POSITIVE_INFINITY)
+                lastFoi.lastTimeStamp = timeStamp - 1e-3;
+            else
+                lastFoi.lastTimeStamp = latestTime;
         }
         
-        // create new entry if needed
-        String key = getKey(producerID, foiID);
-        FeatureEntry entry = idIndex.get(key);
-        if (entry == null)
-            entry = new FeatureEntry(foiID);
-        
-        // if same foi, keep growing period
-        int numPeriods = entry.timePeriods.size();
-        if (foiID.equals(lastFoi) && numPeriods > 0)
+        // create or update entry only if FOI has changed
+        if (!foiID.equals(lastFoi.uid))
         {
-            double[] lastPeriod = entry.timePeriods.get(numPeriods-1);
-            double currentEndTime = lastPeriod[1];
-            if (timeStamp > currentEndTime)
-                lastPeriod[1] = timeStamp;
+            // close period of last FOI
+            closeLastFoiPeriod(producerID, lastFoi);
+            
+            // retrieve or create entry for current FOI
+            String key = getKey(producerID, foiID);
+            FeatureEntry entry = idIndex.get(key);
+            if (entry == null)
+                entry = new FeatureEntry(foiID);
+            
+            // add new observed period valid until 'now'
+            entry.timePeriods.add(new double[] {timeStamp, Double.POSITIVE_INFINITY});
+            idIndex.put(key, entry);
         }
         
-        // otherwise start new period
-        else
-            entry.timePeriods.add(new double[] {timeStamp, timeStamp});
-        
-        // replace old entry
-        idIndex.put(key, entry);
-        
-        // remember current FOI
-        lastFois.put(producerID, foiID);
+        lastFoi.uid = foiID;
+        lastFoi.lastTimeStamp = timeStamp;
+    }
+    
+    
+    void closeLastFoiPeriod(String producerID, FoiInfo lastFoi)
+    {
+        String key = getKey(producerID, lastFoi.uid);
+        FeatureEntry entry = idIndex.get(key);
+        if (entry != null)
+        {
+            int numPeriods = entry.timePeriods.size();
+            if (numPeriods > 0)
+            {
+                double[] lastPeriod = entry.timePeriods.get(numPeriods-1);
+                lastPeriod[1] = lastFoi.lastTimeStamp;
+            }
+            idIndex.put(key, entry);
+        }
     }
     
     

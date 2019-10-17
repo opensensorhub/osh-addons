@@ -17,7 +17,6 @@ package org.sensorhub.impl.persistence.h2;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import org.h2.mvstore.Cursor;
@@ -29,9 +28,11 @@ import org.sensorhub.api.persistence.IDataFilter;
 import org.sensorhub.api.persistence.IDataRecord;
 import org.sensorhub.api.persistence.IFeatureFilter;
 import org.sensorhub.api.persistence.IObsFilter;
+import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.api.persistence.ObsKey;
 import org.sensorhub.impl.persistence.IteratorWrapper;
-import org.sensorhub.impl.persistence.h2.MVFoiTimesStoreImpl.FoiTimePeriod;
+import org.sensorhub.utils.SWEDataUtils;
+import org.sensorhub.utils.SWEDataUtils.VectorIndexer;
 import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockBoolean;
 import org.vast.data.DataBlockByte;
@@ -50,7 +51,11 @@ import org.vast.data.DataBlockUInt;
 import org.vast.data.DataBlockUShort;
 import org.vast.util.Asserts;
 import com.google.common.collect.Sets;
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.prep.PreparedPolygon;
 import net.opengis.swe.v20.DataBlock;
 
 
@@ -62,7 +67,8 @@ public class MVTimeSeriesImpl
     String name;
     MVMap<ProducerTimeKey, DataBlock> recordIndex;
     MVObsStorageImpl parentStore;
-    MVFoiTimesStoreImpl foiTimesStore;
+    MVFoiTimesStoreImpl foiTimesIndex;
+    MVSamplingLocationIndexImpl samplingLocationIndex;
     
     
     static class DataBlockDataType extends KryoDataType
@@ -92,15 +98,13 @@ public class MVTimeSeriesImpl
     
     class IteratorWithFoi extends IteratorWrapper<IDataRecord, IDataRecord>
     {
-        Iterator<FoiTimePeriod> periodIt;
+        Iterator<ObsTimePeriod> periodIt;
         String currentFoiID;
-        boolean preloadValue;
         
-        IteratorWithFoi(Set<FoiTimePeriod>foiTimePeriods, boolean preloadValue)
+        IteratorWithFoi(Set<ObsTimePeriod>foiTimePeriods)
         {
             super(Collections.<IDataRecord>emptyList().iterator());
             this.periodIt = foiTimePeriods.iterator();
-            this.preloadValue = preloadValue;
         }
 
         @Override
@@ -111,7 +115,7 @@ public class MVTimeSeriesImpl
             while ((it == null || !it.hasNext()) && periodIt.hasNext())
             {
                 // process next time range
-                FoiTimePeriod nextPeriod = periodIt.next();
+                ObsTimePeriod nextPeriod = periodIt.next();
                 currentFoiID = nextPeriod.foiID;
                 it = getEntryIterator(nextPeriod.producerID, nextPeriod.start, nextPeriod.stop);
             }
@@ -126,6 +130,32 @@ public class MVTimeSeriesImpl
     }
     
     
+    class IteratorWithSpatialFilter extends IteratorWrapper<IDataRecord, IDataRecord>
+    {
+        PreparedPolygon roi;
+        Point point;
+        Coordinate coords;
+        
+        public IteratorWithSpatialFilter(Iterator<IDataRecord> it, IObsFilter filter)
+        {
+            super(it);
+            this.roi = new PreparedPolygon(filter.getRoi());
+            this.coords = new Coordinate();
+            this.point = new GeometryFactory().createPoint(coords);
+        }
+
+        @Override
+        protected IDataRecord process(IDataRecord elt)
+        {
+            DataBlock data = elt.getData();
+            coords.x = samplingLocationIndex.locationIndexer.getCoordinateAsDouble(0, data);
+            coords.y = samplingLocationIndex.locationIndexer.getCoordinateAsDouble(1, data);
+            point.geometryChanged();
+            return roi.intersects(point) ? elt : null;
+        }        
+    }
+    
+    
     public MVTimeSeriesImpl(MVObsStorageImpl parentStore, String seriesName)
     {
         this.name = seriesName;
@@ -136,7 +166,20 @@ public class MVTimeSeriesImpl
                 .keyType(new ProducerKeyDataType())
                 .valueType(new DataBlockDataType()));
         
-        this.foiTimesStore = new MVFoiTimesStoreImpl(parentStore.mvStore, seriesName);
+        this.foiTimesIndex = new MVFoiTimesStoreImpl(parentStore.mvStore, seriesName);
+    }
+    
+    
+    public MVTimeSeriesImpl(MVObsStorageImpl parentStore, IRecordStoreInfo rsInfo)
+    {
+        this(parentStore, rsInfo.getName());
+        
+        // try to detect sampling location
+        VectorIndexer locationIndexer = SWEDataUtils.getLocationIndexer(rsInfo.getRecordDescription());
+        
+        // if found, also use sampling lolcation index
+        if (locationIndexer != null)
+            this.samplingLocationIndex = new MVSamplingLocationIndexImpl(parentStore.mvStore, rsInfo.getName(), locationIndexer);
     }
     
     
@@ -187,7 +230,7 @@ public class MVTimeSeriesImpl
     ProducerTimeKey[] getKeyRange(IDataFilter filter)
     {
         String producerID = getProducerID(filter);
-        double[] timeRange = getTimeRange(filter);
+        double[] timeRange = getTimeRange(producerID, filter);
         
         return new ProducerTimeKey[] {
             new ProducerTimeKey(producerID, timeRange[0]),
@@ -266,17 +309,21 @@ public class MVTimeSeriesImpl
 
     void store(DataKey key, DataBlock data)
     {
-        recordIndex.putIfAbsent(new ProducerTimeKey(key.producerID, key.timeStamp), data);
+        DataBlock oldValue = recordIndex.putIfAbsent(new ProducerTimeKey(key.producerID, key.timeStamp), data);
         
-        if (key instanceof ObsKey)
+        if (key instanceof ObsKey && oldValue == null)
         {
             // update FOI times
             String foiID = ((ObsKey)key).foiID;
             if (foiID != null)
             {
                 double timeStamp = key.timeStamp;
-                foiTimesStore.updateFoiPeriod(key.producerID, foiID, timeStamp);
+                foiTimesIndex.updateFoiPeriod(key.producerID, foiID, timeStamp);
             }
+            
+            // update obs location index
+            if (samplingLocationIndex != null)
+                samplingLocationIndex.update(key, data);
         }
     }
 
@@ -305,7 +352,7 @@ public class MVTimeSeriesImpl
             count++;
         }
         
-        // TODO remove FOI times once we have the time -> observed FOI index        
+        // TODO cleanup foi times and sampling location indexes
         
         return count;
     }
@@ -378,11 +425,59 @@ public class MVTimeSeriesImpl
     }
     
     
-    private double[] getTimeRange(IDataFilter filter)
+    int[] getEstimatedRecordCounts(String producerID, double[] timeStamps)
+    {
+        int[] bins = new int[timeStamps.length];
+        
+        boolean first = true;
+        long lastKeyIndex = 0;        
+        double lastKeyTime = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < timeStamps.length; i++)
+        {
+            double time = timeStamps[i];
+            
+            // skip bin if last key already too high for this slot
+            if (lastKeyTime > time)
+                continue;
+            
+            ProducerTimeKey timeKey = new ProducerTimeKey(producerID, time);
+            ProducerTimeKey key = (i == 0) ? recordIndex.ceilingKey(timeKey) : recordIndex.floorKey(timeKey);
+            
+            // we're done if no more keys can be found for this producer
+            if (key == null || !key.producerID.equals(producerID))
+                break;
+            
+            long keyIndex = recordIndex.getKeyIndex(key);
+            if (i > 0)
+            {
+                int count = (int)(keyIndex - lastKeyIndex);
+                bins[i-1] = count + (first ? 1 : 0);
+                first = false;
+            }
+            
+            lastKeyIndex = keyIndex;
+            lastKeyTime = key.timeStamp;
+        }
+                
+        return bins;
+    }
+    
+    
+    private double[] getTimeRange(String producerID, IDataFilter filter)
     {
         double[] timeRange = filter.getTimeStampRange();
         if (timeRange != null)
-            return timeRange;
+        {
+            // special case when requesting latest record
+            if (timeRange[0] == Double.POSITIVE_INFINITY && timeRange[1] == Double.POSITIVE_INFINITY)
+            {
+                ProducerTimeKey afterAll = new ProducerTimeKey(producerID, Double.POSITIVE_INFINITY);
+                ProducerTimeKey lastProducerKey = recordIndex.floorKey(afterAll);
+                return new double[] {lastProducerKey.timeStamp, lastProducerKey.timeStamp};
+            }
+            else
+                return timeRange;
+        }
         else
             return ALL_TIMES;
     }
@@ -434,38 +529,26 @@ public class MVTimeSeriesImpl
     }
     
     
-    private IteratorWithFoi getEntryIterator(IDataFilter filter, boolean preloadValue)
+    private Iterator<IDataRecord> getEntryIterator(IDataFilter filter, boolean preloadValue)
     {
         String producerID = getProducerID(filter);
         
-        // get time periods for matching FOIs
-        Set<FoiTimePeriod> foiTimePeriods = getFoiTimePeriods(producerID, filter);
+        // get time periods matching filter
+        Set<ObsTimePeriod> obsTimePeriods = getObsTimePeriods(producerID, filter);
             
-        // if no FOIs have been added just process whole time range
-        if (foiTimePeriods == null)
-        {
-            double start = Double.NEGATIVE_INFINITY;
-            double stop = Double.POSITIVE_INFINITY;
-            
-            double[] timeRange = filter.getTimeStampRange();
-            if (timeRange != null)
-            {
-                start = filter.getTimeStampRange()[0];
-                stop = filter.getTimeStampRange()[1];
-            }
-            
-            foiTimePeriods = new HashSet<>();
-            foiTimePeriods.add(new FoiTimePeriod(producerID, null, start, stop));
-        }
-        
-        // scan through each time range sequentially
-        // but wrap the process with a single iterator
-        return new IteratorWithFoi(foiTimePeriods, preloadValue);
+        // return special iterator to scan through each time range sequentially
+        // optionally post-filtering records on their spatial location      
+        if (samplingLocationIndex != null && filter instanceof IObsFilter && ((IObsFilter)filter).getRoi() != null)
+            return new IteratorWithSpatialFilter(new IteratorWithFoi(obsTimePeriods), (IObsFilter)filter);
+        else
+            return new IteratorWithFoi(obsTimePeriods);
     }
     
     
-    private Set<FoiTimePeriod> getFoiTimePeriods(String producerID, final IDataFilter filter)
+    private Set<ObsTimePeriod> getObsTimePeriods(String producerID, final IDataFilter filter)
     {
+        double[] timeRange = getTimeRange(producerID, filter);
+        
         // extract FOI filters if any
         Collection<String> foiIDs = null;
         Polygon roi = null;
@@ -477,9 +560,9 @@ public class MVTimeSeriesImpl
             roi = ((IObsFilter) filter).getRoi();
         }
         
-        // if using spatial filter, first get matching FOI IDs
-        // and then follow normal process
-        if (roi != null)
+        // if using spatial filter and NOT indexing obs locations, first get
+        // matching FOI IDs and then follow normal process
+        if (roi != null && samplingLocationIndex == null)
         {
             IFeatureFilter foiFilter = new FeatureFilter()
             {
@@ -509,49 +592,105 @@ public class MVTimeSeriesImpl
             foiIDs = allFoiIDs;
         }
         
-        // if no FOIs selected don't compute periods
-        if (foiIDs == null)
-            return null;
-        
         // get time periods for list of FOIs
-        Set<FoiTimePeriod> foiTimes = foiTimesStore.getSortedFoiTimes(producerID, foiIDs);
-        
-        // trim periods to filter time range if specified
-        double[] timeRange = filter.getTimeStampRange();
-        if (timeRange != null)
+        Set<ObsTimePeriod> obsTimeRanges = null;
+        if (foiIDs != null)
         {
-            Iterator<FoiTimePeriod> it = foiTimes.iterator();
-            while (it.hasNext())
-            {
-                FoiTimePeriod foiPeriod = it.next();
-                
-                // trim foi period to filter time range
-                if (foiPeriod.start < timeRange[0])
-                    foiPeriod.start = timeRange[0];
-                
-                if (foiPeriod.stop > timeRange[1])
-                    foiPeriod.stop = timeRange[1];
-                                
-                // case period is completely outside of time range
-                if (foiPeriod.start > foiPeriod.stop)
-                    it.remove();
-            }
+            obsTimeRanges = foiTimesIndex.getSortedFoiTimes(producerID, foiIDs);
+            if (obsTimeRanges.isEmpty())
+                return Collections.emptySet();
         }
         
-        return foiTimes;
+        // get time periods for spatially indexed observations
+        if (roi != null && samplingLocationIndex != null)
+        {
+            Set<ObsTimePeriod> samplingTimeRanges = samplingLocationIndex.getObsTimePeriods(producerID, timeRange, roi);
+            
+            // intersect with foi time periods if any
+            if (obsTimeRanges != null)
+            {
+                Iterator<ObsTimePeriod> it = samplingTimeRanges.iterator();
+                Iterator<ObsTimePeriod> foiIt = obsTimeRanges.iterator();
+                ObsTimePeriod foiTimeRange = foiIt.next();
+                
+                while (it.hasNext())
+                {
+                    ObsTimePeriod obsTimePeriod = it.next();
+                    
+                    boolean intersect = false;                    
+                    while (foiTimeRange != null)
+                    {
+                        if (obsTimePeriod.stop < foiTimeRange.start)
+                            break;
+                            
+                        if (trimTimeRange(obsTimePeriod, foiTimeRange.start, foiTimeRange.stop))
+                        {
+                            intersect = true;
+                            obsTimePeriod.foiID = foiTimeRange.foiID;
+                            break;
+                        }
+                        
+                        foiTimeRange = foiIt.hasNext() ? foiIt.next() : null;
+                    }
+                                            
+                    if (!intersect)
+                        it.remove();
+                }
+            }
+            
+            obsTimeRanges = samplingTimeRanges;
+        }
+        
+        // if no time periods selected, just process whole time range
+        if (obsTimeRanges == null)
+            obsTimeRanges = Sets.newHashSet(new ObsTimePeriod(producerID, null, timeRange[0], timeRange[1]));
+        
+        // trim periods to time range specified in filter
+        Iterator<ObsTimePeriod> it = obsTimeRanges.iterator();
+        while (it.hasNext())
+        {
+            ObsTimePeriod obsTimePeriod = it.next();
+            if (!trimTimeRange(obsTimePeriod, timeRange[0], timeRange[1]))
+                it.remove();
+        }
+        
+        return obsTimeRanges;
+    }
+    
+    
+    boolean trimTimeRange(ObsTimePeriod obsTimePeriod, double start, double stop)
+    {
+        // trim foi period to filter time range
+        if (obsTimePeriod.start < start)
+            obsTimePeriod.start = start;
+        
+        if (obsTimePeriod.stop > stop)
+            obsTimePeriod.stop = stop;
+                        
+        // return false if period completely outside time range
+        return obsTimePeriod.start <= obsTimePeriod.stop;
     }
     
     
     Iterator<String> getFoiIDs(String producerID)
     {
-        return foiTimesStore.getFoiIDs(producerID);
+        return foiTimesIndex.getFoiIDs(producerID);
     }
     
     
     void delete()
     {
-        foiTimesStore.delete();
+        foiTimesIndex.delete();
+        if (samplingLocationIndex != null)
+            samplingLocationIndex.delete();
         recordIndex.getStore().removeMap(recordIndex);
+    }
+    
+    
+    void close()
+    {
+        if (samplingLocationIndex != null)
+            samplingLocationIndex.close();
     }
 
 }

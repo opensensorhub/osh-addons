@@ -49,6 +49,10 @@ public class MVStorageConfig extends ObsStorageConfig
         
     @DisplayInfo(desc="Set to compress underlying file storage")
     public boolean useCompression = false;
+    
+    
+    @DisplayInfo(desc="Set to enable spatial indexing of individual observations sampling locations (when provided)")
+    public boolean indexObsLocation = false;
 
 
     @Override

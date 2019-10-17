@@ -21,16 +21,22 @@ For more information, please email arimus@users.sourceforge.net
 package org.sensorhub.impl.sensor.station.metar;
 
 /**
- * Simple container for METAR weather token constants.  
- * 
- * 	https://github.com/arimus/jweather
- * 
- * @author dennis@bullamanka.com
- * @author Tony Cook 
- * 
- */
+* Simple container for METAR weather token constants.  
+* 
+* 	https://github.com/arimus/jweather
+* 
+* @author dennis@bullamanka.com
+* 
+*/
 public interface MetarConstants {
 	
+	public static final double MPS_TO_KTS = 1.94384;
+	public static final double KMPH_TO_KTS = 0.539957;
+	public static final double MPH_TO_KTS = 0.868976;
+	
+	public static final double KILOMETERS_TO_STATUTEMILES = 0.6213712;
+	public static final double STATUTEMILES_TO_KILOMETERS = 1.609344;
+
 	public enum Modifier {
 		GREATER_THAN("P", "greater than"),
 		LESS_THAN("M", "less than"),
@@ -45,10 +51,6 @@ public interface MetarConstants {
 		private Modifier(String code, String desc) {
 			this.code = code;
 			this.description = desc;
-		}
-		
-		public String toString() {
-			return description;
 		}
 	}
 	

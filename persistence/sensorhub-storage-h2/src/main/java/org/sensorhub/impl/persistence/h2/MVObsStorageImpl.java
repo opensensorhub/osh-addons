@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -94,6 +93,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     }
     
     
+    /*
+     * Constructor used to create a nested MVObsStorage within a MVMultiStorage
+     * In this case, we share maps between all producers
+     */
     protected MVObsStorageImpl(MVObsStorageImpl parentStore, String producerID)
     {
         Asserts.checkNotNull(parentStore, "Parent");                
@@ -154,7 +157,12 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     
     private void loadRecordStore(IRecordStoreInfo rsInfo)
     {
-        MVTimeSeriesImpl recordStore = new MVTimeSeriesImpl(this, rsInfo.getName());        
+        MVTimeSeriesImpl recordStore;        
+        if (config.indexObsLocation)
+            recordStore = new MVTimeSeriesImpl(this, rsInfo);
+        else
+            recordStore = new MVTimeSeriesImpl(this, rsInfo.getName());
+        
         recordStores.put(rsInfo.getName(), recordStore);
     }
 
@@ -164,6 +172,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     {
         if (mvStore != null) 
         {
+            // make sure cached data is flushed
+            for (MVTimeSeriesImpl recordStore: recordStores.values())
+                recordStore.close();
+            
             mvStore.close();
             mvStore = null;
             processDescMap = null;
@@ -430,14 +442,14 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         checkOpen();
         return getRecordStore(recordType).getDataTimeRange(producerID);
     }
-
-
+    
+    
     @Override
-    public Iterator<double[]> getRecordsTimeClusters(String recordType)
+    public int[] getEstimatedRecordCounts(String recordType, double[] timeStamps)
     {
-        checkOpen();
-        //return getRecordStore(recordType).getRecordsTimeClusters(producerID);
-        return Arrays.asList(new double[2]).iterator();
+        Asserts.checkNotNull(timeStamps);
+        Asserts.checkArgument(timeStamps.length >= 2, "At least 2 time stamps must be provided");
+        return getRecordStore(recordType).getEstimatedRecordCounts(producerID, timeStamps);
     }
     
     

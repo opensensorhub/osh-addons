@@ -28,7 +28,7 @@ import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.api.persistence.IStorageModule;
 import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.impl.module.AbstractModule;
-import org.sensorhub.impl.persistence.FilterUtils;
+import org.sensorhub.impl.persistence.StorageUtils;
 import org.sensorhub.impl.persistence.FilteredIterator;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Bbox;
@@ -153,12 +153,12 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         double endTime = config.exposeFilter.endTime.getTime() / 1000.;
         return new double[] {startTime, endTime};
     }
-
-
+    
+    
     @Override
-    public Iterator<double[]> getRecordsTimeClusters(String recordType)
+    public int[] getEstimatedRecordCounts(String recordType, double[] timeStamps)
     {
-        return Arrays.asList(getRecordsTimeRange(recordType)).iterator();
+        return StorageUtils.computeDefaultRecordCounts(this, recordType, timeStamps);
     }
 
 
@@ -399,7 +399,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
             @Override
             protected boolean accept(AbstractFeature f)
             {
-                return FilterUtils.isFeatureSelected(filter, f);
+                return StorageUtils.isFeatureSelected(filter, f);
             }
         };
     }
