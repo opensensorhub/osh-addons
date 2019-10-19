@@ -14,8 +14,6 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.vast.util.Asserts;
-
 
 /**
  * <p>
@@ -25,46 +23,52 @@ import org.vast.util.Asserts;
  * @author Alex Robin
  * @date Sep 25, 2019
  */
-public class ObsResourceId extends ResourceId
+public class CompositeResourceId extends ResourceId
 {
     static final String ID_SEPARATOR = ":";
-    static final String ID_FORMAT = "%d:%d:%d";
-    static final String URL_FORMAT = "'%d:%d:%d'";
+    static final String QUOTECHAR = "'";
     
-    long dataStreamID;
-    long foiID;
+    long[] parentIDs;
     
     
-    public ObsResourceId(long dataStreamID, long foiID, long timeStampMillis)
+    public CompositeResourceId(long dataStreamID, long foiID, long timeStampMillis)
     {
         super(timeStampMillis);
-        this.dataStreamID = dataStreamID;
-        this.foiID = foiID;
+        this.parentIDs = new long[] {dataStreamID, foiID};
+    }
+    
+    
+    public CompositeResourceId(long thingID, long timeStampMillis)
+    {
+        super(timeStampMillis);
+        this.parentIDs = new long[] {thingID};
     }
     
 
-    public ObsResourceId(String idString)
+    public CompositeResourceId(String idString)
     {
         String[] ids = idString.substring(1, idString.length()-1).split(ID_SEPARATOR);
-        Asserts.checkArgument(ids.length == 3);
-        this.dataStreamID = Long.parseLong(ids[0]);
-        this.foiID = Long.parseLong(ids[1]);
-        this.internalID = Long.parseLong(ids[2]);
-        Asserts.checkArgument(dataStreamID > 0, BAD_ID_MSG);
-        Asserts.checkArgument(foiID >= 0, BAD_ID_MSG);
+        this.parentIDs = new long[ids.length-1];
+        for (int i = 0; i < parentIDs.length; i++)
+            this.parentIDs[i] = Long.parseLong(ids[i]);
+        this.internalID = Long.parseLong(ids[ids.length-1]);
     }
     
     
     @Override
     public Object getValue()
     {
-        return String.format(ID_FORMAT, dataStreamID, foiID, internalID);
+        StringBuilder sb = new StringBuilder();
+        for (long id: parentIDs)
+            sb.append(id).append(ID_SEPARATOR);
+        sb.append(internalID);
+        return sb.toString();
     }
 
 
     @Override
     public String getUrl()
     {
-        return String.format(URL_FORMAT, dataStreamID, foiID, internalID);
+        return QUOTECHAR + getValue() + QUOTECHAR;
     }
 }

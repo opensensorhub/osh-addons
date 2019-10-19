@@ -16,18 +16,11 @@ package org.sensorhub.impl.service.sta;
 
 import java.time.Instant;
 import java.util.stream.Collectors;
-import javax.xml.namespace.QName;
-import org.geojson.GeoJsonObject;
-import org.sensorhub.api.datastore.FeatureFilter;
 import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.datastore.IHistoricalObsDatabase;
-import org.vast.ogc.gml.GenericFeature;
-import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
-import com.google.common.base.Strings;
 import de.fraunhofer.iosb.ilt.frostserver.model.HistoricalLocation;
-import de.fraunhofer.iosb.ilt.frostserver.model.Location;
 import de.fraunhofer.iosb.ilt.frostserver.model.Thing;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.EntitySet;
@@ -38,7 +31,6 @@ import de.fraunhofer.iosb.ilt.frostserver.path.EntityType;
 import de.fraunhofer.iosb.ilt.frostserver.path.ResourcePath;
 import de.fraunhofer.iosb.ilt.frostserver.query.Query;
 import de.fraunhofer.iosb.ilt.frostserver.util.NoSuchEntityException;
-import net.opengis.gml.v32.AbstractFeature;
 
 
 /**
@@ -133,15 +125,23 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
     @Override
     public HistoricalLocation getById(ResourceId id, Query q) throws NoSuchEntityException
     {
-        securityHandler.checkPermission(securityHandler.sta_read_location);
+        securityHandler.checkPermission(securityHandler.sta_read_location);        
+        CompositeResourceId changeId = checkResourceId(id);
         
         if (locationDataStore != null)
         {
-            /*var location = locationDataStore.get(new FeatureKey(id.internalID));
-            if (location == null)
-                throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
+            long thingID = changeId.parentIDs[0];
+            long timeStamp = changeId.internalID;
             
-            return toFrostHistoricalLocation(id.internalID, location, q);*/
+            var filter = new STALocationFilter.Builder()
+                .withThings(thingID)
+                .validAtTime(Instant.ofEpochMilli(timeStamp))
+                .build();
+            
+            return locationDataStore.selectHistoricalLocations(filter)
+                .findFirst()
+                .map(k -> toFrostHistoricalLocation(k.getThingID(), k.getTime(), q))
+                .orElse(null);
         }
         
         return null;
@@ -159,11 +159,10 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
             int skip = q.getSkip(0);
             int limit = Math.min(q.getTopOrDefault(), maxPageSize);
             
-            long thingID = 2;
-            var entitySet = locationDataStore.getThingHistoricalLocations(thingID)
+            var entitySet = locationDataStore.selectHistoricalLocations(filter)
                 .skip(skip)
                 .limit(limit+1) // request limit+1 elements to handle paging
-                .map(k -> toFrostHistoricalLocation(thingID, k, q))
+                .map(k -> toFrostHistoricalLocation(k.getThingID(), k.getTime(), q))
                 .collect(Collectors.toCollection(EntitySetImpl::new));
             
             return FrostUtils.handlePaging(entitySet, path, q, limit);
@@ -176,7 +175,7 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
     protected STALocationFilter getFilter(ResourcePath path, Query q)
     {
         var builder = new STALocationFilter.Builder()
-            .validAtTime(Instant.now());
+            .withAllVersions();
         
         EntityPathElement idElt = path.getIdentifiedElement();
         if (idElt != null)
@@ -196,14 +195,25 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
     }
     
     
+    protected CompositeResourceId checkResourceId(ResourceId id) throws NoSuchEntityException
+    {
+        if (!(id instanceof CompositeResourceId) ||
+            ((CompositeResourceId)id).parentIDs.length != 1 ||
+            ((CompositeResourceId)id).parentIDs[0] < 0)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
+        
+        return (CompositeResourceId)id;
+    }
+    
+    
     protected HistoricalLocation toFrostHistoricalLocation(long thingID, Instant time, Query q)
     {
         HistoricalLocation location = new HistoricalLocation();
-        location.setId(new ResourceId(thingID*1000));
+        location.setId(new CompositeResourceId(thingID, time.toEpochMilli()));
         location.setTime(TimeInstant.create(time.toEpochMilli()));
         
         Thing thing = new Thing(new ResourceId(thingID));
-        //thing.setExportObject(false);
+        thing.setExportObject(false);
         location.setThing(thing);
         
         return location;

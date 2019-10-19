@@ -43,7 +43,7 @@ class STADataStreamStoreTypes
     }
     
     
-    static class MVDataStreamThingKeyDataType implements DataType
+    static class MVThingDataStreamKeyDataType implements DataType
     {
         private static final int MEM_SIZE = 8+8;
         

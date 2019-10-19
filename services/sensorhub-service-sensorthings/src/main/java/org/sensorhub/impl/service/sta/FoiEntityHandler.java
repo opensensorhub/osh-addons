@@ -87,7 +87,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
             return new ResourceId(pm.toPublicID(key.getInternalID()));
         }
         
-        throw new UnsupportedOperationException("Cannot insert new features if no database was configured");
+        throw new UnsupportedOperationException(NO_DB_MESSAGE);
     }
     
 
@@ -105,17 +105,15 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
         // store feature description in DB
-        String uid = fid.getUniqueID();
         if (foiWriteStore != null)
         {
-            //foiWriteStore.addVersion(toGmlFeature(foi, uid));
-            foiWriteStore.put(
-                new FeatureKey(pm.toLocalID(fid.getInternalID()), uid, Instant.EPOCH),
-                toGmlFeature(foi, uid));
+            String uid = fid.getUniqueID();
+            var key = new FeatureKey(fid.getInternalID(), uid, FeatureKey.TIMELESS);
+            foiWriteStore.put(key, toGmlFeature(foi, uid));
             return true;
         }
         
-        return false;
+        throw new UnsupportedOperationException(NO_DB_MESSAGE);
     }
     
     
@@ -132,16 +130,19 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         
         if (foiWriteStore != null)
         {
-            var key = new FeatureKey(pm.toLocalID(id.internalID));
-            var f = foiWriteStore.remove(key);
+            var key = foiWriteStore.removeEntries(new FoiFilter.Builder()
+                    .withInternalIDs(pm.toLocalID(id.internalID))
+                    .withAllVersions()
+                    .build())
+                .findFirst();
             
-            if (f == null)
+            if (key.isEmpty())
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
             
             return true;
         }
         
-        return false;
+        throw new UnsupportedOperationException(NO_DB_MESSAGE);
     }
     
 
@@ -150,7 +151,8 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     {
         securityHandler.checkPermission(securityHandler.sta_read_foi);
         
-        var foi = foiReadStore.get(new FeatureKey(id.internalID));
+        var key = FeatureKey.latest(id.internalID);
+        var foi = foiReadStore.get(key);
         
         if (foi == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
@@ -188,10 +190,11 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         {
             if (idElt.getEntityType() == EntityType.OBSERVATION)
             {
-                ObsResourceId obsId = (ObsResourceId)idElt.getId();
-                if (obsId.foiID == 0) // case of no FOI
-                    obsId.foiID = Long.MAX_VALUE;
-                builder.withInternalIDs(obsId.foiID);
+                CompositeResourceId obsId = (CompositeResourceId)idElt.getId();
+                long foiID = obsId.parentIDs[1];
+                if (foiID == 0) // case of no FOI, set bad ID so we send '404 not found'
+                    foiID = Long.MAX_VALUE;
+                builder.withInternalIDs(foiID);
             }
         }
         

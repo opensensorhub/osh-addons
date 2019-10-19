@@ -42,10 +42,8 @@ public class ResourceIdManager implements IdManager<String>
     {
         Asserts.checkNotNull(input, "id");
         
-        if (input.contains(ObsResourceId.ID_SEPARATOR))
-            return new ObsResourceId(input);
-        //if (input.length() > 10)
-        //    return new EncodedObsResourceId(input);
+        if (input.contains(CompositeResourceId.ID_SEPARATOR))
+            return new CompositeResourceId(input);
         else
             return new ResourceId(input);
     }

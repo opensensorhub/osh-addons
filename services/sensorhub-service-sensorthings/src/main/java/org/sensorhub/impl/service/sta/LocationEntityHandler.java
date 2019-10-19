@@ -15,6 +15,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sta;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import org.geojson.GeoJsonObject;
@@ -27,6 +28,7 @@ import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.google.common.base.Strings;
 import de.fraunhofer.iosb.ilt.frostserver.model.Location;
+import de.fraunhofer.iosb.ilt.frostserver.model.Thing;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.EntitySet;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.EntitySetImpl;
@@ -87,7 +89,7 @@ public class LocationEntityHandler implements IResourceHandler<Location>
             return new ResourceId(key.getInternalID());
         }
         
-        throw new UnsupportedOperationException("Cannot insert new locations if no database was configured");
+        throw new UnsupportedOperationException(NO_DB_MESSAGE);
     }
     
 
@@ -108,12 +110,12 @@ public class LocationEntityHandler implements IResourceHandler<Location>
                 
             // store feature description in DB
             String uid = fid.getUniqueID();
-            var key = new FeatureKey(fid.getInternalID(), uid, Instant.EPOCH);
+            var key = new FeatureKey(fid.getInternalID(), uid, FeatureKey.TIMELESS);
             locationDataStore.put(key, toGmlFeature(location, uid));
             return true;
         }
         
-        throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
+        throw new UnsupportedOperationException(NO_DB_MESSAGE);
     }
     
     
@@ -130,14 +132,19 @@ public class LocationEntityHandler implements IResourceHandler<Location>
         
         if (locationDataStore != null)
         {
-            var f = locationDataStore.remove(new FeatureKey(id.internalID));
-            if (f == null)
+            var key = locationDataStore.removeEntries(new FeatureFilter.Builder()
+                    .withInternalIDs(id.internalID)
+                    .withAllVersions()
+                    .build())
+                .findFirst();
+        
+            if (key.isEmpty())
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
             
             return true;
         }
         
-        return false;
+        throw new UnsupportedOperationException(NO_DB_MESSAGE);
     }
     
 
@@ -148,7 +155,9 @@ public class LocationEntityHandler implements IResourceHandler<Location>
         
         if (locationDataStore != null)
         {
-            var location = locationDataStore.get(new FeatureKey(id.internalID));
+            var key = FeatureKey.latest(id.internalID);
+            var location = locationDataStore.get(key);
+            
             if (location == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
             
@@ -236,14 +245,14 @@ public class LocationEntityHandler implements IResourceHandler<Location>
     }
     
     
-    protected void handleLocationAssoc(long thingID, EntitySet<Location> locations) throws NoSuchEntityException
+    protected void handleLocationAssocList(ResourceId thingId, Thing thing) throws NoSuchEntityException
     {
-        if (locations == null)
+        if (thing.getLocations() == null)
             return;
         
         ResourceId locationId;
-        Instant now = Instant.now();
-        for (Location location: locations)
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        for (Location location: thing.getLocations())
         {        
             if (location.getName() == null)
             {
@@ -257,7 +266,7 @@ public class LocationEntityHandler implements IResourceHandler<Location>
                 locationId = create(location);
             }
             
-            locationDataStore.addAssociation(thingID, locationId.internalID, now);
+            locationDataStore.addAssociation(thingId.internalID, locationId.internalID, now);
         }
     }
     

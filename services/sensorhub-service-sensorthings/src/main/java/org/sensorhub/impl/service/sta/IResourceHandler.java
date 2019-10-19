@@ -38,6 +38,7 @@ public interface IResourceHandler<T extends Entity>
     static final String NAME_PROPERTY = "name";
     static final String DESCRIPTION_PROPERTY = "description";
     static final String GEOJSON_FORMAT = "application/vnd.geo+json";
+    static final String NO_DB_MESSAGE = "Create/Update/Delete disabled since persistence is not configured";
         
     
     public ResourceId create(Entity<?> entity) throws NoSuchEntityException;

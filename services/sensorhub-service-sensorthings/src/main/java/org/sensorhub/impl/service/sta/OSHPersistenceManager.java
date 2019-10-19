@@ -16,6 +16,7 @@ package org.sensorhub.impl.service.sta;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.HashMap;
 import org.sensorhub.api.datastore.IDatabaseRegistry;
 import org.sensorhub.api.procedure.IProcedureRegistry;
 import org.vast.util.Asserts;
@@ -24,6 +25,7 @@ import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.EntitySet;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Id;
 import de.fraunhofer.iosb.ilt.frostserver.path.EntityPathElement;
+import de.fraunhofer.iosb.ilt.frostserver.path.EntityProperty;
 import de.fraunhofer.iosb.ilt.frostserver.path.EntityType;
 import de.fraunhofer.iosb.ilt.frostserver.path.ResourcePath;
 import de.fraunhofer.iosb.ilt.frostserver.persistence.PersistenceManager;
@@ -50,8 +52,9 @@ public class OSHPersistenceManager implements PersistenceManager
     STASecurity securityHandler;
     ResourceIdManager idManager = new ResourceIdManager();
     ThingEntityHandler thingHandler;
-    SensorEntityHandler sensorHandler;
     FoiEntityHandler foiHandler;
+    SensorEntityHandler sensorHandler;
+    ObservedPropertyEntityHandler obsPropHandler;
     DatastreamEntityHandler dataStreamHandler;
     ObservationEntityHandler observationHandler;
     LocationEntityHandler locationHandler;
@@ -76,7 +79,43 @@ public class OSHPersistenceManager implements PersistenceManager
     @Override
     public boolean validatePath(ResourcePath path)
     {
-        // TODO Auto-generated method stub
+        try
+        {
+            for (int i = 0; i < path.size(); i++)
+            {
+                var elt = path.get(i);
+                if (elt instanceof EntityPathElement)
+                {
+                    ResourceId id = (ResourceId) ((EntityPathElement) elt).getId();
+                    if (id == null)
+                        continue;
+                    
+                    switch (((EntityPathElement) elt).getEntityType())
+                    {
+                        case THING:
+                            thingHandler.checkThingID(id.internalID);
+                            break;
+                            
+                        case SENSOR:
+                            sensorHandler.checkSensorID(id.internalID);
+                            break;
+                            
+                        case DATASTREAM:
+                        case MULTIDATASTREAM:
+                            dataStreamHandler.checkDatastreamID(id.internalID);
+                            break;
+                            
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+        catch (NoSuchEntityException e)
+        {
+            return false;
+        }        
+        
         return true;
     }
     
@@ -94,10 +133,12 @@ public class OSHPersistenceManager implements PersistenceManager
         
         if (entityType == EntityType.THING)
             return thingHandler;
-        else if (entityType == EntityType.SENSOR)
-            return sensorHandler;
         else if (entityType == EntityType.FEATUREOFINTEREST)
             return foiHandler;
+        else if (entityType == EntityType.SENSOR)
+            return sensorHandler;
+        else if (entityType == EntityType.OBSERVEDPROPERTY)
+            return obsPropHandler;
         else if (entityType == EntityType.DATASTREAM || entityType == EntityType.MULTIDATASTREAM)
             return dataStreamHandler;
         else if (entityType == EntityType.OBSERVATION)
@@ -168,7 +209,24 @@ public class OSHPersistenceManager implements PersistenceManager
         {
             EntityType entityType = ((EntityPathElement)path.getMainElement()).getEntityType();
             Id id = ((EntityPathElement)path.getMainElement()).getId();
-            return get(entityType, id);
+            Entity<?> entity = get(entityType, id);
+            if (entity == null)
+                return null;
+            
+            if (path.isEntityProperty())
+            {
+                String propName = path.getLastElement().toString();
+                Object val = entity.getProperty(EntityProperty.fromString(propName));
+            
+                if (path.isValue())
+                    return val;
+                
+                var customEntity = new HashMap<>();
+                customEntity.put(propName, val);
+                return customEntity;
+            }
+            
+            return entity;            
         }
         
         // case of relationship to a single entity
@@ -237,11 +295,12 @@ public class OSHPersistenceManager implements PersistenceManager
         this.obsDbRegistry = service.getParentHub().getDatabaseRegistry();
         this.database = service.database;
         
-        // setup all handlers
+        // setup all entity handlers
         this.securityHandler = service.getSecurityHandler();
         this.thingHandler = new ThingEntityHandler(this);
-        this.sensorHandler = new SensorEntityHandler(this);
         this.foiHandler = new FoiEntityHandler(this);
+        this.sensorHandler = new SensorEntityHandler(this);
+        this.obsPropHandler = new ObservedPropertyEntityHandler(this);
         this.dataStreamHandler = new DatastreamEntityHandler(this);
         this.observationHandler = new ObservationEntityHandler(this);
         this.locationHandler = new LocationEntityHandler(this);

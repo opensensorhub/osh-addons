@@ -38,6 +38,7 @@ import org.sensorhub.api.datastore.IFeatureStore;
 import org.sensorhub.impl.datastore.h2.MVVoidDataType;
 import org.sensorhub.impl.service.sta.STADataStreamStoreTypes.*;
 import org.vast.ogc.gml.GenericFeature;
+import org.vast.util.Asserts;
 
 
 /**
@@ -49,14 +50,16 @@ import org.vast.ogc.gml.GenericFeature;
  * @author Alex Robin
  * @date Oct 14, 2019
  */
-class STADataStreamStoreImpl implements IDataStreamStore
+class STADataStreamStoreImpl implements ISTADataStreamStore
 {
-    private static final String THING_DATASTREAM_MAP_NAME = "@thing_dstreams";
+    private static final String THING_DATASTREAMS_MAP_NAME = "@thing_dstreams";
+    private static final String DATASTREAM_THING_MAP_NAME = "@dstream_thing";
     
     MVStore mvStore;
     IDataStreamStore delegateStore;
     IFeatureStore<FeatureKey, GenericFeature> thingStore;
-    MVBTreeMap<MVDataStreamThingKey, Boolean> thingDataStreamIndex;
+    MVBTreeMap<MVDataStreamThingKey, Boolean> thingDataStreamsIndex;
+    MVBTreeMap<Long, Long> dataStreamThingIndex;
     
     
     STADataStreamStoreImpl(STADatabase database, IDataStreamStore delegateStore)
@@ -65,16 +68,22 @@ class STADataStreamStoreImpl implements IDataStreamStore
         this.thingStore = database.getThingStore();
         this.delegateStore = delegateStore;
         
-        // Thing-Datastream association map
-        String mapName = THING_DATASTREAM_MAP_NAME + ":" + delegateStore.getDatastoreName();
-        this.thingDataStreamIndex = mvStore.openMap(mapName, new MVBTreeMap.Builder<MVDataStreamThingKey, Boolean>()
-            .keyType(new MVDataStreamThingKeyDataType())
+        // Thing-Datastreams association map
+        String mapName = THING_DATASTREAMS_MAP_NAME + ":" + delegateStore.getDatastoreName();
+        this.thingDataStreamsIndex = mvStore.openMap(mapName, new MVBTreeMap.Builder<MVDataStreamThingKey, Boolean>()
+            .keyType(new MVThingDataStreamKeyDataType())
             .valueType(new MVVoidDataType()));
+        
+        // Datastream-Thing association map
+        mapName = DATASTREAM_THING_MAP_NAME + ":" + delegateStore.getDatastoreName();
+        this.dataStreamThingIndex = mvStore.openMap(mapName, new MVBTreeMap.Builder<Long, Long>());
     }
 
 
     public Long add(DataStreamInfo dsInfo)
     {
+        Asserts.checkArgument(dsInfo instanceof STADataStream);
+        
         // synchronize on MVStore to avoid autocommit in the middle of things
         synchronized (mvStore)
         {
@@ -82,8 +91,11 @@ class STADataStreamStoreImpl implements IDataStreamStore
             
             try
             {
-                Long newKey = delegateStore.add(dsInfo);
-                putThingAssoc(newKey, dsInfo);
+                // we need to create a pure DataStreamInfo before adding to DB
+                var pureDsInfo = DataStreamInfo.Builder.from(dsInfo).build();
+                
+                Long newKey = delegateStore.add(pureDsInfo);
+                putThingAssoc(newKey, (STADataStream)dsInfo);
                 return newKey;
             }
             catch (Exception e)
@@ -98,6 +110,8 @@ class STADataStreamStoreImpl implements IDataStreamStore
     @Override
     public DataStreamInfo put(Long key, DataStreamInfo value)
     {
+        Asserts.checkArgument(value instanceof STADataStream);
+        
         // synchronize on MVStore to avoid autocommit in the middle of things
         synchronized (mvStore)
         {
@@ -105,8 +119,11 @@ class STADataStreamStoreImpl implements IDataStreamStore
             
             try
             {
-                DataStreamInfo oldValue = delegateStore.put(key, value);
-                putThingAssoc(key, value);
+                // we need to create a pure DataStreamInfo before adding to DB
+                var pureDsInfo = DataStreamInfo.Builder.from(value).build();
+                
+                DataStreamInfo oldValue = delegateStore.put(key, pureDsInfo);
+                putThingAssoc(key, (STADataStream)value);
                 return oldValue;
             }
             catch (Exception e)
@@ -118,16 +135,11 @@ class STADataStreamStoreImpl implements IDataStreamStore
     }
     
     
-    protected void putThingAssoc(Long key, DataStreamInfo dsInfo)
+    void putThingAssoc(Long key, STADataStream dsInfo)
     {
-        if (dsInfo instanceof STADataStream)
-        {
-            var assocKey = new MVDataStreamThingKey(
-               ((STADataStream) dsInfo).getThingID(),
-               key);
-           
-            thingDataStreamIndex.put(assocKey, Boolean.TRUE);
-        }
+        var assocKey = new MVDataStreamThingKey(dsInfo.getThingID(), key);
+        thingDataStreamsIndex.put(assocKey, Boolean.TRUE);
+        dataStreamThingIndex.put(assocKey.dataStreamID, assocKey.thingID);
     }
 
 
@@ -141,7 +153,7 @@ class STADataStreamStoreImpl implements IDataStreamStore
             try
             {
                 DataStreamInfo oldValue = delegateStore.remove(key);
-                removeThingAssoc((Long)key, oldValue);
+                removeThingAssoc((Long)key);
                 return oldValue;
             }
             catch (Exception e)
@@ -153,16 +165,18 @@ class STADataStreamStoreImpl implements IDataStreamStore
     }
     
     
-    protected void removeThingAssoc(Long key, DataStreamInfo dsInfo)
+    void removeThingAssoc(Long key)
     {
-        if (dsInfo instanceof STADataStream)
-        {
-            var assocKey = new MVDataStreamThingKey(
-               ((STADataStream) dsInfo).getThingID(),
-               key);
-           
-            thingDataStreamIndex.remove(assocKey, Boolean.TRUE);
-        }
+        long thingID = dataStreamThingIndex.remove(key);
+        var assocKey = new MVDataStreamThingKey(thingID, key);
+        thingDataStreamsIndex.remove(assocKey);        
+    }
+
+
+    @Override
+    public Long getAssociatedThing(long dataStreamID)
+    {
+        return dataStreamThingIndex.get(dataStreamID);
     }
     
     
@@ -170,7 +184,7 @@ class STADataStreamStoreImpl implements IDataStreamStore
     {
         MVDataStreamThingKey first = new MVDataStreamThingKey(thingID, 0);
         MVDataStreamThingKey last = new MVDataStreamThingKey(thingID, Long.MAX_VALUE);
-        var cursor = new RangeCursor<>(thingDataStreamIndex, first, last);        
+        var cursor = new RangeCursor<>(thingDataStreamsIndex, first, last);        
         return cursor.keyStream()
             .map(k -> k.dataStreamID);
     }

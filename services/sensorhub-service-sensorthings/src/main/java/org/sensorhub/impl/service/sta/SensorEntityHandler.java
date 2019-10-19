@@ -15,7 +15,6 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sta;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.stream.Collectors;
 import org.isotc211.v2005.gmd.CIOnlineResource;
 import org.isotc211.v2005.gmd.impl.GMDFactory;
@@ -61,7 +60,9 @@ import net.opengis.sensorml.v20.DocumentList;
 public class SensorEntityHandler implements IResourceHandler<Sensor>
 {
     static final String NOT_FOUND_MESSAGE = "Cannot find 'Sensor' entity with ID #";
+    static final String NOT_WRITABLE_MESSAGE = "Cannot modify read-only 'Sensor' entity #";
     static final String MISSING_ASSOC = "Missing reference to 'Sensor' entity";
+    static final String FORMAT_SML2 = "vhttp://www.opengis.net/sensorml-json/2.0";
     
     OSHPersistenceManager pm;
     IProcedureDescriptionStore procReadStore;
@@ -86,8 +87,8 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     @Override
     public ResourceId create(@SuppressWarnings("rawtypes") Entity entity) throws NoSuchEntityException
     {
+        Asserts.checkArgument(entity instanceof Sensor);        
         securityHandler.checkPermission(securityHandler.sta_insert_sensor);
-        Asserts.checkArgument(entity instanceof Sensor);
         Sensor sensor = (Sensor)entity;
         
         // generate unique ID from name
@@ -109,19 +110,18 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 sensorID = key.getInternalID();
             }
             
-            /*// parse attached data streams if any
-            for (Datastream ds: sensor.getDatastreams())
-                pm.dataStreamHandler.addDatastream(sensorID, proxy, ds);
-            for (MultiDatastream ds: sensor.getMultiDatastreams())
-                pm.dataStreamHandler.addDatastream(sensorID, proxy, ds);*/
-            
             // register new sensor
             FeatureId procID = pm.procRegistry.register(proxy);
-            return new ResourceId(procID.getInternalID());
+            ResourceId newSensorId = new ResourceId(procID.getInternalID());
+            
+            // handle associations / deep inserts
+            pm.dataStreamHandler.handleDatastreamAssocList(newSensorId, sensor);
+            
+            return newSensorId;
         }
         catch (Exception e)
         {
-            throw new IllegalArgumentException("Sensor with name " + sensor.getName() + " already exists");
+            throw new IllegalArgumentException("Sensor with name '" + sensor.getName() + "' already exists");
         }        
     }
     
@@ -131,9 +131,11 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     {
         Asserts.checkArgument(entity instanceof Sensor);
         securityHandler.checkPermission(securityHandler.sta_update_sensor);
+        Sensor sensor = (Sensor)entity;
         
         // retrieve existing proxy from registry
         ResourceId id = (ResourceId)entity.getId();
+        checkProcedureWritable(id.internalID);
         VirtualSensorProxy proxy = getProcedureProxy(id.internalID);
         
         // update description
@@ -141,7 +143,12 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         
         // also update in datastore
         if (procWriteStore != null)
+        {
             procWriteStore.addVersion(proxy.getCurrentDescription());
+            
+            // handle associations / deep inserts
+            pm.dataStreamHandler.handleDatastreamAssocList(id, sensor);
+        }
         
         return true;
     }
@@ -159,6 +166,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         securityHandler.checkPermission(securityHandler.sta_delete_sensor);
         
         // retrieve existing proxy from registry
+        checkProcedureWritable(id.internalID);
         VirtualSensorProxy proc = getProcedureProxy(id.internalID);
                 
         // remove from registry
@@ -168,8 +176,9 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         if (procWriteStore != null)
         {
             FeatureKey procKey = procWriteStore.remove(proc.getUniqueIdentifier());
-            federatedDatabase.getObservationStore().getDataStreams().removeEntries(new DataStreamFilter.Builder()
+            pm.database.getObservationStore().getDataStreams().removeEntries(new DataStreamFilter.Builder()
                 .withProcedures(procKey.getInternalID())
+                .withAllVersions()
                 .build());
         }
         
@@ -183,7 +192,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         securityHandler.checkPermission(securityHandler.sta_read_sensor);
         
         var key = FeatureKey.latest(id.internalID);
-        AbstractProcess proc = procReadStore.get(key);
+        var proc = isSensorVisible(key) ? procReadStore.get(key) : null;
         
         if (proc == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
@@ -202,6 +211,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
         
         var entitySet = procReadStore.selectEntries(filter)
+            .filter(e -> isSensorVisible(e.getKey()))
             //.peek(e -> System.out.println(e.getValue().getUniqueIdentifier() + ": " + e.getValue().getValidTime()))
             .skip(skip)
             .limit(limit+1) // request limit+1 elements to handle paging
@@ -234,8 +244,9 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
             }
             else if (idElt.getEntityType() == EntityType.OBSERVATION)
             {
-                ObsResourceId obsId = (ObsResourceId)idElt.getId();
-                DataStreamInfo dsInfo = federatedDatabase.getObservationStore().getDataStreams().get(obsId.dataStreamID);
+                CompositeResourceId obsId = (CompositeResourceId)idElt.getId();
+                long dataStreamID = obsId.parentIDs[0];
+                DataStreamInfo dsInfo = federatedDatabase.getObservationStore().getDataStreams().get(dataStreamID);
                 builder.withInternalIDs(dsInfo.getProcedure().getInternalID());
             }
         }
@@ -309,13 +320,13 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
             metadata.validTimeBegin = validPeriod.lowerEndpoint();
             metadata.validTimeEnd = validPeriod.hasUpperBound() ? validPeriod.upperEndpoint() : Instant.now();
             sensor.setMetadata(metadata);
+            sensor.setEncodingType(FORMAT_SML2);
         }
         
         // expand navigation links
-        List<Expand> expand = q.getExpand();
-        if (!expand.isEmpty())
+        if (q != null && q.getExpand() != null)
         {
-            for (Expand exp: expand)
+            for (Expand exp: q.getExpand())
             {
                 NavigationProperty prop = exp.getPath().get(0);
                 if (prop == NavigationProperty.DATASTREAMS)
@@ -338,14 +349,14 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     }
     
     
-    protected VirtualSensorProxy getProcedureProxy(long internalID) throws NoSuchEntityException
+    protected VirtualSensorProxy getProcedureProxy(long publicID) throws NoSuchEntityException
     {
-        Asserts.checkArgument(internalID > 0, "IDs must be > 0");
+        Asserts.checkArgument(publicID > 0, "IDs must be > 0");
         
-        var key = new FeatureKey(internalID);        
+        var key = new FeatureKey(publicID);        
         var procID = procReadStore.getFeatureID(key);
         if (procID == null)
-            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + internalID);
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
         
         return getProcedureProxy(procID.getUniqueID());
     }
@@ -396,11 +407,35 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     }
     
     
-    protected void checkSensorID(long sensorID) throws NoSuchEntityException
+    /*
+     * Check that sensorID is present in database and exposed by service
+     */
+    protected void checkSensorID(long publicID) throws NoSuchEntityException
     {
-        boolean hasSensor = procReadStore.containsKey(new FeatureKey(sensorID));        
+        var key = new FeatureKey(publicID);
+        boolean hasSensor = procReadStore.containsKey(key) && isSensorVisible(key);
         if (!hasSensor)
-            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + sensorID);
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
+    }
+    
+    
+    protected boolean isSensorVisible(FeatureId fid)
+    {
+        long publicID = fid.getInternalID();
+        
+        // TODO also check that current user has the right to read this procedure!
+        
+        return pm.obsDbRegistry.getDatabaseID(publicID) == pm.database.getDatabaseID() ||
+            pm.service.isProcedureExposed(fid);
+    }
+    
+    
+    protected void checkProcedureWritable(long publicID)
+    {
+        // TODO also check that current user has the right to write this procedure!
+        
+        if (!(pm.obsDbRegistry.getDatabaseID(publicID) == pm.database.getDatabaseID()))
+            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
     }
 
 }

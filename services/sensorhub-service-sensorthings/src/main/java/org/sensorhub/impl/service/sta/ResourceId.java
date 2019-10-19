@@ -48,8 +48,8 @@ public class ResourceId implements Id
     
     public ResourceId(String idString)
     {
-        this.internalID = Long.parseLong(idString);        
-        Asserts.checkArgument(internalID > 0, BAD_ID_MSG);        
+        this.internalID = Long.parseLong(idString);
+        Asserts.checkArgument(internalID > 0, BAD_ID_MSG);
     }
     
     

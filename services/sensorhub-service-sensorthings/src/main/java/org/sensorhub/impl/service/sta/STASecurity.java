@@ -14,6 +14,7 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
+import java.security.AccessControlException;
 import org.sensorhub.api.security.IPermission;
 import org.sensorhub.impl.module.ModuleSecurity;
 import org.sensorhub.impl.security.ItemPermission;
@@ -24,6 +25,7 @@ public class STASecurity extends ModuleSecurity
 {    
     private static final String LABEL_THING = "Things";
     private static final String LABEL_SENSOR = "Sensors";
+    private static final String LABEL_OBSPROP = "Observed Properties";
     private static final String LABEL_DATASTREAM = "Datastreams";
     private static final String LABEL_FOI = "Features of Interest";
     private static final String LABEL_OBS = "Observations";
@@ -32,6 +34,7 @@ public class STASecurity extends ModuleSecurity
     final IPermission sta_read;
     final IPermission sta_read_thing;
     final IPermission sta_read_sensor;
+    final IPermission sta_read_obsprop;
     final IPermission sta_read_datastream;
     final IPermission sta_read_foi;
     final IPermission sta_read_obs;
@@ -39,6 +42,7 @@ public class STASecurity extends ModuleSecurity
     final IPermission sta_insert;
     final IPermission sta_insert_thing;
     final IPermission sta_insert_sensor;
+    final IPermission sta_insert_obsprop;
     final IPermission sta_insert_datastream;
     final IPermission sta_insert_foi;
     final IPermission sta_insert_obs;
@@ -46,6 +50,7 @@ public class STASecurity extends ModuleSecurity
     final IPermission sta_update;
     final IPermission sta_update_thing;
     final IPermission sta_update_sensor;
+    final IPermission sta_update_obsprop;
     final IPermission sta_update_datastream;
     final IPermission sta_update_foi;
     final IPermission sta_update_obs;
@@ -53,28 +58,33 @@ public class STASecurity extends ModuleSecurity
     final IPermission sta_delete;
     final IPermission sta_delete_thing;
     final IPermission sta_delete_sensor;
+    final IPermission sta_delete_obsprop;
     final IPermission sta_delete_datastream;
     final IPermission sta_delete_foi;
     final IPermission sta_delete_obs;
-    final IPermission sta_delete_location;
+    final IPermission sta_delete_location;    
+
+    ThreadLocal<Exception> authError = new ThreadLocal<>();
     
     
     public STASecurity(STAService service, boolean enable)
     {
-        super(service, "STA", enable);
+        super(service, "sta", enable);
         
         // register permission structure
         sta_read = new ItemPermission(rootPerm, "get");
         sta_read_thing = new ItemPermission(sta_read, "thing", LABEL_THING);
         sta_read_sensor = new ItemPermission(sta_read, "sensor", LABEL_SENSOR);
+        sta_read_obsprop = new ItemPermission(sta_read, "obsprop", LABEL_OBSPROP);
         sta_read_datastream = new ItemPermission(sta_read, "datastream", LABEL_DATASTREAM);
         sta_read_foi = new ItemPermission(sta_read, "foi", LABEL_FOI);
         sta_read_obs = new ItemPermission(sta_read, "obs", LABEL_OBS);
         sta_read_location = new ItemPermission(sta_read, "location", LABEL_LOCATION);
         
-        sta_insert = new ItemPermission(rootPerm, "insert");
+        sta_insert = new ItemPermission(rootPerm, "create");
         sta_insert_thing = new ItemPermission(sta_insert, "thing", LABEL_THING);
         sta_insert_sensor = new ItemPermission(sta_insert, "sensor", LABEL_SENSOR);
+        sta_insert_obsprop = new ItemPermission(sta_insert, "obsprop", LABEL_OBSPROP);
         sta_insert_datastream = new ItemPermission(sta_insert, "datastream", LABEL_DATASTREAM);
         sta_insert_foi = new ItemPermission(sta_insert, "foi", LABEL_FOI);
         sta_insert_obs = new ItemPermission(sta_insert, "obs", LABEL_OBS);
@@ -83,6 +93,7 @@ public class STASecurity extends ModuleSecurity
         sta_update = new ItemPermission(rootPerm, "update");
         sta_update_thing = new ItemPermission(sta_update, "thing", LABEL_THING);
         sta_update_sensor = new ItemPermission(sta_update, "sensor", LABEL_SENSOR);
+        sta_update_obsprop = new ItemPermission(sta_update, "obsprop", LABEL_OBSPROP);
         sta_update_datastream = new ItemPermission(sta_update, "datastream", LABEL_DATASTREAM);
         sta_update_foi = new ItemPermission(sta_update, "foi", LABEL_FOI);
         sta_update_obs = new ItemPermission(sta_update, "obs", LABEL_OBS);
@@ -91,6 +102,7 @@ public class STASecurity extends ModuleSecurity
         sta_delete = new ItemPermission(rootPerm, "delete");
         sta_delete_thing = new ItemPermission(sta_delete, "thing", LABEL_THING);
         sta_delete_sensor = new ItemPermission(sta_delete, "sensor", LABEL_SENSOR);
+        sta_delete_obsprop = new ItemPermission(sta_delete, "obsprop", LABEL_OBSPROP);
         sta_delete_datastream = new ItemPermission(sta_delete, "datastream", LABEL_DATASTREAM);
         sta_delete_foi = new ItemPermission(sta_delete, "foi", LABEL_FOI);
         sta_delete_obs = new ItemPermission(sta_delete, "obs", LABEL_OBS);
@@ -107,6 +119,30 @@ public class STASecurity extends ModuleSecurity
         
         // register permission tree
         service.getParentHub().getSecurityManager().registerModulePermissions(rootPerm);
+    }
+    
+    
+    @Override
+    public void checkPermission(IPermission perm)
+    {
+        try
+        {
+            authError.set(null);
+            super.checkPermission(perm);
+        }
+        catch (AccessControlException e)
+        {
+            authError.set(e);
+            throw e;
+        }
+    }
+    
+    
+    public Exception getPermissionError()
+    {
+        Exception e = authError.get();
+        authError.set(null);
+        return e;
     }
     
     

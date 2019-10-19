@@ -14,8 +14,8 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import org.joda.time.DateTimeZone;
 import org.sensorhub.api.datastore.DataStreamInfo;
@@ -26,6 +26,9 @@ import org.sensorhub.api.datastore.ObsFilter;
 import org.sensorhub.api.datastore.ObsKey;
 import org.sensorhub.impl.sensor.VirtualSensorProxy;
 import org.vast.data.DataBlockDouble;
+import org.vast.data.DataBlockInt;
+import org.vast.data.DataBlockLong;
+import org.vast.data.DataBlockString;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
 import de.fraunhofer.iosb.ilt.frostserver.model.Datastream;
@@ -92,7 +95,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         
         // prepare obs key fields and obs data
         ResourceId dsId = (ResourceId)dataStream.getId();
-        Instant phenomenonTime = Instant.parse(obs.getPhenomenonTime().asISO8601());
+        Instant phenomenonTime = Instant.parse(obs.getPhenomenonTime().asISO8601()).truncatedTo(ChronoUnit.MILLIS);
         FeatureId foi = ObsKey.NO_FOI;
         if (obs.getFeatureOfInterest() != null)
         {
@@ -107,6 +110,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         ObsData obsData = toObsData(obs);
         
         // push obs to proxy
+        pm.sensorHandler.checkProcedureWritable(dsInfo.getProcedure().getInternalID());
         VirtualSensorProxy proxy = pm.sensorHandler.getProcedureProxy(dsInfo.getProcedure().getUniqueID());
         //proxy.publishNewRecord(dsInfo.getOutputName(), obsData.getResult());
         
@@ -118,7 +122,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         }
         
         // generate datastream ID
-        return new ObsResourceId(dsId.internalID, foi.getInternalID(), phenomenonTime.toEpochMilli());
+        return new CompositeResourceId(dsId.internalID, foi.getInternalID(), phenomenonTime.toEpochMilli());
     }
     
 
@@ -139,11 +143,12 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     
     public boolean delete(ResourceId id) throws NoSuchEntityException
     {
-        securityHandler.checkPermission(securityHandler.sta_delete_obs);
+        securityHandler.checkPermission(securityHandler.sta_delete_obs);        
+        CompositeResourceId obsId = checkResourceId(id);
         
         if (obsWriteStore != null)
         {
-            ObsData obs = obsWriteStore.remove(toLocalKey(id));
+            ObsData obs = obsWriteStore.remove(toLocalKey(obsId));
             if (obs == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
             
@@ -157,41 +162,15 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     @Override
     public Observation getById(ResourceId id, Query q) throws NoSuchEntityException
     {
-        securityHandler.checkPermission(securityHandler.sta_read_obs);
-                
-        ObsKey key = toPublicKey(id);
+        securityHandler.checkPermission(securityHandler.sta_read_obs);        
+        CompositeResourceId obsId = checkResourceId(id);
+        
+        ObsKey key = toPublicKey(obsId);
         ObsData obs = obsReadStore.get(key);
         if (obs == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
         
         return toFrostObservation(key, obs, q);
-    }
-    
-    
-    /*
-     * Create a local DB obs key from the entity ID
-     */
-    protected ObsKey toLocalKey(ResourceId id)
-    {
-        ObsResourceId obsId = (ObsResourceId)id;        
-        return new ObsKey(
-            pm.toLocalID(obsId.dataStreamID),
-            new FeatureId(pm.toLocalID(obsId.foiID)),
-            Instant.ofEpochMilli(id.internalID));
-    }
-    
-    
-    /*
-     * Create a public obs key from the entity ID
-     */
-    protected ObsKey toPublicKey(ResourceId id)
-    {
-        ObsResourceId obsId = (ObsResourceId)id;
-        
-        return new ObsKey(
-            obsId.dataStreamID,
-            new FeatureId(obsId.foiID),
-            Instant.ofEpochMilli(id.internalID));
     }
     
 
@@ -244,12 +223,76 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     }
     
     
+    protected CompositeResourceId checkResourceId(ResourceId id) throws NoSuchEntityException
+    {
+        if (!(id instanceof CompositeResourceId) ||
+            ((CompositeResourceId)id).parentIDs.length != 2 ||
+            ((CompositeResourceId)id).parentIDs[0] <= 0)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
+        
+        return (CompositeResourceId)id;
+    }
+    
+    
+    /*
+     * Create a local DB obs key from the entity ID
+     */
+    protected ObsKey toLocalKey(CompositeResourceId obsId)
+    {
+        long dataStreamID = obsId.parentIDs[0];
+        long foiID = obsId.parentIDs[1];
+        
+        return new ObsKey(
+            pm.toLocalID(dataStreamID),
+            new FeatureId(pm.toLocalID(foiID)),
+            Instant.ofEpochMilli(obsId.internalID));
+    }
+    
+    
+    /*
+     * Create a public obs key from the entity ID
+     */
+    protected ObsKey toPublicKey(CompositeResourceId obsId)
+    {
+        long dataStreamID = obsId.parentIDs[0];
+        long foiID = obsId.parentIDs[1];
+        
+        return new ObsKey(
+            dataStreamID,
+            new FeatureId(foiID),
+            Instant.ofEpochMilli(obsId.internalID));
+    }
+    
+    
     protected ObsData toObsData(Observation obs)
     {
-        double val = ((BigDecimal)obs.getResult()).doubleValue();
-        DataBlockDouble result = new DataBlockDouble(1);
-        result.setDoubleValue(val);        
-        return new ObsData(result);
+        Object result = obs.getResult();
+        DataBlock dataBlk;
+        
+        if (result instanceof Integer)
+        {
+            dataBlk = new DataBlockInt(1);
+            dataBlk.setIntValue((Integer)result);        
+        }
+        else if (result instanceof Long)
+        {
+            dataBlk = new DataBlockLong(1);
+            dataBlk.setLongValue((Long)result);        
+        }
+        else if (result instanceof Number)
+        {
+            dataBlk = new DataBlockDouble(1);
+            dataBlk.setDoubleValue(((Number)result).doubleValue());        
+        }
+        else if (result instanceof String)
+        {
+            dataBlk = new DataBlockString();
+            dataBlk.setStringValue((String)result);
+        }
+        else
+            throw new IllegalArgumentException("Unsupported result type: " + result.getClass().getSimpleName());
+        
+        return new ObsData(dataBlk);
     }
     
     
@@ -264,7 +307,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         Observation obs = new Observation();
         
         // composite ID
-        obs.setId(new ObsResourceId(
+        obs.setId(new CompositeResourceId(
             key.getDataStreamID(),
             key.getFoiID().getInternalID(),
             key.getPhenomenonTime().toEpochMilli()));
@@ -279,7 +322,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             obs.setResultTime(TimeInstant.create(key.getResultTime().toEpochMilli(), DateTimeZone.UTC));
         
         // FOI
-        if (!ObsKey.NO_FOI.equals(key.getFoiID()))
+        if (key.getFoiID().getInternalID() != 0)
         {
             FeatureOfInterest foi = new FeatureOfInterest(new ResourceId(key.getFoiID().getInternalID()));
             foi.setExportObject(false);
@@ -287,13 +330,15 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         }
         
         // result
+        boolean isExternalDatastream = pm.obsDbRegistry.getDatabaseID(key.getDataStreamID()) != pm.database.getDatabaseID();
         DataBlock data = obsData.getResult();
-        if (data.getAtomCount() == 2)
+        if ((isExternalDatastream && data.getAtomCount() == 2) || data.getAtomCount() == 1)
         {
+            int resultValueIdx = isExternalDatastream ? 1 : 0;
             Datastream ds = new Datastream(new ResourceId(key.getDataStreamID()));
             ds.setExportObject(false);
-            obs.setDatastream(ds);
-            obs.setResult(getResultValue(data, 1));
+            obs.setDatastream(ds);            
+            obs.setResult(getResultValue(data, resultValueIdx));
         }
         else
         {
@@ -336,5 +381,37 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
                 return null;
         }
     }
+    
+    
+    protected void handleObservationAssocList(ResourceId dataStreamId, AbstractDatastream<?> dataStream) throws NoSuchEntityException
+    {
+        if (dataStream.getObservations() == null)
+            return;
+        
+        boolean isMultiDatastream = dataStream instanceof MultiDatastream;
+        
+        for (Observation obs: dataStream.getObservations())
+        {        
+            if (obs.getResult() != null)
+            {
+                // also set/override mandatory datastream ID
+                if (isMultiDatastream)
+                    obs.setMultiDatastream(new MultiDatastream(dataStreamId));
+                else
+                    obs.setDatastream(new Datastream(dataStreamId));
+                
+                create(obs);
+            }
+        }
+    }
+    
+    
+    /*protected boolean isObservationVisible(ObsKey publicKey)
+    {
+        // TODO also check that current user has the right to read this entity!
+        
+        return pm.obsDbRegistry.getDatabaseID(publicKey.getDataStreamID()) == pm.database.getDatabaseID() ||
+            pm.service.isProcedureExposed(fid);
+    }*/
 
 }

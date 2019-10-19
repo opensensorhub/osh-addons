@@ -33,9 +33,19 @@ import org.sensorhub.impl.service.ogc.OGCServiceConfig.CapabilitiesInfo;
  */
 public class STAServiceConfig extends ServiceConfig
 {
+    public static class HubThingInfo
+    {
+        public String name = "SensorHub Node";
+        public String description = "The local sensor hub and its sensors";
+    }
+    
     
     @DisplayInfo(label="Service Information", desc="Information included in the service metadata document")
     public CapabilitiesInfo ogcCapabilitiesInfo = new CapabilitiesInfo();
+    
+    
+    @DisplayInfo(label="Hub Thing Info", desc="Information used to generate a Thing that represents the local sensor hub")
+    public HubThingInfo hubThing = new HubThingInfo();
     
     
     @DisplayInfo(desc="Set to true to enable transactional operations support")

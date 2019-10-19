@@ -14,13 +14,11 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import java.time.Instant;
 import java.util.Set;
-import javax.xml.namespace.QName;
+import java.util.concurrent.Callable;
 import org.h2.mvstore.MVStore;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.datastore.FeatureKey;
-import org.sensorhub.api.datastore.IDataStreamStore;
 import org.sensorhub.api.datastore.IDatabaseRegistry;
 import org.sensorhub.api.datastore.IFeatureStore;
 import org.sensorhub.api.datastore.IFoiStore;
@@ -32,7 +30,6 @@ import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
 import org.sensorhub.impl.datastore.h2.MVFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVHistoricalObsDatabase;
 import org.vast.ogc.gml.GenericFeature;
-import org.vast.ogc.gml.GenericFeatureImpl;
 import com.google.common.collect.Sets;
 
 
@@ -52,8 +49,7 @@ public class STADatabase implements ISTADatabase
     final static String THING_STORE_NAME = "thing_store";
     final static String LOCATION_STORE_NAME = "location_store";
     final static String OBS_PROP_STORE_NAME = "obsprop_store";
-    final static long HUB_THING_ID = 1;
-    
+        
     STAService service;
     STADatabaseConfig config;
     MVStore mvStore;
@@ -63,6 +59,7 @@ public class STADatabase implements ISTADatabase
     STALocationStoreImpl locationStore;
     STAObsPropStoreImpl obsPropStore;
     STADataStreamStoreImpl dataStreamStore;
+    boolean externalObsDatabaseUsed;
     
     
     STADatabase(STAService service, STADatabaseConfig config)
@@ -84,11 +81,13 @@ public class STADatabase implements ISTADatabase
                 ((MVHistoricalObsDatabase)obsDatabase).init(config);
                 ((MVHistoricalObsDatabase)obsDatabase).start();
                 mvStore = ((MVHistoricalObsDatabase)obsDatabase).getMVStore();
+                externalObsDatabaseUsed = false;
             }
             else
             {
                 // get database module used for writing obs/sensor/datastream/obs/foi entities
-                obsDatabase = (IHistoricalObsDatabase)service.getParentHub().getModuleRegistry().getModuleById(config.externalObsDatabaseID);                
+                obsDatabase = (IHistoricalObsDatabase)service.getParentHub().getModuleRegistry().getModuleById(config.externalObsDatabaseID);
+                externalObsDatabaseUsed = true;
             }
         }
         catch (SensorHubException e)
@@ -102,7 +101,7 @@ public class STADatabase implements ISTADatabase
         dbRegistry.register(wildcardUID, obsDatabase);
         
         // create separate MV Store if an external obs database is used
-        if (mvStore == null)
+        if (externalObsDatabaseUsed)
             mvStore = initMVStore();
         
         // open thing data store
@@ -133,19 +132,11 @@ public class STADatabase implements ISTADatabase
                 .build());
         }
         else
-            obsPropStore = STAObsPropStoreImpl.open(this, THING_STORE_NAME);
+            obsPropStore = STAObsPropStoreImpl.open(this, OBS_PROP_STORE_NAME);
 
         // init datastream store wrapper
         this.dataStreamStore = new STADataStreamStoreImpl(this,
             obsDatabase.getObservationStore().getDataStreams());
-                
-        // load default hub thing
-        String uid = service.getProcedureGroupUID() + "thing:hub";
-        GenericFeature hubThing = new GenericFeatureImpl(new QName("Thing"));
-        hubThing.setUniqueIdentifier(uid);
-        hubThing.setName("SensorHub Node");
-        hubThing.setDescription("All sensors connected to this SensorHub");
-        thingStore.put(new FeatureKey(1, uid, Instant.EPOCH), hubThing);
     }
     
     
@@ -166,6 +157,28 @@ public class STADatabase implements ISTADatabase
         mvStore.setVersionsToKeep(0);
         
         return mvStore;
+    }
+    
+    
+    public <T> T executeTransaction(Callable<T> transaction) throws Exception
+    {
+        synchronized (mvStore)
+        {
+            long currentVersion = mvStore.getCurrentVersion();
+            
+            try
+            {
+                if (externalObsDatabaseUsed)
+                    return obsDatabase.executeTransaction(transaction);
+                else                
+                    return transaction.call();
+            }
+            catch (Exception e)
+            {
+                mvStore.rollbackTo(currentVersion);
+                throw e;
+            }
+        }
     }
     
     
@@ -195,7 +208,7 @@ public class STADatabase implements ISTADatabase
     }
 
 
-    public IDataStreamStore getDataStreamStore()
+    public ISTADataStreamStore getDataStreamStore()
     {
         return dataStreamStore;
     }
@@ -231,7 +244,7 @@ public class STADatabase implements ISTADatabase
 
 
     @Override
-    public IFeatureStore<FeatureKey, ObservedProperty> getObservedPropertyDataStore()
+    public IFeatureStore<FeatureKey, ObsPropDef> getObservedPropertyDataStore()
     {
         return obsPropStore;
     }

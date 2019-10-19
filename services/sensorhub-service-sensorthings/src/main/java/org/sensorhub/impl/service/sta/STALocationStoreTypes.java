@@ -20,6 +20,7 @@ import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.WriteBuffer;
 import org.h2.mvstore.type.DataType;
 import org.sensorhub.impl.datastore.h2.H2Utils;
+import org.sensorhub.impl.service.sta.ILocationStore.IHistoricalLocation;
 
 
 /**
@@ -33,11 +34,11 @@ import org.sensorhub.impl.datastore.h2.H2Utils;
 class STALocationStoreTypes
 {
     
-    static class MVThingLocationKey
+    static class MVThingLocationKey implements IHistoricalLocation
     {
         long thingID;
         long locationID;
-        Instant time;
+        Instant time;        
         
         MVThingLocationKey(long thingID, long locationID)
         {
@@ -50,6 +51,18 @@ class STALocationStoreTypes
             this.thingID = thingID;
             this.locationID = locationID;
             this.time = time;
+        }
+
+        @Override
+        public long getThingID()
+        {
+            return thingID;
+        }
+
+        @Override
+        public Instant getTime()
+        {
+            return time;
         }
     }
     

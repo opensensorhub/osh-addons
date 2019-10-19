@@ -71,12 +71,13 @@ import net.opengis.swe.v20.Vector;
 public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastream>
 {
     static final String NOT_FOUND_MESSAGE = "Cannot find 'Datastream' entity with ID #";
+    static final String MISSING_ASSOC = "Missing reference to 'Datastream' entity";
     static final String UCUM_URI_PREFIX = "http://unitsofmeasure.org/ucum.html#";
     static final String BAD_LINK_THING = "A new Datastream SHALL link to an Thing entity";
         
     OSHPersistenceManager pm;
     IDataStreamStore dataStreamReadStore;
-    IDataStreamStore dataStreamWriteStore;
+    ISTADataStreamStore dataStreamWriteStore;
     STASecurity securityHandler;
     int maxPageSize = 100;
     
@@ -98,20 +99,22 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         Asserts.checkArgument(entity instanceof AbstractDatastream);
         AbstractDatastream<?> dataStream = (AbstractDatastream<?>)entity;
         
-        // check thing and sensor associations
+        // handle associations / deep inserts
         ResourceId thingId = pm.thingHandler.handleThingAssoc(dataStream.getThing());
         ResourceId sensorId = pm.sensorHandler.handleSensorAssoc(dataStream.getSensor());
+        if (dataStream instanceof Datastream)
+            pm.obsPropHandler.handleObsPropertyAssoc(((Datastream)dataStream).getObservedProperty());
         
         // retrieve sensor proxy
+        pm.sensorHandler.checkProcedureWritable(sensorId.internalID);
         VirtualSensorProxy sensorProxy = tryGetProcedureProxy(sensorId.internalID);
         
         // add data stream
-        Long key = addDatastream(thingId.internalID, sensorId.internalID, sensorProxy, dataStream);
-        return new ResourceId(key);
+        return addDatastream(thingId.internalID, sensorId.internalID, sensorProxy, dataStream);
     }
     
     
-    protected Long addDatastream(long thingID, long sensorID, VirtualSensorProxy sensorProxy, AbstractDatastream dataStream)
+    protected ResourceId addDatastream(long thingID, long sensorID, VirtualSensorProxy sensorProxy, AbstractDatastream<?> dataStream) throws NoSuchEntityException
     {
         // add output to virtual sensor in registry
         DataRecord recordStruct = toSweCommon(dataStream);
@@ -119,7 +122,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         
         if (dataStreamWriteStore != null)
         {
-            // also create data stream entry in database
+            // create data stream object
             DataStreamInfo dsInfo = new STADataStream.Builder()
                 .withThing(thingID)
                 .withProcedure(new FeatureId(
@@ -129,12 +132,23 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 .withRecordEncoding(new TextEncodingImpl())
                 .build();
             
-            dataStreamWriteStore.add(dsInfo);
+            // add to database and get its public ID
+            Long newId = dataStreamWriteStore.add(dsInfo);
+            ResourceId newDsId = new ResourceId(pm.toPublicID(newId));
+            
+            // handle associations / deep inserts            
+            pm.observationHandler.handleObservationAssocList(newDsId, dataStream);
+            return newDsId;
         }
-        
-        return dataStreamReadStore.getLatestVersionKey(
-            sensorProxy.getUniqueIdentifier(),
-            recordStruct.getName());
+        else
+        {        
+            // otherwise just get the datastream as exposed by procedure registry
+            long publicID = dataStreamReadStore.getLatestVersionKey(
+                sensorProxy.getUniqueIdentifier(),
+                recordStruct.getName());
+            
+            return new ResourceId(publicID);
+        }
     }
     
 
@@ -153,14 +167,15 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + dsId);
         
         // get sensor proxy from registry
-        long sensorId = oldDsInfo.getProcedure().getInternalID();
-        VirtualSensorProxy sensorProxy = tryGetProcedureProxy(sensorId);
+        long procID = oldDsInfo.getProcedure().getInternalID();
+        pm.sensorHandler.checkProcedureWritable(procID);
+        VirtualSensorProxy sensorProxy = tryGetProcedureProxy(procID);
         DataRecord newRecordStruct = toSweCommon(dataStream);
         
         if (dataStreamWriteStore != null)
         {
             // store new data stream version
-            DataStreamInfo dsInfo = DataStreamInfo.builder()
+            DataStreamInfo dsInfo = new DataStreamInfo.Builder()
                 .withProcedure(oldDsInfo.getProcedure())
                 .withRecordDescription(newRecordStruct)
                 .withRecordEncoding(oldDsInfo.getRecommendedEncoding())
@@ -275,8 +290,8 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             }
             else if (idElt.getEntityType() == EntityType.OBSERVATION)
             {
-                ObsResourceId obsId = (ObsResourceId)idElt.getId();
-                builder.withInternalIDs(obsId.dataStreamID);
+                CompositeResourceId obsId = (CompositeResourceId)idElt.getId();
+                builder.withInternalIDs(obsId.parentIDs[0]);
             }
         }
         
@@ -380,22 +395,25 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     }
     
     
-    protected AbstractDatastream toFrostDatastream(Long internalID, DataStreamInfo dsInfo, Query q)
+    protected AbstractDatastream toFrostDatastream(Long publicID, DataStreamInfo dsInfo, Query q)
     {
         AbstractDatastream dataStream;
         Set<Property> select = q != null ? q.getSelect() : Collections.emptySet();
+        boolean isExternalDatastream = pm.obsDbRegistry.getDatabaseID(publicID) != pm.database.getDatabaseID();
         
         // convert to simple or multi datastream
         DataComponent rec = dsInfo.getRecordDescription();
         if (isScalarOutput(rec))
         {
             Datastream simpleDs = new Datastream();
-            DataComponent comp = rec.getComponent(1);            
+            DataComponent comp = rec.getComponent(1);
             simpleDs.setObservationType(toObsType(comp));
             simpleDs.setUnitOfMeasurement(toUom(comp));
             if (select.isEmpty() || select.contains(NavigationProperty.OBSERVEDPROPERTY))
                 simpleDs.setObservedProperty(toObservedProperty(comp, Collections.emptySet()));            
             dataStream = simpleDs;
+            if (!isExternalDatastream)
+                simpleDs.getObservedProperty().setExportObject(false);
         }
         else
         {
@@ -403,16 +421,20 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             multiDs.setObservationType(IObservation.OBS_TYPE_RECORD);
             visitComponent(rec, multiDs, select.isEmpty() || select.contains(NavigationProperty.OBSERVEDPROPERTIES));
             dataStream = multiDs;
+            if (!isExternalDatastream)
+                multiDs.getObservedProperties().setExportObject(false);
         }
         
         // common properties
-        dataStream.setId(new ResourceId(internalID));
+        dataStream.setId(new ResourceId(publicID));
         dataStream.setName(rec.getLabel() != null ? 
             rec.getLabel() : StringUtils.capitalize(rec.getName()));
         dataStream.setDescription(rec.getDescription());
         
         // link to Thing
-        long thingID =  dsInfo instanceof STADataStream ? ((STADataStream)dsInfo).getThingID() : STADatabase.HUB_THING_ID;      
+        long thingID =  isExternalDatastream ? 
+            STAService.HUB_THING_ID :
+            dataStreamWriteStore.getAssociatedThing(pm.toLocalID(publicID));
         Thing thing = new Thing(new ResourceId(thingID));
         thing.setExportObject(false);
         dataStream.setThing(thing);
@@ -511,6 +533,92 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         }
         
         return uom;
+    }
+    
+    
+    protected ResourceId handleDatastreamAssoc(AbstractDatastream ds) throws NoSuchEntityException
+    {
+        Asserts.checkArgument(ds != null, MISSING_ASSOC);
+        ResourceId dsId;        
+                
+        if (ds.getName() == null)
+        {
+            dsId = (ResourceId)ds.getId();
+            Asserts.checkArgument(dsId != null, MISSING_ASSOC);
+            checkDatastreamID(dsId.internalID);
+        }
+        else
+        {
+            // deep insert
+            dsId = create(ds);
+        }
+        
+        return dsId;
+    }
+    
+    
+    protected void handleDatastreamAssocList(ResourceId thingId, Thing thing) throws NoSuchEntityException
+    {
+        if (thing.getDatastreams() != null)
+        {
+            for (Datastream ds: thing.getDatastreams())
+            {
+                ds.setThing(new Thing(thingId));
+                handleDatastreamAssoc(ds);
+            }
+        }
+        
+        if (thing.getMultiDatastreams() != null)
+        {
+            for (MultiDatastream ds: thing.getMultiDatastreams())
+            {
+                ds.setThing(new Thing(thingId));
+                handleDatastreamAssoc(ds);
+            }
+        }
+    }
+    
+    
+    protected void handleDatastreamAssocList(ResourceId sensorId, Sensor sensor) throws NoSuchEntityException
+    {
+        if (sensor.getDatastreams() != null)
+        {
+            for (Datastream ds: sensor.getDatastreams())
+            {
+                ds.setSensor(new Sensor(sensorId));
+                pm.dataStreamHandler.handleDatastreamAssoc(ds);
+            }
+        }
+        
+        if (sensor.getMultiDatastreams() != null)
+        {
+            for (MultiDatastream ds: sensor.getMultiDatastreams())
+            {
+                ds.setSensor(new Sensor(sensorId));
+                pm.dataStreamHandler.handleDatastreamAssoc(ds);
+            }
+        }
+    }
+    
+    
+    /*
+     * Check that sensorID is present in database and exposed by service
+     */
+    protected void checkDatastreamID(long publicID) throws NoSuchEntityException
+    {
+        DataStreamInfo dsInfo = dataStreamReadStore.get(publicID);
+        boolean hasSensor = dsInfo != null && isDatastreamVisible(publicID, dsInfo.getProcedure());
+        if (!hasSensor)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
+    }
+    
+    
+    protected boolean isDatastreamVisible(long publicID, FeatureId fid)
+    {
+        // TODO also check that current user has the right to read this entity!
+        
+        return pm.obsDbRegistry.getDatabaseID(publicID) == pm.database.getDatabaseID() ||
+            pm.service.isProcedureExposed(fid);
     }
     
     

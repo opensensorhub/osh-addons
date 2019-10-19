@@ -36,24 +36,23 @@ public class STADataStream extends DataStreamInfo
     }
     
     
-    protected DataStreamInfo copy()
-    {
-        STADataStream dsInfo = new STADataStream();
-        dsInfo.procedureID = this.procedureID;
-        dsInfo.recordStruct = this.recordStruct;
-        dsInfo.recordEncoding = this.recordEncoding;
-        dsInfo.recordVersion = this.recordVersion;
-        dsInfo.thingID = this.thingID;
-        return dsInfo;
-    }
-    
-    
-    public static class Builder extends DataStreamInfo.Builder
+    public static class Builder extends DataStreamInfoBuilder<Builder, STADataStream>
     {
         protected Builder()
         {
             this.instance = new STADataStream();
-        }        
+        }
+        
+        public static Builder from(DataStreamInfo base)
+        {
+            return new Builder().copyFrom(base);
+        }
+        
+        protected Builder copyFrom(DataStreamInfo base)
+        {
+            super.copyFrom(base);
+            return this;
+        }
         
         public Builder withThing(long thingID)
         {

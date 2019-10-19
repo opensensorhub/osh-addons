@@ -23,6 +23,7 @@ import org.h2.mvstore.RangeCursor;
 import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.datastore.IFeatureFilter;
 import org.sensorhub.api.datastore.IFeatureStore;
+import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.impl.datastore.h2.H2Utils;
 import org.sensorhub.impl.datastore.h2.IdProvider;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
@@ -82,6 +83,7 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature> imple
         super.init(mvStore, dataStoreInfo, idProvider);
         
         // thing+time to location map
+        // sorted by thing ID, then by time, then by location ID
         String mapName = THING_LOCATIONS_MAP_NAME + ":" + dataStoreInfo.getName();
         this.thingTimeLocationIndex = mvStore.openMap(mapName,
             new MVBTreeMap.Builder<MVThingLocationKey, Boolean>()
@@ -89,6 +91,7 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature> imple
                 .valueType(new MVVoidDataType()));
         
         // location+time to thing map
+        // sorted by location ID, then by time, then by thing ID
         mapName = LOCATION_THINGS_MAP_NAME + ":" + dataStoreInfo.getName();
         this.locationTimeThingIndex = mvStore.openMap(mapName,
             new MVBTreeMap.Builder<MVThingLocationKey, Boolean>()
@@ -139,17 +142,49 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature> imple
     }
     
     
-    public Stream<Instant> getThingHistoricalLocations(long thingID)
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    Stream<IHistoricalLocation> getHistoricalLocationsByThing(long thingID, RangeFilter<Instant> timeRange)
     {
-        var first = new MVThingLocationKey(thingID, 0, Instant.MAX);
-        var last = new MVThingLocationKey(thingID, Integer.MAX_VALUE, Instant.MIN);
-        var cursor = new RangeCursor<>(thingTimeLocationIndex, first, last);
+        MVThingLocationKey first, last;
+        if (timeRange != null)
+        {
+            // time bounds are reversed since we are sorted by descending time stamp
+            first = new MVThingLocationKey(thingID, 0, timeRange.getMax());
+            last = new MVThingLocationKey(thingID, Integer.MAX_VALUE, timeRange.getMin());
+        }
+        else
+        {
+            // time bounds are reversed since we are sorted by descending time stamp
+            first = new MVThingLocationKey(thingID, 0, Instant.MAX);
+            last = new MVThingLocationKey(thingID, Integer.MAX_VALUE, Instant.MIN);
+        }
         
+        var cursor = new RangeCursor<>(thingTimeLocationIndex, first, last);        
         class Holder { Instant value = null; }
-        var lastTime = new Holder();        
-        return cursor.keyStream()
+        var lastTime = new Holder();
+        
+        return (Stream)cursor.keyStream()
             .filter(k -> !Objects.equals(k.time, lastTime.value))
-            .map(k -> lastTime.value = k.time);            
+            .peek(k -> lastTime.value = k.time);  
+    }
+        
+    
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public Stream<IHistoricalLocation> selectHistoricalLocations(STALocationFilter filter)
+    {
+        if (filter.getThings() != null)
+        {
+            return thingStore.selectKeys(filter.getThings())
+                .flatMap(k -> getHistoricalLocationsByThing(k.getInternalID(), filter.getValidTime()));
+        }
+        else
+        {
+            class Holder { Instant value = null; }
+            var lastTime = new Holder();
+            return (Stream)thingTimeLocationIndex.keyStream()
+                .filter(k -> !Objects.equals(k.time, lastTime.value))
+                .peek(k -> lastTime.value = k.time);
+        }
     }
     
 }

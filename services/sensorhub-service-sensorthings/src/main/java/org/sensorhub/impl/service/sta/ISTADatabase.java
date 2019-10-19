@@ -15,7 +15,6 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sta;
 
 import org.sensorhub.api.datastore.FeatureKey;
-import org.sensorhub.api.datastore.IDataStreamStore;
 import org.sensorhub.api.datastore.IFeatureStore;
 import org.sensorhub.api.datastore.IHistoricalObsDatabase;
 import org.vast.ogc.gml.GenericFeature;
@@ -34,11 +33,18 @@ import org.vast.ogc.gml.IFeature;
  */
 public interface ISTADatabase extends IHistoricalObsDatabase
 {
-    public static class ObservedProperty implements IFeature
+    public static class ObsPropDef implements IFeature
     {
         String uri;
         String name;
         String description;
+        
+        public ObsPropDef(String uri, String name, String description)
+        {
+            this.uri = uri;
+            this.name = name;
+            this.description = description;
+        }
         
         @Override
         public String getName()
@@ -64,7 +70,7 @@ public interface ISTADatabase extends IHistoricalObsDatabase
      * @return The datastream store with support for filtering by the
      * associated Things.
      */
-    IDataStreamStore getDataStreamStore();
+    ISTADataStreamStore getDataStreamStore();
     
     
     /**
@@ -82,7 +88,7 @@ public interface ISTADatabase extends IHistoricalObsDatabase
     /**
      * @return The data store handling ObservedProperty entities
      */
-    IFeatureStore<FeatureKey, ObservedProperty> getObservedPropertyDataStore();
+    IFeatureStore<FeatureKey, ObsPropDef> getObservedPropertyDataStore();
     
     
     public long toPublicID(long internalID);

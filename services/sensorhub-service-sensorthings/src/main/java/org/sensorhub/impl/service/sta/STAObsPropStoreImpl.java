@@ -12,10 +12,10 @@ package org.sensorhub.impl.service.sta;
 import org.sensorhub.impl.datastore.h2.H2Utils;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
-import org.sensorhub.impl.service.sta.ISTADatabase.ObservedProperty;
+import org.sensorhub.impl.service.sta.ISTADatabase.ObsPropDef;
 
 
-public class STAObsPropStoreImpl extends MVBaseFeatureStoreImpl<ObservedProperty>
+public class STAObsPropStoreImpl extends MVBaseFeatureStoreImpl<ObsPropDef>
 {
 
     protected STAObsPropStoreImpl()

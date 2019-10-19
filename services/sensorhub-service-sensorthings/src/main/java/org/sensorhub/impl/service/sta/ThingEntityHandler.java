@@ -18,8 +18,8 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
-import org.sensorhub.api.datastore.DataStreamInfo;
 import org.sensorhub.api.datastore.FeatureFilter;
+import org.sensorhub.api.datastore.FeatureId;
 import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.datastore.IFeatureStore;
 import org.sensorhub.api.datastore.IHistoricalObsDatabase;
@@ -83,16 +83,31 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         
         if (thingDataStore != null)
         {
-            // store feature description in DB
-            FeatureKey key = thingDataStore.add(toGmlFeature(thing, uid));
-            
-            // handle associations / deep inserts with locations
-            pm.locationHandler.handleLocationAssoc(key.getInternalID(), thing.getLocations());
-            
-            return new ResourceId(key.getInternalID());
+            try
+            {
+                return pm.database.executeTransaction(() -> {
+                    // store feature description in DB
+                    FeatureKey key = thingDataStore.add(toGmlFeature(thing, uid));
+                    var thingId = new ResourceId(key.getInternalID());
+                    
+                    // handle associations / deep inserts
+                    pm.locationHandler.handleLocationAssocList(thingId, thing);
+                    pm.dataStreamHandler.handleDatastreamAssocList(thingId, thing);
+                    
+                    return thingId;
+                });
+            }
+            catch (RuntimeException | NoSuchEntityException e)
+            {
+                throw e;
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
         }
         
-        throw new UnsupportedOperationException("Cannot insert new features if no database was configured");
+        throw new UnsupportedOperationException(NO_DB_MESSAGE);
     }
     
 
@@ -113,16 +128,17 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
                 
             // store feature description in DB
             String uid = fid.getUniqueID();
-            var key = new FeatureKey(fid.getInternalID(), uid, Instant.EPOCH);
+            var key = new FeatureKey(fid.getInternalID(), uid, FeatureKey.TIMELESS);
             thingDataStore.put(key, toGmlFeature(thing, uid));
             
             // handle associations / deep inserts with locations
-            pm.locationHandler.handleLocationAssoc(key.getInternalID(), thing.getLocations());
+            pm.locationHandler.handleLocationAssocList(id, thing);
+            pm.dataStreamHandler.handleDatastreamAssocList(id, thing);
             
             return true;
         }
         
-        return false;
+        throw new UnsupportedOperationException(NO_DB_MESSAGE);
     }
     
     
@@ -139,14 +155,19 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         
         if (thingDataStore != null)
         {
-            var f = thingDataStore.remove(new FeatureKey(id.internalID));
-            if (f == null)
+            var key = thingDataStore.removeEntries(new FeatureFilter.Builder()
+                    .withInternalIDs(id.internalID)
+                    .withAllVersions()
+                    .build())
+                .findFirst();
+            
+            if (key.isEmpty())
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
             
             return true;
         }
         
-        return false;
+        throw new UnsupportedOperationException(NO_DB_MESSAGE);
     }
     
 
@@ -154,17 +175,23 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     public Thing getById(ResourceId id, Query q) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_read_thing);
+        GenericFeature thing = null;
         
         if (thingDataStore != null)
         {
-            var thing = thingDataStore.get(new FeatureKey(id.internalID));            
-            if (thing == null)
-                throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
-            
-            return toFrostThing(id.internalID, thing, q);
+            var key = FeatureKey.latest(id.internalID);
+            thing = isThingVisible(key) ? thingDataStore.get(key) : null;
+        }
+        else
+        {
+            if (id.internalID == STAService.HUB_THING_ID)
+                thing = pm.service.hubThing;
         }
         
-        return null;
+        if (thing == null)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
+        
+        return toFrostThing(id.internalID, thing, q);
     }
     
 
@@ -180,6 +207,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
             int limit = Math.min(q.getTopOrDefault(), maxPageSize);
             
             var entitySet = thingDataStore.selectEntries(filter)
+                .filter(e -> isThingVisible(e.getKey()))
                 .skip(skip)
                 .limit(limit+1) // request limit+1 elements to handle paging
                 .map(e -> toFrostThing(e.getKey().getInternalID(), e.getValue(), q))
@@ -187,8 +215,12 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
             
             return FrostUtils.handlePaging(entitySet, path, q, limit);
         }
-        
-        return null;
+        else
+        {
+             var set = new EntitySetImpl<Thing>();
+             set.add(toFrostThing(STAService.HUB_THING_ID, pm.service.hubThing, q));
+             return set;
+        }
     }
     
     
@@ -204,10 +236,15 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
                 idElt.getEntityType() == EntityType.MULTIDATASTREAM)
             {
                 ResourceId dsId = (ResourceId)idElt.getId();
-                DataStreamInfo dsInfo = federatedDatabase.getObservationStore().getDataStreams().get(dsId.internalID);
-                long thingID = dsInfo instanceof STADataStream ?                    
-                    ((STADataStream)dsInfo).getThingID() : STADatabase.HUB_THING_ID;
-                builder.withInternalIDs(thingID);
+                Long thingID = pm.database.getDataStreamStore().getAssociatedThing(pm.toLocalID(dsId.internalID));
+                builder.withInternalIDs(thingID != null ? thingID : STAService.HUB_THING_ID);
+            }
+            else if (idElt.getEntityType() == EntityType.OBSERVATION)
+            {
+                CompositeResourceId obsId = (CompositeResourceId)idElt.getId();
+                long dataStreamID = obsId.parentIDs[0];
+                Long thingID = pm.database.getDataStreamStore().getAssociatedThing(pm.toLocalID(dataStreamID));
+                builder.withInternalIDs(thingID != null ? thingID : STAService.HUB_THING_ID);
             }
         }
         
@@ -227,8 +264,11 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         f.setName(thing.getName());
         f.setDescription(thing.getDescription());
         
-        for (var entry: thing.getProperties().entrySet())
-           f.setProperty(entry.getKey(), entry.getValue());
+        if (thing.getProperties() != null)
+        {
+            for (var entry: thing.getProperties().entrySet())
+               f.setProperty(entry.getKey(), entry.getValue());
+        }
         
         return f;
     }
@@ -280,13 +320,23 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     
     protected void checkThingID(long thingID) throws NoSuchEntityException
     {
-        boolean hasThing = thingID == STADatabase.HUB_THING_ID;
+        boolean hasThing = thingID == STAService.HUB_THING_ID;
         
         if (thingDataStore != null)
             hasThing = thingDataStore.containsKey(new FeatureKey(thingID));
         
         if (!hasThing)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + thingID);
+    }
+    
+    
+    protected boolean isThingVisible(FeatureId fid)
+    {
+        // hub thing should not be visible if no other hub procedures are exposed
+        if (fid.getInternalID() == STAService.HUB_THING_ID && pm.service.getConfiguration().exposedProcedures.isEmpty())
+            return false;
+        
+        return true;
     }
 
 }
