@@ -22,59 +22,57 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.vast.util.Asserts;
 import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 
 public class MessageHandler implements IMessageHandler
 {
-	static final Logger log = LoggerFactory.getLogger(MessageHandler.class);
 	static final String POSITION_MSG_TYPE = "position";
 	static final String FLIGHTPLAN_MSG_TYPE = "flightplan";
     static final String ARRIVAL_MSG_TYPE = "arrival";
 	static final long MESSAGE_LATENCY_WARN_LIMIT = 30000L; // in ms
 	
+	Logger log;
 	Gson gson = new GsonBuilder().setPrettyPrinting().create();
     List<FlightObjectListener> objectListeners = new ArrayList<>();
     List<FlightPlanListener> planListeners = new ArrayList<>();
     List<PositionListener> positionListeners = new ArrayList<>();
-    Cache<String, String> idToDestinationCache;
+    Cache<String, String> faIdToDestinationCache;
     BlockingQueue<Runnable> queue;
     ExecutorService exec;
     String user;
     String passwd;
-    volatile long lastMessageReceiveTime = 0L;
-    volatile long lastMessageTime = 0L;
-    long startTime = System.currentTimeMillis()/1000;
+    volatile long latestMessageReceiveTime = 0L; // in seconds
+    volatile long latestMessageTimeStamp = 0L; // in seconds
+    volatile long latestMessageTimeLag = 0L; // in seconds
     int msgCount = 0;
     boolean liveStarted = false;
     
-    public MessageHandler(String user, String pwd) {
-        this.user = user;
-        this.passwd = pwd;
-        this.idToDestinationCache = CacheBuilder.newBuilder()
-               .maximumSize(10000)
-               .concurrencyLevel(2)
-               .expireAfterWrite(24, TimeUnit.HOURS)
-               .build();
-        
+    public MessageHandler(FlightAwareDriver driver) {
+        this.log = driver.getLogger();
+        this.user = driver.getConfiguration().userName;
+        this.passwd = driver.getConfiguration().password;
+        this.faIdToDestinationCache =  Asserts.checkNotNull(driver.faIdToDestinationCache, Cache.class);        
         this.queue = new LinkedBlockingQueue<>(10000);
         this.exec = new ThreadPoolExecutor(2, 4, 1, TimeUnit.SECONDS, queue);
     }
         
     public void handle(String message) {
         try {
-            lastMessageReceiveTime = System.currentTimeMillis();
+            latestMessageReceiveTime = System.currentTimeMillis()/1000;
             FlightObject obj = gson.fromJson(message, FlightObject.class);
-            lastMessageTime = Long.parseLong(obj.pitr);            
+            //if ("DAL595-1571978754-airline-0325".equals(obj.id))
+                //System.out.println(message);
+            latestMessageTimeStamp = Long.parseLong(obj.pitr);
             processMessage(obj);
             
+            latestMessageTimeLag = latestMessageReceiveTime - latestMessageTimeStamp;
             log.trace("message count: {}, queue size: {}", ++msgCount, queue.size());
-            log.trace("time lag: {}", System.currentTimeMillis()/1000-lastMessageTime);
-            if (!liveStarted && lastMessageTime >= startTime)
+            log.trace("time lag: {}", latestMessageTimeLag);
+            if (!liveStarted && latestMessageTimeLag < 10)
             {
                 liveStarted = true;
                 log.info("Starting live feed");
@@ -89,7 +87,7 @@ public class MessageHandler implements IMessageHandler
             
         } catch (Exception e) {
             log.error("Cannot read JSON\n{}", message, e);
-            if (lastMessageTime == 0L)
+            if (latestMessageTimeStamp == 0L)
                 throw new IllegalStateException(message);
             return;
         }
@@ -101,7 +99,7 @@ public class MessageHandler implements IMessageHandler
                 exec.execute(new ProcessPlanTask(this, obj));
                 break;
             case POSITION_MSG_TYPE:
-                if (lastMessageTime >= startTime) // skip older position messages
+                if (!isReplay()) // skip replayed position messages
                     exec.execute(new ProcessPositionTask(this, obj));
                 break;
             case ARRIVAL_MSG_TYPE:
@@ -156,12 +154,20 @@ public class MessageHandler implements IMessageHandler
 			l.newPosition(pos);
 	}
 
-    public long getLastMessageReceiveTime() {
-        return lastMessageReceiveTime;
+    public long getLatestMessageReceiveTime() {
+        return latestMessageReceiveTime;
     }
 
-    public long getLastMessageTime() {
-        return lastMessageTime;
+    public long getLatestMessageTime() {
+        return latestMessageTimeStamp;
+    }
+    
+    public long getMessageTimeLag() {
+        return latestMessageTimeLag;
+    }
+    
+    public boolean isReplay() {
+        return !liveStarted;
     }
 
 }

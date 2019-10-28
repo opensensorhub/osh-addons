@@ -26,10 +26,9 @@ public class MessageHandlerWithForward extends MessageHandler
     IMessageQueuePush msgQueue;
     
     
-    public MessageHandlerWithForward(String user, String pwd, final IMessageQueuePush msgQueue) 
+    public MessageHandlerWithForward(FlightAwareDriver driver, IMessageQueuePush msgQueue) 
     {
-        super(user, pwd);
-        
+        super(driver);        
         Asserts.checkNotNull(msgQueue, IMessageQueuePush.class);
         this.msgQueue = msgQueue;
     }

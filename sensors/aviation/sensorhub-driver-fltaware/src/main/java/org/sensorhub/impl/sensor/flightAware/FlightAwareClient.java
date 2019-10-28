@@ -24,26 +24,26 @@ import java.util.List;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class FlightAwareClient implements Runnable 
 {
-    static final Logger log = LoggerFactory.getLogger(FlightAwareClient.class);
     private static final boolean USE_COMPRESSION = false;
     
-    private String serverUrl;
+    Logger log;
+    String serverUrl;
 	String userName;
 	String password;
-	private SSLSocket ssl_socket = null;
+	long replayDuration = 0; // in seconds before current time
 	List<String> messageTypes = new ArrayList<>();
 	List<String> filterAirlines = new ArrayList<>();
+	SSLSocket ssl_socket = null;
 	IMessageHandler msgHandler;
 	volatile boolean started;
     
 
-	public FlightAwareClient(String serverUrl, String uname, String pwd, IMessageHandler msgHandler) {
+	public FlightAwareClient(String serverUrl, String uname, String pwd, Logger log, IMessageHandler msgHandler) {
+	    this.log = log;
 		this.serverUrl = serverUrl;
 		this.userName = uname;
 		this.password = pwd;
@@ -52,10 +52,10 @@ public class FlightAwareClient implements Runnable
 
 	private String  buildInitiationCommand() 
 	{
-	    long pitr = System.currentTimeMillis()/1000 - 3600*4;
-		//String initiationCmd = "live username " + userName + " password " + password;
-	    String initiationCmd = "pitr " + pitr + " username " + userName + " password " + password;
-
+	    long pitr = System.currentTimeMillis()/1000 - replayDuration;
+	    String initiationCmd = (replayDuration > 0) ? "pitr " + pitr : "live";
+	    initiationCmd += " username " + userName + " password " + password;
+	    
 		if (USE_COMPRESSION) {
 			initiationCmd += " compression gzip";
 		}
@@ -188,6 +188,10 @@ public class FlightAwareClient implements Runnable
 
 	public boolean isStarted() {
 		return started;
+	}
+	
+	public void setReplayDuration(long replayDuration) {
+	    this.replayDuration = replayDuration;
 	}
 	
 	public void addAirline(String airline) {

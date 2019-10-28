@@ -14,28 +14,28 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
+import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *   Process Flight Plan messages from FlightAware firehose feed.
- *   Note that because of the way FlightAware feed and API work, 
- *   we have to pull some info from the Firehose message (airports, departTime, issueTime)
- *   and some from the API (actual waypoints) 
+ * Process Flight Plan messages from FlightAware firehose feed.
+ * Note that because of the way FlightAware feed and API work, 
+ * we have to pull some info from the Firehose message (airports, departTime, issueTime)
+ * and some from the API (actual waypoints) 
  *
  * @author tcook
- *
  */
 public class ProcessPlanTask implements Runnable
 {
-    static final Logger log = LoggerFactory.getLogger(ProcessPlanTask.class);
-    
+    Logger log;    
     FlightObject obj;
 	FlightAwareApi api;
-	MessageHandler converter;
+	MessageHandler msgHandler;
 	
-	public ProcessPlanTask(MessageHandler converter, FlightObject obj) {
-		this.converter = converter;
+	public ProcessPlanTask(MessageHandler msgHandler, FlightObject obj) {
+	    this.log = LoggerFactory.getLogger(msgHandler.log.getName() + ":" + getClass().getSimpleName());
+		this.msgHandler = msgHandler;
 		this.obj = obj;
 		//this.api = new FlightAwareApi(converter.user, converter.passwd);
 	}
@@ -46,22 +46,33 @@ public class ProcessPlanTask implements Runnable
 		    
 		    // save flight destination airport so we can look it up
 		    // when it's missing from position messages
-		    log.debug("New flight plan: {} to {} (fid={})", obj.ident, obj.dest, obj.id);
-		    converter.idToDestinationCache.put(obj.id, obj.dest);
+		    if (obj.dest != null && obj.dest.trim().length() > 0)
+		    {
+    		    msgHandler.faIdToDestinationCache.get(obj.id, new Callable<String>() {
+                    @Override
+                    public String call() throws Exception
+                    {
+                        log.debug("Adding {} => {}_{} to cache", obj.id, obj.ident,obj.dest);
+                        return obj.dest;
+                    }		        
+    		    });
+		    }
 		    
-			/*FlightPlan plan = api.getFlightPlan(obj.id);
-			if(plan == null) {
-				return;
-			}
-			//  By convention, I am using message receive time as issueTime
-			//  Flight Aware does not include it in feed
-			plan.issueTime = System.currentTimeMillis() / 1000;
-			if(obj.orig != null)
-				plan.originAirport = obj.orig;
-			if(obj.dest != null)
-				plan.destinationAirport = obj.dest;
-			plan.departureTime = obj.getDepartureTime();
-			converter.newFlightPlan(plan);*/
+		    if (!msgHandler.isReplay()) {
+    			/*FlightPlan plan = api.getFlightPlan(obj.id);
+    			if(plan == null) {
+    				return;
+    			}
+    			//  By convention, I am using message receive time as issueTime
+    			//  Flight Aware does not include it in feed
+    			plan.issueTime = System.currentTimeMillis() / 1000;
+    			if(obj.orig != null)
+    				plan.originAirport = obj.orig;
+    			if(obj.dest != null)
+    				plan.destinationAirport = obj.dest;
+    			plan.departureTime = obj.getDepartureTime();
+    			converter.newFlightPlan(plan);*/
+		    }
 		} catch (Exception e) {
 			log.error("Error while decoding flight plan", e);
 		} 	

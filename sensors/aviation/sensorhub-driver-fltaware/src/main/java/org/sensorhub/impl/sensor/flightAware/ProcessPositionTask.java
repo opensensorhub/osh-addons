@@ -17,17 +17,24 @@ package org.sensorhub.impl.sensor.flightAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Process Position messages from FlightAware firehose feed.
+ * Messages sometimes omit the destination airport so we have to look it up
+ * in a map of FA ID -> destination airport code.
+ * 
+ * @author tcook
+ */
 public class ProcessPositionTask implements Runnable
 {
-    static final Logger log = LoggerFactory.getLogger(ProcessPositionTask.class);
-    
+    Logger log;
     FlightObject obj;
 	FlightAwareApi api;
-	MessageHandler converter;
+	MessageHandler msgHandler;
 	
-	public ProcessPositionTask(MessageHandler converter, FlightObject obj) {
+	public ProcessPositionTask(MessageHandler msgHandler, FlightObject obj) {
+        this.log = LoggerFactory.getLogger(msgHandler.log.getName() + ":" + getClass().getSimpleName());
 		this.obj = obj;
-		this.converter = converter;
+		this.msgHandler = msgHandler;
 	}
 
 	@Override
@@ -42,17 +49,17 @@ public class ProcessPositionTask implements Runnable
 		    log.trace("** {}: Position message without destination", obj.ident);
 		    
 		    // try to fetch from cache
-		    obj.dest = converter.idToDestinationCache.getIfPresent(obj.id);  
+		    obj.dest = msgHandler.faIdToDestinationCache.getIfPresent(obj.id);  
 		    if (obj.dest == null)
 		    {
-		        if (converter.lastMessageTime >= converter.startTime)
-		            log.debug("** {}: Unknown destination airport", obj.ident);
+		        if (!msgHandler.isReplay())
+		            log.debug("** {}: Destination airport not found in cache", obj.id);
 		        return;
 		    }
 		}
 		
 		log.trace("{}_{}: New position received", obj.ident, obj.dest);
-		converter.newFlightPosition(obj);
+		msgHandler.newFlightPosition(obj);
 	}
 
 }
