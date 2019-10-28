@@ -45,9 +45,8 @@ public class MetarStationMap {
 		System.err.println("MMap file: " + mapPath);
 		map = new HashMap<>();
 		
-		URL url = ClassLoader.getSystemClassLoader().getResource(mapPath);
-		CSVReader reader = new CSVReader(new FileReader(url.getFile()));
-		try {
+//		URL url = ClassLoader.getSystemClassLoader().getResource(mapPath);
+		try (CSVReader reader = new CSVReader(new FileReader(mapPath))){
 			String [] line;
 			reader.readNext(); // skip hdr line
 			while ((line = reader.readNext()) != null ) {
@@ -77,8 +76,6 @@ public class MetarStationMap {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-		} finally {
-			reader.close();
 		}
 	}
 
