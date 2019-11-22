@@ -49,8 +49,8 @@ public class NldnSensor extends AbstractSensorModule<NldnConfig> implements File
 	{
 		super.init();
 
-		this.uniqueID = "urn:osh:sensor:earthcast:nldn";
-		this.xmlID = "ECT_NLDN";
+		this.uniqueID = "urn:osh:sensor:mrms:nldn";
+		this.xmlID = "MRMS_NLDN";
 
 		// initialize outputs
         this.meshInterface = new NldnOutput(this);

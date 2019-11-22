@@ -67,7 +67,7 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 		// SWE Common data structure
 		meshRecordStruct = fac.newDataRecord(5);
 		meshRecordStruct.setName(getName());
-		meshRecordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/mesh"); // ??
+		meshRecordStruct.setDefinition(SWEHelper.getPropertyUri("MRMS/MESH"));
 
 		// time 
 		meshRecordStruct.addField("time", fac.newTimeStampIsoUTC());
@@ -78,19 +78,19 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 		numPoints.setId("NUM_POINTS");
 		meshRecordStruct.addComponent("numPoints",numPoints);
 		
-		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Latitude", null, "deg", DataType.FLOAT);
+		Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("Latitude"), "Latitude", null, "deg", DataType.FLOAT);
 		DataArray latArr = fac.newDataArray();
 		latArr.setElementType("Latitude", latQuant);
 		latArr.setElementCount(numPoints);
 		meshRecordStruct.addComponent("LatitudeArray", latArr);
 
-		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.FLOAT);
+		Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.FLOAT);
 		DataArray lonArr = fac.newDataArray();
 		lonArr.setElementType("Longitude", lonQuant);
 		lonArr.setElementCount(numPoints);
 		meshRecordStruct.addComponent("LongitudeArray", lonArr);		
 
-		Quantity meshQuant = fac.newQuantity("http://earthcastwx.com/ont/swe/property/mesh", "Maximum Estimated Hail Size", null, "mm", DataType.FLOAT);
+		Quantity meshQuant = fac.newQuantity(SWEHelper.getPropertyUri("MaxHailSize"), "Maximum Estimated Hail Size", null, "mm", DataType.FLOAT);
 		DataArray meshArr = fac.newDataArray();
 		meshArr.setElementType("MESH", meshQuant);
 		meshArr.setElementCount(numPoints);

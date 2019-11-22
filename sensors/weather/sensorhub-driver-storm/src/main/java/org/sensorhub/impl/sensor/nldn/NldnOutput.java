@@ -68,7 +68,7 @@ public class NldnOutput extends AbstractSensorOutput<NldnSensor>
 		// SWE Common data structure
 		nldnRecordStruct = fac.newDataRecord(5);
 		nldnRecordStruct.setName(getName());
-		nldnRecordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/nldn"); // ??
+		nldnRecordStruct.setDefinition(SWEHelper.getPropertyUri("MRMS/NLDN"));
 
 		// time 
 		nldnRecordStruct.addField("time", fac.newTimeStampIsoUTC());
@@ -79,19 +79,19 @@ public class NldnOutput extends AbstractSensorOutput<NldnSensor>
 		numPoints.setId("NUM_POINTS");
 		nldnRecordStruct.addComponent("numPoints",numPoints);
 		
-		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Latitude", null, "deg", DataType.FLOAT);
+		Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("Latitude"), "Latitude", null, "deg", DataType.FLOAT);
 		DataArray latArr = fac.newDataArray();
 		latArr.setElementType("Latitude", latQuant);
 		latArr.setElementCount(numPoints);
 		nldnRecordStruct.addComponent("LatitudeArray", latArr);
 
-		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.FLOAT);
+		Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.FLOAT);
 		DataArray lonArr = fac.newDataArray();
 		lonArr.setElementType("Longitude", lonQuant);
 		lonArr.setElementCount(numPoints);
 		nldnRecordStruct.addComponent("LongitudeArray", lonArr);		
 
-		Quantity nldnQuant = fac.newQuantity("http://earthcastwx.com/ont/swe/property/nldn", "Lightning Data", null, "?", DataType.FLOAT);
+		Quantity nldnQuant = fac.newQuantity(SWEHelper.getPropertyUri("LightningDensity"), "Lightning Data", null, "1/km2/min", DataType.FLOAT);
 		DataArray nldnArr = fac.newDataArray();
 		nldnArr.setElementType("NLDN", nldnQuant);
 		nldnArr.setElementCount(numPoints);

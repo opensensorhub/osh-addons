@@ -50,8 +50,8 @@ public class MeshSensor extends AbstractSensorModule<MeshConfig> implements File
 		super.init();
 
 		// IDs
-		this.uniqueID = "urn:osh:sensor:earthcast:mesh";
-		this.xmlID = "ECT_MESH";
+		this.uniqueID = "urn:osh:sensor:mrms:mesh";
+		this.xmlID = "MRMS_MESH";
 
 		// initialize outputs
 		this.meshInterface = new MeshOutput(this);
