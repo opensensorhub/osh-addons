@@ -16,7 +16,6 @@ package org.sensorhub.impl.sensor.nldn;
 
 import java.util.concurrent.TimeUnit;
 
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.DataBlockMixed;
@@ -41,10 +40,6 @@ import net.opengis.swe.v20.Quantity;
 public class NldnOutput extends AbstractSensorOutput<NldnSensor>  
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toSeconds(5);
-	//  Are these dims always fixed?  Should make this settable, even if fixed now
-	private static final int X_SIZE = 902;
-	private static final int Y_SIZE = 674;
-	private static final int NUM_POINTS = X_SIZE * Y_SIZE;
 
 	DataRecord nldnRecordStruct;
 	DataEncoding nldnEncoding;
@@ -94,8 +89,7 @@ public class NldnOutput extends AbstractSensorOutput<NldnSensor>
 		DataArray lonArr = fac.newDataArray();
 		lonArr.setElementType("Longitude", lonQuant);
 		lonArr.setElementCount(numPoints);
-		nldnRecordStruct.addComponent("LongitudeArray", lonArr);
-		
+		nldnRecordStruct.addComponent("LongitudeArray", lonArr);		
 
 		Quantity nldnQuant = fac.newQuantity("http://earthcastwx.com/ont/swe/property/nldn", "Lightning Data", null, "?", DataType.FLOAT);
 		DataArray nldnArr = fac.newDataArray();

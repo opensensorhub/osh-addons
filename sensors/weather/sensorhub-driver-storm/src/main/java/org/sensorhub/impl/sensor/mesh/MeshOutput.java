@@ -14,10 +14,8 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.mesh;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.DataBlockMixed;
@@ -41,10 +39,6 @@ import net.opengis.swe.v20.Quantity;
 public class MeshOutput extends AbstractSensorOutput<MeshSensor>  
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toSeconds(5);
-	//  Are these dims always fixed?  Should make this settable, even if fixed now
-	private static final int X_SIZE = 902;
-	private static final int Y_SIZE = 674;
-	private static final int NUM_POINTS = X_SIZE * Y_SIZE;
 
 	DataRecord meshRecordStruct;
 	DataEncoding meshEncoding;	
@@ -94,16 +88,15 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 		DataArray lonArr = fac.newDataArray();
 		lonArr.setElementType("Longitude", lonQuant);
 		lonArr.setElementCount(numPoints);
-		meshRecordStruct.addComponent("LongitudeArray", lonArr);
-		
+		meshRecordStruct.addComponent("LongitudeArray", lonArr);		
 
 		Quantity meshQuant = fac.newQuantity("http://earthcastwx.com/ont/swe/property/mesh", "Maximum Estimated Hail Size", null, "mm", DataType.FLOAT);
 		DataArray meshArr = fac.newDataArray();
 		meshArr.setElementType("MESH", meshQuant);
 		meshArr.setElementCount(numPoints);
 		meshRecordStruct.addComponent("meshArray", meshArr);
-//		
-//		// default encoding is text
+		
+		// default encoding is text
 		meshEncoding = fac.newTextEncoding(",", "\n");
 	}
 	
