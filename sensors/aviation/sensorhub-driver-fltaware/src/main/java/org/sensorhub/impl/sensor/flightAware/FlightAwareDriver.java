@@ -350,7 +350,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
             {
                 msgQueue.registerListener(new MessageListener() {
                     @Override
-                    public void receive(byte[] msg)
+                    public void receive(Map<String, String> attrs, byte[] payload)
                     {
                         if (!connected)
                         {
@@ -358,7 +358,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                             connected = true;
                         }
                         
-                        msgHandler.handle(new String(msg, StandardCharsets.UTF_8));
+                        msgHandler.handle(new String(payload, StandardCharsets.UTF_8));
                     }                
                 });
             }
