@@ -227,8 +227,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	@Override
 	public void start() throws SensorHubException
 	{
-	    loadIdCache();
-	    
 	    // if configured to use firehose only, connect to firehose now
         if (config.connectionType == Mode.FIREHOSE || config.connectionType == Mode.FIREHOSE_THEN_PUBSUB)
             startWithFirehose();
@@ -237,8 +235,10 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	}
 	
 
-    private void startWithFirehose()
+    private void startWithFirehose() throws SensorHubException
     {
+        loadIdCache();
+        
         reportStatus("Connecting to Firehose channel...");
         timer = Executors.newSingleThreadScheduledExecutor();
         
@@ -302,9 +302,10 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	}
     
     
-    private void startWithPubSub()
+    private void startWithPubSub() throws SensorHubException
     {
         Asserts.checkNotNull(config.pubSubConfig, "PubSubConfig");
+        loadIdCache();
         
         reportStatus("Connecting to Pub/Sub channel...");
         timer = Executors.newSingleThreadScheduledExecutor();
