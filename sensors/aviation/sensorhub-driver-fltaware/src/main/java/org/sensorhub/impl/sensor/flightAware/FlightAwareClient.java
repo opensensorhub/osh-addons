@@ -109,7 +109,8 @@ public class FlightAwareClient implements Runnable
     			inputStream = ssl_socket.getInputStream();
     			reader = new BufferedReader(new InputStreamReader(inputStream));    			
     		} catch (IOException e) {
-                throw new IllegalStateException("Cannot connect to Firehose", e);            
+                log.error("Cannot connect to Firehose", e);
+                return;
             }
 			
     		try {
@@ -160,7 +161,7 @@ public class FlightAwareClient implements Runnable
 		
 		// force close from here
         try {
-            if(!ssl_socket.isClosed())
+            if (ssl_socket != null && !ssl_socket.isClosed())
                 ssl_socket.close();
         } catch (IOException e) {
             log.error("Error closing Firehose client socket", e);

@@ -65,12 +65,12 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     private static final int MAX_ID_CACHE_SIZE = 50000;
     private static final int MAX_ID_CACHE_AGE = 24; // hours
     
-    //  Warn us if messages start stacking up- note sys clock dependence
-    //  Allow configuration of these values
-    private static final long MESSAGE_TIMER_CHECK_PERIOD = 10000L; // in ms
-    private static final long MESSAGE_RECEIVE_TIMEOUT = 20L; // in s
-    private static final long MESSAGE_LATENCY_WARN_LIMIT = 120L; // in s
-    private static final long MAX_REPLAY_DURATION = 3600*4L; // in s
+    // warn us if messages start stacking up- note sys clock dependence
+    // TODO: allow configuration of these values
+    private static final int MESSAGE_TIMER_CHECK_PERIOD = 10000; // in ms
+    private static final int MESSAGE_LATENCY_WARN_LIMIT = 120; // in s
+    private static final int MAX_REPLAY_DURATION = 3600*4; // in s
+    private static final int MAX_RETRY_INTERVAL = 5*60; // in s
     
     FlightPlanOutput flightPlanOutput;
 	FlightPositionOutput flightPositionOutput;
@@ -87,91 +87,97 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	static final String FLIGHT_UID_PREFIX = "urn:osh:aviation:flight:";
 
     Cache<String, String> faIdToDestinationCache;
-    ScheduledExecutorService timer;
+    ScheduledExecutorService watchDogTimer;
     FlightAwareClient firehoseClient;
     IMessageQueuePush msgQueue;
     MessageHandler msgHandler;
-    int retriesLeft;
     boolean connected;
+    int numAttempts;
+    int retryInterval;  
+    long lastRetryTime;
     long lastUpdatedCache = 0L;
         
     
-	class MessageTimeCheck implements Runnable
-	{
-        @Override
+	class WatchDogCheck implements Runnable
+	{	        
+	    WatchDogCheck()
+	    {
+	        // call next attempt here since watchdog is also restarted 
+	        // for every attempt
+	        nextAttempt();
+	    }
+	    
+	    void resetAttempts()
+	    {
+	        numAttempts = 0;
+            nextAttempt();
+	    }
+	    
+	    void nextAttempt()
+        {
+	        // increase retry intervals exponentially up to MAX_RETRY_INTERVAL
+	        int expInterval = (int)(config.initRetryInterval * Math.pow(2, numAttempts));
+            retryInterval = Math.min(expInterval, config.maxRetryInterval);
+	        lastRetryTime = System.currentTimeMillis()/1000;
+            numAttempts++;
+        }
+	    
+	    @Override
         public void run()
         {
-            try
+            if (msgHandler != null)
             {
-                if (msgHandler != null)
+                Thread.currentThread().setName("Watchdog");
+                
+                long now = System.currentTimeMillis()/1000;
+                long lastMsgAge = now - msgHandler.getLatestMessageReceiveTime();
+                long lastMsgLag = msgHandler.getMessageTimeLag();
+                long sinceLastRetry = now - lastRetryTime;
+                
+                // if messages are received normally
+                if (lastMsgAge < config.initRetryInterval)
                 {
-                    long lastMsgAge = System.currentTimeMillis()/1000 - msgHandler.getLatestMessageReceiveTime();
-                    long lastMsgLag = msgHandler.getMessageTimeLag();
+                    resetAttempts();
                     
-                    // if not receiving anything from queue, maybe no other instance connected to firehose?
-                    if (firehoseClient == null && msgQueue != null && lastMsgAge > MESSAGE_RECEIVE_TIMEOUT)
-                    {
-                        getLogger().error("No message received from message queue");
-                        stop();
-                        
-                        if (retriesLeft <= 0)
-                        {
-                            getLogger().error("Max number of retries reached");
-                            return;
-                        }
-                        
-                        retriesLeft--;
-                        if (config.connectionType != Mode.PUBSUB)
-                            startWithFirehose();
-                        else
-                            startWithPubSub();
-                    }
+                    // if messages getting old (usually when we can't keep up)
+                    if (lastMsgLag > MESSAGE_LATENCY_WARN_LIMIT)
+                        getLogger().warn("Messages getting old. Last dated {}s ago", lastMsgLag);
                     
-                    // if connection to firehose didn't succeed
-                    else if (firehoseClient != null && !firehoseClient.isStarted())
-                    {
-                        getLogger().error("Lost connection to Firehose");
-                        stop();
-                        
-                        if (retriesLeft <= 0)
-                        {
-                            getLogger().error("Max number of retries reached");
-                            return;
-                        }
-                        
-                        retriesLeft--;
-                        if (config.connectionType != Mode.FIREHOSE)
-                            startWithPubSub();
-                        else
-                            startWithFirehose();
-                    }
-                    
+                    // otherwise log we are ok
                     else
+                        getLogger().info("FA connection OK: Last message received {}s ago", lastMsgAge);
+                    
+                    getLogger().info("FA ID cache size is {}", faIdToDestinationCache.size());
+                }    
+                
+                // if no message received for a while
+                else if (sinceLastRetry > retryInterval)
+                {
+                    getLogger().error("No message received in the last {}s", retryInterval);
+                    getLogger().error("Reconnection attempt #{}", numAttempts);                                           
+                    
+                    try
                     {
-                        retriesLeft = config.maxRetries;
+                        stop();
                         
-                        // if initially connected but no message received for some time
-                        if (lastMsgAge > MESSAGE_RECEIVE_TIMEOUT)
+                        if (config.connectionType == Mode.PUBSUB ||
+                           (config.connectionType == Mode.PUBSUB_THEN_FIREHOSE && numAttempts <= 3) ||
+                           (config.connectionType == Mode.FIREHOSE_THEN_PUBSUB && numAttempts > 3))
                         {
-                            getLogger().error("No message received in the last {}s", MESSAGE_RECEIVE_TIMEOUT);                        
-                            if (firehoseClient != null)
-                                firehoseClient.restart();
+                            startWithPubSub();
                         }
-                        
-                        // if messages getting old (usually when we can't keep up)
-                        else if (lastMsgLag > MESSAGE_LATENCY_WARN_LIMIT)
-                            getLogger().warn("Messages getting old. Last dated {}s ago", lastMsgLag);
-                        
-                        else
-                            getLogger().info("FA connection OK: Last message received {}s ago", lastMsgAge);
-                        
-                        getLogger().info("FA ID cache size is {}", faIdToDestinationCache.size());
-                    }                    
-                }
-            }
-            catch (SensorHubException e)
-            {
-                getLogger().error("Error during stop", e);
+                        else if (config.connectionType == Mode.FIREHOSE ||
+                                (config.connectionType == Mode.FIREHOSE_THEN_PUBSUB && numAttempts <= 3) ||
+                                (config.connectionType == Mode.PUBSUB_THEN_FIREHOSE && numAttempts > 3))
+                        {
+                            startWithFirehose();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        getLogger().error("Error during automatic restart", e);
+                    }
+                }                
             }
         }
     }
@@ -219,8 +225,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                 .concurrencyLevel(2)
                 .expireAfterWrite(MAX_ID_CACHE_AGE, TimeUnit.HOURS)
                 .build();
-		
-		this.retriesLeft = config.maxRetries;
 	}
 	
 
@@ -240,7 +244,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
         loadIdCache();
         
         reportStatus("Connecting to Firehose channel...");
-        timer = Executors.newSingleThreadScheduledExecutor();
+        watchDogTimer = Executors.newSingleThreadScheduledExecutor();
         
         // connect to pub/sub channel for publishing only
         if (config.pubSubConfig != null)
@@ -294,11 +298,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
         firehoseClient.start();
         
         // start watchdog thread
-        long randomDelay = (long)(Math.random()*10000.);
-        timer.scheduleWithFixedDelay(new MessageTimeCheck(),
-                MESSAGE_RECEIVE_TIMEOUT+randomDelay,
-                MESSAGE_TIMER_CHECK_PERIOD+randomDelay,
-                TimeUnit.MILLISECONDS);
+        startWatchDog();
 	}
     
     
@@ -308,7 +308,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
         loadIdCache();
         
         reportStatus("Connecting to Pub/Sub channel...");
-        timer = Executors.newSingleThreadScheduledExecutor();
+        watchDogTimer = Executors.newSingleThreadScheduledExecutor();
         
         // create message handler
         msgHandler = new MessageHandler(this);
@@ -319,10 +319,15 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
         connectToPubSub(false);
         
         // start watchdog thread
-        long randomDelay = (long)(Math.random()*10000.);
-        timer.scheduleWithFixedDelay(new MessageTimeCheck(),
-                MESSAGE_RECEIVE_TIMEOUT+randomDelay,
-                MESSAGE_TIMER_CHECK_PERIOD+randomDelay,
+        startWatchDog();
+    }
+    
+    
+    private void startWatchDog()
+    {     
+        watchDogTimer.scheduleWithFixedDelay(new WatchDogCheck(),
+                config.initRetryInterval*1000,
+                MESSAGE_TIMER_CHECK_PERIOD,
                 TimeUnit.MILLISECONDS);
     }
     
@@ -372,9 +377,9 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	@Override
 	public void stop() throws SensorHubException
 	{
-		if (timer != null) {
-		    timer.shutdownNow();
-            timer = null;
+		if (watchDogTimer != null) {
+		    watchDogTimer.shutdown();
+            watchDogTimer = null;
 		}
         
         if (msgHandler != null) {
@@ -504,7 +509,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     protected void saveIdCache() throws SensorHubException
     {
         // save ID cache for hot restart
-        if (faIdToDestinationCache != null)
+        if (faIdToDestinationCache != null && faIdToDestinationCache.size() > 0)
         {
             IModuleStateManager stateMgr = SensorHub.getInstance().getModuleRegistry().getStateManager(getLocalID());
             

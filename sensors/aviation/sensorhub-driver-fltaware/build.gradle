@@ -1,6 +1,6 @@
 description = 'Flight Aware Adaptor'
 ext.details = 'Flight Aware flight plans and real-time position provider'
-version = '0.5.1'
+version = '0.5.2'
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
