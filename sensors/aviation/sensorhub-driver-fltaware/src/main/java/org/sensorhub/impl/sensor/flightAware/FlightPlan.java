@@ -17,23 +17,18 @@ package org.sensorhub.impl.sensor.flightAware;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.sensorhub.impl.sensor.flightAware.DecodeFlightResult.Result;
 
+
 /**
- * 
- * <p>
- * 
- * </p>
- *
  * @author tcook
  * @since Sep 27, 2017
- *
  */
-
 public class FlightPlan
 {
-	Long issueTime;  //  FA does not provide- just use receive time of message 
+    public static final String UNKNOWN = "UKN";
+    
+    Long issueTime;  //  FA does not provide- just use receive time of message 
 	String oshFlightId;  // this is flightNumber_destAirport      
 	String faFlightId; // flight aware uid- longer string for FA internal and some API calls
 	String flightNumber;  // includes airline code prefix
@@ -41,11 +36,33 @@ public class FlightPlan
 	List<Waypoint> waypoints = new ArrayList<>();
 	String originAirport = "";
 	String destinationAirport = "";
-	public static final String UNKOWN = "UKN";
 	double departureTime = Double.NaN;
 	double arrivalTime = Double.NaN;
+	String routeString;
+	
+	
+	class Waypoint {
+	    String code = FlightPlan.UNKNOWN;
+	    String type = null;
+	    double time = Double.NaN;
+	    double lat = Double.NaN;
+	    double lon = Double.NaN;
+	    double alt = Double.NaN;
 
-	public FlightPlan() {
+	    public Waypoint(String name, String type, double lat, double lon) {
+	        this.code = name;
+	        this.type = type;
+	        this.lat = lat;
+	        this.lon = lon;
+	    }
+
+	    public String toString() {
+	        return code + " (" + type + "," + lat + "," + lon + ")";
+	    }
+	}
+	
+
+    public FlightPlan() {
 	}
 
 	public FlightPlan(DecodeFlightResult result) {
@@ -54,41 +71,13 @@ public class FlightPlan
 			String name = d.name.trim();
 			if(prevName.equals(name))
 				continue;  // catch duplicate waypts 
-			waypoints.add(new Waypoint(name ,  d.type.trim() , (float)d.latitude,(float) d.longitude));
+			addWaypoint(name, d.type.trim(), d.latitude, d.longitude);
 			if (d.type.equalsIgnoreCase("Origin Airport")) {
 				originAirport = name;
 			} else if (d.type.equalsIgnoreCase("Destination Airport")) {
 				destinationAirport = name;
 			}  
 			prevName = name;
-		}
-	}
-
-	public void dump() {
-		for(Waypoint w: waypoints) {
-			System.err.println(w);
-		}
-
-	}
-
-	static class Waypoint {
-		String code = UNKOWN;
-		String type = UNKOWN;
-		double time = Double.NaN;
-		double lat = Double.NaN;
-		double lon = Double.NaN;
-//		float alt = 0.0f;
-		double alt = Double.NaN;
-
-		public Waypoint(String name, String type, float lat, float lon) {
-			this.code = name;
-			this.type = type;
-			this.lat = lat;
-			this.lon = lon;
-		}
-
-		public String toString() {
-			return code + "," + type + "," + lat + "," + lon;
 		}
 	}
 
@@ -149,8 +138,24 @@ public class FlightPlan
 		this.oshFlightId = oshFlightId;
 	}
 
-	public void addWaypoint(String name, float lat, float lon) {
-		this.waypoints.add(new Waypoint(name, null, lat, lon));
+	public void addWaypoint(String name, String type, double lat, double lon) {
+		this.waypoints.add(new Waypoint(name, type, lat, lon));
+	}
+	
+	public String getWaypointNames() {
+	    StringBuilder sb = new StringBuilder();
+        for (Waypoint wp: waypoints)
+            sb.append(wp.code).append(',');
+        sb.setLength(sb.length()-1);
+        return sb.toString();
+	}
+	
+	public String toString() {
+	    StringBuilder sb = new StringBuilder();
+        for (Waypoint wp: waypoints)
+            sb.append(wp).append(',');
+        sb.setLength(sb.length()-1);
+        return sb.toString();
 	}
 
 }

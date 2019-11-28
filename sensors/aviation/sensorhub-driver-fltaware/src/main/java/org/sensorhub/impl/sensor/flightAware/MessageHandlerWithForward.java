@@ -34,11 +34,25 @@ public class MessageHandlerWithForward extends MessageHandler
     }
     
 
-    @Override
+    /*@Override
     public void handle(String message)
     {
         msgQueue.publish(message.getBytes());        
         super.handle(message);
+    }*/
+
+    protected void newFlightPlan(FlightObject obj, FlightPlan plan)
+    {
+        
+        
+        for (FlightPlanListener l: planListeners)
+            l.newFlightPlan(plan);
+    }
+    
+    protected void newFlightPosition(FlightObject pos)
+    {
+        for (PositionListener l: positionListeners)
+            l.newPosition(pos);
     }
 
 }

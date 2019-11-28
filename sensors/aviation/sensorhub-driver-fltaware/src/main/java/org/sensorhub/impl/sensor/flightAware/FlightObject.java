@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.sensorhub.impl.sensor.flightAware.FlightPlan.Waypoint;
 
 /**
  * 
@@ -82,10 +83,6 @@ import java.util.List;
 
  *
  */
-
-
-
-
 public class FlightObject 
 {
 	public String type;  // pos or fp
@@ -98,14 +95,14 @@ public class FlightObject
 
 
 	public String clock;  // posix epoch timestamp
-	public String id = ""; // faFlightId
+	public String id; // faFlightId
 	public String gs;  // ground speed knots
 	public String speed;  // fixed cruising speed in knots
 	public String heading;
 	public String lat;
 	public String lon;
-	public String orig = ""; // 	ICAO airport code, waypoint, or latitude/longitude pair
-	public String dest = ""; // 	ICAO airport code, waypoint, or latitude/longitude pair
+	public String orig; // 	ICAO airport code, waypoint, or latitude/longitude pair
+	public String dest; // 	ICAO airport code, waypoint, or latitude/longitude pair
 	public String reg;
 	public String squawk;
 	public String updateType;
@@ -114,33 +111,21 @@ public class FlightObject
 	public String eat;
 	public String ete;
 	public String fdt;
-	List<Waypoint> waypoints = new ArrayList<>();
+	public String route;
+	public String facility_name;
+	List<Waypoint> decodedRoute;
+	
 	
 	// Adding for LawBox support
 	public double verticalChange;  //feet per mminute
 	
 	public Long getDepartureTime() {
-		if(edt != null)
-			return Long.parseLong(edt);
+		/*if(edt != null)
+			return Long.parseLong(edt);*/
 		if(fdt != null)
 			return Long.parseLong(fdt);
 		
 		return null;
-	}
-	
-	class Waypoint {
-		public Waypoint(float lat, float lon) {
-			this.lat = lat;
-			this.lon = lon;
-		}
-		
-		float lat;
-		float lon;
-		float alt;
-	}
-
-	public void addWaypoints(double lat, double lon) {
-		waypoints.add(new Waypoint((float)lat, (float)lon));
 	}
 
 	
@@ -180,24 +165,6 @@ public class FlightObject
 //		}
 
 		return b.toString();
-	}
-
-	public float [] getLats() {
-		float[] lats = new float[waypoints.size()];
-		int i=0;
-		for (Waypoint wp : waypoints) {
-			lats[i++] = wp.lat;
-		}
-		return lats;
-	}
-
-	public float[] getLons() {
-		float [] lons = new float[waypoints.size()];
-		int i=0;
-		for (Waypoint wp : waypoints) {
-			lons[i++] = wp.lon;
-		}
-		return lons;
 	}
 	
 	public long getClock() {

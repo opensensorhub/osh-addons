@@ -57,6 +57,9 @@ public class FlightAwareConfig extends SensorConfig
     @DisplayInfo(desc="Airline codes to listen for")
     public List<String> airlines = new ArrayList<>();
     
+    @DisplayInfo(desc="Flight filter configuration")
+    public FlightObjectFilterConfig filterConfig;
+    
     @DisplayInfo(desc="Pub/sub configuration")
     public MessageQueueConfig pubSubConfig;
 }

@@ -22,8 +22,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
-import org.vast.util.Asserts;
-import com.google.common.cache.Cache;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -36,15 +34,14 @@ public class MessageHandler implements IMessageHandler
 	static final long MESSAGE_LATENCY_WARN_LIMIT = 30000L; // in ms
 	
 	Logger log;
+	FlightAwareDriver driver;
 	Gson gson = new GsonBuilder().setPrettyPrinting().create();
     List<FlightObjectListener> objectListeners = new ArrayList<>();
     List<FlightPlanListener> planListeners = new ArrayList<>();
     List<PositionListener> positionListeners = new ArrayList<>();
-    Cache<String, String> faIdToDestinationCache;
-    BlockingQueue<Runnable> queue;
-    ExecutorService exec;
-    String user;
-    String passwd;
+    IFlightObjectFilter flightFilter;
+    BlockingQueue<Runnable> posQueue, fpQueue;
+    ExecutorService posExec, fpExec;
     volatile long latestMessageReceiveTime = 0L; // in seconds
     volatile long latestMessageTimeStamp = 0L; // in seconds
     volatile long latestMessageTimeLag = 0L; // in seconds
@@ -52,12 +49,18 @@ public class MessageHandler implements IMessageHandler
     boolean liveStarted = false;
     
     public MessageHandler(FlightAwareDriver driver) {
+        this.driver = driver;
         this.log = driver.getLogger();
-        this.user = driver.getConfiguration().userName;
-        this.passwd = driver.getConfiguration().password;
-        this.faIdToDestinationCache =  Asserts.checkNotNull(driver.faIdToDestinationCache, Cache.class);        
-        this.queue = new LinkedBlockingQueue<>(10000);
-        this.exec = new ThreadPoolExecutor(2, 4, 1, TimeUnit.SECONDS, queue);
+        this.flightFilter = driver.flightFilter;
+        
+        // keep flight plan processing sequential because it's lower throughput
+        // and so we can properly detect duplicates
+        this.fpQueue = new LinkedBlockingQueue<>(10000);
+        this.fpExec = new ThreadPoolExecutor(1, 1, 1, TimeUnit.SECONDS, fpQueue);
+        
+        // process position messages in parallel
+        this.posQueue = new LinkedBlockingQueue<>(10000);
+        this.posExec = new ThreadPoolExecutor(2, 4, 1, TimeUnit.SECONDS, posQueue);
     }
         
     public void handle(String message) {
@@ -67,10 +70,9 @@ public class MessageHandler implements IMessageHandler
             //if ("DAL595-1571978754-airline-0325".equals(obj.id))
                 //System.out.println(message);
             latestMessageTimeStamp = Long.parseLong(obj.pitr);
-            processMessage(obj);
-            
             latestMessageTimeLag = latestMessageReceiveTime - latestMessageTimeStamp;
-            log.trace("message count: {}, queue size: {}", ++msgCount, queue.size());
+            
+            log.trace("message count: {}, queue size: {}", ++msgCount, posQueue.size());
             log.trace("time lag: {}", latestMessageTimeLag);
             if (!liveStarted && latestMessageTimeLag < 10)
             {
@@ -81,6 +83,13 @@ public class MessageHandler implements IMessageHandler
             {
                 log.info("Replaying historical feed");
             }
+            
+            // skip message if filtered
+            if (flightFilter != null && !flightFilter.test(obj))
+                return;
+            
+            // process message
+            processMessage(obj);
             
             // also notify raw object listeners
             newFlightObject(obj);
@@ -96,11 +105,11 @@ public class MessageHandler implements IMessageHandler
     private void processMessage(FlightObject obj) {
         switch (obj.type) {
             case FLIGHTPLAN_MSG_TYPE:
-                exec.execute(new ProcessPlanTask(this, obj));
+                fpExec.execute(new ProcessPlanTask(this, obj));
                 break;
             case POSITION_MSG_TYPE:
                 if (!isReplay()) // skip replayed position messages
-                    exec.execute(new ProcessPositionTask(this, obj));
+                    posExec.execute(new ProcessPositionTask(this, obj));
                 break;
             case ARRIVAL_MSG_TYPE:
                 //log.info("{}_{} arrived at {}", obj.ident, obj.dest, Instant.ofEpochSecond(Long.parseLong(obj.aat)));
@@ -112,7 +121,8 @@ public class MessageHandler implements IMessageHandler
     }
     
     public void stop() {
-        exec.shutdownNow();
+        posExec.shutdownNow();
+        fpExec.shutdownNow();
     }
 
     public void addObjectListener(FlightObjectListener l) {
@@ -144,7 +154,7 @@ public class MessageHandler implements IMessageHandler
             l.processMessage(obj);
     }
 
-	protected void newFlightPlan(FlightPlan plan) {
+	protected void newFlightPlan(FlightObject obj, FlightPlan plan) {
 		for (FlightPlanListener l: planListeners)
 			l.newFlightPlan(plan);
 	}

@@ -15,7 +15,9 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.flightAware;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.vast.util.Asserts;
+import com.google.common.cache.Cache;
+
 
 /**
  * Process Position messages from FlightAware firehose feed.
@@ -30,30 +32,32 @@ public class ProcessPositionTask implements Runnable
     FlightObject obj;
 	FlightAwareApi api;
 	MessageHandler msgHandler;
+    Cache<String, String> faIdToDestinationCache;
 	
 	public ProcessPositionTask(MessageHandler msgHandler, FlightObject obj) {
-        this.log = LoggerFactory.getLogger(msgHandler.log.getName() + ":" + getClass().getSimpleName());
+        this.log = msgHandler.log;
 		this.obj = obj;
 		this.msgHandler = msgHandler;
+        this.faIdToDestinationCache = Asserts.checkNotNull(msgHandler.driver.faIdToDestinationCache, Cache.class);
 	}
 
 	@Override
 	public void run() {
 		if (obj.ident == null || obj.ident.length() == 0) {
-			log.error("obj.ident is empty or null.");
+			log.error("obj.ident is empty or null");
 			return;
 		}
 		
 		if (obj.dest == null || obj.dest.length() == 0) {		    
 		    // Position message from FlightAware did not contain dest airport
-		    log.trace("** {}: Position message without destination", obj.ident);
+		    log.trace("{}: Position message without destination", obj.ident);
 		    
 		    // try to fetch from cache
-		    obj.dest = msgHandler.faIdToDestinationCache.getIfPresent(obj.id);  
+		    obj.dest = faIdToDestinationCache.getIfPresent(obj.id);  
 		    if (obj.dest == null)
 		    {
 		        if (!msgHandler.isReplay())
-		            log.debug("** {}: Destination airport not found in cache", obj.id);
+		            log.trace("{}: Destination airport not found in cache", obj.id);
 		        return;
 		    }
 		}

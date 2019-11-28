@@ -140,11 +140,11 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         for (Waypoint waypt: plan.waypoints)
         {
             waypointData.setStringValue(i++, waypt.code); 
-            waypointData.setStringValue(i++, waypt.type);  // Not present in FA feed
-            waypointData.setDoubleValue(i++, waypt.time);  // Not present in FA API DecodeFlightRoute response
+            waypointData.setStringValue(i++, waypt.type);
+            waypointData.setDoubleValue(i++, waypt.time);
             waypointData.setDoubleValue(i++, waypt.lat);
             waypointData.setDoubleValue(i++, waypt.lon);
-            waypointData.setDoubleValue(i++, waypt.alt);  //Not present in FA API DecodeFlightRoute response
+            waypointData.setDoubleValue(i++, waypt.alt);
         }
         
         // skip if same as last record for a given foi

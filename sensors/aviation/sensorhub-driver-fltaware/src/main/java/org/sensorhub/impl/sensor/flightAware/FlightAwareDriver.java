@@ -86,6 +86,8 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
 	static final String FLIGHT_UID_PREFIX = "urn:osh:aviation:flight:";
 
+	IFlightObjectFilter flightFilter;
+    IFlightRouteDecoder flightRouteDecoder;
     Cache<String, String> faIdToDestinationCache;
     ScheduledExecutorService watchDogTimer;
     FlightAwareClient firehoseClient;
@@ -218,6 +220,13 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		this.flightPositionOutput = new FlightPositionOutput(this);
 		addOutput(flightPositionOutput, false);
 		flightPositionOutput.init();
+		
+		// init flight filter
+		if (config.filterConfig != null)
+            this.flightFilter = config.filterConfig.getFilter();
+        		
+		// init flight route decoder
+		this.flightRouteDecoder = new FlightRouteDecoderFlightXML(this);
 		
 		// init ID cache
 		this.faIdToDestinationCache = CacheBuilder.newBuilder()

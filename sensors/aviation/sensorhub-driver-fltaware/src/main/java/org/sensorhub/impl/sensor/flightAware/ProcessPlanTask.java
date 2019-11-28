@@ -16,7 +16,9 @@ package org.sensorhub.impl.sensor.flightAware;
 
 import java.util.concurrent.Callable;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.vast.util.Asserts;
+import com.google.common.cache.Cache;
+
 
 /**
  * Process Flight Plan messages from FlightAware firehose feed.
@@ -29,49 +31,44 @@ import org.slf4j.LoggerFactory;
 public class ProcessPlanTask implements Runnable
 {
     Logger log;    
-    FlightObject obj;
-	FlightAwareApi api;
+    FlightObject fltObj;
 	MessageHandler msgHandler;
+    Cache<String, String> faIdToDestinationCache;
+	IFlightRouteDecoder flightRouteDecoder;
 	
-	public ProcessPlanTask(MessageHandler msgHandler, FlightObject obj) {
-	    this.log = LoggerFactory.getLogger(msgHandler.log.getName() + ":" + getClass().getSimpleName());
+	public ProcessPlanTask(MessageHandler msgHandler, FlightObject fltObj) {
+	    this.log = msgHandler.log;
 		this.msgHandler = msgHandler;
-		this.obj = obj;
-		//this.api = new FlightAwareApi(converter.user, converter.passwd);
+		this.faIdToDestinationCache = Asserts.checkNotNull(msgHandler.driver.faIdToDestinationCache, Cache.class);
+		this.flightRouteDecoder = Asserts.checkNotNull(msgHandler.driver.flightRouteDecoder, IFlightRouteDecoder.class);
+		this.fltObj = fltObj;		
 	}
 	
 	@Override
 	public void run() {
-		try {
-		    
+		try {	
 		    // save flight destination airport so we can look it up
 		    // when it's missing from position messages
-		    if (obj.dest != null && obj.dest.trim().length() > 0)
+		    if (fltObj.dest != null && fltObj.dest.trim().length() > 0)
 		    {
-    		    msgHandler.faIdToDestinationCache.get(obj.id, new Callable<String>() {
+    		    faIdToDestinationCache.get(fltObj.id, new Callable<String>() {
                     @Override
                     public String call() throws Exception
                     {
-                        log.debug("Adding {} => {}_{} to cache", obj.id, obj.ident,obj.dest);
-                        return obj.dest;
+                        log.trace("{}_{}: Adding to cache, key={}", fltObj.ident, fltObj.dest, fltObj.id);
+                        return fltObj.dest;
                     }		        
     		    });
 		    }
 		    
-		    if (!msgHandler.isReplay()) {
-    			/*FlightPlan plan = api.getFlightPlan(obj.id);
-    			if(plan == null) {
-    				return;
-    			}
-    			//  By convention, I am using message receive time as issueTime
-    			//  Flight Aware does not include it in feed
-    			plan.issueTime = System.currentTimeMillis() / 1000;
-    			if(obj.orig != null)
-    				plan.originAirport = obj.orig;
-    			if(obj.dest != null)
-    				plan.destinationAirport = obj.dest;
-    			plan.departureTime = obj.getDepartureTime();
-    			converter.newFlightPlan(plan);*/
+		    // decode only real-time flight plan messages
+		    if (!msgHandler.isReplay() && fltObj.facility_name != null && fltObj.facility_name.contains("Airline")) {
+		        FlightPlan plan = flightRouteDecoder.decode(fltObj);
+    		    if (plan != null)
+    		    {
+    		        fltObj.decodedRoute = plan.waypoints;
+    		        msgHandler.newFlightPlan(fltObj, plan);
+    		    }
 		    }
 		} catch (Exception e) {
 			log.error("Error while decoding flight plan", e);
