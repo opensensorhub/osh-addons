@@ -47,8 +47,9 @@ public class DecodeFlightRouteResponse extends FlightAwareResult
 	static class Waypoint {
         String name;
         String type;
-        double latitude;
-        double longitude;
+        double latitude = Double.NaN;
+        double longitude = Double.NaN;
+        double altitude = Double.NaN; // feet above msl
 
         public Waypoint(String name, String type, double lat, double lon) {
             this.name = name;

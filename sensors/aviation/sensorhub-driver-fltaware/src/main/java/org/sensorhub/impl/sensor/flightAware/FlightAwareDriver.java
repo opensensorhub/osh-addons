@@ -16,12 +16,14 @@ package org.sensorhub.impl.sensor.flightAware;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,17 +62,14 @@ import net.opengis.sensorml.v20.PhysicalSystem;
 public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> implements IMultiSourceDataProducer,
 	FlightPlanListener, PositionListener
 {
-    private static final String STATE_FA_ID_CACHE_FILE = "fltaware_ids";
-    private static final String CACHE_TIME_STAMP_PROPERTY = "timestamp";
-    private static final int MAX_ID_CACHE_SIZE = 50000;
-    private static final int MAX_ID_CACHE_AGE = 24; // hours
+    private static final String STATE_CACHE_FILE = "fltaware_cache";
+    private static final int MAX_CACHE_SIZE = 50000;
+    private static final int MAX_CACHE_AGE = 24; // hours
     
-    // warn us if messages start stacking up- note sys clock dependence
-    // TODO: allow configuration of these values
-    private static final int MESSAGE_TIMER_CHECK_PERIOD = 10000; // in ms
+    private static final int MESSAGE_TIMER_CHECK_PERIOD = 10; // in s
     private static final int MESSAGE_LATENCY_WARN_LIMIT = 120; // in s
     private static final int MAX_REPLAY_DURATION = 3600*4; // in s
-    private static final int MAX_RETRY_INTERVAL = 5*60; // in s
+    private static final int CACHE_SAVE_MULTIPLIER = 3; // in number of timer checks
     
     FlightPlanOutput flightPlanOutput;
 	FlightPositionOutput flightPositionOutput;
@@ -88,7 +87,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 
 	IFlightObjectFilter flightFilter;
     IFlightRouteDecoder flightRouteDecoder;
-    Cache<String, String> faIdToDestinationCache;
+    Cache<String, FlightInfo> flightCache;
     ScheduledExecutorService watchDogTimer;
     FlightAwareClient firehoseClient;
     IMessageQueuePush msgQueue;
@@ -98,10 +97,20 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     int retryInterval;  
     long lastRetryTime;
     long lastUpdatedCache = 0L;
+    
+    
+    static class FlightInfo
+    {
+        String dest;
+        String route;
+    }
         
     
 	class WatchDogCheck implements Runnable
 	{	        
+	    int callsLeftBeforeCacheSave = CACHE_SAVE_MULTIPLIER;
+	    
+	    
 	    WatchDogCheck()
 	    {
 	        // call next attempt here since watchdog is also restarted 
@@ -149,7 +158,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                     else
                         getLogger().info("FA connection OK: Last message received {}s ago", lastMsgAge);
                     
-                    getLogger().info("FA ID cache size is {}", faIdToDestinationCache.size());
+                    getLogger().debug("Queue size={}, Cache size={}", msgHandler.execQueue.size(), flightCache.size());
                 }    
                 
                 // if no message received for a while
@@ -179,7 +188,21 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                     {
                         getLogger().error("Error during automatic restart", e);
                     }
-                }                
+                }
+                
+                callsLeftBeforeCacheSave--;
+                if (callsLeftBeforeCacheSave <= 0)
+                {
+                    try
+                    {
+                        saveCache();
+                        callsLeftBeforeCacheSave = CACHE_SAVE_MULTIPLIER;
+                    }
+                    catch (SensorHubException e)
+                    {
+                        getLogger().error("Cannot save cache", e);
+                    }
+                }
             }
         }
     }
@@ -224,16 +247,16 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		// init flight filter
 		if (config.filterConfig != null)
             this.flightFilter = config.filterConfig.getFilter();
-        		
-		// init flight route decoder
-		this.flightRouteDecoder = new FlightRouteDecoderFlightXML(this);
 		
-		// init ID cache
-		this.faIdToDestinationCache = CacheBuilder.newBuilder()
-                .maximumSize(MAX_ID_CACHE_SIZE)
+		// init flight cache
+		this.flightCache = CacheBuilder.newBuilder()
+                .maximumSize(MAX_CACHE_SIZE)
                 .concurrencyLevel(2)
-                .expireAfterWrite(MAX_ID_CACHE_AGE, TimeUnit.HOURS)
+                .expireAfterAccess(MAX_CACHE_AGE, TimeUnit.HOURS)
                 .build();
+		        
+        // init flight route decoder
+        this.flightRouteDecoder = new FlightRouteDecoderFlightXML(this);
 	}
 	
 
@@ -250,7 +273,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 
     private void startWithFirehose() throws SensorHubException
     {
-        loadIdCache();
+        loadCache();
         
         reportStatus("Connecting to Firehose channel...");
         watchDogTimer = Executors.newSingleThreadScheduledExecutor();
@@ -314,7 +337,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     private void startWithPubSub() throws SensorHubException
     {
         Asserts.checkNotNull(config.pubSubConfig, "PubSubConfig");
-        loadIdCache();
+        loadCache();
         
         reportStatus("Connecting to Pub/Sub channel...");
         watchDogTimer = Executors.newSingleThreadScheduledExecutor();
@@ -335,9 +358,9 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     private void startWatchDog()
     {     
         watchDogTimer.scheduleWithFixedDelay(new WatchDogCheck(),
-                config.initRetryInterval*1000,
+                config.initRetryInterval,
                 MESSAGE_TIMER_CHECK_PERIOD,
-                TimeUnit.MILLISECONDS);
+                TimeUnit.SECONDS);
     }
     
 	
@@ -407,8 +430,8 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	    }
 	    
 	    // also save state on stop
-	    saveIdCache();
-	    faIdToDestinationCache.invalidateAll();
+	    saveCache();
+	    flightCache.invalidateAll();
 	}
 	
 	
@@ -489,12 +512,12 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	}
 
     
-    protected void loadIdCache() throws SensorHubException
+    protected void loadCache() throws SensorHubException
     {
         IModuleStateManager stateMgr = SensorHub.getInstance().getModuleRegistry().getStateManager(getLocalID());
         
         // preload cache from file
-        InputStream is = stateMgr.getAsInputStream(STATE_FA_ID_CACHE_FILE);
+        InputStream is = stateMgr.getAsInputStream(STATE_CACHE_FILE);
         if (is != null)
         {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(is)))
@@ -502,54 +525,56 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                 String line;
                 while ((line = reader.readLine()) != null)
                 {
-                    String[] values = line.split("=");
-                    if (values.length != 2)
+                    String[] values = line.split(",");
+                    if (values.length < 2)
+                    {
+                        getLogger().error("Invalid cache entry: {}", line);
                         continue;
+                    }
                     
-                    if (CACHE_TIME_STAMP_PROPERTY.equals(values[0]))
-                        this.lastUpdatedCache = Long.parseLong(values[1]);
-                    else
-                        faIdToDestinationCache.put(values[0], values[1]);
+                    FlightInfo info = new FlightInfo();
+                    info.dest = values[1];
+                    info.route = "null".equals(values[2]) ? null : values[2];
+                    flightCache.put(values[0], info);
                 }
+                
+                // read file last modified time stamp
+                File moduleDataFolder = SensorHub.getInstance().getModuleRegistry().getModuleDataFolder(getLocalID());
+                this.lastUpdatedCache = new File(moduleDataFolder, STATE_CACHE_FILE+".dat").lastModified()/1000;
             }
             catch (IOException e)
             {
                 throw new SensorHubException("Error while saving state", e);
             }
             
-            getLogger().info("Preloaded {} entries to FA ID cache", faIdToDestinationCache.size());
+            getLogger().info("Loaded {} entries to cache. Last modified on {}", flightCache.size(), Instant.ofEpochSecond(lastUpdatedCache));
         }
     }
     
     
-    protected void saveIdCache() throws SensorHubException
+    protected void saveCache() throws SensorHubException
     {
         // save ID cache for hot restart
-        if (faIdToDestinationCache != null && faIdToDestinationCache.size() > 0)
+        if (flightCache != null && flightCache.size() > 0)
         {
             IModuleStateManager stateMgr = SensorHub.getInstance().getModuleRegistry().getStateManager(getLocalID());
             
-            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stateMgr.getOutputStream(STATE_FA_ID_CACHE_FILE))))
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stateMgr.getOutputStream(STATE_CACHE_FILE))))
             {
-                getLogger().info("Saving FA ID cache");
-                
-                for (Entry<String,String> entry: faIdToDestinationCache.asMap().entrySet())
+                for (Entry<String,FlightInfo> entry: flightCache.asMap().entrySet())
                 {
-                    writer.append(entry.getKey()).append("=").append(entry.getValue());
+                    writer.append(entry.getKey()).append(',')
+                          .append(entry.getValue().dest).append(',')
+                          .append(entry.getValue().route);
                     writer.newLine();
                 }
-                
-                // include timestamp
-                this.lastUpdatedCache = System.currentTimeMillis()/1000;
-                writer.append(CACHE_TIME_STAMP_PROPERTY).append("=").append(Long.toString(lastUpdatedCache));
-                writer.newLine();
             }
             catch (IOException e)
             {
                 throw new SensorHubException("Error while saving state", e);
             }
             
-            getLogger().info("Saved {} entries from FA ID cache", faIdToDestinationCache.size());
+            getLogger().info("Saved {} entries to cache", flightCache.size());
         }
     }
 	

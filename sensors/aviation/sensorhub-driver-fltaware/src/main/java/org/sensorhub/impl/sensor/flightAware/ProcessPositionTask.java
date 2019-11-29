@@ -14,6 +14,7 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
+import org.sensorhub.impl.sensor.flightAware.FlightAwareDriver.FlightInfo;
 import org.slf4j.Logger;
 import org.vast.util.Asserts;
 import com.google.common.cache.Cache;
@@ -32,13 +33,13 @@ public class ProcessPositionTask implements Runnable
     FlightObject obj;
 	FlightAwareApi api;
 	MessageHandler msgHandler;
-    Cache<String, String> faIdToDestinationCache;
+	Cache<String, FlightInfo> flightCache;
 	
 	public ProcessPositionTask(MessageHandler msgHandler, FlightObject obj) {
         this.log = msgHandler.log;
 		this.obj = obj;
 		this.msgHandler = msgHandler;
-        this.faIdToDestinationCache = Asserts.checkNotNull(msgHandler.driver.faIdToDestinationCache, Cache.class);
+        this.flightCache = Asserts.checkNotNull(msgHandler.driver.flightCache, Cache.class);
 	}
 
 	@Override
@@ -53,13 +54,15 @@ public class ProcessPositionTask implements Runnable
 		    log.trace("{}: Position message without destination", obj.ident);
 		    
 		    // try to fetch from cache
-		    obj.dest = faIdToDestinationCache.getIfPresent(obj.id);  
-		    if (obj.dest == null)
+		    FlightInfo cachedInfo = flightCache.getIfPresent(obj.id);  
+		    if (cachedInfo == null || cachedInfo.dest == null)
 		    {
 		        if (!msgHandler.isReplay())
 		            log.trace("{}: Destination airport not found in cache", obj.id);
 		        return;
 		    }
+		    else
+		        obj.dest = cachedInfo.dest;
 		}
 		
 		log.trace("{}_{}: New position received", obj.ident, obj.dest);

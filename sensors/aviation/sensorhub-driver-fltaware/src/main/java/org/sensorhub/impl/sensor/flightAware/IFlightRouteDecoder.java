@@ -14,6 +14,10 @@ Copyright (C) 2019 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
+import java.util.List;
+import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.Waypoint;
+
 
 /**
  * Interface for Firehose flight route decoders 
@@ -24,10 +28,11 @@ public interface IFlightRouteDecoder
 {
 
     /**
-     * Expand the route into a list of waypoints, that should be assigned to
-     * the FlightObject.decodedRoute property
-     * @param fltObj object containing the route
-     * @return return true if route was decoded successfully, false otherwise
+     * Expand the route into a list of navigation points
+     * @param fltPlan Flight plan object
+     * @param route Normalized route string
+     * @return return List of navigation points with lat/lon coordinates
+     * @throws SensorHubException if decoding failed
      */
-    public boolean decode(FlightObject fltObj);
+    public List<Waypoint> decode(FlightObject fltPlan, String route) throws SensorHubException;
 }
