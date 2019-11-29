@@ -17,6 +17,7 @@ package org.sensorhub.impl.sensor.flightAware;
 import org.sensorhub.api.comm.IMessageQueuePush;
 import org.vast.util.Asserts;
 
+
 /**
  * Wraps the FlightAware message handler and forwards message to the
  * pub/sub queue 
@@ -35,26 +36,33 @@ public class MessageHandlerWithForward extends MessageHandler
     
 
     @Override
-    public void handle(String message)
+    protected void newFlightObject(FlightObject fltObj)
     {
-        msgQueue.publish(message.getBytes());        
-        super.handle(message);
+        // don't forward flightplan messages here
+        // we need to forward them once the route has been decoded
+        if (!FLIGHTPLAN_MSG_TYPE.equals(fltObj.type))
+            msgQueue.publish(fltObj.json.getBytes());
+        
+        for (FlightObjectListener l: objectListeners)
+            l.processMessage(fltObj);
     }
     
 
-    /*protected void newFlightPlan(FlightObject obj, FlightPlan plan)
+    @Override
+    protected void newFlightPlan(FlightObject fltPlan)
     {
-        
+        publish(fltPlan);
         
         for (FlightPlanListener l: planListeners)
-            l.newFlightPlan(plan);
+            l.newFlightPlan(fltPlan);
     }
     
     
-    protected void newFlightPosition(FlightObject pos)
+    private void publish(FlightObject fltObj)
     {
-        for (PositionListener l: positionListeners)
-            l.newPosition(pos);
-    }*/
+        String msg = gson.toJson(fltObj);
+        System.err.println(msg);
+        msgQueue.publish(msg.getBytes());
+    }
 
 }

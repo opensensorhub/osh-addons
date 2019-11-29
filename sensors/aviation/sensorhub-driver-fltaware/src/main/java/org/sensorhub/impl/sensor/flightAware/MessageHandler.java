@@ -36,13 +36,13 @@ public class MessageHandler implements IMessageHandler
 	
 	Logger log;
 	FlightAwareDriver driver;
-	Gson gson = new GsonBuilder().setPrettyPrinting().create();
+	Gson gson = new GsonBuilder().create();
     List<FlightObjectListener> objectListeners = new ArrayList<>();
     List<FlightPlanListener> planListeners = new ArrayList<>();
     List<PositionListener> positionListeners = new ArrayList<>();
     IFlightObjectFilter flightFilter;
-    BlockingQueue<Runnable> posQueue, fpQueue;
-    ExecutorService posExec, fpExec;
+    BlockingQueue<Runnable> execQueue;
+    ExecutorService exec;
     volatile long latestMessageReceiveTime = 0L; // in seconds
     volatile long latestMessageTimeStamp = 0L; // in seconds
     volatile long latestMessageTimeLag = 0L; // in seconds
@@ -54,26 +54,21 @@ public class MessageHandler implements IMessageHandler
         this.log = driver.getLogger();
         this.flightFilter = driver.flightFilter;
         
-        // keep flight plan processing sequential because it's lower throughput
-        // and so we can properly detect duplicates
-        this.fpQueue = new LinkedBlockingQueue<>(10000);
-        this.fpExec = new ThreadPoolExecutor(1, 1, 1, TimeUnit.SECONDS, fpQueue);
-        
-        // process position messages in parallel
-        this.posQueue = new LinkedBlockingQueue<>(10000);
-        this.posExec = new ThreadPoolExecutor(2, 4, 1, TimeUnit.SECONDS, posQueue);
+        // executor to process messages in parallel
+        this.execQueue = new LinkedBlockingQueue<>(10000);
+        this.exec = new ThreadPoolExecutor(2, 4, 1, TimeUnit.SECONDS, execQueue);
     }
         
     public void handle(String message) {
         try {
             latestMessageReceiveTime = System.currentTimeMillis()/1000;
             FlightObject fltObj = gson.fromJson(message, FlightObject.class);
-            //if ("DAL595-1571978754-airline-0325".equals(obj.id))
-                //System.out.println(message);
+            fltObj.json = message;
+            //System.err.println(message);
             latestMessageTimeStamp = Long.parseLong(fltObj.pitr);
             latestMessageTimeLag = latestMessageReceiveTime - latestMessageTimeStamp;
             
-            log.trace("message count: {}, queue size: {}", ++msgCount, posQueue.size());
+            log.trace("message count: {}, queue size: {}", ++msgCount, execQueue.size());
             log.trace("time lag: {}", latestMessageTimeLag);
             if (!liveStarted && latestMessageTimeLag < 10)
             {
@@ -89,11 +84,11 @@ public class MessageHandler implements IMessageHandler
             if (fltObj.ident != null && flightFilter != null && !flightFilter.test(fltObj))
                 return;
             
+            // notify raw object listeners
+            newFlightObject(fltObj);
+            
             // process message
             processMessage(fltObj);
-            
-            // also notify raw object listeners
-            newFlightObject(fltObj);
             
         } catch (Exception e) {
             log.error("Cannot read JSON\n{}", message, e);
@@ -103,14 +98,14 @@ public class MessageHandler implements IMessageHandler
         }
     }
 
-    private void processMessage(FlightObject obj) {
-        switch (obj.type) {
+    private void processMessage(FlightObject fltObj) {
+        switch (fltObj.type) {
             case FLIGHTPLAN_MSG_TYPE:
-                fpExec.execute(new ProcessPlanTask(this, obj));
+                exec.execute(new ProcessPlanTask(this, fltObj));
                 break;
             case POSITION_MSG_TYPE:
                 if (!isReplay()) // skip replayed position messages
-                    posExec.execute(new ProcessPositionTask(this, obj));
+                    exec.execute(new ProcessPositionTask(this, fltObj));
                 break;
             case ARRIVAL_MSG_TYPE:
                 //log.info("{}_{} arrived at {}", obj.ident, obj.dest, Instant.ofEpochSecond(Long.parseLong(obj.aat)));
@@ -118,14 +113,13 @@ public class MessageHandler implements IMessageHandler
             case KEEPALIVE_MSG_TYPE:
                 break;
             default:
-                log.warn("Unsupported message type: {}", obj.type);
+                log.warn("Unsupported message type: {}", fltObj.type);
                 break;
         }
     }
     
     public void stop() {
-        posExec.shutdownNow();
-        fpExec.shutdownNow();
+        exec.shutdownNow();
     }
 
     public void addObjectListener(FlightObjectListener l) {

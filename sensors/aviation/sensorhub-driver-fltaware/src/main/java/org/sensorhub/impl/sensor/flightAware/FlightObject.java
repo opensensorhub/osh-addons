@@ -84,15 +84,15 @@ import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.Waypoint;
  */
 public class FlightObject 
 {
-	public String type;  // pos or fp
+	transient String json; // original json message as received from firehose
+	
+    public String type;  // pos or fp
 	public String ident;  // tail
 	public String status;
 	public String air_ground;  // always "A" for us so far
 	public String aircrafttype;  // ICAO aircraft type code
 	public String alt;
 	public String pitr;  //  Timestamp value that should be supplied to the "pitr" connection initiation command when reconnecting and you wish to resume firehose playback at that approximate position
-
-
 	public String clock;  // posix epoch timestamp
 	public String id; // faFlightId
 	public String gs;  // ground speed knots
@@ -112,7 +112,8 @@ public class FlightObject
 	public String fdt;
 	public String route;
 	public String facility_name;
-	List<org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.Waypoint> decodedRoute;
+	
+	List<Waypoint> decodedRoute;
 	public double verticalChange;  //feet per minute
     
     
