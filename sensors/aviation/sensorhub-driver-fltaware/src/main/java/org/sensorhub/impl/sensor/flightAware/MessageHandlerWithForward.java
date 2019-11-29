@@ -41,7 +41,10 @@ public class MessageHandlerWithForward extends MessageHandler
         // don't forward flightplan messages here
         // we need to forward them once the route has been decoded
         if (!FLIGHTPLAN_MSG_TYPE.equals(fltObj.type))
+        {
             msgQueue.publish(fltObj.json.getBytes());
+            log.trace("Message published to MQ: {}", fltObj.json);
+        }
         
         for (FlightObjectListener l: objectListeners)
             l.processMessage(fltObj);
@@ -61,8 +64,8 @@ public class MessageHandlerWithForward extends MessageHandler
     private void publish(FlightObject fltObj)
     {
         String msg = gson.toJson(fltObj);
-        System.err.println(msg);
         msgQueue.publish(msg.getBytes());
+        log.trace("Message published to MQ: {}", msg);
     }
 
 }

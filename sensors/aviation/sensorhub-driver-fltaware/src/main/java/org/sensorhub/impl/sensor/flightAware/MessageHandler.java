@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.sensorhub.impl.common.DefaultThreadFactory;
 import org.slf4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -43,11 +44,12 @@ public class MessageHandler implements IMessageHandler
     IFlightObjectFilter flightFilter;
     BlockingQueue<Runnable> execQueue;
     ExecutorService exec;
-    volatile long latestMessageReceiveTime = 0L; // in seconds
+    volatile long latestMessageReceiveTime = System.currentTimeMillis()/1000; // in seconds
     volatile long latestMessageTimeStamp = 0L; // in seconds
     volatile long latestMessageTimeLag = 0L; // in seconds
     int msgCount = 0;
     boolean liveStarted = false;
+    
     
     public MessageHandler(FlightAwareDriver driver) {
         this.driver = driver;
@@ -56,7 +58,7 @@ public class MessageHandler implements IMessageHandler
         
         // executor to process messages in parallel
         this.execQueue = new LinkedBlockingQueue<>(10000);
-        this.exec = new ThreadPoolExecutor(2, 4, 1, TimeUnit.SECONDS, execQueue);
+        this.exec = new ThreadPoolExecutor(2, 4, 1, TimeUnit.SECONDS, execQueue, new DefaultThreadFactory("MsgHandlerPool"));
     }
         
     public void handle(String message) {
@@ -64,12 +66,16 @@ public class MessageHandler implements IMessageHandler
             latestMessageReceiveTime = System.currentTimeMillis()/1000;
             FlightObject fltObj = gson.fromJson(message, FlightObject.class);
             fltObj.json = message;
-            //System.err.println(message);
             latestMessageTimeStamp = Long.parseLong(fltObj.pitr);
             latestMessageTimeLag = latestMessageReceiveTime - latestMessageTimeStamp;
+           
+            if (log.isTraceEnabled())
+            {
+                log.trace("New message:\n{}",  message);
+                log.trace("message count: {}, queue size: {}", ++msgCount, execQueue.size());
+                log.trace("time lag: {}", latestMessageTimeLag);
+            }
             
-            log.trace("message count: {}, queue size: {}", ++msgCount, execQueue.size());
-            log.trace("time lag: {}", latestMessageTimeLag);
             if (!liveStarted && latestMessageTimeLag < 10)
             {
                 liveStarted = true;

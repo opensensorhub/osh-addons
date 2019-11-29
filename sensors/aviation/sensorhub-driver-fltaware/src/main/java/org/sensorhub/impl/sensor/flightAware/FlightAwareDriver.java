@@ -159,13 +159,13 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                         getLogger().info("FA connection OK: Last message received {}s ago", lastMsgAge);
                     
                     getLogger().debug("Queue size={}, Cache size={}", msgHandler.execQueue.size(), flightCache.size());
-                }    
+                }
                 
                 // if no message received for a while
-                else if (sinceLastRetry > retryInterval)
+                else if (sinceLastRetry >= retryInterval)
                 {
-                    getLogger().error("No message received in the last {}s", retryInterval);
-                    getLogger().error("Reconnection attempt #{}", numAttempts);                                           
+                    getLogger().error("No message received in the last {}s. Reconnecting...", lastMsgAge);
+                    getLogger().error("Reconnection attempt #{}", numAttempts);
                     
                     try
                     {
@@ -188,6 +188,12 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                     {
                         getLogger().error("Error during automatic restart", e);
                     }
+                }
+                
+                else
+                {
+                    reportStatus("No message received in the last " + lastMsgAge + "s. "
+                            + "Will attempt reconnection in " + (retryInterval-sinceLastRetry) + "s");
                 }
                 
                 callsLeftBeforeCacheSave--;
@@ -321,7 +327,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
         long replayDuration = Math.min(System.currentTimeMillis()/1000 - lastUpdatedCache, MAX_REPLAY_DURATION);
         if (replayDuration > 2)
         {
-            getLogger().info("FA ID cache is {}s old. Replaying historical messages.", replayDuration);
+            getLogger().info("Cache is {}s old. Replaying historical messages.", replayDuration);
             firehoseClient.setReplayDuration(replayDuration);
         }
         
@@ -574,7 +580,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                 throw new SensorHubException("Error while saving state", e);
             }
             
-            getLogger().info("Saved {} entries to cache", flightCache.size());
+            getLogger().info("Saved cache state: {} entries", flightCache.size());
         }
     }
 	

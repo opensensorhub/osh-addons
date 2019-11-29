@@ -119,8 +119,8 @@ public class FlightAwareClient implements Runnable
     			while (started && (message = reader.readLine()) != null) {
     			    msgHandler.handle(message);
     				/*//  simulate connection closed by peer
-    				if(++cnt >= 400) {
-    					throw new EOFException("Test closed by peer");
+    				if(++cnt >= 100) {
+    					throw new IOException("Test closed by peer");
     				}*/
     			}    			
     		} catch (IOException e) {
@@ -152,7 +152,7 @@ public class FlightAwareClient implements Runnable
 	}
 	
 	public synchronized void start() {
-	    Thread thread = new Thread(this);
+	    Thread thread = new Thread(this, "FirehoseClient");
         thread.start();
 	}
 
