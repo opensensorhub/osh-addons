@@ -16,7 +16,6 @@ package org.sensorhub.impl.sensor.navDb;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -30,7 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import org.sensorhub.api.common.SensorHubException;
@@ -39,21 +37,14 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.navDb.NavDbEntry.Type;
 import org.sensorhub.impl.utils.grid.DirectoryWatcher;
 import org.sensorhub.impl.utils.grid.FileListener;
-import org.vast.sensorML.SMLHelper;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import net.opengis.gml.v32.AbstractFeature;
-import net.opengis.gml.v32.Point;
-import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.AbstractProcess;
 
+
 /**
- * 
+ * Main driver class for loading navigation database in ARINC 424 format
  * @author tcook
  * @since Nov, 2017
- * 
- * TODO: clean up and remove redundant code
- * 
  */
 public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMultiSourceDataProducer, FileListener  
 {
@@ -230,7 +221,8 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
             getLogger().error("Cannot read Nav DB File", e);
         }
         
-        loading.set(false);
+        reportStatus("Loaded database file \"" + navDbFilePath.getFileName() + "\"");
+        loading.set(false);        
     }
     
 

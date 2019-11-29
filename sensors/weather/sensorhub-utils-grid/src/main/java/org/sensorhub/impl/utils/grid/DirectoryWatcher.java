@@ -54,6 +54,8 @@ public class DirectoryWatcher implements Runnable
 
 	@Override
 	public void run()  { //, InterruptedException {
+	    Thread.currentThread().setName("DirWatcher");
+	    
 		while (!Thread.currentThread().isInterrupted()) {
 			WatchKey watchKey;
 			try {
