@@ -24,9 +24,10 @@ public interface IFlightRouteDecoder
 {
 
     /**
-     * Expand the route into a list of waypoints
+     * Expand the route into a list of waypoints, that should be assigned to
+     * the FlightObject.decodedRoute property
      * @param fltObj object containing the route
-     * @return the list of waypoints, each with at least a name and coordinates
+     * @return return true if route was decoded successfully, false otherwise
      */
-    public FlightPlan decode(FlightObject fltObj);
+    public boolean decode(FlightObject fltObj);
 }

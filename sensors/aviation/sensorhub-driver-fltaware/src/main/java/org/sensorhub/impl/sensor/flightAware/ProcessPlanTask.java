@@ -17,6 +17,7 @@ package org.sensorhub.impl.sensor.flightAware;
 import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.vast.util.Asserts;
+import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 
 
@@ -62,13 +63,20 @@ public class ProcessPlanTask implements Runnable
 		    }
 		    
 		    // decode only real-time flight plan messages
-		    if (!msgHandler.isReplay() && fltObj.facility_name != null && fltObj.facility_name.contains("Airline")) {
-		        FlightPlan plan = flightRouteDecoder.decode(fltObj);
-    		    if (plan != null)
-    		    {
-    		        fltObj.decodedRoute = plan.waypoints;
-    		        msgHandler.newFlightPlan(fltObj, plan);
-    		    }
+		    //if (!msgHandler.isReplay())
+		    {		        
+		        // cannot decode if airport codes or route are missing
+	            if (Strings.isNullOrEmpty(fltObj.orig) ||
+	                Strings.isNullOrEmpty(fltObj.dest) ||
+	                Strings.isNullOrEmpty(fltObj.route))
+	                return;
+	            
+	            // keep only flight plans produced by airlines
+	            if (Strings.isNullOrEmpty(fltObj.facility_name) || !fltObj.facility_name.equals("Airline"))
+	                return;
+	            
+		        if (flightRouteDecoder.decode(fltObj))
+    		        msgHandler.newFlightPlan(fltObj);
 		    }
 		} catch (Exception e) {
 			log.error("Error while decoding flight plan", e);

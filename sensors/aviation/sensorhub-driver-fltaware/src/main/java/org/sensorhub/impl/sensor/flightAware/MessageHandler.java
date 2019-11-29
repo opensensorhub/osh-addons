@@ -31,6 +31,7 @@ public class MessageHandler implements IMessageHandler
 	static final String POSITION_MSG_TYPE = "position";
 	static final String FLIGHTPLAN_MSG_TYPE = "flightplan";
     static final String ARRIVAL_MSG_TYPE = "arrival";
+    static final String KEEPALIVE_MSG_TYPE = "keepalive";
 	static final long MESSAGE_LATENCY_WARN_LIMIT = 30000L; // in ms
 	
 	Logger log;
@@ -66,10 +67,10 @@ public class MessageHandler implements IMessageHandler
     public void handle(String message) {
         try {
             latestMessageReceiveTime = System.currentTimeMillis()/1000;
-            FlightObject obj = gson.fromJson(message, FlightObject.class);
+            FlightObject fltObj = gson.fromJson(message, FlightObject.class);
             //if ("DAL595-1571978754-airline-0325".equals(obj.id))
                 //System.out.println(message);
-            latestMessageTimeStamp = Long.parseLong(obj.pitr);
+            latestMessageTimeStamp = Long.parseLong(fltObj.pitr);
             latestMessageTimeLag = latestMessageReceiveTime - latestMessageTimeStamp;
             
             log.trace("message count: {}, queue size: {}", ++msgCount, posQueue.size());
@@ -85,14 +86,14 @@ public class MessageHandler implements IMessageHandler
             }
             
             // skip message if filtered
-            if (flightFilter != null && !flightFilter.test(obj))
+            if (fltObj.ident != null && flightFilter != null && !flightFilter.test(fltObj))
                 return;
             
             // process message
-            processMessage(obj);
+            processMessage(fltObj);
             
             // also notify raw object listeners
-            newFlightObject(obj);
+            newFlightObject(fltObj);
             
         } catch (Exception e) {
             log.error("Cannot read JSON\n{}", message, e);
@@ -113,6 +114,8 @@ public class MessageHandler implements IMessageHandler
                 break;
             case ARRIVAL_MSG_TYPE:
                 //log.info("{}_{} arrived at {}", obj.ident, obj.dest, Instant.ofEpochSecond(Long.parseLong(obj.aat)));
+                break;
+            case KEEPALIVE_MSG_TYPE:
                 break;
             default:
                 log.warn("Unsupported message type: {}", obj.type);
@@ -149,19 +152,19 @@ public class MessageHandler implements IMessageHandler
     	return positionListeners.remove(l);
     }
 
-    protected void newFlightObject(FlightObject obj) {
+    protected void newFlightObject(FlightObject fltObj) {
         for (FlightObjectListener l: objectListeners)
-            l.processMessage(obj);
+            l.processMessage(fltObj);
     }
 
-	protected void newFlightPlan(FlightObject obj, FlightPlan plan) {
+	protected void newFlightPlan(FlightObject fltPlan) {
 		for (FlightPlanListener l: planListeners)
-			l.newFlightPlan(plan);
+			l.newFlightPlan(fltPlan);
 	}
 	
-	protected void newFlightPosition(FlightObject pos) {
+	protected void newFlightPosition(FlightObject fltPos) {
 		for (PositionListener l: positionListeners)
-			l.newPosition(pos);
+			l.newPosition(fltPos);
 	}
 
     public long getLatestMessageReceiveTime() {

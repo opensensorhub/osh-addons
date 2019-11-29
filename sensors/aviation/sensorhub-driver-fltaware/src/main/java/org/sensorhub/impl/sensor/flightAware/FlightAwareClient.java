@@ -54,7 +54,7 @@ public class FlightAwareClient implements Runnable
 	{
 	    long pitr = System.currentTimeMillis()/1000 - replayDuration;
 	    String initiationCmd = (replayDuration > 0) ? "pitr " + pitr : "live";
-	    initiationCmd += " username " + userName + " password " + password;
+	    initiationCmd += " username " + userName + " password " + password + " keepalive 15";
 	    
 		if (USE_COMPRESSION) {
 			initiationCmd += " compression gzip";

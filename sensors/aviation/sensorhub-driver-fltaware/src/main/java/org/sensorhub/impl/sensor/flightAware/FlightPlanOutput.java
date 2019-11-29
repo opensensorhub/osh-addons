@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.flightAware.FlightPlan.Waypoint;
+import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.Waypoint;
 import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEConstants;
@@ -106,16 +106,14 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
 		encoding = fac.newTextEncoding(",", "\n");
 	}
 
-	public synchronized void sendFlightPlan(FlightPlan plan)
+	public synchronized void sendFlightPlan(String oshFlightId, FlightObject fltPlan)
 	{
         long msgTime = System.currentTimeMillis();
-		
-        // renew datablock
-        waypointArray.updateSize(plan.waypoints.size());
-        DataBlock dataBlk = dataStruct.createDataBlock();
         
-        // flight UID
-        String flightId = plan.getOshFlightId();
+        // renew datablock
+        int numWpts = fltPlan.decodedRoute.size();
+        waypointArray.updateSize(numWpts);
+        DataBlock dataBlk = dataStruct.createDataBlock();
         
         //  In FlightAwareDriver is listening for new FP messages from Firehose Feed
         //  Creation of New FOIs are handled there 
@@ -128,34 +126,34 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         
         // set datablock values
         int i = 0;        
-        dataBlk.setDoubleValue(i++, plan.issueTime);
-        dataBlk.setStringValue(i++, flightId);
-        dataBlk.setStringValue(i++, plan.flightNumber);
-        dataBlk.setStringValue(i++, plan.originAirport);
-        dataBlk.setStringValue(i++, plan.destinationAirport);
-        dataBlk.setDoubleValue(i++, plan.departureTime);
-        dataBlk.setIntValue(i++, plan.waypoints.size());
+        dataBlk.setDoubleValue(i++, fltPlan.getMessageTime());
+        dataBlk.setStringValue(i++, oshFlightId);
+        dataBlk.setStringValue(i++, fltPlan.ident);
+        dataBlk.setStringValue(i++, fltPlan.orig);
+        dataBlk.setStringValue(i++, fltPlan.dest);
+        dataBlk.setDoubleValue(i++, fltPlan.getDepartureTime());
+        dataBlk.setIntValue(i++, numWpts);
         AbstractDataBlock waypointData = ((DataBlockMixed)dataBlk).getUnderlyingObject()[i];
         i = 0;
-        for (Waypoint waypt: plan.waypoints)
+        for (Waypoint waypt: fltPlan.decodedRoute)
         {
-            waypointData.setStringValue(i++, waypt.code); 
+            waypointData.setStringValue(i++, waypt.name); 
             waypointData.setStringValue(i++, waypt.type);
-            waypointData.setDoubleValue(i++, waypt.time);
-            waypointData.setDoubleValue(i++, waypt.lat);
-            waypointData.setDoubleValue(i++, waypt.lon);
-            waypointData.setDoubleValue(i++, waypt.alt);
+            waypointData.setDoubleValue(i++, Double.NaN);
+            waypointData.setDoubleValue(i++, waypt.latitude);
+            waypointData.setDoubleValue(i++, waypt.longitude);
+            waypointData.setDoubleValue(i++, Double.NaN);
         }
         
         // skip if same as last record for a given foi
-        if (isDuplicate(flightId, dataBlk))
+        if (isDuplicate(oshFlightId, dataBlk))
             return;
         
         // update latest record and send event
         latestRecord = dataBlk;
         latestRecordTime = msgTime;
-        latestRecords.put(flightId, dataBlk);
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, flightId, this, dataBlk));
+        latestRecords.put(oshFlightId, dataBlk);
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, oshFlightId, this, dataBlk));
 	}
 	
 	

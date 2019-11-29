@@ -34,14 +34,15 @@ public class MessageHandlerWithForward extends MessageHandler
     }
     
 
-    /*@Override
+    @Override
     public void handle(String message)
     {
         msgQueue.publish(message.getBytes());        
         super.handle(message);
-    }*/
+    }
+    
 
-    protected void newFlightPlan(FlightObject obj, FlightPlan plan)
+    /*protected void newFlightPlan(FlightObject obj, FlightPlan plan)
     {
         
         
@@ -49,10 +50,11 @@ public class MessageHandlerWithForward extends MessageHandler
             l.newFlightPlan(plan);
     }
     
+    
     protected void newFlightPosition(FlightObject pos)
     {
         for (PositionListener l: positionListeners)
             l.newPosition(pos);
-    }
+    }*/
 
 }

@@ -1,10 +1,9 @@
 package org.sensorhub.impl.sensor.flightAware;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.concurrent.TimeUnit;
+import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.DecodeFlightRouteResult;
 import org.slf4j.Logger;
-import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
@@ -21,7 +20,7 @@ public class FlightRouteDecoderFlightXML implements IFlightRouteDecoder
     
     Logger log;
     FlightAwareApi api;
-    Cache<String, FlightPlan> flightPlanCache; // key is faFlightID
+    Cache<String, String> flightPlanCache; // faFlightID -> route string
         
     
     public FlightRouteDecoderFlightXML(FlightAwareDriver driver)
@@ -40,60 +39,42 @@ public class FlightRouteDecoderFlightXML implements IFlightRouteDecoder
     
     
     @Override
-    public FlightPlan decode(FlightObject fltObj)
+    public boolean decode(FlightObject fltPlan)
     {
         try
         {
-            // skip if origin, destination or route is missing
-            if (Strings.isNullOrEmpty(fltObj.orig) ||
-                Strings.isNullOrEmpty(fltObj.dest) ||
-                Strings.isNullOrEmpty(fltObj.route))
-                return null;
-            
             // canonicalize route string
-            String newRoute = normalizeRouteString(fltObj);
+            String newRoute = normalizeRouteString(fltPlan);
             
-            // try to get the one in cache
-            FlightPlan cachedPlan = flightPlanCache.getIfPresent(fltObj.id);
-            String cachedRoute = cachedPlan == null ? null : cachedPlan.routeString;
+            // check if we have a route in cache
+            String cachedRoute = flightPlanCache.getIfPresent(fltPlan.id);
             
             // if route hasn't changed, don't publish new flight plan
             if (cachedRoute != null && newRoute.equals(cachedRoute))
             {
-                log.debug("{}_{}: Skipping duplicate route", fltObj.ident, fltObj.dest);
-                return null;
+                log.debug("{}_{}: Skipping duplicate route", fltPlan.ident, fltPlan.dest);
+                return false;
             }
             
-            // if new route
+            // if it's a new route, decode and cache it
             if (cachedRoute != null)
-            {
-                Instant cachedDt = Instant.ofEpochSecond((long)cachedPlan.departureTime);
-                Instant newDt = Instant.ofEpochSecond(Long.parseLong(fltObj.fdt));
-                log.debug("{}_{}: Route change ({}): {}@{} -> {}@{}", fltObj.ident, fltObj.dest, fltObj.facility_name, cachedRoute, cachedDt, newRoute, newDt);
-            }
-            FlightPlan plan = api.getFlightPlan(fltObj.id);
-            if (plan == null)
-                return null;
+                log.debug("{}_{}: Route change ({}): {} -> {}", fltPlan.ident, fltPlan.dest, fltPlan.facility_name, cachedRoute, newRoute);
             
-            // by convention, use message receive time as issueTime
-            // since Flight Aware does not include it in feed
-            plan.issueTime = System.currentTimeMillis() / 1000;
-            plan.originAirport = fltObj.orig;
-            plan.destinationAirport = fltObj.dest;
-            plan.departureTime = fltObj.getDepartureTime();
-            plan.routeString = newRoute;
+            DecodeFlightRouteResult res = api.decodeFlightRoute(fltPlan.id);
+            if (res == null)
+                return false;
             
-            flightPlanCache.put(fltObj.id, plan);
-            
+            fltPlan.decodedRoute = res.data;
+            flightPlanCache.put(fltPlan.id, newRoute);            
             if (log.isDebugEnabled())
-                log.debug("{}_{}: New route decoded ({}): {} -> {}", fltObj.ident, fltObj.dest, fltObj.facility_name, newRoute, plan.getWaypointNames());
+                log.debug("{}_{}: New route decoded ({}): {} -> {}", fltPlan.ident, fltPlan.dest, fltPlan.facility_name, newRoute, res.getWaypointNames());
             
-            return plan;
+            return true;
         }
         catch (IOException e)
         {
             log.error("Error while decoding flight route", e);
-            return null;
+            return false;
         }
     }
     

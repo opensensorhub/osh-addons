@@ -411,6 +411,12 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	    faIdToDestinationCache.invalidateAll();
 	}
 	
+	
+	private String getOshFlightId(FlightObject fltObj)
+	{
+	    return fltObj.ident + '_' + fltObj.dest;
+	}
+	
 
 	private void ensureFlightFoi(String flightId, long recordTime)
 	{						
@@ -437,48 +443,49 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	
 
 	@Override
-	public void newPosition(FlightObject pos)
+	public void newPosition(FlightObject fltPos)
 	{
 		//  Should never send null pos, but check it anyway
-		if(pos == null) {
+		if(fltPos == null)
 			return;
-		}
+		
 		// Check for and add Pos and LawBox FOIs if they aren't already in cache
-		String oshFlightId = pos.getOshFlightId();
-		ensureFlightFoi(oshFlightId, pos.getClock());
+		String oshFlightId = getOshFlightId(fltPos);
+		ensureFlightFoi(oshFlightId, fltPos.getClock());
 		FlightObject prevPos = flightPositions.get(oshFlightId);
 		if(prevPos != null) {
 			// Calc vert change in ft/minute
 			Long prevTime = prevPos.getClock() ;
-			Long newTime = pos.getClock() ;
+			Long newTime = fltPos.getClock() ;
 			Double prevAlt = prevPos.getAltitude();
-			Double newAlt = pos.getAltitude();
+			Double newAlt = fltPos.getAltitude();
 //			System.err.println(" ??? " + oshFlightId + ":" + prevAlt + "," + newAlt + "," + prevTime + "," + newTime);
 			if(prevAlt != null && newAlt != null && prevTime != null && newTime != null && (!prevTime.equals(newTime)) ) {
 				// check math here!!!
-				pos.verticalChange = (newAlt - prevAlt)/( (newTime - prevTime)/60.);
+			    fltPos.verticalChange = (newAlt - prevAlt)/( (newTime - prevTime)/60.);
 //				System.err.println(" ***  " + oshFlightId + ":" + prevAlt + "," + newAlt + "," + prevTime + "," + newTime + " ==> " + pos.verticalChange);
 			}
 		}
 		
-		flightPositions.put(oshFlightId, pos);
-		flightPositionOutput.sendPosition(pos, oshFlightId);
+		flightPositions.put(oshFlightId, fltPos);
+		flightPositionOutput.sendPosition(oshFlightId, fltPos);
 	}
 	
 
 	@Override
-	public void newFlightPlan(FlightPlan plan)
+	public void newFlightPlan(FlightObject fltPlan)
 	{
 		//  Should never send null plan
-		if(plan == null) {
+		if (fltPlan == null)
 			return;
-		}
+		
 		// Add new FlightPlan FOI if new
-		String oshFlightId = plan.getOshFlightId();
-		ensureFlightFoi(oshFlightId, plan.issueTime);
+		String oshFlightId = getOshFlightId(fltPlan);
+		long issueTime = Long.parseLong(fltPlan.pitr)*1000;
+		ensureFlightFoi(oshFlightId, issueTime);
 
 		// send new data to outputs
-		flightPlanOutput.sendFlightPlan(plan);
+		flightPlanOutput.sendFlightPlan(oshFlightId, fltPlan);
 	}
 
     
