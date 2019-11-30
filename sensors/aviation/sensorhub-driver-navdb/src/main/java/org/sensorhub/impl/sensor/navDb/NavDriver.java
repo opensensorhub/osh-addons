@@ -169,7 +169,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
         }
         
         // trigger reader
-        loadAllData(latestFile.toPath());
+        newFile(latestFile.toPath());
     }
 
 
@@ -178,32 +178,20 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
      */
     @Override
     public void newFile(Path p)
-    {
-        try
-        {
-            loadAllData(p);
-        }
-        catch (Exception e)
-        {
-            getLogger().error("Error loading new data", e);
-        }
-    }
-    
-    private void loadAllData(Path navDbFilePath) throws SensorHubException
-    {
+    {        
         // only continue when it's a new nav DB file
-        if (!DATA_FILE_REGEX.matcher(navDbFilePath.getFileName().toString()).matches())
+        if (!DATA_FILE_REGEX.matcher(p.getFileName().toString()).matches())
             return;
         
         // skip if already loading
         if (!loading.compareAndSet(false, true))
             return;
                 
-        getLogger().info("Loading new Nav DB file: {}", navDbFilePath);
+        getLogger().info("Loading new Nav DB file: {}", p);
         
         try
         {
-            List<NavDbEntry> allEntries = LufthansaParser.getNavDbEntries(navDbFilePath);
+            List<NavDbEntry> allEntries = LufthansaParser.getNavDbEntries(p);
             Set<String> newEntityIDs = new TreeSet<>();
             
             if (airports)
@@ -216,12 +204,13 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
             // switch to new entity IDs set atomically
             entityIDs = newEntityIDs;
         }
-        catch (IOException e)
+        catch (Exception e)
         {
-            getLogger().error("Cannot read Nav DB File", e);
+            reportError("Error reading database file \"" + p + "\"", e);
+            return;
         }
         
-        reportStatus("Loaded database file \"" + navDbFilePath.getFileName() + "\"");
+        reportStatus("Loaded database file \"" + p.getFileName() + "\"");
         loading.set(false);        
     }
     
