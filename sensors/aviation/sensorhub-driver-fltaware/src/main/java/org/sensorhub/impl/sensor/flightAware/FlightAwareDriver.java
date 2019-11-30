@@ -510,8 +510,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		
 		// Add new FlightPlan FOI if new
 		String oshFlightId = getOshFlightId(fltPlan);
-		long issueTime = Long.parseLong(fltPlan.pitr)*1000;
-		ensureFlightFoi(oshFlightId, issueTime);
+		ensureFlightFoi(oshFlightId, fltPlan.getMessageTime()*1000);
 
 		// send new data to outputs
 		flightPlanOutput.sendFlightPlan(oshFlightId, fltPlan);

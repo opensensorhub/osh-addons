@@ -116,15 +116,6 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         waypointArray.updateSize(numWpts);
         DataBlock dataBlk = dataStruct.createDataBlock();
         
-        //  In FlightAwareDriver is listening for new FP messages from Firehose Feed
-        //  Creation of New FOIs are handled there 
-//        if (!latestRecords.containsKey(flightId))
-//        {
-//            // create new feature and send event
-//            AbstractFeature foi = parentSensor.addFoi(flightId);
-//            eventHandler.publishEvent(new FoiEvent(msgTime, flightId, parentSensor, foi, plan.issueTime));
-//        }
-        
         // set datablock values
         int i = 0;        
         dataBlk.setDoubleValue(i++, fltPlan.getMessageTime());
@@ -143,7 +134,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
             waypointData.setDoubleValue(i++, Double.NaN);
             waypointData.setDoubleValue(i++, waypt.latitude);
             waypointData.setDoubleValue(i++, waypt.longitude);
-            waypointData.setDoubleValue(i++, Double.NaN);
+            waypointData.setDoubleValue(i++, waypt.altitude);
         }
         
         // skip if same as last record for a given foi
