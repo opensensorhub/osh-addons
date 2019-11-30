@@ -69,13 +69,13 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 		// SWE Common data structure
 		struct = fac.newDataRecord(4);
 		struct.setName(getName());
-		struct.setDefinition("http://earthcastwx.com/ont/swe/property/waypoints"); // ??
+		struct.setDefinition("http://sensorml.com/ont/swe/property/aero/Waypoints");
 
-		Text id = fac.newText("http://sensorml.com/ont/swe/property/wayPtCode", "Waypt Code", "");
+		Text id = fac.newText("http://sensorml.com/ont/swe/property/Code", "Waypoint Code", "");
 		struct.addComponent("code", id);
 		//		Text type = fac.newText("http://sensorml.com/ont/swe/property/type", "Type", "Type (Waypoint/Navaid/etc.)" );
 		//		waypt.addComponent("type", type);
-		Text name = fac.newText("http://sensorml.com/ont/swe/property/name", "Name", "Long name" );
+		Text name = fac.newText("http://sensorml.com/ont/swe/property/Name", "Name", "Long name" );
 		struct.addComponent("name", name);
 		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Geodetic Latitude", null, "deg", DataType.DOUBLE);
 		struct.addComponent("lat", latQuant);

@@ -69,14 +69,13 @@ public class AirportOutput extends AbstractSensorOutput<NavDriver> implements IM
 		// SWE Common data structure
 		navStruct = fac.newDataRecord(4);
 		navStruct.setName(getName());
-//		navStruct.setDefinition("http://earthcastwx.com/ont/swe/property/xxx/BobsAirports"); // ??
-		navStruct.setDefinition("http://earthcastwx.com/ont/swe/property/airports"); // ??
+		navStruct.setDefinition("http://sensorml.com/ont/swe/property/aero/Airports");
 
-		Text id = fac.newText("http://sensorml.com/ont/swe/property/icaoCode", "ICAO Code", "ICAO airline code");
+		Text id = fac.newText("http://sensorml.com/ont/swe/property/Code", "ICAO Code", "ICAO airport code");
 		navStruct.addComponent("code", id);
 		//		Text type = fac.newText("http://sensorml.com/ont/swe/property/type", "Type", "Type (Waypoint/Navaid/etc.)" );
 		//		waypt.addComponent("type", type);
-		Text name = fac.newText("http://sensorml.com/ont/swe/property/name", "Name", "Long name" );
+		Text name = fac.newText("http://sensorml.com/ont/swe/property/Name", "Name", "Long name" );
 		navStruct.addComponent("name", name);
 		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Geodetic Latitude", null, "deg", DataType.DOUBLE);
 		navStruct.addComponent("lat", latQuant);
