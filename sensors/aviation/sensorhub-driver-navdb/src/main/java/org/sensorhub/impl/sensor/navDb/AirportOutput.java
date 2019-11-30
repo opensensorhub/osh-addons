@@ -69,7 +69,7 @@ public class AirportOutput extends AbstractSensorOutput<NavDriver> implements IM
 		// SWE Common data structure
 		navStruct = fac.newDataRecord(4);
 		navStruct.setName(getName());
-		navStruct.setDefinition(SWEHelper.getPropertyUri("aero/Airports"));
+		navStruct.setDefinition(SWEHelper.getPropertyUri("aero/Airport"));
 
 		Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "ICAO Code", "Airport ICAO identification code");
 		navStruct.addComponent("code", id);

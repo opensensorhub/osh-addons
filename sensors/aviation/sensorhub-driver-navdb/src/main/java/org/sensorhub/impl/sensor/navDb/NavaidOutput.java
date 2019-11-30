@@ -70,7 +70,7 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 		// SWE Common data structure
 		navStruct = fac.newDataRecord(4);
 		navStruct.setName(getName());
-		navStruct.setDefinition(SWEHelper.getPropertyUri("aero/Navaids")); // ??
+		navStruct.setDefinition(SWEHelper.getPropertyUri("aero/Navaid"));
 
 		Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "ICAO Code", "Navaid ICAO identification code");
 		navStruct.addComponent("code", id);

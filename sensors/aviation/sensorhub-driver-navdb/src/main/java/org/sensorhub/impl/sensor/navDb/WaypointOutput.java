@@ -69,7 +69,7 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 		// SWE Common data structure
 		struct = fac.newDataRecord(4);
 		struct.setName(getName());
-		struct.setDefinition(SWEHelper.getPropertyUri("aero/Waypoints"));
+		struct.setDefinition(SWEHelper.getPropertyUri("aero/Waypoint"));
 
 		Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "Waypoint Code", "Waypoint ICAO identification code");
 		struct.addComponent("code", id);
