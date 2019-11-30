@@ -39,15 +39,18 @@ import net.opengis.swe.v20.DataType;
 
 
 /**
- * 
- * @author Tony Cook
+ * <p>
+ * Data producer output for flight plan data 
+ * </p>
  *
+ * @author Tony Cook
+ * @since Sep 5, 2017
  */
 public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> implements IMultiSourceDataInterface  
 {
     static final String DEF_FLIGHTPLAN_REC = SWEHelper.getPropertyUri("aero/FlightPlan");
-    static final String DEF_AIRPORT_CODE = SWEHelper.getPropertyUri("aero/AirportCode");
-    static final String DEF_WAYPOINT_CODE = SWEHelper.getPropertyUri("aero/WaypointCode");
+    static final String DEF_ICAO_CODE = SWEHelper.getPropertyUri("aero/ICAO/Code");
+    static final String DEF_WAYPOINT = SWEHelper.getPropertyUri("aero/Waypoint");
     static final String DEF_WAYPOINT_TYPE = SWEHelper.getPropertyUri("aero/WaypointType");
     static final String DEF_FLIGHT_NUM = SWEHelper.getPropertyUri("aero/FlightNumber");
     static final String DEF_FLIGHT_LEVEL = SWEHelper.getPropertyUri("aero/FlightLevel");
@@ -70,18 +73,15 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
 	{
 		GeoPosHelper fac = new GeoPosHelper();
 
-		//  Add top level structure for flight plan
-		//	 time, flightId, flightNum, srcAirport, destAirport, departTime, wayPt[]
-
 		// SWE Common data structure
 		this.dataStruct = fac.newDataRecord();
 		dataStruct.setName(getName());
-		dataStruct.setDefinition(DEF_FLIGHTPLAN_REC); // ??
+		dataStruct.setDefinition(DEF_FLIGHTPLAN_REC);
         dataStruct.addComponent("time", fac.newTimeIsoUTC(SWEConstants.DEF_SAMPLING_TIME, "Issue Time", null));
         dataStruct.addComponent("flightId", fac.newText(ENTITY_ID_URI, "Flight ID", null));
         dataStruct.addComponent("flightNumber", fac.newText(DEF_FLIGHT_NUM, "Flight Number", null));
-        dataStruct.addComponent("srcAirport", fac.newText(DEF_AIRPORT_CODE, "Departure Airport", null));
-        dataStruct.addComponent("destAirport", fac.newText(DEF_AIRPORT_CODE, "Arrival Airport", null));
+        dataStruct.addComponent("srcAirport", fac.newText(DEF_ICAO_CODE, "Departure Airport", "ICAO identification code of departure airport"));
+        dataStruct.addComponent("destAirport", fac.newText(DEF_ICAO_CODE, "Arrival Airport", "ICAO identification code of arrival airport"));
         dataStruct.addComponent("departTime", fac.newTimeIsoUTC(SWEConstants.DEF_FORECAST_TIME, "Departure Time", "Scheduled departure time"));
 
         // array of waypoints
@@ -90,10 +90,11 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         dataStruct.addComponent("numPoints", numPoints);
 
         DataComponent waypt = fac.newDataRecord();
-        waypt.addComponent("code", fac.newText(DEF_WAYPOINT_CODE, "Waypoint Code", "4 or 5 letters ICAO code"));
-        waypt.addComponent("type", fac.newText(DEF_WAYPOINT_TYPE, "Waypoint Type", "Waypoint/Navaid/etc."));
+        waypt.setDefinition(DEF_WAYPOINT);
+        waypt.addComponent("code", fac.newText(DEF_ICAO_CODE, "Waypoint Code", "Waypoint ICAO identification code"));
+        waypt.addComponent("type", fac.newText(DEF_WAYPOINT_TYPE, "Waypoint Type", "Type of navigation point (airport, waypoint, VOR, VORTAC, DME, etc.)"));
         waypt.addComponent("time", fac.newTimeIsoUTC(SWEConstants.DEF_FORECAST_TIME, "Estimated Time", "Estimated time over waypoint"));
-        waypt.addComponent("lat", fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Geodetic Latitude", null, "deg"));
+        waypt.addComponent("lat", fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg"));
         waypt.addComponent("lon", fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg"));
         waypt.addComponent("alt", fac.newQuantity(DEF_FLIGHT_LEVEL, "Flight Level", null, "[ft_i]", DataType.DOUBLE));
         

@@ -64,22 +64,20 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 	{
 		SWEHelper fac = new SWEHelper();
 
-		//	 Structure is {id, name, lat, lon}
+		// Structure is {id, name, lat, lon}
 
 		// SWE Common data structure
 		struct = fac.newDataRecord(4);
 		struct.setName(getName());
-		struct.setDefinition("http://sensorml.com/ont/swe/property/aero/Waypoints");
+		struct.setDefinition(SWEHelper.getPropertyUri("aero/Waypoints"));
 
-		Text id = fac.newText("http://sensorml.com/ont/swe/property/Code", "Waypoint Code", "");
+		Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "Waypoint Code", "Waypoint ICAO identification code");
 		struct.addComponent("code", id);
-		//		Text type = fac.newText("http://sensorml.com/ont/swe/property/type", "Type", "Type (Waypoint/Navaid/etc.)" );
-		//		waypt.addComponent("type", type);
-		Text name = fac.newText("http://sensorml.com/ont/swe/property/Name", "Name", "Long name" );
+		Text name = fac.newText(SWEHelper.getPropertyUri("Name"), "Name", null);
 		struct.addComponent("name", name);
-		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Geodetic Latitude", null, "deg", DataType.DOUBLE);
+		Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg", DataType.DOUBLE);
 		struct.addComponent("lat", latQuant);
-		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.DOUBLE);
+		Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.DOUBLE);
 		struct.addComponent("lon", lonQuant);
 
 		// default encoding is text
