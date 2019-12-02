@@ -1,6 +1,6 @@
 description = 'Gridded Dataset Utilities'
 ext.details = 'Various utilities for handling grid formats based on Unidata library'
-version = '0.3.2'
+version = '0.3.3'
 
 rootProject.allprojects {
   repositories {
