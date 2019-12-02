@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.sensorhub.impl.sensor.mesh.MeshRecord.MeshPoint;
 import ucar.ma2.Array;
+import ucar.ma2.IndexIterator;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import ucar.nc2.dt.GridCoordSystem;
@@ -98,7 +99,6 @@ public class MeshReader
 {
 	//  Var names we need from the Grib file.  Note, obviously we are going to have to rely on these to not change
 	//  Should put in config file in case they do change
-	private static final String ALT_VAR = "altitude_above_msl";
 	private static final String MESH_VAR = "MESH_altitude_above_msl";
 	private static final String TIME_VAR = "time";
     private static final String LON_VAR = "lon";
@@ -128,14 +128,6 @@ public class MeshReader
 		}
 	}
 
-	public double readAlt() throws IOException {
-		Variable valt = ncFile.findVariable(ALT_VAR);
-		Array altArr = valt.read();
-		//		System.err.println(altArr);
-		double alt = altArr.getDouble(0);
-		return alt;
-	}
-
 	//	public float[][] readMesh() throws IOException {
 	public MeshRecord readMesh() throws IOException {
 		MeshRecord meshRec = new MeshRecord();
@@ -158,21 +150,23 @@ public class MeshReader
 		float [] projy =  (float[])ay.getStorage();
 
 		// read mesh data and associate to lat/lon locations
-		Variable vmesh= ncFile.findVariable(MESH_VAR);
+		Variable vmesh = ncFile.findVariable(MESH_VAR);
+		vmesh.setCaching(false); // don't keep cache as it prevents the array to be garbage collected quickly
 		Array meshArr = vmesh.read();
 		Array meshReduce = meshArr.reduce();
-		float [][] mesh  = (float [][])meshReduce. copyToNDJavaArray();
-		int width = ax.getShape()[0];
-		int height = ay.getShape()[0];
-		for(int  j=0; j<height; j++) {
-			for(int i=0; i<width; i++) {
-				float val = mesh[j][i];
-				if(!Float.isNaN(val) && val != 0) {
-					LatLonPoint llpt = proj.projToLatLon(projx[i], projy[j]);
-					MeshPoint meshPt = meshRec.new MeshPoint((float)llpt.getLatitude(), (float)llpt.getLongitude(), mesh[j][i]);
-					meshRec.addMeshPoint(meshPt);
-				}
-			}
+		
+		// read by iterating through index to avoid copying the array
+		IndexIterator it = meshReduce.getIndexIterator();
+		while (it.hasNext()) {
+		    float val = it.getFloatNext();		    
+		    if (!Float.isNaN(val) && val != 0) {
+	            int[] dims = it.getCurrentCounter();
+	            int i = dims[0];
+	            int j = dims[1];
+		        LatLonPoint llpt = proj.projToLatLon(projx[j], projy[i]);
+                MeshPoint meshPt = meshRec.new MeshPoint((float)llpt.getLatitude(), (float)llpt.getLongitude(), val);
+                meshRec.addMeshPoint(meshPt);
+            }		    
 		}
 		
 		return meshRec;
@@ -183,6 +177,7 @@ public class MeshReader
 	 * Need to extract it and possible add "minutes offset" value in storage (so far always 0)
 	 * i.e. double time(time=1);
   			:units = "Minute since 2017-08-04T21:46:39Z";
+     * @return Unix time stamp, seconds since 01/01/1970 UTC
 	 * @throws IOException
 	 */
 	public long readTime() throws IOException {
