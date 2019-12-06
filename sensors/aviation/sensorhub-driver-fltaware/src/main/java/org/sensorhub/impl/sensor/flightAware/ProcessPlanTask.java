@@ -65,38 +65,38 @@ public class ProcessPlanTask implements Runnable
                 return info;
 		    });
 		    
-		    // keep only flight plans produced by airlines
-            if (Strings.nullToEmpty(fltPlan.facility_name).trim().equalsIgnoreCase("airline"))
-		    {		        
-                // need to synchronize on cache entry so we can properly detect duplicates
-                synchronized (cachedInfo)
+		    // keep only flight plans with status flag set to "F: filed" or "A: active"
+		    if (!("F".equalsIgnoreCase(fltPlan.status) || "A".equalsIgnoreCase(fltPlan.status)))
+		        return;
+		    
+		    // need to synchronize on cache entry so we can properly detect duplicates
+            synchronized (cachedInfo)
+            {
+                // if route hasn't changed, don't process further
+                String newRoute = normalizeRouteString(fltPlan);
+                if (cachedInfo.route == null || !newRoute.equals(cachedInfo.route))
                 {
-                    // if route hasn't changed, don't process further
-                    String newRoute = normalizeRouteString(fltPlan);
-                    if (cachedInfo.route == null || !newRoute.equals(cachedInfo.route))
+                    if (cachedInfo.route != null)
+                        log.debug("{}_{}: Route changed ({}): {} -> {}", fltPlan.ident, fltPlan.dest, fltPlan.facility_name, cachedInfo.route, newRoute);
+                    
+                    // decode route or just use already decoded one
+                    // i.e. it may have been decoded by another server and sent to us via mq
+                    if (fltPlan.decodedRoute == null)
                     {
-                        if (cachedInfo.route != null)
-                            log.debug("{}_{}: Route changed ({}): {} -> {}", fltPlan.ident, fltPlan.dest, fltPlan.facility_name, cachedInfo.route, newRoute);
-                        
-                        // decode route or just use already decoded one
-                        // i.e. it may have been decoded by another server and sent to us via mq
-                        if (fltPlan.decodedRoute == null)
-                        {
-                            fltPlan.decodedRoute = flightRouteDecoder.decode(fltPlan, newRoute);
-                            if (log.isDebugEnabled())
-                                log.debug("{}_{}: Route decoded ({}): {} -> {}", fltPlan.ident, fltPlan.dest, fltPlan.facility_name, newRoute, fltPlan.decodedRoute);                            
-                        }   
-                        
-                        // publish flight plan
-                        cachedInfo.route = newRoute;
-                        msgHandler.newFlightPlan(fltPlan);
-                    }
-                    else
-                    {
-                        log.debug("{}_{}: Skipping duplicate route", fltPlan.ident, fltPlan.dest);
-                    }
+                        fltPlan.decodedRoute = flightRouteDecoder.decode(fltPlan, newRoute);
+                        if (log.isDebugEnabled())
+                            log.debug("{}_{}: Route decoded ({}): {} -> {}", fltPlan.ident, fltPlan.dest, fltPlan.facility_name, newRoute, fltPlan.decodedRoute);                            
+                    }   
+                    
+                    // publish flight plan
+                    cachedInfo.route = newRoute;
+                    msgHandler.newFlightPlan(fltPlan);
                 }
-		    }
+                else
+                {
+                    log.debug("{}_{}: Skipping duplicate route", fltPlan.ident, fltPlan.dest);
+                }
+            }
             
 		} catch (Exception e) {
 			log.error("Error while processing flight plan", e);

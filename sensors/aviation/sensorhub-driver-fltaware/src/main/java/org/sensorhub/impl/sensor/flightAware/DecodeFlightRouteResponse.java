@@ -57,5 +57,10 @@ public class DecodeFlightRouteResponse extends FlightAwareResult
             this.latitude = lat;
             this.longitude = lon;
         }
+        
+        @Override
+        public String toString() {
+            return name;
+        }
     }
 }
