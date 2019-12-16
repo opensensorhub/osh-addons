@@ -16,7 +16,7 @@ package org.sensorhub.impl.sensor.flightAware;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +45,12 @@ public class FlightNumberRangeFilter implements IFlightObjectFilter
                     String airline = cols[0].trim();
                     int low = Integer.parseInt(cols[1]);
                     int high = Integer.parseInt(cols[2]);
-                    fltNumRanges.put(airline, Arrays.asList(Range.closed(low, high)));
+                    fltNumRanges.compute(airline, (k,v) -> {
+                       if (v == null)
+                           v = new ArrayList<>();
+                       v.add(Range.closed(low, high));
+                       return v;
+                    });
                 }
             });
         }
