@@ -437,7 +437,8 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	    
 	    // also save state on stop
 	    saveCache();
-	    flightCache.invalidateAll();
+	    if (flightCache != null)
+	        flightCache.invalidateAll();
 	}
 	
 	

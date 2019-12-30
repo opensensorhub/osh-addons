@@ -93,7 +93,8 @@ public class DirectoryWatcher implements Runnable
             }
 			finally
 			{
-                watchKey.reset();
+                if (watchKey != null)
+                    watchKey.reset();
 			}
 		}
 	}
