@@ -35,7 +35,7 @@ public class MessageHandlerWithForward extends MessageHandler
     }
     
 
-    @Override
+    /*@Override
     protected void newFlightObject(FlightObject fltObj)
     {
         // don't forward flightplan messages here
@@ -48,6 +48,19 @@ public class MessageHandlerWithForward extends MessageHandler
         
         for (FlightObjectListener l: objectListeners)
             l.processMessage(fltObj);
+    }*/
+    
+    
+    @Override
+    protected void newFlightObject(FlightObject fltObj)
+    {
+        if (KEEPALIVE_MSG_TYPE.equals(fltObj.type))
+        {
+            msgQueue.publish(fltObj.json.getBytes());
+            log.trace("Keepalive published to MQ: {}", fltObj.json);
+        }
+        
+        super.newFlightObject(fltObj);
     }
     
 
@@ -55,17 +68,26 @@ public class MessageHandlerWithForward extends MessageHandler
     protected void newFlightPlan(FlightObject fltPlan)
     {
         publish(fltPlan);
-        
-        for (FlightPlanListener l: planListeners)
-            l.newFlightPlan(fltPlan);
+        super.newFlightPlan(fltPlan);
     }
     
     
+    @Override
+    protected void newFlightPosition(FlightObject fltPos)
+    {
+        publish(fltPos);
+        super.newFlightPosition(fltPos);
+    }
+
+
     private void publish(FlightObject fltObj)
     {
-        String msg = gson.toJson(fltObj);
-        msgQueue.publish(msg.getBytes());
-        log.trace("Message published to MQ: {}", msg);
+        if (msgQueue != null)
+        {
+            String msg = gson.toJson(fltObj);
+            msgQueue.publish(msg.getBytes());
+            log.debug("{}_{}: {} published to MQ: {}", fltObj.ident, fltObj.dest, fltObj.type, msg);
+        }
     }
 
 }
