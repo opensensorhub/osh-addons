@@ -38,7 +38,7 @@ public class FlightAwareApi
 {  
     static final Logger log = LoggerFactory.getLogger(FlightAwareApi.class);
     
-    private final static String BASE_URL = "http://flightxml.flightaware.com/json/FlightXML2/";
+    private final static String BASE_URL = "https://flightxml.flightaware.com/json/FlightXML2/";
 	private final static String METAR_URL = BASE_URL + "MetarEx?airport=KAUS&startTime=0&howMany=1&offset=0";
 	public final static String InFlightInfo_URL = BASE_URL + "InFlightInfo?";
 	private final static String DecodeFlightRoute_URL = BASE_URL + "DecodeFlightRoute?"; // faFlightID=DAL1323-1506576332-airline-0231";
