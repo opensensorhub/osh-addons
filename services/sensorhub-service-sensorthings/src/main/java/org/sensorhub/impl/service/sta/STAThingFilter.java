@@ -19,43 +19,43 @@ import org.sensorhub.api.datastore.FeatureFilter;
 
 /**
  * <p>
- * Immutable filter object for SensorThings Location entities.<br/>
+ * Immutable filter object for SensorThings Thing entities.<br/>
  * There is an implicit AND between all filter parameters.
  * </p>
  *
  * @author Alex Robin
- * @date Oct 16, 2019
+ * @date Oct 29, 2019
  */
-class STALocationFilter extends FeatureFilter
+class STAThingFilter extends FeatureFilter
 {
-    protected FeatureFilter things;
+    protected FeatureFilter locations;
     
 
-    public FeatureFilter getThings()
+    public FeatureFilter getLocations()
     {
-        return things;
+        return locations;
     }
     
     
-    public static class Builder extends FeatureFilterBuilder<STALocationFilter.Builder, STALocationFilter>
+    public static class Builder extends FeatureFilterBuilder<Builder, STAThingFilter>
     {
         protected Builder()
         {
-            this.instance = new STALocationFilter();
+            this.instance = new STAThingFilter();
         }
         
         
-        public STALocationFilter.Builder withThings(FeatureFilter filter)
+        public Builder withLocations(FeatureFilter filter)
         {
-            instance.things = filter;
+            instance.locations = filter;
             return this;
         }
 
 
-        public STALocationFilter.Builder withThings(Long... thingIDs)
+        public Builder withLocations(Long... locationIDs)
         {
-            instance.things = new FeatureFilter.Builder()
-                .withInternalIDs(thingIDs)
+            instance.locations = new FeatureFilter.Builder()
+                .withInternalIDs(locationIDs)
                 .build();
             return this;
         }

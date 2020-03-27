@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.WriteBuffer;
 import org.h2.mvstore.type.DataType;
+import org.sensorhub.utils.ObjectUtils;
 
 /**
  * <p>
@@ -39,6 +40,12 @@ class STADataStreamStoreTypes
         {
             this.thingID = thingID;
             this.dataStreamID = dsID;
+        }
+
+        @Override
+        public String toString()
+        {
+            return ObjectUtils.toString(this, true);
         }
     }
     

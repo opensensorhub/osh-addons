@@ -18,18 +18,14 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import org.h2.mvstore.MVStore;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.datastore.IDatabaseRegistry;
-import org.sensorhub.api.datastore.IFeatureStore;
 import org.sensorhub.api.datastore.IFoiStore;
 import org.sensorhub.api.datastore.IHistoricalObsDatabase;
 import org.sensorhub.api.datastore.IObsStore;
-import org.sensorhub.api.procedure.IProcedureDescriptionStore;
+import org.sensorhub.api.procedure.IProcedureDescStore;
 import org.sensorhub.impl.datastore.h2.H2Utils;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
-import org.sensorhub.impl.datastore.h2.MVFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVHistoricalObsDatabase;
-import org.vast.ogc.gml.GenericFeature;
 import com.google.common.collect.Sets;
 
 
@@ -55,7 +51,7 @@ public class STADatabase implements ISTADatabase
     MVStore mvStore;
     IDatabaseRegistry dbRegistry;
     IHistoricalObsDatabase obsDatabase;
-    MVFeatureStoreImpl thingStore;
+    STAThingStoreImpl thingStore;
     STALocationStoreImpl locationStore;
     STAObsPropStoreImpl obsPropStore;
     STADataStreamStoreImpl dataStreamStore;
@@ -107,12 +103,12 @@ public class STADatabase implements ISTADatabase
         // open thing data store
         if (H2Utils.getDataStoreInfo(mvStore, THING_STORE_NAME) == null)
         {
-            thingStore = MVFeatureStoreImpl.create(mvStore, MVDataStoreInfo.builder()
+            thingStore = STAThingStoreImpl.create(this, MVDataStoreInfo.builder()
                 .withName(THING_STORE_NAME)
                 .build());
         }
         else
-            thingStore = MVFeatureStoreImpl.open(mvStore, THING_STORE_NAME);
+            thingStore = STAThingStoreImpl.open(this, THING_STORE_NAME);
         
         // open location data store
         if (H2Utils.getDataStoreInfo(mvStore, LOCATION_STORE_NAME) == null)
@@ -137,6 +133,9 @@ public class STADatabase implements ISTADatabase
         // init datastream store wrapper
         this.dataStreamStore = new STADataStreamStoreImpl(this,
             obsDatabase.getObservationStore().getDataStreams());
+        
+        thingStore.locationStore = locationStore;
+        locationStore.thingStore = thingStore;
     }
     
     
@@ -202,7 +201,7 @@ public class STADatabase implements ISTADatabase
 
 
     @Override
-    public IProcedureDescriptionStore getProcedureStore()
+    public IProcedureDescStore getProcedureStore()
     {
         return obsDatabase.getProcedureStore();
     }
@@ -229,22 +228,21 @@ public class STADatabase implements ISTADatabase
 
 
     @Override
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public IFeatureStore<FeatureKey, GenericFeature> getThingStore()
+    public ISTAThingStore getThingStore()
     {
-        return (IFeatureStore)thingStore;
+        return thingStore;
     }
 
 
     @Override
-    public ILocationStore getThingLocationStore()
+    public ISTALocationStore getThingLocationStore()
     {
         return locationStore;
     }
 
 
     @Override
-    public IFeatureStore<FeatureKey, ObsPropDef> getObservedPropertyDataStore()
+    public ISTAObsPropStore getObservedPropertyDataStore()
     {
         return obsPropStore;
     }

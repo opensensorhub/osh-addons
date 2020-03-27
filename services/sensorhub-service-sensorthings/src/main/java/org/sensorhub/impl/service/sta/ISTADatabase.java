@@ -14,11 +14,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.datastore.FeatureKey;
-import org.sensorhub.api.datastore.IFeatureStore;
 import org.sensorhub.api.datastore.IHistoricalObsDatabase;
-import org.vast.ogc.gml.GenericFeature;
-import org.vast.ogc.gml.IFeature;
 
 
 /**
@@ -33,38 +29,6 @@ import org.vast.ogc.gml.IFeature;
  */
 public interface ISTADatabase extends IHistoricalObsDatabase
 {
-    public static class ObsPropDef implements IFeature
-    {
-        String uri;
-        String name;
-        String description;
-        
-        public ObsPropDef(String uri, String name, String description)
-        {
-            this.uri = uri;
-            this.name = name;
-            this.description = description;
-        }
-        
-        @Override
-        public String getName()
-        {
-            return name;
-        }
-        
-        @Override
-        public String getUniqueIdentifier()
-        {
-            return uri;
-        }
-        
-        @Override
-        public String getDescription()
-        {
-            return description;
-        }
-    }
-    
     
     /**
      * @return The datastream store with support for filtering by the
@@ -76,19 +40,19 @@ public interface ISTADatabase extends IHistoricalObsDatabase
     /**
      * @return The data store handling Things entities
      */
-    IFeatureStore<FeatureKey, GenericFeature> getThingStore();
+    ISTAThingStore getThingStore();
     
     
     /**
      * @return The data store handling Location and HistoricalLocation entities
      */
-    ILocationStore getThingLocationStore();
+    ISTALocationStore getThingLocationStore();
     
     
     /**
      * @return The data store handling ObservedProperty entities
      */
-    IFeatureStore<FeatureKey, ObsPropDef> getObservedPropertyDataStore();
+    ISTAObsPropStore getObservedPropertyDataStore();
     
     
     public long toPublicID(long internalID);

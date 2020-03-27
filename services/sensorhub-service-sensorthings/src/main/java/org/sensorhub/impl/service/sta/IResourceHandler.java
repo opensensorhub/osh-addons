@@ -57,4 +57,15 @@ public interface IResourceHandler<T extends Entity>
     
     
     public EntitySet<?> queryCollection(ResourcePath path, Query q);
+    
+    
+    public default ResourcePath getParentPath(ResourcePath path)
+    {
+        var parentPath = new ResourcePath();
+        for (int i = 0; i < path.size()-1; i++)
+            parentPath.addPathElement(path.get(i));
+        parentPath.setMainElement(parentPath.getLastElement());
+        parentPath.setIdentifiedElement(path.getIdentifiedElement());
+        return parentPath;
+    }
 }

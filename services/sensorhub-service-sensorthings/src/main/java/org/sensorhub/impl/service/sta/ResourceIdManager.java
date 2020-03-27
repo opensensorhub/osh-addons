@@ -42,10 +42,13 @@ public class ResourceIdManager implements IdManager<String>
     {
         Asserts.checkNotNull(input, "id");
         
-        if (input.contains(CompositeResourceId.ID_SEPARATOR))
-            return new CompositeResourceId(input);
+        if (input.startsWith("'"))
+        {
+            String base36String = input.substring(1, input.length()-1);
+            return new ResourceIdBigInt(base36String);
+        }
         else
-            return new ResourceId(input);
+            return new ResourceIdLong(input);
     }
 
     

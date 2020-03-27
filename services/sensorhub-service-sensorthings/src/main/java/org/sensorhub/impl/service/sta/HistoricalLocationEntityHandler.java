@@ -47,7 +47,7 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
     static final String MISSING_ASSOC = "Missing reference to 'HistoricalLocation' entity";
         
     OSHPersistenceManager pm;
-    ILocationStore locationDataStore;
+    ISTALocationStore locationDataStore;
     IHistoricalObsDatabase federatedDatabase;
     STASecurity securityHandler;
     int maxPageSize = 100;
@@ -111,7 +111,7 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
         
         if (locationDataStore != null)
         {
-            var f = locationDataStore.remove(new FeatureKey(id.internalID));
+            var f = locationDataStore.remove(new FeatureKey(id.asLong()));
             if (f == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
             
@@ -183,7 +183,12 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
             if (idElt.getEntityType() == EntityType.THING)
             {
                 ResourceId thingId = (ResourceId)idElt.getId();
-                builder.withThings(thingId.internalID);
+                builder.withThings(thingId.asLong());
+            }
+            else if (idElt.getEntityType() == EntityType.LOCATION)
+            {
+                ResourceId locId = (ResourceId)idElt.getId();
+                builder.withInternalIDs(locId.asLong());
             }
         }
         
@@ -212,7 +217,7 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
         location.setId(new CompositeResourceId(thingID, time.toEpochMilli()));
         location.setTime(TimeInstant.create(time.toEpochMilli()));
         
-        Thing thing = new Thing(new ResourceId(thingID));
+        Thing thing = new Thing(new ResourceIdLong(thingID));
         thing.setExportObject(false);
         location.setThing(thing);
         

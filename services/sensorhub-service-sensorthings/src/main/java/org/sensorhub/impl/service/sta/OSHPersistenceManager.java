@@ -16,6 +16,7 @@ package org.sensorhub.impl.service.sta;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.math.BigInteger;
 import java.util.HashMap;
 import org.sensorhub.api.datastore.IDatabaseRegistry;
 import org.sensorhub.api.procedure.IProcedureRegistry;
@@ -93,16 +94,24 @@ public class OSHPersistenceManager implements PersistenceManager
                     switch (((EntityPathElement) elt).getEntityType())
                     {
                         case THING:
-                            thingHandler.checkThingID(id.internalID);
+                            thingHandler.checkThingID(id.asLong());
                             break;
                             
                         case SENSOR:
-                            sensorHandler.checkSensorID(id.internalID);
+                            sensorHandler.checkSensorID(id.asLong());
                             break;
                             
                         case DATASTREAM:
                         case MULTIDATASTREAM:
-                            dataStreamHandler.checkDatastreamID(id.internalID);
+                            dataStreamHandler.checkDatastreamID(id.asLong());
+                            break;
+                            
+                        case LOCATION:
+                            locationHandler.checkLocationID(id.asLong());
+                            break;
+                            
+                        case FEATUREOFINTEREST:
+                            foiHandler.checkFoiID(id.asLong());
                             break;
                             
                         default:
@@ -161,12 +170,36 @@ public class OSHPersistenceManager implements PersistenceManager
     }
     
     
+    protected BigInteger toPublicID(BigInteger internalID)
+    {
+        if (database != null)
+            return obsDbRegistry.getPublicID(database.getDatabaseID(), internalID);
+        else
+            return internalID;
+    }
+    
+    
     protected long toLocalID(long publicID)
     {
         if (database != null)
             return obsDbRegistry.getLocalID(database.getDatabaseID(), publicID);
         else
             return publicID;
+    }
+    
+    
+    protected BigInteger toLocalID(BigInteger publicID)
+    {
+        if (database != null)
+            return obsDbRegistry.getLocalID(database.getDatabaseID(), publicID);
+        else
+            return publicID;
+    }
+    
+    
+    protected boolean isInWritableDatabase(long publicID)
+    {
+        return obsDbRegistry.getDatabaseID(publicID) == database.getDatabaseID();
     }
 
 
@@ -229,7 +262,7 @@ public class OSHPersistenceManager implements PersistenceManager
             return entity;            
         }
         
-        // case of relationship to a single entity
+        // case of association with a single entity
         else if (path.getMainElement() instanceof EntityPathElement)
         {
             EntitySet<?> resultSet = getHandler(path).queryCollection(path, q);

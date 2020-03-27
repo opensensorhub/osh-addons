@@ -14,34 +14,20 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import java.time.Instant;
-import java.util.stream.Stream;
-import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.datastore.IFeatureStore;
-import net.opengis.gml.v32.AbstractFeature;
+import org.sensorhub.api.datastore.IFeatureStore.FeatureField;
+import org.vast.ogc.gml.GenericFeature;
 
 
 /**
  * <p>
- * Interface for SensorThings Location data stores.
+ * Interface for SensorThings Thing data stores.
  * </p>
  *
  * @author Alex Robin
- * @date Oct 16, 2019
+ * @date Oct 29, 2019
  */
-public interface ILocationStore extends IFeatureStore<FeatureKey, AbstractFeature>
+public interface ISTAThingStore extends IFeatureStore<GenericFeature, FeatureField>
 {
-
-    public interface IHistoricalLocation
-    {
-        long getThingID();
-        Instant getTime();
-    }
-    
-    
-    public void addAssociation(long thingID, long locationID, Instant time);
-    
-    
-    public Stream<IHistoricalLocation> selectHistoricalLocations(STALocationFilter filter);
-    
+       
 }

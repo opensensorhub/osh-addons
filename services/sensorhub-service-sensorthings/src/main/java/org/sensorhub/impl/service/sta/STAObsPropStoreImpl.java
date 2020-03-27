@@ -9,15 +9,16 @@
 
 package org.sensorhub.impl.service.sta;
 
+import org.sensorhub.api.datastore.IFeatureStore.FeatureField;
 import org.sensorhub.impl.datastore.h2.H2Utils;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
-import org.sensorhub.impl.service.sta.ISTADatabase.ObsPropDef;
+import org.sensorhub.impl.service.sta.ISTAObsPropStore.ObsPropDef;
 
 
-public class STAObsPropStoreImpl extends MVBaseFeatureStoreImpl<ObsPropDef>
+public class STAObsPropStoreImpl extends MVBaseFeatureStoreImpl<ObsPropDef, FeatureField> implements ISTAObsPropStore
 {
-
+    
     protected STAObsPropStoreImpl()
     {
     }

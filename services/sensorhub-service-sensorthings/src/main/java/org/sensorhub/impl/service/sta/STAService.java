@@ -23,7 +23,6 @@ import java.util.concurrent.Flow.Subscription;
 import javax.xml.namespace.QName;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.datastore.FeatureId;
 import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.module.ModuleEvent;
@@ -131,7 +130,7 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
         hubThing.setUniqueIdentifier(uid);
         hubThing.setName(config.hubThing.name);
         hubThing.setDescription(config.hubThing.description);
-        database.getThingStore().put(new FeatureKey(1, uid, FeatureKey.TIMELESS), hubThing);
+        database.getThingStore().put(new FeatureKey(1, FeatureKey.TIMELESS), hubThing);
         
         // deploy servlet
         servlet = new STAServlet((STASecurity)securityHandler);
@@ -148,28 +147,28 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
     {
         // get procedure internal ID to speed-up lookups later on
         var federatedProcStore = getParentHub().getDatabaseRegistry().getFederatedObsDatabase().getProcedureStore();
-        var fid = federatedProcStore.getFeatureID(new FeatureKey(procUID));
-        if (fid != null)
-            exposedProcedureIDs.add(fid.getInternalID());
+        var key = federatedProcStore.getLatestVersionKey(procUID);
+        if (key != null)
+            exposedProcedureIDs.add(key.getInternalID());
     }
     
     
     /*
      * Check if UID or parent UID was configured to be exposed by service
      */
-    protected boolean isProcedureExposed(String procUID)
+    protected boolean isProcedureExposed(long publicID)
     {
         // TODO handle wildcard and group member cases
         
-        return config.exposedProcedures.contains(procUID);// || config.exposedProcedures.contains(parentUid)
+        return exposedProcedureIDs.contains(publicID);// || config.exposedProcedures.contains(parentUid)
     }
     
     
-    protected boolean isProcedureExposed(FeatureId fid)
+    protected boolean isProcedureExposed(String uid)
     {
         // TODO handle wildcard and group member cases
         
-        return exposedProcedureIDs.contains(fid.getInternalID());
+        return config.exposedProcedures.contains(uid);
     }
     
     

@@ -32,12 +32,10 @@ import org.h2.mvstore.MVStore;
 import org.h2.mvstore.RangeCursor;
 import org.sensorhub.api.datastore.DataStreamFilter;
 import org.sensorhub.api.datastore.DataStreamInfo;
-import org.sensorhub.api.datastore.FeatureKey;
+import org.sensorhub.api.datastore.IDataStreamInfo;
 import org.sensorhub.api.datastore.IDataStreamStore;
-import org.sensorhub.api.datastore.IFeatureStore;
 import org.sensorhub.impl.datastore.h2.MVVoidDataType;
 import org.sensorhub.impl.service.sta.STADataStreamStoreTypes.*;
-import org.vast.ogc.gml.GenericFeature;
 import org.vast.util.Asserts;
 
 
@@ -57,7 +55,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     
     MVStore mvStore;
     IDataStreamStore delegateStore;
-    IFeatureStore<FeatureKey, GenericFeature> thingStore;
+    ISTAThingStore thingStore;
     MVBTreeMap<MVDataStreamThingKey, Boolean> thingDataStreamsIndex;
     MVBTreeMap<Long, Long> dataStreamThingIndex;
     
@@ -80,7 +78,8 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public Long add(DataStreamInfo dsInfo)
+    @Override
+    public Long add(IDataStreamInfo dsInfo)
     {
         Asserts.checkArgument(dsInfo instanceof STADataStream);
         
@@ -108,7 +107,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     
 
     @Override
-    public DataStreamInfo put(Long key, DataStreamInfo value)
+    public IDataStreamInfo put(Long key, IDataStreamInfo value)
     {
         Asserts.checkArgument(value instanceof STADataStream);
         
@@ -120,9 +119,9 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
             try
             {
                 // we need to create a pure DataStreamInfo before adding to DB
-                var pureDsInfo = DataStreamInfo.Builder.from(value).build();
+                IDataStreamInfo pureDsInfo = DataStreamInfo.Builder.from(value).build();
                 
-                DataStreamInfo oldValue = delegateStore.put(key, pureDsInfo);
+                IDataStreamInfo oldValue = delegateStore.put(key, pureDsInfo);
                 putThingAssoc(key, (STADataStream)value);
                 return oldValue;
             }
@@ -135,15 +134,21 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
     
     
-    void putThingAssoc(Long key, STADataStream dsInfo)
+    void putThingAssoc(Long dsID, STADataStream dsInfo)
     {
-        var assocKey = new MVDataStreamThingKey(dsInfo.getThingID(), key);
+        // remove previous assoc if any
+        Long oldThingID = dataStreamThingIndex.remove(dsID);
+        if (oldThingID != null)
+            thingDataStreamsIndex.remove(new MVDataStreamThingKey(oldThingID, dsID));
+        
+        // create new assoc
+        var assocKey = new MVDataStreamThingKey(dsInfo.getThingID(), dsID);
         thingDataStreamsIndex.put(assocKey, Boolean.TRUE);
         dataStreamThingIndex.put(assocKey.dataStreamID, assocKey.thingID);
     }
 
 
-    public DataStreamInfo remove(Object key)
+    public IDataStreamInfo remove(Object key)
     {
         // synchronize on MVStore to avoid autocommit in the middle of things
         synchronized (mvStore)
@@ -152,7 +157,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
             
             try
             {
-                DataStreamInfo oldValue = delegateStore.remove(key);
+                IDataStreamInfo oldValue = delegateStore.remove(key);
                 removeThingAssoc((Long)key);
                 return oldValue;
             }
@@ -190,7 +195,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public Stream<Entry<Long, DataStreamInfo>> selectEntries(DataStreamFilter filter)
+    public Stream<Entry<Long, IDataStreamInfo>> selectEntries(DataStreamFilter filter, Set<DataStreamInfoField> fields)
     {
         if (filter instanceof STADataStreamFilter)
         {
@@ -204,7 +209,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
                 return thingStore.selectKeys(thingFilter)
                     .flatMap(id -> delegateStore.selectEntries(new DataStreamFilter.Builder()
                         .withInternalIDs(datastreamIDs)
-                        .build()));
+                        .build(), fields));
             }
         }        
         
@@ -236,13 +241,13 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public DataStreamInfo getLatestVersion(String procUID, String outputName)
+    public IDataStreamInfo getLatestVersion(String procUID, String outputName)
     {
         return delegateStore.getLatestVersion(procUID, outputName);
     }
 
 
-    public Stream<DataStreamInfo> select(DataStreamFilter query)
+    public Stream<IDataStreamInfo> select(DataStreamFilter query)
     {
         return delegateStore.select(query);
     }
@@ -254,7 +259,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public Entry<Long, DataStreamInfo> getLatestVersionEntry(String procUID, String outputName)
+    public Entry<Long, IDataStreamInfo> getLatestVersionEntry(String procUID, String outputName)
     {
         return delegateStore.getLatestVersionEntry(procUID, outputName);
     }
@@ -302,7 +307,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public void putAll(Map<? extends Long, ? extends DataStreamInfo> map)
+    public void putAll(Map<? extends Long, ? extends IDataStreamInfo> map)
     {
         delegateStore.putAll(map);
     }
@@ -332,7 +337,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public DataStreamInfo get(Object key)
+    public IDataStreamInfo get(Object key)
     {
         return delegateStore.get(key);
     }
@@ -350,13 +355,13 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public Collection<DataStreamInfo> values()
+    public Collection<IDataStreamInfo> values()
     {
         return delegateStore.values();
     }
 
 
-    public Set<Entry<Long, DataStreamInfo>> entrySet()
+    public Set<Entry<Long, IDataStreamInfo>> entrySet()
     {
         return delegateStore.entrySet();
     }
@@ -374,25 +379,25 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public DataStreamInfo getOrDefault(Object key, DataStreamInfo defaultValue)
+    public IDataStreamInfo getOrDefault(Object key, IDataStreamInfo defaultValue)
     {
         return delegateStore.getOrDefault(key, defaultValue);
     }
 
 
-    public void forEach(BiConsumer<? super Long, ? super DataStreamInfo> action)
+    public void forEach(BiConsumer<? super Long, ? super IDataStreamInfo> action)
     {
         delegateStore.forEach(action);
     }
 
 
-    public void replaceAll(BiFunction<? super Long, ? super DataStreamInfo, ? extends DataStreamInfo> function)
+    public void replaceAll(BiFunction<? super Long, ? super IDataStreamInfo, ? extends IDataStreamInfo> function)
     {
         delegateStore.replaceAll(function);
     }
 
 
-    public DataStreamInfo putIfAbsent(Long key, DataStreamInfo value)
+    public IDataStreamInfo putIfAbsent(Long key, IDataStreamInfo value)
     {
         return delegateStore.putIfAbsent(key, value);
     }
@@ -404,37 +409,37 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public boolean replace(Long key, DataStreamInfo oldValue, DataStreamInfo newValue)
+    public boolean replace(Long key, IDataStreamInfo oldValue, IDataStreamInfo newValue)
     {
         return delegateStore.replace(key, oldValue, newValue);
     }
 
 
-    public DataStreamInfo replace(Long key, DataStreamInfo value)
+    public IDataStreamInfo replace(Long key, IDataStreamInfo value)
     {
         return delegateStore.replace(key, value);
     }
 
 
-    public DataStreamInfo computeIfAbsent(Long key, Function<? super Long, ? extends DataStreamInfo> mappingFunction)
+    public IDataStreamInfo computeIfAbsent(Long key, Function<? super Long, ? extends DataStreamInfo> mappingFunction)
     {
         return delegateStore.computeIfAbsent(key, mappingFunction);
     }
 
 
-    public DataStreamInfo computeIfPresent(Long key, BiFunction<? super Long, ? super DataStreamInfo, ? extends DataStreamInfo> remappingFunction)
+    public IDataStreamInfo computeIfPresent(Long key, BiFunction<? super Long, ? super IDataStreamInfo, ? extends IDataStreamInfo> remappingFunction)
     {
         return delegateStore.computeIfPresent(key, remappingFunction);
     }
 
 
-    public DataStreamInfo compute(Long key, BiFunction<? super Long, ? super DataStreamInfo, ? extends DataStreamInfo> remappingFunction)
+    public IDataStreamInfo compute(Long key, BiFunction<? super Long, ? super IDataStreamInfo, ? extends IDataStreamInfo> remappingFunction)
     {
         return delegateStore.compute(key, remappingFunction);
     }
 
 
-    public DataStreamInfo merge(Long key, DataStreamInfo value, BiFunction<? super DataStreamInfo, ? super DataStreamInfo, ? extends DataStreamInfo> remappingFunction)
+    public IDataStreamInfo merge(Long key, IDataStreamInfo value, BiFunction<? super IDataStreamInfo, ? super IDataStreamInfo, ? extends IDataStreamInfo> remappingFunction)
     {
         return delegateStore.merge(key, value, remappingFunction);
     }

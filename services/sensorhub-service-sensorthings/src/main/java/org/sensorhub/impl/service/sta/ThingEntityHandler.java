@@ -19,9 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import org.sensorhub.api.datastore.FeatureFilter;
-import org.sensorhub.api.datastore.FeatureId;
 import org.sensorhub.api.datastore.FeatureKey;
-import org.sensorhub.api.datastore.IFeatureStore;
 import org.sensorhub.api.datastore.IHistoricalObsDatabase;
 import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
@@ -53,7 +51,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     static final String MISSING_ASSOC = "Missing reference to 'Thing' entity";
     
     OSHPersistenceManager pm;
-    IFeatureStore<FeatureKey, GenericFeature> thingDataStore;
+    ISTAThingStore thingDataStore;
     IHistoricalObsDatabase federatedDatabase;
     STASecurity securityHandler;
     int maxPageSize = 100;
@@ -79,7 +77,6 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         
         // generate unique ID from name
         Asserts.checkArgument(!Strings.isNullOrEmpty(thing.getName()), "Thing name must be set");
-        String uid = groupUID + ":thing:" + thing.getName().toLowerCase().replaceAll("\\s+", "_");
         
         if (thingDataStore != null)
         {
@@ -87,8 +84,8 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
             {
                 return pm.database.executeTransaction(() -> {
                     // store feature description in DB
-                    FeatureKey key = thingDataStore.add(toGmlFeature(thing, uid));
-                    var thingId = new ResourceId(key.getInternalID());
+                    FeatureKey key = thingDataStore.add(toGmlFeature(thing, null));
+                    var thingId = new ResourceIdLong(key.getInternalID());
                     
                     // handle associations / deep inserts
                     pm.locationHandler.handleLocationAssocList(thingId, thing);
@@ -122,14 +119,12 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         {
             // retrieve UID of existing feature
             ResourceId id = (ResourceId)entity.getId();
-            var fid = thingDataStore.getFeatureID(new FeatureKey(id.internalID));
-            if (fid == null)
+            var key = thingDataStore.getLatestVersionKey(id.asLong());
+            if (key == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
             // store feature description in DB
-            String uid = fid.getUniqueID();
-            var key = new FeatureKey(fid.getInternalID(), uid, FeatureKey.TIMELESS);
-            thingDataStore.put(key, toGmlFeature(thing, uid));
+            thingDataStore.put(key, toGmlFeature(thing, null));
             
             // handle associations / deep inserts with locations
             pm.locationHandler.handleLocationAssocList(id, thing);
@@ -156,7 +151,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         if (thingDataStore != null)
         {
             var key = thingDataStore.removeEntries(new FeatureFilter.Builder()
-                    .withInternalIDs(id.internalID)
+                    .withInternalIDs(id.asLong())
                     .withAllVersions()
                     .build())
                 .findFirst();
@@ -179,19 +174,18 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         
         if (thingDataStore != null)
         {
-            var key = FeatureKey.latest(id.internalID);
-            thing = isThingVisible(key) ? thingDataStore.get(key) : null;
+            thing = isThingVisible(id.asLong()) ? thingDataStore.getLatestVersion(id.asLong()) : null;
         }
         else
         {
-            if (id.internalID == STAService.HUB_THING_ID)
+            if (id.asLong() == STAService.HUB_THING_ID)
                 thing = pm.service.hubThing;
         }
         
         if (thing == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
         
-        return toFrostThing(id.internalID, thing, q);
+        return toFrostThing(id.asLong(), thing, q);
     }
     
 
@@ -207,7 +201,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
             int limit = Math.min(q.getTopOrDefault(), maxPageSize);
             
             var entitySet = thingDataStore.selectEntries(filter)
-                .filter(e -> isThingVisible(e.getKey()))
+                .filter(e -> isThingVisible(e.getKey().getInternalID()))
                 .skip(skip)
                 .limit(limit+1) // request limit+1 elements to handle paging
                 .map(e -> toFrostThing(e.getKey().getInternalID(), e.getValue(), q))
@@ -226,25 +220,54 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     
     protected FeatureFilter getFilter(ResourcePath path, Query q)
     {
-        var builder = new FeatureFilter.Builder()
+        var builder = new STAThingFilter.Builder()
             .validAtTime(Instant.now());
         
         EntityPathElement idElt = path.getIdentifiedElement();
         if (idElt != null)
         {
-            if (idElt.getEntityType() == EntityType.DATASTREAM ||
-                idElt.getEntityType() == EntityType.MULTIDATASTREAM)
+            var parentElt = (EntityPathElement)path.getMainElement().getParent();
+            
+            // if direct parent is identified
+            if (idElt == parentElt)
             {
-                ResourceId dsId = (ResourceId)idElt.getId();
-                Long thingID = pm.database.getDataStreamStore().getAssociatedThing(pm.toLocalID(dsId.internalID));
-                builder.withInternalIDs(thingID != null ? thingID : STAService.HUB_THING_ID);
+                if (idElt.getEntityType() == EntityType.DATASTREAM ||
+                    idElt.getEntityType() == EntityType.MULTIDATASTREAM)
+                {
+                    ResourceId dsId = (ResourceId)idElt.getId();
+                    Long thingID = pm.database.getDataStreamStore().getAssociatedThing(pm.toLocalID(dsId.asLong()));
+                    builder.withInternalIDs(thingID != null ? thingID : STAService.HUB_THING_ID);
+                }
+                else if (idElt.getEntityType() == EntityType.HISTORICALLOCATION)
+                {
+                    /*CompositeResourceId historyLocId = (CompositeResourceId)idElt.getId();
+                    long thingID = historyLocId.parentIDs[0];
+                    builder.withInternalIDs(thingID);*/
+                }
+                else if (idElt.getEntityType() == EntityType.LOCATION)
+                {
+                    ResourceId locId = (ResourceId)idElt.getId();
+                    builder.withLocations(locId.asLong());
+                }
             }
-            else if (idElt.getEntityType() == EntityType.OBSERVATION)
+            
+            // if direct parent is not identified, need to look it up
+            else
             {
-                CompositeResourceId obsId = (CompositeResourceId)idElt.getId();
-                long dataStreamID = obsId.parentIDs[0];
-                Long thingID = pm.database.getDataStreamStore().getAssociatedThing(pm.toLocalID(dataStreamID));
-                builder.withInternalIDs(thingID != null ? thingID : STAService.HUB_THING_ID);
+                if (parentElt.getEntityType() == EntityType.DATASTREAM ||
+                    parentElt.getEntityType() == EntityType.MULTIDATASTREAM)
+                {
+                    var dataStreamSet = pm.dataStreamHandler.queryCollection(getParentPath(path), q);
+                    
+                    Long thingID = null;
+                    if (!dataStreamSet.isEmpty())
+                    {
+                        long dataStreamID = ((ResourceId)dataStreamSet.asList().get(0).getId()).asLong();
+                        thingID = pm.database.getDataStreamStore().getAssociatedThing(pm.toLocalID(dataStreamID));
+                    }
+                    
+                    builder.withInternalIDs(thingID != null ? thingID : STAService.HUB_THING_ID);
+                }
             }
         }
         
@@ -281,7 +304,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         
         Thing thing = new Thing();
         
-        thing.setId(new ResourceId(internalId));
+        thing.setId(new ResourceIdLong(internalId));
         thing.setName(f.getName());
         thing.setDescription(f.getDescription());
         
@@ -306,7 +329,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         {
             thingId = (ResourceId)thing.getId();
             Asserts.checkArgument(thingId != null, MISSING_ASSOC);
-            checkThingID(thingId.internalID);
+            checkThingID(thingId.asLong());
         }
         else
         {
@@ -330,10 +353,10 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     }
     
     
-    protected boolean isThingVisible(FeatureId fid)
+    protected boolean isThingVisible(long thingID)
     {
         // hub thing should not be visible if no other hub procedures are exposed
-        if (fid.getInternalID() == STAService.HUB_THING_ID && pm.service.getConfiguration().exposedProcedures.isEmpty())
+        if (thingID == STAService.HUB_THING_ID && pm.service.getConfiguration().exposedProcedures.isEmpty())
             return false;
         
         return true;

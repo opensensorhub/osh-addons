@@ -22,7 +22,7 @@ import org.h2.mvstore.MVStore;
 import org.h2.mvstore.RangeCursor;
 import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.datastore.IFeatureFilter;
-import org.sensorhub.api.datastore.IFeatureStore;
+import org.sensorhub.api.datastore.IFeatureStore.FeatureField;
 import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.impl.datastore.h2.H2Utils;
 import org.sensorhub.impl.datastore.h2.IdProvider;
@@ -32,7 +32,6 @@ import org.sensorhub.impl.datastore.h2.MVVoidDataType;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVLocationThingKeyDataType;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVThingLocationKey;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVThingLocationKeyDataType;
-import org.vast.ogc.gml.GenericFeature;
 import net.opengis.gml.v32.AbstractFeature;
 
 
@@ -44,14 +43,14 @@ import net.opengis.gml.v32.AbstractFeature;
  * @author Alex Robin
  * @date Oct 16, 2019
  */
-class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature> implements ILocationStore
+class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, FeatureField> implements ISTALocationStore
 {
     private static final String THING_LOCATIONS_MAP_NAME = "@thing_locations";
     private static final String LOCATION_THINGS_MAP_NAME = "@location_things";
     
-    IFeatureStore<FeatureKey, GenericFeature> thingStore;
+    ISTAThingStore thingStore;
     MVBTreeMap<MVThingLocationKey, Boolean> thingTimeLocationIndex;
-    MVBTreeMap<MVThingLocationKey, Boolean> locationTimeThingIndex;
+    MVBTreeMap<MVThingLocationKey, Boolean> locationThingTimeIndex;
     
     
     STALocationStoreImpl()
@@ -63,7 +62,6 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature> imple
     {
         MVDataStoreInfo dataStoreInfo = H2Utils.loadDataStoreInfo(db.getMVStore(), dataStoreName);
         var store = new STALocationStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
-        store.thingStore = db.getThingStore();
         return store;
     }
     
@@ -72,7 +70,6 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature> imple
     {
         H2Utils.addDataStoreInfo(db.getMVStore(), dataStoreInfo);
         var store = new STALocationStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
-        store.thingStore = db.getThingStore();
         return store;
     }
     
@@ -91,9 +88,9 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature> imple
                 .valueType(new MVVoidDataType()));
         
         // location+time to thing map
-        // sorted by location ID, then by time, then by thing ID
+        // sorted by location ID, then by thing ID, then by time
         mapName = LOCATION_THINGS_MAP_NAME + ":" + dataStoreInfo.getName();
-        this.locationTimeThingIndex = mvStore.openMap(mapName,
+        this.locationThingTimeIndex = mvStore.openMap(mapName,
             new MVBTreeMap.Builder<MVThingLocationKey, Boolean>()
                 .keyType(new MVLocationThingKeyDataType())
                 .valueType(new MVVoidDataType()));
@@ -102,11 +99,20 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature> imple
     }
     
     
+    @Override
+    protected FeatureKey generateKey(AbstractFeature feature)
+    {
+        // generate key
+        long internalID = idProvider.newInternalID();
+        return new FeatureKey(internalID, FeatureKey.TIMELESS);
+    }
+    
+    
     public void addAssociation(long thingID, long locationID, Instant time)
     {
         var key = new MVThingLocationKey(thingID, locationID, time);
         thingTimeLocationIndex.put(key, Boolean.TRUE);
-        locationTimeThingIndex.put(key, Boolean.TRUE);
+        locationThingTimeIndex.put(key, Boolean.TRUE);
     }
         
     
@@ -116,7 +122,21 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature> imple
         var first = thingTimeLocationIndex.ceilingKey(beforeLatest);
         if (first == null || first.thingID != thingID)
             return Stream.empty();
-        var last = new MVThingLocationKey(thingID, Integer.MAX_VALUE, first.time);
+        var last = new MVThingLocationKey(thingID, Long.MAX_VALUE, first.time);
+        var cursor = new RangeCursor<>(thingTimeLocationIndex, first, last);
+        
+        return cursor.keyStream()
+            .map(k -> new FeatureKey(k.locationID));
+    }
+    
+    
+    Stream<FeatureKey> getLocationKeysByThingAndTime(long thingID, Instant time)
+    {
+        var beforeFirst = new MVThingLocationKey(thingID, 0, time);
+        var first = thingTimeLocationIndex.ceilingKey(beforeFirst);
+        if (first == null || first.thingID != thingID || !first.time.equals(time))
+            return Stream.empty();
+        var last = new MVThingLocationKey(thingID, Long.MAX_VALUE, first.time);
         var cursor = new RangeCursor<>(thingTimeLocationIndex, first, last);
         
         return cursor.keyStream()
@@ -132,9 +152,23 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature> imple
             var thingFilter = ((STALocationFilter)filter).getThings();
             if (thingFilter != null)
             {
-                return thingStore.selectKeys(thingFilter)
-                    .flatMap(k -> getCurrentLocationKeysByThing(k.getInternalID()))
-                    .map(k -> featuresIndex.getEntry(k));
+                // get time filter
+                var timeFilter = filter.getValidTime() != null ?
+                    filter.getValidTime() : H2Utils.ALL_TIMES_FILTER;
+                boolean latestVersionOnly = timeFilter.isLatestTime();
+                
+                if (latestVersionOnly)
+                {
+                    return thingStore.selectKeys(thingFilter)
+                        .flatMap(k -> getCurrentLocationKeysByThing(k.getInternalID()))
+                        .map(k -> featuresIndex.getEntry(k));
+                }
+                else
+                {
+                    return thingStore.selectKeys(thingFilter)
+                        .flatMap(k -> getLocationKeysByThingAndTime(k.getInternalID(), timeFilter.getMin()))
+                        .map(k -> featuresIndex.getEntry(k));
+                }
             }
         }
         
@@ -167,6 +201,19 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature> imple
             .filter(k -> !Objects.equals(k.time, lastTime.value))
             .peek(k -> lastTime.value = k.time);  
     }
+    
+    
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    Stream<IHistoricalLocation> getHistoricalLocationsByLocation(long locationID, RangeFilter<Instant> timeRange)
+    {
+        var beforeLatest = new MVThingLocationKey(0, locationID, timeRange.getMax());
+        var first = locationThingTimeIndex.ceilingKey(beforeLatest);
+        if (first == null || first.locationID != locationID)
+            return Stream.empty();
+        var last = new MVThingLocationKey(Long.MAX_VALUE, locationID, timeRange.getMin());
+        var cursor = new RangeCursor<>(locationThingTimeIndex, first, last);
+        return (Stream)cursor.keyStream();
+    }
         
     
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -176,6 +223,11 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature> imple
         {
             return thingStore.selectKeys(filter.getThings())
                 .flatMap(k -> getHistoricalLocationsByThing(k.getInternalID(), filter.getValidTime()));
+        }
+        else if (filter.getInternalIDs() != null)
+        {
+            return filter.getInternalIDs().getSet().stream()
+                .flatMap(id -> getHistoricalLocationsByLocation(id, filter.getValidTime()));
         }
         else
         {

@@ -20,7 +20,8 @@ import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.WriteBuffer;
 import org.h2.mvstore.type.DataType;
 import org.sensorhub.impl.datastore.h2.H2Utils;
-import org.sensorhub.impl.service.sta.ILocationStore.IHistoricalLocation;
+import org.sensorhub.impl.service.sta.ISTALocationStore.IHistoricalLocation;
+import org.sensorhub.utils.ObjectUtils;
 
 
 /**
@@ -63,6 +64,12 @@ class STALocationStoreTypes
         public Instant getTime()
         {
             return time;
+        }
+
+        @Override
+        public String toString()
+        {
+            return ObjectUtils.toString(this, true);
         }
     }
     
@@ -146,14 +153,14 @@ class STALocationStoreTypes
             if (comp != 0)
                 return comp;
             
-            // then compare time stamp
-            // sort in reverse order so that latest version is always first
-            comp = -a.time.compareTo(b.time);
+            // then compare thing ID
+            comp = Long.compare(a.thingID, b.thingID);
             if (comp != 0)
                 return comp;
             
-            // then compare thing ID
-            return Long.compare(a.thingID, b.thingID);
+            // then compare time stamp
+            // sort in reverse order so that latest version is always first
+            return -a.time.compareTo(b.time);
         }
     }
 }

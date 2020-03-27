@@ -18,7 +18,6 @@ import java.time.Instant;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import org.geojson.GeoJsonObject;
-import org.sensorhub.api.datastore.FeatureId;
 import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.datastore.FoiFilter;
 import org.sensorhub.api.datastore.IFoiStore;
@@ -50,6 +49,7 @@ import net.opengis.gml.v32.AbstractGeometry;
 public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
 {
     static final String NOT_FOUND_MESSAGE = "Cannot find 'FeatureOfInterest' entity with ID #";
+    static final String NOT_WRITABLE_MESSAGE = "Cannot modify read-only 'FeatureOfInterest' entity #";
         
     OSHPersistenceManager pm;
     IFoiStore foiReadStore;
@@ -84,7 +84,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         if (foiWriteStore != null)
         {
             FeatureKey key = foiWriteStore.add(toGmlFeature(foi, uid));
-            return new ResourceId(pm.toPublicID(key.getInternalID()));
+            return new ResourceIdLong(pm.toPublicID(key.getInternalID()));
         }
         
         throw new UnsupportedOperationException(NO_DB_MESSAGE);
@@ -100,15 +100,15 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         
         // retrieve UID of existing feature
         ResourceId id = (ResourceId)entity.getId();
-        FeatureId fid = foiReadStore.getFeatureID(new FeatureKey(id.internalID));
-        if (fid == null)
+        var fEntry = foiReadStore.getLatestVersionEntry(id.asLong());
+        if (fEntry == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
         // store feature description in DB
         if (foiWriteStore != null)
         {
-            String uid = fid.getUniqueID();
-            var key = new FeatureKey(fid.getInternalID(), uid, FeatureKey.TIMELESS);
+            var key = fEntry.getKey();
+            var uid = fEntry.getValue().getUniqueIdentifier();
             foiWriteStore.put(key, toGmlFeature(foi, uid));
             return true;
         }
@@ -131,7 +131,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         if (foiWriteStore != null)
         {
             var key = foiWriteStore.removeEntries(new FoiFilter.Builder()
-                    .withInternalIDs(pm.toLocalID(id.internalID))
+                    .withInternalIDs(pm.toLocalID(id.asLong()))
                     .withAllVersions()
                     .build())
                 .findFirst();
@@ -151,13 +151,12 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     {
         securityHandler.checkPermission(securityHandler.sta_read_foi);
         
-        var key = FeatureKey.latest(id.internalID);
-        var foi = foiReadStore.get(key);
+        var foi = isFoiVisible(id.asLong()) ? foiReadStore.getLatestVersion(id.asLong()) : null;
         
         if (foi == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
         else
-            return toFrostFoi(id.internalID, foi, q);
+            return toFrostFoi(id.asLong(), foi, q);
     }
     
 
@@ -171,6 +170,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
         
         var entitySet = foiReadStore.selectEntries(filter)
+            .filter(e -> isFoiVisible(e.getKey().getInternalID()))
             .skip(skip)
             .limit(limit+1) // request limit+1 elements to handle paging
             .map(e -> toFrostFoi(e.getKey().getInternalID(), e.getValue(), q))
@@ -190,11 +190,10 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         {
             if (idElt.getEntityType() == EntityType.OBSERVATION)
             {
-                CompositeResourceId obsId = (CompositeResourceId)idElt.getId();
-                long foiID = obsId.parentIDs[1];
-                if (foiID == 0) // case of no FOI, set bad ID so we send '404 not found'
-                    foiID = Long.MAX_VALUE;
-                builder.withInternalIDs(foiID);
+                ResourceIdBigInt obsId = (ResourceIdBigInt)idElt.getId();
+                builder.withObservations()
+                    .withInternalIDs(obsId.internalID)
+                    .done();
             }
         }
         
@@ -202,7 +201,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         if (q.getFilter() != null)
             q.getFilter().accept(visitor);*/
         
-        return builder.build();            
+        return builder.build();
     }
     
     
@@ -230,7 +229,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         //Set<Property> select = q != null ? q.getSelect() : Collections.emptySet();
         
         FeatureOfInterest foi = new FeatureOfInterest();
-        foi.setId(new ResourceId(internalId));
+        foi.setId(new ResourceIdLong(internalId));
         foi.setName(f.getName());
         foi.setDescription(f.getDescription());
         foi.setEncodingType(GEOJSON_FORMAT);
@@ -245,6 +244,37 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         }
         
         return foi;
+    }
+    
+    
+    /*
+     * Check that foiID is present in database and exposed by service
+     */
+    protected void checkFoiID(long publicID) throws NoSuchEntityException
+    {
+        boolean hasFoi = isFoiVisible(publicID) && foiReadStore.getLatestVersionKey(publicID) != null;
+        if (!hasFoi)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
+    }
+    
+    
+    protected boolean isFoiVisible(long publicID)
+    {
+        // TODO also check that current user has the right to read this procedure!
+        
+        // TODO check that feature is either in writable database 
+        // or associated with a visible sensor
+        
+        return true;
+    }
+    
+    
+    protected void checkFoiWritable(long publicID)
+    {
+        // TODO also check that current user has the right to write this procedure!
+        
+        if (!(pm.obsDbRegistry.getDatabaseID(publicID) == pm.database.getDatabaseID()))
+            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
     }
 
 }

@@ -8,89 +8,29 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
+Copyright (C) 2020 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.service.sta;
 
-import org.vast.util.Asserts;
-import de.fraunhofer.iosb.ilt.frostserver.model.core.Id;
-import de.fraunhofer.iosb.ilt.frostserver.persistence.BasicPersistenceType;
 
+import java.math.BigInteger;
+import de.fraunhofer.iosb.ilt.frostserver.model.core.Id;
 
 /**
  * <p>
- * ResourceId class backed by a single long value
+ * Base interface for resource IDs used by this implementation
  * </p>
  *
  * @author Alex Robin
- * @date Sep 7, 2019
+ * @date Mar 17, 2020
  */
-public class ResourceId implements Id
+public interface ResourceId extends Id
 {
-    static final String BAD_ID_MSG = "IDs must be positive integers";
-        
-    long internalID;
-    
-    
-    protected ResourceId()
-    {        
-    }
-    
-    
-    public ResourceId(long internalID)
-    {
-        Asserts.checkArgument(internalID > 0, BAD_ID_MSG);
-        this.internalID = internalID;
-    }
-    
-    
-    public ResourceId(String idString)
-    {
-        this.internalID = Long.parseLong(idString);
-        Asserts.checkArgument(internalID > 0, BAD_ID_MSG);
-    }
-    
-    
-    @Override
-    public Object getValue()
-    {
-        return internalID;
-    }
 
-
-    @Override
-    public String getUrl()
-    {
-        return Long.toString(internalID);
-    }
+    public long asLong();
     
     
-    @Override
-    public String toString()
-    {
-        return getValue().toString();
-    }
-
-
-    @Override
-    public BasicPersistenceType getBasicPersistenceType()
-    {
-        return null;
-    }
-
-
-    @Override
-    public Object asBasicPersistenceType()
-    {
-        return null;
-    }
-
-
-    @Override
-    public void fromBasicPersitenceType(Object data)
-    {
-    }
-
+    public BigInteger asBigInt();
 }
