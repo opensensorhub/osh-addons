@@ -31,9 +31,9 @@ public class ResourceIdManager implements IdManager<String>
 {
 
     @Override
-    public Class<ResourceId> getIdClass()
+    public Class<ResourceIdLong> getIdClass()
     {
-        return ResourceId.class;
+        return ResourceIdLong.class;
     }
 
     

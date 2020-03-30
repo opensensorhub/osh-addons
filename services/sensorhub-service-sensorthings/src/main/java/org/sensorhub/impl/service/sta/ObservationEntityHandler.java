@@ -53,7 +53,12 @@ import net.opengis.swe.v20.DataBlock;
 
 /**
  * <p>
- * Handler for Sensor resources
+ * Handler for Observation resources.<br/>
+ * 
+ * The truncate flag is used to remove the nanoseconds part of observations IDs
+ * so that we can pass the CITE tests that are limited to 34-bits integer IDs.
+ * However this will only work if observation time stamps are "whole seconds"
+ * with the fractional part set to 0.
  * </p>
  *
  * @author Alex Robin
@@ -69,6 +74,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     IObsStore obsReadStore;
     IObsStore obsWriteStore;
     int maxPageSize = 100;
+    boolean truncateIds = false;
     
     
     ObservationEntityHandler(OSHPersistenceManager pm)
@@ -170,7 +176,10 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     {
         securityHandler.checkPermission(securityHandler.sta_read_obs);
         
-        BigInteger key = ((ResourceIdBigInt)id).internalID;
+        BigInteger key = id.asBigInt();
+        if (truncateIds)
+            key = expandPublicId(key);
+        
         IObsData obs = obsReadStore.get(key);
         if (obs == null || !isObsVisible(obs))
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
@@ -255,7 +264,11 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
      */
     protected BigInteger toLocalKey(ResourceId obsId)
     {
-        return pm.toLocalID(obsId.asBigInt());
+        BigInteger publicId = obsId.asBigInt();
+        if (truncateIds)
+            publicId = expandPublicId(publicId);
+        
+        return pm.toLocalID(publicId);
     }
     
     
@@ -317,7 +330,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         Observation obs = new Observation();
         
         // composite ID
-        obs.setId(new ResourceIdBigInt(key));
+        obs.setId(new ResourceIdBigInt(truncateIds ? truncatePublicId(key) : key));
         
         // phenomenon time
         obs.setPhenomenonTime(TimeInstant.create(obsData.getPhenomenonTime().toEpochMilli(), DateTimeZone.UTC));
@@ -426,6 +439,22 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         // TODO also check that current user has the right to read this entity!
         
         return pm.dataStreamHandler.isDatastreamVisible(publicKey.getDataStreamID());
+    }
+    
+    
+    protected BigInteger expandPublicId(BigInteger id)
+    {
+        // insert the 0 nanoseconds part (32-bits) in the ID
+        var localId = pm.toLocalID(id).shiftLeft(32);
+        return pm.toPublicID(localId);
+    }
+    
+    
+    protected BigInteger truncatePublicId(BigInteger id)
+    {
+        // remove the nanoseconds part (32-bits) of the ID
+        var localId = pm.toLocalID(id).shiftRight(32);
+        return pm.toPublicID(localId);
     }
 
 }
