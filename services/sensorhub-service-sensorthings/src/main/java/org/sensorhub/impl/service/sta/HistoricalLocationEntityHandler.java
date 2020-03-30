@@ -14,10 +14,15 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.stream.Collectors;
+import org.h2.mvstore.DataUtils;
+import org.h2.mvstore.WriteBuffer;
 import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.datastore.IHistoricalObsDatabase;
+import org.sensorhub.impl.datastore.h2.H2Utils;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
 import de.fraunhofer.iosb.ilt.frostserver.model.HistoricalLocation;
@@ -125,17 +130,17 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
     @Override
     public HistoricalLocation getById(ResourceId id, Query q) throws NoSuchEntityException
     {
-        securityHandler.checkPermission(securityHandler.sta_read_location);        
-        CompositeResourceId changeId = checkResourceId(id);
+        securityHandler.checkPermission(securityHandler.sta_read_location);
         
         if (locationDataStore != null)
         {
-            long thingID = changeId.parentIDs[0];
-            long timeStamp = changeId.internalID;
+            long[] ids = parseId(id.asLong());
+            long thingID = ids[0];
+            long timeStamp = ids[1];
             
             var filter = new STALocationFilter.Builder()
                 .withThings(thingID)
-                .validAtTime(Instant.ofEpochMilli(timeStamp))
+                .validAtTime(Instant.ofEpochSecond(timeStamp))
                 .build();
             
             return locationDataStore.selectHistoricalLocations(filter)
@@ -200,21 +205,10 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
     }
     
     
-    protected CompositeResourceId checkResourceId(ResourceId id) throws NoSuchEntityException
-    {
-        if (!(id instanceof CompositeResourceId) ||
-            ((CompositeResourceId)id).parentIDs.length != 1 ||
-            ((CompositeResourceId)id).parentIDs[0] < 0)
-            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
-        
-        return (CompositeResourceId)id;
-    }
-    
-    
     protected HistoricalLocation toFrostHistoricalLocation(long thingID, Instant time, Query q)
     {
         HistoricalLocation location = new HistoricalLocation();
-        location.setId(new CompositeResourceId(thingID, time.toEpochMilli()));
+        location.setId(new ResourceIdLong(generateId(thingID, time)));
         location.setTime(TimeInstant.create(time.toEpochMilli()));
         
         Thing thing = new Thing(new ResourceIdLong(thingID));
@@ -222,6 +216,24 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
         location.setThing(thing);
         
         return location;
+    }
+    
+    
+    protected long generateId(long thingID, Instant time)
+    {
+        WriteBuffer buf = new WriteBuffer(8); // thingID + timestamp seconds
+        DataUtils.writeVarLong(buf.getBuffer(), thingID);
+        DataUtils.writeVarLong(buf.getBuffer(), time.getEpochSecond());
+        return new BigInteger(buf.getBuffer().array(), 0, buf.position()).longValue();
+    }
+    
+    
+    protected long[] parseId(long id)
+    {
+        ByteBuffer buf = ByteBuffer.wrap(BigInteger.valueOf(id).toByteArray());
+        long thingID = DataUtils.readVarLong(buf);
+        long time = DataUtils.readVarLong(buf);
+        return new long[] {thingID, time};
     }
 
 }

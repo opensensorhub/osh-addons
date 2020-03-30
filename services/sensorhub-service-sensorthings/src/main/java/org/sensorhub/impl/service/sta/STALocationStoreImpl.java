@@ -15,6 +15,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sta;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.stream.Stream;
 import org.h2.mvstore.MVBTreeMap;
@@ -24,6 +25,7 @@ import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.datastore.IFeatureFilter;
 import org.sensorhub.api.datastore.IFeatureStore.FeatureField;
 import org.sensorhub.api.datastore.RangeFilter;
+import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.impl.datastore.h2.H2Utils;
 import org.sensorhub.impl.datastore.h2.IdProvider;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
@@ -132,11 +134,15 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
     
     Stream<FeatureKey> getLocationKeysByThingAndTime(long thingID, Instant time)
     {
-        var beforeFirst = new MVThingLocationKey(thingID, 0, time);
+        /*var beforeFirst = new MVThingLocationKey(thingID, 0, time);
         var first = thingTimeLocationIndex.ceilingKey(beforeFirst);
         if (first == null || first.thingID != thingID || !first.time.equals(time))
             return Stream.empty();
         var last = new MVThingLocationKey(thingID, Long.MAX_VALUE, first.time);
+        var cursor = new RangeCursor<>(thingTimeLocationIndex, first, last);*/
+        
+        var first = new MVThingLocationKey(thingID, 0, time.plusSeconds(1).minusMillis(1));
+        var last = new MVThingLocationKey(thingID, 0, time);
         var cursor = new RangeCursor<>(thingTimeLocationIndex, first, last);
         
         return cursor.keyStream()
@@ -177,23 +183,25 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
     
     
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    Stream<IHistoricalLocation> getHistoricalLocationsByThing(long thingID, RangeFilter<Instant> timeRange)
+    Stream<IHistoricalLocation> getHistoricalLocationsByThing(long thingID, TemporalFilter timeRange)
     {
         MVThingLocationKey first, last;
-        if (timeRange != null)
-        {
-            // time bounds are reversed since we are sorted by descending time stamp
-            first = new MVThingLocationKey(thingID, 0, timeRange.getMax());
-            last = new MVThingLocationKey(thingID, Integer.MAX_VALUE, timeRange.getMin());
-        }
-        else
+        if (timeRange == null || timeRange.isAllTimes())
         {
             // time bounds are reversed since we are sorted by descending time stamp
             first = new MVThingLocationKey(thingID, 0, Instant.MAX);
             last = new MVThingLocationKey(thingID, Integer.MAX_VALUE, Instant.MIN);
         }
+        else
+        {
+            // time bounds are reversed since we are sorted by descending time stamp
+            //first = new MVThingLocationKey(thingID, 0, timeRange.getMax());
+            //last = new MVThingLocationKey(thingID, Integer.MAX_VALUE, timeRange.getMin());
+            first = new MVThingLocationKey(thingID, 0, timeRange.getMax().truncatedTo(ChronoUnit.SECONDS).plusSeconds(1));
+            last = new MVThingLocationKey(thingID, Integer.MAX_VALUE, timeRange.getMin().truncatedTo(ChronoUnit.SECONDS));
+        }
         
-        var cursor = new RangeCursor<>(thingTimeLocationIndex, first, last);        
+        var cursor = new RangeCursor<>(thingTimeLocationIndex, first, last);
         class Holder { Instant value = null; }
         var lastTime = new Holder();
         

@@ -209,9 +209,12 @@ public class LocationEntityHandler implements IResourceHandler<Location>
                 }
                 else if (idElt.getEntityType() == EntityType.HISTORICALLOCATION)
                 {
-                    /*CompositeResourceId historicalLocId = (CompositeResourceId)idElt.getId();
-                    builder.withThings(historicalLocId.parentIDs[0])
-                        .validAtTime(Instant.ofEpochMilli(historicalLocId.internalID));*/
+                    var resId = (ResourceId)idElt.getId();
+                    long[] ids = pm.historicalLocationHandler.parseId(resId.asLong());
+                    Instant timeStamp = Instant.ofEpochSecond(ids[1]);
+                    builder.withThings(ids[0])
+                        //.validAtTime(Instant.ofEpochMilli(ids[1]));
+                        .withValidTimeDuring(timeStamp, timeStamp.plusSeconds(1));
                 }
             }
             
