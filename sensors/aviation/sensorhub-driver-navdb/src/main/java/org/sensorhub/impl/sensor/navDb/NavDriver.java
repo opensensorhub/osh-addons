@@ -14,57 +14,59 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.navDb;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
+import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.navDb.NavDbEntry.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.vast.sensorML.SMLHelper;
-
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
-
+import org.sensorhub.impl.utils.grid.DirectoryWatcher;
+import org.sensorhub.impl.utils.grid.FileListener;
 import net.opengis.gml.v32.AbstractFeature;
-import net.opengis.gml.v32.Point;
-import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.AbstractProcess;
 
+
 /**
- * 
+ * Main driver class for loading navigation database in ARINC 424 format
  * @author tcook
  * @since Nov, 2017
- * 
- * TODO: clean up and remove redundant code
- * 
  */
-public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMultiSourceDataProducer  
+public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMultiSourceDataProducer, FileListener  
 {
-	NavOutput navOutput;
+    static final Pattern DATA_FILE_REGEX = Pattern.compile(".+\\.dat");
+    
+    Thread watcherThread;
+    DirectoryWatcher watcher;
+    AirportOutput navOutput;
 	WaypointOutput wyptOutput;
 	NavaidOutput navaidOutput;
-	Set<String> foiIDs;
-	Multimap<String, AbstractFeature> navEntryFois;
+	Set<String> entityIDs;
+	//Multimap<String, AbstractFeature> navEntryFois;
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
 	static final String AIRPORTS_UID_PREFIX = SENSOR_UID_PREFIX + "airports:";
 	static final String WAYPOINTS_UID_PREFIX = SENSOR_UID_PREFIX + "waypoints:";
 	static final String NAVAID_UID_PREFIX = SENSOR_UID_PREFIX + "navaids:";
-	static final Logger log = LoggerFactory.getLogger(NavDriver.class);
+	AtomicBoolean loading = new AtomicBoolean(false);
+	
 
 	public NavDriver() {
-		this.foiIDs = new LinkedHashSet<String>();
-		this.navEntryFois = LinkedListMultimap.create();
+		this.entityIDs = new TreeSet<>();
+		//this.navEntryFois = LinkedListMultimap.create();
 	}
 
 	@Override
@@ -84,154 +86,274 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	@Override
 	public void init() throws SensorHubException
 	{
-
 		super.init();
-
-		System.err.println("Nav DB Path: " + config.navDbPath);
+		
 		// IDs
-		this.uniqueID = "urn:osh:sensor:earthcast:navDb";
-		this.xmlID = "NavDb";
+		this.uniqueID = SENSOR_UID_PREFIX + "navDb";
+		this.xmlID = "NAVDB";
 
 		// Initialize Outputs
 		try {
-			if(waypoints) {
+            if (airports) {
+                this.navOutput = new AirportOutput(this);
+                addOutput(navOutput, false);
+                navOutput.init();
+            }
+
+            if (navaids) {
+                this.navaidOutput = new NavaidOutput(this);
+                addOutput(navaidOutput, false);
+                navaidOutput.init();
+            }
+            
+			if (waypoints) {
 				this.wyptOutput = new WaypointOutput(this);
 				addOutput(wyptOutput, false);
 				wyptOutput.init();
-			}
-
-			if(airports) {
-				this.navOutput = new NavOutput(this);
-				addOutput(navOutput, false);
-				navOutput.init();
-			}
-
-			if(navaids) {
-				this.navaidOutput = new NavaidOutput(this);
-				addOutput(navaidOutput, false);
-				navaidOutput.init();
-			}
-			
+			}			
 		} catch (IOException e) {
-			e.printStackTrace();
-			throw new SensorHubException("Cannot instantiate NavOutput", e);
+			throw new SensorHubException("Cannot instantiate NavDB outputs", e);
 		}        
-
 
 	}
 
 	@Override
 	public void start() throws SensorHubException
 	{
-		if(navaids)
-			startNavaid();
-		if(waypoints)
-			startWaypt();
-		if(airports)
-			startAirports();
-
-	}
-
-	public void startAirports() throws SensorHubException {
-		try {
-			List<NavDbEntry> airports = LufthansaParser.getDeltaAirports(config.navDbPath, config.deltaAirportsPath);
-			//  add FOIS, one per airport
-			SMLHelper smlFac = new SMLHelper();
-			GMLFactory gmlFac = new GMLFactory(true);
-			for(NavDbEntry airport: airports) {
-				AbstractFeature airportFoi = smlFac.newPhysicalSystem();
-				airportFoi.setId(airport.icao);
-				String uid = AIRPORTS_UID_PREFIX + airport.icao;
-				airportFoi.setUniqueIdentifier(uid);
-				airportFoi.setName(airport.name);
-				airportFoi.setDescription("Airport Foi for " + airport.name);
-				Point location = gmlFac.newPoint();
-				location.setPos(new double [] {airport.lat, airport.lon});
-				airportFoi.setLocation(location);
-
-				foiIDs.add(uid);
-				navEntryFois.put(uid, airportFoi);
-			}
-
-			//  Send to output
-			navOutput.sendEntries(airports);
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new SensorHubException("Error parsing NavDB File.  Cannot load.", e);
-		} 		
+	    loading.set(false);
+	    startDirectoryWatcher();
+        readLatestDataFile();
 	}
 
 
-	public void startNavaid() throws SensorHubException
+    private void startDirectoryWatcher() throws SensorHubException
+    {
+        try
+        {
+            watcher = new DirectoryWatcher(Paths.get(config.navDbPath), StandardWatchEventKinds.ENTRY_CREATE);
+            watcherThread = new Thread(watcher);
+            watcher.addListener(this);
+            watcherThread.start();
+            getLogger().info("Watching directory {} for data updates", config.navDbPath);
+        }
+        catch (IOException e)
+        {
+            throw new SensorHubException("Error creating directory watcher on " + config.navDbPath, e);
+        }
+    }
+    
+    
+    private void readLatestDataFile() throws SensorHubException
+    {
+        // list all available nav DB data files
+        File dir = new File(config.navDbPath);
+        File[] navDbFiles = dir.listFiles(new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return DATA_FILE_REGEX.matcher(name).matches();
+            }
+        });        
+        
+        // skip if nothing is available
+        if (navDbFiles.length == 0)
+        {
+            getLogger().warn("No Nav DB file available");
+            return;
+        }
+        
+        // get the one with latest time stamp
+        File latestFile = navDbFiles[0];
+        for (File f: navDbFiles)
+        {
+            if (f.lastModified() > latestFile.lastModified())
+                latestFile = f;
+        }
+        
+        // trigger reader
+        newFile(latestFile.toPath());
+    }
+
+
+    /*
+     * called whenever we get a new Nav DB file
+     */
+    @Override
+    public void newFile(Path p)
+    {        
+        // only continue when it's a new nav DB file
+        if (!DATA_FILE_REGEX.matcher(p.getFileName().toString()).matches())
+            return;
+        
+        // skip if already loading
+        if (!loading.compareAndSet(false, true))
+            return;
+                
+        getLogger().info("Loading new Nav DB file: {}", p);
+        
+        try
+        {
+            List<NavDbEntry> allEntries = LufthansaParser.getNavDbEntries(p);
+            Set<String> newEntityIDs = new TreeSet<>();
+            
+            if (airports)
+                loadAirports(allEntries, newEntityIDs);
+            if (navaids)
+                loadNavaids(allEntries, newEntityIDs);
+            if (waypoints)
+                loadWaypoints(allEntries, newEntityIDs);
+            
+            // switch to new entity IDs set atomically
+            entityIDs = newEntityIDs;
+        }
+        catch (Exception e)
+        {
+            reportError("Error reading database file \"" + p + "\"", e);
+            return;
+        }
+        
+        reportStatus("Loaded database file \"" + p.getFileName() + "\"");
+        loading.set(false);        
+    }
+    
+
+	private void loadAirports(List<NavDbEntry> navDbEntries, Set<String> newEntityIDs)
 	{
-		try {
-			List<NavDbEntry> es = LufthansaParser.getNavDbEntries(Paths.get(config.navDbPath));
-			List<NavDbEntry> navaids = LufthansaParser.filterEntries(es, Type.NAVAID);
-			//  add FOIS, one per airport
-			SMLHelper smlFac = new SMLHelper();
-			GMLFactory gmlFac = new GMLFactory(true);
-			for(NavDbEntry navaid: navaids) {
-				AbstractFeature navaidFoi = smlFac.newPhysicalSystem();
-				navaidFoi.setId(navaid.id);
-				String uid = NAVAID_UID_PREFIX + navaid.id;
-				navaidFoi.setUniqueIdentifier(uid);
-				navaidFoi.setName(navaid.name);
-				navaidFoi.setDescription("Navaid Foi for " + navaid.name);
-				Point location = gmlFac.newPoint();
-				location.setPos(new double [] {navaid.lat, navaid.lon});
-				navaidFoi.setLocation(location);
+	    List<NavDbEntry> airports;
+	    if (config.airportFilterPath != null)
+	        airports = getSelectedAirports(navDbEntries, config.airportFilterPath);
+	    else
+	        airports = LufthansaParser.filterEntries(navDbEntries, Type.AIRPORT);
+	    
+        //SMLHelper smlFac = new SMLHelper();
+        //GMLFactory gmlFac = new GMLFactory(true);
+        
+	    // add FOIS, one per airport
+        for (NavDbEntry airport: airports) {
+            /*String uid = AIRPORTS_UID_PREFIX + airport.icao;
+            AbstractFeature airportFoi = smlFac.newPhysicalSystem();
+            airportFoi.setId(airport.icao);             
+            airportFoi.setUniqueIdentifier(uid);
+            airportFoi.setName(airport.name);
+            airportFoi.setDescription("Airport Foi for " + airport.name);
+            Point location = gmlFac.newPoint();
+            location.setPos(new double [] {airport.lat, airport.lon});
+            airportFoi.setLocation(location);
+            navEntryFois.put(uid, airportFoi);*/
+            newEntityIDs.add(airport.icao);
+        }
 
-				foiIDs.add(uid);
-				navEntryFois.put(uid, navaidFoi);
-			}
-
-			//  Send to output
-			navaidOutput.sendEntries(navaids);
-		} catch (Exception e) {
-			throw new SensorHubException("Error parsing NavDB File.  Cannot load.");
-		} 
+        //  Send to output
+        navOutput.sendEntries(airports);
+        
+        getLogger().info("{} airports loaded", airports.size()); 		
 	}
 
-	public void startWaypt() throws SensorHubException
+
+	private void loadNavaids(List<NavDbEntry> navDbEntries, Set<String> newEntityIDs)
 	{
-		try {
-			List<NavDbEntry> entries = LufthansaParser.getNavDbEntries(Paths.get(config.navDbPath));
-			List<NavDbEntry> waypts = LufthansaParser.filterEntries(entries, Type.WAYPOINT);
-			SMLHelper smlFac = new SMLHelper();
-			GMLFactory gmlFac = new GMLFactory(true);
-			for(NavDbEntry waypt: waypts) {
-				AbstractFeature wyptFoi = smlFac.newPhysicalSystem();
-				wyptFoi.setId(waypt.id);
-				String uid = WAYPOINTS_UID_PREFIX + waypt.id;
-				wyptFoi.setUniqueIdentifier(uid);
-				wyptFoi.setName(waypt.name);
-				wyptFoi.setDescription("Navaid Foi for " + waypt.name);
-				Point location = gmlFac.newPoint();
-				location.setPos(new double [] {waypt.lat, waypt.lon});
-				wyptFoi.setLocation(location);
+	    List<NavDbEntry> navaids = LufthansaParser.filterEntries(navDbEntries, Type.NAVAID);
+        //SMLHelper smlFac = new SMLHelper();
+        //GMLFactory gmlFac = new GMLFactory(true);
+        
+        // add FOIS, one per airport
+        for (NavDbEntry navaid: navaids) {
+            /*String uid = NAVAID_UID_PREFIX + navaid.id;
+            AbstractFeature navaidFoi = smlFac.newPhysicalSystem();
+            navaidFoi.setId(navaid.id);
+            navaidFoi.setUniqueIdentifier(uid);
+            navaidFoi.setName(navaid.name);
+            navaidFoi.setDescription("Navaid Foi for " + navaid.name);
+            Point location = gmlFac.newPoint();
+            location.setPos(new double [] {navaid.lat, navaid.lon});
+            navaidFoi.setLocation(location);
+            navEntryFois.put(uid, navaidFoi);*/
+            newEntityIDs.add(navaid.id);                
+        }
 
-				foiIDs.add(uid);
-				navEntryFois.put(uid, wyptFoi);
-			}
-
-			//  Send to output
-			wyptOutput.sendEntries(waypts);
-		} catch (Exception e) {
-			throw new SensorHubException("Error parsing NavDB File.  Cannot load.");
-		} 	
+        //  Send to output
+        navaidOutput.sendEntries(navaids);
+        
+        getLogger().info("{} navaids loaded", navaids.size());
 	}
+	
+
+	private void loadWaypoints(List<NavDbEntry> navDbEntries, Set<String> newEntityIDs)
+	{
+	    List<NavDbEntry> waypts = LufthansaParser.filterEntries(navDbEntries, Type.WAYPOINT);
+        //SMLHelper smlFac = new SMLHelper();
+        //GMLFactory gmlFac = new GMLFactory(true);
+        
+        for (NavDbEntry waypt: waypts) {
+            /*String uid = WAYPOINTS_UID_PREFIX + waypt.id;
+            AbstractFeature wyptFoi = smlFac.newPhysicalSystem();
+            wyptFoi.setId(waypt.id);
+            wyptFoi.setUniqueIdentifier(uid);
+            wyptFoi.setName(waypt.name);
+            wyptFoi.setDescription("Navaid Foi for " + waypt.name);
+            Point location = gmlFac.newPoint();
+            location.setPos(new double [] {waypt.lat, waypt.lon});
+            wyptFoi.setLocation(location);
+            navEntryFois.put(uid, wyptFoi);*/
+            newEntityIDs.add(waypt.id);
+        }
+
+        //  Send to output
+        wyptOutput.sendEntries(waypts);
+        
+        getLogger().info("{} waypoints loaded", waypts.size());	
+	}
+
+
+    public List<String> readSelectedAirportIcaos(String filterPath)
+    {
+        List<String> delta = new ArrayList<>();
+        
+        try (BufferedReader br= new BufferedReader(new FileReader(filterPath))) {
+            while (true) {
+                String l = br.readLine();
+                if(l==null)  break;
+                String icao = l.substring(0, 4);
+                delta.add(icao);
+            }
+        }
+        catch (IOException e)
+        {
+            getLogger().error("Cannot read airport list", e);
+        }
+        
+        return delta;
+    }
+    
+
+    public List<NavDbEntry> getSelectedAirports(List<NavDbEntry> navDbEntries, String deltaPath)
+    {
+        List<String> icaos = readSelectedAirportIcaos(deltaPath);
+        List<NavDbEntry> deltaAirports = new ArrayList<>();
+        
+        for (NavDbEntry a: navDbEntries) {
+            if(icaos.contains(a.id) && a.type == Type.AIRPORT) {
+                deltaAirports.add(a);
+            }
+        }
+        
+        return deltaAirports;
+    }
+	
 
 	@Override
 	public void stop() throws SensorHubException
 	{
+	    if (watcherThread != null)
+            watcherThread.interrupt();
 	}
 
 
 	@Override
-	public boolean isConnected() {
-		return false;
+	public boolean isConnected() 
+	{
+		return true;
 	}
 
+	
 	@Override
 	public AbstractFeature getCurrentFeatureOfInterest()
 	{
@@ -242,7 +364,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	@Override
 	public Collection<String> getEntityIDs()
 	{
-		return Collections.unmodifiableCollection(navEntryFois.keySet());
+		return Collections.unmodifiableCollection(entityIDs);
 	}
 
 
@@ -263,28 +385,28 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	@Override
 	public AbstractFeature getCurrentFeatureOfInterest(String entityID)
 	{
-		Collection <AbstractFeature> fois = navEntryFois.get(entityID);
-		Iterator<AbstractFeature>  it = fois.iterator();
-		return it.next();
+		return null;
 	}
 
 
 	@Override
 	public Collection<? extends AbstractFeature> getFeaturesOfInterest()
 	{
-		return Collections.unmodifiableCollection(navEntryFois.values());
+		//return Collections.unmodifiableCollection(navEntryFois.values());
+	    return Collections.emptyList();
 	}
 
 
 	@Override
 	public Collection<String> getFeaturesOfInterestIDs()
 	{
-		return Collections.unmodifiableCollection(foiIDs);
+		return Collections.unmodifiableCollection(entityIDs);
 	}
+	
 
 	@Override
 	public Collection<String> getEntitiesWithFoi(String foiID)
 	{
-		return Arrays.asList(foiID);
+		return Arrays.asList(foiID.substring(foiID.lastIndexOf(':')+1));
 	}
 }

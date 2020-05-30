@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -30,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.persistence.DataFilter;
 import org.sensorhub.api.persistence.DataKey;
 import org.sensorhub.api.persistence.IDataFilter;
 import org.sensorhub.api.persistence.IDataRecord;
@@ -93,6 +93,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     }
     
     
+    /*
+     * Constructor used to create a nested MVObsStorage within a MVMultiStorage
+     * In this case, we share maps between all producers
+     */
     protected MVObsStorageImpl(MVObsStorageImpl parentStore, String producerID)
     {
         Asserts.checkNotNull(parentStore, "Parent");                
@@ -153,7 +157,12 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     
     private void loadRecordStore(IRecordStoreInfo rsInfo)
     {
-        MVTimeSeriesImpl recordStore = new MVTimeSeriesImpl(this, rsInfo.getName());        
+        MVTimeSeriesImpl recordStore;        
+        if (config.indexObsLocation)
+            recordStore = new MVTimeSeriesImpl(this, rsInfo);
+        else
+            recordStore = new MVTimeSeriesImpl(this, rsInfo.getName());
+        
         recordStores.put(rsInfo.getName(), recordStore);
     }
 
@@ -163,6 +172,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     {
         if (mvStore != null) 
         {
+            // make sure cached data is flushed
+            for (MVTimeSeriesImpl recordStore: recordStores.values())
+                recordStore.close();
+            
             mvStore.close();
             mvStore = null;
             processDescMap = null;
@@ -385,6 +398,34 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         rsInfoMap.put(name, rsInfo);
         loadRecordStore(rsInfo);
     }
+    
+    
+    public synchronized void upgradeRecordStore(String name, DataComponent recordStructure, DataEncoding recommendedEncoding, boolean deleteRecords)
+    {
+        checkOpen();
+        Asserts.checkNotNull(name, "name");
+        Asserts.checkNotNull(recordStructure, DataComponent.class);
+        Asserts.checkNotNull(recommendedEncoding, DataEncoding.class);
+        
+        DataStreamInfo rsInfo = new DataStreamInfo(name, recordStructure, recommendedEncoding);
+        rsInfoMap.put(name, rsInfo);
+        
+        // remove old records if requested
+        // usually needed if old records are not compatible with new data structure
+        if (deleteRecords)
+            recordStores.get(name).remove(new DataFilter(name));
+        
+        mvStore.commit();
+    }
+    
+    
+    public synchronized void removeRecordStore(String name)
+    {
+        rsInfoMap.remove(name);
+        MVTimeSeriesImpl rsStore = recordStores.remove(name);
+        rsStore.delete();
+        mvStore.commit();
+    }
 
 
     @Override
@@ -401,14 +442,14 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         checkOpen();
         return getRecordStore(recordType).getDataTimeRange(producerID);
     }
-
-
+    
+    
     @Override
-    public Iterator<double[]> getRecordsTimeClusters(String recordType)
+    public int[] getEstimatedRecordCounts(String recordType, double[] timeStamps)
     {
-        checkOpen();
-        //return getRecordStore(recordType).getRecordsTimeClusters(producerID);
-        return Arrays.asList(new double[2]).iterator();
+        Asserts.checkNotNull(timeStamps);
+        Asserts.checkArgument(timeStamps.length >= 2, "At least 2 time stamps must be provided");
+        return getRecordStore(recordType).getEstimatedRecordCounts(producerID, timeStamps);
     }
     
     

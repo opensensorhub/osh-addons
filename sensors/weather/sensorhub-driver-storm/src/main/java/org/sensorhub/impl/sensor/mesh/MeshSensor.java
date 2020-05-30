@@ -50,8 +50,8 @@ public class MeshSensor extends AbstractSensorModule<MeshConfig> implements File
 		super.init();
 
 		// IDs
-		this.uniqueID = "urn:osh:sensor:earthcast:mesh";
-		this.xmlID = "ECT_MESH";
+		this.uniqueID = "urn:osh:sensor:mrms:mesh";
+		this.xmlID = "MRMS_MESH";
 
 		// initialize outputs
 		this.meshInterface = new MeshOutput(this);
@@ -150,11 +150,12 @@ public class MeshSensor extends AbstractSensorModule<MeshConfig> implements File
             if (rec == null)
                 throw new IOException("MeshReader returned null record");
             
+            reportStatus("Loaded data file \"" + p.getFileName() + "\"");
             meshInterface.sendMeasurement(rec);
         }
         catch (Exception e)
         {
-            getLogger().error("Error reading MESH data file: {}", p, e);
+            reportError("Error reading data file \"" + p + "\"", e);
         }
     }
 }

@@ -14,8 +14,11 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
-//  May or may not use this
+
+/**
+ * Listener for Firehose message objects of type flightplan
+ */
 public interface FlightPlanListener
 {
-	public void newFlightPlan(FlightPlan plan);
+	public void newFlightPlan(FlightObject fltPlan);
 }

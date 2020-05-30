@@ -21,76 +21,105 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.sensorhub.impl.common.DefaultThreadFactory;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 
 public class MessageHandler implements IMessageHandler
 {
-	static final Logger log = LoggerFactory.getLogger(MessageHandler.class);
 	static final String POSITION_MSG_TYPE = "position";
 	static final String FLIGHTPLAN_MSG_TYPE = "flightplan";
+    static final String ARRIVAL_MSG_TYPE = "arrival";
+    static final String KEEPALIVE_MSG_TYPE = "keepalive";
 	static final long MESSAGE_LATENCY_WARN_LIMIT = 30000L; // in ms
 	
-	Gson gson = new GsonBuilder().setPrettyPrinting().create();
+	Logger log;
+	FlightAwareDriver driver;
+	Gson gson = new GsonBuilder().create();
     List<FlightObjectListener> objectListeners = new ArrayList<>();
     List<FlightPlanListener> planListeners = new ArrayList<>();
     List<PositionListener> positionListeners = new ArrayList<>();
-    Cache<String, String> idToDestinationCache;
-    BlockingQueue<Runnable> queue;
+    IFlightObjectFilter flightFilter;
+    BlockingQueue<Runnable> execQueue;
     ExecutorService exec;
-    String user;
-    String passwd;
-    volatile long lastMessageReceiveTime = 0L;
-    volatile long lastMessageTime = 0L;
+    volatile long latestMessageReceiveTime = System.currentTimeMillis()/1000; // in seconds
+    volatile long latestMessageTimeStamp = 0L; // in seconds
+    volatile long latestMessageTimeLag = 0L; // in seconds
+    int msgCount = 0;
+    boolean liveStarted = false;
     
     
-    public MessageHandler(String user, String pwd) {
-        this.user = user;
-        this.passwd = pwd;
-        this.idToDestinationCache = CacheBuilder.newBuilder()
-               .maximumSize(10000)
-               .concurrencyLevel(2)
-               .expireAfterWrite(24, TimeUnit.HOURS)
-               .build();
+    public MessageHandler(FlightAwareDriver driver) {
+        this.driver = driver;
+        this.log = driver.getLogger();
+        this.flightFilter = driver.flightFilter;
         
-        this.queue = new LinkedBlockingQueue<>(1000);
-        this.exec = new ThreadPoolExecutor(2, 2, 1, TimeUnit.SECONDS, queue);
+        // executor to process messages in parallel
+        this.execQueue = new LinkedBlockingQueue<>(10000);
+        this.exec = new ThreadPoolExecutor(2, 4, 1, TimeUnit.SECONDS, execQueue, new DefaultThreadFactory("MsgHandlerPool"));
     }
-    
+        
     public void handle(String message) {
         try {
-            lastMessageReceiveTime = System.currentTimeMillis();
+            latestMessageReceiveTime = System.currentTimeMillis()/1000;
+            FlightObject fltObj = gson.fromJson(message, FlightObject.class);
+            fltObj.json = message;
+            latestMessageTimeStamp = Long.parseLong(fltObj.pitr);
+            latestMessageTimeLag = latestMessageReceiveTime - latestMessageTimeStamp;
+           
+            if (log.isTraceEnabled())
+            {
+                log.trace("New message:\n{}",  message);
+                log.trace("message count: {}, queue size: {}", ++msgCount, execQueue.size());
+                log.trace("time lag: {}", latestMessageTimeLag);
+            }
             
-            FlightObject obj = gson.fromJson(message, FlightObject.class);
-            lastMessageTime = Long.parseLong(obj.pitr);            
-            processMessage(obj);
+            if (!liveStarted && latestMessageTimeLag < 10)
+            {
+                liveStarted = true;
+                log.info("Starting live feed");
+            }
+            else if (msgCount == 1)
+            {
+                log.info("Replaying historical feed");
+            }
             
-            // also notify raw object listeners
-            newFlightObject(obj);
+            // skip message if filtered
+            if (fltObj.ident != null && flightFilter != null && !flightFilter.test(fltObj))
+                return;
+            
+            // notify raw object listeners
+            newFlightObject(fltObj);
+            
+            // process message
+            processMessage(fltObj);
             
         } catch (Exception e) {
             log.error("Cannot read JSON\n{}", message, e);
-            if (lastMessageTime == 0L)
+            if (latestMessageTimeStamp == 0L)
                 throw new IllegalStateException(message);
             return;
         }
     }
 
-    private void processMessage(FlightObject obj) {
-        switch (obj.type) {
+    private void processMessage(FlightObject fltObj) {
+        switch (fltObj.type) {
             case FLIGHTPLAN_MSG_TYPE:
-                exec.execute(new ProcessPlanTask(this, obj));
+                exec.execute(new ProcessPlanTask(this, fltObj));
                 break;
             case POSITION_MSG_TYPE:
-                exec.execute(new ProcessPositionTask(this, obj));
+                if (!isReplay()) // skip replayed position messages
+                    exec.execute(new ProcessPositionTask(this, fltObj));
+                break;
+            case ARRIVAL_MSG_TYPE:
+                //log.info("{}_{} arrived at {}", obj.ident, obj.dest, Instant.ofEpochSecond(Long.parseLong(obj.aat)));
+                break;
+            case KEEPALIVE_MSG_TYPE:
                 break;
             default:
-                log.warn("Unsupported message type: {}", obj.type);
+                log.warn("Unsupported message type: {}", fltObj.type);
                 break;
         }
     }
@@ -123,27 +152,35 @@ public class MessageHandler implements IMessageHandler
     	return positionListeners.remove(l);
     }
 
-    protected void newFlightObject(FlightObject obj) {
+    protected void newFlightObject(FlightObject fltObj) {
         for (FlightObjectListener l: objectListeners)
-            l.processMessage(obj);
+            l.processMessage(fltObj);
     }
 
-	protected void newFlightPlan(FlightPlan plan) {
+	protected void newFlightPlan(FlightObject fltPlan) {
 		for (FlightPlanListener l: planListeners)
-			l.newFlightPlan(plan);
+			l.newFlightPlan(fltPlan);
 	}
 	
-	protected void newFlightPosition(FlightObject pos) {
+	protected void newFlightPosition(FlightObject fltPos) {
 		for (PositionListener l: positionListeners)
-			l.newPosition(pos);
+			l.newPosition(fltPos);
 	}
 
-    public long getLastMessageReceiveTime() {
-        return lastMessageReceiveTime;
+    public long getLatestMessageReceiveTime() {
+        return latestMessageReceiveTime;
     }
 
-    public long getLastMessageTime() {
-        return lastMessageTime;
+    public long getLatestMessageTime() {
+        return latestMessageTimeStamp;
+    }
+    
+    public long getMessageTimeLag() {
+        return latestMessageTimeLag;
+    }
+    
+    public boolean isReplay() {
+        return !liveStarted;
     }
 
 }

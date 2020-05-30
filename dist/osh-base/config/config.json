@@ -1,0 +1,191 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "name": "HTTP Server",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "httpPort": 8181,
+    "servletsRootUrl": "/sensorhub",
+    "staticDocRootUrl": "web",
+    "authMethod": "BASIC",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig",
+    "users": [
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "admin",
+        "name": "Administrator",
+        "password": "admin",
+        "roles": ["admin"]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "anonymous",
+        "name": "Anonymous User",
+        "password": "",
+        "roles": ["anon"]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "sensor",
+        "name": "Smart Sensors",
+        "password": "pwd",
+        "roles": ["sost"]
+      }
+    ],
+    "roles": [
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "admin",
+        "allow": ["*"],
+        "deny": []
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "anon",
+        "allow": ["sos[*]/get/*"],
+        "deny": []
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "sost",
+        "allow": [
+          "sos[*]/get/*",
+          "sos[*]/insert/*",
+          "sos[*]/update/*"
+        ],
+        "deny": []
+      }
+    ],
+    "id": "bd112969-8838-4f62-8d10-1edf1baa6669",
+    "moduleClass": "org.sensorhub.impl.security.BasicSecurityRealm",
+    "name": "Users",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "name": "Simulated GPS Sensor",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsSensor",
+    "autoStart": true,
+    "sensorML": null,
+    "hiddenIO": null,
+    "centerLatitude": 34.7300,
+    "centerLongitude": -86.5850,
+    "areaSize": 0.1,
+    "vehicleSpeed": 200
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherConfig",
+    "serialNumber": "0123456879",
+    "location": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig$LLALocation",
+      "lat": 34.8038,
+      "lon": -86.7228,
+      "alt": 0.0
+    },
+    "sensorML": "base_description.xml",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "moduleClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor",
+    "name": "Simulated Weather Sensor",
+    "autoStart": true
+  }, 
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
+    "name": "GPS Sensor Storage",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "autoStart": true,
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+      "memoryCacheSize": 1024,
+      "storagePath": "db/gps_obs.dat"
+    }
+  }, 
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2",
+    "name": "Weather Data Storage",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "autoStart": true,
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+      "memoryCacheSize": 1024,
+      "storagePath": "db/weather_obs.dat"
+    }
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "name": "SOS Service",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "autoStart": true,
+    "endPoint": "/sos",
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "enableTransactional": true,
+    "customFormats": [],
+    "dataProviders" : [
+       {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "Fake GPS",
+           "description": "Fake GPS sensor",
+           "uri": "urn:mysos:offering02",
+           "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+           "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1"
+       },
+       {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "Fake Weather",
+           "description": "Fake Weather sensor",
+           "uri": "urn:mysos:offering03",
+           "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",           
+           "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2"
+       }
+    ],
+    "ogcCapabilitiesInfo": {
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by OpenSensorHub",
+      "keywords": ["SensorHub", "GPS", "weather"],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider":
+      {
+        "individualName": "Bobby Jones",
+        "organizationName": "Bobby Jones Inc.",
+        "positionName": "CEO",
+        "voiceNumbers": ["+1 800 123 4567"],
+        "faxNumbers": ["+1 800 123 4568"],
+        "deliveryPoints": ["1 Main Street"],
+        "city": "Portland",
+        "administrativeArea": "OR",
+        "postalCode": "97209",
+        "country": "France",
+        "emails": ["admin@bobby.com"],
+        "website": null,
+        "hoursOfService": null,
+        "contactInstructions": null
+      }
+    },
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": true,
+      "requireAuth": false
+    }
+  }
+]

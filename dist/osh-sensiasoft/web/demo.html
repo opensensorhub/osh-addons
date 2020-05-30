@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>OpenSensorHub Demo Links</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="keywords" content="OSH,OGC,SOS,stream,sensor,websocket,video,JSON">
+    <link href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="http://docs.opensensorhub.org/css/theme.css" type="text/css">
+    <style>
+      body {background-color: white; padding: 30px;}
+      li {margin-bottom: 10px;}
+      h3 {margin-top: 40px; margin-bottom: 15px;}
+      h4 {margin-bottom: 12px;}
+      p {margin-bottom: 15px;}
+    </style>
+  </head>
+  <body class="rst-content">
+   <div class="section">
+    <h1>OpenSensorHub Demo Links</h1>
+        
+    <p>
+      These example links demonstrate how to access OpenSensorHub (OSH) web services directly from a browser or through apps.
+      One should examine the structure of the URL request as well as the response. These web services are conformant with the Open Geospatial Consortium (OGC)
+      Sensor Web Enablement (SWE 2.0) encoding and web service interface standards.
+    </p>
+        
+    
+    <h3>Accessing OSH through Apps or Browser Clients</h3>
+    <p>
+      As a user of OSH services, most of your interactions may be limited to using browser clients that have been built or customized
+      to meet your specific needs. An example of such a client is provided in the following link which uses a browser-based client
+      (written in JavaScript) to retrieve and replay previously captured dashcam video and GPS locations.
+    </p>
+    <ul>   
+      <li><a href="osm_client_recorded_on_bottsgeo.html" target="_blank">Javascript Client with Historical GPS + Video</a></li>    
+    </ul>
+    <p>
+      or perhaps this browser client showing streaming results from a simulated weather station.
+    </p>
+    <ul>
+      <li><a href="http://opensensorhub.github.io/osh-js/Demos-old/GpsStreamViewer/#/" target="_blank">Javascript Client with Live Weather Data</a></li>
+    </ul>
+    <p>
+      Other example clients are showcased on the following page:
+    </p>
+    <ul>
+      <li><a href="http://opensensorhub.github.io/osh-js/Demos-old" target="_blank">Example Dashboard Clients</a></li>
+    </ul>
+
+    
+    <h3>Accessing OSH directly using HTTP GET requests</h3>
+    <p>
+      If you desire to directly interact with the OSH web services or if YOU are the developer of one of these browser clients or apps,
+      then you will need to learn to &quot;speak SWE&quot; or use one of the libraries designed to hide these details from you.
+      Examples of the most used web request (&quot;speaking SWE&quot;) include:
+    </p>
+    
+    <h4>Service Metadata</h4>
+    <ul>
+	    <li><a href="sensorhub/sos?service=SOS&acceptVersions=2.0.0&request=GetCapabilities">Get Service Capabilities</a></li>
+	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetFeatureOfInterest">Get Features of Interest</a></li>
+    </ul>
+
+    <h4>Simulated GPS</h4>
+    <ul>
+	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=DescribeSensor&procedure=urn:osh:sensor:simgps:d136b6ea">DescribeSensor</a></li>
+	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:mysos:offering02&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation">GetResultTemplate Simulated GPS</a></li>
+	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering02&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T19:59:00Z">GetResult Historical Simulated GPS</a></li>
+    </ul>
+    
+    <h4>Simulated Weather Station</h4>
+    <ul>
+	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=DescribeSensor&procedure=urn:osh:sensor:simweather:0123456879">DescribeSensor</a></li>
+	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather">GetResultTemplate (all measured properties)</a></li>
+	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T20:58:00Z">GetResult Historical (all measured properties)</a></li>
+	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/AirTemperature">GetResultTemplate (only temperature)</a></li>
+	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/AirTemperature&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T20:58:00Z">GetResult Historical (only temperature)</a></li>
+    </ul>
+    
+    <h4>UAV Navigation Data</h4>
+    <ul>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=DescribeSensor&procedure=urn:osh:sensor:mavlink:solo:BB11A5A00157">DescribeSensor</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:mysos:solo:nav2&observedProperty=http://www.opengis.net/def/property/OGC/0/PlatformOrientation">GetResultTemplate (only attitude)</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:solo:nav2&observedProperty=http://www.opengis.net/def/property/OGC/0/PlatformOrientation&temporalFilter=phenomenonTime,2015-12-19T21:01:29.231Z/2015-12-19T21:03:19.675Z">GetResult Historical (only attitude)</a></li>
+    </ul>
+    
+        
+    <h3>Mastering Time</h3>
+    <p>
+      OpenSensorHub allows for a variety of temporal requests, including accessing the latest measurement, opening a data stream of real-time measurements,
+      requesting archived measurements within a custom time range, and accessing archived data streamed at a particular playback speed.
+      <i>NOTE: Some of these examples suffer from the browser/javascript buffer delay discussed below in &quot;HTTP vs. Web Sockets&quot;.
+      Use web sockets for immediate access to streaming values.</i>
+    </p>    
+    <ul>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering02&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&temporalFilter=phenomenonTime,now">Get Latest Simulated GPS</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering02&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T19:59:00Z">Get Historical Simulated GPS</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering02&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T19:59:00Z&replaySpeed=1">Get Historical Simulated GPS with Real-Time Playback</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering02&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T19:59:00Z&replaySpeed=4">Get Historical Simulated GPS with 4 x Real-Time Playback</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering02&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&temporalFilter=phenomenonTime,now/2116-01-01T00:00:00Z">Get Real-Time Simulated GPS from Now Until 2116</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,now">GetResult Latest Weather (all measured properties)</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T20:58:00Z">GetResult Historical Weather (all measured properties)</a></li>
+    </ul>
+    
+    
+    <h3>HTTP vs. WebSockets</h3>
+    <p>
+      One can set up a datastream using either persistent HTTP or web sockets. In our experience, when one sets up data streaming using persistent HTTP
+      in a web browser or JavaScript app, there is often a caching delay before the data values can be accessed by the app and displayed.
+      The values have already been send and received, but are not yet made available to the application. It is also cumbersome to parse a never ending
+      stream of data using the browser AJAX APIs. Using WebSockets solves both issues because it is designed for real-time bi-directional streaming between
+      server and client.
+    </p>
+    <ul>
+      <li><a href="osm_client.html">Javascript Client with Live Simulated GPS (persistent HTTP GET)</a></li>
+      <li><a href="osm_client_websockets.html">Javascript Client with Live Simulated GPS (web sockets)</a></li>
+    </ul>
+    
+    
+    <h3>Handling Video</h3>
+    <p>
+      The same SWE protocols can be used to stream real-time or archived video. The following requests allow you to query the video codec used in the stream
+      and then request the video stream in exactly the same way it was done before for other types of data. Notice that the data description indicates that the
+      stream is binary encoded with JPEG (MJPEG) codec this time.<br/>
+      <small>(*) Video streamed from raw GetResult will only show in Firefox and Safari</small>
+    </p>
+    <ul>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=DescribeSensor&procedure=urn:android:device:060693280a28e015">DescribeSensor Android Phone</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:android:device:060693280a28e015-sos&observedProperty=http://sensorml.com/ont/swe/property/VideoFrame">GetResultTemplate Video</a></li>
+      <li><a href="video.html">GetResult Recorded Video *</a></li>
+      <li><a href="video-websockets.html">GetResult Recorded Video (web sockets)</a></li>
+    </ul>
+    
+    
+    <h3>Filtering by Feature Of Interest</h3>
+    <p>
+      The concept of features of interest (FOI) is used in SOS to identify a particular member of a sensor network. You can filter measurements using the ID
+      of one more several FOIs. The following examples illustrate this with Automated Vehicle Location (AVL) data that was acquired for several emergency vehicles.
+      One can first retrieve the list of vehicles (FOIs) available and then retrieve GPS data either for a single vehicle or for several vehicles at once.
+      Notice that the vehicle ID is present in the output stream so that the data can be properly demultiplexed.
+    </p>
+    <ul>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetFeatureOfInterest&procedure=urn:osh:sensor:avl:911:fleet">GetFeatureOfInterest AVL</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:mysos:avl&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation">GetResultTemplate AVL</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:avl&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&featureOfInterest=urn:osh:sensor:avl:911:fleet:FE4&temporalFilter=phenomenonTime,2014-03-29T06:16:12Z/2014-03-29T14:26:12Z">GetResult Historical AVL (one vehicle)</a></li>    
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:avl&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&temporalFilter=phenomenonTime,2014-03-29T06:16:12Z/2014-03-29T14:26:12Z">GetResult Historical AVL (all vehicles)</a></li>
+    </ul>
+    
+    
+    <h3>JSON Support</h3>
+    <p>
+      JSON format is supported since v1.2 of OpenSensorHub. It is now possible to retrieve both metadata and data streams as JSON. This is an extension to 
+      the SOS standard that is pending approval at OGC.
+    </p>
+    <ul>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,now&responseFormat=application/json">GetResult Latest Weather (JSON)</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T20:58:00Z&responseFormat=application/json">GetResult Historical Weather (JSON)</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&responseFormat=application/json">GetResultTemplate Weather (JSON)</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=DescribeSensor&procedure=urn:osh:sensor:simgps:d136b6ea&procedureDescriptionFormat=http://www.opengis.net/sensorml-json/2.0">DescribeSensor GPS (JSON)</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:avl&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&temporalFilter=phenomenonTime,2014-03-29T06:16:12Z/2014-03-29T14:26:12Z&responseFormat=application/json">GetResult Historical AVL (JSON)</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetObservation&offering=urn:mysos:avl&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&featureOfInterest=urn:osh:sensor:avl:911:fleet:FE4&temporalFilter=phenomenonTime,2014-03-29T06:16:12Z/2014-03-29T06:26:12Z&responseFormat=http://www.opengis.net/om-json/2.0">GetObservation Historical AVL (JSON)</a></li>
+    </ul>
+        
+    
+    <h3>Result Streams vs. Observations</h3>
+    <p>
+      The SOS interface allows one to retrieve data as compact record streams or as complete observation objects. Although it is much more bandwidth intensive
+      and verbose, in some use cases, retrieving complete observations is useful because it allows attaching advanced metadata with each observation.
+      When advanced observation metadata is not used/needed, we clearly encourage you to use the GetResult operation at it is much more efficient on the wire
+      and much faster/easier to parse.
+    </p>
+    <ul>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetObservation&offering=urn:mysos:avl&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&featureOfInterest=urn:osh:sensor:avl:911:fleet:FE4&temporalFilter=phenomenonTime,2014-03-29T06:16:12Z/2014-03-29T06:26:12Z">GetObservation Historical AVL (one vehicle)</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetObservation&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T19:59:00Z">GetObservation Historical Weather (all measurements)</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetObservation&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/AirTemperature&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T19:59:00Z">GetObservation Historical Weather (only temperature)</a></li>
+    </ul>
+    
+    
+    <!--
+    <p>&nbsp;</p>
+    <h4>Satellite Orbits</h4>
+    <p><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:mysos:offering:tle&observedProperty=http://sensorml.com/ont/swe/property/TLEData">GetResultTemplate Satellite TLE</a></p>
+    <p><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:mysos:offering:currentState&observedProperty=http://www.opengis.net/def/property/OGC/0/PlatformState">GetResultTemplate Satellite Position/Velocity</a></p>
+    <p><a href="http://sensiasoft.net:8181/sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering:tle&observedProperty=http://sensorml.com/ont/swe/property/TLEData&temporalFilter=phenomenonTime,2014-01-01/now">TLE Archive</a>
+    <p><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering:currentState&observedProperty=http://www.opengis.net/def/property/OGC/0/PlatformState&temporalFilter=phenTime,now">Current SPOT-7 Position</a>
+    <p><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering:predictedState&observedProperty=http://www.opengis.net/def/property/OGC/0/PlatformState&temporalFilter=phenTime,now/2055-01-01">Predicted SPOT-7 Position (next 3 days)</a>
+    <p><a href="satellitetracks/satellitetracks.htm">View Predicted SPOT-7 Position on Map</a>
+    -->
+   </div>  
+  </body>
+</html>
+
+
+
+

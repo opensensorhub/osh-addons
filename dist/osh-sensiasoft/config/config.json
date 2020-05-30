@@ -1,0 +1,825 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "httpPort": 8181,
+    "httpsPort": 0,
+    "staticDocRootUrl": "web",
+    "servletsRootUrl": "/sensorhub",
+    "maxRequestsPerSecond": 10,
+    "authMethod": "BASIC",
+    "keyStorePath": ".keystore/ssl_keys",
+    "trustStorePath": ".keystore/ssl_trust",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "name": "HTTP Server",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig",
+    "users": [
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "admin",
+        "name": "Administrator",
+        "password": "admin",
+        "roles": ["admin"]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "anonymous",
+        "name": "Anonymous User",
+        "password": "",
+        "roles": ["anon"]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "sensor",
+        "name": "Smart Sensors",
+        "password": "pwd",
+        "roles": ["sost"]
+      }
+    ],
+    "roles": [
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "admin",
+        "allow": ["*"],
+        "deny": []
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "anon",
+        "allow": ["sos[*]/get/*"],
+        "deny": []
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "sost",
+        "allow": [
+          "sos[*]/get/*",
+          "sos[*]/insert/*",
+          "sos[*]/update/*"
+        ],
+        "deny": []
+      }
+    ],
+    "id": "d53d07ad-ed77-4707-9da3-25eb9737ead3",
+    "moduleClass": "org.sensorhub.impl.security.BasicSecurityRealm",
+    "name": "Users & Roles",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "customPanels": [],
+    "customForms": [],
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
+    "googleApiUrl": "https://maps.googleapis.com/maps/api/directions/json",
+    "googleApiKey": "ENTER_YOUR_API_KEY_HERE",
+    "centerLatitude": 34.73,
+    "centerLongitude": -86.585,
+    "areaSize": 0.1,
+    "vehicleSpeed": 200.0,
+    "walkingMode": false,
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsSensor",
+    "name": "Simulated GPS Sensor",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 4096,
+      "objectCacheSize": 100,
+      "storagePath": "gps_obs.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "autoStart": false
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "minCommitPeriod": 10000,
+    "processEvents": false,
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "GPS Sensor Storage",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherConfig",
+    "serialNumber": "0123456879",
+    "location": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig$LLALocation",
+      "lat": 34.8038,
+      "lon": -86.7228,
+      "alt": 0.0
+    },
+    "sensorML": "base_description.xml",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "moduleClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor",
+    "name": "Simulated Weather Sensor",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 4096,
+      "objectCacheSize": 100,
+      "storagePath": "weather_obs.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+      "autoStart": false
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "minCommitPeriod": 10000,
+    "processEvents": false,
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Weather Data Storage",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.avl.AVLConfig",
+    "fleetID": "911:fleet",
+    "agencyName": "Huntsville Fire Department",
+    "commSettings": {
+      "objClass": "org.sensorhub.impl.sensor.avl.MultipleFilesProviderConfig",
+      "dataFolder": "/home/ubuntu/data",
+      "moduleClass": "org.sensorhub.impl.sensor.avl.MultipleFilesProvider",
+      "autoStart": false
+    },
+    "id": "d136b6ea-3950-4691-bf56-ac893e5fbb22",
+    "moduleClass": "org.sensorhub.impl.sensor.avl.AVLDriver",
+    "name": "AVL Data Stream",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 4096,
+      "objectCacheSize": 100,
+      "storagePath": "avl.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.MultiEntityStorageImpl",
+      "autoStart": false
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-ac893e5fbb22",
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "d136b6ea-3950-4691-1234-ac893e5fbb22",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "AVL Data Storage",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.avl.AVLConfig",
+    "fleetID": "hsv:police",
+    "agencyName": "Huntsville Police Department",
+    "commSettings": {
+      "objClass": "org.sensorhub.impl.sensor.avl.SimulatedProviderConfig",
+      "googleApiUrl": "http://maps.googleapis.com/maps/api/directions/json",
+      "vehicles": [
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "PC01",
+          "startLat": 34.748404,
+          "startLon": -86.564166,
+          "stopLat": 34.709717,
+          "stopLon": -86.590201,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "PC02",
+          "startLat": 34.703169,
+          "startLon": -86.627156,
+          "stopLat": 34.688863,
+          "stopLon": -86.591712,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "PC03",
+          "startLat": 34.706973,
+          "startLon": -86.540495,
+          "stopLat": 34.704598,
+          "stopLon": -86.569689,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "PC04",
+          "startLat": 34.669722,
+          "startLon": -86.532615,
+          "stopLat": 34.705005,
+          "stopLon": -86.569814,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "PC05",
+          "startLat": 34.720774,
+          "startLon": -86.608865,
+          "stopLat": 34.705428,
+          "stopLon": -86.59118,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "PC06",
+          "startLat": 34.712606,
+          "startLon": -86.545055,
+          "stopLat": 34.705309,
+          "stopLon": -86.568544,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "PC07",
+          "startLat": 34.718275,
+          "startLon": -86.557414,
+          "stopLat": 34.704411,
+          "stopLon": -86.591692,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "PC08",
+          "startLat": 34.748404,
+          "startLon": -86.566766,
+          "stopLat": 34.672048,
+          "stopLon": -86.574112,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "PC09",
+          "startLat": 34.745927,
+          "startLon": -86.576738,
+          "stopLat": 34.707049,
+          "stopLon": -86.58929,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "PC10",
+          "startLat": 34.738052,
+          "startLon": -86.58953,
+          "stopLat": 34.683868,
+          "stopLon": -86.553163,
+          "speed": 80.0,
+          "stopAtEnd": true
+        }
+      ],
+      "startDate": "2015-12-11T17:30:00Z",
+      "centerLat": 34.73,
+      "centerLon": -86.585,
+      "areaSize": 0.1,
+      "moduleClass": "org.sensorhub.impl.sensor.avl.SimulatedProvider",
+      "autoStart": false
+    },
+    "id": "d136b6ea-3950-4691-bf56-ac893e5faa11",
+    "moduleClass": "org.sensorhub.impl.sensor.avl.AVLDriver",
+    "name": "Police Dept AVL Data",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.avl.AVLConfig",
+    "fleetID": "hsv:fire",
+    "agencyName": "Huntsville Fire Department",
+    "commSettings": {
+      "objClass": "org.sensorhub.impl.sensor.avl.SimulatedProviderConfig",
+      "googleApiUrl": "http://maps.googleapis.com/maps/api/directions/json",
+      "vehicles": [
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "FR01",
+          "startLat": 34.727826,
+          "startLon": -86.656828,
+          "stopLat": 34.692197,
+          "stopLon": -86.581513,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "FR02",
+          "startLat": 34.727826,
+          "startLon": -86.656828,
+          "stopLat": 34.690143,
+          "stopLon": -86.592105,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "FR03",
+          "startLat": 34.68996,
+          "startLon": -86.583128,
+          "stopLat": 34.690527,
+          "stopLon": -86.580833,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "FL04",
+          "startLat": 34.68996,
+          "startLon": -86.583128,
+          "stopLat": 34.685644,
+          "stopLon": -86.57852,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "FL05",
+          "startLat": 34.629651,
+          "startLon": -86.566703,
+          "stopLat": 34.689982,
+          "stopLon": -86.580276,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "FL06",
+          "startLat": 34.6288,
+          "startLon": -86.566684,
+          "stopLat": 34.688711,
+          "stopLon": -86.575599,
+          "speed": 80.0,
+          "stopAtEnd": true
+        }
+      ],
+      "startDate": "2015-12-11T17:30:00Z",
+      "centerLat": 34.73,
+      "centerLon": -86.585,
+      "areaSize": 0.1,
+      "moduleClass": "org.sensorhub.impl.sensor.avl.SimulatedProvider",
+      "autoStart": false
+    },
+    "id": "d136b6ea-3950-4691-bf56-ac893e5faa22",
+    "moduleClass": "org.sensorhub.impl.sensor.avl.AVLDriver",
+    "name": "Fire Dept AVL Data",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.avl.AVLConfig",
+    "fleetID": "hsv:rescue",
+    "agencyName": "Huntsville Rescue Vehicles",
+    "commSettings": {
+      "objClass": "org.sensorhub.impl.sensor.avl.SimulatedProviderConfig",
+      "googleApiUrl": "http://maps.googleapis.com/maps/api/directions/json",
+      "vehicles": [
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "HE01",
+          "startLat": 34.694182,
+          "startLon": -86.569213,
+          "stopLat": 34.691431,
+          "stopLon": -86.568854,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "HE02",
+          "startLat": 34.711212,
+          "startLon": -86.601832,
+          "stopLat": 34.69187,
+          "stopLon": -86.581422,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "HE03",
+          "startLat": 34.712572,
+          "startLon": -86.615916,
+          "stopLat": 34.690525,
+          "stopLon": -86.589285,
+          "speed": 80.0,
+          "stopAtEnd": true
+        },
+        {
+          "objClass": "org.sensorhub.impl.sensor.avl.SimulatedVehicleConfig",
+          "vehicleID": "HE04",
+          "startLat": 34.720091,
+          "startLon": -86.582419,
+          "stopLat": 34.692044,
+          "stopLon": -86.58904,
+          "speed": 80.0,
+          "stopAtEnd": true
+        }
+      ],
+      "startDate": "2015-12-11T17:30:00Z",
+      "centerLat": 34.73,
+      "centerLon": -86.585,
+      "areaSize": 0.1,
+      "moduleClass": "org.sensorhub.impl.sensor.avl.SimulatedProvider",
+      "autoStart": false
+    },
+    "id": "d136b6ea-3950-4691-bf56-ac893e5faa33",
+    "moduleClass": "org.sensorhub.impl.sensor.avl.AVLDriver",
+    "name": "Rescue AVL Data",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 1024,
+      "objectCacheSize": 100,
+      "storagePath": "avl-police.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.MultiEntityStorageImpl",
+      "autoStart": false
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-ac893e5faa11",
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "d136b6ea-3950-4691-1234-ac893e5faa11",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Police Dept AVL Data Storage",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 1024,
+      "objectCacheSize": 100,
+      "storagePath": "avl-fire.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.MultiEntityStorageImpl",
+      "autoStart": false
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-ac893e5faa22",
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "d136b6ea-3950-4691-1234-ac893e5faa22",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Fire Dept AVL Data Storage",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 1024,
+      "objectCacheSize": 100,
+      "storagePath": "avl-rescue.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.MultiEntityStorageImpl",
+      "autoStart": false
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-ac893e5faa33",
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "d136b6ea-3950-4691-1234-ac893e5faa33",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Rescue Dept AVL Data Storage",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.usgs.water.USGSWaterDataConfig",
+    "exposeFilter": {
+      "objClass": "org.sensorhub.impl.usgs.water.DataFilter",
+      "siteTypes": [],
+      "siteIds": [],
+      "stateCodes": [
+        "NY"
+      ],
+      "countyCodes": [],
+      "parameters": [
+        "GAGE_HEIGHT",
+        "WATER_TEMP",
+        "DISCHARGE"
+      ],
+      "startTime": "2019-01-18T00:00:00Z",
+      "endTime": "2100-12-31T00:00:00Z"
+    },
+    "id": "5e55d292-4d6c-4554-a561-2c106d9a26af",
+    "moduleClass": "org.sensorhub.impl.usgs.water.USGSWaterDataArchive",
+    "name": "USGS Water Data Archive",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.plume.PlumeConfig",
+    "dataPath": "/home/ubuntu/data/plume/PARTICLE.OUT_12Zrel_350m",
+    "id": "d136b6ea-3950-4691-bf56-ac893e5fcc44",
+    "moduleClass": "org.sensorhub.impl.sensor.plume.PlumeSensor",
+    "name": "Plume Data Stream",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 1024,
+      "objectCacheSize": 100,
+      "storagePath": "plume.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "autoStart": false
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-ac893e5fcc44",
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "d136b6ea-3950-4691-1234-ac893e5fcc44",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Plume Data Storage",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.process.sat.TLEPredictorProcessConfig",
+    "tleFetchUrl": "http://www.celestrak.com/NORAD/elements/resource.txt",
+    "satID": 40053,
+    "dataSources": [],
+    "id": "5cb4569c-9e08-4fa1-1458-fead589eff51",
+    "moduleClass": "org.sensorhub.impl.process.sat.TLEPredictorProcess",
+    "name": "Satellite Navigation Processing",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 4096,
+      "objectCacheSize": 100,
+      "storagePath": "sat_nav.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "autoStart": false
+    },
+    "dataSourceID": "5cb4569c-9e08-4fa1-1458-fead589eff51",
+    "selectedOutputs": [
+      "tleData",
+      "predictedState"
+    ],
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "5cb4569c-9e08-4fa1-1458-edcc589eff51",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Satellite Navigation Data Storage",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+    "memoryCacheSize": 1024,
+    "objectCacheSize": 100,
+    "storagePath": "urn_android_device_060693280a28e015.dat",
+    "id": "5cb4569c-9e08-4fa1-1458-000000000000",
+    "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+    "name": "Android Data Storage for Toulouse Drive",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+    "memoryCacheSize": 1024,
+    "objectCacheSize": 100,
+    "storagePath": "solo-nav.dat",
+    "id": "f5ab10ad-9e12-4257-dddd-ed7d721b26e2",
+    "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+    "name": "Solo MAVLink Storage (Airport Road 2)",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+    "memoryCacheSize": 1024,
+    "objectCacheSize": 100,
+    "storagePath": "solo-video.dat",
+    "id": "f5ab10ad-9e12-4257-dddd-ed7d721b26e3",
+    "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+    "name": "Solo Video Storage (Airport Road 2)",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "enableTransactional": true,
+    "maxObsCount": 100,
+    "maxRecordCount": 100000,
+    "newStorageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 4096,
+      "objectCacheSize": 100,
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "autoStart": true
+    },
+    "dataProviders": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+        "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:mysos:offering02",
+        "name": "Simulated GPS",
+        "description": "Simulated GPS sensor",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+        "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:mysos:offering03",
+        "name": "Simulated Weather",
+        "description": "Simulated Weather sensor",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.StorageDataProviderConfig",
+        "storageID": "5cb4569c-9e08-4fa1-1458-000000000000",
+        "hiddenOutputs": [],
+        "maxFois": 10,
+        "offeringID": "urn:android:device:060693280a28e015-sos",
+        "name": "Android GPS and Video Data",
+        "description": "GPS and video data collected using Android phone during a drive through Toulouse",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.StorageDataProviderConfig",
+        "storageID": "d136b6ea-3950-4691-1234-ac893e5fbb22",
+        "hiddenOutputs": [],
+        "maxFois": 10,
+        "offeringID": "urn:mysos:avl",
+        "name": "AVL 911",
+        "description": "AVL location and status data for 911 vehicles",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-ac893e5faa11",
+        "storageID": "d136b6ea-3950-4691-1234-ac893e5faa11",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:mysos:avl:police",
+        "description": "AVL location and status data for police vehicles",
+        "enabled": false
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-ac893e5faa22",
+        "storageID": "d136b6ea-3950-4691-1234-ac893e5faa22",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:mysos:avl:fire",
+        "description": "AVL location and status data for fire vehicles",
+        "enabled": false
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-ac893e5faa33",
+        "storageID": "d136b6ea-3950-4691-1234-ac893e5faa33",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:mysos:avl:rescue",
+        "description": "AVL location and status data for rescue vehicles",
+        "enabled": false
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-ac893e5fcc44",
+        "storageID": "d136b6ea-3950-4691-1234-ac893e5fcc44",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:mysos:plume",
+        "name": "Plume Data",
+        "description": "Simulated data of a chemical release based on a plume model",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.StorageDataProviderConfig",
+        "storageID": "f5ab10ad-9e12-4257-dddd-ed7d721b26e2",
+        "hiddenOutputs": [],
+        "maxFois": 10,
+        "offeringID": "urn:mysos:solo:nav2",
+        "description": "Navigation data from 3DR Solo UAV",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.StorageDataProviderConfig",
+        "storageID": "f5ab10ad-9e12-4257-dddd-ed7d721b26e3",
+        "hiddenOutputs": [],
+        "maxFois": 10,
+        "offeringID": "urn:mysos:solo:video2",
+        "description": "Video data from 3DR Solo UAV",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "urn:android:device:a0e0eac2fea3f614",
+        "storageID": "urn:android:device:a0e0eac2fea3f614#storage",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:android:device:a0e0eac2fea3f614-sos",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.StorageDataProviderConfig",
+        "storageID": "5e55d292-4d6c-4554-a561-2c106d9a26af",
+        "hiddenOutputs": [],
+        "maxFois": 0,
+        "offeringID": "urn:mysos:usgs:water",
+        "enabled": true
+      }
+    ],
+    "dataConsumers": [],
+    "customFormats": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/mp4",
+        "className": "org.sensorhub.impl.service.sos.video.MP4Serializer"
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/x-motion-jpeg",
+        "className": "org.sensorhub.impl.service.sos.video.MJPEGSerializer"
+      }
+    ],
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": true,
+      "requireAuth": false
+    },
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": [
+        "SensorHub",
+        "Video"
+      ],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumbers": [
+          "+33 5 89 65 32 45"
+        ],
+        "faxNumbers": [],
+        "deliveryPoints": [],
+        "city": "Toulouse",
+        "postalCode": "30000",
+        "country": "France",
+        "emails": [],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/sos",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "name": "SOS Service",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.sost.SOSVirtualSensorConfig",
+    "id": "urn:android:device:a0e0eac2fea3f614",
+    "moduleClass": "org.sensorhub.impl.sensor.sost.SOSVirtualSensor",
+    "name": "Alex's Nexus5 Sensors",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 4096,
+      "objectCacheSize": 100,
+      "storagePath": "urn_android_device_a0e0eac2fea3f614.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "autoStart": true
+    },
+    "dataSourceID": "urn:android:device:a0e0eac2fea3f614",
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "urn:android:device:a0e0eac2fea3f614#storage",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Alex's Nexus5 Sensors Storage",
+    "autoStart": true
+  }
+]

@@ -16,16 +16,15 @@ package org.sensorhub.impl.sensor.flightAware;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.DecodeFlightRouteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,11 +33,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
+
 public class FlightAwareApi
 {  
     static final Logger log = LoggerFactory.getLogger(FlightAwareApi.class);
     
-    private final static String BASE_URL = "http://flightxml.flightaware.com/json/FlightXML2/";
+    private final static String BASE_URL = "https://flightxml.flightaware.com/json/FlightXML2/";
 	private final static String METAR_URL = BASE_URL + "MetarEx?airport=KAUS&startTime=0&howMany=1&offset=0";
 	public final static String InFlightInfo_URL = BASE_URL + "InFlightInfo?";
 	private final static String DecodeFlightRoute_URL = BASE_URL + "DecodeFlightRoute?"; // faFlightID=DAL1323-1506576332-airline-0231";
@@ -59,7 +59,7 @@ public class FlightAwareApi
 
 	public static String toJson(Object object) {
 		Gson gson = new  GsonBuilder().setPrettyPrinting().create();
-		String json =  gson.toJson(object);
+		String json = gson.toJson(object);
 		return json;
 	}
 
@@ -111,85 +111,16 @@ public class FlightAwareApi
 	 * @throws ClientProtocolException
 	 * @throws IOException
 	 */
-	public FlightPlan getFlightPlan(String id) throws ClientProtocolException, IOException {
+	public DecodeFlightRouteResult decodeFlightRoute(String id) throws ClientProtocolException, IOException {
 		String json = invokeNew(DecodeFlightRoute_URL + "faFlightID=" + id);
+		
 //		System.err.println(DecodeFlightRoute_URL + "faFlightID=" + id);
 		if(json.contains("error")) {
-			log.debug("FlightPlan.getFlightPlan(): Whoops for faFlightId  {} : {}", id,json);
+			log.debug("Error in decodeFlightRoute() for flight {}: {}", id, json);
 			return null;
 		}
-		DecodeFlightResult decodedInfo = (DecodeFlightResult)fromJson(json, DecodeFlightResult.class);
 		
-		FlightPlan plan = new FlightPlan(decodedInfo);
-		plan.faFlightId = id;
-		int dashIdx = id.indexOf('-'); 
-		if(dashIdx == -1) {
-			log.debug("FltawareApi.getFltPlan(): Don't understand faFlightId: {} ", id);
-		}
-		String ident = id.substring(0, dashIdx);
-		plan.oshFlightId = ident + "_" + plan.destinationAirport;
-		plan.flightNumber = ident;
-//		plan.time = comes from firehose only
-		return plan;
-	}
-
-	// ident is tail number
-	//  @TODO
-	public FlightPlan getFlightPosition(String ident) throws ClientProtocolException, IOException {
-		String json = invokeNew(InFlightInfo_URL+ "ident=" + ident);
-//		System.err.println(DecodeFlightRoute_URL + "faFlightID=" + id);
-		if(json.contains("error")) {
-			log.debug("FlightPlan.getFlightPosition(): Whoops for flight ident{} : {}", ident,json);
-			return null;
-		}
-//		DecodeFlightResult decodedInfo = (DecodeFlightResult)fromJson(json, DecodeFlightResult.class);
-//		
-//		FlightPosition pos = new FlightPosition();
-//		//pos.ident = id;
-//		int dashIdx = id.indexOf('-'); 
-//		if(dashIdx == -1) {
-//			log.debug("FltawareApi.getFltPlan(): Don't understand faFlightId: {} ", id);
-//		}
-//		String ident = id.substring(0, dashIdx);
-//		plan.oshFlightId = ident + "_" + plan.destinationAirport;
-////		plan.time = comes from firehose only
-//		return plan;
-		return null;
-	}
-
-	
-	public static void main(String[] args) throws Exception {
-		log.warn("Logging Works");
-		System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
-
-		System.setProperty("org.apache.commons.logging.simplelog.showdatetime", "true");
-		System.setProperty("org.apache.commons.logging.simplelog.log.httpclient.wire", "debug");
-		System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.commons.httpclient", "debug");
-
-		FlightAwareApi api = new FlightAwareApi("drgregswilson", "2809b6196a2cfafeb89db0a00b117ac67e876220");
-		
-		String json;
-//		json = api.invokeNew(InFlightInfo_URL, "ident=DAL1174");
-//		System.err.println(json);
-//		InFlightInfo info = (InFlightInfo) api.fromJson(json, InFlightInfo.class);
-//		Instant depTime = Instant.ofEpochSecond(info.InFlightInfoResult.departureTime);
-//		System.err.println(info.InFlightInfoResult.ident + " departed from: " + info.InFlightInfoResult.destination + " at " + depTime);
-		
-		json = api.invokeNew(InFlightInfo_URL, "ident=DAL129");
-		System.err.println(json);
-		InFlightInfo info = (InFlightInfo) fromJson(json, InFlightInfo.class);
-//		System.err.println(FlightInfoEx_URL + "ident=DAL1260");
-		System.err.println(info.InFlightInfoResult.destination);
-
-		
-//		json = api.invokeNew(InFlightInfo_URL, "ident=DAL1323");
-//		InFlightInfo info = (InFlightInfo) api.fromJson(json, InFlightInfo.class);
-//		Instant depTime = Instant.ofEpochSecond(info.InFlightInfoResult.departureTime);
-//		System.err.println(info.InFlightInfoResult.ident + " departed from: " + info.InFlightInfoResult.destination + " at " + depTime);
-//		api.printJson(json);
-//				List<Waypoint> waypoints = info.createWaypoints();
-//				for(Waypoint p: waypoints) 
-//					System.err.println(p);
+		return ((DecodeFlightRouteResponse)fromJson(json, DecodeFlightRouteResponse.class)).DecodeFlightRouteResult;
 	}
 
 }

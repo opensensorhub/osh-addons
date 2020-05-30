@@ -1,0 +1,53 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. 
+   -
+   - Software distributed under the License is distributed on an "AS IS" basis,
+   - WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+   - for the specific language governing rights and limitations under the License.
+   -
+   - The Initial Developer is Terravolv, Inc. Portions created by the Initial
+   - Developer are Copyright (C) 2014-2015 the Initial Developer. All Rights Reserved. -->
+   
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SOS Satellite Track</title>
+    <meta charset="utf-8" />
+    <meta name="viewport"   content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet"  href="leaflet.css"  type="text/css"/>
+    <link rel="stylesheet"  href="sensors.css"  type="text/css"/>
+  </head>
+  <body style="margin: 0;">
+    <div id="map"></div>
+    <!--<div id="dbg"></div>-->
+    <div id="dataObjectSelector">
+      <button id="playSatTrack">Play Sat Track</button>
+    </div>
+    <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+    <script type='text/javascript' src="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js"></script>
+    <script type='text/javascript' src="https://rawgithub.com/shramov/leaflet-plugins/master/layer/tile/Google.js"></script>    
+    <script src="http://maps.google.com/maps/api/js?v=3.2&sensor=false"></script>
+    <script src='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v0.0.4/Leaflet.fullscreen.min.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v0.0.4/leaflet.fullscreen.css' rel='stylesheet' />
+    <script type="text/javascript" src="variable_dictionary.js"></script>
+    <script type="text/javascript" src="ecef2lla.js"></script>
+    <script type="text/javascript" src="helper.js"></script>
+    <script>
+      map.addLayer(osm_StreetMap);
+      L.control.layers({'Google Roadmap':ggl_RoadMap,
+                        'Google Satellite':ggl_SatelliteMap,
+                        'Google Hybrid':ggl_SatelliteHybridMap,
+                        'Open Street Map':osm_StreetMap}).addTo(map);
+      var north = L.control({position: "bottomright"});
+      north.onAdd = function(map) {
+          var div = L.DomUtil.create("div", "info legend");
+          div.innerHTML = '<img src="northarrow.png">';
+          return div;
+      }
+      north.addTo(map);
+      L.control.fullscreen().addTo(map);
+
+    </script>
+  </body>
+</html>

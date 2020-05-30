@@ -17,13 +17,12 @@ package org.sensorhub.impl.sensor.navDb;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEHelper;
 
@@ -41,15 +40,15 @@ import net.opengis.swe.v20.Text;
  * @author Tony Cook
  *
  */
-public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMultiSourceDataInterface 
+public class AirportOutput extends AbstractSensorOutput<NavDriver> implements IMultiSourceDataInterface 
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = 1;
 
 	DataRecord navStruct;
 	DataEncoding encoding;	
-	Map<String, DataBlock> records = new LinkedHashMap<>();  // key is navDbEntry uid
+	Map<String, DataBlock> records = new TreeMap<>();  // key is navDbEntry uid
 
-	public NavOutput(NavDriver parentSensor) throws IOException
+	public AirportOutput(NavDriver parentSensor) throws IOException
 	{
 		super(parentSensor);
 	}
@@ -58,30 +57,27 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 	@Override
 	public String getName()
 	{
-		return "NavOutput";
+		return "AirportOutput";
 	}
 
 	protected void init()
 	{
 		SWEHelper fac = new SWEHelper();
 
-		//	 Structure is {id, name, lat, lon}
+		// Structure is {id, name, lat, lon}
 
 		// SWE Common data structure
 		navStruct = fac.newDataRecord(4);
 		navStruct.setName(getName());
-//		navStruct.setDefinition("http://earthcastwx.com/ont/swe/property/xxx/BobsAirports"); // ??
-		navStruct.setDefinition("http://earthcastwx.com/ont/swe/property/airports"); // ??
+		navStruct.setDefinition(SWEHelper.getPropertyUri("aero/Airport"));
 
-		Text id = fac.newText("http://sensorml.com/ont/swe/property/icaoCode", "ICAO Code", "ICAO airline code");
+		Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "ICAO Code", "Airport ICAO identification code");
 		navStruct.addComponent("code", id);
-		//		Text type = fac.newText("http://sensorml.com/ont/swe/property/type", "Type", "Type (Waypoint/Navaid/etc.)" );
-		//		waypt.addComponent("type", type);
-		Text name = fac.newText("http://sensorml.com/ont/swe/property/name", "Name", "Long name" );
+		Text name = fac.newText(SWEHelper.getPropertyUri("Name"), "Name", "Long name" );
 		navStruct.addComponent("name", name);
-		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Geodetic Latitude", null, "deg", DataType.DOUBLE);
+		Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg", DataType.DOUBLE);
 		navStruct.addComponent("lat", latQuant);
-		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.DOUBLE);
+		Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.DOUBLE);
 		navStruct.addComponent("lon", lonQuant);
 
 		// default encoding is text
@@ -130,7 +126,8 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 
 	public void sendEntries(List<NavDbEntry> recs)
 	{                
-
+	    Map<String, DataBlock> newRecords = new TreeMap<>();
+	    
 		for(NavDbEntry rec: recs) {
 			DataBlock dataBlock = navStruct.createDataBlock();
 
@@ -138,13 +135,16 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 			dataBlock.setStringValue(1, rec.name);
 			dataBlock.setDoubleValue(2, rec.lat);
 			dataBlock.setDoubleValue(3, rec.lon);
-			// Do I need a map here
-			String uid = NavDriver.AIRPORTS_UID_PREFIX + rec.id;
-			records.put(uid, dataBlock);   
-			long time = System.currentTimeMillis();
-			eventHandler.publishEvent(new SensorDataEvent(time, uid, NavOutput.this, dataBlock));
+			
+			newRecords.put(rec.id, dataBlock);   
+			//long time = System.currentTimeMillis();
+			//eventHandler.publishEvent(new SensorDataEvent(time, uid, NavOutput.this, dataBlock));
 		}
+		
+		// switch to new records atomically
+		records = newRecords;
 	}
+	
 
 	public double getAverageSamplingPeriod()
 	{
@@ -164,11 +164,12 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 	{
 		return encoding;
 	}
+	
 
 	@Override
 	public Collection<String> getEntityIDs()
 	{
-		return parentSensor.getEntityIDs();
+	    return parentSensor.getEntityIDs();
 	}
 
 
@@ -180,10 +181,9 @@ public class NavOutput extends AbstractSensorOutput<NavDriver> implements IMulti
 
 
 	@Override
-	public DataBlock getLatestRecord(String entityID) {
-		//  Can't really generate this one
-		DataBlock b =  records.get(entityID);
-		return b;
+	public DataBlock getLatestRecord(String entityID)
+	{
+	    return records.get(entityID);
 	}
     
     

@@ -31,6 +31,7 @@ import org.vast.swe.SWEHelper;
 
 public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
 {
+    private static String OUTPUT_NAME = "rangeData";
     private static String MSG_PREFIX = "$PLTIT";
     private static String MSG_TYPE_HV = "HV";
     //private static String MSG_TYPE_HT = "HT";
@@ -40,6 +41,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     
     DataComponent lrfData;
     DataEncoding dataEncoding;
+    Thread readThread;
     BufferedReader msgReader;
     boolean sendData;
     
@@ -53,7 +55,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     @Override
     public String getName()
     {
-        return lrfData.getName();
+        return OUTPUT_NAME;
     }
 
 
@@ -74,7 +76,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
         SWEHelper fac = new SWEHelper();
         
         DataRecord lrfData = fac.newDataRecord(5);
-        lrfData.setName("rangeData");
+        lrfData.setName(OUTPUT_NAME);
         lrfData.setDefinition("http://sensorml.com/ont/swe/property/LaserRangeData");
         
         // add time, horizontalDistance, azimuth, inclination, and slopeDistance
@@ -227,7 +229,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
         }
         
         // start main measurement thread
-        Thread t = new Thread(new Runnable()
+        readThread = new Thread(new Runnable()
         {
             public void run()
             {
@@ -237,7 +239,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
                 }
             }
         });
-        t.start();
+        readThread.start();
     }
 
 
@@ -245,10 +247,10 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     {
         sendData = false;
         
-        if (msgReader != null)
+        if (readThread != null)
         {
-            try { msgReader.close(); }
-            catch (IOException e) { }
+            readThread.interrupt();
+            readThread = null;
             msgReader = null;
         }
     }

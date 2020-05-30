@@ -17,13 +17,12 @@ package org.sensorhub.impl.sensor.navDb;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEHelper;
 
@@ -47,7 +46,7 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 
 	DataRecord struct;
 	DataEncoding encoding;	
-	Map<String, DataBlock> records = new LinkedHashMap<>();  // key is navDbEntry uid
+	Map<String, DataBlock> records = new TreeMap<>();  // key is navDbEntry uid
 
 	public WaypointOutput(NavDriver parentSensor) throws IOException
 	{
@@ -65,22 +64,20 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 	{
 		SWEHelper fac = new SWEHelper();
 
-		//	 Structure is {id, name, lat, lon}
+		// Structure is {id, name, lat, lon}
 
 		// SWE Common data structure
 		struct = fac.newDataRecord(4);
 		struct.setName(getName());
-		struct.setDefinition("http://earthcastwx.com/ont/swe/property/waypoints"); // ??
+		struct.setDefinition(SWEHelper.getPropertyUri("aero/Waypoint"));
 
-		Text id = fac.newText("http://sensorml.com/ont/swe/property/wayPtCode", "Waypt Code", "");
+		Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "Waypoint Code", "Waypoint ICAO identification code");
 		struct.addComponent("code", id);
-		//		Text type = fac.newText("http://sensorml.com/ont/swe/property/type", "Type", "Type (Waypoint/Navaid/etc.)" );
-		//		waypt.addComponent("type", type);
-		Text name = fac.newText("http://sensorml.com/ont/swe/property/name", "Name", "Long name" );
+		Text name = fac.newText(SWEHelper.getPropertyUri("Name"), "Name", null);
 		struct.addComponent("name", name);
-		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Geodetic Latitude", null, "deg", DataType.DOUBLE);
+		Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg", DataType.DOUBLE);
 		struct.addComponent("lat", latQuant);
-		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.DOUBLE);
+		Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.DOUBLE);
 		struct.addComponent("lon", lonQuant);
 
 		// default encoding is text
@@ -128,22 +125,26 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 	}
 
 	public void sendEntries(List<NavDbEntry> recs)
-	{                
-
-		for(NavDbEntry rec: recs) {
+	{
+	    Map<String, DataBlock> newRecords = new TreeMap<>();
+        
+        for(NavDbEntry rec: recs) {
 			DataBlock dataBlock = struct.createDataBlock();
 
 			dataBlock.setStringValue(0, rec.id);
 			dataBlock.setStringValue(1, rec.name);
 			dataBlock.setDoubleValue(2, rec.lat);
 			dataBlock.setDoubleValue(3, rec.lon);
-			// Do I need a map here
-			String uid = NavDriver.WAYPOINTS_UID_PREFIX + rec.id;
-			records.put(uid, dataBlock);   
-			long time = System.currentTimeMillis();
-			eventHandler.publishEvent(new SensorDataEvent(time, uid, WaypointOutput.this, dataBlock));
+			
+			newRecords.put(rec.id, dataBlock);   
+			//long time = System.currentTimeMillis();
+			//eventHandler.publishEvent(new SensorDataEvent(time, uid, WaypointOutput.this, dataBlock));
 		}
+        
+        // switch to new records atomically
+        records = newRecords;
 	}
+	
 
 	public double getAverageSamplingPeriod()
 	{
@@ -163,26 +164,26 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 	{
 		return encoding;
 	}
+	
 
 	@Override
 	public Collection<String> getEntityIDs()
 	{
-		return parentSensor.getEntityIDs();
+	    return parentSensor.getEntityIDs();
 	}
 
 
 	@Override
 	public Map<String, DataBlock> getLatestRecords()
 	{
-		return Collections.unmodifiableMap(records);
+	    return Collections.unmodifiableMap(records);
 	}
 
 
 	@Override
-	public DataBlock getLatestRecord(String entityID) {
-		//  Can't really generate this one
-		DataBlock b =  records.get(entityID);
-		return b;
+	public DataBlock getLatestRecord(String entityID)
+	{
+	    return records.get(entityID);
 	}
     
     

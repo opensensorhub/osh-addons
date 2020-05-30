@@ -35,8 +35,11 @@ public class FlightAwareConfig extends SensorConfig
     @DisplayInfo(desc="Type of connection")
     public Mode connectionType = Mode.FIREHOSE;
     
-    @DisplayInfo(desc="Maximum number of connection retries")
-    public int maxRetries = 5;
+    @DisplayInfo(label="Initial Retry Interval", desc="Delay before the first retry of the exponential backoff strategy, in seconds)")
+    public int initRetryInterval = 20;
+    
+    @DisplayInfo(label="Max Retry Interval", desc="Max interval between retries, in seconds)")
+    public int maxRetryInterval = 300;
     
     @DisplayInfo(desc="FlightAware Firehose hostname")
     public String hostname = "firehose.flightaware.com";
@@ -53,6 +56,9 @@ public class FlightAwareConfig extends SensorConfig
     
     @DisplayInfo(desc="Airline codes to listen for")
     public List<String> airlines = new ArrayList<>();
+    
+    @DisplayInfo(desc="Flight filter configuration")
+    public FlightObjectFilterConfig filterConfig;
     
     @DisplayInfo(desc="Pub/sub configuration")
     public MessageQueueConfig pubSubConfig;

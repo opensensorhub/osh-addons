@@ -1,6 +1,6 @@
 description = 'Gridded Dataset Utilities'
 ext.details = 'Various utilities for handling grid formats based on Unidata library'
-version = '0.3.2'
+version = '0.3.3'
 
 rootProject.allprojects {
   repositories {
@@ -10,7 +10,14 @@ rootProject.allprojects {
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile 'edu.ucar:grib:4.6.10'
+  compile ('edu.ucar:grib:4.6.10') {
+    exclude group: 'com.amazonaws', module: 'aws-java-sdk-s3'
+    exclude group: 'edu.ucar', module: 'jj2000'  
+    exclude group: 'org.apache.httpcomponents', module: 'httpcore'
+    exclude group: 'org.apache.httpcomponents', module: 'httpclient'
+    exclude group: 'org.apache.httpcomponents', module: 'httpmime'
+    exclude group: 'com.google.guava', module: 'guava'
+  }
 }
 
 // add info to OSGi manifest

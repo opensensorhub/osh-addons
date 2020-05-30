@@ -39,7 +39,7 @@ public class NldnSensor extends AbstractSensorModule<NldnConfig> implements File
 {
     static final Pattern DATA_FILE_REGEX = Pattern.compile(".*NLDN.*grb2");
     
-    NldnOutput meshInterface;
+    NldnOutput nldnInterface;
 	Thread watcherThread;
 	DirectoryWatcher watcher;
 	
@@ -49,13 +49,13 @@ public class NldnSensor extends AbstractSensorModule<NldnConfig> implements File
 	{
 		super.init();
 
-		this.uniqueID = "urn:osh:sensor:earthcast:nldn";
-		this.xmlID = "ECT_NLDN";
+		this.uniqueID = "urn:osh:sensor:mrms:nldn";
+		this.xmlID = "MRMS_NLDN";
 
 		// initialize outputs
-        this.meshInterface = new NldnOutput(this);
-		addOutput(meshInterface, false);
-		meshInterface.init();
+        this.nldnInterface = new NldnOutput(this);
+		addOutput(nldnInterface, false);
+		nldnInterface.init();
 	}
 	
 
@@ -149,11 +149,12 @@ public class NldnSensor extends AbstractSensorModule<NldnConfig> implements File
             if (rec == null)
                 throw new IOException("NldnReader returned null record");
             
-            meshInterface.sendMeasurement(rec);
+            reportStatus("Loaded data file \"" + p.getFileName() + "\"");
+            nldnInterface.sendMeasurement(rec);
         }
         catch (Exception e)
         {
-            getLogger().error("Error reading NLDN data file: {}", p, e);
+            reportError("Error reading data file \"" + p + "\"", e);
         }
     }
 }

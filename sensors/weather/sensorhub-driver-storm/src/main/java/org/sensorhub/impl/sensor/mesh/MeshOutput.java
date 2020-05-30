@@ -14,10 +14,8 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.mesh;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.DataBlockMixed;
@@ -41,10 +39,6 @@ import net.opengis.swe.v20.Quantity;
 public class MeshOutput extends AbstractSensorOutput<MeshSensor>  
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toSeconds(5);
-	//  Are these dims always fixed?  Should make this settable, even if fixed now
-	private static final int X_SIZE = 902;
-	private static final int Y_SIZE = 674;
-	private static final int NUM_POINTS = X_SIZE * Y_SIZE;
 
 	DataRecord meshRecordStruct;
 	DataEncoding meshEncoding;	
@@ -73,7 +67,7 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 		// SWE Common data structure
 		meshRecordStruct = fac.newDataRecord(5);
 		meshRecordStruct.setName(getName());
-		meshRecordStruct.setDefinition("http://earthcastwx.com/ont/swe/property/mesh"); // ??
+		meshRecordStruct.setDefinition(SWEHelper.getPropertyUri("MRMS/MESH"));
 
 		// time 
 		meshRecordStruct.addField("time", fac.newTimeStampIsoUTC());
@@ -84,26 +78,25 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 		numPoints.setId("NUM_POINTS");
 		meshRecordStruct.addComponent("numPoints",numPoints);
 		
-		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Latitude", null, "deg", DataType.FLOAT);
+		Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("Latitude"), "Latitude", null, "deg", DataType.FLOAT);
 		DataArray latArr = fac.newDataArray();
 		latArr.setElementType("Latitude", latQuant);
 		latArr.setElementCount(numPoints);
 		meshRecordStruct.addComponent("LatitudeArray", latArr);
 
-		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.FLOAT);
+		Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.FLOAT);
 		DataArray lonArr = fac.newDataArray();
 		lonArr.setElementType("Longitude", lonQuant);
 		lonArr.setElementCount(numPoints);
-		meshRecordStruct.addComponent("LongitudeArray", lonArr);
-		
+		meshRecordStruct.addComponent("LongitudeArray", lonArr);		
 
-		Quantity meshQuant = fac.newQuantity("http://earthcastwx.com/ont/swe/property/mesh", "Maximum Estimated Hail Size", null, "mm", DataType.FLOAT);
+		Quantity meshQuant = fac.newQuantity(SWEHelper.getPropertyUri("MaxHailSize"), "Maximum Estimated Hail Size", null, "mm", DataType.FLOAT);
 		DataArray meshArr = fac.newDataArray();
 		meshArr.setElementType("MESH", meshQuant);
 		meshArr.setElementCount(numPoints);
 		meshRecordStruct.addComponent("meshArray", meshArr);
-//		
-//		// default encoding is text
+		
+		// default encoding is text
 		meshEncoding = fac.newTextEncoding(",", "\n");
 	}
 	

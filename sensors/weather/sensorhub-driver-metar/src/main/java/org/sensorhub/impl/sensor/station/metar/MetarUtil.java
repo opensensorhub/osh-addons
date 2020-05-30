@@ -5,8 +5,12 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.TimeZone;
 
 /**
  * <p>Title: MetarUtil.java</p>
@@ -105,20 +109,73 @@ public class MetarUtil
 		return e;
 	}
 
-	public static boolean isEmwinMetarFile(String s) {
-		if(!s.startsWith("SAHOURLY")) 
-			return false;
-		int lastDot = s.lastIndexOf('.');
-		if(lastDot == -1)
-			return false;
-		String suffix = s.substring(lastDot + 1, s.length());
-		if(suffix.length() == 0)
-			return false;
-		
-	    boolean isInt = suffix.matches("\\d+");
-	    if(suffix.equalsIgnoreCase("TXT") || isInt)
-	    	return true;
-	    return false;
+	/**
+	 * 
+	 * @param year
+	 * @param month
+	 * @param dateStr - standard Metar report date String DDHHMMZ where DD = day of month, HH = hour of day, MM = minute
+	 * @return epoch seconds since 1970-01-01
+	 * @throws NumberFormatException
+	 */
+	public static long computeTimeUtc(int year, int month, String dateStr) throws NumberFormatException {
+		if(dateStr.length() != 7)
+			throw new NumberFormatException("Invalid dateString: " + dateStr);
+		String day = dateStr.substring(0, 2);
+		String hour = dateStr.substring(2, 4);
+		String minute = dateStr.substring(4, 6);
+
+		int iday = Integer.parseInt(day);
+		int	ihour = Integer.parseInt(hour);
+		int	iminute = Integer.parseInt(minute);
+
+		// Java 8
+		LocalDateTime dt = LocalDateTime.of(year, month, iday, ihour, iminute, 0, 0);
+		return dt.toEpochSecond(ZoneOffset.UTC);
+	}
+
+	/**
+	 * 
+	 * @param dateStr - standard Metar report date String DDHHMM where DD = day of month, HH = hour of day, MM = minute
+	 * @return epoch seconds since 1970-01-01
+	 * @throws NumberFormatException
+	 */
+	public static long computeTimeUtc(String dateStr) throws NumberFormatException {
+		if(dateStr.length() != 7)
+			throw new NumberFormatException("Invalid dateString: " + dateStr);
+		String day = dateStr.substring(0, 2);
+		int iday = Integer.parseInt(day);
+
+		//  Check for month changeover using system time.  
+		//  *Assumes* system clock is correct and always ahead of dateStr day/hour/minute fields, which *should* always be the case
+		// For archive ingest, year and month must be provided by the caller using computeTimeUtc(year, month, dateStr)
+		// JAVA 8
+		//		LocalDateTime dtNow = LocalDateTime.now();
+		//		int year = dtNow.get(ChronoField.YEAR);
+		//		int month = dtNow.get(ChronoField.MONTH_OF_YEAR);
+		//		int dayOfMonth = dtNow.get(ChronoField.DAY_OF_MONTH);
+
+		Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+		//		Calendar cal  = TimeUtil.getGMTCalendar(2017, 0, 1, 0, 0, 0);
+		//		Calendar cal  = TimeUtil.getGMTCalendar(2017, 11, 1, 0, 0, 0);
+		int year = cal.get(Calendar.YEAR);
+		int month = cal.get(Calendar.MONTH) + 1;
+		int dayOfMonth = cal.get(Calendar.DAY_OF_MONTH);
+
+		if(iday > dayOfMonth) {
+			if(--month == 0) {
+				month = 12;
+				--year;
+			}
+		}
+		return computeTimeUtc(year, month, dateStr);
+	}
+
+	public static double millibarsToInches(double pressureMb) {
+		return  (29.92 * pressureMb) / 1013.25;
+	}
+	
+	public static double inchesToMillibars(double pressureInches) {
+		return (pressureInches/29.92) * 1013.25;
 	}
 
 	public static void main_(String[] args) throws Exception {

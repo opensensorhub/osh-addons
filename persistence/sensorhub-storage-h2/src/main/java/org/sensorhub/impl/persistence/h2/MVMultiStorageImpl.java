@@ -20,7 +20,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import org.h2.mvstore.MVMap;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataKey;
@@ -48,7 +48,7 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
     private static final String PRODUCERS_MAP_NAME = "@producers";
 
     MVMap<String, String> dataStoreInfoMap;
-    Map<String, MVObsStorageImpl> obsStores = new ConcurrentHashMap<>();
+    Map<String, MVObsStorageImpl> obsStores = new ConcurrentSkipListMap<>(); // use sorted map so we can iterate in same order as persistent index (more sequential scan)
     
     
     /* to iterate through a list of producers records in parallel while sorting by time */
@@ -163,6 +163,7 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
         try
         {
             obsStore = new MVObsStorageImpl(this, producerID);
+            obsStore.init(config);
             obsStores.put(producerID, obsStore);
             return obsStore;
         }
@@ -236,6 +237,22 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
             timeRange[0] = timeRange[1] = Double.NaN;
         
         return timeRange;
+    }
+    
+    
+    @Override
+    public int[] getEstimatedRecordCounts(String recordType, double[] timeStamps)
+    {
+        int [] counts = new int[timeStamps.length-1];
+        
+        for (MVObsStorageImpl dataStore: obsStores.values())
+        {
+            int[] producerCounts = dataStore.getEstimatedRecordCounts(recordType, timeStamps);
+            for (int i = 0; i < counts.length; i++)
+                counts[i] += producerCounts[i];
+        }
+        
+        return counts;
     }
 
 

@@ -1,0 +1,40 @@
+apply from: gradle.oshCoreDir + '/common.gradle'
+version = oshCoreVersion
+
+dependencies {
+  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
+  compile 'org.sensorhub:sensorhub-storage-perst:' + oshCoreVersion
+  compile 'org.sensorhub:sensorhub-webui-core:' + oshCoreVersion
+  compile 'org.sensorhub:sensorhub-tools:' + oshCoreVersion
+  compile 'org.sensorhub:sensorhub-service-video:[0.1,2.0)'
+  compile 'org.sensorhub:sensorhub-driver-fakegps:[0.1,2.0)'
+  compile 'org.sensorhub:sensorhub-driver-fakeweather:[0.1,2.0)'
+  compile 'org.sensorhub:sensorhub-driver-avl-911:[0.1,2.0)'
+  compile 'org.sensorhub:sensorhub-driver-plume:[0.1,2.0)'
+  compile 'org.sensorhub:sensorhub-storage-usgswater:[0.1,2.0)'
+  compile 'org.sensorhub:sensorhub-process-vecmath:[0.1,2.0)'
+  compile 'org.sensorhub:sensorhub-process-geoloc:[0.1,2.0)'
+  compile 'org.sensorhub:sensorhub-process-sat:[0.1,2.0)'
+}
+
+distributions {
+  main {
+    contents {
+      from 'scripts'
+      from 'config'
+      from 'README.md'
+      into('web') {
+        from 'web'
+      }
+      into('lib') {
+        from project.configurations.compileClasspath
+      }
+    }
+  }
+}
+
+
+
+
+

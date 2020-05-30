@@ -21,7 +21,7 @@ import org.sensorhub.api.sensor.SensorConfig;
 public class NldnConfig extends SensorConfig
 {
     
-    @DisplayInfo(desc="Max Estimated Hail Size Config params")
+    @DisplayInfo(desc="Directory to search for NLDN data files")
     public String dataPath;
     
     

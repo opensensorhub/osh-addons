@@ -1,0 +1,80 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <link rel="stylesheet" href="style.css" type="text/css" />
+    <script src="OpenLayers.js"></script>
+    <script type="text/javascript">
+        var map, layer;
+        var xhReq;
+        var marker;
+        var markers;
+        var epsg4326 = new OpenLayers.Projection("EPSG:4326");
+
+        function init(){
+            map = new OpenLayers.Map( 'map', {            
+              controls: [
+                new OpenLayers.Control.LayerSwitcher(),
+                new OpenLayers.Control.Navigation({zoomBoxEnabled: true, zoomWheelEnabled: true}),
+                new OpenLayers.Control.PanZoomBar(),
+                new OpenLayers.Control.MousePosition(),
+                new OpenLayers.Control.ScaleLine()
+              ]
+            });
+            map.numZoomLevels = 17;
+
+            // OSM background map layer
+            var osm = new OpenLayers.Layer.OSM();
+            map.addLayer(osm);
+
+            // vector layer
+            markers = new OpenLayers.Layer.Markers("Markers");
+            map.addLayer(markers);
+
+            // center map on HSV
+            var center = new OpenLayers.LonLat(-86.5850, 34.7300).transform(epsg4326, map.getProjectionObject());
+            map.setCenter(center, 11);
+
+            // create marker
+            var size = new OpenLayers.Size(30, 30);
+            var offset = new OpenLayers.Pixel(-size.w/2, -size.h/2);
+            var icon = new OpenLayers.Icon('img/draw_point_on.png', size, offset);
+            marker = new OpenLayers.Marker(new OpenLayers.LonLat(0, 0), icon);
+            markers.addMarker(marker);
+
+            // GPS
+            // prepare reader
+            var reader = new FileReader();
+            reader.onload = function() {
+                var rec = reader.result;
+                //console.log(rec);
+                document.getElementById("text").innerHTML = rec;
+                var tokens = rec.trim().split(",");
+                var lat = parseFloat(tokens[1]);
+                var lon = parseFloat(tokens[2]);
+                var alt = parseFloat(tokens[3]);
+                marker.lonlat = new OpenLayers.LonLat(lon, lat).transform(epsg4326, map.getProjectionObject());
+                markers.redraw();
+            }
+            
+            // query SOS GPS stream
+            var currentUrl = window.location;
+            var ws = new WebSocket("ws://" + currentUrl.host + "/sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering02&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&temporalFilter=phenomenonTime,now/2055-01-01");
+            ws.onmessage = function (event) {
+                reader.readAsText(event.data);
+            }
+            ws.onerror = function (event) {
+                ws.close();
+            }
+        }
+
+    </script>
+  </head>
+  <body onload="init()" style="font-family: verdana">
+    <h1 id="title">SOS Client Example</h1>
+    <div id="map" style="width:100%; height:768px" class="smallmap"></div>    
+    <div id="text">Waiting for first GPS pos...</div>
+  </body>
+</html>
+
+
+
+

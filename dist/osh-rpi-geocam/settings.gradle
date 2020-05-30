@@ -1,0 +1,9 @@
+rootProject.name = 'osh-rpi-geocam'
+def repoRootDir = "$rootDir/../.."
+gradle.ext.oshCoreDir = "$repoRootDir/../osh-core"
+
+if (!new File(gradle.oshCoreDir).exists())
+    throw new GradleException('Repository osh-core is missing. Please clone it from https://github.com/opensensorhub/osh-core')
+
+includeBuild gradle.oshCoreDir
+includeBuild repoRootDir

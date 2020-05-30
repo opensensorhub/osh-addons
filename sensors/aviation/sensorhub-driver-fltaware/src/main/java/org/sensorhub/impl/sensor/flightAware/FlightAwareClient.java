@@ -24,35 +24,38 @@ import java.util.List;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class FlightAwareClient implements Runnable 
 {
-    static final Logger log = LoggerFactory.getLogger(FlightAwareClient.class);
     private static final boolean USE_COMPRESSION = false;
     
-    private String serverUrl;
+    Logger log;
+    String serverUrl;
 	String userName;
 	String password;
-	private SSLSocket ssl_socket = null;
+	long replayDuration = 0; // in seconds before current time
 	List<String> messageTypes = new ArrayList<>();
 	List<String> filterAirlines = new ArrayList<>();
+	SSLSocket ssl_socket = null;
 	IMessageHandler msgHandler;
 	volatile boolean started;
     
 
-	public FlightAwareClient(String serverUrl, String uname, String pwd, IMessageHandler msgHandler) {
+	public FlightAwareClient(String serverUrl, String uname, String pwd, Logger log, IMessageHandler msgHandler) {
+	    this.log = log;
 		this.serverUrl = serverUrl;
 		this.userName = uname;
 		this.password = pwd;
 		this.msgHandler = msgHandler;
 	}
 
-	private String  buildInitiationCommand() {
-		String initiationCmd = "live username " + userName + " password " + password;
-
+	private String  buildInitiationCommand() 
+	{
+	    long pitr = System.currentTimeMillis()/1000 - replayDuration;
+	    String initiationCmd = (replayDuration > 0) ? "pitr " + pitr : "live";
+	    initiationCmd += " username " + userName + " password " + password + " keepalive 15";
+	    
 		if (USE_COMPRESSION) {
 			initiationCmd += " compression gzip";
 		}
@@ -106,7 +109,8 @@ public class FlightAwareClient implements Runnable
     			inputStream = ssl_socket.getInputStream();
     			reader = new BufferedReader(new InputStreamReader(inputStream));    			
     		} catch (IOException e) {
-                throw new IllegalStateException("Cannot connect to Firehose", e);            
+                log.error("Cannot connect to Firehose", e);
+                return;
             }
 			
     		try {
@@ -115,8 +119,8 @@ public class FlightAwareClient implements Runnable
     			while (started && (message = reader.readLine()) != null) {
     			    msgHandler.handle(message);
     				/*//  simulate connection closed by peer
-    				if(++cnt >= 400) {
-    					throw new EOFException("Test closed by peer");
+    				if(++cnt >= 100) {
+    					throw new IOException("Test closed by peer");
     				}*/
     			}    			
     		} catch (IOException e) {
@@ -148,7 +152,7 @@ public class FlightAwareClient implements Runnable
 	}
 	
 	public synchronized void start() {
-	    Thread thread = new Thread(this);
+	    Thread thread = new Thread(this, "FirehoseClient");
         thread.start();
 	}
 
@@ -157,7 +161,7 @@ public class FlightAwareClient implements Runnable
 		
 		// force close from here
         try {
-            if(!ssl_socket.isClosed())
+            if (ssl_socket != null && !ssl_socket.isClosed())
                 ssl_socket.close();
         } catch (IOException e) {
             log.error("Error closing Firehose client socket", e);
@@ -185,6 +189,10 @@ public class FlightAwareClient implements Runnable
 
 	public boolean isStarted() {
 		return started;
+	}
+	
+	public void setReplayDuration(long replayDuration) {
+	    this.replayDuration = replayDuration;
 	}
 	
 	public void addAirline(String airline) {

@@ -1,5 +1,3 @@
-Collection of drivers for Earthcast/Delta project. Includes separate driver classes for:
-- NLDN (lightning)
-- MESH (Hail)
-- Turbulence (Vertical slices of GTGTURB product)
-- FlightAware (Feed for flight plan and location data)
+# FlightAware Add-on
+
+Add-on to ingest real-time flight plan and position data from FlightAware Firehose feed
