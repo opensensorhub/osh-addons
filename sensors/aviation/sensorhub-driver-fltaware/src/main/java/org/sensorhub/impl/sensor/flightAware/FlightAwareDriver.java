@@ -381,7 +381,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
             pubSubConfig.subscriptionName = hostname + prefix + pubSubConfig.topicName;
             
             // load message queue implementation
-	        msgQueue = (IMessageQueuePush)SensorHub.getInstance().getModuleRegistry().loadClass(pubSubConfig.moduleClass);
+	        msgQueue = (IMessageQueuePush)getParentHub().getModuleRegistry().loadClass(pubSubConfig.moduleClass);
             msgQueue.init(pubSubConfig);
             
             if (!publishOnly)
@@ -520,7 +520,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     
     protected void loadCache() throws SensorHubException
     {
-        IModuleStateManager stateMgr = SensorHub.getInstance().getModuleRegistry().getStateManager(getLocalID());
+        IModuleStateManager stateMgr = getParentHub().getModuleRegistry().getStateManager(getLocalID());
         
         // preload cache from file
         InputStream is = stateMgr.getAsInputStream(STATE_CACHE_FILE);
@@ -545,7 +545,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                 }
                 
                 // read file last modified time stamp
-                File moduleDataFolder = SensorHub.getInstance().getModuleRegistry().getModuleDataFolder(getLocalID());
+                File moduleDataFolder = getParentHub().getModuleRegistry().getModuleDataFolder(getLocalID());
                 this.lastUpdatedCache = new File(moduleDataFolder, STATE_CACHE_FILE+".dat").lastModified()/1000;
             }
             catch (IOException e)
@@ -563,7 +563,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
         // save ID cache for hot restart
         if (flightCache != null && flightCache.size() > 0)
         {
-            IModuleStateManager stateMgr = SensorHub.getInstance().getModuleRegistry().getStateManager(getLocalID());
+            IModuleStateManager stateMgr = getParentHub().getModuleRegistry().getStateManager(getLocalID());
             
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stateMgr.getOutputStream(STATE_CACHE_FILE))))
             {

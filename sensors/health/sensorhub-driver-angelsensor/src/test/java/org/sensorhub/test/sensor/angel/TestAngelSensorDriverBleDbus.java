@@ -50,7 +50,7 @@ public class TestAngelSensorDriverBleDbus implements IEventListener
     @Before
     public void init() throws Exception
     {
-        ModuleRegistry reg = SensorHub.getInstance().getModuleRegistry();
+        ModuleRegistry reg = new SensorHub().getModuleRegistry();
 
         BluetoothNetworkConfig netConf = new BluetoothNetworkConfig();
         netConf.id = "BLE";
