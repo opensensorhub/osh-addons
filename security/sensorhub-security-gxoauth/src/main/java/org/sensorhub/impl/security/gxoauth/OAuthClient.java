@@ -21,7 +21,6 @@ import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.SensorHub;
 import org.sensorhub.impl.module.AbstractModule;
 
 
@@ -49,14 +48,14 @@ public class OAuthClient extends AbstractModule<OAuthClientConfig> implements Au
     @Override
     public void start() throws SensorHubException
     {
-        SensorHub.getInstance().getSecurityManager().registerAuthenticator(this);
+        getParentHub().getSecurityManager().registerAuthenticator(this);
     }
 
 
     @Override
     public void stop() throws SensorHubException
     {
-        SensorHub.getInstance().getSecurityManager().registerAuthenticator(authenticator);
+        getParentHub().getSecurityManager().registerAuthenticator(authenticator);
         this.authenticator = null;
     }
 

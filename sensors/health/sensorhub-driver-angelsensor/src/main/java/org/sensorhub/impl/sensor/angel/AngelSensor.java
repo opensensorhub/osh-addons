@@ -27,7 +27,6 @@ import org.sensorhub.api.comm.ble.IGattClient;
 import org.sensorhub.api.comm.ble.IGattField;
 import org.sensorhub.api.comm.ble.IGattService;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.SensorHub;
 import org.sensorhub.impl.module.ModuleRegistry;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
@@ -149,8 +148,8 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
         // connect to BLE network
         if (bleNetRef == null)
         {
-            ModuleRegistry reg = SensorHub.getInstance().getModuleRegistry();
-            bleNetRef = (WeakReference<IBleNetwork<?>>) reg.getModuleRef(config.networkID);
+            ModuleRegistry reg = getParentHub().getModuleRegistry();
+            bleNetRef = reg.getModuleRef(config.networkID);
 
             // connect to sensor
             gattCallback = new AngelSensorCallback();
