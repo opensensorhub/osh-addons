@@ -65,7 +65,7 @@ public class TruPulseWithGeolocSensor extends TruPulseSensor
         geolocProcess.init(geolocProcessConfig);
                 
         // add geoloc output
-        geolocOutput = new TruPulseGeolocOutput(this, geolocProcess.getAllOutputs().get("targetLocation"));
+        geolocOutput = new TruPulseGeolocOutput(this, geolocProcess.getOutputs().get("targetLocation"));
         addOutput(geolocOutput, false);
     }
 

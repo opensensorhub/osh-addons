@@ -192,7 +192,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             // let each registered output handle this message
             if (activeMessages.contains(msgID))
             {
-                for (IStreamingDataInterface output: this.getAllOutputs().values())
+                for (IStreamingDataInterface output: this.getOutputs().values())
                 {
                     NMEAGpsOutput nmeaOut = (NMEAGpsOutput)output;
                     nmeaOut.handleMessage(msgTime, msgID, msg);

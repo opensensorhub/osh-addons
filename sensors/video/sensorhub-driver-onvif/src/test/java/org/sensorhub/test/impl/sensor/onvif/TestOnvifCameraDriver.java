@@ -124,7 +124,7 @@ public class TestOnvifCameraDriver implements IEventListener
     	Map<String, IStreamingControlInterface> cmdInputs = driver.getCommandInputs();
     	assertTrue(cmdInputs.containsKey("ptzControl"));
     	
-    	Map<String, IStreamingDataInterface> outputs = driver.getAllOutputs();
+    	Map<String, IStreamingDataInterface> outputs = driver.getOutputs();
     	assertTrue(outputs.containsKey("ptzOutput"));
     	
         // register listeners

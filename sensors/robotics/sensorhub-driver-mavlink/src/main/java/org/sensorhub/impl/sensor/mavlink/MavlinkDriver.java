@@ -391,7 +391,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
             }*/
             
             // let each registered output handle this message
-            for (IStreamingDataInterface output: this.getAllOutputs().values())
+            for (IStreamingDataInterface output: this.getOutputs().values())
             {
                 MavlinkOutput nmeaOut = (MavlinkOutput)output;
                 nmeaOut.handleMessage(lastMsgTime, msg);
