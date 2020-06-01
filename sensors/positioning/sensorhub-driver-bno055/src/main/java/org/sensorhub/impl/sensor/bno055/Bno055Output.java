@@ -69,14 +69,7 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
     
     public Bno055Output(Bno055Sensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "imuData";
+        super("imuData", parentSensor);
     }
 
 

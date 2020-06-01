@@ -42,15 +42,8 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
     
     protected V4LCameraOutputMJPEG(V4LCameraDriver driver, ImageFormat imgFormat)
     {
-        super(driver);
+        super("camOutput_MJPEG", driver);
         this.imgFormat = imgFormat;
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return "camOutput_MJPEG";
     }
     
     

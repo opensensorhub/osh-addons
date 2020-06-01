@@ -56,20 +56,13 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver> implements IMulti
 
     public AVLOutput(AVLDriver parentSensor)
     {
-        super(parentSensor);
+        super("avlData", parentSensor);
 
         // Intergraph 911 System format (20140329002208CD) + add T (before parsing)
         timeFormat = new SimpleDateFormat("yyyyMMddHHmmssz");
 
         //this.cal = new GregorianCalendar();
         //cal.setTimeZone(TimeZone.getTimeZone("UTC"));
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "avlData";
     }
 
 

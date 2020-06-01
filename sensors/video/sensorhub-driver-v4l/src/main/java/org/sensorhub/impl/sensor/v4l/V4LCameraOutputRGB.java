@@ -41,14 +41,7 @@ public class V4LCameraOutputRGB extends V4LCameraOutput implements CaptureCallba
     
     protected V4LCameraOutputRGB(V4LCameraDriver driver)
     {
-        super(driver);
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return "camOutput_RGB";
+        super("camOutput_RGB", driver);
     }
     
     

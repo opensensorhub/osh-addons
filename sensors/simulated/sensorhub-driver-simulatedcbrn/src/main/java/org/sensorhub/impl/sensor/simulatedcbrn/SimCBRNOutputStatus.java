@@ -45,14 +45,7 @@ public class SimCBRNOutputStatus extends AbstractSensorOutput<SimCBRNSensor>
 
 	public SimCBRNOutputStatus(SimCBRNSensor parentSensor)
 	{
-		super(parentSensor);
-	}
-
-
-	@Override
-	public String getName()
-	{
-		return "STATUS";
+		super("status", parentSensor);
 	}
 
 

@@ -32,15 +32,18 @@ class KinectInfraredOutput extends KinectOutputInterface {
 
 	private static final String ERR_STR = new String("Error while initializing IR output");
 
-	private static final String STR_NAME = new String("Kinect IR Camera");
+	private static final String STR_NAME = new String("irCamera");
 
 	protected DataStream irStream;
 
 	public KinectInfraredOutput(KinectSensor parentSensor, Device kinectDevice) {
 
-		super(parentSensor, kinectDevice);
+        super(STR_NAME, parentSensor, kinectDevice);
+    }
+	
+	protected KinectInfraredOutput(String name, KinectSensor parentSensor, Device kinectDevice) {
 
-		name = STR_NAME;
+		super(name, parentSensor, kinectDevice);
 	}
 
 	@Override

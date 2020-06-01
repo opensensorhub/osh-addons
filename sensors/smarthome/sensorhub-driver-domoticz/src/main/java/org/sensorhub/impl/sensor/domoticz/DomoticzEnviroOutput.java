@@ -17,14 +17,8 @@ public class DomoticzEnviroOutput extends AbstractSensorOutput<DomoticzDriver>
 	DataBlock enviroBlock;
 	
 	public DomoticzEnviroOutput(DomoticzDriver parentSensor) {
-		super(parentSensor);
+		super("enviroData", parentSensor);
 	}
-	
-	@Override
-    public String getName()
-    {
-        return "DomoticzEnviroData";
-    }
 
 
     protected void init() throws IOException

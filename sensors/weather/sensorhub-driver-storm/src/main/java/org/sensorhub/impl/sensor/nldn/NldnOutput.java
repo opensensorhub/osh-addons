@@ -47,14 +47,7 @@ public class NldnOutput extends AbstractSensorOutput<NldnSensor>
 	
 	public NldnOutput(NldnSensor parentSensor)
 	{
-		super(parentSensor);
-	}
-
-
-	@Override
-	public String getName()
-	{
-		return "nldnData";
+		super("nldn", parentSensor);
 	}
 	
 

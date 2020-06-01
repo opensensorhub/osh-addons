@@ -47,15 +47,8 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
 
     public FakeGpsOutput(FakeGpsSensor parentSensor)
     {
-        super(parentSensor);
+        super("gpsLocation", parentSensor);
         trajPoints = new ArrayList<>();
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "gpsLocation";
     }
 
 

@@ -17,14 +17,8 @@ public class DomoticzAlertOutput extends AbstractSensorOutput<DomoticzDriver>
 	DataBlock alertBlock;
 	
 	public DomoticzAlertOutput(DomoticzDriver parentSensor) {
-		super(parentSensor);
+		super("alertData", parentSensor);
 	}
-	
-	@Override
-    public String getName()
-    {
-        return "DomoticzAlertData";
-    }
 
 
     protected void init() throws IOException

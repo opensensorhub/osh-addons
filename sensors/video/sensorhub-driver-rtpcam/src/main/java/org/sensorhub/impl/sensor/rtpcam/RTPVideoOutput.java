@@ -65,21 +65,13 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
     
     public RTPVideoOutput(SensorType driver)
     {
-        this(driver, "video");
+        this("video", driver);
     }
     
     
-    public RTPVideoOutput(SensorType driver, String name)
+    public RTPVideoOutput(String name, SensorType driver)
     {
-        super(driver);
-        this.name = name;
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return name;
+        super(name, driver);
     }
     
     

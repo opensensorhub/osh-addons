@@ -36,7 +36,7 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 	private static final int IDX_Z_COORD_COMPONENT = 2;
 	private static final int DIMENSIONS = 3;
 
-	private static final String STR_NAME = new String("Kinect Depth - Camera Model Mapped");
+	private static final String STR_NAME = new String("depthMapData");
 
 	private static final String STR_POINT_UNITS_OF_MEASURE = new String("m");
 
@@ -69,13 +69,7 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 
 	public KinectDepthMappedOutput(KinectSensor parentSensor, Device kinectDevice) {
 
-		super(parentSensor, kinectDevice);
-
-		name = STR_NAME;
-
-		samplingTimeMillis = (long) (getParentModule().getConfiguration().samplingTime * MS_PER_S);
-
-		numPoints = computeNumPoints();
+		super(STR_NAME, parentSensor, kinectDevice);
 	}
 
 	@Override

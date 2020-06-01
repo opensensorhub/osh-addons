@@ -9,6 +9,7 @@ import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEHelper;
 
+
 public class UAHweatherOutput extends AbstractSensorOutput<UAHweatherSensor>
 {
     DataComponent dataStruct;
@@ -16,14 +17,7 @@ public class UAHweatherOutput extends AbstractSensorOutput<UAHweatherSensor>
     
     public UAHweatherOutput(UAHweatherSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "UAH Weather";
+        super("weatherData", parentSensor);
     }
 
 

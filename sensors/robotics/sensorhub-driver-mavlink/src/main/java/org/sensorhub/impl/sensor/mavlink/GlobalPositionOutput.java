@@ -37,15 +37,8 @@ public class GlobalPositionOutput extends MavlinkOutput
     
     public GlobalPositionOutput(MavlinkDriver parentSensor)
     {
-        super(parentSensor);
+        super("platformLoc", parentSensor);
         this.samplingPeriod = 1.0; // default to 1Hz on startup        
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return "platformLoc";
     }
     
     

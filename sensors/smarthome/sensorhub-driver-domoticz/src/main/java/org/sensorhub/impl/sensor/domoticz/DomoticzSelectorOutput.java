@@ -17,14 +17,8 @@ public class DomoticzSelectorOutput extends AbstractSensorOutput<DomoticzDriver>
 	DataBlock selectorBlock;
 	
 	public DomoticzSelectorOutput(DomoticzDriver parentSensor) {
-		super(parentSensor);
+		super("selectorData", parentSensor);
 	}
-	
-	@Override
-    public String getName()
-    {
-        return "DomoticzSelectorData";
-    }
 
 
     protected void init() throws IOException

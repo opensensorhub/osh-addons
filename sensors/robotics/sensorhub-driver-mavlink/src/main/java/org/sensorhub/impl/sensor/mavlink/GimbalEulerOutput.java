@@ -38,15 +38,8 @@ public class GimbalEulerOutput extends MavlinkOutput
     
     public GimbalEulerOutput(MavlinkDriver parentSensor)
     {
-        super(parentSensor);
+        super("gimbalAtt", parentSensor);
         this.samplingPeriod = 0.1; // default to 10Hz on startup        
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return "gimbalAtt";
     }
     
     

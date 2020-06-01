@@ -17,14 +17,8 @@ public class DomoticzMotionOutput extends AbstractSensorOutput<DomoticzDriver>
 	DataBlock motionBlock;
 	
 	public DomoticzMotionOutput(DomoticzDriver parentSensor) {
-		super(parentSensor);
+		super("motionData", parentSensor);
 	}
-	
-	@Override
-    public String getName()
-    {
-        return "DomoticzMotionData";
-    }
 
 
     protected void init() throws IOException

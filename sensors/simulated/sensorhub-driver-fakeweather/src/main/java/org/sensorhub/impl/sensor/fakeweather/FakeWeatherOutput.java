@@ -51,14 +51,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     
     public FakeWeatherOutput(FakeWeatherSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "weather";
+        super("weather", parentSensor);
     }
 
 

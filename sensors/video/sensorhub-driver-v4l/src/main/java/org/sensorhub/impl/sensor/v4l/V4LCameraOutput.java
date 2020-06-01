@@ -38,12 +38,6 @@ public abstract class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriv
     boolean processingFrame;
     
     
-    public V4LCameraOutput(V4LCameraDriver parentSensor)
-    {
-        super(parentSensor);
-    }
-
-
     public V4LCameraOutput(String name, V4LCameraDriver parentSensor)
     {
         super(name, parentSensor);

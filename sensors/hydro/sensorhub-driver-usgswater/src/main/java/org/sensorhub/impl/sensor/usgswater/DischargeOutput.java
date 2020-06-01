@@ -50,14 +50,7 @@ public class DischargeOutput extends AbstractSensorOutput <USGSWaterDriver> impl
 
     public DischargeOutput(USGSWaterDriver driver)
     {
-        super(driver);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "discharge";
+        super("discharge", driver);
     }
   
     

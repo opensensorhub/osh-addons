@@ -17,14 +17,8 @@ public class DomoticzTempOutput extends AbstractSensorOutput<DomoticzDriver>
 	DataBlock tempBlock;
 	
 	public DomoticzTempOutput(DomoticzDriver parentSensor) {
-		super(parentSensor);
+		super("tempData", parentSensor);
 	}
-	
-	@Override
-    public String getName()
-    {
-        return "DomoticzTempData";
-    }
 
 
     protected void init() throws IOException

@@ -56,18 +56,11 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IM
 	
 	public MetarOutput(MetarSensor parentSensor)
 	{
-		super(parentSensor);
+		super("metarWeather", parentSensor);
 		aviationTimerTask = new AviationTimerTask(parentSensor.getConfiguration().aviationWeatherUrl);
 		timer = new Timer(true);
 	    timer.scheduleAtFixedRate(aviationTimerTask, 0, AVERAGE_POLLING_PERIOD);
 		latestUpdateTimes = new HashMap<String, Long>();
-	}
-
-
-	@Override
-	public String getName()
-	{
-		return "metarWeather";
 	}
 
 

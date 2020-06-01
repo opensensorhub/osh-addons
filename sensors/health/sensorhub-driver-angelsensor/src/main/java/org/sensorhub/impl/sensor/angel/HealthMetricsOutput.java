@@ -34,14 +34,7 @@ public class HealthMetricsOutput extends AbstractSensorOutput<AngelSensor>
     
     public HealthMetricsOutput(AngelSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "healthData";
+        super("healthData", parentSensor);
     }
 
 

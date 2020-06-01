@@ -30,7 +30,7 @@ public class LocalPosOutput extends AbstractSensorOutput<Trek1000Sensor>
 
     public LocalPosOutput(Trek1000Sensor parentSensor)
     {
-        super(parentSensor);
+        super("xyzLoc", parentSensor);
     }
 
 
@@ -67,13 +67,6 @@ public class LocalPosOutput extends AbstractSensorOutput<Trek1000Sensor>
         latestRecord = dataBlock;
         latestRecordTime = msgTime;
         eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlock));
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "xyzLoc";
     }
 
 

@@ -43,13 +43,7 @@ public class AHRSOutput extends AbstractSensorOutput<AHRSSensor>
     
     public AHRSOutput(AHRSSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-    @Override
-    public String getName()
-    {
-    	return "ahrsData";
+        super("ahrsData", parentSensor);
     }
    
     protected void init()

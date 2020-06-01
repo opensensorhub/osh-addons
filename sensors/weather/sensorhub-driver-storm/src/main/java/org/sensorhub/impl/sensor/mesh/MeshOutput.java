@@ -46,14 +46,7 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 	
 	public MeshOutput(MeshSensor parentSensor)
 	{
-		super(parentSensor);
-	}
-
-
-	@Override
-	public String getName()
-	{
-		return "MeshSensor";
+		super("mesh", parentSensor);
 	}
 	
 

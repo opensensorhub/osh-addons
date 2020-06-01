@@ -37,15 +37,8 @@ public class BatteryStatusOutput extends MavlinkOutput
     
     public BatteryStatusOutput(MavlinkDriver parentSensor)
     {
-        super(parentSensor);
+        super("batteryStatus", parentSensor);
         this.samplingPeriod = 0.1; // default to 10Hz on startup        
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return "batteryStatus";
     }
     
     

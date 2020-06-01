@@ -32,14 +32,7 @@ public class VaisalaWeatherCompositeOutput extends AbstractSensorOutput<VaisalaW
     
     public VaisalaWeatherCompositeOutput(VaisalaWeatherSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "weather";
+        super("weather", parentSensor);
     }
 
 

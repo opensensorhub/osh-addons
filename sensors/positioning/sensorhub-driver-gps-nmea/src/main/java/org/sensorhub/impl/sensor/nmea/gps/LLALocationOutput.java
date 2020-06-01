@@ -48,18 +48,11 @@ public class LLALocationOutput extends NMEAGpsOutput
     
     public LLALocationOutput(NMEAGpsSensor parentSensor)
     {
-        super(parentSensor);
+        super("gpsLocation", parentSensor);
         this.samplingPeriod = 1.0; // default to 1Hz on startup
         
         this.cal = new GregorianCalendar();
         cal.setTimeZone(TimeZone.getTimeZone("UTC"));
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return "gpsLocation";
     }
 
     

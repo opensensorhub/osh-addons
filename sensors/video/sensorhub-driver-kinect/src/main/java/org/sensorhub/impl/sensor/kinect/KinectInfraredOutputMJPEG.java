@@ -34,7 +34,7 @@ import net.opengis.swe.v20.DataBlock;
 
 class KinectInfraredOutputMJPEG extends KinectInfraredOutput {
 
-	private static final String STR_NAME = new String("Kinect IR Camera (MJPEG)");
+	private static final String STR_NAME = new String("irCamera_MJPEG)");
 
 	private static final String STR_JPG_FORMAT_SPECIFIER = new String("jpg");
 
@@ -42,9 +42,7 @@ class KinectInfraredOutputMJPEG extends KinectInfraredOutput {
 
 	public KinectInfraredOutputMJPEG(KinectSensor parentSensor, Device kinectDevice) {
 
-		super(parentSensor, kinectDevice);
-
-		name = STR_NAME;
+		super(STR_NAME, parentSensor, kinectDevice);
 	}
 
 	@Override

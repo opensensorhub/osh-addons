@@ -21,7 +21,7 @@ public class HttpWeatherOutput extends AbstractSensorOutput<HttpWeatherSensor> {
      * @param parentSensor - the parent sensor
      */
 	public HttpWeatherOutput(HttpWeatherSensor parentSensor) {
-		super(parentSensor);
+		super("httpweather", parentSensor);
 	}
 	
 	/**
@@ -174,11 +174,6 @@ public class HttpWeatherOutput extends AbstractSensorOutput<HttpWeatherSensor> {
         latestRecordTime = System.currentTimeMillis();
         // Publish
         eventHandler.publish(new DataEvent(latestRecordTime, HttpWeatherOutput.this, dataBlock));
-	}
-	
-	@Override
-	public String getName() {
-		return "httpweather";
 	}
 
 	@Override

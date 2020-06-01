@@ -64,7 +64,7 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
 
     public AxisPtzOutput(AxisCameraDriver driver)
     {
-        super(driver);
+        super("ptzOutput", driver);
         
         try {
 
@@ -75,13 +75,6 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
            
             e.printStackTrace();
         }
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "ptzOutput";
     }
   
     

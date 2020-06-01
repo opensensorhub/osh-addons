@@ -53,7 +53,7 @@ public class TwitterOutput extends AbstractSensorOutput<TwitterSensor>
 	
 	public TwitterOutput(TwitterSensor parentSensor) 
 	{
-		super(parentSensor);
+		super("tweet", parentSensor);
 	}
 
 	protected void init()
@@ -196,11 +196,6 @@ public class TwitterOutput extends AbstractSensorOutput<TwitterSensor>
 
 	public boolean isConnected() {
 		return client != null ? true : false;
-	}
-
-	@Override
-	public String getName() {
-		return "Twitter_Output";
 	}
 
 	@Override

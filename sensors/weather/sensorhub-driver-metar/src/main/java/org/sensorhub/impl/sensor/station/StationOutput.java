@@ -51,14 +51,7 @@ public class StationOutput extends AbstractSensorOutput<StationSensor>
     
     public StationOutput(StationSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "GenericWeatherStation";
+        super("weatherData", parentSensor);
     }
 
 

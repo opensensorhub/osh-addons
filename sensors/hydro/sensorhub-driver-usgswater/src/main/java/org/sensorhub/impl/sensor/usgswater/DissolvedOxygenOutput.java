@@ -50,14 +50,7 @@ public class DissolvedOxygenOutput extends AbstractSensorOutput <USGSWaterDriver
 
     public DissolvedOxygenOutput(USGSWaterDriver driver)
     {
-        super(driver);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "oxygen";
+        super("oxygen", driver);
     }
   
     

@@ -32,15 +32,8 @@ public class GPSQualityOutput extends NMEAGpsOutput
         
     public GPSQualityOutput(NMEAGpsSensor parentSensor)
     {
-        super(parentSensor);
+        super("gpsQuality", parentSensor);
         this.samplingPeriod = 1.0; // default to 1Hz on startup
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return "gpsQuality";
     }
 
     

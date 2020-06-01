@@ -17,14 +17,8 @@ public class DomoticzLumOutput extends AbstractSensorOutput<DomoticzDriver>
 	DataBlock lumBlock;
 	
 	public DomoticzLumOutput(DomoticzDriver parentSensor) {
-		super(parentSensor);
+		super("lumData", parentSensor);
 	}
-	
-	@Override
-    public String getName()
-    {
-        return "DomoticzLumData";
-    }
 
 
     protected void init() throws IOException

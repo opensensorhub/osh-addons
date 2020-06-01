@@ -17,14 +17,8 @@ public class DomoticzUVOutput extends AbstractSensorOutput<DomoticzDriver>
 	DataBlock uvBlock;
 	
 	public DomoticzUVOutput(DomoticzDriver parentSensor) {
-		super(parentSensor);
+		super("uvLightData", parentSensor);
 	}
-	
-	@Override
-    public String getName()
-    {
-        return "DomoticzUltravioletData";
-    }
 
 
 	// Ultraviolet output results in a 500 error when requesting the

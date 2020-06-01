@@ -50,14 +50,7 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 
 	public WaypointOutput(NavDriver parentSensor) throws IOException
 	{
-		super(parentSensor);
-	}
-
-
-	@Override
-	public String getName()
-	{
-		return "WayptOutput";
+		super("waypoints", parentSensor);
 	}
 
 	protected void init()

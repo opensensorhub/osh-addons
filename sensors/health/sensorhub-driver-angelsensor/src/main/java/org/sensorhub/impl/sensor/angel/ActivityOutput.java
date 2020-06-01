@@ -28,14 +28,7 @@ public class ActivityOutput extends AbstractSensorOutput<AngelSensor>
     
     public ActivityOutput(AngelSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "activityData";
+        super("activityData", parentSensor);
     }
 
 

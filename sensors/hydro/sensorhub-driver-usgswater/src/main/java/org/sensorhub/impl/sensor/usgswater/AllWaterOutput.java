@@ -52,14 +52,7 @@ public class AllWaterOutput extends AbstractSensorOutput <USGSWaterDriver> imple
 
     public AllWaterOutput(USGSWaterDriver driver)
     {
-        super(driver);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "All-Data";
+        super("allData", driver);
     }
     
     

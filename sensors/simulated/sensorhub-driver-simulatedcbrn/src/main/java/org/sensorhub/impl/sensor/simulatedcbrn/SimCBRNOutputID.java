@@ -47,14 +47,7 @@ public class SimCBRNOutputID extends AbstractSensorOutput<SimCBRNSensor>
 
 	public SimCBRNOutputID(SimCBRNSensor parentSensor)
 	{
-		super(parentSensor);
-	}
-
-
-	@Override
-	public String getName()
-	{
-		return "ID";
+		super("poc", parentSensor);
 	}
 
 

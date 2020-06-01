@@ -51,14 +51,7 @@ public class IntelipodOutput extends AbstractSensorOutput<IntelipodSensor>
     
     public IntelipodOutput(IntelipodSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "intelipodData";
+        super("intelipodData", parentSensor);
     }
 
 

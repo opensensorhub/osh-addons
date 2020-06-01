@@ -38,14 +38,7 @@ public class SimWeatherStationOutput extends AbstractSensorOutput<SimWeatherStat
     
     public SimWeatherStationOutput(SimWeatherStationSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "Sim Weather";
+        super("weather", parentSensor);
     }
 
 

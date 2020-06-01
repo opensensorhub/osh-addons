@@ -62,14 +62,7 @@ public class FakeCamOutput extends AbstractSensorOutput<FakeCamSensor>
 
     public FakeCamOutput(FakeCamSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "videoOut";
+        super("videoOut", parentSensor);
     }
 
 

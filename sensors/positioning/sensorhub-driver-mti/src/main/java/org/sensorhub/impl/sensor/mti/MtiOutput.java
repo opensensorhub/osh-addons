@@ -55,14 +55,7 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
     
     public MtiOutput(MtiSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "imuData";
+        super("imuData", parentSensor);
     }
 
 

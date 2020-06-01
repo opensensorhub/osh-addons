@@ -39,9 +39,9 @@ public abstract class NMEAGpsOutput extends AbstractSensorOutput<NMEAGpsSensor>
     protected long lastMsgTime = Long.MIN_VALUE;
     
 
-    public NMEAGpsOutput(NMEAGpsSensor parentSensor)
+    public NMEAGpsOutput(String name, NMEAGpsSensor parentSensor)
     {
-        super(parentSensor);
+        super(name, parentSensor);
     }
     
     

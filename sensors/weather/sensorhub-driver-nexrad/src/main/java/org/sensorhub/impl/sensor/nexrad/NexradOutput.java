@@ -83,17 +83,10 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor> implements 
 
 	public NexradOutput(NexradSensor parentSensor)
 	{
-		super(parentSensor);
+		super("nexradData", parentSensor);
 		nexradSensor = parentSensor;
 		Timer queueTimer = new Timer();  
 		queueTimer.scheduleAtFixedRate(new CheckNumListeners(), 0, LISTENER_CHECK_INTERVAL); //delay in milliseconds
-	}
-
-
-	@Override
-	public String getName()
-	{
-		return "NexradData";
 	}
 
 

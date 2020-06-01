@@ -17,14 +17,8 @@ public class DomoticzStatusOutput extends AbstractSensorOutput<DomoticzDriver>
 	DataBlock statusBlock;
 	
 	public DomoticzStatusOutput(DomoticzDriver parentSensor) {
-		super(parentSensor);
+		super("statusData", parentSensor);
 	}
-	
-	@Override
-    public String getName()
-    {
-        return "DomoticzStatusData";
-    }
 
 
     protected void init() throws IOException

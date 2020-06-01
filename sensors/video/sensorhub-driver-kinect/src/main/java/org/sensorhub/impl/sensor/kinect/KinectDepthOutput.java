@@ -32,7 +32,7 @@ import net.opengis.swe.v20.Quantity;
 
 class KinectDepthOutput extends KinectOutputInterface {
 
-	private static final String STR_NAME = new String("Kinect Depth");
+	private static final String STR_NAME = new String("depthData");
 
 	private static final String STR_POINT_UNITS_OF_MEASURE = new String("m");
 
@@ -72,9 +72,12 @@ class KinectDepthOutput extends KinectOutputInterface {
 
 	public KinectDepthOutput(KinectSensor parentSensor, Device kinectDevice) {
 
-		super(parentSensor, kinectDevice);
+        this(STR_NAME, parentSensor, kinectDevice);
+    }	
+	
+	protected KinectDepthOutput(String name, KinectSensor parentSensor, Device kinectDevice) {
 
-		name = STR_NAME;
+		super(name, parentSensor, kinectDevice);
 
 		samplingTimeMillis = (long) (getParentModule().getConfiguration().samplingTime * MS_PER_S);
 

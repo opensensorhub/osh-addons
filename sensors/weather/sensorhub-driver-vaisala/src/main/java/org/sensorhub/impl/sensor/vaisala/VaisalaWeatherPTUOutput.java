@@ -29,14 +29,7 @@ public class VaisalaWeatherPTUOutput extends AbstractSensorOutput<VaisalaWeather
     
     public VaisalaWeatherPTUOutput(VaisalaWeatherSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "ptu";
+        super("ptu", parentSensor);
     }
 
 

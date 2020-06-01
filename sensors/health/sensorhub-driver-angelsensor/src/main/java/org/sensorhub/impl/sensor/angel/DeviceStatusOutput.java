@@ -33,14 +33,7 @@ public class DeviceStatusOutput extends AbstractSensorOutput<AngelSensor>
     
     public DeviceStatusOutput(AngelSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "deviceStatus";
+        super("deviceStatus", parentSensor);
     }
 
 

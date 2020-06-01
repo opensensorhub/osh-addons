@@ -50,14 +50,7 @@ public class GageHeightOutput extends AbstractSensorOutput <USGSWaterDriver> imp
 
     public GageHeightOutput(USGSWaterDriver driver)
     {
-        super(driver);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "gageHeight";
+        super("gageHeight", driver);
     }
   
     

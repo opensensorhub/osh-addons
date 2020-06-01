@@ -50,14 +50,7 @@ public class WaterTempCelsiusOutput extends AbstractSensorOutput <USGSWaterDrive
 
     public WaterTempCelsiusOutput(USGSWaterDriver driver)
     {
-        super(driver);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "waterTempCelsius";
+        super("waterTemp", driver);
     }
   
     

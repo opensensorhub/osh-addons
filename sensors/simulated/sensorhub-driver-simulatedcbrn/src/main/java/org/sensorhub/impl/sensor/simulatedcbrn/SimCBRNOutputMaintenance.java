@@ -43,14 +43,7 @@ public class SimCBRNOutputMaintenance extends AbstractSensorOutput<SimCBRNSensor
 
 	public SimCBRNOutputMaintenance(SimCBRNSensor parentSensor)
 	{
-		super(parentSensor);
-	}
-
-
-	@Override
-	public String getName()
-	{
-		return "MAINT";
+		super("maint", parentSensor);
 	}
 
 

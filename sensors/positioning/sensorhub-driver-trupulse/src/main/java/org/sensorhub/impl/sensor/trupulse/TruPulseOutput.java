@@ -48,14 +48,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     
     public TruPulseOutput(TruPulseSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return OUTPUT_NAME;
+        super(OUTPUT_NAME, parentSensor);
     }
 
 

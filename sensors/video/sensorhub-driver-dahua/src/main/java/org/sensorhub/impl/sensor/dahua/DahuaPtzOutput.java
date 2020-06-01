@@ -62,14 +62,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
 
     public DahuaPtzOutput(DahuaCameraDriver driver)
     {
-        super(driver);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "ptzOutput";
+        super("ptzOutput", driver);
     }
     
     

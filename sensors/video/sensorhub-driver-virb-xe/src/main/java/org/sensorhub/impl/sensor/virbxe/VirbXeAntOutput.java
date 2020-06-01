@@ -61,14 +61,7 @@ public class VirbXeAntOutput extends AbstractSensorOutput<VirbXeDriver>
     
     public VirbXeAntOutput(VirbXeDriver parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "healthSensors";
+        super("healthData", parentSensor);
     }
     
 

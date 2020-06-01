@@ -50,14 +50,7 @@ public class SpecificConductanceOutput extends AbstractSensorOutput <USGSWaterDr
 
     public SpecificConductanceOutput(USGSWaterDriver driver)
     {
-        super(driver);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "conductance";
+        super("conductance", driver);
     }
   
     

@@ -76,7 +76,7 @@ public class SimCBRNOutputAlerts extends AbstractSensorOutput<SimCBRNSensor>
 
     public SimCBRNOutputAlerts(SimCBRNSensor parentSensor)
     {
-        super(parentSensor);
+        super("alerts", parentSensor);
         // Point Sources
         this.source1 = new PointSource(parentSensor.getConfiguration().src1_lat,
                 parentSensor.getConfiguration().src1_lon,
@@ -99,13 +99,6 @@ public class SimCBRNOutputAlerts extends AbstractSensorOutput<SimCBRNSensor>
                 parentSensor.getConfiguration().src3_intensity,
                 parentSensor.getConfiguration().src3_type,
                 parentSensor.getConfiguration().src1_radius);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "ALERTS";
     }
 
 

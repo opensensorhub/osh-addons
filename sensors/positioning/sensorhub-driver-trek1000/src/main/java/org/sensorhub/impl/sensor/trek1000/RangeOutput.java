@@ -31,7 +31,7 @@ public class RangeOutput extends AbstractSensorOutput<Trek1000Sensor>
 
     public RangeOutput(Trek1000Sensor parentSensor)
     {
-        super(parentSensor);
+        super("ranges", parentSensor);
     }
 
 
@@ -63,13 +63,6 @@ public class RangeOutput extends AbstractSensorOutput<Trek1000Sensor>
         latestRecord = dataBlock;
         latestRecordTime = msgTime;
         eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlock));
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "ranges";
     }
 
 

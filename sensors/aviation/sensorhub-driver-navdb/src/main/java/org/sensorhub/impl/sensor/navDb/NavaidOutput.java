@@ -51,14 +51,7 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 
 	public NavaidOutput(NavDriver parentSensor) throws IOException
 	{
-		super(parentSensor);
-	}
-
-
-	@Override
-	public String getName()
-	{
-		return "NavaidOutput";
+		super("navaids", parentSensor);
 	}
 
 	protected void init()

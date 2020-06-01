@@ -38,9 +38,9 @@ public abstract class MavlinkOutput extends AbstractSensorOutput<MavlinkDriver>
     protected long lastMsgTime = Long.MIN_VALUE;
     
 
-    public MavlinkOutput(MavlinkDriver parentSensor)
+    public MavlinkOutput(String name, MavlinkDriver parentSensor)
     {
-        super(parentSensor);
+        super(name, parentSensor);
     }
     
     

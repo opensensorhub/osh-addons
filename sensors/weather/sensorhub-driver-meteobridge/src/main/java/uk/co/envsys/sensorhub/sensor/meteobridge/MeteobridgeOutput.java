@@ -25,12 +25,7 @@ public class MeteobridgeOutput extends AbstractSensorOutput<MeteobridgeSensor> {
     
 	
 	public MeteobridgeOutput(MeteobridgeSensor parentSensor) {
-		super(parentSensor);
-	}
-	
-	@Override
-	public String getName() {
-		return "weather";
+		super("weather", parentSensor);
 	}
 	
 	/**

@@ -39,15 +39,8 @@ public class AttitudeQuatOutput extends MavlinkOutput
     
     public AttitudeQuatOutput(MavlinkDriver parentSensor)
     {
-        super(parentSensor);
+        super("platformAttQ", parentSensor);
         this.samplingPeriod = 0.1; // default to 10Hz on startup        
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return "platformAtt";
     }
     
     

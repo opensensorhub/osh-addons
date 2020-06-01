@@ -38,15 +38,8 @@ public class AttitudeEulerOutput extends MavlinkOutput
     
     public AttitudeEulerOutput(MavlinkDriver parentSensor)
     {
-        super(parentSensor);
+        super("platformAtt", parentSensor);
         this.samplingPeriod = 0.1; // default to 10Hz on startup        
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return "platformAtt";
     }
     
     

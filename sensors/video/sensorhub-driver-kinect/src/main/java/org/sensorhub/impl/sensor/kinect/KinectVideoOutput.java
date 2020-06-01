@@ -32,17 +32,20 @@ class KinectVideoOutput extends KinectOutputInterface {
 	
 	private static final String ERR_STR = new String("Error while initializing RGB video output");
 	
-	private static final String STR_NAME = new String("Kinect Camera (RGB)");
+	private static final String STR_NAME = new String("rgbCamera");
 			
 	protected static final int BYTES_PER_PIXEL = 3;
 
 	protected DataStream videoStream;
 
 	public KinectVideoOutput(KinectSensor parentSensor, Device kinectDevice) {
+        
+        super(STR_NAME, parentSensor, kinectDevice);
+    }
+
+	protected KinectVideoOutput(String name, KinectSensor parentSensor, Device kinectDevice) {
 		
-		super(parentSensor, kinectDevice);
-		
-		name = STR_NAME;
+		super(name, parentSensor, kinectDevice);
 	}
 
 	@Override

@@ -44,14 +44,7 @@ public class PlumeOutput extends AbstractSensorOutput<PlumeSensor>
 
 	public PlumeOutput(PlumeSensor parentSensor)
 	{
-		super(parentSensor);
-	}
-
-
-	@Override
-	public String getName()
-	{
-		return "plumeModel";
+		super("plumeModel", parentSensor);
 	}
 
 

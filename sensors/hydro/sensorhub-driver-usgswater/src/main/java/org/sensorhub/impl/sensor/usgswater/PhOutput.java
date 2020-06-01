@@ -50,14 +50,7 @@ public class PhOutput extends AbstractSensorOutput <USGSWaterDriver> implements 
 
     public PhOutput(USGSWaterDriver driver)
     {
-        super(driver);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "waterpH";
+        super("waterpH", driver);
     }
   
     

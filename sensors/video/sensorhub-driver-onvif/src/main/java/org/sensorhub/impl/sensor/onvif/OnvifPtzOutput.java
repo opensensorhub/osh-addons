@@ -59,7 +59,7 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
 
     public OnvifPtzOutput(OnvifCameraDriver driver)
     {
-        super(driver);
+        super("ptzOutput", driver);
 
         // set default values
         double minPan = -180.0;
@@ -159,12 +159,6 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
             timer = null;
         }		
 	}
-
-    @Override
-    public String getName()
-    {
-        return "ptzOutput";
-    }
     
     @Override
     public double getAverageSamplingPeriod()

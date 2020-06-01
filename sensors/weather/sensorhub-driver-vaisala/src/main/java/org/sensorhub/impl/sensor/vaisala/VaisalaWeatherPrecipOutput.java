@@ -29,14 +29,7 @@ public class VaisalaWeatherPrecipOutput extends AbstractSensorOutput<VaisalaWeat
     
     public VaisalaWeatherPrecipOutput(VaisalaWeatherSensor parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "precipitation";
+        super("precip", parentSensor);
     }
 
 

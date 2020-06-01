@@ -61,14 +61,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
     
     public VirbXeNavOutput(VirbXeDriver parentSensor)
     {
-        super(parentSensor);
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "navData";
+        super("navData", parentSensor);
     }
 
 

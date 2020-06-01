@@ -50,14 +50,7 @@ public class AirportOutput extends AbstractSensorOutput<NavDriver> implements IM
 
 	public AirportOutput(NavDriver parentSensor) throws IOException
 	{
-		super(parentSensor);
-	}
-
-
-	@Override
-	public String getName()
-	{
-		return "AirportOutput";
+		super("airports", parentSensor);
 	}
 
 	protected void init()
