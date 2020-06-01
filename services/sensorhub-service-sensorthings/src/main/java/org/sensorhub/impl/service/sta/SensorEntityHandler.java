@@ -28,6 +28,7 @@ import org.sensorhub.api.procedure.IProcedureDescStore;
 import org.sensorhub.api.procedure.IProcedureWithState;
 import org.sensorhub.impl.sensor.VirtualSensorProxy;
 import org.vast.sensorML.SMLBuilders;
+import org.vast.sensorML.SMLHelper;
 import org.vast.util.Asserts;
 import org.vast.util.TimeExtent;
 import com.github.fge.jsonpatch.JsonPatch;
@@ -277,7 +278,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         // TODO use provided SensorML doc in metadata
 
         // create simple SensorML instance
-        var proc = SMLBuilders.newPhysicalSystem()
+        var proc = new SMLHelper().createPhysicalSystem()
             .uniqueID(uid)
             .name(sensor.getName())
             .description(sensor.getDescription())
