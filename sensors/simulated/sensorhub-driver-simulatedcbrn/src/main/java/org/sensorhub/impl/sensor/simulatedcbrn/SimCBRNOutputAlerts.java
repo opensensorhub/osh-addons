@@ -318,7 +318,7 @@ public class SimCBRNOutputAlerts extends AbstractSensorOutput<SimCBRNSensor>
     @SuppressWarnings("Duplicates")
     private void simulate()
     {
-        SimCBRNConfig config = getParentModule().getConfiguration();
+        SimCBRNConfig config = getParentProducer().getConfiguration();
         // Update the sensor's location
         if (trajPoints.isEmpty() || currentTrackPos >= trajPoints.size()-2)
         {
@@ -362,7 +362,7 @@ public class SimCBRNOutputAlerts extends AbstractSensorOutput<SimCBRNSensor>
     @SuppressWarnings("Duplicates")
     private boolean generateRandomTrajectory()
     {
-        SimCBRNConfig config = getParentModule().getConfiguration();
+        SimCBRNConfig config = getParentProducer().getConfiguration();
         // used fixed start/end coordinates or generate random ones
         double startLat;
         double startLong;
@@ -479,7 +479,7 @@ public class SimCBRNOutputAlerts extends AbstractSensorOutput<SimCBRNSensor>
 
     private double getObservedIntensity()
     {
-        SimCBRNConfig config = getParentModule().getConfiguration();
+        SimCBRNConfig config = getParentProducer().getConfiguration();
         int numSources = config.numSources;
         double avgIntensity = 0;
         for (int i = 0; i < numSources; i++)

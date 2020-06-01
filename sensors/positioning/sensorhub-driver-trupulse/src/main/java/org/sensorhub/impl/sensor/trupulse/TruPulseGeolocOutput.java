@@ -103,7 +103,7 @@ public class TruPulseGeolocOutput implements ISensorDataInterface, IEventListene
 
 
     @Override
-    public ISensorModule<?> getParentModule()
+    public ISensorModule<?> getParentProducer()
     {
         return parentSensor;
     }

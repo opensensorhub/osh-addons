@@ -19,11 +19,10 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
-import org.sensorhub.api.common.IEventHandler;
-import org.sensorhub.api.common.IEventListener;
+import org.sensorhub.api.event.IEventHandler;
+import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IDataProducer;
-import org.sensorhub.api.data.IDataProducerModule;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.impl.SensorHub;
 import org.vast.physics.MechanicalState;
@@ -139,7 +138,7 @@ public class SatelliteStateOutput implements IStreamingDataInterface
         
         lastRecordTime = System.currentTimeMillis();
         lastRecord = stateData;
-        eventHandler.publishEvent(new DataEvent(lastRecordTime, this, lastRecord));
+        eventHandler.publish(new DataEvent(lastRecordTime, this, lastRecord));
     }
     
     
@@ -160,7 +159,7 @@ public class SatelliteStateOutput implements IStreamingDataInterface
         }
         
         lastRecordTime = System.currentTimeMillis();
-        eventHandler.publishEvent(new DataEvent(lastRecordTime, this, dataRecords.toArray(new DataBlock[0])));
+        eventHandler.publish(new DataEvent(lastRecordTime, this, dataRecords.toArray(new DataBlock[0])));
         TLEPredictorProcess.log.debug("Done batch processing of predicted states");
     }
 

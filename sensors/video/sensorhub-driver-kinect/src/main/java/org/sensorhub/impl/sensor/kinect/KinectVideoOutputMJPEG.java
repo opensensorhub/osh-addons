@@ -48,14 +48,14 @@ class KinectVideoOutputMJPEG extends KinectVideoOutput {
 	@Override
 	public void init() throws SensorException {
 
-		device.setVideoFormat(getParentModule().getConfiguration().rgbFormat);
+		device.setVideoFormat(getParentProducer().getConfiguration().rgbFormat);
 
 		try {
 
 			VideoCamHelper videoCamHelper = new VideoCamHelper();
 
-			videoStream = videoCamHelper.newVideoOutputMJPEG(getName(), getParentModule().getConfiguration().frameWidth,
-					getParentModule().getConfiguration().frameHeight);
+			videoStream = videoCamHelper.newVideoOutputMJPEG(getName(), getParentProducer().getConfiguration().frameWidth,
+					getParentProducer().getConfiguration().frameHeight);
 
 		} catch (Exception e) {
 
@@ -73,8 +73,8 @@ class KinectVideoOutputMJPEG extends KinectVideoOutput {
 
 				DataBlock dataBlock = videoStream.getElementType().createDataBlock();
 
-				BufferedImage bufferedImage = new BufferedImage(getParentModule().getConfiguration().frameWidth,
-						getParentModule().getConfiguration().frameHeight, BufferedImage.TYPE_3BYTE_BGR);
+				BufferedImage bufferedImage = new BufferedImage(getParentProducer().getConfiguration().frameWidth,
+						getParentProducer().getConfiguration().frameHeight, BufferedImage.TYPE_3BYTE_BGR);
 
 				byte[] channelData = ((DataBufferByte) bufferedImage.getRaster().getDataBuffer()).getData();
 				

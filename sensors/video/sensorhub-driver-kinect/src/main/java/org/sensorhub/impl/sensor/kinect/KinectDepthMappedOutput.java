@@ -89,7 +89,7 @@ public class KinectDepthMappedOutput extends KinectDepthOutput {
 
 		numPoints = computeNumPoints();
 
-		device.setDepthFormat(getParentModule().getConfiguration().depthFormat);
+		device.setDepthFormat(getParentProducer().getConfiguration().depthFormat);
 
 		VectorHelper factory = new VectorHelper();
 

@@ -158,7 +158,7 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();
-        eventHandler.publishEvent(new DataEvent(latestRecordTime, this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlock));
         
         // HACK to also send the command to camera directly
         if (useSps)
@@ -244,7 +244,7 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
 
 
     @Override
-    public IDataProducerModule<?> getParentModule()
+    public IDataProducerModule<?> getParentProducer()
     {
         return parentProcess;
     }

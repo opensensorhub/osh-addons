@@ -48,15 +48,15 @@ class KinectInfraredOutputMJPEG extends KinectInfraredOutput {
 	@Override
 	public void init() throws SensorException {
 
-		device.setVideoFormat(getParentModule().getConfiguration().irFormat);
+		device.setVideoFormat(getParentProducer().getConfiguration().irFormat);
 
 		try {
 
 			VideoCamHelper irHelper = new VideoCamHelper();
 			
             irStream = irHelper.newVideoOutputMJPEG(STR_NAME,
-            		getParentModule().getConfiguration().frameWidth, 
-            		getParentModule().getConfiguration().frameHeight);
+            		getParentProducer().getConfiguration().frameWidth, 
+            		getParentProducer().getConfiguration().frameHeight);
 
 		} catch (Exception e) {
 
@@ -74,8 +74,8 @@ class KinectInfraredOutputMJPEG extends KinectInfraredOutput {
 
 				DataBlock dataBlock = irStream.getElementType().createDataBlock();
 
-				BufferedImage bufferedImage = new BufferedImage(getParentModule().getConfiguration().frameWidth,
-						getParentModule().getConfiguration().frameHeight, BufferedImage.TYPE_BYTE_GRAY);
+				BufferedImage bufferedImage = new BufferedImage(getParentProducer().getConfiguration().frameWidth,
+						getParentProducer().getConfiguration().frameHeight, BufferedImage.TYPE_BYTE_GRAY);
 
 				byte[] channelData = ((DataBufferByte) bufferedImage.getRaster().getDataBuffer()).getData();
 				

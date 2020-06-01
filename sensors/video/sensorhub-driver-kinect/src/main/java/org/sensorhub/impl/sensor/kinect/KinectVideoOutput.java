@@ -63,14 +63,14 @@ class KinectVideoOutput extends KinectOutputInterface {
 	@Override
 	public void init() throws SensorException {
 
-		device.setVideoFormat(getParentModule().getConfiguration().rgbFormat);
+		device.setVideoFormat(getParentProducer().getConfiguration().rgbFormat);
 
         try {
 
             VideoCamHelper videoCamHelper = new VideoCamHelper();
 
             videoStream = videoCamHelper.newVideoOutputRGB(getName(),
-            		getParentModule().getConfiguration().frameWidth, getParentModule().getConfiguration().frameHeight);
+            		getParentProducer().getConfiguration().frameWidth, getParentProducer().getConfiguration().frameHeight);
                                     
         } catch (Exception e) {
         	
@@ -88,7 +88,7 @@ class KinectVideoOutput extends KinectOutputInterface {
 				
 				DataBlock dataBlock = videoStream.getElementType().createDataBlock();
 				
-				byte[] channelData = new byte[BYTES_PER_PIXEL * getParentModule().getConfiguration().frameWidth * getParentModule().getConfiguration().frameHeight];
+				byte[] channelData = new byte[BYTES_PER_PIXEL * getParentProducer().getConfiguration().frameWidth * getParentProducer().getConfiguration().frameHeight];
 
 				getChannelData(frame, channelData);
 
@@ -111,11 +111,11 @@ class KinectVideoOutput extends KinectOutputInterface {
 	
 	protected void getChannelData(ByteBuffer frame, byte[] channelData) {
 		
-		for (short y = 0; y < getParentModule().getConfiguration().frameHeight; ++y) {
+		for (short y = 0; y < getParentProducer().getConfiguration().frameHeight; ++y) {
 
-			for (short x = 0; x < getParentModule().getConfiguration().frameWidth; ++x) {
+			for (short x = 0; x < getParentProducer().getConfiguration().frameWidth; ++x) {
 			
-				int offset = BYTES_PER_PIXEL * (x + y * getParentModule().getConfiguration().frameWidth);
+				int offset = BYTES_PER_PIXEL * (x + y * getParentProducer().getConfiguration().frameWidth);
 
 				// Kinect reports in BGRA
 				byte r = frame.get(offset + 2);

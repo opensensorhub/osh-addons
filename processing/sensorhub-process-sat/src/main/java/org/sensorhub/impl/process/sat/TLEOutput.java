@@ -126,7 +126,7 @@ public class TLEOutput implements IStreamingDataInterface, TLEProvider
                 
                 lastRecordTime = System.currentTimeMillis();
                 lastRecord = tleData;
-                eventHandler.publishEvent(new DataEvent(lastRecordTime, this, lastRecord));
+                eventHandler.publish(new DataEvent(lastRecordTime, this, lastRecord));
                 
                 // notify new TLE received
                 parentProcess.notifyNewTLE();

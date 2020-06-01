@@ -124,15 +124,15 @@ public class SimCBRNOutputReadings extends AbstractSensorOutput<SimCBRNSensor>
 	// will need to do some of the simulation here save for later
 	private void sendMeasurement()
 	{
-		/*getParentModule().simData.update(getParentModule().getConfiguration());
+		/*getParentProducer().simData.update(getParentProducer().getConfiguration());
 		double time = System.currentTimeMillis()/1000;
 
 		// Temperature sim (copied from FakeWeatherOutput)
 		temp += variation(temp, tempRef, 0.001, 0.1);
-		agentClassStatus = getParentModule().simData.getDetectedAgent().getAgentClass();
-		agentIDStatus = getParentModule().simData.getDetectedAgent().getAgentID();
-		numericalLevel = getParentModule().simData.findThreatLevel();
-		stringLevel = getParentModule().simData.findThreatString();*/
+		agentClassStatus = getParentProducer().simData.getDetectedAgent().getAgentClass();
+		agentIDStatus = getParentProducer().simData.getDetectedAgent().getAgentID();
+		numericalLevel = getParentProducer().simData.findThreatLevel();
+		stringLevel = getParentProducer().simData.findThreatString();*/
 
 		// Build DataBlock
 		DataBlock dataBlock = cbrnReadingData.createDataBlock();

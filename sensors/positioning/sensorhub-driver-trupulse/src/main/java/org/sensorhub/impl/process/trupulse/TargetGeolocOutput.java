@@ -95,7 +95,7 @@ public class TargetGeolocOutput implements IStreamingDataInterface
 
 
     @Override
-    public TargetGeolocProcess getParentModule()
+    public TargetGeolocProcess getParentProducer()
     {
         return parentProcess;
     }
