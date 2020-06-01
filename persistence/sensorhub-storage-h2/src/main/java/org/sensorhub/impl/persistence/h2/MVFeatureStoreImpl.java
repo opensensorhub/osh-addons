@@ -134,7 +134,7 @@ public class MVFeatureStoreImpl implements IFeatureStorage
     
     private boolean intersectsRoi(Polygon roi, AbstractFeature f)
     {
-        Geometry geom = (Geometry)f.getLocation();
+        Geometry geom = (Geometry)f.getGeometry();
         return geom != null && roi.intersects(geom);
     }
 
@@ -223,10 +223,10 @@ public class MVFeatureStoreImpl implements IFeatureStorage
     public synchronized void store(AbstractFeature foi)
     {
         AbstractFeature oldFoi = idIndex.put(foi.getUniqueIdentifier(), foi);
-        if (oldFoi == null && foi.getLocation() != null)
+        if (oldFoi == null && foi.getGeometry() != null)
         {
             int hashID = foi.getUniqueIdentifier().hashCode();
-            SpatialKey rect = GeomUtils.getBoundingRectangle(hashID, foi.getLocation());
+            SpatialKey rect = GeomUtils.getBoundingRectangle(hashID, foi.getGeometry());
             spatialIndex.put(rect, foi.getUniqueIdentifier());
         }
     }

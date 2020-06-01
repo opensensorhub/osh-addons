@@ -728,7 +728,7 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		// build the foi index requQueryBuilders.termsQuery("producerId", producerIds)QueryBuilders.termsQuery("producerId", producerIds)est
 		IndexRequestBuilder foiIdxReq = client.prepareIndex(indexName, FOI_IDX_NAME);
 
-		AbstractGeometry geometry = foi.getLocation();
+		AbstractGeometry geometry = foi.getGeometry();
 
 		// build source
 		Map<String, Object> json = new HashMap<>();
