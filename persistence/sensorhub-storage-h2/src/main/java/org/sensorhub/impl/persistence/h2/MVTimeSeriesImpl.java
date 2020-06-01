@@ -127,6 +127,12 @@ public class MVTimeSeriesImpl
                 ((ObsKey)next.getKey()).foiID = currentFoiID;
             }
         }
+
+        @Override
+        protected IDataRecord process(IDataRecord elt)
+        {
+            return elt;
+        }
     }
     
     

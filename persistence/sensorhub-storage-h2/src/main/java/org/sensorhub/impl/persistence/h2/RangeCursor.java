@@ -67,5 +67,12 @@ public class RangeCursor<K, V> extends IteratorWrapper<K, K>
     {
         return ((Cursor<K, V>)it).getValue();
     }
+    
+
+    @Override
+    protected K process(K key)
+    {
+        return key;
+    }
 
 }
