@@ -16,7 +16,7 @@ package org.sensorhub.impl.persistence.h2;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
-import org.sensorhub.api.persistence.ObsStorageConfig;
+import org.sensorhub.api.persistence.StorageConfig;
 import org.sensorhub.utils.FileUtils;
 import com.google.common.base.Strings;
 
@@ -29,7 +29,7 @@ import com.google.common.base.Strings;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Sep 7, 2013
  */
-public class MVStorageConfig extends ObsStorageConfig
+public class MVStorageConfig extends StorageConfig
 {
     static final String STORAGE_ID_VAR = "${STORAGE_ID}";
     

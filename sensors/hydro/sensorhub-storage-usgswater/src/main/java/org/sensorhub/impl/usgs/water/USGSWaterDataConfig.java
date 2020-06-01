@@ -16,12 +16,12 @@ package org.sensorhub.impl.usgs.water;
 
 import java.util.Date;
 import org.sensorhub.api.config.DisplayInfo;
-import org.sensorhub.api.persistence.ObsStorageConfig;
+import org.sensorhub.api.persistence.StorageConfig;
 import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
 import org.sensorhub.impl.usgs.water.CodeEnums.StateCode;
 
 
-public class USGSWaterDataConfig extends ObsStorageConfig
+public class USGSWaterDataConfig extends StorageConfig
 {
     
     @DisplayInfo(desc="Only data matching this filter will be accessible through this storage instance")

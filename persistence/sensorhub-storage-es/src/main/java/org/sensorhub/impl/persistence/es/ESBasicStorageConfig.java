@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
+import org.sensorhub.api.persistence.StorageConfig;
 
 /**
  * <p>
@@ -28,7 +29,7 @@ import org.sensorhub.api.config.DisplayInfo.Required;
  * @author Mathieu Dhainaut <mathieu.dhainaut@gmail.com>
  * @since 2017
  */
-public class ESBasicStorageConfig extends org.sensorhub.api.persistence.ObsStorageConfig {
+public class ESBasicStorageConfig extends StorageConfig {
 	
     @Required
     @DisplayInfo(desc="ES cluster name")

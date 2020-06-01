@@ -17,11 +17,11 @@ package org.sensorhub.impl.ndbc;
 import java.util.Date;
 
 import org.sensorhub.api.config.DisplayInfo;
-import org.sensorhub.api.persistence.ObsStorageConfig;
+import org.sensorhub.api.persistence.StorageConfig;
 import org.sensorhub.impl.ndbc.BuoyEnums.ObsParam;
 
 
-public class NDBCConfig extends ObsStorageConfig
+public class NDBCConfig extends StorageConfig
 {
     @DisplayInfo(desc="Only data matching this filter will be accessible through this storage instance")
     public DataFilter exposeFilter = new DataFilter();
