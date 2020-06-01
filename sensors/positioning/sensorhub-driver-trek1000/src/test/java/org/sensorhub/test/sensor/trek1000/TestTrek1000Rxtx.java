@@ -3,12 +3,10 @@ package org.sensorhub.test.sensor.trek1000;
 import static org.junit.Assert.*;
 import java.io.IOException;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig;
@@ -97,13 +95,14 @@ public class TestTrek1000Rxtx implements IEventListener
     public void handleEvent(Event e)
     {
         assertTrue(e instanceof DataEvent);
-        DataEvent newDataEvent = (DataEvent)e;
+        DataEvent dataEvent = (DataEvent)e;
         
         try
         {
-            writer.setDataComponents(newDataEvent.getRecordDescription());
+            IStreamingDataInterface output = driver.getObservationOutputs().get(dataEvent.getChannelID());
+            writer.setDataComponents(output.getRecordDescription().copy());
             writer.reset();
-            writer.write(newDataEvent.getRecords()[0]);
+            writer.write(dataEvent.getRecords()[0]);
             writer.flush();
             
             sampleCount++;

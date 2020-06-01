@@ -112,12 +112,12 @@ public class TestGammaDriver implements IEventListener
     public void handleEvent(Event e)
     {
         assertTrue(e instanceof DataEvent);
-        DataEvent newDataEvent = (DataEvent)e;
+        DataEvent dataEvent = (DataEvent)e;
         
         try
         {
-            System.out.print("\nNew data received from sensor " + newDataEvent.getSensorID());
-            writer.write(newDataEvent.getRecords()[0]);
+            System.out.print("\nNew data received from sensor " + dataEvent.getProcedureID());
+            writer.write(dataEvent.getRecords()[0]);
             writer.flush();
             
             sampleCount++;

@@ -106,14 +106,15 @@ public class TestAvlDriverFromFile implements IEventListener
     public void handleEvent(Event e)
     {
         assertTrue(e instanceof DataEvent);
-        DataEvent newDataEvent = (DataEvent)e;
+        DataEvent dataEvent = (DataEvent)e;
         
         try
         {
             //System.out.print("\nNew data received from sensor " + newDataEvent.getSensorId());
-            writer.setDataComponents(newDataEvent.getRecordDescription());
+            IStreamingDataInterface output = driver.getObservationOutputs().get(dataEvent.getChannelID());
+            writer.setDataComponents(output.getRecordDescription().copy());
             writer.reset();
-            writer.write(newDataEvent.getRecords()[0]);
+            writer.write(dataEvent.getRecords()[0]);
             writer.flush();
             
             sampleCount++;

@@ -281,17 +281,18 @@ public class TestAxisCameraDriver implements IEventListener
     public void handleEvent(Event e)
     {
         assertTrue(e instanceof DataEvent);
-        DataEvent newDataEvent = (DataEvent)e;
+        DataEvent dataEvent = (DataEvent)e;
         
-        if (newDataEvent.getSource().getClass().equals(AxisVideoOutput.class))
+        if (dataEvent.getSource().getClass().equals(AxisVideoOutput.class))
         {
-	        videoTestHelper.renderFrameJPEG(newDataEvent.getRecords()[0]);
+	        videoTestHelper.renderFrameJPEG(dataEvent.getRecords()[0]);
             frameCount++;
         }
-        else if (newDataEvent.getSource().getClass().equals(AxisPtzOutput.class))
+        else if (dataEvent.getSource().getClass().equals(AxisPtzOutput.class))
         {
-        	DataComponent ptzParams = newDataEvent.getRecordDescription().copy();
-        	ptzParams.setData(newDataEvent.getRecords()[0]);
+            IStreamingDataInterface output = driver.getObservationOutputs().get(dataEvent.getChannelID());
+            DataComponent ptzParams = output.getRecordDescription().copy();
+        	ptzParams.setData(dataEvent.getRecords()[0]);
         	System.out.println(ptzParams);
         }
         

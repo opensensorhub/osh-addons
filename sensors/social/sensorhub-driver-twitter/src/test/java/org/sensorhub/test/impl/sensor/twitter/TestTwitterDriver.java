@@ -4,7 +4,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.twitter.TwitterConfig;
@@ -13,7 +12,6 @@ import org.vast.sensorML.SMLUtils;
 import org.vast.swe.SWEUtils;
 import static org.junit.Assert.*;
 
-import java.io.IOException;
 import java.util.UUID;
 
 import org.junit.After;
@@ -90,9 +88,9 @@ public class TestTwitterDriver implements IEventListener
 	public void handleEvent(Event e)
 	{
 		assertTrue(e instanceof DataEvent);
-		DataEvent newDataEvent = (DataEvent)e;
+		DataEvent dataEvent = (DataEvent)e;
 		
-		System.out.println("\nNo. " + Integer.toString(sampleCount) + ": New data received from sensor " + newDataEvent.getSensorID());
+		System.out.println("\nNo. " + Integer.toString(sampleCount) + ": New data received from sensor " + dataEvent.getProcedureID());
 		sampleCount++;
 		
 		if (sampleCount >= 2) {

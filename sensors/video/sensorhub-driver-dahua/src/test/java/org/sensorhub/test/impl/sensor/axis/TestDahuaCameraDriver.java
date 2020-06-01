@@ -291,18 +291,19 @@ public class TestDahuaCameraDriver implements IEventListener
     public void handleEvent(Event e)
     {
         assertTrue(e instanceof DataEvent);
-        DataEvent newDataEvent = (DataEvent)e;
+        DataEvent dataEvent = (DataEvent)e;
         
-        if (newDataEvent.getSource().getClass().equals(DahuaVideoOutput.class))
+        if (dataEvent.getSource().getClass().equals(DahuaVideoOutput.class))
         {
-	        System.out.println("Received Frame, Timestamp=" + newDataEvent.getRecords()[0].getDoubleValue(0));
-	        videoTestHelper.renderFrameH264(newDataEvent.getRecords()[0]);            
+	        System.out.println("Received Frame, Timestamp=" + dataEvent.getRecords()[0].getDoubleValue(0));
+	        videoTestHelper.renderFrameH264(dataEvent.getRecords()[0]);            
             frameCount++;
         }
-        else if (newDataEvent.getSource().getClass().equals(DahuaPtzOutput.class))
+        else if (dataEvent.getSource().getClass().equals(DahuaPtzOutput.class))
         {
-        	DataComponent ptzParams = newDataEvent.getRecordDescription().copy();
-        	ptzParams.setData(newDataEvent.getRecords()[0]);
+            IStreamingDataInterface output = driver.getObservationOutputs().get(dataEvent.getChannelID());
+            DataComponent ptzParams = output.getRecordDescription().copy();
+        	ptzParams.setData(dataEvent.getRecords()[0]);
         	System.out.println(ptzParams);
         }
         
