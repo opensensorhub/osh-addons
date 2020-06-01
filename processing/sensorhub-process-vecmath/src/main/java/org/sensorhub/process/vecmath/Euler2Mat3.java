@@ -59,7 +59,7 @@ public class Euler2Mat3 extends ExecutableProcessImpl
         VecMathHelper sweHelper = new VecMathHelper();
         
         // create euler input
-        Vector eulerData = sweHelper.newEulerAngles(null, "deg");
+        Vector eulerData = sweHelper.newEulerAngles(null, "rad");
         inputData.add("orientation", eulerData);
         r1Data = (Quantity)eulerData.getComponent(0);
         r2Data = (Quantity)eulerData.getComponent(1);
