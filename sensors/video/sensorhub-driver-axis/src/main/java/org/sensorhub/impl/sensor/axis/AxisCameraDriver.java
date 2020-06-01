@@ -276,14 +276,14 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
             term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
             term.setLabel("Manufacturer Name");
             term.setValue("Axis");
-            identifierList.addIdentifier2(term);
+            identifierList.addIdentifier(term);
 
             if (modelNumber != null) {
                 term = smlFac.newTerm();
                 term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
                 term.setLabel("Model Number");
                 term.setValue(modelNumber);
-                identifierList.addIdentifier2(term);
+                identifierList.addIdentifier(term);
             }
 
             if (serialNumber != null) {
@@ -291,7 +291,7 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
                 term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
                 term.setLabel("Serial Number");
                 term.setValue(serialNumber);
-                identifierList.addIdentifier2(term);
+                identifierList.addIdentifier(term);
             }
 
             if (longName != null) {
@@ -299,7 +299,7 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
                 term.setDefinition(SWEHelper.getPropertyUri("LongName"));
                 term.setLabel("Long Name");
                 term.setValue(longName);
-                identifierList.addIdentifier2(term);
+                identifierList.addIdentifier(term);
             }
 
             if (shortName != null) {
@@ -307,7 +307,7 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
                 term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
                 term.setLabel("Short Name");
                 term.setValue(shortName);
-                identifierList.addIdentifier2(term);
+                identifierList.addIdentifier(term);
             }
         }
     }
