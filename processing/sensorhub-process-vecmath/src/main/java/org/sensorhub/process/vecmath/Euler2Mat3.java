@@ -21,7 +21,6 @@
 
 package org.sensorhub.process.vecmath;
 
-import net.opengis.swe.v20.AllowedTokens;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Text;
@@ -60,8 +59,7 @@ public class Euler2Mat3 extends ExecutableProcessImpl
         VecMathHelper sweHelper = new VecMathHelper();
         
         // create euler input
-        Vector eulerData = sweHelper.newEulerAngles();
-        eulerData.setReferenceFrame(null);
+        Vector eulerData = sweHelper.newEulerAngles(null, "deg");
         inputData.add("orientation", eulerData);
         r1Data = (Quantity)eulerData.getComponent(0);
         r2Data = (Quantity)eulerData.getComponent(1);
@@ -72,15 +70,11 @@ public class Euler2Mat3 extends ExecutableProcessImpl
         outputData.add("rotMatrix", outputMatrix);
         
         // create rot order param
-        orderParam = sweHelper.newText();
-        AllowedTokens values = sweHelper.newAllowedTokens();
-        values.addValue("XYZ");
-        values.addValue("YZX");
-        values.addValue("ZXY");
-        values.addValue("XZY");
-        values.addValue("ZYX");
-        values.addValue("YXZ");
-        orderParam.setConstraint(values);
+        orderParam = sweHelper.createText()
+            .addAllowedValues(
+                "XYZ", "YZX", "ZXY",
+                "XZY", "ZYX", "YXZ")
+            .build();
         paramData.add("rotAxes", orderParam);
     }
     

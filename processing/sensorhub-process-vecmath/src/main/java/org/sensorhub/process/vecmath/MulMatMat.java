@@ -63,7 +63,7 @@ public class MulMatMat extends ExecutableProcessImpl
         inputData.add("M2", mat2);
         
         // create scalar input
-        scalar = sweHelper.newQuantity();
+        scalar = sweHelper.createQuantity().build();
         scalar.setValue(1.0);
         inputData.add("s", scalar);
         

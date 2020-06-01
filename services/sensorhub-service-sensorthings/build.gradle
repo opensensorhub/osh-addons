@@ -13,6 +13,8 @@ dependencies {
   compile 'org.sensorhub:sensorhub-datastore-h2:' + oshCoreVersion
   compile 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.Core:1.10.1'
   compile 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.HTTP.Common:1.10.1'
+  
+  testCompile 'org.jglue.fluent-json:fluent-json:2.0.3'
 }
 
 // add info to OSGi manifest

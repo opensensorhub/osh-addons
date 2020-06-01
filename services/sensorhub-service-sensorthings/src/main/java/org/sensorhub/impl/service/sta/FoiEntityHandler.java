@@ -22,6 +22,7 @@ import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.datastore.FoiFilter;
 import org.sensorhub.api.datastore.IFoiStore;
 import org.vast.ogc.gml.GenericFeatureImpl;
+import org.vast.ogc.gml.IGeoFeature;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.google.common.base.Strings;
@@ -223,7 +224,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     }
     
     
-    protected FeatureOfInterest toFrostFoi(long internalId, AbstractFeature f, Query q)
+    protected FeatureOfInterest toFrostFoi(long internalId, IGeoFeature f, Query q)
     {
         // TODO implement select and expand
         //Set<Property> select = q != null ? q.getSelect() : Collections.emptySet();

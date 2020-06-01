@@ -7,9 +7,9 @@ at http://mozilla.org/MPL/2.0/.
 Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
- 
+
 Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
- 
+
 ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.service.sta;
@@ -18,9 +18,9 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.sensorhub.api.common.ProcedureId;
 import org.sensorhub.api.datastore.DataStreamFilter;
 import org.sensorhub.api.datastore.DataStreamInfo;
-import org.sensorhub.api.datastore.FeatureId;
 import org.sensorhub.api.datastore.IDataStreamInfo;
 import org.sensorhub.api.datastore.IDataStreamStore;
 import org.sensorhub.impl.sensor.VirtualSensorProxy;
@@ -76,14 +76,14 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     static final String MISSING_ASSOC = "Missing reference to 'Datastream' entity";
     static final String UCUM_URI_PREFIX = "http://unitsofmeasure.org/ucum.html#";
     static final String BAD_LINK_THING = "A new Datastream SHALL link to an Thing entity";
-        
+
     OSHPersistenceManager pm;
     IDataStreamStore dataStreamReadStore;
     ISTADataStreamStore dataStreamWriteStore;
     STASecurity securityHandler;
     int maxPageSize = 100;
-    
-    
+
+
     DatastreamEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
@@ -92,65 +92,65 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         this.dataStreamReadStore = new STAFederatedDataStreamStoreWrapper(pm.database, federatedDataStreamStore);
         this.securityHandler = pm.service.getSecurityHandler();
     }
-    
-    
+
+
     @Override
     public ResourceId create(Entity entity) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_insert_datastream);
         Asserts.checkArgument(entity instanceof AbstractDatastream);
         AbstractDatastream<?> dataStream = (AbstractDatastream<?>)entity;
-        
+
         // handle associations / deep inserts
         ResourceId thingId = pm.thingHandler.handleThingAssoc(dataStream.getThing());
         ResourceId sensorId = pm.sensorHandler.handleSensorAssoc(dataStream.getSensor());
-                
+
         // retrieve sensor proxy
         pm.sensorHandler.checkProcedureWritable(sensorId.asLong());
         VirtualSensorProxy sensorProxy = tryGetProcedureProxy(sensorId.asLong());
-        
+
         // add data stream
         return addDatastream(thingId.asLong(), sensorId.asLong(), sensorProxy, dataStream);
     }
-    
-    
+
+
     protected ResourceId addDatastream(long thingID, long sensorID, VirtualSensorProxy sensorProxy, AbstractDatastream<?> dataStream) throws NoSuchEntityException
     {
         // add output to virtual sensor in registry
         DataRecord recordStruct = toSweCommon(dataStream);
         sensorProxy.newOutput(recordStruct, new TextEncodingImpl());
-        
+
         if (dataStreamWriteStore != null)
         {
             // create data stream object
             DataStreamInfo dsInfo = new STADataStream.Builder()
                 .withThing(thingID)
-                .withProcedure(new FeatureId(
+                .withProcedure(new ProcedureId(
                     pm.toLocalID(sensorID),
                     sensorProxy.getUniqueIdentifier()))
                 .withRecordDescription(recordStruct)
                 .withRecordEncoding(new TextEncodingImpl())
                 .build();
-            
+
             // add to database and get its public ID
             Long newId = dataStreamWriteStore.add(dsInfo);
             ResourceId newDsId = new ResourceIdLong(pm.toPublicID(newId));
-            
-            // handle associations / deep inserts            
+
+            // handle associations / deep inserts
             pm.observationHandler.handleObservationAssocList(newDsId, dataStream);
             return newDsId;
         }
         else
-        {        
+        {
             // otherwise just get the datastream as exposed by procedure registry
             long publicID = dataStreamReadStore.getLatestVersionKey(
                 sensorProxy.getUniqueIdentifier(),
                 recordStruct.getName());
-            
+
             return new ResourceIdLong(publicID);
         }
     }
-    
+
 
     @Override
     public boolean update(Entity entity) throws NoSuchEntityException
@@ -158,119 +158,121 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         securityHandler.checkPermission(securityHandler.sta_update_datastream);
         Asserts.checkArgument(entity instanceof AbstractDatastream);
         AbstractDatastream<?> dataStream = (AbstractDatastream<?>)entity;
-        
+
         // check datastream is writable
         ResourceId dsId = (ResourceId)entity.getId();
         checkDatastreamWritable(dsId.asLong());
-        
+
         // get existing data stream
         // we use write store even for reading because only datastreams in write store can be updated anyway!
         long localDsID = pm.toLocalID(dsId.asLong());
         IDataStreamInfo oldDsInfo = dataStreamWriteStore.get(localDsID);
         if (oldDsInfo == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + dsId);
-        
+
         // generate new record structure
         DataRecord newRecordStruct = toSweCommon(dataStream);
-        
+
         if (dataStreamWriteStore != null)
         {
             // handle associations / deep inserts or reuse existing assoc
             long thingID = dataStream.getThing() != null ?
-                pm.thingHandler.handleThingAssoc(dataStream.getThing()).asLong() : 
+                pm.thingHandler.handleThingAssoc(dataStream.getThing()).asLong() :
                 dataStreamWriteStore.getAssociatedThing(localDsID);
-            
+
             //ResourceId sensorId = pm.sensorHandler.handleSensorAssoc(dataStream.getSensor());
-                        
+
             // store new data stream version
             IDataStreamInfo dsInfo = new STADataStream.Builder()
                 .withThing(thingID)
-                .withProcedure(oldDsInfo.getProcedure())
+                .withProcedure(oldDsInfo.getProcedureID())
                 .withRecordDescription(newRecordStruct)
                 .withRecordEncoding(oldDsInfo.getRecordEncoding())
                 .withRecordVersion(oldDsInfo.getRecordVersion())
                 .build();
-            
+
             // check name wasn't changed
             Asserts.checkArgument(dsInfo.getOutputName().equals(oldDsInfo.getOutputName()), "Cannot change a datastream name");
             dataStreamWriteStore.put(localDsID, dsInfo);
         }
-        
+
         // also update virtual sensor output in registry
-        long procID = oldDsInfo.getProcedure().getInternalID();
+        long procID = oldDsInfo.getProcedureID().getInternalID();
         VirtualSensorProxy sensorProxy = tryGetProcedureProxy(pm.toPublicID(procID));
         sensorProxy.newOutput(newRecordStruct, oldDsInfo.getRecordEncoding());
-        
+
         return true;
     }
-    
-    
+
+
+    @Override
     public boolean patch(ResourceId id, JsonPatch patch) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_update_sensor);
         throw new UnsupportedOperationException("Patch not supported");
     }
-    
-    
+
+
+    @Override
     public boolean delete(ResourceId id) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_delete_datastream);
         checkDatastreamWritable(id.asLong());
-        
+
         IDataStreamInfo dsInfo;
         if (dataStreamWriteStore != null)
             dsInfo = dataStreamWriteStore.remove(pm.toLocalID(id.asLong()));
         else
             dsInfo = dataStreamReadStore.get(id.asLong());
-        
+
         // also update sensor description in registry
         if (dsInfo != null)
-        {    
+        {
             // need to convert to public ID if internalID was coming from write store
-            long procID = dsInfo.getProcedure().getInternalID();
+            long procID = dsInfo.getProcedureID().getInternalID();
             if (dataStreamWriteStore != null)
                 procID = pm.toPublicID(procID);
-            
+
             VirtualSensorProxy sensorProxy = tryGetProcedureProxy(procID);
             AbstractProcess sensorDesc = sensorProxy.getCurrentDescription();
             sensorDesc.getOutputList().remove(dsInfo.getOutputName());
             sensorProxy.updateDescription(sensorDesc);
             return true;
         };
-        
+
         throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
     }
-    
-    
+
+
     protected VirtualSensorProxy tryGetProcedureProxy(long sensorId) throws NoSuchEntityException
     {
         return pm.sensorHandler.getProcedureProxy(sensorId);
     }
-    
+
 
     @Override
     public AbstractDatastream getById(ResourceId id, Query q) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_read_datastream);
-        
+
         IDataStreamInfo dsInfo = dataStreamReadStore.get(id.asLong());
         if (dsInfo == null || !isDatastreamVisible(id.asLong(), dsInfo))
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
 
         return toFrostDatastream(id.asLong(), dsInfo, q);
     }
-    
+
 
     @Override
     @SuppressWarnings("unchecked")
     public EntitySet<?> queryCollection(ResourcePath path, Query q)
     {
         securityHandler.checkPermission(securityHandler.sta_read_datastream);
-        
+
         DataStreamFilter filter = getFilter(path, q);
         int skip = q.getSkip(0);
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
-        
+
         var entitySet = dataStreamReadStore.selectEntries(filter)
             .filter(e -> isDatastreamVisible(e.getKey(), e.getValue()))
             .skip(skip)
@@ -278,15 +280,15 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             .map(e -> toFrostDatastream(e.getKey(), e.getValue(), q))
             .filter(ds -> ds.getEntityType() == path.getMainElementType())
             .collect(Collectors.toCollection(EntitySetImpl::new));
-        
+
         return FrostUtils.handlePaging(entitySet, path, q, limit);
     }
-    
-    
+
+
     protected DataStreamFilter getFilter(ResourcePath path, Query q)
     {
         STADataStreamFilter.Builder builder = new STADataStreamFilter.Builder();
-        
+
         EntityPathElement idElt = path.getIdentifiedElement();
         if (idElt != null)
         {
@@ -306,67 +308,67 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 /*builder.withObservations(new ObsFilter.Builder()
                     .withInternalIDs(obsId.internalID)
                     .build());*/
-                
+
                 builder.withObservations()
                     .withInternalIDs(obsId.internalID)
                     .done();
-                    
+
             }
             else if (idElt.getEntityType() == EntityType.OBSERVEDPROPERTY)
             {
                 // TODO
             }
         }
-        
+
         DatastreamFilterVisitor visitor = new DatastreamFilterVisitor(builder);
         if (q.getFilter() != null)
             q.getFilter().accept(visitor);
-        
-        return builder.build();            
+
+        return builder.build();
     }
-    
-    
+
+
     protected boolean isScalarOutput(DataComponent rec)
     {
         return (rec.getComponentCount() <= 2 &&
             rec.getComponent(1) instanceof ScalarComponent);
     }
-    
-    
+
+
     protected DataRecord toSweCommon(AbstractDatastream<?> abstractDs) throws NoSuchEntityException
     {
         SWEHelper helper = new SWEHelper();
-        
+
         DataRecord rec = helper.newDataRecord();
         rec.setName(toNCName(abstractDs.getName()));
         rec.setLabel(abstractDs.getName());
         rec.setDescription(abstractDs.getDescription());
         rec.addComponent("time", helper.newTimeIsoUTC(SWEConstants.DEF_PHENOMENON_TIME, "Sampling Time", null));
-        
+
         if (abstractDs instanceof Datastream)
         {
             Datastream ds = (Datastream)abstractDs;
             ObservedProperty obsProp = ds.getObservedProperty();
-            
+
             //Asserts.checkArgument(obsProp.getName() != null, "Observed properties must be provided inline when creating a datastream");
             ResourceId obsPropId = pm.obsPropHandler.handleObsPropertyAssoc(obsProp);
             if (obsProp.getName() == null)
                 obsProp = pm.obsPropHandler.getById(obsPropId, new Query());
             else
                 obsProp.setId(obsPropId);
-            
+
             DataComponent comp = toComponent(
                 ds.getObservationType(),
                 obsProp,
                 ds.getUnitOfMeasurement(),
                 helper);
-            
+
             rec.addComponent(comp.getName(), comp);
         }
         else
         {
             MultiDatastream ds = (MultiDatastream)abstractDs;
-            
+
             int i = 0;
             for (ObservedProperty obsProp: ds.getObservedProperties())
             {
@@ -376,30 +378,30 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                     obsProp = pm.obsPropHandler.getById(obsPropId, new Query());
                 else
                     obsProp.setId(obsPropId);
-                
+
                 DataComponent comp = toComponent(
                     ds.getMultiObservationDataTypes().get(i),
                     obsProp,
                     ds.getUnitOfMeasurements().get(i),
                     helper);
                 i++;
-                
+
                 rec.addComponent(comp.getName(), comp);
             }
         }
-        
+
         return rec;
     }
-    
-    
+
+
     protected DataComponent toComponent(String obsType, ObservedProperty obsProp, UnitOfMeasurement uom, SWEHelper fac)
     {
         DataComponent comp = null;
-        
+
         if (IObservation.OBS_TYPE_MEAS.equals(obsType))
         {
             comp = fac.newQuantity();
-            
+
             if (uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
                 ((Quantity)comp).getUom().setCode(uom.getDefinition().replace(UCUM_URI_PREFIX, ""));
             else
@@ -411,7 +413,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             comp = fac.newCount();
         else if (IObservation.OBS_TYPE_RECORD.equals(obsType))
             comp = fac.newDataRecord();
-        
+
         if (comp != null)
         {
             comp.setId(obsProp.getId().toString());
@@ -420,23 +422,23 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             comp.setDescription(obsProp.getDescription());
             comp.setDefinition(obsProp.getDefinition());
         }
-        
+
         return comp;
     }
-    
-    
+
+
     protected String toNCName(String name)
     {
         return name.toLowerCase().replaceAll("\\s+", "_");
     }
-    
-    
+
+
     protected AbstractDatastream toFrostDatastream(Long publicID, IDataStreamInfo dsInfo, Query q)
     {
         AbstractDatastream dataStream;
         Set<Property> select = q != null ? q.getSelect() : Collections.emptySet();
         boolean isExternalDatastream = pm.obsDbRegistry.getDatabaseID(publicID) != pm.database.getDatabaseID();
-        
+
         // convert to simple or multi datastream
         DataComponent rec = dsInfo.getRecordDescription();
         if (isScalarOutput(rec))
@@ -446,7 +448,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             simpleDs.setObservationType(toObsType(comp));
             simpleDs.setUnitOfMeasurement(toUom(comp));
             if (select.isEmpty() || select.contains(NavigationProperty.OBSERVEDPROPERTY))
-                simpleDs.setObservedProperty(toObservedProperty(comp, Collections.emptySet()));            
+                simpleDs.setObservedProperty(toObservedProperty(comp, Collections.emptySet()));
             dataStream = simpleDs;
             if (!isExternalDatastream)
                 simpleDs.getObservedProperty().setExportObject(false);
@@ -460,46 +462,46 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             if (!isExternalDatastream)
                 multiDs.getObservedProperties().setExportObject(false);
         }
-        
+
         // common properties
         dataStream.setId(new ResourceIdLong(publicID));
-        dataStream.setName(rec.getLabel() != null ? 
+        dataStream.setName(rec.getLabel() != null ?
             rec.getLabel() : StringUtils.capitalize(rec.getName()));
         dataStream.setDescription(rec.getDescription());
-        
+
         // link to Thing
-        long thingID =  isExternalDatastream ? 
+        long thingID =  isExternalDatastream ?
             STAService.HUB_THING_ID :
             dataStreamWriteStore.getAssociatedThing(pm.toLocalID(publicID));
         Thing thing = new Thing(new ResourceIdLong(thingID));
         thing.setExportObject(false);
         dataStream.setThing(thing);
-        
+
         // link to Sensor
-        ResourceIdLong sensorId = new ResourceIdLong(dsInfo.getProcedure().getInternalID());
+        ResourceIdLong sensorId = new ResourceIdLong(dsInfo.getProcedureID().getInternalID());
         Sensor sensor = new Sensor(sensorId);
-        sensor.setExportObject(false);   
+        sensor.setExportObject(false);
         dataStream.setSensor(sensor);
-        
+
         return dataStream;
     }
-    
-    
+
+
     protected void visitComponent(DataComponent c, MultiDatastream multiDs, boolean expandObsProps)
     {
         if (c instanceof ScalarComponent)
         {
             String def = c.getDefinition();
-            
+
             // skip time stamp
             if (def != null && (SWEConstants.DEF_PHENOMENON_TIME.equals(def) ||
                 SWEConstants.DEF_SAMPLING_TIME.equals(def)))
                 return;
-            
+
             multiDs.getMultiObservationDataTypes().add(toObsType(c));
-            multiDs.getUnitOfMeasurements().add(toUom(c));            
+            multiDs.getUnitOfMeasurements().add(toUom(c));
             if (expandObsProps)
-                multiDs.getObservedProperties().add(toObservedProperty(c, Collections.emptySet()));                        
+                multiDs.getObservedProperties().add(toObservedProperty(c, Collections.emptySet()));
         }
         else if (c instanceof DataRecord || c instanceof Vector)
         {
@@ -510,8 +512,8 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             }
         }
     }
-    
-    
+
+
     protected String toObsType(DataComponent comp)
     {
         if (comp instanceof Quantity)
@@ -525,25 +527,25 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         else
             return null;
     }
-    
-    
+
+
     protected ObservedProperty toObservedProperty(DataComponent comp, Set<Property> select)
     {
         ObservedProperty obsProp = new ObservedProperty();
-        
+
         obsProp.setDefinition(comp.getDefinition());
-        obsProp.setName(comp.getLabel() != null ? 
+        obsProp.setName(comp.getLabel() != null ?
             comp.getLabel() : StringUtils.capitalize(comp.getName()));
         obsProp.setDescription(comp.getDescription());
-        
+
         return obsProp;
     }
-    
-    
+
+
     protected UnitOfMeasurement toUom(DataComponent comp)
     {
         UnitOfMeasurement uom = new UnitOfMeasurement();
-        
+
         if (comp instanceof HasUom)
         {
             if (((HasUom)comp).getUom().hasHref())
@@ -551,11 +553,11 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 uom.setDefinition(((HasUom)comp).getUom().getHref());
             }
             else
-            {                
+            {
                 Unit ucumUnit = ((HasUom)comp).getUom().getValue();
                 uom.setName(ucumUnit.getName());
                 uom.setSymbol(ucumUnit.getPrintSymbol());
-                uom.setDefinition(UCUM_URI_PREFIX + 
+                uom.setDefinition(UCUM_URI_PREFIX +
                     (ucumUnit.getCode() != null ? ucumUnit.getCode() : ucumUnit.getExpression()));
             }
         }
@@ -567,16 +569,16 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         {
             uom.setName("No Unit");
         }
-        
+
         return uom;
     }
-    
-    
+
+
     protected ResourceId handleDatastreamAssoc(AbstractDatastream ds) throws NoSuchEntityException
     {
         Asserts.checkArgument(ds != null, MISSING_ASSOC);
-        ResourceId dsId;        
-                
+        ResourceId dsId;
+
         if (ds.getName() == null)
         {
             dsId = (ResourceId)ds.getId();
@@ -588,11 +590,11 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             // deep insert
             dsId = create(ds);
         }
-        
+
         return dsId;
     }
-    
-    
+
+
     protected void handleDatastreamAssocList(ResourceId thingId, Thing thing) throws NoSuchEntityException
     {
         if (thing.getDatastreams() != null)
@@ -603,7 +605,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 handleDatastreamAssoc(ds);
             }
         }
-        
+
         if (thing.getMultiDatastreams() != null)
         {
             for (MultiDatastream ds: thing.getMultiDatastreams())
@@ -613,8 +615,8 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             }
         }
     }
-    
-    
+
+
     protected void handleDatastreamAssocList(ResourceId sensorId, Sensor sensor) throws NoSuchEntityException
     {
         if (sensor.getDatastreams() != null)
@@ -625,7 +627,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 pm.dataStreamHandler.handleDatastreamAssoc(ds);
             }
         }
-        
+
         if (sensor.getMultiDatastreams() != null)
         {
             for (MultiDatastream ds: sensor.getMultiDatastreams())
@@ -635,8 +637,8 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             }
         }
     }
-    
-    
+
+
     /*
      * Check that sensorID is present in database and exposed by service
      */
@@ -646,60 +648,60 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         if (!hasSensor)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
     }
-    
-    
+
+
     protected void checkDatastreamWritable(long publicID)
     {
         // TODO also check that current user has the right to write this procedure!
-        
+
         if (!pm.isInWritableDatabase(publicID))
             throw new UnsupportedOperationException(NOT_WRITABLE_MESSAGE + publicID);
     }
-    
-    
+
+
     protected boolean isDatastreamVisible(long publicID, IDataStreamInfo dsInfo)
     {
         // TODO also check that current user has the right to read this entity!
-        
+
         if (!(dsInfo.getRecordEncoding() instanceof TextEncoding))
             return false;
-        
-        String procId = dsInfo.getProcedure().getUniqueID();
+
+        String procId = dsInfo.getProcedureID().getUniqueID();
         return pm.isInWritableDatabase(publicID) || pm.service.isProcedureExposed(procId);
     }
-    
-    
+
+
     protected boolean isDatastreamVisible(long publicID)
     {
         IDataStreamInfo dsInfo = dataStreamReadStore.get(publicID);
         return dsInfo != null && isDatastreamVisible(publicID, dsInfo);
     }
-    
-    
+
+
     /*
      * Helper methods to convert to/from packed numerical IDs
-     */    
+     */
     /*static int MAX_DATASTREAMS_PER_SENSOR = 100;
     static int MAX_VERSIONS_PER_DATASTREAM = 100;
     static int MAX_VERSIONS_PER_SENSOR = MAX_DATASTREAMS_PER_SENSOR * MAX_VERSIONS_PER_DATASTREAM;
     static int LATEST_VERSION = 999;
-    
+
     static class DatastreamIds
     {
         long sensorId;
         int outputId;
         int version;
     }
-    
-    
+
+
     protected ResourceId generateDatastreamId(long sensorId, int outputId, int version)
     {
         long sensorIdPart = sensorId * MAX_VERSIONS_PER_SENSOR;
         long outputIdPart = outputId * MAX_VERSIONS_PER_DATASTREAM;
         return new ResourceId(sensorIdPart + outputIdPart + version);
     }
-    
-    
+
+
     protected DatastreamIds parseDatastreamId(ResourceId dsId)
     {
         long internalId = dsId.getValue();

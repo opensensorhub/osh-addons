@@ -58,12 +58,12 @@ public class MulMat3Mat3 extends ExecutableProcessImpl
         mat1 = sweHelper.newMatrix(3, 3);
         inputData.add("M1", mat1);
         
-        // create input M1
+        // create input M2
         mat2 = sweHelper.newMatrix(3, 3);
         inputData.add("M2", mat2);
         
         // create scalar input
-        scalar = sweHelper.newQuantity();
+        scalar = sweHelper.createQuantity().build();
         scalar.setValue(1.0);
         inputData.add("s", scalar);
         

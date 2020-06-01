@@ -7,9 +7,9 @@ at http://mozilla.org/MPL/2.0/.
 Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
- 
+
 Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
- 
+
 ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.service.sta;
@@ -64,8 +64,8 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
     GenericFeature hubThing;
     ServletV1P0 servlet;
     Set<Long> exposedProcedureIDs = ConcurrentHashMap.newKeySet();
-    
-    
+
+
     @Override
     public void requestStart() throws SensorHubException
     {
@@ -74,43 +74,43 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
             HttpServer httpServer = HttpServer.getInstance();
             if (httpServer == null)
                 throw new SensorHubException("HTTP server module is not loaded");
-            
+
             // subscribe to server lifecycle events
             httpServer.registerListener(this);
-            
+
             // we actually start in the handleEvent() method when
             // a STARTED event is received from HTTP server
         }
     }
-    
-    
+
+
     @Override
     public void setConfiguration(STAServiceConfig config)
     {
         super.setConfiguration(config);
         this.securityHandler = new STASecurity(this, config.security.enableAccessControl);
     }
-    
-    
+
+
     @Override
     public void start() throws SensorHubException
     {
         serviceInstances.put(System.identityHashCode(this), this);
-        
+
         // fetch internalIDs of exposed procedures
         // and ensure we get notified if procedures are added later
         exposedProcedureIDs.clear();
         subscribeToProcedureRegistryEvents()
-            .thenAccept(s -> {                
+            .thenAccept(s -> {
                 // keep handle to subscription so we can cancel it later
                 procRegistrySub = s;
-        
+
                 // expose all procedures that are already available
                 // others will be handled later when added/enabled
                 for (String procUID: config.exposedProcedures)
                     addProcedure(procUID);
-            });        
-        
+            });
+
         /*// register group
         if (getProcedureGroupUID() != null)
         {
@@ -119,11 +119,11 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
             procGroup.setDescription(config.virtualSensorGroup.description);
             getParentHub().getProcedureRegistry().register(new VirtualSensorProxy(procGroup));
         }*/
-        
+
         // init database
         // TODO load database implementation class dynamically
         database = new STADatabase(this, config.dbConfig);
-        
+
         // create default hub thing
         String uid = getProcedureGroupUID() + ":thing:hub";
         hubThing = new GenericFeatureImpl(new QName("Thing"));
@@ -131,15 +131,15 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
         hubThing.setName(config.hubThing.name);
         hubThing.setDescription(config.hubThing.description);
         database.getThingStore().put(new FeatureKey(1, FeatureKey.TIMELESS), hubThing);
-        
+
         // deploy servlet
         servlet = new STAServlet((STASecurity)securityHandler);
         deploy();
-        
+
         setState(ModuleState.STARTED);
     }
-    
-    
+
+
     /*
      * Expose new procedure if listed in configuration
      */
@@ -151,50 +151,50 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
         if (key != null)
             exposedProcedureIDs.add(key.getInternalID());
     }
-    
-    
+
+
     /*
      * Check if UID or parent UID was configured to be exposed by service
      */
     protected boolean isProcedureExposed(long publicID)
     {
         // TODO handle wildcard and group member cases
-        
+
         return exposedProcedureIDs.contains(publicID);// || config.exposedProcedures.contains(parentUid)
     }
-    
-    
+
+
     protected boolean isProcedureExposed(String uid)
     {
         // TODO handle wildcard and group member cases
-        
+
         return config.exposedProcedures.contains(uid);
     }
-    
-    
+
+
     protected CompletableFuture<Subscription> subscribeToProcedureRegistryEvents()
-    {     
+    {
         return getParentHub().getEventBus().newSubscription(ProcedureEvent.class)
             .withSourceID(IProcedureRegistry.EVENT_SOURCE_ID)
             .withEventType(ProcedureAddedEvent.class)
             .withEventType(ProcedureEnabledEvent.class)
             .consume(e -> {
-                var uid = e.getProcedureUID();
+                var uid = e.getProcedureID().getUniqueID();
                 if (isProcedureExposed(uid))
                     addProcedure(uid);
             });
     }
-    
-    
+
+
     protected String getProcedureGroupUID()
     {
         if (config.virtualSensorGroup != null)
             return config.virtualSensorGroup.uid;
         else
-            return DEFAULT_GROUP_UID;        
+            return DEFAULT_GROUP_UID;
     }
-    
-    
+
+
     @Override
     public void stop()
     {
@@ -204,60 +204,60 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
             procRegistrySub.cancel();
             procRegistrySub = null;
         }
-        
+
         // undeploy servlet
         if (servlet != null)
         {
             undeploy();
             servlet = null;
         }
-        
+
         // close database
         if (database != null)
         {
             database.close();
             database = null;
         }
-        
+
         serviceInstances.remove(System.identityHashCode(this));
         exposedProcedureIDs.clear();
-        
+
         setState(ModuleState.STOPPED);
     }
-   
-    
+
+
     protected void deploy() throws SensorHubException
     {
         HttpServer httpServer = HttpServer.getInstance();
         if (httpServer == null || !httpServer.isStarted())
             throw new SensorHubException("An HTTP server instance must be started");
-        
+
         Properties staSettings = new Properties();
         staSettings.setProperty(TAG_SERVICE_ROOT_URL, config.getPublicEndpoint());
         staSettings.setProperty(TAG_TEMP_PATH, "/tmp");
         staSettings.setProperty(PREFIX_PERSISTENCE+TAG_IMPLEMENTATION_CLASS, OSHPersistenceManager.class.getCanonicalName());
         staSettings.setProperty(PREFIX_PERSISTENCE+SERVICE_INSTANCE_ID, Integer.toString(System.identityHashCode(this)));
         //staSettings.setProperty(TAG_USE_ABSOLUTE_NAVIGATION_LINKS, "false");
-            
+
         // deploy ourself to HTTP server
         httpServer.deployServlet(servlet, config.endPoint + "/v1.0/*");
         servlet.getServletContext().setAttribute(TAG_CORE_SETTINGS, new CoreSettings(staSettings));
         httpServer.addServletSecurity(config.endPoint, config.security.requireAuth);
     }
-    
-    
+
+
     protected void undeploy()
     {
         HttpServer httpServer = HttpServer.getInstance();
-        
+
         // return silently if HTTP server missing on stop
         if (httpServer == null || !httpServer.isStarted())
             return;
-        
+
         httpServer.undeployServlet(servlet);
     }
-    
-    
+
+
     @Override
     public void cleanup() throws SensorHubException
     {
@@ -265,13 +265,13 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
         HttpServer httpServer = HttpServer.getInstance();
         if (httpServer != null)
             httpServer.unregisterListener(this);
-        
+
         // unregister security handler
         if (securityHandler != null)
             securityHandler.unregister();
     }
-    
-    
+
+
     @Override
     public void handleEvent(Event e)
     {
@@ -279,7 +279,7 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
         if (e instanceof ModuleEvent && e.getSource() == HttpServer.getInstance())
         {
             ModuleState newState = ((ModuleEvent) e).getNewState();
-            
+
             // start when HTTP server is enabled
             if (newState == ModuleState.STARTED)
             {
@@ -292,14 +292,14 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
                     reportError("SensorThings API Service could not start", ex);
                 }
             }
-            
+
             // stop when HTTP server is disabled
             else if (newState == ModuleState.STOPPED)
                 stop();
         }
     }
-    
-    
+
+
     public STASecurity getSecurityHandler()
     {
         return (STASecurity)securityHandler;
