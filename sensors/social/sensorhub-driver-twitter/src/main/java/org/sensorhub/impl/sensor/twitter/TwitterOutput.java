@@ -18,7 +18,7 @@ import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.DataRecordImpl;
 import org.vast.swe.SWEConstants;
@@ -180,7 +180,7 @@ public class TwitterOutput extends AbstractSensorOutput<TwitterSensor>
 		
 		latestRecord = dataBlock;
 		latestRecordTime = System.currentTimeMillis();
-		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, TwitterOutput.this, dataBlock));
+		eventHandler.publish(new DataEvent(latestRecordTime, TwitterOutput.this, dataBlock));
 	}
 
 	protected void stop() 

@@ -28,7 +28,7 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataStream;
 import net.sf.jipcam.axis.media.protocol.http.MjpegStream;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
@@ -156,7 +156,7 @@ public class OnvifVideoOutput extends AbstractSensorOutput <OnvifCameraDriver> {
 
                             latestRecord = dataBlock;
                             latestRecordTime = System.currentTimeMillis();
-                            eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, OnvifVideoOutput.this, latestRecord));
+                            eventHandler.publish(new DataEvent(latestRecordTime, OnvifVideoOutput.this, latestRecord));
                         }
 
                         // wait 1s before trying to reconnect

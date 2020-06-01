@@ -21,7 +21,7 @@ import datasimulation.ChemAgent;
 import datasimulation.PointSource;
 import net.opengis.swe.v20.*;
 import net.opengis.swe.v20.Vector;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
@@ -262,7 +262,7 @@ public class SimCBRNOutputAlerts extends AbstractSensorOutput<SimCBRNSensor>
         //this method call is required to push data
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, SimCBRNOutputAlerts.this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, SimCBRNOutputAlerts.this, dataBlock));
     }
 
 

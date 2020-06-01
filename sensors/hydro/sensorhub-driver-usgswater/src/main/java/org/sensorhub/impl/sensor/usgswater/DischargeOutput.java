@@ -26,7 +26,7 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.TextEncoding;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
@@ -103,7 +103,7 @@ public class DischargeOutput extends AbstractSensorOutput <USGSWaterDriver> impl
     		latestRecordTime = System.currentTimeMillis();
     		latestRecord = dataBlock;
     		latestRecords.put(USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), latestRecord); 
-    		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, rec.getSiteCode(), DischargeOutput.this, dataBlock));
+    		eventHandler.publish(new DataEvent(latestRecordTime, rec.getSiteCode(), DischargeOutput.this, dataBlock));
     	}
     }
 

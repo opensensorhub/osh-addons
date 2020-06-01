@@ -15,7 +15,7 @@ import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.openhab.OpenHabConfig;
 import org.sensorhub.impl.sensor.openhab.OpenHabDriver;
 import org.vast.data.DataChoiceImpl;
@@ -163,8 +163,8 @@ public class TestOpenHabDriver implements IEventListener
     @Override
     public void handleEvent(Event<?> e)
     {
-        assertTrue(e instanceof SensorDataEvent);
-        SensorDataEvent newDataEvent = (SensorDataEvent)e;
+        assertTrue(e instanceof DataEvent);
+        DataEvent newDataEvent = (DataEvent)e;
         
         double timeStamp = newDataEvent.getRecords()[0].getDoubleValue(1);
         System.out.println("Frame received on " + new DateTimeFormat().formatIso(timeStamp, 0));

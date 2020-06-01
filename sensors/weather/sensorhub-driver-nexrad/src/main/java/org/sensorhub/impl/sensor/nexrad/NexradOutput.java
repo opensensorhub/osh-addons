@@ -26,7 +26,7 @@ import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.data.IMultiSourceDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.nexrad.aws.AwsNexradUtil;
 import org.sensorhub.impl.sensor.nexrad.aws.LdmRadial;
@@ -377,7 +377,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor> implements 
 	        latestRecords.put(siteUID, latestRecord);
 			
 			latestRecordTime = System.currentTimeMillis();
-			eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, NexradOutput.this, nexradBlock));
+			eventHandler.publish(new DataEvent(latestRecordTime, NexradOutput.this, nexradBlock));
 		}
 
 	}

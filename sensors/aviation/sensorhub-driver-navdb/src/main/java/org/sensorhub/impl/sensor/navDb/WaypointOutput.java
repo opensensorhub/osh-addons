@@ -138,7 +138,7 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 			
 			newRecords.put(rec.id, dataBlock);   
 			//long time = System.currentTimeMillis();
-			//eventHandler.publishEvent(new SensorDataEvent(time, uid, WaypointOutput.this, dataBlock));
+			//eventHandler.publish(new DataEvent(time, uid, WaypointOutput.this, dataBlock));
 		}
         
         // switch to new records atomically

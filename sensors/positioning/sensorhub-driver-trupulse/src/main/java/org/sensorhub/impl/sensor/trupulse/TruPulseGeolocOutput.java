@@ -22,7 +22,7 @@ import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
 import org.sensorhub.api.sensor.ISensorModule;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.common.BasicEventHandler;
 import net.opengis.swe.v20.DataBlock;
@@ -169,7 +169,7 @@ public class TruPulseGeolocOutput implements ISensorDataInterface, IEventListene
     public void handleEvent(Event<?> e)
     {
         if (e instanceof DataEvent)
-            eventHandler.publishEvent(new SensorDataEvent(e.getTimeStamp(), this, ((DataEvent)e).getRecords()));
+            eventHandler.publish(new DataEvent(e.getTimeStamp(), this, ((DataEvent)e).getRecords()));
         
     }
 

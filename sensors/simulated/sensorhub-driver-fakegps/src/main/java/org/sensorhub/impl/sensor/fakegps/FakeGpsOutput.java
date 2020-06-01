@@ -26,7 +26,7 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.Vector;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.helper.GeoPosHelper;
@@ -248,7 +248,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FakeGpsOutput.this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, FakeGpsOutput.this, dataBlock));
         
         currentTrackPos += speed / dist;
     }

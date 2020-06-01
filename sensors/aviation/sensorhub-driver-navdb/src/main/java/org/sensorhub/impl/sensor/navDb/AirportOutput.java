@@ -138,7 +138,7 @@ public class AirportOutput extends AbstractSensorOutput<NavDriver> implements IM
 			
 			newRecords.put(rec.id, dataBlock);   
 			//long time = System.currentTimeMillis();
-			//eventHandler.publishEvent(new SensorDataEvent(time, uid, NavOutput.this, dataBlock));
+			//eventHandler.publish(new DataEvent(time, uid, NavOutput.this, dataBlock));
 		}
 		
 		// switch to new records atomically

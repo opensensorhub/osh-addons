@@ -25,7 +25,7 @@ import javax.imageio.ImageIO;
 import org.openkinect.freenect.Device;
 import org.openkinect.freenect.FrameMode;
 import org.openkinect.freenect.VideoHandler;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.vast.data.DataBlockMixed;
@@ -105,8 +105,8 @@ class KinectInfraredOutputMJPEG extends KinectInfraredOutput {
 
 					latestRecordTime = System.currentTimeMillis();
 
-					eventHandler.publishEvent(
-							new SensorDataEvent(latestRecordTime, KinectInfraredOutputMJPEG.this, dataBlock));
+					eventHandler.publish(
+							new DataEvent(latestRecordTime, KinectInfraredOutputMJPEG.this, dataBlock));
 
 				} catch (IOException e) {
 

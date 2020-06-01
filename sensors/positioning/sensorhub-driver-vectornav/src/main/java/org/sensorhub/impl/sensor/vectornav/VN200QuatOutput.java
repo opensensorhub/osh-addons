@@ -19,7 +19,7 @@ import java.nio.ByteBuffer;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Vector;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
@@ -83,6 +83,6 @@ public class VN200QuatOutput extends VN200AbstractOutput
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = timeStamp;
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, this, dataBlock));        
+        eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlock));        
     }
 }

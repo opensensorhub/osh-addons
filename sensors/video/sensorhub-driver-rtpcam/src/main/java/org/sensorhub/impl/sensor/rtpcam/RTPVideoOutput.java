@@ -27,7 +27,7 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataStream;
 import org.sensorhub.api.sensor.ISensorModule;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.rtpcam.RTSPClient.StreamInfo;
@@ -313,7 +313,7 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
                     // send event
                     latestRecord = newRecord;
                     latestRecordTime = System.currentTimeMillis();
-                    eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, RTPVideoOutput.this, latestRecord));
+                    eventHandler.publish(new DataEvent(latestRecordTime, RTPVideoOutput.this, latestRecord));
                 }
             });                
         }

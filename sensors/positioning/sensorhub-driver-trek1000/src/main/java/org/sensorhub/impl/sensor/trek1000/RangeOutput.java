@@ -3,7 +3,7 @@ package org.sensorhub.impl.sensor.trek1000;
 
 import java.util.ArrayList;
 import org.sensorhub.api.sensor.PositionConfig.LLALocation;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.DataRecordImpl;
 import org.vast.swe.SWEHelper;
@@ -62,7 +62,7 @@ public class RangeOutput extends AbstractSensorOutput<Trek1000Sensor>
         
         latestRecord = dataBlock;
         latestRecordTime = msgTime;
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlock));
     }
 
 

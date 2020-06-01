@@ -144,7 +144,7 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 			if("USA".equals(rec.region) || "CAN".equals("rec.region"))
 			    newDomesticRecords.put(rec.id, dataBlock);
 			//long time = System.currentTimeMillis();
-			//eventHandler.publishEvent(new SensorDataEvent(time, uid, NavaidOutput.this, dataBlock));
+			//eventHandler.publish(new DataEvent(time, uid, NavaidOutput.this, dataBlock));
 		}
 		
 		// switch to new records atomically

@@ -16,7 +16,7 @@ package org.sensorhub.impl.sensor.mti;
 
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.api.comm.ICommProvider;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -112,7 +112,7 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = msgTime;
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, MtiOutput.this, dataBlock));        
+        eventHandler.publish(new DataEvent(latestRecordTime, MtiOutput.this, dataBlock));        
     }
     
     

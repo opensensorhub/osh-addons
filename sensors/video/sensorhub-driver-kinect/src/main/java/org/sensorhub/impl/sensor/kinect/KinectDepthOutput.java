@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import org.openkinect.freenect.DepthHandler;
 import org.openkinect.freenect.Device;
 import org.openkinect.freenect.FrameMode;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.vast.data.DataBlockMixed;
 import org.vast.data.TextEncodingImpl;
 import org.vast.swe.SWEHelper;
@@ -163,7 +163,7 @@ class KinectDepthOutput extends KinectOutputInterface {
 					
 					latestRecordTime = System.currentTimeMillis();
 					
-					eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, KinectDepthOutput.this, dataBlock));
+					eventHandler.publish(new DataEvent(latestRecordTime, KinectDepthOutput.this, dataBlock));
 
 					frame.position(0);
 

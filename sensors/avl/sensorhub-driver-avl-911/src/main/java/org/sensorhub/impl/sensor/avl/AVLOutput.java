@@ -35,7 +35,7 @@ import net.opengis.swe.v20.Vector;
 import net.opengis.swe.v20.Category;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.data.IMultiSourceDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
@@ -213,7 +213,7 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver> implements IMulti
         latestRecord = dataBlock;
         latestRecords.put(vehID, latestRecord);
         latestRecordTime = System.currentTimeMillis();
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, vehID, AVLOutput.this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, vehID, AVLOutput.this, dataBlock));
     }
 
 

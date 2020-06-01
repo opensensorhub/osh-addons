@@ -26,7 +26,7 @@ import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig;
 import org.sensorhub.impl.sensor.intelipod.IntelipodConfig;
 import org.sensorhub.impl.sensor.intelipod.IntelipodSensor;
@@ -110,8 +110,8 @@ public class TestIntelipodDriver implements IEventListener
     @Override
     public void handleEvent(Event<?> e)
     {
-        assertTrue(e instanceof SensorDataEvent);
-        SensorDataEvent newDataEvent = (SensorDataEvent)e;
+        assertTrue(e instanceof DataEvent);
+        DataEvent newDataEvent = (DataEvent)e;
         
         try
         {

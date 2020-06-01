@@ -14,7 +14,7 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.angel;
 
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
@@ -94,7 +94,7 @@ public class DeviceStatusOutput extends AbstractSensorOutput<AngelSensor>
         // update latest record and send event
         latestRecord = data;
         latestRecordTime = timeStamp;
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, this, data));
+        eventHandler.publish(new DataEvent(latestRecordTime, this, data));
     }
     
     

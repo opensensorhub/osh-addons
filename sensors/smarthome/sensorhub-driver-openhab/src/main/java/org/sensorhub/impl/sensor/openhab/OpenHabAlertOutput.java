@@ -1,7 +1,7 @@
 package org.sensorhub.impl.sensor.openhab;
 
 import java.io.IOException;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.openhab.OpenHabHandler.OpenHabItems;
 import org.sensorhub.impl.sensor.openhab.OpenHabHandler.OpenHabThings;
@@ -72,7 +72,7 @@ public class OpenHabAlertOutput extends AbstractSensorOutput<OpenHabDriver>
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, OpenHabAlertOutput.this, dataBlock)); 
+        eventHandler.publish(new DataEvent(latestRecordTime, OpenHabAlertOutput.this, dataBlock)); 
     }
     
     protected void start()

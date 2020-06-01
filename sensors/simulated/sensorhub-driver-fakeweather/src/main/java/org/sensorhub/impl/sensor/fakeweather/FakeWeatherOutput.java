@@ -18,7 +18,7 @@ package org.sensorhub.impl.sensor.fakeweather;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -123,7 +123,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FakeWeatherOutput.this, dataBlock));        
+        eventHandler.publish(new DataEvent(latestRecordTime, FakeWeatherOutput.this, dataBlock));        
     }
     
     

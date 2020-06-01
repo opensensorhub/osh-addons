@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.data.IMultiSourceDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.Waypoint;
 import org.vast.data.AbstractDataBlock;
@@ -145,7 +145,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         latestRecord = dataBlk;
         latestRecordTime = msgTime;
         latestRecords.put(oshFlightId, dataBlk);
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, oshFlightId, this, dataBlk));
+        eventHandler.publish(new DataEvent(latestRecordTime, oshFlightId, this, dataBlk));
 	}
 	
 	

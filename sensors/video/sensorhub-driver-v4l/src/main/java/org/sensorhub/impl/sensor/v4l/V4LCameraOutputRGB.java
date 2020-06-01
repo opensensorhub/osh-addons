@@ -16,7 +16,7 @@ package org.sensorhub.impl.sensor.v4l;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.vast.data.DataBlockByte;
@@ -107,7 +107,7 @@ public class V4LCameraOutputRGB extends V4LCameraOutput implements CaptureCallba
             // update latest record and send event
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
-            eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, this, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlock));
             
             frame.recycle();
         }

@@ -11,7 +11,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
@@ -110,7 +110,7 @@ public class OpenHabMotionOutput extends AbstractSensorOutput<OpenHabDriver>
 //        // update latest record and send event
 //        latestRecord = dataBlock;
 //        latestRecordTime = System.currentTimeMillis();
-//        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, OpenHabMotionOutput.this, dataBlock)); 
+//        eventHandler.publish(new DataEvent(latestRecordTime, OpenHabMotionOutput.this, dataBlock)); 
 //    }
     
     protected void start()

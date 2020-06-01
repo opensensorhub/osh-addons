@@ -16,7 +16,7 @@ package org.sensorhub.impl.sensor.bno055;
 
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.api.comm.ICommProvider;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Timer;
@@ -161,7 +161,7 @@ public class Bno055Output extends AbstractSensorOutput<Bno055Sensor>
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = msgTime;
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, Bno055Output.this, dataBlock));        
+        eventHandler.publish(new DataEvent(latestRecordTime, Bno055Output.this, dataBlock));        
     }
    
 

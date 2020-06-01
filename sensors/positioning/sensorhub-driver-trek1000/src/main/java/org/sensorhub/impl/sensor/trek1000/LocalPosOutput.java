@@ -1,7 +1,7 @@
 
 package org.sensorhub.impl.sensor.trek1000;
 
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.DataRecordImpl;
 import org.vast.swe.SWEConstants;
@@ -66,7 +66,7 @@ public class LocalPosOutput extends AbstractSensorOutput<Trek1000Sensor>
         
         latestRecord = dataBlock;
         latestRecordTime = msgTime;
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlock));
     }
 
 

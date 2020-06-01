@@ -29,7 +29,7 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.TextEncoding;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
@@ -220,7 +220,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
         
         latestRecord = ptzData;
         latestRecordTime = now;
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, DahuaPtzOutput.this, latestRecord));
+        eventHandler.publish(new DataEvent(latestRecordTime, DahuaPtzOutput.this, latestRecord));
     }
 
     

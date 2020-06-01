@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.sensorhub.api.data.IMultiSourceDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
@@ -129,7 +129,7 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		latestRecords.put(oshFlightId, dataBlk);
 		latestRecordTime = System.currentTimeMillis();
         latestUpdateTimes.put(oshFlightId, fltPos.getClock());
-		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPositionOutput.this, dataBlk));        	
+		eventHandler.publish(new DataEvent(latestRecordTime, FlightPositionOutput.this, dataBlk));        	
 	}
 
 	public double getAverageSamplingPeriod()

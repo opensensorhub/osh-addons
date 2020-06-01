@@ -1,7 +1,7 @@
 package org.sensorhub.impl.sensor.domoticz;
 
 import java.io.IOException;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.domoticz.DomoticzDriver.ValidDevice;
 import org.sensorhub.impl.sensor.domoticz.DomoticzHandler.DomoticzResponse;
@@ -72,7 +72,7 @@ public class DomoticzTempHumOutput extends AbstractSensorOutput<DomoticzDriver>
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, DomoticzTempHumOutput.this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, DomoticzTempHumOutput.this, dataBlock));
     }
     
     protected void start()

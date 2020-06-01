@@ -26,7 +26,7 @@ import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.foscam.FoscamConfig;
 import org.sensorhub.impl.sensor.foscam.FoscamConfig.ResolutionEnum;
 import org.sensorhub.impl.sensor.foscam.FoscamDriver;
@@ -142,8 +142,8 @@ public class TestFoscamCameraDriver implements IEventListener {
 
 	@Override
 	public void handleEvent(Event<?> e) {
-		assertTrue(e instanceof SensorDataEvent);
-		SensorDataEvent newDataEvent = (SensorDataEvent) e;
+		assertTrue(e instanceof DataEvent);
+		DataEvent newDataEvent = (DataEvent) e;
 
 		double timeStamp = newDataEvent.getRecords()[0].getDoubleValue(0);
 		System.out.println("Frame received on " + new DateTimeFormat().formatIso(timeStamp, 0) + " ("

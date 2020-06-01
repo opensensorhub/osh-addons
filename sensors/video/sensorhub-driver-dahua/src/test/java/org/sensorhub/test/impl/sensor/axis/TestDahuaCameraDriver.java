@@ -28,7 +28,7 @@ import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.dahua.DahuaCameraConfig;
 import org.sensorhub.impl.sensor.dahua.DahuaCameraDriver;
@@ -290,8 +290,8 @@ public class TestDahuaCameraDriver implements IEventListener
     @Override
     public void handleEvent(Event<?> e)
     {
-        assertTrue(e instanceof SensorDataEvent);
-        SensorDataEvent newDataEvent = (SensorDataEvent)e;
+        assertTrue(e instanceof DataEvent);
+        DataEvent newDataEvent = (DataEvent)e;
         
         if (newDataEvent.getSource().getClass().equals(DahuaVideoOutput.class))
         {

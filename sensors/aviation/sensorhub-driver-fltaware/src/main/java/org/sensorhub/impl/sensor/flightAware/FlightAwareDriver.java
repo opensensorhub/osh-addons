@@ -466,7 +466,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 
 		// send event
 		long now = System.currentTimeMillis();
-		eventHandler.publishEvent(new FoiEvent(now, flightId, this, foi, recordTime));
+		eventHandler.publish(new FoiEvent(now, flightId, this, foi, recordTime));
 
 		getLogger().trace("{}: New FOI added: {}; Num FOIs = {}", flightId, uid, flightFois.size());
 	}

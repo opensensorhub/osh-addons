@@ -15,7 +15,7 @@ Copyright (C) 2012-2015 Botts Innovative Research Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.virbxe;
 
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -252,7 +252,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
 	                  	
 		                latestRecord = data;
 		                latestRecordTime = System.currentTimeMillis();
-		                eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, VirbXeNavOutput.this, latestRecord)); 	                  		
+		                eventHandler.publish(new DataEvent(latestRecordTime, VirbXeNavOutput.this, latestRecord)); 	                  		
 	                }
 	                catch (Exception e)
 	                {

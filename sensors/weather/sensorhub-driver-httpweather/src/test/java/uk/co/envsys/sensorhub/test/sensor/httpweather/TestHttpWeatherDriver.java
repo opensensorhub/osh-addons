@@ -9,7 +9,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.AsciiDataWriter;
@@ -121,8 +121,8 @@ public class TestHttpWeatherDriver extends HttpWeatherTestUtils implements IEven
      */
 	@Override
 	public void handleEvent(Event<?> e) {
-		assertTrue(e instanceof SensorDataEvent);
-        SensorDataEvent newDataEvent = (SensorDataEvent)e;
+		assertTrue(e instanceof DataEvent);
+        DataEvent newDataEvent = (DataEvent)e;
         DataBlock record = newDataEvent.getRecords()[0];
        
         assertValueMatch(record, "intemp", IN_TEMP);

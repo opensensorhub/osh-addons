@@ -8,7 +8,7 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEHelper;
 
@@ -175,7 +175,7 @@ public class VaisalaWeatherPTUOutput extends AbstractSensorOutput<VaisalaWeather
     	// Update Latest Record and Send Event
     	latestRecord = dataBlock;
     	latestRecordTime = System.currentTimeMillis();
-    	eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, VaisalaWeatherPTUOutput.this, dataBlock));
+    	eventHandler.publish(new DataEvent(latestRecordTime, VaisalaWeatherPTUOutput.this, dataBlock));
     	/********************************************************************************************************/
 	}
 

@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import org.openkinect.freenect.Device;
 import org.openkinect.freenect.FrameMode;
 import org.openkinect.freenect.VideoHandler;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.vast.data.DataBlockMixed;
@@ -99,7 +99,7 @@ class KinectVideoOutput extends KinectOutputInterface {
 		        
 		        latestRecordTime = System.currentTimeMillis();
 		        
-		        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, KinectVideoOutput.this, dataBlock));      
+		        eventHandler.publish(new DataEvent(latestRecordTime, KinectVideoOutput.this, dataBlock));      
 		        
 				frame.position(0);
 			}

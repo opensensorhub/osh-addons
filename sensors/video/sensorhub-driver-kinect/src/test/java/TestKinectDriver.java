@@ -18,7 +18,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.kinect.KinectConfig;
 import org.sensorhub.impl.sensor.kinect.KinectConfig.Mode;
 import org.vast.data.DataBlockMixed;
@@ -117,8 +117,8 @@ public class TestKinectDriver implements IEventListener {
 			@Override
 			public void handleEvent(Event<?> e) {
 
-				assertTrue(e instanceof SensorDataEvent);
-				SensorDataEvent newDataEvent = (SensorDataEvent) e;
+				assertTrue(e instanceof DataEvent);
+				DataEvent newDataEvent = (DataEvent) e;
 
 				DataBlock frameBlock = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[1];
 
@@ -275,8 +275,8 @@ public class TestKinectDriver implements IEventListener {
 	@Override
 	public void handleEvent(Event<?> e) {
 
-		assertTrue(e instanceof SensorDataEvent);
-		SensorDataEvent newDataEvent = (SensorDataEvent) e;
+		assertTrue(e instanceof DataEvent);
+		DataEvent newDataEvent = (DataEvent) e;
 
 		displayFrame.drawFrame(newDataEvent.getRecords()[0]);
 

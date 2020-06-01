@@ -179,7 +179,7 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
             
             // send event
             long now = System.currentTimeMillis();
-            eventHandler.publishEvent(new FoiEvent(now, vehicleID, this, foi, recordTime));
+            eventHandler.publish(new FoiEvent(now, vehicleID, this, foi, recordTime));
             
             log.debug("New vehicle added as FOI: {}", uid);
         }

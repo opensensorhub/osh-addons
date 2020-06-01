@@ -209,7 +209,7 @@ public class GPSsim
 		// update latest record and send event
 		latestRecord = dataBlock;
 		latestRecordTime = System.currentTimeMillis();
-		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FakeGpsOutput.this, dataBlock));*/
+		eventHandler.publish(new DataEvent(latestRecordTime, FakeGpsOutput.this, dataBlock));*/
 
 		currentTrackPos += speed / dist;
 		return new double[] {lat, lon, alt};

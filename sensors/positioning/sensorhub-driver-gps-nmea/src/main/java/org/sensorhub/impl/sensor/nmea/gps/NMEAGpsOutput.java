@@ -17,7 +17,7 @@ package org.sensorhub.impl.sensor.nmea.gps;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 
 
@@ -71,7 +71,7 @@ public abstract class NMEAGpsOutput extends AbstractSensorOutput<NMEAGpsSensor>
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = msgTime;
-        eventHandler.publishEvent(new SensorDataEvent(msgTime, this, dataBlock));
+        eventHandler.publish(new DataEvent(msgTime, this, dataBlock));
     }
     
     

@@ -15,7 +15,7 @@
 package org.sensorhub.impl.sensor.simulatedcbrn;
 
 import net.opengis.swe.v20.*;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEHelper;
 
@@ -112,7 +112,7 @@ public class SimCBRNOutputMaintenance extends AbstractSensorOutput<SimCBRNSensor
 		//this method call is required to push data
 		latestRecord = dataBlock;
 		latestRecordTime = System.currentTimeMillis();
-		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, SimCBRNOutputMaintenance.this, dataBlock));
+		eventHandler.publish(new DataEvent(latestRecordTime, SimCBRNOutputMaintenance.this, dataBlock));
 	}
 
 

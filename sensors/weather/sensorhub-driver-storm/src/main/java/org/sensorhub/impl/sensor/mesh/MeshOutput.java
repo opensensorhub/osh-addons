@@ -16,7 +16,7 @@ package org.sensorhub.impl.sensor.mesh;
 
 import java.util.concurrent.TimeUnit;
 
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEHelper;
@@ -130,7 +130,7 @@ public class MeshOutput extends AbstractSensorOutput<MeshSensor>
 		// update latest record and send event
 		latestRecord = dataBlock;
 		latestRecordTime = System.currentTimeMillis();
-		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, MeshOutput.this, dataBlock));        
+		eventHandler.publish(new DataEvent(latestRecordTime, MeshOutput.this, dataBlock));        
 	}
 	
 

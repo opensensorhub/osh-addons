@@ -17,7 +17,7 @@ package org.sensorhub.impl.sensor.trupulse;
 
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.api.comm.ICommProvider;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -186,7 +186,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
             // update latest record and send event
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
-            eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, TruPulseOutput.this, dataBlock)); 
+            eventHandler.publish(new DataEvent(latestRecordTime, TruPulseOutput.this, dataBlock)); 
     	}
     	catch(IOException e)
     	{

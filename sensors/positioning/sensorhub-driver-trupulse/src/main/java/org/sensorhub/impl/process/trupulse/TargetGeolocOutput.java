@@ -90,7 +90,7 @@ public class TargetGeolocOutput implements IStreamingDataInterface
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();
-        eventHandler.publishEvent(new DataEvent(latestRecordTime, this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlock));
     }
 
 

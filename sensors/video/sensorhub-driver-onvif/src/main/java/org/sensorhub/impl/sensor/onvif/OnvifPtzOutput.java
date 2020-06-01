@@ -26,7 +26,7 @@ import net.opengis.swe.v20.TextEncoding;
 import org.onvif.ver10.schema.FloatRange;
 import org.onvif.ver10.schema.PTZVector;
 import org.onvif.ver10.schema.Profile;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.vast.data.SWEFactory;
@@ -132,7 +132,7 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
 
 						latestRecord = dataStruct.getData();
 						latestRecordTime = System.currentTimeMillis();
-						eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, OnvifPtzOutput.this, latestRecord));
+						eventHandler.publish(new DataEvent(latestRecordTime, OnvifPtzOutput.this, latestRecord));
                     }
                     catch (Exception e)
                     {
