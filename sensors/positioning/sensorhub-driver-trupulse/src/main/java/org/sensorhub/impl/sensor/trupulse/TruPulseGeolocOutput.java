@@ -16,8 +16,8 @@ package org.sensorhub.impl.sensor.trupulse;
 
 import java.util.Collections;
 import java.util.List;
-import org.sensorhub.api.common.Event;
-import org.sensorhub.api.common.IEventListener;
+import org.sensorhub.api.event.Event;
+import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
@@ -166,7 +166,7 @@ public class TruPulseGeolocOutput implements IStreamingDataInterface, IEventList
 
 
     @Override
-    public void handleEvent(Event<?> e)
+    public void handleEvent(Event e)
     {
         if (e instanceof DataEvent)
             eventHandler.publish(new DataEvent(e.getTimeStamp(), this, ((DataEvent)e).getRecords()));

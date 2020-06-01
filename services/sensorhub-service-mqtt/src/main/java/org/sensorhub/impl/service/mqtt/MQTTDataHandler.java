@@ -24,7 +24,7 @@ import net.opengis.swe.v20.DataStream;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.sensorhub.api.common.Event;
+import org.sensorhub.api.data.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
@@ -104,7 +104,7 @@ public class MQTTDataHandler implements IEventListener
 
 
     @Override
-    public void handleEvent(Event<?> e)
+    public void handleEvent(Event e)
     {
         if (e instanceof DataEvent)
         {

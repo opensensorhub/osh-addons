@@ -39,8 +39,8 @@ import org.onvif.ver10.schema.PTZVector;
 import org.onvif.ver10.schema.Profile;
 import org.onvif.ver10.schema.VideoSource;
 import org.sensorhub.api.common.CommandStatus;
-import org.sensorhub.api.common.Event;
-import org.sensorhub.api.common.IEventListener;
+import org.sensorhub.api.event.Event;
+import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
@@ -192,7 +192,7 @@ public class TestOnvifCameraDriver implements IEventListener
     }
 
     @Override
-    public void handleEvent(Event<?> e)
+    public void handleEvent(Event e)
     {
         assertTrue(e instanceof DataEvent);
         

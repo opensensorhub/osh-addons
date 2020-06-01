@@ -18,7 +18,7 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.DataType;
 import org.sensorhub.api.common.IEventHandler;
-import org.sensorhub.api.common.IEventListener;
+import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IDataProducerModule;
 import org.sensorhub.api.data.IStreamingDataInterface;

@@ -6,8 +6,8 @@ import java.util.UUID;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sensorhub.api.common.Event;
-import org.sensorhub.api.common.IEventListener;
+import org.sensorhub.api.event.Event;
+import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.vast.data.TextEncodingImpl;
@@ -120,7 +120,7 @@ public class TestHttpWeatherDriver extends HttpWeatherTestUtils implements IEven
      * Checks the output from OSH to ensure it matches what we sent to the HTTP Endpoint.
      */
 	@Override
-	public void handleEvent(Event<?> e) {
+	public void handleEvent(Event e) {
 		assertTrue(e instanceof DataEvent);
         DataEvent newDataEvent = (DataEvent)e;
         DataBlock record = newDataEvent.getRecords()[0];

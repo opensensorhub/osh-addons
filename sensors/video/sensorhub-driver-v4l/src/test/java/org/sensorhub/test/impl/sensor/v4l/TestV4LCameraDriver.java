@@ -23,8 +23,8 @@ import net.opengis.swe.v20.DataType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.sensorhub.api.common.Event;
-import org.sensorhub.api.common.IEventListener;
+import org.sensorhub.api.event.Event;
+import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.sensor.ISensorControlInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
@@ -195,7 +195,7 @@ public class TestV4LCameraDriver implements IEventListener
     
     
     @Override
-    public void handleEvent(Event<?> e)
+    public void handleEvent(Event e)
     {
         assertTrue(e instanceof DataEvent);
         DataEvent newDataEvent = (DataEvent)e;

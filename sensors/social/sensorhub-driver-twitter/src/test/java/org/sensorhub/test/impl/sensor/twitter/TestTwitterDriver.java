@@ -2,8 +2,8 @@ package org.sensorhub.test.impl.sensor.twitter;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sensorhub.api.common.Event;
-import org.sensorhub.api.common.IEventListener;
+import org.sensorhub.api.event.Event;
+import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
@@ -87,7 +87,7 @@ public class TestTwitterDriver implements IEventListener
 	}
 	
 	@Override
-	public void handleEvent(Event<?> e)
+	public void handleEvent(Event e)
 	{
 		assertTrue(e instanceof DataEvent);
 		DataEvent newDataEvent = (DataEvent)e;
