@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig;
 import org.sensorhub.impl.sensor.bno055.Bno055Config;
@@ -69,7 +69,7 @@ public class TestBno055DriverRxtx implements IEventListener
     {
         assertEquals("Wrong number of sensor outputs", 1, driver.getObservationOutputs().size());
         
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
@@ -93,7 +93,7 @@ public class TestBno055DriverRxtx implements IEventListener
     public void testSendMeasurements() throws Exception
     {
         System.out.println();
-        ISensorDataInterface output = driver.getObservationOutputs().get("imuData");
+        IStreamingDataInterface output = driver.getObservationOutputs().get("imuData");
         
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));

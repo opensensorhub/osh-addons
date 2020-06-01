@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherConfig;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor;
@@ -58,7 +58,7 @@ public class TestFakeWeatherDriver implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
@@ -80,7 +80,7 @@ public class TestFakeWeatherDriver implements IEventListener
     public void testSendMeasurements() throws Exception
     {
         System.out.println();
-        ISensorDataInterface gpsOutput = driver.getObservationOutputs().get("weather");
+        IStreamingDataInterface gpsOutput = driver.getObservationOutputs().get("weather");
         
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));

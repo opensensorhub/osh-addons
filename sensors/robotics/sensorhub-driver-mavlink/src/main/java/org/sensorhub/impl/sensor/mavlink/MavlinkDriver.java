@@ -22,7 +22,7 @@ import java.io.OutputStream;
 import java.util.Timer;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.mavlink.MavlinkConfig.MsgTypes;
@@ -391,7 +391,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
             }*/
             
             // let each registered output handle this message
-            for (ISensorDataInterface output: this.getAllOutputs().values())
+            for (IStreamingDataInterface output: this.getAllOutputs().values())
             {
                 MavlinkOutput nmeaOut = (MavlinkOutput)output;
                 nmeaOut.handleMessage(lastMsgTime, msg);

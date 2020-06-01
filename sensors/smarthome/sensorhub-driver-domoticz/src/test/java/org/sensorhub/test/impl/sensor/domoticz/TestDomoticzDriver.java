@@ -17,7 +17,7 @@ import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorControlInterface;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.domoticz.DomoticzConfig;
@@ -60,7 +60,7 @@ public class TestDomoticzDriver implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
@@ -83,7 +83,7 @@ public class TestDomoticzDriver implements IEventListener
     {
         System.out.println();
         
-        ISensorDataInterface dataOutput = driver.getObservationOutputs().get("DomoticzTempData");
+        IStreamingDataInterface dataOutput = driver.getObservationOutputs().get("DomoticzTempData");
 
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));

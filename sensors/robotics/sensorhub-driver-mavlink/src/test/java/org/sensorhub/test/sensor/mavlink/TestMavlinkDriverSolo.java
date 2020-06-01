@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.comm.UDPCommProviderConfig;
 import org.sensorhub.impl.sensor.mavlink.MavlinkConfig;
@@ -70,7 +70,7 @@ public class TestMavlinkDriverSolo implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
@@ -97,13 +97,13 @@ public class TestMavlinkDriverSolo implements IEventListener
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
         writer.setOutput(System.out);
         
-        ISensorDataInterface attOutput = driver.getObservationOutputs().get("platformAtt");
+        IStreamingDataInterface attOutput = driver.getObservationOutputs().get("platformAtt");
         attOutput.registerListener(this);
         
-        ISensorDataInterface locOutput = driver.getObservationOutputs().get("platformLoc");
+        IStreamingDataInterface locOutput = driver.getObservationOutputs().get("platformLoc");
         locOutput.registerListener(this);
         
-        ISensorDataInterface gimbalOutput = driver.getObservationOutputs().get("gimbalAtt");
+        IStreamingDataInterface gimbalOutput = driver.getObservationOutputs().get("gimbalAtt");
         gimbalOutput.registerListener(this);
         
         driver.start();

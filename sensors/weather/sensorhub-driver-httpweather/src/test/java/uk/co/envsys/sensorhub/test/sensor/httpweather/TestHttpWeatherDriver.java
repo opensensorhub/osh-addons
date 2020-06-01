@@ -8,7 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
@@ -45,7 +45,7 @@ public class TestHttpWeatherDriver extends HttpWeatherTestUtils implements IEven
      */
     @Test
 	public void testOutputDescMatchesConfig() throws Exception {
-		for (ISensorDataInterface di: driver.getObservationOutputs().values()) {
+		for (IStreamingDataInterface di: driver.getObservationOutputs().values()) {
             DataComponent dataMsg = di.getRecordDescription();
             if(DEBUG) {
 	            System.out.println();
@@ -63,7 +63,7 @@ public class TestHttpWeatherDriver extends HttpWeatherTestUtils implements IEven
      */
     @Test
 	public void testDisabledComponentNotInOutputDesc() throws Exception {
-		for (ISensorDataInterface di: driver.getObservationOutputs().values()) {
+		for (IStreamingDataInterface di: driver.getObservationOutputs().values()) {
             DataComponent dataMsg = di.getRecordDescription();
             assertTrue(!config.exposeSunrise);
             assertTrue(dataMsg.getComponent("sunrise") == null);
@@ -96,7 +96,7 @@ public class TestHttpWeatherDriver extends HttpWeatherTestUtils implements IEven
      */
     @Test
     public void testReceiveSendMeasurements() throws Exception {
-        ISensorDataInterface weatherOutput = driver.getObservationOutputs().get("httpweather");        
+        IStreamingDataInterface weatherOutput = driver.getObservationOutputs().get("httpweather");        
         String testValues = "?intemp=" + String.valueOf(IN_TEMP) + "&outtemp=" + String.valueOf(OUT_TEMP);
         if(DEBUG) {
         	System.out.println();

@@ -25,7 +25,7 @@ import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import javax.swing.JFrame;
 import net.opengis.swe.v20.DataBlock;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.vast.data.DataBlockMixed;
 
 
@@ -35,7 +35,7 @@ public class VideoTestHelper
     BufferedImage img;
     
     
-    public void initWindow(ISensorDataInterface videoOutput) throws Exception
+    public void initWindow(IStreamingDataInterface videoOutput) throws Exception
     {
         // prepare frame and buffered image
         int height = videoOutput.getRecordDescription().getComponent(1).getComponentCount();

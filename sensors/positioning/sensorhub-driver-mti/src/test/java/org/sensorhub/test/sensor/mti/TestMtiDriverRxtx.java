@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig;
 import org.sensorhub.impl.sensor.mti.MtiConfig;
@@ -65,7 +65,7 @@ public class TestMtiDriverRxtx implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
@@ -87,7 +87,7 @@ public class TestMtiDriverRxtx implements IEventListener
     public void testSendMeasurements() throws Exception
     {
         System.out.println();
-        ISensorDataInterface output = driver.getObservationOutputs().get("imuData");
+        IStreamingDataInterface output = driver.getObservationOutputs().get("imuData");
         
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));

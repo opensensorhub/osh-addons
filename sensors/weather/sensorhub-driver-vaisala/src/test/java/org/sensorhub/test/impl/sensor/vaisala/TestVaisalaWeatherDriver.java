@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig;
 import org.sensorhub.impl.sensor.vaisala.VaisalaWeatherConfig;
@@ -70,7 +70,7 @@ public class TestVaisalaWeatherDriver implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
@@ -92,11 +92,11 @@ public class TestVaisalaWeatherDriver implements IEventListener
     public void testSendMeasurements() throws Exception
     {
         System.out.println();
-        ISensorDataInterface gpsOutput = driver.getObservationOutputs().get("weather");
-        //ISensorDataInterface gpsOutput = driver.getObservationOutputs().get("wind");
-        //ISensorDataInterface gpsOutput = driver.getObservationOutputs().get("ptu");
-        //ISensorDataInterface gpsOutput = driver.getObservationOutputs().get("precipitation");
-        //ISensorDataInterface gpsOutput = driver.getObservationOutputs().get("supervisor");
+        IStreamingDataInterface gpsOutput = driver.getObservationOutputs().get("weather");
+        //IStreamingDataInterface gpsOutput = driver.getObservationOutputs().get("wind");
+        //IStreamingDataInterface gpsOutput = driver.getObservationOutputs().get("ptu");
+        //IStreamingDataInterface gpsOutput = driver.getObservationOutputs().get("precipitation");
+        //IStreamingDataInterface gpsOutput = driver.getObservationOutputs().get("supervisor");
         
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));

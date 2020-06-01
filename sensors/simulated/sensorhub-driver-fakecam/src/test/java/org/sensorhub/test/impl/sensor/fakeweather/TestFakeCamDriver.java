@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.fakecam.FakeCamConfig;
 import org.sensorhub.impl.sensor.fakecam.FakeCamSensor;
@@ -54,7 +54,7 @@ public class TestFakeCamDriver implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
@@ -77,7 +77,7 @@ public class TestFakeCamDriver implements IEventListener
     {
         System.out.println();
         
-        ISensorDataInterface camOutput = driver.getObservationOutputs().get("videoOut");        
+        IStreamingDataInterface camOutput = driver.getObservationOutputs().get("videoOut");        
         camOutput.registerListener(this);
         
         driver.start();

@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorControlInterface;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.v4l.V4LCameraDriver;
 import org.sensorhub.impl.sensor.v4l.V4LCameraConfig;
@@ -73,7 +73,7 @@ public class TestV4LCameraDriver implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             DataComponent dataMsg = di.getRecordDescription();
             new SWEUtils(SWEUtils.V2_0).writeComponent(System.out, dataMsg, false, true);
@@ -107,7 +107,7 @@ public class TestV4LCameraDriver implements IEventListener
     public void testCaptureAtDefaultRes() throws Exception
     {
         // register listener on data interface
-        ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+        IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
         assertTrue("No video output", di != null);
         di.registerListener(this);
         videoTestHelper.initWindow(di);
@@ -129,7 +129,7 @@ public class TestV4LCameraDriver implements IEventListener
     public void testChangeParams() throws Exception
     {
         // register listener on data interface
-        ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+        IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
         di.registerListener(this);
         
         int expectedWidth = config.defaultParams.imgWidth = 320;
@@ -151,7 +151,7 @@ public class TestV4LCameraDriver implements IEventListener
     public void testSendCommand() throws Exception
     {
         // register listener on data interface
-        ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+        IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
         di.registerListener(this);
         
         // start capture and wait until we receive the first frame

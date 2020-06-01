@@ -17,7 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.kinect.KinectConfig;
 import org.sensorhub.impl.sensor.kinect.KinectConfig.Mode;
@@ -77,7 +77,7 @@ public class TestKinectDriver implements IEventListener {
 		displayFrame.initialize("Depth Test", config, Mode.DEPTH, false);
 
 		// register listener on data interface
-		ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+		IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
 
 		assertTrue("No video output", di != null);
 
@@ -108,7 +108,7 @@ public class TestKinectDriver implements IEventListener {
 		driver.requestStart();
 
 		// register listener on data interface
-		ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+		IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
 
 		assertTrue("No video output", di != null);
 
@@ -162,7 +162,7 @@ public class TestKinectDriver implements IEventListener {
 		driver.requestStart();
 
 		// register listener on data interface
-		ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+		IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
 
 		assertTrue("No video output", di != null);
 
@@ -192,7 +192,7 @@ public class TestKinectDriver implements IEventListener {
 		driver.requestStart();
 
 		// register listener on data interface
-		ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+		IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
 
 		assertTrue("No video output", di != null);
 
@@ -223,7 +223,7 @@ public class TestKinectDriver implements IEventListener {
 		driver.requestStart();
 
 		// register listener on data interface
-		ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+		IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
 
 		assertTrue("No video output", di != null);
 
@@ -254,7 +254,7 @@ public class TestKinectDriver implements IEventListener {
 		driver.requestStart();
 
 		// register listener on data interface
-		ISensorDataInterface di = driver.getObservationOutputs().values().iterator().next();
+		IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
 
 		assertTrue("No video output", di != null);
 

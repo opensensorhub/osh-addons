@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorControlInterface;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.foscam.FoscamConfig;
 import org.sensorhub.impl.sensor.foscam.FoscamConfig.ResolutionEnum;
@@ -80,7 +80,7 @@ public class TestFoscamCameraDriver implements IEventListener {
 
 	@Test
 	public void testGetOutputDesc() throws Exception {
-		for (ISensorDataInterface di : driver.getObservationOutputs().values()) {
+		for (IStreamingDataInterface di : driver.getObservationOutputs().values()) {
 			System.out.println();
 			DataComponent dataMsg = di.getRecordDescription();
 			new SWEUtils(SWEUtils.V2_0).writeComponent(System.out, dataMsg, false, true);
@@ -96,7 +96,7 @@ public class TestFoscamCameraDriver implements IEventListener {
 
 	@Test
 	public void testVideoOutput() throws Exception {
-		ISensorDataInterface camOutput = driver.getObservationOutputs().get("video");
+		IStreamingDataInterface camOutput = driver.getObservationOutputs().get("video");
 		camOutput.registerListener(this);
 
 		driver.start();

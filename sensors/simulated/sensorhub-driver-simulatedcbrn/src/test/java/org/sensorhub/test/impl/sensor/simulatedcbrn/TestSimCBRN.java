@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.simulatedcbrn.SimCBRNConfig;
 import org.sensorhub.impl.sensor.simulatedcbrn.SimCBRNSensor;
@@ -67,7 +67,7 @@ public class TestSimCBRN implements IEventListener
 	@Test
 	public void testGetOutputDesc() throws Exception
 	{
-		for (ISensorDataInterface di: driver.getObservationOutputs().values())
+		for (IStreamingDataInterface di: driver.getObservationOutputs().values())
 		{
 			System.out.println();
 			DataComponent dataMsg = di.getRecordDescription();
@@ -89,11 +89,11 @@ public class TestSimCBRN implements IEventListener
 	public void testSendMeasurements() throws Exception
 	{
 		System.out.println();
-		ISensorDataInterface idOutput = driver.getObservationOutputs().get("ID");
-		ISensorDataInterface alertOutput = driver.getObservationOutputs().get("ALERTS");
-		//ISensorDataInterface readingsOutput = driver.getObservationOutputs().get("READGS");
-		ISensorDataInterface maintOutput = driver.getObservationOutputs().get("MAINT");
-		ISensorDataInterface statusOutput = driver.getObservationOutputs().get("STATUS");
+		IStreamingDataInterface idOutput = driver.getObservationOutputs().get("ID");
+		IStreamingDataInterface alertOutput = driver.getObservationOutputs().get("ALERTS");
+		//IStreamingDataInterface readingsOutput = driver.getObservationOutputs().get("READGS");
+		IStreamingDataInterface maintOutput = driver.getObservationOutputs().get("MAINT");
+		IStreamingDataInterface statusOutput = driver.getObservationOutputs().get("STATUS");
 
 
 		writer = new AsciiDataWriter();

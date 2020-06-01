@@ -22,7 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.rtpcam.RTPCameraConfig;
 import org.sensorhub.impl.sensor.rtpcam.RTPCameraDriver;
@@ -61,7 +61,7 @@ public class TestRTPCameraDriverSolo implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
@@ -82,7 +82,7 @@ public class TestRTPCameraDriverSolo implements IEventListener
     @Test
     public void testSendMeasurements() throws Exception
     {        
-        ISensorDataInterface camOutput = driver.getObservationOutputs().get("video");
+        IStreamingDataInterface camOutput = driver.getObservationOutputs().get("video");
         camOutput.registerListener(this);
         
         driver.start();

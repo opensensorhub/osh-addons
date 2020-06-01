@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 
 
@@ -192,7 +192,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
             // let each registered output handle this message
             if (activeMessages.contains(msgID))
             {
-                for (ISensorDataInterface output: this.getAllOutputs().values())
+                for (IStreamingDataInterface output: this.getAllOutputs().values())
                 {
                     NMEAGpsOutput nmeaOut = (NMEAGpsOutput)output;
                     nmeaOut.handleMessage(msgTime, msgID, msg);

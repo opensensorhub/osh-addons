@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
@@ -66,7 +66,7 @@ public class TestAvlDriverSimu implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
@@ -93,7 +93,7 @@ public class TestAvlDriverSimu implements IEventListener
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
         writer.setOutput(System.out);
         
-        ISensorDataInterface locOutput = driver.getObservationOutputs().get("avlData");
+        IStreamingDataInterface locOutput = driver.getObservationOutputs().get("avlData");
         locOutput.registerListener(this);
         
         driver.start();

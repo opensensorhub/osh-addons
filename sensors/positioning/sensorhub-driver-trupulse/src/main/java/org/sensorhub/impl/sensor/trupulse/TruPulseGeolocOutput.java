@@ -20,7 +20,7 @@ import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IStreamingDataInterface;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.SensorException;
@@ -38,7 +38,7 @@ import net.opengis.swe.v20.DataEncoding;
  * @author Alex Robin <alex.robin@sensiasoftware.com>
  * @since Apr 10, 2019
  */
-public class TruPulseGeolocOutput implements ISensorDataInterface, IEventListener
+public class TruPulseGeolocOutput implements IStreamingDataInterface, IEventListener
 {
     TruPulseWithGeolocSensor parentSensor;
     IStreamingDataInterface processOutput;

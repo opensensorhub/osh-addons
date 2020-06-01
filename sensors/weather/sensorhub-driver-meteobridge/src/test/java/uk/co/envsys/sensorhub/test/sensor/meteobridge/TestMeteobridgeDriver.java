@@ -14,7 +14,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 
 import org.vast.data.TextEncodingImpl;
@@ -52,7 +52,7 @@ public class TestMeteobridgeDriver implements IEventListener {
 	@Test
 	public void testOutputDescMatchesConfig() throws Exception {
 		// Just print the descriptions for now
-		for (ISensorDataInterface di: driver.getObservationOutputs().values()) {
+		for (IStreamingDataInterface di: driver.getObservationOutputs().values()) {
             DataComponent dataMsg = di.getRecordDescription();
             if(DEBUG) {
             	System.out.println();
@@ -87,7 +87,7 @@ public class TestMeteobridgeDriver implements IEventListener {
 	
 	@Test
 	public void testDisabledComponentNotInOutputDesc() throws Exception {
-		for (ISensorDataInterface di: driver.getObservationOutputs().values()) {
+		for (IStreamingDataInterface di: driver.getObservationOutputs().values()) {
             DataComponent dataMsg = di.getRecordDescription();
             assertTrue(!config.sol0evoEnabled);
             assertTrue(dataMsg.getComponent("sol0evo") == null);
@@ -117,7 +117,7 @@ public class TestMeteobridgeDriver implements IEventListener {
     	// Unimplmented, need sample meteobridge output from livedataxml.cgi
     	// register this as listener
     	// start driver (log/respond to events)
-    	ISensorDataInterface meteobridgeOutput = driver.getObservationOutputs().get("weather");
+    	IStreamingDataInterface meteobridgeOutput = driver.getObservationOutputs().get("weather");
     	
     	writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));

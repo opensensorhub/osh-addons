@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.station.metar.MetarConfig;
 import org.sensorhub.impl.sensor.station.metar.MetarSensor;
@@ -64,7 +64,7 @@ public class TestWeatherStation implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
@@ -86,9 +86,9 @@ public class TestWeatherStation implements IEventListener
     public void testSendMeasurements() throws Exception
     {
         System.out.println();
-        Map<String, ? extends ISensorDataInterface> map = driver.getObservationOutputs();
+        Map<String, ? extends IStreamingDataInterface> map = driver.getObservationOutputs();
         System.err.println(map);
-        ISensorDataInterface metarOutput = driver.getObservationOutputs().get("metarWeather");
+        IStreamingDataInterface metarOutput = driver.getObservationOutputs().get("metarWeather");
         
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));

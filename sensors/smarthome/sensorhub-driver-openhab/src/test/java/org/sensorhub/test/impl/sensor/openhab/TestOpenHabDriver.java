@@ -14,7 +14,7 @@ import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.ISensorControlInterface;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.openhab.OpenHabConfig;
 import org.sensorhub.impl.sensor.openhab.OpenHabDriver;
@@ -56,7 +56,7 @@ public class TestOpenHabDriver implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
@@ -79,7 +79,7 @@ public class TestOpenHabDriver implements IEventListener
     {
         System.out.println();
         
-        ISensorDataInterface dataOutput = driver.getObservationOutputs().get("OpenHABUltravioletData");
+        IStreamingDataInterface dataOutput = driver.getObservationOutputs().get("OpenHABUltravioletData");
 
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));

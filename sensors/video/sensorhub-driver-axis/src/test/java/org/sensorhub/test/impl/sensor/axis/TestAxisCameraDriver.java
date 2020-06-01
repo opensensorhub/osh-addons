@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorControlInterface;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.axis.AxisCameraConfig;
@@ -97,7 +97,7 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             DataComponent dataMsg = di.getRecordDescription();
             new SWEUtils(SWEUtils.V2_0).writeComponent(System.out, dataMsg, false, true);
@@ -128,7 +128,7 @@ public class TestAxisCameraDriver implements IEventListener
     public void testVideoCapture() throws Exception
     {
         // register listener on data interface
-        ISensorDataInterface di = driver.getObservationOutputs().get("video1");
+        IStreamingDataInterface di = driver.getObservationOutputs().get("video1");
         assertTrue("No video output", di != null);
     	di.registerListener(this);
     	videoTestHelper.initWindow(di);
@@ -151,7 +151,7 @@ public class TestAxisCameraDriver implements IEventListener
     public void testPTZSettingsOutput() throws Exception
     {
         // register listener on data interface
-        ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
+        IStreamingDataInterface di = driver.getObservationOutputs().get("ptzOutput");
         assertTrue("No ptz output", di != null);
         di.registerListener(this);
                 
@@ -168,9 +168,9 @@ public class TestAxisCameraDriver implements IEventListener
     public void testSendPTZCommand() throws Exception
     {
         // register listeners
-    	ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
+    	IStreamingDataInterface di = driver.getObservationOutputs().get("ptzOutput");
         di.registerListener(this);
-        ISensorDataInterface di2 = driver.getObservationOutputs().get("video1");
+        IStreamingDataInterface di2 = driver.getObservationOutputs().get("video1");
         di2.registerListener(this);
         videoTestHelper.initWindow(di2);
         

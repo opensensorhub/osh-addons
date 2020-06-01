@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig;
 import org.sensorhub.impl.sensor.uahweather.UAHweatherConfig;
@@ -69,7 +69,7 @@ public class TestUAHweatherDriver implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: sensor.getObservationOutputs().values())
+        for (IStreamingDataInterface di: sensor.getObservationOutputs().values())
         {
             System.out.println();
             DataComponent dataMsg = di.getRecordDescription();
@@ -91,7 +91,7 @@ public class TestUAHweatherDriver implements IEventListener
     public void testSendMeasurements() throws Exception
     {
         System.out.println();
-        ISensorDataInterface weatherOutput = sensor.getObservationOutputs().get("UAH Weather");
+        IStreamingDataInterface weatherOutput = sensor.getObservationOutputs().get("UAH Weather");
         writer = new AsciiDataWriter();
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
         writer.setDataComponents(weatherOutput.getRecordDescription());

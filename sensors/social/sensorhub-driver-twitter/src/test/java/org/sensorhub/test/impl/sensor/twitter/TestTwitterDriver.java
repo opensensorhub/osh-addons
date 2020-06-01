@@ -5,7 +5,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.twitter.TwitterConfig;
 import org.sensorhub.impl.sensor.twitter.TwitterSensor;
@@ -45,7 +45,7 @@ public class TestTwitterDriver implements IEventListener
 	@Test
 	public void testGetOutputDesc() throws Exception
 	{
-		for (ISensorDataInterface di: driver.getObservationOutputs().values())
+		for (IStreamingDataInterface di: driver.getObservationOutputs().values())
 		{
 			System.out.println();
 			DataComponent dataMsg = di.getRecordDescription();
@@ -66,7 +66,7 @@ public class TestTwitterDriver implements IEventListener
 	{
 		System.out.println();
 
-		ISensorDataInterface twitterOutput = driver.getObservationOutputs().get("Twitter_Output");
+		IStreamingDataInterface twitterOutput = driver.getObservationOutputs().get("Twitter_Output");
 		twitterOutput.registerListener(this);
 
 		/*

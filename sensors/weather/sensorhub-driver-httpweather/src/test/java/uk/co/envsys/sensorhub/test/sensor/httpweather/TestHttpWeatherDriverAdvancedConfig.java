@@ -9,7 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.vast.data.TextEncodingImpl;
 import org.vast.swe.AsciiDataWriter;
@@ -50,7 +50,7 @@ public class TestHttpWeatherDriverAdvancedConfig extends HttpWeatherTestUtils im
     @Test
 	public void testOutputDescMatchesConfig() throws Exception {
 		// Just print the descriptions for now
-		for (ISensorDataInterface di: driver.getObservationOutputs().values()) {
+		for (IStreamingDataInterface di: driver.getObservationOutputs().values()) {
             DataComponent dataMsg = di.getRecordDescription();
             if(DEBUG) {
             	System.out.println();
@@ -78,7 +78,7 @@ public class TestHttpWeatherDriverAdvancedConfig extends HttpWeatherTestUtils im
     
     @Test
     public void testReceiveSendMeasurements() throws Exception {
-        ISensorDataInterface weatherOutput = driver.getObservationOutputs().get("httpweather");
+        IStreamingDataInterface weatherOutput = driver.getObservationOutputs().get("httpweather");
         if(DEBUG) {
 	        System.out.println();
 	        writer = new AsciiDataWriter();

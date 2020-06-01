@@ -9,7 +9,7 @@ import org.junit.Test;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.comm.rxtx.RxtxSerialCommProviderConfig;
 import org.sensorhub.impl.sensor.trek1000.Trek1000Config;
@@ -49,7 +49,7 @@ public class TestTrek1000Rxtx implements IEventListener
 	@Test
 	public void testGetOutputDesc() throws Exception
 	{
-		for (ISensorDataInterface di: driver.getObservationOutputs().values())
+		for (IStreamingDataInterface di: driver.getObservationOutputs().values())
 		{
 			System.out.println();
 			DataComponent dataMsg = di.getRecordDescription();
@@ -76,9 +76,9 @@ public class TestTrek1000Rxtx implements IEventListener
         writer.setDataEncoding(new TextEncodingImpl(",", "\n"));
         writer.setOutput(System.out);
         
-        //ISensorDataInterface rangeOutput = driver.getObservationOutputs().get("ranges");
+        //IStreamingDataInterface rangeOutput = driver.getObservationOutputs().get("ranges");
         //rangeOutput.registerListener(this);
-        ISensorDataInterface locOutput = driver.getObservationOutputs().get("xyzLoc");
+        IStreamingDataInterface locOutput = driver.getObservationOutputs().get("xyzLoc");
         locOutput.registerListener(this);
         
         driver.start();

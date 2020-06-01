@@ -42,7 +42,7 @@ import org.sensorhub.api.common.CommandStatus;
 import org.sensorhub.api.common.Event;
 import org.sensorhub.api.common.IEventListener;
 import org.sensorhub.api.sensor.ISensorControlInterface;
-import org.sensorhub.api.sensor.ISensorDataInterface;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.onvif.OnvifCameraConfig;
@@ -94,7 +94,7 @@ public class TestOnvifCameraDriver implements IEventListener
     @Test
     public void testGetOutputDesc() throws Exception
     {
-        for (ISensorDataInterface di: driver.getObservationOutputs().values())
+        for (IStreamingDataInterface di: driver.getObservationOutputs().values())
         {
             DataComponent dataMsg = di.getRecordDescription();
             new SWEUtils(SWEUtils.V2_0).writeComponent(System.out, dataMsg, false, true);
@@ -124,11 +124,11 @@ public class TestOnvifCameraDriver implements IEventListener
     	Map<String, ISensorControlInterface> cmdInputs = driver.getCommandInputs();
     	assertTrue(cmdInputs.containsKey("ptzControl"));
     	
-    	Map<String, ISensorDataInterface> outputs = driver.getAllOutputs();
+    	Map<String, IStreamingDataInterface> outputs = driver.getAllOutputs();
     	assertTrue(outputs.containsKey("ptzOutput"));
     	
         // register listeners
-    	ISensorDataInterface di = driver.getObservationOutputs().get("ptzOutput");
+    	IStreamingDataInterface di = driver.getObservationOutputs().get("ptzOutput");
         di.registerListener(this);
         
         // get ptz control interface
