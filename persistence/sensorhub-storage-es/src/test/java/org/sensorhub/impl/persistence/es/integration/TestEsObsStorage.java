@@ -32,7 +32,7 @@ import org.junit.Before;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.persistence.es.ESBasicStorageConfig;
 import org.sensorhub.impl.persistence.es.ESObsStorageImpl;
-import org.sensorhub.test.persistence.AbstractTestObsStorage;
+import org.sensorhub.impl.persistence.AbstractTestObsStorage;
 
 
 public class TestEsObsStorage extends AbstractTestObsStorage<ESObsStorageImpl>

@@ -27,7 +27,7 @@ import org.sensorhub.api.persistence.ObsFilter;
 import org.sensorhub.api.persistence.ObsKey;
 import org.sensorhub.impl.persistence.h2.MVMultiStorageImpl;
 import org.sensorhub.impl.persistence.h2.MVStorageConfig;
-import org.sensorhub.test.persistence.AbstractTestMultiObsStorage;
+import org.sensorhub.impl.persistence.AbstractTestMultiObsStorage;
 import org.vast.data.TextEncodingImpl;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.helper.GeoPosHelper;

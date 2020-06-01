@@ -26,7 +26,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.sensorhub.impl.persistence.es.ESBasicStorageImpl;
 import org.sensorhub.impl.persistence.es.ESBasicStorageConfig;
-import org.sensorhub.test.persistence.AbstractTestBasicStorage;
+import org.sensorhub.impl.persistence.AbstractTestBasicStorage;
 import org.sensorhub.utils.FileUtils;
 
 

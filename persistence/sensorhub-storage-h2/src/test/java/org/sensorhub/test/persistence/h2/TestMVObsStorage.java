@@ -19,7 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.sensorhub.impl.persistence.h2.MVObsStorageImpl;
 import org.sensorhub.impl.persistence.h2.MVStorageConfig;
-import org.sensorhub.test.persistence.AbstractTestObsStorage;
+import org.sensorhub.impl.persistence.AbstractTestObsStorage;
 
 
 public class TestMVObsStorage extends AbstractTestObsStorage<MVObsStorageImpl>

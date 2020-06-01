@@ -32,7 +32,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.IObsStorageModule;
 import org.sensorhub.impl.persistence.es.ESBasicStorageConfig;
 import org.sensorhub.impl.persistence.es.ESMultiSourceStorageImpl;
-import org.sensorhub.test.persistence.AbstractTestMultiObsStorage;
+import org.sensorhub.impl.persistence.AbstractTestMultiObsStorage;
 
 
 public class TestEsMultiSourceStorage extends AbstractTestMultiObsStorage<IObsStorageModule<ESBasicStorageConfig>>
