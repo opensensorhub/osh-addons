@@ -26,7 +26,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IDataProducerModule;
 import org.sensorhub.api.data.IStreamingDataInterface;
-import org.sensorhub.api.sensor.ISensorControlInterface;
+import org.sensorhub.api.data.IStreamingControlInterface;
 import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.impl.SensorHub;
 import org.vast.data.TextEncodingImpl;
@@ -62,7 +62,7 @@ public class CamPtzGeoPointingOutput implements IStreamingDataInterface
     boolean useSps;
     SPSUtils utils = new SPSUtils();
     DescribeTaskingResponse dtResp;
-    ISensorControlInterface controlInput;
+    IStreamingControlInterface controlInput;
     int commandID;
     DataBlock commandData;
     

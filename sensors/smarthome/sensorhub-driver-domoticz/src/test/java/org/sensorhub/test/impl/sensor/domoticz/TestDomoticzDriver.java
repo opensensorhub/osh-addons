@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorControlInterface;
+import org.sensorhub.api.data.IStreamingControlInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.security.ClientAuth;
@@ -107,7 +107,7 @@ public class TestDomoticzDriver implements IEventListener
 //    public void testSwitchOrSelectorCommand() throws Exception
 //    {  
 //        // get control interface
-//        ISensorControlInterface ci = driver.getCommandInputs().get("selectorControl");
+//        IStreamingControlInterface ci = driver.getCommandInputs().get("selectorControl");
 //        DataComponent commandDesc = ci.getCommandDescription().copy();
 //    	DataBlock commandData;
 //    	

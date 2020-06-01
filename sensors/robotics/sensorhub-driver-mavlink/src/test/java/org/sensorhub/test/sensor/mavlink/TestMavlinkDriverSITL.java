@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorControlInterface;
+import org.sensorhub.api.data.IStreamingControlInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.comm.UDPCommProviderConfig;
@@ -120,7 +120,7 @@ public class TestMavlinkDriverSITL implements IEventListener
     @Test
     public void testTakeOffCommand() throws Exception
     {
-        ISensorControlInterface navControl = driver.getCommandInputs().get("navCommands");
+        IStreamingControlInterface navControl = driver.getCommandInputs().get("navCommands");
         DataChoice cmdChoice = (DataChoice)navControl.getCommandDescription().copy();
         cmdChoice.assignNewDataBlock();
         cmdChoice.setSelectedItem(CmdTypes.TAKEOFF.name());
@@ -135,7 +135,7 @@ public class TestMavlinkDriverSITL implements IEventListener
         testTakeOffCommand();
         Thread.sleep(5000);
         
-        ISensorControlInterface navControl = driver.getCommandInputs().get("navCommands");
+        IStreamingControlInterface navControl = driver.getCommandInputs().get("navCommands");
         DataChoice cmdChoice = (DataChoice)navControl.getCommandDescription().copy();
         cmdChoice.assignNewDataBlock();
         cmdChoice.setSelectedItem(CmdTypes.LOITER.name());
@@ -152,7 +152,7 @@ public class TestMavlinkDriverSITL implements IEventListener
         //testTakeOffCommand();
         //Thread.sleep(5000);
         
-        ISensorControlInterface navControl = driver.getCommandInputs().get("navCommands");
+        IStreamingControlInterface navControl = driver.getCommandInputs().get("navCommands");
         DataChoice cmdChoice = (DataChoice)navControl.getCommandDescription().copy();
         cmdChoice.assignNewDataBlock();
         cmdChoice.setSelectedItem(CmdTypes.GOTO_LLA.name());
@@ -170,7 +170,7 @@ public class TestMavlinkDriverSITL implements IEventListener
         //testTakeOffCommand();
         //Thread.sleep(5000);
         
-        ISensorControlInterface navControl = driver.getCommandInputs().get("navCommands");
+        IStreamingControlInterface navControl = driver.getCommandInputs().get("navCommands");
         DataChoice cmdChoice = (DataChoice)navControl.getCommandDescription().copy();
         cmdChoice.assignNewDataBlock();
         cmdChoice.setSelectedItem(CmdTypes.GOTO_ENU.name());
@@ -190,7 +190,7 @@ public class TestMavlinkDriverSITL implements IEventListener
         
         for (int i=0; i<30; i++)
         {
-            ISensorControlInterface navControl = driver.getCommandInputs().get("navCommands");
+            IStreamingControlInterface navControl = driver.getCommandInputs().get("navCommands");
             DataChoice cmdChoice = (DataChoice)navControl.getCommandDescription().copy();
             cmdChoice.assignNewDataBlock();
             cmdChoice.setSelectedItem(CmdTypes.VELOCITY.name());
@@ -212,7 +212,7 @@ public class TestMavlinkDriverSITL implements IEventListener
         float yaw = 0;
         for (int i=0; i<30; i++)
         {
-            ISensorControlInterface navControl = driver.getCommandInputs().get("navCommands");
+            IStreamingControlInterface navControl = driver.getCommandInputs().get("navCommands");
             DataChoice cmdChoice = (DataChoice)navControl.getCommandDescription().copy();
             cmdChoice.assignNewDataBlock();
             cmdChoice.setSelectedItem(CmdTypes.HEADING.name());
@@ -228,7 +228,7 @@ public class TestMavlinkDriverSITL implements IEventListener
     @Test
     public void testRtlCommand() throws Exception
     {
-        ISensorControlInterface navControl = driver.getCommandInputs().get("navCommands");
+        IStreamingControlInterface navControl = driver.getCommandInputs().get("navCommands");
         DataChoice cmdChoice = (DataChoice)navControl.getCommandDescription().copy();
         cmdChoice.assignNewDataBlock();
         cmdChoice.setSelectedItem(CmdTypes.RTL.name());
@@ -240,7 +240,7 @@ public class TestMavlinkDriverSITL implements IEventListener
     @Test
     public void testLandCommand() throws Exception
     {
-        ISensorControlInterface navControl = driver.getCommandInputs().get("navCommands");
+        IStreamingControlInterface navControl = driver.getCommandInputs().get("navCommands");
         DataChoice cmdChoice = (DataChoice)navControl.getCommandDescription().copy();
         cmdChoice.assignNewDataBlock();
         cmdChoice.setSelectedItem(CmdTypes.LAND.name());

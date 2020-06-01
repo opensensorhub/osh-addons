@@ -24,7 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
-import org.sensorhub.api.sensor.ISensorControlInterface;
+import org.sensorhub.api.data.IStreamingControlInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.security.ClientAuth;
@@ -108,7 +108,7 @@ public class TestAxisCameraDriver implements IEventListener
     @Test
     public void testGetCommandDesc() throws Exception
     {
-        for (ISensorControlInterface ci: driver.getCommandInputs().values())
+        for (IStreamingControlInterface ci: driver.getCommandInputs().values())
         {
             DataComponent commandMsg = ci.getCommandDescription();
             new SWEUtils(SWEUtils.V2_0).writeComponent(System.out, commandMsg, false, true);
@@ -175,7 +175,7 @@ public class TestAxisCameraDriver implements IEventListener
         videoTestHelper.initWindow(di2);
         
         // get ptz control interface
-        ISensorControlInterface ci = driver.getCommandInputs().get("ptzControl");
+        IStreamingControlInterface ci = driver.getCommandInputs().get("ptzControl");
         DataComponent commandDesc = ci.getCommandDescription().copy();
         
         // start capture and send commands

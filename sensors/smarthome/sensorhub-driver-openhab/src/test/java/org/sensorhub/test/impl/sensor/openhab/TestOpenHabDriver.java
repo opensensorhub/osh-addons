@@ -13,7 +13,7 @@ import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.sensor.ISensorControlInterface;
+import org.sensorhub.api.data.IStreamingControlInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.openhab.OpenHabConfig;
@@ -104,7 +104,7 @@ public class TestOpenHabDriver implements IEventListener
 //    public void testSwitchCommand() throws Exception
 //    {  
 //        // get control interface
-//        ISensorControlInterface ci = driver.getCommandInputs().get("switchControl");
+//        IStreamingControlInterface ci = driver.getCommandInputs().get("switchControl");
 //        DataComponent commandDesc = ci.getCommandDescription().copy();
 //    	DataBlock commandData;
 //    	
@@ -124,7 +124,7 @@ public class TestOpenHabDriver implements IEventListener
 //    public void testDimmerCommand() throws Exception
 //    {  
 //        // get control interface
-//        ISensorControlInterface ci = driver.getCommandInputs().get("dimmerControl");
+//        IStreamingControlInterface ci = driver.getCommandInputs().get("dimmerControl");
 //        DataComponent commandDesc = ci.getCommandDescription().copy();
 //    	DataBlock commandData;
 //    	

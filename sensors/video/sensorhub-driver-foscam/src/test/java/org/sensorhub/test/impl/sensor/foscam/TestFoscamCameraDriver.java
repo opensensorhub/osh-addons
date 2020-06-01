@@ -24,7 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
-import org.sensorhub.api.sensor.ISensorControlInterface;
+import org.sensorhub.api.data.IStreamingControlInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.foscam.FoscamConfig;
@@ -113,7 +113,7 @@ public class TestFoscamCameraDriver implements IEventListener {
 	@Test
 	public void testRelPTZCommand() throws Exception {
 		// get ptz control interface
-		ISensorControlInterface ci = driver.getCommandInputs().get("ptzControl");
+		IStreamingControlInterface ci = driver.getCommandInputs().get("ptzControl");
 		DataComponent commandDesc = ci.getCommandDescription().copy();
 		DataBlock commandData;
 
