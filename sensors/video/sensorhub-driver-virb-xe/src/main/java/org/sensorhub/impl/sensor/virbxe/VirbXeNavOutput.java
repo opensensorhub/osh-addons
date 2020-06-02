@@ -105,7 +105,7 @@ public class VirbXeNavOutput extends AbstractSensorOutput<VirbXeDriver>
         navData.addComponent("accel", accel);
       
         // Acceleration Magnitude 
-        Quantity accelMag = fac.newQuantity(GeoPosHelper.DEF_ACCELERATION_MAG, 
+        Quantity accelMag = fac.newQuantity(GeoPosHelper.DEF_ACCELERATION, 
         		"Acceleration Magnitude", 
         		"Magnitude of the acceleration Vector", 
         		"m/s2", DataType.FLOAT);

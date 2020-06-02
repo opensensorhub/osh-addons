@@ -29,6 +29,7 @@ import net.opengis.swe.v20.Vector;
 import org.sensorhub.algo.vecmath.Mat3d;
 import org.vast.process.SMLException;
 import org.vast.sensorML.ExecutableProcessImpl;
+import org.vast.swe.helper.VectorHelper;
 
 
 /**
@@ -55,7 +56,7 @@ public class Euler2Mat3_Process extends ExecutableProcessImpl
         VecMathHelper sweHelper = new VecMathHelper();
         
         // create euler input
-        Vector eulerData = sweHelper.newEulerAngles();
+        Vector eulerData = sweHelper.newEulerAngles(VectorHelper.DEF_ORIENTATION_EULER, "rad");
         eulerData.setReferenceFrame(null);
         inputData.add("orientation", eulerData);
         r1Data = (Quantity)eulerData.getComponent(0);
@@ -63,7 +64,7 @@ public class Euler2Mat3_Process extends ExecutableProcessImpl
         r3Data = (Quantity)eulerData.getComponent(2);
         
         // create matrix output
-        outputMatrix = sweHelper.newMatrix(VecMathHelper.DEF_ROT_MATRIX, null, 3, 3);
+        outputMatrix = sweHelper.newMatrix(VectorHelper.DEF_ROT_MATRIX, null, 3, 3);
         outputData.add("rotMatrix", outputMatrix);
         
         // create rot order param

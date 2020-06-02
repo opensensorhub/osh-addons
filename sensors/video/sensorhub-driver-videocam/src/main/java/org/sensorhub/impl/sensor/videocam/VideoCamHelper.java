@@ -20,7 +20,7 @@ import java.util.Collection;
 import org.vast.cdm.common.CDMException;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
-
+import org.vast.swe.helper.RasterHelper;
 import net.opengis.swe.v20.AllowedTokens;
 import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.BinaryBlock;
@@ -47,7 +47,7 @@ import net.opengis.swe.v20.Time;
  * @author Mike Botts <mike.botts@botts-inc.com>
  * @since March 2016
  */
-public class VideoCamHelper extends SWEHelper
+public class VideoCamHelper extends RasterHelper
 {
     public static final String DEF_VIDEOFRAME = getPropertyUri("VideoFrame");
 
@@ -282,26 +282,10 @@ public class VideoCamHelper extends SWEHelper
         return newVideoOutputCODEC(name, width, height, "H264");
     }
     
-    
-    public DataArray newGrayscaleImage(int width, int height) {
-    	
-        DataArray imgArray = newDataArray(height);
-        imgArray.setDefinition(SWEConstants.DEF_IMAGE);
-        DataArray imgRow = newDataArray(width);
-                
-        DataRecord imgPixel = newDataRecord(3);
-
-        imgPixel.addComponent("intensity", newCount(DataType.BYTE));
-        
-        imgRow.addComponent("pixel", imgPixel);
-        imgArray.setElementType("row", imgRow);
-        return imgArray;    	
-    }
-    
     public DataRecord newGrayscaleFrame(String name, String definition, int width, int height) {
     	
         Time timeStamp = newTimeStampIsoUTC();        
-        DataArray imgArr = newGrayscaleImage(width, height);
+        DataArray imgArr = newGrayscaleImage(width, height, DataType.BYTE);
         imgArr.setName("img");
         
         DataRecord dataStruct = wrapWithTimeStamp(timeStamp, imgArr);
