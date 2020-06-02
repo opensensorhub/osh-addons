@@ -21,7 +21,7 @@ public class TestSensorHub
         //SensorHub.main(new String[] {"src/main/resources/config_empty_sost_with_storage.json", "storage"});
         //SensorHub.main(new String[] {"src/main/resources/config_video_tls.json", "storage"});
         //SensorHub.main(new String[] {"src/main/resources/config_sat_process.json", "storage"});
-//        SensorHub.main(new String[] {"src/main/resources/config_metar_with_storage.json", "storage"});
+        SensorHub.main(new String[] {"src/main/resources/config_metar_with_storage.json", "storage"});
 //        SensorHub.main(new String[] {"src/main/resources/config_avl_with_storage.json", "storage"});
         //SensorHub.main(new String[] {"src/main/resources/config_avl_with_es.json", "storage"});
         //SensorHub.main(new String[] {"src/main/resources/config_empty_ble.json", "storage"});
@@ -37,7 +37,6 @@ public class TestSensorHub
         //SensorHub.main(new String[] {"src/main/resources/config_video_dahua.json", "storage"});
         //SensorHub.main(new String[] {"src/main/resources/config_solo.json", "storage"});
         //SensorHub.main(new String[] {"src/main/resources/config_uwb.json", "storage"});       
-    	SensorHub.main(new String[] {"src/main/resources/config_intellisense.json", "storage"});       
     }
 
 }
