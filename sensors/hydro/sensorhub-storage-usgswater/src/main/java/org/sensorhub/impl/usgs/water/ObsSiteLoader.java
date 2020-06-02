@@ -109,6 +109,8 @@ public class ObsSiteLoader
         // constant options
         buf.append("dataType=iv&"); // site with IV data available
         buf.append("siteOutput=expanded&"); // get all info
+        if(filter.isoPeriod != null)
+        	buf.append("period=" + filter.isoPeriod + "&");
         buf.append("format=rdb"); // output format
         
         return buf.toString();
