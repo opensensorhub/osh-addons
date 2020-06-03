@@ -93,6 +93,7 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig>
 		try {
 			ObsSiteLoader parser = new ObsSiteLoader(this);
 			parser.preloadSites(config.exposeFilter, fois);
+			getLogger().info("Preloaded {} sites", fois.size());
 		} catch (Exception e) {
 			throw new SensorHubException("Error loading site information", e);
 		}
