@@ -26,6 +26,7 @@ dependencies {
   compile project(':sensorhub-driver-fakeweather')
   compile project(':sensorhub-driver-gamma')
   compile project(':sensorhub-driver-gps-nmea')
+  compile project(':sensorhub-driver-intellisense')
   compile project(':sensorhub-driver-mavlink')
   compile project(':sensorhub-driver-metar')
   compile project(':sensorhub-driver-mti')
