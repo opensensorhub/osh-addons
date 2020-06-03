@@ -419,7 +419,7 @@ public class VaisalaWeatherSensor extends AbstractSensorModule<VaisalaWeatherCon
             term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
             term.setLabel("Manufacturer Name");
             term.setValue("Vaisala");
-            identifierList.addIdentifier2(term);
+            identifierList.addIdentifier(term);
             
             if (modelNumber != null)
             {
@@ -427,7 +427,7 @@ public class VaisalaWeatherSensor extends AbstractSensorModule<VaisalaWeatherCon
                 term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
                 term.setLabel("Model Number");
                 term.setValue(modelNumber);
-                identifierList.addIdentifier2(term);
+                identifierList.addIdentifier(term);
             }
             
             if (serialNumber != null)
@@ -436,7 +436,7 @@ public class VaisalaWeatherSensor extends AbstractSensorModule<VaisalaWeatherCon
                 term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
                 term.setLabel("Serial Number");
                 term.setValue(serialNumber);
-                identifierList.addIdentifier2(term);
+                identifierList.addIdentifier(term);
             }
             
             // Long Name
@@ -444,14 +444,14 @@ public class VaisalaWeatherSensor extends AbstractSensorModule<VaisalaWeatherCon
             term.setDefinition(SWEHelper.getPropertyUri("LongName"));
             term.setLabel("Long Name");
             term.setValue("Vaisala " + modelNumber + " Weather Transmitter #" + serialNumber);
-            identifierList.addIdentifier2(term);
+            identifierList.addIdentifier(term);
 
             // Short Name
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
             term.setLabel("Short Name");
             term.setValue("Vaisala " + modelNumber);
-            identifierList.addIdentifier2(term);
+            identifierList.addIdentifier(term);
         }
         System.out.println("Done Updating Sensor Description");
     }

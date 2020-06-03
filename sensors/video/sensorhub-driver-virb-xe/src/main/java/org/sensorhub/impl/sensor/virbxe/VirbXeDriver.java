@@ -217,39 +217,39 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
             term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
             term.setLabel("Manufacturer Name");
             term.setValue("Garmin");
-            ident.addIdentifier2(term);
+            ident.addIdentifier(term);
             
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
             term.setLabel("Model Number");
             term.setValue(modelNumber);
-            ident.addIdentifier2(term);
+            ident.addIdentifier(term);
             
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
             term.setLabel("Serial Number");
             term.setValue(serialNumber);
-            ident.addIdentifier2(term);
+            ident.addIdentifier(term);
             
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("Firmware"));
             term.setLabel("Firmware");
             term.setValue(firmware);
-            ident.addIdentifier2(term);
+            ident.addIdentifier(term);
             
             // Long Name
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("LongName"));
             term.setLabel("Long Name");
             term.setValue("Garmin " + modelNumber + " Video Camera #" + serialNumber);
-            ident.addIdentifier2(term);
+            ident.addIdentifier(term);
         
             // Short Name
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
             term.setLabel("Short Name");
             term.setValue("Garmin " + modelNumber);
-            ident.addIdentifier2(term);
+            ident.addIdentifier(term);
         }
     }
 

@@ -83,13 +83,13 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
             term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
             term.setLabel("Manufacturer Name");
             term.setValue("XSens");
-            identifiers.addIdentifier2(term);
+            identifiers.addIdentifier(term);
             
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
             term.setLabel("Model Number");
             term.setValue("MTi 28A53G35");
-            identifiers.addIdentifier2(term);
+            identifiers.addIdentifier(term);
             
             SpatialFrame localRefFrame = smlFac.newSpatialFrame();
             localRefFrame.setId(CRS_ID);
