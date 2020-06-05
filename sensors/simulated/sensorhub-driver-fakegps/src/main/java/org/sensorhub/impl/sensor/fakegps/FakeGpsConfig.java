@@ -35,4 +35,8 @@ public class FakeGpsConfig extends SensorConfig
     
     public double vehicleSpeed = 40; // km/h
     public boolean walkingMode = false;
+    
+    //  parameters to limit number of calls to Google directions API
+    public boolean cacheTrajectory = false;
+    public Integer apiRequestPeriodMinutes = 720; 
 }

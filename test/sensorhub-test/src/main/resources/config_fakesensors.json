@@ -26,16 +26,18 @@
   },
   {
     "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
-    "googleApiUrl": "http://maps.googleapis.com/maps/api/directions/json",
+    "googleApiUrl": "https://maps.googleapis.com/maps/api/directions/json",
     "centerLatitude": 34.73,
     "centerLongitude": -86.585,
-    "areaSize": 0.1,
+    "areaSize": 0.05,
     "vehicleSpeed": 200.0,
     "walkingMode": false,
     "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
     "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsSensor",
     "name": "Fake GPS Sensor",
-    "autoStart": true
+    "autoStart": true,
+    "cacheTrajectory": true,
+    "apiRequestPeriodMinutes": 720
   },
   {
     "objClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherConfig",
