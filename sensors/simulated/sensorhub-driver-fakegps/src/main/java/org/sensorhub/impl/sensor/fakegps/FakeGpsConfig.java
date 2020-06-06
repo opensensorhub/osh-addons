@@ -14,6 +14,8 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fakegps;
 
+import java.util.concurrent.TimeUnit;
+
 import org.sensorhub.api.sensor.SensorConfig;
 
 
@@ -35,4 +37,8 @@ public class FakeGpsConfig extends SensorConfig
     
     public double vehicleSpeed = 40; // km/h
     public boolean walkingMode = false;
+    
+    //  parameters to limit number of calls to Google directions API
+    public boolean cacheTrajectory = false;
+    public Long apiRequestPeriodMinutes = TimeUnit.MINUTES.toMillis(720); 
 }
