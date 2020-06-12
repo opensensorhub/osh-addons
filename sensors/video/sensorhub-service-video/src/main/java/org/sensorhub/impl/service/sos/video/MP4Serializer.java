@@ -21,7 +21,9 @@ import java.nio.channels.Channels;
 import java.util.Arrays;
 import javax.servlet.AsyncContext;
 import javax.servlet.http.HttpServletResponse;
+import java.util.Set;
 import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
 import org.mp4parser.streaming.StreamingTrack;
 import org.mp4parser.streaming.input.h264.H264NalConsumingTrack;
 import org.mp4parser.streaming.output.mp4.FragmentedMp4Writer;
@@ -33,12 +35,15 @@ import org.sensorhub.impl.service.swe.RecordTemplate;
 import org.vast.data.DataBlockMixed;
 import org.vast.ows.sos.GetResultRequest;
 import org.vast.ows.sos.SOSException;
+import com.google.common.collect.Sets;
 
 
 public class MP4Serializer extends AbstractAsyncSerializer<GetResultRequest, DataEvent> implements ISOSAsyncResultSerializer
 {
     public static String MP4_MIME_TYPE = "video/mp4";
+    private static final Set<String> IMG_ARRAY_COMPONENT_NAMES = Sets.newHashSet("img", "videoFrame");
     
+    int imgComponentIdx = -1;
     FragmentedMp4Writer mp4Muxer;
     H264DBtrack h264Source;
     
@@ -62,7 +67,7 @@ public class MP4Serializer extends AbstractAsyncSerializer<GetResultRequest, Dat
             }
             
             // get H264 frame data
-            DataBlock frameBlk = ((DataBlockMixed)nextFrame).getUnderlyingObject()[1];
+            DataBlock frameBlk = ((DataBlockMixed)nextFrame).getUnderlyingObject()[imgComponentIdx];
             byte[] frameData = (byte[])frameBlk.getUnderlyingObject();
             ByteBuffer nals = ByteBuffer.wrap(frameData);
             
@@ -137,6 +142,17 @@ public class MP4Serializer extends AbstractAsyncSerializer<GetResultRequest, Dat
         {
             // set MIME type for MP4 format
             ((HttpServletResponse)asyncCtx.getResponse()).setContentType(MP4_MIME_TYPE);
+        }
+        
+        // get index of image component
+        DataComponent dataStruct = resultTemplate.getDataStructure();
+        for (int i = dataStruct.getComponentCount()-1; i >= 0; i--)
+        {
+            if (IMG_ARRAY_COMPONENT_NAMES.contains(dataStruct.getComponent(i).getName()))
+            {
+                imgComponentIdx = i;
+                break;
+            }
         }
         
         // adapt swe common data as H264 streaming track
