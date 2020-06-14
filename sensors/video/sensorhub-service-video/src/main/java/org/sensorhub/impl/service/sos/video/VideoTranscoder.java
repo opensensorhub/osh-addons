@@ -77,14 +77,19 @@ public class VideoTranscoder implements ISOSCustomSerializer
         OutputStream os = new BufferedOutputStream(request.getResponseStream());
         GetResultRequest gReq = (GetResultRequest)request;
         
-        String framerateString = (String)gReq.getExtensions().get(new QName("video_fps"));
+        String fpsString = (String)gReq.getExtensions().get(new QName("video_fps"));
+        int fps = fpsString != null ? Integer.valueOf(fpsString) : 30;
         String bitrateString = (String)gReq.getExtensions().get(new QName("video_bitrate"));
         int bitrate = bitrateString != null ? Integer.valueOf(bitrateString)*1024 : 150*1024;
         String frameWidthString = (String)gReq.getExtensions().get(new QName("video_width"));
         int frameWidth = frameWidthString != null ? Integer.valueOf(frameWidthString) : 320;
         String frameHeightString = (String)gReq.getExtensions().get(new QName("video_height"));
         int frameHeight = frameHeightString != null ? Integer.valueOf(frameHeightString) : 180;
+        String frameSizeScalingString = (String)gReq.getExtensions().get(new QName("video_scale"));
+        double frameSizeScale = frameSizeScalingString != null ? Double.valueOf(frameSizeScalingString) : 0.5;
         
+        AVCodec decoder;
+        AVCodec encoder;
         AVCodecContext decode_ctx;
         AVCodecContext encode_ctx;
         SwsContext sws_ctx = null;
@@ -116,34 +121,17 @@ public class VideoTranscoder implements ISOSCustomSerializer
             av_init_packet(enc_pkt);
             av_frame = av_frame_alloc();
             sws_frame = av_frame_alloc();
-            sws_frame.format(AV_PIX_FMT_YUV420P);
-            sws_frame.width(frameWidth);
-            sws_frame.height(frameHeight);
-            av_image_alloc(sws_frame.data(), sws_frame.linesize(), frameWidth, frameHeight, AV_PIX_FMT_YUV420P, 1);
             
-            // init decoder
-            AVCodec decoder = avcodec_find_decoder(avcodec.AV_CODEC_ID_H264);
+            // init decoder context
+            decoder = avcodec_find_decoder(avcodec.AV_CODEC_ID_H264);
             decode_ctx = avcodec_alloc_context3(decoder);
             if (avcodec_open2(decode_ctx, decoder, (PointerPointer<?>)null) < 0) {
                 throw new IllegalStateException("Error initializing decoder for codec " + codecName);
             }
             
-            // init encoder
-            AVRational timeBase = new AVRational();
-            timeBase.num(1);
-            timeBase.den(30);
-            AVCodec encoder = avcodec_find_encoder(avcodec.AV_CODEC_ID_H264);
+            // create decoder context
+            encoder = avcodec_find_encoder(avcodec.AV_CODEC_ID_H264);
             encode_ctx = avcodec_alloc_context3(encoder);
-            encode_ctx.time_base(timeBase);
-            encode_ctx.width(frameWidth);
-            encode_ctx.height(frameHeight);
-            encode_ctx.pix_fmt(encoder.pix_fmts().get(0));
-            encode_ctx.bit_rate(bitrate);    
-            av_opt_set(encode_ctx.priv_data(), "preset", "ultrafast", 0);
-            av_opt_set(encode_ctx.priv_data(), "tune", "zerolatency", 0);
-            if (avcodec_open2(encode_ctx, encoder, (PointerPointer<?>)null) < 0) {
-                throw new IllegalStateException("Error initializing encoder for codec " + codecName);
-            }
             
             // prepare writer for selected encoding
             writer = SWEHelper.createDataWriter(dataProvider.getDefaultResultEncoding());
@@ -174,6 +162,9 @@ public class VideoTranscoder implements ISOSCustomSerializer
             DataBlock nextRecord;
             while ((nextRecord = dataProvider.getNextResultRecord()) != null)
             {        
+                // make a copy so we don't interfer with
+                nextRecord = nextRecord.clone();
+                
                 // get frame data
                 DataBlock frameBlk = ((DataBlockMixed)nextRecord).getUnderlyingObject()[imgCompIdx];
                 byte[] frameData = (byte[])frameBlk.getUnderlyingObject();
@@ -187,11 +178,42 @@ public class VideoTranscoder implements ISOSCustomSerializer
                 
                 if (ret2 == 0)
                 {                
-                    // resize frame
-                    if (sws_ctx == null)
+                    // init scaler and encoder once we decode the 1st frame
+                    if (sws_ctx == null )
                     {
-                        sws_ctx = sws_getContext(av_frame.width(), av_frame.height(), AV_PIX_FMT_YUV420P, frameWidth, frameHeight, AV_PIX_FMT_YUV420P, SWS_BICUBIC, null, null, (double[])null);
+                        // determine frame size
+                        if (frameWidthString == null && frameHeightString == null)
+                        {
+                            frameWidth = (int)(av_frame.width() * frameSizeScale);
+                            frameHeight = (int)(av_frame.height() * frameSizeScale);
+                        }                        
+                        
+                        // init scaler
+                        sws_frame.format(AV_PIX_FMT_YUV420P);
+                        sws_frame.width(frameWidth);
+                        sws_frame.height(frameHeight);
+                        av_image_alloc(sws_frame.data(), sws_frame.linesize(), 
+                                frameWidth, frameHeight, AV_PIX_FMT_YUV420P, 1);
+                        
+                        sws_ctx = sws_getContext(av_frame.width(), av_frame.height(), AV_PIX_FMT_YUV420P,
+                                frameWidth, frameHeight, AV_PIX_FMT_YUV420P, SWS_BICUBIC, null, null, (double[])null);
                         //System.out.printf("%d x %d -> %d x %d", av_frame.width(), av_frame.height(), frameWidth, frameHeight);
+                        
+                        // init encoder
+                        AVRational timeBase = new AVRational();
+                        timeBase.num(1);
+                        timeBase.den(fps);
+                        encode_ctx.time_base(timeBase);
+                        encode_ctx.width(frameWidth);
+                        encode_ctx.height(frameHeight);
+                        encode_ctx.pix_fmt(encoder.pix_fmts().get(0));
+                        encode_ctx.bit_rate(bitrate);
+                        //encode_ctx.sample_rate(fps);
+                        av_opt_set(encode_ctx.priv_data(), "preset", "ultrafast", 0);
+                        av_opt_set(encode_ctx.priv_data(), "tune", "zerolatency", 0);
+                        if (avcodec_open2(encode_ctx, encoder, (PointerPointer<?>)null) < 0) {
+                            throw new IllegalStateException("Error initializing encoder for codec " + codecName);
+                        }
                     }
                     sws_scale(sws_ctx, av_frame.data(), av_frame.linesize(), 0, av_frame.height(), sws_frame.data(), sws_frame.linesize());
                     
