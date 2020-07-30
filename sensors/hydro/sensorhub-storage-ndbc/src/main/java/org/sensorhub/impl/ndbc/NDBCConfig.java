@@ -14,7 +14,9 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.ndbc;
 
+import java.time.Instant;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.persistence.ObsStorageConfig;
@@ -28,15 +30,25 @@ public class NDBCConfig extends ObsStorageConfig
     
     public NDBCConfig()
     {
-        exposeFilter.stationIds.add("0Y2W3");
-        exposeFilter.parameters.add(ObsParam.AIR_PRESSURE_AT_SEA_LEVEL);
-        exposeFilter.endTime = new Date(new Date().getTime()/86400000*86400000);
-        exposeFilter.startTime = new Date(exposeFilter.endTime.getTime()-3600*24*30*1000);
+//        exposeFilter.stationIds.add("0Y2W3");
+        exposeFilter.stationIds.add("ljpc1");
+        exposeFilter.endTime = System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1);
+        exposeFilter.startTime = exposeFilter.endTime - TimeUnit.DAYS.toMillis(7);
+        System.err.println("Start in cons: " + Instant.ofEpochMilli(exposeFilter.startTime));
+        System.err.println("End in cons: " + Instant.ofEpochMilli(exposeFilter.endTime));
+//        exposeFilter.startTime = new Date(exposeFilter.endTime.getTime()-3600*24*30*1000);
+//        ObsParam [] props = ObsParam.values();
+//        for(ObsParam prop: props)
+//        	exposeFilter.parameters.add(prop);
+        exposeFilter.parameters.add(ObsParam.WAVES);
+//        exposeFilter.parameters.add(ObsParam.AIR_TEMPERATURE);
+        
+        // NOTE: NDBC bbox requests are apparently not returning all available buoys
+//        exposeFilter.siteBbox = new Bbox(-118.0,32.0, -117.0, 33.0);
     }
 
 	@Override
 	public void setStorageIdentifier(String name) {
 		// TODO Auto-generated method stub
-		
 	}
 }

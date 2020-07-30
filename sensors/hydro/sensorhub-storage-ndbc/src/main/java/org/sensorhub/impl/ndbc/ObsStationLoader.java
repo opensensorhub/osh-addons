@@ -21,14 +21,13 @@ import net.opengis.gml.v32.impl.GMLFactory;
  * <p>
  * Loader for NDBC tabular data of observation stations<br/>
  * See <a href="http://sdf.ndbc.noaa.gov/"> web service documentation</a>
+ * Station Info in html: https://sdf.ndbc.noaa.gov/stations.shtml
  * </p>
  *
  * @author Lee Butler <labutler10@gmail.com>
  * @since Jan 27, 2018
  */
 public class ObsStationLoader {
-	static final String STN_INFO_URL = NDBCArchive.BASE_NDBC_URL + "/stations.shtml";
-	static final String FOI_UID_PREFIX = NDBCArchive.IOOS_UID_PREFIX + "station:wmo:";
 	static final String BASE_URL = NDBCArchive.BASE_NDBC_URL
 			+ "/sos/server.php?request=GetObservation&service=SOS&version=1.0.0&";
 	static final int AGE_THRESHOLD_DAYS = 7;  // configurable
@@ -39,6 +38,7 @@ public class ObsStationLoader {
 		this.module = module;
 	}
 
+	//  Load stations by requesting latest measurement from all (or  filtered) stations in network
 	public void loadStations(Map<String, AbstractFeature> fois, DataFilter filter) throws IOException {
 		StringBuilder buf = new StringBuilder(BASE_URL);
 
@@ -65,7 +65,7 @@ public class ObsStationLoader {
 		buf.append("&responseformat=text/csv&eventtime=latest"); // output type
 		module.getLogger().debug("Requesting stations from: " + buf.toString());
 		URL url = new URL(buf.toString());
-
+		System.err.println(buf.toString());
 		BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
 
 		String line;

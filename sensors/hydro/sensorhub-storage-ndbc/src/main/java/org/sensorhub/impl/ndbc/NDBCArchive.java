@@ -3,6 +3,7 @@ package org.sensorhub.impl.ndbc;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,6 +45,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 {
 	static final String BASE_NDBC_URL = "https://sdf.ndbc.noaa.gov";
 	static final String IOOS_UID_PREFIX = "urn:ioos:";
+	static final String FOI_UID_PREFIX = NDBCArchive.IOOS_UID_PREFIX + "station:wmo:";
 	
 	Map<String, RecordStore> dataStores = new LinkedHashMap<>();
     Map<String, AbstractFeature> fois = new LinkedHashMap<>();
@@ -127,7 +129,8 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     {
         // compute rough estimate here
         DataFilter ndbcFilter = getNdbcFilter(filter);
-        long dt = ndbcFilter.endTime.getTime() - ndbcFilter.startTime.getTime();
+//        long dt = ndbcFilter.endTime.getTime() - ndbcFilter.startTime.getTime();
+        long dt = ndbcFilter.endTime - ndbcFilter.startTime;
         long samplingPeriod = TimeUnit.MINUTES.toMillis(15); // shortest sampling period seems to be 15min
         int numSites = ndbcFilter.stationIds.isEmpty() ? fois.size() : ndbcFilter.stationIds.size();
         return (int)(numSites * dt / samplingPeriod);
@@ -138,7 +141,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     @Override
     public int getNumRecords(String recordType)
     {
-        long dt = config.exposeFilter.endTime.getTime() - config.exposeFilter.startTime.getTime();
+        long dt = config.exposeFilter.endTime - config.exposeFilter.startTime;
         long samplingPeriod = TimeUnit.MINUTES.toMillis(15); // shortest sampling period seems to be 15min
         int numSites = fois.size();
         return (int)(numSites * dt / samplingPeriod);
@@ -149,8 +152,8 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     @Override
     public double[] getRecordsTimeRange(String recordType)
     {
-        double startTime = config.exposeFilter.startTime.getTime() / 1000.;
-        double endTime = config.exposeFilter.endTime.getTime() / 1000.;
+        double startTime = config.exposeFilter.startTime / 1000.;
+        double endTime = config.exposeFilter.endTime / 1000.;
         return new double[] {startTime, endTime};
     }
     
@@ -203,12 +206,14 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         
         // request observations by batch and iterate through them sequentially
         final long batchLength = TimeUnit.DAYS.toMillis(31); // 31 days
-        final long endTime = ((long)Math.ceil(ndbcFilter.endTime.getTime()/1000.))*1000; // round to next second
+//        final long endTime = ((long)Math.ceil(ndbcFilter.endTime.getTime()/1000.))*1000; // round to next second
+        final long endTime =  ndbcFilter.endTime; // round to next second
         class BatchIterator implements Iterator<IDataRecord>
         {                
             Iterator<BuoyDataRecord> batchIt;
             IDataRecord next;
-            long nextBatchStartTime = ndbcFilter.startTime.getTime()/1000*1000; // round to previous second
+            //long nextBatchStartTime = ndbcFilter.startTime.getTime()/1000*1000; // round to previous second
+            long nextBatchStartTime = ndbcFilter.startTime; 
             
             BatchIterator()
             {
@@ -223,7 +228,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
                 // retrieve next batch if needed
                 if ((batchIt == null || !batchIt.hasNext()) && nextBatchStartTime <= endTime)
                 {
-                	ndbcFilter.startTime = new Date(nextBatchStartTime);
+                	ndbcFilter.startTime = nextBatchStartTime;
                     
                     // adjust batch length to avoid a very small batch at the end
                     long timeGap = 1000; // gap to avoid duplicated obs
@@ -231,7 +236,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
                     long timeLeft = endTime - nextBatchStartTime;
                     if (((double)timeLeft) / batchLength < 1.5)
                         adjBatchLength = timeLeft+timeGap;
-                    ndbcFilter.endTime = new Date(Math.min(nextBatchStartTime+adjBatchLength-timeGap, endTime));
+                    ndbcFilter.endTime = Math.min(nextBatchStartTime + adjBatchLength - timeGap, endTime);
                     batchIt = nextBatch(loader, ndbcFilter, recType).iterator();
                     nextBatchStartTime += adjBatchLength;
                 }
@@ -275,11 +280,12 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
             if (fois != null)
             {
                 for (String foiID: fois)
-                	ndbcFilter.stationIds.add(foiID.substring(ObsStationLoader.FOI_UID_PREFIX.length()));
+                	ndbcFilter.stationIds.add(foiID.substring(FOI_UID_PREFIX.length()));
             }
         }
         if (!config.exposeFilter.stationIds.isEmpty())
-        	ndbcFilter.stationIds.retainAll(config.exposeFilter.stationIds);
+        	//ndbcFilter.stationIds.retainAll(config.exposeFilter.stationIds);
+        	ndbcFilter.stationIds.addAll(config.exposeFilter.stationIds);
                     
         // use config params
         ndbcFilter.parameters.addAll(config.exposeFilter.parameters);
@@ -289,8 +295,8 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         ndbcFilter.siteBbox.setMaxY(config.exposeFilter.siteBbox.getMaxY());
         
         // init time filter
-        long configStartTime = config.exposeFilter.startTime.getTime();
-        long configEndTime = config.exposeFilter.endTime.getTime();
+        long configStartTime = config.exposeFilter.startTime;
+        long configEndTime = config.exposeFilter.endTime;
         long filterStartTime = Long.MIN_VALUE;
         long filterEndTime = Long.MAX_VALUE;
         if (filter.getTimeStampRange() != null)
@@ -299,8 +305,8 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
             filterEndTime = (long)(filter.getTimeStampRange()[1] * 1000);
         }
         
-        ndbcFilter.startTime = new Date(Math.min(configEndTime, Math.max(configStartTime, filterStartTime)));
-        ndbcFilter.endTime = new Date(Math.min(configEndTime, Math.max(configStartTime, filterEndTime)));
+        ndbcFilter.startTime = Math.min(configEndTime, Math.max(configStartTime, filterStartTime));
+        ndbcFilter.endTime = Math.min(configEndTime, Math.max(configStartTime, filterEndTime));
         
         return ndbcFilter;
     }
@@ -315,9 +321,9 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
             if (getLogger().isDebugEnabled())
             {
                 DateTimeFormat timeFormat = new DateTimeFormat();
-                getLogger().debug("Next batch is {} - {}",
-                                  timeFormat.formatIso(filter.startTime.getTime()/1000., 0),
-                                  timeFormat.formatIso(filter.endTime.getTime()/1000., 0));
+                getLogger().info("Next batch is {} - {}",
+                                  Instant.ofEpochMilli(filter.startTime),
+                                  Instant.ofEpochMilli(filter.endTime));
             }
             
             // request and parse next batch

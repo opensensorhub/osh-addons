@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -80,17 +81,19 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         DateTimeFormat timeFormat = new DateTimeFormat();
         if (filter.startTime != null)
             buf.append("&eventtime=")
-               .append(timeFormat.formatIso(filter.startTime.getTime()/1000., 0));
+                //.append(timeFormat.formatIso(filter.startTime.getTime()/1000., 0));
+        	    .append(Instant.ofEpochMilli(filter.startTime).toString().substring(0,19) + "Z");
         if (filter.endTime != null)
             buf.append("/")
-               .append(timeFormat.formatIso(filter.endTime.getTime()/1000., 0));
+//               .append(timeFormat.formatIso(filter.endTime.getTime()/1000., 0));
+    	    .append(Instant.ofEpochMilli(filter.endTime).toString().substring(0,19) + "Z");
         
         return buf.toString();
     }
     
     public void sendRequest(DataFilter filter) throws IOException {
     	requestURL = buildInstantValuesRequest(filter);
-    	module.getLogger().debug("Requesting observations from: " + requestURL);
+    	module.getLogger().info("Requesting observations from: " + requestURL);
     	URL url = new URL(requestURL);
     	
     	reader = new BufferedReader(new InputStreamReader(url.openStream()));
@@ -212,7 +215,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
             while ((line = reader.readLine()) != null)
             {                
                 line = line.trim();
-                
+                System.err.println(line);
                 // parse header
                 if (line.startsWith("station_id,sensor_id"))
                 {

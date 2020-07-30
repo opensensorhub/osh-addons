@@ -20,8 +20,8 @@ public class DataFilter {
     public Set<ObsParam> parameters = new LinkedHashSet<>();
     
     @DisplayInfo(desc="Minimum time stamp of requested objects")
-    public Date startTime = null;
+    public Long startTime = null;
     
     @DisplayInfo(desc="Maximum time stamp of requested objects")
-    public Date endTime = null;
+    public Long endTime = null;
 }
