@@ -81,11 +81,9 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         DateTimeFormat timeFormat = new DateTimeFormat();
         if (filter.startTime != null)
             buf.append("&eventtime=")
-                //.append(timeFormat.formatIso(filter.startTime.getTime()/1000., 0));
         	    .append(Instant.ofEpochMilli(filter.startTime).toString().substring(0,19) + "Z");
         if (filter.endTime != null)
             buf.append("/")
-//               .append(timeFormat.formatIso(filter.endTime.getTime()/1000., 0));
     	    .append(Instant.ofEpochMilli(filter.endTime).toString().substring(0,19) + "Z");
         
         return buf.toString();
