@@ -201,7 +201,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		RecordStore rs = dataStores.get(recType); 
 		
 		// prepare loader to fetch data from NDBC web service
-        final ObsRecordLoader loader = new ObsRecordLoader(this, rs.getRecordDescription());
+        final ObsRecordLoader loader = new ObsRecordLoader(rs.getRecordDescription(), logger);
         final DataFilter ndbcFilter = getNdbcFilter(filter);
         
         // request observations by batch and iterate through them sequentially

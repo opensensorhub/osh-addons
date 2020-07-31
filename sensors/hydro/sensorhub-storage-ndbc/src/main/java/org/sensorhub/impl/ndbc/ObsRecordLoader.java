@@ -13,30 +13,29 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TimeZone;
-import org.sensorhub.impl.module.AbstractModule;
+
 import org.sensorhub.impl.ndbc.BuoyEnums.ObsParam;
+import org.slf4j.Logger;
 import org.vast.util.Bbox;
-import org.vast.util.DateTimeFormat;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 
 public class ObsRecordLoader implements Iterator<DataBlock> {
 	static final String BASE_URL = NDBCArchive.BASE_NDBC_URL + "/sos/server.php?request=GetObservation&service=SOS&version=1.0.0";
-	AbstractModule<?> module;
 	DataFilter filter;
 	BufferedReader reader;
 	String requestURL;
 	ParamValueParser[] paramReaders;
 	DataBlock data;
 	DataBlock templateRecord, nextRecord;
+	Logger logger;
 	
-    public ObsRecordLoader(AbstractModule<?> module, DataComponent recordDesc)
+    public ObsRecordLoader(DataComponent recordDesc, Logger logger)
     {
-        this.module = module;
         this.templateRecord = recordDesc.createDataBlock();
         this.data = recordDesc.createDataBlock();
-        
+        this.logger = logger;
     }
     
 //    protected String buildInstantValuesRequest(DataFilter filter, Map<String, String[]> sensorOfferings)
@@ -78,20 +77,19 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         buf.append("&responseformat=text/csv"); // output type
         
         // time range
-        DateTimeFormat timeFormat = new DateTimeFormat();
         if (filter.startTime != null)
             buf.append("&eventtime=")
         	    .append(Instant.ofEpochMilli(filter.startTime).toString().substring(0,19) + "Z");
         if (filter.endTime != null)
             buf.append("/")
-    	    .append(Instant.ofEpochMilli(filter.endTime).toString().substring(0,19) + "Z");
+            	.append(Instant.ofEpochMilli(filter.endTime).toString().substring(0,19) + "Z");
         
         return buf.toString();
     }
     
     public void sendRequest(DataFilter filter) throws IOException {
     	requestURL = buildInstantValuesRequest(filter);
-    	module.getLogger().info("Requesting observations from: " + requestURL);
+    	logger.info("Requesting observations from: " + requestURL);
     	URL url = new URL(requestURL);
     	
     	reader = new BufferedReader(new InputStreamReader(url.openStream()));
@@ -159,20 +157,21 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         		readers.add(new FloatValueParser(14, i++)); // sea surface swell wave to direction (deg)
         		readers.add(new FloatValueParser(15, i++)); // sea surface wind wave to direction (deg)
         		
-        		// Ingnoring the below parameters for now
-        		// To include them, we need to replace all semicolons in "line" to commas
-        		
+        		//  The 
+        		//   "number_of_frequencies (count)","center_frequencies (Hz)","bandwidths (Hz)","spectral_energy (m**2/Hz)",
+        		//   "mean_wave_direction (degree)","principal_wave_direction (degree)",
+        		//   "polar_coordinate_r1 (1)","polar_coordinate_r2 (1)",calculation_method,"sampling_rate (Hz)"
 //        		readers.add(new FloatValueParser(16, i++)); // number of frequencies (count)
+        		//  The next 7 columns contain numFrequencies semicolon-delimited values 
 //        		readers.add(new FloatValueParser(17, i++)); // center frequencies (Hz)
-        		// delimiter changes from comma to semicolon here...
 //        		readers.add(new FloatValueParser(18, i++)); // bandwidths (Hz)
 //        		readers.add(new FloatValueParser(19, i++)); // spectral energy (m^2/Hz)
 //        		readers.add(new FloatValueParser(20, i++)); // mean wave direction (deg)
 //        		readers.add(new FloatValueParser(21, i++)); // principle wave direction (deg)
 //        		readers.add(new FloatValueParser(22, i++)); // polar coordinate r1 (1)
 //        		readers.add(new FloatValueParser(23, i++)); // polar coordinate r2 (1)
-//        		readers.add(new FloatValueParser(24, i++)); // calculation method
-//        		readers.add(new FloatValueParser(25, i++)); // sampling rate (Hz)
+//        		readers.add(new FloatValueParser(24, i++)); // calculation method  String
+//        		readers.add(new FloatValueParser(25, i++)); // sampling rate (Hz)  ??
         	}
         	else if (param == ObsParam.WINDS) {
         		readers.add(new BuoyDepthParser(5, i++)); // buoy depth
@@ -249,7 +248,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         }
         catch (IOException e)
         {
-            module.getLogger().error("Error while reading tabular data", e);
+            logger.error("Error while reading tabular data", e);
         }
         
         return null;
@@ -281,6 +280,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         }
         catch (IOException e)
         {
+        	logger.error(e.getMessage());
         }
     }
     
