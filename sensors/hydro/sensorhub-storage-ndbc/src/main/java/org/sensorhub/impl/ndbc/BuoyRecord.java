@@ -1,7 +1,7 @@
 package org.sensorhub.impl.ndbc;
 
 public class BuoyRecord {
-	
+
 	BuoyEnums.ObsParam recordType;
 	// Common to all record types
 	String stationId;
@@ -11,11 +11,14 @@ public class BuoyRecord {
 	Double depth;
 	String timeStr;
 	long timeMs;
-	
+
 	public BuoyRecord(BuoyEnums.ObsParam recordType) {
 		this.recordType = recordType;
+		currents = new Currents();
+		waves = new Waves();
+		winds = new Winds();
 	}
-	
+
 	// Scalars
 	Double airPressure;
 	Double airTemperature;
@@ -24,35 +27,37 @@ public class BuoyRecord {
 	Double waterTemperature;
 	Double seaFloorDepth;
 	Integer depthAveragingInterval;
-	
+
 	//  Collections
+	Currents currents;
+	Waves waves;
+	Winds winds;
+
 	class Currents {
-		  Integer bin;    // bin
-		  Integer waterDirection;   // direction of sea water velocity (deg)
-		  Double waterSpeed;     // sea water speed (cm/s)
-		  Double upwardWaterVelocity; // upward sea water velocity (cm/s)
-		  Double errorVelocity;       // error velocity (cm/s)
-		  Double orientation;  // platform orientation (deg)
-		  Double pitch;  // platform pitch angle (deg)
-		  Double roll;   // platform roll angle (deg)
-		  Double waterTemperature;  // sea water temperature (degC)
-		  
-		  // TODO- populate the rest of these 
-//		  percent good 3 beam (%)     // percent good 3 beam (%)
-//		  percent good 4 beam (%)     // percent good 4 beam (%)
-//		  percent rejected (%)        // percent rejected (%)
-//		  percent bad (%)             // percent bad (%)
-//		  echo intensity beam 1 (count// echo intensity beam 1 (count)
-//		  echo intensity beam 2 (count// echo intensity beam 2 (count)
-//		  echo intensity beam 3 (count// echo intensity beam 3 (count)
-//		  echo intensity beam 4 (count// echo intensity beam 4 (count)
-//		  correlation magnitude beam 1// correlation magnitude beam 1 (count)
-//		  correlation magnitude beam 2// correlation magnitude beam 2 (count)
-//		  correlation magnitude beam 3// correlation magnitude beam 3 (count)
-//		  correlation magnitude beam 4// correlation magnitude beam 4 (count)
-//		  quality flags (au)          // quality flags (au)
+		Integer bin;
+		Integer direction_of_sea_water_velocity;
+		Double sea_water_speed;
+		Double upward_sea_water_velocity;
+		Double error_velocity;
+		Double platform_orientation;
+		Double platform_pitch_angle;
+		Double platform_roll_angle;
+		Double sea_water_temperature;
+		Integer pct_good_3_beam;
+		Integer pct_good_4_beam;
+		Integer pct_rejected;
+		Integer pct_bad;
+		Integer echo_intensity_beam1;
+		Integer echo_intensity_beam2;
+		Integer echo_intensity_beam3;
+		Integer echo_intensity_beam4;
+		Integer correlation_magnitude_beam1;
+		Integer correlation_magnitude_beam2;
+		Integer correlation_magnitude_beam3;
+		Integer correlation_magnitude_beam4;
+		Integer quality_flags;
 	}
-	
+
 	class Waves {
 		Double sea_surface_wave_significant_height; //(m)	
 		Double sea_surface_wave_peak_period; //(s)	
@@ -75,9 +80,9 @@ public class BuoyRecord {
 		Double [] polar_coordinate_r2; //(1)	
 		String calculation_method;	
 		Integer sampling_rate; //(Hz)
-		
+
 	}
-	
+
 	class Winds {
 		Integer wind_from_direction; //(degree)
 		Integer wind_speed; //(m/s)
