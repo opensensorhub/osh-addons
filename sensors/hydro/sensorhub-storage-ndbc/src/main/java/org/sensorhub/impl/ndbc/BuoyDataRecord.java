@@ -9,7 +9,6 @@ public class BuoyDataRecord implements IDataRecord, Comparable<BuoyDataRecord>
     DataKey key;
     DataBlock data;
     
-    
     public BuoyDataRecord(DataKey key, DataBlock data)
     {
         this.key = key;

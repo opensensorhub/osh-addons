@@ -21,6 +21,7 @@ import org.vast.util.Bbox;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 
+@Deprecated // 
 public class ObsRecordLoader implements Iterator<DataBlock> {
 	static final String BASE_URL = NDBCArchive.BASE_NDBC_URL + "/sos/server.php?request=GetObservation&service=SOS&version=1.0.0";
 	DataFilter filter;

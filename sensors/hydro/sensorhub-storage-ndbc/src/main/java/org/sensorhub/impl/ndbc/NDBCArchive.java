@@ -47,7 +47,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	static final String IOOS_UID_PREFIX = "urn:ioos:";
 	static final String FOI_UID_PREFIX = NDBCArchive.IOOS_UID_PREFIX + "station:wmo:";
 	
-	Map<String, RecordStore> dataStores = new LinkedHashMap<>();
+	Map<String, BuoyRecordStore> dataStores = new LinkedHashMap<>();
     Map<String, AbstractFeature> fois = new LinkedHashMap<>();
     Bbox foiExtent = new Bbox();
     PhysicalSystem systemDesc;
@@ -80,11 +80,21 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         }
 	}
     
+//    protected void initRecordStores() throws SensorHubException
+//    {
+//        RecordStore rs = new RecordStore("buoyData", config.exposeFilter.parameters);
+//        dataStores.put(rs.getName(), rs);
+//    }
+//    
     protected void initRecordStores() throws SensorHubException
     {
-        RecordStore rs = new RecordStore("buoyData", config.exposeFilter.parameters);
-        dataStores.put(rs.getName(), rs);
+    	for(BuoyEnums.ObsParam param: config.exposeFilter.parameters) {
+//            BuoyRecordStore rs = new BuoyRecordStore("buoyData", param);
+            BuoyRecordStore rs = new BuoyRecordStore();
+            dataStores.put(rs.getName(), rs);
+    	}
     }
+    
     
     protected void initSensorNetworkDescription() throws SensorHubException
     {
@@ -95,7 +105,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         systemDesc.setDescription("NDBC automated sensor network for realtime and archive buoy data"); // + getNumFois(null) + " stations across the US");
         
         // add outputs
-        for (RecordStore rs: dataStores.values())
+        for (BuoyRecordStore rs: dataStores.values())
             systemDesc.addOutput(rs.getName(), rs.getRecordDescription());
     }
     
@@ -198,7 +208,8 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	@Override
 	public Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
 		final String recType = filter.getRecordType();
-		RecordStore rs = dataStores.get(recType); 
+//		RecordStore rs = dataStores.get(recType); 
+		BuoyRecordStore rs = dataStores.get(recType); 
 		
 		// prepare loader to fetch data from NDBC web service
         final ObsRecordLoader loader = new ObsRecordLoader(rs.getRecordDescription(), logger);

@@ -15,6 +15,7 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.DataType;
 
+@Deprecated //  Use BuoyRecordStore
 public class RecordStore  implements IRecordStoreInfo {
 	
     DataRecord dataStruct;
