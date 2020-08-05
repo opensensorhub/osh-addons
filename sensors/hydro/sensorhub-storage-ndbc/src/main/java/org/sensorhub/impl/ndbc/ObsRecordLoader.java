@@ -14,7 +14,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TimeZone;
 
-import org.sensorhub.impl.ndbc.BuoyEnums.ObsParam;
 import org.slf4j.Logger;
 import org.vast.util.Bbox;
 
@@ -68,7 +67,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         if (!filter.parameters.isEmpty()) {
 			buf.append("&observedProperty=");
 			int idx = 0;
-			for (ObsParam param : filter.parameters) {
+			for (BuoyParam param : filter.parameters) {
 				buf.append(param.toString().toLowerCase()); //.append(',');
 				if(++idx < filter.parameters.size())
 					buf.append(",");
@@ -102,7 +101,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         preloadNext();
     }
     
-    protected void initParamReaders(Set<ObsParam> params, String[] fieldNames)
+    protected void initParamReaders(Set<BuoyParam> params, String[] fieldNames)
     {
         ArrayList<ParamValueParser> readers = new ArrayList<ParamValueParser>();
         int i = 0;
@@ -114,9 +113,9 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         readers.add(new FloatValueParser(3, i++)); // buoy loc lon
         
         // create a reader for each selected param
-        for (ObsParam param: params)
+        for (BuoyParam param: params)
         {
-        	if (param == ObsParam.CURRENTS) {
+        	if (param == BuoyParam.CURRENTS) {
         		readers.add(new FloatValueParser(5, i++)); // bin
         		readers.add(new BuoyDepthParser(6, i++)); // buoy depth
         		readers.add(new FloatValueParser(7, i++)); // direction of sea water velocity (deg)
@@ -141,11 +140,11 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         		readers.add(new FloatValueParser(26, i++)); // correlation magnitude beam 4 (count)
         		readers.add(new FloatValueParser(27, i++)); // quality flags (au)
         	}
-        	else if (param == ObsParam.SEA_FLOOR_DEPTH_BELOW_SEA_SURFACE) {
+        	else if (param == BuoyParam.SEA_FLOOR_DEPTH_BELOW_SEA_SURFACE) {
         		readers.add(new FloatValueParser(5, i++)); // sea floor depth below sea surface (m)
         		readers.add(new FloatValueParser(6, i++)); // averaging interval
         	}
-        	else if (param == ObsParam.WAVES) {
+        	else if (param == BuoyParam.WAVES) {
         		readers.add(new FloatValueParser(5, i++)); // sea surface wave significant height (m)
         		readers.add(new FloatValueParser(6, i++)); // sea surface wave peak period (s)
         		readers.add(new FloatValueParser(7, i++)); // sea surface wave mean period (s)
@@ -174,7 +173,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
 //        		readers.add(new FloatValueParser(24, i++)); // calculation method  String
 //        		readers.add(new FloatValueParser(25, i++)); // sampling rate (Hz)  ??
         	}
-        	else if (param == ObsParam.WINDS) {
+        	else if (param == BuoyParam.WINDS) {
         		readers.add(new BuoyDepthParser(5, i++)); // buoy depth
         		readers.add(new FloatValueParser(6, i++)); // wind from direction (deg)
         		readers.add(new FloatValueParser(7, i++)); // wind speed (m/s)

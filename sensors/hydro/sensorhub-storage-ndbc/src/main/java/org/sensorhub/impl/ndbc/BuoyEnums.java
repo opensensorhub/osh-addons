@@ -1,5 +1,6 @@
 package org.sensorhub.impl.ndbc;
 
+@Deprecated //  Use BuoyParam
 public class BuoyEnums {
 
 	public enum ObsParam

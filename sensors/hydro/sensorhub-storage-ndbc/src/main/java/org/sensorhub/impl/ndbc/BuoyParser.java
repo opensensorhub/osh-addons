@@ -16,11 +16,11 @@ import org.vast.util.Bbox;
 public class BuoyParser {
 	static final String BASE_URL = NDBCArchive.BASE_NDBC_URL + "/sos/server.php?request=GetObservation&service=SOS&version=1.0.0";
 	DataFilter filter;
-	ObsParam recordType;
+	BuoyParam recordType;
 	String requestURL;
 	Logger logger;
 
-	public BuoyParser(DataFilter filter, ObsParam recordType)
+	public BuoyParser(DataFilter filter, BuoyParam recordType)
 	{
 		this.filter = filter;
 		this.recordType = recordType;
@@ -29,7 +29,7 @@ public class BuoyParser {
 	public static void main(String[] args) throws IOException {
 		DataFilter filter = new DataFilter();
 //		filter.startTime=
-		BuoyParser parser = new BuoyParser(filter, ObsParam.AIR_TEMPERATURE);
+		BuoyParser parser = new BuoyParser(filter, BuoyParam.AIR_TEMPERATURE);
 		parser.getRecords();
 	}
 	
@@ -170,7 +170,7 @@ public class BuoyParser {
 						rec.waves.sea_surface_swell_wave_to_direction = parseDouble(values[14]); //(degree)	
 						rec.waves.sea_surface_wind_wave_to_direction = parseDouble(values[15]); //(degree)	
 						rec.waves.number_of_frequencies = parseInt(values[16]); //(count)	
-						//  The arrays are semicolon delimited 
+						//  The following arrays are semicolon delimited 
 //						Double [] center_frequencies = parseMultiDouble(values[]); //(Hz)	
 //						Double [] bandwidths; //(Hz)	
 //						Double [] spectral_energy; //(m**2/Hz)	
@@ -192,7 +192,7 @@ public class BuoyParser {
 					} 
 					recs.add(rec);
 				} catch (Exception e) {
-//					logger.error(e.getMessage());
+					logger.error(e.getMessage());
 					e.printStackTrace(System.err);
 					continue;
 				}

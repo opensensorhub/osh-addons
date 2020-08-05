@@ -17,7 +17,7 @@ public class DataFilter {
     public Bbox siteBbox = new Bbox();
     
     @DisplayInfo(desc="Observed parameters")
-    public Set<ObsParam> parameters = new LinkedHashSet<>();
+    public Set<BuoyParam> parameters = new LinkedHashSet<>();
     
     @DisplayInfo(desc="Minimum time stamp of requested objects")
     public Long startTime = null;

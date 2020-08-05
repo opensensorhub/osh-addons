@@ -40,7 +40,7 @@ public class NDBCConfig extends ObsStorageConfig
 //        ObsParam [] props = ObsParam.values();
 //        for(ObsParam prop: props)
 //        	exposeFilter.parameters.add(prop);
-        exposeFilter.parameters.add(ObsParam.WAVES);
+        exposeFilter.parameters.add(BuoyParam.WAVES);
 //        exposeFilter.parameters.add(ObsParam.AIR_TEMPERATURE);
         
         // NOTE: NDBC bbox requests are apparently not returning all available buoys

@@ -2,7 +2,7 @@ package org.sensorhub.impl.ndbc;
 
 public class BuoyRecord {
 
-	BuoyEnums.ObsParam recordType;
+	BuoyParam recordType;
 	// Common to all record types
 	String stationId;
 	String sensorId;
@@ -12,7 +12,7 @@ public class BuoyRecord {
 	String timeStr;
 	long timeMs;
 
-	public BuoyRecord(BuoyEnums.ObsParam recordType) {
+	public BuoyRecord(BuoyParam recordType) {
 		this.recordType = recordType;
 		currents = new Currents();
 		waves = new Waves();

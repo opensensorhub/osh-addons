@@ -17,7 +17,7 @@ package org.sensorhub.impl.ndbc;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.persistence.StorageConfig;
 
-
+//  Not using this yet
 public class CachedStorageConfig extends NDBCConfig
 {
     @DisplayInfo(label="Cache Config", desc="Configuration of underlying storage used for caching NDBC database")

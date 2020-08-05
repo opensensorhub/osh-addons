@@ -54,12 +54,16 @@ public class ObsStationLoader {
 
 		//  Filter parameters MUST contain at least one property.  
 		//  For getting station list, we need to specify a single property, so pick the first
-		//  NOTE: for robustness, we can get all the buoy IDs, lat-lons, and time ranges from Caps doc:
+		//  NOTE: using a param for the station list will only return stations that measure that param
+		//  We can get all the buoy IDs, lat-lons, and time ranges from Caps doc:
 		//  	https://sdf.ndbc.noaa.gov/sos/server.php?request=GetCapabilities&service=SOS
+		//  It is 2 MB so for nwo just sticking with this method 
 		if(filter.parameters.size() == 0) {
 			throw new IOException("DataFilter must contain at list one parameter in Set<ObsParam> parameters");
 		}
-		ObsParam param = filter.parameters.iterator().next();
+		BuoyParam param = filter.parameters.iterator().next();
+		if(param == BuoyParam.ENVIRONMENTAL)
+			param = BuoyParam.SEA_WATER_TEMPERATURE;
 		buf.append("&observedProperty=" + param.toString().toLowerCase());
 
 		buf.append("&responseformat=text/csv&eventtime=latest"); // output type

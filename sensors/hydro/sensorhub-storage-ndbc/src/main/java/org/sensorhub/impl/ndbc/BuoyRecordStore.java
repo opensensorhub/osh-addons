@@ -1,8 +1,7 @@
 package org.sensorhub.impl.ndbc;
 
-import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.persistence.IRecordStoreInfo;
-import org.vast.swe.SWEConstants;
+import org.vast.swe.SWEBuilders.DataRecordBuilder;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
@@ -10,67 +9,42 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 
-public class BuoyRecordStore implements IRecordStoreInfo 
+abstract public class BuoyRecordStore implements IRecordStoreInfo 
 {
+    DataRecordBuilder headerBuilder;
+	BuoyParam param;
     DataRecord dataStruct;
     DataEncoding encoding;
+    static GeoPosHelper geoHelper = new GeoPosHelper();
+    static final SWEHelper sweHelper = new SWEHelper();
     static String MMI_CF_DEF_PREFIX = "https://mmisw.org/ont/cf/parameter/";
 
-    public BuoyRecordStore() {
-        SWEHelper helper = new SWEHelper();
-        GeoPosHelper geo = new GeoPosHelper();
-        
-        helper.createDataRecord()
-        .label("header")
-        .name("header")
-//        .description("Header containing message timestamp, floatID, and message number")
-        .addSamplingTimeIsoUTC("Time")
-        .addField("BuoyID", helper.createText()
-            .label("Buoy Identifier")
-            .description("IOOS Identifier for this buoy")
-            .definition(SWEHelper.getPropertyUri("buoyID"))
-            .build())
-        .addField("location",helper.createVector()
-			.from(geo.newLocationVectorLatLon(SWEConstants.DEF_PLATFORM_LOC))
-			.label("Float GPS Location")
-			.build())
-        .addField("buoy_depth", helper.createQuantity()
-        	.label("Buoy Depth")
-        	.definition(MMI_CF_DEF_PREFIX + "buoy_depth")  // check this
-        	.uomCode("m")
-        	.build())
-        .addField("air_pressure_at_sea_level", helper.createQuantity()
-        	.label("Air Pressure")
-        	.description("Air Pressure At Sea Level")
-        	.definition(MMI_CF_DEF_PREFIX + "air_pressure_at_sea_level")
-        	.uomCode("hPa")
-        	.build())
-        .addField("air_temperature", helper.createQuantity()
-        	.label("Air Temperature")
-        	.definition(MMI_CF_DEF_PREFIX + "air_temperature")
-        	.uomCode("degC")
-        	.build())
-        .addField("conductivity", helper.createQuantity()
-        	.label("Electrical Conductivity")
-        	.definition(MMI_CF_DEF_PREFIX + "sea_water_electrical_conductivity")
-        	.uomCode("mS/cm")
-        	.build())
-        .addField("salinity", helper.createQuantity()
-        	.label("sea_water_salinity")
-        	.definition(MMI_CF_DEF_PREFIX + "sea_water_salinity")
-        	.uomCode("psu")
-        	.build())
-        .addField("water_temperature", helper.createQuantity()
-        	.label("Water Temperature")
-        	.definition(MMI_CF_DEF_PREFIX + "sea_water_temperature")
-        	.uomCode("degC")
-        	.build());
-
-        
-        dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
-        encoding = helper.newTextEncoding();
+    public BuoyRecordStore(BuoyParam param) {
+    	this.param = param;
     }
     
+    public void createHeaderBuilder() {
+    	headerBuilder = sweHelper.createDataRecord()
+//        .definition(OOT_DEF_PREFIX + "header")
+        .label("header")
+        .description("Header containing message timestamp, floatID, and message number")
+        // means
+//        .addField("imu_altitude_mean", helper.createQuantity()
+//            .uomCode("m")
+//            .build())
+        .addSamplingTimeIsoUTC("Time")
+        .addField("floatID", sweHelper.createText()
+            .label("Buoy ID")
+            .description("Buoy unique identifier (IMEI modem identifier is used)")
+            .definition(SWEHelper.getPropertyUri("IMEI"))
+            .build())
+        .addField("msgID", sweHelper.createText()
+                .label("MessageID")
+                .description("MessageID not available for NDBC Buoys")
+                .definition(SWEHelper.getPropertyUri("msgID"))
+                .build());
+    }
+
     
 	@Override
 	public String getName() {
