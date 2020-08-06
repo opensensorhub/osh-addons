@@ -143,7 +143,8 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         		readers.add(new FloatValueParser(6, i++)); // averaging interval
         	}
            	else if (param == BuoyParam.SEA_WATER_TEMPERATURE) {
-        		readers.add(new FloatValueParser(5, i++)); // sea water temp
+//           		readers.add(new StationIdParser(fromIndex, toIndex))
+           		readers.add(new FloatValueParser(5, i++)); // sea water temp
         		readers.add(new FloatValueParser(6, i++)); // averaging interval
         	}
         	else if (param == BuoyParam.WAVES) {

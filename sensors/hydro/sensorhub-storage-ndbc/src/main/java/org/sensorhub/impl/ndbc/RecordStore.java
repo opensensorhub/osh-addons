@@ -252,6 +252,12 @@ public class RecordStore  implements IRecordStoreInfo {
             		break;
         		
 	        	case "sea_water_temperature":
+//	        		SWEHelper sweHelper = new SWEHelper();
+//	        		 dataStruct.addField("msgID", sweHelper.createText()
+//	        	                .label("MessageID")
+//	        	                .description("MessageID not available for NDBC Buoys")
+//	        	                .definition(SWEHelper.getPropertyUri("msgID"))
+//	        	                .build());
 	        		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/buoy_depth", "Buoy Depth", null, "m", DataType.FLOAT));
 	        		c = helper.newQuantity(SWEHelper.getPropertyUri("sea_water_temperature"),
 	        				"Sea Water Temperature",

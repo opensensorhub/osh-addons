@@ -152,7 +152,9 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
                 // retrieve next batch if needed
                 if ((batchIt == null || !batchIt.hasNext()) && nextBatchStartTime <= stopTime)
                 {
-                	ndbcFilter.setStartTime(nextBatchStartTime);
+                	//  Bypass natching mechanism til I figure it out
+//                	ndbcFilter.setStartTime(nextBatchStartTime);
+                	ndbcFilter.setStartTime(config.exposeFilter.getStartTime());
                     
                     // adjust batch length to avoid a very small batch at the end
                     long timeGap = 1000; // gap to avoid duplicated obs
@@ -160,7 +162,8 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
                     long timeLeft = stopTime - nextBatchStartTime;
                     if (((double)timeLeft) / batchLength < 1.5)
                         adjBatchLength = timeLeft+timeGap;
-                    ndbcFilter.setStopTime(Math.min(nextBatchStartTime + adjBatchLength - timeGap, stopTime));
+//                    ndbcFilter.setStopTime(Math.min(nextBatchStartTime + adjBatchLength - timeGap, stopTime));
+                    ndbcFilter.setStopTime(config.exposeFilter.getStopTime());
                     batchIt = nextBatch(loader, ndbcFilter, recType).iterator();
                     nextBatchStartTime += adjBatchLength;
                 }
