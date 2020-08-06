@@ -67,11 +67,10 @@ public class BuoyParser {
 		buf.append("&responseformat=text/csv"); // output type
 
 		// time range
-		if (filter.startTime != null && filter.endTime != null) {
-			buf.append("&eventtime=")
-			.append(Instant.ofEpochMilli(filter.startTime).toString().substring(0,19) + "Z");
-			buf.append("/")
-			.append(Instant.ofEpochMilli(filter.endTime).toString().substring(0,19) + "Z");
+		if (filter.startTimeIso != null && filter.stopTimeIso != null) {
+			buf.append("&eventtime=" + filter.startTimeIso + "/" + filter.stopTimeIso);
+			//.append(Instant.ofEpochMilli(filter.startTime).toString().substring(0,19) + "Z");
+			//.append(Instant.ofEpochMilli(filter.endTime).toString().substring(0,19) + "Z");
 		} else {
 			buf.append("&eventtime=latest");
 		}

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,12 +28,11 @@ import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.api.persistence.IStorageModule;
 import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.impl.module.AbstractModule;
-import org.sensorhub.impl.persistence.FilteredIterator;
 import org.sensorhub.impl.persistence.StorageUtils;
+import org.sensorhub.impl.persistence.FilteredIterator;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Bbox;
 import org.vast.util.DateTimeFormat;
-
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
@@ -40,13 +40,12 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 
-public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStorageModule<NDBCConfig>, IMultiSourceStorage<IObsStorage>
+public class NDBCArchiveOld extends AbstractModule<NDBCConfig> implements IObsStorageModule<NDBCConfig>, IMultiSourceStorage<IObsStorage>
 {
 	static final String BASE_NDBC_URL = "https://sdf.ndbc.noaa.gov";
 	static final String IOOS_UID_PREFIX = "urn:ioos:";
-	static final String FOI_UID_PREFIX = NDBCArchive.IOOS_UID_PREFIX + "station:wmo:";
 	
-	Map<String, BuoyRecordStore> dataStores = new LinkedHashMap<>();
+	Map<String, RecordStore> dataStores = new LinkedHashMap<>();
     Map<String, AbstractFeature> fois = new LinkedHashMap<>();
     Bbox foiExtent = new Bbox();
     PhysicalSystem systemDesc;
@@ -81,16 +80,8 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     
     protected void initRecordStores() throws SensorHubException
     {
-    	for(BuoyParam param: config.exposeFilter.parameters) {
-    		switch(param) {
-    		case SEA_WATER_TEMPERATURE:
-        		BuoyRecordStore rs = new WaterTemperatureStore();
-                dataStores.put(rs.getName(), rs);
-        		break;
-        	default:
-        		logger.error("Param unrecognized or unsupported: {}" + param);
-    		} 
-    	}
+        RecordStore rs = new RecordStore("buoyData", config.exposeFilter.parameters);
+        dataStores.put(rs.getName(), rs);
     }
     
     protected void initSensorNetworkDescription() throws SensorHubException
@@ -102,32 +93,122 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         systemDesc.setDescription("NDBC automated sensor network for realtime and archive buoy data"); // + getNumFois(null) + " stations across the US");
         
         // add outputs
-        for (BuoyRecordStore rs: dataStores.values())
+        for (RecordStore rs: dataStores.values())
             systemDesc.addOutput(rs.getName(), rs.getRecordDescription());
+    }
+    
+	@Override
+	public AbstractProcess getLatestDataSourceDescription()
+	{
+		return systemDesc;
+	}
+	
+    @Override
+    public List<AbstractProcess> getDataSourceDescriptionHistory(double startTime, double endTime)
+    {
+        return Arrays.<AbstractProcess>asList(systemDesc);
+    }
+    
+	@Override
+	public AbstractProcess getDataSourceDescriptionAtTime(double time)
+	{
+		return systemDesc;
+	}
+
+    @Override
+    public Map<String, ? extends IRecordStoreInfo> getRecordStores()
+    {
+        return Collections.unmodifiableMap(dataStores);
+    }
+
+
+    @Override
+    public int getNumMatchingRecords(IDataFilter filter, long maxCount)
+    {
+        // compute rough estimate here
+        DataFilter ndbcFilter = getNdbcFilter(filter);
+        long dt = ndbcFilter.endTime.getTime() - ndbcFilter.startTime.getTime();
+        long samplingPeriod = TimeUnit.MINUTES.toMillis(15); // shortest sampling period seems to be 15min
+        int numSites = ndbcFilter.stationIds.isEmpty() ? fois.size() : ndbcFilter.stationIds.size();
+        return (int)(numSites * dt / samplingPeriod);
+//    	return 1;
+    }
+
+
+    @Override
+    public int getNumRecords(String recordType)
+    {
+        long dt = config.exposeFilter.endTime.getTime() - config.exposeFilter.startTime.getTime();
+        long samplingPeriod = TimeUnit.MINUTES.toMillis(15); // shortest sampling period seems to be 15min
+        int numSites = fois.size();
+        return (int)(numSites * dt / samplingPeriod);
+//        return 1;
+    }
+
+
+    @Override
+    public double[] getRecordsTimeRange(String recordType)
+    {
+        double startTime = config.exposeFilter.startTime.getTime() / 1000.;
+        double endTime = config.exposeFilter.endTime.getTime() / 1000.;
+        return new double[] {startTime, endTime};
+    }
+    
+    
+    @Override
+    public int[] getEstimatedRecordCounts(String recordType, double[] timeStamps)
+    {
+        return StorageUtils.computeDefaultRecordCounts(this, recordType, timeStamps);
+    }
+
+
+    @Override
+    public DataBlock getDataBlock(DataKey key)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+
+    @Override
+    public Iterator<DataBlock> getDataBlockIterator(IDataFilter filter)
+    {
+        final Iterator<? extends IDataRecord> it = getRecordIterator(filter);
+        
+        return new Iterator<DataBlock>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return it.hasNext();
+//                return false;
+            }
+
+            @Override
+            public DataBlock next()
+            {
+                return it.next().getData();
+            }
+        };
     }
     
 	@Override
 	public Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
 		final String recType = filter.getRecordType();
-//		RecordStore rs = dataStores.get(recType); 
-		BuoyRecordStore rs = dataStores.get(recType); 
+		RecordStore rs = dataStores.get(recType); 
 		
 		// prepare loader to fetch data from NDBC web service
-        final ObsRecordLoader loader = new ObsRecordLoader(rs.getRecordDescription(), logger);
-        BuoyRecordLoader bloader = new BuoyRecordLoader();
+        final ObsRecordLoader loader = new ObsRecordLoader(this, rs.getRecordDescription());
         final DataFilter ndbcFilter = getNdbcFilter(filter);
         
         // request observations by batch and iterate through them sequentially
         final long batchLength = TimeUnit.DAYS.toMillis(31); // 31 days
-//        final long stopTime = ((long)Math.ceil(ndbcFilter.stopTime.getTime()/1000.))*1000; // round to next second
-        final long stopTime =  ndbcFilter.getStopTime(); // round to next second
-        
+        final long endTime = ((long)Math.ceil(ndbcFilter.endTime.getTime()/1000.))*1000; // round to next second
         class BatchIterator implements Iterator<IDataRecord>
         {                
             Iterator<BuoyDataRecord> batchIt;
             IDataRecord next;
-            //long nextBatchStartTime = ndbcFilter.startTime.getTime()/1000*1000; // round to previous second
-            long nextBatchStartTime = ndbcFilter.getStartTime(); 
+            long nextBatchStartTime = ndbcFilter.startTime.getTime()/1000*1000; // round to previous second
             
             BatchIterator()
             {
@@ -140,17 +221,17 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
                 next = null;
                 
                 // retrieve next batch if needed
-                if ((batchIt == null || !batchIt.hasNext()) && nextBatchStartTime <= stopTime)
+                if ((batchIt == null || !batchIt.hasNext()) && nextBatchStartTime <= endTime)
                 {
-                	ndbcFilter.setStartTime(nextBatchStartTime);
+                	ndbcFilter.startTime = new Date(nextBatchStartTime);
                     
                     // adjust batch length to avoid a very small batch at the end
                     long timeGap = 1000; // gap to avoid duplicated obs
                     long adjBatchLength = batchLength;
-                    long timeLeft = stopTime - nextBatchStartTime;
+                    long timeLeft = endTime - nextBatchStartTime;
                     if (((double)timeLeft) / batchLength < 1.5)
                         adjBatchLength = timeLeft+timeGap;
-                    ndbcFilter.setStopTime(Math.min(nextBatchStartTime + adjBatchLength - timeGap, stopTime));
+                    ndbcFilter.endTime = new Date(Math.min(nextBatchStartTime+adjBatchLength-timeGap, endTime));
                     batchIt = nextBatch(loader, ndbcFilter, recType).iterator();
                     nextBatchStartTime += adjBatchLength;
                 }
@@ -194,12 +275,11 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
             if (fois != null)
             {
                 for (String foiID: fois)
-                	ndbcFilter.stationIds.add(foiID.substring(FOI_UID_PREFIX.length()));
+                	ndbcFilter.stationIds.add(foiID.substring(ObsStationLoader.FOI_UID_PREFIX.length()));
             }
         }
         if (!config.exposeFilter.stationIds.isEmpty())
-        	//ndbcFilter.stationIds.retainAll(config.exposeFilter.stationIds);
-        	ndbcFilter.stationIds.addAll(config.exposeFilter.stationIds);
+        	ndbcFilter.stationIds.retainAll(config.exposeFilter.stationIds);
                     
         // use config params
         ndbcFilter.parameters.addAll(config.exposeFilter.parameters);
@@ -209,18 +289,18 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         ndbcFilter.siteBbox.setMaxY(config.exposeFilter.siteBbox.getMaxY());
         
         // init time filter
-        long configStartTime = config.exposeFilter.getStartTime();
-        long configstopTime = config.exposeFilter.getStopTime();
+        long configStartTime = config.exposeFilter.startTime.getTime();
+        long configEndTime = config.exposeFilter.endTime.getTime();
         long filterStartTime = Long.MIN_VALUE;
-        long filterstopTime = Long.MAX_VALUE;
+        long filterEndTime = Long.MAX_VALUE;
         if (filter.getTimeStampRange() != null)
         {
             filterStartTime = (long)(filter.getTimeStampRange()[0] * 1000);
-            filterstopTime = (long)(filter.getTimeStampRange()[1] * 1000);
+            filterEndTime = (long)(filter.getTimeStampRange()[1] * 1000);
         }
         
-        ndbcFilter.setStartTime(Math.min(configstopTime, Math.max(configStartTime, filterStartTime)));
-        ndbcFilter.setStopTime(Math.min(configstopTime, Math.max(configStartTime, filterstopTime)));
+        ndbcFilter.startTime = new Date(Math.min(configEndTime, Math.max(configStartTime, filterStartTime)));
+        ndbcFilter.endTime = new Date(Math.min(configEndTime, Math.max(configStartTime, filterEndTime)));
         
         return ndbcFilter;
     }
@@ -235,7 +315,9 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
             if (getLogger().isDebugEnabled())
             {
                 DateTimeFormat timeFormat = new DateTimeFormat();
-                getLogger().info("Next batch is {} - {}", filter.startTimeIso, filter.stopTimeIso);
+                getLogger().debug("Next batch is {} - {}",
+                                  timeFormat.formatIso(filter.startTime.getTime()/1000., 0),
+                                  timeFormat.formatIso(filter.endTime.getTime()/1000., 0));
             }
             
             // request and parse next batch
@@ -258,104 +340,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
             throw new RuntimeException("Error while sending request for instantaneous values");
         }
     }
-
-    
-	@Override
-	public AbstractProcess getLatestDataSourceDescription()
-	{
-		return systemDesc;
-	}
-	
-    @Override
-    public List<AbstractProcess> getDataSourceDescriptionHistory(double startTime, double stopTime)
-    {
-        return Arrays.<AbstractProcess>asList(systemDesc);
-    }
-    
-	@Override
-	public AbstractProcess getDataSourceDescriptionAtTime(double time)
-	{
-		return systemDesc;
-	}
-
-    @Override
-    public Map<String, ? extends IRecordStoreInfo> getRecordStores()
-    {
-        return Collections.unmodifiableMap(dataStores);
-    }
-
-
-    @Override
-    public int getNumMatchingRecords(IDataFilter filter, long maxCount)
-    {
-        // compute rough estimate here
-        DataFilter ndbcFilter = getNdbcFilter(filter);
-//        long dt = ndbcFilter.stopTime.getTime() - ndbcFilter.startTime.getTime();
-        long dt = ndbcFilter.getStopTime() - ndbcFilter.getStartTime();
-        long samplingPeriod = TimeUnit.MINUTES.toMillis(15); // shortest sampling period seems to be 15min
-        int numSites = ndbcFilter.stationIds.isEmpty() ? fois.size() : ndbcFilter.stationIds.size();
-        return (int)(numSites * dt / samplingPeriod);
-//    	return 1;
-    }
-
-
-    @Override
-    public int getNumRecords(String recordType)
-    {
-        long dt = config.exposeFilter.getStopTime() - config.exposeFilter.getStartTime();
-        long samplingPeriod = TimeUnit.MINUTES.toMillis(15); // shortest sampling period seems to be 15min
-        int numSites = fois.size();
-        return (int)(numSites * dt / samplingPeriod);
-//        return 1;
-    }
-
-
-    @Override
-    public double[] getRecordsTimeRange(String recordType)
-    {
-        double startTime = config.exposeFilter.getStartTime() / 1000.;
-        double stopTime = config.exposeFilter.getStopTime() / 1000.;
-        return new double[] {startTime, stopTime};
-    }
-    
-    
-    @Override
-    public int[] getEstimatedRecordCounts(String recordType, double[] timeStamps)
-    {
-        return StorageUtils.computeDefaultRecordCounts(this, recordType, timeStamps);
-    }
-
-
-    @Override
-    public DataBlock getDataBlock(DataKey key)
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    @Override
-    public Iterator<DataBlock> getDataBlockIterator(IDataFilter filter)
-    {
-        final Iterator<? extends IDataRecord> it = getRecordIterator(filter);
-        
-        return new Iterator<DataBlock>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return it.hasNext();
-//                return false;
-            }
-
-            @Override
-            public DataBlock next()
-            {
-                return it.next().getData();
-            }
-        };
-    }
-    
 
     @Override
     public int getNumFois(IFoiFilter filter)
@@ -478,7 +462,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 
 
     @Override
-    public void removeDataSourceDescriptionHistory(double startTime, double stopTime)
+    public void removeDataSourceDescriptionHistory(double startTime, double endTime)
     {
         throw new UnsupportedOperationException();
     }

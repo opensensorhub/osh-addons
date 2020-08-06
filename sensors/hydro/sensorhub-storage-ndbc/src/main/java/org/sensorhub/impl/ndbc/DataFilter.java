@@ -1,13 +1,14 @@
 package org.sensorhub.impl.ndbc;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.sensorhub.api.config.DisplayInfo;
-import org.sensorhub.impl.ndbc.BuoyEnums.ObsParam;
 import org.vast.util.Bbox;
 
+// TODO- just move all these to Config.  
+//  Also there is a class called DataFilter @ package org.sensorhub.api.persistence.DataFilter
 public class DataFilter {
 	
     @DisplayInfo(desc="List of station identifiers")
@@ -16,12 +17,31 @@ public class DataFilter {
     @DisplayInfo(desc="Geographic region (BBOX)")
     public Bbox siteBbox = new Bbox();
     
-    @DisplayInfo(desc="Observed parameters")
+    @DisplayInfo(desc="Required at least one:  Observed parameters")
     public Set<BuoyParam> parameters = new LinkedHashSet<>();
     
-    @DisplayInfo(desc="Minimum time stamp of requested objects")
-    public Long startTime = null;
+    @DisplayInfo(desc="Required:  Minimum ISO-8601 time stamp of requested objects")
+    public String startTimeIso;
+//    private Long startTime = null;
     
-    @DisplayInfo(desc="Maximum time stamp of requested objects")
-    public Long endTime = null;
+    @DisplayInfo(desc="Required:  Maximum ISO-8601 time stamp of requested objects")
+    public String stopTimeIso;
+//    private Long endTime = null;
+    
+    public Long getStartTime() {
+    	return Instant.parse(startTimeIso).toEpochMilli();
+    }
+
+    public Long getStopTime() {
+    	return Instant.parse(stopTimeIso).toEpochMilli();
+    }
+    
+    public void setStartTime(Long time) {
+    	this.startTimeIso = Instant.ofEpochMilli(time).toString();
+    }
+
+    public void setStopTime(Long time) {
+    	this.stopTimeIso = Instant.ofEpochMilli(time).toString();
+    }
+
 }

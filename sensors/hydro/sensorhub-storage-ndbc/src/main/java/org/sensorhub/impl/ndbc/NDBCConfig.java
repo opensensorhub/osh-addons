@@ -15,12 +15,10 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.ndbc;
 
 import java.time.Instant;
-import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.persistence.ObsStorageConfig;
-import org.sensorhub.impl.ndbc.BuoyEnums.ObsParam;
 
 
 public class NDBCConfig extends ObsStorageConfig
@@ -32,10 +30,10 @@ public class NDBCConfig extends ObsStorageConfig
     {
 //        exposeFilter.stationIds.add("0Y2W3");
         exposeFilter.stationIds.add("ljpc1");
-        exposeFilter.endTime = System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1);
-        exposeFilter.startTime = exposeFilter.endTime - TimeUnit.DAYS.toMillis(7);
-        System.err.println("Start in cons: " + Instant.ofEpochMilli(exposeFilter.startTime));
-        System.err.println("End in cons: " + Instant.ofEpochMilli(exposeFilter.endTime));
+        exposeFilter.setStopTime(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
+        exposeFilter.setStartTime(exposeFilter.getStopTime() - TimeUnit.DAYS.toMillis(7));
+        System.err.println("Start in cons: " + Instant.ofEpochMilli(exposeFilter.getStartTime()));
+        System.err.println("End in cons: " + Instant.ofEpochMilli(exposeFilter.getStopTime()));
 //        exposeFilter.startTime = new Date(exposeFilter.endTime.getTime()-3600*24*30*1000);
 //        ObsParam [] props = ObsParam.values();
 //        for(ObsParam prop: props)

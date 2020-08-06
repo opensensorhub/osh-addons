@@ -77,12 +77,10 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         buf.append("&responseformat=text/csv"); // output type
         
         // time range
-        if (filter.startTime != null)
-            buf.append("&eventtime=")
-        	    .append(Instant.ofEpochMilli(filter.startTime).toString().substring(0,19) + "Z");
-        if (filter.endTime != null)
-            buf.append("/")
-            	.append(Instant.ofEpochMilli(filter.endTime).toString().substring(0,19) + "Z");
+        if (filter.startTimeIso != null)
+            buf.append("&eventtime=" + filter.startTimeIso);
+        if (filter.stopTimeIso != null)
+            buf.append("/" + filter.stopTimeIso);
         
         return buf.toString();
     }

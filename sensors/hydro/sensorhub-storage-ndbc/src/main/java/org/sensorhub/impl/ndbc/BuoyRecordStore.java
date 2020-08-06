@@ -21,6 +21,7 @@ abstract public class BuoyRecordStore implements IRecordStoreInfo
 
     public BuoyRecordStore(BuoyParam param) {
     	this.param = param;
+    	createHeaderBuilder();
     }
     
     public void createHeaderBuilder() {
