@@ -21,7 +21,7 @@ public class RecordStore  implements IRecordStoreInfo {
     DataRecord dataStruct;
     DataEncoding encoding;
     
-    public RecordStore(String name, Set<ObsParam> parameters)
+    public RecordStore(String name, Set<BuoyParam> parameters)
     {
         SWEHelper helper = new SWEHelper();
         GeoPosHelper geo = new GeoPosHelper();
@@ -37,7 +37,7 @@ public class RecordStore  implements IRecordStoreInfo {
         dataStruct.addComponent("location", geo.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC));
         dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
         
-        for (ObsParam param: parameters)
+        for (BuoyParam param: parameters)
         {
         	String paramName = param.name().toLowerCase();
         	
@@ -53,7 +53,7 @@ public class RecordStore  implements IRecordStoreInfo {
 	        				DataType.FLOAT);
 	        		dataStruct.addComponent("air_pressure_at_sea_level", c);
 	        		break;
-        		
+	        	
             	case "air_temperature":
             		dataStruct.addComponent("depth", helper.newQuantity("http://sensorml.com/ont/swe/property/buoy_depth", "Buoy Depth", null, "m", DataType.FLOAT));
             		c = helper.newQuantity(SWEHelper.getPropertyUri("air_temperature"),

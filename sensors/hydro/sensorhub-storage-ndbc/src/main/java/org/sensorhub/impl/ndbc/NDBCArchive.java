@@ -46,7 +46,8 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	static final String IOOS_UID_PREFIX = "urn:ioos:";
 	static final String FOI_UID_PREFIX = NDBCArchive.IOOS_UID_PREFIX + "station:wmo:";
 	
-	Map<String, BuoyRecordStore> dataStores = new LinkedHashMap<>();
+	Map<String, RecordStore> dataStores = new LinkedHashMap<>();
+//	Map<String, BuoyRecordStore> dataStores = new LinkedHashMap<>();
     Map<String, AbstractFeature> fois = new LinkedHashMap<>();
     Bbox foiExtent = new Bbox();
     PhysicalSystem systemDesc;
@@ -79,19 +80,26 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         }
 	}
     
+//    protected void initBuoyRecordStores() throws SensorHubException
+//    {
+//    	for(BuoyParam param: config.exposeFilter.parameters) {
+//    		switch(param) {
+//    		case SEA_WATER_TEMPERATURE:
+//        		BuoyRecordStore rs = new WaterTemperatureStore();
+//                dataStores.put(rs.getName(), rs);
+//        		break;
+//        	default:
+//        		logger.error("Param unrecognized or unsupported: {}" + param);
+//    		} 
+//    	}
+//    }
+//    
     protected void initRecordStores() throws SensorHubException
     {
-    	for(BuoyParam param: config.exposeFilter.parameters) {
-    		switch(param) {
-    		case SEA_WATER_TEMPERATURE:
-        		BuoyRecordStore rs = new WaterTemperatureStore();
-                dataStores.put(rs.getName(), rs);
-        		break;
-        	default:
-        		logger.error("Param unrecognized or unsupported: {}" + param);
-    		} 
-    	}
+        RecordStore rs = new RecordStore("buoyData", config.exposeFilter.parameters);
+        dataStores.put(rs.getName(), rs);
     }
+    
     
     protected void initSensorNetworkDescription() throws SensorHubException
     {
@@ -102,15 +110,17 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         systemDesc.setDescription("NDBC automated sensor network for realtime and archive buoy data"); // + getNumFois(null) + " stations across the US");
         
         // add outputs
-        for (BuoyRecordStore rs: dataStores.values())
+//        for (BuoyRecordStore rs: dataStores.values())
+//            systemDesc.addOutput(rs.getName(), rs.getRecordDescription());
+        for (RecordStore rs: dataStores.values())
             systemDesc.addOutput(rs.getName(), rs.getRecordDescription());
     }
     
 	@Override
 	public Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
 		final String recType = filter.getRecordType();
-//		RecordStore rs = dataStores.get(recType); 
-		BuoyRecordStore rs = dataStores.get(recType); 
+		RecordStore rs = dataStores.get(recType); 
+//		BuoyRecordStore rs = dataStores.get(recType); 
 		
 		// prepare loader to fetch data from NDBC web service
         final ObsRecordLoader loader = new ObsRecordLoader(rs.getRecordDescription(), logger);
@@ -255,6 +265,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         }
         catch (IOException e)
         {
+        	e.printStackTrace(System.err);
             throw new RuntimeException("Error while sending request for instantaneous values");
         }
     }

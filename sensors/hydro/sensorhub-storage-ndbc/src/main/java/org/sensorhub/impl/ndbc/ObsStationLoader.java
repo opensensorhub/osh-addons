@@ -69,7 +69,6 @@ public class ObsStationLoader {
 		buf.append("&responseformat=text/csv&eventtime=latest"); // output type
 		module.getLogger().debug("Requesting stations from: " + buf.toString());
 		URL url = new URL(buf.toString());
-		System.err.println(buf.toString());
 		BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
 
 		String line;

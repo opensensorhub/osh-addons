@@ -52,6 +52,7 @@ public class WaterTemperatureStore extends BuoyRecordStore
 	        	.build())
 	        .build();
 
+	        dataStruct.setName("waterTemperature");
 	        dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
 	        // dataStruct.setDefinition("blah");  // if needed
 	        encoding = helper.newTextEncoding();

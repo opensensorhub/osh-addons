@@ -142,6 +142,10 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         		readers.add(new FloatValueParser(5, i++)); // sea floor depth below sea surface (m)
         		readers.add(new FloatValueParser(6, i++)); // averaging interval
         	}
+           	else if (param == BuoyParam.SEA_WATER_TEMPERATURE) {
+        		readers.add(new FloatValueParser(5, i++)); // sea water temp
+        		readers.add(new FloatValueParser(6, i++)); // averaging interval
+        	}
         	else if (param == BuoyParam.WAVES) {
         		readers.add(new FloatValueParser(5, i++)); // sea surface wave significant height (m)
         		readers.add(new FloatValueParser(6, i++)); // sea surface wave peak period (s)
@@ -210,7 +214,6 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
             while ((line = reader.readLine()) != null)
             {                
                 line = line.trim();
-                System.err.println(line);
                 // parse header
                 if (line.startsWith("station_id,sensor_id"))
                 {
