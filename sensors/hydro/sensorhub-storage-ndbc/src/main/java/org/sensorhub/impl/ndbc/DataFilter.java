@@ -7,8 +7,7 @@ import java.util.Set;
 import org.sensorhub.api.config.DisplayInfo;
 import org.vast.util.Bbox;
 
-// TODO- just move all these to Config.  
-//  Also there is a class called DataFilter @ package org.sensorhub.api.persistence.DataFilter
+@Deprecated // Use NDBCConfig. Refactored to have all these params be in that class directly
 public class DataFilter {
 	
     @DisplayInfo(desc="List of station identifiers")
@@ -43,5 +42,8 @@ public class DataFilter {
     public void setStopTime(Long time) {
     	this.stopTimeIso = Instant.ofEpochMilli(time).toString();
     }
+    
+    @DisplayInfo(desc="Limit the max amount of days for a single request from NDBC server")
+    public Integer maxRequestTimeRange = 7;
 
 }

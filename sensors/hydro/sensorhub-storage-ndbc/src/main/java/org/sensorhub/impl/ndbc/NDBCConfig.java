@@ -15,38 +15,75 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.ndbc;
 
 import java.time.Instant;
-import java.util.concurrent.TimeUnit;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.persistence.ObsStorageConfig;
+import org.vast.util.Bbox;
 
 
 public class NDBCConfig extends ObsStorageConfig
 {
-    @DisplayInfo(desc="Only data matching this filter will be accessible through this storage instance")
-    public DataFilter exposeFilter = new DataFilter();
+	//  Need to format ISO with integer seconds + "Z"
+	static final DateTimeFormatter formatter = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd HH:mm:ss")
+            .withZone(ZoneId.of("GMT"));
     
-    public NDBCConfig()
-    {
-//        exposeFilter.stationIds.add("0Y2W3");
-        exposeFilter.stationIds.add("ljpc1");
-        exposeFilter.setStopTime(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
-        exposeFilter.setStartTime(exposeFilter.getStopTime() - TimeUnit.DAYS.toMillis(7));
-        System.err.println("Start in cons: " + Instant.ofEpochMilli(exposeFilter.getStartTime()));
-        System.err.println("End in cons: " + Instant.ofEpochMilli(exposeFilter.getStopTime()));
-//        exposeFilter.startTime = new Date(exposeFilter.endTime.getTime()-3600*24*30*1000);
-//        ObsParam [] props = ObsParam.values();
-//        for(ObsParam prop: props)
-//        	exposeFilter.parameters.add(prop);
-        exposeFilter.parameters.add(BuoyParam.WAVES);
-//        exposeFilter.parameters.add(ObsParam.AIR_TEMPERATURE);
-        
-        // NOTE: NDBC bbox requests are apparently not returning all available buoys
-//        exposeFilter.siteBbox = new Bbox(-118.0,32.0, -117.0, 33.0);
+    @DisplayInfo(desc="List of station identifiers")
+    public Set<String> stationIds = new LinkedHashSet<>();
+    
+    @DisplayInfo(desc="Geographic region (BBOX)")
+    public Bbox siteBbox = new Bbox();
+    
+    @DisplayInfo(desc="Required at least one:  Observed parameters")
+    public Set<BuoyParam> parameters = new LinkedHashSet<>();
+    
+    @DisplayInfo(desc="Required:  ISO-8601 timestamp of earliest data available via NDBC SOS, and used for start timestamp requests to NDBC SOS")
+    public String startTimeIso = "2006-01-01T00:00:00Z";  
+    
+    @DisplayInfo(desc="ISO-8601 for stop timestamp requests to NDBC SOS")
+    public String stopTimeIso;
+    
+    public Long getStartTime() {
+    	return Instant.parse(startTimeIso).toEpochMilli();
+    }
+
+    public Long getStopTime() {
+    	return Instant.parse(stopTimeIso).toEpochMilli();
+    }
+    
+    public void setStartTime(Long timeMs) {
+//    	this.startTimeIso = Instant.ofEpochMilli(time).toString();
+    	this.startTimeIso = formatIso(timeMs);
+    }
+
+    public void setStopTime(Long timeMs) {
+//    	this.stopTimeIso = Instant.ofEpochMilli(time).toString();
+    	this.stopTimeIso = formatIso(timeMs);
+    }
+    
+    @DisplayInfo(desc="Limit the max amount of days for a single request from NDBC server")
+    public Integer maxRequestTimeRange = 7;
+
+    /**
+     * 
+     * @param timeMs
+     * @return iso 8601 formatted String 
+     */
+    public static String formatIso(long timeMs) {
+    	Instant inst = Instant.ofEpochMilli(timeMs);
+		LocalDateTime ldt = LocalDateTime.ofInstant(inst, ZoneId.of("GMT"));
+    	String iso = ldt.format(formatter);
+    	iso = iso.replace(" ", "T") + "Z";
+    	return iso;
     }
 
 	@Override
 	public void setStorageIdentifier(String name) {
-		// TODO Auto-generated method stub
+		this.name = name;
 	}
 }

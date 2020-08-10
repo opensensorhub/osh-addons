@@ -39,14 +39,14 @@ public class ObsStationLoader {
 	}
 
 	//  Load stations by requesting latest measurement from all (or  filtered) stations in network
-	public void loadStations(Map<String, AbstractFeature> fois, DataFilter filter) throws IOException {
+	public void loadStations(Map<String, AbstractFeature> fois, NDBCConfig config) throws IOException {
 		StringBuilder buf = new StringBuilder(BASE_URL);
 
 		//  We want all stations
 		buf.append("&offering=urn:ioos:network:noaa.nws.ndbc:all");
 		// site bbox
-		if (filter.siteBbox != null && !filter.siteBbox.isNull()) {
-			Bbox bbox = filter.siteBbox;
+		if (config.siteBbox != null && !config.siteBbox.isNull()) {
+			Bbox bbox = config.siteBbox;
 			buf.append("&featureofinterest=BBOX:").append(bbox.getMinX())
 					.append(",").append(bbox.getMinY()).append(",").append(bbox.getMaxX()).append(",")
 					.append(bbox.getMaxY());
@@ -58,10 +58,10 @@ public class ObsStationLoader {
 		//  We can get all the buoy IDs, lat-lons, and time ranges from Caps doc:
 		//  	https://sdf.ndbc.noaa.gov/sos/server.php?request=GetCapabilities&service=SOS
 		//  It is 2 MB so for nwo just sticking with this method 
-		if(filter.parameters.size() == 0) {
+		if(config.parameters.size() == 0) {
 			throw new IOException("DataFilter must contain at list one parameter in Set<ObsParam> parameters");
 		}
-		BuoyParam param = filter.parameters.iterator().next();
+		BuoyParam param = config.parameters.iterator().next();
 		if(param == BuoyParam.ENVIRONMENTAL)
 			param = BuoyParam.SEA_WATER_TEMPERATURE;
 		buf.append("&observedProperty=" + param.toString().toLowerCase());

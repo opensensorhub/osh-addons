@@ -23,7 +23,8 @@ import net.opengis.swe.v20.DataComponent;
 @Deprecated // 
 public class ObsRecordLoader implements Iterator<DataBlock> {
 	static final String BASE_URL = NDBCArchive.BASE_NDBC_URL + "/sos/server.php?request=GetObservation&service=SOS&version=1.0.0";
-	DataFilter filter;
+//	DataFilter filter;
+	NDBCConfig config;
 	BufferedReader reader;
 	String requestURL;
 	ParamValueParser[] paramReaders;
@@ -39,9 +40,10 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
     }
     
 //    protected String buildInstantValuesRequest(DataFilter filter, Map<String, String[]> sensorOfferings)
-    protected String buildInstantValuesRequest(DataFilter filter)
+    protected String buildInstantValuesRequest(NDBCConfig filter)
     {
         StringBuilder buf = new StringBuilder(BASE_URL);
+        int x = 0;
         
         // site ids
         if (!filter.stationIds.isEmpty())
@@ -85,14 +87,14 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
         return buf.toString();
     }
     
-    public void sendRequest(DataFilter filter) throws IOException {
-    	requestURL = buildInstantValuesRequest(filter);
+    public void sendRequest(NDBCConfig config) throws IOException {
+    	requestURL = buildInstantValuesRequest(config);
     	logger.info("Requesting observations from: " + requestURL);
     	URL url = new URL(requestURL);
     	
     	reader = new BufferedReader(new InputStreamReader(url.openStream()));
 
-    	this.filter = filter;
+    	this.config = config;
     	
     	// preload first record
         nextRecord = null;
@@ -219,7 +221,7 @@ public class ObsRecordLoader implements Iterator<DataBlock> {
                 if (line.startsWith("station_id,sensor_id"))
                 {
                 	String[] fieldNames = line.split(",");
-                	initParamReaders(filter.parameters, fieldNames);
+                	initParamReaders(config.parameters, fieldNames);
                     line = reader.readLine();
                     if (line == null || line.trim().isEmpty())
                         return null;
