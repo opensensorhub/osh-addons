@@ -12,8 +12,8 @@ public class TestNDBC
     {
     	NDBCArchive storage = new NDBCArchive();
     	NDBCConfig config = new NDBCConfig();
-    	config.exposeFilter.stationIds.add("0Y2W3");
-    	config.exposeFilter.parameters.add(BuoyParam.AIR_PRESSURE_AT_SEA_LEVEL);
+    	config.stationIds.add("0Y2W3");
+    	config.parameters.add(BuoyParam.AIR_PRESSURE_AT_SEA_LEVEL);
     	storage.init(config);
     	storage.start();
     }

@@ -15,20 +15,20 @@ import org.vast.util.Bbox;
 
 public class BuoyParser {
 	static final String BASE_URL = NDBCArchive.BASE_NDBC_URL + "/sos/server.php?request=GetObservation&service=SOS&version=1.0.0";
-	DataFilter filter;
+	NDBCConfig filter;
 	BuoyParam recordType;
 	String requestURL;
 	Logger logger;
 
-	public BuoyParser(DataFilter filter, BuoyParam recordType)
+	public BuoyParser(NDBCConfig filter, BuoyParam recordType)
 	{
 		this.filter = filter;
 		this.recordType = recordType;
 	}
 
 	public static void main(String[] args) throws IOException {
-		DataFilter filter = new DataFilter();
-//		filter.startTime=
+		NDBCConfig filter = new NDBCConfig();
+				
 		BuoyParser parser = new BuoyParser(filter, BuoyParam.AIR_TEMPERATURE);
 		parser.getRecords();
 	}
@@ -81,7 +81,6 @@ public class BuoyParser {
 	public List<BuoyRecord> getRecords() throws IOException {
 		requestURL = buildRequest();
 //		logger.info("Requesting observations from: " + requestURL);
-		System.err.println("Requesting observations from: " + requestURL);
 		URL url = new URL(requestURL);
 
 		List<BuoyRecord> recs = parseResponse(url.openStream());
@@ -105,6 +104,7 @@ public class BuoyParser {
 					rec.lat = Double.parseDouble(values[2]);
 					rec.lon = Double.parseDouble(values[3]);
 					rec.timeStr = values[4];
+					rec.timeMs = Instant.parse( rec.timeStr ).toEpochMilli();
 					//rec.timeMs = ;
 					switch(recordType) {
 					case AIR_PRESSURE_AT_SEA_LEVEL:

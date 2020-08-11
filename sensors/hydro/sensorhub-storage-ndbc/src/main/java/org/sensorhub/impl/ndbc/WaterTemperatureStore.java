@@ -54,7 +54,7 @@ public class WaterTemperatureStore extends BuoyRecordStore
 
 	        dataStruct.setName("waterTemperature");
 	        dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
-	        // dataStruct.setDefinition("blah");  // if needed
+	        dataStruct.setDefinition("https://mmisw.org/ont/cf/parameter/sea_water_temperature");  // if needed
 	        encoding = helper.newTextEncoding();
 	    }
 	    

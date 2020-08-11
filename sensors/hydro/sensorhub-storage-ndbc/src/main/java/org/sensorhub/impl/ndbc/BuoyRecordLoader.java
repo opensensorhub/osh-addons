@@ -7,30 +7,45 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
 
 public class BuoyRecordLoader implements Iterator<DataBlock> {
 
-	public List<BuoyRecord> getRecords(DataFilter filter) throws IOException {
-		List<BuoyRecord> allRecs = new ArrayList<>();
-		for (BuoyParam param : filter.parameters) {
-			BuoyParser parser = new BuoyParser(filter, param);
-			List<BuoyRecord> recs = parser.getRecords();
-			allRecs.addAll(recs);
+	DataBlock block;
+	//	List<BuoyRecord> records;
+	List<DataBlock> blocks;
+	Iterator<DataBlock> iterator; 
+	DataComponent dataComponent;
+
+	public BuoyRecordLoader(DataComponent dataComponent) {
+		this.dataComponent = dataComponent;
+	}
+
+	public List<BuoyRecord> getRecords(NDBCConfig filter) throws IOException {
+		BuoyParser parser = new BuoyParser(filter, filter.parameters.iterator().next());
+		List<BuoyRecord> recs = parser.getRecords();
+		blocks = new ArrayList<>();
+		for(BuoyRecord rec: recs) {
+			block = dataComponent.createDataBlock();
+			block.setDoubleValue(0, rec.timeMs/1000.);
+			block.setStringValue(1, rec.stationId);
+			block.setStringValue(2, "N/A"); // MSG ID
+			block.setDoubleValue(3, rec.waterTemperature);
+			blocks.add(block);
 		}
-		return allRecs;
+		iterator = blocks.iterator();
+		return recs;
 	}
 
 	@Override
 	public boolean hasNext() {
-//		return (nextRecord != null);
-		return false;
+		return iterator.hasNext();
 	}
 
 	@Override
 	public DataBlock next() {
 		if (!hasNext())
 			throw new NoSuchElementException();
-//		return preloadNext();
-		return null;
+		return iterator.next();
 	}
 }
