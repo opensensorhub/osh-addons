@@ -18,6 +18,8 @@ import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import javax.xml.namespace.QName;
 import org.bytedeco.ffmpeg.avcodec.AVCodec;
@@ -25,7 +27,6 @@ import org.bytedeco.ffmpeg.avcodec.AVCodecContext;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avutil.AVFrame;
 import org.bytedeco.ffmpeg.avutil.AVRational;
-import org.bytedeco.ffmpeg.global.avcodec;
 import org.bytedeco.ffmpeg.swscale.SwsContext;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
@@ -44,8 +45,12 @@ import org.vast.swe.SWEHelper;
 import org.vast.swe.fast.DataBlockProcessor;
 import org.vast.swe.fast.FilterByDefinition;
 import com.google.common.collect.Sets;
+import net.opengis.swe.v20.BinaryBlock;
+import net.opengis.swe.v20.BinaryEncoding;
+import net.opengis.swe.v20.BinaryMember;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
+import net.opengis.swe.v20.DataEncoding;
 import static org.bytedeco.ffmpeg.global.avcodec.*;
 import static org.bytedeco.ffmpeg.global.avutil.*;
 import static org.bytedeco.ffmpeg.global.swscale.*;
@@ -68,6 +73,27 @@ import static org.bytedeco.ffmpeg.global.swscale.*;
 public class VideoTranscoder implements ISOSCustomSerializer
 {
     private static final Set<String> IMG_ARRAY_COMPONENT_NAMES = Sets.newHashSet("img", "videoFrame");
+    private static final Map<String, CodecConfig> CODEC_TABLE = new HashMap<>();
+    
+    static {
+        CODEC_TABLE.put("H264", new CodecConfig("h264", "libx264"));
+        CODEC_TABLE.put("H265", new CodecConfig("hevc", "libx265"));
+        CODEC_TABLE.put("HEVC", new CodecConfig("hevc", "libx265"));
+        CODEC_TABLE.put("VP8", new CodecConfig("vp8", "libvpx"));
+        CODEC_TABLE.put("VP9", new CodecConfig("vp9", "libvpx-vp9"));
+    }
+    
+    static class CodecConfig
+    {
+        String decoderName;
+        String encoderName;
+        
+        CodecConfig(String decName, String encName)
+        {
+            this.decoderName = decName;
+            this.encoderName = encName;
+        }
+    }
     
     
     @Override
@@ -86,7 +112,7 @@ public class VideoTranscoder implements ISOSCustomSerializer
         String frameHeightString = (String)gReq.getExtensions().get(new QName("video_height"));
         int frameHeight = frameHeightString != null ? Integer.valueOf(frameHeightString) : 180;
         String frameSizeScalingString = (String)gReq.getExtensions().get(new QName("video_scale"));
-        double frameSizeScale = frameSizeScalingString != null ? Double.valueOf(frameSizeScalingString) : 0.5;
+        double frameSizeScale = frameSizeScalingString != null ? Double.valueOf(frameSizeScalingString) : 1.0;
         
         AVCodec decoder;
         AVCodec encoder;
@@ -94,12 +120,12 @@ public class VideoTranscoder implements ISOSCustomSerializer
         AVCodecContext encode_ctx;
         SwsContext sws_ctx = null;
         DataStreamWriter writer;
-        String codecName = "h264";
+        CodecConfig codecConfig = null;
         AVFrame av_frame;
         AVFrame sws_frame;
         AVPacket dec_pkt;
         AVPacket enc_pkt;
-        int imgCompIdx = 0;
+        int imgCompIdx = -1;
         
         try
         {
@@ -114,6 +140,24 @@ public class VideoTranscoder implements ISOSCustomSerializer
                 }
             }
             
+            // get native codec
+            DataEncoding enc = dataProvider.getDefaultResultEncoding();
+            if (enc instanceof BinaryEncoding)
+            {
+                for (BinaryMember m: ((BinaryEncoding)enc).getMemberList())
+                {
+                    if (m instanceof BinaryBlock)
+                    {
+                        String codecID = ((BinaryBlock) m).getCompression();
+                        codecConfig = CODEC_TABLE.get(codecID);
+                        break;
+                    }
+                }                
+            }            
+                        
+            if (codecConfig == null || imgCompIdx < 0)
+                throw new IOException("Requested data stream does not contain video frames or transcoding for this codec is not supported");
+            
             // init FFMPEG objects
             dec_pkt = av_packet_alloc();
             av_init_packet(dec_pkt);
@@ -123,14 +167,16 @@ public class VideoTranscoder implements ISOSCustomSerializer
             sws_frame = av_frame_alloc();
             
             // init decoder context
-            decoder = avcodec_find_decoder(avcodec.AV_CODEC_ID_H264);
+            //decoder = avcodec_find_decoder(avcodec.AV_CODEC_ID_H264);
+            decoder = avcodec_find_decoder_by_name(codecConfig.decoderName);
             decode_ctx = avcodec_alloc_context3(decoder);
             if (avcodec_open2(decode_ctx, decoder, (PointerPointer<?>)null) < 0) {
-                throw new IllegalStateException("Error initializing decoder for codec " + codecName);
+                throw new IllegalStateException("Error initializing decoder " + codecConfig.decoderName);
             }
             
             // create decoder context
-            encoder = avcodec_find_encoder(avcodec.AV_CODEC_ID_H264);
+            //encoder = avcodec_find_encoder(avcodec.AV_CODEC_ID_H264);
+            encoder = avcodec_find_encoder_by_name(codecConfig.encoderName);
             encode_ctx = avcodec_alloc_context3(encoder);
             
             // prepare writer for selected encoding
@@ -212,7 +258,7 @@ public class VideoTranscoder implements ISOSCustomSerializer
                         av_opt_set(encode_ctx.priv_data(), "preset", "ultrafast", 0);
                         av_opt_set(encode_ctx.priv_data(), "tune", "zerolatency", 0);
                         if (avcodec_open2(encode_ctx, encoder, (PointerPointer<?>)null) < 0) {
-                            throw new IllegalStateException("Error initializing encoder for codec " + codecName);
+                            throw new IllegalStateException("Error initializing encoder for codec " + codecConfig.encoderName);
                         }
                     }
                     sws_scale(sws_ctx, av_frame.data(), av_frame.linesize(), 0, av_frame.height(), sws_frame.data(), sws_frame.linesize());
