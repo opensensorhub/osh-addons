@@ -68,10 +68,11 @@ public class LLALocationOutput extends NMEAGpsOutput
         GeoPosHelper fac = new GeoPosHelper();
         
         // SWE Common data structure
-        dataStruct = fac.newDataRecord(3);
+        dataStruct = fac.newDataRecord(5);
         dataStruct.setName(getName());
         dataStruct.addComponent("time", fac.newTimeStampIsoUTC());
-        
+        dataStruct.addComponent("floatID", fac.newText("http://sensorml.com/ont/swe/property/IMEI","Bouy ID", "Bouy Unique Identifier"));
+        dataStruct.addComponent("msgID", fac.newText("http://sensorml.com/ont/swe/property/msgID", "MOMSN", "The running MO message count for that bouy"));
         Vector locVector = fac.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
         locVector.setLabel("Location");
         locVector.setDescription("Location measured by GPS device");
@@ -112,9 +113,11 @@ public class LLALocationOutput extends NMEAGpsOutput
             // populate datablock
             dataBlock = getNewDataBlock();
             dataBlock.setDoubleValue(0, toJulianTime(utcTimeToken));
-            dataBlock.setDoubleValue(1, toDecimalDegrees(tokens[2], tokens[3], false)); // lat
-            dataBlock.setDoubleValue(2, toDecimalDegrees(tokens[4], tokens[5], true)); // lon
-            dataBlock.setDoubleValue(3, toEllipsoidalHeight(tokens[9], tokens[11])); // alt           
+            dataBlock.setStringValue(1, getParentModule().getConfiguration().bouyID);
+            dataBlock.setStringValue(2, "N/A");
+            dataBlock.setDoubleValue(3, toDecimalDegrees(tokens[2], tokens[3], false)); // lat
+            dataBlock.setDoubleValue(4, toDecimalDegrees(tokens[4], tokens[5], true)); // lon
+            dataBlock.setDoubleValue(5, toEllipsoidalHeight(tokens[9], tokens[11])); // alt      
         }
         
         else if (msgID.equals(NMEAGpsSensor.RMC_MSG))
@@ -137,9 +140,11 @@ public class LLALocationOutput extends NMEAGpsOutput
             // populate datablock
             dataBlock = getNewDataBlock();
             dataBlock.setDoubleValue(0, toJulianTime(utcTimeToken, tokens[9]));
-            dataBlock.setDoubleValue(1, toDecimalDegrees(tokens[3], tokens[4], false)); // lat
-            dataBlock.setDoubleValue(2, toDecimalDegrees(tokens[5], tokens[6], true)); // lon 
-            dataBlock.setDoubleValue(3, Double.NaN); // alt
+            dataBlock.setStringValue(1, getParentModule().getConfiguration().bouyID);
+            dataBlock.setStringValue(2, "N/A");
+            dataBlock.setDoubleValue(3, toDecimalDegrees(tokens[3], tokens[4], false)); // lat
+            dataBlock.setDoubleValue(4, toDecimalDegrees(tokens[5], tokens[6], true)); // lon
+            dataBlock.setDoubleValue(5, Double.NaN); // alt
         }
         
         else if (msgID.equals(NMEAGpsSensor.ZDA_MSG))

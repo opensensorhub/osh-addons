@@ -37,6 +37,9 @@ public class NMEAGpsConfig extends SensorConfig
     
     @DisplayInfo(label="Active NMEA Messages", desc="List of NMEA sentences to provide as outputs")
     public List<String> activeSentences = new ArrayList<String>();
+
+    @DisplayInfo(label="Bouy ID", desc="Bouy Unique Identifier")
+    public String bouyID = null;
     
     
     public NMEAGpsConfig()
