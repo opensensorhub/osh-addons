@@ -33,6 +33,8 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.sensorhub.impl.service.sos.ISOSCustomSerializer;
 import org.sensorhub.impl.service.sos.ISOSDataProvider;
 import org.sensorhub.impl.service.sos.SOSProviderUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vast.cdm.common.DataStreamWriter;
 import org.vast.data.DataBlockMixed;
 import org.vast.ows.OWSRequest;
@@ -72,6 +74,8 @@ import static org.bytedeco.ffmpeg.global.swscale.*;
  */
 public class VideoTranscoder implements ISOSCustomSerializer
 {
+    private static final Logger log = LoggerFactory.getLogger(VideoTranscoder.class);
+    
     private static final Set<String> IMG_ARRAY_COMPONENT_NAMES = Sets.newHashSet("img", "videoFrame");
     private static final Map<String, CodecConfig> CODEC_TABLE = new HashMap<>();
     
@@ -106,13 +110,20 @@ public class VideoTranscoder implements ISOSCustomSerializer
         String fpsString = (String)gReq.getExtensions().get(new QName("video_fps"));
         int fps = fpsString != null ? Integer.valueOf(fpsString) : 30;
         String bitrateString = (String)gReq.getExtensions().get(new QName("video_bitrate"));
-        int bitrate = bitrateString != null ? Integer.valueOf(bitrateString)*1024 : 150*1024;
+        int bitrate = bitrateString != null ? Integer.valueOf(bitrateString)*1000 : 150*1000;
         String frameWidthString = (String)gReq.getExtensions().get(new QName("video_width"));
         int frameWidth = frameWidthString != null ? Integer.valueOf(frameWidthString) : 320;
         String frameHeightString = (String)gReq.getExtensions().get(new QName("video_height"));
         int frameHeight = frameHeightString != null ? Integer.valueOf(frameHeightString) : 180;
         String frameSizeScalingString = (String)gReq.getExtensions().get(new QName("video_scale"));
         double frameSizeScale = frameSizeScalingString != null ? Double.valueOf(frameSizeScalingString) : 1.0;
+        
+        if (fps <= 0)
+            throw new IllegalArgumentException("Invalid frame rate requested");
+        if (bitrate <= 0)
+            throw new IllegalArgumentException("Invalid bitrate requested");
+        if (fps <= 0 || bitrate <= 0 || frameWidth <= 0 || frameHeight <= 0 || frameSizeScale <= 0)
+            throw new IllegalArgumentException("Invalid frame size requested");
         
         AVCodec decoder;
         AVCodec encoder;
@@ -140,6 +151,10 @@ public class VideoTranscoder implements ISOSCustomSerializer
                 }
             }
             
+            if (imgCompIdx < 0)
+                throw new IllegalArgumentException("Requested data stream does not contain video frames");
+            
+            
             // get native codec
             DataEncoding enc = dataProvider.getDefaultResultEncoding();
             if (enc instanceof BinaryEncoding)
@@ -156,7 +171,7 @@ public class VideoTranscoder implements ISOSCustomSerializer
             }            
                         
             if (codecConfig == null || imgCompIdx < 0)
-                throw new IOException("Requested data stream does not contain video frames or transcoding for this codec is not supported");
+                throw new IllegalArgumentException("Transcoding is not supported for this video stream");
             
             // init FFMPEG objects
             dec_pkt = av_packet_alloc();
@@ -167,7 +182,6 @@ public class VideoTranscoder implements ISOSCustomSerializer
             sws_frame = av_frame_alloc();
             
             // init decoder context
-            //decoder = avcodec_find_decoder(avcodec.AV_CODEC_ID_H264);
             decoder = avcodec_find_decoder_by_name(codecConfig.decoderName);
             decode_ctx = avcodec_alloc_context3(decoder);
             if (avcodec_open2(decode_ctx, decoder, (PointerPointer<?>)null) < 0) {
@@ -175,7 +189,6 @@ public class VideoTranscoder implements ISOSCustomSerializer
             }
             
             // create decoder context
-            //encoder = avcodec_find_encoder(avcodec.AV_CODEC_ID_H264);
             encoder = avcodec_find_encoder_by_name(codecConfig.encoderName);
             encode_ctx = avcodec_alloc_context3(encoder);
             
@@ -230,9 +243,23 @@ public class VideoTranscoder implements ISOSCustomSerializer
                         // determine frame size
                         if (frameWidthString == null && frameHeightString == null)
                         {
-                            frameWidth = (int)(av_frame.width() * frameSizeScale);
-                            frameHeight = (int)(av_frame.height() * frameSizeScale);
-                        }                        
+                            frameWidth = (int)Math.round(av_frame.width() * frameSizeScale);
+                            frameHeight = (int)Math.round(av_frame.height() * frameSizeScale);
+                        }
+                        else if (frameWidthString != null && frameHeightString == null)
+                        {
+                            frameHeight = (int)Math.round(frameWidth * ((double)av_frame.height()/av_frame.width()));
+                        }
+                        else if (frameWidthString == null && frameHeightString != null)
+                        {
+                            frameWidth = (int)Math.round(frameHeight * ((double)av_frame.width()/av_frame.height()));
+                        }
+                        
+                        // make sure frame dimensions are multiple of 2
+                        if (frameWidth % 2 != 0)
+                            frameWidth++;
+                        if (frameHeight % 2 != 0)
+                            frameHeight++;
                         
                         // init scaler
                         sws_frame.format(AV_PIX_FMT_YUV420P);
@@ -243,7 +270,9 @@ public class VideoTranscoder implements ISOSCustomSerializer
                         
                         sws_ctx = sws_getContext(av_frame.width(), av_frame.height(), AV_PIX_FMT_YUV420P,
                                 frameWidth, frameHeight, AV_PIX_FMT_YUV420P, SWS_BICUBIC, null, null, (double[])null);
-                        //System.out.printf("%d x %d -> %d x %d", av_frame.width(), av_frame.height(), frameWidth, frameHeight);
+                                                
+                        log.debug("Resizing {}x{} -> {}x{}", av_frame.width(), av_frame.height(), frameWidth, frameHeight);
+                        log.debug("Target bitrate = {}", bitrate);
                         
                         // init encoder
                         AVRational timeBase = new AVRational();
@@ -261,6 +290,8 @@ public class VideoTranscoder implements ISOSCustomSerializer
                             throw new IllegalStateException("Error initializing encoder for codec " + codecConfig.encoderName);
                         }
                     }
+                    
+                    // scale frame to desired resolution (width/height)
                     sws_scale(sws_ctx, av_frame.data(), av_frame.linesize(), 0, av_frame.height(), sws_frame.data(), sws_frame.linesize());
                     
                     // encode
@@ -299,7 +330,7 @@ public class VideoTranscoder implements ISOSCustomSerializer
         }
         catch (Exception e)
         {
-            throw new IOException("Error while transcoding provider data", e);
+            throw new IOException("Error while transcoding video data", e);
         }
     }
 }
