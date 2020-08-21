@@ -30,6 +30,7 @@ import org.bytedeco.ffmpeg.avutil.AVRational;
 import org.bytedeco.ffmpeg.swscale.SwsContext;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.javacpp.PointerScope;
 import org.sensorhub.impl.service.sos.ISOSCustomSerializer;
 import org.sensorhub.impl.service.sos.ISOSDataProvider;
 import org.sensorhub.impl.service.sos.SOSProviderUtils;
@@ -125,212 +126,261 @@ public class VideoTranscoder implements ISOSCustomSerializer
         if (fps <= 0 || bitrate <= 0 || frameWidth <= 0 || frameHeight <= 0 || frameSizeScale <= 0)
             throw new IllegalArgumentException("Invalid frame size requested");
         
-        AVCodec decoder;
-        AVCodec encoder;
-        AVCodecContext decode_ctx;
-        AVCodecContext encode_ctx;
+        AVCodec decoder = null;
+        AVCodec encoder = null;
+        AVCodecContext decode_ctx = null;
+        AVCodecContext encode_ctx = null;
         SwsContext sws_ctx = null;
         DataStreamWriter writer;
         CodecConfig codecConfig = null;
-        AVFrame av_frame;
-        AVFrame sws_frame;
-        AVPacket dec_pkt;
-        AVPacket enc_pkt;
+        AVFrame av_frame = null;
+        AVFrame sws_frame = null;
+        AVPacket dec_pkt = null;
+        AVPacket enc_pkt = null;
         int imgCompIdx = -1;
         
-        try
+        try (PointerScope scope = new PointerScope())
         {
-            // get index of image component
-            DataComponent dataStruct = dataProvider.getResultStructure();            
-            for (int i = dataStruct.getComponentCount()-1; i >= 0; i--)
+            try
             {
-                if (IMG_ARRAY_COMPONENT_NAMES.contains(dataStruct.getComponent(i).getName()))
+                // get index of image component
+                DataComponent dataStruct = dataProvider.getResultStructure();            
+                for (int i = dataStruct.getComponentCount()-1; i >= 0; i--)
                 {
-                    imgCompIdx = i;
-                    break;
-                }
-            }
-            
-            if (imgCompIdx < 0)
-                throw new IllegalArgumentException("Requested data stream does not contain video frames");
-            
-            
-            // get native codec
-            DataEncoding enc = dataProvider.getDefaultResultEncoding();
-            if (enc instanceof BinaryEncoding)
-            {
-                for (BinaryMember m: ((BinaryEncoding)enc).getMemberList())
-                {
-                    if (m instanceof BinaryBlock)
+                    if (IMG_ARRAY_COMPONENT_NAMES.contains(dataStruct.getComponent(i).getName()))
                     {
-                        String codecID = ((BinaryBlock) m).getCompression();
-                        codecConfig = CODEC_TABLE.get(codecID);
+                        imgCompIdx = i;
                         break;
                     }
-                }                
-            }            
-                        
-            if (codecConfig == null || imgCompIdx < 0)
-                throw new IllegalArgumentException("Transcoding is not supported for this video stream");
-            
-            // init FFMPEG objects
-            dec_pkt = av_packet_alloc();
-            av_init_packet(dec_pkt);
-            enc_pkt = av_packet_alloc();
-            av_init_packet(enc_pkt);
-            av_frame = av_frame_alloc();
-            sws_frame = av_frame_alloc();
-            
-            // init decoder context
-            decoder = avcodec_find_decoder_by_name(codecConfig.decoderName);
-            decode_ctx = avcodec_alloc_context3(decoder);
-            if (avcodec_open2(decode_ctx, decoder, (PointerPointer<?>)null) < 0) {
-                throw new IllegalStateException("Error initializing decoder " + codecConfig.decoderName);
+                }
+                
+                if (imgCompIdx < 0)
+                    throw new IllegalArgumentException("Requested data stream does not contain video frames");
+                
+                
+                // get native codec
+                DataEncoding enc = dataProvider.getDefaultResultEncoding();
+                if (enc instanceof BinaryEncoding)
+                {
+                    for (BinaryMember m: ((BinaryEncoding)enc).getMemberList())
+                    {
+                        if (m instanceof BinaryBlock)
+                        {
+                            String codecID = ((BinaryBlock) m).getCompression();
+                            codecConfig = CODEC_TABLE.get(codecID);
+                            break;
+                        }
+                    }                
+                }            
+                            
+                if (codecConfig == null || imgCompIdx < 0)
+                    throw new IllegalArgumentException("Transcoding is not supported for this video stream");
+                
+                // init FFMPEG objects
+                av_log_set_level(log.isDebugEnabled() ? AV_LOG_INFO : AV_LOG_FATAL);
+                dec_pkt = av_packet_alloc();
+                av_init_packet(dec_pkt);
+                enc_pkt = av_packet_alloc();
+                av_init_packet(enc_pkt);
+                av_frame = av_frame_alloc();
+                sws_frame = av_frame_alloc();
+                                
+                // init decoder context
+                decoder = avcodec_find_decoder_by_name(codecConfig.decoderName);
+                decode_ctx = avcodec_alloc_context3(decoder);
+                if (avcodec_open2(decode_ctx, decoder, (PointerPointer<?>)null) < 0) {
+                    throw new IllegalStateException("Error initializing decoder " + codecConfig.decoderName);
+                }
+                
+                // create decoder context
+                encoder = avcodec_find_encoder_by_name(codecConfig.encoderName);
+                encode_ctx = avcodec_alloc_context3(encoder);
+                
+                // prepare writer for selected encoding
+                writer = SWEHelper.createDataWriter(dataProvider.getDefaultResultEncoding());
+                
+                // we also do filtering here in case data provider hasn't modified the datablocks
+                // always keep sampling time and entity ID if present
+                gReq.getObservables().add(SWEConstants.DEF_SAMPLING_TIME);
+                String entityComponentUri = SOSProviderUtils.findEntityIDComponentURI(dataProvider.getResultStructure());
+                if (entityComponentUri != null)
+                    gReq.getObservables().add(entityComponentUri);
+                // temporary hack to switch btw old and new writer architecture
+                if (writer instanceof AbstractDataWriter)
+                    writer = new FilteredWriter((AbstractDataWriter)writer, gReq.getObservables());
+                else
+                    ((DataBlockProcessor)writer).setDataComponentFilter(new FilterByDefinition(gReq.getObservables()));
+                writer.setDataComponents(dataProvider.getResultStructure());
+                writer.setOutput(os);
+            }
+            catch (IOException e)
+            {
+                throw new IOException("Error initializing video transcoding", e);
             }
             
-            // create decoder context
-            encoder = avcodec_find_encoder_by_name(codecConfig.encoderName);
-            encode_ctx = avcodec_alloc_context3(encoder);
-            
-            // prepare writer for selected encoding
-            writer = SWEHelper.createDataWriter(dataProvider.getDefaultResultEncoding());
-            
-            // we also do filtering here in case data provider hasn't modified the datablocks
-            // always keep sampling time and entity ID if present
-            gReq.getObservables().add(SWEConstants.DEF_SAMPLING_TIME);
-            String entityComponentUri = SOSProviderUtils.findEntityIDComponentURI(dataProvider.getResultStructure());
-            if (entityComponentUri != null)
-                gReq.getObservables().add(entityComponentUri);
-            // temporary hack to switch btw old and new writer architecture
-            if (writer instanceof AbstractDataWriter)
-                writer = new FilteredWriter((AbstractDataWriter)writer, gReq.getObservables());
-            else
-                ((DataBlockProcessor)writer).setDataComponentFilter(new FilterByDefinition(gReq.getObservables()));
-            writer.setDataComponents(dataProvider.getResultStructure());
-            writer.setOutput(os);
-        }
-        catch (IOException e)
-        {
-            throw new IOException("Error initializing video transcoding", e);
-        }
-        
-        try
-        {        
-            // transcode and write all records
-            long pts = 0;
-            DataBlock nextRecord;
-            while ((nextRecord = dataProvider.getNextResultRecord()) != null)
+            try
             {        
-                // make a copy so we don't interfer with
-                nextRecord = nextRecord.clone();
-                
-                // get frame data
-                DataBlock frameBlk = ((DataBlockMixed)nextRecord).getUnderlyingObject()[imgCompIdx];
-                byte[] frameData = (byte[])frameBlk.getUnderlyingObject();
-                
-                // decode frame
-                dec_pkt.data(new BytePointer(frameData));
-                dec_pkt.size(frameData.length);
-                int ret1 = avcodec_send_packet(decode_ctx, dec_pkt);
-                int ret2 = avcodec_receive_frame(decode_ctx, av_frame);
-                //System.out.printf("decode: ret1 %d ret2 %d\n", ret1, ret2);
-                
-                if (ret2 == 0)
-                {                
-                    // init scaler and encoder once we decode the 1st frame
-                    if (sws_ctx == null )
+                // transcode and write all records
+                long pts = 0;
+                DataBlock nextRecord;
+                BytePointer nativeFrameData = new BytePointer(50*1024);
+                while ((nextRecord = dataProvider.getNextResultRecord()) != null)
+                {        
+                    // clone datablock so we don't interfere with other concurrently running streams
+                    nextRecord = nextRecord.clone();
+                    
+                    // get frame data
+                    DataBlock frameBlk = ((DataBlockMixed)nextRecord).getUnderlyingObject()[imgCompIdx];
+                    byte[] frameData = (byte[])frameBlk.getUnderlyingObject();
+                    
+                    // grow packet data buffer as needed
+                    if (nativeFrameData.capacity() < frameData.length)
                     {
-                        // determine frame size
-                        if (frameWidthString == null && frameHeightString == null)
-                        {
-                            frameWidth = (int)Math.round(av_frame.width() * frameSizeScale);
-                            frameHeight = (int)Math.round(av_frame.height() * frameSizeScale);
-                        }
-                        else if (frameWidthString != null && frameHeightString == null)
-                        {
-                            frameHeight = (int)Math.round(frameWidth * ((double)av_frame.height()/av_frame.width()));
-                        }
-                        else if (frameWidthString == null && frameHeightString != null)
-                        {
-                            frameWidth = (int)Math.round(frameHeight * ((double)av_frame.width()/av_frame.height()));
-                        }
-                        
-                        // make sure frame dimensions are multiple of 2
-                        if (frameWidth % 2 != 0)
-                            frameWidth++;
-                        if (frameHeight % 2 != 0)
-                            frameHeight++;
-                        
-                        // init scaler
-                        sws_frame.format(AV_PIX_FMT_YUV420P);
-                        sws_frame.width(frameWidth);
-                        sws_frame.height(frameHeight);
-                        av_image_alloc(sws_frame.data(), sws_frame.linesize(), 
-                                frameWidth, frameHeight, AV_PIX_FMT_YUV420P, 1);
-                        
-                        sws_ctx = sws_getContext(av_frame.width(), av_frame.height(), AV_PIX_FMT_YUV420P,
-                                frameWidth, frameHeight, AV_PIX_FMT_YUV420P, SWS_BICUBIC, null, null, (double[])null);
-                                                
-                        log.debug("Resizing {}x{} -> {}x{}", av_frame.width(), av_frame.height(), frameWidth, frameHeight);
-                        log.debug("Target bitrate = {}", bitrate);
-                        
-                        // init encoder
-                        AVRational timeBase = new AVRational();
-                        timeBase.num(1);
-                        timeBase.den(fps);
-                        encode_ctx.time_base(timeBase);
-                        encode_ctx.width(frameWidth);
-                        encode_ctx.height(frameHeight);
-                        encode_ctx.pix_fmt(encoder.pix_fmts().get(0));
-                        encode_ctx.bit_rate(bitrate);
-                        //encode_ctx.sample_rate(fps);
-                        av_opt_set(encode_ctx.priv_data(), "preset", "ultrafast", 0);
-                        av_opt_set(encode_ctx.priv_data(), "tune", "zerolatency", 0);
-                        if (avcodec_open2(encode_ctx, encoder, (PointerPointer<?>)null) < 0) {
-                            throw new IllegalStateException("Error initializing encoder for codec " + codecConfig.encoderName);
-                        }
+                        nativeFrameData.deallocate();
+                        nativeFrameData = new BytePointer(Math.max(frameData.length, nativeFrameData.capacity()*2));
                     }
+                    nativeFrameData.position(0);
+                    nativeFrameData.limit(0);
+                    nativeFrameData.put(frameData);
                     
-                    // scale frame to desired resolution (width/height)
-                    sws_scale(sws_ctx, av_frame.data(), av_frame.linesize(), 0, av_frame.height(), sws_frame.data(), sws_frame.linesize());
+                    // decode frame
+                    dec_pkt.data(nativeFrameData);
+                    dec_pkt.size(frameData.length);
+                    int ret1 = avcodec_send_packet(decode_ctx, dec_pkt);
+                    int ret2 = avcodec_receive_frame(decode_ctx, av_frame);
+                    av_packet_unref(dec_pkt);
+                    //System.out.printf("decode: ret1 %d ret2 %d\n", ret1, ret2);
                     
-                    // encode
-                    av_frame.pts(pts++);
-                    ret1 = avcodec_send_frame(encode_ctx, sws_frame);
-                    //System.out.printf("encode: ret1 %d\n", ret1);
-                    //System.out.println("EAGAIN=" + avutil.AVERROR_EAGAIN());
-                    //System.out.println("ENOMEM=" + avutil.AVERROR_ENOMEM());
-                    
-                    if (ret1 == 0)
-                    {
-                        av_init_packet(enc_pkt);
-                        ret2 = avcodec_receive_packet(encode_ctx, enc_pkt);
-                        //System.out.printf("encode: ret1 %d ret2 %d\n", ret1, ret2);
-                        if (ret2 == 0)
+                    if (ret2 == 0)
+                    {                
+                        // init scaler and encoder once we decode the 1st frame
+                        if (sws_ctx == null )
                         {
-                            // repackage in datablock
-                            //System.out.println("encoded pkt size = " + enc_pkt.size());
-                            //frameData = enc_pkt.data().getStringBytes();
-                            frameData = new byte[enc_pkt.size()];
-                            enc_pkt.data().get(frameData);
-                            frameBlk.setUnderlyingObject(frameData);                
-                                            
-                            // write record to output stream
-                            writer.write(nextRecord);
-                            writer.flush();
+                            // determine frame size
+                            if (frameWidthString == null && frameHeightString == null)
+                            {
+                                frameWidth = (int)Math.round(av_frame.width() * frameSizeScale);
+                                frameHeight = (int)Math.round(av_frame.height() * frameSizeScale);
+                            }
+                            else if (frameWidthString != null && frameHeightString == null)
+                            {
+                                frameHeight = (int)Math.round(frameWidth * ((double)av_frame.height()/av_frame.width()));
+                            }
+                            else if (frameWidthString == null && frameHeightString != null)
+                            {
+                                frameWidth = (int)Math.round(frameHeight * ((double)av_frame.width()/av_frame.height()));
+                            }
+                            
+                            // make sure frame dimensions are multiple of 2
+                            if (frameWidth % 2 != 0)
+                                frameWidth++;
+                            if (frameHeight % 2 != 0)
+                                frameHeight++;
+                            
+                            // init scaler
+                            sws_frame.format(AV_PIX_FMT_YUV420P);
+                            sws_frame.width(frameWidth);
+                            sws_frame.height(frameHeight);
+                            av_image_alloc(sws_frame.data(), sws_frame.linesize(), 
+                                    frameWidth, frameHeight, AV_PIX_FMT_YUV420P, 1);
+                            
+                            sws_ctx = sws_getContext(av_frame.width(), av_frame.height(), AV_PIX_FMT_YUV420P,
+                                    frameWidth, frameHeight, AV_PIX_FMT_YUV420P, SWS_BICUBIC, null, null, (double[])null);
+                                                    
+                            log.debug("Resizing {}x{} -> {}x{}", av_frame.width(), av_frame.height(), frameWidth, frameHeight);
+                            log.debug("Target bitrate = {}", bitrate);
+                            
+                            // init encoder
+                            AVRational timeBase = new AVRational();
+                            timeBase.num(1);
+                            timeBase.den(fps);
+                            encode_ctx.time_base(timeBase);
+                            encode_ctx.width(frameWidth);
+                            encode_ctx.height(frameHeight);
+                            encode_ctx.pix_fmt(encoder.pix_fmts().get(0));
+                            encode_ctx.bit_rate(bitrate);
+                            //encode_ctx.sample_rate(fps);
+                            av_opt_set(encode_ctx.priv_data(), "preset", "ultrafast", 0);
+                            av_opt_set(encode_ctx.priv_data(), "tune", "zerolatency", 0);
+                            if (avcodec_open2(encode_ctx, encoder, (PointerPointer<?>)null) < 0) {
+                                throw new IllegalStateException("Error initializing encoder for codec " + codecConfig.encoderName);
+                            }
+                        }
+                        
+                        // scale frame to desired resolution (width/height)
+                        sws_scale(sws_ctx, av_frame.data(), av_frame.linesize(), 0, av_frame.height(), sws_frame.data(), sws_frame.linesize());
+                        
+                        // encode
+                        av_frame.pts(pts++);
+                        ret1 = avcodec_send_frame(encode_ctx, sws_frame);
+                        //System.out.printf("encode: ret1 %d\n", ret1);
+                        //System.out.println("EAGAIN=" + avutil.AVERROR_EAGAIN());
+                        //System.out.println("ENOMEM=" + avutil.AVERROR_ENOMEM());
+                        
+                        while (ret1 >= 0)
+                        {
+                            //av_init_packet(enc_pkt);
+                            ret1 = avcodec_receive_packet(encode_ctx, enc_pkt);
+                            //System.out.printf("encode: ret1 %d ret2 %d\n", ret1, ret2);
+                            
+                            if (ret1 == 0)
+                            {
+                                // repackage in datablock
+                                //System.out.println("encoded pkt size = " + enc_pkt.size());
+                                //frameData = enc_pkt.data().getStringBytes();
+                                frameData = new byte[enc_pkt.size()];
+                                enc_pkt.data().get(frameData);
+                                frameBlk.setUnderlyingObject(frameData);                
+                                                
+                                // write record to output stream
+                                writer.write(nextRecord);
+                                writer.flush();
+                            }
+                            
+                            av_packet_unref(enc_pkt);
                         }
                     }
                 }
             }
+            catch (EOFException e)
+            {
+                // this happens if output stream is closed by client
+                // we stop silently in that case
+            }
+            catch (Exception e)
+            {
+                throw new IOException("Error while transcoding video data", e);
+            }
         }
-        catch (EOFException e)
+        finally
         {
-            // this happens if output stream is closed by client
-            // we stop silently in that case
-        }
-        catch (Exception e)
-        {
-            throw new IOException("Error while transcoding video data", e);
+            if (dec_pkt != null) {
+                av_packet_unref(dec_pkt);
+                av_packet_free(dec_pkt);
+            }
+            if (enc_pkt != null) {
+                av_packet_unref(enc_pkt);
+                av_packet_free(enc_pkt);
+            }
+            if (av_frame != null) {
+                //av_freep(av_frame.data());
+                av_frame_free(av_frame);
+            }
+            if (sws_frame != null) {
+                av_freep(sws_frame.data());
+                av_frame_free(sws_frame);
+            }
+            if (decode_ctx != null) {
+                avcodec_close(decode_ctx);
+                avcodec_free_context(decode_ctx);
+            }
+            if (encode_ctx != null) {
+                avcodec_close(encode_ctx);
+                avcodec_free_context(encode_ctx);
+            }
+            if (sws_ctx != null) {
+                sws_freeContext(sws_ctx);
+            }
         }
     }
 }
