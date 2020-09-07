@@ -13,10 +13,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataKey;
+import org.sensorhub.api.persistence.FoiFilter;
 import org.sensorhub.api.persistence.IDataFilter;
 import org.sensorhub.api.persistence.IDataRecord;
 import org.sensorhub.api.persistence.IFoiFilter;
@@ -26,13 +28,16 @@ import org.sensorhub.api.persistence.IObsStorage;
 import org.sensorhub.api.persistence.IObsStorageModule;
 import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.api.persistence.IStorageModule;
+import org.sensorhub.api.persistence.ObsPeriod;
 import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.persistence.StorageUtils;
 import org.sensorhub.impl.persistence.FilteredIterator;
+import org.sensorhub.impl.persistence.IteratorWrapper;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Bbox;
 import org.vast.util.DateTimeFormat;
+import com.vividsolutions.jts.geom.Polygon;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
@@ -542,5 +547,25 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
     public void sync(IStorageModule<?> storage) throws StorageException
     {
         throw new UnsupportedOperationException();
+    }
+    
+
+    @Override
+    public Iterator<ObsPeriod> getFoiTimeRanges(IObsFilter filter)
+    {
+        FoiFilter foiFilter = new FoiFilter()
+        {
+            public Set<String> getFeatureIDs() { return filter.getFoiIDs(); }
+            public Polygon getRoi() { return filter.getRoi(); }
+        };
+                
+        return new IteratorWrapper<String, ObsPeriod>(getFoiIDs(foiFilter))
+        {
+            @Override
+            protected ObsPeriod process(String foiID)
+            {
+                return new ObsPeriod(foiID, Double.NaN, Double.NaN);
+            }            
+        };
     }
 }
