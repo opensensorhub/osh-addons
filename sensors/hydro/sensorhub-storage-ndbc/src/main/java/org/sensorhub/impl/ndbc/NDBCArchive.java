@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
@@ -47,7 +48,7 @@ import net.opengis.swe.v20.DataEncoding;
 
 public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStorageModule<NDBCConfig>, IMultiSourceStorage<IObsStorage>
 {
-	static final String BASE_NDBC_URL = "https://sdf.ndbc.noaa.gov";
+//	static final String BASE_NDBC_URL;
 	static final String IOOS_UID_PREFIX = "urn:ioos:";
 	static final String FOI_UID_PREFIX = NDBCArchive.IOOS_UID_PREFIX + "station:wmo:";
 
@@ -57,26 +58,38 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	Bbox foiExtent = new Bbox();
 	PhysicalSystem systemDesc;
 	Map<String, String[]> sensorOfferings = new LinkedHashMap<>();
-
+	
+	Timer capsTimer;
+	CapsTask capsTask;  // = new CapsTask("https://sdf.ndbc.noaa.gov/sos/server.php", TimeUnit.MINUTES.toMillis(60L));
+    Map<String, ObsPeriod> foiTimeRanges;
+	
 	@Override
 	public void start() throws SensorHubException
 	{
 		loadFois();
 		initRecordStores();
 		initSensorNetworkDescription();
+		
+		//  Kick off thread for loading FOI time ranges
+		capsTimer = new Timer();
+		capsTask = new CapsTask("https://sdf.ndbc.noaa.gov/sos/server.php", TimeUnit.MINUTES.toMillis(config.foiUpdatePeriodMinutes));
+		capsTask = new CapsTask(config.ndbcUrl, TimeUnit.MINUTES.toMillis(config.foiUpdatePeriodMinutes));
+		capsTask.setBbox(config.siteBbox.getMinY(), config.siteBbox.getMinX(), config.siteBbox.getMaxY(), config.siteBbox.getMaxX());
+//		capsTask.setBbox(31.0, -120.0, 35.0, -115.0);
+		capsTimer.scheduleAtFixedRate(capsTask, 0, config.foiUpdatePeriodMinutes);
 	}
 
 	@Override
 	public void stop() throws SensorHubException {
-		// TODO Auto-generated method stub
-
+		if(capsTimer != null)
+			capsTimer.cancel();
 	}
 
+	//  TODO - modify to get these from caps instead of requesting observations
 	protected void loadFois()  throws SensorHubException {
-		// request and parse station info
 		try
 		{
-			ObsStationLoader parser = new ObsStationLoader(this);
+			ObsStationLoader parser = new ObsStationLoader(config.ndbcUrl, logger);
 			parser.loadStations(fois, config);
 		}
 		catch (Exception e)
@@ -571,7 +584,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         throw new UnsupportedOperationException();
     }
     
-
     @Override
     public Iterator<ObsPeriod> getFoiTimeRanges(IObsFilter filter)
     {
@@ -586,6 +598,9 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
             @Override
             protected ObsPeriod process(String foiID)
             {
+            	ObsPeriod obsPeriod = foiTimeRanges.get(foiID);
+            	if(obsPeriod != null)
+            		return obsPeriod;
                 return new ObsPeriod(foiID, Double.NaN, Double.NaN);
             }            
         };

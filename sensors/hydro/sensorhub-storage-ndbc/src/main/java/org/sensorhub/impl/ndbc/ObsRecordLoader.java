@@ -6,7 +6,6 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -22,7 +21,7 @@ import net.opengis.swe.v20.DataComponent;
 
 @Deprecated // 
 public class ObsRecordLoader implements Iterator<DataBlock> {
-	static final String BASE_URL = NDBCArchive.BASE_NDBC_URL + "/sos/server.php?request=GetObservation&service=SOS&version=1.0.0";
+	static final String BASE_URL = "https://sdf.ndbc.noaa.gov/sos/server.php" + "?request=GetObservation&service=SOS&version=1.0.0";
 //	DataFilter filter;
 	NDBCConfig config;
 	BufferedReader reader;

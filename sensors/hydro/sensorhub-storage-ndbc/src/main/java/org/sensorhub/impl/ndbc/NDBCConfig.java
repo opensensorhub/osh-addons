@@ -20,11 +20,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.persistence.ObsStorageConfig;
 import org.vast.util.Bbox;
-
 
 public class NDBCConfig extends ObsStorageConfig
 {
@@ -33,6 +33,9 @@ public class NDBCConfig extends ObsStorageConfig
             .ofPattern("yyyy-MM-dd HH:mm:ss")
             .withZone(ZoneId.of("GMT"));
     
+    @DisplayInfo(desc="Base URL of NDBC server")
+	public String ndbcUrl = "https://sdf.ndbc.noaa.gov/sos/server.php";
+	
     @DisplayInfo(desc="List of station identifiers")
     public Set<String> stationIds = new LinkedHashSet<>();
     
@@ -41,6 +44,9 @@ public class NDBCConfig extends ObsStorageConfig
     
     @DisplayInfo(desc="Required at least one:  Observed parameters")
     public Set<BuoyParam> parameters = new LinkedHashSet<>();
+    
+    @DisplayInfo(desc="Period in minutes to harvest FOI info from NDBC caps doc")
+    public Long foiUpdatePeriodMinutes = TimeUnit.MINUTES.toMillis(60L);
     
     @DisplayInfo(desc="Required:  ISO-8601 timestamp of earliest data available via NDBC SOS, and used for start timestamp requests to NDBC SOS")
     public String startTimeIso = "2006-01-01T00:00:00Z";  

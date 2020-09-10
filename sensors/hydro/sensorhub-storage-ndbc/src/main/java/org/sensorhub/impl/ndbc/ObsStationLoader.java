@@ -7,8 +7,7 @@ import java.net.URL;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-import org.sensorhub.impl.module.AbstractModule;
-import org.sensorhub.impl.ndbc.BuoyEnums.ObsParam;
+import org.slf4j.Logger;
 import org.vast.ogc.om.SamplingPoint;
 import org.vast.swe.SWEHelper;
 import org.vast.util.Bbox;
@@ -28,19 +27,22 @@ import net.opengis.gml.v32.impl.GMLFactory;
  * @since Jan 27, 2018
  */
 public class ObsStationLoader {
-	static final String BASE_URL = NDBCArchive.BASE_NDBC_URL
-			+ "/sos/server.php?request=GetObservation&service=SOS&version=1.0.0&";
+//	static final String BASE_URL = NDBCArchive.BASE_NDBC_URL
+//			+ "?request=GetObservation&service=SOS&version=1.0.0&";
 	static final int AGE_THRESHOLD_DAYS = 7;  // configurable
 	
-	AbstractModule<?> module;
-
-	public ObsStationLoader(AbstractModule<?> module) {
-		this.module = module;
+	Logger logger;
+	String obsUrl;
+	
+	public ObsStationLoader(String ndbcUrl, Logger logger) {
+		this.logger = logger;
+		this.obsUrl = ndbcUrl + "?request=GetObservation&service=SOS&version=1.0.0&";
 	}
 
 	//  Load stations by requesting latest measurement from all (or  filtered) stations in network
+	//  TODO- modify to get from caps
 	public void loadStations(Map<String, AbstractFeature> fois, NDBCConfig config) throws IOException {
-		StringBuilder buf = new StringBuilder(BASE_URL);
+		StringBuilder buf = new StringBuilder(obsUrl);
 
 		//  We want all stations
 		buf.append("&offering=urn:ioos:network:noaa.nws.ndbc:all");
@@ -67,7 +69,7 @@ public class ObsStationLoader {
 		buf.append("&observedProperty=" + param.toString().toLowerCase());
 
 		buf.append("&responseformat=text/csv&eventtime=latest"); // output type
-		module.getLogger().debug("Requesting stations from: " + buf.toString());
+		logger.debug("Requesting stations from: " + buf.toString());
 		URL url = new URL(buf.toString());
 		BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
 
@@ -106,7 +108,7 @@ public class ObsStationLoader {
 			stnLoc.setPos(new double[] { Double.parseDouble(token[2]), Double.parseDouble(token[3]) });
 			station.setShape(stnLoc);
 			
-			module.getLogger().debug("Adding FOI: " + station.getUniqueIdentifier() + " : " + station.getId() + " : " + stnLoc);
+			logger.debug("Adding FOI: " + station.getUniqueIdentifier() + " : " + station.getId() + " : " + stnLoc);
 			
 			fois.put(idArr[idArr.length - 1], station);
 		}

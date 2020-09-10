@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 import org.vast.util.Bbox;
 
 public class BuoyParser {
-	static final String BASE_URL = NDBCArchive.BASE_NDBC_URL + "/sos/server.php?request=GetObservation&service=SOS&version=1.0.0";
+	String obsUrl;
 	NDBCConfig filter;
 	BuoyParam recordType;
 	String requestURL;
@@ -24,6 +24,7 @@ public class BuoyParser {
 	{
 		this.filter = filter;
 		this.recordType = recordType;
+		obsUrl = filter.ndbcUrl + "?request=GetObservation&service=SOS&version=1.0.0";
 	}
 
 	public static void main(String[] args) throws IOException {
@@ -36,7 +37,7 @@ public class BuoyParser {
 	//    protected String buildInstantValuesRequest(DataFilter filter, Map<String, String[]> sensorOfferings)
 	protected String buildRequest()
 	{
-		StringBuilder buf = new StringBuilder(BASE_URL);
+		StringBuilder buf = new StringBuilder(obsUrl);
 
 		// site ids
 		if (!filter.stationIds.isEmpty())
