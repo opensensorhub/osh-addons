@@ -9,7 +9,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.sensorhub.impl.ndbc.BuoyEnums.ObsParam;
 import org.slf4j.Logger;
 import org.vast.util.Bbox;
 
@@ -29,8 +28,8 @@ public class BuoyParser {
 
 	public static void main(String[] args) throws IOException {
 		NDBCConfig filter = new NDBCConfig();
-				
-		BuoyParser parser = new BuoyParser(filter, BuoyParam.AIR_TEMPERATURE);
+		filter.siteBbox = new Bbox(-120. , 31., -115., 35.);
+		BuoyParser parser = new BuoyParser(filter, BuoyParam.SEA_WATER_ELECTRICAL_CONDUCTIVITY);
 		parser.getRecords();
 	}
 	
@@ -83,8 +82,9 @@ public class BuoyParser {
 		requestURL = buildRequest();
 //		logger.info("Requesting observations from: " + requestURL);
 		URL url = new URL(requestURL);
-
+		System.err.println(url);
 		List<BuoyRecord> recs = parseResponse(url.openStream());
+		System.err.println("Received " + recs.size() + " records");
 		return recs;
 	}
 

@@ -72,7 +72,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		
 		//  Kick off thread for loading FOI time ranges
 		capsTimer = new Timer();
-		capsTask = new CapsTask("https://sdf.ndbc.noaa.gov/sos/server.php", TimeUnit.MINUTES.toMillis(config.foiUpdatePeriodMinutes));
 		capsTask = new CapsTask(config.ndbcUrl, TimeUnit.MINUTES.toMillis(config.foiUpdatePeriodMinutes));
 		capsTask.setBbox(config.siteBbox.getMinY(), config.siteBbox.getMinX(), config.siteBbox.getMaxY(), config.siteBbox.getMaxX());
 //		capsTask.setBbox(31.0, -120.0, 35.0, -115.0);
@@ -115,8 +114,36 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	protected void initRecordStores() throws SensorHubException
 	{
 		//  TOODO instantiate All params stores
-		BuoyRecordStore rs = new WaterTemperatureStore();  
-		dataStores.put(rs.getName(), rs);
+		Iterator<BuoyParam> it = config.parameters.iterator();
+		BuoyRecordStore store = null;
+		while(it.hasNext()) {
+			BuoyParam param = it.next();
+			switch(param) {
+			case SEA_WATER_TEMPERATURE:
+				store = new WaterTemperatureStore();
+				break;
+			case AIR_TEMPERATURE:
+				store = new AirTemperatureStore();
+				break;
+			case AIR_PRESSURE_AT_SEA_LEVEL:
+			case SEA_WATER_ELECTRICAL_CONDUCTIVITY:
+				store = new ConductivityStore();
+				break;
+			case SEA_WATER_SALINITY:
+			case CURRENTS:
+			case ENVIRONMENTAL:
+			case SEA_FLOOR_DEPTH_BELOW_SEA_SURFACE:
+			case WAVES:
+			case WINDS:
+				logger.info("BuoyParam not yet supported: " + param.name());
+				continue;
+			default:
+				logger.error("BuoyParam not recognized: " + param.name());
+				continue;
+			}
+			dataStores.put(store.getName(), store);
+			
+		}
 	}
 	//    
 
@@ -247,41 +274,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		return reqConfig;
 	}
 	
-	protected Collection<BuoyDataRecord> nextBatch(ObsRecordLoader loader, NDBCConfig config, String recType)
-	{
-		try
-		{
-			ArrayList<BuoyDataRecord> records = new ArrayList<>();
-
-			// log batch time range
-			if (getLogger().isDebugEnabled())
-			{
-				getLogger().info("Next batch is {} - {}", config.startTimeIso, config.stopTimeIso);
-			}
-
-			// request and parse next batch
-			loader.sendRequest(config);
-			while (loader.hasNext())
-			{
-				DataBlock data = loader.next();
-				if (data == null)
-					break;
-				DataKey key = new DataKey(recType, data.getDoubleValue(0));
-				records.add(new BuoyDataRecord(key, data));
-			}
-
-			// sort by timestamps
-			Collections.sort(records);
-			return records;
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace(System.err);
-			throw new RuntimeException("Error while sending request for instantaneous values");
-		}
-	}
-
-
 	@Override
 	public AbstractProcess getLatestDataSourceDescription()
 	{
