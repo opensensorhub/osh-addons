@@ -425,6 +425,11 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig>
 		throw new UnsupportedOperationException();
 	}
 
+    @Override
+    public void updateRecordStore(String name, DataComponent recordStructure) {
+        throw new UnsupportedOperationException();        
+    }
+
 	@Override
 	public void storeRecord(DataKey key, DataBlock data) {
 		throw new UnsupportedOperationException();

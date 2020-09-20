@@ -470,6 +470,12 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 		// do nothing 
 	}
 
+    @Override
+    public void updateRecordStore(String name, DataComponent recordStructure)
+    {
+        // TODO implement updating the record description        
+    }
+
 	@Override
 	public int getNumRecords(String recordType) {
 		SearchResponse response = client.prepareSearch(indexName).setTypes(RS_DATA_IDX_NAME)

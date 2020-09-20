@@ -156,30 +156,29 @@ public class MVTimeSeriesImpl
     }
     
     
-    public MVTimeSeriesImpl(MVObsStorageImpl parentStore, String seriesName)
+    public MVTimeSeriesImpl(MVObsStorageImpl parentStore, IRecordStoreInfo rsInfo, boolean indexObsLocation)
     {
-        this.name = seriesName;
+        this.name = rsInfo.getName();
         this.parentStore = parentStore;
         
-        String mapName = RECORDS_MAP_NAME + ":" + seriesName;        
+        // create maps
+        String mapName = RECORDS_MAP_NAME + ":" + this.name;        
         this.recordIndex = parentStore.mvStore.openMap(mapName, new MVMap.Builder<ProducerTimeKey, DataBlock>()
                 .keyType(new ProducerKeyDataType())
                 .valueType(new DataBlockDataType()));
         
-        this.foiTimesIndex = new MVFoiTimesStoreImpl(parentStore.mvStore, seriesName);
-    }
-    
-    
-    public MVTimeSeriesImpl(MVObsStorageImpl parentStore, IRecordStoreInfo rsInfo)
-    {
-        this(parentStore, rsInfo.getName());
+        this.foiTimesIndex = new MVFoiTimesStoreImpl(parentStore.mvStore, this.name);
         
-        // try to detect sampling location
-        VectorIndexer locationIndexer = SWEDataUtils.getLocationIndexer(rsInfo.getRecordDescription());
-        
-        // if found, also use sampling lolcation index
-        if (locationIndexer != null)
-            this.samplingLocationIndex = new MVSamplingLocationIndexImpl(parentStore.mvStore, rsInfo.getName(), locationIndexer);
+        // prepare to index location if requested
+        if (indexObsLocation)
+        {
+            // try to detect sampling location
+            VectorIndexer locationIndexer = SWEDataUtils.getLocationIndexer(rsInfo.getRecordDescription());
+            
+            // if found, also use sampling lolcation index
+            if (locationIndexer != null)
+                this.samplingLocationIndex = new MVSamplingLocationIndexImpl(parentStore.mvStore, rsInfo.getName(), locationIndexer);
+        }
     }
     
     
