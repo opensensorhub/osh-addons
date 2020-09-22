@@ -499,6 +499,12 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		throw new UnsupportedOperationException();
 	}
 
+    @Override
+    public void updateRecordStore(String name, DataComponent recordStructure)
+    {
+        throw new UnsupportedOperationException();        
+    }
+
 
 	@Override
 	public void addRecordStore(String name, DataComponent recordStructure, DataEncoding recommendedEncoding)

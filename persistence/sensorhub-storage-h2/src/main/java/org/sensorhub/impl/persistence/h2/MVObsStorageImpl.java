@@ -41,6 +41,7 @@ import org.sensorhub.api.persistence.IStorageModule;
 import org.sensorhub.api.persistence.ObsPeriod;
 import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.impl.module.AbstractModule;
+import org.sensorhub.utils.DataComponentChecks;
 import org.sensorhub.utils.FileUtils;
 import org.vast.util.Asserts;
 import org.vast.util.Bbox;
@@ -159,12 +160,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     
     private void loadRecordStore(IRecordStoreInfo rsInfo)
     {
-        MVTimeSeriesImpl recordStore;        
-        if (config.indexObsLocation)
-            recordStore = new MVTimeSeriesImpl(this, rsInfo);
-        else
-            recordStore = new MVTimeSeriesImpl(this, rsInfo.getName());
-        
+        MVTimeSeriesImpl recordStore = new MVTimeSeriesImpl(this, rsInfo, config.indexObsLocation);
         recordStores.put(rsInfo.getName(), recordStore);
     }
 
@@ -399,6 +395,27 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         DataStreamInfo rsInfo = new DataStreamInfo(name, recordStructure, recommendedEncoding);
         rsInfoMap.put(name, rsInfo);
         loadRecordStore(rsInfo);
+    }
+
+
+    @Override
+    public void updateRecordStore(String name, DataComponent newDataStruct)
+    {
+        checkOpen();
+        Asserts.checkNotNull(name, "name");
+        Asserts.checkNotNull(newDataStruct, DataComponent.class);
+        
+        DataStreamInfo oldRsInfo = (DataStreamInfo)rsInfoMap.get(name);
+        if (oldRsInfo == null)
+            throw new IllegalArgumentException("No time series with name " + name);
+        
+        // check that new structure is compatible with previous one
+        if (!DataComponentChecks.checkStructCompatible(oldRsInfo.recordDescription, newDataStruct))
+            throw new IllegalStateException("New data structure for record store " + getName() + 
+                    " is not compatible with the one already in storage");
+        
+        DataStreamInfo newRsInfo = new DataStreamInfo(name, newDataStruct, oldRsInfo.recommendedEncoding);
+        rsInfoMap.put(name, newRsInfo);
     }
     
     
