@@ -139,7 +139,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		systemDesc = helper.newPhysicalSystem();
 		systemDesc.setUniqueIdentifier(IOOS_UID_PREFIX + "network:ndbc:buoy"); // + config.parameters.iterator().next().toString().toLowerCase());
 		systemDesc.setName("NDBC Buoy Data Network");
-		systemDesc.setDescription("NDBC automated sensor network for realtime and archive buoy data"); // + getNumFois(null) + " stations across the US");
+		systemDesc.setDescription("NDBC automated sensor network for realtime and archive buoy data"); 
 
 		// add outputs
 		for (BuoyRecordStore rs: dataStores.values())
@@ -232,6 +232,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		if( Double.isInfinite(filter.getTimeStampRange()[0]) && Double.isInfinite(filter.getTimeStampRange()[1]) )  {
 			reqConfig.setStartTime(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
 			reqConfig.setStopTime(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1));
+			reqConfig.setLatest(true);
 			return reqConfig;
 		}
 		//  TODO: StreamStoragePanel initializes two requests for full time range. 

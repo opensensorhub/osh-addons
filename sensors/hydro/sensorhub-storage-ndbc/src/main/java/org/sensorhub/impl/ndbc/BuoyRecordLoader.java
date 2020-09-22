@@ -24,6 +24,11 @@ public class BuoyRecordLoader implements Iterator<DataBlock> {
 	public List<BuoyRecord> getRecords(NDBCConfig filter, BuoyParam param) throws IOException {
 		BuoyParser parser = new BuoyParser(filter, param);
 		List<BuoyRecord> recs = parser.getRecords();
+		if(filter.isLatest()) {
+			BuoyRecord rec = recs.get(recs.size() - 1);
+			recs.clear();
+			recs.add(rec);
+		}
 		blocks = new ArrayList<>();
 		for(BuoyRecord rec: recs) {
 			block = dataComponent.createDataBlock();

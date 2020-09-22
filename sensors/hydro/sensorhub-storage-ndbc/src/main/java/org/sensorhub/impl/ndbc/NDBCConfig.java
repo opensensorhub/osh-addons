@@ -20,7 +20,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.persistence.ObsStorageConfig;
@@ -69,8 +68,21 @@ public class NDBCConfig extends ObsStorageConfig
     public void setStopTime(Long timeMs) {
     	this.stopTimeIso = formatIso(timeMs);
     }
+    
+    //  Not settable in config file- flag for latest measurement only
+    //  NOT using this because NDBC will return old data when using eventTime=latest
+    //  in requests to their SOS
+    private boolean latest = false;
 
-    // NDBC Request limit is 31 days. If we want more than that, will need to batch requests and combine results
+    public boolean isLatest() {
+		return latest;
+	}
+
+	public void setLatest(boolean latest) {
+		this.latest = latest;
+	}
+
+	// NDBC Request limit is 31 days. If we want more than that, will need to batch requests and combine results
     // Limiting to 5 days max request because StreamStorage panel triggers two requests for full time range
     // and eats up resources. 
     @DisplayInfo(desc="Limit the max amount of days for a single request from NDBC server")
