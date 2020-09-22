@@ -26,6 +26,7 @@ import net.opengis.gml.v32.impl.GMLFactory;
  * @author Lee Butler <labutler10@gmail.com>
  * @since Jan 27, 2018
  */
+@Deprecated // Use CapabilitiesReader to populate stations
 public class ObsStationLoader {
 //	static final String BASE_URL = NDBCArchive.BASE_NDBC_URL
 //			+ "?request=GetObservation&service=SOS&version=1.0.0&";

@@ -15,5 +15,9 @@ public enum BuoyParam
     //  Groups
     CURRENTS,
     WAVES,
-    WINDS
+    WINDS,
+    
+    //  GPS is not a requestable parameter from NDBC SOS, but is included with 
+    //  every response. So I am treating it like a normal parameter
+    GPS
 }

@@ -46,7 +46,7 @@ public class NDBCConfig extends ObsStorageConfig
     public Set<BuoyParam> parameters = new LinkedHashSet<>();
     
     @DisplayInfo(desc="Period in minutes to harvest FOI info from NDBC caps doc")
-    public Long foiUpdatePeriodMinutes = TimeUnit.MINUTES.toMillis(60L);
+    public Long foiUpdatePeriodMinutes = 60L;
     
     @DisplayInfo(desc="Required:  ISO-8601 timestamp of earliest data available via NDBC SOS, and used for start timestamp requests to NDBC SOS")
     public String startTimeIso = "2006-01-01T00:00:00Z";  

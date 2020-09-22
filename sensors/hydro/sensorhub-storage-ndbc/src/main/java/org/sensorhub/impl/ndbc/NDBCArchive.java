@@ -14,7 +14,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Timer;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataKey;
@@ -48,34 +50,32 @@ import net.opengis.swe.v20.DataEncoding;
 
 public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStorageModule<NDBCConfig>, IMultiSourceStorage<IObsStorage>
 {
-//	static final String BASE_NDBC_URL;
 	static final String IOOS_UID_PREFIX = "urn:ioos:";
 	static final String FOI_UID_PREFIX = NDBCArchive.IOOS_UID_PREFIX + "station:wmo:";
 
 	//	Map<String, RecordStore> dataStores = new LinkedHashMap<>();
 	Map<String, BuoyRecordStore> dataStores = new LinkedHashMap<>();
 	Map<String, AbstractFeature> fois = new LinkedHashMap<>();
+    Map<String, ObsPeriod> foiTimeRanges = new ConcurrentHashMap<>();
 	Bbox foiExtent = new Bbox();
 	PhysicalSystem systemDesc;
-	Map<String, String[]> sensorOfferings = new LinkedHashMap<>();
 	
 	Timer capsTimer;
-	CapsTask capsTask;  // = new CapsTask("https://sdf.ndbc.noaa.gov/sos/server.php", TimeUnit.MINUTES.toMillis(60L));
-    Map<String, ObsPeriod> foiTimeRanges;
+	CapsReaderTask capsTask;  // = new CapsTask("https://sdf.ndbc.noaa.gov/sos/server.php", TimeUnit.MINUTES.toMillis(60L));
 	
 	@Override
 	public void start() throws SensorHubException
 	{
-		loadFois();
+		//loadFois();
 		initRecordStores();
 		initSensorNetworkDescription();
-		
-		//  Kick off thread for loading FOI time ranges
+
+		//  Kick off thread for loading FOIS and time ranges
 		capsTimer = new Timer();
-		capsTask = new CapsTask(config.ndbcUrl, TimeUnit.MINUTES.toMillis(config.foiUpdatePeriodMinutes));
+		capsTask = new CapsReaderTask(config.ndbcUrl, TimeUnit.MINUTES.toMillis(config.foiUpdatePeriodMinutes), updateMetadata);
 		capsTask.setBbox(config.siteBbox.getMinY(), config.siteBbox.getMinX(), config.siteBbox.getMaxY(), config.siteBbox.getMaxX());
 //		capsTask.setBbox(31.0, -120.0, 35.0, -115.0);
-		capsTimer.scheduleAtFixedRate(capsTask, 0, config.foiUpdatePeriodMinutes);
+		capsTimer.scheduleAtFixedRate(capsTask, 0, TimeUnit.MINUTES.toMillis(config.foiUpdatePeriodMinutes));
 	}
 
 	@Override
@@ -84,8 +84,22 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 			capsTimer.cancel();
 	}
 
-	//  TODO - modify to get these from caps instead of requesting observations
-	protected void loadFois()  throws SensorHubException {
+	//	Callback for CapsReader to update fois and TimeRanges
+	Consumer<List<BuoyMetadata>>  updateMetadata = (mdList)-> {
+        System.out.println("updateMetadata... NumBuoys: " + mdList.size());
+        for(BuoyMetadata md: mdList) {
+        	if(!fois.containsKey(md.name)) {
+        		fois.put(md.name, md.foi);
+        		logger.info("Adding Buoy FOI: {}" , md.uid);
+        	}
+        	if(!foiTimeRanges.containsKey(md.uid )) {
+        		foiTimeRanges.put(md.uid, new ObsPeriod(md.uid, md.startTime, md.stopTime));
+        	}
+        }
+    };
+	
+	@Deprecated // load FOIS using capabilities Reader
+	protected void loadFoisOld()  throws SensorHubException {
 		try
 		{
 			ObsStationLoader parser = new ObsStationLoader(config.ndbcUrl, logger);
@@ -96,20 +110,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 			throw new SensorHubException("Error loading station information", e);
 		}
 	}
-
-	//    protected void initRecordStores() throws SensorHubException
-	//    {
-	//    	for(BuoyParam param: config.parameters) {
-	//    		switch(param) {
-	//    		case SEA_WATER_TEMPERATURE:
-	//        		BuoyRecordStore rs = new WaterTemperatureStore();
-	//                dataStores.put(rs.getName(), rs);
-	//        		break;
-	//        	default:
-	//        		logger.error("Param unrecognized or unsupported: {}" + param);
-	//    		} 
-	//    	}
-	//    }
 
 	protected void initRecordStores() throws SensorHubException
 	{
@@ -125,10 +125,10 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 			case AIR_TEMPERATURE:
 				store = new AirTemperatureStore();
 				break;
-			case AIR_PRESSURE_AT_SEA_LEVEL:
 			case SEA_WATER_ELECTRICAL_CONDUCTIVITY:
 				store = new ConductivityStore();
 				break;
+			case AIR_PRESSURE_AT_SEA_LEVEL:
 			case SEA_WATER_SALINITY:
 			case CURRENTS:
 			case ENVIRONMENTAL:
@@ -142,10 +142,12 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 				continue;
 			}
 			dataStores.put(store.getName(), store);
-			
 		}
+		// TODO
+		// GPS is not technically a parameter. Position is returned with all Paramers,
+		// so we need to treat it a little differently
+		//	 store = new GpsRecordStore(??);
 	}
-	//    
 
 	protected void initSensorNetworkDescription() throws SensorHubException
 	{
@@ -156,8 +158,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		systemDesc.setDescription("NDBC automated sensor network for realtime and archive buoy data"); // + getNumFois(null) + " stations across the US");
 
 		// add outputs
-		//        for (BuoyRecordStore rs: dataStores.values())
-		//            systemDesc.addOutput(rs.getName(), rs.getRecordDescription());
 		for (BuoyRecordStore rs: dataStores.values())
 			systemDesc.addOutput(rs.getName(), rs.getRecordDescription());
 	}
@@ -182,14 +182,10 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 			{
 				loadRecords();
 				iterator = buoyDataRecords.iterator();
-
 			}
 
 			protected void loadRecords()
 			{
-				//                	Iterator<DataBlock> recIterator;
-//				config.setStartTime(config.getStartTime());
-//				config.setStopTime(config.getStopTime());
 				try {
 					List<BuoyRecord> recs = bloader.getRecords(config);
 					while ( bloader.hasNext()) {
@@ -199,10 +195,9 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 						buoyDataRecords.add(new BuoyDataRecord(key, block));
 					}
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					logger.error(e.getMessage());
 				}
-
 				Collections.sort(buoyDataRecords);
 			}
 
@@ -211,7 +206,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 			{
 				return iterator.hasNext();
 			}
-
 
 			@Override
 			public IDataRecord next()
@@ -262,6 +256,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 			reqConfig.setStopTime(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1));
 			return reqConfig;
 		}
+		// If we're here from StreamStoragePanel, set to smaller value than 7 days
 		long reqStartTime = (long)(filter.getTimeStampRange()[0] * 1000);
 		long reqStopTime = (long)(filter.getTimeStampRange()[1] * 1000);
 		if( (reqStopTime - reqStartTime) > TimeUnit.DAYS.toMillis(config.maxRequestTimeRange) ) {
@@ -321,7 +316,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		long samplingPeriod = TimeUnit.MINUTES.toMillis(15); // shortest sampling period seems to be 15min
 		int numSites = fois.size();
 		return (int)(numSites * dt / samplingPeriod);
-		//        return 1;
 	}
 
 	//  NOTE: In theory this should correspond to full records in storage
