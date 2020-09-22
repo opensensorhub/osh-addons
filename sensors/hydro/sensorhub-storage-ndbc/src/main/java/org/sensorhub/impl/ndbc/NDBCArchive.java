@@ -53,7 +53,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	static final String IOOS_UID_PREFIX = "urn:ioos:";
 	static final String FOI_UID_PREFIX = NDBCArchive.IOOS_UID_PREFIX + "station:wmo:";
 
-	//	Map<String, RecordStore> dataStores = new LinkedHashMap<>();
 	Map<String, BuoyRecordStore> dataStores = new LinkedHashMap<>();
 	Map<String, AbstractFeature> fois = new LinkedHashMap<>();
     Map<String, ObsPeriod> foiTimeRanges = new ConcurrentHashMap<>();
@@ -66,7 +65,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	@Override
 	public void start() throws SensorHubException
 	{
-		//loadFois();
 		initRecordStores();
 		initSensorNetworkDescription();
 
@@ -74,7 +72,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		capsTimer = new Timer();
 		capsTask = new CapsReaderTask(config.ndbcUrl, TimeUnit.MINUTES.toMillis(config.foiUpdatePeriodMinutes), updateMetadata);
 		capsTask.setBbox(config.siteBbox.getMinY(), config.siteBbox.getMinX(), config.siteBbox.getMaxY(), config.siteBbox.getMaxX());
-//		capsTask.setBbox(31.0, -120.0, 35.0, -115.0);
 		capsTimer.scheduleAtFixedRate(capsTask, 0, TimeUnit.MINUTES.toMillis(config.foiUpdatePeriodMinutes));
 	}
 
@@ -87,19 +84,14 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	//	Callback for CapsReader to update fois and TimeRanges
 	//  Check concurrency concerns
 	Consumer<List<BuoyMetadata>>  updateMetadata = (mdList)-> {
-        System.out.println("updateMetadata... NumBuoys: " + mdList.size());
         for(BuoyMetadata md: mdList) {
         	if(!fois.containsKey(md.name)) {
         		fois.put(md.name, md.foi);
         		logger.info("Adding Buoy FOI: {}" , md.uid);
         	}
-//        	if(foiTimeRanges.containsKey(md.uid )) {
-//        		foiTimeRanges.replace(md.uid, new ObsPeriod(md.uid, md.startTime, md.stopTime));
-//        	} else {
-       		foiTimeRanges.put(md.uid, new ObsPeriod(md.uid, md.startTime, md.stopTime));
-//        	}
+      		foiTimeRanges.put(md.uid, new ObsPeriod(md.uid, md.startTime, md.stopTime));
         }
-        System.err.println(foiTimeRanges.size() + " foiTimeRange entries");
+        logger.info("Update Metadata...  {} foiTimeRange entries", foiTimeRanges.size());
     };
 	
 	protected void initRecordStores() throws SensorHubException
@@ -135,9 +127,10 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 			dataStores.put(store.getName(), store);
 		}
 		// TODO
-		// GPS is not technically a parameter. Position is returned with all Paramers,
-		// so we need to treat it a little differently
-		//	 store = new GpsRecordStore(??);
+//		 GPS is not technically a parameter. Position is returned with all Paramers,
+//		 so we need to treat it a little differently
+		 store = new GpsRecordStore();
+		 dataStores.put(store.getName(), store);
 	}
 
 	protected void initSensorNetworkDescription() throws SensorHubException
@@ -156,11 +149,9 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	@Override
 	public Iterator<? extends IDataRecord> getRecordIterator(IDataFilter filter) {
 		String recType = filter.getRecordType();
-		//		RecordStore rs = dataStores.get(recType); 
+		BuoyParam param = BuoyParam.valueOf(recType);
 		BuoyRecordStore store = (BuoyRecordStore)dataStores.get(recType); 
 
-		// prepare loader to fetch data from NDBC web service
-		//        final ObsRecordLoader loader = new ObsRecordLoader(rs.getRecordDescription(), logger);
 		BuoyRecordLoader bloader = new BuoyRecordLoader(store.getRecordDescription());
 		NDBCConfig config = getNdbcConfig(filter);
 
@@ -178,7 +169,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 			protected void loadRecords()
 			{
 				try {
-					List<BuoyRecord> recs = bloader.getRecords(config);
+					List<BuoyRecord> recs = bloader.getRecords(config, param);
 					while ( bloader.hasNext()) {
 						DataBlock block = bloader.next();
 						// null check?
@@ -186,7 +177,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 						buoyDataRecords.add(new BuoyDataRecord(key, block));
 					}
 				} catch (IOException e) {
-					e.printStackTrace();
 					logger.error(e.getMessage());
 				}
 				Collections.sort(buoyDataRecords);
@@ -216,7 +206,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 
 		// keep only site IDs that are in both request and config
 		if (filter.getProducerIDs() != null)
-			//config.stationIds.addAll(filter.getProducerIDs());
 			config.stationIds.retainAll(filter.getProducerIDs());
 
 		if (filter instanceof IObsFilter)
@@ -229,7 +218,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 			}
 		}
 		if (!config.stationIds.isEmpty())
-			//ndbcFilter.stationIds.retainAll(config.stationIds);
 			reqConfig.stationIds.addAll(config.stationIds);
 
 		// use config params
@@ -240,18 +228,18 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		reqConfig.siteBbox.setMaxY(config.siteBbox.getMaxY());
 
 		// init time filter
-		//  NDBC limits requests to 31 days
 		// First, check for latest (both time ranges will be infinite)
 		if( Double.isInfinite(filter.getTimeStampRange()[0]) && Double.isInfinite(filter.getTimeStampRange()[1]) )  {
 			reqConfig.setStartTime(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
 			reqConfig.setStopTime(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1));
 			return reqConfig;
 		}
-		// If we're here from StreamStoragePanel, set to smaller value than 7 days
+		//  TODO: StreamStoragePanel initializes two requests for full time range. 
+		//  Limiting max request days to avoid huge requests to NDBC server, but need a better fix
 		long reqStartTime = (long)(filter.getTimeStampRange()[0] * 1000);
 		long reqStopTime = (long)(filter.getTimeStampRange()[1] * 1000);
-		if( (reqStopTime - reqStartTime) > TimeUnit.DAYS.toMillis(config.maxRequestTimeRange) ) {
-			reqStartTime = reqStopTime - TimeUnit.DAYS.toMillis(config.maxRequestTimeRange);
+		if( (reqStopTime - reqStartTime) > TimeUnit.DAYS.toMillis(config.maxRequestTimeRangeDays) ) {
+			reqStartTime = reqStopTime - TimeUnit.DAYS.toMillis(config.maxRequestTimeRangeDays);
 		}
 		reqConfig.setStartTime(reqStartTime);
 		reqConfig.setStopTime(reqStopTime);
@@ -295,7 +283,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		long samplingPeriod = TimeUnit.MINUTES.toMillis(15); // shortest sampling period seems to be 15min
 		int numSites = config.stationIds.isEmpty() ? fois.size() : config.stationIds.size();
 		return (int)(numSites * dt / samplingPeriod);
-		//    	return 1;
 	}
 
 
@@ -347,7 +334,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 			public boolean hasNext()
 			{
 				return it.hasNext();
-				//                return false;
 			}
 
 			@Override

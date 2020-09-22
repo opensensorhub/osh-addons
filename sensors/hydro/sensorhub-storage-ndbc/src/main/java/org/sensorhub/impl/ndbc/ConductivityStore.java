@@ -12,6 +12,7 @@ public class ConductivityStore extends BuoyRecordStore {
         .addField("conductivity", createConductivity())
         .build();
 
+        dataStruct.setName("SEA_WATER_ELECTRICAL_CONDUCTIVITY");
         dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
         dataStruct.setDefinition("urn:darpa:oot:message:conductivity");  // if needed
         encoding = sweHelper.newTextEncoding();

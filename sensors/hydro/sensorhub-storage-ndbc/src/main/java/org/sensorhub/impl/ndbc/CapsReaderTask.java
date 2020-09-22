@@ -1,7 +1,5 @@
 package org.sensorhub.impl.ndbc;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -17,6 +15,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.sensorhub.api.persistence.ObsPeriod;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vast.ogc.gml.GMLUtils;
 import org.vast.ogc.om.SamplingPoint;
 import org.vast.ows.GetCapabilitiesRequest;
@@ -51,10 +51,9 @@ public class CapsReaderTask extends TimerTask  {
     Map<String, ObsPeriod> foiTimeRanges;
     GMLFactory gmlFac = new GMLFactory(true);
     
-//    Consumer< Map<String, ObsPeriod>> callback;
     Consumer<List<BuoyMetadata>> callback;
+    Logger logger = LoggerFactory.getLogger(this.getClass());
     
-//	public CapsReaderTask(String capsUrl, long updateTimeMs, Consumer< Map<String, ObsPeriod>> callback) {
 	public CapsReaderTask(String capsUrl, long updateTimeMs, Consumer< List<BuoyMetadata>> callback) {
 		this.capsUrl = capsUrl;
 		this.updateTimeMs = updateTimeMs;
@@ -70,15 +69,13 @@ public class CapsReaderTask extends TimerTask  {
 
 	@Override
 	public void run() {
-		System.out.println("Caps updating at : " + 
-				LocalDateTime.ofInstant(Instant.ofEpochMilli(scheduledExecutionTime()), 
-						ZoneId.of("UTC")));
+//		System.out.println("Caps updating at : " + LocalDateTime.ofInstant(Instant.ofEpochMilli(scheduledExecutionTime()), 
+//						ZoneId.of("UTC")));
 		try {
 			List<BuoyMetadata> metadata = getBuoyMetadata();
 			callback.accept(metadata);
 		} catch (Exception e) {
 			e.printStackTrace();
-			//  retry and adjust schedule accordingly
 		}
 	}
 
@@ -88,7 +85,7 @@ public class CapsReaderTask extends TimerTask  {
 		OWSUtils utils = new OWSUtils();
 		InputStream is;
 		is = utils.sendGetRequest(request).getInputStream();
-		System.out.println(utils.buildURLQuery(request));
+		logger.info("Requesting caps from {}",utils.buildURLQuery(request));
 
 		DOMHelper dom = new DOMHelper(is, false);
 		OWSExceptionReader.checkException(dom, dom.getBaseElement());
@@ -101,7 +98,6 @@ public class CapsReaderTask extends TimerTask  {
 		getCaps.setService("SOS");
 		GMLUtils gmlUtils = new GMLUtils(GMLUtils.V3_2);
 
-		System.err.println("Reading caps");
 		DOMHelper dom = sendRequest(getCaps);
 		NodeList obsOffs = dom.getElements("Contents/ObservationOfferingList/ObservationOffering");
 		List<String> ids = new ArrayList<>();
@@ -119,10 +115,10 @@ public class CapsReaderTask extends TimerTask  {
 		getCaps.setService("SOS");
 		GMLUtils gmlUtils = new GMLUtils(GMLUtils.V3_2);
 
-		System.err.println("Reading caps");
-//		DOMHelper dom = sendRequest(getCaps);
-	    InputStream is = new BufferedInputStream((new FileInputStream("C:/Users/tcook/root/sensorHub/oot/buoy/Caps.xml")));
-		DOMHelper dom = new DOMHelper(is, false);
+		DOMHelper dom = sendRequest(getCaps);
+		// Uncomment to test local cached file
+//	    InputStream is = new BufferedInputStream((new FileInputStream("C:/Users/tcook/root/sensorHub/oot/buoy/Caps.xml")));
+//		DOMHelper dom = new DOMHelper(is, false);
 
 		List<BuoyMetadata> mdList = new ArrayList<>();
 		
@@ -162,7 +158,7 @@ public class CapsReaderTask extends TimerTask  {
 				}
 				Instant iStart = Instant.ofEpochMilli((long)startTime * 1000L);
 				Instant iStop = Instant.ofEpochMilli((long)stopTime * 1000L);
-				System.err.println("\t" + uid + "," + iStart + " : " + iStop);
+//				System.err.println("\t" + uid + "," + iStart + " : " + iStop);
 //				foiTimeRanges.put(uid, new ObsPeriod(uid, startTime, stopTime));
 				metadata.startTime = startTime;
 				metadata.stopTime = stopTime;
@@ -171,7 +167,6 @@ public class CapsReaderTask extends TimerTask  {
 				//  What to use here?  We should always get times in theory but handle this case
 			}
 		}
-		System.err.println(obsOffs.getLength());
 		return mdList;
 	}
 	

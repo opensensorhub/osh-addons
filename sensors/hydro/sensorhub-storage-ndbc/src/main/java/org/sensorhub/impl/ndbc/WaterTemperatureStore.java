@@ -7,20 +7,20 @@ public class WaterTemperatureStore extends BuoyRecordStore
 	// TODO - split into separate stores- time may be different for each parameter
 	
 	public WaterTemperatureStore() {
-			super(BuoyParam.SEA_WATER_TEMPERATURE);
-	        
-	        dataStruct = headerBuilder
-	        .addField("water_temperature", sweHelper.createQuantity()
-	        	.label("Water Temperature")
-	        	.definition(MMI_CF_DEF_PREFIX + "sea_water_temperature")
-	        	.uomCode("degC")
-	        	.build())
-	        .build();
+		super(BuoyParam.SEA_WATER_TEMPERATURE);
+        
+        dataStruct = headerBuilder
+        .addField("water_temperature", sweHelper.createQuantity()
+        	.label("Water Temperature")
+        	.definition(MMI_CF_DEF_PREFIX + "sea_water_temperature")
+        	.uomCode("degC")
+        	.build())
+        .build();
 
-	        dataStruct.setName("waterTemperature");
-	        dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
-	        dataStruct.setDefinition("urn:darpa:oot:message:watertemp");  // if needed
-	        encoding = sweHelper.newTextEncoding();
-	    }
+        dataStruct.setName("SEA_WATER_TEMPERATURE");
+        dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
+        dataStruct.setDefinition("urn:darpa:oot:message:watertemp");  // if needed
+        encoding = sweHelper.newTextEncoding();
+    }
 	    
 }

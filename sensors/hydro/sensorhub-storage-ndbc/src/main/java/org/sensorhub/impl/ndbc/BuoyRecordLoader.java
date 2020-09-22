@@ -12,7 +12,6 @@ import net.opengis.swe.v20.DataComponent;
 public class BuoyRecordLoader implements Iterator<DataBlock> {
 
 	DataBlock block;
-	//	List<BuoyRecord> records;
 	List<DataBlock> blocks;
 	Iterator<DataBlock> iterator; 
 	DataComponent dataComponent;
@@ -21,8 +20,9 @@ public class BuoyRecordLoader implements Iterator<DataBlock> {
 		this.dataComponent = dataComponent;
 	}
 
-	public List<BuoyRecord> getRecords(NDBCConfig filter) throws IOException {
-		BuoyParser parser = new BuoyParser(filter, filter.parameters.iterator().next());
+	// TODO - recType should be of type BuoyParam
+	public List<BuoyRecord> getRecords(NDBCConfig filter, BuoyParam param) throws IOException {
+		BuoyParser parser = new BuoyParser(filter, param);
 		List<BuoyRecord> recs = parser.getRecords();
 		blocks = new ArrayList<>();
 		for(BuoyRecord rec: recs) {
@@ -30,7 +30,23 @@ public class BuoyRecordLoader implements Iterator<DataBlock> {
 			block.setDoubleValue(0, rec.timeMs/1000.);
 			block.setStringValue(1, rec.stationId);
 			block.setStringValue(2, "N/A"); // MSG ID
-			block.setDoubleValue(3, rec.waterTemperature);
+			switch(param) {
+			case SEA_WATER_TEMPERATURE:
+				block.setDoubleValue(3, rec.waterTemperature);
+				break;
+			case AIR_TEMPERATURE:
+				block.setDoubleValue(3, rec.airTemperature);
+				break;
+			case SEA_WATER_ELECTRICAL_CONDUCTIVITY:
+				block.setDoubleValue(3, rec.conductivity);
+				break;
+			case GPS:
+				block.setDoubleValue(3, rec.lat);
+				block.setDoubleValue(4, rec.lon);
+				break;
+			default:
+				throw new IOException("BuoyRecordLoader- record type not recognized: " + param);
+			}
 			blocks.add(block);
 		}
 		iterator = blocks.iterator();

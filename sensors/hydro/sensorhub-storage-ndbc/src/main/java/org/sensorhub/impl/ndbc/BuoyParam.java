@@ -18,6 +18,11 @@ public enum BuoyParam
     WINDS,
     
     //  GPS is not a requestable parameter from NDBC SOS, but is included with 
-    //  every response. So I am treating it like a normal parameter
-    GPS
+    //  every response. Client code must handle GPS as a special case 
+    GPS;
+    
+	public static void main(String[] args) throws Exception {
+		BuoyParam  p = BuoyParam.valueOf("SEA_WATER_TEMPERATURE");
+		System.err.println(p);
+	}
 }

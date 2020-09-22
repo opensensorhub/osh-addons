@@ -63,17 +63,18 @@ public class NDBCConfig extends ObsStorageConfig
     }
     
     public void setStartTime(Long timeMs) {
-//    	this.startTimeIso = Instant.ofEpochMilli(time).toString();
     	this.startTimeIso = formatIso(timeMs);
     }
 
     public void setStopTime(Long timeMs) {
-//    	this.stopTimeIso = Instant.ofEpochMilli(time).toString();
     	this.stopTimeIso = formatIso(timeMs);
     }
-    
+
+    // NDBC Request limit is 31 days. If we want more than that, will need to batch requests and combine results
+    // Limiting to 5 days max request because StreamStorage panel triggers two requests for full time range
+    // and eats up resources. 
     @DisplayInfo(desc="Limit the max amount of days for a single request from NDBC server")
-    public Integer maxRequestTimeRange = 7;
+    public Integer maxRequestTimeRangeDays = 5;
 
     /**
      * 

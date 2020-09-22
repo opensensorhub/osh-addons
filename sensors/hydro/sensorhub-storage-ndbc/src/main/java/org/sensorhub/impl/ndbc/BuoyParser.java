@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vast.util.Bbox;
 
 public class BuoyParser {
@@ -17,11 +18,14 @@ public class BuoyParser {
 	NDBCConfig filter;
 	BuoyParam recordType;
 	String requestURL;
-	Logger logger;
+	Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	public BuoyParser(NDBCConfig filter, BuoyParam recordType)
 	{
 		this.filter = filter;
+		//  GPS requests are not supported by NDBC, so request SST, which most buoys support
+		if(recordType == BuoyParam.GPS)
+			recordType = BuoyParam.SEA_WATER_TEMPERATURE;
 		this.recordType = recordType;
 		obsUrl = filter.ndbcUrl + "?request=GetObservation&service=SOS&version=1.0.0";
 	}
@@ -80,11 +84,10 @@ public class BuoyParser {
 
 	public List<BuoyRecord> getRecords() throws IOException {
 		requestURL = buildRequest();
-//		logger.info("Requesting observations from: " + requestURL);
+		logger.info("Requesting observations from: " + requestURL);
 		URL url = new URL(requestURL);
-		System.err.println(url);
 		List<BuoyRecord> recs = parseResponse(url.openStream());
-		System.err.println("Received " + recs.size() + " records");
+		logger.info("Received " + recs.size() + " records");
 		return recs;
 	}
 

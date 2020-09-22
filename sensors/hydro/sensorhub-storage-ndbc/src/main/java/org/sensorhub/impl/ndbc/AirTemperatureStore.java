@@ -15,7 +15,7 @@ public class AirTemperatureStore extends BuoyRecordStore
         	.build())
         .build();
 
-        dataStruct.setName("airTemperature");
+        dataStruct.setName("AIR_TEMPERATURE");
         dataStruct.getFieldList().getProperty(1).setRole(IMultiSourceDataInterface.ENTITY_ID_URI);
         dataStruct.setDefinition("urn:darpa:oot:message:airtemp");  // if needed
         encoding = sweHelper.newTextEncoding();
