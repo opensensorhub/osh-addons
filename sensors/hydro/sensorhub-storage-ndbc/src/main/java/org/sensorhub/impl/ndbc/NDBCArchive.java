@@ -69,6 +69,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	@Override
 	public void start() throws SensorHubException
 	{
+		logger = getLogger();
 		initRecordStores();
 		initSensorNetworkDescription();
 
