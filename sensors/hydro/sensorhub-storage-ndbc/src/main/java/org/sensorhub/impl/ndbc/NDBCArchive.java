@@ -85,6 +85,7 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	}
 
 	//	Callback for CapsReader to update fois and TimeRanges
+	//  Check concurrency concerns
 	Consumer<List<BuoyMetadata>>  updateMetadata = (mdList)-> {
         System.out.println("updateMetadata... NumBuoys: " + mdList.size());
         for(BuoyMetadata md: mdList) {
@@ -92,25 +93,15 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
         		fois.put(md.name, md.foi);
         		logger.info("Adding Buoy FOI: {}" , md.uid);
         	}
-        	if(!foiTimeRanges.containsKey(md.uid )) {
-        		foiTimeRanges.put(md.uid, new ObsPeriod(md.uid, md.startTime, md.stopTime));
-        	}
+//        	if(foiTimeRanges.containsKey(md.uid )) {
+//        		foiTimeRanges.replace(md.uid, new ObsPeriod(md.uid, md.startTime, md.stopTime));
+//        	} else {
+       		foiTimeRanges.put(md.uid, new ObsPeriod(md.uid, md.startTime, md.stopTime));
+//        	}
         }
+        System.err.println(foiTimeRanges.size() + " foiTimeRange entries");
     };
 	
-	@Deprecated // load FOIS using capabilities Reader
-	protected void loadFoisOld()  throws SensorHubException {
-		try
-		{
-			ObsStationLoader parser = new ObsStationLoader(config.ndbcUrl, logger);
-			parser.loadStations(fois, config);
-		}
-		catch (Exception e)
-		{
-			throw new SensorHubException("Error loading station information", e);
-		}
-	}
-
 	protected void initRecordStores() throws SensorHubException
 	{
 		//  TOODO instantiate All params stores
