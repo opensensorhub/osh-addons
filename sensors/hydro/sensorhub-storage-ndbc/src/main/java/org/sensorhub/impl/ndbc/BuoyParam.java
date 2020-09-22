@@ -1,3 +1,7 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+ Copyright (C) 2020 Botts Innovative Research, Inc. All Rights Reserved.
+ ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.ndbc;
 
 public enum BuoyParam

@@ -34,13 +34,10 @@ import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.Point;
 import net.opengis.gml.v32.impl.GMLFactory;
 
-/**
- * CapabilitiesReader - Currently used to get Time Ranges from NDBC Caps on a
- * 						schedule. Other harvesting could be added here if needed
- * @author tcook
- *
- */
+/***************************** BEGIN LICENSE BLOCK ***************************
 
+Copyright (C) 2020 Botts Innovative Research, Inc. All Rights Reserved.
+******************************* END LICENSE BLOCK ***************************/
 public class CapsReaderTask extends TimerTask  {
 
 	String capsUrl;
