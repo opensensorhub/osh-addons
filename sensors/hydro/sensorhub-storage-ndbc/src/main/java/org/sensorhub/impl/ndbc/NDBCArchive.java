@@ -102,10 +102,11 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	protected void initRecordStores() throws SensorHubException
 	{
 		//  TOODO instantiate All params stores
-		Iterator<BuoyParam> it = config.parameters.iterator();
+//		Iterator<BuoyParam> it = config.parameters.iterator();
+		BuoyParam [] params = BuoyParam.values();
 		BuoyRecordStore store = null;
-		while(it.hasNext()) {
-			BuoyParam param = it.next();
+		for(BuoyParam param: params) {
+//			BuoyParam param = it.next();
 			switch(param) {
 			case SEA_WATER_TEMPERATURE:
 				store = new WaterTemperatureStore();
@@ -125,17 +126,15 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 			case WINDS:
 				logger.info("BuoyParam not yet supported: " + param.name());
 				continue;
+			case GPS:
+				 store = new GpsRecordStore();
+				continue;
 			default:
 				logger.error("BuoyParam not recognized: " + param.name());
 				continue;
 			}
 			dataStores.put(store.getName(), store);
 		}
-		// TODO
-//		 GPS is not technically a parameter. Position is returned with all Paramers,
-//		 so we need to treat it a little differently
-		 store = new GpsRecordStore();
-		 dataStores.put(store.getName(), store);
 	}
 
 	protected void initSensorNetworkDescription() throws SensorHubException
@@ -226,14 +225,14 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 			reqConfig.stationIds.addAll(config.stationIds);
 
 		// use config params
-		reqConfig.parameters.addAll(config.parameters);
+//		reqConfig.parameters.addAll(config.parameters);
 		reqConfig.siteBbox.setMinX(config.siteBbox.getMinX());
 		reqConfig.siteBbox.setMinY(config.siteBbox.getMinY());
 		reqConfig.siteBbox.setMaxX(config.siteBbox.getMaxX());
 		reqConfig.siteBbox.setMaxY(config.siteBbox.getMaxY());
 
 		// init time filter
-		// First, check for latest (both time ranges will be infinite)
+		// First, check for "now" (both time ranges will be infinite)
 		if( Double.isInfinite(filter.getTimeStampRange()[0]) && Double.isInfinite(filter.getTimeStampRange()[1]) )  {
 			reqConfig.setStartTime(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
 			reqConfig.setStopTime(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1));

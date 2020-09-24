@@ -13,7 +13,7 @@ public class TestNDBC
     	NDBCArchive storage = new NDBCArchive();
     	NDBCConfig config = new NDBCConfig();
     	config.stationIds.add("46258");
-    	config.parameters.add(BuoyParam.SEA_WATER_TEMPERATURE);
+//    	config.parameters.add(BuoyParam.SEA_WATER_TEMPERATURE);
     	storage.init(config);
     	storage.start();
     }

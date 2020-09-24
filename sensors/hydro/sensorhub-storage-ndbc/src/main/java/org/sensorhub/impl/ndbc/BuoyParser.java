@@ -17,6 +17,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.util.Bbox;
 
+/**
+ * NDBC SOS details here:  https://sdf.ndbc.noaa.gov/sos/
+ * 
+ * NOTE: As of 2020-09-22, NDBC SOS does not properly handle &eventTime=latest requests
+ *       Therefore I am using a time range and filtering results when we receive a phenomTime=Now SOS request
+ * 
+ * @author tcook
+ *
+ */
+
 public class BuoyParser {
 	String obsUrl;
 	NDBCConfig filter;
@@ -41,7 +51,6 @@ public class BuoyParser {
 		parser.getRecords();
 	}
 	
-	//    protected String buildInstantValuesRequest(DataFilter filter, Map<String, String[]> sensorOfferings)
 	protected String buildRequest()
 	{
 		StringBuilder buf = new StringBuilder(obsUrl);
@@ -52,7 +61,8 @@ public class BuoyParser {
 			buf.append("&offering=");
 			for (String id: filter.stationIds)
 				buf.append("urn:ioos:station:wmo:").append(id).append(',');
-			buf.setCharAt(buf.length()-1, '&');
+			buf.deleteCharAt(buf.length() - 1);
+			//buf.setCharAt(buf.length()-1, '&');
 		} else {
 			buf.append("&offering=urn:ioos:network:noaa.nws.ndbc:all");
 		}
@@ -65,7 +75,7 @@ public class BuoyParser {
 			.append(bbox.getMinX()).append(",")
 			.append(bbox.getMinY()).append(",")
 			.append(bbox.getMaxX()).append(",")
-			.append(bbox.getMaxY()).append("&");
+			.append(bbox.getMaxY());
 		}
 
 		// parameters
@@ -75,6 +85,8 @@ public class BuoyParser {
 		buf.append("&responseformat=text/csv"); // output type
 
 		// time range
+		// NDBC SOS is not handling &eventTime=latest in their requests properly, so don't use it here
+		// starttimeIso and stopTimeIso should always ne non-null
 		if (filter.startTimeIso != null && filter.stopTimeIso != null) {
 			buf.append("&eventtime=" + filter.startTimeIso + "/" + filter.stopTimeIso);
 		} else {
@@ -90,7 +102,32 @@ public class BuoyParser {
 		URL url = new URL(requestURL);
 		List<BuoyRecord> recs = parseResponse(url.openStream());
 		logger.info("Received " + recs.size() + " records");
+		if(filter.isLatest() && recs.size() > 0) {
+			recs = filterLatest(recs);
+			logger.debug(recs.size() + " records after filterLatest");
+		}
 		return recs;
+	}
+	
+	//  This method assumes records returned by NDBC SOS are always sorted
+	//  by site, then time.  Which has been the case for every request I have seen
+	private List<BuoyRecord> filterLatest(List<BuoyRecord> recs) {
+		List<BuoyRecord> latestRecs = new ArrayList<>();
+		
+		boolean firstPass = false;
+		BuoyRecord prevRec = recs.get(0);
+		for(BuoyRecord rec: recs) {
+//			System.err.println(rec.stationId + "," + rec.timeStr);
+			if(!prevRec.stationId.equals(rec.stationId)) {
+//				System.err.println("\t" + prevRec.stationId + "," + prevRec.timeStr);
+				latestRecs.add(prevRec);
+			}
+			prevRec = rec;
+		}
+		// Add last record 
+		latestRecs.add(prevRec);
+//		System.err.println("\t" + prevRec.stationId + "," + prevRec.timeStr);
+		return latestRecs;
 	}
 
 	protected List<BuoyRecord> parseResponse(InputStream is) throws IOException {

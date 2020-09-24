@@ -41,8 +41,8 @@ public class NDBCConfig extends ObsStorageConfig
     @DisplayInfo(desc="Geographic region (BBOX)")
     public Bbox siteBbox = new Bbox();
     
-    @DisplayInfo(desc="Required at least one:  Observed parameters")
-    public Set<BuoyParam> parameters = new LinkedHashSet<>();
+//    @DisplayInfo(desc="Required at least one:  Observed parameters")
+//    public Set<BuoyParam> parameters = new LinkedHashSet<>();
     
     @DisplayInfo(desc="Period in minutes to harvest FOI info from NDBC caps doc")
     public Long foiUpdatePeriodMinutes = 60L;
@@ -70,8 +70,6 @@ public class NDBCConfig extends ObsStorageConfig
     }
     
     //  Not settable in config file- flag for latest measurement only
-    //  NOT using this because NDBC will return old data when using eventTime=latest
-    //  in requests to their SOS
     private boolean latest = false;
 
     public boolean isLatest() {

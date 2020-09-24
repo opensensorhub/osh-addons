@@ -44,8 +44,6 @@ public class CapsReaderTask extends TimerTask  {
 	long updateTimeMs;
 	Bbox bbox = new Bbox(-90.0, -180.0, 90.0, 180.0);  // default to global
 
-	Map<String, AbstractFeature> fois;
-    Map<String, ObsPeriod> foiTimeRanges;
     GMLFactory gmlFac = new GMLFactory(true);
     
     Consumer<List<BuoyMetadata>> callback;
@@ -55,8 +53,6 @@ public class CapsReaderTask extends TimerTask  {
 		this.capsUrl = capsUrl;
 		this.updateTimeMs = updateTimeMs;
 		this.callback = callback;
-		fois = new LinkedHashMap<>();
-		foiTimeRanges = new ConcurrentHashMap<>();
 	}
 
 	//  NDBC Uses EPSG:4326 coord ordering (lat,lon), so reverse our config for filtering 
