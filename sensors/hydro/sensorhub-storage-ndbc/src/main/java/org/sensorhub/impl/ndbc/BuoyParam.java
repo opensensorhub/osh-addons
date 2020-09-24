@@ -13,8 +13,6 @@ public enum BuoyParam
     SEA_WATER_ELECTRICAL_CONDUCTIVITY,
     SEA_WATER_SALINITY,
     SEA_WATER_TEMPERATURE,
-    //  All Environmental scalars will be grouped in one data record
-    ENVIRONMENTAL,
     
     //  Groups
     CURRENTS,

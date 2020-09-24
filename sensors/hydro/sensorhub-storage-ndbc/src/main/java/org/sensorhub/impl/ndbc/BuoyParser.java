@@ -224,11 +224,14 @@ public class BuoyParser {
 						rec.waves.sampling_rate = parseInt(values[25]); //(Hz)
 						break;
 					case WINDS:
-						rec.seaFloorDepth = parseDouble(values[5]);
-						rec.winds.wind_from_direction = parseInt(values[6]); //(degree)
-						rec.winds.wind_speed = parseInt(values[7]); //(m/s)
-						rec.winds.wind_speed_of_gust = parseInt(values[8]); //(m/s)
-						rec.winds.upward_air_velocity = parseDouble(values[9]); //(m/s)
+						rec.depth = parseDouble(values[5]);
+						rec.winds.wind_from_direction = parseDouble(values[6]); //(degree)
+						rec.winds.wind_speed = parseDouble(values[7]); //(m/s)
+						if(values.length > 8)
+							rec.winds.wind_speed_of_gust = parseDouble(values[8]); //(m/s)
+						//  upward_air_velocity is not there for buoys I have checked
+						if(values.length > 9)
+							rec.winds.upward_air_velocity = parseDouble(values[9]); //(m/s)
 						break;
 					default:
 					} 

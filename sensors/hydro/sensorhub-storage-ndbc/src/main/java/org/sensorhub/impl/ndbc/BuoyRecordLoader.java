@@ -13,6 +13,7 @@ import java.util.NoSuchElementException;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 
+//  TODO - fix missing values correctly (see Winds)
 public class BuoyRecordLoader implements Iterator<DataBlock> {
 
 	DataBlock block;
@@ -27,11 +28,6 @@ public class BuoyRecordLoader implements Iterator<DataBlock> {
 	public List<BuoyRecord> getRecords(NDBCConfig filter, BuoyParam param) throws IOException {
 		BuoyParser parser = new BuoyParser(filter, param);
 		List<BuoyRecord> recs = parser.getRecords();
-//		if(filter.isLatest()) {
-//			BuoyRecord rec = recs.get(recs.size() - 1);
-//			recs.clear();
-//			recs.add(rec);
-//		}
 		blocks = new ArrayList<>();
 		for(BuoyRecord rec: recs) {
 			block = dataComponent.createDataBlock();
@@ -48,6 +44,15 @@ public class BuoyRecordLoader implements Iterator<DataBlock> {
 			case SEA_WATER_ELECTRICAL_CONDUCTIVITY:
 				block.setDoubleValue(3, rec.conductivity);
 				break;
+			case AIR_PRESSURE_AT_SEA_LEVEL:
+				block.setDoubleValue(3, rec.airPressure);
+				break;
+			case WINDS:
+				setDoubleValue(block, 3, rec.winds.wind_from_direction);
+				setDoubleValue(block, 4, rec.winds.wind_speed);
+				setDoubleValue(block, 5, rec.winds.wind_speed_of_gust);
+				setDoubleValue(block, 6, rec.winds.upward_air_velocity);
+				break;
 			case GPS:
 				block.setDoubleValue(3, rec.lat);
 				block.setDoubleValue(4, rec.lon);
@@ -59,6 +64,14 @@ public class BuoyRecordLoader implements Iterator<DataBlock> {
 		}
 		iterator = blocks.iterator();
 		return recs;
+	}
+	
+	private void setDoubleValue(DataBlock block, int index, Double value) {
+		if(value == null) {
+			block.setDoubleValue(index, -999.9);  // fix this to proper SWE missing value convention
+			return; 
+		}
+		block.setDoubleValue(index, value);
 	}
 
 	@Override

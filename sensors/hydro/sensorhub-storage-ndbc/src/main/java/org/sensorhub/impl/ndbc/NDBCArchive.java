@@ -118,17 +118,20 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 				store = new ConductivityStore();
 				break;
 			case AIR_PRESSURE_AT_SEA_LEVEL:
-			case SEA_WATER_SALINITY:
+				store = new AirPressureStore();
+				break;
+			case WINDS:
+				store = new WindsStore();
+				break;
+			case SEA_WATER_SALINITY:  // TODO, add depth support
+//				store = new SalinityStore();
+//				break;
 			case CURRENTS:
-			case ENVIRONMENTAL:
 			case SEA_FLOOR_DEPTH_BELOW_SEA_SURFACE:
 			case WAVES:
-			case WINDS:
-				logger.info("BuoyParam not yet supported: " + param.name());
-				continue;
 			case GPS:
-				 store = new GpsRecordStore();
-				continue;
+				store = new GpsRecordStore();
+				break;
 			default:
 				logger.error("BuoyParam not recognized: " + param.name());
 				continue;
@@ -183,7 +186,6 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 				} catch (IOException e) {
 					logger.error(e.getMessage());
 				}
-				Collections.sort(buoyDataRecords);
 			}
 
 			@Override
@@ -234,7 +236,8 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 		// init time filter
 		// First, check for "now" (both time ranges will be infinite)
 		if( Double.isInfinite(filter.getTimeStampRange()[0]) && Double.isInfinite(filter.getTimeStampRange()[1]) )  {
-			reqConfig.setStartTime(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
+			// If now, set to a window and filter the response in BuoyParser
+			reqConfig.setStartTime(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2));
 			reqConfig.setStopTime(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1));
 			reqConfig.setLatest(true);
 			return reqConfig;
@@ -281,13 +284,15 @@ public class NDBCArchive extends AbstractModule<NDBCConfig> implements IObsStora
 	@Override
 	public int getNumMatchingRecords(IDataFilter filter, long maxCount)
 	{
+		// Bypassing check.  Need to limit possible response size differently
+		return 1;
+		
 		// compute rough estimate here
-		NDBCConfig config = getNdbcConfig(filter);
-		//        long dt = ndbcFilter.stopTime.getTime() - ndbcFilter.startTime.getTime();
-		long dt = System.currentTimeMillis() - config.getStartTime();
-		long samplingPeriod = TimeUnit.MINUTES.toMillis(15); // shortest sampling period seems to be 15min
-		int numSites = config.stationIds.isEmpty() ? fois.size() : config.stationIds.size();
-		return (int)(numSites * dt / samplingPeriod);
+//		NDBCConfig config = getNdbcConfig(filter);
+//		long dt = System.currentTimeMillis() - config.getStartTime();
+//		long samplingPeriod = TimeUnit.MINUTES.toMillis(15); // shortest sampling period seems to be 15min
+//		int numSites = config.stationIds.isEmpty() ? fois.size() : config.stationIds.size();
+//		return (int)(numSites * dt / samplingPeriod);
 	}
 
 

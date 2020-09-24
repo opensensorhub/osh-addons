@@ -4,6 +4,14 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.ndbc;
 
+/**
+ * BuoyRecord is a POJO for holding all the fields in data records 
+ * returned by NDBC SOS
+ * 
+ * @author tcook
+ *
+ */
+
 public class BuoyRecord {
 
 	BuoyParam recordType;
@@ -12,7 +20,7 @@ public class BuoyRecord {
 	String sensorId;
 	Double lat;
 	Double lon;
-	Double depth;
+	Double depth; 
 	String timeStr;
 	long timeMs;
 
@@ -88,9 +96,9 @@ public class BuoyRecord {
 	}
 
 	class Winds {
-		Integer wind_from_direction; //(degree)
-		Integer wind_speed; //(m/s)
-		Integer wind_speed_of_gust; //(m/s)
+		Double wind_from_direction; //(degree)
+		Double wind_speed; //(m/s)
+		Double wind_speed_of_gust; //(m/s)
 		Double upward_air_velocity; //(m/s)
 	}
 }

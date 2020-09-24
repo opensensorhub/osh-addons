@@ -13,6 +13,8 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 
+// TODO- add depth to almost all outputs
+//  https://mmisw.org/ont/secoora/parameter/depth
 abstract public class BuoyRecordStore implements IRecordStoreInfo 
 {
     DataRecordBuilder headerBuilder;
@@ -22,6 +24,8 @@ abstract public class BuoyRecordStore implements IRecordStoreInfo
     static GeoPosHelper geoHelper = new GeoPosHelper();
     static final SWEHelper sweHelper = new SWEHelper();
     static String MMI_CF_DEF_PREFIX = "https://mmisw.org/ont/cf/parameter/";
+    static String MMI_SECOORA_DEF_PREFIX = "https://mmisw.org/ont/secoora/parameter/";
+    static String MMI_IOOS_DEF_PREFIX = "https://mmisw.org/ont/ioos/parameter/";
 
     public BuoyRecordStore(BuoyParam param) {
     	this.param = param;
@@ -30,13 +34,8 @@ abstract public class BuoyRecordStore implements IRecordStoreInfo
     
     public void createHeaderBuilder() {
     	headerBuilder = sweHelper.createDataRecord()
-//        .definition(OOT_DEF_PREFIX + "header")
         .label("header")
         .description("Header containing message timestamp, floatID, and message number")
-        // means
-//        .addField("imu_altitude_mean", helper.createQuantity()
-//            .uomCode("m")
-//            .build())
         .addSamplingTimeIsoUTC("Time")
         .addField("floatID", sweHelper.createText()
             .label("Buoy ID")
@@ -58,13 +57,11 @@ abstract public class BuoyRecordStore implements IRecordStoreInfo
 
 	@Override
 	public DataComponent getRecordDescription() {
-		// TODO Auto-generated method stub
         return dataStruct;
 	}
 
 	@Override
 	public DataEncoding getRecommendedEncoding() {
-		// TODO Auto-generated method stub
         return encoding;
 	}
 	  
