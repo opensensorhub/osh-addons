@@ -1,6 +1,10 @@
 apply from: gradle.oshCoreDir + '/common.gradle'
 version = oshCoreVersion
 
+apply plugin: 'java'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   compile 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
