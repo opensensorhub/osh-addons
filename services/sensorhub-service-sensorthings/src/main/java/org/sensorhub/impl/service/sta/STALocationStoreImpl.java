@@ -21,11 +21,11 @@ import java.util.stream.Stream;
 import org.h2.mvstore.MVBTreeMap;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.RangeCursor;
-import org.sensorhub.api.datastore.FeatureKey;
-import org.sensorhub.api.datastore.IFeatureFilter;
-import org.sensorhub.api.datastore.IFeatureStore.FeatureField;
 import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
+import org.sensorhub.api.feature.FeatureKey;
+import org.sensorhub.api.feature.IFeatureFilter;
+import org.sensorhub.api.feature.IFeatureStore.FeatureField;
 import org.sensorhub.impl.datastore.h2.H2Utils;
 import org.sensorhub.impl.datastore.h2.IdProvider;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
@@ -234,7 +234,7 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
         }
         else if (filter.getInternalIDs() != null)
         {
-            return filter.getInternalIDs().getSet().stream()
+            return filter.getInternalIDs().stream()
                 .flatMap(id -> getHistoricalLocationsByLocation(id, filter.getValidTime()));
         }
         else

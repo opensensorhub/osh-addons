@@ -18,9 +18,9 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
-import org.sensorhub.api.datastore.FeatureFilter;
-import org.sensorhub.api.datastore.FeatureKey;
-import org.sensorhub.api.datastore.IHistoricalObsDatabase;
+import org.sensorhub.api.feature.FeatureFilter;
+import org.sensorhub.api.feature.FeatureKey;
+import org.sensorhub.api.procedure.ProcedureId;
 import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.util.Asserts;
@@ -52,19 +52,17 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     
     OSHPersistenceManager pm;
     ISTAThingStore thingDataStore;
-    IHistoricalObsDatabase federatedDatabase;
     STASecurity securityHandler;
     int maxPageSize = 100;
-    String groupUID;
+    ProcedureId procGroupID;
     
     
     ThingEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.federatedDatabase = pm.obsDbRegistry.getFederatedObsDatabase();
-        this.thingDataStore = pm.database != null ? pm.database.getThingStore() : null;
+        this.thingDataStore = pm.writeDatabase != null ? pm.writeDatabase.getThingStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
-        this.groupUID = pm.service.getProcedureGroupUID();
+        this.procGroupID = pm.service.getProcedureGroupID();
     }
     
     
@@ -82,7 +80,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         {
             try
             {
-                return pm.database.executeTransaction(() -> {
+                return pm.writeDatabase.executeTransaction(() -> {
                     // store feature description in DB
                     FeatureKey key = thingDataStore.add(toGmlFeature(thing, null));
                     var thingId = new ResourceIdLong(key.getInternalID());
@@ -235,7 +233,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
                     idElt.getEntityType() == EntityType.MULTIDATASTREAM)
                 {
                     ResourceId dsId = (ResourceId)idElt.getId();
-                    Long thingID = pm.database.getDataStreamStore().getAssociatedThing(pm.toLocalID(dsId.asLong()));
+                    Long thingID = pm.writeDatabase.getDataStreamStore().getAssociatedThing(pm.toLocalID(dsId.asLong()));
                     builder.withInternalIDs(thingID != null ? thingID : STAService.HUB_THING_ID);
                 }
                 else if (idElt.getEntityType() == EntityType.HISTORICALLOCATION)
@@ -263,7 +261,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
                     if (!dataStreamSet.isEmpty())
                     {
                         long dataStreamID = ((ResourceId)dataStreamSet.asList().get(0).getId()).asLong();
-                        thingID = pm.database.getDataStreamStore().getAssociatedThing(pm.toLocalID(dataStreamID));
+                        thingID = pm.writeDatabase.getDataStreamStore().getAssociatedThing(pm.toLocalID(dataStreamID));
                     }
                     
                     builder.withInternalIDs(thingID != null ? thingID : STAService.HUB_THING_ID);
@@ -355,10 +353,6 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     
     protected boolean isThingVisible(long thingID)
     {
-        // hub thing should not be visible if no other hub procedures are exposed
-        if (thingID == STAService.HUB_THING_ID && pm.service.getConfiguration().exposedProcedures.isEmpty())
-            return false;
-        
         return true;
     }
 

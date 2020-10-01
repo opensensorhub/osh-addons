@@ -14,13 +14,11 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import java.util.HashSet;
-import java.util.Set;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.security.SecurityConfig;
 import org.sensorhub.api.service.ServiceConfig;
+import org.sensorhub.impl.datastore.obs.ProcedureObsDatabaseViewConfig;
 import org.sensorhub.impl.sensor.VirtualProcedureGroupConfig;
-import org.sensorhub.impl.service.ogc.OGCServiceConfig.CapabilitiesInfo;
 
 
 /**
@@ -40,12 +38,27 @@ public class STAServiceConfig extends ServiceConfig
     }
     
     
-    @DisplayInfo(label="Service Information", desc="Information included in the service metadata document")
-    public CapabilitiesInfo ogcCapabilitiesInfo = new CapabilitiesInfo();
-    
-    
     @DisplayInfo(label="Hub Thing Info", desc="Information used to generate a Thing that represents the local sensor hub")
     public HubThingInfo hubThing = new HubThingInfo();
+    
+    
+    @DisplayInfo(desc="Metadata of procedure group that will be created to contain all sensors "
+        + "registered through this service. Only sensors in this group will be modifiable by this service")
+    public VirtualProcedureGroupConfig virtualSensorGroup;
+    
+    
+    @DisplayInfo(label="Database Config", desc="Configuration of database for persisting entities. "
+        + "If none is provided, no Things can be created and only the latest state of each Sensor is maintained"
+        + " (i.e. no observation or location history is stored).")
+    public STADatabaseConfig dbConfig = new STADatabaseConfig();
+    
+    
+    @DisplayInfo(desc="Filtered view to select procedures exposed as read-only through this service")
+    public ProcedureObsDatabaseViewConfig exposedProcedures;
+    
+    
+    @DisplayInfo(desc="Security related options")
+    public SecurityConfig security = new SecurityConfig();
     
     
     @DisplayInfo(desc="Set to true to enable transactional operations support")
@@ -54,29 +67,6 @@ public class STAServiceConfig extends ServiceConfig
     
     @DisplayInfo(label="Max Observations Returned", desc="Maximum number of observations returned in a page (max limit)")
     public int maxObsCount = 1000;
-    
-    
-    @DisplayInfo(label="Database Config", desc="Configuration of database for persisting entities. "
-        + "If none is provided, only live sensors are exposed and no new Sensor or Thing entities can "
-        + "be created.")
-    public STADatabaseConfig dbConfig = new STADatabaseConfig();
-    
-    
-    @DisplayInfo(desc="Metadata of procedure group that will be created to contain all sensors "
-        + "registered through this service. Only sensors in this group will be modifiable by this service")
-    public VirtualProcedureGroupConfig virtualSensorGroup;
-    
-    
-    @DisplayInfo(desc="Unique IDs of other procedures or procedure groups to expose as read-only through this service")
-    public Set<String> exposedProcedures = new HashSet<>();
-    
-    
-    //@DisplayInfo(desc="Mapping of custom formats mime-types to custom serializer classes")
-    //public List<SOSCustomFormatConfig> customFormats = new ArrayList<>();
-    
-    
-    @DisplayInfo(desc="Security related options")
-    public SecurityConfig security = new SecurityConfig();
     
     
     public STAServiceConfig()

@@ -18,22 +18,29 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.joda.time.DateTimeZone;
-import org.sensorhub.api.common.FeatureId;
-import org.sensorhub.api.datastore.IObsData;
-import org.sensorhub.api.datastore.IObsStore;
-import org.sensorhub.api.datastore.ObsData;
-import org.sensorhub.api.datastore.ObsFilter;
-import org.sensorhub.api.datastore.ObsKey;
-import org.sensorhub.impl.sensor.VirtualSensorProxy;
+import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.api.event.EventUtils;
+import org.sensorhub.api.event.IEventPublisher;
+import org.sensorhub.api.feature.FeatureId;
+import org.sensorhub.api.obs.IDataStreamInfo;
+import org.sensorhub.api.obs.IObsData;
+import org.sensorhub.api.obs.IObsStore;
+import org.sensorhub.api.obs.ObsData;
+import org.sensorhub.api.obs.ObsFilter;
+import org.sensorhub.api.obs.ObsKey;
 import org.vast.data.DataBlockDouble;
 import org.vast.data.DataBlockInt;
 import org.vast.data.DataBlockLong;
 import org.vast.data.DataBlockString;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import de.fraunhofer.iosb.ilt.frostserver.model.Datastream;
 import de.fraunhofer.iosb.ilt.frostserver.model.FeatureOfInterest;
 import de.fraunhofer.iosb.ilt.frostserver.model.MultiDatastream;
@@ -75,74 +82,128 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     IObsStore obsWriteStore;
     int maxPageSize = 100;
     boolean truncateIds = false;
+    Cache<Long, EventPublisherInfo> eventPublishersCache;
+    
+    
+    static class EventPublisherInfo
+    {
+        IDataStreamInfo dsInfo;
+        IEventPublisher publisher;
+        
+        EventPublisherInfo(IDataStreamInfo dsInfo, IEventPublisher publisher)
+        {
+            this.dsInfo = dsInfo;
+            this.publisher = publisher;
+        }
+    }
 
 
     ObservationEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.obsReadStore = pm.obsDbRegistry.getFederatedObsDatabase().getObservationStore();
-        this.obsWriteStore = pm.database != null ? pm.database.getObservationStore() : null;
+        this.obsReadStore = pm.readDatabase.getObservationStore();
+        this.obsWriteStore = pm.writeDatabase != null ? pm.writeDatabase.getObservationStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
+        
+        this.eventPublishersCache = CacheBuilder.newBuilder()
+            .maximumSize(1000)
+            .concurrencyLevel(2)
+            .expireAfterAccess(1, TimeUnit.HOURS)
+            .build();
     }
 
 
     @Override
     public ResourceId create(Entity entity) throws NoSuchEntityException
     {
-        securityHandler.checkPermission(securityHandler.sta_insert_obs);
+        checkTransactionsEnabled();
         Asserts.checkArgument(entity instanceof Observation);
         Observation obs = (Observation)entity;
 
-        // check data stream is present
-        AbstractDatastream<?> dataStream = obs.getDatastream();
-        if (dataStream == null)
-            dataStream = obs.getMultiDatastream();
-        if (dataStream == null)
-            throw new IllegalArgumentException("A new Observation SHALL link to a Datastream or MultiDatastream entity");
-
-        Asserts.checkArgument(obs.getPhenomenonTime() != null, "Missing phenomenonTime");
-
-        // check linked datastream exists
-        var dsId = (ResourceId)dataStream.getId();
-        var dsInfo = obsReadStore.getDataStreams().get(dsId.asLong());
-        if (dsInfo == null)
-            throw new NoSuchEntityException(DatastreamEntityHandler.NOT_FOUND_MESSAGE + dsId);
-
-        // check linked FOI exists
-        ResourceId foiId = null;
-        String foiUri = null;
-        if (obs.getFeatureOfInterest() != null)
+        securityHandler.checkPermission(securityHandler.sta_insert_obs);
+        
+        try
         {
-            foiId = (ResourceId)obs.getFeatureOfInterest().getId();
-            var foi = pm.foiHandler.foiReadStore.getLatestVersion(foiId.asLong());
-            if (foi == null)
-                throw new NoSuchEntityException(FoiEntityHandler.NOT_FOUND_MESSAGE + foiId);
-            foiUri = foi.getUniqueIdentifier();
+            return pm.writeDatabase.executeTransaction(() -> {
+                
+                // handle associations / deep inserts
+                ResourceId dsId = pm.dataStreamHandler.handleDatastreamAssoc(obs.getDatastream());
+                Asserts.checkArgument(obs.getPhenomenonTime() != null, "Missing phenomenonTime");
+        
+                // check linked FOI exists
+                ResourceId foiId = null;
+                String foiUri = null;
+                if (obs.getFeatureOfInterest() != null)
+                {
+                    foiId = (ResourceId)obs.getFeatureOfInterest().getId();
+                    long localFoiID = pm.toLocalID(foiId.asLong());
+                    var foi = pm.foiHandler.foiWriteStore.getLatestVersion(localFoiID);
+                    if (foi == null)
+                        throw new NoSuchEntityException(FoiEntityHandler.NOT_FOUND_MESSAGE + foiId);
+                    foiUri = foi.getUniqueIdentifier();
+                }
+        
+                // generate OSH obs
+                ObsData obsData = toObsData(obs, dsId, foiId, foiUri);
+                
+                // publish event
+                sendDataEvent(dsId.asLong(), obsData);
+                                
+                // store obs in DB
+                BigInteger newObsId = obsWriteStore.add(obsData);
+                return new ResourceIdBigInt(newObsId);
+            });
         }
-
-        // generate OSH obs
-        ObsData obsData = toObsData(obs, dsId, foiId, foiUri);
-
-        // push obs to proxy
-        BigInteger newObsId = BigInteger.ZERO;
-        pm.sensorHandler.checkProcedureWritable(dsInfo.getProcedureID().getInternalID());
-        VirtualSensorProxy proxy = pm.sensorHandler.getProcedureProxy(dsInfo.getProcedureID().getUniqueID());
-        //proxy.publishNewRecord(dsInfo.getOutputName(), obsData.getResult());
-        // TODO handle pushing obs even when no store is attached
-
-        // add observation to data store
-        if (obsWriteStore != null)
-            newObsId = obsWriteStore.add(obsData);
-
-        return new ResourceIdBigInt(pm.toPublicID(newObsId));
+        catch (IllegalArgumentException | NoSuchEntityException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new ServerErrorException("Error creating observation", e);
+        }
+    }
+    
+    
+    /*
+     * Manage a cache of event publisher so we don't have to query procedure UID everytime!
+     */
+    void sendDataEvent(long publicDsID, ObsData obsData)
+    {
+        long localDsID = pm.toLocalID(publicDsID);
+        
+        EventPublisherInfo publisherInfo;
+        try
+        {
+            publisherInfo = eventPublishersCache.get(publicDsID, () -> {
+                IDataStreamInfo dsInfo = pm.dataStreamHandler.dataStreamWriteStore.get(localDsID);
+                IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureOutputSourceID(dsInfo.getProcedureID().getUniqueID(), dsInfo.getOutputName()));        
+                return new EventPublisherInfo(dsInfo, publisher);
+            });
+        }
+        catch (ExecutionException e)
+        {
+            throw new IllegalStateException("Error retrieving event publisher for datastream " + publicDsID, e);
+        }
+        
+        publisherInfo.publisher.publish(new DataEvent(
+            System.currentTimeMillis(), 
+            publisherInfo.dsInfo.getProcedureID(),
+            publisherInfo.dsInfo.getOutputName(),
+            obsData.getResult()
+        ));
     }
 
 
     @Override
     public boolean update(Entity entity) throws NoSuchEntityException
     {
+        checkTransactionsEnabled();
+        Asserts.checkArgument(entity instanceof Observation);
+        //Observation obs = (Observation)entity;
+        
         securityHandler.checkPermission(securityHandler.sta_update_obs);
-        throw new UnsupportedOperationException("Patch not supported");
+        throw new UnsupportedOperationException("Update not supported");
     }
 
 
@@ -157,6 +218,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     @Override
     public boolean delete(ResourceId id) throws NoSuchEntityException
     {
+        checkTransactionsEnabled();
         securityHandler.checkPermission(securityHandler.sta_delete_obs);
         ResourceId obsId = id;
 
@@ -352,7 +414,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         }
 
         // result
-        boolean isExternalDatastream = pm.obsDbRegistry.getDatabaseID(obsData.getDataStreamID()) != pm.database.getDatabaseID();
+        boolean isExternalDatastream = !pm.isInWritableDatabase(obsData.getDataStreamID());
         DataBlock data = obsData.getResult();
         if ((isExternalDatastream && data.getAtomCount() == 2) || data.getAtomCount() == 1)
         {
@@ -441,6 +503,13 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         // TODO also check that current user has the right to read this entity!
 
         return pm.dataStreamHandler.isDatastreamVisible(publicKey.getDataStreamID());
+    }
+    
+    
+    protected void checkTransactionsEnabled()
+    {
+        if (obsWriteStore == null)
+            throw new UnsupportedOperationException(NO_DB_MESSAGE);
     }
 
 

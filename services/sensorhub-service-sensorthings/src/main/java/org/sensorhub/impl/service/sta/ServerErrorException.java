@@ -8,26 +8,26 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
+Copyright (C) 2020 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.feature.IFeatureStore;
-import org.sensorhub.api.feature.IFeatureStore.FeatureField;
-import org.vast.ogc.gml.GenericFeature;
 
-
-/**
- * <p>
- * Interface for SensorThings Thing data stores.
- * </p>
- *
- * @author Alex Robin
- * @date Oct 29, 2019
- */
-public interface ISTAThingStore extends IFeatureStore<GenericFeature, FeatureField>
+public class ServerErrorException extends RuntimeException
 {
-       
+    private static final long serialVersionUID = -2200006501961925621L;
+    
+
+    public ServerErrorException(String message)
+    {
+        super(message);
+    }
+    
+    
+    public ServerErrorException(String message, Throwable cause)
+    {
+        super(message, cause);
+    }
 }

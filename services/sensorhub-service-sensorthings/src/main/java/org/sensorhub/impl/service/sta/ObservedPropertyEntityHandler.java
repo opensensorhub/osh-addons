@@ -17,10 +17,10 @@ package org.sensorhub.impl.service.sta;
 import java.time.Instant;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import org.sensorhub.api.datastore.FeatureFilter;
-import org.sensorhub.api.datastore.FeatureKey;
-import org.sensorhub.api.datastore.IDataStreamInfo;
-import org.sensorhub.api.datastore.IHistoricalObsDatabase;
+import org.sensorhub.api.feature.FeatureFilter;
+import org.sensorhub.api.feature.FeatureKey;
+import org.sensorhub.api.obs.IDataStreamInfo;
+import org.sensorhub.api.procedure.IProcedureObsDatabase;
 import org.sensorhub.impl.service.sta.ISTAObsPropStore.ObsPropDef;
 import org.vast.data.ScalarIterator;
 import org.vast.util.Asserts;
@@ -51,19 +51,17 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
     
     OSHPersistenceManager pm;
     ISTAObsPropStore obsPropDataStore;
-    IHistoricalObsDatabase federatedDatabase;
+    IProcedureObsDatabase readDatabase;
     STASecurity securityHandler;
     int maxPageSize = 100;
-    String groupUID;
     
     
     ObservedPropertyEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.federatedDatabase = pm.obsDbRegistry.getFederatedObsDatabase();
-        this.obsPropDataStore = pm.database != null ? pm.database.getObservedPropertyDataStore() : null;
+        this.readDatabase = pm.readDatabase;
+        this.obsPropDataStore = pm.writeDatabase != null ? pm.writeDatabase.getObservedPropertyDataStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
-        this.groupUID = pm.service.getProcedureGroupUID();
     }
     
     
@@ -168,12 +166,12 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
             int skip = q.getSkip(0);
             int limit = Math.min(q.getTopOrDefault(), maxPageSize);
             
-            if (filter.getInternalIDs() != null && filter.getInternalIDs().isRange())
+            if (filter.getParentIDs() != null && !filter.getParentIDs().isEmpty())
             {
                 // case external datastream, just extract observed properties from record structure
-                // hack: datastream ID is stored in ID range
-                long dsId = filter.getInternalIDs().getRange().lowerEndpoint();
-                IDataStreamInfo dsInfo = federatedDatabase.getObservationStore().getDataStreams().get(dsId);
+                // hack: datastream ID is stored in parent ID filter
+                long dsId = filter.getParentIDs().iterator().next();
+                IDataStreamInfo dsInfo = readDatabase.getObservationStore().getDataStreams().get(dsId);
                 return getObservedPropertySet(dsInfo, q);                
             }
             else
@@ -208,14 +206,14 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
                 if (pm.isInWritableDatabase(dsId))
                 {
                     // if datastream was created by STA, get IDs of observed properties from record structure
-                    IDataStreamInfo dsInfo = federatedDatabase.getObservationStore().getDataStreams().get(dsId);
+                    IDataStreamInfo dsInfo = readDatabase.getObservationStore().getDataStreams().get(dsId);
                     builder.withInternalIDs(getObservedPropertyIds(dsInfo));
                 }
                 else
                 {
                     // else use an empty list and let caller handle the case
-                    // hack: store datastream ID in filter ID range
-                    builder.withInternalIDRange(dsId, dsId);
+                    // hack: store datastream ID in parent ID set
+                    builder.withParents(dsId);
                 }
             }
         }

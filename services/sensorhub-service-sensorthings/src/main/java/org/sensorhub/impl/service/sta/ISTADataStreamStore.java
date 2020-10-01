@@ -14,7 +14,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.datastore.IDataStreamStore;
+import org.sensorhub.api.obs.IDataStreamStore;
 
 /**
  * <p>

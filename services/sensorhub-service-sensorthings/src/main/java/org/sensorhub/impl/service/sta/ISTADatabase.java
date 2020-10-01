@@ -14,7 +14,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.datastore.IHistoricalObsDatabase;
+import org.sensorhub.api.procedure.IProcedureObsDatabase;
 
 
 /**
@@ -27,7 +27,7 @@ import org.sensorhub.api.datastore.IHistoricalObsDatabase;
  * @author Alex Robin
  * @date Oct 12, 2019
  */
-public interface ISTADatabase extends IHistoricalObsDatabase
+public interface ISTADatabase extends IProcedureObsDatabase
 {
     
     /**

@@ -14,8 +14,8 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.datastore.DataStreamFilter;
-import org.sensorhub.api.datastore.FeatureFilter;
+import org.sensorhub.api.feature.FeatureFilter;
+import org.sensorhub.api.obs.DataStreamFilter;
 
 
 /**

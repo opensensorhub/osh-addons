@@ -18,9 +18,10 @@ import java.time.Instant;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import org.geojson.GeoJsonObject;
-import org.sensorhub.api.datastore.FeatureKey;
-import org.sensorhub.api.datastore.FoiFilter;
-import org.sensorhub.api.datastore.IFoiStore;
+import org.sensorhub.api.feature.FeatureKey;
+import org.sensorhub.api.obs.FoiFilter;
+import org.sensorhub.api.obs.IFoiStore;
+import org.sensorhub.api.procedure.ProcedureId;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.ogc.gml.IGeoFeature;
 import org.vast.util.Asserts;
@@ -51,70 +52,99 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
 {
     static final String NOT_FOUND_MESSAGE = "Cannot find 'FeatureOfInterest' entity with ID #";
     static final String NOT_WRITABLE_MESSAGE = "Cannot modify read-only 'FeatureOfInterest' entity #";
+    static final String MISSING_ASSOC = "Missing reference to 'Feature Of Interest' entity";
         
     OSHPersistenceManager pm;
     IFoiStore foiReadStore;
     IFoiStore foiWriteStore;
     STASecurity securityHandler;
     int maxPageSize = 100;
-    String groupUID;
+    ProcedureId procGroupID;
     
     
     FoiEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.foiReadStore = pm.obsDbRegistry.getFederatedObsDatabase().getFoiStore();
-        this.foiWriteStore = pm.database != null ? pm.database.getFoiStore() : null;
+        this.foiReadStore = pm.readDatabase.getFoiStore();
+        this.foiWriteStore = pm.writeDatabase != null ? pm.writeDatabase.getFoiStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
-        this.groupUID = pm.service.getProcedureGroupUID();
+        this.procGroupID = pm.service.getProcedureGroupID();
     }
     
     
     @Override
     public ResourceId create(@SuppressWarnings("rawtypes") Entity entity) throws NoSuchEntityException
     {
-        securityHandler.checkPermission(securityHandler.sta_insert_foi);
+        checkTransactionsEnabled();
         Asserts.checkArgument(entity instanceof FeatureOfInterest);
         FeatureOfInterest foi = (FeatureOfInterest)entity;
         
+        securityHandler.checkPermission(securityHandler.sta_insert_foi);
+        
         // generate unique ID from name
         Asserts.checkArgument(!Strings.isNullOrEmpty(foi.getName()), "Feature name must be set");
-        String uid = groupUID + ":foi:" + foi.getName().toLowerCase().replaceAll("\\s+", "_");
+        String uid = procGroupID.getUniqueID() + ":foi:" + foi.getName().toLowerCase().replaceAll("\\s+", "_");
         
-        // store feature description in DB
-        if (foiWriteStore != null)
+        try
         {
-            FeatureKey key = foiWriteStore.add(toGmlFeature(foi, uid));
-            return new ResourceIdLong(pm.toPublicID(key.getInternalID()));
+            return pm.writeDatabase.executeTransaction(() -> {
+                // store feature in DB
+                FeatureKey key = foiWriteStore.add(toGmlFeature(foi, uid));
+                
+                // publish event?                
+                // handle associations / deep inserts?
+                
+                return new ResourceIdLong(pm.toPublicID(key.getInternalID()));
+            });
         }
-        
-        throw new UnsupportedOperationException(NO_DB_MESSAGE);
+        catch (IllegalArgumentException | NoSuchEntityException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new ServerErrorException("Error creating feature of interest", e);
+        }
     }
     
 
     @Override
     public boolean update(@SuppressWarnings("rawtypes") Entity entity) throws NoSuchEntityException
     {
-        securityHandler.checkPermission(securityHandler.sta_update_foi);
+        checkTransactionsEnabled();
         Asserts.checkArgument(entity instanceof FeatureOfInterest);
         FeatureOfInterest foi = (FeatureOfInterest)entity;
         
-        // retrieve UID of existing feature
-        ResourceId id = (ResourceId)entity.getId();
-        var fEntry = foiReadStore.getLatestVersionEntry(id.asLong());
-        if (fEntry == null)
-            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
-                
-        // store feature description in DB
-        if (foiWriteStore != null)
-        {
-            var key = fEntry.getKey();
-            var uid = fEntry.getValue().getUniqueIdentifier();
-            foiWriteStore.put(key, toGmlFeature(foi, uid));
-            return true;
-        }
+        securityHandler.checkPermission(securityHandler.sta_update_foi);
         
-        throw new UnsupportedOperationException(NO_DB_MESSAGE);
+        long publicFoiID = ((ResourceId)entity.getId()).asLong();
+        checkFoiWritable(publicFoiID);
+        
+        // retrieve UID of existing feature
+        long locaFoiID = pm.toLocalID(publicFoiID);
+        var fEntry = foiWriteStore.getLatestVersionEntry(locaFoiID);
+        if (fEntry == null)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicFoiID);
+        
+        try
+        {
+            return pm.writeDatabase.executeTransaction(() -> {
+                
+                // store feature description in DB
+                var key = fEntry.getKey();
+                var uid = fEntry.getValue().getUniqueIdentifier();
+                foiWriteStore.put(key, toGmlFeature(foi, uid));
+                return true;
+            });
+        }
+        catch (IllegalArgumentException | NoSuchEntityException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new ServerErrorException("Error updating feature of interest", e);
+        }
     }
     
     
@@ -127,23 +157,37 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     
     public boolean delete(ResourceId id) throws NoSuchEntityException
     {
+        checkTransactionsEnabled();
         securityHandler.checkPermission(securityHandler.sta_delete_foi);
         
-        if (foiWriteStore != null)
-        {
-            var key = foiWriteStore.removeEntries(new FoiFilter.Builder()
-                    .withInternalIDs(pm.toLocalID(id.asLong()))
-                    .withAllVersions()
-                    .build())
-                .findFirst();
-            
-            if (key.isEmpty())
-                throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
-            
-            return true;
-        }
+        long publicFoiID = id.asLong();
+        checkFoiWritable(publicFoiID);
+        long locaFoiID = pm.toLocalID(publicFoiID);
         
-        throw new UnsupportedOperationException(NO_DB_MESSAGE);
+        try
+        {
+            return pm.writeDatabase.executeTransaction(() -> {
+                
+                var key = foiWriteStore.removeEntries(new FoiFilter.Builder()
+                        .withInternalIDs(locaFoiID)
+                        .withAllVersions()
+                        .build())
+                    .findFirst();
+                
+                if (key.isEmpty())
+                    throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
+            
+                return true;
+            });
+        }
+        catch (IllegalArgumentException | NoSuchEntityException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new ServerErrorException("Error updating feature of interest", e);
+        }
     }
     
 
@@ -246,15 +290,47 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         
         return foi;
     }
+
+
+    protected ResourceId handleFoiAssoc(FeatureOfInterest foi) throws NoSuchEntityException
+    {
+        Asserts.checkArgument(foi != null, MISSING_ASSOC);
+        ResourceId foiId;
+
+        if (foi.getName() == null)
+        {
+            foiId = (ResourceId)foi.getId();
+            Asserts.checkArgument(foiId != null, MISSING_ASSOC);
+            checkFoiIDInWriteStore(foiId.asLong());
+        }
+        else
+        {
+            // deep insert
+            foiId = create(foi);
+        }
+
+        return foiId;
+    }
     
     
     /*
-     * Check that foiID is present in database and exposed by service
+     * Check that foi ID is present in database and exposed by service
      */
     protected void checkFoiID(long publicID) throws NoSuchEntityException
     {
         boolean hasFoi = isFoiVisible(publicID) && foiReadStore.getLatestVersionKey(publicID) != null;
         if (!hasFoi)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
+    }
+
+
+    /*
+     * Check that foi ID is present in writable database
+     */
+    protected void checkFoiIDInWriteStore(long publicID) throws NoSuchEntityException
+    {
+        long localID = pm.toLocalID(publicID);
+        if (foiWriteStore.getLatestVersionKey(localID) == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
     }
     
@@ -274,8 +350,15 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     {
         // TODO also check that current user has the right to write this procedure!
         
-        if (!(pm.obsDbRegistry.getDatabaseID(publicID) == pm.database.getDatabaseID()))
+        if (!pm.isInWritableDatabase(publicID))
             throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
+    }
+    
+    
+    protected void checkTransactionsEnabled()
+    {
+        if (foiWriteStore == null)
+            throw new UnsupportedOperationException(NO_DB_MESSAGE);
     }
 
 }

@@ -9,7 +9,7 @@
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.datastore.IFeatureStore.FeatureField;
+import org.sensorhub.api.feature.IFeatureStore.FeatureField;
 import org.sensorhub.impl.datastore.h2.H2Utils;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;

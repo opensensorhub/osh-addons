@@ -19,9 +19,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import org.geojson.GeoJsonObject;
-import org.sensorhub.api.datastore.FeatureFilter;
-import org.sensorhub.api.datastore.FeatureKey;
-import org.sensorhub.api.datastore.IHistoricalObsDatabase;
+import org.sensorhub.api.feature.FeatureFilter;
+import org.sensorhub.api.feature.FeatureKey;
 import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.util.Asserts;
@@ -55,19 +54,15 @@ public class LocationEntityHandler implements IResourceHandler<Location>
         
     OSHPersistenceManager pm;
     ISTALocationStore locationDataStore;
-    IHistoricalObsDatabase federatedDatabase;
     STASecurity securityHandler;
     int maxPageSize = 100;
-    String groupUID;
     
     
     LocationEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.federatedDatabase = pm.obsDbRegistry.getFederatedObsDatabase();
-        this.locationDataStore = pm.database != null ? pm.database.getThingLocationStore() : null;
+        this.locationDataStore = pm.writeDatabase != null ? pm.writeDatabase.getThingLocationStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
-        this.groupUID = pm.service.getProcedureGroupUID();
     }
     
     

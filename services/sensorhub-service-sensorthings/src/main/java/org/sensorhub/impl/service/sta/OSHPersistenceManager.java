@@ -19,7 +19,8 @@ import java.io.Writer;
 import java.math.BigInteger;
 import java.util.HashMap;
 import org.sensorhub.api.datastore.IDatabaseRegistry;
-import org.sensorhub.api.procedure.IProcedureRegistry;
+import org.sensorhub.api.event.IEventBus;
+import org.sensorhub.api.procedure.IProcedureObsDatabase;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
@@ -60,9 +61,10 @@ public class OSHPersistenceManager implements PersistenceManager
     ObservationEntityHandler observationHandler;
     LocationEntityHandler locationHandler;
     HistoricalLocationEntityHandler historicalLocationHandler;
-    IProcedureRegistry procRegistry;
-    IDatabaseRegistry obsDbRegistry;
-    ISTADatabase database;
+    IEventBus eventBus;
+    IDatabaseRegistry dbRegistry;
+    IProcedureObsDatabase readDatabase;
+    ISTADatabase writeDatabase;
     
     
     public OSHPersistenceManager()
@@ -163,8 +165,8 @@ public class OSHPersistenceManager implements PersistenceManager
     
     protected long toPublicID(long internalID)
     {
-        if (database != null)
-            return obsDbRegistry.getPublicID(database.getDatabaseID(), internalID);
+        if (writeDatabase != null)
+            return dbRegistry.getPublicID(writeDatabase.getDatabaseID(), internalID);
         else
             return internalID;
     }
@@ -172,8 +174,8 @@ public class OSHPersistenceManager implements PersistenceManager
     
     protected BigInteger toPublicID(BigInteger internalID)
     {
-        if (database != null)
-            return obsDbRegistry.getPublicID(database.getDatabaseID(), internalID);
+        if (writeDatabase != null)
+            return dbRegistry.getPublicID(writeDatabase.getDatabaseID(), internalID);
         else
             return internalID;
     }
@@ -181,8 +183,8 @@ public class OSHPersistenceManager implements PersistenceManager
     
     protected long toLocalID(long publicID)
     {
-        if (database != null)
-            return obsDbRegistry.getLocalID(database.getDatabaseID(), publicID);
+        if (writeDatabase != null)
+            return dbRegistry.getLocalID(writeDatabase.getDatabaseID(), publicID);
         else
             return publicID;
     }
@@ -190,8 +192,8 @@ public class OSHPersistenceManager implements PersistenceManager
     
     protected BigInteger toLocalID(BigInteger publicID)
     {
-        if (database != null)
-            return obsDbRegistry.getLocalID(database.getDatabaseID(), publicID);
+        if (writeDatabase != null)
+            return dbRegistry.getLocalID(writeDatabase.getDatabaseID(), publicID);
         else
             return publicID;
     }
@@ -199,7 +201,7 @@ public class OSHPersistenceManager implements PersistenceManager
     
     protected boolean isInWritableDatabase(long publicID)
     {
-        return obsDbRegistry.getDatabaseID(publicID) == database.getDatabaseID();
+        return dbRegistry.getDatabaseID(publicID) == writeDatabase.getDatabaseID();
     }
 
 
@@ -324,9 +326,10 @@ public class OSHPersistenceManager implements PersistenceManager
         this.service = STAService.serviceInstances.get(serviceId);
         
         // connect to registries
-        this.procRegistry = service.getParentHub().getProcedureRegistry();
-        this.obsDbRegistry = service.getParentHub().getDatabaseRegistry();
-        this.database = service.database;
+        this.eventBus = service.getParentHub().getEventBus();
+        this.dbRegistry = service.getParentHub().getDatabaseRegistry();
+        this.readDatabase = service.readDatabase;
+        this.writeDatabase = service.writeDatabase;
         
         // setup all entity handlers
         this.securityHandler = service.getSecurityHandler();

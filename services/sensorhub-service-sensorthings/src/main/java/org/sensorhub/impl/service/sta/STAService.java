@@ -16,28 +16,26 @@ package org.sensorhub.impl.service.sta;
 
 import java.util.HashMap;
 import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Flow.Subscription;
 import javax.xml.namespace.QName;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.datastore.FeatureKey;
 import org.sensorhub.api.event.IEventListener;
+import org.sensorhub.api.feature.FeatureKey;
 import org.sensorhub.api.module.ModuleEvent;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
-import org.sensorhub.api.procedure.IProcedureRegistry;
-import org.sensorhub.api.procedure.ProcedureAddedEvent;
-import org.sensorhub.api.procedure.ProcedureEnabledEvent;
-import org.sensorhub.api.procedure.ProcedureEvent;
+import org.sensorhub.api.procedure.IProcedureObsDatabase;
+import org.sensorhub.api.procedure.ProcedureId;
 import org.sensorhub.api.service.IServiceModule;
 import org.sensorhub.impl.module.AbstractModule;
+import org.sensorhub.impl.sensor.VirtualProcedureGroupConfig;
 import org.sensorhub.impl.service.HttpServer;
 import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
+import org.vast.sensorML.SMLHelper;
+import com.google.common.base.Strings;
 import de.fraunhofer.iosb.ilt.frostserver.http.common.ServletV1P0;
 import de.fraunhofer.iosb.ilt.frostserver.settings.CoreSettings;
+import net.opengis.sensorml.v20.AbstractProcess;
 import static de.fraunhofer.iosb.ilt.frostserver.settings.CoreSettings.*;
 import static de.fraunhofer.iosb.ilt.frostserver.settings.PersistenceSettings.*;
 
@@ -56,14 +54,14 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
 {
     static final String SERVICE_INSTANCE_ID = "oshServiceId";
     static final HashMap<Integer, STAService> serviceInstances = new HashMap<>(); // static map needed to get access to service from persistence manager
-    static final String DEFAULT_GROUP_UID = "urn:osh:sta";
+    static final String DEFAULT_GROUP_UID = "urn:osh:sta:group";
     static final long HUB_THING_ID = 1;
 
-    Subscription procRegistrySub;
-    ISTADatabase database;
+    IProcedureObsDatabase readDatabase;
+    ISTADatabase writeDatabase;
     GenericFeature hubThing;
     ServletV1P0 servlet;
-    Set<Long> exposedProcedureIDs = ConcurrentHashMap.newKeySet();
+    ProcedureId virtualGroupId;
 
 
     @Override
@@ -88,6 +86,19 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
     public void setConfiguration(STAServiceConfig config)
     {
         super.setConfiguration(config);
+        
+        // TODO check config
+        if (config.virtualSensorGroup == null)
+        {
+            config.virtualSensorGroup = new VirtualProcedureGroupConfig();
+            config.virtualSensorGroup.uid = DEFAULT_GROUP_UID;
+            config.virtualSensorGroup.name = "SensorThings Sensor Group";
+            config.virtualSensorGroup.description = "Sensors registered via SensorThings API";
+        }
+        
+        if (Strings.isNullOrEmpty(config.virtualSensorGroup.uid))
+            throw new IllegalArgumentException("Virtual Sensor Group UID cannot be null");
+        
         this.securityHandler = new STASecurity(this, config.security.enableAccessControl);
     }
 
@@ -96,41 +107,43 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
     public void start() throws SensorHubException
     {
         serviceInstances.put(System.identityHashCode(this), this);
+        
+        // TODO use other databases or filtered views according to config
+        this.readDatabase = getParentHub().getDatabaseRegistry().getFederatedObsDatabase();
 
-        // fetch internalIDs of exposed procedures
-        // and ensure we get notified if procedures are added later
-        exposedProcedureIDs.clear();
-        subscribeToProcedureRegistryEvents()
-            .thenAccept(s -> {
-                // keep handle to subscription so we can cancel it later
-                procRegistrySub = s;
-
-                // expose all procedures that are already available
-                // others will be handled later when added/enabled
-                for (String procUID: config.exposedProcedures)
-                    addProcedure(procUID);
-            });
-
-        /*// register group
-        if (getProcedureGroupUID() != null)
+        if (config.dbConfig != null)
         {
-            AbstractProcess procGroup = SMLHelper.createSimpleProcess(getProcedureGroupUID()).getDescription();
-            procGroup.setName(config.virtualSensorGroup.name);
-            procGroup.setDescription(config.virtualSensorGroup.description);
-            getParentHub().getProcedureRegistry().register(new VirtualSensorProxy(procGroup));
-        }*/
-
-        // init database
-        // TODO load database implementation class dynamically
-        database = new STADatabase(this, config.dbConfig);
-
+            // init database
+            // TODO load database implementation class dynamically
+            writeDatabase = new STADatabase(this, config.dbConfig);
+        }
+        
+        // create or retrieve virtual sensor group
+        String virtualGroupUID = config.virtualSensorGroup.uid;
+        FeatureKey fk;
+        if (!writeDatabase.getProcedureStore().contains(virtualGroupUID))
+        {
+            // register optional group
+            AbstractProcess procGroup = new SMLHelper().createPhysicalSystem()
+                .uniqueID(virtualGroupUID)
+                .name(config.virtualSensorGroup.name)
+                .description(config.virtualSensorGroup.description)
+                .build();
+            
+            fk = writeDatabase.getProcedureStore().add(procGroup);
+            virtualGroupId = new ProcedureId(fk.getInternalID(), procGroup.getUniqueIdentifier());
+        }
+        else
+            fk = writeDatabase.getProcedureStore().getLatestVersionKey(virtualGroupUID);
+        virtualGroupId = new ProcedureId(fk.getInternalID(), virtualGroupUID);
+        
         // create default hub thing
-        String uid = getProcedureGroupUID() + ":thing:hub";
+        String uid = getProcedureGroupID().getUniqueID() + ":thing:hub";
         hubThing = new GenericFeatureImpl(new QName("Thing"));
         hubThing.setUniqueIdentifier(uid);
         hubThing.setName(config.hubThing.name);
         hubThing.setDescription(config.hubThing.description);
-        database.getThingStore().put(new FeatureKey(1, FeatureKey.TIMELESS), hubThing);
+        writeDatabase.getThingStore().put(new FeatureKey(1, FeatureKey.TIMELESS), hubThing);
 
         // deploy servlet
         servlet = new STAServlet((STASecurity)securityHandler);
@@ -140,71 +153,15 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
     }
 
 
-    /*
-     * Expose new procedure if listed in configuration
-     */
-    protected void addProcedure(String procUID)
+    protected ProcedureId getProcedureGroupID()
     {
-        // get procedure internal ID to speed-up lookups later on
-        var federatedProcStore = getParentHub().getDatabaseRegistry().getFederatedObsDatabase().getProcedureStore();
-        var key = federatedProcStore.getLatestVersionKey(procUID);
-        if (key != null)
-            exposedProcedureIDs.add(key.getInternalID());
-    }
-
-
-    /*
-     * Check if UID or parent UID was configured to be exposed by service
-     */
-    protected boolean isProcedureExposed(long publicID)
-    {
-        // TODO handle wildcard and group member cases
-
-        return exposedProcedureIDs.contains(publicID);// || config.exposedProcedures.contains(parentUid)
-    }
-
-
-    protected boolean isProcedureExposed(String uid)
-    {
-        // TODO handle wildcard and group member cases
-
-        return config.exposedProcedures.contains(uid);
-    }
-
-
-    protected CompletableFuture<Subscription> subscribeToProcedureRegistryEvents()
-    {
-        return getParentHub().getEventBus().newSubscription(ProcedureEvent.class)
-            .withSourceID(IProcedureRegistry.EVENT_SOURCE_ID)
-            .withEventType(ProcedureAddedEvent.class)
-            .withEventType(ProcedureEnabledEvent.class)
-            .consume(e -> {
-                var uid = e.getProcedureID().getUniqueID();
-                if (isProcedureExposed(uid))
-                    addProcedure(uid);
-            });
-    }
-
-
-    protected String getProcedureGroupUID()
-    {
-        if (config.virtualSensorGroup != null)
-            return config.virtualSensorGroup.uid;
-        else
-            return DEFAULT_GROUP_UID;
+        return virtualGroupId;
     }
 
 
     @Override
     public void stop()
     {
-        // unsubscribe from procedure registry
-        if (procRegistrySub != null)
-        {
-            procRegistrySub.cancel();
-            procRegistrySub = null;
-        }
-
         // undeploy servlet
         if (servlet != null)
         {
@@ -213,15 +170,13 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
         }
 
         // close database
-        if (database != null)
+        if (writeDatabase != null)
         {
-            database.close();
-            database = null;
+            writeDatabase.close();
+            writeDatabase = null;
         }
 
         serviceInstances.remove(System.identityHashCode(this));
-        exposedProcedureIDs.clear();
-
         setState(ModuleState.STOPPED);
     }
 

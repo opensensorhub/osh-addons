@@ -20,9 +20,7 @@ import java.time.Instant;
 import java.util.stream.Collectors;
 import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.WriteBuffer;
-import org.sensorhub.api.datastore.FeatureKey;
-import org.sensorhub.api.datastore.IHistoricalObsDatabase;
-import org.sensorhub.impl.datastore.h2.H2Utils;
+import org.sensorhub.api.feature.FeatureKey;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
 import de.fraunhofer.iosb.ilt.frostserver.model.HistoricalLocation;
@@ -53,19 +51,15 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
         
     OSHPersistenceManager pm;
     ISTALocationStore locationDataStore;
-    IHistoricalObsDatabase federatedDatabase;
     STASecurity securityHandler;
     int maxPageSize = 100;
-    String groupUID;
     
     
     HistoricalLocationEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.federatedDatabase = pm.obsDbRegistry.getFederatedObsDatabase();
-        this.locationDataStore = pm.database != null ? pm.database.getThingLocationStore() : null;
+        this.locationDataStore = pm.writeDatabase != null ? pm.writeDatabase.getThingLocationStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
-        this.groupUID = pm.service.getProcedureGroupUID();
     }
     
     

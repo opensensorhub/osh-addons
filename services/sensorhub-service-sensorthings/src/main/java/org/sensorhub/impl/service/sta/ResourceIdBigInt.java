@@ -91,7 +91,7 @@ public class ResourceIdBigInt implements ResourceId
     public String toString()
     {
         if (internalID.compareTo(MAX_VALUE_JS) >= 0)
-            return "\"" + internalID.toString() + "\""; 
+            return "\"" + internalID.toString(36) + "\""; 
         else
             return internalID.toString();
     }

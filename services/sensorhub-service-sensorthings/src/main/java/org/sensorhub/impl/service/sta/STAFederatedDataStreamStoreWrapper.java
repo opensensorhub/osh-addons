@@ -26,9 +26,9 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.sensorhub.api.datastore.DataStreamFilter;
-import org.sensorhub.api.datastore.IDataStreamInfo;
-import org.sensorhub.api.datastore.IDataStreamStore;
+import org.sensorhub.api.obs.DataStreamFilter;
+import org.sensorhub.api.obs.IDataStreamInfo;
+import org.sensorhub.api.obs.IDataStreamStore;
 
 
 /**

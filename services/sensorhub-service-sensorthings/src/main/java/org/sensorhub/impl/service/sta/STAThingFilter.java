@@ -14,7 +14,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.datastore.FeatureFilter;
+import org.sensorhub.api.feature.FeatureFilter;
 
 
 /**
@@ -41,7 +41,7 @@ class STAThingFilter extends FeatureFilter
     {
         protected Builder()
         {
-            this.instance = new STAThingFilter();
+            super(new STAThingFilter());
         }
         
         
