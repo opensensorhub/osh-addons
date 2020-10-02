@@ -306,7 +306,10 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
                 idElt.getEntityType() == EntityType.MULTIDATASTREAM)
             {
                 ResourceId dsId = (ResourceId)idElt.getId();
-                builder.withDataStreams(dsId.asLong());
+                builder.withDataStreams()
+                    .withInternalIDs(dsId.asLong())
+                    .withAllVersions()
+                    .done();
             }
             if (idElt.getEntityType() == EntityType.FEATUREOFINTEREST)
             {

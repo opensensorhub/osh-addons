@@ -315,7 +315,8 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
 
     protected DataStreamFilter getFilter(ResourcePath path, Query q)
     {
-        STADataStreamFilter.Builder builder = new STADataStreamFilter.Builder();
+        STADataStreamFilter.Builder builder = new STADataStreamFilter.Builder()
+            .withAllVersions();
 
         EntityPathElement idElt = path.getIdentifiedElement();
         if (idElt != null)

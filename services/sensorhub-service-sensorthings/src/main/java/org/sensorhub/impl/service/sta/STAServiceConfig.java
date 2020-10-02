@@ -47,9 +47,10 @@ public class STAServiceConfig extends ServiceConfig
     public VirtualProcedureGroupConfig virtualSensorGroup;
     
     
-    @DisplayInfo(label="Database Config", desc="Configuration of database for persisting entities. "
-        + "If none is provided, no Things can be created and only the latest state of each Sensor is maintained"
-        + " (i.e. no observation or location history is stored).")
+    @DisplayInfo(label="Database Config", desc="Configuration of database used for persisting entities. "
+        + "If none is provided, no Thing entities can be created. New sensors registered through this service will be "
+        + "available on the hub, but with no persistence guarantee across restarts. Only the latest observation from "
+        + "each datastream will be available and older observations will be discarded.")
     public STADatabaseConfig dbConfig = new STADatabaseConfig();
     
     
