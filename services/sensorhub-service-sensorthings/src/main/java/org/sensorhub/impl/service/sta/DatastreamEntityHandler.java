@@ -127,7 +127,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 DataRecord recordStruct = toSweCommon(dataStream);
                 DataStreamInfo dsInfo = new STADataStream.Builder()
                     .withThing(thingId.asLong())
-                    .withProcedure(new ProcedureId(sensorId.asLong(), procUID))
+                    .withProcedure(new ProcedureId(localSensorID, procUID))
                     .withRecordDescription(recordStruct)
                     .withRecordEncoding(new TextEncodingImpl())
                     .build();
