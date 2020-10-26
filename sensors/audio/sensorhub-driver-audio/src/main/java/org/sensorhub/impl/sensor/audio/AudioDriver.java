@@ -24,6 +24,7 @@ public class AudioDriver extends AbstractSensorModule<AudioConfig>
 {
 	AudioOutput output;
 	Thread fileReaderThread;
+	FileTester fileReader;
 
 	public AudioDriver() {
 	}
@@ -39,11 +40,14 @@ public class AudioDriver extends AbstractSensorModule<AudioConfig>
 	@Override
 	public void start() throws SensorHubException
 	{
-
+		fileReader = new FileTester(config.wavFile);
+		fileReaderThread = new Thread(fileReader);
+		fileReaderThread.start();
 	}
 
 	class FileTester implements Runnable {
 		String testPath;
+		//		private volatile boolean running = false; 
 
 		public FileTester(String testPath) {
 			this.testPath = testPath;
@@ -52,8 +56,9 @@ public class AudioDriver extends AbstractSensorModule<AudioConfig>
 		@Override
 		public void run() {
 			// Open the wav file specified as the first argument
+			//			running = true;
+			int frameCnt = 0;
 			try(WavFile wavFile = WavFile.openWavFile(new File(config.wavFile))) {
-
 				// Display information about the wav file
 				wavFile.display();
 				// Get the number of audio channels in the wav file
@@ -67,28 +72,42 @@ public class AudioDriver extends AbstractSensorModule<AudioConfig>
 				do {
 					// Read frames into buffer
 					framesRead = wavFile.readFrames(buffer, config.numSamplesPerArray);
-					output.publishChunk(buffer, config.numSamplesPerArray, wavFile.getSampleRate());
-					
+//					long offsetTime
+					output.publishChunk(buffer, frameCnt, wavFile.getSampleRate());
+
 					// Loop through frames and look for minimum and maximum value
 					for (int s=0 ; s<framesRead * numChannels ; s++) {
 						if (buffer[s] > max) max = buffer[s];
 						if (buffer[s] < min) min = buffer[s];
 					}
-					Thread.sleep(10_000);
+					Thread.sleep(5000L);
+					frameCnt += framesRead;
+					if(frameCnt % 1000 == 0)
+						System.err.println(frameCnt + " frames read...");
 				} while (framesRead != 0);
 
 				// Close the wavFile
 				wavFile.close();
-			}  catch (Exception e) {
+				System.err.printf("Min: %f, Max: %f\n", min, max);
+
+			} catch (Exception e) {
 				e.printStackTrace();
 				logger.error(e.getMessage());
+			} finally {
+				//running = false;
 			}
+		}
+
+		public void stop() {
+			//running = false;
 		}
 	}
 
 	@Override
 	public void stop() throws SensorHubException
 	{
+//		if(fileReader != null)
+//			fileReader.stop();
 	}
 
 	@Override

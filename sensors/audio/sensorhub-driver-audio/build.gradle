@@ -4,6 +4,7 @@ version = '0.1.0'
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile 'org.bytedeco:ffmpeg-platform:4.2.2-1.5.3'
 }
 
 // add info to OSGi manifest

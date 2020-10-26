@@ -70,20 +70,22 @@ public class AudioOutput extends AbstractSensorOutput<AudioDriver>
 			.definition("urn:osh:audio:wav:sampleArray")
 			.label("WavRecord")
 			.description("Array of Wav files samples")
-			.addField("timestamp", swe.createTime()
-				.definition(SWEConstants.DEF_SAMPLING_TIME)
-				.description("Time in microseconds since start of file/stream")
-				.refFrame("sampleTime")
-				.label("Sample Time")
-				.uomCode("us")
-				.build())
+			.addSamplingTimeIsoUTC("IsoTime")
+			.addField("julainTimeMs", swe.createTime()
+					.definition(SWEConstants.DEF_SAMPLING_TIME)
+					.description("Time in microseconds since start of file/stream")
+					.refFrame("sampleTime")
+					.label("Sample Julioan Time")
+					.uomCode("us")
+					.dataType(DataType.LONG)
+					.build())
 			.addField("samplingRate", swe.createQuantity()
 				.definition(SWEConstants.OGC_PROP_URI + "SamplingRate")
 				.description("Sampling Rate")
 				.uomCode("Hz")
 				.dataType(DataType.LONG)
 				.build())
-			.addField("", swe.createArray()
+			.addField("amplitudeArray", swe.createArray()
 //				.withVariableSize("NumSamplesPerArray")
 				.withFixedSize(NUM_SAMPLES_PER_ARRAY)
 				.withElement("amplitude", swe.createQuantity()
@@ -112,9 +114,10 @@ public class AudioOutput extends AbstractSensorOutput<AudioDriver>
 	public void publishChunk(double [] buffer, int sampleCount, long samplingRateHz) { // pass these in from config
 		DataBlock block = getNewDataBlock();
 		double offsetTime = (double) sampleCount / (double) samplingRateHz; 
-		block.setDoubleValue(0, baseTime + offsetTime);
-		block.setLongValue(1, samplingRateHz);
-		AbstractDataBlock wavData = ((DataBlockMixed)block).getUnderlyingObject()[2];
+		block.setDoubleValue(0, (baseTime + offsetTime));
+		block.setLongValue(1, (long)(baseTime + offsetTime) * 1000L);
+		block.setLongValue(2, samplingRateHz);
+		AbstractDataBlock wavData = ((DataBlockMixed)block).getUnderlyingObject()[3];
         wavData.setUnderlyingObject(buffer);
         
         // send event
