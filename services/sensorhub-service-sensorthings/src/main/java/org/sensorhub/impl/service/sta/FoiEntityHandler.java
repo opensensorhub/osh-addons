@@ -122,7 +122,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         
         // retrieve UID of existing feature
         long locaFoiID = pm.toLocalID(publicFoiID);
-        var fEntry = foiWriteStore.getLatestVersionEntry(locaFoiID);
+        var fEntry = foiWriteStore.getCurrentVersionEntry(locaFoiID);
         if (fEntry == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicFoiID);
         
@@ -168,13 +168,12 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         {
             return pm.writeDatabase.executeTransaction(() -> {
                 
-                var key = foiWriteStore.removeEntries(new FoiFilter.Builder()
+                var count = foiWriteStore.removeEntries(new FoiFilter.Builder()
                         .withInternalIDs(locaFoiID)
                         .withAllVersions()
-                        .build())
-                    .findFirst();
+                        .build());
                 
-                if (key.isEmpty())
+                if (count <= 0)
                     throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
             
                 return true;
@@ -196,7 +195,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     {
         securityHandler.checkPermission(securityHandler.sta_read_foi);
         
-        var foi = isFoiVisible(id.asLong()) ? foiReadStore.getLatestVersion(id.asLong()) : null;
+        var foi = isFoiVisible(id.asLong()) ? foiReadStore.getCurrentVersion(id.asLong()) : null;
         
         if (foi == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
@@ -318,7 +317,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
      */
     protected void checkFoiID(long publicID) throws NoSuchEntityException
     {
-        boolean hasFoi = isFoiVisible(publicID) && foiReadStore.getLatestVersionKey(publicID) != null;
+        boolean hasFoi = isFoiVisible(publicID) && foiReadStore.getCurrentVersionKey(publicID) != null;
         if (!hasFoi)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
     }
@@ -330,7 +329,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     protected void checkFoiIDInWriteStore(long publicID) throws NoSuchEntityException
     {
         long localID = pm.toLocalID(publicID);
-        if (foiWriteStore.getLatestVersionKey(localID) == null)
+        if (foiWriteStore.getCurrentVersionKey(localID) == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
     }
     

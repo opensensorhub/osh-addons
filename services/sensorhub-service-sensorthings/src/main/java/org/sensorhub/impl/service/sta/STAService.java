@@ -108,15 +108,18 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
     {
         serviceInstances.put(System.identityHashCode(this), this);
         
-        // TODO use other databases or filtered views according to config
-        this.readDatabase = getParentHub().getDatabaseRegistry().getFederatedObsDatabase();
-
         if (config.dbConfig != null)
         {
             // init database
             // TODO load database implementation class dynamically
             writeDatabase = new STADatabase(this, config.dbConfig);
         }
+        
+        // get existing or create new FilteredView from config
+        if (config.exposedResources != null)
+            readDatabase = config.exposedResources.getFilteredView(getParentHub());
+        else
+            readDatabase = getParentHub().getDatabaseRegistry().getFederatedObsDatabase();
         
         // create or retrieve virtual sensor group
         String virtualGroupUID = config.virtualSensorGroup.uid;
@@ -134,7 +137,7 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
             virtualGroupId = new ProcedureId(fk.getInternalID(), procGroup.getUniqueIdentifier());
         }
         else
-            fk = writeDatabase.getProcedureStore().getLatestVersionKey(virtualGroupUID);
+            fk = writeDatabase.getProcedureStore().getCurrentVersionKey(virtualGroupUID);
         virtualGroupId = new ProcedureId(fk.getInternalID(), virtualGroupUID);
         
         // create default hub thing

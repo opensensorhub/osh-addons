@@ -30,6 +30,7 @@ import org.sensorhub.api.obs.IDataStreamStore;
 import org.sensorhub.api.procedure.ProcedureId;
 import org.vast.data.TextEncodingImpl;
 import org.vast.ogc.om.IObservation;
+import org.vast.ogc.om.IProcedure;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.unit.Unit;
@@ -52,7 +53,6 @@ import de.fraunhofer.iosb.ilt.frostserver.path.Property;
 import de.fraunhofer.iosb.ilt.frostserver.path.ResourcePath;
 import de.fraunhofer.iosb.ilt.frostserver.query.Query;
 import de.fraunhofer.iosb.ilt.frostserver.util.NoSuchEntityException;
-import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.Category;
 import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataComponent;
@@ -120,7 +120,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 
                 // get parent sensor
                 long localSensorID = pm.toLocalID(sensorId.asLong());
-                AbstractProcess proc = pm.sensorHandler.procWriteStore.getLatestVersion(localSensorID);
+                IProcedure proc = pm.sensorHandler.procWriteStore.getCurrentVersion(localSensorID);
                 String procUID = proc.getUniqueIdentifier();
                 
                 // create data stream object
@@ -199,11 +199,10 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                     .withProcedure(oldDsInfo.getProcedureID())
                     .withRecordDescription(newRecordStruct)
                     .withRecordEncoding(oldDsInfo.getRecordEncoding())
-                    .withRecordVersion(oldDsInfo.getRecordVersion())
                     .build();
 
                 // check name wasn't changed
-                if (!dsInfo.getOutputName().equals(oldDsInfo.getOutputName()))
+                if (!dsInfo.getName().equals(oldDsInfo.getName()))
                     throw new IllegalArgumentException("Cannot change a datastream name");
                 
                 // TODO check that structure hasn't changed 
@@ -464,7 +463,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         boolean isExternalDatastream = !pm.isInWritableDatabase(publicID);
 
         // convert to simple or multi datastream
-        DataComponent rec = dsInfo.getRecordDescription();
+        DataComponent rec = dsInfo.getRecordStructure();
         if (isScalarOutput(rec))
         {
             Datastream simpleDs = new Datastream();

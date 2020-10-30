@@ -17,7 +17,6 @@ package org.sensorhub.impl.service.sta;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -229,12 +228,6 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public ZoneOffset getTimeZone()
-    {
-        return delegateStore.getTimeZone();
-    }
-
-
     public long getNumRecords()
     {
         return delegateStore.getNumRecords();
@@ -265,7 +258,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public Stream<Long> removeEntries(DataStreamFilter query)
+    public long removeEntries(DataStreamFilter query)
     {
         return delegateStore.removeEntries(query);
     }

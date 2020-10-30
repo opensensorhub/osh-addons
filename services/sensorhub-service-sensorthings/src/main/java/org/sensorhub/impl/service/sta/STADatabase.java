@@ -21,9 +21,8 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.datastore.IDatabaseRegistry;
 import org.sensorhub.api.obs.IFoiStore;
 import org.sensorhub.api.obs.IObsStore;
-import org.sensorhub.api.procedure.IProcedureDescStore;
+import org.sensorhub.api.procedure.IProcedureStore;
 import org.sensorhub.api.procedure.IProcedureObsDatabase;
-import org.sensorhub.impl.datastore.h2.H2Utils;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
 import org.sensorhub.impl.datastore.h2.MVObsDatabase;
 import com.google.common.collect.Sets;
@@ -81,7 +80,7 @@ public class STADatabase implements ISTADatabase
             }
             else
             {
-                // get database module used for writing obs/sensor/datastream/obs/foi entities
+                // get database module used for writing sensor/datastream/obs/foi entities
                 obsDatabase = (IProcedureObsDatabase)service.getParentHub().getModuleRegistry().getModuleById(config.externalObsDatabaseID);
                 externalObsDatabaseUsed = true;
             }
@@ -101,37 +100,22 @@ public class STADatabase implements ISTADatabase
             mvStore = initMVStore();
         
         // open thing data store
-        if (H2Utils.getDataStoreInfo(mvStore, THING_STORE_NAME) == null)
-        {
-            thingStore = STAThingStoreImpl.create(this, MVDataStoreInfo.builder()
-                .withName(THING_STORE_NAME)
-                .build());
-        }
-        else
-            thingStore = STAThingStoreImpl.open(this, THING_STORE_NAME);
+        thingStore = STAThingStoreImpl.open(this, MVDataStoreInfo.builder()
+            .withName(THING_STORE_NAME)
+            .build());
         
         // open location data store
-        if (H2Utils.getDataStoreInfo(mvStore, LOCATION_STORE_NAME) == null)
-        {
-            locationStore = STALocationStoreImpl.create(this, MVDataStoreInfo.builder()
-                .withName(LOCATION_STORE_NAME)
-                .build());
-        }
-        else
-            locationStore = STALocationStoreImpl.open(this, LOCATION_STORE_NAME);
+        locationStore = STALocationStoreImpl.open(this, MVDataStoreInfo.builder()
+            .withName(LOCATION_STORE_NAME)
+            .build());
         
         // open observed property data store
-        if (H2Utils.getDataStoreInfo(mvStore, OBS_PROP_STORE_NAME) == null)
-        {
-            obsPropStore = STAObsPropStoreImpl.create(this, MVDataStoreInfo.builder()
-                .withName(OBS_PROP_STORE_NAME)
-                .build());
-        }
-        else
-            obsPropStore = STAObsPropStoreImpl.open(this, OBS_PROP_STORE_NAME);
+        obsPropStore = STAObsPropStoreImpl.open(this, MVDataStoreInfo.builder()
+            .withName(OBS_PROP_STORE_NAME)
+            .build());
 
         // init datastream store wrapper
-        this.dataStreamStore = new STADataStreamStoreImpl(this,
+        dataStreamStore = new STADataStreamStoreImpl(this,
             obsDatabase.getObservationStore().getDataStreams());
         
         thingStore.locationStore = locationStore;
@@ -201,7 +185,7 @@ public class STADatabase implements ISTADatabase
 
 
     @Override
-    public IProcedureDescStore getProcedureStore()
+    public IProcedureStore getProcedureStore()
     {
         return obsDatabase.getProcedureStore();
     }

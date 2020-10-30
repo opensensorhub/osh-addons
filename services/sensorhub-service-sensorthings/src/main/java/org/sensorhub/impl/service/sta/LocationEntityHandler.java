@@ -19,7 +19,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import org.geojson.GeoJsonObject;
-import org.sensorhub.api.feature.FeatureFilter;
 import org.sensorhub.api.feature.FeatureKey;
 import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
@@ -98,7 +97,7 @@ public class LocationEntityHandler implements IResourceHandler<Location>
         if (locationDataStore != null)
         {
             // retrieve UID of existing feature
-            var key = locationDataStore.getLatestVersionKey(id.asLong());
+            var key = locationDataStore.getCurrentVersionKey(id.asLong());
             if (locationDataStore.containsKey(key))
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
@@ -124,13 +123,12 @@ public class LocationEntityHandler implements IResourceHandler<Location>
         
         if (locationDataStore != null)
         {
-            var key = locationDataStore.removeEntries(new FeatureFilter.Builder()
+            var count = locationDataStore.removeEntries(new STALocationFilter.Builder()
                     .withInternalIDs(id.asLong())
                     .withAllVersions()
-                    .build())
-                .findFirst();
+                    .build());
         
-            if (key.isEmpty())
+            if (count <= 0)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
             
             return true;
@@ -147,7 +145,7 @@ public class LocationEntityHandler implements IResourceHandler<Location>
         
         if (locationDataStore != null)
         {
-            var location = locationDataStore.getLatestVersion(id.asLong());
+            var location = locationDataStore.getCurrentVersion(id.asLong());
             
             if (location == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
@@ -166,7 +164,7 @@ public class LocationEntityHandler implements IResourceHandler<Location>
         
         if (locationDataStore != null)
         {
-            FeatureFilter filter = getFilter(path, q);
+            STALocationFilter filter = getFilter(path, q);
             int skip = q.getSkip(0);
             int limit = Math.min(q.getTopOrDefault(), maxPageSize);
             
@@ -183,7 +181,7 @@ public class LocationEntityHandler implements IResourceHandler<Location>
     }
     
     
-    protected FeatureFilter getFilter(ResourcePath path, Query q)
+    protected STALocationFilter getFilter(ResourcePath path, Query q)
     {
         var builder = new STALocationFilter.Builder()
             .validAtTime(Instant.now());
@@ -200,7 +198,7 @@ public class LocationEntityHandler implements IResourceHandler<Location>
                 {
                     ResourceId thingId = (ResourceId)idElt.getId();
                     builder.withThings(thingId.asLong())
-                        .withLatestVersion();
+                        .withCurrentVersion();
                 }
                 else if (idElt.getEntityType() == EntityType.HISTORICALLOCATION)
                 {
@@ -220,7 +218,7 @@ public class LocationEntityHandler implements IResourceHandler<Location>
                 {
                     var thingSet = pm.thingHandler.queryCollection(getParentPath(path), q);
                     
-                    builder.withLatestVersion()
+                    builder.withCurrentVersion()
                         .withThings(thingSet.isEmpty() ?
                             Long.MAX_VALUE :
                             ((ResourceId)thingSet.iterator().next().getId()).asLong());

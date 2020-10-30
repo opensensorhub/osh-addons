@@ -14,7 +14,6 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.feature.FeatureFilter;
 import org.sensorhub.api.obs.DataStreamFilter;
 
 
@@ -30,10 +29,10 @@ import org.sensorhub.api.obs.DataStreamFilter;
  */
 class STADataStreamFilter extends DataStreamFilter
 {
-    protected FeatureFilter things;
+    protected STAThingFilter things;
     
 
-    public FeatureFilter getThings()
+    public STAThingFilter getThings()
     {
         return things;
     }
@@ -43,20 +42,20 @@ class STADataStreamFilter extends DataStreamFilter
     {
         protected Builder()
         {
-            this.instance = new STADataStreamFilter();
+            super(new STADataStreamFilter());
         }
         
         
-        public Builder withThings(FeatureFilter filter)
+        public Builder withThings(STAThingFilter filter)
         {
             ((STADataStreamFilter)instance).things = filter;
             return this;
         }
 
 
-        public Builder withThings(Long... thingIDs)
+        public Builder withThings(long... thingIDs)
         {
-            ((STADataStreamFilter)instance).things = new FeatureFilter.Builder()
+            instance.things = new STAThingFilter.Builder()
                 .withInternalIDs(thingIDs)
                 .build();
             return this;

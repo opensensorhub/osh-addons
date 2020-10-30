@@ -17,7 +17,7 @@ package org.sensorhub.impl.service.sta;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.security.SecurityConfig;
 import org.sensorhub.api.service.ServiceConfig;
-import org.sensorhub.impl.datastore.obs.ProcedureObsDatabaseViewConfig;
+import org.sensorhub.impl.datastore.view.ProcedureObsDatabaseViewConfig;
 import org.sensorhub.impl.sensor.VirtualProcedureGroupConfig;
 
 
@@ -54,8 +54,8 @@ public class STAServiceConfig extends ServiceConfig
     public STADatabaseConfig dbConfig = new STADatabaseConfig();
     
     
-    @DisplayInfo(desc="Filtered view to select procedures exposed as read-only through this service")
-    public ProcedureObsDatabaseViewConfig exposedProcedures;
+    @DisplayInfo(desc="Filtered view to select procedures/datastreams/observations exposed as read-only through this service")
+    public ProcedureObsDatabaseViewConfig exposedResources;
     
     
     @DisplayInfo(desc="Security related options")

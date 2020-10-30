@@ -14,7 +14,10 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.feature.FeatureFilter;
+import org.sensorhub.api.datastore.EmptyFilterIntersection;
+import org.sensorhub.api.feature.FeatureFilterBase;
+import org.sensorhub.api.resource.ResourceFilter;
+import org.vast.ogc.gml.IFeature;
 
 
 /**
@@ -26,18 +29,25 @@ import org.sensorhub.api.feature.FeatureFilter;
  * @author Alex Robin
  * @date Oct 16, 2019
  */
-class STALocationFilter extends FeatureFilter
+class STALocationFilter extends FeatureFilterBase<IFeature>
 {
-    protected FeatureFilter things;
+    protected STAThingFilter things;
     
 
-    public FeatureFilter getThings()
+    public STAThingFilter getThings()
     {
         return things;
     }
+
+
+    @Override
+    public ResourceFilter<IFeature> intersect(ResourceFilter<IFeature> filter) throws EmptyFilterIntersection
+    {
+        throw new UnsupportedOperationException();
+    }
     
     
-    public static class Builder extends FeatureFilterBuilder<STALocationFilter.Builder, STALocationFilter>
+    public static class Builder extends FeatureFilterBaseBuilder<STALocationFilter.Builder, IFeature, STALocationFilter>
     {
         protected Builder()
         {
@@ -45,19 +55,19 @@ class STALocationFilter extends FeatureFilter
         }
         
         
-        public STALocationFilter.Builder withThings(FeatureFilter filter)
+        public STALocationFilter.Builder withThings(STAThingFilter filter)
         {
             instance.things = filter;
             return this;
         }
 
 
-        public STALocationFilter.Builder withThings(Long... thingIDs)
+        public STALocationFilter.Builder withThings(long... thingIDs)
         {
-            instance.things = new FeatureFilter.Builder()
+            instance.things = new STAThingFilter.Builder()
                 .withInternalIDs(thingIDs)
                 .build();
             return this;
         }
-    }        
+    }       
 }

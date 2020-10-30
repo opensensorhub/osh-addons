@@ -24,12 +24,12 @@ import org.h2.mvstore.RangeCursor;
 import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.feature.FeatureKey;
-import org.sensorhub.api.feature.IFeatureFilter;
-import org.sensorhub.api.feature.IFeatureStore.FeatureField;
+import org.sensorhub.api.feature.IFeatureStoreBase.FeatureField;
 import org.sensorhub.impl.datastore.h2.H2Utils;
 import org.sensorhub.impl.datastore.h2.IdProvider;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
+import org.sensorhub.impl.datastore.h2.MVFeatureParentKey;
 import org.sensorhub.impl.datastore.h2.MVVoidDataType;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVLocationThingKeyDataType;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVThingLocationKey;
@@ -45,7 +45,7 @@ import net.opengis.gml.v32.AbstractFeature;
  * @author Alex Robin
  * @date Oct 16, 2019
  */
-class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, FeatureField> implements ISTALocationStore
+class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, FeatureField, STALocationFilter> implements ISTALocationStore
 {
     private static final String THING_LOCATIONS_MAP_NAME = "@thing_locations";
     private static final String LOCATION_THINGS_MAP_NAME = "@location_things";
@@ -60,19 +60,17 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
     }
     
     
-    public static STALocationStoreImpl open(STADatabase db, String dataStoreName)
+    public static STALocationStoreImpl open(STADatabase db, MVDataStoreInfo dataStoreInfo)
     {
-        MVDataStoreInfo dataStoreInfo = H2Utils.loadDataStoreInfo(db.getMVStore(), dataStoreName);
-        var store = new STALocationStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
-        return store;
+        return new STALocationStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
     }
     
     
-    public static STALocationStoreImpl create(STADatabase db, MVDataStoreInfo dataStoreInfo)
+    @Override
+    protected MVFeatureParentKey generateKey(long parentID, AbstractFeature feature)
     {
-        H2Utils.addDataStoreInfo(db.getMVStore(), dataStoreInfo);
-        var store = new STALocationStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
-        return store;
+        long internalID = idProvider.newInternalID();
+        return new MVFeatureParentKey(parentID, internalID);
     }
     
     
@@ -98,15 +96,6 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
                 .valueType(new MVVoidDataType()));
         
         return this;
-    }
-    
-    
-    @Override
-    protected FeatureKey generateKey(AbstractFeature feature)
-    {
-        // generate key
-        long internalID = idProvider.newInternalID();
-        return new FeatureKey(internalID, FeatureKey.TIMELESS);
     }
     
     
@@ -151,7 +140,7 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
 
 
     @Override
-    protected Stream<Entry<FeatureKey, AbstractFeature>> getIndexedStream(IFeatureFilter filter)
+    protected Stream<Entry<MVFeatureParentKey, AbstractFeature>> getIndexedStream(STALocationFilter filter)
     {
         if (filter instanceof STALocationFilter)
         {
@@ -161,9 +150,9 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
                 // get time filter
                 var timeFilter = filter.getValidTime() != null ?
                     filter.getValidTime() : H2Utils.ALL_TIMES_FILTER;
-                boolean latestVersionOnly = timeFilter.isLatestTime();
+                boolean currentVersionOnly = timeFilter.isCurrentTime();
                 
-                if (latestVersionOnly)
+                if (currentVersionOnly)
                 {
                     return thingStore.selectKeys(thingFilter)
                         .flatMap(k -> getCurrentLocationKeysByThing(k.getInternalID()))

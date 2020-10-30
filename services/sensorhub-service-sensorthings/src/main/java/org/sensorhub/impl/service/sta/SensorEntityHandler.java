@@ -23,7 +23,8 @@ import org.sensorhub.api.event.IEventPublisher;
 import org.sensorhub.api.obs.DataStreamFilter;
 import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.api.obs.IObsStore;
-import org.sensorhub.api.procedure.IProcedureDescStore;
+import org.sensorhub.api.procedure.IProcedureStore;
+import org.sensorhub.api.procedure.IProcedureWithDesc;
 import org.sensorhub.api.procedure.IProcedureRegistry;
 import org.sensorhub.api.procedure.ProcedureAddedEvent;
 import org.sensorhub.api.procedure.ProcedureChangedEvent;
@@ -69,8 +70,8 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     static final String FORMAT_SML2 = "http://www.opengis.net/sensorml-json/2.0";
 
     OSHPersistenceManager pm;
-    IProcedureDescStore procReadStore;
-    IProcedureDescStore procWriteStore;
+    IProcedureStore procReadStore;
+    IProcedureStore procWriteStore;
     IObsStore obsReadStore;
     STASecurity securityHandler;
     int maxPageSize = 100;
@@ -157,7 +158,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         
         // get current version
         long localSensorID = pm.toLocalID(publicSensorID);
-        IProcedure proc = procWriteStore.getLatestVersion(localSensorID);
+        IProcedure proc = procWriteStore.getCurrentVersion(localSensorID);
         if (proc == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
@@ -213,7 +214,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         
         // get current version
         long localSensorID = pm.toLocalID(publicSensorID);
-        IProcedure proc = procWriteStore.getLatestVersion(localSensorID);
+        IProcedure proc = procWriteStore.getCurrentVersion(localSensorID);
         if (proc == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
@@ -257,7 +258,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     {
         securityHandler.checkPermission(securityHandler.sta_read_sensor);
 
-        var proc = procReadStore.getLatestVersion(id.asLong());
+        var proc = procReadStore.getCurrentVersion(id.asLong());
         if (proc == null || !isSensorVisible(id.asLong()))
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
         
@@ -290,11 +291,10 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     {
         ProcedureFilter.Builder builder = new ProcedureFilter.Builder()
             .validAtTime(Instant.now());
-            //.withValidTimeDuring(Instant.MIN, Instant.MAX);
 
         ProcedureId procGroupID = pm.service.getProcedureGroupID();
         if (procGroupID != null)
-            builder.withParentGroups(procGroupID.getUniqueID());
+            builder.withParents().withUniqueIDs(procGroupID.getUniqueID()).done();
 
         EntityPathElement idElt = path.getIdentifiedElement();
         if (idElt != null)
@@ -373,7 +373,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
 
 
     @SuppressWarnings("unchecked")
-    protected Sensor toFrostSensor(long internalId, AbstractProcess proc, Query q)
+    protected Sensor toFrostSensor(long internalId, IProcedureWithDesc proc, Query q)
     {
         // TODO add full SensorML doc in metadata
 
@@ -381,30 +381,37 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         sensor.setId(new ResourceIdLong(internalId));
         sensor.setName(proc.getName());
         sensor.setDescription(proc.getDescription());
-
-        // add metadata link
-        if (!proc.getDocumentationList().isEmpty())
+        
+        //if (q.getSelect().contains("metadata"))
         {
-            DocumentList docList = proc.getDocumentationList().get("sta_metadata");
-            if (!docList.getDocumentList().isEmpty())
-            {
-                CIOnlineResource doc = docList.getDocumentList().get(0);
-                sensor.setEncodingType(doc.getProtocol());
-                sensor.setMetadata(doc.getLinkage());
+            AbstractProcess fullDesc = proc.getFullDescription();
+            if (fullDesc != null)
+            {    
+                // add metadata link
+                if (!fullDesc.getDocumentationList().isEmpty())
+                {
+                    DocumentList docList = fullDesc.getDocumentationList().get("sta_metadata");
+                    if (!docList.getDocumentList().isEmpty())
+                    {
+                        CIOnlineResource doc = docList.getDocumentList().get(0);
+                        sensor.setEncodingType(doc.getProtocol());
+                        sensor.setMetadata(doc.getLinkage());
+                    }
+                }
+                else
+                {
+                    var metadata = new SensorMLMetadata();
+                    metadata.uid = proc.getUniqueIdentifier();
+                    TimeExtent validPeriod = proc.getValidTime();
+                    if (validPeriod != null)
+                    {
+                        metadata.validTimeBegin = validPeriod.begin();
+                        metadata.validTimeEnd = validPeriod.hasEnd() ? validPeriod.end() : Instant.now();
+                    }
+                    sensor.setMetadata(metadata);
+                    sensor.setEncodingType(FORMAT_SML2);
+                }
             }
-        }
-        else
-        {
-            var metadata = new SensorMLMetadata();
-            metadata.uid = proc.getUniqueIdentifier();
-            TimeExtent validPeriod = proc.getValidTime();
-            if (validPeriod != null)
-            {
-                metadata.validTimeBegin = validPeriod.begin();
-                metadata.validTimeEnd = validPeriod.hasEnd() ? validPeriod.end() : Instant.now();
-            }
-            sensor.setMetadata(metadata);
-            sensor.setEncodingType(FORMAT_SML2);
         }
 
         // expand navigation links
@@ -459,7 +466,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
      */
     protected void checkSensorID(long publicID) throws NoSuchEntityException
     {
-        if (procReadStore.getLatestVersionKey(publicID) == null)
+        if (procReadStore.getCurrentVersionKey(publicID) == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
     }
     
@@ -470,7 +477,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     protected void checkSensorIDInWriteStore(long publicID) throws NoSuchEntityException
     {
         long localID = pm.toLocalID(publicID);
-        if (procWriteStore.getLatestVersionKey(localID) == null)
+        if (procWriteStore.getCurrentVersionKey(localID) == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
     }
 

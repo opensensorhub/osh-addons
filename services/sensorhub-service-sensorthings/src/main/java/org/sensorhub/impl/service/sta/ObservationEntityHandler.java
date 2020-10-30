@@ -137,7 +137,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
                 {
                     foiId = (ResourceId)obs.getFeatureOfInterest().getId();
                     long localFoiID = pm.toLocalID(foiId.asLong());
-                    var foi = pm.foiHandler.foiWriteStore.getLatestVersion(localFoiID);
+                    var foi = pm.foiHandler.foiWriteStore.getCurrentVersion(localFoiID);
                     if (foi == null)
                         throw new NoSuchEntityException(FoiEntityHandler.NOT_FOUND_MESSAGE + foiId);
                     foiUri = foi.getUniqueIdentifier();
@@ -189,7 +189,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         publisherInfo.publisher.publish(new DataEvent(
             System.currentTimeMillis(), 
             publisherInfo.dsInfo.getProcedureID(),
-            publisherInfo.dsInfo.getOutputName(),
+            publisherInfo.dsInfo.getName(),
             obsData.getResult()
         ));
     }

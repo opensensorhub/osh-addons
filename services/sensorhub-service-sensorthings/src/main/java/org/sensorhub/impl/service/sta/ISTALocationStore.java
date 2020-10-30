@@ -16,8 +16,8 @@ package org.sensorhub.impl.service.sta;
 
 import java.time.Instant;
 import java.util.stream.Stream;
-import org.sensorhub.api.feature.IFeatureStore;
-import org.sensorhub.api.feature.IFeatureStore.FeatureField;
+import org.sensorhub.api.feature.IFeatureStoreBase;
+import org.sensorhub.api.feature.IFeatureStoreBase.FeatureField;
 import net.opengis.gml.v32.AbstractFeature;
 
 
@@ -29,7 +29,7 @@ import net.opengis.gml.v32.AbstractFeature;
  * @author Alex Robin
  * @date Oct 16, 2019
  */
-public interface ISTALocationStore extends IFeatureStore<AbstractFeature, FeatureField>
+public interface ISTALocationStore extends IFeatureStoreBase<AbstractFeature, FeatureField, STALocationFilter>
 {
 
     public interface IHistoricalLocation
@@ -43,5 +43,11 @@ public interface ISTALocationStore extends IFeatureStore<AbstractFeature, Featur
     
     
     public Stream<IHistoricalLocation> selectHistoricalLocations(STALocationFilter filter);
+    
+    
+    public default STALocationFilter.Builder filterBuilder()
+    {
+        return new STALocationFilter.Builder();
+    }
     
 }

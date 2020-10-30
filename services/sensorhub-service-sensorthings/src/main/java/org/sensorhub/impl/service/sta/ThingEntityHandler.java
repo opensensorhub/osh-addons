@@ -18,7 +18,6 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
-import org.sensorhub.api.feature.FeatureFilter;
 import org.sensorhub.api.feature.FeatureKey;
 import org.sensorhub.api.procedure.ProcedureId;
 import org.vast.ogc.gml.GenericFeature;
@@ -117,7 +116,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         {
             // retrieve UID of existing feature
             ResourceId id = (ResourceId)entity.getId();
-            var key = thingDataStore.getLatestVersionKey(id.asLong());
+            var key = thingDataStore.getCurrentVersionKey(id.asLong());
             if (key == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
@@ -148,13 +147,12 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         
         if (thingDataStore != null)
         {
-            var key = thingDataStore.removeEntries(new FeatureFilter.Builder()
+            var count = thingDataStore.removeEntries(new STAThingFilter.Builder()
                     .withInternalIDs(id.asLong())
                     .withAllVersions()
-                    .build())
-                .findFirst();
+                    .build());
             
-            if (key.isEmpty())
+            if (count <= 0)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
             
             return true;
@@ -172,7 +170,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         
         if (thingDataStore != null)
         {
-            thing = isThingVisible(id.asLong()) ? thingDataStore.getLatestVersion(id.asLong()) : null;
+            thing = isThingVisible(id.asLong()) ? thingDataStore.getCurrentVersion(id.asLong()) : null;
         }
         else
         {
@@ -194,7 +192,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         
         if (thingDataStore != null)
         {
-            FeatureFilter filter = getFilter(path, q);
+            STAThingFilter filter = getFilter(path, q);
             int skip = q.getSkip(0);
             int limit = Math.min(q.getTopOrDefault(), maxPageSize);
             
@@ -216,7 +214,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     }
     
     
-    protected FeatureFilter getFilter(ResourcePath path, Query q)
+    protected STAThingFilter getFilter(ResourcePath path, Query q)
     {
         var builder = new STAThingFilter.Builder()
             .validAtTime(Instant.now());

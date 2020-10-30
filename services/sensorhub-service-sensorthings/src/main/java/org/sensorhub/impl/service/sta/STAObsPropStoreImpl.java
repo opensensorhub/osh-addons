@@ -9,14 +9,14 @@
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.feature.IFeatureStore.FeatureField;
-import org.sensorhub.impl.datastore.h2.H2Utils;
+import org.sensorhub.api.feature.FeatureFilter;
+import org.sensorhub.api.feature.IFeatureStoreBase.FeatureField;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
 import org.sensorhub.impl.service.sta.ISTAObsPropStore.ObsPropDef;
 
 
-public class STAObsPropStoreImpl extends MVBaseFeatureStoreImpl<ObsPropDef, FeatureField> implements ISTAObsPropStore
+public class STAObsPropStoreImpl extends MVBaseFeatureStoreImpl<ObsPropDef, FeatureField, FeatureFilter> implements ISTAObsPropStore
 {
     
     protected STAObsPropStoreImpl()
@@ -24,17 +24,16 @@ public class STAObsPropStoreImpl extends MVBaseFeatureStoreImpl<ObsPropDef, Feat
     }
     
     
-    public static STAObsPropStoreImpl open(STADatabase db, String dataStoreName)
+    public static STAObsPropStoreImpl open(STADatabase db, MVDataStoreInfo dataStoreInfo)
     {
-        MVDataStoreInfo dataStoreInfo = H2Utils.loadDataStoreInfo(db.getMVStore(), dataStoreName);
         return (STAObsPropStoreImpl)new STAObsPropStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
     }
-    
-    
-    public static STAObsPropStoreImpl create(STADatabase db, MVDataStoreInfo dataStoreInfo)
+
+
+    @Override
+    public FeatureFilter.Builder filterBuilder()
     {
-        H2Utils.addDataStoreInfo(db.getMVStore(), dataStoreInfo);
-        return (STAObsPropStoreImpl)new STAObsPropStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
+        return new FeatureFilter.Builder();
     }
     
 

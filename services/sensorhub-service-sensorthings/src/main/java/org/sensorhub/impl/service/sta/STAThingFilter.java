@@ -14,7 +14,10 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.feature.FeatureFilter;
+import org.sensorhub.api.datastore.EmptyFilterIntersection;
+import org.sensorhub.api.feature.FeatureFilterBase;
+import org.sensorhub.api.resource.ResourceFilter;
+import org.vast.ogc.gml.IFeature;
 
 
 /**
@@ -26,18 +29,25 @@ import org.sensorhub.api.feature.FeatureFilter;
  * @author Alex Robin
  * @date Oct 29, 2019
  */
-class STAThingFilter extends FeatureFilter
+class STAThingFilter extends FeatureFilterBase<IFeature>
 {
-    protected FeatureFilter locations;
+    protected STALocationFilter locations;
     
 
-    public FeatureFilter getLocations()
+    public STALocationFilter getLocations()
     {
         return locations;
     }
+
+
+    @Override
+    public ResourceFilter<IFeature> intersect(ResourceFilter<IFeature> filter) throws EmptyFilterIntersection
+    {
+        throw new UnsupportedOperationException();
+    }
     
     
-    public static class Builder extends FeatureFilterBuilder<Builder, STAThingFilter>
+    public static class Builder extends FeatureFilterBaseBuilder<Builder, IFeature, STAThingFilter>
     {
         protected Builder()
         {
@@ -45,16 +55,16 @@ class STAThingFilter extends FeatureFilter
         }
         
         
-        public Builder withLocations(FeatureFilter filter)
+        public Builder withLocations(STALocationFilter filter)
         {
             instance.locations = filter;
             return this;
         }
 
 
-        public Builder withLocations(Long... locationIDs)
+        public Builder withLocations(long... locationIDs)
         {
-            instance.locations = new FeatureFilter.Builder()
+            instance.locations = new STALocationFilter.Builder()
                 .withInternalIDs(locationIDs)
                 .build();
             return this;

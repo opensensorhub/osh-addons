@@ -166,11 +166,14 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
             int skip = q.getSkip(0);
             int limit = Math.min(q.getTopOrDefault(), maxPageSize);
             
-            if (filter.getParentIDs() != null && !filter.getParentIDs().isEmpty())
+            if (filter.getParentFilter() != null &&
+                filter.getParentFilter().getInternalIDs() != null &&
+                !filter.getParentFilter().getInternalIDs().isEmpty())
             {
-                // case external datastream, just extract observed properties from record structure
+                // case of external datastream: parent ID is set to datastream ID
+                // just extract observed properties from record structure
                 // hack: datastream ID is stored in parent ID filter
-                long dsId = filter.getParentIDs().iterator().next();
+                long dsId = filter.getParentFilter().getInternalIDs().iterator().next();
                 IDataStreamInfo dsInfo = readDatabase.getObservationStore().getDataStreams().get(dsId);
                 return getObservedPropertySet(dsInfo, q);                
             }
@@ -213,7 +216,7 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
                 {
                     // else use an empty list and let caller handle the case
                     // hack: store datastream ID in parent ID set
-                    builder.withParents(dsId);
+                    builder.withParents().withInternalIDs(dsId).done();
                 }
             }
         }
@@ -230,7 +233,7 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
     {
         var obsPropIDs = new TreeSet<Long>();
         
-        ScalarIterator it = new ScalarIterator(dsInfo.getRecordDescription());
+        ScalarIterator it = new ScalarIterator(dsInfo.getRecordStructure());
         while (it.hasNext())
         {
             String id = it.next().getId();
@@ -246,7 +249,7 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
     {
         var entitySet = new EntitySetImpl<ObservedProperty>();
         
-        ScalarIterator it = new ScalarIterator(dsInfo.getRecordDescription());
+        ScalarIterator it = new ScalarIterator(dsInfo.getRecordStructure());
         while (it.hasNext())
         {
             var obsProp = pm.dataStreamHandler.toObservedProperty(it.next(), q.getSelect());

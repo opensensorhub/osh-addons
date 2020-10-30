@@ -14,8 +14,9 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.feature.IFeatureStore;
-import org.sensorhub.api.feature.IFeatureStore.FeatureField;
+import org.sensorhub.api.feature.FeatureFilter;
+import org.sensorhub.api.feature.IFeatureStoreBase;
+import org.sensorhub.api.feature.IFeatureStoreBase.FeatureField;
 import org.sensorhub.impl.service.sta.ISTAObsPropStore.ObsPropDef;
 import org.vast.ogc.gml.IFeature;
 
@@ -28,7 +29,7 @@ import org.vast.ogc.gml.IFeature;
  * @author Alex Robin
  * @date March 23, 2020
  */
-public interface ISTAObsPropStore extends IFeatureStore<ObsPropDef, FeatureField>
+public interface ISTAObsPropStore extends IFeatureStoreBase<ObsPropDef, FeatureField, FeatureFilter>
 {
     
     public static class ObsPropDef implements IFeature
@@ -42,6 +43,12 @@ public interface ISTAObsPropStore extends IFeatureStore<ObsPropDef, FeatureField
             this.uri = uri;
             this.name = name;
             this.description = description;
+        }
+
+        @Override
+        public String getId()
+        {
+            return null;
         }
         
         @Override

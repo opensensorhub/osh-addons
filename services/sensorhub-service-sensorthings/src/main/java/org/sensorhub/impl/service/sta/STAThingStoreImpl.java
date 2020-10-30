@@ -17,15 +17,12 @@ package org.sensorhub.impl.service.sta;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.stream.Stream;
-import org.h2.mvstore.MVStore;
 import org.h2.mvstore.RangeCursor;
 import org.sensorhub.api.feature.FeatureKey;
-import org.sensorhub.api.feature.IFeatureFilter;
-import org.sensorhub.api.feature.IFeatureStore.FeatureField;
-import org.sensorhub.impl.datastore.h2.H2Utils;
-import org.sensorhub.impl.datastore.h2.IdProvider;
+import org.sensorhub.api.feature.IFeatureStoreBase.FeatureField;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
+import org.sensorhub.impl.datastore.h2.MVFeatureParentKey;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVThingLocationKey;
 import org.vast.ogc.gml.GenericFeature;
 
@@ -39,7 +36,7 @@ import org.vast.ogc.gml.GenericFeature;
  * @author Alex Robin
  * @date Oct 29, 2019
  */
-class STAThingStoreImpl extends MVBaseFeatureStoreImpl<GenericFeature, FeatureField> implements ISTAThingStore
+class STAThingStoreImpl extends MVBaseFeatureStoreImpl<GenericFeature, FeatureField, STAThingFilter> implements ISTAThingStore
 {
     STALocationStoreImpl locationStore;
     
@@ -49,39 +46,20 @@ class STAThingStoreImpl extends MVBaseFeatureStoreImpl<GenericFeature, FeatureFi
     }
     
     
-    public static STAThingStoreImpl open(STADatabase db, String dataStoreName)
+    public static STAThingStoreImpl open(STADatabase db, MVDataStoreInfo dataStoreInfo)
     {
-        MVDataStoreInfo dataStoreInfo = H2Utils.loadDataStoreInfo(db.getMVStore(), dataStoreName);
-        var store = new STAThingStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
-        return store;
-    }
-    
-    
-    public static STAThingStoreImpl create(STADatabase db, MVDataStoreInfo dataStoreInfo)
-    {
-        H2Utils.addDataStoreInfo(db.getMVStore(), dataStoreInfo);
-        var store = new STAThingStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
-        return store;
-    }
-    
-    
-    @Override
-    protected STAThingStoreImpl init(MVStore mvStore, MVDataStoreInfo dataStoreInfo, IdProvider idProvider)
-    {
-        super.init(mvStore, dataStoreInfo, idProvider);
-        return this;
-    }
-    
-    
-    @Override
-    protected FeatureKey generateKey(GenericFeature feature)
-    {
-        // generate key
-        long internalID = idProvider.newInternalID();
-        return new FeatureKey(internalID, FeatureKey.TIMELESS);
+        return (STAThingStoreImpl)new STAThingStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
     }
         
     
+    @Override
+    protected MVFeatureParentKey generateKey(long parentID, GenericFeature feature)
+    {
+        long internalID = idProvider.newInternalID();
+        return new MVFeatureParentKey(parentID, internalID);
+    }
+
+
     Stream<FeatureKey> getThingKeysByCurrentLocation(long locationID)
     {
         var first = new MVThingLocationKey(0, locationID, Instant.MAX);
@@ -113,20 +91,24 @@ class STAThingStoreImpl extends MVBaseFeatureStoreImpl<GenericFeature, FeatureFi
     
     
     @Override
-    protected Stream<Entry<FeatureKey, GenericFeature>> getIndexedStream(IFeatureFilter filter)
+    protected Stream<Entry<MVFeatureParentKey, GenericFeature>> getIndexedStream(STAThingFilter filter)
     {
-        if (filter instanceof STAThingFilter)
+        var locationFilter = filter.getLocations();
+        if (locationFilter != null)
         {
-            var locationFilter = ((STAThingFilter)filter).getLocations();
-            if (locationFilter != null)
-            {
-                return locationStore.selectKeys(locationFilter)
-                    .flatMap(k -> getThingKeysByCurrentLocation(k.getInternalID()))
-                    .map(k -> featuresIndex.getEntry(k));
-            }
+            return locationStore.selectKeys(locationFilter)
+                .flatMap(k -> getThingKeysByCurrentLocation(k.getInternalID()))
+                .map(k -> featuresIndex.getEntry(k));
         }
         
         return super.getIndexedStream(filter);
+    }
+
+
+    @Override
+    public STAThingFilter.Builder filterBuilder()
+    {
+        return new STAThingFilter.Builder();
     }
     
 }

@@ -49,6 +49,30 @@ public class TestSTAService
     String staRoot;
     
     
+    @Before
+    public void startService() throws IOException, SensorHubException
+    {
+        // use temp DB file
+        dbFile = File.createTempFile("sta-db-", ".dat");
+        dbFile.deleteOnExit();
+        
+        // get instance with in-memory DB
+        moduleRegistry = new SensorHub().getModuleRegistry();
+        
+        // start HTTP server
+        HttpServerConfig httpConfig = new HttpServerConfig();
+        httpConfig.httpPort = SERVER_PORT;
+        moduleRegistry.loadModule(httpConfig, TIMEOUT);
+        
+        // start SensorThings service
+        STAServiceConfig staCfg = new STAServiceConfig();
+        staCfg.autoStart = true;
+        staCfg.dbConfig.storagePath = dbFile.getAbsolutePath();
+        sta = (STAService)moduleRegistry.loadModule(staCfg, TIMEOUT);
+        staRoot = staCfg.getPublicEndpoint() + "/v1.0/";
+    }
+    
+    
     @Test
     public void testDeepInsertThing() throws Exception
     {
@@ -77,7 +101,7 @@ public class TestSTAService
         
         assertThingEquals(
             thing1,
-            obj.getAsJsonArray("value").get(0).getAsJsonObject());
+            obj.getAsJsonArray("value").get(1).getAsJsonObject());
     }
     
     
@@ -166,7 +190,6 @@ public class TestSTAService
         var ds1Id = toPublicId(1);
         
         JsonObject obj = sendGetRequest("Datastreams(" + ds1Id + ")/Sensor").getAsJsonObject();
-        assertEquals(ds1Id, obj.get("@iot.id").getAsInt());
         assertSensorEquals(
             thing1.getAsJsonArray("Datastreams").get(0).getAsJsonObject().get("Sensor").getAsJsonObject(),
             obj);
@@ -391,30 +414,6 @@ public class TestSTAService
         {
             throw new IOException(e);
         }
-    }
-    
-    
-    @Before
-    public void startService() throws IOException, SensorHubException
-    {
-        // use temp DB file
-        dbFile = File.createTempFile("sta-db-", ".dat");
-        dbFile.deleteOnExit();
-        
-        // get instance with in-memory DB
-        moduleRegistry = new SensorHub().getModuleRegistry();
-        
-        // start HTTP server
-        HttpServerConfig httpConfig = new HttpServerConfig();
-        httpConfig.httpPort = SERVER_PORT;
-        moduleRegistry.loadModule(httpConfig, TIMEOUT);
-        
-        // start SensorThings service
-        STAServiceConfig staCfg = new STAServiceConfig();
-        staCfg.autoStart = true;
-        staCfg.dbConfig.storagePath = dbFile.getAbsolutePath();
-        sta = (STAService)moduleRegistry.loadModule(staCfg, TIMEOUT);
-        staRoot = staCfg.getPublicEndpoint() + "/v1.0/";
     }
     
     
