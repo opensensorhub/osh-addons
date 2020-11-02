@@ -172,7 +172,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 AbstractProcess procDesc = toSmlProcess((Sensor)entity, procUID);
                 
                 // update description in DB
-                procWriteStore.addVersion(procDesc);
+                procWriteStore.add(procGroupID.getInternalID(), procDesc);
                 
                 // publish event
                 IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureEventSourceInfo(procUID));

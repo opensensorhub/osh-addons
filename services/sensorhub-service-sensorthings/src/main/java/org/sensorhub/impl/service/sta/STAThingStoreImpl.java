@@ -53,7 +53,7 @@ class STAThingStoreImpl extends MVBaseFeatureStoreImpl<GenericFeature, FeatureFi
         
     
     @Override
-    protected MVFeatureParentKey generateKey(long parentID, GenericFeature feature)
+    protected MVFeatureParentKey generateKey(long parentID, MVFeatureParentKey existingKey, GenericFeature feature)
     {
         long internalID = idProvider.newInternalID();
         return new MVFeatureParentKey(parentID, internalID);

@@ -67,7 +67,7 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
     
     
     @Override
-    protected MVFeatureParentKey generateKey(long parentID, AbstractFeature feature)
+    protected MVFeatureParentKey generateKey(long parentID, MVFeatureParentKey existingKey, AbstractFeature feature)
     {
         long internalID = idProvider.newInternalID();
         return new MVFeatureParentKey(parentID, internalID);
