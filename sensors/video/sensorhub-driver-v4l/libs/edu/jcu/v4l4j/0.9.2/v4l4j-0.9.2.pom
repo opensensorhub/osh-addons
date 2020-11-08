@@ -2,7 +2,7 @@
    <modelVersion>4.0.0</modelVersion>
    <groupId>edu.jcu</groupId>
    <artifactId>v4l4j</artifactId>
-   <version>0.9.1</version>
+   <version>0.9.2</version>
    <name>V4L4J Library</name>
    <packaging>jar</packaging>
 </project>
