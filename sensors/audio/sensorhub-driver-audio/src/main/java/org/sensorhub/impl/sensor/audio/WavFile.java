@@ -361,7 +361,9 @@ public class WavFile implements AutoCloseable
 			}
 
 			int v = buffer[bufferPointer];
-			if (b < bytesPerSample-1 || bytesPerSample == 1) v &= 0xFF;
+			if (b < bytesPerSample-1 || bytesPerSample == 1) 
+				v &= 0xFF;
+			int tmp = v << (b * 8);
 			val += v << (b * 8);
 
 			bufferPointer ++;
@@ -699,7 +701,7 @@ public class WavFile implements AutoCloseable
 		out.printf("Valid Bits: %d, Bytes per sample: %d\n", validBits, bytesPerSample);
 	}
 
-	public static void main(String[] args)
+	public static void main_(String[] args)
 	{
 		if (args.length < 1)
 		{

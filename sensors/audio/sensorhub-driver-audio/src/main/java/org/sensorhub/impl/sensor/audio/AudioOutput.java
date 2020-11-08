@@ -39,13 +39,13 @@ public class AudioOutput extends AbstractSensorOutput<AudioDriver>
 	DataRecord struct;
     protected DataEncoding encoding;
 
-	static final int  NUM_SAMPLES_PER_ARRAY = 100;
-	static final double SAMPLE_OUTPUT_RATE = 0.1;  // 
+	int  numSamplesPerArray;
+	static final double SAMPLE_OUTPUT_RATE = 0.1;  //  Not sure what to set this to 
 		
 	public AudioOutput(AudioDriver parentSensor)
 	{
 		super(parentSensor);
-		//logger = parentSensor.getLogger();
+		numSamplesPerArray = parentSensor.getConfiguration().numSamplesPerArray;
 		init();
 	}
 
@@ -86,12 +86,13 @@ public class AudioOutput extends AbstractSensorOutput<AudioDriver>
 				.dataType(DataType.LONG)
 				.build())
 			.addField("amplitudeArray", swe.createArray()
+				//  Fixed size works, but what about last sample array?
 //				.withVariableSize("NumSamplesPerArray")
-				.withFixedSize(NUM_SAMPLES_PER_ARRAY)
+				.withFixedSize(numSamplesPerArray)
 				.withElement("amplitude", swe.createQuantity()
 					.definition(SWEConstants.OGC_PROP_URI + "Amplitude")
 					.description("Amplitude of Sample")
-					.uomCode("dB")
+					.uomCode("db")  //  really normalized amplitude, not db
 					.dataType(DataType.DOUBLE)
 					.build())
 				.build())
