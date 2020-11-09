@@ -16,8 +16,8 @@ package org.sensorhub.impl.service.sta;
 
 import java.time.Instant;
 import java.util.stream.Stream;
-import org.sensorhub.api.feature.IFeatureStoreBase;
-import org.sensorhub.api.feature.IFeatureStoreBase.FeatureField;
+import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
+import org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField;
 import net.opengis.gml.v32.AbstractFeature;
 
 

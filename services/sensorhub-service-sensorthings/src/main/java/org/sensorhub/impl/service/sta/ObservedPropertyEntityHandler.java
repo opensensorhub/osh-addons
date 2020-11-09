@@ -17,10 +17,11 @@ package org.sensorhub.impl.service.sta;
 import java.time.Instant;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import org.sensorhub.api.feature.FeatureFilter;
-import org.sensorhub.api.feature.FeatureKey;
+import org.sensorhub.api.database.IProcedureObsDatabase;
+import org.sensorhub.api.datastore.feature.FeatureFilter;
+import org.sensorhub.api.datastore.feature.FeatureKey;
+import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.obs.IDataStreamInfo;
-import org.sensorhub.api.procedure.IProcedureObsDatabase;
 import org.sensorhub.impl.service.sta.ISTAObsPropStore.ObsPropDef;
 import org.vast.data.ScalarIterator;
 import org.vast.util.Asserts;
@@ -72,10 +73,8 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
         Asserts.checkArgument(entity instanceof ObservedProperty);
         ObservedProperty obsProp = (ObservedProperty)entity;
         
-        if (!obsProp.getDatastreams().isEmpty())
-            throw new IllegalArgumentException("Cannot deep insert a Datastream with an ObservedProperty");
-        if (!obsProp.getMultiDatastreams().isEmpty())
-            throw new IllegalArgumentException("Cannot deep insert a MultiDatastream with an ObservedProperty");
+        if (!obsProp.getDatastreams().isEmpty() || !obsProp.getMultiDatastreams().isEmpty())
+            throw new IllegalArgumentException("Cannot deep insert an ObservedProperty containing Datastreams");
                 
         if (obsPropDataStore != null)
         {
@@ -174,7 +173,8 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
                 // just extract observed properties from record structure
                 // hack: datastream ID is stored in parent ID filter
                 long dsId = filter.getParentFilter().getInternalIDs().iterator().next();
-                IDataStreamInfo dsInfo = readDatabase.getObservationStore().getDataStreams().get(dsId);
+                var dsKey = new DataStreamKey(dsId);
+                IDataStreamInfo dsInfo = readDatabase.getObservationStore().getDataStreams().get(dsKey);
                 return getObservedPropertySet(dsInfo, q);                
             }
             else
@@ -209,7 +209,8 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
                 if (pm.isInWritableDatabase(dsId))
                 {
                     // if datastream was created by STA, get IDs of observed properties from record structure
-                    IDataStreamInfo dsInfo = readDatabase.getObservationStore().getDataStreams().get(dsId);
+                    var dsKey = new DataStreamKey(dsId);
+                    IDataStreamInfo dsInfo = readDatabase.getObservationStore().getDataStreams().get(dsKey);
                     builder.withInternalIDs(getObservedPropertyIds(dsInfo));
                 }
                 else

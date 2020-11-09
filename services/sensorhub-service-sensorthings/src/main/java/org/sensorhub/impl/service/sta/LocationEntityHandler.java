@@ -19,7 +19,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import org.geojson.GeoJsonObject;
-import org.sensorhub.api.feature.FeatureKey;
+import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.util.Asserts;

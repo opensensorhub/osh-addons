@@ -14,11 +14,14 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.obs.IDataStreamStore;
+import org.sensorhub.api.datastore.obs.DataStreamKey;
+import org.sensorhub.api.datastore.obs.IDataStreamStore;
+import org.sensorhub.api.obs.IDataStreamInfo;
 
 /**
  * <p>
- * TODO ISTADataStreamStore type description
+ * Extension to datastream store interface to handle associate with Things
+ * entities
  * </p>
  *
  * @author Alex Robin
@@ -26,6 +29,11 @@ import org.sensorhub.api.obs.IDataStreamStore;
  */
 public interface ISTADataStreamStore extends IDataStreamStore
 {
+    
+    public DataStreamKey add(long thingID, IDataStreamInfo dsInfo);
+    
+    
+    public IDataStreamInfo put(long thingID, DataStreamKey key, IDataStreamInfo value);
     
     
     public Long getAssociatedThing(long dataStreamID);

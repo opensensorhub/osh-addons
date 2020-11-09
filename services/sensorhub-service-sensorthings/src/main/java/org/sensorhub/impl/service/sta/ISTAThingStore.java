@@ -14,8 +14,8 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.feature.IFeatureStoreBase;
-import org.sensorhub.api.feature.IFeatureStoreBase.FeatureField;
+import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
+import org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField;
 import org.vast.ogc.gml.GenericFeature;
 
 

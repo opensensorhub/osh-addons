@@ -15,7 +15,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sta;
 
 import org.sensorhub.api.datastore.EmptyFilterIntersection;
-import org.sensorhub.api.feature.FeatureFilterBase;
+import org.sensorhub.api.datastore.feature.FeatureFilterBase;
 import org.sensorhub.api.resource.ResourceFilter;
 import org.vast.ogc.gml.IFeature;
 

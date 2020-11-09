@@ -23,8 +23,8 @@ import org.h2.mvstore.MVStore;
 import org.h2.mvstore.RangeCursor;
 import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
-import org.sensorhub.api.feature.FeatureKey;
-import org.sensorhub.api.feature.IFeatureStoreBase.FeatureField;
+import org.sensorhub.api.datastore.feature.FeatureKey;
+import org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField;
 import org.sensorhub.impl.datastore.h2.H2Utils;
 import org.sensorhub.impl.datastore.h2.IdProvider;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
@@ -34,12 +34,15 @@ import org.sensorhub.impl.datastore.h2.MVVoidDataType;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVLocationThingKeyDataType;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVThingLocationKey;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVThingLocationKeyDataType;
+import org.vast.ogc.gml.IFeature;
+import org.vast.util.Asserts;
 import net.opengis.gml.v32.AbstractFeature;
 
 
 /**
  * <p>
- * Extension of {@link MVBaseFeatureStoreImpl} for associating Location entities to Things
+ * Extension of {@link MVBaseFeatureStoreImpl} for associating Location
+ * entities to Thing entities.
  * </p>
  *
  * @author Alex Robin
@@ -67,10 +70,26 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
     
     
     @Override
-    protected MVFeatureParentKey generateKey(long parentID, MVFeatureParentKey existingKey, AbstractFeature feature)
+    public synchronized FeatureKey add(long parentID, AbstractFeature feature)
     {
+        Asserts.checkNotNull(feature, IFeature.class);
+        
         long internalID = idProvider.newInternalID();
-        return new MVFeatureParentKey(parentID, internalID);
+        var newKey = new MVFeatureParentKey(parentID, internalID);
+
+        // add to store
+        put(newKey, feature, false, false);
+        return newKey;       
+    }
+    
+    
+    @Override
+    public AbstractFeature put(FeatureKey key, AbstractFeature feature)
+    {
+        Asserts.checkNotNull(key, FeatureKey.class);
+        Asserts.checkNotNull(feature, IFeature.class); 
+        var fk = new MVFeatureParentKey(0L, key.getInternalID(), key.getValidStartTime());
+        return put(fk, feature, true, true);
     }
     
     

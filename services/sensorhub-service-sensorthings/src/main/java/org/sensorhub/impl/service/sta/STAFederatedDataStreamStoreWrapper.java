@@ -25,9 +25,11 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.sensorhub.api.obs.DataStreamFilter;
+import org.sensorhub.api.datastore.obs.DataStreamFilter;
+import org.sensorhub.api.datastore.obs.DataStreamKey;
+import org.sensorhub.api.datastore.obs.IDataStreamStore;
+import org.sensorhub.api.datastore.procedure.IProcedureStore;
 import org.sensorhub.api.obs.IDataStreamInfo;
-import org.sensorhub.api.obs.IDataStreamStore;
 
 
 /**
@@ -53,27 +55,30 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     }
 
 
-    public Stream<Entry<Long, IDataStreamInfo>> selectEntries(DataStreamFilter filter, Set<DataStreamInfoField> fields)
+    public Stream<Entry<DataStreamKey, IDataStreamInfo>> selectEntries(DataStreamFilter filter, Set<DataStreamInfoField> fields)
     {
         if (filter instanceof STADataStreamFilter)
         {
             var thingFilter = ((STADataStreamFilter)filter).getThings();
             if (thingFilter != null && staDataStreamStore != null)
                 return staDataStreamStore.selectEntries(filter, fields)
-                    .map(e -> new AbstractMap.SimpleEntry<>(database.toPublicID(e.getKey()), e.getValue()));
+                    .map(e -> {
+                        var publicKey = new DataStreamKey(database.toPublicID(e.getKey().getInternalID()));
+                        return new AbstractMap.SimpleEntry<>(publicKey, e.getValue());
+                    });
         }        
         
         return federatedStore.selectEntries(filter);
     }
     
 
-    public Long add(IDataStreamInfo dsInfo)
+    public DataStreamKey add(IDataStreamInfo dsInfo)
     {
         return federatedStore.add(dsInfo);
     }
 
 
-    public Long getLatestVersionKey(String procUID, String outputName)
+    public DataStreamKey getLatestVersionKey(String procUID, String outputName)
     {
         return federatedStore.getLatestVersionKey(procUID, outputName);
     }
@@ -103,13 +108,13 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     }
 
 
-    public Stream<Long> selectKeys(DataStreamFilter query)
+    public Stream<DataStreamKey> selectKeys(DataStreamFilter query)
     {
         return federatedStore.selectKeys(query);
     }
 
 
-    public Entry<Long, IDataStreamInfo> getLatestVersionEntry(String procUID, String outputName)
+    public Entry<DataStreamKey, IDataStreamInfo> getLatestVersionEntry(String procUID, String outputName)
     {
         return federatedStore.getLatestVersionEntry(procUID, outputName);
     }
@@ -157,7 +162,7 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     }
 
 
-    public void putAll(Map<? extends Long, ? extends IDataStreamInfo> map)
+    public void putAll(Map<? extends DataStreamKey, ? extends IDataStreamInfo> map)
     {
         federatedStore.putAll(map);
     }
@@ -193,7 +198,7 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     }
 
 
-    public IDataStreamInfo put(Long key, IDataStreamInfo value)
+    public IDataStreamInfo put(DataStreamKey key, IDataStreamInfo value)
     {
         return federatedStore.put(key, value);
     }
@@ -211,7 +216,7 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     }
 
 
-    public Set<Long> keySet()
+    public Set<DataStreamKey> keySet()
     {
         return federatedStore.keySet();
     }
@@ -223,7 +228,7 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     }
 
 
-    public Set<Entry<Long, IDataStreamInfo>> entrySet()
+    public Set<Entry<DataStreamKey, IDataStreamInfo>> entrySet()
     {
         return federatedStore.entrySet();
     }
@@ -247,19 +252,19 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     }
 
 
-    public void forEach(BiConsumer<? super Long, ? super IDataStreamInfo> action)
+    public void forEach(BiConsumer<? super DataStreamKey, ? super IDataStreamInfo> action)
     {
         federatedStore.forEach(action);
     }
 
 
-    public void replaceAll(BiFunction<? super Long, ? super IDataStreamInfo, ? extends IDataStreamInfo> function)
+    public void replaceAll(BiFunction<? super DataStreamKey, ? super IDataStreamInfo, ? extends IDataStreamInfo> function)
     {
         federatedStore.replaceAll(function);
     }
 
 
-    public IDataStreamInfo putIfAbsent(Long key, IDataStreamInfo value)
+    public IDataStreamInfo putIfAbsent(DataStreamKey key, IDataStreamInfo value)
     {
         return federatedStore.putIfAbsent(key, value);
     }
@@ -271,39 +276,46 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     }
 
 
-    public boolean replace(Long key, IDataStreamInfo oldValue, IDataStreamInfo newValue)
+    public boolean replace(DataStreamKey key, IDataStreamInfo oldValue, IDataStreamInfo newValue)
     {
         return federatedStore.replace(key, oldValue, newValue);
     }
 
 
-    public IDataStreamInfo replace(Long key, IDataStreamInfo value)
+    public IDataStreamInfo replace(DataStreamKey key, IDataStreamInfo value)
     {
         return federatedStore.replace(key, value);
     }
 
 
-    public IDataStreamInfo computeIfAbsent(Long key, Function<? super Long, ? extends IDataStreamInfo> mappingFunction)
+    public IDataStreamInfo computeIfAbsent(DataStreamKey key, Function<? super DataStreamKey, ? extends IDataStreamInfo> mappingFunction)
     {
         return federatedStore.computeIfAbsent(key, mappingFunction);
     }
 
 
-    public IDataStreamInfo computeIfPresent(Long key, BiFunction<? super Long, ? super IDataStreamInfo, ? extends IDataStreamInfo> remappingFunction)
+    public IDataStreamInfo computeIfPresent(DataStreamKey key, BiFunction<? super DataStreamKey, ? super IDataStreamInfo, ? extends IDataStreamInfo> remappingFunction)
     {
         return federatedStore.computeIfPresent(key, remappingFunction);
     }
 
 
-    public IDataStreamInfo compute(Long key, BiFunction<? super Long, ? super IDataStreamInfo, ? extends IDataStreamInfo> remappingFunction)
+    public IDataStreamInfo compute(DataStreamKey key, BiFunction<? super DataStreamKey, ? super IDataStreamInfo, ? extends IDataStreamInfo> remappingFunction)
     {
         return federatedStore.compute(key, remappingFunction);
     }
 
 
-    public IDataStreamInfo merge(Long key, IDataStreamInfo value, BiFunction<? super IDataStreamInfo, ? super IDataStreamInfo, ? extends IDataStreamInfo> remappingFunction)
+    public IDataStreamInfo merge(DataStreamKey key, IDataStreamInfo value, BiFunction<? super IDataStreamInfo, ? super IDataStreamInfo, ? extends IDataStreamInfo> remappingFunction)
     {
         return federatedStore.merge(key, value, remappingFunction);
+    }
+
+
+    @Override
+    public void linkTo(IProcedureStore procedureStore)
+    {
+        throw new UnsupportedOperationException();
     }
 
 }

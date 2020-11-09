@@ -18,7 +18,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
-import org.sensorhub.api.feature.FeatureKey;
+import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.procedure.ProcedureId;
 import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;

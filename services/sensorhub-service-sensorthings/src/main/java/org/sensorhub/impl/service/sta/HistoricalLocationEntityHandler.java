@@ -20,7 +20,7 @@ import java.time.Instant;
 import java.util.stream.Collectors;
 import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.WriteBuffer;
-import org.sensorhub.api.feature.FeatureKey;
+import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
 import de.fraunhofer.iosb.ilt.frostserver.model.HistoricalLocation;

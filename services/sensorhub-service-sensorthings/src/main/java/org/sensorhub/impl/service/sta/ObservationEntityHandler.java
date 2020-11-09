@@ -24,15 +24,16 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.joda.time.DateTimeZone;
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.api.datastore.obs.DataStreamKey;
+import org.sensorhub.api.datastore.obs.IObsStore;
+import org.sensorhub.api.datastore.obs.ObsFilter;
+import org.sensorhub.api.datastore.obs.ObsKey;
 import org.sensorhub.api.event.EventUtils;
 import org.sensorhub.api.event.IEventPublisher;
 import org.sensorhub.api.feature.FeatureId;
 import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.api.obs.IObsData;
-import org.sensorhub.api.obs.IObsStore;
 import org.sensorhub.api.obs.ObsData;
-import org.sensorhub.api.obs.ObsFilter;
-import org.sensorhub.api.obs.ObsKey;
 import org.vast.data.DataBlockDouble;
 import org.vast.data.DataBlockInt;
 import org.vast.data.DataBlockLong;
@@ -170,13 +171,12 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
      */
     void sendDataEvent(long publicDsID, ObsData obsData)
     {
-        long localDsID = pm.toLocalID(publicDsID);
-        
         EventPublisherInfo publisherInfo;
         try
         {
             publisherInfo = eventPublishersCache.get(publicDsID, () -> {
-                IDataStreamInfo dsInfo = pm.dataStreamHandler.dataStreamWriteStore.get(localDsID);
+                var dsKey = new DataStreamKey(publicDsID);
+                IDataStreamInfo dsInfo = obsReadStore.getDataStreams().get(dsKey);
                 IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureOutputSourceID(dsInfo.getProcedureID().getUniqueID(), dsInfo.getOutputName()));        
                 return new EventPublisherInfo(dsInfo, publisher);
             });

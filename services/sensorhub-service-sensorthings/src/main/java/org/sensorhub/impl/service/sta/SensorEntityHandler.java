@@ -15,20 +15,23 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sta;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import org.isotc211.v2005.gmd.CIOnlineResource;
 import org.isotc211.v2005.gmd.impl.GMDFactory;
+import org.sensorhub.api.datastore.obs.DataStreamFilter;
+import org.sensorhub.api.datastore.obs.DataStreamKey;
+import org.sensorhub.api.datastore.obs.IObsStore;
+import org.sensorhub.api.datastore.procedure.IProcedureStore;
+import org.sensorhub.api.datastore.procedure.ProcedureFilter;
 import org.sensorhub.api.event.EventUtils;
 import org.sensorhub.api.event.IEventPublisher;
-import org.sensorhub.api.obs.DataStreamFilter;
 import org.sensorhub.api.obs.IDataStreamInfo;
-import org.sensorhub.api.obs.IObsStore;
-import org.sensorhub.api.procedure.IProcedureStore;
 import org.sensorhub.api.procedure.IProcedureWithDesc;
 import org.sensorhub.api.procedure.IProcedureRegistry;
 import org.sensorhub.api.procedure.ProcedureAddedEvent;
 import org.sensorhub.api.procedure.ProcedureChangedEvent;
-import org.sensorhub.api.procedure.ProcedureFilter;
 import org.sensorhub.api.procedure.ProcedureId;
 import org.sensorhub.api.procedure.ProcedureRemovedEvent;
 import org.vast.ogc.om.IProcedure;
@@ -113,7 +116,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 long publicSensorID;
                 try
                 {
-                    var key = procWriteStore.add(procDesc);
+                    var key = procWriteStore.add(procGroupID.getInternalID(), procDesc);
                     publicSensorID = pm.toPublicID(key.getInternalID());
                 }
                 catch (Exception e)
@@ -308,7 +311,8 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                     idElt.getEntityType() == EntityType.MULTIDATASTREAM)
                 {
                     ResourceId dsId = (ResourceId)idElt.getId();
-                    IDataStreamInfo dsInfo = obsReadStore.getDataStreams().get(dsId.asLong());
+                    var dsKey = new DataStreamKey(dsId.asLong());
+                    IDataStreamInfo dsInfo = obsReadStore.getDataStreams().get(dsKey);
                     builder.withInternalIDs(dsInfo.getProcedureID().getInternalID());
                 }
             }
@@ -344,6 +348,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
             .uniqueID(uid)
             .name(sensor.getName())
             .description(sensor.getDescription())
+            .validFrom(OffsetDateTime.now())
             .build();
 
         // get documentation link if set
@@ -406,7 +411,8 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                     if (validPeriod != null)
                     {
                         metadata.validTimeBegin = validPeriod.begin();
-                        metadata.validTimeEnd = validPeriod.hasEnd() ? validPeriod.end() : Instant.now();
+                        metadata.validTimeEnd = validPeriod.hasEnd() ? validPeriod.end() :
+                            Instant.now().truncatedTo(ChronoUnit.SECONDS);
                     }
                     sensor.setMetadata(metadata);
                     sensor.setEncodingType(FORMAT_SML2);
@@ -484,8 +490,6 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
 
     protected boolean isSensorVisible(long publicID)
     {
-        // TODO check that current user has the right to read this procedure!
-
         return true;
     }
 

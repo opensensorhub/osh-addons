@@ -18,13 +18,15 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.stream.Stream;
 import org.h2.mvstore.RangeCursor;
-import org.sensorhub.api.feature.FeatureKey;
-import org.sensorhub.api.feature.IFeatureStoreBase.FeatureField;
+import org.sensorhub.api.datastore.feature.FeatureKey;
+import org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
 import org.sensorhub.impl.datastore.h2.MVFeatureParentKey;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVThingLocationKey;
 import org.vast.ogc.gml.GenericFeature;
+import org.vast.ogc.gml.IFeature;
+import org.vast.util.Asserts;
 
 
 /**
@@ -50,13 +52,29 @@ class STAThingStoreImpl extends MVBaseFeatureStoreImpl<GenericFeature, FeatureFi
     {
         return (STAThingStoreImpl)new STAThingStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
     }
-        
+    
     
     @Override
-    protected MVFeatureParentKey generateKey(long parentID, MVFeatureParentKey existingKey, GenericFeature feature)
+    public synchronized FeatureKey add(long parentID, GenericFeature feature)
     {
+        Asserts.checkNotNull(feature, IFeature.class);
+        
         long internalID = idProvider.newInternalID();
-        return new MVFeatureParentKey(parentID, internalID);
+        var newKey = new MVFeatureParentKey(parentID, internalID);
+
+        // add to store
+        put(newKey, feature, false, false);
+        return newKey;       
+    }
+    
+    
+    @Override
+    public GenericFeature put(FeatureKey key, GenericFeature feature)
+    {
+        Asserts.checkNotNull(key, FeatureKey.class);
+        Asserts.checkNotNull(feature, IFeature.class); 
+        var fk = new MVFeatureParentKey(0L, key.getInternalID(), key.getValidStartTime());
+        return put(fk, feature, true, true);
     }
 
 
