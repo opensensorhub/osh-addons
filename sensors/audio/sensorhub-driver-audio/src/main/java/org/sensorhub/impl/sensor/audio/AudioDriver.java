@@ -14,10 +14,12 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.audio;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -27,10 +29,12 @@ import org.slf4j.Logger;
 public class AudioDriver extends AbstractSensorModule<AudioConfig> 
 {
 	AudioOutput output;
-//	Thread fileReaderThread;
 	Thread fileReader;
 	String [] supportedFormats = { "wav" };
 	Logger logger;
+	Path filePath;  // TODO support reading all files in dir
+	boolean isDir = false;
+	
 	
 	public AudioDriver() {
 	}
@@ -48,8 +52,30 @@ public class AudioDriver extends AbstractSensorModule<AudioConfig>
 	public void start() throws SensorHubException
 	{
 //		fileReader = new JavaReader(config, output);
+		//  Extract baseTime from filename (if it has basetime)
+		// GUI_Decode_2019-03-27 132356.wav
+		Path p = Paths.get(config.wavFile);
+		double baseTime = beastKitBaseTimeParser(p.getFileName().toString());
+		output.baseTime = baseTime;
+//		output.baseTime = System.currentTimeMillis() / 1000;;
 		fileReader = new FfmpegReader(config, output);
 		fileReader.start();
+	}
+	
+	public double beastKitBaseTimeParser(String fname) {
+//		String fname = "GUI_Decode_2019-03-27 132356.wav";
+		String dateStr = fname.substring(11, fname.length() - 4);
+		System.err.println(dateStr);
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HHmmss").withZone(ZoneId.of("GMT"));
+		ZonedDateTime zdt = ZonedDateTime.parse(dateStr, formatter);
+		long sec = zdt.toInstant().getEpochSecond();
+		long nano = zdt.toInstant().getNano();
+		double time = sec + nano;
+//		System.err.println(time);
+//		Instant inst = Instant.ofEpochSecond(sec, nano);
+//		System.err.println(inst);
+		
+		return time;
 	}
 
 	@Override

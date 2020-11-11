@@ -13,9 +13,15 @@ public class AudioConfig extends SensorConfig
 	Double sampleOutputRate = 0.1;
 
 	@DisplayInfo(desc="Wav file to process")
-	String wavFile = "C:/Users/tcook/root/sensorHub/audio/wavFiles/GUI_Decode_2019-03-27 132356.wav";
+//	String wavFile = "C:/Users/tcook/root/sensorHub/audio/wavFiles/GUI_Decode_2019-03-27 132356.wav";
+//	String wavFile = "C:/Users/tcook/root/sensorHub/audio/wavFiles/GUI_Decode_2019-03-27 132408.wav";
+	String wavFile = "C:/Users/tcook/root/sensorHub/audio/wavFiles/GUI_Decode_2019-03-27 132410.wav";
 
-	@DisplayInfo(desc="Directory of multiple audio files to load")
-	String wavDir = "C:/Users/tcook/root/sensorHub/audio/wavFiles";
+	@DisplayInfo(desc="Directory containing multiple audio files to load")
+	String wavDir; // = "C:/Users/tcook/root/sensorHub/audio/wavFiles";
+	
+	//  TODO support pattern extraction of baseTime from a filename 
+	@DisplayInfo(desc="baseTimeFormat")
+	String baseTimeFormat;
 }
 

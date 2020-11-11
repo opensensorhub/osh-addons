@@ -15,6 +15,8 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.audio;
 
+import java.time.Instant;
+
 import org.sensorhub.api.sensor.SensorDataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.data.AbstractDataBlock;
@@ -42,6 +44,9 @@ public class AudioOutput extends AbstractSensorOutput<AudioDriver>
 	int  numSamplesPerArray;
 	static final double SAMPLE_OUTPUT_RATE = 0.1;  //  Not sure what to set this to 
 		
+	// baseTime in seconds for formats that do not contain embedded base time or absolute time in format 
+    double baseTime;  // = System.currentTimeMillis() / 1000.0;  
+
 	public AudioOutput(AudioDriver parentSensor)
 	{
 		super(parentSensor);
@@ -111,8 +116,8 @@ public class AudioOutput extends AbstractSensorOutput<AudioDriver>
             return latestRecord.renew();
     }
 
-    double baseTime = System.currentTimeMillis() / 1000.0;  // Can get this from filename for Beastkit
-	public void publishChunk(double [] buffer, int sampleCount, long samplingRateHz) { // pass these in from config
+    @Deprecated
+    public void publishChunk(double [] buffer, int sampleCount, long samplingRateHz) { // pass these in from config
 		DataBlock block = getNewDataBlock();
 		double offsetTime = (double) sampleCount / (double) samplingRateHz; 
 		block.setDoubleValue(0, (baseTime + offsetTime));
@@ -127,6 +132,25 @@ public class AudioOutput extends AbstractSensorOutput<AudioDriver>
         eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AudioOutput.this, latestRecord));
 	}
 	
+	public void publishRecord(AudioRecord rec) { // pass these in from config
+		DataBlock block = getNewDataBlock();
+		double offsetTime = (double) rec.sampleIndex / (double) rec.samplingRate;
+//		System.err.println(" \n>>Offset time" + offsetTime);
+		block.setDoubleValue(0, (baseTime + offsetTime));
+		block.setLongValue(1, (long)((baseTime + offsetTime) * 1000.0));
+		block.setLongValue(2, rec.samplingRate);
+		AbstractDataBlock wavData = ((DataBlockMixed)block).getUnderlyingObject()[3];
+        wavData.setUnderlyingObject(rec.sampleData);
+        
+        // send event
+        latestRecord = block;
+        latestRecordTime = System.currentTimeMillis();
+        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AudioOutput.this, latestRecord));
+	}
+	
+	public void setBaseTime(long baseTime) {
+		this.baseTime = baseTime;
+	}
 	
 	@Override
 	public DataComponent getRecordDescription() {

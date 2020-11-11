@@ -65,9 +65,8 @@ public class FfmpegReader extends Thread
 	//
 	AudioConfig config;
 	AudioOutput output;
-	Path testPath;
-	boolean isDir = false;
-	
+	Path filePath;
+
 	//  Native class variables
 	AVCodec decoder = null;
 	AVCodec encoder = null;
@@ -87,19 +86,19 @@ public class FfmpegReader extends Thread
 	int bitsPerSample;
 	private double floatScale;				// Scaling factor used for int <-> float conversion				
 
+	boolean odDump = true;  // enable for od-style output to syserr
 	
 	public FfmpegReader(AudioConfig config, AudioOutput output) {
 		this.config = config;
 		this.output = output;
-		this.testPath = Paths.get(config.wavDir);
-		isDir = testPath.toFile().isDirectory();
+		this.filePath = Paths.get(config.wavFile);
 	}
-	
-//	public void findFormatInfo(String url) {
-//		formatCtx  = avformat_alloc_context();
-//		avformat_open_input(formatCtx, url, null, null);
-//	}
-//
+
+	//	public void findFormatInfo(String url) {
+	//		formatCtx  = avformat_alloc_context();
+	//		avformat_open_input(formatCtx, url, null, null);
+	//	}
+	//
 	void printStreamInformation(AVCodec decoder, AVCodecContext decode_ctx, int audioStreamIndex) {
 		System.err.println("Codec: " + decoder.long_name());
 		System.err.printf("---------\n");
@@ -120,7 +119,7 @@ public class FfmpegReader extends Thread
 		avformat_open_input(formatCtx, inputFile, null, null);
 
 		av_dump_format(formatCtx, 0, inputFile, 0);
-		
+
 		// init decoder context
 		decoder = avcodec_find_decoder_by_name(DECODER); //
 		//		System.err.println(decoder);
@@ -128,20 +127,20 @@ public class FfmpegReader extends Thread
 		//  Have to manually set these  or avcodec_open2() fails
 		decodeCtx.sample_rate(8000);
 		decodeCtx.channels(1);
-			
+
 		// init decoder
 		int status = avcodec_open2(decodeCtx, decoder, (PointerPointer<?>)null);
 		if (status < 0) {
 			throw new IllegalStateException("Error initializing decoder " + DECODER);
 		}
 
-//		printStreamInformation(decoder, decodeCtx, 0);
+		printStreamInformation(decoder, decodeCtx, 0);
 
 		//  init frame and packet 
 		avFrame = av_frame_alloc();
 		avPacket = av_packet_alloc();
 		av_init_packet(avPacket);
-		
+
 		//  Metadata
 		BytePointer sampleFormatName = av_get_sample_fmt_name(decodeCtx.sample_fmt());
 		bytesPerSample = av_get_bytes_per_sample(decodeCtx.sample_fmt());
@@ -162,7 +161,7 @@ public class FfmpegReader extends Thread
 		}
 
 	}
-	
+
 	@Override
 	public void run() {
 		init(config.wavFile);
@@ -178,6 +177,9 @@ public class FfmpegReader extends Thread
 		boolean eof = false;
 		AVInputFormat avFormat;
 		int frameCnt = 0;
+		int arrayCnt = 0;
+		int totCnt = 46;
+
 		while(!eof) {
 			int res = av_read_frame(formatCtx, avPacket);
 			if (res == AVERROR_EOF) {
@@ -185,7 +187,7 @@ public class FfmpegReader extends Thread
 				break;
 			}
 			if (res == AVERROR_EAGAIN()) {
-//				System.err.println("EOF reached");
+				//				System.err.println("EOF reached");
 				// don't think we care about this one
 				break;
 			}
@@ -199,6 +201,8 @@ public class FfmpegReader extends Thread
 				continue;
 			}
 			//  Send packet to decoder
+			//			avPacket.size(512);  //  
+
 			res = avcodec_send_packet(decodeCtx, avPacket);
 			if(res != 0) {
 				System.err.println("Send packet Error result = " + res);
@@ -228,29 +232,41 @@ public class FfmpegReader extends Thread
 				System.err.println("Frame : " + frameCnt);
 				int numSamples = avFrame.nb_samples();
 				System.err.println("FrameSamples: " + numSamples);
-//				for(int s = 0; s < avFrame.nb_samples(); ++s) {
-					for(int c = 0; c < decodeCtx.channels(); ++c) {
-//						float sample = getSample(decodeCtx, avFrame.extended_data(c), s);
-						byte [] tbuff = new byte[numSamples]; 
-						BytePointer buff = avFrame.extended_data(c);
-						buff.get(tbuff);
-						double [] sampleData = new double[config.numSamplesPerArray];
-						int sampleCnt = 0;
-						int arrayCnt = 0;
-						for(int i=0; i<numSamples; i+=2) {
-							double lval = normalizeSample(tbuff[i], tbuff[i+1]);
-							System.err.printf(" [%d] %x %x %f: ", i,tbuff[i], tbuff[i+1], lval);
-							sampleData[sampleCnt++] = lval;
-							if(sampleCnt == config.numSamplesPerArray ) {
-								output.publishChunk(sampleData, (sampleCnt * arrayCnt), decodeCtx.sample_rate());
-								sampleData = new double[config.numSamplesPerArray];
-								sampleCnt = 0;
-								arrayCnt++;
-//								Thread.sleep(1000L);
-							}
+				AudioRecord rec = new AudioRecord();
+				//				for(int s = 0; s < avFrame.nb_samples(); ++s) {
+				for(int c = 0; c < decodeCtx.channels(); ++c) {
+					//						float sample = getSample(decodeCtx, avFrame.extended_data(c), s);
+					byte [] tbuff = new byte[numSamples * 2]; 
+					BytePointer buff = avFrame.extended_data(c);
+					//						System.err.println("Capacity: " + buff.sizeof());
+					buff.get(tbuff);
+					rec.sampleData = new double[config.numSamplesPerArray];
+
+					int sampleCnt = 0;
+					for(int i=0; i<numSamples * 2; i+=2) {
+						double lval = normalizeSample(tbuff[i], tbuff[i+1]);
+						//							if(tbuff[i] != 0 || tbuff[i+1] != 0)
+						//								System.err.printf(" [%x] [%d] %x %x %f: ", totCnt, sampleCnt, tbuff[i], tbuff[i + 1], lval);
+						if(odDump) {
+							if(totCnt % 16 == 0)
+								System.err.printf("\n[%04x]: " , totCnt);
+							System.err.printf("%02x%02x ", tbuff[i + 1], tbuff[i]);
+						}
+						rec.sampleData[sampleCnt++] = lval;
+						totCnt+=2;
+						if(sampleCnt == config.numSamplesPerArray ) {
+							rec.sampleIndex = (sampleCnt * arrayCnt);
+							rec.samplingRate = decodeCtx.sample_rate();
+							output.publishRecord(rec);
+							//								System.err.println("\n**sampleIdx, arrCnt " + sampleCnt + "," + arrayCnt);
+							rec.sampleData = new double[config.numSamplesPerArray];
+							sampleCnt = 0;
+							arrayCnt++;
+							Thread.sleep(30L);
 						}
 					}
-//				}
+				}
+				//				}
 				System.err.println();
 
 				av_frame_unref(avFrame);
@@ -268,26 +284,26 @@ public class FfmpegReader extends Thread
 		switch(sampleSize) {
 		case 1:
 			// 8bit samples are always unsigned
-//			val = REINTERPRET_CAST(uint8_t*, buffer)[sampleIndex];
+			//			val = REINTERPRET_CAST(uint8_t*, buffer)[sampleIndex];
 			// make signed
-//			val -= 127;
+			//			val -= 127;
 			break;
 
 		case 2:
-//			val = REINTERPRET_CAST(int16_t*, buffer)[sampleIndex];
-//			return ByteBuffer.wrap(buff.).getFloat();
-//			buff.byte
-//			byte [] tbuff = new byte[2]; 
-//			buff.get(tbuff);
+			//			val = REINTERPRET_CAST(int16_t*, buffer)[sampleIndex];
+			//			return ByteBuffer.wrap(buff.).getFloat();
+			//			buff.byte
+			//			byte [] tbuff = new byte[2]; 
+			//			buff.get(tbuff);
 			byte [] tbuff4 = { 0, 0, sample2, sample1 };
 			float f = ByteBuffer.wrap(tbuff4).getFloat();
 			return f;
 		case 4:
-//			val = REINTERPRET_CAST(int32_t*, buffer)[sampleIndex];
+			//			val = REINTERPRET_CAST(int32_t*, buffer)[sampleIndex];
 			break;
 
 		case 8:
-//			val = REINTERPRET_CAST(int64_t*, buffer)[sampleIndex];
+			//			val = REINTERPRET_CAST(int64_t*, buffer)[sampleIndex];
 			break;
 
 		default:
@@ -302,7 +318,7 @@ public class FfmpegReader extends Thread
 		v = -8, fffffff8
 		v &= ff  (248, f8000000)
 		val = 248
-		
+
 		v = b1 (-1, FFFFFFFF)
 		tmp = v << 8 (-256,  FFFFFF00)
 		val += tmp (-8)
@@ -314,10 +330,10 @@ public class FfmpegReader extends Thread
 	}
 
 	public static void main_(String[] args) throws MalformedURLException {
-//		FfmpegReader reader = new FfmpegReader();
-//		String filepath = "C:/Users/tcook/root/sensorHub/audio/wavFiles/GUI_Decode_2019-03-27 132356.wav";
-//		String url = Paths.get(filepath).toUri().toURL().toString();
-//		reader.init(filepath);
-//		reader.read();
+		//		FfmpegReader reader = new FfmpegReader();
+		//		String filepath = "C:/Users/tcook/root/sensorHub/audio/wavFiles/GUI_Decode_2019-03-27 132356.wav";
+		//		String url = Paths.get(filepath).toUri().toURL().toString();
+		//		reader.init(filepath);
+		//		reader.read();
 	}
 }
