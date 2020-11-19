@@ -125,7 +125,7 @@ public class TestNmeaGpsDriverRxtx implements IEventListener
         try
         {
             //System.out.print("\nNew data received from sensor " + newDataEvent.getSensorId());
-            IStreamingDataInterface output = driver.getObservationOutputs().get(dataEvent.getChannelID());
+            IStreamingDataInterface output = driver.getObservationOutputs().get(dataEvent.getOutputName());
             writer.setDataComponents(output.getRecordDescription().copy());
             writer.reset();
             writer.write(dataEvent.getRecords()[0]);

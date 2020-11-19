@@ -290,7 +290,7 @@ public class TestAxisCameraDriver implements IEventListener
         }
         else if (dataEvent.getSource().getClass().equals(AxisPtzOutput.class))
         {
-            IStreamingDataInterface output = driver.getObservationOutputs().get(dataEvent.getChannelID());
+            IStreamingDataInterface output = driver.getObservationOutputs().get(dataEvent.getOutputName());
             DataComponent ptzParams = output.getRecordDescription().copy();
         	ptzParams.setData(dataEvent.getRecords()[0]);
         	System.out.println(ptzParams);

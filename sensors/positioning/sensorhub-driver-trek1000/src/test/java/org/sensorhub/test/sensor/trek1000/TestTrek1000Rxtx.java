@@ -99,7 +99,7 @@ public class TestTrek1000Rxtx implements IEventListener
         
         try
         {
-            IStreamingDataInterface output = driver.getObservationOutputs().get(dataEvent.getChannelID());
+            IStreamingDataInterface output = driver.getObservationOutputs().get(dataEvent.getOutputName());
             writer.setDataComponents(output.getRecordDescription().copy());
             writer.reset();
             writer.write(dataEvent.getRecords()[0]);
