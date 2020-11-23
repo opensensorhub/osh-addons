@@ -126,7 +126,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 
                 // publish event
                 IEventPublisher publisher = pm.eventBus.getPublisher(IProcedureRegistry.EVENT_SOURCE_INFO);
-                publisher.publish(new ProcedureAddedEvent(new ProcedureId(publicSensorID, procUID), procGroupID));
+                publisher.publish(new ProcedureAddedEvent(procUID, procGroupID.getUniqueID()));
                 
                 // handle associations / deep inserts
                 ResourceId newSensorId = new ResourceIdLong(publicSensorID);
@@ -179,7 +179,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 
                 // publish event
                 IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureEventSourceInfo(procUID));
-                publisher.publish(new ProcedureChangedEvent(new ProcedureId(publicSensorID, procUID)));
+                publisher.publish(new ProcedureChangedEvent(procUID));
                 
                 // handle associations / deep inserts
                 pm.dataStreamHandler.handleDatastreamAssocList(id, sensor);
@@ -240,7 +240,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 // publish event
                 var procID = new ProcedureId(publicSensorID, proc.getUniqueIdentifier());
                 IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureEventSourceInfo(procID.getUniqueID()));
-                publisher.publish(new ProcedureRemovedEvent(procID, procGroupID));
+                publisher.publish(new ProcedureRemovedEvent(procID.getUniqueID(), procGroupID.getUniqueID()));
     
                 return true;
             });

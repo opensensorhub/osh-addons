@@ -133,10 +133,9 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 ResourceId newDsId = new ResourceIdLong(publicDsID);
                 
                 // publish event
-                ProcedureId procID = new ProcedureId(sensorId.asLong(), procUID);
                 String outputName = dsInfo.getOutputName();
                 IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureOutputSourceID(procUID, outputName));
-                publisher.publish(new DataStreamAddedEvent(procID, outputName, publicDsID));
+                publisher.publish(new DataStreamAddedEvent(procUID, outputName));
                             
                 // handle associations / deep inserts
                 pm.observationHandler.handleObservationAssocList(newDsId, dataStream);
@@ -203,7 +202,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 ProcedureId procID = dsInfo.getProcedureID();
                 String outputName = dsInfo.getOutputName();
                 IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureOutputSourceID(procID.getUniqueID(), outputName));
-                publisher.publish(new DataStreamChangedEvent(procID, outputName, publicDsID));
+                publisher.publish(new DataStreamChangedEvent(procID.getUniqueID(), outputName));
     
                 return true;
             });
@@ -249,7 +248,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 ProcedureId procID = dsInfo.getProcedureID();
                 String outputName = dsInfo.getOutputName();
                 IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureOutputSourceID(procID.getUniqueID(), outputName));
-                publisher.publish(new DataStreamRemovedEvent(procID, outputName, publicDsID));
+                publisher.publish(new DataStreamRemovedEvent(procID.getUniqueID(), outputName));
                 
                 return true;
             });

@@ -14,7 +14,6 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import java.util.Set;
 import java.util.concurrent.Callable;
 import org.h2.mvstore.MVStore;
 import org.sensorhub.api.common.SensorHubException;
@@ -25,7 +24,6 @@ import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.procedure.IProcedureStore;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
 import org.sensorhub.impl.datastore.h2.MVObsDatabase;
-import com.google.common.collect.Sets;
 
 
 /**
@@ -73,8 +71,9 @@ public class STADatabase implements ISTADatabase
             if (config.externalObsDatabaseID == null)
             {        
                 obsDatabase = new MVObsDatabase();
-                ((MVObsDatabase)obsDatabase).init(config);
-                ((MVObsDatabase)obsDatabase).start();
+                ((MVObsDatabase)obsDatabase).setConfiguration(config);
+                ((MVObsDatabase)obsDatabase).requestInit(true);
+                ((MVObsDatabase)obsDatabase).requestStart();
                 mvStore = ((MVObsDatabase)obsDatabase).getMVStore();
                 externalObsDatabaseUsed = false;
             }
@@ -91,9 +90,8 @@ public class STADatabase implements ISTADatabase
         }
         
         // register obs database with hub
-        Set<String> wildcardUID = Sets.newHashSet(service.getProcedureGroupID()+"*");
         dbRegistry = service.getParentHub().getDatabaseRegistry();
-        dbRegistry.register(wildcardUID, obsDatabase);
+        dbRegistry.register(obsDatabase);
         
         // create separate MV Store if an external obs database is used
         if (externalObsDatabaseUsed)

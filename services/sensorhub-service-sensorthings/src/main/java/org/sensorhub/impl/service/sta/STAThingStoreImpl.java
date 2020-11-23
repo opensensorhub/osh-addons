@@ -59,11 +59,11 @@ class STAThingStoreImpl extends MVBaseFeatureStoreImpl<GenericFeature, FeatureFi
     {
         Asserts.checkNotNull(feature, IFeature.class);
         
-        long internalID = idProvider.newInternalID();
+        long internalID = idProvider.newInternalID(feature);
         var newKey = new MVFeatureParentKey(parentID, internalID);
 
         // add to store
-        put(newKey, feature, false, false);
+        put(newKey, feature, true, false);
         return newKey;       
     }
     

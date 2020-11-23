@@ -150,15 +150,9 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     }
 
 
-    public boolean isReadSupported()
+    public boolean isReadOnly()
     {
-        return federatedStore.isReadSupported();
-    }
-
-
-    public boolean isWriteSupported()
-    {
-        return federatedStore.isWriteSupported();
+        return federatedStore.isReadOnly();
     }
 
 

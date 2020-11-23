@@ -188,7 +188,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         
         publisherInfo.publisher.publish(new DataEvent(
             System.currentTimeMillis(), 
-            publisherInfo.dsInfo.getProcedureID(),
+            publisherInfo.dsInfo.getProcedureID().getUniqueID(),
             publisherInfo.dsInfo.getName(),
             obsData.getResult()
         ));

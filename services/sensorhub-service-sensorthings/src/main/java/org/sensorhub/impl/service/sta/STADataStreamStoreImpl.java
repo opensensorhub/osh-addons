@@ -296,15 +296,9 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public boolean isReadSupported()
+    public boolean isReadOnly()
     {
-        return delegateStore.isReadSupported();
-    }
-
-
-    public boolean isWriteSupported()
-    {
-        return delegateStore.isWriteSupported();
+        return delegateStore.isReadOnly();
     }
 
 

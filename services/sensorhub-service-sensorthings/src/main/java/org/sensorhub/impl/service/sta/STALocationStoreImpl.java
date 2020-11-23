@@ -21,12 +21,12 @@ import java.util.stream.Stream;
 import org.h2.mvstore.MVBTreeMap;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.RangeCursor;
+import org.sensorhub.api.datastore.IdProvider;
 import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField;
 import org.sensorhub.impl.datastore.h2.H2Utils;
-import org.sensorhub.impl.datastore.h2.IdProvider;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
 import org.sensorhub.impl.datastore.h2.MVFeatureParentKey;
@@ -74,11 +74,11 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
     {
         Asserts.checkNotNull(feature, IFeature.class);
         
-        long internalID = idProvider.newInternalID();
+        long internalID = idProvider.newInternalID(feature);
         var newKey = new MVFeatureParentKey(parentID, internalID);
 
         // add to store
-        put(newKey, feature, false, false);
+        put(newKey, feature, true, false);
         return newKey;       
     }
     
@@ -94,7 +94,7 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
     
     
     @Override
-    protected STALocationStoreImpl init(MVStore mvStore, MVDataStoreInfo dataStoreInfo, IdProvider idProvider)
+    protected STALocationStoreImpl init(MVStore mvStore, MVDataStoreInfo dataStoreInfo, IdProvider<AbstractFeature> idProvider)
     {
         super.init(mvStore, dataStoreInfo, idProvider);
         
