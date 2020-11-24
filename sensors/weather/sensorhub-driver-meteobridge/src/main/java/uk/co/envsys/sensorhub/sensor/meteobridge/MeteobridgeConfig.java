@@ -1,16 +1,14 @@
 package uk.co.envsys.sensorhub.sensor.meteobridge;
 
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.sensor.PositionConfig;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.api.sensor.PositionConfig.LLALocation;
 
 public class MeteobridgeConfig extends SensorConfig {
-	@DisplayInfo(label="Latitude", desc="Latitude of meteobridge-connected station")
-	public double centerLatitude = 34.8038; // in deg
-	@DisplayInfo(label="Longitude", desc="Longitude of meteobridge-connected station")
-	public double centerLongitude = -86.7228; // in deg
-	@DisplayInfo(label="Altitude", desc="Altitude of meteobridge-connected station")
-	public double centerAltitude = 0.000; // in meters
-	@DisplayInfo(label="IP Address", desc="IP Address of the meteobridge device")
+    @DisplayInfo(desc="Station geographic location")
+    public PositionConfig.LLALocation location = new PositionConfig.LLALocation();
+    @DisplayInfo(label="IP Address", desc="IP Address of the meteobridge device")
 	public String address = "127.0.0.1"; // localhost default
 	@DisplayInfo(label="Pull Sampling Frequency", desc="How often in seconds to query the meteobridge")
 	public double samplingFrequency = 30; // localhost default
@@ -54,4 +52,11 @@ public class MeteobridgeConfig extends SensorConfig {
 	public boolean sol0radEnabled = true;
 	@DisplayInfo(label="Enable sol0evo", desc="Enable evapotranspiration sensor")
 	public boolean sol0evoEnabled = false;
+    
+    
+    @Override
+    public LLALocation getLocation()
+    {
+        return location;
+    }
 }

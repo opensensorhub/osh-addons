@@ -151,7 +151,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         // add H264 video output
         if (config.enableH264) {
 			String outputName = videoOutName + videoOutNum++;
-			h264VideoOutput = new RTPVideoOutput<OnvifCameraDriver>(this, outputName);
+			h264VideoOutput = new RTPVideoOutput<OnvifCameraDriver>(outputName, this);
 			h264VideoOutput.init(profile.getVideoSourceConfiguration().getBounds().getWidth(), 
 								profile.getVideoSourceConfiguration().getBounds().getHeight());
 			// TODO: check the difference between the above and what's below

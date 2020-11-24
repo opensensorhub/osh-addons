@@ -14,17 +14,15 @@ Copyright (C) 2012-2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.trupulse;
 
-import java.util.Collections;
-import java.util.List;
 import org.sensorhub.api.event.Event;
+import org.sensorhub.api.event.EventUtils;
 import org.sensorhub.api.event.IEventListener;
+import org.sensorhub.api.event.IEventSourceInfo;
 import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.sensor.ISensorModule;
-import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.common.BasicEventHandler;
+import org.sensorhub.impl.event.BasicEventHandler;
+import org.sensorhub.impl.event.EventSourceInfo;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -43,6 +41,7 @@ public class TruPulseGeolocOutput implements IStreamingDataInterface, IEventList
     TruPulseWithGeolocSensor parentSensor;
     IStreamingDataInterface processOutput;
     BasicEventHandler eventHandler = new BasicEventHandler();
+    IEventSourceInfo eventSrcInfo;
     
     
     TruPulseGeolocOutput(TruPulseWithGeolocSensor parentSensor, IStreamingDataInterface processOutput)
@@ -50,6 +49,10 @@ public class TruPulseGeolocOutput implements IStreamingDataInterface, IEventList
         this.parentSensor = parentSensor;
         this.processOutput = processOutput;
         processOutput.registerListener(this);
+        
+        var procUID = parentSensor.getUniqueIdentifier();
+        String sourceID = EventUtils.getProcedureOutputSourceID(procUID, getName());
+        this.eventSrcInfo = new EventSourceInfo(procUID, sourceID);
     }
     
     
@@ -124,53 +127,19 @@ public class TruPulseGeolocOutput implements IStreamingDataInterface, IEventList
 
 
     @Override
-    public boolean isStorageSupported()
-    {
-        return false;
-    }
-
-
-    @Override
-    public int getStorageCapacity() throws SensorException
-    {
-        return 0;
-    }
-
-
-    @Override
-    public int getNumberOfAvailableRecords() throws SensorException
-    {
-        return 0;
-    }
-
-
-    @Override
-    public List<DataBlock> getLatestRecords(int maxRecords, boolean clear) throws SensorException
-    {
-        return Collections.emptyList();
-    }
-
-
-    @Override
-    public List<DataBlock> getAllRecords(boolean clear) throws SensorException
-    {
-        return Collections.emptyList();
-    }
-
-
-    @Override
-    public int clearAllRecords() throws SensorException
-    {
-        return 0;
-    }
-
-
-    @Override
     public void handleEvent(Event e)
     {
         if (e instanceof DataEvent)
             eventHandler.publish(new DataEvent(e.getTimeStamp(), this, ((DataEvent)e).getRecords()));
         
+    }
+
+
+    @Override
+    public IEventSourceInfo getEventSourceInfo()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }
