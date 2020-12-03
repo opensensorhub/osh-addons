@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.PriorityQueue;
 import org.slf4j.Logger;
@@ -54,7 +55,7 @@ public class RTPH264Receiver extends Thread
     
     volatile boolean started;
     String remoteHost;
-    int localPort;
+    int remotePort, localPort;
     DatagramSocket rtpSocket;    
     RTPH264Callback callback;
     PriorityQueue<RTPPacket> pktQueue;
@@ -69,10 +70,11 @@ public class RTPH264Receiver extends Thread
     byte[] sps, pps;
         
     
-    public RTPH264Receiver(String remoteHost, int localPort, RTPH264Callback callback)
+    public RTPH264Receiver(String remoteHost, int remotePort, int localPort, RTPH264Callback callback)
     {
         super(RTPH264Receiver.class.getSimpleName());
         this.remoteHost = remoteHost;
+        this.remotePort = remotePort;
         this.localPort = localPort;
         this.callback = callback;
     }
@@ -117,7 +119,8 @@ public class RTPH264Receiver extends Thread
             // bind UDP port for receiving RTP packets
             rtpSocket = new DatagramSocket(localPort);
             rtpSocket.setReuseAddress(true);
-            rtpSocket.setReceiveBufferSize(MAX_DATAGRAM_SIZE);      
+            rtpSocket.setReceiveBufferSize(MAX_DATAGRAM_SIZE);
+            rtpSocket.send(new DatagramPacket(new byte[4], 0, 4, InetAddress.getByName(remoteHost), remotePort));
 
             final byte[] receiveData = new byte[MAX_DATAGRAM_SIZE];
             final DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
