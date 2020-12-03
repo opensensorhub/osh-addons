@@ -141,7 +141,7 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
             }
             
             // start RTP/H264 receiving thread
-            rtpThread = new RTPH264Receiver(rtspConfig.remoteHost, rtspConfig.localUdpPort, this);
+            rtpThread = new RTPH264Receiver(rtspConfig.remoteHost, rtspClient.getRemoteRtpPort(), rtspConfig.localUdpPort, this);
             StreamInfo h264Stream = null;
             int streamIndex = 0;
             int i = 0;
