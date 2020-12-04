@@ -48,6 +48,7 @@ import org.sensorhub.api.persistence.IObsStorage;
 import org.sensorhub.api.persistence.IObsStorageModule;
 import org.sensorhub.api.persistence.ObsFilter;
 import org.sensorhub.api.persistence.ObsKey;
+import org.sensorhub.api.persistence.ObsPeriod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.ogc.gml.GMLUtils;
@@ -917,4 +918,11 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 		return QueryBuilders.geoIntersectionQuery(SHAPE_FIELD_NAME, 
 				ShapeBuilders.newPolygon(Arrays.asList(polygon.getCoordinates())));
 	}
+
+	@Override
+    public Iterator<ObsPeriod> getFoiTimeRanges(IObsFilter filter) {
+        // TODO implement getFoiTimeRanges()
+        ObsPeriod unknownPeriod = new ObsPeriod("NONE", Double.NaN, Double.NaN);
+        return Arrays.asList(unknownPeriod).iterator();
+    }
 }
