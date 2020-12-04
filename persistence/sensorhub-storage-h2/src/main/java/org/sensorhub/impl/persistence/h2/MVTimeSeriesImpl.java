@@ -540,7 +540,7 @@ public class MVTimeSeriesImpl
         String producerID = getProducerID(filter);
         
         // get time periods matching filter
-        Set<ObsTimePeriod> obsTimePeriods = getObsTimePeriods(producerID, filter);
+        Set<ObsTimePeriod> obsTimePeriods = getObsTimePeriods(producerID, filter, false);
             
         // return special iterator to scan through each time range sequentially
         // optionally post-filtering records on their spatial location      
@@ -551,7 +551,7 @@ public class MVTimeSeriesImpl
     }
     
     
-    private Set<ObsTimePeriod> getObsTimePeriods(String producerID, final IDataFilter filter)
+    Set<ObsTimePeriod> getObsTimePeriods(String producerID, final IDataFilter filter, boolean returnAllIfNoFoiSelected)
     {
         double[] timeRange = getTimeRange(producerID, filter);
         
@@ -647,9 +647,15 @@ public class MVTimeSeriesImpl
             obsTimeRanges = samplingTimeRanges;
         }
         
-        // if no time periods selected, just process whole time range
+        // if no foi was selected, return either the whole time range
+        // or the list of all foi time ranges
         if (obsTimeRanges == null)
-            obsTimeRanges = Sets.newHashSet(new ObsTimePeriod(producerID, null, timeRange[0], timeRange[1]));
+        {
+            if (returnAllIfNoFoiSelected)
+                obsTimeRanges = foiTimesIndex.getSortedFoiTimes(producerID, null);
+            else
+                obsTimeRanges = Sets.newHashSet(new ObsTimePeriod(producerID, null, timeRange[0], timeRange[1]));
+        }
         
         // trim periods to time range specified in filter
         Iterator<ObsTimePeriod> it = obsTimeRanges.iterator();
@@ -658,6 +664,9 @@ public class MVTimeSeriesImpl
             ObsTimePeriod obsTimePeriod = it.next();
             if (!trimTimeRange(obsTimePeriod, timeRange[0], timeRange[1]))
                 it.remove();
+
+            if (obsTimePeriod.stop == Double.POSITIVE_INFINITY)
+                obsTimePeriod.stop = getDataTimeRange(producerID)[1];
         }
         
         return obsTimeRanges;

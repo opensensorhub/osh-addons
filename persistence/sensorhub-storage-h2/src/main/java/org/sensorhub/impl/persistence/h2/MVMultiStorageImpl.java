@@ -28,7 +28,9 @@ import org.sensorhub.api.persistence.IDataFilter;
 import org.sensorhub.api.persistence.IDataRecord;
 import org.sensorhub.api.persistence.IFoiFilter;
 import org.sensorhub.api.persistence.IMultiSourceStorage;
+import org.sensorhub.api.persistence.IObsFilter;
 import org.sensorhub.api.persistence.IObsStorage;
+import org.sensorhub.api.persistence.ObsPeriod;
 import org.vast.util.Asserts;
 import org.vast.util.Bbox;
 import net.opengis.gml.v32.AbstractFeature;
@@ -59,6 +61,7 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
         IDataRecord[] nextRecords;
         IDataRecord nextRecord;
         
+        @SuppressWarnings("unchecked")
         MultiProducerTimeSortIterator(Collection<String> producerIDs)
         {
             this.numProducers = producerIDs.size();
@@ -291,6 +294,7 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             protected Iterator<IDataRecord> getSubIterator(String producerID)
             {
                 return (Iterator<IDataRecord>)getDataStore(producerID).getRecordIterator(filter);
@@ -321,6 +325,7 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             protected Iterator<IDataRecord> getSubIterator(String producerID)
             {
                 return (Iterator<IDataRecord>)getDataStore(producerID).getRecordIterator(filter);
@@ -489,6 +494,36 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
         }
         
         return fois.iterator();
+    }
+    
+    
+    @Override
+    public Iterator<ObsPeriod> getFoiTimeRanges(IObsFilter filter)
+    {
+        return new Iterator<ObsPeriod>() {
+            Iterator<MVObsStorageImpl> dataStoresIt = obsStores.values().iterator();
+            Iterator<ObsPeriod> currentIterator;
+
+            @Override
+            public boolean hasNext()
+            {
+                while (currentIterator == null || !currentIterator.hasNext())
+                {
+                    if (!dataStoresIt.hasNext())
+                        return false;
+
+                    currentIterator = dataStoresIt.next().getFoiTimeRanges(filter);
+                }
+
+                return true;
+            }
+
+            @Override
+            public ObsPeriod next()
+            {
+                return currentIterator.next();
+            }
+        };
     }
 
 

@@ -34,9 +34,11 @@ import org.sensorhub.api.persistence.DataKey;
 import org.sensorhub.api.persistence.IDataFilter;
 import org.sensorhub.api.persistence.IDataRecord;
 import org.sensorhub.api.persistence.IFoiFilter;
+import org.sensorhub.api.persistence.IObsFilter;
 import org.sensorhub.api.persistence.IObsStorageModule;
 import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.api.persistence.IStorageModule;
+import org.sensorhub.api.persistence.ObsPeriod;
 import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.utils.FileUtils;
@@ -677,5 +679,35 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     protected void checkOpen()
     {
         Asserts.checkState(mvStore != null, "Storage is not open");
+    }
+
+
+    @Override
+    public Iterator<ObsPeriod> getFoiTimeRanges(IObsFilter filter)
+    {
+        checkOpen();        
+        filter = (IObsFilter)ensureProducerID(filter);
+
+        MVTimeSeriesImpl recordStore = getRecordStore(filter.getRecordType());
+        Set<ObsTimePeriod> timePeriods = recordStore.getObsTimePeriods(producerID, filter, true);
+        if (timePeriods == null)
+            return Collections.emptyIterator();
+
+        Iterator<ObsTimePeriod> it = timePeriods.iterator();
+        return new Iterator<ObsPeriod>() {
+
+            @Override
+            public boolean hasNext()
+            {
+                return it.hasNext();
+            }
+
+            @Override
+            public ObsPeriod next()
+            {
+                ObsTimePeriod p = it.next();
+                return new ObsPeriod(p.foiID, p.start, p.stop);
+            }
+        };
     }
 }
