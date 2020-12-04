@@ -200,7 +200,6 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
     }
     
     
-    @Override
     public void stop()
     {
         // stop RTP receiver thread

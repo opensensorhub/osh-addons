@@ -17,7 +17,6 @@ package org.sensorhub.impl.sensor.fakeweather;
 
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
-import org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor;
 import org.sensorhub.api.data.DataEvent;
 import java.util.Random;
 import java.util.Timer;
@@ -144,7 +143,6 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     }
 
 
-    @Override
     protected void stop()
     {
         if (timer != null)

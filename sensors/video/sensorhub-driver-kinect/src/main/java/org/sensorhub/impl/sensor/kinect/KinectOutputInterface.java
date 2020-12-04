@@ -37,7 +37,6 @@ public abstract class KinectOutputInterface extends AbstractSensorOutput<KinectS
 
 	public abstract void start();
 	
-	@Override
 	protected void stop() {
 
 		device.stopDepth();
