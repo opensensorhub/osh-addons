@@ -1,3 +1,4 @@
 **/*.dat
 **/.moduledata
 **/*.json.bak*
+**/*.deleted
