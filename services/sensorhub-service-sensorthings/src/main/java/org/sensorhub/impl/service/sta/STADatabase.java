@@ -251,4 +251,21 @@ public class STADatabase implements ISTADatabase
         mvStore.close();        
     }
 
+
+    @Override
+    public boolean isOpen()
+    {
+        return obsDatabase != null &&
+            mvStore != null &&
+            !mvStore.isClosed() &&
+            obsDatabase.isOpen();
+    }
+
+
+    @Override
+    public boolean isReadOnly()
+    {
+        return obsDatabase.isReadOnly();
+    }
+
 }
