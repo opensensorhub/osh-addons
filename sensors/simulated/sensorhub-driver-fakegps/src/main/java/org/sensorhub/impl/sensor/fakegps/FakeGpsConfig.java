@@ -14,8 +14,6 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fakegps;
 
-import java.util.concurrent.TimeUnit;
-
 import org.sensorhub.api.sensor.SensorConfig;
 
 
@@ -33,12 +31,12 @@ public class FakeGpsConfig extends SensorConfig
     // otherwise use these to generate random start and stop locations
     public double centerLatitude = 34.7300; // in deg    
     public double centerLongitude = -86.5850; // in deg
-    public double areaSize = 0.1; // in deg
+    public double areaSize = 0.01; // in deg
     
     public double vehicleSpeed = 40; // km/h
     public boolean walkingMode = false;
     
     //  parameters to limit number of calls to Google directions API
     public boolean cacheTrajectory = false;
-    public Long apiRequestPeriodMinutes = TimeUnit.MINUTES.toMillis(720); 
+    public Integer apiRequestPeriodMinutes = 720; 
 }
