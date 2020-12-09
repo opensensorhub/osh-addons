@@ -7,10 +7,10 @@ at http://mozilla.org/MPL/2.0/.
 Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
- 
+
 The Initial Developer is Botts Innovative Research Inc.. Portions created by the Initial
 Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
- 
+
 ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.sensor.dahua;
@@ -51,14 +51,14 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
     TextEncoding textEncoding;
     URL getSettingsUrl;
     Timer timer;
-        
+
     // set default timezone to GMT; check TZ in init below
     TimeZone tz = TimeZone.getTimeZone("UTC");
-    DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");    
-    
+    DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
+
     // latest PTZ values
     float pan, tilt, zoom;
-    
+
 
     public DahuaPtzOutput(DahuaCameraDriver driver)
     {
@@ -71,8 +71,8 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
     {
         return "ptzOutput";
     }
-    
-    
+
+
     protected void init() throws SensorException
     {
         // set default PTZ min-max values
@@ -82,7 +82,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
         double maxTilt = 90.0;
         double minZoom = 0.0;
         double maxZoom = 1.0;  // can't retrieve zoom range for Dahua; set high
-    	
+
         // figure out pan and tilt ranges
         try
         {
@@ -116,8 +116,8 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
         }
 
         // generate output structure and encoding
-        VideoCamHelper videoHelper = new VideoCamHelper();        
-        ptzDataStruct = videoHelper.newPtzOutput(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom);        
+        VideoCamHelper videoHelper = new VideoCamHelper();
+        ptzDataStruct = videoHelper.newPtzOutput(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom);
         textEncoding = videoHelper.newTextEncoding();
         textEncoding.setBlockSeparator("\n");
         textEncoding.setTokenSeparator(",");
@@ -133,7 +133,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
         {
             getSettingsUrl = new URL(parentSensor.getHostUrl() + "/ptz.cgi?action=getStatus");
 	        final long samplingPeriod = (long)(getAverageSamplingPeriod()*1000);
-	        
+
 	        TimerTask timerTask = new TimerTask()
 	        {
 	            @Override
@@ -147,7 +147,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
 	            	}
                 }
 	        };
-	
+
 	        timer = new Timer();
 	        timer.scheduleAtFixedRate(timerTask, 0, samplingPeriod);
 	    }
@@ -156,12 +156,12 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
 	        throw new SensorException("Cannot start PTZ status read task", e);
 	    }
     }
-    
-    
+
+
     protected void requestPtzStatus()
     {
         InputStream is = null;
-        
+
         try
         {
             is = getSettingsUrl.openStream();
@@ -174,14 +174,19 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
                 String[] tokens = line.split("=");
 
                 if (tokens[0].trim().equalsIgnoreCase("status.Postion[0]"))
-                    pan = Float.parseFloat(tokens[1]);                    
+                    pan = Float.parseFloat(tokens[1]);
                 else if (tokens[0].trim().equalsIgnoreCase("status.Postion[1]"))
-                    tilt = -Float.parseFloat(tokens[1]);                    
+                    // TODO: invert tilt values based on flag
+                    if(parentSensor.getConfiguration().invertTiltCommands){
+                        tilt = Float.parseFloat(tokens[1]);
+                    }else{
+                        tilt = -Float.parseFloat(tokens[1]);
+                    }
                 else if (tokens[0].trim().equalsIgnoreCase("status.Postion[2]"))
                     zoom = (float)(Double.parseDouble(tokens[1])/120.0);
             }
-            
-            sendPtzStatus();            
+
+            sendPtzStatus();
         }
         catch (Exception e)
         {
@@ -199,8 +204,8 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
             }
         }
     }
-    
-    
+
+
     protected synchronized void sendPtzStatus()
     {
         // generate new data block
@@ -209,21 +214,26 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
             ptzData = ptzDataStruct.createDataBlock();
         else
             ptzData = latestRecord.renew();
-        
+
         // set sampling time
         long now = System.currentTimeMillis();
         double time = now / 1000.;
         ptzData.setDoubleValue(0, time);
         ptzData.setFloatValue(1, pan);
-        ptzData.setFloatValue(2, tilt);
+        // Changed to accommodate tilt command inversion
+        if (parentSensor.getConfiguration().invertTiltCommands) {
+            ptzData.setFloatValue(2, -tilt);
+        } else {
+            ptzData.setFloatValue(2, tilt);
+        }
         ptzData.setFloatValue(3, zoom);
-        
+
         latestRecord = ptzData;
         latestRecordTime = now;
         eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, DahuaPtzOutput.this, latestRecord));
     }
 
-    
+
     @Override
     public double getAverageSamplingPeriod()
     {
@@ -252,6 +262,6 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
         {
             timer.cancel();
             timer = null;
-        }		
-	}	
+        }
+	}
 }
