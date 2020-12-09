@@ -221,8 +221,14 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         	    pan += 360.0;
         	       	
         	// send request to absolute pan/tilt/zoom positions
-            URL optionsURL = new URL(parentSensor.getHostUrl() + 
-            		"/ptz.cgi?action=start&channel=0&code=PositionABS&arg1=" + pan + "&arg2=" + (-tilt) + "&arg3=" + zoom*120);
+            URL optionsURL;
+            if(parentSensor.getConfiguration().invertTiltCommands){
+                optionsURL = new URL(parentSensor.getHostUrl() +
+                        "/ptz.cgi?action=start&channel=0&code=PositionABS&arg1=" + pan + "&arg2=" + (tilt) + "&arg3=" + zoom*120);
+            }else {
+                optionsURL = new URL(parentSensor.getHostUrl() +
+                        "/ptz.cgi?action=start&channel=0&code=PositionABS&arg1=" + pan + "&arg2=" + (-tilt) + "&arg3=" + zoom * 120);
+            }
             if (!alwaysRequestPtzStatus)
             {
                 parentSensor.ptzDataInterface.pan = (float)pan;

@@ -62,6 +62,9 @@ public class DahuaCameraConfig extends SensorConfig
     
     @DisplayInfo(desc="Set to true if this OSH node has exclusive control of the camera")
     public boolean exclusiveControl = true;
+
+    @DisplayInfo(desc="Inverts tilt values of the commands issued to the camera")
+    public boolean invertTiltCommands = false;
     
 
     public class VideoConfig extends BasicVideoConfig
