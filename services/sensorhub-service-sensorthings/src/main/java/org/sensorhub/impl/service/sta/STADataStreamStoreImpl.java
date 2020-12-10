@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 import org.h2.mvstore.MVBTreeMap;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.RangeCursor;
+import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
@@ -79,14 +80,14 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     
     
     @Override
-    public DataStreamKey add(IDataStreamInfo dsInfo)
+    public DataStreamKey add(IDataStreamInfo dsInfo) throws DataStoreException
     {
         return add(0L, dsInfo);
     }
     
     
     @Override
-    public DataStreamKey add(long thingID, IDataStreamInfo dsInfo)
+    public DataStreamKey add(long thingID, IDataStreamInfo dsInfo) throws DataStoreException
     {
         // synchronize on MVStore to avoid autocommit in the middle of things
         synchronized (mvStore)

@@ -10,7 +10,6 @@
 package org.sensorhub.impl.service.sta;
 
 import org.sensorhub.api.datastore.feature.FeatureFilter;
-import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
@@ -28,20 +27,6 @@ public class STAObsPropStoreImpl extends MVBaseFeatureStoreImpl<ObsPropDef, Feat
     public static STAObsPropStoreImpl open(STADatabase db, MVDataStoreInfo dataStoreInfo)
     {
         return (STAObsPropStoreImpl)new STAObsPropStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
-    }
-
-
-    @Override
-    public synchronized FeatureKey add(ObsPropDef obsProp)
-    {
-        try
-        {
-            return super.add(obsProp);
-        }
-        catch (IllegalArgumentException e)
-        {
-            throw new IllegalArgumentException("Datastore already contains observed property " + obsProp.uri);
-        }
     }
 
 

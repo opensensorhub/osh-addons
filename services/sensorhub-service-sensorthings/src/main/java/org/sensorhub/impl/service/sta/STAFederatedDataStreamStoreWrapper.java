@@ -70,12 +70,6 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
         
         return federatedStore.selectEntries(filter);
     }
-    
-
-    public DataStreamKey add(IDataStreamInfo dsInfo)
-    {
-        return federatedStore.add(dsInfo);
-    }
 
 
     public DataStreamKey getLatestVersionKey(String procUID, String outputName)
@@ -303,6 +297,12 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     public IDataStreamInfo merge(DataStreamKey key, IDataStreamInfo value, BiFunction<? super IDataStreamInfo, ? super IDataStreamInfo, ? extends IDataStreamInfo> remappingFunction)
     {
         return federatedStore.merge(key, value, remappingFunction);
+    }
+    
+
+    public DataStreamKey add(IDataStreamInfo dsInfo)
+    {
+        throw new UnsupportedOperationException();
     }
 
 

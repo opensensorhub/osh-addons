@@ -19,6 +19,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import org.geojson.GeoJsonObject;
+import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
@@ -78,8 +79,15 @@ public class LocationEntityHandler implements IResourceHandler<Location>
         // store feature description in DB
         if (locationDataStore != null)
         {
-            FeatureKey key = locationDataStore.add(toGmlFeature(location, null));
-            return new ResourceIdLong(key.getInternalID());
+            try
+            {
+                FeatureKey key = locationDataStore.add(toGmlFeature(location, null));
+                return new ResourceIdLong(key.getInternalID());
+            }
+            catch (DataStoreException e)
+            {
+                throw new IllegalArgumentException("Location already exists");
+            }
         }
         
         throw new UnsupportedOperationException(NO_DB_MESSAGE);

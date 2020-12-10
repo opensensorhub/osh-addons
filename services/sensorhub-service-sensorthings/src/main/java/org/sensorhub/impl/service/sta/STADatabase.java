@@ -165,20 +165,20 @@ public class STADatabase implements ISTADatabase
     
     public long toPublicID(long internalID)
     {
-        return dbRegistry.getPublicID(getDatabaseID(), internalID);
+        return dbRegistry.getPublicID(getDatabaseNum(), internalID);
     }
     
     
     public long toLocalID(long publicID)
     {
-        return dbRegistry.getLocalID(getDatabaseID(), publicID);
+        return dbRegistry.getLocalID(getDatabaseNum(), publicID);
     }
     
         
     @Override
-    public int getDatabaseID()
+    public Integer getDatabaseNum()
     {
-        return obsDatabase.getDatabaseID();
+        return obsDatabase.getDatabaseNum();
     }
 
 

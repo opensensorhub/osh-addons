@@ -166,7 +166,7 @@ public class OSHPersistenceManager implements PersistenceManager
     protected long toPublicID(long internalID)
     {
         if (writeDatabase != null)
-            return dbRegistry.getPublicID(writeDatabase.getDatabaseID(), internalID);
+            return dbRegistry.getPublicID(writeDatabase.getDatabaseNum(), internalID);
         else
             return internalID;
     }
@@ -175,7 +175,7 @@ public class OSHPersistenceManager implements PersistenceManager
     protected BigInteger toPublicID(BigInteger internalID)
     {
         if (writeDatabase != null)
-            return dbRegistry.getPublicID(writeDatabase.getDatabaseID(), internalID);
+            return dbRegistry.getPublicID(writeDatabase.getDatabaseNum(), internalID);
         else
             return internalID;
     }
@@ -184,7 +184,7 @@ public class OSHPersistenceManager implements PersistenceManager
     protected long toLocalID(long publicID)
     {
         if (writeDatabase != null)
-            return dbRegistry.getLocalID(writeDatabase.getDatabaseID(), publicID);
+            return dbRegistry.getLocalID(writeDatabase.getDatabaseNum(), publicID);
         else
             return publicID;
     }
@@ -193,7 +193,7 @@ public class OSHPersistenceManager implements PersistenceManager
     protected BigInteger toLocalID(BigInteger publicID)
     {
         if (writeDatabase != null)
-            return dbRegistry.getLocalID(writeDatabase.getDatabaseID(), publicID);
+            return dbRegistry.getLocalID(writeDatabase.getDatabaseNum(), publicID);
         else
             return publicID;
     }
@@ -201,7 +201,7 @@ public class OSHPersistenceManager implements PersistenceManager
     
     protected boolean isInWritableDatabase(long publicID)
     {
-        return dbRegistry.getDatabaseID(publicID) == writeDatabase.getDatabaseID();
+        return dbRegistry.getDatabaseID(publicID) == writeDatabase.getDatabaseNum();
     }
 
 

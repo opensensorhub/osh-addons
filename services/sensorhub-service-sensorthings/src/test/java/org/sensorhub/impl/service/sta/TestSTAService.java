@@ -305,7 +305,7 @@ public class TestSTAService
     
     protected long toPublicId(long numId)
     {
-        return sta.getParentHub().getDatabaseRegistry().getPublicID(sta.writeDatabase.getDatabaseID(), numId);
+        return sta.getParentHub().getDatabaseRegistry().getPublicID(sta.writeDatabase.getDatabaseNum(), numId);
     }
     
     

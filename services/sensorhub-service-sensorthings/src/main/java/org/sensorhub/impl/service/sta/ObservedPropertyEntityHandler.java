@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.sensorhub.api.database.IProcedureObsDatabase;
+import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureFilter;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
@@ -78,9 +79,16 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
                 
         if (obsPropDataStore != null)
         {
-            // store feature description in DB
-            FeatureKey key = obsPropDataStore.add(toGmlDefinition(obsProp));            
-            return new ResourceIdLong(key.getInternalID());
+            try
+            {
+                // store feature description in DB
+                FeatureKey key = obsPropDataStore.add(toGmlDefinition(obsProp));            
+                return new ResourceIdLong(key.getInternalID());
+            }
+            catch (DataStoreException e)
+            {
+                throw new IllegalArgumentException("Observed property " + obsProp.getDefinition() + " already exists");
+            }
         }
         
         throw new UnsupportedOperationException(NO_DB_MESSAGE);
