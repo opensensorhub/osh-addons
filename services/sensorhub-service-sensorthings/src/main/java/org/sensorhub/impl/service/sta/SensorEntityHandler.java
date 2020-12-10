@@ -34,6 +34,7 @@ import org.sensorhub.api.procedure.ProcedureAddedEvent;
 import org.sensorhub.api.procedure.ProcedureChangedEvent;
 import org.sensorhub.api.procedure.ProcedureId;
 import org.sensorhub.api.procedure.ProcedureRemovedEvent;
+import org.sensorhub.utils.SWEDataUtils;
 import org.vast.ogc.om.IProcedure;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Asserts;
@@ -103,7 +104,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         
         // generate unique ID from name
         Asserts.checkArgument(!Strings.isNullOrEmpty(sensor.getName()), "Sensor name must be set");        
-        String procUID = procGroupID.getUniqueID() + ":" + sensor.getName().toLowerCase().replaceAll("\\s+", "_");
+        String procUID = procGroupID.getUniqueID() + ":" + SWEDataUtils.toNCName(sensor.getName());
         
         try
         {

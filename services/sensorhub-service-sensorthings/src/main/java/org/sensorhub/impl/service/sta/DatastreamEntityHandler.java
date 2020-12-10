@@ -29,9 +29,11 @@ import org.sensorhub.api.obs.DataStreamInfo;
 import org.sensorhub.api.obs.DataStreamRemovedEvent;
 import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.api.procedure.ProcedureId;
+import org.sensorhub.utils.SWEDataUtils;
 import org.vast.data.TextEncodingImpl;
 import org.vast.ogc.om.IObservation;
 import org.vast.ogc.om.IProcedure;
+import org.vast.swe.SWEBuilders.DataComponentBuilder;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.unit.Unit;
@@ -362,7 +364,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         SWEHelper helper = new SWEHelper();
 
         DataRecord rec = helper.newDataRecord();
-        rec.setName(toNCName(abstractDs.getName()));
+        rec.setName(SWEDataUtils.toNCName(abstractDs.getName()));
         rec.setLabel(abstractDs.getName());
         rec.setDescription(abstractDs.getDescription());
         rec.addComponent("time", helper.newTimeIsoUTC(SWEConstants.DEF_PHENOMENON_TIME, "Sampling Time", null));
@@ -418,11 +420,11 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
 
     protected DataComponent toComponent(String obsType, ObservedProperty obsProp, UnitOfMeasurement uom, SWEHelper fac)
     {
-        DataComponent comp = null;
+        DataComponentBuilder<? extends DataComponentBuilder<?,?>, ? extends DataComponent> comp = null;
 
         if (IObservation.OBS_TYPE_MEAS.equals(obsType))
         {
-            comp = fac.newQuantity();
+            comp = fac.createQuantity();
 
             if (uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
                 ((Quantity)comp).getUom().setCode(uom.getDefinition().replace(UCUM_URI_PREFIX, ""));
@@ -430,28 +432,23 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 ((Quantity)comp).getUom().setHref(uom.getDefinition());
         }
         else if (IObservation.OBS_TYPE_CATEGORY.equals(obsType))
-            comp = fac.newCategory();
+            comp = fac.createCategory();
         else if (IObservation.OBS_TYPE_COUNT.equals(obsType))
-            comp = fac.newCount();
+            comp = fac.createCount();
         else if (IObservation.OBS_TYPE_RECORD.equals(obsType))
-            comp = fac.newDataRecord();
+            comp = fac.createDataRecord();
 
         if (comp != null)
         {
-            comp.setId(obsProp.getId().toString());
-            comp.setName(toNCName(obsProp.getName()));
-            comp.setLabel(obsProp.getName());
-            comp.setDescription(obsProp.getDescription());
-            comp.setDefinition(obsProp.getDefinition());
+            return comp.id(obsProp.getId().toString())
+                .name(SWEDataUtils.toNCName(obsProp.getName()))
+                .label(obsProp.getName())
+                .description(obsProp.getDescription())
+                .definition(obsProp.getDefinition())
+                .build();
         }
-
-        return comp;
-    }
-
-
-    protected String toNCName(String name)
-    {
-        return name.toLowerCase().replaceAll("\\s+", "_");
+        
+        return null;
     }
 
 

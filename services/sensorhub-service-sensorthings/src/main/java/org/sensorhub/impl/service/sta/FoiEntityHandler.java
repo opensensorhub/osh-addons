@@ -22,6 +22,7 @@ import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.procedure.ProcedureId;
+import org.sensorhub.utils.SWEDataUtils;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.ogc.gml.IGeoFeature;
 import org.vast.util.Asserts;
@@ -83,7 +84,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         
         // generate unique ID from name
         Asserts.checkArgument(!Strings.isNullOrEmpty(foi.getName()), "Feature name must be set");
-        String uid = procGroupID.getUniqueID() + ":foi:" + foi.getName().toLowerCase().replaceAll("\\s+", "_");
+        String uid = procGroupID.getUniqueID() + ":foi:" + SWEDataUtils.toNCName(foi.getName());
         
         try
         {
