@@ -20,6 +20,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import org.isotc211.v2005.gmd.CIOnlineResource;
 import org.isotc211.v2005.gmd.impl.GMDFactory;
+import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IObsStore;
@@ -29,7 +30,6 @@ import org.sensorhub.api.event.EventUtils;
 import org.sensorhub.api.event.IEventPublisher;
 import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.api.procedure.IProcedureWithDesc;
-import org.sensorhub.api.procedure.IProcedureRegistry;
 import org.sensorhub.api.procedure.ProcedureAddedEvent;
 import org.sensorhub.api.procedure.ProcedureChangedEvent;
 import org.sensorhub.api.procedure.ProcedureId;
@@ -126,7 +126,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 }
                 
                 // publish event
-                IEventPublisher publisher = pm.eventBus.getPublisher(IProcedureRegistry.EVENT_SOURCE_INFO);
+                IEventPublisher publisher = pm.eventBus.getPublisher(ISensorHub.EVENT_SOURCE_INFO);
                 publisher.publish(new ProcedureAddedEvent(procUID, procGroupID.getUniqueID()));
                 
                 // handle associations / deep inserts

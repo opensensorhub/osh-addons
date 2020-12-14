@@ -201,7 +201,7 @@ public class OSHPersistenceManager implements PersistenceManager
     
     protected boolean isInWritableDatabase(long publicID)
     {
-        return dbRegistry.getDatabaseID(publicID) == writeDatabase.getDatabaseNum();
+        return dbRegistry.getDatabaseNum(publicID) == writeDatabase.getDatabaseNum();
     }
 
 
