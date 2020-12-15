@@ -1,3 +1,7 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+ Copyright (C) 2020 Botts Innovative Research, Inc. All Rights Reserved.
+ ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.ndbc;
 
 import org.sensorhub.api.persistence.DataKey;
@@ -8,7 +12,6 @@ public class BuoyDataRecord implements IDataRecord, Comparable<BuoyDataRecord>
 {
     DataKey key;
     DataBlock data;
-    
     
     public BuoyDataRecord(DataKey key, DataBlock data)
     {

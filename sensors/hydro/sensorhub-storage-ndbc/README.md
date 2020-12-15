@@ -4,4 +4,6 @@ This module implements the storage API and connects to NDBC web archive for buoy
 
 Site information is retrieved using the **NDBC Site Web Service** documented [here](http://sdf.ndbc.noaa.gov/sos/).
 
-This is currently non-functional, as the driver is currently being developed.
+The module is now operational, supporting air temperature, water temperature, conductivity, and GPS position.  Data Structures have been updated to use the OOT Harmonized models.  
+
+TODO: Add support for remaining properties.

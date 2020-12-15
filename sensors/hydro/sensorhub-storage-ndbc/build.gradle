@@ -4,6 +4,7 @@ version = '0.1.0'
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  compile 'org.vast.opengis:ogc-services-common:1.4.0'
   compile 'org.jsoup:jsoup:1.11.2'
 }
 
