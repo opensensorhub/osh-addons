@@ -97,34 +97,26 @@
     "moduleClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor",
     "name": "Simulated Weather Sensor",
     "autoStart": true
-  }, 
+  },
   {
-    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
-    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
-    "name": "GPS Sensor Storage",
-    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
-    "autoStart": true,
-    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
-    "storageConfig": {
-      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
-      "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+    "objClass": "org.sensorhub.impl.database.obs.ProcedureObsEventDatabaseConfig",
+    "dbConfig": {
+      "objClass": "org.sensorhub.impl.datastore.h2.MVObsDatabaseConfig",
+      "storagePath": "obs_db.dat",
       "memoryCacheSize": 1024,
-      "storagePath": "db/gps_obs.dat"
-    }
-  }, 
-  {
-    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
-    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2",
-    "name": "Weather Data Storage",
-    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
-    "autoStart": true,
-    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
-    "storageConfig": {
-      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
-      "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
-      "memoryCacheSize": 1024,
-      "storagePath": "db/weather_obs.dat"
-    }
+      "objectCacheSize": 100,
+      "readOnly": false,
+      "moduleClass": "org.sensorhub.impl.datastore.h2.MVObsDatabase"
+    },
+    "databaseNum": 5,
+    "procedureUIDs": ["urn:osh:sensor:*"],
+    "excludedOutputs": [],
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "d6592d73-f4be-402f-b2cd-48e39fa545ef",
+    "moduleClass": "org.sensorhub.impl.database.obs.ProcedureObsEventDatabase",
+    "name": "All Obs Database",
+    "autoStart": true
   },
   {
     "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
@@ -137,27 +129,13 @@
     "enableHttpPOST": true,
     "enableSOAP": true,
     "enableTransactional": true,
-    "customFormats": [],
-    "dataProviders" : [
-       {
-           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
-           "enabled": true,
-           "name": "Fake GPS",
-           "description": "Fake GPS sensor",
-           "uri": "urn:mysos:offering02",
-           "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
-           "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1"
-       },
-       {
-           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
-           "enabled": true,
-           "name": "Fake Weather",
-           "description": "Fake Weather sensor",
-           "uri": "urn:mysos:offering03",
-           "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",           
-           "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc2"
-       }
-    ],
+    "exposedResources": {
+      "objClass": "org.sensorhub.impl.datastore.view.ProcedureObsDatabaseViewConfig",
+      "includeFilter": {
+        "objClass": "org.sensorhub.api.datastore.procedure.ProcedureFilter",
+        "uniqueIDs": ["urn:osh:sensor:*"]
+      }
+    },
     "ogcCapabilitiesInfo": {
       "title": "Test SOS Service",
       "description": "An SOS service automatically deployed by OpenSensorHub",
@@ -187,5 +165,88 @@
       "enableAccessControl": true,
       "requireAuth": false
     }
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sweapi.SWEApiServiceConfig",
+    "customFormats": [],
+    "exposedResources": {
+      "objClass": "org.sensorhub.impl.datastore.view.ProcedureObsDatabaseViewConfig",
+      "includeFilter": {
+        "objClass": "org.sensorhub.api.datastore.procedure.ProcedureFilter",
+        "uniqueIDs": ["urn:osh:sensor:*"]
+      }
+    },
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": false,
+      "requireAuth": true
+    },
+    "enableTransactional": false,
+    "maxObsCount": 100,
+    "maxResponseLimit": 100000,
+    "defaultLiveTimeout": 600.0,
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "voiceNumbers": [],
+        "faxNumbers": [],
+        "deliveryPoints": [],
+        "emails": [],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/api",
+    "id": "9d23a6a7-7455-41d1-9f1d-494be4e2463c",
+    "moduleClass": "org.sensorhub.impl.service.sweapi.SWEApiService",
+    "name": "SWE API Service",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sta.STAServiceConfig",
+    "hubThing": {
+      "objClass": "org.sensorhub.impl.service.sta.STAServiceConfig$HubThingInfo",
+      "name": "SensorHub Node",
+      "description": "The local sensor hub and its sensors"
+    },
+    "virtualSensorGroup": {
+      "objClass": "org.sensorhub.impl.sensor.VirtualProcedureGroupConfig",
+      "uid": "urn:osh:sta:group",
+      "name": "SensorThings Sensor Group",
+      "description": "Sensors registered via SensorThings API"
+    },
+    "dbConfig": {
+      "objClass": "org.sensorhub.impl.service.sta.STADatabaseConfig",
+      "storagePath": "sta_db.dat",
+      "memoryCacheSize": 5120,
+      "autoCommitBufferSize": 1024,
+      "useCompression": false,
+      "indexObsLocation": false,
+      "databaseNum": 1,
+      "readOnly": false,
+      "autoStart": false
+    },
+    "exposedResources": {
+      "objClass": "org.sensorhub.impl.datastore.view.ProcedureObsDatabaseViewConfig",
+      "includeFilter": {
+        "objClass": "org.sensorhub.api.datastore.procedure.ProcedureFilter",
+        "uniqueIDs": ["urn:osh:sensor:*"]
+      }
+    },
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": false,
+      "requireAuth": true
+    },
+    "enableTransactional": true,
+    "maxObsCount": 1000,
+    "endPoint": "/sta",
+    "id": "192c2157-c5f9-4724-bd48-6380b2dc232d",
+    "moduleClass": "org.sensorhub.impl.service.sta.STAService",
+    "name": "SensorThings API Service",
+    "autoStart": true
   }
 ]
