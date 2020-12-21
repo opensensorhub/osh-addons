@@ -12,7 +12,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.test.impl.sensor.fakegps;
+package org.sensorhub.impl.sensor.fakegps;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -26,8 +26,6 @@ import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.impl.sensor.fakegps.FakeGpsConfig;
-import org.sensorhub.impl.sensor.fakegps.FakeGpsSensor;
 import org.vast.data.TextEncodingImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.AsciiDataWriter;

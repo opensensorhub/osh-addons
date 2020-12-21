@@ -14,24 +14,27 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fakegps;
 
+import java.awt.geom.Point2D;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import net.opengis.gml.v32.AbstractGeometry;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.data.DataEvent;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.ogc.gml.IGeoFeature;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.helper.GeoPosHelper;
-import com.google.common.collect.Lists;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -41,50 +44,109 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
 {
     DataComponent posDataStruct;
     DataEncoding posDataEncoding;
-    List<double[]> trajPoints;
-    boolean sendData;
-    Timer timer;
-    double currentTrackPos;
+    ScheduledExecutorService timer;
+    FakeGpsConfig config;
+    List<Route> routes;
     Long lastApiCallTime = 0L;
+    long samplingPeriodMillis;
+    boolean multipleAssets;
+    boolean sendData;
+    
+    
+    class MobileAsset implements IGeoFeature
+    {
+        String id;
+        double speed;
+        double currentTrackPos;
+        
+        public String getId() { return id; }
+        public String getUniqueIdentifier() { return parentSensor.getUniqueIdentifier() + ":" + id; }
+        public String getName() { return "Mobile Asset " + id; }
+        public String getDescription() { return "Mobile asset with simulated location " + id; }
+        public AbstractGeometry getGeometry() { return null; }
+    }
+    
+    
+    class Route
+    {
+        List<Point2D> points = new ArrayList<>();
+        List<MobileAsset> assets = new ArrayList<>();
+        ReadWriteLock lock = new ReentrantReadWriteLock();
+    }
     
 
     public FakeGpsOutput(FakeGpsSensor parentSensor)
     {
         super("gpsLocation", parentSensor);
-        trajPoints = new ArrayList<>();
+        
+        this.config = parentSensor.getConfiguration();
+        this.routes = new ArrayList<>();
+        
+        if (config instanceof FakeGpsNetworkConfig)
+        {
+            var conf = (FakeGpsNetworkConfig)config;
+            for (int i = 0; i < conf.numRoutes;i++)
+            {
+                var route = new Route();
+                for (int n = 0; n < conf.numAssetsPerRoute; n++)
+                {
+                    var asset = new MobileAsset();
+                    asset.id = String.format("G%03dA%03d", i+1, n+1);
+                    route.assets.add(asset);
+                }
+                this.routes.add(route);
+            }
+        }
+        else
+        {
+            var route = new Route();
+            route.assets.add(new MobileAsset());
+            this.routes.add(route);
+        }
+        
+        this.samplingPeriodMillis = (long)(config.samplingPeriodSeconds * 1000);
+        this.multipleAssets = routes.size() > 1 || routes.get(0).assets.size() > 1;
     }
 
 
     protected void init()
     {
+        // create output data structure
         GeoPosHelper fac = new GeoPosHelper();
-
-        // SWE Common data structure
-        posDataStruct = fac.newDataRecord(3);
-        posDataStruct.setName(getName());
-
-        posDataStruct.addComponent("time", fac.newTimeStampIsoGPS());
-
-        Vector locVector = fac.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
-        locVector.setLabel("Location");
-        locVector.setDescription("Location measured by GPS device");
-        posDataStruct.addComponent("location", locVector);
-
+        var recBuilder = fac.createDataRecord()
+            .name(getName())
+            .definition("urn:osh:sensor:simgps:gpsdata")
+            .addField("time", fac.createTime()
+                .asSamplingTimeIsoGPS()
+                .build());
+        
+        if (multipleAssets)
+        {
+            recBuilder.addField("assetID", fac.createText()
+                .label("Asset ID")
+                .description("Identifier of mobile asset")
+                .build());
+        }  
+            
+        recBuilder.addField("location", fac.createVector()
+            .from(fac.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC))
+            .description("Location measured by the GPS device")
+            .build());
+            
+        posDataStruct = recBuilder.build();
         posDataEncoding = fac.newTextEncoding(",", "\n");
     }
 
 
-    private boolean generateRandomTrajectory()
+    private boolean generateRandomRoute(Route route)
     {
-        FakeGpsConfig config = getParentProducer().getConfiguration();
-
         // used fixed start/end coordinates or generate random ones 
         double startLat;
         double startLong;
         double endLat;
         double endLong;
 
-        if (trajPoints.isEmpty())
+        if (route.points.isEmpty())
         {
             startLat = config.centerLatitude + (Math.random() - 0.5) * config.areaSize;
             startLong = config.centerLongitude + (Math.random() - 0.5) * config.areaSize;
@@ -111,21 +173,33 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         else
         {
             // restart from end of previous track
-            double[] lastPoint = trajPoints.get(trajPoints.size() - 1);
-            startLat = lastPoint[0];
-            startLong = lastPoint[1];
+            var lastPoint = route.points.get(route.points.size() - 1);
+            startLat = lastPoint.getY();
+            startLong = lastPoint.getX();
             endLat = config.centerLatitude + (Math.random() - 0.5) * config.areaSize;
             endLong = config.centerLongitude + (Math.random() - 0.5) * config.areaSize;
         }
 
         try
         {
+            // generate 10 more random waypoints spread across the entire area
+            List<Point2D> waypoints = new ArrayList<>();
+            for (int i = 0; i < 10; i++)
+            {
+                var wlat = config.centerLatitude + (Math.random() - 0.5) * config.areaSize;
+                var wlon = config.centerLongitude + (Math.random() - 0.5) * config.areaSize;
+                waypoints.add(new Point2D.Double(wlon, wlat));
+            }
+            
             // request directions using Google API
-            URL dirRequest = new URL(config.googleApiUrl + "?key=" + config.googleApiKey +
+            String dirRequest = config.googleApiUrl + "?key=" + config.googleApiKey +
+                ((config.walkingMode) ? "&mode=walking" : "") +
                 "&origin=" + startLat + "," + startLong +
-                "&destination=" + endLat + "," + endLong + ((config.walkingMode) ? "&mode=walking" : ""));
+                "&destination=" + endLat + "," + endLong + "&waypoints=";
+            for (var wp: waypoints)
+                dirRequest += "via:" + wp.getY() + "," + wp.getX() + "|";
             log.debug("Google API request: " + dirRequest);
-            InputStream is = new BufferedInputStream(dirRequest.openStream());
+            InputStream is = new BufferedInputStream(new URL(dirRequest).openStream());
 
             // parse JSON track
             JsonParser reader = new JsonParser();
@@ -146,29 +220,54 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             JsonElement polyline = routes.getAsJsonArray().get(0).getAsJsonObject().get("overview_polyline");
             String encodedData = polyline.getAsJsonObject().get("points").getAsString();
 
-            // decode polyline data
-            decodePoly(encodedData);
-            currentTrackPos = 0.0;
+            try
+            {
+                route.lock.writeLock().lock();
+                
+                // decode polyline data
+                decodePoly(encodedData, route.points);
+                
+                // assign mobile assets to random speed and positions along the route
+                boolean first = true;
+                for (var asset: route.assets)
+                {
+                    if (first)
+                        asset.currentTrackPos = 0.0;
+                    else
+                        asset.currentTrackPos = Math.random() * (route.points.size()-1);
+                    first = false;
+                    
+                    asset.speed = config.minSpeed + Math.random() * Math.abs(config.maxSpeed - config.minSpeed);
+                    if (Math.random() < 0.5)
+                        asset.speed = -asset.speed;
+                }
+            }
+            finally
+            {
+                route.lock.writeLock().unlock();
+            }
+            
             lastApiCallTime = System.currentTimeMillis();
             parentSensor.clearError();
             return true;
         }
         catch (Exception e)
         {
-            parentSensor.reportError("Error while retrieving Google directions", e);
-            trajPoints.clear();
-            try { Thread.sleep(60000L); }
-            catch (InterruptedException e1) {}
+            parentSensor.reportError("Error while retrieving Google directions", e);            
             return false;
         }
     }
 
 
-    private void decodePoly(String encoded)
+    /*
+     * Parse data coming out of Google Directions API
+     * and build a list of Point2D
+     */
+    private void decodePoly(String encoded, List<Point2D> points)
     {
         int index = 0, len = encoded.length();
         int lat = 0, lng = 0;
-        trajPoints.clear();
+        points.clear();
 
         while (index < len)
         {
@@ -195,83 +294,126 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
             lng += dlng;
 
-            double[] p = new double[] { (double) lat / 1E5, (double) lng / 1E5 };
-            trajPoints.add(p);
+            var p = new Point2D.Double((double) lng / 1E5, (double) lat / 1E5);
+            points.add(p);
         }
     }
 
 
-    private boolean refreshTrajectory()
+    protected void sendMeasurement(Route route, MobileAsset asset)
     {
-        FakeGpsConfig config = getParentProducer().getConfiguration();
-
-        if (config.cacheTrajectory)
+        try
         {
-            // Iif lastApiCallTime is more recent than config.apiRequestPeriodMinutes param, 
-            // reverse the trajectory instead of calling Google api for new trajectory 
-            if (System.currentTimeMillis() - lastApiCallTime < TimeUnit.MINUTES.toMillis(config.apiRequestPeriodMinutes))
+            route.lock.readLock().lock();
+            int lastPointIdx = route.points.size()-1;
+            //System.out.println("Updating pos for " + asset.id);
+            
+            //System.out.printf("track pos = %.2f\n", asset.currentTrackPos);
+            var floorPos = (int)Math.floor(asset.currentTrackPos);
+            var ceilPos = (int)Math.ceil(asset.currentTrackPos);
+                        
+            // get points around current position on route
+            double ratio = asset.currentTrackPos - floorPos;
+            var p0 = route.points.get(floorPos);
+            var p1 =  route.points.get(ceilPos);
+            double dLat = p1.getY() - p0.getY();
+            double dLon = p1.getX() - p0.getX();
+    
+            // compute new position
+            double time = System.currentTimeMillis() / 1000.;
+            double lat = p0.getY() + dLat * ratio;
+            double lon = p0.getX() + dLon * ratio;
+            double alt = 193;
+    
+            // build and publish datablock
+            DataBlock dataBlock = posDataStruct.createDataBlock();
+            int i = 0;
+            dataBlock.setDoubleValue(i++, time);
+            if (multipleAssets)
+                dataBlock.setStringValue(i++, asset.id);
+            dataBlock.setDoubleValue(i++, lat);
+            dataBlock.setDoubleValue(i++, lon);
+            dataBlock.setDoubleValue(i++, alt);
+    
+            // update latest record and send event
+            latestRecord = dataBlock;
+            latestRecordTime = System.currentTimeMillis();
+            var foiUid = multipleAssets ? asset.getUniqueIdentifier() : null;
+            eventHandler.publish(new DataEvent(latestRecordTime, FakeGpsOutput.this, foiUid, dataBlock));
+            //System.out.printf("%.4f,%.4f\n", dataBlock.getDoubleValue(1), dataBlock.getDoubleValue(2)); 
+            
+            // compute next pos on route
+            boolean reverse = asset.speed < 0;
+            var trackIdxInc = reverse ? -1 : 1;
+            var distanceLeft = Math.abs(asset.speed) / 3600. * samplingPeriodMillis / 1000.;
+            //System.out.printf("distance needed = %.2fkm\n", distanceLeft);
+            var pointIdx = reverse ? ceilPos : floorPos;
+            p0 = route.points.get(pointIdx);
+            do
             {
-                trajPoints = Lists.reverse(trajPoints);
-                currentTrackPos = 0.0;
-                parentSensor.getLogger().debug("Reversing course");
-                return true;
+                pointIdx += trackIdxInc;
+                if (ratio == 0.0 && reverse)
+                    ratio = 1.0;
+                
+                // reverse route if we reached an end
+                if (pointIdx < 0 || pointIdx > lastPointIdx)
+                {
+                    //System.out.println("reached " + (pointIdx <= 0 ? "start" : "end") + " of route. reversing course.");
+                    pointIdx = pointIdx <= 0 ? 0 : lastPointIdx+1;
+                    ratio = 0.0;
+                    asset.speed = -asset.speed;
+                    break;
+                }
+                
+                p1 = route.points.get(pointIdx);
+                double dist = computeArcDistance(p0, p1);
+                //System.out.printf("segment length = %.2fkm\n", dist);
+                
+                // if in the middle of a segment
+                var remainingDist = dist * (reverse ? ratio : (1.0-ratio));
+                //System.out.printf("remaining length = %.2fkm\n", remainingDist);
+                
+                // if current segment is long enough
+                if (remainingDist > distanceLeft)
+                {
+                    ratio += distanceLeft / dist * trackIdxInc;
+                    //System.out.printf("distance on segment = %.2fkm\n", dist*ratio);
+                    //System.out.printf("added distance = %.2fkm\n", distanceLeft);
+                    break;
+                }
+                else
+                {
+                    //System.out.printf("added distance = %.2fkm\n", remainingDist);
+                    distanceLeft -= remainingDist;
+                    ratio = 0.0;
+                }
+                
+                p0 = p1;
             }
+            while (true);
+            
+            asset.currentTrackPos = (reverse ? pointIdx : pointIdx-1) + ratio;
         }
-
-        if (!generateRandomTrajectory())
-            return false;
-
-        //for (double[] p: trajPoints)
-        //    System.out.println(Arrays.toString(p));
-
-        // skip if generated traj is too small
-        if (trajPoints.size() < 2)
+        catch (Exception e)
         {
-            trajPoints.clear();
-            return false;
+            getLogger().error("Error computing measurement for asset {}", asset.id, e);
         }
-        return true;
+        finally
+        {
+            route.lock.readLock().unlock();
+        }
     }
-
-
-    private void sendMeasurement()
+    
+    
+    protected double computeArcDistance(Point2D p1, Point2D p2)
     {
-        FakeGpsConfig config = getParentProducer().getConfiguration();
-        if (trajPoints.isEmpty() || currentTrackPos >= trajPoints.size() - 2)
-        {
-            if (!refreshTrajectory())
-                return;
-        }
-
-        // convert speed from km/h to lat/lon deg/s
-        double speed = config.vehicleSpeed / 20000 * 180 / 3600;
-        int trackIndex = (int) currentTrackPos;
-        double ratio = currentTrackPos - trackIndex;
-        double[] p0 = trajPoints.get(trackIndex);
-        double[] p1 = trajPoints.get(trackIndex + 1);
-        double dLat = p1[0] - p0[0];
-        double dLon = p1[1] - p0[1];
-        double dist = Math.sqrt(dLat * dLat + dLon * dLon);
-
-        // compute new position
-        double time = System.currentTimeMillis() / 1000.;
-        double lat = p0[0] + dLat * ratio;
-        double lon = p0[1] + dLon * ratio;
-        double alt = 193;
-
-        // build and publish datablock
-        DataBlock dataBlock = posDataStruct.createDataBlock();
-        dataBlock.setDoubleValue(0, time);
-        dataBlock.setDoubleValue(1, lat);
-        dataBlock.setDoubleValue(2, lon);
-        dataBlock.setDoubleValue(3, alt);
-
-        // update latest record and send event
-        latestRecord = dataBlock;
-        latestRecordTime = System.currentTimeMillis();
-        eventHandler.publish(new DataEvent(latestRecordTime, FakeGpsOutput.this, dataBlock));
-
-        currentTrackPos += speed / dist;
+        double lat1r = Math.toRadians(p1.getY());
+        double lon1r = Math.toRadians(p1.getX());
+        double lat2r = Math.toRadians(p2.getY());
+        double lon2r = Math.toRadians(p2.getX());
+        double thetaR = lon1r - lon2r;
+        double dist = Math.sin(lat1r) * Math.sin(lat2r) + Math.cos(lat1r) * Math.cos(lat2r) * Math.cos(thetaR);
+        return Math.acos(dist) * 6371; //;
     }
 
 
@@ -279,17 +421,36 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     {
         if (timer != null)
             return;
-        timer = new Timer();
-
-        // start main measurement generation thread
-        TimerTask task = new TimerTask() {
-            public void run()
+        timer = Executors.newSingleThreadScheduledExecutor();
+        
+        // create all initial routes
+        for (var route: routes)
+            generateRandomRoute(route);
+        
+        // schedule route updates
+        var updatePeriod = TimeUnit.MINUTES.toMillis(config.apiRequestPeriodMinutes);
+        timer.scheduleWithFixedDelay(() -> {
+            // update one of the routes (randomly picked)
+            if (System.currentTimeMillis() - lastApiCallTime > updatePeriod)
             {
-                sendMeasurement();
+                int idx = (int)Math.round(Math.random() * (routes.size()-1));
+                getLogger().info("Updating route #{}", idx);
+                var route = routes.get(idx);
+                generateRandomRoute(route);
             }
-        };
-
-        timer.schedule(task, 0, (long) (getAverageSamplingPeriod() * 1000));
+        }, 0, 60, TimeUnit.SECONDS); // we schedule more often in case request fails
+        
+        // schedule all measurements with random delays
+        for (var route: routes)
+        {
+            for (var asset:route.assets)
+            {
+                var randomDelay = (long)(Math.random() * samplingPeriodMillis);
+                timer.scheduleAtFixedRate(() -> {
+                    sendMeasurement(route, asset);
+                }, randomDelay, (long)samplingPeriodMillis, TimeUnit.MILLISECONDS);
+            }
+        }
     }
 
 
@@ -297,18 +458,27 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     {
         if (timer != null)
         {
-            timer.cancel();
+            try
+            {
+                timer.shutdown();
+                timer.awaitTermination(1L, TimeUnit.SECONDS);
+            }
+            catch (Exception e)
+            {
+            }
+            
             timer = null;
         }
-
-        trajPoints.clear();
+        
+        for (var route: routes)
+            route.points.clear();
     }
 
 
     @Override
     public double getAverageSamplingPeriod()
     {
-        return 1.0;
+        return samplingPeriodMillis / 1000.;
     }
 
 
@@ -324,5 +494,4 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     {
         return posDataEncoding;
     }
-
 }

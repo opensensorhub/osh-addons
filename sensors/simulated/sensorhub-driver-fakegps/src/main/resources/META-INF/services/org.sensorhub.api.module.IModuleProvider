@@ -1,1 +1,2 @@
 org.sensorhub.impl.sensor.fakegps.FakeGpsDescriptor
+org.sensorhub.impl.sensor.fakegps.FakeGpsNetworkDescriptor

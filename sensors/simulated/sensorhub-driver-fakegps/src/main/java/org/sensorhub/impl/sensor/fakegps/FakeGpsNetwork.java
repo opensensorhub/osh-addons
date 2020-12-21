@@ -14,25 +14,27 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fakegps;
 
+import java.util.Map;
+import java.util.TreeMap;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.vast.ogc.gml.IGeoFeature;
 
 
 /**
  * <p>
- * Driver implementation outputing simulated GPS data after
- * requesting trajectories from Google Directions.
+ * Driver implementation generating simulated GPS trajectories for multiple
+ * vehicles in a given area.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
- * @since Nov 2, 2014
+ * @author Alex Robin
+ * @since Dec 19, 2020
  */
-public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
+public class FakeGpsNetwork extends FakeGpsSensor
 {
-    FakeGpsOutput dataInterface;
+    Map<String, IGeoFeature> fois = new TreeMap<>();
     
     
-    public FakeGpsSensor()
+    public FakeGpsNetwork()
     {
     }
     
@@ -42,17 +44,17 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
     {
         super.init();
         
-        // validate config
-        config.validate();
-        
-        // generate IDs
-        generateUniqueID("urn:osh:sensor:simgps:", null);
-        generateXmlID("GPS_SENSOR_", null);
-        
-        // init main data interface
-        dataInterface = new FakeGpsOutput(this);
-        addOutput(dataInterface, false);
-        dataInterface.init();
+        // create FOIs
+        for (var route: dataInterface.routes)
+            for (var asset: route.assets)
+                fois.put(asset.getUniqueIdentifier(), asset);
+    }
+
+
+    @Override
+    public Map<String, ? extends IGeoFeature> getCurrentFeaturesOfInterest()
+    {
+        return fois;
     }
     
     
@@ -62,7 +64,7 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
         synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
-            sensorDescription.setDescription("Simulated GPS sensor generating data along random itineraries obtained using Google Direction API");
+            sensorDescription.setDescription(FakeGpsNetworkDescriptor.DRIVER_DESC);
         }
     }
 
