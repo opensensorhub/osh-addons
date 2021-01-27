@@ -175,7 +175,11 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver> {
             else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PTZ_POS)) {
 //        		System.out.println("Got all 3 PTZ parameters...");
                 pan = data.getDoubleValue(0);
-                tilt = data.getDoubleValue(1);
+                if (parentSensor.getConfiguration().invertRelativeTiltCommands) {
+                    tilt = -data.getDoubleValue();
+                } else {
+                    tilt = data.getDoubleValue(1);
+                }
                 if (!Double.isNaN(data.getDoubleValue(2)))
                     zoom = data.getDoubleValue(2);
             }
@@ -184,9 +188,13 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver> {
             else {
                 if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PAN))
                     pan = data.getDoubleValue();
-                else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_TILT))
-                    tilt = data.getDoubleValue();
-                else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_ZOOM))
+                else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_TILT)) {
+                    if (parentSensor.getConfiguration().invertRelativeTiltCommands) {
+                        tilt = -data.getDoubleValue();
+                    } else {
+                        tilt = data.getDoubleValue();
+                    }
+                } else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_ZOOM))
                     zoom = data.getDoubleValue();
                 else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_RPAN))
                     pan = data.getDoubleValue() + pan;
