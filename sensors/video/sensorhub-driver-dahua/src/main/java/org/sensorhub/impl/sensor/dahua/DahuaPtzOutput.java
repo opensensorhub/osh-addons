@@ -1,17 +1,16 @@
 /***************************** BEGIN LICENSE BLOCK ***************************
 
-The contents of this file are subject to the Mozilla Public License, v. 2.0.
-If a copy of the MPL was not distributed with this file, You can obtain one
-at http://mozilla.org/MPL/2.0/.
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
 
-Software distributed under the License is distributed on an "AS IS" basis,
-WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-for the specific language governing rights and limitations under the License.
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
 
-The Initial Developer is Botts Innovative Research Inc.. Portions created by the Initial
-Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
-
-******************************* END LICENSE BLOCK ***************************/
+ The Initial Developer is Botts Innovative Research Inc.. Portions created by the Initial
+ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
+ ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.sensor.dahua;
 
@@ -25,6 +24,7 @@ import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
+
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -42,11 +42,10 @@ import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
  * (PTZ) capabilities.
  * </p>
  *
-  * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts <mike.botts@botts-inc.com>
  * @since March 2016
  */
-public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
-{
+public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver> {
     DataComponent ptzDataStruct;
     TextEncoding textEncoding;
     URL getSettingsUrl;
@@ -60,21 +59,18 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
     float pan, tilt, zoom;
 
 
-    public DahuaPtzOutput(DahuaCameraDriver driver)
-    {
+    public DahuaPtzOutput(DahuaCameraDriver driver) {
         super(driver);
     }
 
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return "ptzOutput";
     }
 
 
-    protected void init() throws SensorException
-    {
+    protected void init() throws SensorException {
         // set default PTZ min-max values
         double minPan = 0.0;
         double maxPan = 360.0;
@@ -84,35 +80,31 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
         double maxZoom = 1.0;  // can't retrieve zoom range for Dahua; set high
 
         // figure out pan and tilt ranges
-        try
-        {
+        try {
             URL optionsURL = new URL(parentSensor.getHostUrl() + "/ptz.cgi?action=getCurrentProtocolCaps&channel=0");
-        	InputStream is = optionsURL.openStream();
-        	BufferedReader bReader = new BufferedReader(new InputStreamReader(is));
+            InputStream is = optionsURL.openStream();
+            BufferedReader bReader = new BufferedReader(new InputStreamReader(is));
 
-        	// get limit values from IP stream
-        	String line;
-        	while ((line = bReader.readLine()) != null)
-        	{
-        		// parse response
-        		String[] tokens = line.split("=");
+            // get limit values from IP stream
+            String line;
+            while ((line = bReader.readLine()) != null) {
+                // parse response
+                String[] tokens = line.split("=");
 
-        		if (tokens[0].trim().equalsIgnoreCase("caps.PtzMotionRange.HorizontalAngle[0]"))
-        			minPan = Double.parseDouble(tokens[1]);
-        		else if (tokens[0].trim().equalsIgnoreCase("caps.PtzMotionRange.HorizontalAngle[1]"))
-        			maxPan = Double.parseDouble(tokens[1]);
-        		else if (tokens[0].trim().equalsIgnoreCase("caps.PtzMotionRange.VerticalAngle[0]"))
-        			minTilt = Double.parseDouble(tokens[1]);
-        		else if (tokens[0].trim().equalsIgnoreCase("caps.PtzMotionRange.VerticalAngle[1]"))
-        			maxTilt = Double.parseDouble(tokens[1]);
-        		// can't currently get maxZoom from Dahua API
-        		//else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MaxZoom"))
-        		//    maxZoom = Double.parseDouble(tokens[1]);
-        	}
-        }
-        catch (IOException e)
-        {
-        	throw new SensorException("Cannot parse PTZ limits", e);
+                if (tokens[0].trim().equalsIgnoreCase("caps.PtzMotionRange.HorizontalAngle[0]"))
+                    minPan = Double.parseDouble(tokens[1]);
+                else if (tokens[0].trim().equalsIgnoreCase("caps.PtzMotionRange.HorizontalAngle[1]"))
+                    maxPan = Double.parseDouble(tokens[1]);
+                else if (tokens[0].trim().equalsIgnoreCase("caps.PtzMotionRange.VerticalAngle[0]"))
+                    minTilt = Double.parseDouble(tokens[1]);
+                else if (tokens[0].trim().equalsIgnoreCase("caps.PtzMotionRange.VerticalAngle[1]"))
+                    maxTilt = Double.parseDouble(tokens[1]);
+                // can't currently get maxZoom from Dahua API
+                //else if (tokens[0].trim().equalsIgnoreCase("root.PTZ.Limit.L1.MaxZoom"))
+                //    maxZoom = Double.parseDouble(tokens[1]);
+            }
+        } catch (IOException e) {
+            throw new SensorException("Cannot parse PTZ limits", e);
         }
 
         // generate output structure and encoding
@@ -124,90 +116,67 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
     }
 
 
-    protected void start() throws SensorException
-    {
+    protected void start() throws SensorException {
         if (timer != null)
             return;
 
-        try
-        {
+        try {
             getSettingsUrl = new URL(parentSensor.getHostUrl() + "/ptz.cgi?action=getStatus");
-	        final long samplingPeriod = (long)(getAverageSamplingPeriod()*1000);
+            final long samplingPeriod = (long) (getAverageSamplingPeriod() * 1000);
 
-	        TimerTask timerTask = new TimerTask()
-	        {
-	            @Override
-	            public void run()
-	            {
-	            	synchronized (DahuaPtzOutput.this)
-	            	{
-	            	    // only update if control module hasn't pushed an update recently
-	            	    if (System.currentTimeMillis() - latestRecordTime >= samplingPeriod/2)
-	            	        requestPtzStatus();
-	            	}
+            TimerTask timerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    synchronized (DahuaPtzOutput.this) {
+                        // only update if control module hasn't pushed an update recently
+                        if (System.currentTimeMillis() - latestRecordTime >= samplingPeriod / 2)
+                            requestPtzStatus();
+                    }
                 }
-	        };
+            };
 
-	        timer = new Timer();
-	        timer.scheduleAtFixedRate(timerTask, 0, samplingPeriod);
-	    }
-	    catch (Exception e)
-	    {
-	        throw new SensorException("Cannot start PTZ status read task", e);
-	    }
+            timer = new Timer();
+            timer.scheduleAtFixedRate(timerTask, 0, samplingPeriod);
+        } catch (Exception e) {
+            throw new SensorException("Cannot start PTZ status read task", e);
+        }
     }
 
 
-    protected void requestPtzStatus()
-    {
+    protected void requestPtzStatus() {
         InputStream is = null;
 
-        try
-        {
+        try {
             is = getSettingsUrl.openStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 
             String line;
-            while ((line = reader.readLine()) != null)
-            {
+            while ((line = reader.readLine()) != null) {
                 // parse response
                 String[] tokens = line.split("=");
 
                 if (tokens[0].trim().equalsIgnoreCase("status.Postion[0]"))
                     pan = Float.parseFloat(tokens[1]);
                 else if (tokens[0].trim().equalsIgnoreCase("status.Postion[1]"))
-                    // TODO: invert tilt values based on flag
-                    if(parentSensor.getConfiguration().invertTiltCommands){
-                        tilt = Float.parseFloat(tokens[1]);
-                    }else{
-                        tilt = -Float.parseFloat(tokens[1]);
-                    }
+                    tilt = -Float.parseFloat(tokens[1]);
                 else if (tokens[0].trim().equalsIgnoreCase("status.Postion[2]"))
-                    zoom = (float)(Double.parseDouble(tokens[1])/120.0);
+                    zoom = (float) (Double.parseDouble(tokens[1]) / 120.0);
             }
 
             sendPtzStatus();
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             getParentModule().getLogger().error("Error requesting PTZ status", e);
-        }
-        finally
-        {
-            try
-            {
+        } finally {
+            try {
                 if (is != null)
                     is.close();
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
             }
         }
     }
 
 
-    protected synchronized void sendPtzStatus()
-    {
+    protected synchronized void sendPtzStatus() {
         // generate new data block
         DataBlock ptzData;
         if (latestRecord == null)
@@ -221,7 +190,7 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
         ptzData.setDoubleValue(0, time);
         ptzData.setFloatValue(1, pan);
         // Changed to accommodate tilt command inversion
-        if (parentSensor.getConfiguration().invertTiltCommands) {
+        if (parentSensor.getConfiguration().invertRelativeTiltCommands) {
             ptzData.setFloatValue(2, -tilt);
         } else {
             ptzData.setFloatValue(2, tilt);
@@ -235,33 +204,28 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
 
 
     @Override
-    public double getAverageSamplingPeriod()
-    {
+    public double getAverageSamplingPeriod() {
         // generating 1 record per second for PTZ settings
         return 10.0;
     }
 
 
     @Override
-    public DataComponent getRecordDescription()
-    {
+    public DataComponent getRecordDescription() {
         return ptzDataStruct;
     }
 
 
     @Override
-    public DataEncoding getRecommendedEncoding()
-    {
+    public DataEncoding getRecommendedEncoding() {
         return textEncoding;
     }
 
 
-	public void stop()
-	{
-	    if (timer != null)
-        {
+    public void stop() {
+        if (timer != null) {
             timer.cancel();
             timer = null;
         }
-	}
+    }
 }
