@@ -94,14 +94,17 @@
       "siteTypes": [],
       "siteIds": [],
       "stateCodes": [
-        "AL"
+        "NY"
       ],
       "countyCodes": [],
       "parameters": [
+        "GAGE_HEIGHT",                                                                                               
+        "WATER_TEMP",    
         "DISCHARGE"
       ],
-      "startTime": "Mar 16, 2017 5:07:31 PM",
-      "endTime": "Mar 17, 2017 5:07:31 PM"
+      "startTime": "2019-01-18T00:00:00Z",                                                                           
+      "endTime": "2045-12-24T00:00:00Z",
+      "isoPeriod": "P1W"                                                                              
     },
     "id": "1af0a45c-c906-4cef-b2ba-b934d13b97ea",
     "moduleClass": "org.sensorhub.impl.usgs.water.USGSWaterDataArchive",

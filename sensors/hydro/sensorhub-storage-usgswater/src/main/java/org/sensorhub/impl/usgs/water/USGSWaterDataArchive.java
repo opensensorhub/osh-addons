@@ -27,8 +27,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataKey;
+import org.sensorhub.api.persistence.FoiFilter;
 import org.sensorhub.api.persistence.IDataFilter;
 import org.sensorhub.api.persistence.IDataRecord;
 import org.sensorhub.api.persistence.IFoiFilter;
@@ -38,13 +40,16 @@ import org.sensorhub.api.persistence.IObsStorage;
 import org.sensorhub.api.persistence.IObsStorageModule;
 import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.api.persistence.IStorageModule;
+import org.sensorhub.api.persistence.ObsPeriod;
 import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.impl.module.AbstractModule;
-import org.sensorhub.impl.persistence.FilterUtils;
+import org.sensorhub.impl.persistence.StorageUtils;
 import org.sensorhub.impl.persistence.FilteredIterator;
+import org.sensorhub.impl.persistence.IteratorWrapper;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Bbox;
 import org.vast.util.DateTimeFormat;
+import com.vividsolutions.jts.geom.Polygon;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
@@ -93,6 +98,7 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig>
 		try {
 			ObsSiteLoader parser = new ObsSiteLoader(this);
 			parser.preloadSites(config.exposeFilter, fois);
+			getLogger().info("Preloaded {} sites", fois.size());
 		} catch (Exception e) {
 			throw new SensorHubException("Error loading site information", e);
 		}
@@ -159,12 +165,12 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig>
 		double startTime = config.exposeFilter.startTime.getTime() / 1000.;
 		double endTime = config.exposeFilter.endTime.getTime() / 1000.;
 		return new double[] { startTime, endTime };
-	}
-
-	@Override
-	public Iterator<double[]> getRecordsTimeClusters(String recordType) {
-		return Arrays.asList(getRecordsTimeRange(recordType)).iterator();
-	}
+	}    
+    
+    @Override
+    public int[] getEstimatedRecordCounts(String recordType, double[] timeStamps) {
+        return StorageUtils.computeDefaultRecordCounts(this, recordType, timeStamps);
+    }
 
 	@Override
 	public DataBlock getDataBlock(DataKey key) {
@@ -364,7 +370,7 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig>
 		return new FilteredIterator<AbstractFeature>(it) {
 			@Override
 			protected boolean accept(AbstractFeature f) {
-				return FilterUtils.isFeatureSelected(filter, f);
+				return StorageUtils.isFeatureSelected(filter, f);
 			}
 		};
 	}
@@ -419,6 +425,11 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig>
 		throw new UnsupportedOperationException();
 	}
 
+    @Override
+    public void updateRecordStore(String name, DataComponent recordStructure) {
+        throw new UnsupportedOperationException();        
+    }
+
 	@Override
 	public void storeRecord(DataKey key, DataBlock data) {
 		throw new UnsupportedOperationException();
@@ -467,5 +478,21 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig>
 	@Override
 	public void sync(IStorageModule<?> storage) throws StorageException {
 		throw new UnsupportedOperationException();
-	}
+	}    
+
+    @Override
+    public Iterator<ObsPeriod> getFoiTimeRanges(IObsFilter filter) {        
+        FoiFilter foiFilter = new FoiFilter() {
+            public Set<String> getFeatureIDs() { return filter.getFoiIDs(); }
+            public Polygon getRoi() { return filter.getRoi(); }
+        };
+                
+        return new IteratorWrapper<String, ObsPeriod>(getFoiIDs(foiFilter)) {
+            @Override
+            protected ObsPeriod process(String foiID)
+            {
+                return new ObsPeriod(foiID, Double.NaN, Double.NaN);
+            }            
+        };
+    }
 }

@@ -288,7 +288,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
             term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
             term.setLabel("Manufacturer Name");
             term.setValue("Dahua");
-            identifierList.addIdentifier2(term);
+            identifierList.addIdentifier(term);
             
             if (modelNumber != null)
             {
@@ -296,7 +296,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
                 term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
                 term.setLabel("Model Number");
                 term.setValue(modelNumber);
-                identifierList.addIdentifier2(term);
+                identifierList.addIdentifier(term);
             }
             
             if (serialNumber != null)
@@ -305,7 +305,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
                 term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
                 term.setLabel("Serial Number");
                 term.setValue(serialNumber);
-                identifierList.addIdentifier2(term);
+                identifierList.addIdentifier(term);
             }
             
             // Long Name
@@ -313,14 +313,14 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
             term.setDefinition(SWEHelper.getPropertyUri("LongName"));
             term.setLabel("Long Name");
             term.setValue("Dahua " + modelNumber + " Video Camera #" + serialNumber);
-            identifierList.addIdentifier2(term);
+            identifierList.addIdentifier(term);
 
             // Short Name
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
             term.setLabel("Short Name");
             term.setValue("Dahua Cam " + modelNumber);
-            identifierList.addIdentifier2(term);
+            identifierList.addIdentifier(term);
         }
     }
 

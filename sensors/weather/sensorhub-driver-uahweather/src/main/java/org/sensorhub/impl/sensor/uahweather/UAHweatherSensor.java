@@ -97,7 +97,7 @@ public class UAHweatherSensor extends AbstractSensorModule<UAHweatherConfig>
             term.setDefinition(SWEHelper.getPropertyUri("Manufacturer"));
             term.setLabel("Manufacturer Name");
             term.setValue("UAH Atmospheric Science");
-            identifierList.addIdentifier2(term);
+            identifierList.addIdentifier(term);
             
             if (config.modelNumber != null)
             {
@@ -105,7 +105,7 @@ public class UAHweatherSensor extends AbstractSensorModule<UAHweatherConfig>
                 term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
                 term.setLabel("Model Number");
                 term.setValue(config.modelNumber);
-                identifierList.addIdentifier2(term);
+                identifierList.addIdentifier(term);
             }
             
             if (config.serialNumber != null)
@@ -114,7 +114,7 @@ public class UAHweatherSensor extends AbstractSensorModule<UAHweatherConfig>
                 term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
                 term.setLabel("Serial Number");
                 term.setValue(config.serialNumber);
-                identifierList.addIdentifier2(term);
+                identifierList.addIdentifier(term);
             }
             
             // Long Name
@@ -122,14 +122,14 @@ public class UAHweatherSensor extends AbstractSensorModule<UAHweatherConfig>
             term.setDefinition(SWEHelper.getPropertyUri("LongName"));
             term.setLabel("Long Name");
             term.setValue("Model " + config.modelNumber + " UAH Weather Station #" + config.serialNumber);
-            identifierList.addIdentifier2(term);
+            identifierList.addIdentifier(term);
 
             // Short Name
             term = smlFac.newTerm();
             term.setDefinition(SWEHelper.getPropertyUri("ShortName"));
             term.setLabel("Short Name");
             term.setValue("UAH Weather Station " + config.modelNumber);
-            identifierList.addIdentifier2(term);
+            identifierList.addIdentifier(term);
         }
     }
 

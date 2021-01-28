@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -35,11 +34,14 @@ import org.sensorhub.api.persistence.DataKey;
 import org.sensorhub.api.persistence.IDataFilter;
 import org.sensorhub.api.persistence.IDataRecord;
 import org.sensorhub.api.persistence.IFoiFilter;
+import org.sensorhub.api.persistence.IObsFilter;
 import org.sensorhub.api.persistence.IObsStorageModule;
 import org.sensorhub.api.persistence.IRecordStoreInfo;
 import org.sensorhub.api.persistence.IStorageModule;
+import org.sensorhub.api.persistence.ObsPeriod;
 import org.sensorhub.api.persistence.StorageException;
 import org.sensorhub.impl.module.AbstractModule;
+import org.sensorhub.utils.DataComponentChecks;
 import org.sensorhub.utils.FileUtils;
 import org.vast.util.Asserts;
 import org.vast.util.Bbox;
@@ -94,6 +96,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     }
     
     
+    /*
+     * Constructor used to create a nested MVObsStorage within a MVMultiStorage
+     * In this case, we share maps between all producers
+     */
     protected MVObsStorageImpl(MVObsStorageImpl parentStore, String producerID)
     {
         Asserts.checkNotNull(parentStore, "Parent");                
@@ -154,7 +160,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     
     private void loadRecordStore(IRecordStoreInfo rsInfo)
     {
-        MVTimeSeriesImpl recordStore = new MVTimeSeriesImpl(this, rsInfo.getName());        
+        MVTimeSeriesImpl recordStore = new MVTimeSeriesImpl(this, rsInfo, config.indexObsLocation);
         recordStores.put(rsInfo.getName(), recordStore);
     }
 
@@ -164,6 +170,10 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     {
         if (mvStore != null) 
         {
+            // make sure cached data is flushed
+            for (MVTimeSeriesImpl recordStore: recordStores.values())
+                recordStore.close();
+            
             mvStore.close();
             mvStore = null;
             processDescMap = null;
@@ -386,6 +396,27 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         rsInfoMap.put(name, rsInfo);
         loadRecordStore(rsInfo);
     }
+
+
+    @Override
+    public void updateRecordStore(String name, DataComponent newDataStruct)
+    {
+        checkOpen();
+        Asserts.checkNotNull(name, "name");
+        Asserts.checkNotNull(newDataStruct, DataComponent.class);
+        
+        DataStreamInfo oldRsInfo = (DataStreamInfo)rsInfoMap.get(name);
+        if (oldRsInfo == null)
+            throw new IllegalArgumentException("No time series with name " + name);
+        
+        // check that new structure is compatible with previous one
+        if (!DataComponentChecks.checkStructCompatible(oldRsInfo.recordDescription, newDataStruct))
+            throw new IllegalStateException("New data structure for record store " + getName() + 
+                    " is not compatible with the one already in storage");
+        
+        DataStreamInfo newRsInfo = new DataStreamInfo(name, newDataStruct, oldRsInfo.recommendedEncoding);
+        rsInfoMap.put(name, newRsInfo);
+    }
     
     
     public synchronized void upgradeRecordStore(String name, DataComponent recordStructure, DataEncoding recommendedEncoding, boolean deleteRecords)
@@ -430,14 +461,14 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         checkOpen();
         return getRecordStore(recordType).getDataTimeRange(producerID);
     }
-
-
+    
+    
     @Override
-    public Iterator<double[]> getRecordsTimeClusters(String recordType)
+    public int[] getEstimatedRecordCounts(String recordType, double[] timeStamps)
     {
-        checkOpen();
-        //return getRecordStore(recordType).getRecordsTimeClusters(producerID);
-        return Arrays.asList(new double[2]).iterator();
+        Asserts.checkNotNull(timeStamps);
+        Asserts.checkArgument(timeStamps.length >= 2, "At least 2 time stamps must be provided");
+        return getRecordStore(recordType).getEstimatedRecordCounts(producerID, timeStamps);
     }
     
     
@@ -635,6 +666,36 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
             filter = getProducerFoiFilter(filter);
         
         return featureStore.getFeatures(filter);
+    }
+
+
+    @Override
+    public Iterator<ObsPeriod> getFoiTimeRanges(IObsFilter filter)
+    {
+        checkOpen();        
+        filter = (IObsFilter)ensureProducerID(filter);
+        
+        MVTimeSeriesImpl recordStore = getRecordStore(filter.getRecordType());
+        Set<ObsTimePeriod> timePeriods = recordStore.getObsTimePeriods(producerID, filter, true);
+        if (timePeriods == null)
+            return Collections.emptyIterator();
+        
+        Iterator<ObsTimePeriod> it = timePeriods.iterator();
+        return new Iterator<ObsPeriod>() {
+
+            @Override
+            public boolean hasNext()
+            {
+                return it.hasNext();
+            }
+
+            @Override
+            public ObsPeriod next()
+            {
+                ObsTimePeriod p = it.next();
+                return new ObsPeriod(p.foiID, p.start, p.stop);
+            }
+        };
     }
 
 

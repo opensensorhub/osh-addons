@@ -14,6 +14,10 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
+
+/**
+ * Listener for Firehose message objects of type position
+ */
 public interface PositionListener
 {
 	public void newPosition(FlightObject pos);

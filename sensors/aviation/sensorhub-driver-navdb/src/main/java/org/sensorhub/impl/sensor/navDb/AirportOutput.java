@@ -64,23 +64,20 @@ public class AirportOutput extends AbstractSensorOutput<NavDriver> implements IM
 	{
 		SWEHelper fac = new SWEHelper();
 
-		//	 Structure is {id, name, lat, lon}
+		// Structure is {id, name, lat, lon}
 
 		// SWE Common data structure
 		navStruct = fac.newDataRecord(4);
 		navStruct.setName(getName());
-//		navStruct.setDefinition("http://earthcastwx.com/ont/swe/property/xxx/BobsAirports"); // ??
-		navStruct.setDefinition("http://earthcastwx.com/ont/swe/property/airports"); // ??
+		navStruct.setDefinition(SWEHelper.getPropertyUri("aero/Airport"));
 
-		Text id = fac.newText("http://sensorml.com/ont/swe/property/icaoCode", "ICAO Code", "ICAO airline code");
+		Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "ICAO Code", "Airport ICAO identification code");
 		navStruct.addComponent("code", id);
-		//		Text type = fac.newText("http://sensorml.com/ont/swe/property/type", "Type", "Type (Waypoint/Navaid/etc.)" );
-		//		waypt.addComponent("type", type);
-		Text name = fac.newText("http://sensorml.com/ont/swe/property/name", "Name", "Long name" );
+		Text name = fac.newText(SWEHelper.getPropertyUri("Name"), "Name", "Long name" );
 		navStruct.addComponent("name", name);
-		Quantity latQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Latitude", "Geodetic Latitude", null, "deg", DataType.DOUBLE);
+		Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg", DataType.DOUBLE);
 		navStruct.addComponent("lat", latQuant);
-		Quantity lonQuant = fac.newQuantity("http://sensorml.com/ont/swe/property/Longitude", "Longitude", null, "deg", DataType.DOUBLE);
+		Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.DOUBLE);
 		navStruct.addComponent("lon", lonQuant);
 
 		// default encoding is text

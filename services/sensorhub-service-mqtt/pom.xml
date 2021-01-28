@@ -15,7 +15,7 @@
       <url>http://www.sensiasoftware.com</url>
    </organization>
    <properties>
-      <netty.version>4.0.30.Final</netty.version>
+      <netty.version>4.1.51.Final</netty.version>
    </properties>
    <repositories>
       <repository>
@@ -40,7 +40,7 @@
       <dependency>
          <groupId>org.eclipse.paho</groupId>
          <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-         <version>1.0.2</version>
+         <version>1.2.1</version>
       </dependency>
       <dependency>
          <groupId>io.netty</groupId>

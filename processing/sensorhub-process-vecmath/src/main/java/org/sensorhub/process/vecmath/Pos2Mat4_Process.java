@@ -66,7 +66,7 @@ public class Pos2Mat4_Process extends ExecutableProcessImpl
         tzData = (Quantity)tData.getComponent(2);
         
         // create euler input
-        Vector eulerData = vecHelper.newEulerAngles();
+        Vector eulerData = vecHelper.newEulerAngles(VectorHelper.DEF_ORIENTATION_EULER, "rad");
         eulerData.setReferenceFrame(null);
         inputData.add("orientation", eulerData);
         r1Data = (Quantity)eulerData.getComponent(0);

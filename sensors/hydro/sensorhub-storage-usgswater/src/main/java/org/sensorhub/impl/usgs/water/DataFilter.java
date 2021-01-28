@@ -48,5 +48,8 @@ public class DataFilter
     public Date startTime = null;
     
     @DisplayInfo(desc="Maximum time stamp of requested objects")
-    public Date endTime = null;    
+    public Date endTime = null;
+    
+    @DisplayInfo(desc="Get sites reporting within this period, represented as ISO-8601")
+    public String isoPeriod = null;
 }

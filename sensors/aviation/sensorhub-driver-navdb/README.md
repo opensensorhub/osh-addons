@@ -1,5 +1,4 @@
-Collection of drivers for Earthcast/Delta project. Includes separate driver classes for:
-- NLDN (lightning)
-- MESH (Hail)
-- Turbulence (Vertical slices of GTGTURB product)
-- FlightAware (Feed for flight plan and location data)
+# Navigation Database Add-on
+
+Add-on to read navigation data from an ARINC-424 compatible database file.
+

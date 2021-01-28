@@ -14,12 +14,21 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executors;
@@ -31,11 +40,14 @@ import org.sensorhub.api.comm.MessageQueueConfig;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.FoiEvent;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
+import org.sensorhub.api.module.IModuleStateManager;
 import org.sensorhub.impl.SensorHub;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.flightAware.FlightAwareConfig.Mode;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Asserts;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.AbstractProcess;
@@ -50,6 +62,15 @@ import net.opengis.sensorml.v20.PhysicalSystem;
 public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> implements IMultiSourceDataProducer,
 	FlightPlanListener, PositionListener
 {
+    private static final String STATE_CACHE_FILE = "fltaware_cache";
+    private static final int MAX_CACHE_SIZE = 50000;
+    private static final int MAX_CACHE_AGE = 24; // hours
+    
+    private static final int MESSAGE_TIMER_CHECK_PERIOD = 10; // in s
+    private static final int MESSAGE_LATENCY_WARN_LIMIT = 120; // in s
+    private static final int MAX_REPLAY_DURATION = 3600*4; // in s
+    private static final int CACHE_SAVE_MULTIPLIER = 3; // in number of timer checks
+    
     FlightPlanOutput flightPlanOutput;
 	FlightPositionOutput flightPositionOutput;
 	
@@ -64,95 +85,130 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
 	static final String FLIGHT_UID_PREFIX = "urn:osh:aviation:flight:";
 
-    //  Warn us if messages start stacking up- note sys clock dependence
-    //  Allow configuration of these values
-	private static final long MESSAGE_TIMER_CHECK_PERIOD = 10000L; // in ms
-    private static final long MESSAGE_RECEIVE_TIMEOUT = 20000L; // in ms
-    private static final long MESSAGE_LATENCY_WARN_LIMIT = 120000L; // in ms
-    
-    //  Use the following to debug disconnect/reconnect code
-//  private static final long MESSAGE_TIMER_CHECK_PERIOD = 20000L; // in ms
-//  private static final long MESSAGE_LATENCY_WARN_LIMIT = 10000L; // in ms
-//  private static final long MESSAGE_LATENCY_RESTART_LIMIT = 20000L; // in ms
-    
-    ScheduledExecutorService timer;
+	IFlightObjectFilter flightFilter;
+    IFlightRouteDecoder flightRouteDecoder;
+    Cache<String, FlightInfo> flightCache;
+    ScheduledExecutorService watchDogTimer;
     FlightAwareClient firehoseClient;
     IMessageQueuePush msgQueue;
     MessageHandler msgHandler;
-    int retriesLeft;
     boolean connected;
+    int numAttempts;
+    int retryInterval;  
+    long lastRetryTime;
+    long lastUpdatedCache = 0L;
+    
+    
+    static class FlightInfo
+    {
+        String dest;
+        String route;
+    }
         
     
-	class MessageTimeCheck implements Runnable
-	{
-        @Override
+	class WatchDogCheck implements Runnable
+	{	        
+	    int callsLeftBeforeCacheSave = CACHE_SAVE_MULTIPLIER;
+	    
+	    
+	    WatchDogCheck()
+	    {
+	        // call next attempt here since watchdog is also restarted 
+	        // for every attempt
+	        nextAttempt();
+	    }
+	    
+	    void resetAttempts()
+	    {
+	        numAttempts = 0;
+            nextAttempt();
+	    }
+	    
+	    void nextAttempt()
+        {
+	        // increase retry intervals exponentially up to MAX_RETRY_INTERVAL
+	        int expInterval = (int)(config.initRetryInterval * Math.pow(2, numAttempts));
+            retryInterval = Math.min(expInterval, config.maxRetryInterval);
+	        lastRetryTime = System.currentTimeMillis()/1000;
+            numAttempts++;
+        }
+	    
+	    @Override
         public void run()
         {
             if (msgHandler != null)
             {
-                long sysTime = System.currentTimeMillis();
-                long lastMsgRecvTime = msgHandler.getLastMessageReceiveTime();
-                long lastMsgTime = msgHandler.getLastMessageTime()*1000;
-                long lastMsgDelta = sysTime - lastMsgRecvTime;
-                long lastMsgAge = sysTime - lastMsgTime;
+                Thread.currentThread().setName("Watchdog");
                 
-                // if not receiving anything from queue, maybe no other instance connected to firehose?
-                if (firehoseClient == null && msgQueue != null && lastMsgDelta > MESSAGE_RECEIVE_TIMEOUT)
+                long now = System.currentTimeMillis()/1000;
+                long lastMsgAge = now - msgHandler.getLatestMessageReceiveTime();
+                long lastMsgLag = msgHandler.getMessageTimeLag();
+                long sinceLastRetry = now - lastRetryTime;
+                
+                // if messages are received normally
+                if (lastMsgAge < config.initRetryInterval)
                 {
-                    getLogger().error("No message received from message queue");
-                    stop();
+                    resetAttempts();
                     
-                    if (retriesLeft <= 0)
-                    {
-                        getLogger().error("Max number of retries reached");
-                        return;
-                    }
+                    // if messages getting old (usually when we can't keep up)
+                    if (lastMsgLag > MESSAGE_LATENCY_WARN_LIMIT)
+                        getLogger().warn("Messages getting old. Last dated {}s ago", lastMsgLag);
                     
-                    retriesLeft--;
-                    if (config.connectionType != Mode.PUBSUB)
-                        startWithFirehose();
+                    // otherwise log we are ok
                     else
-                        startWithPubSub();
+                        getLogger().info("FA connection OK: Last message received {}s ago", lastMsgAge);
+                    
+                    getLogger().debug("Queue size={}, Cache size={}", msgHandler.execQueue.size(), flightCache.size());
                 }
                 
-                // if connection to firehose didn't succeed
-                else if (firehoseClient != null && !firehoseClient.isStarted())
+                // if no message received for a while
+                else if (sinceLastRetry >= retryInterval)
                 {
-                    getLogger().error("Lost connection to Firehose");
-                    stop();
+                    getLogger().error("No message received in the last {}s. Reconnecting...", lastMsgAge);
+                    getLogger().error("Reconnection attempt #{}", numAttempts);
                     
-                    if (retriesLeft <= 0)
+                    try
                     {
-                        getLogger().error("Max number of retries reached");
-                        return;
+                        stop();
+                        
+                        if (config.connectionType == Mode.PUBSUB ||
+                           (config.connectionType == Mode.PUBSUB_THEN_FIREHOSE && numAttempts <= 3) ||
+                           (config.connectionType == Mode.FIREHOSE_THEN_PUBSUB && numAttempts > 3))
+                        {
+                            startWithPubSub();
+                        }
+                        else if (config.connectionType == Mode.FIREHOSE ||
+                                (config.connectionType == Mode.FIREHOSE_THEN_PUBSUB && numAttempts <= 3) ||
+                                (config.connectionType == Mode.PUBSUB_THEN_FIREHOSE && numAttempts > 3))
+                        {
+                            startWithFirehose();
+                        }
                     }
-                    
-                    retriesLeft--;
-                    if (config.connectionType != Mode.FIREHOSE)
-                        startWithPubSub();
-                    else
-                        startWithFirehose();
+                    catch (Exception e)
+                    {
+                        getLogger().error("Error during automatic restart", e);
+                    }
                 }
                 
                 else
                 {
-                    retriesLeft = config.maxRetries;
-                    
-                    // if initially connected but no message received for some time
-                    if (lastMsgDelta > MESSAGE_RECEIVE_TIMEOUT)
+                    reportStatus("No message received in the last " + lastMsgAge + "s. "
+                            + "Will attempt reconnection in " + (retryInterval-sinceLastRetry) + "s");
+                }
+                
+                callsLeftBeforeCacheSave--;
+                if (callsLeftBeforeCacheSave <= 0)
+                {
+                    try
                     {
-                        getLogger().error("No message received in the last {}s", MESSAGE_RECEIVE_TIMEOUT/1000);                        
-                        if (firehoseClient != null)
-                            firehoseClient.restart();
+                        saveCache();
+                        callsLeftBeforeCacheSave = CACHE_SAVE_MULTIPLIER;
                     }
-                    
-                    // if messages getting old (usually when we can't keep up)
-                    else if (lastMsgAge > MESSAGE_LATENCY_WARN_LIMIT)
-                        getLogger().warn("Messages getting old. Last dated {}s ago", lastMsgAge/1000);
-                    
-                    else
-                        getLogger().info("FA connection OK: Last message received {}s ago", lastMsgDelta/1000);
-                }                    
+                    catch (SensorHubException e)
+                    {
+                        getLogger().error("Cannot save cache", e);
+                    }
+                }
             }
         }
     }
@@ -194,7 +250,19 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 		addOutput(flightPositionOutput, false);
 		flightPositionOutput.init();
 		
-		this.retriesLeft = config.maxRetries;
+		// init flight filter
+		if (config.filterConfig != null)
+            this.flightFilter = config.filterConfig.getFilter();
+		
+		// init flight cache
+		this.flightCache = CacheBuilder.newBuilder()
+                .maximumSize(MAX_CACHE_SIZE)
+                .concurrencyLevel(2)
+                .expireAfterAccess(MAX_CACHE_AGE, TimeUnit.HOURS)
+                .build();
+		        
+        // init flight route decoder
+        this.flightRouteDecoder = new FlightRouteDecoderFlightXML(this);
 	}
 	
 
@@ -209,10 +277,12 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	}
 	
 
-    private void startWithFirehose()
+    private void startWithFirehose() throws SensorHubException
     {
+        loadCache();
+        
         reportStatus("Connecting to Firehose channel...");
-        timer = Executors.newSingleThreadScheduledExecutor();
+        watchDogTimer = Executors.newSingleThreadScheduledExecutor();
         
         // connect to pub/sub channel for publishing only
         if (config.pubSubConfig != null)
@@ -220,14 +290,14 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
         
         // create message handler
         if (msgQueue != null)
-            msgHandler = new MessageHandlerWithForward(config.userName, config.password, msgQueue);
+            msgHandler = new MessageHandlerWithForward(this, msgQueue);
         else
-            msgHandler = new MessageHandler(config.userName, config.password);
+            msgHandler = new MessageHandler(this);
         msgHandler.addPlanListener(this);
         msgHandler.addPositionListener(this);
         
         // configure firehose feed
-        firehoseClient = new FlightAwareClient(config.hostname, config.userName, config.password, new IMessageHandler() {
+        firehoseClient = new FlightAwareClient(config.hostname, config.userName, config.password, getLogger(), new IMessageHandler() {
             @Override
             public void handle(String msg)
             {
@@ -247,33 +317,39 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                 }
             }            
         });
+        
         for(String mt: config.messageTypes)
             firehoseClient.addMessageType(mt);
         for(String airline: config.airlines)
             firehoseClient.addAirline(airline);
+        
+        // if cache is too old, replay older messages
+        long replayDuration = Math.min(System.currentTimeMillis()/1000 - lastUpdatedCache, MAX_REPLAY_DURATION);
+        if (replayDuration > 2)
+        {
+            getLogger().info("Cache is {}s old. Replaying historical messages.", replayDuration);
+            firehoseClient.setReplayDuration(replayDuration);
+        }
         
         // start firehose feed
         connected = false;
         firehoseClient.start();
         
         // start watchdog thread
-        long randomDelay = (long)(Math.random()*10000.);
-        timer.scheduleWithFixedDelay(new MessageTimeCheck(),
-                MESSAGE_RECEIVE_TIMEOUT+randomDelay,
-                MESSAGE_TIMER_CHECK_PERIOD+randomDelay,
-                TimeUnit.MILLISECONDS);
+        startWatchDog();
 	}
     
     
-    private void startWithPubSub()
+    private void startWithPubSub() throws SensorHubException
     {
         Asserts.checkNotNull(config.pubSubConfig, "PubSubConfig");
+        loadCache();
         
         reportStatus("Connecting to Pub/Sub channel...");
-        timer = Executors.newSingleThreadScheduledExecutor();
+        watchDogTimer = Executors.newSingleThreadScheduledExecutor();
         
         // create message handler
-        msgHandler = new MessageHandler(config.userName, config.password);
+        msgHandler = new MessageHandler(this);
         msgHandler.addPlanListener(this);
         msgHandler.addPositionListener(this);
         
@@ -281,11 +357,16 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
         connectToPubSub(false);
         
         // start watchdog thread
-        long randomDelay = (long)(Math.random()*10000.);
-        timer.scheduleWithFixedDelay(new MessageTimeCheck(),
-                MESSAGE_RECEIVE_TIMEOUT+randomDelay,
-                MESSAGE_TIMER_CHECK_PERIOD+randomDelay,
-                TimeUnit.MILLISECONDS);
+        startWatchDog();
+    }
+    
+    
+    private void startWatchDog()
+    {     
+        watchDogTimer.scheduleWithFixedDelay(new WatchDogCheck(),
+                config.initRetryInterval,
+                MESSAGE_TIMER_CHECK_PERIOD,
+                TimeUnit.SECONDS);
     }
     
 	
@@ -307,7 +388,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
             {
                 msgQueue.registerListener(new MessageListener() {
                     @Override
-                    public void receive(byte[] msg)
+                    public void receive(Map<String, String> attrs, byte[] payload)
                     {
                         if (!connected)
                         {
@@ -315,7 +396,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                             connected = true;
                         }
                         
-                        msgHandler.handle(new String(msg, StandardCharsets.UTF_8));
+                        msgHandler.handle(new String(payload, StandardCharsets.UTF_8));
                     }                
                 });
             }
@@ -332,11 +413,11 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	
 
 	@Override
-	public void stop()
+	public void stop() throws SensorHubException
 	{
-		if (timer != null) {
-		    timer.shutdownNow();
-            timer = null;
+		if (watchDogTimer != null) {
+		    watchDogTimer.shutdown();
+            watchDogTimer = null;
 		}
         
         if (msgHandler != null) {
@@ -353,6 +434,17 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 			firehoseClient.stop();
 			firehoseClient = null;
 	    }
+	    
+	    // also save state on stop
+	    saveCache();
+	    if (flightCache != null)
+	        flightCache.invalidateAll();
+	}
+	
+	
+	private String getOshFlightId(FlightObject fltObj)
+	{
+	    return fltObj.ident + '_' + fltObj.dest;
 	}
 	
 
@@ -381,49 +473,116 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	
 
 	@Override
-	public void newPosition(FlightObject pos)
+	public void newPosition(FlightObject fltPos)
 	{
 		//  Should never send null pos, but check it anyway
-		if(pos == null) {
+		if(fltPos == null)
 			return;
-		}
+		
 		// Check for and add Pos and LawBox FOIs if they aren't already in cache
-		String oshFlightId = pos.getOshFlightId();
-		ensureFlightFoi(oshFlightId, pos.getClock());
+		String oshFlightId = getOshFlightId(fltPos);
+		ensureFlightFoi(oshFlightId, fltPos.getClock());
 		FlightObject prevPos = flightPositions.get(oshFlightId);
 		if(prevPos != null) {
 			// Calc vert change in ft/minute
 			Long prevTime = prevPos.getClock() ;
-			Long newTime = pos.getClock() ;
+			Long newTime = fltPos.getClock() ;
 			Double prevAlt = prevPos.getAltitude();
-			Double newAlt = pos.getAltitude();
+			Double newAlt = fltPos.getAltitude();
 //			System.err.println(" ??? " + oshFlightId + ":" + prevAlt + "," + newAlt + "," + prevTime + "," + newTime);
 			if(prevAlt != null && newAlt != null && prevTime != null && newTime != null && (!prevTime.equals(newTime)) ) {
 				// check math here!!!
-				pos.verticalChange = (newAlt - prevAlt)/( (newTime - prevTime)/60.);
+			    fltPos.verticalChange = (newAlt - prevAlt)/( (newTime - prevTime)/60.);
 //				System.err.println(" ***  " + oshFlightId + ":" + prevAlt + "," + newAlt + "," + prevTime + "," + newTime + " ==> " + pos.verticalChange);
 			}
 		}
 		
-		flightPositions.put(oshFlightId, pos);
-		flightPositionOutput.sendPosition(pos, oshFlightId);
+		flightPositions.put(oshFlightId, fltPos);
+		flightPositionOutput.sendPosition(oshFlightId, fltPos);
 	}
 	
 
 	@Override
-	public void newFlightPlan(FlightPlan plan)
+	public void newFlightPlan(FlightObject fltPlan)
 	{
 		//  Should never send null plan
-		if(plan == null) {
+		if (fltPlan == null)
 			return;
-		}
+		
 		// Add new FlightPlan FOI if new
-		String oshFlightId = plan.getOshFlightId();
-		ensureFlightFoi(oshFlightId, plan.issueTime);
+		String oshFlightId = getOshFlightId(fltPlan);
+		ensureFlightFoi(oshFlightId, fltPlan.getMessageTime()*1000);
 
 		// send new data to outputs
-		flightPlanOutput.sendFlightPlan(plan);
+		flightPlanOutput.sendFlightPlan(oshFlightId, fltPlan);
 	}
+
+    
+    protected void loadCache() throws SensorHubException
+    {
+        IModuleStateManager stateMgr = SensorHub.getInstance().getModuleRegistry().getStateManager(getLocalID());
+        
+        // preload cache from file
+        InputStream is = stateMgr.getAsInputStream(STATE_CACHE_FILE);
+        if (is != null)
+        {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is)))
+            {
+                String line;
+                while ((line = reader.readLine()) != null)
+                {
+                    String[] values = line.split(",");
+                    if (values.length < 2)
+                    {
+                        getLogger().error("Invalid cache entry: {}", line);
+                        continue;
+                    }
+                    
+                    FlightInfo info = new FlightInfo();
+                    info.dest = values[1];
+                    info.route = "null".equals(values[2]) ? null : values[2];
+                    flightCache.put(values[0], info);
+                }
+                
+                // read file last modified time stamp
+                File moduleDataFolder = SensorHub.getInstance().getModuleRegistry().getModuleDataFolder(getLocalID());
+                this.lastUpdatedCache = new File(moduleDataFolder, STATE_CACHE_FILE+".dat").lastModified()/1000;
+            }
+            catch (IOException e)
+            {
+                throw new SensorHubException("Error while saving state", e);
+            }
+            
+            getLogger().info("Loaded {} entries to cache. Last modified on {}", flightCache.size(), Instant.ofEpochSecond(lastUpdatedCache));
+        }
+    }
+    
+    
+    protected void saveCache() throws SensorHubException
+    {
+        // save ID cache for hot restart
+        if (flightCache != null && flightCache.size() > 0)
+        {
+            IModuleStateManager stateMgr = SensorHub.getInstance().getModuleRegistry().getStateManager(getLocalID());
+            
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stateMgr.getOutputStream(STATE_CACHE_FILE))))
+            {
+                for (Entry<String,FlightInfo> entry: flightCache.asMap().entrySet())
+                {
+                    writer.append(entry.getKey()).append(',')
+                          .append(entry.getValue().dest).append(',')
+                          .append(entry.getValue().route);
+                    writer.newLine();
+                }
+            }
+            catch (IOException e)
+            {
+                throw new SensorHubException("Error while saving state", e);
+            }
+            
+            getLogger().info("Saved cache state: {} entries", flightCache.size());
+        }
+    }
 	
 
     @Override

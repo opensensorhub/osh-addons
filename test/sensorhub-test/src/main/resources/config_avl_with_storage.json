@@ -30,7 +30,7 @@
     "agencyName": "Huntsville Fire Department",
     "commSettings": {
       "objClass": "org.sensorhub.impl.sensor.avl.MultipleFilesProviderConfig",
-      "dataFolder": "../../osh-sensors/sensorhub-driver-avl-911/src/test/resources",
+      "dataFolder": "../../sensors/avl/sensorhub-driver-avl-911/src/test/resources",
       "moduleClass": "org.sensorhub.impl.sensor.avl.MultipleFilesProvider",
       "autoStart": false
     },
@@ -42,11 +42,13 @@
   {
     "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
     "storageConfig": {
-      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
-      "storagePath": "avl.dat",
+      "objClass": "org.sensorhub.impl.persistence.h2.MVStorageConfig",
+      "storagePath": "avl_h2.dat",
       "memoryCacheSize": 1024,
-      "objectCacheSize": 100,
-      "moduleClass": "org.sensorhub.impl.persistence.perst.MultiEntityStorageImpl",
+      "autoCommitBufferSize": 1024,
+      "useCompression": false,
+      "indexObsLocation": true,
+      "moduleClass": "org.sensorhub.impl.persistence.h2.MVMultiStorageImpl",
       "autoStart": false
     },
     "dataSourceID": "d136b6ea-3950-4691-bf56-ac893e5fbb22",
@@ -67,44 +69,18 @@
         "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
         "sensorID": "d136b6ea-3950-4691-bf56-ac893e5fbb22",
         "storageID": "d136b6ea-3950-4691-1234-ac893e5fbb22",
-        "hiddenOutputs": [],
+        "latestRecordSource": "STORAGE",
+        "excludedOutputs": [],
         "liveDataTimeout": 3600.0,
         "maxFois": 10,
         "offeringID": "urn:mysos:avl",
         "name": "AVL 911",
         "description": "AVL location and status data for 911 vehicles",
         "enabled": true
-      },
-      {
-        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
-        "sensorID": "urn:android:device:a0e0eac2fea3f614",
-        "hiddenOutputs": [],
-        "liveDataTimeout": 10.0,
-        "maxFois": 10,
-        "offeringID": "urn:android:device:a0e0eac2fea3f614-sos",
-        "enabled": true
       }
     ],
-    "dataConsumers": [
-      {
-        "objClass": "org.sensorhub.impl.service.sos.SensorConsumerConfig",
-        "sensorID": "urn:android:device:a0e0eac2fea3f614",
-        "offeringID": "urn:android:device:a0e0eac2fea3f614-sos",
-        "enabled": true
-      }
-    ],
-    "customFormats": [
-      {
-        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
-        "mimeType": "video/mp4",
-        "className": "org.sensorhub.impl.service.sos.video.MP4Serializer"
-      },
-      {
-        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
-        "mimeType": "video/x-motion-jpeg",
-        "className": "org.sensorhub.impl.service.sos.video.MJPEGSerializer"
-      }
-    ],
+    "dataConsumers": [],
+    "customFormats": [],
     "security": {
       "objClass": "org.sensorhub.api.security.SecurityConfig",
       "enableAccessControl": false,
@@ -150,13 +126,6 @@
     "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
     "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
     "name": "SOS Service",
-    "autoStart": true
-  },
-  {
-    "objClass": "org.sensorhub.impl.sensor.swe.SWETransactionalSensorConfig",
-    "id": "urn:android:device:a0e0eac2fea3f614",
-    "moduleClass": "org.sensorhub.impl.sensor.swe.SWETransactionalSensor",
-    "name": "Android Sensors [Alex's Nexus5]",
     "autoStart": true
   }
 ]

@@ -15,9 +15,9 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.flightAware;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.Waypoint;
 
 /**
  * 
@@ -82,30 +82,26 @@ import java.util.List;
 
  *
  */
-
-
-
-
 public class FlightObject 
 {
-	public String type;  // pos or fp
+	transient String json; // original json message as received from firehose
+	
+    public String type;  // pos or fp
 	public String ident;  // tail
 	public String status;
 	public String air_ground;  // always "A" for us so far
 	public String aircrafttype;  // ICAO aircraft type code
 	public String alt;
 	public String pitr;  //  Timestamp value that should be supplied to the "pitr" connection initiation command when reconnecting and you wish to resume firehose playback at that approximate position
-
-
 	public String clock;  // posix epoch timestamp
-	public String id = ""; // faFlightId
+	public String id; // faFlightId
 	public String gs;  // ground speed knots
 	public String speed;  // fixed cruising speed in knots
 	public String heading;
 	public String lat;
 	public String lon;
-	public String orig = ""; // 	ICAO airport code, waypoint, or latitude/longitude pair
-	public String dest = ""; // 	ICAO airport code, waypoint, or latitude/longitude pair
+	public String orig; // 	ICAO airport code, waypoint, or latitude/longitude pair
+	public String dest; // 	ICAO airport code, waypoint, or latitude/longitude pair
 	public String reg;
 	public String squawk;
 	public String updateType;
@@ -114,90 +110,23 @@ public class FlightObject
 	public String eat;
 	public String ete;
 	public String fdt;
-	List<Waypoint> waypoints = new ArrayList<>();
+	public String route;
+	public String facility_name;
 	
-	// Adding for LawBox support
-	public double verticalChange;  //feet per mminute
+	List<Waypoint> decodedRoute;
+	public double verticalChange;  //feet per minute
+    
+    
+    public long getMessageTime() {
+        return Long.parseLong(pitr);
+    }  
 	
 	public Long getDepartureTime() {
 		if(edt != null)
 			return Long.parseLong(edt);
 		if(fdt != null)
 			return Long.parseLong(fdt);
-		
 		return null;
-	}
-	
-	class Waypoint {
-		public Waypoint(float lat, float lon) {
-			this.lat = lat;
-			this.lon = lon;
-		}
-		
-		float lat;
-		float lon;
-		float alt;
-	}
-
-	public void addWaypoints(double lat, double lon) {
-		waypoints.add(new Waypoint((float)lat, (float)lon));
-	}
-
-	
-	@Override
-	public String toString() {
-		StringBuilder b = new StringBuilder();
-		b.append("type: " + type + "\n");
-		b.append("  id: " + id + "\n");
-		b.append("  ident: " + ident + "\n");
-		b.append("  status: " + status + "\n");
-		b.append("  orig: " + orig + "\n");
-		b.append("  dest: " + dest + "\n");
-		b.append("  clock: " + clock + "\n");
-		b.append("  time: " + getTimeStr() + "\n");
-		b.append("  heading: " + heading + "\n");
-		b.append("  groundspeed: " + gs + "\n");
-		b.append("  speed: " + speed + "\n");
-		b.append("  lat: " + lat + "\n");
-		b.append("  lon: " + lon + "\n");
-		b.append("  alt: " + alt + "\n");
-		b.append("  altChange: " + altChange + "\n");
-//		b.append("  waypoints: \n");
-//		if(waypoints.size() > 0) {
-//			int cnt = 0;
-//			for (Waypoint wp : waypoints) {
-//				b.append("    " + wp.lat + "," + wp.lon );
-//				if(wp.alt > 0) {
-//					b.append(" " + wp.alt );
-//					System.err.println("Alt in waypt!!");
-//					System.exit(0);
-//				}
-//				b.append("\n");
-//				
-////				if(cnt++>=3)
-////					break;
-//			}
-//		}
-
-		return b.toString();
-	}
-
-	public float [] getLats() {
-		float[] lats = new float[waypoints.size()];
-		int i=0;
-		for (Waypoint wp : waypoints) {
-			lats[i++] = wp.lat;
-		}
-		return lats;
-	}
-
-	public float[] getLons() {
-		float [] lons = new float[waypoints.size()];
-		int i=0;
-		for (Waypoint wp : waypoints) {
-			lons[i++] = wp.lon;
-		}
-		return lons;
 	}
 	
 	public long getClock() {
@@ -212,13 +141,6 @@ public class FlightObject
 		if(clock == null)  return "";
 		Instant instant = Instant.ofEpochMilli(getTimeMs() * 1000);
 		return instant.toString();
-	}
-	
-	// Need to add null checking where this is called
-	public String getOshFlightId() {
-		if(ident == null || dest == null)
-			return null;
-		return ident + "_" + dest;
 	}
 	
 	public double getValue (String s) {
@@ -292,4 +214,10 @@ public class FlightObject
 				);
 		return result;
 	}
+
+    public void addWaypoint(String name, String type, double lat, double lon) {
+        if (decodedRoute == null)
+            decodedRoute = new ArrayList<>(25);
+        decodedRoute.add(new Waypoint(name, type, lat, lon));
+    }
 }

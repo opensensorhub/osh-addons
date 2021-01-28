@@ -93,42 +93,42 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		encoding = fac.newTextEncoding(",", "\n");
 	}
 
-	public void sendPosition(FlightObject obj, String oshFlightId)
+	public void sendPosition(String oshFlightId, FlightObject fltPos)
 	{                
 		int i = 0;
 		
 		// build data block from FlightObject Record
 		DataBlock dataBlk = recordStruct.createDataBlock();
-		dataBlk.setDoubleValue(i++, obj.getClock());
-		dataBlk.setStringValue(i++, obj.getOshFlightId());
-		dataBlk.setDoubleValue(i++, obj.getValue(obj.lat));
-		dataBlk.setDoubleValue(i++, obj.getValue(obj.lon));		
+		dataBlk.setDoubleValue(i++, fltPos.getClock());
+		dataBlk.setStringValue(i++, oshFlightId);
+		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.lat));
+		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.lon));		
 		
 		// fix altitude if 0
-        double alt = obj.getValue(obj.alt);
+        double alt = fltPos.getValue(fltPos.alt);
         if (alt <= 0)
         {
             DataBlock lastData = latestRecords.get(oshFlightId);
             if (lastData != null)
             {
                 double lastAlt = lastData.getDoubleValue(i);
-                parentSensor.getLogger().debug("{}{} Using last value = {}", obj.getOshFlightId(), INVALID_ALT_MSG, lastAlt);
+                parentSensor.getLogger().debug("{}{} Using last value = {}", oshFlightId, INVALID_ALT_MSG, lastAlt);
                 alt = lastAlt;
             }
             else
-                parentSensor.getLogger().debug("{}{} No previous value available", obj.getOshFlightId(), INVALID_ALT_MSG);
+                parentSensor.getLogger().debug("{}{} No previous value available", oshFlightId, INVALID_ALT_MSG);
         }
 		dataBlk.setDoubleValue(i++, alt);
 		
-		dataBlk.setDoubleValue(i++, obj.getValue(obj.heading));
-		dataBlk.setDoubleValue(i++, obj.getValue(obj.gs));
-        dataBlk.setDoubleValue(i++, obj.verticalChange);
+		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.heading));
+		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.gs));
+        dataBlk.setDoubleValue(i++, fltPos.verticalChange);
         
 		// update latest record and send event
 		latestRecord = dataBlk;
 		latestRecords.put(oshFlightId, dataBlk);
 		latestRecordTime = System.currentTimeMillis();
-        latestUpdateTimes.put(oshFlightId, obj.getClock());
+        latestUpdateTimes.put(oshFlightId, fltPos.getClock());
 		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FlightPositionOutput.this, dataBlk));        	
 	}
 

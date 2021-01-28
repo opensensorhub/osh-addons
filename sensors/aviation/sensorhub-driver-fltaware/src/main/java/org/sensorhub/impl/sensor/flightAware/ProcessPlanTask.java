@@ -14,52 +14,102 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.io.IOException;
+import org.sensorhub.impl.sensor.flightAware.FlightAwareDriver.FlightInfo;
+import org.slf4j.Logger;
+import org.vast.util.Asserts;
+import com.google.common.base.Strings;
+import com.google.common.cache.Cache;
 
-import org.apache.http.client.ClientProtocolException;
 
 /**
- *   Process Flight Plan messages from FlightAware firehose feed.
- *   Note that because of the way FlightAware feed and API work, 
- *   we have to pull some info from the Firehose message (airports, departTime, issueTime)
- *   and some from the API (actual waypoints) 
- *
- * @author tcook
- *
+ * Process Flight Plan messages from FlightAware firehose feed.
+ * <p>
+ * We also maintain a cache of previously processed flight info objects for 2 reasons:
+ * 1. Some position messages are missing the dest field so we need to look it up
+ *    from the cache using the faFlightId
+ * 2. Many flightplan messages contain duplicate routes so we use the cache to
+ *    detect duplicates and avoid sending a new message
+ * </p>
+ * @author Tony Cook
+ * @author Alex Robin
  */
 public class ProcessPlanTask implements Runnable
 {
-	FlightObject obj;
-	FlightAwareApi api;
-	MessageHandler converter;
+    Logger log;    
+    FlightObject fltPlan;
+	MessageHandler msgHandler;
+	Cache<String, FlightInfo> flightCache;
+	IFlightRouteDecoder flightRouteDecoder;
 	
-	public ProcessPlanTask(MessageHandler converter, FlightObject obj) {
-		this.converter = converter;
-		this.obj = obj;
-		this.api = new FlightAwareApi(converter.user, converter.passwd);
+	public ProcessPlanTask(MessageHandler msgHandler, FlightObject fltObj) {
+	    this.log = msgHandler.log;
+		this.msgHandler = msgHandler;
+		this.flightCache = Asserts.checkNotNull(msgHandler.driver.flightCache, Cache.class);
+		this.flightRouteDecoder = Asserts.checkNotNull(msgHandler.driver.flightRouteDecoder, IFlightRouteDecoder.class);
+		this.fltPlan = fltObj;		
 	}
 	
 	@Override
 	public void run() {
-		try {
-			FlightPlan plan = api.getFlightPlan(obj.id);
-			if(plan == null) {
-				return;
-			}
-			//  By convention, I am using message receive time as issueTime
-			//  Flight Aware does not include it in feed
-			plan.issueTime = System.currentTimeMillis() / 1000;
-			if(obj.orig != null)
-				plan.originAirport = obj.orig;
-			if(obj.dest != null)
-				plan.destinationAirport = obj.dest;
-			plan.departureTime = obj.getDepartureTime();
-			converter.newFlightPlan(plan);
-		} catch (ClientProtocolException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+		try {		    
+		    // skip if airport codes or route are missing
+		    if (Strings.nullToEmpty(fltPlan.orig).trim().isEmpty() ||
+		        Strings.nullToEmpty(fltPlan.dest).trim().isEmpty() ||
+		        Strings.nullToEmpty(fltPlan.route).trim().isEmpty())
+		        return;
+		    
+		    // save at least the dest airport in cache
+		    FlightInfo cachedInfo = flightCache.get(fltPlan.id, () -> {
+		        FlightInfo info = new FlightInfo();
+		        info.dest = fltPlan.dest;
+                return info;
+		    });
+		    
+		    // keep only flight plans with status flag set to "F: filed" or "A: active"
+		    if (!("F".equalsIgnoreCase(fltPlan.status) || "A".equalsIgnoreCase(fltPlan.status)))
+		        return;
+		    
+		    // need to synchronize on cache entry so we can properly detect duplicates
+            synchronized (cachedInfo)
+            {
+                // if route hasn't changed, don't process further
+                String newRoute = normalizeRouteString(fltPlan);
+                if (cachedInfo.route == null || !newRoute.equals(cachedInfo.route))
+                {
+                    if (cachedInfo.route != null)
+                        log.debug("{}_{}: Route changed ({}): {} -> {}", fltPlan.ident, fltPlan.dest, fltPlan.facility_name, cachedInfo.route, newRoute);
+                    
+                    // decode route or just use already decoded one
+                    // i.e. it may have been decoded by another server and sent to us via mq
+                    if (fltPlan.decodedRoute == null)
+                    {
+                        fltPlan.decodedRoute = flightRouteDecoder.decode(fltPlan, newRoute);
+                        if (log.isDebugEnabled())
+                            log.debug("{}_{}: Route decoded ({}): {} -> {}", fltPlan.ident, fltPlan.dest, fltPlan.facility_name, newRoute, fltPlan.decodedRoute);                            
+                    }   
+                    
+                    // publish flight plan
+                    cachedInfo.route = newRoute;
+                    msgHandler.newFlightPlan(fltPlan);
+                }
+                else
+                {
+                    log.debug("{}_{}: Skipping duplicate route", fltPlan.ident, fltPlan.dest);
+                }
+            }
+            
+		} catch (Exception e) {
+			log.error("Error while processing flight plan", e);
 		} 	
 	}
-
+    
+    
+    String normalizeRouteString(FlightObject fltObj)
+    {
+        log.debug("{}_{}: FA route is: {}", fltObj.ident, fltObj.dest, fltObj.route);
+        return fltObj.route
+            .trim()
+            .replaceAll("/[0-9]{4}$", "")
+            .replaceAll("/|\\*", "");
+    }
 }

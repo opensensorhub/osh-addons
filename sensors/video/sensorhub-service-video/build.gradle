@@ -1,16 +1,12 @@
 description = 'SOS Extensions for Video'
 ext.details = 'Sensor Observation Service extensions for supporting video'
-version = '1.1.0'
+version = '1.2.0'
 
-rootProject.allprojects {
-  repositories {
-    maven { url "http://52north.org/maven/repo/releases" }
-  }
-}
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   compile 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
+  compile 'org.bytedeco:ffmpeg-platform:4.2.2-1.5.3'
 }
 
 // add info to OSGi manifest

@@ -17,6 +17,7 @@ package org.sensorhub.impl.sensor.flightAware;
 import org.sensorhub.api.comm.IMessageQueuePush;
 import org.vast.util.Asserts;
 
+
 /**
  * Wraps the FlightAware message handler and forwards message to the
  * pub/sub queue 
@@ -26,20 +27,67 @@ public class MessageHandlerWithForward extends MessageHandler
     IMessageQueuePush msgQueue;
     
     
-    public MessageHandlerWithForward(String user, String pwd, final IMessageQueuePush msgQueue) 
+    public MessageHandlerWithForward(FlightAwareDriver driver, IMessageQueuePush msgQueue) 
     {
-        super(user, pwd);
-        
+        super(driver);        
         Asserts.checkNotNull(msgQueue, IMessageQueuePush.class);
         this.msgQueue = msgQueue;
     }
     
 
-    @Override
-    public void handle(String message)
+    /*@Override
+    protected void newFlightObject(FlightObject fltObj)
     {
-        msgQueue.publish(message.getBytes());        
-        super.handle(message);
+        // don't forward flightplan messages here
+        // we need to forward them once the route has been decoded
+        if (!FLIGHTPLAN_MSG_TYPE.equals(fltObj.type))
+        {
+            msgQueue.publish(fltObj.json.getBytes());
+            log.trace("Message published to MQ: {}", fltObj.json);
+        }
+        
+        for (FlightObjectListener l: objectListeners)
+            l.processMessage(fltObj);
+    }*/
+    
+    
+    @Override
+    protected void newFlightObject(FlightObject fltObj)
+    {
+        if (KEEPALIVE_MSG_TYPE.equals(fltObj.type))
+        {
+            msgQueue.publish(fltObj.json.getBytes());
+            log.trace("Keepalive published to MQ: {}", fltObj.json);
+        }
+        
+        super.newFlightObject(fltObj);
+    }
+    
+
+    @Override
+    protected void newFlightPlan(FlightObject fltPlan)
+    {
+        publish(fltPlan);
+        super.newFlightPlan(fltPlan);
+    }
+    
+    
+    @Override
+    protected void newFlightPosition(FlightObject fltPos)
+    {
+        publish(fltPos);
+        super.newFlightPosition(fltPos);
+    }
+
+
+    private void publish(FlightObject fltObj)
+    {
+        if (msgQueue != null)
+        {
+            String msg = gson.toJson(fltObj);
+            msgQueue.publish(msg.getBytes());
+            log.debug("{}_{}: {} published to MQ: {}", fltObj.ident, fltObj.dest, fltObj.type, msg);
+        }
     }
 
 }

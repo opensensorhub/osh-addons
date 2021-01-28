@@ -116,8 +116,19 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 		for (Station station: stations)
 		{
 			String stationId = station.getId();
+			//  Only load what we want for SCIRA
+			boolean keepStation = false;
+			for(String id: config.stationIds) {
+				if(id.equalsIgnoreCase(stationId)) {
+					keepStation = true;
+					break;
+				}
+			}
+			if(!keepStation)
+				continue;
 			String uid = STATION_UID_PREFIX + stationId;
 			String description = "METAR weather station: " + stationId;
+			log.debug("Adding: " + description);
 
 			// generate small SensorML for FOI (in this case the system is the FOI)
 			PhysicalSystem foi = smlFac.newPhysicalSystem();

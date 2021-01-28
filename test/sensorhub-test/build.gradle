@@ -1,6 +1,6 @@
 apply plugin: 'java'
 description = 'Main Test Project'
-targetCompatibility = 1.7
+targetCompatibility = 1.8
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
@@ -26,7 +26,9 @@ dependencies {
   compile project(':sensorhub-driver-fakeweather')
   compile project(':sensorhub-driver-gamma')
   compile project(':sensorhub-driver-gps-nmea')
+  compile project(':sensorhub-driver-intellisense')
   compile project(':sensorhub-driver-mavlink')
+  compile project(':sensorhub-driver-metar')
   compile project(':sensorhub-driver-mti')
   compile project(':sensorhub-driver-plume')
   compile project(':sensorhub-driver-rtpcam')

@@ -80,7 +80,7 @@
   },
   {
     "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
-    "googleApiUrl": "http://maps.googleapis.com/maps/api/directions/json",
+    "googleApiUrl": "https://maps.googleapis.com/maps/api/directions/json",
     "googleApiKey": "ENTER_YOUR_API_KEY_HERE",
     "centerLatitude": 34.73,
     "centerLongitude": -86.585,
@@ -98,7 +98,7 @@
       "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
       "memoryCacheSize": 4096,
       "objectCacheSize": 100,
-      "storagePath": "gps_obs.dat",
+      "storagePath": "/var/osh/data/gps_obs.dat",
       "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
       "autoStart": false
     },
@@ -131,7 +131,7 @@
       "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
       "memoryCacheSize": 4096,
       "objectCacheSize": 100,
-      "storagePath": "weather_obs.dat",
+      "storagePath": "/var/osh/data/weather_obs.dat",
       "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
       "autoStart": false
     },
@@ -149,7 +149,7 @@
     "agencyName": "Huntsville Fire Department",
     "commSettings": {
       "objClass": "org.sensorhub.impl.sensor.avl.MultipleFilesProviderConfig",
-      "dataFolder": "/home/ubuntu/data",
+      "dataFolder": "/var/osh/data/avl",
       "moduleClass": "org.sensorhub.impl.sensor.avl.MultipleFilesProvider",
       "autoStart": false
     },
@@ -164,7 +164,7 @@
       "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
       "memoryCacheSize": 4096,
       "objectCacheSize": 100,
-      "storagePath": "avl.dat",
+      "storagePath": "/var/osh/data/avl.dat",
       "moduleClass": "org.sensorhub.impl.persistence.perst.MultiEntityStorageImpl",
       "autoStart": false
     },
@@ -445,7 +445,7 @@
       "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
       "memoryCacheSize": 1024,
       "objectCacheSize": 100,
-      "storagePath": "avl-police.dat",
+      "storagePath": "/var/osh/data/avl-police.dat",
       "moduleClass": "org.sensorhub.impl.persistence.perst.MultiEntityStorageImpl",
       "autoStart": false
     },
@@ -463,7 +463,7 @@
       "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
       "memoryCacheSize": 1024,
       "objectCacheSize": 100,
-      "storagePath": "avl-fire.dat",
+      "storagePath": "/var/osh/data/avl-fire.dat",
       "moduleClass": "org.sensorhub.impl.persistence.perst.MultiEntityStorageImpl",
       "autoStart": false
     },
@@ -481,7 +481,7 @@
       "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
       "memoryCacheSize": 1024,
       "objectCacheSize": 100,
-      "storagePath": "avl-rescue.dat",
+      "storagePath": "/var/osh/data/avl-rescue.dat",
       "moduleClass": "org.sensorhub.impl.persistence.perst.MultiEntityStorageImpl",
       "autoStart": false
     },
@@ -494,8 +494,31 @@
     "autoStart": true
   },
   {
+    "objClass": "org.sensorhub.impl.usgs.water.USGSWaterDataConfig",
+    "exposeFilter": {
+      "objClass": "org.sensorhub.impl.usgs.water.DataFilter",
+      "siteTypes": [],
+      "siteIds": [],
+      "stateCodes": [
+        "NY"
+      ],
+      "countyCodes": [],
+      "parameters": [
+        "GAGE_HEIGHT",
+        "WATER_TEMP",
+        "DISCHARGE"
+      ],
+      "startTime": "2019-01-18T00:00:00Z",
+      "endTime": "2100-12-31T00:00:00Z"
+    },
+    "id": "5e55d292-4d6c-4554-a561-2c106d9a26af",
+    "moduleClass": "org.sensorhub.impl.usgs.water.USGSWaterDataArchive",
+    "name": "USGS Water Data Archive",
+    "autoStart": true
+  },
+  {
     "objClass": "org.sensorhub.impl.sensor.plume.PlumeConfig",
-    "dataPath": "/home/ubuntu/data/plume/PARTICLE.OUT_12Zrel_350m",
+    "dataPath": "/var/osh/data/plume/PARTICLE.OUT_12Zrel_350m",
     "id": "d136b6ea-3950-4691-bf56-ac893e5fcc44",
     "moduleClass": "org.sensorhub.impl.sensor.plume.PlumeSensor",
     "name": "Plume Data Stream",
@@ -507,7 +530,7 @@
       "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
       "memoryCacheSize": 1024,
       "objectCacheSize": 100,
-      "storagePath": "plume.dat",
+      "storagePath": "/var/osh/data/plume.dat",
       "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
       "autoStart": false
     },
@@ -535,7 +558,7 @@
       "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
       "memoryCacheSize": 4096,
       "objectCacheSize": 100,
-      "storagePath": "sat_nav.dat",
+      "storagePath": "/var/osh/data/sat_nav.dat",
       "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
       "autoStart": false
     },
@@ -555,7 +578,7 @@
     "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
     "memoryCacheSize": 1024,
     "objectCacheSize": 100,
-    "storagePath": "urn_android_device_060693280a28e015.dat",
+    "storagePath": "/var/osh/data/urn_android_device_060693280a28e015.dat",
     "id": "5cb4569c-9e08-4fa1-1458-000000000000",
     "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
     "name": "Android Data Storage for Toulouse Drive",
@@ -565,7 +588,7 @@
     "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
     "memoryCacheSize": 1024,
     "objectCacheSize": 100,
-    "storagePath": "solo-nav.dat",
+    "storagePath": "/var/osh/data/solo-nav.dat",
     "id": "f5ab10ad-9e12-4257-dddd-ed7d721b26e2",
     "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
     "name": "Solo MAVLink Storage (Airport Road 2)",
@@ -575,7 +598,7 @@
     "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
     "memoryCacheSize": 1024,
     "objectCacheSize": 100,
-    "storagePath": "solo-video.dat",
+    "storagePath": "/var/osh/data/solo-video.dat",
     "id": "f5ab10ad-9e12-4257-dddd-ed7d721b26e3",
     "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
     "name": "Solo Video Storage (Airport Road 2)",
@@ -710,6 +733,14 @@
         "maxFois": 10,
         "offeringID": "urn:android:device:a0e0eac2fea3f614-sos",
         "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.StorageDataProviderConfig",
+        "storageID": "5e55d292-4d6c-4554-a561-2c106d9a26af",
+        "hiddenOutputs": [],
+        "maxFois": 0,
+        "offeringID": "urn:mysos:usgs:water",
+        "enabled": true
       }
     ],
     "dataConsumers": [],
@@ -779,7 +810,7 @@
       "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
       "memoryCacheSize": 4096,
       "objectCacheSize": 100,
-      "storagePath": "urn_android_device_a0e0eac2fea3f614.dat",
+      "storagePath": "/var/osh/data/urn_android_device_a0e0eac2fea3f614.dat",
       "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
       "autoStart": true
     },

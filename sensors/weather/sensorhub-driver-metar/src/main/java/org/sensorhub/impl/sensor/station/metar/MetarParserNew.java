@@ -1,14 +1,10 @@
 package org.sensorhub.impl.sensor.station.metar;
 
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoField;
 import java.util.Arrays;
 
 import org.sensorhub.impl.sensor.station.metar.MetarConstants.Modifier;
 import org.sensorhub.impl.sensor.station.metar.RunwayVisualRange.Range;
-
 
 /**
  * 
@@ -17,16 +13,28 @@ import org.sensorhub.impl.sensor.station.metar.RunwayVisualRange.Range;
  *  It means "A report from a fully automated AWS that does not include information from sensors for 
  *  visibility, weather or cloud will report ///, // or ///// respectively in lieu of these parameters."
 
- *
+ *  This parser should replace existing buggy parser
  */
 
 public class MetarParserNew 
 {
+	boolean overrideYearMonth = false;
+	Integer overrideYear;
+	Integer overrideMonth;
+	static final boolean debug = false;
+
+	public void setOverrideYearMonth(Integer yr, Integer mon) {
+		overrideYearMonth = true;
+		overrideYear = yr;
+		overrideMonth = mon;
+	}
+
 	// Records should already be cleaned (MetarUtil) before being sent here
 	public Metar parseMetar(String line) {
 		Metar metar = new Metar();
 		metar.reportString = line;
-		System.err.println(line);
+		if(debug)
+			System.err.println(line);
 
 		try {
 			String [] sarr = line.split(" ");
@@ -43,11 +51,21 @@ public class MetarParserNew
 
 			// next field must be stationID
 			//			System.err.println("Must be station: " + sarr[fieldCnt]);
-			metar.stationID = sarr[fieldCnt++];
+			metar.stationId = sarr[fieldCnt++];
 
 			// next field must be date: ddhhmmZ
 			//			System.err.println("Must be date: " + sarr[fieldCnt]);
-			metar.dateString = sarr[fieldCnt++];
+			try {
+				metar.dateString = sarr[fieldCnt++];
+			} catch (NumberFormatException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return null;
+			}
+			if(overrideYearMonth)
+				metar.timeUtc = MetarUtil.computeTimeUtc(overrideYear, overrideMonth, metar.dateString);
+			else 
+				metar.timeUtc = MetarUtil.computeTimeUtc(metar.dateString);
 
 			// AUTO or COR optional
 			s = sarr[fieldCnt];
@@ -66,14 +84,20 @@ public class MetarParserNew
 			s = sarr[fieldCnt];
 			if(isMissing(s)) {
 				fieldCnt++;
-			} else if(s.endsWith("KT") || s.endsWith("MPS")) {
-				parseWind(metar, s);
-				s = sarr[++fieldCnt];
-				if(s.length() == 7 && s.charAt(3) == 'V') {
-					parseVariableWindDir(metar, s);
-					fieldCnt++;
+				//  Attempt to handle all the crazy wind encodings and some miscodings
+			} else if( (s.length() >= 5 && isNumeric(s.substring(0,5))) || s.startsWith("VRB") || s.endsWith("KT") || s.endsWith("MPS" ) ) {
+				try {
+					//  wind seems to be error prone- let's not throw the whole record out if it fails
+					parseWind(metar, s);
+					s = sarr[++fieldCnt];
+					if(s.length() == 7 && s.charAt(3) == 'V') {
+						parseVariableWindDir(metar, s);
+						fieldCnt++;
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
-			}
+			} 
 
 			//  Vis - /// indicates missing in most refs I Could find
 			//  international seems mostly to use 4 digit meters value without M appended,
@@ -92,11 +116,18 @@ public class MetarParserNew
 					metar.setVisibilityKilometers(meters/1000.0);
 				}
 				fieldCnt++;
+				s = sarr[fieldCnt];
+				//  check for second visibility field (seeing this in some Italian metars)
+				//  Ignoring it for now- just don't want it to cause problems parsing the rest of the record
+				if ((s.length() == 5 || s.length() == 6) && isNumeric(s.substring(0,4)) ) {
+					//					 System.err.println("Second VIS field: " + sarr[fieldCnt]);
+					fieldCnt++;
+				}
 			} else if(s.equals(MetarConstants.CAVOK)) {  
 				metar.isCavok = true;
 				metar.setVisibilityKilometers(10.0);
 				fieldCnt++;
-			} else if (s.endsWith("M")) { // either KM or SM- think this is safe but could be conditions where it fails
+			} else if (s.endsWith("KM") || s.endsWith("SM")) { // either KM or SM
 				parseVis(metar, sarr[fieldCnt]);
 				fieldCnt++;
 			} else if (fieldCnt+1 < sarr.length && sarr[fieldCnt + 1].endsWith("M")) {
@@ -115,8 +146,8 @@ public class MetarParserNew
 			if(isMissing(s)) {
 				fieldCnt++;
 			} else { 
-				while(!s.equals("RMK") && !s.equals("RA") && s.startsWith("R")) {  // Not ReMarK and not RAin- should be runway
-					//				System.err.println(sarr[fieldCnt]);
+				//				while(!s.equals("RMK") && !s.equals("RA") && !s.equals("RASN") && !s.equals("SN") && s.startsWith("R")) {  // Not ReMarK and not RAin- should be runway
+				while(s.startsWith("R") && isNumeric(s.substring(1,2))) {
 					metar.addRunwayVisualRange(parseRunwayVis(sarr[fieldCnt++]));
 					if(fieldCnt >= sarr.length)
 						return metar;
@@ -133,7 +164,8 @@ public class MetarParserNew
 			} else {
 				while(PresentWeather.isPresentWeather(s)) {
 					PresentWeather pw = PresentWeather.parsePresentWeather(s);
-					System.err.println("PW: " + s + ": " +   pw);
+					if(debug)
+						System.err.println("PW: " + s + ": " +   pw);
 					metar.addPresentWeather(pw);
 					if(fieldCnt >= sarr.length)
 						return metar;
@@ -141,8 +173,9 @@ public class MetarParserNew
 				}
 			}
 
-
 			// Cloud Cover
+			//  i.e. OVC001 
+			//  but can be ///001 - indefinite ceiling with vertical visibility of 100 feet AGL
 			if(fieldCnt >= sarr.length)
 				return metar;
 			s = sarr[fieldCnt];
@@ -151,11 +184,12 @@ public class MetarParserNew
 			} else {
 				while(SkyCondition.isSkyCondition(s)) {
 					SkyCondition sc = SkyCondition.parseSkyCondition(s);
-					System.err.println("SC: " + s + ": " +   sc);
+					if(debug)
+						System.err.println("SC: " + s + ": " +   sc);
 					metar.addSkyCondition(sc);
-					if(fieldCnt >= sarr.length)
+					if(++fieldCnt >= sarr.length)
 						return metar;
-					s = sarr[++fieldCnt];
+					s = sarr[fieldCnt];
 				}
 			}
 
@@ -163,29 +197,48 @@ public class MetarParserNew
 			//  12/7  M4/M2
 			//  23/  M4/  Missing dewpt
 			//  /14  /M3   Missing tmp
+			//  M/M apparently means both are missing
+			//  corner cases
+			//   24/// seen freq. and covered  
+			//   ///12 haven't seen yet
+			//  In case of Q////, which is really a missing pressure, the check for a single slash is 
+			//    causing us to interpret this as T/Td whene it is really just missing.
+			//    METAR LIRK 071555Z AUTO 33013KT //// ///// Q////
 			if(fieldCnt >= sarr.length)
 				return metar;
 			s = sarr[fieldCnt];
 			if(isMissing(s)) {
 				fieldCnt++;
+			} else if(s.equals("Q////") || s.equals("A////")) {
+				;  // do nothing- this field is pressure and needs to be passed down to next level
 			} else if(s.contains("/")) {
 				int slashIdx = s.indexOf('/');
 				if(slashIdx == 0)  {// dewPt only
 					String d = s.substring(1);
-					metar.setDewPointC(parseTempDew(d));
+					metar.dewPointC = parseTempDew(d);
 				} else if (slashIdx == s.length() - 1) {  // temp only
 					String d = s.substring(0, slashIdx);
-					metar.setTemperatureC(parseTempDew(d));
+					metar.temperatureC = parseTempDew(d);
 				} else {  // T and Td
 					String [] tdstr = s.split("/");
-					metar.setTemperatureC(parseTempDew(tdstr[0]));
-					metar.setDewPointC(parseTempDew(tdstr[1]));
+					if(!tdstr[0].equals("M"))
+						metar.temperatureC = parseTempDew(tdstr[0]);
+					if(tdstr.length == 2 && !tdstr[1].equals("M"))  // catches case of 24///
+						metar.dewPointC = parseTempDew(tdstr[1]);
 				}
+				if(metar.stationId.equals("MHLE"))
+					System.err.println(metar.reportString);
+				if(fieldCnt >= sarr.length)
+					return metar;
+
 				s = sarr[++fieldCnt];
-				System.err.println("T/TD: " + metar.getTemperature() + "/" + metar.getDewPoint());
+				if(debug)
+					System.err.println("T/TD: " + metar.temperatureC + "/" + metar.dewPointC);
 			}
 
 			// Altimeter APPPP - Altimeter in inches of Mercury * 100 (mainly US)
+			// Note that if SLP pressure exists in Remarks section, it will override this value
+			//  If APPP and QPPP, use QPPP
 			if(fieldCnt >= sarr.length)
 				return metar;
 			s = sarr[fieldCnt];
@@ -193,22 +246,37 @@ public class MetarParserNew
 				fieldCnt++;
 			} else 	if(s.startsWith("A")) {
 				s = s.substring(1);
-				metar.altimeter = Integer.parseInt(s) / 100.0;
+				if(!isMissing(s))
+					metar.altimeter = Integer.parseInt(s) / 100.0;
 				fieldCnt++;
-				System.err.println("Alt: " + metar.altimeter);
+				if(debug)
+					System.err.println("Alt: " + metar.altimeter);
 			}
 
 			// Pressure QPPPP - Pressure in hPa/mb  (mainly interntnl)
+			// Note that if SLP pressure exists in Remarks section, it will override this value
 			if(fieldCnt >= sarr.length)
 				return metar;
 			s = sarr[fieldCnt];
+			if(metar.stationId.equals(""))
+				System.err.println(metar.reportString);
 			if(isMissing(s)) {
 				fieldCnt++;
 			} else 	if(s.startsWith("Q")) {
 				s = s.substring(1);
-				metar.pressure = Double.parseDouble(s);
+				if(isNumeric(s)) {
+					metar.pressure = Double.parseDouble(s);
+					if(debug)
+						System.err.println("Pressure: " + metar.pressure);
+				} else {
+					// Have seen a small number of reports with the String QFE or QNH followed by a value.
+					//    e.g. MGMT 061800Z 05018KT CAVOK 31/13 QFE 1012.7
+					// Mostly Guatemalan stations. It is non-standard and all the decoders online I have seen ignore it,
+					// I will try to gracefully bypass it in case there are other fields after it
+					if (s.equals("FE") || s.equals("NH"))
+						fieldCnt++;
+				}
 				fieldCnt++;
-				System.err.println("Pressure: " + metar.pressure);
 			}
 
 			// Remarks - RMK
@@ -219,11 +287,12 @@ public class MetarParserNew
 				String [] subarr = Arrays.copyOfRange(sarr, ++fieldCnt, sarr.length); 
 				parseRemarks(metar, subarr);
 			}
-
-			System.err.println("");
+			if(debug)
+				System.err.println("");
 		} catch (Exception e) {
 			System.err.println("FAILED: " + line);
-			e.printStackTrace(System.err);
+//			e.printStackTrace(System.err);
+			return null;  //  Unexpected failure- don't retain this record
 		}
 		return metar;
 	}
@@ -236,7 +305,8 @@ public class MetarParserNew
 	//  hourly precip   :  Ppppp - precip in 100ths of inches - should P000 be trace?
 	//  24 hour precip  :  7pppp - 24 hour precip (TODO) 
 	public static void parseRemarks(Metar metar, String [] sarr ) {
-		System.err.print("REMARKS: ");
+		if(debug)
+			System.err.print("REMARKS: ");
 		int fieldCnt = 0;
 		for(int i=fieldCnt; i<sarr.length; i++) {
 			//			System.err.println(sarr[i]);
@@ -244,24 +314,27 @@ public class MetarParserNew
 				if(sarr[i].length() == 6) {
 					// assumes 900 < P < 1089.9 - I think this is reasonable and have to assume something to parse 
 					String ps = sarr[i].substring(3, 6);
+					if(isMissing(ps))
+						continue;
 					if(ps.startsWith("9"))
 						metar.pressure = Double.parseDouble(ps)/10. + 900.;  
 					else 
 						metar.pressure = Double.parseDouble(ps)/10. + 1000.;
-					System.err.println("Prss: " + metar.pressure + "... " + sarr[i]);
+					if(debug)
+						System.err.println("Prss: " + metar.pressure + "... " + sarr[i]);
 				}
 			} else if(sarr[i].startsWith("T")) {
 				if(sarr[i].length() == 9) {  // T/Td in 10ths
 					String ts = sarr[i].substring(1,5);
 					String td = sarr[i].substring(5,9);
-					double valT = Double.parseDouble(ts.substring(1)) / 10.0;
-					double valTd = Double.parseDouble(td.substring(1)) / 10.0;
-					double tempP = ts.charAt(0) == '1' ? -1. * valT : valT;
-					metar.setTemperaturePrecise(tempP);
-					double dewP = td.charAt(0) == '1' ? -1. * valTd : valTd;
-					metar.setDewPointPrecise(dewP);
-
-					System.err.println("Prc T/Td: " + metar.getTemperature() + "/" + metar.getDewPoint() + " ... " + sarr[i]);
+					metar.temperaturePrecise = Double.parseDouble(ts.substring(1)) / 10.0;
+					if(ts.charAt(0) == '1')
+						metar.temperaturePrecise *= -1;
+					metar.dewPointPrecise = Double.parseDouble(td.substring(1)) / 10.0;
+					if(td.charAt(0) == '1')
+						metar.dewPointPrecise *= -1;
+					if(debug)
+						System.err.println("Prc T/Td: " + metar.temperaturePrecise + "/" + metar.dewPointPrecise + " ... " + sarr[i]);
 				} // something else starting with T
 			} else if (sarr[i].equals("PK")) {
 				if(sarr[i+1].equals("WND" )) {
@@ -282,15 +355,17 @@ public class MetarParserNew
 						min = Integer.parseInt(ts.substring(2));
 					}
 					//  TODO set peakWind time
-					System.err.println("PeakWind: " + pws+ " ... " + metar.windDirectionGust + "/" + metar.windGust + "/" + hr + ":" + min);
+					if(debug)
+						System.err.println("PeakWind: " + pws+ " ... " + metar.windDirectionGust + "/" + metar.windGust + "/" + hr + ":" + min);
 				}
 			} else if(sarr[i].startsWith("6") && sarr[i].length() == 5 && isNumeric(sarr[i])) {
-				System.err.println("Six hour precip: " + sarr[i]);
+				//				System.err.println("Six hour precip: " + sarr[i]);
 			} else if(sarr[i].startsWith("7") && sarr[i].length() == 5 && isNumeric(sarr[i].substring(1))) {
-				System.err.println("24 hr Prcp: " + sarr[i]);
+				//				System.err.println("24 hr Prcp: " + sarr[i]);
 			} else if(sarr[i].startsWith("P") && sarr[i].length() == 5 && isNumeric(sarr[i].substring(1))) {
 				metar.hourlyPrecipInches = Double.parseDouble(sarr[i].substring(1)) / 100.0;
-				System.err.println("Hourly Prcp: " + sarr[i] + " ... " + metar.hourlyPrecipInches);
+				if(debug)
+					System.err.println("Hourly Prcp: " + sarr[i] + " ... " + metar.hourlyPrecipInches);
 			} else if(sarr[i].startsWith("PCPN")) {
 				System.err.println("PCPN: " + sarr[i]);
 			}
@@ -298,24 +373,28 @@ public class MetarParserNew
 
 	}
 
-	public static Double parseTempDew(String s) {
-		double sign = 1.;
+	public static int parseTempDew(String s) {
+		int sign = 1;
 		if(s.length() > 1 && s.startsWith("M")) {
-			sign = -1.;
+			sign = -1;
 			s = s.substring(1);
 		}
-		return  sign * Double.parseDouble(s);
+		return  sign * Integer.parseInt(s);
 	}
 
 	//  1 1/2SM
 	//  3/4SM  4800M
 	//  9SM
 	//  M1/4SM  Less than whatever follows
+	//  ////SM - another missing code
 	public static void parseVis(Metar m, String... s) throws NumberFormatException {
 		double val = 0;
 		if(s[0].startsWith("M")) {
 			m.visibilityLessThan = true;
 			val = parseFraction(s[0].substring(1, s[0].length()-2));
+		} else if(s[0].startsWith("//")) {
+			//  ////SM missing for Canada
+			return;
 		} else if(s.length == 1) {
 			val = parseFraction(s[0].substring(0, s[0].length()-2));
 		} else {
@@ -356,10 +435,12 @@ public class MetarParserNew
 		//		parseVis(m, "6SM");
 		//		parseVis(m, "1", "1/2SM");
 		parseVis(m, "11", "3/8KM");
-		System.err.println(m.getVisibilityMiles());
-		System.err.println(m.getVisibilityKilometers());
-		System.err.println(m.isCavok);
-		System.err.println(m.visibilityLessThan);
+		if(debug) {
+			System.err.println(m.getVisibilityMiles());
+			System.err.println(m.getVisibilityKilometers());
+			System.err.println(m.isCavok);
+			System.err.println(m.visibilityLessThan);
+		}
 	}
 
 	/**
@@ -373,9 +454,17 @@ Gkk - if the wind is gusting, the gust speed in knots is added. (as in theis exa
 dddVddd - If the wind direction is variable and the wind speed is greater than 6 knots, give the direction range. e.g. 23013KT 210V250
 VRBkk - If the wind speed is variable and less than 6 knots, use VRB05KT.
 Example: 36023G33KT 360 degrees heading, 23 kts speed with gusts to 33 kts.
+
+Wind. First 3 digits mean true north direction (nearest 10 deg) or VRB for variable. The next two digits mean speed and unit 
+(KT for knots, KMH for kilometers per hour, or MPS for meters per second). Wind gust, as needed, is given as a 2-digit maximum speed. 
+00000KT is given for calm. If wind direction varies 60 degrees or more, variability is appended, e.g. 180V260. In FedEx forecast, direction is 2-digit, velocity is always in knots.
+
+	corner cases
+		36017G25KKT looks like an error 
 	TODO: ///06KT - support this!
 	 **/
-	public static final void parseWind(Metar metar, String s) {
+	public static final void parseWind(Metar metar, String s) throws NumberFormatException {
+		String units = "";
 		if(s.startsWith("VRB")) {
 			metar.windDirectionIsVariable = true;
 			String speedStr = s.substring(3, 5);
@@ -383,8 +472,36 @@ Example: 36023G33KT 360 degrees heading, 23 kts speed with gusts to 33 kts.
 			//			System.err.println("IS VRB: " + metar.getWindSpeed());
 			return;
 		}
-		int endIdx = s.indexOf("K");  // MPS
+		int endIdx = s.length() - 1;
+		if(s.endsWith("KT")) {
+			units = "kts";
+			endIdx = s.indexOf("KT");
+		} else if(s.endsWith("MPS")) {
+			units = "mps";
+			endIdx = s.indexOf("MPS");
+		} else if(s.endsWith("KMH")) {
+			units = "kmh";
+			endIdx = s.indexOf("KMH");
+		} else {
+			System.err.println("Cannot parsewind: " + s);
+			return;
+		}
 
+		
+//		int endIdx = s.indexOf("KT");  // Todo support KPH also if I ever see it 
+//		if(endIdx == -1) {
+//			endIdx = s.indexOf("MPS");
+//			if(endIdx == -1) {
+//				endIdx = s.indexOf("MPS"); 
+//				if(endIdx == -1) {
+//					System.err.println("Cannot parsewind: " + s);
+//					return;
+//				}
+//			}
+//			units="mps";
+//		} else {
+//			units = "kts";
+//		}
 		String windStr = s.substring(0, endIdx);
 		//		System.err.println(s + ":  " + windStr);
 		int endWindIdx;
@@ -400,8 +517,19 @@ Example: 36023G33KT 360 degrees heading, 23 kts speed with gusts to 33 kts.
 		}
 		String windDirStr = windStr.substring(0, 3);
 		String windSpeedStr = windStr.substring(3, endWindIdx);
-		metar.windDirection = Integer.parseInt(windDirStr);
-		metar.setWindSpeed(Double.parseDouble(windSpeedStr));
+		if(!isMissing(windDirStr))
+			metar.windDirection = Integer.parseInt(windDirStr);
+		if(!isMissing(windSpeedStr))
+			metar.setWindSpeed(Double.parseDouble(windSpeedStr));
+		if("mps".equals(units)) {
+			metar.setWindSpeed(metar.getWindSpeed() * MetarConstants.MPS_TO_KTS);
+			if(metar.windGust != null)
+				metar.windGust *= MetarConstants.MPS_TO_KTS;
+		} else if ("kmh".equals(units)) {
+			metar.setWindSpeed(metar.getWindSpeed() * MetarConstants.KMPH_TO_KTS);
+			if(metar.windGust != null)
+				metar.windGust *= MetarConstants.KMPH_TO_KTS;
+		}
 		//		System.err.println(windDirStr + "/" + windSpeedStr);
 	}
 
@@ -423,10 +551,19 @@ Example: 36023G33KT 360 degrees heading, 23 kts speed with gusts to 33 kts.
 		int slashIdx = s.indexOf('/');
 		if (slashIdx == -1)
 			throw new NumberFormatException("No slash in Runway Vis field: " + s);
-		RunwayVisualRange rvr = new RunwayVisualRange(s);
-		rvr.runwayId = s.substring(0, slashIdx);
-
+		String runwayId = s.substring(0, slashIdx);
+		RunwayVisualRange rvr = new RunwayVisualRange(runwayId);
 		String vis = s.substring(slashIdx + 1, s.length());
+		// If vis is missing, return here.  Not sure we need to report this
+		if(isMissing(vis)) {
+			rvr.isMissing = true;
+			return rvr;
+		}
+		//  If ending in /D /N /U- we have a trend 
+		if(vis.endsWith("/D") || vis.endsWith("/N") || vis.endsWith("/U")) {
+			rvr.trend = vis.charAt(vis.length() - 1);
+			vis = vis.substring(0, vis.length() - 2);
+		}
 		if(vis.endsWith("FT")) {  //  US
 			rvr.units = "feet";
 			vis = vis.substring(0, vis.length() - 2);
@@ -479,63 +616,13 @@ Example: 36023G33KT 360 degrees heading, 23 kts speed with gusts to 33 kts.
 		if(Character.isLetter(c)) {
 			range.addModifier(getModifier(c));
 			s = s.substring(0, s.length() - 1);
+		} else if(c == '/') {  //   Not sure what trailing slash means, but don't choke on it
+			s = s.substring(0, s.length() - 1);
 		}
 		range.value = Integer.parseInt(s);
 		return range;
 	}
 
-	/**
-	 * 
-	 * @param year
-	 * @param month
-	 * @param dateStr - standard Metar report date String DDHHMM where DD = day of month, HH = hour of day, MM = minute
-	 * @return epoch seconds since 1970-01-01
-	 * @throws NumberFormatException
-	 */
-	public static long computeTimeUtc(int year, int month, String dateStr) throws NumberFormatException {
-		if(dateStr.length() != 7)
-			throw new NumberFormatException("Invalid dateString: " + dateStr);
-		String day = dateStr.substring(0, 2);
-		String hour = dateStr.substring(2, 4);
-		String minute = dateStr.substring(4, 6);
-
-		int iday = Integer.parseInt(day);
-		int	ihour = Integer.parseInt(hour);
-		int	iminute = Integer.parseInt(minute);
-
-		LocalDateTime dt = LocalDateTime.of(year, month, iday, ihour, iminute, 0, 0);
-		return dt.toEpochSecond(ZoneOffset.UTC);
-	}
-	
-	/**
-	 * 
-	 * @param dateStr - standard Metar report date String DDHHMM where DD = day of month, HH = hour of day, MM = minute
-	 * @return epoch seconds since 1970-01-01
-	 * @throws NumberFormatException
-	 */
-	public static long computeTimeUtc(String dateStr) throws NumberFormatException {
-		if(dateStr.length() != 7)
-			throw new NumberFormatException("Invalid dateString: " + dateStr);
-		String day = dateStr.substring(0, 2);
-		int iday = Integer.parseInt(day);
-
-		//  Check for month changeover using system time.  
-		//  *Assumes* system clock is correct and always ahead of dateStr day/hour/minute fields
-		//  We have to get year and month somehow, as they are not provided in the Metar record format.
-		// For archive ingest, year and month must be provided by the caller using computeTimeUtc(year, month, dateStr)
-		LocalDateTime dtNow = LocalDateTime.now();
-		int year = dtNow.get(ChronoField.YEAR);
-		int month = dtNow.get(ChronoField.MONTH_OF_YEAR);
-		int dayOfMonth = dtNow.get(ChronoField.DAY_OF_MONTH);
-		if(iday > dayOfMonth) {
-			if(--month == 0) {
-				month = 12;
-				--year;
-			}
-		}
-		return computeTimeUtc(year, month, dateStr);
-	}
-	
 	/**
 	 * 
 	 * @param s
@@ -566,31 +653,20 @@ Example: 36023G33KT 360 degrees heading, 23 kts speed with gusts to 33 kts.
 		parseVariableWindDir(new Metar(), "130V190");
 	}
 
-	public static void main(String[] args) throws Exception {
-		
-		long dt = computeTimeUtc("312359Z");
-		long dt2 = computeTimeUtc("010001Z");
-		System.err.println(dt);
-		System.err.println(LocalDateTime.ofEpochSecond(dt, 0, ZoneOffset.UTC));
-		System.err.println(LocalDateTime.ofEpochSecond(dt2, 0, ZoneOffset.UTC));
-		
-		
-//		MetarParserNew mp = new MetarParserNew();
-//		//						File infile = new File("C:/Data/station/metar/wxMsg/SAHOURLY.TXT.3065");
-//		File infile = new File("C:/Data/sensorhub/metar/SAHOURLY.TXT.2262");
-//		//								File infile = new File("C:/Data/station/metar/NAMSA_EURSA_621377820000.TXT");
-//		//				File infile = new File("C:/Data/station/metar/testMetar.txt");
-//
-//		try {
-//			List<String> lines = MetarUtil.cleanFile(infile.toPath(), false);
-////			lines = Files.readAllLines(infile.toPath(), Charset.defaultCharset());
-//
-//			for(String l: lines)
-//				mp.parseMetar(l);
-//		} catch (Exception e1) {
-//			// TODO Auto-generated catch block
-//			e1.printStackTrace();
-//		}
+	public static void main_(String[] args) throws Exception {
+		String test = "METAR LIBR 281650Z 33007KT 9999 SCT025";
+		MetarParserNew p = new MetarParserNew();
+		Metar m = p.parseMetar(test);
+		System.err.println(m);
+	}
 
+	public static void main(String[] args) throws Exception {
+//		MetarReaderAviation reader = new MetarReaderAviation();
+//		FileInputStream is = new FileInputStream("C:/Users/tcook/Downloads/metars.cache (20).csv"); 
+//		List<MetarRecordEx> recs = reader.read(new FileInputStream("C:/Data/station/metar/error/error1.txt"));
+//		System.err.println(recs.size() + " read");
+
+		//				for(MetarRecordEx rec: recs)
+		//					System.err.println(rec.station.stationName + "," + rec + "," + rec.windGust + "," + rec.visibility + "," + rec.skyConditions + "," + rec.skyConditionsId);
 	}
 }

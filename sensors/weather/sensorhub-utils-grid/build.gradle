@@ -1,6 +1,6 @@
 description = 'Gridded Dataset Utilities'
 ext.details = 'Various utilities for handling grid formats based on Unidata library'
-version = '0.3.2'
+version = '0.3.3'
 
 rootProject.allprojects {
   repositories {
@@ -16,7 +16,6 @@ dependencies {
     exclude group: 'org.apache.httpcomponents', module: 'httpcore'
     exclude group: 'org.apache.httpcomponents', module: 'httpclient'
     exclude group: 'org.apache.httpcomponents', module: 'httpmime'
-    exclude group: 'com.google.protobuf', module: 'protobuf-java'
     exclude group: 'com.google.guava', module: 'guava'
   }
 }

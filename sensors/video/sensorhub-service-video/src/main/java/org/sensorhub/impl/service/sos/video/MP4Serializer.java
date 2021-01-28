@@ -21,7 +21,9 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.util.Arrays;
+import java.util.Set;
 import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
 import org.mp4parser.streaming.StreamingTrack;
 import org.mp4parser.streaming.input.h264.H264NalConsumingTrack;
 import org.mp4parser.streaming.output.mp4.FragmentedMp4Writer;
@@ -29,12 +31,14 @@ import org.sensorhub.impl.service.sos.ISOSCustomSerializer;
 import org.sensorhub.impl.service.sos.ISOSDataProvider;
 import org.vast.data.DataBlockMixed;
 import org.vast.ows.OWSRequest;
+import com.google.common.collect.Sets;
 
 
 public class MP4Serializer implements ISOSCustomSerializer
 {
     public static String MP4_MIME_TYPE = "video/mp4";
-        
+    private static final Set<String> IMG_ARRAY_COMPONENT_NAMES = Sets.newHashSet("img", "videoFrame");
+    
     
     class H264DBtrack extends H264NalConsumingTrack
     {
@@ -44,6 +48,18 @@ public class MP4Serializer implements ISOSCustomSerializer
             DataBlock nextRecord;
             try
             {
+                // get index of image component
+                DataComponent dataStruct = dataProvider.getResultStructure();
+                int imgCompIdx = 0;
+                for (int i = dataStruct.getComponentCount()-1; i >= 0; i--)
+                {
+                    if (IMG_ARRAY_COMPONENT_NAMES.contains(dataStruct.getComponent(i).getName()))
+                    {
+                        imgCompIdx = i;
+                        break;
+                    }
+                }
+                
                 //OutputStream os = new FileOutputStream("/home/alex/testsos.h264");
                 //WritableByteChannel ch = Channels.newChannel(os);
                 boolean hasTime = false;
@@ -60,7 +76,7 @@ public class MP4Serializer implements ISOSCustomSerializer
                     }
                     
                     // get H264 frame data
-                    DataBlock frameBlk = ((DataBlockMixed)nextRecord).getUnderlyingObject()[1];
+                    DataBlock frameBlk = ((DataBlockMixed)nextRecord).getUnderlyingObject()[imgCompIdx];
                     byte[] frameData = (byte[])frameBlk.getUnderlyingObject();
                     ByteBuffer nals = ByteBuffer.wrap(frameData);
                     

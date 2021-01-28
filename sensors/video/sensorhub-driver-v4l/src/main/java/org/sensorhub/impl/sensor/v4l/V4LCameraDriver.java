@@ -101,7 +101,13 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
                 getLogger().debug("Creating MJPEG output");
                 dataInterface = new V4LCameraOutputMJPEG(this, fmt);
             }
+            else if ("H264".equals(fmt.getName()))
+            {
+                getLogger().debug("Creating H264 output");
+                dataInterface = new V4LCameraOutputH264(this, fmt);
+            }
         }
+        
         dataInterface.init();
         addOutput(dataInterface, false);
         
