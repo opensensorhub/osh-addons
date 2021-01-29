@@ -16,10 +16,12 @@ package org.sensorhub.impl.sensor.fakegps;
 
 import org.sensorhub.api.common.SensorHubException;
 
+
 public class FakeGpsNetworkConfig extends FakeGpsConfig
 {    
     public int numRoutes = 5;
     public int numAssetsPerRoute = 3;
+    
     
     protected void validate() throws SensorHubException
     {

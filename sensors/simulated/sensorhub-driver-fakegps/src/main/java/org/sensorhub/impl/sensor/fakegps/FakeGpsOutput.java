@@ -42,8 +42,8 @@ import com.google.gson.JsonParser;
 
 public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
 {
-    DataComponent posDataStruct;
-    DataEncoding posDataEncoding;
+    DataComponent dataStruct;
+    DataEncoding dataEncoding;
     ScheduledExecutorService timer;
     FakeGpsConfig config;
     List<Route> routes;
@@ -53,14 +53,15 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     boolean sendData;
     
     
-    class MobileAsset implements IGeoFeature
+    static class MobileAsset implements IGeoFeature
     {
         String id;
+        String uid;
         double speed;
         double currentTrackPos;
         
         public String getId() { return id; }
-        public String getUniqueIdentifier() { return parentSensor.getUniqueIdentifier() + ":" + id; }
+        public String getUniqueIdentifier() { return uid; }
         public String getName() { return "Mobile Asset " + id; }
         public String getDescription() { return "Mobile asset with simulated location " + id; }
         public AbstractGeometry getGeometry() { return null; }
@@ -92,6 +93,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
                 {
                     var asset = new MobileAsset();
                     asset.id = String.format("G%03dA%03d", i+1, n+1);
+                    asset.uid = parentSensor.getUniqueIdentifier() + ":" + asset.id;
                     route.assets.add(asset);
                 }
                 this.routes.add(route);
@@ -133,8 +135,8 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             .description("Location measured by the GPS device")
             .build());
             
-        posDataStruct = recBuilder.build();
-        posDataEncoding = fac.newTextEncoding(",", "\n");
+        dataStruct = recBuilder.build();
+        dataEncoding = fac.newTextEncoding(",", "\n");
     }
 
 
@@ -304,6 +306,9 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     {
         try
         {
+            if (route.points.size() < 2)
+                return;
+            
             route.lock.readLock().lock();
             int lastPointIdx = route.points.size()-1;
             //System.out.println("Updating pos for " + asset.id);
@@ -326,7 +331,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             double alt = 193;
     
             // build and publish datablock
-            DataBlock dataBlock = posDataStruct.createDataBlock();
+            DataBlock dataBlock = dataStruct.createDataBlock();
             int i = 0;
             dataBlock.setDoubleValue(i++, time);
             if (multipleAssets)
@@ -425,7 +430,18 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         
         // create all initial routes
         for (var route: routes)
+        {
             generateRandomRoute(route);
+            
+            // schedule measurements with random delays
+            for (var asset: route.assets)
+            {
+                var randomDelay = (long)(Math.random() * samplingPeriodMillis);
+                timer.scheduleAtFixedRate(() -> {
+                    sendMeasurement(route, asset);
+                }, randomDelay, (long)samplingPeriodMillis, TimeUnit.MILLISECONDS);
+            }
+        }
         
         // schedule route updates
         var updatePeriod = TimeUnit.MINUTES.toMillis(config.apiRequestPeriodMinutes);
@@ -439,18 +455,6 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
                 generateRandomRoute(route);
             }
         }, 0, 60, TimeUnit.SECONDS); // we schedule more often in case request fails
-        
-        // schedule all measurements with random delays
-        for (var route: routes)
-        {
-            for (var asset:route.assets)
-            {
-                var randomDelay = (long)(Math.random() * samplingPeriodMillis);
-                timer.scheduleAtFixedRate(() -> {
-                    sendMeasurement(route, asset);
-                }, randomDelay, (long)samplingPeriodMillis, TimeUnit.MILLISECONDS);
-            }
-        }
     }
 
 
@@ -485,13 +489,13 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     @Override
     public DataComponent getRecordDescription()
     {
-        return posDataStruct;
+        return dataStruct;
     }
 
 
     @Override
     public DataEncoding getRecommendedEncoding()
     {
-        return posDataEncoding;
+        return dataEncoding;
     }
 }
