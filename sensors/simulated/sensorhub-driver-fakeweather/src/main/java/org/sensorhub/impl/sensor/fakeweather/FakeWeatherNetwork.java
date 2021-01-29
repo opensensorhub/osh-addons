@@ -8,32 +8,29 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
-Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
+Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.sensor.fakeweather;
 
+import java.util.Map;
+import java.util.Random;
+import java.util.TreeMap;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.vast.sensorML.SMLHelper;
+import org.vast.ogc.gml.IGeoFeature;
 
 
-/**
- * <p>
- * Driver implementation outputting simulated weather data by randomly
- * increasing or decreasing temperature, pressure, wind speed, and
- * wind direction.  Serves as a simple sensor to deploy as well as
- * a simple example of a sensor driver.
- * </p>
- *
- * @author Mike Botts <mike.botts@botts-inc.com>
- * @since Dec 24, 2014
- */
-public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
+public class FakeWeatherNetwork extends AbstractSensorModule<FakeWeatherNetworkConfig>
 {
-    FakeWeatherOutput dataInterface;
+    FakeWeatherNetworkOutput dataInterface;
+    Map<String, FakeWeatherStation> stations = new TreeMap<>();
+    
+    
+    public FakeWeatherNetwork()
+    {
+    }
     
     
     @Override
@@ -42,28 +39,40 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
         super.init();
         
         // generate identifiers
-        generateUniqueID("urn:osh:sensor:simweather:", config.serialNumber);
-        generateXmlID("WEATHER_STATION_", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:simweathernetwork:", config.networkID);
+        generateXmlID("WEATHER_NETWORK_", config.networkID);
         
         // init main data interface
-        dataInterface = new FakeWeatherOutput(this);
+        dataInterface = new FakeWeatherNetworkOutput(this);
         addOutput(dataInterface, false);
         dataInterface.init();
+        
+        // generate station fois
+        var rand = new Random(config.id.hashCode());
+        for (int i = 1; i <= config.numStations; i++)
+        {
+            var lat = (rand.nextDouble() - 0.5) * config.areaSize + config.centerLocation.lat;
+            var lon = (rand.nextDouble() - 0.5) * config.areaSize + config.centerLocation.lon;
+            var station = new FakeWeatherStation(i, lat, lon);
+            stations.put(station.uid, station);
+        }
     }
 
 
+    @Override
+    public Map<String, ? extends IGeoFeature> getCurrentFeaturesOfInterest()
+    {
+        return stations;
+    }
+    
+    
     @Override
     protected void updateSensorDescription()
     {
         synchronized (sensorDescLock)
         {
             super.updateSensorDescription();
-            
-            if (!sensorDescription.isSetDescription())
-                sensorDescription.setDescription("Simulated weather station generating realistic pseudo-random measurements");
-            
-            SMLHelper helper = new SMLHelper(sensorDescription);
-            helper.addSerialNumber(config.serialNumber);
+            sensorDescription.setDescription(FakeWeatherNetworkDescriptor.DRIVER_DESC);
         }
     }
 
@@ -97,4 +106,3 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
         return true;
     }
 }
-

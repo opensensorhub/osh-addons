@@ -8,46 +8,31 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
-Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
+Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.sensor.fakeweather;
 
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
+import org.sensorhub.impl.sensor.fakeweather.FakeWeatherNetworkOutput;
 import org.sensorhub.api.data.DataEvent;
-import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 
 
-public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
+public class FakeWeatherNetworkOutput extends AbstractSensorOutput<FakeWeatherNetwork>
 {
     DataComponent dataStruct;
     DataEncoding dataEncoding;
     Timer timer;
-    Random rand = new Random();
-    
-    // reference values around which actual values vary
-    double tempRef = 20.0;
-    double pressRef = 1013.0;
-    double windSpeedRef = 5.0;
-    double directionRef = 0.0;
-    
-    // initialize then keep new values for each measurement
-    double temp = tempRef;
-    double press = pressRef;
-    double windSpeed = windSpeedRef;
-    double windDir = directionRef;
 
     
-    public FakeWeatherOutput(FakeWeatherSensor parentSensor)
+    public FakeWeatherNetworkOutput(FakeWeatherNetwork parentSensor)
     {
         super("weather", parentSensor);
     }
@@ -65,6 +50,11 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
             
             .addField("time", fac.createTime()
                 .asSamplingTimeIsoUTC()
+                .build())
+            
+            .addField("stationID", fac.createText()
+                .definition(SWEConstants.DEF_SYSTEM_ID)
+                .pattern("[0-9A-Z]{5-10}")
                 .build())
             
             .addField("temperature", fac.createQuantity()
@@ -99,47 +89,17 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     }
 
     
-    private void sendMeasurement()
+    private void sendMeasurement(FakeWeatherStation station)
     {                
-        // generate new weather values
-        double time = System.currentTimeMillis() / 1000.;
+        // generate latest record
+        if (latestRecord == null)
+            latestRecord = station.createMeasurement(dataStruct.createDataBlock());
+        else
+            latestRecord = station.createMeasurement(latestRecord);
         
-        // temperature; value will increase or decrease by less than 0.1 deg
-        temp += variation(temp, tempRef, 0.001, 0.1);
-        
-        // pressure; value will increase or decrease by less than 20 hPa
-        press += variation(press, pressRef, 0.001, 0.1);
-        
-        // wind speed; keep positive
-        // vary value between +/- 10 m/s
-        windSpeed += variation(windSpeed, windSpeedRef, 0.001, 0.1);
-        windSpeed = windSpeed < 0.0 ? 0.0 : windSpeed; 
-        
-        // wind direction; keep between 0 and 360 degrees
-        windDir += 1.0 * (2.0 * Math.random() - 1.0);
-        windDir = windDir < 0.0 ? windDir+360.0 : windDir;
-        windDir = windDir > 360.0 ? windDir-360.0 : windDir;
-        
-        parentSensor.getLogger().trace(String.format("temp=%5.2f, press=%4.2f, wind speed=%5.2f, wind dir=%3.1f", temp, press, windSpeed, windDir));
-        
-        // build and publish datablock
-        DataBlock dataBlock = dataStruct.createDataBlock();
-        dataBlock.setDoubleValue(0, time);
-        dataBlock.setDoubleValue(1, temp);
-        dataBlock.setDoubleValue(2, press);
-        dataBlock.setDoubleValue(3, windSpeed);
-        dataBlock.setDoubleValue(4, windDir);
-        
-        // update latest record and send event
-        latestRecord = dataBlock;
+        // send event
         latestRecordTime = System.currentTimeMillis();
-        eventHandler.publish(new DataEvent(latestRecordTime, FakeWeatherOutput.this, dataBlock));        
-    }
-    
-    
-    private double variation(double val, double ref, double dampingCoef, double noiseSigma)
-    {
-        return -dampingCoef*(val - ref) + noiseSigma*rand.nextGaussian();
+        eventHandler.publish(new DataEvent(latestRecordTime, FakeWeatherNetworkOutput.this, station.getUniqueIdentifier(), latestRecord));        
     }
 
 
@@ -153,7 +113,8 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         TimerTask task = new TimerTask() {
             public void run()
             {
-                sendMeasurement();
+                for (var station: getParentProducer().stations.values())
+                    sendMeasurement(station);
             }            
         };
         
