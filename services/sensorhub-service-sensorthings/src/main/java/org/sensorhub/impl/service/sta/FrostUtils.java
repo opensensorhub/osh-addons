@@ -198,8 +198,10 @@ public class FrostUtils
     
     public static org.geojson.GeoJsonObject toGeoJsonGeom(net.opengis.gml.v32.AbstractGeometry gmlGeom)
     {
-        Asserts.checkArgument(SWEConstants.REF_FRAME_4326.equals(gmlGeom.getSrsName()) ||
-            SWEConstants.REF_FRAME_4979.equals(gmlGeom.getSrsName()), "Only EPSG:4326 and EPSG:4979 CRS are supported in GeoJson");
+        Asserts.checkArgument(gmlGeom.getSrsName() == null ||
+            SWEConstants.REF_FRAME_4326.equals(gmlGeom.getSrsName()) ||
+            SWEConstants.REF_FRAME_4979.equals(gmlGeom.getSrsName()),
+            "Only EPSG:4326 and EPSG:4979 CRS are supported in GeoJson");
         
         if (gmlGeom instanceof net.opengis.gml.v32.Point)
         {
