@@ -37,5 +37,8 @@ public interface ISTADataStreamStore extends IDataStreamStore
     public IDataStreamInfo put(long thingID, DataStreamKey key, IDataStreamInfo value);
     
     
+    public void putThingAssoc(long thingID, long dsID);
+    
+    
     public Long getAssociatedThing(long dataStreamID);
 }

@@ -27,6 +27,7 @@ import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.api.procedure.ProcedureId;
 import org.sensorhub.api.service.IServiceModule;
 import org.sensorhub.impl.module.AbstractModule;
+import org.sensorhub.impl.procedure.wrapper.ProcedureWrapper;
 import org.sensorhub.impl.sensor.VirtualProcedureGroupConfig;
 import org.sensorhub.impl.service.HttpServer;
 import org.vast.ogc.gml.GenericFeature;
@@ -122,23 +123,26 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
             readDatabase = getParentHub().getDatabaseRegistry().getFederatedObsDatabase();
         
         // create or retrieve virtual sensor group
-        String virtualGroupUID = config.virtualSensorGroup.uid;
-        FeatureKey fk;
-        if (!writeDatabase.getProcedureStore().contains(virtualGroupUID))
+        if (config.virtualSensorGroup != null)
         {
-            // register optional group
-            AbstractProcess procGroup = new SMLHelper().createPhysicalSystem()
-                .uniqueID(virtualGroupUID)
-                .name(config.virtualSensorGroup.name)
-                .description(config.virtualSensorGroup.description)
-                .build();
-            
-            fk = writeDatabase.getProcedureStore().add(procGroup);
-            virtualGroupId = new ProcedureId(fk.getInternalID(), procGroup.getUniqueIdentifier());
+            String virtualGroupUID = config.virtualSensorGroup.uid;
+            FeatureKey fk;
+            if (!writeDatabase.getProcedureStore().contains(virtualGroupUID))
+            {
+                // register optional group
+                AbstractProcess procGroup = new SMLHelper().createPhysicalSystem()
+                    .uniqueID(virtualGroupUID)
+                    .name(config.virtualSensorGroup.name)
+                    .description(config.virtualSensorGroup.description)
+                    .build();
+                
+                fk = writeDatabase.getProcedureStore().add(new ProcedureWrapper(procGroup));
+                virtualGroupId = new ProcedureId(fk.getInternalID(), procGroup.getUniqueIdentifier());
+            }
+            else
+                fk = writeDatabase.getProcedureStore().getCurrentVersionKey(virtualGroupUID);
+            virtualGroupId = new ProcedureId(fk.getInternalID(), virtualGroupUID);
         }
-        else
-            fk = writeDatabase.getProcedureStore().getCurrentVersionKey(virtualGroupUID);
-        virtualGroupId = new ProcedureId(fk.getInternalID(), virtualGroupUID);
         
         // create default hub thing
         String uid = getProcedureGroupID().getUniqueID() + ":thing:hub";
@@ -175,6 +179,7 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
         // close database
         if (writeDatabase != null)
         {
+            getParentHub().getDatabaseRegistry().unregister(writeDatabase);
             writeDatabase.close();
             writeDatabase = null;
         }

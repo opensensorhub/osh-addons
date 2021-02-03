@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 import org.h2.mvstore.MVBTreeMap;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.RangeCursor;
+import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.IdProvider;
 import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
@@ -70,7 +71,7 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
     
     
     @Override
-    public synchronized FeatureKey add(long parentID, AbstractFeature feature)
+    public synchronized FeatureKey add(long parentID, AbstractFeature feature) throws DataStoreException
     {
         Asserts.checkNotNull(feature, IFeature.class);
         
@@ -86,10 +87,17 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
     @Override
     public AbstractFeature put(FeatureKey key, AbstractFeature feature)
     {
-        Asserts.checkNotNull(key, FeatureKey.class);
-        Asserts.checkNotNull(feature, IFeature.class); 
-        var fk = new MVFeatureParentKey(0L, key.getInternalID(), key.getValidStartTime());
-        return put(fk, feature, true, true);
+        try
+        {
+            Asserts.checkNotNull(key, FeatureKey.class);
+            Asserts.checkNotNull(feature, IFeature.class); 
+            var fk = new MVFeatureParentKey(0L, key.getInternalID(), key.getValidStartTime());
+            return put(fk, feature, true, true);
+        }
+        catch (DataStoreException e)
+        {
+            throw new IllegalStateException(e.getMessage());
+        }
     }
     
     

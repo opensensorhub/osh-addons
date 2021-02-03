@@ -68,6 +68,7 @@ public class TestSTAService
         STAServiceConfig staCfg = new STAServiceConfig();
         staCfg.autoStart = true;
         staCfg.dbConfig.storagePath = dbFile.getAbsolutePath();
+        staCfg.dbConfig.databaseNum = 3;
         sta = (STAService)moduleRegistry.loadModule(staCfg, TIMEOUT);
         staRoot = staCfg.getPublicEndpoint() + "/v1.0/";
     }

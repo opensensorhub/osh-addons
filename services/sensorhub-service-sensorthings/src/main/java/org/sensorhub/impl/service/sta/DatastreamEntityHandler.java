@@ -18,22 +18,18 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
-import org.sensorhub.api.event.EventUtils;
-import org.sensorhub.api.event.IEventPublisher;
-import org.sensorhub.api.obs.DataStreamAddedEvent;
-import org.sensorhub.api.obs.DataStreamChangedEvent;
 import org.sensorhub.api.obs.DataStreamInfo;
-import org.sensorhub.api.obs.DataStreamRemovedEvent;
 import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.api.procedure.ProcedureId;
 import org.sensorhub.utils.SWEDataUtils;
 import org.vast.data.TextEncodingImpl;
 import org.vast.ogc.om.IObservation;
-import org.vast.ogc.om.IProcedure;
 import org.vast.swe.SWEBuilders.DataComponentBuilder;
+import org.vast.swe.SWEBuilders.QuantityBuilder;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.unit.Unit;
@@ -118,27 +114,29 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 ResourceId thingId = pm.thingHandler.handleThingAssoc(dataStream.getThing());
                 ResourceId sensorId = pm.sensorHandler.handleSensorAssoc(dataStream.getSensor());
                 
-                // TODO try to see if a datastream with the same name already exists, and handle versioning
-                // when versioning a datastream, the parent procedure description must be versioned too
-                
-                // get parent sensor
+                // get parent procedure handler
                 long localSensorID = pm.toLocalID(sensorId.asLong());
-                IProcedure proc = pm.sensorHandler.procWriteStore.getCurrentVersion(localSensorID);
-                String procUID = proc.getUniqueIdentifier();
+                var procHandler = pm.transactionHandler.getProcedureHandler(localSensorID);
+                if (procHandler == null)
+                    throw new NoSuchEntityException(SensorEntityHandler.NOT_FOUND_MESSAGE + sensorId);
                 
                 // create data stream object
+                var procUID = procHandler.getProcedureUID();
                 var dsInfo = toSweDataStream(new ProcedureId(localSensorID, procUID), dataStream);
 
-                // store in DB
-                var localDsKey = dataStreamWriteStore.add(thingId.asLong(), dsInfo);
-                long publicDsID = pm.toPublicID(localDsKey.getInternalID());
+                // store in DB + send event
+                var dsHandler = procHandler.addOrUpdateDataStream(
+                    dsInfo.getOutputName(),
+                    dsInfo.getRecordStructure(),
+                    dsInfo.getRecordEncoding());
+                
+                // associate with thing
+                var localDsID = dsHandler.getDataStreamKey().getInternalID();
+                dataStreamWriteStore.putThingAssoc(thingId.asLong(), localDsID);
+                                
+                long publicDsID = pm.toPublicID(localDsID);
                 ResourceId newDsId = new ResourceIdLong(publicDsID);
                 
-                // publish event
-                String outputName = dsInfo.getOutputName();
-                IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureOutputSourceID(procUID, outputName));
-                publisher.publish(new DataStreamAddedEvent(procUID, outputName));
-                            
                 // handle associations / deep inserts
                 pm.observationHandler.handleObservationAssocList(newDsId, dataStream);
                 
@@ -148,6 +146,10 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         catch (IllegalArgumentException | NoSuchEntityException e)
         {
             throw e;
+        }
+        catch (DataStoreException e)
+        {
+            throw new IllegalArgumentException(e.getMessage());
         }
         catch (Exception e)
         {
@@ -167,47 +169,25 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         
         long publicDsID = ((ResourceId)entity.getId()).asLong();
         checkDatastreamWritable(publicDsID);
-                
-        // get existing data stream
-        // we use write store even for reading because only datastreams in write store can be updated anyway!
+        
+        // get transaction handler for existing datastream
         long localDsID = pm.toLocalID(publicDsID);
-        var localDsKey = new DataStreamKey(localDsID);
-        IDataStreamInfo oldDsInfo = dataStreamWriteStore.get(localDsKey);
-        if (oldDsInfo == null)
-            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicDsID);
+        var dsHandler = pm.transactionHandler.getDataStreamHandler(localDsID);
+        if (dsHandler == null)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + entity.getId());
+        var oldDsInfo = dsHandler.getDataStreamInfo();
         
         try
         {
-            return pm.writeDatabase.executeTransaction(() -> {
-        
-                // handle associations / deep inserts or reuse existing assoc
-                long thingID = dataStream.getThing() != null ?
-                    pm.thingHandler.handleThingAssoc(dataStream.getThing()).asLong() :
-                    dataStreamWriteStore.getAssociatedThing(localDsID);
+            // create new data stream version
+            var dsInfo = toSweDataStream(oldDsInfo.getProcedureID(), dataStream);
 
-                //ResourceId sensorId = pm.sensorHandler.handleSensorAssoc(dataStream.getSensor());
-                
-                // create new data stream version
-                var dsInfo = toSweDataStream(oldDsInfo.getProcedureID(), dataStream);
-
-                // check output name wasn't changed
-                if (!dsInfo.getOutputName().equals(oldDsInfo.getOutputName()))
-                    throw new IllegalArgumentException("Cannot change a datastream name");
-                
-                // TODO check that structure hasn't changed 
-                // if obs have already been associated with this datastream
-                
-                // write to store
-                dataStreamWriteStore.put(thingID, new DataStreamKey(localDsID), dsInfo);
-    
-                // publish event
-                ProcedureId procID = dsInfo.getProcedureID();
-                String outputName = dsInfo.getOutputName();
-                IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureOutputSourceID(procID.getUniqueID(), outputName));
-                publisher.publish(new DataStreamChangedEvent(procID.getUniqueID(), outputName));
-    
-                return true;
-            });
+            // check output name wasn't changed
+            if (!dsInfo.getOutputName().equals(oldDsInfo.getOutputName()))
+                throw new IllegalArgumentException("Cannot change a datastream name");
+            
+            // update in DB
+            return dsHandler.update(dsInfo.getRecordStructure(), dsInfo.getRecordEncoding());
         }
         catch (IllegalArgumentException | NoSuchEntityException e)
         {
@@ -236,28 +216,17 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         
         long publicDsID = id.asLong();
         checkDatastreamWritable(publicDsID);
-                
+        
+        // get transaction handler for existing datastream
+        long localDsID = pm.toLocalID(publicDsID);
+        var dsHandler = pm.transactionHandler.getDataStreamHandler(localDsID);
+        if (dsHandler == null)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
+        
+        // delete from DB
         try
         {
-            return pm.writeDatabase.executeTransaction(() -> {
-                
-                var localDsKey = new DataStreamKey(pm.toLocalID(publicDsID));
-                IDataStreamInfo dsInfo = dataStreamWriteStore.remove(localDsKey);
-                if (dsInfo == null)
-                    throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
-                
-                // publish event
-                ProcedureId procID = dsInfo.getProcedureID();
-                String outputName = dsInfo.getOutputName();
-                IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureOutputSourceID(procID.getUniqueID(), outputName));
-                publisher.publish(new DataStreamRemovedEvent(procID.getUniqueID(), outputName));
-                
-                return true;
-            });
-        }
-        catch (IllegalArgumentException | NoSuchEntityException e)
-        {
-            throw e;
+            return dsHandler.delete();
         }
         catch (Exception e)
         {
@@ -361,13 +330,14 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
 
     protected DataRecord toSweCommon(AbstractDatastream<?> abstractDs) throws NoSuchEntityException
     {
-        SWEHelper helper = new SWEHelper();
+        SWEHelper fac = new SWEHelper();
 
-        DataRecord rec = helper.newDataRecord();
-        rec.setName(SWEDataUtils.toNCName(abstractDs.getName()));
-        rec.setLabel(abstractDs.getName());
-        rec.setDescription(abstractDs.getDescription());
-        rec.addComponent("time", helper.newTimeIsoUTC(SWEConstants.DEF_PHENOMENON_TIME, "Sampling Time", null));
+        var rec = fac.createDataRecord()
+            .name(SWEDataUtils.toNCName(abstractDs.getName()))
+            .label(abstractDs.getName())
+            .description(abstractDs.getDescription())
+            .addField("time", fac.createTime().asPhenomenonTimeIsoUTC()
+                .label("Sampling Time"));
 
         if (abstractDs instanceof Datastream)
         {
@@ -385,9 +355,9 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 ds.getObservationType(),
                 obsProp,
                 ds.getUnitOfMeasurement(),
-                helper);
+                fac);
 
-            rec.addComponent(comp.getName(), comp);
+            rec.addField(comp.getName(), comp);
         }
         else
         {
@@ -407,14 +377,14 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                     ds.getMultiObservationDataTypes().get(i),
                     obsProp,
                     ds.getUnitOfMeasurements().get(i),
-                    helper);
+                    fac);
                 i++;
 
-                rec.addComponent(comp.getName(), comp);
+                rec.addField(comp.getName(), comp);
             }
         }
 
-        return rec;
+        return rec.build();
     }
 
 
@@ -427,9 +397,9 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             comp = fac.createQuantity();
 
             if (uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
-                ((Quantity)comp).getUom().setCode(uom.getDefinition().replace(UCUM_URI_PREFIX, ""));
+                ((QuantityBuilder)comp).uomCode(uom.getDefinition().replace(UCUM_URI_PREFIX, ""));
             else
-                ((Quantity)comp).getUom().setHref(uom.getDefinition());
+                ((QuantityBuilder)comp).uomUri(uom.getDefinition());
         }
         else if (IObservation.OBS_TYPE_CATEGORY.equals(obsType))
             comp = fac.createCategory();

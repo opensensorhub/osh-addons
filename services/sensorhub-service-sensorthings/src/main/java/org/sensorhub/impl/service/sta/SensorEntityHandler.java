@@ -20,22 +20,17 @@ import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import org.isotc211.v2005.gmd.CIOnlineResource;
 import org.isotc211.v2005.gmd.impl.GMDFactory;
-import org.sensorhub.api.ISensorHub;
-import org.sensorhub.api.datastore.obs.DataStreamFilter;
+import org.sensorhub.api.datastore.DataStoreException;
+import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
-import org.sensorhub.api.datastore.obs.IObsStore;
+import org.sensorhub.api.datastore.obs.IDataStreamStore;
 import org.sensorhub.api.datastore.procedure.IProcedureStore;
 import org.sensorhub.api.datastore.procedure.ProcedureFilter;
-import org.sensorhub.api.event.EventUtils;
-import org.sensorhub.api.event.IEventPublisher;
 import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.api.procedure.IProcedureWithDesc;
-import org.sensorhub.api.procedure.ProcedureAddedEvent;
-import org.sensorhub.api.procedure.ProcedureChangedEvent;
 import org.sensorhub.api.procedure.ProcedureId;
-import org.sensorhub.api.procedure.ProcedureRemovedEvent;
+import org.sensorhub.impl.procedure.wrapper.ProcedureWrapper;
 import org.sensorhub.utils.SWEDataUtils;
-import org.vast.ogc.om.IProcedure;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Asserts;
 import org.vast.util.TimeExtent;
@@ -76,7 +71,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     OSHPersistenceManager pm;
     IProcedureStore procReadStore;
     IProcedureStore procWriteStore;
-    IObsStore obsReadStore;
+    IDataStreamStore dataStreamReadStore;
     STASecurity securityHandler;
     int maxPageSize = 100;
     ProcedureId procGroupID;
@@ -87,7 +82,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         this.pm = pm;
         this.procReadStore = pm.readDatabase.getProcedureStore();
         this.procWriteStore = pm.writeDatabase != null ? pm.writeDatabase.getProcedureStore() : null;
-        this.obsReadStore = pm.readDatabase.getObservationStore();
+        this.dataStreamReadStore = pm.readDatabase.getDataStreamStore();
         this.securityHandler = pm.service.getSecurityHandler();
         this.procGroupID = pm.service.getProcedureGroupID();
     }
@@ -113,23 +108,24 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 // generate sensorML description
                 AbstractProcess procDesc = toSmlProcess(sensor, procUID);
                 
-                // store in DB
-                long publicSensorID;
-                try
-                {
-                    var key = procWriteStore.add(procGroupID.getInternalID(), procDesc);
-                    publicSensorID = pm.toPublicID(key.getInternalID());
-                }
-                catch (Exception e)
-                {
-                    throw new IllegalArgumentException("Sensor with name '" + sensor.getName() + "' already exists");
-                }
+                // cleanup sml description before storage
+                var procWrapper = new ProcedureWrapper(procDesc)
+                    .hideOutputs()
+                    .hideTaskableParams()
+                    .defaultToValidFromNow();
                 
-                // publish event
-                IEventPublisher publisher = pm.eventBus.getPublisher(ISensorHub.EVENT_SOURCE_INFO);
-                publisher.publish(new ProcedureAddedEvent(procUID, procGroupID.getUniqueID()));
+                // store in DB + send event
+                FeatureKey procKey;
+                if (procGroupID != null)
+                {
+                    var groupHandler = pm.transactionHandler.getProcedureHandler(procGroupID.getInternalID());
+                    procKey = groupHandler.addOrUpdateMember(procWrapper).getProcedureKey();
+                }
+                else
+                    procKey = pm.transactionHandler.addOrUpdateProcedure(procWrapper).getProcedureKey();
                 
                 // handle associations / deep inserts
+                var publicSensorID = pm.toPublicID(procKey.getInternalID());
                 ResourceId newSensorId = new ResourceIdLong(publicSensorID);
                 pm.dataStreamHandler.handleDatastreamAssocList(newSensorId, sensor);
     
@@ -139,6 +135,10 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         catch (IllegalArgumentException | NoSuchEntityException e)
         {
             throw e;
+        }
+        catch (DataStoreException e)
+        {
+            throw new IllegalArgumentException(e.getMessage());
         }
         catch (Exception e)
         {
@@ -152,7 +152,6 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     {
         checkTransactionsEnabled();
         Asserts.checkArgument(entity instanceof Sensor);
-        Sensor sensor = (Sensor)entity;
         
         securityHandler.checkPermission(securityHandler.sta_update_sensor);
         
@@ -160,37 +159,30 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         long publicSensorID = ((ResourceId)entity.getId()).asLong();
         checkProcedureWritable(publicSensorID);
         
-        // get current version
+        // get transaction handler for existing sensor
         long localSensorID = pm.toLocalID(publicSensorID);
-        IProcedure proc = procWriteStore.getCurrentVersion(localSensorID);
-        if (proc == null)
+        var procHandler = pm.transactionHandler.getProcedureHandler(localSensorID);
+        if (procHandler == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
         // update description
         try
         {
-            return pm.writeDatabase.executeTransaction(() -> {
-                
-                // generate sensorML description
-                String procUID = proc.getUniqueIdentifier();
-                AbstractProcess procDesc = toSmlProcess((Sensor)entity, procUID);
-                
-                // update description in DB
-                procWriteStore.add(procGroupID.getInternalID(), procDesc);
-                
-                // publish event
-                IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureEventSourceInfo(procUID));
-                publisher.publish(new ProcedureChangedEvent(procUID));
-                
-                // handle associations / deep inserts
-                pm.dataStreamHandler.handleDatastreamAssocList(id, sensor);
-                
-                return true;
-            });
+            // generate sensorML description
+            String procUID = procHandler.getProcedureUID();
+            AbstractProcess procDesc = toSmlProcess((Sensor)entity, procUID);
+            
+            // cleanup sml description before storage
+            var procWrapper = new ProcedureWrapper(procDesc)
+                .hideOutputs()
+                .hideTaskableParams()
+                .defaultToValidFromNow();
+            
+            return procHandler.update(procWrapper);
         }
-        catch (IllegalArgumentException | NoSuchEntityException e)
+        catch (DataStoreException e)
         {
-            throw e;
+            throw new IllegalArgumentException(e.getMessage());
         }
         catch (Exception e)
         {
@@ -216,39 +208,19 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         long publicSensorID = id.asLong();
         checkProcedureWritable(publicSensorID);
         
-        // get current version
+        // get transaction handler for existing sensor
         long localSensorID = pm.toLocalID(publicSensorID);
-        IProcedure proc = procWriteStore.getCurrentVersion(localSensorID);
-        if (proc == null)
+        var procHandler = pm.transactionHandler.getProcedureHandler(localSensorID);
+        if (procHandler == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
-                
+        
         try
         {
-            return pm.writeDatabase.executeTransaction(() -> {
-                                
-                // delete all attached datastreams
-                pm.dataStreamHandler.dataStreamWriteStore.removeEntries(new DataStreamFilter.Builder()
-                    .withProcedures(localSensorID)
-                    .withAllVersions()
-                    .build());
-                
-                // delete entire procedure history  
-                procWriteStore.removeEntries(new ProcedureFilter.Builder()
-                    .withInternalIDs(localSensorID)
-                    .withAllVersions()
-                    .build());
-                
-                // publish event
-                var procID = new ProcedureId(publicSensorID, proc.getUniqueIdentifier());
-                IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureEventSourceInfo(procID.getUniqueID()));
-                publisher.publish(new ProcedureRemovedEvent(procID.getUniqueID(), procGroupID.getUniqueID()));
-    
-                return true;
-            });
+            return procHandler.delete();            
         }
-        catch (IllegalArgumentException | NoSuchEntityException e)
+        catch (DataStoreException e)
         {
-            throw e;
+            throw new IllegalArgumentException(e.getMessage());
         }
         catch (Exception e)
         {
@@ -294,11 +266,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     protected ProcedureFilter getFilter(ResourcePath path, Query q)
     {
         ProcedureFilter.Builder builder = new ProcedureFilter.Builder()
-            .validAtTime(Instant.now());
-
-        ProcedureId procGroupID = pm.service.getProcedureGroupID();
-        if (procGroupID != null)
-            builder.withParents().withUniqueIDs(procGroupID.getUniqueID()).done();
+            .withCurrentVersion();
 
         EntityPathElement idElt = path.getIdentifiedElement();
         if (idElt != null)
@@ -313,7 +281,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 {
                     ResourceId dsId = (ResourceId)idElt.getId();
                     var dsKey = new DataStreamKey(dsId.asLong());
-                    IDataStreamInfo dsInfo = obsReadStore.getDataStreams().get(dsKey);
+                    IDataStreamInfo dsInfo = dataStreamReadStore.get(dsKey);
                     builder.withInternalIDs(dsInfo.getProcedureID().getInternalID());
                 }
             }

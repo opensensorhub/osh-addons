@@ -248,7 +248,8 @@ public class STADatabase implements ISTADatabase
     @Override
     public void close()
     {
-        mvStore.close();        
+        if (!mvStore.isClosed())
+            mvStore.close();        
     }
 
 

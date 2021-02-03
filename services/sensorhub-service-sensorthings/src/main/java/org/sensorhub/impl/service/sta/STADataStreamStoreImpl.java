@@ -142,7 +142,8 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
     
     
-    protected void putThingAssoc(long thingID, long dsID)
+    @Override
+    public void putThingAssoc(long thingID, long dsID)
     {
         // remove previous assoc if any
         Long oldThingID = dataStreamThingIndex.remove(dsID);

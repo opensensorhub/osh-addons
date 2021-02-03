@@ -18,22 +18,19 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.joda.time.DateTimeZone;
-import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.datastore.obs.ObsKey;
-import org.sensorhub.api.event.EventUtils;
 import org.sensorhub.api.event.IEventPublisher;
 import org.sensorhub.api.feature.FeatureId;
 import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.api.obs.IObsData;
 import org.sensorhub.api.obs.ObsData;
+import org.sensorhub.impl.procedure.DataStreamTransactionHandler;
 import org.vast.data.DataBlockDouble;
 import org.vast.data.DataBlockInt;
 import org.vast.data.DataBlockLong;
@@ -83,7 +80,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     IObsStore obsWriteStore;
     int maxPageSize = 100;
     boolean truncateIds = false;
-    Cache<Long, EventPublisherInfo> eventPublishersCache;
+    Cache<Long, DataStreamTransactionHandler> dsHandlerCache;
     
     
     static class EventPublisherInfo
@@ -106,9 +103,9 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         this.obsWriteStore = pm.writeDatabase != null ? pm.writeDatabase.getObservationStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
         
-        this.eventPublishersCache = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .concurrencyLevel(2)
+        this.dsHandlerCache = CacheBuilder.newBuilder()
+            .maximumSize(10000)
+            .concurrencyLevel(4)
             .expireAfterAccess(1, TimeUnit.HOURS)
             .build();
     }
@@ -122,6 +119,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         Observation obs = (Observation)entity;
 
         securityHandler.checkPermission(securityHandler.sta_insert_obs);
+        Asserts.checkArgument(obs.getPhenomenonTime() != null, "Missing phenomenonTime");
         
         try
         {
@@ -129,7 +127,15 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
                 
                 // handle associations / deep inserts
                 ResourceId dsId = pm.dataStreamHandler.handleDatastreamAssoc(obs.getDatastream());
-                Asserts.checkArgument(obs.getPhenomenonTime() != null, "Missing phenomenonTime");
+                
+                // get transaction handler for existing datastream
+                long localDsID = pm.toLocalID(dsId.asLong());
+                var dsHandler = dsHandlerCache.get(localDsID, () -> {
+                    return pm.transactionHandler.getDataStreamHandler(localDsID);
+                });
+                if (dsHandler == null)
+                    throw new NoSuchEntityException(DatastreamEntityHandler.NOT_FOUND_MESSAGE + dsId);
+                //var oldDsInfo = dsHandler.getDataStreamInfo();
         
                 // check linked FOI exists
                 ResourceId foiId = null;
@@ -145,13 +151,11 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
                 }
         
                 // generate OSH obs
-                ObsData obsData = toObsData(obs, dsId, foiId, foiUri);
+                var obsData = toObsData(obs, dsId, foiId, foiUri);
                 
-                // publish event
-                sendDataEvent(dsId.asLong(), obsData);
+                // store in DB + send event
+                var newObsId = dsHandler.addObs(obsData);
                                 
-                // store obs in DB
-                BigInteger newObsId = obsWriteStore.add(obsData);
                 return new ResourceIdBigInt(newObsId);
             });
         }
@@ -163,35 +167,6 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         {
             throw new ServerErrorException("Error creating observation", e);
         }
-    }
-    
-    
-    /*
-     * Manage a cache of event publisher so we don't have to query procedure UID everytime!
-     */
-    void sendDataEvent(long publicDsID, ObsData obsData)
-    {
-        EventPublisherInfo publisherInfo;
-        try
-        {
-            publisherInfo = eventPublishersCache.get(publicDsID, () -> {
-                var dsKey = new DataStreamKey(publicDsID);
-                IDataStreamInfo dsInfo = obsReadStore.getDataStreams().get(dsKey);
-                IEventPublisher publisher = pm.eventBus.getPublisher(EventUtils.getProcedureOutputSourceID(dsInfo.getProcedureID().getUniqueID(), dsInfo.getOutputName()));        
-                return new EventPublisherInfo(dsInfo, publisher);
-            });
-        }
-        catch (ExecutionException e)
-        {
-            throw new IllegalStateException("Error retrieving event publisher for datastream " + publicDsID, e);
-        }
-        
-        publisherInfo.publisher.publish(new DataEvent(
-            System.currentTimeMillis(), 
-            publisherInfo.dsInfo.getProcedureID().getUniqueID(),
-            publisherInfo.dsInfo.getName(),
-            obsData.getResult()
-        ));
     }
 
 
