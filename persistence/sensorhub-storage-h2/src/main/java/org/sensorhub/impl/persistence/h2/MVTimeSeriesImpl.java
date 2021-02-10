@@ -472,7 +472,10 @@ public class MVTimeSeriesImpl
             {
                 ProducerTimeKey afterAll = new ProducerTimeKey(producerID, Double.POSITIVE_INFINITY);
                 ProducerTimeKey lastProducerKey = recordIndex.floorKey(afterAll);
-                return new double[] {lastProducerKey.timeStamp, lastProducerKey.timeStamp};
+                if (lastProducerKey != null)
+                    return new double[] {lastProducerKey.timeStamp, lastProducerKey.timeStamp};
+                else
+                    return timeRange;
             }
             else
                 return timeRange;
