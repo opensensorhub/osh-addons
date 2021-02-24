@@ -308,7 +308,7 @@ public class MVTimeSeriesImpl
 
     void store(DataKey key, DataBlock data)
     {
-        DataBlock oldValue = recordIndex.putIfAbsent(new ProducerTimeKey(key.producerID, key.timeStamp), data);
+        DataBlock oldValue = recordIndex.put(new ProducerTimeKey(key.producerID, key.timeStamp), data);
         
         if (key instanceof ObsKey && oldValue == null)
         {
