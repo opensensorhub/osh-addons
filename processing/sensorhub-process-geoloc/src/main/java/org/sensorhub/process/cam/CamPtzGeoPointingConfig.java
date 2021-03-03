@@ -20,9 +20,15 @@ import org.sensorhub.api.processing.StreamProcessConfig;
 
 /**
  * <p>
- * Configuration for PTZcamera geo-targeting process
+ * Configuration for PTZ camera geo-targeting process.
+ * </p><p>
+ * The camera orientation is expressed in ENU frame and the local frame
+ * attached to the camera has its X axis pointed along the camera look
+ * direction. This means that the camera is pointing east when yaw is 0. 
+ * </p><p>
+ * To point the camera north, set yaw to 90° in fixedCameraRotENU.<br/>
+ * To flip the camera upside-down, set roll to 180°.<br/>
  * </p>
- *
  * <p>Copyright (c) 2015 Sensia Software LLC</p>
  * @author Alexandre Robin <alex.robin@sensiasoftware.com>
  * @since Aug 9, 2015
@@ -35,7 +41,7 @@ public class CamPtzGeoPointingConfig extends StreamProcessConfig
     @DisplayInfo(desc="Camera location when camera is static (lat, lon, alt as in EPSG:4979)")
     public double[] fixedCameraPosLLA;    
     
-    @DisplayInfo(desc="Camera reference orientation in ENU frame when camera is static (pitch, roll, yaw in deg)")
+    @DisplayInfo(desc="Camera reference orientation in ENU frame when camera is static (roll, pitch, yaw in deg). Camera is pointing east when yaw=0")
     public double[] fixedCameraRotENU;
     
     @DisplayInfo(desc="Camera focal length at zoom factor 0 (in mm)")
