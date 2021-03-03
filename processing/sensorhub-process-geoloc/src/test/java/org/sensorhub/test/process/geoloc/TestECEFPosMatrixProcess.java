@@ -97,17 +97,17 @@ public class TestECEFPosMatrixProcess
         
         // above lat0, lon0, horizontal and pointing east
         geoConv.LLAtoECEF(new Vect3d(0.0, 0.0, 0.0), ecefLoc);
-        enuRot.set(0.0, 0.0, Math.sin(Math.PI/2/2), Math.cos(Math.PI/2/2));
+        enuRot.set(0.0, 0.0, Math.sin(-Math.PI/2/2), Math.cos(-Math.PI/2/2));
         posMat = execProcess(p, ecefLoc, enuRot);
         posMat.toQuat(attQ);
         
         // check output
-        assertEquals(0.0, attQ.s, 1e-12);
-        assertEquals(Math.sqrt(2)/2, attQ.x, 1e-12);
-        assertEquals(0.0, attQ.y, 1e-12);
-        assertEquals(Math.sqrt(2)/2, attQ.z, 1e-12);
+        assertEquals(Math.sqrt(2)/2, attQ.s, 1e-7);
+        assertEquals(0.0, attQ.x, 1e-7);
+        assertEquals(Math.sqrt(2)/2, attQ.y, 1e-7);
+        assertEquals(0.0, attQ.z, 1e-7);
         checkResult(posMat, new Vect3d(0.0, 0.0, 0.0), ecefLoc);
-        checkResult(posMat, new Vect3d(10.0, 0.0, 0.0), newEcefLoc.add(ecefLoc, new Vect3d(0, 0, 10)));
-        checkResult(posMat, new Vect3d(0.0, 10.0, 0.0), newEcefLoc.add(ecefLoc, new Vect3d(0, -10, 0)));
+        checkResult(posMat, new Vect3d(10.0, 0.0, 0.0), newEcefLoc.add(ecefLoc, new Vect3d(0, 0, -10)));
+        checkResult(posMat, new Vect3d(0.0, 10.0, 0.0), newEcefLoc.add(ecefLoc, new Vect3d(0, 10, 0)));
     }
 }

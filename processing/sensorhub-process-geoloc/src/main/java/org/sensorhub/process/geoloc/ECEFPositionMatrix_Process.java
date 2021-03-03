@@ -82,7 +82,7 @@ public class ECEFPositionMatrix_Process extends ExecutableProcessImpl
         mountOrient = geoHelper.newQuatOrientation(null, SWEConstants.NIL_UNKNOWN);
         mountOrient.setDescription("Device orientation in platform reference frame");
         mountOrient.assignNewDataBlock();
-        mountOrient.getData().setDoubleValue(0, 1.0); // set to identity
+        mountOrient.getData().setDoubleValue(3, 1.0); // set scalar to 1.0 = identity
         paramData.add("mountOrient", mountOrient);
         
         //// OUTPUTS ////
@@ -113,10 +113,7 @@ public class ECEFPositionMatrix_Process extends ExecutableProcessImpl
         locPlatMount.z = locData.getDoubleValue(2);
                 
         DataBlock attData = mountOrient.getData();
-        att.s = attData.getDoubleValue(0); // scalar is first
-        att.x = attData.getDoubleValue(1);
-        att.y = attData.getDoubleValue(2);
-        att.z = attData.getDoubleValue(3);
+        VecMathHelper.toQuat4d(attData, att);
         att.toRotationMatrix(rotPlatMount);
     }
     
@@ -133,10 +130,7 @@ public class ECEFPositionMatrix_Process extends ExecutableProcessImpl
         locEcefPlat.z = locData.getDoubleValue(2);
         
         DataBlock attData = platformAtt.getData();
-        att.s = attData.getDoubleValue(0); // scalar is first
-        att.x = attData.getDoubleValue(1);
-        att.y = attData.getDoubleValue(2);
-        att.z = attData.getDoubleValue(3);
+        VecMathHelper.toQuat4d(attData, att);
         
         // deal with LatLon coordinates if needed
         if (isLatLon)
