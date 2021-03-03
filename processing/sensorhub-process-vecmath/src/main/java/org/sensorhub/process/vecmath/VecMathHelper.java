@@ -41,21 +41,33 @@ public class VecMathHelper extends VectorHelper
     }
     
     
+    /**
+     * Get Quat4d object from values in the datablock, using the "scalar last" convention.
+     * The order of the fields in the datablock should be [qx, qy, qz, q0]
+     * @param vData
+     * @param q
+     */
     public static void toQuat4d(DataBlock vData, Quat4d q)
     {
-        q.s = vData.getDoubleValue(0);
-        q.x = vData.getDoubleValue(1);
-        q.y = vData.getDoubleValue(2);
-        q.z = vData.getDoubleValue(3);
+        q.x = vData.getDoubleValue(0);
+        q.y = vData.getDoubleValue(1);
+        q.z = vData.getDoubleValue(2);
+        q.s = vData.getDoubleValue(3);
     }
     
     
+    /**
+     * Fill datablock with values in the Quat4d object, using the "scalar last" convention.
+     * The order of the fields in the datablock will be [qx, qy, qz, q0]
+     * @param vData
+     * @param q
+     */
     public static void fromQuat4d(Quat4d q, DataBlock vData)
     {
-        vData.setDoubleValue(0, q.s);
-        vData.setDoubleValue(1, q.x);
-        vData.setDoubleValue(2, q.y);
-        vData.setDoubleValue(3, q.z);
+        vData.setDoubleValue(0, q.x);
+        vData.setDoubleValue(1, q.y);
+        vData.setDoubleValue(2, q.z);
+        vData.setDoubleValue(3, q.s);
     }
     
     
