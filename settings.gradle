@@ -11,7 +11,7 @@ if (gradle.parent == null)
   includeBuild gradle.oshCoreDir
 
 // include all folders with build.gradle as subprojects
-FileTree subprojects = fileTree(rootDir).exclude('core', 'dist').include('**/build.gradle')
+FileTree subprojects = fileTree(rootDir).exclude('dist').include('**/build.gradle')
 subprojects.files.each { File f ->
   File projectFolder = f.parentFile
   if (projectFolder != rootDir) {

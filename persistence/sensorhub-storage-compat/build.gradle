@@ -3,16 +3,16 @@ ext.details = 'Adaptater package to use OSH v1 storage files with OSH v2 datasto
 version = oshCoreVersion
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   testCompile group:'org.sensorhub', name:'sensorhub-core', version:oshCoreVersion, configuration: 'testArtifacts'
 }
 
 
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
-    instruction 'Bundle-Vendor', 'Sensia Software LLC'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.persistence.Activator'
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.persistence.Activator')
   }
 }
 

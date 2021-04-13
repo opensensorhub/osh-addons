@@ -3,8 +3,8 @@ ext.details = 'Sensor driver for IP cameras streaming H264 video through RTSP/RT
 version = '1.0.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile project(':sensorhub-driver-videocam')
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-driver-videocam')
   testCompile 'org.jcodec:jcodec-javase:0.1.9'
 }
 
@@ -19,10 +19,10 @@ test {
 }
 
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
-    instruction 'Bundle-Vendor', 'Sensia Software LLC'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.fakegps.Activator'
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.fakegps.Activator')
   }
 }
 

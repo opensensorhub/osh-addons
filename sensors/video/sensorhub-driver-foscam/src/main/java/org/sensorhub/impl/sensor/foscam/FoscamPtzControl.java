@@ -21,10 +21,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Collection;
-
-import org.sensorhub.api.common.CommandStatus;
-import org.sensorhub.api.common.CommandStatus.StatusCode;
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.sensorhub.impl.sensor.foscam.ptz.FoscamPTZpreset;
 import org.sensorhub.impl.sensor.foscam.ptz.FoscamPTZpresetsHandler;
@@ -189,9 +187,6 @@ public class FoscamPtzControl extends AbstractSensorControl<FoscamDriver> {
 			throw new SensorException("Error connecting to Foscam PTZ control", e);
 		}
 
-		CommandStatus cmdStatus = new CommandStatus();
-		cmdStatus.status = StatusCode.COMPLETED;
-		logger.info("cmdStatus = " + cmdStatus.status);
-		return cmdStatus;
+		return CommandStatus.COMPLETED_IMMEDIATELY;
 	}
 }

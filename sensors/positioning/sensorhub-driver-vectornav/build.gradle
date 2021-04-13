@@ -3,7 +3,7 @@ ext.details = 'Driver for VectorNav VN200 Inertial Navigation Systems'
 version = '0.1-SNAPSHOT'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   testCompile project(':sensorhub-comm-rxtx')
 }
 
@@ -14,10 +14,10 @@ test {
 }
 
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
-    instruction 'Bundle-Vendor', 'Sensia Software LLC'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.fakegps.Activator'
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.fakegps.Activator')
   }
 }
 

@@ -24,9 +24,8 @@ import java.net.MalformedURLException;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
-import org.sensorhub.api.common.CommandStatus;
-import org.sensorhub.api.common.CommandStatus.StatusCode;
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.sensorhub.impl.sensor.videocam.ptz.PtzPreset;
@@ -198,9 +197,7 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
 	        throw new SensorException("Error connecting to Axis PTZ control", e);
 	    }        
        
-        CommandStatus cmdStatus = new CommandStatus();
-        cmdStatus.status = StatusCode.COMPLETED;        
-        return cmdStatus;
+        return CommandStatus.COMPLETED_IMMEDIATELY;
     }
     
     

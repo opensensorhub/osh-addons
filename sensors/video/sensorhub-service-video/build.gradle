@@ -4,16 +4,16 @@ version = '1.2.0'
 
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
-  compile 'org.bytedeco:ffmpeg-platform:4.2.2-1.5.3'
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
+  implementation 'org.bytedeco:ffmpeg-platform:4.2.2-1.5.3'
 }
 
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
-    instruction 'Bundle-Vendor', 'Sensia Software LLC'
-    instruction 'Bundle-Activator', 'org.sensorhub.process.math.Activator'
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.process.math.Activator')
   }
 }
 

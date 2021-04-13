@@ -1,20 +1,20 @@
-description = 'SensorThings API'
-ext.details = 'Implementation of OGC SensorThing API based on FROST server'
+description = 'SensorThings MQTT Server'
+ext.details = 'Implementation of MQTT binding for SensorThing API based on FROST server'
 version = '0.1.0'
 
 rootProject.allprojects {
   repositories {
     maven { url "https://dl.bintray.com/fraunhoferiosb/Maven" }
+    maven { url "https://repo.spring.io/plugins-release" }
+    maven { url "https://dl.bintray.com/andsel/maven" }
   }
 }
   
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  implementation 'org.sensorhub:sensorhub-datastore-h2:' + oshCoreVersion
-  implementation 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.Core:1.10.1'
-  implementation 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.HTTP.Common:1.10.1'
-  
-  testCompile 'org.jglue.fluent-json:fluent-json:2.0.3'
+  implementation project(':sensorhub-service-sensorthings')
+  implementation 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.MQTT:1.10.1'
+  implementation 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.MQTT.Moquette:1.10.1'
 }
 
 // add info to OSGi manifest

@@ -30,9 +30,8 @@ import org.onvif.ver10.schema.PTZVector;
 import org.onvif.ver10.schema.Profile;
 import org.onvif.ver10.schema.Vector1D;
 import org.onvif.ver10.schema.Vector2D;
-import org.sensorhub.api.common.CommandStatus;
-import org.sensorhub.api.common.CommandStatus.StatusCode;
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.sensorhub.impl.sensor.videocam.ptz.PtzConfig;
@@ -189,9 +188,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 	        throw new SensorException("Error sending PTZ command via ONVIF", e);
 	    }        
        
-        CommandStatus cmdStatus = new CommandStatus();
-        cmdStatus.status = StatusCode.COMPLETED;        
-        return cmdStatus;
+        return CommandStatus.COMPLETED_IMMEDIATELY;
     }
     
     @Override

@@ -9,8 +9,8 @@ rootProject.allprojects {
 }
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile project(':sensorhub-comm-dio')
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-comm-dio')
 }
 
 // exclude tests requiring connection to the sensor
@@ -20,10 +20,10 @@ test {
 }
 
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
-    instruction 'Bundle-Vendor', 'Sensia Software LLC'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.actuator.pca9685.Activator'
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.actuator.pca9685.Activator')
   }
 }
 

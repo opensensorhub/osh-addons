@@ -3,10 +3,10 @@ ext.details = 'Driver for METAR weather station network through Anything Weather
 version = '1.0.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile 'org.apache.httpcomponents:httpclient:4.3.6'
-  compile 'joda-time:joda-time:2.7'
-  compile 'com.opencsv:opencsv:3.8'
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.apache.httpcomponents:httpclient:4.3.6'
+  implementation 'joda-time:joda-time:2.7'
+  implementation 'com.opencsv:opencsv:3.8'
 }
 
 // exclude tests requiring connection to the sensor
@@ -16,10 +16,10 @@ test {
 }
 
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
-    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.station.metar.Activator'
+    attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.station.metar.Activator')
   }
 }
 

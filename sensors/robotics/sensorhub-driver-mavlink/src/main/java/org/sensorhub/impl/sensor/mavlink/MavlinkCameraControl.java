@@ -22,9 +22,8 @@ import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Vector;
-import org.sensorhub.api.common.CommandStatus;
-import org.sensorhub.api.common.CommandStatus.StatusCode;
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.mavlink.MavlinkConfig.CmdTypes;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
@@ -151,9 +150,7 @@ public class MavlinkCameraControl extends MavlinkControlInput
             throw new SensorException("Cannot execute command", e);
         }
         
-        CommandStatus cmdStatus = new CommandStatus();
-        cmdStatus.status = StatusCode.COMPLETED;
-        return cmdStatus;
+        return CommandStatus.COMPLETED_IMMEDIATELY;
     }
 
 }

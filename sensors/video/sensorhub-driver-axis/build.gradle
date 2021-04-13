@@ -3,9 +3,9 @@ ext.details = 'Driver for IP video cameras from Axis (with PTZ tasking support)'
 version = '1.0.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile project(':sensorhub-driver-rtpcam')
-  compile('net.sf.jipcam:jipcam:0.9.1') {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-driver-rtpcam')
+  implementation('net.sf.jipcam:jipcam:0.9.1') {
     exclude group: 'javax.servlet', module: 'servlet-api'
     exclude group: 'commons-cli', module: 'commons-cli'
     exclude group: 'commons-httpclient', module: 'commons-httpclient'
@@ -20,10 +20,10 @@ test {
 }
 
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
-    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.axis.Activator'
+    attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.axis.Activator')
   }
 }
 

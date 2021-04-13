@@ -3,16 +3,16 @@ ext.details = 'Driver for pulling measurements from Intellisense Flood Sensor AP
 version = '0.1.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.3.6'
-  compile group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.3.3'
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.3.6'
+  implementation group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.3.3'
 }
 
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
-    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.usgswater.Activator'
+    attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.usgswater.Activator')
   }
 }
 

@@ -3,15 +3,15 @@ ext.details = 'Driver for TruPulse 360R Laser Range Finder with inclination and 
 version = '1.0.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile project(':sensorhub-process-geoloc')
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-process-geoloc')
 }
 
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
-    instruction 'Bundle-Vendor', 'Sensia Software LLC'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.trupulse.Activator'
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.trupulse.Activator')
   }
 }
 

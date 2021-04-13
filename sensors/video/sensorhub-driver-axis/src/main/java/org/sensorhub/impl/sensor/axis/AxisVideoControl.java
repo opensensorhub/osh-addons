@@ -18,8 +18,8 @@ package org.sensorhub.impl.sensor.axis;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
-import org.sensorhub.api.common.CommandStatus;
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 
 /**

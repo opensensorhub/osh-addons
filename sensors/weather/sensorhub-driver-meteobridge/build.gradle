@@ -4,18 +4,18 @@ ext.details = 'Sensor driver for the MeteoBridge weather gateway'
 version = '0.1-SNAPSHOT'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile 'org.apache.commons:commons-io:1.3.2'
-  compile 'org.simpleframework:simple-common:6.0.1'
-  compile 'org.simpleframework:simple-transport:6.0.1'
-  compile 'org.simpleframework:simple-http:6.0.1'
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.apache.commons:commons-io:1.3.2'
+  implementation 'org.simpleframework:simple-common:6.0.1'
+  implementation 'org.simpleframework:simple-transport:6.0.1'
+  implementation 'org.simpleframework:simple-http:6.0.1'
 }
 
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
-    instruction 'Bundle-Vendor', 'Environment Systems'
-    instruction 'Bundle-Activator', 'uk.co.envsys.sensorhub.sensor.httpweather.Activator'
+    attributes('Bundle-Vendor': 'Environment Systems')
+    attributes('Bundle-Activator': 'uk.co.envsys.sensorhub.sensor.httpweather.Activator')
   }
 }
 

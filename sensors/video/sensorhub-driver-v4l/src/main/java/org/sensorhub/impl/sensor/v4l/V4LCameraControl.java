@@ -23,12 +23,12 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
-import org.sensorhub.api.common.CommandStatus;
-import org.sensorhub.api.common.CommandStatus.StatusCode;
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.data.DataValue;
 import org.vast.data.SWEFactory;
+import au.edu.jcu.v4l4j.DeviceInfo;
 import au.edu.jcu.v4l4j.FrameInterval;
 import au.edu.jcu.v4l4j.FrameInterval.DiscreteInterval;
 import au.edu.jcu.v4l4j.ImageFormat;
@@ -63,7 +63,7 @@ public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
     }
     
     
-    protected void init()
+    protected void init(DeviceInfo deviceInfo)
     {
         this.camParams = parentSensor.camParams;
         SWEFactory fac = new SWEFactory();
@@ -78,7 +78,7 @@ public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
         // choice of image format
         Category formatVal = fac.newCategory();
         tokenConstraint = fac.newAllowedTokens();
-        List<ImageFormat> v4lImgFormats = parentSensor.deviceInfo.getFormatList().getNativeFormats();
+        List<ImageFormat> v4lImgFormats = deviceInfo.getFormatList().getNativeFormats();
         for (int i=0; i<v4lImgFormats.size(); i++)
             tokenConstraint.addValue(v4lImgFormats.get(i).getName());
         formatVal.setConstraint(tokenConstraint);
@@ -163,9 +163,6 @@ public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
     @Override
     public CommandStatus execCommand(DataBlock command) throws SensorException
     {
-        CommandStatus cmdStatus = new CommandStatus();
-        cmdStatus.status = StatusCode.COMPLETED;
-        
         // associate command data to msg structure definition
         DataComponent commandMsg = commandData.copy();
         commandMsg.setData(command);
@@ -195,7 +192,7 @@ public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
         // update driver with new params        
         parentSensor.updateParams(camParams);
         
-        return cmdStatus;
+        return CommandStatus.COMPLETED_IMMEDIATELY;
     }
 
 

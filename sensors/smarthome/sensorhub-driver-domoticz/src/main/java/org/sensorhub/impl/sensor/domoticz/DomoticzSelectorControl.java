@@ -2,10 +2,8 @@ package org.sensorhub.impl.sensor.domoticz;
 
 import java.io.InputStream;
 import java.net.URL;
-
-import org.sensorhub.api.common.CommandStatus;
-import org.sensorhub.api.common.CommandStatus.StatusCode;
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.data.DataChoiceImpl;
 import org.vast.swe.SWEHelper;
@@ -113,10 +111,7 @@ public class DomoticzSelectorControl extends AbstractSensorControl<DomoticzDrive
         	throw new SensorException("Error sending command", e);
 		}
         
-        CommandStatus cmdStatus = new CommandStatus();
-        cmdStatus.status = StatusCode.COMPLETED;    
-        
-        return cmdStatus;
+        return CommandStatus.COMPLETED_IMMEDIATELY;
 	}
     
     

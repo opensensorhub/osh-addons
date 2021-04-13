@@ -9,8 +9,8 @@ rootProject.allprojects {
 }
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  embedded 'gnu.io:rxtx:2.2-pre1'
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  embeddedImpl 'gnu.io:rxtx:2.2-pre1'
 }
 
 test {

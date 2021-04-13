@@ -1,16 +1,19 @@
-description = 'Simple Math Functions'
-ext.details = 'Simple math functions and processing blocks'
-version = '1.0.0'
+description = 'MQTT Server (HiveMQ)'
+ext.details = 'Implementation of MQTT client/server API using HiveMQ'
+version = '0.1.0'
 
+  
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-datastore-h2:' + oshCoreVersion
+  //embeddedImpl 'com.hivemq:hivemq-community-edition-embeddedImpl:2021.1'
 }
-  
+
 // add info to OSGi manifest
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.process.math.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.service:hivemq:Activator')
   }
 }
 

@@ -3,11 +3,11 @@ ext.details = 'Storage based on Elastic search database'
 version = '1.0.0-SNAPSHOT'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile project(':sensorhub-storage-compat')
-  compile 'org.elasticsearch.client:transport:5.3.1'
-  compile 'com.esotericsoftware:kryo:4.0.0'
-  compile 'org.locationtech.spatial4j:spatial4j:0.6'
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-storage-compat')
+  implementation 'org.elasticsearch.client:transport:5.3.1'
+  implementation 'com.esotericsoftware:kryo:4.0.0'
+  implementation 'org.locationtech.spatial4j:spatial4j:0.6'
   
   testCompile 'org.apache.logging.log4j:log4j-api:2.7'
   testCompile 'org.apache.logging.log4j:log4j-core:2.7'
@@ -21,10 +21,10 @@ test {
 }
 
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
-    instruction 'Bundle-Vendor', 'Sensia Software LLC'
-    instruction 'Bundle-Activator', 'org.sensorhub.process.math.Activator'
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.process.math.Activator')
   }
 }
 

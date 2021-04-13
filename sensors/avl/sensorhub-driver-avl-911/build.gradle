@@ -3,7 +3,7 @@ ext.details = "Driver for Automatic Vehicle Location providing location and stat
 version = '1.0.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
 }
 
 // exclude tests requiring connection to the sensor
@@ -13,10 +13,10 @@ test {
 }
 
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
-    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.avl.Activator'
+    attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.avl.Activator')
   }
 }
 
