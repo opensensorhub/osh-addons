@@ -84,7 +84,7 @@ public class CommRelayService extends AbstractModule<CommRelayConfig>
 
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         // start incoming provider
         if (incoming == null)
@@ -139,7 +139,7 @@ public class CommRelayService extends AbstractModule<CommRelayConfig>
     
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         started = false;
         

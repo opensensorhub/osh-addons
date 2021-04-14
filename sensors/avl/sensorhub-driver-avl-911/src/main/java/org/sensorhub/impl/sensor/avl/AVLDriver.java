@@ -63,9 +63,9 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // generate IDs
         generateUniqueID(SENSOR_UID_PREFIX, config.fleetID);
@@ -94,7 +94,7 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
 	
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         // init comm provider
         if (commProvider == null)
@@ -121,7 +121,7 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
     
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         // stop comm provider
         if (commProvider != null)

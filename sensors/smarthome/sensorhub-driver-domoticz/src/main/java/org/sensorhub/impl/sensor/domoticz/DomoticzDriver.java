@@ -77,9 +77,9 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
     };
     
   @Override
-  public void init() throws SensorHubException
+protected void doInit() throws SensorHubException
   {
-	  super.init();
+	  super.doInit();
 	  
 	  selectorControl = null;
 	  
@@ -573,7 +573,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 	}
 
 	@Override
-	public void start() throws SensorHubException
+	protected void doStart() throws SensorHubException
 	{
 		if (timer != null)
 			return;
@@ -606,7 +606,7 @@ public class DomoticzDriver extends AbstractSensorModule<DomoticzConfig>
 	}
 	
 	@Override
-	public void stop() throws SensorHubException
+	protected void doStop() throws SensorHubException
 	{
 	}
 	

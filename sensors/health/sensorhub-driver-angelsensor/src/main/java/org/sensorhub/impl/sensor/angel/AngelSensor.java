@@ -87,9 +87,9 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
 
 
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // generate IDs
         generateUniqueID("urn:osh:angelsensor:", config.btAddress);
@@ -143,7 +143,7 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
 
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         // connect to BLE network
         if (bleNetRef == null)
@@ -159,7 +159,7 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
 
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         if (gattClient != null)
             gattClient.close();

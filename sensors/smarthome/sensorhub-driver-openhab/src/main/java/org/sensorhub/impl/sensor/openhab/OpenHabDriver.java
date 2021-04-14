@@ -73,9 +73,9 @@ public class OpenHabDriver extends AbstractSensorModule<OpenHabConfig>
     };
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-    	super.init();
+    	super.doInit();
 	  
 //    	selectorControl = null;
 	  
@@ -656,7 +656,7 @@ public class OpenHabDriver extends AbstractSensorModule<OpenHabConfig>
     }
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
     	if (timer != null)
     		return;
@@ -689,7 +689,7 @@ public class OpenHabDriver extends AbstractSensorModule<OpenHabConfig>
     }
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
     }
 

@@ -57,7 +57,7 @@ public class JdkDioI2CCommProvider extends AbstractModule<JdkDioI2CCommProviderC
     
     
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {        
         I2CConfig config = this.config.protocol;
         String deviceString = String.format("I2C device (Bus %d, Addr %H)", config.busNumber, config.deviceAddress);
@@ -117,7 +117,7 @@ public class JdkDioI2CCommProvider extends AbstractModule<JdkDioI2CCommProviderC
 
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         if (i2c != null)
         {

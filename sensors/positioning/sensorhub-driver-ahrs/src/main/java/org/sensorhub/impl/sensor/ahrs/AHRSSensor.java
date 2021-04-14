@@ -30,9 +30,9 @@ public class AHRSSensor extends AbstractSensorModule<AHRSConfig>
 
 
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // generate IDs
         generateUniqueID("urn:osh:sensor:ahrs:", null);
@@ -82,7 +82,7 @@ public class AHRSSensor extends AbstractSensorModule<AHRSConfig>
 
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         if (commProvider == null)
         {
@@ -108,7 +108,7 @@ public class AHRSSensor extends AbstractSensorModule<AHRSConfig>
 
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         if (dataInterface != null)
             dataInterface.stop();

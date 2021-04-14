@@ -45,9 +45,9 @@ public class NldnSensor extends AbstractSensorModule<NldnConfig> implements File
 	
 
 	@Override
-	public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
 	{
-		super.init();
+		super.doInit();
 
 		this.uniqueID = "urn:osh:sensor:mrms:nldn";
 		this.xmlID = "MRMS_NLDN";
@@ -60,7 +60,7 @@ public class NldnSensor extends AbstractSensorModule<NldnConfig> implements File
 	
 
 	@Override
-	public void start() throws SensorHubException
+	protected void doStart() throws SensorHubException
 	{
 	    startDirectoryWatcher();
 	    readLatestDataFile();
@@ -68,7 +68,7 @@ public class NldnSensor extends AbstractSensorModule<NldnConfig> implements File
 
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         if (watcherThread != null)
             watcherThread.interrupt();

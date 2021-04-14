@@ -234,7 +234,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	
 
 	@Override
-	public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
 	{
 		// IDs
 		this.uniqueID = SENSOR_UID_PREFIX + "flightAware";
@@ -267,7 +267,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	
 
 	@Override
-	public void start() throws SensorHubException
+	protected void doStart() throws SensorHubException
 	{
 	    // if configured to use firehose only, connect to firehose now
         if (config.connectionType == Mode.FIREHOSE || config.connectionType == Mode.FIREHOSE_THEN_PUBSUB)
@@ -413,7 +413,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	
 
 	@Override
-	public void stop() throws SensorHubException
+	protected void doStop() throws SensorHubException
 	{
 		if (watchDogTimer != null) {
 		    watchDogTimer.shutdown();

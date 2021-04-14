@@ -58,9 +58,9 @@ public class Trek1000Sensor extends AbstractSensorModule<Trek1000Config>
 
 
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
 
         // generate identifiers
         generateUniqueID("urn:osh:sensor:trek1000:", config.serialNumber);
@@ -94,7 +94,7 @@ public class Trek1000Sensor extends AbstractSensorModule<Trek1000Config>
 
 
     @Override
-    public void start() throws SensorException
+    protected void doStart() throws SensorException
     {
         if (started)
             return;
@@ -199,7 +199,7 @@ public class Trek1000Sensor extends AbstractSensorModule<Trek1000Config>
     
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         started = false;
         

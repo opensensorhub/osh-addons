@@ -54,7 +54,7 @@ public class RxtxSerialCommProvider extends AbstractModule<RxtxSerialCommProvide
     
     
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         UARTConfig config = this.config.protocol;
         
@@ -173,7 +173,7 @@ public class RxtxSerialCommProvider extends AbstractModule<RxtxSerialCommProvide
 
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         if (serialPort != null)
         {

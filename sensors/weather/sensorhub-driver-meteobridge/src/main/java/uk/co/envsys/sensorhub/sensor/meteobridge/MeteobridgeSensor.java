@@ -13,8 +13,8 @@ public class MeteobridgeSensor extends AbstractSensorModule<MeteobridgeConfig>{
 	
 	public MeteobridgeSensor() {}	// blank constructor
 	
-	public void init() throws SensorHubException {
-		super.init();
+	protected void doInit() throws SensorHubException {
+		super.doInit();
 		
 		dataInterface = new MeteobridgeOutput(this);
 		addOutput(dataInterface, false);
@@ -44,13 +44,13 @@ public class MeteobridgeSensor extends AbstractSensorModule<MeteobridgeConfig>{
 	}
 
 	@Override
-	public void start() throws SensorHubException {
+	protected void doStart() throws SensorHubException {
 		connected = true;
 		dataInterface.start();
 	}
 
 	@Override
-	public void stop() throws SensorHubException {
+	protected void doStop() throws SensorHubException {
 		connected = false;
 		dataInterface.stop();
 	}

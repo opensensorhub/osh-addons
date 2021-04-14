@@ -38,9 +38,9 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // validate config
         config.validate();
@@ -68,14 +68,14 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
 
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         dataInterface.start();        
     }
     
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         if (dataInterface != null)
             dataInterface.stop();

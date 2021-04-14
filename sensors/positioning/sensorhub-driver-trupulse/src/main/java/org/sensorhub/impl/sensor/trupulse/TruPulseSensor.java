@@ -48,9 +48,9 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // generate identifiers: use serial number from config or first characters of local ID
         generateUniqueID("urn:lasertech:trupulse360:", config.serialNumber);
@@ -75,7 +75,7 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
 
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         // init comm provider
         if (commProvider == null)
@@ -102,7 +102,7 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
     
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         if (dataInterface != null)
             dataInterface.stop();

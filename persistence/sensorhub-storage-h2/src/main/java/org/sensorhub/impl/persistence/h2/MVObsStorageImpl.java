@@ -112,7 +112,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
 
 
     @Override
-    public synchronized void start() throws SensorHubException
+    protected synchronized void doStart() throws SensorHubException
     {
         Asserts.checkState(mvStore == null, "Cannot start a nested ObsStorage instance");
         
@@ -170,7 +170,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
 
 
     @Override
-    public synchronized void stop() throws SensorHubException
+    protected synchronized void doStop() throws SensorHubException
     {
         if (mvStore != null) 
         {

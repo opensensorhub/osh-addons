@@ -105,7 +105,7 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
 
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         serviceInstances.put(System.identityHashCode(this), this);
         
@@ -167,7 +167,7 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
 
 
     @Override
-    public void stop()
+    protected void doStop()
     {
         // undeploy servlet
         if (servlet != null)

@@ -168,7 +168,7 @@ public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderC
 
 
     @Override
-    public synchronized void start() throws SensorHubException
+    protected synchronized void doStart() throws SensorHubException
     {
         final Path dir = Paths.get(config.dataFolder);
 
@@ -245,7 +245,7 @@ public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderC
 
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         started = false;
         

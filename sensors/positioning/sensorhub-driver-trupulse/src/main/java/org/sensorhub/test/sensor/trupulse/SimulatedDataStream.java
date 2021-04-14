@@ -71,7 +71,7 @@ public class SimulatedDataStream extends AbstractModule<CommProviderConfig<?>> i
 
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         // create piped is / os pair
         try
@@ -106,7 +106,7 @@ public class SimulatedDataStream extends AbstractModule<CommProviderConfig<?>> i
 
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         if (is != null)
         {

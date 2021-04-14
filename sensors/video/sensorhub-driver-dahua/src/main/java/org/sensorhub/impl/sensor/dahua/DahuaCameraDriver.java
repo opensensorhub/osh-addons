@@ -83,10 +83,10 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
         // reset internal state in case init() was already called
-        super.init();
+        super.doInit();
         videoDataInterface = null;
         ptzDataInterface = null;
         ptzControlInterface = null;
@@ -248,7 +248,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
     
     
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         // wait for valid connection to camera
         connection.waitForConnection();
@@ -336,7 +336,7 @@ public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>
 
     
     @Override
-    public void stop()
+    protected void doStop()
     {
         if (connection != null)
             connection.cancel();

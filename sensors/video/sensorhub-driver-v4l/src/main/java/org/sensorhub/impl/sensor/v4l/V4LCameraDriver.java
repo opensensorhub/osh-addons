@@ -63,9 +63,9 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // generate IDs
         generateUniqueID("urn:osh:sensor:v4l-cam:", config.serialNumber);
@@ -78,7 +78,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     
     
     @Override
-    public void start() throws SensorException
+    protected void doStart() throws SensorException
     {
         this.camParams = config.defaultParams.clone();
         
@@ -118,7 +118,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     
     
     @Override
-    public void stop()
+    protected void doStop()
     {
         if (dataInterface != null)
             dataInterface.stop();

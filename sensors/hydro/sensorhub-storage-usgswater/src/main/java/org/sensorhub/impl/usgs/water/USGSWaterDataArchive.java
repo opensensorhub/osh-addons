@@ -78,14 +78,14 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig>
 	PhysicalSystem systemDesc;
 
 	@Override
-	public void start() throws SensorHubException {
+	protected void doStart() throws SensorHubException {
 		loadFois();
 		initRecordStores();
 		initSensorNetworkDescription();
 	}
 
 	@Override
-	public void stop() throws SensorHubException {
+	protected void doStop() throws SensorHubException {
 	}
 
 	protected void loadFois() throws SensorHubException {

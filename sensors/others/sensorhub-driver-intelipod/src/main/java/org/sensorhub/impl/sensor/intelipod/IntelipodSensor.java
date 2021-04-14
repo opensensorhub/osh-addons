@@ -60,10 +60,10 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
     	//System.out.println("Initializing...");
-        super.init();
+        super.doInit();
         
         // init main data interface
         intelipodOut = new IntelipodOutput(this);
@@ -124,7 +124,7 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
     
     
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
     	//System.out.println("Starting...");
 
@@ -148,7 +148,7 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
     
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
     	//close();
     	started = false;

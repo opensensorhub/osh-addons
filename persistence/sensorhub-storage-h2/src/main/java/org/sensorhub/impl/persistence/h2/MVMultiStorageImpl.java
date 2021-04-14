@@ -139,9 +139,9 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
     
     
     @Override
-    public synchronized void start() throws SensorHubException
+    protected synchronized void doStart() throws SensorHubException
     {
-        super.start();
+        super.doStart();
         
         // load child data stores
         this.dataStoreInfoMap = mvStore.openMap(PRODUCERS_MAP_NAME, new MVMap.Builder<String, String>());
@@ -151,9 +151,9 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
     
     
     @Override
-    public synchronized void stop() throws SensorHubException
+    protected synchronized void doStop() throws SensorHubException
     {
-        super.stop();
+        super.doStop();
         
         dataStoreInfoMap = null;
         obsStores.clear();

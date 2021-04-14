@@ -164,12 +164,12 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 	
 	@Override
-	public void init() {
+    protected void doInit() {
 	    this.indexName = (config.indexName != null) ? config.indexName : getLocalID();
 	}
 
 	@Override
-	public synchronized void start() throws SensorHubException {
+	protected synchronized void doStart() throws SensorHubException {
 		if(client == null) {
 			// init transport client
 			Settings settings = Settings.builder()
@@ -267,7 +267,7 @@ public class ESBasicStorageImpl extends AbstractModule<ESBasicStorageConfig> imp
 	}
 	
 	@Override
-	public synchronized void stop() throws SensorHubException {
+	protected synchronized void doStop() throws SensorHubException {
 		if(client != null) {
 			client.close();
 		}

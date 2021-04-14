@@ -58,9 +58,9 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // generate identifiers: use serial number from config or first characters of local ID
         generateUniqueID("urn:osh:sensor:nmea-gps:", config.serialNumber);
@@ -108,7 +108,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
 
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         if (started)
             return;
@@ -245,7 +245,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
     
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         started = false;
         

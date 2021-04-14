@@ -46,14 +46,14 @@ public class OAuthClient extends AbstractModule<OAuthClientConfig> implements Au
     
     
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         getParentHub().getSecurityManager().registerAuthenticator(this);
     }
 
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         getParentHub().getSecurityManager().registerAuthenticator(authenticator);
         this.authenticator = null;

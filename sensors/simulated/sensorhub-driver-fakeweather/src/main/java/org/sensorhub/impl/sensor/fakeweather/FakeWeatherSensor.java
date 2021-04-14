@@ -37,9 +37,9 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // generate identifiers
         generateUniqueID("urn:osh:sensor:simweather:", config.serialNumber);
@@ -69,7 +69,7 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
 
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         if (dataInterface != null)
             dataInterface.start();        
@@ -77,7 +77,7 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
     
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         if (dataInterface != null)
             dataInterface.stop();

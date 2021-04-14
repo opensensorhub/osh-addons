@@ -55,9 +55,9 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 
 
 	@Override
-	public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
 	{
-		super.init();
+		super.doInit();
 
 		// generate IDs
 		this.uniqueID = SENSOR_UID_PREFIX + "network";
@@ -100,7 +100,7 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 
 
 	@Override
-	public void start() throws SensorHubException
+	protected void doStart() throws SensorHubException
 	{
 		SMLHelper smlFac = new SMLHelper();
 		GMLFactory gmlFac = new GMLFactory(true);
@@ -172,7 +172,7 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 	}
 
 	@Override
-	public void stop() throws SensorHubException
+	protected void doStop() throws SensorHubException
 	{
 		metarInterface.stop();
 	}

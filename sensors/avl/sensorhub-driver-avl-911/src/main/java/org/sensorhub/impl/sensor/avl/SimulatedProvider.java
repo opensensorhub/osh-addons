@@ -267,7 +267,7 @@ public class SimulatedProvider extends AbstractModule<SimulatedProviderConfig> i
     
 
     @Override
-    public synchronized void start() throws SensorHubException
+    protected synchronized void doStart() throws SensorHubException
     {
         if (config.googleApiKey == null || config.googleApiKey.isEmpty())
             throw new SensorHubException("A Google API key with access to the Directions API must be provided in the configuration");
@@ -333,7 +333,7 @@ public class SimulatedProvider extends AbstractModule<SimulatedProviderConfig> i
     
     
     @Override
-    public synchronized void stop() throws SensorHubException
+    protected synchronized void doStop() throws SensorHubException
     {
         try
         {

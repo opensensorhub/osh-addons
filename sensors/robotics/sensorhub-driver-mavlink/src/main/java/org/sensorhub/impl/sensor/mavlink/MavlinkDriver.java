@@ -89,7 +89,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
         // generate identifiers
         generateUniqueID("urn:osh:sensor:mavlink:", config.vehicleID);
@@ -146,7 +146,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
 
 
     @Override
-    public synchronized void start() throws SensorHubException
+    protected synchronized void doStart() throws SensorHubException
     {
         if (started)
             return;        
@@ -414,7 +414,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
 
 
     @Override
-    public synchronized void stop() throws SensorHubException
+    protected synchronized void doStop() throws SensorHubException
     {
         started = false;
         

@@ -63,9 +63,9 @@ public class VN200Sensor extends AbstractSensorModule<VN200Config>
 
 
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // generate IDs
         generateUniqueID("urn:vectornav:imu:", null);
@@ -120,7 +120,7 @@ public class VN200Sensor extends AbstractSensorModule<VN200Config>
 
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         if (started)
             return;
@@ -292,7 +292,7 @@ public class VN200Sensor extends AbstractSensorModule<VN200Config>
     
     
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         if (commProvider != null)
         {

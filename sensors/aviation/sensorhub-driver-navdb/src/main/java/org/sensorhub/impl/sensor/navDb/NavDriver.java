@@ -84,9 +84,9 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	boolean navaids = true;
 
 	@Override
-	public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
 	{
-		super.init();
+		super.doInit();
 		
 		// IDs
 		this.uniqueID = SENSOR_UID_PREFIX + "navDb";
@@ -118,7 +118,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	}
 
 	@Override
-	public void start() throws SensorHubException
+	protected void doStart() throws SensorHubException
 	{
 	    loading.set(false);
 	    startDirectoryWatcher();
@@ -340,7 +340,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	
 
 	@Override
-	public void stop() throws SensorHubException
+	protected void doStop() throws SensorHubException
 	{
 	    if (watcherThread != null)
             watcherThread.interrupt();

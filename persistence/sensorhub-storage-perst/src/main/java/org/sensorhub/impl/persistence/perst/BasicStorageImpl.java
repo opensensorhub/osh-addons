@@ -58,7 +58,7 @@ public class BasicStorageImpl extends AbstractModule<BasicStorageConfig> impleme
     
         
     @Override
-    public synchronized void start() throws StorageException
+    protected synchronized void doStart() throws StorageException
     {
         try
         {
@@ -112,7 +112,7 @@ public class BasicStorageImpl extends AbstractModule<BasicStorageConfig> impleme
     
 
     @Override
-    public synchronized void stop() throws SensorHubException
+    protected synchronized void doStop() throws SensorHubException
     {
         if (db != null) 
         {

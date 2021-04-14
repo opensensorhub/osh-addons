@@ -39,9 +39,9 @@ public class FakeCamSensor extends AbstractSensorModule<FakeCamConfig>
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // generate IDs
         generateUniqueID("urn:osh:sensor:simcam:", config.cameraID);
@@ -66,14 +66,14 @@ public class FakeCamSensor extends AbstractSensorModule<FakeCamConfig>
 
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         dataInterface.start();        
     }
     
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         dataInterface.stop();
     }

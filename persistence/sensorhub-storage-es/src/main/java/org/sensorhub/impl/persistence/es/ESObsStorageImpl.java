@@ -100,8 +100,8 @@ public class ESObsStorageImpl extends ESBasicStorageImpl implements IObsStorageM
 	}
 	
 	@Override
-	public void start() throws SensorHubException {
-	    super.start();
+	protected void doStart() throws SensorHubException {
+	    super.doStart();
 	    
 	    // preload bbox
 	    if (client != null) {

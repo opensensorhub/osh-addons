@@ -54,7 +54,7 @@ public class JdkDioSerialCommProvider extends AbstractModule<JdkDioSerialCommPro
     
     
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         org.sensorhub.impl.comm.UARTConfig config = this.config.protocol;
         
@@ -154,7 +154,7 @@ public class JdkDioSerialCommProvider extends AbstractModule<JdkDioSerialCommPro
 
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         if (uart != null)
         {

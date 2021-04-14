@@ -80,10 +80,10 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
         // reset internal state in case init() was already called
-        super.init();
+        super.doInit();
         videoDataInterface = null;
         navDataInterface = null;
         healthDataInterface = null;
@@ -175,7 +175,7 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
     
     
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         // wait for valid connection to camera
         connection.waitForConnection();
@@ -309,7 +309,7 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
 
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         if (connection != null)
             connection.cancel();

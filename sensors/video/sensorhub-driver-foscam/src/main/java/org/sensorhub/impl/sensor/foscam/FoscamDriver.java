@@ -52,9 +52,9 @@ public class FoscamDriver extends AbstractSensorModule<FoscamConfig> {
 	}	
 
 	@Override
-	public void init() throws SensorHubException {
+    protected void doInit() throws SensorHubException {
 		// reset internal state in case init() was already called
-		super.init();
+		super.doInit();
 		videoDataInterface = null;
 		ptzControlInterface = null;
 		ptzSupported = false;
@@ -85,7 +85,7 @@ public class FoscamDriver extends AbstractSensorModule<FoscamConfig> {
 	}
 
 	@Override
-	public synchronized void start() throws SensorHubException {
+	protected synchronized void doStart() throws SensorHubException {
 		// wait for valid connection to camera
 		connection.waitForConnection();
 
@@ -99,7 +99,7 @@ public class FoscamDriver extends AbstractSensorModule<FoscamConfig> {
 	}
 
 	@Override
-	public synchronized void stop() {
+	protected synchronized void doStop() {
 
 		if (connection != null)
 			connection.cancel();

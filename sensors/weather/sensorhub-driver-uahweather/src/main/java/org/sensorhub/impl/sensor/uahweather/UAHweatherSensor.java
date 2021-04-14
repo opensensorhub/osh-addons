@@ -28,9 +28,9 @@ public class UAHweatherSensor extends AbstractSensorModule<UAHweatherConfig>
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // init comm provider
         if (commProvider == null)
@@ -169,7 +169,7 @@ public class UAHweatherSensor extends AbstractSensorModule<UAHweatherConfig>
     }
     
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
     	if (started)
             return;
@@ -194,7 +194,7 @@ public class UAHweatherSensor extends AbstractSensorModule<UAHweatherConfig>
     
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
     	started = false;
         

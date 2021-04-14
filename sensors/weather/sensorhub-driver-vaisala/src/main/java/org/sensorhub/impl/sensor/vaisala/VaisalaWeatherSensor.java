@@ -73,9 +73,9 @@ public class VaisalaWeatherSensor extends AbstractSensorModule<VaisalaWeatherCon
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // create data interfaces
         compOut = new VaisalaWeatherCompositeOutput(this);
@@ -499,7 +499,7 @@ public class VaisalaWeatherSensor extends AbstractSensorModule<VaisalaWeatherCon
     }
     
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
     	// start main measurement thread
       Thread t = new Thread(new Runnable()
@@ -522,7 +522,7 @@ public class VaisalaWeatherSensor extends AbstractSensorModule<VaisalaWeatherCon
     
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
     	started = false;
       

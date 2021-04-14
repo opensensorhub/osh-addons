@@ -44,7 +44,7 @@ public class PwmServoActuators extends AbstractSensorModule<PwmServosConfig>
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
         super.init(config);
         
@@ -68,7 +68,7 @@ public class PwmServoActuators extends AbstractSensorModule<PwmServosConfig>
 
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         if (started)
             return;
@@ -97,7 +97,7 @@ public class PwmServoActuators extends AbstractSensorModule<PwmServosConfig>
     
     
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         started = false;
         

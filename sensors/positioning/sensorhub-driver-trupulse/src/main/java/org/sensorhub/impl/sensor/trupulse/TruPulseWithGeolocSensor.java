@@ -37,9 +37,9 @@ public class TruPulseWithGeolocSensor extends TruPulseSensor
     
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // create geoloc processing config
         TargetGeolocConfig geolocProcessConfig = new TargetGeolocConfig();
@@ -71,17 +71,17 @@ public class TruPulseWithGeolocSensor extends TruPulseSensor
 
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
-        super.start();
+        super.doStart();
         geolocProcess.start();
     }
 
 
     @Override
-    public void stop() throws SensorHubException
+    protected void doStop() throws SensorHubException
     {
         geolocProcess.stop();
-        super.stop();        
+        super.doStop();        
     }
 }

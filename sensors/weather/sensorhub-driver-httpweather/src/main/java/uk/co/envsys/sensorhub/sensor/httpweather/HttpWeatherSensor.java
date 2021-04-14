@@ -22,8 +22,8 @@ public class HttpWeatherSensor extends AbstractSensorModule<HttpWeatherConfig> {
 	
 	public HttpWeatherSensor() {}
 	
-	public void init() throws SensorHubException {
-		super.init();
+	protected void doInit() throws SensorHubException {
+		super.doInit();
 		dataInterface = new HttpWeatherOutput(this);
 		addOutput(dataInterface, false);
 		dataInterface.init();
@@ -71,7 +71,7 @@ public class HttpWeatherSensor extends AbstractSensorModule<HttpWeatherConfig> {
 	}
 
 	@Override
-	public void start() throws SensorHubException {
+	protected void doStart() throws SensorHubException {
 		HttpServer instance = HttpServer.getInstance();
 		if(instance == null) {
 			// NO RUNNING SERVER FOUND - probably running unit tests... start one?
@@ -85,7 +85,7 @@ public class HttpWeatherSensor extends AbstractSensorModule<HttpWeatherConfig> {
 	}
 
 	@Override
-	public void stop() throws SensorHubException {
+	protected void doStop() throws SensorHubException {
 		HttpServer.getInstance().undeployServlet(server);
 		serverRunning = false;
 	}

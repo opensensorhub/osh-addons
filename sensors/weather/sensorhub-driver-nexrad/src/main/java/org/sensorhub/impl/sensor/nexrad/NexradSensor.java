@@ -89,9 +89,9 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig> implements 
 	}
 
 	@Override
-	public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
 	{
-		super.init();
+		super.doInit();
 
 		// generate IDs
 		this.uniqueID = SITE_UID_PREFIX + "network";
@@ -144,7 +144,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig> implements 
 	}
 
 	@Override
-	public void start() throws SensorHubException
+	protected void doStart() throws SensorHubException
 	{
 		SMLHelper smlFac = new SMLHelper();
 		GMLFactory gmlFac = new GMLFactory(true);
@@ -183,7 +183,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig> implements 
 
 
 	@Override
-	public void stop() throws SensorHubException
+	protected void doStop() throws SensorHubException
 	{
 		dataInterface.stop();
 		if(isRealtime)

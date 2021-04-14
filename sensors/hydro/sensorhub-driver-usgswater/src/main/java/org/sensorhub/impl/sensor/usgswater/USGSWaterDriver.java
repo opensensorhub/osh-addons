@@ -108,10 +108,10 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     };
     
     @Override
-    public void init() throws SensorHubException
+    protected void doInit() throws SensorHubException
     {
         // reset internal state in case init() was already called
-        super.init();
+        super.doInit();
         
     	this.countyCode = new LinkedHashSet<CountyCode>();
 
@@ -207,7 +207,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     }
 
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
 	    
     	SMLHelper sml = new SMLHelper();
@@ -627,7 +627,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 
 
     @Override
-    public void stop() {
+    protected void doStop() {
 	    if (timer != null)
         {
             timer.cancel();
