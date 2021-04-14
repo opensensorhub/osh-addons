@@ -61,14 +61,14 @@ public class TLEPredictorProcess extends AbstractStreamProcess<TLEPredictorProce
     
     
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         tleOutput.start();        
     }
     
     
     @Override
-    public void stop()
+    protected void doStop()
     {
         tleOutput.stop();
         realTimeStateOutput.stop();

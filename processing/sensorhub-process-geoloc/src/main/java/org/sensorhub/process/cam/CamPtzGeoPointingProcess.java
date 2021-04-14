@@ -160,9 +160,9 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
     
     
     @Override
-    public void start() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
-        super.start();
+        super.doStart();
         camPtzOutput.start();
         threadPool = new ThreadPoolExecutor(1, 1, 10000L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
     }
