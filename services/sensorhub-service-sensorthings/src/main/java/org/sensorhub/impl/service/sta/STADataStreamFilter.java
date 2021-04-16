@@ -27,7 +27,7 @@ import org.sensorhub.api.datastore.obs.DataStreamFilter;
  * @author Alex Robin
  * @date Oct 14, 2019
  */
-class STADataStreamFilter extends DataStreamFilter
+public class STADataStreamFilter extends DataStreamFilter
 {
     protected STAThingFilter things;
     
@@ -40,9 +40,18 @@ class STADataStreamFilter extends DataStreamFilter
     
     public static class Builder extends DataStreamFilterBuilder<Builder, STADataStreamFilter>
     {
-        protected Builder()
+        public Builder()
         {
             super(new STADataStreamFilter());
+        }
+        
+        
+        @Override
+        public STADataStreamFilter.Builder copyFrom(STADataStreamFilter base)
+        {
+            super.copyFrom(base);
+            instance.things = base.things;
+            return this;
         }
         
         

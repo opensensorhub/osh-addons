@@ -19,6 +19,7 @@ import org.h2.mvstore.MVStore;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.database.IDatabaseRegistry;
 import org.sensorhub.api.database.IProcedureObsDatabase;
+import org.sensorhub.api.datastore.command.ICommandStore;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.procedure.IProcedureStore;
@@ -206,6 +207,13 @@ public class STADatabase implements ISTADatabase
     public IFoiStore getFoiStore()
     {
         return obsDatabase.getFoiStore();
+    }
+
+
+    @Override
+    public ICommandStore getCommandStore()
+    {
+        return obsDatabase.getCommandStore();
     }
 
 

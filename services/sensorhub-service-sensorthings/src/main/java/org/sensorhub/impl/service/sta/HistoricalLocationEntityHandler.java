@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.WriteBuffer;
 import org.sensorhub.api.datastore.feature.FeatureKey;
+import org.sensorhub.impl.service.sta.filter.HistoricalLocationFilterVisitor;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
 import de.fraunhofer.iosb.ilt.frostserver.model.HistoricalLocation;
@@ -191,9 +192,9 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
             }
         }
         
-        /*SensorFilterVisitor visitor = new SensorFilterVisitor(builder);
+        HistoricalLocationFilterVisitor visitor = new HistoricalLocationFilterVisitor(builder);
         if (q.getFilter() != null)
-            q.getFilter().accept(visitor);*/
+            q.getFilter().accept(visitor);
         
         return builder.build();
     }

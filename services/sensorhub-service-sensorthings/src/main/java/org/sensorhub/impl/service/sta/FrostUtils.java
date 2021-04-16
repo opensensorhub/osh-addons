@@ -130,7 +130,7 @@ public class FrostUtils
     
     public static AbstractGeometry toGmlGeometry(org.geojson.GeoJsonObject geojson)
     {
-        GMLFactory fac = new GMLFactory();
+        GMLFactory fac = new GMLFactory(true);
         
         if (geojson instanceof org.geojson.Point)
         {

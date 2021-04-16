@@ -30,6 +30,7 @@ import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.api.procedure.IProcedureWithDesc;
 import org.sensorhub.api.procedure.ProcedureId;
 import org.sensorhub.impl.procedure.wrapper.ProcedureWrapper;
+import org.sensorhub.impl.service.sta.filter.SensorFilterVisitor;
 import org.sensorhub.utils.SWEDataUtils;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Asserts;

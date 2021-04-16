@@ -22,6 +22,7 @@ import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.procedure.ProcedureId;
+import org.sensorhub.impl.service.sta.filter.FoiFilterVisitor;
 import org.sensorhub.utils.SWEDataUtils;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.ogc.gml.IGeoFeature;
@@ -242,9 +243,9 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
             }
         }
         
-        /*SensorFilterVisitor visitor = new SensorFilterVisitor(builder);
+        FoiFilterVisitor visitor = new FoiFilterVisitor(builder);
         if (q.getFilter() != null)
-            q.getFilter().accept(visitor);*/
+            q.getFilter().accept(visitor);
         
         return builder.build();
     }

@@ -18,14 +18,17 @@ import java.util.HashMap;
 import java.util.Properties;
 import javax.xml.namespace.QName;
 import org.sensorhub.api.event.Event;
+import org.sensorhub.api.comm.mqtt.IMqttService;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.database.IProcedureObsDatabase;
 import org.sensorhub.api.datastore.feature.FeatureKey;
+import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.module.ModuleEvent;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.api.procedure.ProcedureId;
 import org.sensorhub.api.service.IServiceModule;
+import org.sensorhub.impl.database.registry.FilteredFederatedObsDatabase;
 import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.procedure.wrapper.ProcedureWrapper;
 import org.sensorhub.impl.sensor.VirtualProcedureGroupConfig;
@@ -112,15 +115,21 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
         if (config.dbConfig != null)
         {
             // init database
-            // TODO load database implementation class dynamically
             writeDatabase = new STADatabase(this, config.dbConfig);
         }
         
-        // get existing or create new FilteredView from config
-        if (config.exposedResources != null)
-            readDatabase = config.exposedResources.getFilteredView(getParentHub());
+        // get filter for FilteredView from config
+        var filter = config.exposedResources.getObsFilter();
+        if (writeDatabase != null)
+        {
+            // if a writable database was provided, make sure we always expose
+            // its content via this service by flagging it as unfiltered
+            readDatabase = new FilteredFederatedObsDatabase(
+                getParentHub().getDatabaseRegistry(),
+                (ObsFilter)filter, writeDatabase.getDatabaseNum());
+        }
         else
-            readDatabase = getParentHub().getDatabaseRegistry().getFederatedObsDatabase();
+            readDatabase = config.exposedResources.getFilteredView(getParentHub());
         
         // create or retrieve virtual sensor group
         if (config.virtualSensorGroup != null)
@@ -203,9 +212,21 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
         //staSettings.setProperty(TAG_USE_ABSOLUTE_NAVIGATION_LINKS, "false");
 
         // deploy ourself to HTTP server
-        httpServer.deployServlet(servlet, config.endPoint + "/v1.0/*");
-        servlet.getServletContext().setAttribute(TAG_CORE_SETTINGS, new CoreSettings(staSettings));
+        var endpoint = config.endPoint + "/v1.0/";
+        httpServer.deployServlet(servlet, endpoint + "*");
+        var coreSettings = new CoreSettings(staSettings);
+        servlet.getServletContext().setAttribute(TAG_CORE_SETTINGS, coreSettings);
         httpServer.addServletSecurity(config.endPoint, config.security.requireAuth);
+        
+        // also enable MQTT extension if an MQTT server is available
+        getParentHub().getModuleRegistry().waitForModuleType(IMqttService.class, ModuleState.STARTED)
+            .thenAccept(mqtt -> {
+                if (mqtt != null && config.enableMqtt)
+                {
+                    mqtt.registerHandler(endpoint, new STAMqttConnector(this, endpoint, coreSettings));
+                    getLogger().info("SensorThings MQTT handler registered");
+                }
+            });
     }
 
 
@@ -258,7 +279,16 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
 
             // stop when HTTP server is disabled
             else if (newState == ModuleState.STOPPED)
-                stop();
+            {
+                try
+                {
+                    stop();
+                }
+                catch (Exception ex)
+                {
+                    reportError("SensorThings API Service could not stop", ex);
+                }
+            }
         }
     }
 

@@ -31,6 +31,7 @@ import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.api.obs.IObsData;
 import org.sensorhub.api.obs.ObsData;
 import org.sensorhub.impl.procedure.DataStreamTransactionHandler;
+import org.sensorhub.impl.service.sta.filter.ObsFilterVisitor;
 import org.vast.data.DataBlockDouble;
 import org.vast.data.DataBlockInt;
 import org.vast.data.DataBlockLong;
@@ -293,9 +294,9 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             }
         }
 
-        /*SensorFilterVisitor visitor = new SensorFilterVisitor(builder);
+        ObsFilterVisitor visitor = new ObsFilterVisitor(builder);
         if (q.getFilter() != null)
-            q.getFilter().accept(visitor);*/
+            q.getFilter().accept(visitor);
 
         return builder.build();
     }

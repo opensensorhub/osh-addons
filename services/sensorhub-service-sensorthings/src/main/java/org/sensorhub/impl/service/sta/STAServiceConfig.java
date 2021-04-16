@@ -66,6 +66,10 @@ public class STAServiceConfig extends ServiceConfig
     public boolean enableTransactional = false;
     
     
+    @DisplayInfo(desc="Set to true to enable MQTT support")
+    public boolean enableMqtt = false;
+    
+    
     @DisplayInfo(label="Max Observations Returned", desc="Maximum number of observations returned in a page (max limit)")
     public int maxObsCount = 1000;
     

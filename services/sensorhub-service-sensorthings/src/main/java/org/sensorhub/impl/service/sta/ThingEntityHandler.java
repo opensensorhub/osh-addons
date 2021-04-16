@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.procedure.ProcedureId;
+import org.sensorhub.impl.service.sta.filter.ThingFilterVisitor;
 import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.util.Asserts;
@@ -267,9 +268,9 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
             }
         }
         
-        /*SensorFilterVisitor visitor = new SensorFilterVisitor(builder);
+        ThingFilterVisitor visitor = new ThingFilterVisitor(builder);
         if (q.getFilter() != null)
-            q.getFilter().accept(visitor);*/
+            q.getFilter().accept(visitor);
         
         return builder.build();
     }

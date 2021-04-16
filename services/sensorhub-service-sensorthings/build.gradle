@@ -11,8 +11,9 @@ rootProject.allprojects {
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-datastore-h2:' + oshCoreVersion
-  implementation 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.Core:1.10.1'
-  implementation 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.HTTP.Common:1.10.1'
+  implementation project(':sensorhub-comm-mqtt')
+  embeddedImpl 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.Core:1.10.1'
+  embeddedImpl 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.HTTP.Common:1.10.1'
   
   testCompile 'org.jglue.fluent-json:fluent-json:2.0.3'
 }
@@ -21,7 +22,7 @@ dependencies {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.process.math.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.service.sta.Activator')
   }
 }
 

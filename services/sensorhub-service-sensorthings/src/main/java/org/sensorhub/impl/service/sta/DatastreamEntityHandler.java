@@ -25,6 +25,7 @@ import org.sensorhub.api.datastore.obs.IDataStreamStore;
 import org.sensorhub.api.obs.DataStreamInfo;
 import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.api.procedure.ProcedureId;
+import org.sensorhub.impl.service.sta.filter.DatastreamFilterVisitor;
 import org.sensorhub.utils.SWEDataUtils;
 import org.vast.data.TextEncodingImpl;
 import org.vast.ogc.om.IObservation;

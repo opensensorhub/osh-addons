@@ -21,6 +21,7 @@ import javax.xml.namespace.QName;
 import org.geojson.GeoJsonObject;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureKey;
+import org.sensorhub.impl.service.sta.filter.LocationFilterVisitor;
 import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.util.Asserts;
@@ -234,9 +235,9 @@ public class LocationEntityHandler implements IResourceHandler<Location>
             }
         }           
         
-        /*SensorFilterVisitor visitor = new SensorFilterVisitor(builder);
+        LocationFilterVisitor visitor = new LocationFilterVisitor(builder);
         if (q.getFilter() != null)
-            q.getFilter().accept(visitor);*/
+            q.getFilter().accept(visitor);
         
         return builder.build();
     }

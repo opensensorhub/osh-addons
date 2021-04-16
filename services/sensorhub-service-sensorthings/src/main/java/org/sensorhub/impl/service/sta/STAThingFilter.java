@@ -29,7 +29,7 @@ import org.vast.ogc.gml.IFeature;
  * @author Alex Robin
  * @date Oct 29, 2019
  */
-class STAThingFilter extends FeatureFilterBase<IFeature>
+public class STAThingFilter extends FeatureFilterBase<IFeature>
 {
     protected STALocationFilter locations;
     
@@ -49,9 +49,18 @@ class STAThingFilter extends FeatureFilterBase<IFeature>
     
     public static class Builder extends FeatureFilterBaseBuilder<Builder, IFeature, STAThingFilter>
     {
-        protected Builder()
+        public Builder()
         {
             super(new STAThingFilter());
+        }
+        
+        
+        @Override
+        public STAThingFilter.Builder copyFrom(STAThingFilter base)
+        {
+            super.copyFrom(base);
+            instance.locations = base.locations;
+            return this;
         }
         
         
