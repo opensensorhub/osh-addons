@@ -33,12 +33,14 @@ import de.fraunhofer.iosb.ilt.frostserver.http.common.ServletV1P0;
 public class STAServlet extends ServletV1P0
 {
     private static final long serialVersionUID = 6257719486841697633L;
+    
+    STAService service;
     STASecurity securityHandler;
     
     
-    STAServlet(STASecurity securityHandler)
+    STAServlet(STAService service)
     {
-        this.securityHandler = securityHandler;
+        this.securityHandler = service.getSecurityHandler();
     }
     
     

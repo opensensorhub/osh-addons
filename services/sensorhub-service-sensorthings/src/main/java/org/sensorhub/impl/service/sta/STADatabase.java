@@ -23,6 +23,7 @@ import org.sensorhub.api.datastore.command.ICommandStore;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.procedure.IProcedureStore;
+import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
 import org.sensorhub.impl.datastore.h2.MVObsDatabase;
 
@@ -73,8 +74,10 @@ public class STADatabase implements ISTADatabase
             {        
                 obsDatabase = new MVObsDatabase();
                 ((MVObsDatabase)obsDatabase).setConfiguration(config);
-                ((MVObsDatabase)obsDatabase).requestInit(true);
-                ((MVObsDatabase)obsDatabase).requestStart();
+                ((MVObsDatabase)obsDatabase).init();
+                ((MVObsDatabase)obsDatabase).waitForState(ModuleState.INITIALIZED, 5000L);
+                ((MVObsDatabase)obsDatabase).start();
+                ((MVObsDatabase)obsDatabase).waitForState(ModuleState.STARTED, 5000L);
                 mvStore = ((MVObsDatabase)obsDatabase).getMVStore();
                 externalObsDatabaseUsed = false;
             }

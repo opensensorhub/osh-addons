@@ -60,7 +60,7 @@ public class TestKinectDriver implements IEventListener {
 
 		displayFrame.dispose();
 
-		driver.requestStop();
+		driver.stop();
 	}
 
 	@Test
@@ -71,8 +71,8 @@ public class TestKinectDriver implements IEventListener {
 		config.pointCloudScaleFactor = .1;
 
 		driver.setConfiguration(config);
-		driver.requestInit(false);
-		driver.requestStart();
+		driver.init();
+		driver.start();
 
 		displayFrame.initialize("Depth Test", config, Mode.DEPTH, false);
 
@@ -104,8 +104,8 @@ public class TestKinectDriver implements IEventListener {
 		config.useCameraModel = true;
 
 		driver.setConfiguration(config);
-		driver.requestInit(false);
-		driver.requestStart();
+		driver.init();
+		driver.start();
 
 		// register listener on data interface
 		IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
@@ -158,8 +158,8 @@ public class TestKinectDriver implements IEventListener {
 		displayFrame.initialize("RGB Test", config.frameWidth, config.frameHeight, Mode.VIDEO, false);
 
 		driver.setConfiguration(config);
-		driver.requestInit(false);
-		driver.requestStart();
+		driver.init();
+		driver.start();
 
 		// register listener on data interface
 		IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
@@ -188,8 +188,8 @@ public class TestKinectDriver implements IEventListener {
 		displayFrame.initialize("IR Test", config.frameWidth, config.frameHeight, Mode.IR, false);
 
 		driver.setConfiguration(config);
-		driver.requestInit(false);
-		driver.requestStart();
+		driver.init();
+		driver.start();
 
 		// register listener on data interface
 		IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
@@ -219,8 +219,8 @@ public class TestKinectDriver implements IEventListener {
 		displayFrame.initialize("MJPEG Test", config.frameWidth, config.frameHeight, Mode.VIDEO, true);
 
 		driver.setConfiguration(config);
-		driver.requestInit(false);
-		driver.requestStart();
+		driver.init();
+		driver.start();
 
 		// register listener on data interface
 		IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
@@ -250,8 +250,8 @@ public class TestKinectDriver implements IEventListener {
 		displayFrame.initialize("IR MJPEG Test", config.frameWidth, config.frameHeight, Mode.IR, true);
 
 		driver.setConfiguration(config);
-		driver.requestInit(false);
-		driver.requestStart();
+		driver.init();
+		driver.start();
 
 		// register listener on data interface
 		IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();

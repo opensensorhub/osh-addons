@@ -151,12 +151,12 @@ public class FlightAwareClient implements Runnable
 		}
 	}
 	
-	public synchronized void start() {
+	protected synchronized void start() {
 	    Thread thread = new Thread(this, "FirehoseClient");
         thread.start();
 	}
 
-	public synchronized void stop() {
+	protected synchronized void stop() {
 		started = false;
 		
 		// force close from here

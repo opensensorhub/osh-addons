@@ -69,7 +69,7 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
 
 
     @Override
-    public void requestStart() throws SensorHubException
+    public void start() throws SensorHubException
     {
         if (canStart())
         {
@@ -162,7 +162,7 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
         writeDatabase.getThingStore().put(new FeatureKey(1, FeatureKey.TIMELESS), hubThing);
 
         // deploy servlet
-        servlet = new STAServlet((STASecurity)securityHandler);
+        servlet = new STAServlet(this);
         deploy();
 
         setState(ModuleState.STARTED);
@@ -269,7 +269,7 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
             {
                 try
                 {
-                    start();
+                    doStart();
                 }
                 catch (Exception ex)
                 {
@@ -282,7 +282,7 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
             {
                 try
                 {
-                    stop();
+                    doStop();
                 }
                 catch (Exception ex)
                 {

@@ -25,8 +25,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
-import org.sensorhub.api.data.IStreamingControlInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
+import org.sensorhub.api.command.IStreamingControlInterface;
+import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.v4l.V4LCameraDriver;
 import org.sensorhub.impl.sensor.v4l.V4LCameraConfig;
@@ -57,16 +58,13 @@ public class TestV4LCameraDriver implements IEventListener
         
         driver = new V4LCameraDriver();
         driver.setConfiguration(config);
-        driver.requestInit(false);
-        driver.requestStart();
+        driver.init();        
     }
     
     
     private void startCapture() throws Exception
     {
-        // update config to start capture
-        config.defaultParams.doCapture = true;
-        driver.updateConfig(config);
+        driver.start();
     }
     
     
@@ -120,8 +118,8 @@ public class TestV4LCameraDriver implements IEventListener
                 this.wait();
         }
         
-        assertTrue(actualWidth == config.defaultParams.imgWidth);
-        assertTrue(actualHeight == config.defaultParams.imgHeight);
+        assertEquals(config.defaultParams.imgWidth, actualWidth);
+        assertEquals(config.defaultParams.imgHeight, actualHeight);
     }
     
     
@@ -132,8 +130,8 @@ public class TestV4LCameraDriver implements IEventListener
         IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
         di.registerListener(this);
         
-        int expectedWidth = config.defaultParams.imgWidth = 320;
-        int expectedHeight = config.defaultParams.imgHeight = 240;
+        int expectedWidth = config.defaultParams.imgWidth = 800;
+        int expectedHeight = config.defaultParams.imgHeight = 600;
         
         // start capture and wait until we receive the first frame
         synchronized (this)
@@ -142,8 +140,8 @@ public class TestV4LCameraDriver implements IEventListener
             this.wait();
         }
         
-        assertTrue(actualWidth == expectedWidth);
-        assertTrue(actualHeight == expectedHeight);
+        assertEquals(expectedWidth, actualWidth);
+        assertEquals(expectedHeight, actualHeight);
     }
     
     
@@ -161,8 +159,8 @@ public class TestV4LCameraDriver implements IEventListener
             this.wait();
         }        
         
-        int expectedWidth = 160;
-        int expectedHeight = 120;
+        int expectedWidth = 640;
+        int expectedHeight = 480;
         
         IStreamingControlInterface ci = driver.getCommandInputs().values().iterator().next();
         DataBlock commandData = ci.getCommandDescription().createDataBlock();
@@ -189,8 +187,8 @@ public class TestV4LCameraDriver implements IEventListener
             this.wait();
         }
         
-        assertTrue(actualWidth == expectedWidth);
-        assertTrue(actualHeight == expectedHeight);
+        assertEquals(expectedWidth, actualWidth);
+        assertEquals(expectedHeight, actualHeight);
     }
     
     
@@ -219,7 +217,14 @@ public class TestV4LCameraDriver implements IEventListener
     {
         videoTestHelper.dispose();
         
-        if (driver != null)
-            driver.stop();
+        try
+        {
+            if (driver != null)
+                driver.stop();
+        }
+        catch (SensorHubException e)
+        {
+            e.printStackTrace();
+        }
     }
 }
