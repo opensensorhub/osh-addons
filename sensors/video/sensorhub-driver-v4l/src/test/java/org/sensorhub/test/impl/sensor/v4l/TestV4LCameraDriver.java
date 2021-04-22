@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.data.IStreamingDataInterface;
+import org.sensorhub.api.command.CommandData;
 import org.sensorhub.api.command.IStreamingControlInterface;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
@@ -178,7 +179,7 @@ public class TestV4LCameraDriver implements IEventListener
         commandData.setIntValue(fieldIndex++, 10);
         
         // send command to control interface
-        ci.execCommand(commandData);
+        ci.executeCommand(new CommandData(1, commandData), ack -> {});
         
         // start capture and wait until we receive the first frame
         // after we changed settings

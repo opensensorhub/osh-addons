@@ -3,7 +3,6 @@ package org.sensorhub.impl.sensor.domoticz;
 import java.io.InputStream;
 import java.net.URL;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.data.DataChoiceImpl;
 import org.vast.swe.SWEHelper;
@@ -18,16 +17,10 @@ public class DomoticzSwitchControl extends AbstractSensorControl<DomoticzDriver>
 {
 	DataChoice commandData;
 
+	
 	public DomoticzSwitchControl(DomoticzDriver driver)
 	{
-		super(driver);
-	}
-
-	
-	@Override
-	public String getName()
-	{
-		return "switchControl";
+		super("switchControl", driver);
 	}
 
 	
@@ -65,7 +58,7 @@ public class DomoticzSwitchControl extends AbstractSensorControl<DomoticzDriver>
 	
     
     @Override
-	public CommandStatus execCommand(DataBlock command) throws SensorException {
+	protected boolean execCommand(DataBlock command) throws SensorException {
     	
     	// associate command data to msg structure definition
         DataChoice commandMsg = (DataChoice) commandData.copy();
@@ -99,7 +92,7 @@ public class DomoticzSwitchControl extends AbstractSensorControl<DomoticzDriver>
         	throw new SensorException("Error sending command", e);
 		}
         
-        return CommandStatus.COMPLETED_IMMEDIATELY;
+        return true;
 	}
     
     

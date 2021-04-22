@@ -24,8 +24,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
-import org.sensorhub.api.data.IStreamingControlInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
+import org.sensorhub.api.command.CommandData;
+import org.sensorhub.api.command.IStreamingControlInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.axis.AxisCameraConfig;
@@ -243,7 +244,7 @@ public class TestAxisCameraDriver implements IEventListener
         			((DataChoiceImpl)commandDesc).setSelectedItem("rpan");
         			commandData = commandDesc.createDataBlock();
         			commandData.setFloatValue(1, 5.0f);
-        			ci.execCommand(commandData);
+        			ci.executeCommand(new CommandData(1, commandData), ack -> {});
         		}                               
         		this.wait();
         	}
@@ -301,11 +302,9 @@ public class TestAxisCameraDriver implements IEventListener
     
     
     @After
-    public void cleanup()
+    public void cleanup() throws Exception
     {
         videoTestHelper.dispose();
-        
-        if (driver != null)
-            driver.stop();
+        driver.stop();
     }
 }

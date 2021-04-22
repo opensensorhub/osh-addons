@@ -21,12 +21,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Collection;
-
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.sensorhub.impl.sensor.videocam.ptz.PtzPreset;
@@ -68,15 +66,8 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
     
     protected DahuaPtzControl(DahuaCameraDriver driver)
     {
-        super(driver);
+        super("ptzControl", driver);
         this.alwaysRequestPtzStatus = !driver.getConfiguration().exclusiveControl;
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return "ptzControl";
     }
     
     
@@ -143,17 +134,17 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
     {    
         return commandData;
     }
-
-
+    
+    
     @Override
-    public CommandStatus execCommand(DataBlock command) throws SensorException
+    protected boolean execCommand(DataBlock command) throws SensorException
     {
         // reject if commands are too frequent because camera cannot handle 
         // successive commands if they come too fast
         if (System.currentTimeMillis() - lastCommandReceived < 1000)
         {
             parentSensor.getLogger().warn("PTZ command rejected");
-            return CommandStatus.REJECTED_IMMEDIATELY;
+            return false;
         }        
         lastCommandReceived = System.currentTimeMillis();
         
@@ -236,6 +227,6 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
 	    	throw new SensorException("Error connecting to Dahua PTZ control", e);
 	    }        
        
-        return CommandStatus.COMPLETED_IMMEDIATELY;
+        return true;
     }
 }

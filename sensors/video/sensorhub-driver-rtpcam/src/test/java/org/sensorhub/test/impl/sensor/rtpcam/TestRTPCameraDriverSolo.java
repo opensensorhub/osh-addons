@@ -112,7 +112,7 @@ public class TestRTPCameraDriverSolo implements IEventListener
     
     
     @After
-    public void cleanup()
+    public void cleanup() throws Exception
     {
         driver.stop();
     }

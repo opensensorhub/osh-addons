@@ -31,7 +31,6 @@ import org.onvif.ver10.schema.Profile;
 import org.onvif.ver10.schema.Vector1D;
 import org.onvif.ver10.schema.Vector2D;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.sensorhub.impl.sensor.videocam.ptz.PtzConfig;
@@ -70,7 +69,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 
     protected OnvifPtzControl(OnvifCameraDriver driver)
     {
-        super(driver);
+        super("ptzControl", driver);
         
         FloatRange panSpaces = driver.camera.getPtz().getPanSpaces(driver.profile.getToken());
         minPan = panSpaces.getMin();
@@ -113,7 +112,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
     }
     
     @Override
-    public CommandStatus execCommand(DataBlock command) throws SensorException
+    protected boolean execCommand(DataBlock command) throws SensorException
     {
     	// associate command data to msg structure definition
         DataChoice commandMsg = (DataChoice) commandData.copy();
@@ -188,13 +187,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 	        throw new SensorException("Error sending PTZ command via ONVIF", e);
 	    }        
        
-        return CommandStatus.COMPLETED_IMMEDIATELY;
-    }
-    
-    @Override
-    public String getName()
-    {
-        return "ptzControl";
+        return true;
     }
     
     @Override

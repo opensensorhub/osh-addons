@@ -19,7 +19,6 @@ package org.sensorhub.impl.sensor.axis;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 
 /**
@@ -38,15 +37,7 @@ public class AxisVideoControl extends AbstractSensorControl<AxisCameraDriver>
 
     public AxisVideoControl(AxisCameraDriver parentSensor)
     {
-        super(parentSensor);
-        // TODO Auto-generated constructor stub
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "videoControl";
+        super("videoControl", parentSensor);
     }
     
     
@@ -59,10 +50,10 @@ public class AxisVideoControl extends AbstractSensorControl<AxisCameraDriver>
 
 
     @Override
-    public CommandStatus execCommand(DataBlock command) throws SensorException
+    protected boolean execCommand(DataBlock command) throws SensorException
     {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
 

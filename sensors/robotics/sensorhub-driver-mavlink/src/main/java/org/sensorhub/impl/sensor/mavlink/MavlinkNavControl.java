@@ -21,7 +21,6 @@ import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.mavlink.MavlinkConfig.CmdTypes;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
@@ -48,14 +47,7 @@ public class MavlinkNavControl extends MavlinkControlInput
     
     protected MavlinkNavControl(MavlinkDriver driver)
     {
-        super(driver);
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return "navCommands";
+        super("navCommands", driver);
     }
     
     
@@ -154,7 +146,7 @@ public class MavlinkNavControl extends MavlinkControlInput
     
 
     @Override
-    public CommandStatus execCommand(DataBlock command) throws SensorException
+    protected boolean execCommand(DataBlock command) throws SensorException
     {
         try
         {
@@ -286,7 +278,7 @@ public class MavlinkNavControl extends MavlinkControlInput
             throw new SensorException("Cannot execute command", e);
         }
         
-        return CommandStatus.COMPLETED_IMMEDIATELY;
+        return true;
     }
 
 

@@ -19,7 +19,6 @@ package org.sensorhub.impl.sensor.onvif;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 
 /**
@@ -35,16 +34,10 @@ import org.sensorhub.impl.sensor.AbstractSensorControl;
 
 public class OnvifVideoControl extends AbstractSensorControl<OnvifCameraDriver>
 {
+    
     public OnvifVideoControl(OnvifCameraDriver parentSensor)
     {
-        super(parentSensor);
-        // TODO Auto-generated constructor stub
-    }
-
-    @Override
-    public String getName()
-    {
-        return "videoControl";
+        super("videoControl", parentSensor);
     }
     
     @Override
@@ -55,10 +48,10 @@ public class OnvifVideoControl extends AbstractSensorControl<OnvifCameraDriver>
     }
 
     @Override
-    public CommandStatus execCommand(DataBlock command) throws SensorException
+    protected boolean execCommand(DataBlock command) throws SensorException
     {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
 	public void init()

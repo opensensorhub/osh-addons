@@ -25,8 +25,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
+import org.sensorhub.api.command.CommandData;
+import org.sensorhub.api.command.IStreamingControlInterface;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.IStreamingControlInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.comm.UDPCommProviderConfig;
@@ -125,7 +126,7 @@ public class TestMavlinkDriverSITL implements IEventListener
         cmdChoice.assignNewDataBlock();
         cmdChoice.setSelectedItem(CmdTypes.TAKEOFF.name());
         cmdChoice.getSelectedItem().getData().setFloatValue(20.0f);
-        navControl.execCommand(cmdChoice.getData());
+        navControl.executeCommand(new CommandData(1, cmdChoice.getData()), ack -> {});
     }
     
     
@@ -142,7 +143,7 @@ public class TestMavlinkDriverSITL implements IEventListener
         cmdChoice.getSelectedItem().getData().setFloatValue(0, -35.37f); // lat
         cmdChoice.getSelectedItem().getData().setFloatValue(1, 149.161f); // lon
         cmdChoice.getSelectedItem().getData().setFloatValue(2, 20.0f); // alt
-        navControl.execCommand(cmdChoice.getData());
+        navControl.executeCommand(new CommandData(1, cmdChoice.getData()), ack -> {});
     }
     
     
@@ -160,7 +161,7 @@ public class TestMavlinkDriverSITL implements IEventListener
         cmdChoice.getSelectedItem().getData().setFloatValue(1, 149.161f); // lon
         cmdChoice.getSelectedItem().getData().setFloatValue(2, 50.0f); // alt
         cmdChoice.getSelectedItem().getData().setFloatValue(3, 90.0f); // yaw
-        navControl.execCommand(cmdChoice.getData());
+        navControl.executeCommand(new CommandData(1, cmdChoice.getData()), ack -> {});
     }
     
     
@@ -178,7 +179,7 @@ public class TestMavlinkDriverSITL implements IEventListener
         cmdChoice.getSelectedItem().getData().setFloatValue(1, 0.0f); // y
         cmdChoice.getSelectedItem().getData().setFloatValue(2, 20.0f); // z
         cmdChoice.getSelectedItem().getData().setFloatValue(3, 90.0f); // yaw
-        navControl.execCommand(cmdChoice.getData());
+        navControl.executeCommand(new CommandData(1, cmdChoice.getData()), ack -> {});
     }
     
     
@@ -197,7 +198,7 @@ public class TestMavlinkDriverSITL implements IEventListener
             cmdChoice.getSelectedItem().getData().setFloatValue(0, 0.0f); // vx
             cmdChoice.getSelectedItem().getData().setFloatValue(1, 5.0f); // vy
             cmdChoice.getSelectedItem().getData().setFloatValue(2, 0.0f); // vz
-            navControl.execCommand(cmdChoice.getData());
+            navControl.executeCommand(new CommandData(1, cmdChoice.getData()), ack -> {});
             Thread.sleep(500);
         }
     }
@@ -218,7 +219,7 @@ public class TestMavlinkDriverSITL implements IEventListener
             cmdChoice.setSelectedItem(CmdTypes.HEADING.name());
             cmdChoice.getSelectedItem().getData().setFloatValue(0, yaw); // yaw
             cmdChoice.getSelectedItem().getData().setFloatValue(1, 10.0f); // yaw rate
-            navControl.execCommand(cmdChoice.getData());
+            navControl.executeCommand(new CommandData(1, cmdChoice.getData()), ack -> {});
             Thread.sleep(500);
             yaw += 10;
         }
@@ -233,7 +234,7 @@ public class TestMavlinkDriverSITL implements IEventListener
         cmdChoice.assignNewDataBlock();
         cmdChoice.setSelectedItem(CmdTypes.RTL.name());
         cmdChoice.getSelectedItem().getData().setBooleanValue(true);
-        navControl.execCommand(cmdChoice.getData());
+        navControl.executeCommand(new CommandData(1, cmdChoice.getData()), ack -> {});
     }
     
     
@@ -246,7 +247,7 @@ public class TestMavlinkDriverSITL implements IEventListener
         cmdChoice.setSelectedItem(CmdTypes.LAND.name());
         cmdChoice.getSelectedItem().getData().setFloatValue(0, -35.37f); // lat
         cmdChoice.getSelectedItem().getData().setFloatValue(1, 149.161f); // lon
-        navControl.execCommand(cmdChoice.getData());
+        navControl.executeCommand(new CommandData(1, cmdChoice.getData()), ack -> {});
     }
     
     
@@ -306,15 +307,8 @@ public class TestMavlinkDriverSITL implements IEventListener
     
     
     @After
-    public void cleanup()
+    public void cleanup() throws Exception
     {
-        try
-        {
-            driver.stop();
-        }
-        catch (SensorHubException e)
-        {
-            e.printStackTrace();
-        }
+        driver.stop();
     }
 }

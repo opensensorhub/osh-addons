@@ -115,7 +115,7 @@ public class TestRTPCameraDriverFoscam implements IEventListener
     
     
     @After
-    public void cleanup()
+    public void cleanup() throws Exception
     {
         driver.stop();
     }

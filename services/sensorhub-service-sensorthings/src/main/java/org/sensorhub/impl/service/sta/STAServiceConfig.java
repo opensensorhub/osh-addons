@@ -16,7 +16,7 @@ package org.sensorhub.impl.service.sta;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.security.SecurityConfig;
-import org.sensorhub.api.service.ServiceConfig;
+import org.sensorhub.api.service.HttpServiceConfig;
 import org.sensorhub.impl.datastore.view.ProcedureObsDatabaseViewConfig;
 import org.sensorhub.impl.sensor.VirtualProcedureGroupConfig;
 
@@ -29,7 +29,7 @@ import org.sensorhub.impl.sensor.VirtualProcedureGroupConfig;
  * @author Alex Robin
  * @since Sep 25, 2019
  */
-public class STAServiceConfig extends ServiceConfig
+public class STAServiceConfig extends HttpServiceConfig
 {
     public static class HubThingInfo
     {

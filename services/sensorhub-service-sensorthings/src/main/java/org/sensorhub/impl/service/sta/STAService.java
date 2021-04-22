@@ -17,22 +17,19 @@ package org.sensorhub.impl.service.sta;
 import java.util.HashMap;
 import java.util.Properties;
 import javax.xml.namespace.QName;
-import org.sensorhub.api.event.Event;
-import org.sensorhub.api.comm.mqtt.IMqttService;
+import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.database.IProcedureObsDatabase;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.event.IEventListener;
-import org.sensorhub.api.module.ModuleEvent;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.api.procedure.ProcedureId;
 import org.sensorhub.api.service.IServiceModule;
 import org.sensorhub.impl.database.registry.FilteredFederatedObsDatabase;
-import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.procedure.wrapper.ProcedureWrapper;
 import org.sensorhub.impl.sensor.VirtualProcedureGroupConfig;
-import org.sensorhub.impl.service.HttpServer;
+import org.sensorhub.impl.service.AbstractHttpServiceModule;
 import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.sensorML.SMLHelper;
@@ -54,7 +51,7 @@ import static de.fraunhofer.iosb.ilt.frostserver.settings.PersistenceSettings.*;
  * @author Alex Robin
  * @since Sep 6, 2019
  */
-public class STAService extends AbstractModule<STAServiceConfig> implements IServiceModule<STAServiceConfig>, IEventListener
+public class STAService extends AbstractHttpServiceModule<STAServiceConfig> implements IServiceModule<STAServiceConfig>, IEventListener
 {
     static final String SERVICE_INSTANCE_ID = "oshServiceId";
     static final HashMap<Integer, STAService> serviceInstances = new HashMap<>(); // static map needed to get access to service from persistence manager
@@ -66,24 +63,6 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
     GenericFeature hubThing;
     ServletV1P0 servlet;
     ProcedureId virtualGroupId;
-
-
-    @Override
-    public void start() throws SensorHubException
-    {
-        if (canStart())
-        {
-            HttpServer httpServer = HttpServer.getInstance();
-            if (httpServer == null)
-                throw new SensorHubException("HTTP server module is not loaded");
-
-            // subscribe to server lifecycle events
-            httpServer.registerListener(this);
-
-            // we actually start in the handleEvent() method when
-            // a STARTED event is received from HTTP server
-        }
-    }
 
 
     @Override
@@ -200,12 +179,8 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
 
     protected void deploy() throws SensorHubException
     {
-        HttpServer httpServer = HttpServer.getInstance();
-        if (httpServer == null || !httpServer.isStarted())
-            throw new SensorHubException("An HTTP server instance must be started");
-
         Properties staSettings = new Properties();
-        staSettings.setProperty(TAG_SERVICE_ROOT_URL, config.getPublicEndpoint());
+        staSettings.setProperty(TAG_SERVICE_ROOT_URL, httpServer.getPublicEndpointUrl(config.endPoint));
         staSettings.setProperty(TAG_TEMP_PATH, "/tmp");
         staSettings.setProperty(PREFIX_PERSISTENCE+TAG_IMPLEMENTATION_CLASS, OSHPersistenceManager.class.getCanonicalName());
         staSettings.setProperty(PREFIX_PERSISTENCE+SERVICE_INSTANCE_ID, Integer.toString(System.identityHashCode(this)));
@@ -219,7 +194,7 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
         httpServer.addServletSecurity(config.endPoint, config.security.requireAuth);
         
         // also enable MQTT extension if an MQTT server is available
-        getParentHub().getModuleRegistry().waitForModuleType(IMqttService.class, ModuleState.STARTED)
+        getParentHub().getModuleRegistry().waitForModuleType(IMqttServer.class, ModuleState.STARTED)
             .thenAccept(mqtt -> {
                 if (mqtt != null && config.enableMqtt)
                 {
@@ -232,8 +207,6 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
 
     protected void undeploy()
     {
-        HttpServer httpServer = HttpServer.getInstance();
-
         // return silently if HTTP server missing on stop
         if (httpServer == null || !httpServer.isStarted())
             return;
@@ -245,51 +218,9 @@ public class STAService extends AbstractModule<STAServiceConfig> implements ISer
     @Override
     public void cleanup() throws SensorHubException
     {
-        // stop listening to http server events
-        HttpServer httpServer = HttpServer.getInstance();
-        if (httpServer != null)
-            httpServer.unregisterListener(this);
-
         // unregister security handler
         if (securityHandler != null)
             securityHandler.unregister();
-    }
-
-
-    @Override
-    public void handleEvent(Event e)
-    {
-        // catch HTTP server lifecycle events
-        if (e instanceof ModuleEvent && e.getSource() == HttpServer.getInstance())
-        {
-            ModuleState newState = ((ModuleEvent) e).getNewState();
-
-            // start when HTTP server is enabled
-            if (newState == ModuleState.STARTED)
-            {
-                try
-                {
-                    doStart();
-                }
-                catch (Exception ex)
-                {
-                    reportError("SensorThings API Service could not start", ex);
-                }
-            }
-
-            // stop when HTTP server is disabled
-            else if (newState == ModuleState.STOPPED)
-            {
-                try
-                {
-                    doStop();
-                }
-                catch (Exception ex)
-                {
-                    reportError("SensorThings API Service could not stop", ex);
-                }
-            }
-        }
     }
 
 

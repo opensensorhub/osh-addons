@@ -28,7 +28,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.SensorHub;
-import org.sensorhub.impl.module.ModuleRegistry;
 import org.sensorhub.impl.service.HttpServer;
 import org.sensorhub.impl.service.HttpServerConfig;
 import com.google.gson.Gson;
@@ -43,26 +42,28 @@ public class TestSTAService
     static final int SERVER_PORT = 8888;
     static final long TIMEOUT = 10000;
     static final String ID_PROP = "@iot.id";
-    ModuleRegistry moduleRegistry;
+    SensorHub hub;
     File dbFile;
     STAService sta;
     String staRoot;
     
     
     @Before
-    public void startService() throws IOException, SensorHubException
+    public void setup() throws IOException, SensorHubException
     {
         // use temp DB file
         dbFile = File.createTempFile("sta-db-", ".dat");
         dbFile.deleteOnExit();
         
         // get instance with in-memory DB
-        moduleRegistry = new SensorHub().getModuleRegistry();
+        hub = new SensorHub();
+        hub.start();
+        var moduleRegistry = hub.getModuleRegistry();
         
         // start HTTP server
         HttpServerConfig httpConfig = new HttpServerConfig();
         httpConfig.httpPort = SERVER_PORT;
-        moduleRegistry.loadModule(httpConfig, TIMEOUT);
+        var httpServer = (HttpServer)moduleRegistry.loadModule(httpConfig, TIMEOUT);
         
         // start SensorThings service
         STAServiceConfig staCfg = new STAServiceConfig();
@@ -70,7 +71,7 @@ public class TestSTAService
         staCfg.dbConfig.storagePath = dbFile.getAbsolutePath();
         staCfg.dbConfig.databaseNum = 3;
         sta = (STAService)moduleRegistry.loadModule(staCfg, TIMEOUT);
-        staRoot = staCfg.getPublicEndpoint() + "/v1.0/";
+        staRoot = httpServer.getPublicEndpointUrl(staCfg.endPoint + "/v1.0/");
     }
     
     
@@ -409,7 +410,7 @@ public class TestSTAService
                 System.err.println(response.body());
             assertEquals(200, statusCode);
             
-            return new JsonParser().parse(response.body());
+            return JsonParser.parseString(response.body());
         }
         catch (InterruptedException e)
         {
@@ -423,10 +424,9 @@ public class TestSTAService
     {
         try
         {
-            if (moduleRegistry != null)
-                moduleRegistry.shutdown(false, false);
-            HttpServer.getInstance().cleanup();
-            
+            if (hub != null)
+                hub.stop();
+                        
             // HACK to reset FROST PM factory so we can create a new servlet with new settings
             Field instanceField = PersistenceManagerFactory.class.getDeclaredField("instance");
             instanceField.setAccessible(true);

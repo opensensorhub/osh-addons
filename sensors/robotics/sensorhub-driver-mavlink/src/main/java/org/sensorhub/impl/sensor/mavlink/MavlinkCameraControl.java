@@ -23,7 +23,6 @@ import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.mavlink.MavlinkConfig.CmdTypes;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
@@ -44,14 +43,7 @@ public class MavlinkCameraControl extends MavlinkControlInput
     
     protected MavlinkCameraControl(MavlinkDriver driver)
     {
-        super(driver);
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return "camCommands";
+        super("camCommands", driver);
     }
     
     
@@ -105,7 +97,7 @@ public class MavlinkCameraControl extends MavlinkControlInput
 
 
     @Override
-    public CommandStatus execCommand(DataBlock command) throws SensorException
+    protected boolean execCommand(DataBlock command) throws SensorException
     {
         msg_command_long cmd = null;
         
@@ -150,7 +142,7 @@ public class MavlinkCameraControl extends MavlinkControlInput
             throw new SensorException("Cannot execute command", e);
         }
         
-        return CommandStatus.COMPLETED_IMMEDIATELY;
+        return true;
     }
 
 }

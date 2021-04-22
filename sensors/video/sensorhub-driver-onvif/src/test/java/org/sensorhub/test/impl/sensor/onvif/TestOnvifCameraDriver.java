@@ -25,11 +25,12 @@ import net.opengis.swe.v20.DataComponent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.sensorhub.api.common.CommandStatus;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
-import org.sensorhub.api.data.IStreamingControlInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
+import org.sensorhub.api.command.CommandData;
+import org.sensorhub.api.command.IStreamingControlInterface;
+import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.onvif.OnvifCameraConfig;
 import org.sensorhub.impl.sensor.onvif.OnvifCameraDriver;
@@ -116,28 +117,24 @@ public class TestOnvifCameraDriver implements IEventListener
 
         // instantiate command data block and status
         DataBlock commandData;
-        CommandStatus cs;
-
+        
         // Absolute Pan
         ((DataChoiceImpl) commandDesc).setSelectedItem("pan");
         commandData = commandDesc.createDataBlock();
         commandData.setFloatValue(1, 0.0f);
-        cs = ci.execCommand(commandData);
-        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
+        ci.executeCommand(new CommandData(1, commandData), ack -> {});
 
         // Absolute Tilt
         ((DataChoiceImpl) commandDesc).setSelectedItem("tilt");
         commandData = commandDesc.createDataBlock();
         commandData.setFloatValue(1, 0.0f);
-        cs = ci.execCommand(commandData);
-        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
+        ci.executeCommand(new CommandData(1, commandData), ack -> {});
 
         // Absolute Zoom
         ((DataChoiceImpl) commandDesc).setSelectedItem("zoom");
         commandData = commandDesc.createDataBlock();
         commandData.setFloatValue(1, 0.0f);
-        cs = ci.execCommand(commandData);
-        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
+        ci.executeCommand(new CommandData(1, commandData), ack -> {});
 
         // Absolute PTZ
         ((DataChoiceImpl) commandDesc).setSelectedItem("ptzPos");
@@ -145,29 +142,25 @@ public class TestOnvifCameraDriver implements IEventListener
         commandData.setFloatValue(1, 0.25f);
         commandData.setFloatValue(2, -0.25f);
         commandData.setFloatValue(3, 0.50f);
-        cs = ci.execCommand(commandData);
-        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
+        ci.executeCommand(new CommandData(1, commandData), ack -> {});
         
         // Relative Pan
         ((DataChoiceImpl) commandDesc).setSelectedItem("rpan");
         commandData = commandDesc.createDataBlock();
         commandData.setFloatValue(1, -0.25f);
-        cs = ci.execCommand(commandData);
-        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
+        ci.executeCommand(new CommandData(1, commandData), ack -> {});
 
         // Relative Tilt
         ((DataChoiceImpl) commandDesc).setSelectedItem("rtilt");
         commandData = commandDesc.createDataBlock();
         commandData.setFloatValue(1, -0.25f);
-        cs = ci.execCommand(commandData);
-        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
+        ci.executeCommand(new CommandData(1, commandData), ack -> {});
 
         // Relative Zoom
         ((DataChoiceImpl) commandDesc).setSelectedItem("rzoom");
         commandData = commandDesc.createDataBlock();
         commandData.setFloatValue(1, 0.50f);
-        cs = ci.execCommand(commandData);
-        assertEquals(CommandStatus.StatusCode.COMPLETED, cs.status);
+        ci.executeCommand(new CommandData(1, commandData), ack -> {});
     }
 
     @Override
@@ -179,9 +172,8 @@ public class TestOnvifCameraDriver implements IEventListener
     }
     
     @After
-    public void cleanup()
+    public void cleanup() throws Exception
     {
-        if (driver != null)
-            driver.stop();
+        driver.stop();
     }
 }

@@ -24,8 +24,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
-import org.sensorhub.api.data.IStreamingControlInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
+import org.sensorhub.api.command.CommandData;
+import org.sensorhub.api.command.IStreamingControlInterface;
+import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.foscam.FoscamConfig;
 import org.sensorhub.impl.sensor.foscam.FoscamConfig.ResolutionEnum;
@@ -121,22 +123,22 @@ public class TestFoscamCameraDriver implements IEventListener {
 		((DataChoiceImpl) commandDesc).setSelectedItem("relMove");
 		commandData = commandDesc.createDataBlock();
 		commandData.setStringValue(1, "Right");
-		ci.execCommand(commandData);
+		ci.executeCommand(new CommandData(1, commandData), ack -> {});
 
 		((DataChoiceImpl) commandDesc).setSelectedItem("relMove");
 		commandData = commandDesc.createDataBlock();
 		commandData.setStringValue(1, "Left");
-		ci.execCommand(commandData);
+		ci.executeCommand(new CommandData(1, commandData), ack -> {});
 
 		((DataChoiceImpl) commandDesc).setSelectedItem("relMove");
 		commandData = commandDesc.createDataBlock();
 		commandData.setStringValue(1, "Up");
-		ci.execCommand(commandData);
+		ci.executeCommand(new CommandData(1, commandData), ack -> {});
 
 		((DataChoiceImpl) commandDesc).setSelectedItem("relMove");
 		commandData = commandDesc.createDataBlock();
 		commandData.setStringValue(1, "Down");
-		ci.execCommand(commandData);
+		ci.executeCommand(new CommandData(1, commandData), ack -> {});
 		driver.stop();
 	}
 
@@ -156,7 +158,7 @@ public class TestFoscamCameraDriver implements IEventListener {
 	}
 
 	@After
-	public void cleanup() {
+	public void cleanup() throws Exception {
 		driver.stop();
 	}
 }

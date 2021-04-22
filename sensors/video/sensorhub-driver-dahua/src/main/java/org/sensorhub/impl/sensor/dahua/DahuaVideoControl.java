@@ -19,7 +19,6 @@ package org.sensorhub.impl.sensor.dahua;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.api.tasking.CommandStatus;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 
 /**
@@ -39,15 +38,7 @@ public class DahuaVideoControl extends AbstractSensorControl<DahuaCameraDriver>
 
     public DahuaVideoControl(DahuaCameraDriver parentSensor)
     {
-        super(parentSensor);
-        // TODO Auto-generated constructor stub
-    }
-
-
-    @Override
-    public String getName()
-    {
-        return "videoControl";
+        super("videoControl", parentSensor);
     }
     
     
@@ -59,28 +50,23 @@ public class DahuaVideoControl extends AbstractSensorControl<DahuaCameraDriver>
     }
 
 
-    @Override
-    public CommandStatus execCommand(DataBlock command) throws SensorException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
 	public void init()
 	{
-		// TODO Auto-generated method stub
-		
+		// TODO Auto-generated method stub		
 	}
+	
+	
+	@Override
+    protected boolean execCommand(DataBlock command) throws SensorException
+    {
+	    // TODO Auto-generated method stub
+	    throw new UnsupportedOperationException();
+    }
 
 
 	public void stop()
 	{
-		// TODO Auto-generated method stub
-		
+		// TODO Auto-generated method stub		
 	}
-    
-    
-
 }
 
