@@ -15,6 +15,8 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.v4l;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import net.opengis.swe.v20.AllowedTokens;
 import net.opengis.swe.v20.AllowedValues;
 import net.opengis.swe.v20.Category;
@@ -23,8 +25,13 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
+import org.sensorhub.api.command.CommandAck;
+import org.sensorhub.api.command.CommandException;
+import org.sensorhub.api.command.ICommandAck;
+import org.sensorhub.api.command.ICommandData;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.api.tasking.CommandStatus;
+import org.sensorhub.api.task.ITaskStatus;
+import org.sensorhub.api.task.TaskStatus;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.data.DataValue;
 import org.vast.data.SWEFactory;
@@ -52,14 +59,7 @@ public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
     
     protected V4LCameraControl(V4LCameraDriver driver)
     {
-        super(driver);
-    }
-    
-    
-    @Override
-    public String getName()
-    {
-        return "camParams";
+        super("camParams", driver);
     }
     
     
@@ -161,11 +161,11 @@ public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
 
 
     @Override
-    public CommandStatus execCommand(DataBlock command) throws SensorException
+    public CompletableFuture<Void> executeCommand(ICommandData command, Consumer<ICommandAck> callback)
     {
         // associate command data to msg structure definition
         DataComponent commandMsg = commandData.copy();
-        commandMsg.setData(command);
+        commandMsg.setData(command.getParams());
         
         // parse command (TODO should we assume it has already been validated?)        
         // image format
@@ -189,10 +189,26 @@ public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
         // frame rate
         camParams.frameRate = commandMsg.getComponent("frameRate").getData().getIntValue();
         
-        // update driver with new params        
-        parentSensor.updateParams(camParams);
+        // update driver with new params
+        try
+        {
+            parentSensor.updateParams(camParams);
+            callback.accept(CommandAck.success(command));
+            return CompletableFuture.completedFuture(null);
+        }
+        catch (SensorException e)
+        {
+            callback.accept(CommandAck.fail(command));
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+
+    @Override
+    public void validateCommand(ICommandData command) throws CommandException
+    {
+        // TODO Auto-generated method stub
         
-        return CommandStatus.COMPLETED_IMMEDIATELY;
     }
 
 

@@ -17,9 +17,14 @@ package org.sensorhub.impl.sensor.v4l;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import au.edu.jcu.v4l4j.CaptureCallback;
+import au.edu.jcu.v4l4j.DeviceInfo;
 import au.edu.jcu.v4l4j.FrameGrabber;
+import au.edu.jcu.v4l4j.VideoFrame;
+import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 
 
 /**
@@ -30,38 +35,98 @@ import au.edu.jcu.v4l4j.FrameGrabber;
  * @author Alex Robin
  * @since Apr 23, 2016
  */
-public abstract class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver>
+public abstract class V4LCameraOutput extends AbstractSensorOutput<V4LCameraDriver> implements CaptureCallback
 {
     DataStream dataStream;
     FrameGrabber frameGrabber;
     long systemTimeOffset = -1L;
-    boolean processingFrame;
+    AtomicBoolean processingFrame = new AtomicBoolean();
+    boolean started, firstFrame;
     
     
     public V4LCameraOutput(String name, V4LCameraDriver parentSensor)
     {
         super(name, parentSensor);
     }
-
-
-    protected abstract void init() throws SensorException;
+    
+    
+    protected abstract void init(DeviceInfo deviceInfo) throws SensorException;
+    
+    protected abstract void initFrameGrabber(V4LCameraParams camParams) throws V4L4JException;
+    
+    protected abstract void processFrame(VideoFrame frame);
+    
+    
+    protected void start() throws SensorException
+    {
+        try
+        {
+            initFrameGrabber(parentSensor.camParams);            
+            frameGrabber.setCaptureCallback(this);
+            processingFrame.set(false);
+            started = false;
+            firstFrame = true;
+            frameGrabber.startCapture();
+            parentSensor.getLogger().debug("V4L frame capture started");
+        }
+        catch (V4L4JException e)
+        {
+            throw new SensorException("Could not start V4L frame grabber", e);
+        }
+    }
 
     
-    @Override
     protected void stop()
     {
         if (frameGrabber != null)
         {
-            if (parentSensor.camParams.doCapture)
-            {
-                parentSensor.getLogger().debug("Stopping V4L capture");
+            if (started)
                 frameGrabber.stopCapture();
-                parentSensor.getLogger().debug("V4L capture stopped");
-            }
+            parentSensor.getLogger().debug("V4L capture stopped");
             
             parentSensor.videoDevice.releaseFrameGrabber();
             parentSensor.videoDevice.releaseControlList();            
             frameGrabber = null;
+        }
+    }
+    
+    
+    @Override
+    public void exceptionReceived(V4L4JException e)
+    {
+        getLogger().error("Error while streaming V4L video", e);
+    }
+    
+    
+    @Override
+    public void nextFrame(VideoFrame frame)
+    {
+        if (processingFrame.compareAndSet(false, true))
+        {
+            try
+            {
+                // discard first frame because capture time is wrong
+                if (firstFrame)
+                    firstFrame = false;
+                else            
+                    processFrame(frame);
+                
+                frame.recycle();                
+            }
+            catch (Exception e)
+            {
+                getLogger().error("Error decoding frame, ts=" + frame.getCaptureTime());
+            }
+            finally
+            {
+                processingFrame.set(false);
+            }
+        }
+        
+        // else skip frame if we're lagging behind
+        else
+        {
+            parentSensor.getLogger().debug("Frame skipped, ts=" + frame.getCaptureTime());
         }
     }
         

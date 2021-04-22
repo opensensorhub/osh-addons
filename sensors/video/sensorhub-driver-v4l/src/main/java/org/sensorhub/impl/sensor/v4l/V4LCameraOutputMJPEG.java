@@ -20,6 +20,7 @@ import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.vast.data.DataBlockMixed;
 import au.edu.jcu.v4l4j.CaptureCallback;
+import au.edu.jcu.v4l4j.DeviceInfo;
 import au.edu.jcu.v4l4j.ImageFormat;
 import au.edu.jcu.v4l4j.V4L4JConstants;
 import au.edu.jcu.v4l4j.VideoFrame;
@@ -28,7 +29,7 @@ import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 
 /**
  * <p>
- * Implementation of video output for V4L sensor
+ * Implementation of MJPEG video output for V4L sensor
  * </p>
  *
  * @author Alex Robin <alex.robin@sensiasoftware.com>
@@ -37,7 +38,6 @@ import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCallback
 {
     ImageFormat imgFormat;
-    boolean firstFrame;
     
     
     protected V4LCameraOutputMJPEG(V4LCameraDriver driver, ImageFormat imgFormat)
@@ -48,17 +48,14 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
     
     
     @Override
-    protected void init() throws SensorException
+    protected void init(DeviceInfo deviceInfo) throws SensorException
     {
         V4LCameraParams camParams = parentSensor.camParams;
         
-        // init frame grabber
+        // init frame grabber and output
         try
         {
-            frameGrabber = parentSensor.videoDevice.getRawFrameGrabber(camParams.imgWidth, camParams.imgHeight, 0, V4L4JConstants.STANDARD_WEBCAM, imgFormat);
-            //frameGrabber = parentSensor.videoDevice.getJPEGFrameGrabber(camParams.imgWidth, camParams.imgHeight, 0, V4L4JConstants.STANDARD_WEBCAM, 80);
-            //frameGrabber.setFrameInterval(1, camParams.frameRate);
-            parentSensor.getLogger().debug("V4L frame grabber created");
+            initFrameGrabber(camParams);
             
             // adjust params to what was actually set up by V4L
             camParams.imgWidth = frameGrabber.getWidth();
@@ -69,17 +66,6 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
             // create SWE output structure
             VideoCamHelper fac = new VideoCamHelper();
             dataStream = fac.newVideoOutputMJPEG(getName(), camParams.imgWidth, camParams.imgHeight);
-            
-            // start capture
-            if (camParams.doCapture)
-            {
-                parentSensor.getLogger().debug("Starting V4L capture");
-                frameGrabber.setCaptureCallback(this);
-                processingFrame = false;
-                firstFrame = true;
-                frameGrabber.startCapture();
-                parentSensor.getLogger().debug("V4L capture started");
-            }            
         }
         catch (V4L4JException e)
         {
@@ -88,62 +74,36 @@ public class V4LCameraOutputMJPEG extends V4LCameraOutput implements CaptureCall
     }
     
     
-    @Override
-    public void exceptionReceived(V4L4JException e)
-    {
-        // TODO Auto-generated method stub
+    protected void initFrameGrabber(V4LCameraParams camParams) throws V4L4JException
+    {        
+        if (frameGrabber == null)
+        {
+            frameGrabber = parentSensor.videoDevice.getRawFrameGrabber(camParams.imgWidth, camParams.imgHeight, 0, V4L4JConstants.STANDARD_WEBCAM, imgFormat);
+            //frameGrabber.setFrameInterval(1, camParams.frameRate);
+        }
     }
 
 
     @Override
-    public void nextFrame(VideoFrame frame)
+    public void processFrame(VideoFrame frame)
     {
-        try
-        {
-            // discard first frame because capture time is wrong
-            if (firstFrame)
-            {
-                frame.recycle();
-                firstFrame = false;
-                return;
-            }
-            
-            // skip frame if we're lagging behind
-            if (processingFrame)
-            {
-                parentSensor.getLogger().debug("Frame skipped @ " + frame.getCaptureTime());
-                return;
-            }
-            
-            processingFrame = true;
-            DataBlock dataBlock;
-            if (latestRecord == null)
-                dataBlock = dataStream.getElementType().createDataBlock();
-            else
-                dataBlock = latestRecord.renew();
-            
-            // time stamp
-            dataBlock.setDoubleValue(getJulianTimeStamp(frame.getCaptureTime()));
-            
-            // either compressed or RGB data
-            byte[] frameData = new byte[frame.getFrameLength()];
-            System.arraycopy(frame.getBytes(), 0, frameData, 0, frameData.length);
-            ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(frameData);
-            
-            // update latest record and send event
-            latestRecord = dataBlock;
-            latestRecordTime = System.currentTimeMillis();
-            eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlock));
-            
-            frame.recycle();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        finally
-        {
-            processingFrame = false;
-        }
+        DataBlock dataBlock;
+        if (latestRecord == null)
+            dataBlock = dataStream.getElementType().createDataBlock();
+        else
+            dataBlock = latestRecord.renew();
+        
+        // time stamp
+        dataBlock.setDoubleValue(getJulianTimeStamp(frame.getCaptureTime()));
+        
+        // either compressed or RGB data
+        byte[] frameData = new byte[frame.getFrameLength()];
+        System.arraycopy(frame.getBytes(), 0, frameData, 0, frameData.length);
+        ((DataBlockMixed)dataBlock).getUnderlyingObject()[1].setUnderlyingObject(frameData);
+        
+        // update latest record and send event
+        latestRecord = dataBlock;
+        latestRecordTime = System.currentTimeMillis();
+        eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlock));
     }
 }

@@ -37,7 +37,6 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
 {
     V4LCameraParams camParams;
     VideoDevice videoDevice;
-    DeviceInfo deviceInfo;
     V4LCameraOutput dataInterface;
     V4LCameraControl controlInterface;
     
@@ -70,28 +69,10 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
         // generate IDs
         generateUniqueID("urn:osh:sensor:v4l-cam:", config.serialNumber);
         generateXmlID("V4L_CAMERA_", config.serialNumber);
-        
-        // create data and control interfaces
-        this.dataInterface = new V4LCameraOutputRGB(this);
-        this.controlInterface = new V4LCameraControl(this);
-    }
-    
-    
-    @Override
-    protected void doStart() throws SensorException
-    {
         this.camParams = config.defaultParams.clone();
         
         // init video device
-        try
-        {
-            videoDevice = new VideoDevice(config.deviceName);
-            deviceInfo = videoDevice.getDeviceInfo();
-        }
-        catch (V4L4JException e)
-        {
-            throw new SensorException("Cannot initialize video device " + config.deviceName, e);
-        }
+        DeviceInfo deviceInfo = initVideoDevice();
         
         // init video output
         for (ImageFormat fmt: deviceInfo.getFormatList().getNativeFormats())
@@ -105,15 +86,48 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
             {
                 getLogger().debug("Creating H264 output");
                 dataInterface = new V4LCameraOutputH264(this, fmt);
-            }
+            }            
         }
         
-        dataInterface.init();
+        if (dataInterface == null)
+        {
+            getLogger().debug("Creating RGB output");
+            dataInterface = new V4LCameraOutputRGB(this);
+        } 
+        
+        dataInterface.init(deviceInfo);
         addOutput(dataInterface, false);
         
-        // init control interfacess
-        controlInterface.init();
+        // init control interface
+        this.controlInterface = new V4LCameraControl(this);
+        controlInterface.init(deviceInfo);
         addControlInput(controlInterface);
+    }
+    
+    
+    protected DeviceInfo initVideoDevice() throws SensorException
+    {
+        try
+        {
+            videoDevice = new VideoDevice(config.deviceName);
+            return videoDevice.getDeviceInfo();
+        }
+        catch (V4L4JException e)
+        {
+            throw new SensorException("Cannot initialize video device " + config.deviceName, e);
+        }
+    }
+    
+    
+    @Override
+    protected void doStart() throws SensorException
+    {
+        if (videoDevice == null)
+            initVideoDevice();
+            
+        // start video streaming
+        if (dataInterface != null)
+            dataInterface.start();
     }
     
     
@@ -136,10 +150,9 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
     
     public void updateParams(V4LCameraParams params) throws SensorException
     {
-        // cleanup framegrabber and reinit sensor interfaces
+        // cleanup framegrabber and restart video output
         dataInterface.stop();
-        dataInterface.init();
-        controlInterface.init();
+        dataInterface.start();
     }
     
     
