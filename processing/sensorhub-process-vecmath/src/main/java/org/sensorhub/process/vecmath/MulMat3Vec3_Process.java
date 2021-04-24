@@ -27,6 +27,7 @@ import org.sensorhub.algo.vecmath.Mat3d;
 import org.sensorhub.algo.vecmath.Vect3d;
 import org.vast.process.SMLException;
 import org.vast.sensorML.ExecutableProcessImpl;
+import org.vast.swe.SWEConstants;
 
 
 /**
@@ -55,11 +56,11 @@ public class MulMat3Vec3_Process extends ExecutableProcessImpl
         inputData.add("M", mat);
         
         // create vector input V
-        vect = sweHelper.newVector3(null, null);
+        vect = sweHelper.newVector3(null, SWEConstants.NIL_TEMPLATE);
         inputData.add("V", vect);
      
         // create result vector output
-        vres = sweHelper.newVector3(null, null);
+        vres = sweHelper.newVector3(null, SWEConstants.NIL_TEMPLATE);
         outputData.add("Vres", vres);
     }
 

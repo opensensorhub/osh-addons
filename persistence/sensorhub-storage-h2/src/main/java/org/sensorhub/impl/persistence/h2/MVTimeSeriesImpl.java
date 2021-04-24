@@ -308,7 +308,7 @@ public class MVTimeSeriesImpl
 
     void store(DataKey key, DataBlock data)
     {
-        DataBlock oldValue = recordIndex.putIfAbsent(new ProducerTimeKey(key.producerID, key.timeStamp), data);
+        DataBlock oldValue = recordIndex.put(new ProducerTimeKey(key.producerID, key.timeStamp), data);
         
         if (key instanceof ObsKey && oldValue == null)
         {
@@ -472,7 +472,10 @@ public class MVTimeSeriesImpl
             {
                 ProducerTimeKey afterAll = new ProducerTimeKey(producerID, Double.POSITIVE_INFINITY);
                 ProducerTimeKey lastProducerKey = recordIndex.floorKey(afterAll);
-                return new double[] {lastProducerKey.timeStamp, lastProducerKey.timeStamp};
+                if (lastProducerKey != null)
+                    return new double[] {lastProducerKey.timeStamp, lastProducerKey.timeStamp};
+                else
+                    return timeRange;
             }
             else
                 return timeRange;

@@ -260,8 +260,8 @@ public class CamPtzGeoPointingProcess extends AbstractStreamProcess<CamPtzGeoPoi
             
             // transform LOS to camera frame
             los.rotateZ(-lastCamRotEnu.z);
-            //los.rotateY(lastCameraRotEnu.y);
-            //los.rotateX(lastCameraRotEnu.x);
+            los.rotateY(-lastCamRotEnu.y);
+            los.rotateX(-lastCamRotEnu.x);
             
             // compute PTZ values
             double pan = Math.toDegrees(Math.atan2(los.y, los.x));

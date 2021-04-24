@@ -29,7 +29,6 @@ import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
-
 import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
@@ -49,10 +48,10 @@ import net.opengis.swe.v20.DataType;
 public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> implements IMultiSourceDataInterface  
 {
     static final String DEF_FLIGHTPLAN_REC = SWEHelper.getPropertyUri("aero/FlightPlan");
-    static final String DEF_ICAO_CODE = SWEHelper.getPropertyUri("aero/ICAO/Code");
+    static final String DEF_AIRPORT_CODE = SWEHelper.getPropertyUri("aero/AirportCode/ICAO");
     static final String DEF_WAYPOINT = SWEHelper.getPropertyUri("aero/Waypoint");
     static final String DEF_WAYPOINT_TYPE = SWEHelper.getPropertyUri("aero/WaypointType");
-    static final String DEF_FLIGHT_NUM = SWEHelper.getPropertyUri("aero/FlightNumber");
+    static final String DEF_WAYPOINT_CODE = SWEHelper.getPropertyUri("aero/WaypointCode/ICAO");static final String DEF_FLIGHT_NUM = SWEHelper.getPropertyUri("aero/FlightNumber");
     static final String DEF_FLIGHT_LEVEL = SWEHelper.getPropertyUri("aero/FlightLevel");
 
     private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toMillis(15); 
@@ -80,8 +79,9 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         dataStruct.addComponent("time", fac.newTimeIsoUTC(SWEConstants.DEF_SAMPLING_TIME, "Issue Time", null));
         dataStruct.addComponent("flightId", fac.newText(ENTITY_ID_URI, "Flight ID", null));
         dataStruct.addComponent("flightNumber", fac.newText(DEF_FLIGHT_NUM, "Flight Number", null));
-        dataStruct.addComponent("srcAirport", fac.newText(DEF_ICAO_CODE, "Departure Airport", "ICAO identification code of departure airport"));
-        dataStruct.addComponent("destAirport", fac.newText(DEF_ICAO_CODE, "Arrival Airport", "ICAO identification code of arrival airport"));
+        dataStruct.addComponent("srcAirport", fac.newText(DEF_AIRPORT_CODE, "Departure Airport", "ICAO identification code of departure airport"));
+        dataStruct.addComponent("destAirport", fac.newText(DEF_AIRPORT_CODE, "Arrival Airport", "ICAO identification code of arrival airport"));
+        dataStruct.addComponent("altAirports", fac.newText(DEF_AIRPORT_CODE, "Alternate Airports", "ICAO identification codes of alternate airports"));
         dataStruct.addComponent("departTime", fac.newTimeIsoUTC(SWEConstants.DEF_FORECAST_TIME, "Departure Time", "Scheduled departure time"));
 
         // array of waypoints
@@ -91,7 +91,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
 
         DataComponent waypt = fac.newDataRecord();
         waypt.setDefinition(DEF_WAYPOINT);
-        waypt.addComponent("code", fac.newText(DEF_ICAO_CODE, "Waypoint Code", "Waypoint ICAO identification code"));
+        waypt.addComponent("code", fac.newText(DEF_WAYPOINT_CODE, "Waypoint Code", "Waypoint ICAO identification code"));
         waypt.addComponent("type", fac.newText(DEF_WAYPOINT_TYPE, "Waypoint Type", "Type of navigation point (airport, waypoint, VOR, VORTAC, DME, etc.)"));
         waypt.addComponent("time", fac.newTimeIsoUTC(SWEConstants.DEF_FORECAST_TIME, "Estimated Time", "Estimated time over waypoint"));
         waypt.addComponent("lat", fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg"));
@@ -123,6 +123,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         dataBlk.setStringValue(i++, fltPlan.ident);
         dataBlk.setStringValue(i++, fltPlan.orig);
         dataBlk.setStringValue(i++, fltPlan.dest);
+        dataBlk.setStringValue(i++, null);
         dataBlk.setDoubleValue(i++, fltPlan.getDepartureTime());
         dataBlk.setIntValue(i++, numWpts);
         AbstractDataBlock waypointData = ((DataBlockMixed)dataBlk).getUnderlyingObject()[i];
