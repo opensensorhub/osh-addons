@@ -1,0 +1,38 @@
+description = 'Sphinx4 NLP'
+ext.details = "Driver for Audio Analysis and Transcription"
+version = '1.0.0'
+
+dependencies {
+    compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    compile 'net.sf.phat:sphinx4-core:5prealpha'
+    compile 'net.sf.phat:sphinx4-data:5prealpha'
+    testImplementation('junit:junit:4.13')
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+//      If tests are to be excluded list them here as follows
+//          exclude '**/TestNameClass.class'
+test {
+    useJUnit()
+}
+
+// add info to OSGi manifest
+jar {
+    manifest {
+        instruction 'Bundle-Vendor', 'Nicolas Garay'
+        instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.audio.transcription.Activator'
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'nickgaray'
+            name 'Nick Garay'
+            organization ''
+            organizationUrl ''
+        }
+    }
+}
