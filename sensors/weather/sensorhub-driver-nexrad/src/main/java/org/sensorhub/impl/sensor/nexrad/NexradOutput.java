@@ -16,16 +16,11 @@ package org.sensorhub.impl.sensor.nexrad;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
-import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.nexrad.aws.AwsNexradUtil;
@@ -63,7 +58,7 @@ import net.opengis.swe.v20.Time;
  *  TODO - verify that rangeToCenterOfFirstGate and gateSize are constants; how do we specify UOM for a count
  */
 
-public class NexradOutput extends AbstractSensorOutput<NexradSensor> implements IMultiSourceDataInterface
+public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 {
 	private static final Logger logger = LoggerFactory.getLogger(NexradOutput.class);
 	DataRecord nexradStruct;
@@ -75,7 +70,6 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor> implements 
 	NexradSensor nexradSensor;
 	//	LdmFilesProvider ldmFilesProvider;
 	ChunkPathQueue chunkQueue;
-    Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
 
 	//  Listener Check needed to know if anyone is receiving events to know when to delete the AWS queue
 	static final long LISTENER_CHECK_INTERVAL = TimeUnit.MINUTES.toMillis(1); 
@@ -109,7 +103,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor> implements 
 
 		// 88D site identifier (1)
 		nexradStruct.addComponent("siteId", fac.newText());
-		nexradStruct.getFieldList().getProperty(1).setRole(ENTITY_ID_URI); // use site ID as entity ID     
+		nexradStruct.getFieldList().getProperty(1).setRole(SWEConstants.DEF_SYSTEM_ID); // use site ID as entity ID     
 
 		// 2
 		Quantity el = new QuantityImpl();
@@ -366,11 +360,9 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor> implements 
 
 			//System.out.printf("r,v,s: %d,%d,%d\n", refMomentData.numGates, velMomentData.numGates, swMomentData.numGates);
 			String siteUID = NexradSensor.SITE_UID_PREFIX + radial.dataHeader.siteId;
-			latestRecord = nexradBlock;
-	        latestRecords.put(siteUID, latestRecord);
-			
+			latestRecord = nexradBlock;			
 			latestRecordTime = System.currentTimeMillis();
-			eventHandler.publish(new DataEvent(latestRecordTime, NexradOutput.this, nexradBlock));
+			eventHandler.publish(new DataEvent(latestRecordTime, NexradOutput.this, siteUID, nexradBlock));
 		}
 
 	}
@@ -448,24 +440,4 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor> implements 
 		}
 
 	}
-
-    @Override
-    public Collection<String> getEntityIDs()
-    {
-        return parentSensor.getEntityIDs();
-    }
-
-
-    @Override
-    public Map<String, DataBlock> getLatestRecords()
-    {
-        return Collections.unmodifiableMap(latestRecords);
-    }
-
-
-    @Override
-    public DataBlock getLatestRecord(String entityID)
-    {
-        return latestRecords.get(entityID);
-    }
 }

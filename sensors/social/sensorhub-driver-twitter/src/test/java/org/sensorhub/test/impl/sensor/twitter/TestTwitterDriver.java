@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.data.IStreamingDataInterface;
+import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.twitter.TwitterConfig;
 import org.sensorhub.impl.sensor.twitter.TwitterSensor;
@@ -94,14 +95,19 @@ public class TestTwitterDriver implements IEventListener
 		sampleCount++;
 		
 		if (sampleCount >= 2) {
-			driver.stop();
+			try {
+			    driver.stop();
+			}
+            catch (SensorHubException e1) {
+                e1.printStackTrace();
+            }
 		}
 
 		synchronized (this) { this.notify(); }
 	}
 
     @After
-    public void cleanup()
+    public void cleanup() throws Exception
     {
 		driver.stop();
     }

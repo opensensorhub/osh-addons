@@ -17,24 +17,18 @@ package org.sensorhub.impl.sensor.intellisense;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.data.IDataProducer;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vast.sensorML.SMLHelper;
 
-import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.Point;
 import net.opengis.gml.v32.impl.GMLFactory;
-import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
 
 
@@ -44,17 +38,13 @@ public class IntellisenseSensor extends AbstractSensorModule<IntellisenseConfig>
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:intellisense:";
 	static final String DEVICE_UID_PREFIX = SENSOR_UID_PREFIX + "station:";
 	
-	Set<String> foiIDs;
-	Map<String, PhysicalSystem> stationFois;
-	Map<String, PhysicalSystem> stationDesc;
-
 	IntellisenseOutput output;
 	FloodPoller floodPoller;
 	Timer timer;
 	long pollingPeriod;
 	
 	// Test constructor
-	public IntellisenseSensor(IntellisenseConfig config) throws SensorHubException {
+	protected IntellisenseSensor(IntellisenseConfig config) throws SensorHubException {
 		this.config = config;
 		doInit();
 	}
@@ -66,52 +56,39 @@ public class IntellisenseSensor extends AbstractSensorModule<IntellisenseConfig>
     protected void doInit() throws SensorHubException
 	{
 		super.doInit();
+		
 		// generate identifiers
 		this.uniqueID = SENSOR_UID_PREFIX + "network";
-		this.foiIDs = new LinkedHashSet<String>();
-		this.stationFois = new LinkedHashMap<String, PhysicalSystem>();
-		this.stationDesc = new LinkedHashMap<String, PhysicalSystem>();
 		this.output = new IntellisenseOutput(this);
 		addOutput(output, false);
-		setReportingMode(config.reportingMode);
+				
+		// generate station FOIs and full descriptions
+        int cnt = 0;
+        SMLHelper smlFac = new SMLHelper();
+        GMLFactory gmlFac = new GMLFactory(true);
+        for (String deviceId: config.deviceIds)
+        {
+            String uid = DEVICE_UID_PREFIX + deviceId;
+            String description = "Intellisense Flood Sensor.. deviceID, UID: " + deviceId + ", " + uid;
+
+            // generate small SensorML for FOI (in this case the system is the FOI)
+            PhysicalSystem foi = smlFac.newPhysicalSystem();
+            foi.setId(deviceId);
+            foi.setUniqueIdentifier(uid);
+            foi.setName(deviceId); // use name from spreadsheet?
+            foi.setDescription(description);
+
+            Point stationLoc = gmlFac.newPoint();
+            stationLoc.setPos(new double[] {config.deviceLats[cnt], config.deviceLons[cnt++]});
+            foi.setLocation(stationLoc);
+            foiMap.put(uid, foi);
+        }
 	}
 
 	@Override
 	protected void doStart() throws SensorHubException
 	{
-		SMLHelper smlFac = new SMLHelper();
-		GMLFactory gmlFac = new GMLFactory(true);
-
-		// generate station FOIs and full descriptions
-		int cnt = 0;
-		for (String deviceId: config.deviceIds)
-		{
-			String uid = DEVICE_UID_PREFIX + deviceId;
-			String description = "Intellisense Flood Sensor.. deviceID, UID: " + deviceId + ", " + uid;
-			logger.debug("Adding: " + description);
-
-			// generate small SensorML for FOI (in this case the system is the FOI)
-			PhysicalSystem foi = smlFac.newPhysicalSystem();
-			foi.setId(deviceId);
-			foi.setUniqueIdentifier(uid);
-			foi.setName(deviceId); // use name from spreadsheet?
-			foi.setDescription(description);
-
-			Point stationLoc = gmlFac.newPoint();
-			stationLoc.setPos(new double[] {config.deviceLats[cnt], config.deviceLons[cnt++]});
-			foi.setLocation(stationLoc);
-			stationFois.put(uid, foi);
-			foiIDs.add(uid);
-
-			// TODO generate full SensorML for sensor description
-			PhysicalSystem sensorDesc = smlFac.newPhysicalSystem();
-			sensorDesc.setId("STATION_" + deviceId);
-			sensorDesc.setUniqueIdentifier(uid);
-			sensorDesc.setName(deviceId);
-			sensorDesc.setDescription(description);
-			stationDesc.put(uid, sensorDesc);
-		}
-	
+	    setReportingMode(config.reportingMode);
 	}
 
 	@Override
@@ -179,58 +156,15 @@ public class IntellisenseSensor extends AbstractSensorModule<IntellisenseConfig>
 		return true;
 	}
 
+    @Override
+    public Map<String, ? extends IDataProducer> getMembers()
+    {
+        return Collections.emptyMap();
+    }
 
-	@Override
-	public Collection<String> getEntityIDs()
-	{
-		return Collections.unmodifiableCollection(stationFois.keySet());
-	}
-
-
-	@Override
-	public AbstractFeature getCurrentFeatureOfInterest()
-	{
-		return null;
-	}
-
-
-	@Override
-	public AbstractProcess getCurrentDescription(String entityID)
-	{
-		return stationDesc.get(entityID);
-	}
-
-
-	@Override
-	public double getLastDescriptionUpdate(String entityID)
-	{
-		return 0;
-	}
-
-
-	@Override
-	public AbstractFeature getCurrentFeatureOfInterest(String entityID)
-	{
-		return stationFois.get(entityID);
-	}
-
-
-	@Override
-	public Collection<? extends AbstractFeature> getFeaturesOfInterest()
-	{
-		return Collections.unmodifiableCollection(stationFois.values());
-	}
-
-
-	@Override
-	public Collection<String> getFeaturesOfInterestIDs()
-	{
-		return Collections.unmodifiableCollection(foiIDs);
-	}
-
-	@Override
-	public Collection<String> getEntitiesWithFoi(String foiID)
-	{
-		return Arrays.asList(foiID);
-	}
+    @Override
+    public Collection<String> getProceduresWithFoi(String foiUID)
+    {
+        return Arrays.asList(getUniqueIdentifier());
+    }
 }

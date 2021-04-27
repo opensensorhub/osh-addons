@@ -27,18 +27,18 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.data.IDataProducer;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.navDb.NavDbEntry.Type;
 import org.sensorhub.impl.utils.grid.DirectoryWatcher;
 import org.sensorhub.impl.utils.grid.FileListener;
-import net.opengis.gml.v32.AbstractFeature;
-import net.opengis.sensorml.v20.AbstractProcess;
 
 
 /**
@@ -55,18 +55,14 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
     AirportOutput navOutput;
 	WaypointOutput wyptOutput;
 	NavaidOutput navaidOutput;
-	Set<String> entityIDs;
-	//Multimap<String, AbstractFeature> navEntryFois;
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
-	static final String AIRPORTS_UID_PREFIX = SENSOR_UID_PREFIX + "airports:";
-	static final String WAYPOINTS_UID_PREFIX = SENSOR_UID_PREFIX + "waypoints:";
+	static final String AIRPORT_UID_PREFIX = SENSOR_UID_PREFIX + "airports:";
+	static final String WAYPOINT_UID_PREFIX = SENSOR_UID_PREFIX + "waypoints:";
 	static final String NAVAID_UID_PREFIX = SENSOR_UID_PREFIX + "navaids:";
 	AtomicBoolean loading = new AtomicBoolean(false);
 	
 
 	public NavDriver() {
-		this.entityIDs = new TreeSet<>();
-		//this.navEntryFois = LinkedListMultimap.create();
 	}
 
 	@Override
@@ -200,9 +196,6 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
                 loadNavaids(allEntries, newEntityIDs);
             if (waypoints)
                 loadWaypoints(allEntries, newEntityIDs);
-            
-            // switch to new entity IDs set atomically
-            entityIDs = newEntityIDs;
         }
         catch (Exception e)
         {
@@ -352,61 +345,18 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	{
 		return true;
 	}
-
-	
-	@Override
-	public AbstractFeature getCurrentFeatureOfInterest()
-	{
-		return null;
-	}
-
-
-	@Override
-	public Collection<String> getEntityIDs()
-	{
-		return Collections.unmodifiableCollection(entityIDs);
-	}
-
-
-	@Override
-	public AbstractProcess getCurrentDescription(String entityID)
-	{
-		return null;
-	}
-
-
-	@Override
-	public double getLastDescriptionUpdate(String entityID)
-	{
-		return 0;
-	}
-
-
-	@Override
-	public AbstractFeature getCurrentFeatureOfInterest(String entityID)
-	{
-		return null;
-	}
-
-
-	@Override
-	public Collection<? extends AbstractFeature> getFeaturesOfInterest()
-	{
-		//return Collections.unmodifiableCollection(navEntryFois.values());
-	    return Collections.emptyList();
-	}
-
-
-	@Override
-	public Collection<String> getFeaturesOfInterestIDs()
-	{
-		return Collections.unmodifiableCollection(entityIDs);
-	}
 	
 
-	@Override
-	public Collection<String> getEntitiesWithFoi(String foiID)
-	{
-		return Arrays.asList(foiID.substring(foiID.lastIndexOf(':')+1));
-	}
+    @Override
+    public Map<String, ? extends IDataProducer> getMembers()
+    {
+        return Collections.emptyMap();
+    }
+    
+
+    @Override
+    public Collection<String> getProceduresWithFoi(String foiUID)
+    {
+        return Arrays.asList(getUniqueIdentifier());
+    }
 }

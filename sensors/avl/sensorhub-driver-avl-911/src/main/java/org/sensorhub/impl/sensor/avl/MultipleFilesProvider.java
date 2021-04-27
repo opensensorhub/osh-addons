@@ -39,6 +39,8 @@ import java.util.concurrent.PriorityBlockingQueue;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.module.AbstractModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -53,6 +55,7 @@ import org.sensorhub.impl.module.AbstractModule;
  */
 public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderConfig> implements ICommProvider<MultipleFilesProviderConfig>
 {
+    static Logger log = LoggerFactory.getLogger(MultipleFilesProvider.class);
     WatchService watcher;
     BlockingQueue<File> files;
     InputStream multiFileInputStream;
@@ -150,7 +153,7 @@ public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderC
         try
         {
             File nextFile = files.take();
-            AVLDriver.log.debug("Next data file: " + nextFile);
+            log.debug("Next data file: " + nextFile);
             return new FileInputStream(nextFile);
         }
         catch (InterruptedException e)
@@ -230,7 +233,7 @@ public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderC
                             Path newFile = (Path)event.context();
                             if (newFile.toString().endsWith(".trk"))
                             {
-                                AVLDriver.log.debug("New AVL file detected: " + newFile);
+                                log.debug("New AVL file detected: " + newFile);
                                 files.add(dir.resolve(newFile).toFile());
                             }
                         }
@@ -253,8 +256,8 @@ public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderC
         {
             if (watcher != null)
                 watcher.close();
-            
-            multiFileInputStream.close();
+            if (multiFileInputStream != null)
+                multiFileInputStream.close();
             files.clear();
         }
         catch (IOException e)

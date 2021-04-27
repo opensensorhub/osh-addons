@@ -16,18 +16,13 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.station.metar;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
-import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 
 import net.opengis.swe.v20.DataBlock;
@@ -42,25 +37,19 @@ import net.opengis.swe.v20.DataRecord;
  *
  *  	aviationTimerTas polls aviation csv Metar file at POLLING_INTERVAL and checks for new records.  
  */
-public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IMultiSourceDataInterface
+public class MetarOutput extends AbstractSensorOutput<MetarSensor>
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toSeconds(20);
 	private static final int AVERAGE_POLLING_PERIOD = (int)TimeUnit.MINUTES.toMillis(1);
 
 	DataRecord metarRecordStruct;
 	DataEncoding metarRecordEncoding;
-	Map<String, Long> latestUpdateTimes;
-	Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
 	Timer timer;
 	TimerTask aviationTimerTask;
 	
 	public MetarOutput(MetarSensor parentSensor)
 	{
 		super("metarWeather", parentSensor);
-		aviationTimerTask = new AviationTimerTask(parentSensor.getConfiguration().aviationWeatherUrl);
-		timer = new Timer(true);
-	    timer.scheduleAtFixedRate(aviationTimerTask, 0, AVERAGE_POLLING_PERIOD);
-		latestUpdateTimes = new HashMap<String, Long>();
 	}
 
 
@@ -93,12 +82,19 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IM
 		metarRecordStruct.addField("skyConditions", fac.newText("http://sensorml.com/ont/swe/property/SkyConditions", "Sky Conditions", null));
 		metarRecordStruct.addField("runwayVisualRange", fac.newText("http://sensorml.com/ont/swe/property/RunwayVisualRange", "RunwayVisualRange", null));
 
-		// mark component providing entity ID
-		metarRecordStruct.getFieldList().getProperty(1).setRole(ENTITY_ID_URI);
+		// mark component providing foi ID
+		metarRecordStruct.getFieldList().getProperty(1).setRole(SWEConstants.DEF_SYSTEM_ID);
 
 		// default encoding is text
 		metarRecordEncoding = fac.newTextEncoding(",", "\n");
 	}
+	
+	protected void start()
+    {
+	    aviationTimerTask = new AviationTimerTask(parentSensor.getConfiguration().aviationWeatherUrl);
+        timer = new Timer(true);
+        timer.scheduleAtFixedRate(aviationTimerTask, 0, AVERAGE_POLLING_PERIOD);
+    }
 
 
 	private DataBlock metarRecordToDataBlock(String stationID, Metar rec)
@@ -166,32 +162,6 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IM
 	{
 		return metarRecordEncoding;
 	}
-
-	@Override
-	public Collection<String> getEntityIDs()
-	{
-		return parentSensor.getEntityIDs();
-	}
-
-
-	@Override
-	public Map<String, DataBlock> getLatestRecords()
-	{
-		return Collections.unmodifiableMap(latestRecords);
-	}
-
-
-	@Override
-	public DataBlock getLatestRecord(String entityID)
-	{
-		//    	DataBlock db = latestRecords.get(entityID);
-		for(Map.Entry<String, DataBlock> dbe: latestRecords.entrySet()) {
-			String key = dbe.getKey();
-			DataBlock val = dbe.getValue();
-			System.err.println(key + " : " + val);
-		}
-		return latestRecords.get(entityID);
-	}
 	
 	// Realtime 
 	class AviationTimerTask extends TimerTask {
@@ -219,11 +189,9 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor> implements IM
 							continue;
 						metar.timeUtc = MetarUtil.computeTimeUtc(metar.dateString);
 						// TODO Fix the time!!
-						latestUpdateTimes.put(metar.stationId, metar.timeUtc);
 						latestRecordTime = System.currentTimeMillis();
 						String stationUID = MetarSensor.STATION_UID_PREFIX + metar.stationId;
 						latestRecord = metarRecordToDataBlock(metar.stationId, metar);
-						latestRecords.put(stationUID, latestRecord);   
 					} catch (Exception e) {
 						e.printStackTrace(System.err);
 						continue;

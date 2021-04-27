@@ -15,15 +15,8 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.intellisense;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.sensorhub.api.data.IMultiSourceDataInterface;
-import org.sensorhub.api.sensor.SensorDataEvent;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
 import org.vast.swe.SWEConstants;
@@ -41,30 +34,20 @@ import net.opengis.swe.v20.DataRecord;
  *
  *  	aviationTimerTas polls aviation csv Metar file at POLLING_INTERVAL and checks for new records.  
  */
-public class IntellisenseOutput extends AbstractSensorOutput<IntellisenseSensor> implements IMultiSourceDataInterface
+public class IntellisenseOutput extends AbstractSensorOutput<IntellisenseSensor>
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toSeconds(20);
 
 	DataRecord recordStruct;
 	DataEncoding recordEncoding;
-	Map<String, Long> latestUpdateTimes;
-	Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
-
 	Logger logger;
+	
 	
 	public IntellisenseOutput(IntellisenseSensor parentSensor)
 	{
-		super(parentSensor);
-		latestUpdateTimes = new HashMap<String, Long>();
+		super("floodRecord", parentSensor);
 		logger = parentSensor.getLogger();
 		init();
-	}
-
-
-	@Override
-	public String getName()
-	{
-		return "intellisenseFloodRecord";
 	}
 
 
@@ -101,7 +84,7 @@ public class IntellisenseOutput extends AbstractSensorOutput<IntellisenseSensor>
 		recordStruct.addField("batteryLevel", fac.newQuantity("http://sensorml.com/ont/swe/property/BatteryLevel", "Battery Level", null, "volts"));
 
 		// mark component providing entity ID
-		recordStruct.getFieldList().getProperty(1).setRole(ENTITY_ID_URI);
+		recordStruct.getFieldList().getProperty(1).setRole(SWEConstants.DEF_SYSTEM_ID);
 
 		// default encoding is text
 		recordEncoding = fac.newTextEncoding(",", "\n");
@@ -138,12 +121,10 @@ public class IntellisenseOutput extends AbstractSensorOutput<IntellisenseSensor>
 	
 	public void addRecord(FloodRecord record) {
 		try {
-			latestUpdateTimes.put(record.deviceId, record.timeMs);
 			latestRecordTime = System.currentTimeMillis();
 			String deviceUID = IntellisenseSensor.DEVICE_UID_PREFIX + record.deviceId;
 			latestRecord = recordToDataBlock(record);
-			latestRecords.put(deviceUID, latestRecord);  
-    		eventHandler.publishEvent(new SensorDataEvent(latestRecordTime,deviceUID, IntellisenseOutput.this, latestRecord ));
+			eventHandler.publish(new DataEvent(latestRecordTime, IntellisenseOutput.this, deviceUID, latestRecord));
 		} catch (Exception e) {
 			e.printStackTrace(System.err);
 		}
@@ -189,31 +170,5 @@ public class IntellisenseOutput extends AbstractSensorOutput<IntellisenseSensor>
 	public DataEncoding getRecommendedEncoding()
 	{
 		return recordEncoding;
-	}
-
-	@Override
-	public Collection<String> getEntityIDs()
-	{
-		return parentSensor.getEntityIDs();
-	}
-
-
-	@Override
-	public Map<String, DataBlock> getLatestRecords()
-	{
-		return Collections.unmodifiableMap(latestRecords);
-	}
-
-
-	@Override
-	public DataBlock getLatestRecord(String entityID)
-	{
-		//    	DataBlock db = latestRecords.get(entityID);
-//		for(Map.Entry<String, DataBlock> dbe: latestRecords.entrySet()) {
-//			String key = dbe.getKey();
-//			DataBlock val = dbe.getValue();
-//		}
-		return latestRecords.get(entityID);
-	}
-	
+	}	
 }

@@ -20,12 +20,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import net.opengis.swe.v20.AllowedTokens;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
@@ -34,7 +30,6 @@ import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.Vector;
 import net.opengis.swe.v20.Category;
 import org.sensorhub.api.comm.ICommProvider;
-import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
@@ -42,16 +37,14 @@ import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 
-public class AVLOutput extends AbstractSensorOutput<AVLDriver> implements IMultiSourceDataInterface
+public class AVLOutput extends AbstractSensorOutput<AVLDriver>
 {
     GregorianCalendar cal;
-
     DataRecord dataStruct;
     DataEncoding dataEncoding;
     BufferedReader msgReader;
     boolean sendData;
     SimpleDateFormat timeFormat;
-    Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
 
 
     public AVLOutput(AVLDriver parentSensor)
@@ -86,8 +79,7 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver> implements IMulti
         
         // Vehicle ID
         dataStruct.addComponent("veh-id", fac.newCategory(SWEHelper.getPropertyUri("Vehicle-ID"), "Vehicle ID", "Mobile Vehicle Identification", null));
-        dataStruct.getFieldList().getProperty("veh-id").setRole(ENTITY_ID_URI); // tag with entity ID role
-
+        
         // location (latitude-longitude)	        
         Vector locVector = fac.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC);
         locVector.setLabel("Vehicle Location");
@@ -135,7 +127,7 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver> implements IMulti
                 Date time;
 
                 // parse the data string
-                AVLDriver.log.debug("Message received: {}", line);
+                log.debug("Message received: {}", line);
 
                 // split tokens based on one or more white spaces
                 String[] tokens = line.trim().split("\\s+");
@@ -151,7 +143,7 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver> implements IMulti
                 }
                 catch (ParseException e)
                 {
-                    AVLDriver.log.warn("Exception parsing date-time string ", timeString + "T");
+                    getLogger().warn("Exception parsing date-time string ", timeString + "T");
                     continue;
                 }
 
@@ -179,12 +171,12 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver> implements IMulti
         catch (IOException e)
         {
             if (sendData)
-                AVLDriver.log.error("Unable to parse AVL message", e);
+                getLogger().error("Unable to parse AVL message", e);
             return;
         }
         
         // create new FOI if needed
-        parentSensor.addFoi(julianTime, vehID);
+        var foiUID = parentSensor.addFoi(julianTime, vehID);
 
         // create and populate datablock
         DataBlock dataBlock;
@@ -204,9 +196,8 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver> implements IMulti
 
         // update latest record and send event
         latestRecord = dataBlock;
-        latestRecords.put(vehID, latestRecord);
         latestRecordTime = System.currentTimeMillis();
-        eventHandler.publish(new DataEvent(latestRecordTime, vehID, AVLOutput.this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, AVLOutput.this, foiUID, dataBlock));
     }
 
 
@@ -220,7 +211,7 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver> implements IMulti
         try
         {
             msgReader = new BufferedReader(new InputStreamReader(commProvider.getInputStream()));
-            AVLDriver.log.info("Connected to AVL data stream");
+            parentSensor.getLogger().info("Connected to AVL data stream");
         }
         catch (IOException e)
         {
@@ -271,27 +262,6 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver> implements IMulti
     public double getAverageSamplingPeriod()
     {
         return 1200.0; //why 20 minutes?
-    }
-
-
-    @Override
-    public Collection<String> getEntityIDs()
-    {
-        return parentSensor.getEntityIDs();
-    }
-
-
-    @Override
-    public Map<String, DataBlock> getLatestRecords()
-    {
-        return Collections.unmodifiableMap(latestRecords);
-    }
-
-
-    @Override
-    public DataBlock getLatestRecord(String entityID)
-    {
-        return latestRecords.get(entityID);
     }
 
 }

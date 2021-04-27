@@ -17,22 +17,16 @@ package org.sensorhub.impl.sensor.avl;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
-import net.opengis.gml.v32.AbstractFeature;
-import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.FoiEvent;
+import org.sensorhub.api.data.IDataProducer;
 import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.sensorhub.utils.SWEDataUtils;
 import org.vast.sensorML.SMLHelper;
-
 
 
 /**
@@ -46,12 +40,7 @@ import org.vast.sensorML.SMLHelper;
  */
 public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMultiSourceDataProducer
 {
-	static final Logger log = LoggerFactory.getLogger(AVLDriver.class);
-
-	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:avl:";
-    
-    Set<String> foiIDs;
-    Map<String, AbstractFeature> vehicleFois;
+	static final String UID_PREFIX = "urn:osh:sensor:avl:";
     	
 	ICommProvider<?> commProvider;
     AVLOutput dataInterface;
@@ -68,12 +57,8 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
         super.doInit();
         
         // generate IDs
-        generateUniqueID(SENSOR_UID_PREFIX, config.fleetID);
-        generateXmlID("AVL_", config.fleetID);            
-        
-        // create foi maps
-        this.foiIDs = new LinkedHashSet<String>();
-        this.vehicleFois = new LinkedHashMap<String, AbstractFeature>();
+        generateUniqueID(UID_PREFIX, config.fleetID);
+        generateXmlID("AVL_", config.fleetID);
         
         // init main data interface
         dataInterface = new AVLOutput(this);
@@ -150,20 +135,20 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
     }
     
     
-    void addFoi(double recordTime, String vehicleID)
+    String addFoi(double recordTime, String vehicleID)
     {
-        if (!vehicleFois.containsKey(vehicleID))
+        String foiUID = UID_PREFIX + config.fleetID + ':' + vehicleID;
+        
+        if (!foiMap.containsKey(foiUID))
         {
-            String name = vehicleID;
-            String uid = SENSOR_UID_PREFIX + config.fleetID + ':' + vehicleID;
-            String description = "Vehicle " + vehicleID + " from " + config.agencyName;
-            
+            String name = vehicleID;            
+            String description = "Vehicle " + vehicleID + " from " + config.agencyName;            
             SMLHelper smlFac = new SMLHelper();
             
             // generate small SensorML for FOI (in this case the system is the FOI)
             PhysicalSystem foi = smlFac.newPhysicalSystem();
             foi.setId(vehicleID);
-            foi.setUniqueIdentifier(uid);
+            foi.setUniqueIdentifier(foiUID);
             foi.setName(name);
             foi.setDescription(description);
             /*ContactList contacts = smlFac.newContactList();
@@ -173,76 +158,31 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
             contacts.addContact(contact);
             foi.addContacts(contacts);*/
             
-            // update maps
-            foiIDs.add(uid);
-            vehicleFois.put(vehicleID, foi);
+            // add to map
+            foiMap.put(foiUID, foi);
             
             // send event
             long now = System.currentTimeMillis();
-            eventHandler.publish(new FoiEvent(now, vehicleID, this, foi, recordTime));
+            eventHandler.publish(new FoiEvent(now, this, foi, SWEDataUtils.toInstant(recordTime)));
             
-            log.debug("New vehicle added as FOI: {}", uid);
+            getLogger().debug("New vehicle added as FOI: {}", foiUID);
         }
-    }
-
-
-    @Override
-    public Collection<String> getEntityIDs()
-    {
-        return Collections.unmodifiableSet(vehicleFois.keySet());
-    }
-    
-    
-    @Override
-    public AbstractFeature getCurrentFeatureOfInterest()
-    {
-        return null;
-    }
-
-
-    @Override
-    public AbstractProcess getCurrentDescription(String entityID)
-    {
-        return null;
-    }
-
-
-    @Override
-    public double getLastDescriptionUpdate(String entityID)
-    {
-        return 0;
-    }
-
-
-    @Override
-    public AbstractFeature getCurrentFeatureOfInterest(String entityID)
-    {
-        return vehicleFois.get(entityID);
-    }
-
-
-    @Override
-    public Collection<? extends AbstractFeature> getFeaturesOfInterest()
-    {
-        return Collections.unmodifiableCollection(vehicleFois.values());
-    }
-    
-    
-    @Override
-    public Collection<String> getFeaturesOfInterestIDs()
-    {
-        return Collections.unmodifiableSet(foiIDs);
-    }
-
-
-    @Override
-    public Collection<String> getEntitiesWithFoi(String foiID)
-    {
-        if (!foiIDs.contains(foiID))
-            return Collections.EMPTY_SET;
         
-        String entityID = foiID.substring(foiID.lastIndexOf(':')+1);
-        return Arrays.asList(entityID);
+        return foiUID;
+    }
+
+
+    @Override
+    public Collection<String> getProceduresWithFoi(String foiUID)
+    {
+        return Arrays.asList(this.uniqueID);
+    }
+
+
+    @Override
+    public Map<String, ? extends IDataProducer> getMembers()
+    {
+        return Collections.emptyMap();
     }
 
 }

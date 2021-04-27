@@ -15,14 +15,9 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.navDb;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.IMultiSourceDataInterface;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEHelper;
 
@@ -40,13 +35,12 @@ import net.opengis.swe.v20.Text;
  * @author Tony Cook
  *
  */
-public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements IMultiSourceDataInterface 
+public class WaypointOutput extends AbstractSensorOutput<NavDriver>
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = 1;
 
 	DataRecord struct;
-	DataEncoding encoding;	
-	Map<String, DataBlock> records = new TreeMap<>();  // key is navDbEntry uid
+	DataEncoding encoding;
 
 	public WaypointOutput(NavDriver parentSensor) throws IOException
 	{
@@ -119,7 +113,7 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 
 	public void sendEntries(List<NavDbEntry> recs)
 	{
-	    Map<String, DataBlock> newRecords = new TreeMap<>();
+	    long time = System.currentTimeMillis();
         
         for(NavDbEntry rec: recs) {
 			DataBlock dataBlock = struct.createDataBlock();
@@ -129,13 +123,10 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 			dataBlock.setDoubleValue(2, rec.lat);
 			dataBlock.setDoubleValue(3, rec.lon);
 			
-			newRecords.put(rec.id, dataBlock);   
-			//long time = System.currentTimeMillis();
-			//eventHandler.publish(new DataEvent(time, uid, WaypointOutput.this, dataBlock));
+			// TODO send as a single ObsEvent w/ multiple IObsData
+			var foiUID = NavDriver.WAYPOINT_UID_PREFIX + rec.id;
+			eventHandler.publish(new DataEvent(time, WaypointOutput.this, foiUID, dataBlock));
 		}
-        
-        // switch to new records atomically
-        records = newRecords;
 	}
 	
 
@@ -156,27 +147,6 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
 	public DataEncoding getRecommendedEncoding()
 	{
 		return encoding;
-	}
-	
-
-	@Override
-	public Collection<String> getEntityIDs()
-	{
-	    return parentSensor.getEntityIDs();
-	}
-
-
-	@Override
-	public Map<String, DataBlock> getLatestRecords()
-	{
-	    return Collections.unmodifiableMap(records);
-	}
-
-
-	@Override
-	public DataBlock getLatestRecord(String entityID)
-	{
-	    return records.get(entityID);
 	}
     
     

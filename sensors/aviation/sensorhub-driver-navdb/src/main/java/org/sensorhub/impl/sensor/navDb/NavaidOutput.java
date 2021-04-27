@@ -15,14 +15,9 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.navDb;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.IMultiSourceDataInterface;
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEHelper;
 
@@ -40,14 +35,12 @@ import net.opengis.swe.v20.Text;
  * @author Tony Cook
  *
  */
-public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMultiSourceDataInterface 
+public class NavaidOutput extends AbstractSensorOutput<NavDriver>
 {
 	private static final int AVERAGE_SAMPLING_PERIOD = 1;
 
 	DataRecord navStruct;
-	DataEncoding encoding;	
-	Map<String, DataBlock> globalRecords = new TreeMap<>();  // key is navDbEntry uid
-	Map<String, DataBlock> domesticRecords = new TreeMap<>();  // US & CAN only
+	DataEncoding encoding;
 
 	public NavaidOutput(NavDriver parentSensor) throws IOException
 	{
@@ -122,10 +115,9 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 
 	public void sendEntries(List<NavDbEntry> recs)
 	{                
-	    Map<String, DataBlock> newDomesticRecords = new TreeMap<>();
-	    Map<String, DataBlock> newGlobalRecords = new TreeMap<>();
-	    
-		for(NavDbEntry rec: recs) {
+	    long time = System.currentTimeMillis();
+        
+        for(NavDbEntry rec: recs) {
 			DataBlock dataBlock = navStruct.createDataBlock();
 
 			dataBlock.setStringValue(0, rec.id);
@@ -133,16 +125,11 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 			dataBlock.setDoubleValue(2, rec.lat);
 			dataBlock.setDoubleValue(3, rec.lon);
 			
-			newGlobalRecords.put(rec.id, dataBlock);
-			if("USA".equals(rec.region) || "CAN".equals("rec.region"))
-			    newDomesticRecords.put(rec.id, dataBlock);
-			//long time = System.currentTimeMillis();
-			//eventHandler.publish(new DataEvent(time, uid, NavaidOutput.this, dataBlock));
+			//if("USA".equals(rec.region) || "CAN".equals("rec.region"))
+			// TODO send as a single ObsEvent w/ multiple IObsData
+            var foiUID = NavDriver.NAVAID_UID_PREFIX + rec.id;
+            eventHandler.publish(new DataEvent(time, NavaidOutput.this, foiUID, dataBlock));
 		}
-		
-		// switch to new records atomically
-        globalRecords = newGlobalRecords;
-		domesticRecords = newDomesticRecords;
 	}
 	
 
@@ -163,27 +150,6 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
 	public DataEncoding getRecommendedEncoding()
 	{
 		return encoding;
-	}
-	
-
-	@Override
-	public Collection<String> getEntityIDs()
-	{
-	    return parentSensor.getEntityIDs();
-	}
-
-
-	@Override
-	public Map<String, DataBlock> getLatestRecords()
-	{
-	    return Collections.unmodifiableMap(domesticRecords);
-	}
-
-
-	@Override
-	public DataBlock getLatestRecord(String entityID)
-	{
-	    return globalRecords.get(entityID);
 	}
 	
 	
