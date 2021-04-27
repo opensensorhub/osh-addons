@@ -119,21 +119,18 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             .name(getName())
             .definition("urn:osh:sensor:simgps:gpsdata")
             .addField("time", fac.createTime()
-                .asSamplingTimeIsoGPS()
-                .build());
+                .asSamplingTimeIsoGPS());
         
         if (multipleAssets)
         {
             recBuilder.addField("assetID", fac.createText()
                 .label("Asset ID")
-                .description("Identifier of mobile asset")
-                .build());
+                .description("Identifier of mobile asset"));
         }  
             
         recBuilder.addField("location", fac.createVector()
             .from(fac.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC))
-            .description("Location measured by the GPS device")
-            .build());
+            .description("Location measured by the GPS device"));
             
         dataStruct = recBuilder.build();
         dataEncoding = fac.newTextEncoding(",", "\n");
@@ -204,8 +201,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             InputStream is = new BufferedInputStream(new URL(dirRequest).openStream());
 
             // parse JSON track
-            JsonParser reader = new JsonParser();
-            JsonElement root = reader.parse(new InputStreamReader(is));
+            JsonElement root = JsonParser.parseReader(new InputStreamReader(is));
             JsonObject rootObj = root.getAsJsonObject();
 
             //System.out.println(root);

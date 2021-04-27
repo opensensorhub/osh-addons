@@ -49,38 +49,32 @@ public class FakeWeatherNetworkOutput extends AbstractSensorOutput<FakeWeatherNe
             .description("Weather measurements")
             
             .addField("time", fac.createTime()
-                .asSamplingTimeIsoUTC()
-                .build())
+                .asSamplingTimeIsoUTC())
             
             .addField("stationID", fac.createText()
                 .definition(SWEConstants.DEF_SYSTEM_ID)
-                .pattern("[0-9A-Z]{5-10}")
-                .build())
+                .pattern("[0-9A-Z]{5-10}"))
             
             .addField("temperature", fac.createQuantity()
                 .definition("http://mmisw.org/ont/cf/parameter/air_temperature")
                 .label("Air Temperature")
-                .uomCode("Cel")
-                .build())
+                .uomCode("Cel"))
             
             .addField("pressure", fac.createQuantity()
                 .definition("http://mmisw.org/ont/cf/parameter/air_pressure")
                 .label("Atmospheric Pressure")
-                .uomCode("hPa")
-                .build())
+                .uomCode("hPa"))
             
             .addField("windSpeed", fac.createQuantity()
                 .definition("http://mmisw.org/ont/cf/parameter/wind_speed")
                 .label("Wind Speed")
-                .uomCode("m/s")
-                .build())
+                .uomCode("m/s"))
             
             .addField("windDirection", fac.createQuantity()
                 .definition("http://mmisw.org/ont/cf/parameter/wind_from_direction")
                 .label("Wind Direction")
                 .uomCode("deg")
-                .refFrame("http://sensorml.com/ont/swe/property/NED", "z")
-                .build())
+                .refFrame("http://sensorml.com/ont/swe/property/NED", "z"))
             
             .build();
      
