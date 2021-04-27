@@ -4,8 +4,8 @@ version = '0.1.0'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.3.6'
-  implementation group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.3.3'
+  embeddedImpl 'org.apache.httpcomponents:httpclient:4.3.6'
+  embeddedImpl 'org.apache.httpcomponents:httpcore:4.3.3'
 }
 
 // add info to OSGi manifest

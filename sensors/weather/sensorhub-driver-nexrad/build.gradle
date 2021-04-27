@@ -10,14 +10,14 @@ rootProject.allprojects {
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  implementation 'org.apache.httpcomponents:httpclient:4.4.1'
-  implementation 'com.amazonaws:aws-java-sdk-sqs:1.10.50'
-  implementation 'com.amazonaws:aws-java-sdk-sns:1.10.50'
-  implementation 'com.amazonaws:aws-java-sdk-s3:1.10.50'
-  implementation 'org.apache.commons:commons-compress:1.5'
-  implementation 'commons-io:commons-io:2.5'
-  implementation 'joda-time:joda-time:2.9.2'
-  implementation 'com.google.guava:guava:19.0'
+  embeddedImpl 'org.apache.httpcomponents:httpclient:4.4.1'
+  embeddedImpl 'com.amazonaws:aws-java-sdk-sqs:1.10.50'
+  embeddedImpl 'com.amazonaws:aws-java-sdk-sns:1.10.50'
+  embeddedImpl 'com.amazonaws:aws-java-sdk-s3:1.10.50'
+  embeddedImpl 'org.apache.commons:commons-compress:1.5'
+  embeddedImpl 'commons-io:commons-io:2.5'
+  embeddedImpl 'joda-time:joda-time:2.9.2'
+  embeddedImpl 'com.google.guava:guava:19.0'
 
 // UCAR NetCDF dependencies
   implementation 'edu.ucar:cdm:4.6.9'

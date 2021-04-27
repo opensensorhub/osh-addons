@@ -10,7 +10,7 @@ rootProject.allprojects {
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  implementation ('edu.ucar:grib:4.6.10') {
+  embeddedImpl ('edu.ucar:grib:4.6.10') {
     exclude group: 'com.amazonaws', module: 'aws-java-sdk-s3'
     exclude group: 'edu.ucar', module: 'jj2000'  
     exclude group: 'org.apache.httpcomponents', module: 'httpcore'

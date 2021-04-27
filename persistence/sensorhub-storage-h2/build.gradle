@@ -5,8 +5,8 @@ version = oshCoreVersion
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-storage-compat')
-  implementation 'com.h2database:h2-mvstore:1.4.197'
-  implementation 'com.esotericsoftware:kryo:4.0.0'
+  embeddedImpl 'com.h2database:h2-mvstore:1.4.197'
+  embeddedImpl 'com.esotericsoftware:kryo:4.0.0'
   testCompile group:'org.sensorhub', name:'sensorhub-core', version:oshCoreVersion, configuration: 'testArtifacts'
 }
 

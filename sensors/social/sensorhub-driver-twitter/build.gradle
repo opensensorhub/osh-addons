@@ -4,8 +4,8 @@ version = '0.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  implementation 'com.twitter:hbc-core:2.2.0'
-  implementation 'com.twitter:hbc-twitter4j:2.2.0'
+  embeddedImpl 'com.twitter:hbc-core:2.2.0'
+  embeddedImpl 'com.twitter:hbc-twitter4j:2.2.0'
 }
 
 // add info to OSGi manifest

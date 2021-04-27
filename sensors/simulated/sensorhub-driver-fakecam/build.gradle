@@ -4,7 +4,7 @@ version = '0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  implementation 'com.googlecode.mp4parser:isoparser:1.0.5.4'
+  embeddedImpl 'com.googlecode.mp4parser:isoparser:1.0.5.4'
 }
 
 // exclude tests requiring connection to the sensor
