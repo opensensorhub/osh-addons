@@ -10,7 +10,7 @@ dependencies {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.process.geoloc.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.process.sat.Activator')
   }
 }
 

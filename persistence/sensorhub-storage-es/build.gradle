@@ -24,7 +24,7 @@ test {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.process.math.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.persistence.es.Activator')
   }
 }
 

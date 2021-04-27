@@ -18,7 +18,7 @@ test {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
-    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.axis.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.dahua.Activator')
   }
 }
 

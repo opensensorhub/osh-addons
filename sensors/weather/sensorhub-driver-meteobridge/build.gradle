@@ -15,7 +15,7 @@ dependencies {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Environment Systems')
-    attributes('Bundle-Activator': 'uk.co.envsys.sensorhub.sensor.httpweather.Activator')
+    attributes('Bundle-Activator': 'uk.co.envsys.sensorhub.sensor.meteobridge.Activator')
   }
 }
 

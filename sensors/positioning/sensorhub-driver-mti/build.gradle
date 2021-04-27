@@ -17,7 +17,7 @@ test {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': project.group + '.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.mti.Activator')
   }
 }
 

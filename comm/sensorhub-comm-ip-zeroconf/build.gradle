@@ -4,3 +4,10 @@ ext.details = 'ZeroConf IP network adapter based on JmDNS'
 dependencies{
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
 }
+
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.comm.zeroconf.Activator')
+  }
+}

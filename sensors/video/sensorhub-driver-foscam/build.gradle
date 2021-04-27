@@ -18,7 +18,7 @@ test {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.fakegps.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.foscam.Activator')
   }
 }
 

@@ -113,7 +113,7 @@ public class TestSimWeatherStationDriver implements IEventListener
         
         try
         {
-            System.out.print("\nNew data received from sensor " + dataEvent.getProcedureID());
+            System.out.print("\nNew data received from sensor " + dataEvent.getProcedureUID());
             writer.write(dataEvent.getRecords()[0]);
             writer.flush();
             

@@ -24,7 +24,6 @@ dependencies {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Botts Innovative Research Inc.')
-    attributes('Bundle-Activator': 'org.sensorhub.impl.utils.grid.Activator')
   }
 }
 

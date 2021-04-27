@@ -1,1 +1,2 @@
-org.sensorhub.impl.sensor.fltaware.FltawareDescriptor
+org.sensorhub.impl.sensor.mesh.MeshDescriptor
+org.sensorhub.impl.sensor.nldn.NldnDescriptor

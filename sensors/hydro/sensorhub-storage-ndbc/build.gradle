@@ -11,7 +11,7 @@ dependencies {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Botts Innovative Research Inc.')
-    attributes('Bundle-Activator': 'org.sensorhub.impl.storage.ndbc.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.ndbc.Activator')
   }
 }
 
