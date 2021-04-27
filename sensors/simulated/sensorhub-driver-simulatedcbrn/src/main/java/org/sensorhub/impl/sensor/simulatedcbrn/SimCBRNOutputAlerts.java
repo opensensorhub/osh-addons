@@ -283,7 +283,6 @@ public class SimCBRNOutputAlerts extends AbstractSensorOutput<SimCBRNSensor>
     }
 
 
-    @Override
     protected void stop()
     {
         if (timer != null)

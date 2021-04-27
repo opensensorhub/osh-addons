@@ -127,7 +127,6 @@ public class SimCBRNOutputMaintenance extends AbstractSensorOutput<SimCBRNSensor
 	}
 
 
-	@Override
 	protected void stop()
 	{
 		if (timer != null)

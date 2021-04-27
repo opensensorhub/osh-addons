@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import org.sensorhub.impl.common.DefaultThreadFactory;
+import org.sensorhub.utils.NamedThreadFactory;
 import org.slf4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -58,7 +58,7 @@ public class MessageHandler implements IMessageHandler
         
         // executor to process messages in parallel
         this.execQueue = new LinkedBlockingQueue<>(10000);
-        this.exec = new ThreadPoolExecutor(2, 4, 1, TimeUnit.SECONDS, execQueue, new DefaultThreadFactory("MsgHandlerPool"));
+        this.exec = new ThreadPoolExecutor(2, 4, 1, TimeUnit.SECONDS, execQueue, new NamedThreadFactory("MsgHandlerPool"));
     }
         
     public void handle(String message) {
