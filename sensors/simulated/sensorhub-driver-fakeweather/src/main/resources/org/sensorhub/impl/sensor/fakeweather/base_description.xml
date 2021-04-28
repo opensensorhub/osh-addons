@@ -11,19 +11,19 @@ xsi:schemaLocation="http://www.opengis.net/sensorML/2.0 http://schemas.opengis.n
    <sml:identification>
       <sml:IdentifierList>
          <sml:identifier>
-            <sml:Term definition="urn:ogc:def:identifier:OGC:longname">
+            <sml:Term definition="http://sensorml.com/ont/swe/property/LongName">
                <sml:label>Long Name</sml:label>
                <sml:value>Davis Vantage Pro2 Weather Station</sml:value>
             </sml:Term>
          </sml:identifier>
          <sml:identifier>
-            <sml:Term definition="urn:ogc:def:identifier:OGC:shortname">
+            <sml:Term definition="http://sensorml.com/ont/swe/property/ShortName">
                <sml:label>Short Name</sml:label>
                <sml:value>Vantage Pro2</sml:value>
             </sml:Term>
          </sml:identifier>
          <sml:identifier>
-            <sml:Term definition="urn:ogc:def:identifier:OGC:manufacturer">
+            <sml:Term definition="http://sensorml.com/ont/swe/property/Manufacturer">
                <sml:label>Manufacturer</sml:label>
                <sml:value>Davis Instruments</sml:value>
             </sml:Term>
@@ -33,15 +33,15 @@ xsi:schemaLocation="http://www.opengis.net/sensorML/2.0 http://schemas.opengis.n
    <sml:classification>
       <sml:ClassifierList>
          <sml:classifier>
-            <sml:Term definition="urn:ogc:def:classifier:OGC:application">
+            <sml:Term definition="http://sensorml.com/ont/swe/property/Application">
                <sml:label>Intended Application</sml:label>
                <sml:value>weather</sml:value>
             </sml:Term>
          </sml:classifier>
          <sml:classifier>
-            <sml:Term definition="urn:sensor:classifier:sensorType">
+            <sml:Term definition="http://sensorml.com/ont/swe/property/SensorType">
                <sml:label>Instrument Type</sml:label>
-               <sml:codeSpace xlink:href="http://gcmdservices.gsfc.nasa.gov/static/kms/instruments/instruments.xml" />
+               <sml:codeSpace xlink:href="https://gcmd.earthdata.nasa.gov/kms/concepts/concept_scheme/instruments" />
                <sml:value>weather station</sml:value>
             </sml:Term>
          </sml:classifier>
@@ -55,7 +55,7 @@ xsi:schemaLocation="http://www.opengis.net/sensorML/2.0 http://schemas.opengis.n
   </sml:validTime>
    <sml:contacts>
       <sml:ContactList>
-         <sml:contact xlink:role="http://sensorml.com/def/role/Manufacturer">
+         <sml:contact xlink:role="http://sensorml.com/ont/swe/property/Manufacturer">
             <gmd:CI_ResponsibleParty>
                <gmd:organisationName>
                   <gco:CharacterString>Davis Instruments Corp.</gco:CharacterString>

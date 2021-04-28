@@ -16,6 +16,9 @@ package org.sensorhub.impl.sensor.fakegps;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.vast.sensorML.SMLHelper;
+import org.vast.swe.SWEHelper;
+import net.opengis.sensorml.v20.PhysicalSystem;
 
 
 /**
@@ -63,6 +66,43 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
         {
             super.updateSensorDescription();
             sensorDescription.setDescription("Simulated GPS sensor generating data along random itineraries obtained using Google Direction API");
+            
+            var sml = new SMLHelper();
+            sml.edit((PhysicalSystem)sensorDescription)
+            
+                .addIdentifier(sml.identifiers.serialNumber("45AC78EDF"))
+                
+                .addClassifier(sml.classifiers.sensorType("Global Navigation Satellite System (GNSS) Receiver"))
+                .addClassifier(sml.classifiers.sensorType(
+                    "http://vocab.nerc.ac.uk/collection/D01/current/D0100002",
+                    "http://vocab.nerc.ac.uk/collection/L05/current/POS02"))
+                            
+                .addCharacteristicList("operating_specs", sml.characteristics.operatingCharacteristics()
+                    .add("voltage", sml.characteristics.operatingVoltageRange(3.3, 5., "V"))
+                    .add("temperature", sml.conditions.temperatureRange(-10., 75., "Cel")))
+            
+                .addCapabilityList("system_caps", sml.capabilities.systemCapabilities()
+                    .add("update_rate", sml.capabilities.reportingFrequency(1.0))
+                    .add("accuracy", sml.capabilities.absoluteAccuracy(2.5, "m"))
+                    .add("ttff_cold", sml.createQuantity()
+                        .definition(SWEHelper.getDBpediaUri("Time_to_first_fix"))
+                        .label("Cold Start TTFF")
+                        .description("Time to first fix on cold start")
+                        .uomCode("s")
+                        .value(120))
+                    .add("ttff_warm", sml.createQuantity()
+                        .definition(SWEHelper.getDBpediaUri("Time_to_first_fix"))
+                        .label("Warm Start TTFF")
+                        .description("Time to first fix on warm start")
+                        .uomCode("s")
+                        .value(30))
+                    .add("ttff_hot", sml.createQuantity()
+                        .definition(SWEHelper.getDBpediaUri("Time_to_first_fix"))
+                        .label("Hot Start TTFF")
+                        .description("Time to first fix on hot start")
+                        .uomCode("s")
+                        .value(5))
+                    .add("battery_life", sml.characteristics.batteryLifetime(72, "h")));
         }
     }
 

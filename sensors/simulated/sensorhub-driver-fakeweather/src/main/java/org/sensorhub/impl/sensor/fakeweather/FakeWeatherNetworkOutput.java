@@ -43,7 +43,7 @@ public class FakeWeatherNetworkOutput extends AbstractSensorOutput<FakeWeatherNe
         SWEHelper fac = new SWEHelper();
         
         // create output data structure
-        dataStruct = fac.createDataRecord()
+        dataStruct = fac.createRecord()
             .name(getName())
             .definition("http://sensorml.com/ont/swe/property/Weather")
             .description("Weather measurements")
@@ -56,25 +56,25 @@ public class FakeWeatherNetworkOutput extends AbstractSensorOutput<FakeWeatherNe
                 .pattern("[0-9A-Z]{5-10}"))
             
             .addField("temperature", fac.createQuantity()
-                .definition("http://mmisw.org/ont/cf/parameter/air_temperature")
+                .definition(SWEHelper.getCfUri("air_temperature"))
                 .label("Air Temperature")
                 .uomCode("Cel"))
             
             .addField("pressure", fac.createQuantity()
-                .definition("http://mmisw.org/ont/cf/parameter/air_pressure")
+                .definition(SWEHelper.getCfUri("air_pressure"))
                 .label("Atmospheric Pressure")
                 .uomCode("hPa"))
             
             .addField("windSpeed", fac.createQuantity()
-                .definition("http://mmisw.org/ont/cf/parameter/wind_speed")
+                .definition(SWEHelper.getCfUri("wind_speed"))
                 .label("Wind Speed")
                 .uomCode("m/s"))
             
             .addField("windDirection", fac.createQuantity()
-                .definition("http://mmisw.org/ont/cf/parameter/wind_from_direction")
+                .definition(SWEHelper.getCfUri("wind_from_direction"))
                 .label("Wind Direction")
                 .uomCode("deg")
-                .refFrame("http://sensorml.com/ont/swe/property/NED", "z"))
+                .refFrame(SWEConstants.REF_FRAME_NED, "z"))
             
             .build();
      
