@@ -41,7 +41,7 @@ for the transport stream path, OSH will read the TS and convert it to OSH record
 can then be played back anytime, no longer needing to read from the TS file).
                  
 And then configure the 
-- **Storage Config** using a ```Perst Record Storage``` instance providing the 
+- **Storage Config** using a ```H2 Record Storage``` instance providing the 
   - **Storage Path** as the location where the OSH records are to be stored.
 
 SOS Service:
@@ -62,18 +62,10 @@ The following are a list of example requests.
 The **IP ADDRESS** and **PORT** will need to be specified and point to the instance
 of the OpenSensorHub node serving the data.
 
-### Airframe Attitude Request
-- **HTTP**
-  - http://[IP ADDRESS]:[PORT]/sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:socom:sensor:uas:uas001-sos&observedProperty=http://sensorml.com/ont/swe/property/AirframeAttitude&temporalFilter=phenomenonTime,2019-03-27T14:39:31.535Z/2019-03-27T15:04:04.163Z&responseFormat=application/json
-  
 ### Airframe Position Request
 - **HTTP**
   - http://[IP ADDRESS]:[PORT]/sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:socom:sensor:uas:uas001-sos&observedProperty=http://sensorml.com/ont/swe/property/AirframePosition&temporalFilter=phenomenonTime,2019-03-27T14:39:31.535Z/2019-03-27T15:04:04.163Z&responseFormat=application/json
-  
-### Airframe Location Request
-- **HTTP**
-  - http://[IP ADDRESS]:[PORT]/sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:socom:sensor:uas:uas001-sos&observedProperty=http://sensorml.com/ont/swe/property/AirframeLocation&temporalFilter=phenomenonTime,2019-03-27T14:39:31.535Z/2019-03-27T15:04:04.163Z&responseFormat=application/json
-  
+
 ### Identification Request
 - **HTTP**
   - http://[IP ADDRESS]:[PORT]/sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:socom:sensor:uas:uas001-sos&observedProperty=http://sensorml.com/ont/swe/property/Identification&temporalFilter=phenomenonTime,2019-03-27T14:39:31.535Z/2019-03-27T15:04:04.163Z&responseFormat=application/json 
