@@ -18,9 +18,7 @@ Select ```Sensors``` from the left hand accordion control and right click for co
   - **Server Ip:** IP Address of server providing ```Transport Stream``` data 
   - **Port:** Used in conjunction with the _Server Ip_ to connect to ```Transport Stream``` data 
 - **Outputs:**
-  - **Airframe Attitude:** If enabled, provides heading, pitch, and roll of the airframe
   - **Airframe Position:** If enabled, provides lat, lon, alt, heading, pitch, and roll of the airframe
-  - **Airframe Location:** If enabled, provides lat, lon, alt of the airframe
   - **All Combined:** If enabled, provides all data received through MPEG-TS STANAG 4609 ST 0601.16 UAS Datalink Local Set MetaData
   - **Geo Referenced Image Frame Data:** If enabled, provides data corresponding to the quad lat, lon coordinates of the image being transmitted
   - **Gimbal Attitude:** If enabled, provides yaw, pitch, and roll of the sensor gimbal
