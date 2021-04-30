@@ -23,7 +23,7 @@ import org.sensorhub.api.config.DisplayInfo;
  * Configuration options for I2C hardware interface
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Aug 27, 2015
  */
 public class I2CConfig implements ICommConfig

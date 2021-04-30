@@ -34,7 +34,7 @@ import org.vast.process.ProcessException;
  * such that Mres = s.M1.M2, where M1, M2, and Mres are matrices and s a scalar.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @date Jan 16, 2008
  */
 public class MulMatMat extends ExecutableProcessImpl

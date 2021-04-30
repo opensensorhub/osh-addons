@@ -47,7 +47,7 @@ import com.MAVLink.enums.MAV_PARAM_TYPE;
  * be extended.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Dec 12, 2015
  */
 public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>

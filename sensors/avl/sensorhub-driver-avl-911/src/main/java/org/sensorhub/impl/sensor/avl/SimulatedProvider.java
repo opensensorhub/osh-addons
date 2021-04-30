@@ -47,7 +47,7 @@ import com.google.gson.JsonParser;
  * using Google Directions API.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Nov 29, 2015
  */
 public class SimulatedProvider extends AbstractModule<SimulatedProviderConfig> implements ICommProvider<SimulatedProviderConfig>

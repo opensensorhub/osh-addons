@@ -19,7 +19,7 @@ import net.opengis.swe.v20.Vector;
  * Output of raw anchor to anchor or tag to anchor ranges
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Aug 4, 2017
  */
 public class LocalPosOutput extends AbstractSensorOutput<Trek1000Sensor>

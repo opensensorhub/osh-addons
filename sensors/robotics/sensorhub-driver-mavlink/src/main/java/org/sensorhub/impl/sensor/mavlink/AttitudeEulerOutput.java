@@ -30,7 +30,7 @@ import com.MAVLink.common.msg_attitude;
  * Output for MAVLink ATTITUDE_QUATERNION messages
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Dec 12, 2015
  */
 public class AttitudeEulerOutput extends MavlinkOutput

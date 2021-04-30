@@ -42,7 +42,7 @@ import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
  * (PTZ) capabilities.
  * </p>
  *
-  * @author Mike Botts <mike.botts@botts-inc.com>
+  * @author Mike Botts
  * @since March 2016
  */
 public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>

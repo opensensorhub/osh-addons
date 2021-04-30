@@ -26,7 +26,7 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
  * Abstract base for all outputs corresponding to NMEA sentences
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Aug 27, 2015
  */
 public abstract class NMEAGpsOutput extends AbstractSensorOutput<NMEAGpsSensor>

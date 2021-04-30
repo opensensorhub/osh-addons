@@ -39,7 +39,7 @@ import org.vast.data.DataChoiceImpl;
  * (PTZ) capabilities.
  * </p>
  *
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since March 2016
  */
 public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>

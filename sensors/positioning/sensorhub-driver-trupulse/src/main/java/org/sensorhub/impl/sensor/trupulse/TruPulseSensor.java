@@ -31,7 +31,8 @@ import org.slf4j.LoggerFactory;
  * TruPulse sensor, one can calculate the geospatial position of the target.
  * </p>
  *
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
+ * @author Alex Robin
  * @since June 8, 2015
  */
 public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>

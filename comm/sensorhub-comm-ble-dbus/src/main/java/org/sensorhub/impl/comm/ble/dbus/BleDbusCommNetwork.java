@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * Linux 
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Feb 11, 2016
  */
 public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> implements IBleNetwork<BluetoothNetworkConfig>

@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * Communication provider for UART serial ports using JDK Device I/O
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Aug 27, 2015
  */
 public class JdkDioSerialCommProvider extends AbstractModule<JdkDioSerialCommProviderConfig> implements ICommProvider<JdkDioSerialCommProviderConfig>

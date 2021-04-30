@@ -41,7 +41,7 @@ import net.opengis.swe.v20.DataComponent;
  * particular class provides control of the Pan-Tilt-Zoom (PTZ) capabilities.
  * </p>
  *
- * @author Lee Butler <labutler10@gmail.com>
+ * @author Lee Butler
  * @since September 2016
  */
 public class FoscamPtzControl extends AbstractSensorControl<FoscamDriver> {

@@ -44,7 +44,7 @@ import org.vast.data.SWEFactory;
  * </p>
  *
  * 
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since October 30, 2014
  */
 

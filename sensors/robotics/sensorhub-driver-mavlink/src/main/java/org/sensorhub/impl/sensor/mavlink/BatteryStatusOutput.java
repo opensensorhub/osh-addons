@@ -28,7 +28,7 @@ import com.MAVLink.common.msg_battery_status;
  * Output for MAVLink BATTERY_STATUS messages
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Jul 4, 2016
  */
 public class BatteryStatusOutput extends MavlinkOutput

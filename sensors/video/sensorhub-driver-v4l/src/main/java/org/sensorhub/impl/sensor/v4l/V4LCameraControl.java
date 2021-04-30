@@ -48,7 +48,7 @@ import au.edu.jcu.v4l4j.ResolutionInfo.DiscreteResolution;
  * Implementation of control interface for V4L sensor
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Sep 5, 2013
  */
 public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>

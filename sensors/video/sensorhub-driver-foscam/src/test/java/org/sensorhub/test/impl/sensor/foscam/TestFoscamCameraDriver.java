@@ -46,7 +46,7 @@ import net.opengis.swe.v20.DataComponent;
  * Implementation of sensor interface for generic Axis Cameras using IP protocol
  * </p>
  * 
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * 
  */
 

@@ -42,7 +42,7 @@ import org.vast.data.DataBlockMixed;
  * Implementation of data interface for RTP camera stream
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @param <SensorType> Type of parent sensor
  * @since Dec 12, 2015
  */

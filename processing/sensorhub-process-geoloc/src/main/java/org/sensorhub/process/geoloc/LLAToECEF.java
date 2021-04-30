@@ -30,7 +30,7 @@ import org.vast.swe.helper.GeoPosHelper;
  * Process for converting 3D coordinates from LLA (4979) to ECEF (4978)
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Sep 2, 2015
  */
 public class LLAToECEF extends ExecutableProcessImpl

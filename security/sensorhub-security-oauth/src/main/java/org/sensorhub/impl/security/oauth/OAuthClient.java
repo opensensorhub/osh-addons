@@ -29,7 +29,7 @@ import org.sensorhub.impl.module.AbstractModule;
  * OAuth Client module relying on Apache Oltu library
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Nov 29, 2016
  */
 public class OAuthClient extends AbstractModule<OAuthClientConfig> implements Authenticator

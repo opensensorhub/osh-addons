@@ -32,7 +32,7 @@ import au.edu.jcu.v4l4j.exceptions.V4L4JException;
  * Implementation of RGB video output for V4L sensor
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Sep 5, 2013
  */
 public class V4LCameraOutputRGB extends V4LCameraOutput implements CaptureCallback

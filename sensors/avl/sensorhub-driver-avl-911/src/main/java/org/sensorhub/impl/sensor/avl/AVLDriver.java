@@ -35,7 +35,7 @@ import org.vast.sensorML.SMLHelper;
  * to the Intergraph 911 System data format, although this should be able to be generalized.
  * </p>
  *
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since September 10, 2015
  */
 public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMultiSourceDataProducer

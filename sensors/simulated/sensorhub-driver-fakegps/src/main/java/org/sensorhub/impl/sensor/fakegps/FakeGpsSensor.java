@@ -27,7 +27,7 @@ import net.opengis.sensorml.v20.PhysicalSystem;
  * requesting trajectories from Google Directions.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Nov 2, 2014
  */
 public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>

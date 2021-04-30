@@ -32,7 +32,7 @@ import org.vast.swe.helper.GeoPosHelper;
  * Converts ECEF (4978) to ECI coordinates
  * </p>
  * 
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @date Sep 2, 2015
  */
 public class ECEFtoECI extends ExecutableProcessImpl

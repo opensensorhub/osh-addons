@@ -35,7 +35,7 @@ import org.sensorhub.api.comm.ble.IGattService;
  * Implementation of GATT service wrapping DBus GattService1
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Mar 14, 2016
  */
 public class GattServiceImpl implements IGattService

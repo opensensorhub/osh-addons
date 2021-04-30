@@ -29,7 +29,7 @@ import net.opengis.sensorml.v20.PhysicalSystem;
  * a simple example of a sensor driver.
  * </p>
  *
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since Dec 24, 2014
  */
 public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>

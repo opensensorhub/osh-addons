@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * on Foscam v1.0.4 API.
  * </p>
  *
- * @author Lee Butler <labutler10@gmail.com>
+ * @author Lee Butler
  * @since September 2016
  */
 public class FoscamDriver extends AbstractSensorModule<FoscamConfig> {

@@ -24,7 +24,7 @@ import java.util.Map;
  * Helper class for handling PTZ relative movements
  * </p>
  *
- * @author Lee Butler <labutler10@gmail.com>
+ * @author Lee Butler
  * @since September 2016
  */
 public class FoscamPTZrelMoveHandler

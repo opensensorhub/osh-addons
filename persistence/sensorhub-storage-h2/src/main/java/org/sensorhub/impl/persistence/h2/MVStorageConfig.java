@@ -26,7 +26,7 @@ import com.google.common.base.Strings;
  * Configuration class for PERST basic storage
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Sep 7, 2013
  */
 public class MVStorageConfig extends StorageConfig

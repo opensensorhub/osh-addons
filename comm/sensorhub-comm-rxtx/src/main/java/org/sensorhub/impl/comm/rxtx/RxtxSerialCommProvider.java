@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * Communication provider for serial ports
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since July 2, 2015
  */
 public class RxtxSerialCommProvider extends AbstractModule<RxtxSerialCommProviderConfig> implements ICommProvider<RxtxSerialCommProviderConfig>

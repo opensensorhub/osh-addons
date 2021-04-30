@@ -38,7 +38,7 @@ import org.vast.swe.helper.GeoPosHelper;
  * below the reference WGS84 ellipsoid.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Nov 13, 2015
  */
 public class RayIntersectEllipsoid extends ExecutableProcessImpl

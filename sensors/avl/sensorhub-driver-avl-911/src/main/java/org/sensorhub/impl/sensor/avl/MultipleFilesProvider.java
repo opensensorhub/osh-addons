@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * detected and processed.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Sep 15, 2015
  */
 public class MultipleFilesProvider extends AbstractModule<MultipleFilesProviderConfig> implements ICommProvider<MultipleFilesProviderConfig>

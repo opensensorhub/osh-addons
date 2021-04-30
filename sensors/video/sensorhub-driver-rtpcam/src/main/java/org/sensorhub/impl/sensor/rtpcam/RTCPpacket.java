@@ -45,7 +45,7 @@ import java.nio.ByteBuffer;
  * Implementation of an RTCP packet
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Mar 21, 2016
  */
 class RTCPpacket

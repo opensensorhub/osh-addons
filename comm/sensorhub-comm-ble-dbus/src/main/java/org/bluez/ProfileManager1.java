@@ -15,7 +15,7 @@ import org.freedesktop.dbus.Variant;
  * <b>Object path:</b> /org/bluez<br/>
  * </p>
  * 
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Feb 29, 2016
  */
 public interface ProfileManager1 extends DBusInterface

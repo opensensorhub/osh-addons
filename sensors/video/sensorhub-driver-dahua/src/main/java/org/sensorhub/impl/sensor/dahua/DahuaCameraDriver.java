@@ -40,7 +40,7 @@ import org.vast.swe.SWEHelper;
  * protocol Based on Dahua v1.23 API.
  * </p>
  *
-  * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since March 2016
  */
 public class DahuaCameraDriver extends AbstractSensorModule<DahuaCameraConfig>

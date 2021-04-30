@@ -24,7 +24,7 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
  * static video file in loop.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Jan 10, 2015
  */
 public class FakeCamSensor extends AbstractSensorModule<FakeCamConfig>

@@ -24,7 +24,7 @@ package org.sensorhub.algo.vecmath;
  * <b>This class is NOT thread-safe</b>
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Nov 13, 2015
  */
 public class BilinearInterpolation

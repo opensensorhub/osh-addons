@@ -42,7 +42,7 @@ import net.opengis.swe.v20.DataBlock;
  * H2 MVStore implementation of {@link IMultiSourceStorage} module.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Dec 9, 2017
  */
 public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSourceStorage<IObsStorage>

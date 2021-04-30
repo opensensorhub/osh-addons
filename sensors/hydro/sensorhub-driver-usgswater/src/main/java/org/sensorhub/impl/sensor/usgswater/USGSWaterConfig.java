@@ -4,7 +4,7 @@ import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
 import org.sensorhub.impl.usgs.water.CodeEnums.StateCode;
-import org.sensorhub.impl.usgs.water.DataFilter;
+import org.sensorhub.impl.usgs.water.USGSDataFilter;
 
 
 /**
@@ -13,13 +13,13 @@ import org.sensorhub.impl.usgs.water.DataFilter;
  * protocol. This particular class stores configuration parameters.
  * </p>
  * 
- * @author Lee Butler <labutler10@gmail.com>
+ * @author Lee Butler
  * @since March 22, 2017
  */
 public class USGSWaterConfig extends SensorConfig {
     
     @DisplayInfo(desc="Only data matching this filter will be accessible through this storage instance")
-    public DataFilter exposeFilter = new DataFilter();
+    public USGSDataFilter exposeFilter = new USGSDataFilter();
     
     public USGSWaterConfig()
     {

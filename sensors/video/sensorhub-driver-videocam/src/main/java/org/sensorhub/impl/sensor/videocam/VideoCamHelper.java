@@ -42,7 +42,7 @@ import net.opengis.swe.v20.Time;
  * Pan-Tilt-Zoom (PTZ) control
  * </p>
  *
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since March 2016
  */
 public class VideoCamHelper extends RasterHelper

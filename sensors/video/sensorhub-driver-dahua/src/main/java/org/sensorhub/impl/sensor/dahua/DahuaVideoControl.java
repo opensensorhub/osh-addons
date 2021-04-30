@@ -29,7 +29,7 @@ import org.sensorhub.impl.sensor.AbstractSensorControl;
  * </p>
 
  * 
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since March 2016
  */
 

@@ -40,7 +40,7 @@ import org.vast.swe.SWEHelper;
  * protocol
  * </p>
  * 
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since October 30, 2014
  */
 public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > {

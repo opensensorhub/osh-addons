@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * to the I2C bus. This driver is based no JDK Device I/O.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Aug 29, 2015
  */
 public class JdkDioI2CCommProvider extends AbstractModule<JdkDioI2CCommProviderConfig> implements ICommProvider<JdkDioI2CCommProviderConfig>

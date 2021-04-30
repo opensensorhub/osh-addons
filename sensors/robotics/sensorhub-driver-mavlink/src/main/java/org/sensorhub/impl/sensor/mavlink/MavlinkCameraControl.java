@@ -35,7 +35,7 @@ import com.MAVLink.enums.MAV_CMD;
  * Implementation of camera control interface for MAVLink systems
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Jul 5, 2016
  */
 public class MavlinkCameraControl extends MavlinkControlInput

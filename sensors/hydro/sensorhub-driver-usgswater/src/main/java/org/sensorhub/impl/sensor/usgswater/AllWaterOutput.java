@@ -39,7 +39,7 @@ import org.vast.swe.SWEHelper;
  * protocol. This particular class stores configuration parameters.
  * </p>
  * 
- * @author Lee Butler <labutler10@gmail.com>
+ * @author Lee Butler
  * @since March 22, 2017
  */
 

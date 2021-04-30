@@ -37,7 +37,7 @@ import org.vast.swe.SWEHelper;
  * Driver for XSens MTi Inertial Motion Unit
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since July 1, 2015
  */
 public class VN200Sensor extends AbstractSensorModule<VN200Config>

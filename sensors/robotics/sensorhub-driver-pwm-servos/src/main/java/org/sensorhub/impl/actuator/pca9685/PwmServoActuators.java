@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * 16-channels PWM daughter board using I2C commands.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Aug 27, 2015
  */
 public class PwmServoActuators extends AbstractSensorModule<PwmServosConfig>

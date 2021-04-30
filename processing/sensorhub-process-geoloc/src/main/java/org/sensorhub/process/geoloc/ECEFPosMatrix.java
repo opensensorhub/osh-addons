@@ -38,7 +38,7 @@ import org.vast.swe.helper.GeoPosHelper;
  * to transform from local (sensor) coordinates to ECEF coordinates.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @date Nov 13, 2015
  */
 public class ECEFPosMatrix extends ExecutableProcessImpl

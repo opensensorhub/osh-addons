@@ -20,7 +20,7 @@ package org.sensorhub.impl.sensor.rtpcam;
  * Implementation of an RTP packet
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Dec 14, 2015
  */
 public class RTPPacket implements Comparable<RTPPacket>

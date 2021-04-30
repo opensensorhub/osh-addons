@@ -29,7 +29,7 @@ import com.MAVLink.common.msg_global_position_int;
  * Output for MAVLink GLOBAL_POSITION_INT messages
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Dec 12, 2015
  */
 public class GlobalPositionOutput extends MavlinkOutput

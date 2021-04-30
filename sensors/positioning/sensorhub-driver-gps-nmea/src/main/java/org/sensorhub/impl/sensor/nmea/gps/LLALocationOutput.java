@@ -33,7 +33,7 @@ import org.vast.util.DateTimeFormat;
  * Otherwise UTC day is obtained from system clock.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Aug 27, 2015
  */
 public class LLALocationOutput extends NMEAGpsOutput

@@ -37,7 +37,7 @@ import net.opengis.swe.v20.DataBlock;
  * observations with changing spatial location
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Jun 10, 2019
  */
 class MVSamplingLocationIndexImpl

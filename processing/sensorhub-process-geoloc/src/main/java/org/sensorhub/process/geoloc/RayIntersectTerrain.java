@@ -33,7 +33,7 @@ import org.vast.swe.SWEHelper;
  * It also allows height adjustment.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Nov 13, 2015
  */
 public class RayIntersectTerrain extends RayIntersectEllipsoid

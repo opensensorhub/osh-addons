@@ -30,7 +30,7 @@ import com.MAVLink.ardupilotmega.msg_gimbal_report;
  * Output for MAVLink GIMBAL_REPORT messages
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Dec 12, 2015
  */
 public class GimbalEulerOutput extends MavlinkOutput

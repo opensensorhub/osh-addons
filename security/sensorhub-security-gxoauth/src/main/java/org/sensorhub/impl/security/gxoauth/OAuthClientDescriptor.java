@@ -25,7 +25,7 @@ import org.sensorhub.impl.module.JarModuleProvider;
  * the ModuleRegistry.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Nov 19, 2016
  */
 public class OAuthClientDescriptor extends JarModuleProvider

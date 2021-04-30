@@ -21,7 +21,7 @@ package org.sensorhub.impl.persistence.h2;
  * and feature of interest. Used internally by H2 storage implementation.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Jun 12, 2019
  */
 class ObsTimePeriod

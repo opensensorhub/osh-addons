@@ -48,7 +48,7 @@ import static org.junit.Assert.*;
  * protocol
  * </p>
  * 
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  */
 public class TestDahuaCameraDriver implements IEventListener
 {

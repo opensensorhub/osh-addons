@@ -70,7 +70,7 @@ import static org.bytedeco.ffmpeg.global.swscale.*;
  * Transcoding works only with H264 for now.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Jun 14, 2020
  */
 public class VideoTranscoder implements ISOSCustomSerializer
@@ -202,9 +202,9 @@ public class VideoTranscoder implements ISOSCustomSerializer
                 // we also do filtering here in case data provider hasn't modified the datablocks
                 // always keep sampling time and entity ID if present
                 gReq.getObservables().add(SWEConstants.DEF_SAMPLING_TIME);
-                String entityComponentUri = SOSProviderUtils.findEntityIDComponentURI(dataProvider.getResultStructure());
-                if (entityComponentUri != null)
-                    gReq.getObservables().add(entityComponentUri);
+                //String entityComponentUri = SOSProviderUtils.findEntityIDComponentURI(dataProvider.getResultStructure());
+                //if (entityComponentUri != null)
+                //    gReq.getObservables().add(entityComponentUri);
                 // temporary hack to switch btw old and new writer architecture
                 if (writer instanceof AbstractDataWriter)
                     writer = new FilteredWriter((AbstractDataWriter)writer, gReq.getObservables());

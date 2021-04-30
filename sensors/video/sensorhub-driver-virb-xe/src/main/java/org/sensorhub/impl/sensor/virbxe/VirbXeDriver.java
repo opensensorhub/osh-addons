@@ -36,7 +36,7 @@ import com.google.gson.Gson;
  * Driver for Garmin VIRB XE camera
  * </p>
  *
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since April 12, 2016
  */
 public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>

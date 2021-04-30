@@ -32,7 +32,7 @@ import au.edu.jcu.v4l4j.exceptions.V4L4JException;
  * Implementation of H264 video output for V4L sensor
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Oct 17, 2020
  */
 public class V4LCameraOutputH264 extends V4LCameraOutput implements CaptureCallback

@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
  * provided by the jmDNS library.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Feb 10, 2016
  */
 public class IpCommNetwork extends AbstractModule<IpNetworkConfig> implements ICommNetwork<IpNetworkConfig>

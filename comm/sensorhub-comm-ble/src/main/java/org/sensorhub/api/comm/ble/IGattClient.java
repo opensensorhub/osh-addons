@@ -23,7 +23,7 @@ import java.util.Collection;
  * <i>This interface was originally modeled on Android's Bluetooth LE API.</i>
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Feb 28, 2016
  */
 public interface IGattClient

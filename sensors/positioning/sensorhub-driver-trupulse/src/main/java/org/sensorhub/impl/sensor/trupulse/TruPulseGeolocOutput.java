@@ -33,7 +33,7 @@ import net.opengis.swe.v20.DataEncoding;
  * Wrapper class to expose target geoloc output on sensor object
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Apr 10, 2019
  */
 public class TruPulseGeolocOutput implements IStreamingDataInterface, IEventListener
@@ -51,7 +51,7 @@ public class TruPulseGeolocOutput implements IStreamingDataInterface, IEventList
         processOutput.registerListener(this);
         
         var procUID = parentSensor.getUniqueIdentifier();
-        String sourceID = EventUtils.getProcedureOutputSourceID(procUID, getName());
+        String sourceID = EventUtils.getDataStreamTopicID(procUID, getName());
         this.eventSrcInfo = new EventSourceInfo(procUID, sourceID);
     }
     

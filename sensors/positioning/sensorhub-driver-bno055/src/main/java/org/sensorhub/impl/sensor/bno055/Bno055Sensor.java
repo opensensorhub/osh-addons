@@ -38,11 +38,11 @@ import org.vast.swe.SWEHelper;
 
 /**
  * <p>
- * Driver for XSens MTi Inertial Motion Unit
+ * Driver for BNO55 IMU
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
- * @since July 1, 2015
+ * @author Alex Robin
+ * @since Apr 7, 2016
  */
 public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
 {

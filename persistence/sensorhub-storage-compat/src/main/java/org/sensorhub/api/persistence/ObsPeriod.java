@@ -21,7 +21,7 @@ package org.sensorhub.api.persistence;
  * for a given FOI
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Aug 30, 2020
  */
 public class ObsPeriod

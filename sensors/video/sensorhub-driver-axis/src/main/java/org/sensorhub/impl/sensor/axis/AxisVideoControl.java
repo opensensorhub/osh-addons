@@ -28,7 +28,7 @@ import org.sensorhub.impl.sensor.AbstractSensorControl;
  * camera itself.
  * </p>
  * 
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since October 30, 2014
  */
 

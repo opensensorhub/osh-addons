@@ -34,7 +34,7 @@ import org.sensorhub.impl.sensor.videocam.ptz.PtzPreset;
  * Configuration parameters for Dahua cameras
  * </p>
  * 
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since March 2016
  */
 public class DahuaCameraConfig extends SensorConfig

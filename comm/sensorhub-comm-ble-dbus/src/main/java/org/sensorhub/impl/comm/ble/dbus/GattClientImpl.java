@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * BlueZ D-Bus GATT client implementation
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Feb 28, 2016
  */
 public class GattClientImpl implements IGattClient

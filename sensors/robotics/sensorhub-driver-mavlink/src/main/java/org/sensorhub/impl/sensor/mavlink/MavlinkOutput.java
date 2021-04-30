@@ -27,7 +27,7 @@ import com.MAVLink.Messages.MAVLinkMessage;
  * Abstract base for all outputs corresponding to MAVLink messages
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Dec 10, 2015
  */
 public abstract class MavlinkOutput extends AbstractSensorOutput<MavlinkDriver>

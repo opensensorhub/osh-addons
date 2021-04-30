@@ -28,7 +28,7 @@ import org.freedesktop.dbus.DBusInterface;
  * <b>Object path:</b> [variable prefix]/{hci0,hci1,...}/dev_XX_XX_XX_XX_XX_XX/serviceXX<br/>
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Feb 28, 2016
  */
 public interface GattService1 extends DBusInterface

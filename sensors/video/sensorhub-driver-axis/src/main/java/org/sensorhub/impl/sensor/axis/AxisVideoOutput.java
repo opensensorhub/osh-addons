@@ -42,7 +42,7 @@ import org.vast.data.DataBlockMixed;
  * camera capabilities.
  * </p>
  * 
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since October 30, 2014
  */
 public class AxisVideoOutput extends AbstractSensorOutput < AxisCameraDriver > {

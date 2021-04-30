@@ -73,7 +73,7 @@ import net.opengis.swe.v20.DataEncoding;
  * inside a multi-producer storage.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Dec 10, 2017
  */
 public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements IObsStorageModule<MVStorageConfig>

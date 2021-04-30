@@ -32,7 +32,7 @@ import org.freedesktop.dbus.Variant;
  * <b>Object path:</b> /org/bluez/{hci0,hci1,...}<br/>
  * </p>
  * 
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Feb 26, 2016
  */
 public interface LEAdvertisingManager1 extends DBusInterface

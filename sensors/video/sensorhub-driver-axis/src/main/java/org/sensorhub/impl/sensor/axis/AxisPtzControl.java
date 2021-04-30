@@ -39,7 +39,7 @@ import org.vast.data.DataChoiceImpl;
  * (PTZ) capabilities.
  * </p>
  * 
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since October 30, 2014
  */
 public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>

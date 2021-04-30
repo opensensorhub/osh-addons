@@ -32,7 +32,7 @@ import org.h2.mvstore.MVStore;
  * Implementation of FoI observation periods
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Dec 10, 2017
  */
 class MVFoiTimesStoreImpl

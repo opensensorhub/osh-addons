@@ -40,7 +40,7 @@ import org.vast.swe.SWEHelper;
  * Driver for Angel Sensor
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Mar 12, 2016
  */
 public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>

@@ -28,7 +28,7 @@ import net.opengis.swe.v20.Text;
  * Pan-Tilt-Zoom (PTZ) control
  * </p>
  *
- * @author Lee Butler <labutler10@gmail.com>
+ * @author Lee Butler
  * @since September 2016
  */
 public class FoscamHelper extends VideoCamHelper

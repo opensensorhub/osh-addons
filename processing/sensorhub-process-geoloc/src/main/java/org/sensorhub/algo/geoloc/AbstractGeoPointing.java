@@ -23,7 +23,7 @@ import org.sensorhub.algo.vecmath.Vect3d;
  * Abtract base for classes computing pointing orientation
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Aug 11, 2015
  */
 public abstract class AbstractGeoPointing implements IGeoPointing

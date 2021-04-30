@@ -19,7 +19,7 @@ import net.opengis.swe.v20.DataType;
  * Output of raw anchor to anchor or tag to anchor ranges
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Aug 4, 2017
  */
 public class RangeOutput extends AbstractSensorOutput<Trek1000Sensor>

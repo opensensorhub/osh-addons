@@ -33,7 +33,7 @@ import org.vast.swe.SWEHelper;
  * to one of two outputs depending on the result of the comparison.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Nov 13, 2015
  */
 public class CompareOperation extends ExecutableProcessImpl

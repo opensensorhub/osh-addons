@@ -30,7 +30,7 @@ import org.sensorhub.impl.sensor.videocam.VideoResolution;
  * Configuration class for the generic RTP/RTSP camera driver
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Dec 12, 2015
  */
 public class RTPCameraConfig extends SensorConfig

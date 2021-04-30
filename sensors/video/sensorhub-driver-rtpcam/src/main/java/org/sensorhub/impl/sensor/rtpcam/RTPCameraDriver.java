@@ -26,7 +26,7 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
  * Generic driver implementation for RTP/RTSP cameras.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Dec 12, 2015
  */
 public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>

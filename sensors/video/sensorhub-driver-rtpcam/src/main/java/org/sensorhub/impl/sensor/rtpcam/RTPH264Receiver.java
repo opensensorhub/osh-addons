@@ -33,7 +33,7 @@ import org.vast.swe.Base64Decoder;
  * Only single NAL unit packets and FU-A fragmentation units are supported.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Dec 14, 2015
  */
 public class RTPH264Receiver extends Thread

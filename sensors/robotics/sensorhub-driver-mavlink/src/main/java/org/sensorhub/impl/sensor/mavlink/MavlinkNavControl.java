@@ -38,7 +38,7 @@ import com.MAVLink.enums.MAV_FRAME;
  * Implementation of navigation control interface for MAVLink systems
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Jul 5, 2016
  */
 public class MavlinkNavControl extends MavlinkControlInput

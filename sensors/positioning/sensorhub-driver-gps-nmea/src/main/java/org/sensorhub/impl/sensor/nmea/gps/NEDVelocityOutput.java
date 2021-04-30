@@ -27,7 +27,7 @@ import org.vast.swe.SWEHelper;
  * UTC time of each output sample is obtained from previous position fix.
  * </p>
  *
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Aug 27, 2015
  */
 public class NEDVelocityOutput extends NMEAGpsOutput

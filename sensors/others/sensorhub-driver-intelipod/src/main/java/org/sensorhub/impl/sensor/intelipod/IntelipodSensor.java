@@ -35,7 +35,7 @@ import org.vast.swe.SWEHelper;
  * TruPulse sensor, one can calculate the geospatial position of the target.
  * </p>
  *
- * @author Mike Botts <mike.botts@botts-inc.com>
+ * @author Mike Botts
  * @since June 8, 2015
  */
 public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>

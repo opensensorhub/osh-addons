@@ -34,7 +34,7 @@ import org.vast.swe.helper.GeoPosHelper;
  * coordinates of the intersect point expressed in the same frame.
  * </p>
 
- * @author Alex Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Nov 13, 2015
  */
 public class RayIntersectSphere extends ExecutableProcessImpl
