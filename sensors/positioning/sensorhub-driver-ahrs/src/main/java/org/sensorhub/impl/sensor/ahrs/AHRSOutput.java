@@ -82,7 +82,7 @@ public class AHRSOutput extends AbstractSensorOutput<AHRSSensor>
 //    	imuData.addComponent("attitude", quat);
 
     	Vector att = fac.newEulerOrientationECEF(
-                SWEHelper.getPropertyUri("Attitude"));
+                SWEHelper.getPropertyUri("Attitude"), "deg");
       	att.setDataType(DataType.FLOAT);
       	ahrsData.addComponent("Attitude", att);
    

@@ -24,9 +24,8 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
-import net.opengis.swe.v20.Vector;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
-import org.vast.swe.helper.GeoPosHelper.ImuFields;
 
 
 public class MtiOutput extends AbstractSensorOutput<MtiSensor>
@@ -62,19 +61,27 @@ public class MtiOutput extends AbstractSensorOutput<MtiSensor>
     protected void init()
     {
         // build SWE Common record structure
-        GeoPosHelper fac = new GeoPosHelper();
+        GeoPosHelper swe = new GeoPosHelper();
         String localFrame = parentSensor.getUniqueIdentifier() + "#" + MtiSensor.CRS_ID;
         
         // generic IMU data
-        imuData = fac.newImuOutput(getName(), localFrame, ImuFields.GYRO, ImuFields.ACCEL);
-        
-        // integrated measurements
-        Vector quat = fac.newQuatOrientationENU(null);
-        quat.setDataType(DataType.FLOAT);
-        imuData.addComponent("attitude", quat);
+        imuData = swe.createRecord()
+            .name(name)
+            .definition(SWEHelper.getPropertyUri("ImuData"))
+            .addSamplingTimeIsoUTC("time")
+            .addField("angRate", swe.createAngularVelocityVector("deg/s")
+                .localFrame(localFrame)
+                .dataType(DataType.FLOAT))
+            .addField("accel", swe.createAccelerationVector("m/s2")
+                .localFrame(localFrame)
+                .dataType(DataType.FLOAT))
+            .addField("attitude", swe.createQuatOrientationENU()
+                .localFrame(localFrame)
+                .dataType(DataType.FLOAT))
+            .build();
      
         // also generate encoding definition as text block
-        dataEncoding = fac.newTextEncoding(",", "\n");        
+        dataEncoding = swe.newTextEncoding(",", "\n");        
     }
     
 
