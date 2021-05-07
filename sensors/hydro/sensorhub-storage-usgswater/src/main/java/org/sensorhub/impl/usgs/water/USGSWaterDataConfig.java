@@ -14,31 +14,22 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.usgs.water;
 
-import java.util.Date;
 import org.sensorhub.api.config.DisplayInfo;
-import org.sensorhub.api.persistence.StorageConfig;
+import org.sensorhub.api.database.DatabaseConfig;
 import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
 import org.sensorhub.impl.usgs.water.CodeEnums.StateCode;
 
 
-public class USGSWaterDataConfig extends StorageConfig
+public class USGSWaterDataConfig extends DatabaseConfig
 {
     
     @DisplayInfo(desc="Only data matching this filter will be accessible through this storage instance")
-    public DataFilter exposeFilter = new DataFilter();
+    public USGSDataFilter exposeFilter = new USGSDataFilter();
     
     
     public USGSWaterDataConfig()
     {
         exposeFilter.stateCodes.add(StateCode.AL);
-        exposeFilter.parameters.add(ObsParam.DISCHARGE);
-        exposeFilter.endTime = new Date(new Date().getTime()/86400000*86400000);
-        exposeFilter.startTime = new Date(exposeFilter.endTime.getTime()-3600*24*30*1000);
-    }
-
-
-    @Override
-    public void setStorageIdentifier(String name)
-    {
+        exposeFilter.paramCodes.add(ObsParam.DISCHARGE);
     }
 }
