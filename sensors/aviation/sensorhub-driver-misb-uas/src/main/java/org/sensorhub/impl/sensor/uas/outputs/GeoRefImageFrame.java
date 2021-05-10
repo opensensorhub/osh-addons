@@ -14,6 +14,8 @@
 package org.sensorhub.impl.sensor.uas.outputs;
 
 import org.sensorhub.impl.sensor.uas.UasSensor;
+import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
+import org.sensorhub.misb.stanag4609.tags.TagSet;
 import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.slf4j.Logger;
@@ -79,68 +81,71 @@ public class GeoRefImageFrame extends UasOutput {
     }
 
     @Override
-    protected void setData(DataBlock dataBlock, int localSetTag, Object value) {
+    protected void setData(DataBlock dataBlock, TagSet localSet, int localSetTag, Object value) {
 
-        switch (localSetTag) {
-
-            case 0x02: // "Precision Time Stamp", "Timestamp for all metadata in this Local Set; used to coordinate with Motion Imagery", "microseconds"
-                dataBlock.setDoubleValue(0, (Double) value);
-                break;
-
-            case 0x10: // "Sensor Horizontal Field of View", "Horizontal field of view of selected imaging sensor", "deg"
-                dataBlock.setDoubleValue(1, (Double) value);
-                break;
-
-            case 0x11: // "Sensor Vertical Field of View", "Vertical field of view of selected imaging sensor", "deg"
-                dataBlock.setDoubleValue(2, (Double) value);
-                break;
-
-            case 0x17: // "Frame Center Latitude", "Terrain latitude of frame center", "deg"
-                dataBlock.setDoubleValue(3, (Double) value);
-                break;
-
-            case 0x18: // "Frame Center Longitude", "Terrain longitude of frame center", "deg"
-                dataBlock.setDoubleValue(4, (Double) value);
-                break;
-
-            case 0x19: // "Frame Center Elevation", "Terrain elevation at frame center relative to Mean Sea Level (MSL)", "m"
-                dataBlock.setDoubleValue(5, (Double) value);
-                break;
-
-            case 0x1A: // "Offset Corner Latitude Point 1", "Frame latitude offset for upper left corner", "deg"
-                dataBlock.setDoubleValue(6, (Double) value);
-                break;
-
-            case 0x1B: // "Offset Corner Longitude Point 1", "Frame longitude offset for upper left corner", "deg"
-                dataBlock.setDoubleValue(7, (Double) value);
-                break;
-
-            case 0x1C: // "Offset Corner Latitude Point 2", "Frame latitude offset for upper right corner", "deg"
-                dataBlock.setDoubleValue(8, (Double) value);
-                break;
-
-            case 0x1D: // "Offset Corner Longitude Point 2", "Frame longitude offset for upper right corner", "deg"
-                dataBlock.setDoubleValue(9, (Double) value);
-                break;
-
-            case 0x1E: // "Offset Corner Latitude Point 3", "Frame latitude offset for lower right corner", "deg"
-                dataBlock.setDoubleValue(10, (Double) value);
-                break;
-
-            case 0x1F: // "Offset Corner Longitude Point 3", "Frame longitude offset for lower right corner", "deg"
-                dataBlock.setDoubleValue(11, (Double) value);
-                break;
-
-            case 0x20: // "Offset Corner Latitude Point 4", "Frame latitude offset for lower left corner", "deg"
-                dataBlock.setDoubleValue(12, (Double) value);
-                break;
-
-            case 0x21: // "Offset Corner Longitude Point 4", "Frame longitude offset for lower left corner", "deg"
-                dataBlock.setDoubleValue(13, (Double) value);
-                break;
-
-            default:
-                break;
+        if (localSet == UasDataLinkSet.UAS_LOCAL_SET) {
+            
+            switch (localSetTag) {
+    
+                case 0x02: // "Precision Time Stamp", "Timestamp for all metadata in this Local Set; used to coordinate with Motion Imagery", "microseconds"
+                    dataBlock.setDoubleValue(0, (Double) value);
+                    break;
+    
+                case 0x10: // "Sensor Horizontal Field of View", "Horizontal field of view of selected imaging sensor", "deg"
+                    dataBlock.setDoubleValue(1, (Double) value);
+                    break;
+    
+                case 0x11: // "Sensor Vertical Field of View", "Vertical field of view of selected imaging sensor", "deg"
+                    dataBlock.setDoubleValue(2, (Double) value);
+                    break;
+    
+                case 0x17: // "Frame Center Latitude", "Terrain latitude of frame center", "deg"
+                    dataBlock.setDoubleValue(3, (Double) value);
+                    break;
+    
+                case 0x18: // "Frame Center Longitude", "Terrain longitude of frame center", "deg"
+                    dataBlock.setDoubleValue(4, (Double) value);
+                    break;
+    
+                case 0x19: // "Frame Center Elevation", "Terrain elevation at frame center relative to Mean Sea Level (MSL)", "m"
+                    dataBlock.setDoubleValue(5, (Double) value);
+                    break;
+    
+                case 0x1A: // "Offset Corner Latitude Point 1", "Frame latitude offset for upper left corner", "deg"
+                    dataBlock.setDoubleValue(6, (Double) value);
+                    break;
+    
+                case 0x1B: // "Offset Corner Longitude Point 1", "Frame longitude offset for upper left corner", "deg"
+                    dataBlock.setDoubleValue(7, (Double) value);
+                    break;
+    
+                case 0x1C: // "Offset Corner Latitude Point 2", "Frame latitude offset for upper right corner", "deg"
+                    dataBlock.setDoubleValue(8, (Double) value);
+                    break;
+    
+                case 0x1D: // "Offset Corner Longitude Point 2", "Frame longitude offset for upper right corner", "deg"
+                    dataBlock.setDoubleValue(9, (Double) value);
+                    break;
+    
+                case 0x1E: // "Offset Corner Latitude Point 3", "Frame latitude offset for lower right corner", "deg"
+                    dataBlock.setDoubleValue(10, (Double) value);
+                    break;
+    
+                case 0x1F: // "Offset Corner Longitude Point 3", "Frame longitude offset for lower right corner", "deg"
+                    dataBlock.setDoubleValue(11, (Double) value);
+                    break;
+    
+                case 0x20: // "Offset Corner Latitude Point 4", "Frame latitude offset for lower left corner", "deg"
+                    dataBlock.setDoubleValue(12, (Double) value);
+                    break;
+    
+                case 0x21: // "Offset Corner Longitude Point 4", "Frame longitude offset for lower left corner", "deg"
+                    dataBlock.setDoubleValue(13, (Double) value);
+                    break;
+    
+                default:
+                    break;
+            }
         }
     }
 

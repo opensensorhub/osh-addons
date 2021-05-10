@@ -16,8 +16,8 @@ package org.sensorhub.impl.sensor.uas.outputs;
 import org.sensorhub.impl.sensor.uas.UasSensor;
 import org.sensorhub.impl.sensor.uas.common.SyncTime;
 import org.sensorhub.impl.sensor.uas.klv.DecodedSetListener;
-import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
 import org.sensorhub.misb.stanag4609.tags.Tag;
+import org.sensorhub.misb.stanag4609.tags.TagSet;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -81,22 +81,11 @@ public abstract class UasOutput extends AbstractSensorOutput<UasSensor> implemen
      * translating the object to the correct form for output.
      *
      * @param dataBlock   The data block onto which the output values are being mapped
+     * @param localSet    The local set that the tag is a member of   
      * @param localSetTag The local set tag id according to which the value is decoded and mapped
      * @param value       The raw value
      */
-    protected abstract void setData(DataBlock dataBlock, int localSetTag, Object value);
-
-    /**
-     * Sets the data block fields in accordance to the Uas Local Set tag and corresponding object
-     * translating the object to the correct form for output.
-     *
-     * @param dataBlock   The data block onto which the output values are being mapped
-     * @param localSetTag The local set tag id according to which the value is decoded and mapped
-     * @param value       The raw value
-     */
-    protected void setSecurityData(DataBlock dataBlock, int localSetTag, Object value) {
-
-    }
+    protected abstract void setData(DataBlock dataBlock, TagSet localSet, int localSetTag, Object value);
 
     /**
      * Publishes the populated SWE Common Data on the event bus
@@ -177,15 +166,7 @@ public abstract class UasOutput extends AbstractSensorOutput<UasSensor> implemen
             Tag tag = entry.getKey();
             int localSetTag = tag.getLocalSetTag();
             Object value = entry.getValue();
-
-            if (tag.getMemberOf() == UasDataLinkSet.UAS_LOCAL_SET) {
-
-                setData(dataBlock, localSetTag, value);
-
-            } else {
-
-                setSecurityData(dataBlock, localSetTag, value);
-            }
+            setData(dataBlock, tag.getMemberOf(), localSetTag, value);
         }
 
         latestRecord = dataBlock;

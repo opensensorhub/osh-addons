@@ -14,6 +14,9 @@
 package org.sensorhub.impl.sensor.uas.outputs;
 
 import org.sensorhub.impl.sensor.uas.UasSensor;
+import org.sensorhub.impl.sensor.uas.klv.SecurityLocalSet;
+import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
+import org.sensorhub.misb.stanag4609.tags.TagSet;
 import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.slf4j.Logger;
@@ -79,16 +82,22 @@ public class Security extends UasOutput {
     }
 
     @Override
-    protected void setData(DataBlock dataBlock, int localSetTag, Object value) {
+    protected void setData(DataBlock dataBlock, TagSet localSet, int localSetTag, Object value) {
 
-        // "Precision Time Stamp", "Timestamp for all metadata in this Local Set; used to coordinate with Motion Imagery", "microseconds"
-        if (0x02 == localSetTag) {
-
-            dataBlock.setDoubleValue(0, (Double) value);
+        if (localSet == UasDataLinkSet.UAS_LOCAL_SET)
+        {
+            // "Precision Time Stamp", "Timestamp for all metadata in this Local Set; used to coordinate with Motion Imagery", "microseconds"
+            if (0x02 == localSetTag) {
+    
+                dataBlock.setDoubleValue(0, (Double) value);
+            }
+        }
+        else if (localSet == SecurityLocalSet.SECURITY_LOCAL_SET)
+        {
+            setSecurityData(dataBlock, localSetTag, value);
         }
     }
 
-    @Override
     protected void setSecurityData(DataBlock dataBlock, int localSetTag, Object value) {
 
         // "Security Local Set", "MISB ST 0102 local let Security Metadata items"
