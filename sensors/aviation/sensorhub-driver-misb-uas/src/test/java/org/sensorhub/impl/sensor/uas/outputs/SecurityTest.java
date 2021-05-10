@@ -23,8 +23,9 @@ import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.vast.data.DataBlockMixed;
-
+import org.vast.swe.SWEHelper;
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 
 import static org.junit.Assert.*;
@@ -38,7 +39,7 @@ public class SecurityTest {
     @Before
     public void init() throws Exception {
 
-        URL resource = getClass().getClassLoader().getResource("sample-stream.ts");
+        URL resource = UasSensor.class.getResource("sample-stream.ts");
         UasConfig config = new UasConfig();
 
         assert resource != null;
@@ -63,13 +64,23 @@ public class SecurityTest {
 
         // register listener on data interface
         IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
+        var dataWriter = SWEHelper.createDataWriter(di.getRecommendedEncoding());
+        dataWriter.setDataComponents(di.getRecordDescription());
+        dataWriter.setOutput(System.out);
 
         IEventListener listener = event -> {
 
             assertTrue(event instanceof DataEvent);
             DataEvent newDataEvent = (DataEvent) event;
 
-            DataBlock dataBlock = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[0];
+            DataBlock dataBlock = ((DataBlockMixed) newDataEvent.getRecords()[0]);
+            try {
+                dataWriter.write(dataBlock);
+                dataWriter.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+                fail("Error writing data");
+            }
 
             assertTrue(dataBlock.getDoubleValue(0) > 0);
 
@@ -78,20 +89,6 @@ public class SecurityTest {
             assertEquals("UNCLASSIFIED", dataBlock.getStringValue(0));
             assertEquals("1", dataBlock.getStringValue(1));
             assertEquals("//US", dataBlock.getStringValue(2));
-            assertNull(dataBlock.getStringValue(3));
-            assertEquals("//FOUO", dataBlock.getStringValue(4));
-            assertEquals("US", dataBlock.getStringValue(5));
-            assertNull(dataBlock.getStringValue(6));
-            assertNull(dataBlock.getStringValue(7));
-            assertNull(dataBlock.getStringValue(8));
-            assertNull(dataBlock.getStringValue(9));
-            assertNull(dataBlock.getStringValue(10));
-            assertNull(dataBlock.getStringValue(11));
-            assertNull(dataBlock.getStringValue(12));
-            assertNull(dataBlock.getStringValue(13));
-            assertEquals("5", dataBlock.getStringValue(14));
-            assertNull(dataBlock.getStringValue(15));
-            assertNull(dataBlock.getStringValue(16));
 
             synchronized (syncObject) {
 

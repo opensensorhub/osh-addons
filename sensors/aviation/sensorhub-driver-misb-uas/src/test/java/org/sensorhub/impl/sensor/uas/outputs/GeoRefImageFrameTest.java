@@ -23,11 +23,13 @@ import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.vast.data.DataBlockMixed;
-
+import org.vast.swe.SWEHelper;
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class GeoRefImageFrameTest {
 
@@ -38,7 +40,7 @@ public class GeoRefImageFrameTest {
     @Before
     public void init() throws Exception {
 
-        URL resource = getClass().getClassLoader().getResource("sample-stream.ts");
+        URL resource = UasSensor.class.getResource("sample-stream.ts");
         UasConfig config = new UasConfig();
 
         assert resource != null;
@@ -63,16 +65,26 @@ public class GeoRefImageFrameTest {
 
         // register listener on data interface
         IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
+        var dataWriter = SWEHelper.createDataWriter(di.getRecommendedEncoding());
+        dataWriter.setDataComponents(di.getRecordDescription().copy());
+        dataWriter.setOutput(System.out);
 
         IEventListener listener = event -> {
 
             assertTrue(event instanceof DataEvent);
             DataEvent newDataEvent = (DataEvent) event;
 
-            DataBlock dataBlock = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[0];
+            DataBlock dataBlock = ((DataBlockMixed) newDataEvent.getRecords()[0]);
+            try {
+                dataWriter.write(dataBlock);
+                dataWriter.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+                fail("Error writing data");
+            }
 
             assertTrue(dataBlock.getDoubleValue(0) > 0);
-
+            
             dataBlock = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[1];
 
             assertTrue(dataBlock.getDoubleValue(0) > 0);
