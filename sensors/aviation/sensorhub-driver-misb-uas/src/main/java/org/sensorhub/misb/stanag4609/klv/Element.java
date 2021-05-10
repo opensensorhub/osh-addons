@@ -161,8 +161,7 @@ public class Element implements JsonPrinter {
                 case UINT: // Variable length
                     long computedValue = 0;
                     for (int idx = 0; idx < value.length; ++idx) {
-
-                        computedValue = computedValue << (idx * 8);
+                        computedValue = computedValue << 8;
                         computedValue += value[idx] & 0x0FF;
                     }
                     result = computedValue;
