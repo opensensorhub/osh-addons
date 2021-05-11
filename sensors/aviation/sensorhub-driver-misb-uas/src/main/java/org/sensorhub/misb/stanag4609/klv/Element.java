@@ -215,12 +215,17 @@ public class Element implements JsonPrinter {
                     result = new String(value, StandardCharsets.UTF_8);
                     break;
                 case SET:
+                case SERIES:
                 case SMPTE_336M:
+                case BINARY:
+                    result = getBytes();
+                    break;
+                case IMAPA:
+                case IMAPB:
                     result = getBytes();
                     break;
                 case DLP:
                 case VLP:
-                case IMAPB:
                 case FLP:
                 case SMPTE_330M:
                     logger.error("Unsupported encoding encountered for tag: {} encoding: {}", tag.getName(), encoding.toString());
