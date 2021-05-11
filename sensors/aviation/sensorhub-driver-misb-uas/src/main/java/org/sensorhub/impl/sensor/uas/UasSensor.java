@@ -157,6 +157,11 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
 
             uasOutputs.add(new Security(this));
         }
+
+        if(config.outputs.enableTargetIndicators) {
+
+            uasOutputs.add(new VmtiOutput(this));
+        }
     }
 
     @Override

@@ -42,6 +42,9 @@ public class Outputs {
     @DisplayInfo(label = "Security", desc = "Security classification information")
     public boolean enableSecurity = false;
 
+    @DisplayInfo(label = "Target Indicators", desc = "Video Moving Target Indicators (VMTI)")
+    public boolean enableTargetIndicators = false;
+
     @DisplayInfo(label = "Video", desc = "Video feed")
     public boolean enableVideo = false;
 }
