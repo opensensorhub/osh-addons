@@ -14,6 +14,8 @@
 package org.sensorhub.impl.sensor.uas.outputs;
 
 import org.sensorhub.impl.sensor.uas.UasSensor;
+import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
+import org.sensorhub.misb.stanag4609.tags.TagSet;
 import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.slf4j.Logger;
@@ -80,24 +82,27 @@ public class Identification extends UasOutput {
     }
 
     @Override
-    protected void setData(DataBlock dataBlock, int localSetTag, Object value) {
+    protected void setData(DataBlock dataBlock, TagSet localSet, int localSetTag, Object value) {
 
-        switch (localSetTag) {
-
-            case 0x02: // "Precision Time Stamp", "Timestamp for all metadata in this Local Set; used to coordinate with Motion Imagery", "microseconds"
-                dataBlock.setDoubleValue(0, (Double) value);
-                break;
-
-            case 0x0A: // "Platform Designation", "Model name for the platform"
-                dataBlock.setStringValue(1, (String) value);
-                break;
-
-            case 0x04: // "Platform Tail Number", "Identifier of platform as posted"
-                dataBlock.setStringValue(2, (String) value);
-                break;
-
-            default:
-                break;
+        if (localSet == UasDataLinkSet.UAS_LOCAL_SET) {
+            
+            switch (localSetTag) {
+    
+                case 0x02: // "Precision Time Stamp", "Timestamp for all metadata in this Local Set; used to coordinate with Motion Imagery", "microseconds"
+                    dataBlock.setDoubleValue(0, (Double) value);
+                    break;
+    
+                case 0x0A: // "Platform Designation", "Model name for the platform"
+                    dataBlock.setStringValue(1, (String) value);
+                    break;
+    
+                case 0x04: // "Platform Tail Number", "Identifier of platform as posted"
+                    dataBlock.setStringValue(2, (String) value);
+                    break;
+    
+                default:
+                    break;
+            }
         }
     }
 

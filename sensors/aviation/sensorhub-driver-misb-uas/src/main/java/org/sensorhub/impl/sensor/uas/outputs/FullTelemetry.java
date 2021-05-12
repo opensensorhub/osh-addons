@@ -14,6 +14,9 @@
 package org.sensorhub.impl.sensor.uas.outputs;
 
 import org.sensorhub.impl.sensor.uas.UasSensor;
+import org.sensorhub.impl.sensor.uas.klv.SecurityLocalSet;
+import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
+import org.sensorhub.misb.stanag4609.tags.TagSet;
 import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.slf4j.Logger;
@@ -91,142 +94,149 @@ public class FullTelemetry extends UasOutput {
     }
 
     @Override
-    protected void setData(DataBlock dataBlock, int localSetTag, Object value) {
+    protected void setData(DataBlock dataBlock, TagSet localSet, int localSetTag, Object value) {
 
-        switch (localSetTag) {
-
-            case 0x01: // "Checksum"
-                break;
-
-            case 0x02: // "Precision Time Stamp", "Timestamp for all metadata in this Local Set; used to coordinate with Motion Imagery", "microseconds"
-                dataBlock.setDoubleValue(0, (Double) value);
-                break;
-
-            case 0x41: // "UAS Datalink LS Version Number", "Version number of the UAS Datalink LS document used to generate KLV metadata"
-                dataBlock.setIntValue(1, (Integer) value);
-                break;
-
-            case 0x0A: // "Platform Designation", "Model name for the platform"
-                dataBlock.setStringValue(2, (String) value);
-                break;
-
-            case 0x30: // "Security Local Set", "MISB ST 0102 local let Security Metadata items"
-                break;
-
-            case 0x04: // "Platform Tail Number", "Identifier of platform as posted"
-                dataBlock.setStringValue(20, (String) value);
-                break;
-
-            case 0x0D: // "Sensor Latitude", "Sensor latitude", "deg"
-                dataBlock.setDoubleValue(21, (Double) value);
-                break;
-
-            case 0x0E: // "Sensor Longitude", "Sensor longitude", "deg"
-                dataBlock.setDoubleValue(22, (Double) value);
-                break;
-
-            case 0x0F: // "Sensor True Altitude", "Altitude of sensor as measured from Mean Sea Level (MSL)", "m"
-                dataBlock.setDoubleValue(23, (Double) value);
-                break;
-
-            case 0x10: // "Sensor Horizontal Field of View", "Horizontal field of view of selected imaging sensor", "deg"
-                dataBlock.setDoubleValue(24, (Double) value);
-                break;
-
-            case 0x11: // "Sensor Vertical Field of View", "Vertical field of view of selected imaging sensor", "deg"
-                dataBlock.setDoubleValue(25, (Double) value);
-                break;
-
-            case 0x17: // "Frame Center Latitude", "Terrain latitude of frame center", "deg"
-                dataBlock.setDoubleValue(26, (Double) value);
-                break;
-
-            case 0x18: // "Frame Center Longitude", "Terrain longitude of frame center", "deg"
-                dataBlock.setDoubleValue(27, (Double) value);
-                break;
-
-            case 0x19: // "Frame Center Elevation", "Terrain elevation at frame center relative to Mean Sea Level (MSL)", "m"
-                dataBlock.setDoubleValue(28, (Double) value);
-                break;
-
-            case 0x1A: // "Offset Corner Latitude Point 1", "Frame latitude offset for upper left corner", "deg"
-                dataBlock.setDoubleValue(29, (Double) value);
-                break;
-
-            case 0x1B: // "Offset Corner Longitude Point 1", "Frame longitude offset for upper left corner", "deg"
-                dataBlock.setDoubleValue(30, (Double) value);
-                break;
-
-            case 0x1C: // "Offset Corner Latitude Point 2", "Frame latitude offset for upper right corner", "deg"
-                dataBlock.setDoubleValue(31, (Double) value);
-                break;
-
-            case 0x1D: // "Offset Corner Longitude Point 2", "Frame longitude offset for upper right corner", "deg"
-                dataBlock.setDoubleValue(32, (Double) value);
-                break;
-
-            case 0x1E: // "Offset Corner Latitude Point 3", "Frame latitude offset for lower right corner", "deg"
-                dataBlock.setDoubleValue(33, (Double) value);
-                break;
-
-            case 0x1F: // "Offset Corner Longitude Point 3", "Frame longitude offset for lower right corner", "deg"
-                dataBlock.setDoubleValue(34, (Double) value);
-                break;
-
-            case 0x20: // "Offset Corner Latitude Point 4", "Frame latitude offset for lower left corner", "deg"
-                dataBlock.setDoubleValue(35, (Double) value);
-                break;
-
-            case 0x21: // "Offset Corner Longitude Point 4", "Frame longitude offset for lower left corner", "deg"
-                dataBlock.setDoubleValue(36, (Double) value);
-                break;
-
-            case 0x0B: // "Image Source Sensor", "Name of currently active sensor"
-                dataBlock.setStringValue(37, (String) value);
-                break;
-
-            case 0x0C: // "Image Coordinate System", "Name of the image coordinate system used"
-                dataBlock.setStringValue(38, (String) value);
-                break;
-
-            case 0x15: // "Slant Range", "Slant range in meters", "m"
-                dataBlock.setDoubleValue(39, (Double) value);
-                break;
-
-            case 0x12: // "Sensor Relative Azimuth Angle", "Relative rotation angle of sensor to platform longitudinal axis", "deg"
-                dataBlock.setDoubleValue(40, (Double) value);
-                break;
-
-            case 0x13: // "Sensor Relative Elevation Angle", "Relative elevation angle of sensor to platform longitudinal-transverse plane", "deg"
-                dataBlock.setDoubleValue(41, (Double) value);
-                break;
-
-            case 0x14: // "Sensor Relative Roll Angle", "Relative roll angle of sensor to aircraft platform", "deg"
-                dataBlock.setDoubleValue(42, (Double) value);
-                break;
-
-            case 0x05: // "Platform Heading Angle", "Aircraft heading angle", "deg"
-                dataBlock.setDoubleValue(43, (Double) value);
-                break;
-
-            case 0x06: // "Platform Pitch Angle", "Aircraft pitch angle", "deg"
-                dataBlock.setDoubleValue(44, (Double) value);
-                break;
-
-            case 0x07: // "Platform Roll Angle", "Platform roll angle", "deg"
-                dataBlock.setDoubleValue(45, (Double) value);
-                break;
-
-            case 0x38: // "Platform Ground Speed", "Speed projected to the ground of an airborne platform passing overhead", "m/s"
-                dataBlock.setIntValue(46, (int) value);
-                break;
-
-            default:
-                break;
+        if (localSet == UasDataLinkSet.UAS_LOCAL_SET) {
+            
+            switch (localSetTag) {
+    
+                case 0x01: // "Checksum"
+                    break;
+    
+                case 0x02: // "Precision Time Stamp", "Timestamp for all metadata in this Local Set; used to coordinate with Motion Imagery", "microseconds"
+                    dataBlock.setDoubleValue(0, (Double) value);
+                    break;
+    
+                case 0x41: // "UAS Datalink LS Version Number", "Version number of the UAS Datalink LS document used to generate KLV metadata"
+                    dataBlock.setIntValue(1, (Integer) value);
+                    break;
+    
+                case 0x0A: // "Platform Designation", "Model name for the platform"
+                    dataBlock.setStringValue(2, (String) value);
+                    break;
+    
+                case 0x30: // "Security Local Set", "MISB ST 0102 local let Security Metadata items"
+                    break;
+    
+                case 0x04: // "Platform Tail Number", "Identifier of platform as posted"
+                    dataBlock.setStringValue(20, (String) value);
+                    break;
+    
+                case 0x0D: // "Sensor Latitude", "Sensor latitude", "deg"
+                    dataBlock.setDoubleValue(21, (Double) value);
+                    break;
+    
+                case 0x0E: // "Sensor Longitude", "Sensor longitude", "deg"
+                    dataBlock.setDoubleValue(22, (Double) value);
+                    break;
+    
+                case 0x0F: // "Sensor True Altitude", "Altitude of sensor as measured from Mean Sea Level (MSL)", "m"
+                    dataBlock.setDoubleValue(23, (Double) value);
+                    break;
+    
+                case 0x10: // "Sensor Horizontal Field of View", "Horizontal field of view of selected imaging sensor", "deg"
+                    dataBlock.setDoubleValue(24, (Double) value);
+                    break;
+    
+                case 0x11: // "Sensor Vertical Field of View", "Vertical field of view of selected imaging sensor", "deg"
+                    dataBlock.setDoubleValue(25, (Double) value);
+                    break;
+    
+                case 0x17: // "Frame Center Latitude", "Terrain latitude of frame center", "deg"
+                    dataBlock.setDoubleValue(26, (Double) value);
+                    break;
+    
+                case 0x18: // "Frame Center Longitude", "Terrain longitude of frame center", "deg"
+                    dataBlock.setDoubleValue(27, (Double) value);
+                    break;
+    
+                case 0x19: // "Frame Center Elevation", "Terrain elevation at frame center relative to Mean Sea Level (MSL)", "m"
+                    dataBlock.setDoubleValue(28, (Double) value);
+                    break;
+    
+                case 0x1A: // "Offset Corner Latitude Point 1", "Frame latitude offset for upper left corner", "deg"
+                    dataBlock.setDoubleValue(29, (Double) value);
+                    break;
+    
+                case 0x1B: // "Offset Corner Longitude Point 1", "Frame longitude offset for upper left corner", "deg"
+                    dataBlock.setDoubleValue(30, (Double) value);
+                    break;
+    
+                case 0x1C: // "Offset Corner Latitude Point 2", "Frame latitude offset for upper right corner", "deg"
+                    dataBlock.setDoubleValue(31, (Double) value);
+                    break;
+    
+                case 0x1D: // "Offset Corner Longitude Point 2", "Frame longitude offset for upper right corner", "deg"
+                    dataBlock.setDoubleValue(32, (Double) value);
+                    break;
+    
+                case 0x1E: // "Offset Corner Latitude Point 3", "Frame latitude offset for lower right corner", "deg"
+                    dataBlock.setDoubleValue(33, (Double) value);
+                    break;
+    
+                case 0x1F: // "Offset Corner Longitude Point 3", "Frame longitude offset for lower right corner", "deg"
+                    dataBlock.setDoubleValue(34, (Double) value);
+                    break;
+    
+                case 0x20: // "Offset Corner Latitude Point 4", "Frame latitude offset for lower left corner", "deg"
+                    dataBlock.setDoubleValue(35, (Double) value);
+                    break;
+    
+                case 0x21: // "Offset Corner Longitude Point 4", "Frame longitude offset for lower left corner", "deg"
+                    dataBlock.setDoubleValue(36, (Double) value);
+                    break;
+    
+                case 0x0B: // "Image Source Sensor", "Name of currently active sensor"
+                    dataBlock.setStringValue(37, (String) value);
+                    break;
+    
+                case 0x0C: // "Image Coordinate System", "Name of the image coordinate system used"
+                    dataBlock.setStringValue(38, (String) value);
+                    break;
+    
+                case 0x15: // "Slant Range", "Slant range in meters", "m"
+                    dataBlock.setDoubleValue(39, (Double) value);
+                    break;
+    
+                case 0x12: // "Sensor Relative Azimuth Angle", "Relative rotation angle of sensor to platform longitudinal axis", "deg"
+                    dataBlock.setDoubleValue(40, (Double) value);
+                    break;
+    
+                case 0x13: // "Sensor Relative Elevation Angle", "Relative elevation angle of sensor to platform longitudinal-transverse plane", "deg"
+                    dataBlock.setDoubleValue(41, (Double) value);
+                    break;
+    
+                case 0x14: // "Sensor Relative Roll Angle", "Relative roll angle of sensor to aircraft platform", "deg"
+                    dataBlock.setDoubleValue(42, (Double) value);
+                    break;
+    
+                case 0x05: // "Platform Heading Angle", "Aircraft heading angle", "deg"
+                    dataBlock.setDoubleValue(43, (Double) value);
+                    break;
+    
+                case 0x06: // "Platform Pitch Angle", "Aircraft pitch angle", "deg"
+                    dataBlock.setDoubleValue(44, (Double) value);
+                    break;
+    
+                case 0x07: // "Platform Roll Angle", "Platform roll angle", "deg"
+                    dataBlock.setDoubleValue(45, (Double) value);
+                    break;
+    
+                case 0x38: // "Platform Ground Speed", "Speed projected to the ground of an airborne platform passing overhead", "m/s"
+                    dataBlock.setIntValue(46, (int) value);
+                    break;
+    
+                default:
+                    break;
+            }
+        }
+        else if (localSet == SecurityLocalSet.SECURITY_LOCAL_SET)
+        {
+            setSecurityData(dataBlock, localSetTag, value);
         }
     }
 
-    @Override
+
     protected void setSecurityData(DataBlock dataBlock, int localSetTag, Object value) {
 
         // "Security Local Set", "MISB ST 0102 local let Security Metadata items"

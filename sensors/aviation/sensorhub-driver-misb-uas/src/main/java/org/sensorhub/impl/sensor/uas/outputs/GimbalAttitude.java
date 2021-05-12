@@ -14,6 +14,8 @@
 package org.sensorhub.impl.sensor.uas.outputs;
 
 import org.sensorhub.impl.sensor.uas.UasSensor;
+import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
+import org.sensorhub.misb.stanag4609.tags.TagSet;
 import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.slf4j.Logger;
@@ -79,28 +81,31 @@ public class GimbalAttitude extends UasOutput {
     }
 
     @Override
-    protected void setData(DataBlock dataBlock, int localSetTag, Object value) {
+    protected void setData(DataBlock dataBlock, TagSet localSet, int localSetTag, Object value) {
 
-        switch (localSetTag) {
-
-            case 0x02: // "Precision Time Stamp", "Timestamp for all metadata in this Local Set; used to coordinate with Motion Imagery", "microseconds"
-                dataBlock.setDoubleValue(0, (Double) value);
-                break;
-
-            case 0x12: // "Sensor Relative Azimuth Angle", "Relative rotation angle of sensor to platform longitudinal axis", "deg"
-                dataBlock.setDoubleValue(1, (Double) value);
-                break;
-
-            case 0x13: // "Sensor Relative Elevation Angle", "Relative elevation angle of sensor to platform longitudinal-transverse plane", "deg"
-                dataBlock.setDoubleValue(2, (Double) value);
-                break;
-
-            case 0x14: // "Sensor Relative Roll Angle", "Relative roll angle of sensor to aircraft platform", "deg"
-                dataBlock.setDoubleValue(3, (Double) value);
-                break;
-
-            default:
-                break;
+        if (localSet == UasDataLinkSet.UAS_LOCAL_SET) {
+            
+            switch (localSetTag) {
+    
+                case 0x02: // "Precision Time Stamp", "Timestamp for all metadata in this Local Set; used to coordinate with Motion Imagery", "microseconds"
+                    dataBlock.setDoubleValue(0, (Double) value);
+                    break;
+    
+                case 0x12: // "Sensor Relative Azimuth Angle", "Relative rotation angle of sensor to platform longitudinal axis", "deg"
+                    dataBlock.setDoubleValue(1, (Double) value);
+                    break;
+    
+                case 0x13: // "Sensor Relative Elevation Angle", "Relative elevation angle of sensor to platform longitudinal-transverse plane", "deg"
+                    dataBlock.setDoubleValue(2, (Double) value);
+                    break;
+    
+                case 0x14: // "Sensor Relative Roll Angle", "Relative roll angle of sensor to aircraft platform", "deg"
+                    dataBlock.setDoubleValue(3, (Double) value);
+                    break;
+    
+                default:
+                    break;
+            }
         }
     }
 

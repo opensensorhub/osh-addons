@@ -440,9 +440,14 @@ public class UasDataLinkSet extends AbstractDataSet {
                     case 0x07: // "Platform Roll Angle", "Platform roll angle", "deg"
                         valuesMap.put(tag, convertToDouble((short) value, 100.0, 65534.0, 0.0));
                         break;
+                        
+                    case 0x4A: // "Video Moving Target Indicator and Track Metadata", "MISB ST 0903.4 local let VMTI Metadata items"
+                        AbstractDataSet vmtiSet = new VmtiLocalSet(((byte[]) value).length, (byte[]) value);
+                        valuesMap.putAll(vmtiSet.decode());
+                        break;
 
                     default:
-                        logger.error("Invalid tag: {}", tag.getLocalSetTag());
+                        logger.error("Unsupported tag: {}", tag.getLocalSetTag());
                         break;
                 }
 

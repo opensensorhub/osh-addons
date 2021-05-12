@@ -43,6 +43,8 @@ import static org.junit.Assert.*;
  */
 public class MpegTsProcessorTest {
 
+    static final String TEST_MPEGTS_FILE = "src/test/resources/org/sensorhub/impl/sensor/uas/sample-stream.ts";
+    
     @Test
     public void testOpenStreamFails() {
 
@@ -54,8 +56,7 @@ public class MpegTsProcessorTest {
     @Test
     public void testOpenStreamFilePath() {
 
-        MpegTsProcessor mpegTsProcessor =
-                new MpegTsProcessor("src/test/resources/sample-stream.ts");
+        MpegTsProcessor mpegTsProcessor = new MpegTsProcessor(TEST_MPEGTS_FILE);
 
         assertTrue(mpegTsProcessor.openStream());
 
@@ -65,7 +66,7 @@ public class MpegTsProcessorTest {
     @Test
     public void testQueryStreams() {
 
-        MpegTsProcessor mpegTsProcessor = new MpegTsProcessor("src/test/resources/sample-stream.ts");
+        MpegTsProcessor mpegTsProcessor = new MpegTsProcessor(TEST_MPEGTS_FILE);
 
         assertTrue(mpegTsProcessor.openStream());
 
@@ -81,7 +82,7 @@ public class MpegTsProcessorTest {
     @Test
     public void testGetVideoFrameDimensions() {
 
-        MpegTsProcessor mpegTsProcessor = new MpegTsProcessor("src/test/resources/sample-stream.ts");
+        MpegTsProcessor mpegTsProcessor = new MpegTsProcessor(TEST_MPEGTS_FILE);
 
         mpegTsProcessor.openStream();
 
@@ -93,7 +94,7 @@ public class MpegTsProcessorTest {
 
             assertEquals(2, dimensions.length);
 
-            assertEquals(720, dimensions[0]);
+            assertEquals(640, dimensions[0]);
 
             assertEquals(480, dimensions[1]);
 
@@ -108,7 +109,7 @@ public class MpegTsProcessorTest {
     @Test
     public void testGetVideoAvgFrameRate() {
 
-        MpegTsProcessor mpegTsProcessor = new MpegTsProcessor("src/test/resources/sample-stream.ts");
+        MpegTsProcessor mpegTsProcessor = new MpegTsProcessor(TEST_MPEGTS_FILE);
 
         mpegTsProcessor.openStream();
 
@@ -133,7 +134,7 @@ public class MpegTsProcessorTest {
 
         final int SLEEP_30_S = 30000;
 
-        MpegTsProcessor mpegTsProcessor = new MpegTsProcessor("src/test/resources/sample-stream.ts");
+        MpegTsProcessor mpegTsProcessor = new MpegTsProcessor(TEST_MPEGTS_FILE);
 
         mpegTsProcessor.openStream();
 
@@ -181,11 +182,12 @@ public class MpegTsProcessorTest {
 
         final int SLEEP_30_S = 30000;
         final JFrame window = new JFrame();
-        window.setSize(720, 480);
+        window.setSize(640, 480);
         window.setVisible(true);
+        window.setResizable(false);
 
         MpegTsProcessor mpegTsProcessor =
-                new MpegTsProcessor("src/test/resources/sample-stream.ts");
+                new MpegTsProcessor(TEST_MPEGTS_FILE);
 
         mpegTsProcessor.openStream();
 
@@ -197,7 +199,7 @@ public class MpegTsProcessorTest {
 
                 try {
                     MappedH264ES es = new MappedH264ES(NIOUtils.from(ByteBuffer.wrap(dataBufferRecord.getDataBuffer()), 0));
-                    Picture out = Picture.create(720, 480, ColorSpace.YUV420);
+                    Picture out = Picture.create(640, 480, ColorSpace.YUV420);
                     H264Decoder decoder = new H264Decoder();
                     Packet packet;
 
@@ -250,7 +252,7 @@ public class MpegTsProcessorTest {
         final int SLEEP_30_S = 30000;
 
         MpegTsProcessor mpegTsProcessor =
-                new MpegTsProcessor("src/test/resources/sample-stream.ts");
+                new MpegTsProcessor(TEST_MPEGTS_FILE);
 
         mpegTsProcessor.openStream();
 

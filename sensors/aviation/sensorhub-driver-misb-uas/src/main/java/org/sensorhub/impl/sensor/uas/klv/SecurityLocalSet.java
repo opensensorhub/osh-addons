@@ -136,6 +136,7 @@ public class SecurityLocalSet extends AbstractDataSet {
                         break;
 
                     case 0x02: // Classifying Country and Releasing Instructions Country Coding Method
+                    case 0x0C: // Object Country Coding Method
                     case 0x16: // Version
                         valuesMap.put(tag, String.valueOf((int) value));
                         break;
@@ -149,7 +150,6 @@ public class SecurityLocalSet extends AbstractDataSet {
                     case 0x09: // Classification Reason
                     case 0x0A: // Declassification Date
                     case 0x0B: // Classification and Marking System
-                    case 0x0C: // Object Country Coding Method
                     case 0x0D: // Object Country Codes
                     case 0x0E: // Classification Comments
                     case 0x17: // Classifying Country and Releasing Instructions Country Coding Method Version Date

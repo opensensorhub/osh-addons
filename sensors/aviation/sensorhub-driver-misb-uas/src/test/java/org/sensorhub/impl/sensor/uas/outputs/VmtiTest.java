@@ -15,6 +15,9 @@ package org.sensorhub.impl.sensor.uas.outputs;
 
 import org.sensorhub.impl.sensor.uas.UasSensor;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
+import org.vast.data.DataBlockList;
+import org.vast.data.DataBlockMixed;
+import org.vast.swe.SWEHelper;
 import net.opengis.swe.v20.DataBlock;
 import org.junit.After;
 import org.junit.Before;
@@ -22,15 +25,16 @@ import org.junit.Test;
 import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
-import org.vast.data.DataBlockMixed;
-import org.vast.swe.SWEHelper;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.concurrent.atomic.AtomicInteger;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import static org.junit.Assert.*;
-
-public class SecurityTest {
+public class VmtiTest {
 
     private UasSensor driver = null;
 
@@ -39,12 +43,12 @@ public class SecurityTest {
     @Before
     public void init() throws Exception {
 
-        URL resource = UasSensor.class.getResource("sample-stream.ts");
+        URL resource = UasSensor.class.getResource("sample-stream-original.ts");
         UasConfig config = new UasConfig();
 
         assert resource != null;
         config.connection.transportStreamPath = new File(resource.toURI()).getPath();
-        config.outputs.enableSecurity = true;
+        config.outputs.enableTargetIndicators = true;
 
         driver = new UasSensor();
         driver.setConfiguration(config);
@@ -58,7 +62,7 @@ public class SecurityTest {
     }
 
     @Test
-    public void testSecurity() throws Exception {
+    public void testVmti() throws Exception {
 
         driver.start();
 
@@ -68,12 +72,13 @@ public class SecurityTest {
         dataWriter.setDataComponents(di.getRecordDescription());
         dataWriter.setOutput(System.out);
 
+        AtomicInteger count = new AtomicInteger();
         IEventListener listener = event -> {
 
             assertTrue(event instanceof DataEvent);
             DataEvent newDataEvent = (DataEvent) event;
 
-            DataBlock dataBlock = ((DataBlockMixed) newDataEvent.getRecords()[0]);
+            DataBlock dataBlock = newDataEvent.getRecords()[0];
             try {
                 dataWriter.write(dataBlock);
                 dataWriter.flush();
@@ -81,18 +86,36 @@ public class SecurityTest {
                 e.printStackTrace();
                 fail("Error writing data");
             }
-
-            assertTrue(dataBlock.getDoubleValue(0) > 0);
-
-            dataBlock = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[1];
-
-            assertEquals("UNCLASSIFIED", dataBlock.getStringValue(0));
-            assertEquals("1", dataBlock.getStringValue(1));
-            assertEquals("//US", dataBlock.getStringValue(2));
-
-            synchronized (syncObject) {
-
-                syncObject.notify();
+            
+            try {
+                assertTrue(dataBlock.getDoubleValue(0) > 0); // time stamp
+                
+                var frameNum = dataBlock.getIntValue(1);
+                var numTargets = dataBlock.getIntValue(2);
+                assertTrue(frameNum >= 0);
+                assertTrue(numTargets >= 0);
+                
+                if (frameNum > 0 && numTargets > 0) {
+                    var targetSeries = (DataBlockList) ((DataBlockMixed)dataBlock).getUnderlyingObject()[3];
+                    assertEquals(numTargets, targetSeries.getListSize());
+                    
+                    for (int i=0; i<targetSeries.getListSize(); i++) {
+                        var targetData = targetSeries.get(i);
+                        
+                        int targetID = targetData.getIntValue(0);
+                        assertTrue(targetID > 0);
+                        
+                        int centroidX = targetData.getIntValue(1);
+                        int centroidY = targetData.getIntValue(2);
+                        assertTrue(centroidX >= 0 && centroidX < 640);
+                        assertTrue(centroidY >= 0 && centroidY < 480);
+                    }
+                }
+            } finally {
+                synchronized (syncObject) {
+                    if (count.incrementAndGet() > 1000)
+                        syncObject.notify();
+                }
             }
         };
 

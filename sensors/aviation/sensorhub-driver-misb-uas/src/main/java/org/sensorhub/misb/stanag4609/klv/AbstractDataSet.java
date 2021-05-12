@@ -15,7 +15,6 @@ package org.sensorhub.misb.stanag4609.klv;
 
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagSet;
-
 import java.time.Instant;
 import java.util.HashMap;
 
@@ -161,7 +160,7 @@ public abstract class AbstractDataSet {
 
         return (localSetRange / fieldMaxRange) * value + offset;
     }
-
+    
     /**
      * Converts the value passed in as a long integer to a time in milliseconds since epoch ( Jan 1, 1970)
      *

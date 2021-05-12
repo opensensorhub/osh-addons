@@ -31,6 +31,7 @@ import com.google.gson.JsonObject;
 public enum Encoding implements JsonPrinter {
 
     NONE("None"),
+    BINARY("binary"),
     BYTE("byte", 1),
     UINT("uint"),
     UINT8("uint8", 1),
@@ -48,8 +49,10 @@ public enum Encoding implements JsonPrinter {
     ISO_IEC_646_YYYY_MM_DD("ISO/IEC 646 Date", 10),
     RFC_2781("RFC 2781"),
     SET("set"),
+    SERIES("series"),
     DLP("defined length pack"),
     VLP("variable length pack"),
+    IMAPA("IMAPA"),
     IMAPB("IMAPB"),
     FLP("FLP"),
     SMPTE_330M("SMPTE 330M", 32),

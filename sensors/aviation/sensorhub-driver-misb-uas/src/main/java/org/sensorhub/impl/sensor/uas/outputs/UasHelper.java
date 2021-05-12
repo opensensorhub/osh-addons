@@ -30,6 +30,9 @@ public class UasHelper extends GeoPosHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(UasHelper.class);
 
+    public static final String MISB_DEF_ROOT = SWEConstants.SML_ONTOLOGY_ROOT + "misb/";
+    
+    
     public Quantity createPlatformGroundSpeed() {
 
         return createQuantity()
