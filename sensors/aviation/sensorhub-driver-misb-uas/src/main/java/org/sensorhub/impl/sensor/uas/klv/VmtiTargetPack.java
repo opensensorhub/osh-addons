@@ -16,6 +16,7 @@ package org.sensorhub.impl.sensor.uas.klv;
 import org.sensorhub.misb.stanag4609.klv.AbstractDataSet;
 import org.sensorhub.misb.stanag4609.klv.AbstractSeries;
 import org.sensorhub.misb.stanag4609.klv.Element;
+import org.sensorhub.misb.stanag4609.klv.ImapB;
 import org.sensorhub.misb.stanag4609.tags.Encoding;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagRegistry;
@@ -35,10 +36,13 @@ import java.util.LinkedHashMap;
  */
 public class VmtiTargetPack extends AbstractDataSet {
 
-    private static final Logger logger = LoggerFactory.getLogger(VmtiTargetPack.class);
-
     public static final TagSet VTARGET_PACK_LOCAL_SET = new TagSet("-", "VTarget Pack Local Set Dictionary", "Local Label");
-       
+    
+    private static final Logger logger = LoggerFactory.getLogger(VmtiTargetPack.class);
+    
+    private static final ImapB LOC_OFFSET_IMAPB_FUNC = new ImapB(-19.2, 19.2, 3);
+    private static final ImapB HAE_IMAPB_FUNC = new ImapB(-900, 19000, 2);
+    
     
     public static class Series extends AbstractSeries {
 
@@ -156,12 +160,12 @@ public class VmtiTargetPack extends AbstractDataSet {
                     case 14: // Boundary Top Left Lon Offset
                     case 15: // Boundary Bottom Right Lat Offset
                     case 16: // Boundary Bottom Right Lon Offset
-                        var offsetDeg = reverse_imapb(-19.2, 19.2, 3, (byte[])value);
+                        var offsetDeg = LOC_OFFSET_IMAPB_FUNC.intToDouble((byte[])value);
                         valuesMap.put(tag, offsetDeg);
                         break;
                         
                     case 12: // Target Hae
-                        var hae = reverse_imapb(-900, 19000, 2, (byte[])value);
+                        var hae = HAE_IMAPB_FUNC.intToDouble((byte[])value);
                         valuesMap.put(tag, hae);
                         break;
                         

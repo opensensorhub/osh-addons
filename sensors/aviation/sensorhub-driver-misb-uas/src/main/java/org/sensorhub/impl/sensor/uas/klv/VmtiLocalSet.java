@@ -15,6 +15,7 @@ package org.sensorhub.impl.sensor.uas.klv;
 
 import org.sensorhub.misb.stanag4609.klv.AbstractDataSet;
 import org.sensorhub.misb.stanag4609.klv.Element;
+import org.sensorhub.misb.stanag4609.klv.ImapB;
 import org.sensorhub.misb.stanag4609.tags.Encoding;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagRegistry;
@@ -33,9 +34,11 @@ import java.util.LinkedHashMap;
  */
 public class VmtiLocalSet extends AbstractDataSet {
 
-    private static final Logger logger = LoggerFactory.getLogger(VmtiLocalSet.class);
-
     public static final TagSet VMTI_LOCAL_SET = new TagSet("06 0E 2B 34 02 0B 01 01 0E 01 03 03 06 00 00 00", "VMTI Local Set Dictionary", "Universal Label");
+    
+    private static final Logger logger = LoggerFactory.getLogger(VmtiLocalSet.class);
+    
+    private static final ImapB FOV_IMAPB_FUNC = new ImapB(0, 180, 2);
     
     
     private int numTargets;
@@ -127,7 +130,7 @@ public class VmtiLocalSet extends AbstractDataSet {
                         
                     case 11: // VMTI Horizontal FOV
                     case 12: // VMTI Horizontal FOV
-                        var fov = reverse_imapb(0, 180, 2, (byte[])value);
+                        var fov = FOV_IMAPB_FUNC.intToDouble((byte[])value);
                         valuesMap.put(tag, fov);
                         break;
                         

@@ -15,7 +15,6 @@ package org.sensorhub.misb.stanag4609.klv;
 
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagSet;
-import java.math.BigInteger;
 import java.time.Instant;
 import java.util.HashMap;
 
@@ -162,33 +161,6 @@ public abstract class AbstractDataSet {
         return (localSetRange / fieldMaxRange) * value + offset;
     }
     
-    /**
-     * Converts the unsigned integer value passed as byte[] to floating point representation
-     * using the IMAPB algorithm defined in MISB ST 1201
-     * @param min min parameter value
-     * @param max max parameter value
-     * @param len known uint length
-     * @param data unsigned integer data
-     * @return double value of parameter after mapping
-     */
-    protected double reverse_imapb(double min, double max, int len, byte[] data) {
-        
-        var a = min;
-        var b = max;
-        var bPow = Math.ceil(log2(b-a));
-        var dPow = 8*len-1;
-        var sR = Math.pow(2, bPow-dPow);
-        var zOff = (a < 0 && b > 0.0) ? a/sR - Math.floor(a/sR) : 0.0;
-        
-        var y = new BigInteger(1, data).doubleValue(); // int value is always positive
-        return sR * (y - zOff) + min;
-    }
-    
-    static double LOG2_BASE = Math.log(2);
-    protected double log2(double val) {
-        return Math.log(val) / LOG2_BASE;
-    }
-
     /**
      * Converts the value passed in as a long integer to a time in milliseconds since epoch ( Jan 1, 1970)
      *

@@ -15,28 +15,10 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.misb.stanag4609.klv;
 
 import static org.junit.Assert.assertEquals;
-import java.util.HashMap;
 import org.junit.Test;
-import org.sensorhub.misb.stanag4609.tags.Tag;
 
 
-/**
- * <p>
- * Unit test suite for common methods in AbstractDataSet
- * </p>
- *
- * @author Alex Robin
- * @since May 11, 2021
- */
-public class AbstractDataSetTest
-{
-    class TestDataSet extends AbstractDataSet {
-        @Override
-        public HashMap<Tag, Object> decode()
-        {
-            return null;
-        }            
-    }    
+public class ImapBTest {
     
     /*
      * Test IMAPB conversion using examples from MISB ST 903.5 spec
@@ -44,19 +26,23 @@ public class AbstractDataSetTest
     @Test
     public void testImapb() {
         
-        var dataSet = new TestDataSet();
         double dval;
+        ImapB imapb;
         
-        dval = dataSet.reverse_imapb(0, 180, 2, new byte[] {0x06, 0x40});
+        imapb = new ImapB(0, 180, 2);
+        dval = imapb.intToDouble(new byte[] {0x06, 0x40});
         assertEquals(12.5, dval, 1e-8);
                 
-        dval = dataSet.reverse_imapb(-19.2, 19.2, 3, new byte[] {0x3A, 0x66, 0x67});
+        imapb = new ImapB(-19.2, 19.2, 3);
+        dval = imapb.intToDouble(new byte[] {0x3A, 0x66, 0x67});
         assertEquals(10.0, dval, 1e-8);
         
-        dval = dataSet.reverse_imapb(-19.2, 19.2, 3, new byte[] {0x3E, 0x66, 0x67});
+        imapb = new ImapB(-19.2, 19.2, 3);
+        dval = imapb.intToDouble(new byte[] {0x3E, 0x66, 0x67});
         assertEquals(12.0, dval, 1e-8);
         
-        dval = dataSet.reverse_imapb(-900., 19000, 2, new byte[] {0x2A, (byte)0x94});
+        imapb = new ImapB(-900., 19000, 2);
+        dval = imapb.intToDouble(new byte[] {0x2A, (byte)0x94});
         assertEquals(10000.0, dval, 1e-8);
     }
 }
