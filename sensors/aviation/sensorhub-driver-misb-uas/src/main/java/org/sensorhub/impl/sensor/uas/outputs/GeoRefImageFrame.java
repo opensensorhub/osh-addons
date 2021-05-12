@@ -111,35 +111,35 @@ public class GeoRefImageFrame extends UasOutput {
                     dataBlock.setDoubleValue(5, (Double) value);
                     break;
     
-                case 0x1A: // "Offset Corner Latitude Point 1", "Frame latitude offset for upper left corner", "deg"
+                case 0x1A: // "Offset Corner Latitude Point 1", "Frame latitude offset for upper right corner", "deg"
                     dataBlock.setDoubleValue(6, (Double) value);
                     break;
     
-                case 0x1B: // "Offset Corner Longitude Point 1", "Frame longitude offset for upper left corner", "deg"
+                case 0x1B: // "Offset Corner Longitude Point 1", "Frame longitude offset for upper right corner", "deg"
                     dataBlock.setDoubleValue(7, (Double) value);
                     break;
     
-                case 0x1C: // "Offset Corner Latitude Point 2", "Frame latitude offset for upper right corner", "deg"
+                case 0x1C: // "Offset Corner Latitude Point 2", "Frame latitude offset for lower right corner", "deg"
                     dataBlock.setDoubleValue(8, (Double) value);
                     break;
     
-                case 0x1D: // "Offset Corner Longitude Point 2", "Frame longitude offset for upper right corner", "deg"
+                case 0x1D: // "Offset Corner Longitude Point 2", "Frame longitude offset for lower right corner", "deg"
                     dataBlock.setDoubleValue(9, (Double) value);
                     break;
     
-                case 0x1E: // "Offset Corner Latitude Point 3", "Frame latitude offset for lower right corner", "deg"
+                case 0x1E: // "Offset Corner Latitude Point 3", "Frame latitude offset for lower left corner", "deg"
                     dataBlock.setDoubleValue(10, (Double) value);
                     break;
     
-                case 0x1F: // "Offset Corner Longitude Point 3", "Frame longitude offset for lower right corner", "deg"
+                case 0x1F: // "Offset Corner Longitude Point 3", "Frame longitude offset for lower left corner", "deg"
                     dataBlock.setDoubleValue(11, (Double) value);
                     break;
     
-                case 0x20: // "Offset Corner Latitude Point 4", "Frame latitude offset for lower left corner", "deg"
+                case 0x20: // "Offset Corner Latitude Point 4", "Frame latitude offset for upper left corner", "deg"
                     dataBlock.setDoubleValue(12, (Double) value);
                     break;
     
-                case 0x21: // "Offset Corner Longitude Point 4", "Frame longitude offset for lower left corner", "deg"
+                case 0x21: // "Offset Corner Longitude Point 4", "Frame longitude offset for upper left corner", "deg"
                     dataBlock.setDoubleValue(13, (Double) value);
                     break;
     

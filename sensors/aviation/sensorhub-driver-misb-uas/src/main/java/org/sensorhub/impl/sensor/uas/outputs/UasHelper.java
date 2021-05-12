@@ -103,14 +103,14 @@ public class UasHelper extends GeoPosHelper {
                         .definition(SWEHelper.getPropertyUri("FrameCenterElevation"))
                         .uomCode("m")
                         .build())
-                .addField("ulc",
-                        newLocationVectorLatLon(SWEHelper.getPropertyUri("FrameUpperLeftCorner")))
                 .addField("urc",
                         newLocationVectorLatLon(SWEHelper.getPropertyUri("FrameUpperRightCorner")))
-                .addField("llc",
-                        newLocationVectorLatLon(SWEHelper.getPropertyUri("FrameLowerLeftCorner")))
                 .addField("lrc",
                         newLocationVectorLatLon(SWEHelper.getPropertyUri("FrameLowerRightCorner")))
+                .addField("llc",
+                        newLocationVectorLatLon(SWEHelper.getPropertyUri("FrameLowerLeftCorner")))
+                .addField("ulc",
+                        newLocationVectorLatLon(SWEHelper.getPropertyUri("FrameUpperLeftCorner")))
                 .build();
     }
 
