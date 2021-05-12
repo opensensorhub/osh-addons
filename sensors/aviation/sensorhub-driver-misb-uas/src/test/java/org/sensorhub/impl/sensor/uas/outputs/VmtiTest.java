@@ -15,6 +15,8 @@ package org.sensorhub.impl.sensor.uas.outputs;
 
 import org.sensorhub.impl.sensor.uas.UasSensor;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
+import org.vast.data.DataBlockList;
+import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEHelper;
 import net.opengis.swe.v20.DataBlock;
 import org.junit.After;
@@ -27,7 +29,8 @@ import org.sensorhub.api.data.DataEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-
+import java.util.concurrent.atomic.AtomicInteger;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -69,6 +72,7 @@ public class VmtiTest {
         dataWriter.setDataComponents(di.getRecordDescription());
         dataWriter.setOutput(System.out);
 
+        AtomicInteger count = new AtomicInteger();
         IEventListener listener = event -> {
 
             assertTrue(event instanceof DataEvent);
@@ -84,16 +88,33 @@ public class VmtiTest {
             }
             
             try {
-                assertTrue(dataBlock.getDoubleValue(0) > 0);
-                /*assertTrue(dataBlock.getDoubleValue(1) >= -90 && dataBlock.getDoubleValue(1) <= 90);
-                assertTrue(dataBlock.getDoubleValue(2) >= -180 && dataBlock.getDoubleValue(2) <= 180);
-                assertTrue(dataBlock.getDoubleValue(3) >= Double.MIN_VALUE && dataBlock.getDoubleValue(3) <= Double.MAX_VALUE);
-                assertTrue(dataBlock.getDoubleValue(4) >= 0 && dataBlock.getDoubleValue(4) <= 360);
-                assertTrue(dataBlock.getDoubleValue(5) >= -90 && dataBlock.getDoubleValue(5) <= 90);
-                assertTrue(dataBlock.getDoubleValue(6) >= -180 && dataBlock.getDoubleValue(6) <= 180);*/
+                assertTrue(dataBlock.getDoubleValue(0) > 0); // time stamp
+                
+                var frameNum = dataBlock.getIntValue(1);
+                var numTargets = dataBlock.getIntValue(2);
+                assertTrue(frameNum >= 0);
+                assertTrue(numTargets >= 0);
+                
+                if (frameNum > 0 && numTargets > 0) {
+                    var targetSeries = (DataBlockList) ((DataBlockMixed)dataBlock).getUnderlyingObject()[3];
+                    assertEquals(numTargets, targetSeries.getListSize());
+                    
+                    for (int i=0; i<targetSeries.getListSize(); i++) {
+                        var targetData = targetSeries.get(i);
+                        
+                        int targetID = targetData.getIntValue(0);
+                        assertTrue(targetID > 0);
+                        
+                        int centroidX = targetData.getIntValue(1);
+                        int centroidY = targetData.getIntValue(2);
+                        assertTrue(centroidX >= 0 && centroidX < 640);
+                        assertTrue(centroidY >= 0 && centroidY < 480);
+                    }
+                }
             } finally {
                 synchronized (syncObject) {
-                    //syncObject.notify();
+                    if (count.incrementAndGet() > 1000)
+                        syncObject.notify();
                 }
             }
         };
