@@ -59,8 +59,13 @@ public class STAServlet extends ServletV1P0
         if (authError != null)
         {
             response.reset();
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.getWriter().print(authError.getMessage());
+            if (request.getRemoteUser() != null)
+            {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.getWriter().print(authError.getMessage());
+            }
+            else
+                request.authenticate(response);
         }
     }
         

@@ -23,6 +23,14 @@ import org.sensorhub.impl.security.ModulePermissions;
 
 public class STASecurity extends ModuleSecurity
 {    
+    private static final String NAME_THING = "things";
+    private static final String NAME_SENSOR = "sensors";
+    private static final String NAME_OBSPROP = "obsprops";
+    private static final String NAME_DATASTREAM = "datastreams";
+    private static final String NAME_FOI = "fois";
+    private static final String NAME_OBS = "obs";
+    private static final String NAME_LOCATION = "locations";
+    
     private static final String LABEL_THING = "Things";
     private static final String LABEL_SENSOR = "Sensors";
     private static final String LABEL_OBSPROP = "Observed Properties";
@@ -69,44 +77,44 @@ public class STASecurity extends ModuleSecurity
     
     public STASecurity(STAService service, boolean enable)
     {
-        super(service, "sta", enable);
+        super(service, "stapi", enable);
         
         // register permission structure
         sta_read = new ItemPermission(rootPerm, "get");
-        sta_read_thing = new ItemPermission(sta_read, "thing", LABEL_THING);
-        sta_read_sensor = new ItemPermission(sta_read, "sensor", LABEL_SENSOR);
-        sta_read_obsprop = new ItemPermission(sta_read, "obsprop", LABEL_OBSPROP);
-        sta_read_datastream = new ItemPermission(sta_read, "datastream", LABEL_DATASTREAM);
-        sta_read_foi = new ItemPermission(sta_read, "foi", LABEL_FOI);
-        sta_read_obs = new ItemPermission(sta_read, "obs", LABEL_OBS);
-        sta_read_location = new ItemPermission(sta_read, "location", LABEL_LOCATION);
+        sta_read_thing = new ItemPermission(sta_read, NAME_THING, LABEL_THING);
+        sta_read_sensor = new ItemPermission(sta_read, NAME_SENSOR, LABEL_SENSOR);
+        sta_read_obsprop = new ItemPermission(sta_read, NAME_OBSPROP, LABEL_OBSPROP);
+        sta_read_datastream = new ItemPermission(sta_read, NAME_DATASTREAM, LABEL_DATASTREAM);
+        sta_read_foi = new ItemPermission(sta_read, NAME_FOI, LABEL_FOI);
+        sta_read_obs = new ItemPermission(sta_read, NAME_OBS, LABEL_OBS);
+        sta_read_location = new ItemPermission(sta_read, NAME_LOCATION, LABEL_LOCATION);
         
         sta_insert = new ItemPermission(rootPerm, "create");
-        sta_insert_thing = new ItemPermission(sta_insert, "thing", LABEL_THING);
-        sta_insert_sensor = new ItemPermission(sta_insert, "sensor", LABEL_SENSOR);
-        sta_insert_obsprop = new ItemPermission(sta_insert, "obsprop", LABEL_OBSPROP);
-        sta_insert_datastream = new ItemPermission(sta_insert, "datastream", LABEL_DATASTREAM);
-        sta_insert_foi = new ItemPermission(sta_insert, "foi", LABEL_FOI);
-        sta_insert_obs = new ItemPermission(sta_insert, "obs", LABEL_OBS);
-        sta_insert_location = new ItemPermission(sta_insert, "location", LABEL_LOCATION);
+        sta_insert_thing = new ItemPermission(sta_insert, NAME_THING, LABEL_THING);
+        sta_insert_sensor = new ItemPermission(sta_insert, NAME_SENSOR, LABEL_SENSOR);
+        sta_insert_obsprop = new ItemPermission(sta_insert, NAME_OBSPROP, LABEL_OBSPROP);
+        sta_insert_datastream = new ItemPermission(sta_insert, NAME_DATASTREAM, LABEL_DATASTREAM);
+        sta_insert_foi = new ItemPermission(sta_insert, NAME_FOI, LABEL_FOI);
+        sta_insert_obs = new ItemPermission(sta_insert, NAME_OBS, LABEL_OBS);
+        sta_insert_location = new ItemPermission(sta_insert, NAME_LOCATION, LABEL_LOCATION);
         
         sta_update = new ItemPermission(rootPerm, "update");
-        sta_update_thing = new ItemPermission(sta_update, "thing", LABEL_THING);
-        sta_update_sensor = new ItemPermission(sta_update, "sensor", LABEL_SENSOR);
-        sta_update_obsprop = new ItemPermission(sta_update, "obsprop", LABEL_OBSPROP);
-        sta_update_datastream = new ItemPermission(sta_update, "datastream", LABEL_DATASTREAM);
-        sta_update_foi = new ItemPermission(sta_update, "foi", LABEL_FOI);
+        sta_update_thing = new ItemPermission(sta_update, NAME_THING, LABEL_THING);
+        sta_update_sensor = new ItemPermission(sta_update, NAME_SENSOR, LABEL_SENSOR);
+        sta_update_obsprop = new ItemPermission(sta_update, NAME_OBSPROP, LABEL_OBSPROP);
+        sta_update_datastream = new ItemPermission(sta_update, NAME_DATASTREAM, LABEL_DATASTREAM);
+        sta_update_foi = new ItemPermission(sta_update, NAME_FOI, LABEL_FOI);
         sta_update_obs = new ItemPermission(sta_update, "obs", LABEL_OBS);
-        sta_update_location = new ItemPermission(sta_update, "location", LABEL_LOCATION);
+        sta_update_location = new ItemPermission(sta_update, NAME_LOCATION, LABEL_LOCATION);
         
         sta_delete = new ItemPermission(rootPerm, "delete");
-        sta_delete_thing = new ItemPermission(sta_delete, "thing", LABEL_THING);
-        sta_delete_sensor = new ItemPermission(sta_delete, "sensor", LABEL_SENSOR);
-        sta_delete_obsprop = new ItemPermission(sta_delete, "obsprop", LABEL_OBSPROP);
-        sta_delete_datastream = new ItemPermission(sta_delete, "datastream", LABEL_DATASTREAM);
-        sta_delete_foi = new ItemPermission(sta_delete, "foi", LABEL_FOI);
-        sta_delete_obs = new ItemPermission(sta_delete, "obs", LABEL_OBS);
-        sta_delete_location = new ItemPermission(sta_delete, "location", LABEL_LOCATION);
+        sta_delete_thing = new ItemPermission(sta_delete, NAME_THING, LABEL_THING);
+        sta_delete_sensor = new ItemPermission(sta_delete, NAME_SENSOR, LABEL_SENSOR);
+        sta_delete_obsprop = new ItemPermission(sta_delete, NAME_OBSPROP, LABEL_OBSPROP);
+        sta_delete_datastream = new ItemPermission(sta_delete, NAME_DATASTREAM, LABEL_DATASTREAM);
+        sta_delete_foi = new ItemPermission(sta_delete, NAME_FOI, LABEL_FOI);
+        sta_delete_obs = new ItemPermission(sta_delete, NAME_OBS, LABEL_OBS);
+        sta_delete_location = new ItemPermission(sta_delete, NAME_LOCATION, LABEL_LOCATION);
         
         // register wildcard permission tree usable for all SOS services
         // do it at this point so we don't include specific offering permissions

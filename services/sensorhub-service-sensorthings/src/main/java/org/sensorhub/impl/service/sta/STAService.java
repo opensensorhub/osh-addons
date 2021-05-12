@@ -188,10 +188,11 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
 
         // deploy ourself to HTTP server
         var endpoint = config.endPoint + "/v1.0/";
-        httpServer.deployServlet(servlet, endpoint + "*");
+        var wildcardEndpoint = endpoint + "*";
+        httpServer.deployServlet(servlet, wildcardEndpoint);
+        httpServer.addServletSecurity(wildcardEndpoint, config.security.requireAuth);
         var coreSettings = new CoreSettings(staSettings);
         servlet.getServletContext().setAttribute(TAG_CORE_SETTINGS, coreSettings);
-        httpServer.addServletSecurity(config.endPoint, config.security.requireAuth);
         
         // also enable MQTT extension if an MQTT server is available
         getParentHub().getModuleRegistry().waitForModuleType(IMqttServer.class, ModuleState.STARTED)
