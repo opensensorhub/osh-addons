@@ -333,7 +333,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     {
         SWEHelper fac = new SWEHelper();
 
-        var rec = fac.createDataRecord()
+        var rec = fac.createRecord()
             .name(SWEDataUtils.toNCName(abstractDs.getName()))
             .label(abstractDs.getName())
             .description(abstractDs.getDescription())
@@ -407,7 +407,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         else if (IObservation.OBS_TYPE_COUNT.equals(obsType))
             comp = fac.createCount();
         else if (IObservation.OBS_TYPE_RECORD.equals(obsType))
-            comp = fac.createDataRecord();
+            comp = fac.createRecord();
 
         if (comp != null)
         {

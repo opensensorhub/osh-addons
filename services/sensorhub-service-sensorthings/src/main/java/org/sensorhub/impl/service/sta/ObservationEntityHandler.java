@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import org.joda.time.DateTimeZone;
 import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.obs.ObsFilter;
-import org.sensorhub.api.datastore.obs.ObsKey;
 import org.sensorhub.api.event.IEventPublisher;
 import org.sensorhub.api.feature.FeatureId;
 import org.sensorhub.api.obs.IDataStreamInfo;
@@ -474,14 +473,6 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         // TODO also check that current user has the right to read this entity!
 
         return pm.dataStreamHandler.isDatastreamVisible(obsData.getDataStreamID());
-    }
-
-
-    protected boolean isDatastreamVisible(ObsKey publicKey)
-    {
-        // TODO also check that current user has the right to read this entity!
-
-        return pm.dataStreamHandler.isDatastreamVisible(publicKey.getDataStreamID());
     }
     
     
