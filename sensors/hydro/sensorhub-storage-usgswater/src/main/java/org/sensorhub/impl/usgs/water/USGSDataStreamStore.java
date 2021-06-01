@@ -96,6 +96,18 @@ public class USGSDataStreamStore extends ReadOnlyDataStore<DataStreamKey, IDataS
     @Override
     public Stream<Entry<DataStreamKey, IDataStreamInfo>> selectEntries(DataStreamFilter filter, Set<DataStreamInfoField> fields)
     {
+        // check if USGS procedures are selected
+        if (filter.getProcedureFilter() != null)
+        {
+            var uniqueIDs = filter.getProcedureFilter().getUniqueIDs();
+            if (uniqueIDs != null && !uniqueIDs.contains(USGSWaterDataArchive.UID_PREFIX + "network"))
+                return Stream.empty();
+            
+            var internalIDs = filter.getProcedureFilter().getInternalIDs();
+            if (internalIDs != null && !internalIDs.contains(1L))
+                return Stream.empty();
+        }        
+        
         // convert datastream filter to USGS filter
         var queryFilter = FilterUtils.from(filter);
         
