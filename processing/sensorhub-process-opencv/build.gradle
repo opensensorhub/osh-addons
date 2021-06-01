@@ -1,6 +1,6 @@
-description = 'JavaCV processing components'
-ext.details = 'Computer vision and image processing components based on the JavaCV platform'
-version = '1.5.5'
+description = 'OpenCV processing components'
+ext.details = 'Computer vision and image processing components based on the OpenCV platform'
+version = '4.5.1'
 
 
 dependencies {
@@ -15,7 +15,7 @@ dependencies {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.impl.service.sos.video.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.process.cv')
     attributes('-fixupmessages': 'Classes found in the wrong directory; is:=ignore')
     attributes('-exportcontents': 'org.bytedeco.opencv.*, org.opencv.*')
   }
