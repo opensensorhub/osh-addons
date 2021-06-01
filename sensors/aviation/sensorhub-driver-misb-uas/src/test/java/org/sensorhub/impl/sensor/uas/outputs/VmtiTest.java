@@ -43,7 +43,7 @@ public class VmtiTest {
     @Before
     public void init() throws Exception {
 
-        URL resource = UasSensor.class.getResource("sample-stream-original.ts");
+        URL resource = UasSensor.class.getResource("sample-stream.ts");
         UasConfig config = new UasConfig();
 
         assert resource != null;
@@ -113,7 +113,7 @@ public class VmtiTest {
                 }
             } finally {
                 synchronized (syncObject) {
-                    if (count.incrementAndGet() > 1000)
+                    if (count.incrementAndGet() > 200)
                         syncObject.notify();
                 }
             }

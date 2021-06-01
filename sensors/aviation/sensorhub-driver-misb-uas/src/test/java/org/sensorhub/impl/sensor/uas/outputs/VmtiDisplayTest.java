@@ -27,27 +27,14 @@ import org.bytedeco.ffmpeg.avutil.AVFrame;
 import org.bytedeco.ffmpeg.swscale.SwsContext;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
-import org.jcodec.codecs.h264.H264Decoder;
-import org.jcodec.codecs.h264.MappedH264ES;
-import org.jcodec.common.NIOUtils;
-import org.jcodec.common.model.ColorSpace;
-import org.jcodec.common.model.Packet;
-import org.jcodec.common.model.Picture;
-import org.jcodec.scale.AWTUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
-import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.util.TreeMap;
 import javax.swing.JFrame;
 import static org.bytedeco.ffmpeg.global.avcodec.av_init_packet;
@@ -55,7 +42,6 @@ import static org.bytedeco.ffmpeg.global.avcodec.av_packet_alloc;
 import static org.bytedeco.ffmpeg.global.avcodec.av_packet_unref;
 import static org.bytedeco.ffmpeg.global.avcodec.avcodec_alloc_context3;
 import static org.bytedeco.ffmpeg.global.avcodec.avcodec_find_decoder_by_name;
-import static org.bytedeco.ffmpeg.global.avcodec.avcodec_find_encoder_by_name;
 import static org.bytedeco.ffmpeg.global.avcodec.avcodec_open2;
 import static org.bytedeco.ffmpeg.global.avcodec.avcodec_receive_frame;
 import static org.bytedeco.ffmpeg.global.avcodec.avcodec_send_packet;
@@ -66,8 +52,6 @@ import static org.bytedeco.ffmpeg.global.avutil.av_image_alloc;
 import static org.bytedeco.ffmpeg.global.swscale.SWS_BICUBIC;
 import static org.bytedeco.ffmpeg.global.swscale.sws_getContext;
 import static org.bytedeco.ffmpeg.global.swscale.sws_scale;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class VmtiDisplayTest {
 
@@ -83,7 +67,7 @@ public class VmtiDisplayTest {
         window.setResizable(false);
         var graphicCtx = window.getContentPane().getGraphics();
                 
-        URL resource = UasSensor.class.getResource("sample-stream-original.ts");
+        URL resource = UasSensor.class.getResource("sample-stream.ts");
         UasConfig config = new UasConfig();
 
         assert resource != null;
