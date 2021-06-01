@@ -1,0 +1,35 @@
+description = 'JavaCV processing components'
+ext.details = 'Computer vision and image processing components based on the JavaCV platform'
+version = '1.5.5'
+
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-process-ffmpeg')
+  embeddedApi('org.bytedeco:opencv-platform:4.5.1-1.5.5') {
+    exclude group: 'org.bytedeco', module: 'javacpp'
+  }
+}
+
+// add info to OSGi manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.service.sos.video.Activator')
+    attributes('-fixupmessages': 'Classes found in the wrong directory; is:=ignore')
+    attributes('-exportcontents': 'org.bytedeco.opencv.*, org.opencv.*')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com' 
+    }
+  }
+}
+
