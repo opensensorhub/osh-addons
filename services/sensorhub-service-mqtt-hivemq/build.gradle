@@ -2,18 +2,25 @@ description = 'MQTT Server (HiveMQ)'
 ext.details = 'Implementation of MQTT client/server API using HiveMQ'
 version = '0.1.0'
 
-  
+
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  implementation 'org.sensorhub:sensorhub-datastore-h2:' + oshCoreVersion
-  //embeddedImpl 'com.hivemq:hivemq-community-edition-embeddedImpl:2021.1'
+  implementation project(':sensorhub-comm-mqtt')
+  embeddedImpl 'org.eclipse.jetty:jetty-util:9.4.19.v20190610'
+  embeddedImpl('com.hivemq:hivemq-community-edition-embedded:2021.1') {
+    exclude group: 'org.rocksdb', module: 'rocksdbjni'
+    exclude group: 'ch.qos.logback', module: 'logback-classic'
+    exclude group: 'com.google.guava', module: 'guava'
+    exclude group: 'com.hivemq', module: 'hivemq-extension-sdk'
+  }
+  embeddedImpl 'com.hivemq:hivemq-extension-sdk:4.6.1'
 }
 
 // add info to OSGi manifest
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.impl.service:hivemq:Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.service.hivemq.Activator')
   }
 }
 
