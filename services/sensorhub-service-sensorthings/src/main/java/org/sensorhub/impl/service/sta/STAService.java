@@ -195,14 +195,17 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
         servlet.getServletContext().setAttribute(TAG_CORE_SETTINGS, coreSettings);
         
         // also enable MQTT extension if an MQTT server is available
-        getParentHub().getModuleRegistry().waitForModuleType(IMqttServer.class, ModuleState.STARTED)
-            .thenAccept(mqtt -> {
-                if (mqtt != null && config.enableMqtt)
-                {
-                    mqtt.registerHandler(endpoint, new STAMqttConnector(this, endpoint, coreSettings));
-                    getLogger().info("SensorThings MQTT handler registered");
-                }
-            });
+        if (config.enableMqtt)
+        {
+            getParentHub().getModuleRegistry().waitForModuleType(IMqttServer.class, ModuleState.STARTED)
+                .thenAccept(mqtt -> {
+                    if (mqtt != null)
+                    {
+                        mqtt.registerHandler(endpoint, new STAMqttConnector(this, endpoint, coreSettings));
+                        getLogger().info("SensorThings MQTT handler registered");
+                    }
+                });
+        }
     }
 
 

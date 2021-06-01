@@ -14,6 +14,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
+import java.util.concurrent.Flow.Subscriber;
 import com.github.fge.jsonpatch.JsonPatch;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.EntitySet;
@@ -57,6 +58,10 @@ public interface IResourceHandler<T extends Entity>
     
     
     public EntitySet<?> queryCollection(ResourcePath path, Query q);
+    
+    
+    //public default void subscribeToEntity(ResourceId id, Query q, Subscriber<T> subscriber) {}
+    public default void subscribeToCollection(ResourcePath path, Query q, Subscriber<T> subscriber) {}
     
     
     public default ResourcePath getParentPath(ResourcePath path)

@@ -15,10 +15,12 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sta;
 
 import java.math.BigInteger;
+import java.security.AccessControlException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Flow.Subscriber;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.joda.time.DateTimeZone;
@@ -29,7 +31,10 @@ import org.sensorhub.api.feature.FeatureId;
 import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.api.obs.IObsData;
 import org.sensorhub.api.obs.ObsData;
+import org.sensorhub.api.obs.ObsEvent;
+import org.sensorhub.impl.event.DelegatingSubscriberAdapter;
 import org.sensorhub.impl.procedure.DataStreamTransactionHandler;
+import org.sensorhub.impl.procedure.ProcedureSubscriptionHandler;
 import org.sensorhub.impl.service.sta.filter.ObsFilterVisitor;
 import org.vast.data.DataBlockDouble;
 import org.vast.data.DataBlockInt;
@@ -247,6 +252,33 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
 
         return FrostUtils.handlePaging(entitySet, path, q, limit);
     }
+    
+    
+    @Override
+    public void subscribeToCollection(ResourcePath path, Query q, Subscriber<Observation> subscriber)
+    {
+        securityHandler.checkPermission(securityHandler.sta_read_obs);
+        
+        // create obs filter
+        ObsFilter filter = getFilter(path, q);
+        
+        // subscribe for obs using filter
+        var eventHelper = new ProcedureSubscriptionHandler(pm.readDatabase, pm.eventBus);
+        var ok = eventHelper.subscribe(filter, new DelegatingSubscriberAdapter<ObsEvent, Observation>(subscriber) {
+            public void onNext(ObsEvent item)
+            {
+                for (var obs: item.getObservations())
+                {
+                    var staObs = toFrostObservation(BigInteger.ONE, obs, q);
+                    subscriber.onNext(staObs);
+                }
+            }           
+        });
+        
+        // if subscribe failed, it means topic was not available
+        if (!ok)
+            throw new AccessControlException("Resource unavailable: " + path);
+    }
 
 
     public Predicate<Entry<BigInteger, IObsData>> getDatastreamVisiblePredicate()
@@ -372,7 +404,8 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         Observation obs = new Observation();
 
         // composite ID
-        obs.setId(new ResourceIdBigInt(truncateIds ? truncatePublicId(key) : key));
+        if (key != null)
+            obs.setId(new ResourceIdBigInt(truncateIds ? truncatePublicId(key) : key));
 
         // phenomenon time
         obs.setPhenomenonTime(TimeInstant.create(obsData.getPhenomenonTime().toEpochMilli(), DateTimeZone.UTC));

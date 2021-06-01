@@ -47,7 +47,8 @@ import de.fraunhofer.iosb.ilt.frostserver.query.expression.function.temporal.Mee
 
 public abstract class EntityFilterVisitor<T extends EntityFilterVisitor<T>> implements BaseExpressionVisitor<T>
 {    
-    protected Map<String, Class<? extends ExpressionVisitor<?>>> propTypes = new HashMap<>();
+    @SuppressWarnings("rawtypes")
+    protected Map<String, Class<? extends ExpressionVisitor>> propTypes = new HashMap<>();
         
     
     /*

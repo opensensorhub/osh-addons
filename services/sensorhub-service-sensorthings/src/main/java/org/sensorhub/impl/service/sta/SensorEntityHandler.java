@@ -14,9 +14,11 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
+import java.security.AccessControlException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.Flow.Subscriber;
 import java.util.stream.Collectors;
 import org.isotc211.v2005.gmd.CIOnlineResource;
 import org.isotc211.v2005.gmd.impl.GMDFactory;
@@ -28,7 +30,12 @@ import org.sensorhub.api.datastore.procedure.IProcedureStore;
 import org.sensorhub.api.datastore.procedure.ProcedureFilter;
 import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.api.procedure.IProcedureWithDesc;
+import org.sensorhub.api.procedure.ProcedureAddedEvent;
+import org.sensorhub.api.procedure.ProcedureChangedEvent;
+import org.sensorhub.api.procedure.ProcedureEvent;
 import org.sensorhub.api.procedure.ProcedureId;
+import org.sensorhub.impl.event.DelegatingSubscriberAdapter;
+import org.sensorhub.impl.procedure.ProcedureSubscriptionHandler;
 import org.sensorhub.impl.procedure.wrapper.ProcedureWrapper;
 import org.sensorhub.impl.service.sta.filter.SensorFilterVisitor;
 import org.sensorhub.utils.SWEDataUtils;
@@ -261,6 +268,37 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
             .collect(Collectors.toCollection(EntitySetImpl::new));
 
         return FrostUtils.handlePaging(entitySet, path, q, limit);
+    }
+    
+    
+    @Override
+    public void subscribeToCollection(ResourcePath path, Query q, Subscriber<Sensor> subscriber)
+    {
+        securityHandler.checkPermission(securityHandler.sta_read_obs);
+        
+        // create obs filter
+        ProcedureFilter filter = getFilter(path, q);
+        
+        // subscribe for obs using filter
+        var eventHelper = new ProcedureSubscriptionHandler(pm.readDatabase, pm.eventBus);
+        var ok = eventHelper.subscribe(filter, new DelegatingSubscriberAdapter<ProcedureEvent, Sensor>(subscriber) {
+            public void onNext(ProcedureEvent item)
+            {
+                if (item instanceof ProcedureAddedEvent || item instanceof ProcedureChangedEvent)
+                {
+                    var proc = procReadStore.getCurrentVersion(item.getProcedureUID());
+                    if (proc != null)
+                    {
+                        var staSensor = toFrostSensor(1, proc, q);
+                        subscriber.onNext(staSensor);
+                    }
+                }
+            }           
+        });
+        
+        // if subscribe failed, it means topic was not available
+        if (!ok)
+            throw new AccessControlException("Resource unavailable: " + path);
     }
 
 
