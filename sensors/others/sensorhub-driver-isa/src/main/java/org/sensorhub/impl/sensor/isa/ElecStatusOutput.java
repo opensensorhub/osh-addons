@@ -1,5 +1,6 @@
 package org.sensorhub.impl.sensor.isa;
 
+import org.sensorhub.api.data.DataEvent;
 import org.vast.swe.SWEConstants;
 
 
@@ -41,8 +42,38 @@ public class ElecStatusOutput extends ISAOutput
     }
     
     
+    @Override
+    public double getAverageSamplingPeriod()
+    {
+        return 60.;
+    }
+
+
+    protected long nextRecordTime = Long.MIN_VALUE;
     protected void sendRandomMeasurement()
     {
+        var now = System.currentTimeMillis();
+        if (nextRecordTime > now)
+            return;
         
+        var dataBlk = dataStruct.createDataBlock();
+        
+        // simulate discharging battery
+        var dischargeStep = 2;
+        var prevCapacity = latestRecord != null ? latestRecord.getDoubleValue(3) : 100;
+        var newCapacity = prevCapacity > dischargeStep ? prevCapacity - dischargeStep : 99;
+        var timeLeft = Math.round(newCapacity / dischargeStep * getAverageSamplingPeriod());
+        
+        int i = 0;
+        dataBlk.setDoubleValue(i++, ((double)now)/1000.);
+        dataBlk.setDoubleValue(i++, 12); // voltage
+        dataBlk.setDoubleValue(i++, 0.25); // current
+        dataBlk.setDoubleValue(i++, newCapacity); // capacity
+        dataBlk.setDoubleValue(i++, timeLeft); // time_to_empty
+        
+        nextRecordTime = now + (long)(getAverageSamplingPeriod()*1000);
+        latestRecordTime = now;
+        latestRecord = dataBlk;
+        eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlk));
     }
 }

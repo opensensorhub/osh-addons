@@ -1,5 +1,6 @@
 package org.sensorhub.impl.sensor.isa;
 
+import org.sensorhub.api.data.DataEvent;
 import org.vast.swe.SWEConstants;
 
 
@@ -50,8 +51,34 @@ public class RadioStatusOutput extends ISAOutput
     }
     
     
+    @Override
+    public double getAverageSamplingPeriod()
+    {
+        return 20.;
+    }
+
+
+    protected long nextRecordTime = Long.MIN_VALUE;
     protected void sendRandomMeasurement()
     {
+        var now = System.currentTimeMillis();
+        if (nextRecordTime > now)
+            return;
         
+        var dataBlk = dataStruct.createDataBlock();
+        
+        int i = 0;
+        dataBlk.setDoubleValue(i++, ((double)now)/1000.);
+        dataBlk.setDoubleValue(i++, Double.NaN); // link loss
+        dataBlk.setBooleanValue(i++, Math.random() > 0.1); // link state
+        dataBlk.setDoubleValue(i++, 2600); // range
+        dataBlk.setDoubleValue(i++, -30 + Math.random()*10); // receive power
+        dataBlk.setDoubleValue(i++, Double.NaN); // signal strength
+        dataBlk.setDoubleValue(i++, 22); // transmit power
+        
+        nextRecordTime = now + (long)(getAverageSamplingPeriod()*1000);
+        latestRecordTime = now;
+        latestRecord = dataBlk;
+        eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlk));
     }
 }
