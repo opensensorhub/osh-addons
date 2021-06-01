@@ -454,6 +454,9 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     {
         switch (data.getDataType(index))
         {
+            case BOOLEAN:
+                return data.getBooleanValue(index);
+                
             case DOUBLE:
             case FLOAT:
                 return data.getDoubleValue(index);
