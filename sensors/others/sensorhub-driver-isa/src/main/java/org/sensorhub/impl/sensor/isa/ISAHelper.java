@@ -21,8 +21,17 @@ import org.vast.swe.SWEConstants;
 
 public class ISAHelper extends SMLHelper
 {
-    public static final String ISA_DEF_URI_BASE = "http://sensorml.com/ont/isa/property/";
-    public static final String MMI_CF_DEF_URI_BASE = "https://mmisw.org/ont/cf/parameter/";
+    private static final String ISA_DEF_URI_BASE = "http://sensorml.com/ont/isa/property/";
+    
+    
+    /*
+     * Generate a definition URI resolving to the ISA ontology.
+     * See http://sensorml.com/ont/isa/property for registered terms
+     */        
+    public static String getIsaUri(String concept)
+    {
+        return ISA_DEF_URI_BASE + concept;
+    }
     
     
     QuantityBuilder errorField(String uom)

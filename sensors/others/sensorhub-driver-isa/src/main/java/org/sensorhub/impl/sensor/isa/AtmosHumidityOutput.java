@@ -13,11 +13,11 @@ public class AtmosHumidityOutput extends ISAOutput
         // output structure
         dataStruct = isa.createRecord()
             .name(this.name)
-            .definition(ISAHelper.ISA_DEF_URI_BASE + "Atmospheric_Humidity")
+            .definition(ISAHelper.getCfUri("Atmospheric_Humidity"))
             .label("Atmospheric Humidity")
             .addSamplingTimeIsoUTC("time")
             .addField("value", isa.createQuantity()
-                .definition(ISAHelper.MMI_CF_DEF_URI_BASE + "relative_humidity")
+                .definition(ISAHelper.getCfUri("relative_humidity"))
                 .description("Amount of moisture in the atmosphere expressed in percentage of humidity.")
                 .uomCode("%"))
             .addField("error", isa.errorField("%"))

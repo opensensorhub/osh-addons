@@ -13,11 +13,11 @@ public class AtmosTempOutput extends ISAOutput
         // output structure
         dataStruct = isa.createRecord()
             .name(this.name)
-            .definition(ISAHelper.ISA_DEF_URI_BASE + "Atmospheric_Temperature")
+            .definition(ISAHelper.getIsaUri("Atmospheric_Temperature"))
             .label("Atmospheric Temperature")
             .addSamplingTimeIsoUTC("time")
             .addField("value", isa.createQuantity()
-                .definition(ISAHelper.MMI_CF_DEF_URI_BASE + "air_temperature")
+                .definition(ISAHelper.getCfUri("air_temperature"))
                 .description("Temperature measurement in degrees Celsius.")
                 .uomCode("Cel"))
             .addField("error", isa.errorField("Cel"))

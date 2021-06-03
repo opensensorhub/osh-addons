@@ -13,11 +13,11 @@ public class AtmosPressureOutput extends ISAOutput
         // output structure
         dataStruct = isa.createRecord()
             .name(this.name)
-            .definition(ISAHelper.ISA_DEF_URI_BASE + "Atmospheric_Pressure")
+            .definition(ISAHelper.getIsaUri("Atmospheric_Pressure"))
             .label("Atmospheric Pressure")
             .addSamplingTimeIsoUTC("time")
             .addField("value", isa.createQuantity()
-                .definition(ISAHelper.MMI_CF_DEF_URI_BASE + "air_pressure")
+                .definition(ISAHelper.getCfUri("air_pressure"))
                 .description("The measurement of the force per unit area in pascals (newtons per square meter).")
                 .uomCode("Pa"))
             .addField("error", isa.errorField("Pa"))
