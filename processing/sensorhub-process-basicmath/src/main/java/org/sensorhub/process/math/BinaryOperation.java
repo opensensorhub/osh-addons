@@ -15,7 +15,8 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.process.math;
 
 import java.util.Arrays;
-import net.opengis.swe.v20.AllowedTokens;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Text;
 import org.sensorhub.api.processing.OSHProcessInfo;
@@ -51,23 +52,37 @@ public class BinaryOperation extends ExecutableProcessImpl
         SWEHelper sweHelper = new SWEHelper();
     	
     	// inputs
-        operand1 = sweHelper.newQuantity(SWEConstants.DEF_DN, "Operand1", null, SWEConstants.UOM_ANY);
+        operand1 = sweHelper.createQuantity()
+            .definition(SWEConstants.DEF_DN)
+            .label("Operand1")
+            .uomUri(SWEConstants.UOM_ANY)
+            .build();
         inputData.add("operand1", operand1);
         
-        operand2 = sweHelper.newQuantity(SWEConstants.DEF_DN, "Operand2", null, SWEConstants.UOM_ANY);
+        operand2 = sweHelper.createQuantity()
+            .definition(SWEConstants.DEF_DN)
+            .label("Operand2")
+            .uomUri(SWEConstants.UOM_ANY)
+            .build();
         inputData.add("operand2", operand2);
         
         // parameters
-        operator = sweHelper.newText(SWEHelper.getPropertyUri("Operator"), "Operator", null);
-        AllowedTokens operatorList = sweHelper.newAllowedTokens();
-        for (OperatorEnum op: OperatorEnum.values())
-            operatorList.addValue(op.toString());
-        operator.setConstraint(operatorList);
+        operator = sweHelper.createText()
+            .definition(SWEHelper.getPropertyUri("Operator"))
+            .label("Operator")
+            .addAllowedValues(Stream.of(OperatorEnum.values())
+                .map(e -> e.toString())
+                .collect(Collectors.toList()))
+            .build();
         operator.assignNewDataBlock();
         paramData.add("operator", operator);
         
         // outputs
-        result = sweHelper.newQuantity(SWEConstants.DEF_DN, "Result", null, SWEConstants.UOM_ANY);
+        result = sweHelper.createQuantity()
+            .definition(SWEConstants.DEF_DN)
+            .label("Result")
+            .uomUri(SWEConstants.UOM_ANY)
+            .build();
         outputData.add("result", result);
     }
 

@@ -15,7 +15,8 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.process.math;
 
 import java.util.Arrays;
-import net.opengis.swe.v20.AllowedTokens;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.opengis.swe.v20.Boolean;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Text;
@@ -50,28 +51,52 @@ public class CompareOperation extends ExecutableProcessImpl
     {
     	super(INFO);
         SWEHelper sweHelper = new SWEHelper();
-    	
-    	// inputs
-    	value = sweHelper.newQuantity(SWEConstants.DEF_DN, "Value", null, SWEConstants.UOM_ANY);
-        inputData.add("value", value);        
-        threshold = sweHelper.newQuantity(SWEConstants.DEF_DN, "Threshold", null, SWEConstants.UOM_ANY);
+        
+        // inputs
+        value = sweHelper.createQuantity()
+            .definition(SWEConstants.DEF_DN)
+            .label("Value")
+            .uomUri(SWEConstants.UOM_ANY)
+            .build();
+        inputData.add("value", value);
+        
+        threshold = sweHelper.createQuantity()
+            .definition(SWEConstants.DEF_DN)
+            .label("Threshold")
+            .uomUri(SWEConstants.UOM_ANY)
+            .build();
         inputData.add("threshold", threshold);
         
         // parameters
-        operator = sweHelper.newText(SWEHelper.getPropertyUri("Operator"), "Operator", null);
-        AllowedTokens operatorList = sweHelper.newAllowedTokens();
-        for (OperatorEnum op: OperatorEnum.values())
-            operatorList.addValue(op.toString());
-        operator.setConstraint(operatorList);
+        operator = sweHelper.createText()
+            .definition(SWEHelper.getPropertyUri("Operator"))
+            .label("Operator")
+            .addAllowedValues(Stream.of(OperatorEnum.values())
+                .map(e -> e.toString())
+                .collect(Collectors.toList()))
+            .build();
         operator.assignNewDataBlock();
         paramData.add("operator", operator);
         
         // outputs
-        result = sweHelper.newBoolean(SWEConstants.DEF_FLAG, "Comparison Result", null);
+        result = sweHelper.createBoolean()
+            .definition(SWEConstants.DEF_FLAG)
+            .label("Comparison Result")
+            .build();
         outputData.add("result", result);
-        outputIfTrue = sweHelper.newQuantity(SWEConstants.DEF_DN, "True Output", null, SWEConstants.UOM_ANY);
+                
+        outputIfTrue = sweHelper.createQuantity()
+            .definition(SWEConstants.DEF_DN)
+            .label("True Output")
+            .uomUri(SWEConstants.UOM_ANY)
+            .build();
         outputData.add("outputIfTrue", outputIfTrue);
-        outputIfFalse = sweHelper.newQuantity(SWEConstants.DEF_DN, "False Output", null, SWEConstants.UOM_ANY);
+        
+        outputIfFalse = sweHelper.createQuantity()
+            .definition(SWEConstants.DEF_DN)
+            .label("False Output")
+            .uomUri(SWEConstants.UOM_ANY)
+            .build();
         outputData.add("outputIfFalse", outputIfFalse);
     }
 
