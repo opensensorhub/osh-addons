@@ -1,5 +1,5 @@
-description = 'UAS Sensor'
-ext.details = "Driver for UAS system providing video and telemetry based on STANAG 4609"
+description = 'MISB UAS Sensors'
+ext.details = "Driver for UAS system providing video and telemetry based on MISB ST 0601 / STANAG 4609"
 version = '2.0.0'
 
 // To build in entire java cv platform of projects use

@@ -27,46 +27,6 @@ import org.sensorhub.impl.module.JarModuleProvider;
  */
 public class UasDescriptor extends JarModuleProvider implements IModuleProvider {
 
-    private static final String MODULE_VERSION = "1.0.0";
-    private static final String MODULE_NAME = "UAS Sensor Driver";
-    private static final String MODULE_DESCRIPTION = "UAS OpenSensorHub driver providing data feeds to on" +
-            "board sensors";
-    private static final String MODULE_PROVIDER = "Botts Innovative Research, Inc.";
-
-    /**
-     * @return Name of the module
-     */
-    @Override
-    public String getModuleName() {
-
-        return MODULE_NAME;
-    }
-
-    /**
-     * @return Description of the module
-     */
-    public String getModuleDescription() {
-
-        return MODULE_DESCRIPTION;
-    }
-
-    /**
-     * @return The software version of the module as a tuple of three values
-     * <code>major.minor.patch</code>
-     */
-    public String getModuleVersion() {
-
-        return MODULE_VERSION;
-    }
-
-    /**
-     * @return The name of the provider
-     */
-    public String getProviderName() {
-
-        return MODULE_PROVIDER;
-    }
-
     /**
      * Retrieves the class implementing the OpenSensorHub interface necessary to
      * perform SOS/SPS/SOS-T operations.
