@@ -7,13 +7,15 @@ dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
   embeddedApi 'org.bytedeco:ffmpeg-platform:4.2.2-1.5.3'
+  
+  testImplementation project(':sensorhub-driver-v4l')
 }
 
 // add info to OSGi manifest
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.impl.service.sos.video.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.process.video.Activator')
     attributes('-fixupmessages': 'Classes found in the wrong directory; is:=ignore')
     attributes('-exportcontents': 'org.sensorhub.impl.service.sos.video, org.bytedeco.ffmpeg.*')
   }
