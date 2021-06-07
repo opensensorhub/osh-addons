@@ -20,6 +20,7 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Transparency;
 import java.awt.color.ColorSpace;
+import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.awt.image.ComponentColorModel;
 import java.awt.image.DataBuffer;
@@ -51,15 +52,20 @@ public class VideoDisplay extends ExecutableProcessImpl
 {
 	public static final OSHProcessInfo INFO = new OSHProcessInfo("video:VideoDisplay", "Video Display Window", null, VideoDisplay.class);
 	
-	Time timeStamp;
-	Count inputWidth;
-	Count inputHeight;
-	DataArray imgIn;
+	protected Time timeStamp;
+	protected Count inputWidth;
+	protected Count inputHeight;
+	protected DataArray imgIn;
 	
-	JFrame window;
-	Graphics graphicCtx;
-	BufferedImage bufImg;
-	String infoTxt;
+	protected JFrame window;
+	protected BufferStrategy strategy;
+	protected Graphics graphicCtx;
+	protected BufferedImage bufImg;
+	protected String frameSizeTxt;
+	
+	protected int frameCounter = 0;
+	protected long startCountTime;
+	protected int fps;
 	
 	
 	public VideoDisplay()
@@ -112,7 +118,9 @@ public class VideoDisplay extends ExecutableProcessImpl
         window.pack();
         window.setVisible(true);
         window.setResizable(false);
-        graphicCtx = canvas.getGraphics();
+        //graphicCtx = canvas.getGraphics();
+        canvas.createBufferStrategy(2);
+        strategy = canvas.getBufferStrategy();
         
         // create RGB buffered image
         var cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
@@ -127,7 +135,7 @@ public class VideoDisplay extends ExecutableProcessImpl
             new int[] {0, 1, 2}, null);
         bufImg = new BufferedImage(colorModel, raster, false, null);
         
-        infoTxt = String.format("%d x %d (%d bytes)", width, height, width*height*3);
+        frameSizeTxt = String.format("%d x %d", width, height);
     }
     
 
@@ -147,12 +155,30 @@ public class VideoDisplay extends ExecutableProcessImpl
         var ts = timeStamp.getData().getDoubleValue();
         var dateTime = Instant.ofEpochMilli((long)(ts*1000));
         
+        var now = System.currentTimeMillis();
+        if (now - startCountTime >= 1000)
+        {
+            fps = (int)Math.round(1000. / (double)(now - startCountTime) * (frameCounter+1));
+            startCountTime = now;
+            frameCounter = 0;
+        }
+        else
+            frameCounter++;
+        
         // draw image
+        graphicCtx = strategy.getDrawGraphics();
         graphicCtx.setColor(Color.YELLOW);
         graphicCtx.drawImage(bufImg, 0, 0, null);
-        
-        graphicCtx.drawString(infoTxt, 10, 20);
-        graphicCtx.drawString(dateTime.toString(), 10, 35);
+        graphicCtx.drawString(frameSizeTxt + ", " + fps + " fps", 10, 20);
+        graphicCtx.drawString(dateTime.toString(), 10, 35);        
+    }
+    
+    
+    @Override
+    public void publishData()
+    {
+        graphicCtx.dispose();        
+        strategy.show();
     }
             
             
