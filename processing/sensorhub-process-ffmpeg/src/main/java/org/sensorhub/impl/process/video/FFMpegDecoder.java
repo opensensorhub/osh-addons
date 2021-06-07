@@ -50,7 +50,7 @@ import org.vast.swe.helper.RasterHelper;
  */
 public class FFMpegDecoder extends ExecutableProcessImpl
 {
-	public static final OSHProcessInfo INFO = new OSHProcessInfo("FFMpegDecoder", "FFMPEG Video Decoder", null, FFMpegDecoder.class);
+	public static final OSHProcessInfo INFO = new OSHProcessInfo("video:FFMpegDecoder", "FFMPEG Video Decoder", null, FFMpegDecoder.class);
 	
 	enum CodecEnum {
 	    //AUTO("auto"),

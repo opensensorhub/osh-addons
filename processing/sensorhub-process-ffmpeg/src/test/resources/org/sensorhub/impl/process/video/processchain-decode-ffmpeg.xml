@@ -52,7 +52,7 @@
       </sml:component>
       <sml:component name="decoder">
         <sml:SimpleProcess gml:id="P2">
-          <sml:typeOf xlink:href="urn:osh:process:FFMpegDecoder"/>
+          <sml:typeOf xlink:href="urn:osh:process:video:FFMpegDecoder"/>
           <sml:configuration>
             <sml:Settings>
               <sml:setValue ref="inputs/codedFrame/width">640</sml:setValue>
@@ -64,7 +64,7 @@
       </sml:component>
       <sml:component name="display">
         <sml:SimpleProcess gml:id="P3">
-          <sml:typeOf xlink:href="urn:osh:process:VideoDisplay"/>
+          <sml:typeOf xlink:href="urn:osh:process:video:VideoDisplay"/>
         </sml:SimpleProcess>
       </sml:component>
     </sml:ComponentList>

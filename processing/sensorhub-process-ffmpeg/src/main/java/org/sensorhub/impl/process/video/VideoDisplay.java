@@ -49,7 +49,7 @@ import org.vast.swe.helper.RasterHelper;
  */
 public class VideoDisplay extends ExecutableProcessImpl
 {
-	public static final OSHProcessInfo INFO = new OSHProcessInfo("VideoDisplay", "Video Display Window", null, VideoDisplay.class);
+	public static final OSHProcessInfo INFO = new OSHProcessInfo("video:VideoDisplay", "Video Display Window", null, VideoDisplay.class);
 	
 	private Time timeStamp;
 	private Count inputWidth;

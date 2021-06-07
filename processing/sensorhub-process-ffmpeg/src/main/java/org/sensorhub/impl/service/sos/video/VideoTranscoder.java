@@ -33,7 +33,6 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.PointerScope;
 import org.sensorhub.impl.service.sos.ISOSCustomSerializer;
 import org.sensorhub.impl.service.sos.ISOSDataProvider;
-import org.sensorhub.impl.service.sos.SOSProviderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.cdm.common.DataStreamWriter;
@@ -139,7 +138,8 @@ public class VideoTranscoder implements ISOSCustomSerializer
         AVPacket enc_pkt = null;
         int imgCompIdx = -1;
         
-        try (PointerScope scope = new PointerScope())
+        try (@SuppressWarnings("unchecked")
+        PointerScope scope = new PointerScope())
         {
             try
             {
