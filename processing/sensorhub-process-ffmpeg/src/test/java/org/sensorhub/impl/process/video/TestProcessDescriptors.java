@@ -22,7 +22,7 @@ public class TestProcessDescriptors extends AbstractProcessProvider
     
     public TestProcessDescriptors()
     {
-        addImpl(VideoDisplay.INFO);
+        //addImpl(VideoDisplay.INFO);
     }
 
 }

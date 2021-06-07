@@ -88,7 +88,7 @@ public class TestFFMpegDecoderProcess
         
         @SuppressWarnings("unchecked")
         IProcessModule<SMLProcessConfig> process = (IProcessModule<SMLProcessConfig>)registry.loadModule(processCfg);
-        process.init();        
+        process.init();
         return process;
     }
     

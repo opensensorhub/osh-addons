@@ -36,6 +36,7 @@ import org.vast.data.DataBlockByte;
 import org.vast.data.DataBlockCompressed;
 import org.vast.process.ExecutableProcessImpl;
 import org.vast.process.ProcessException;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.RasterHelper;
 
@@ -68,11 +69,12 @@ public class FFMpegDecoder extends ExecutableProcessImpl
 	    }
 	}
 	
-	private Count inputWidth, inputHeight;
-	private DataArray imgIn;
-	private Count outputWidth, outputHeight;
-    private DataArray imgOut;
-    private Text codecParam;
+	Count inputWidth, inputHeight;
+	DataArray imgIn;
+	Count outputWidth, outputHeight;
+    DataArray imgOut;
+    Text codecParam;
+    Count decimFactorParam;
     
     AVCodec decoder = null;
     AVCodecContext decode_ctx = null;
@@ -81,6 +83,9 @@ public class FFMpegDecoder extends ExecutableProcessImpl
     AVFrame sws_frame = null;
     AVPacket dec_pkt = null;
     BytePointer nativeFrameData;
+    int frameCounter = 0;
+    int decimFactor = 1;
+    boolean publish;
     
     
     public FFMpegDecoder()
@@ -106,15 +111,19 @@ public class FFMpegDecoder extends ExecutableProcessImpl
             .build());
         
         // parameters
-        codecParam = swe.createText()
+        paramData.add("codec", codecParam = swe.createText()
             .definition(SWEHelper.getPropertyUri("Codec"))
             .label("Codec Name")
             .addAllowedValues(Stream.of(CodecEnum.values())
                 .map(e -> e.toString())
                 .collect(Collectors.toList()))
-            .build();
-        codecParam.assignNewDataBlock();
-        paramData.add("codec", codecParam);
+            .build());
+        
+        paramData.add("decimFactor", decimFactorParam = swe.createCount()
+            .definition(SWEConstants.DEF_COEF)
+            .label("Decimation Factor")
+            .description("Decimation factor of input frames. Only 1 frame every 'decimFactor' frames will be outputted")
+            .build());
         
         // outputs
         outputData.add("rgbFrame", swe.createRecord()
@@ -170,6 +179,7 @@ public class FFMpegDecoder extends ExecutableProcessImpl
     public void init() throws ProcessException
     {
         super.init();
+        frameCounter = 0;
         
         // init decoder according to configured codec
         try
@@ -194,7 +204,14 @@ public class FFMpegDecoder extends ExecutableProcessImpl
         catch (IllegalArgumentException e)
         {
             throw new ProcessException("Unsupported codec. Must be one of " + Arrays.toString(CodecEnum.values()), e);
-        }        
+        }
+        
+        // set decimation factor
+        decimFactor = decimFactorParam.getData().getIntValue();
+        if (decimFactor < 0)
+            throw new ProcessException("Decimation factor must be > 0. Current value is " + decimFactor);
+        if (decimFactor == 0)
+            decimFactor = 1;
     }
 
 
@@ -251,17 +268,32 @@ public class FFMpegDecoder extends ExecutableProcessImpl
             if (sws_ctx == null )
                 initScaler(av_frame);
             
-            // apply scaler (needed to convert from YUV to RGB)
-            sws_scale(sws_ctx, av_frame.data(), av_frame.linesize(), 0, av_frame.height(),sws_frame.data(), sws_frame.linesize());
-            
-            // write decoded data to output
-            // TODO use special datablock to encapsulate native buffer
-            // would be more efficient when passing frame to other native libraries (e.g. OpenCV)
-            
-            frameData = new byte[av_frame.width() * av_frame.height() * 3];
-            sws_frame.data(0).get(frameData);
-            ((DataBlockByte)imgOut.getData()).setUnderlyingObject(frameData);
+            if (frameCounter++ % decimFactor == 0)
+            {
+                // apply scaler (needed to convert from YUV to RGB)
+                sws_scale(sws_ctx, av_frame.data(), av_frame.linesize(), 0, av_frame.height(), sws_frame.data(), sws_frame.linesize());
+                
+                // write decoded data to output
+                // TODO use special datablock to encapsulate native buffer
+                // would be more efficient when passing frame to other native libraries (e.g. OpenCV)
+                
+                frameData = new byte[av_frame.width() * av_frame.height() * 3];
+                sws_frame.data(0).get(frameData);
+                ((DataBlockByte)imgOut.getData()).setUnderlyingObject(frameData);
+                
+                publish = true;
+            }
+            else
+                publish = false;
         }
+    }
+    
+    
+    @Override
+    protected void publishData() throws InterruptedException
+    {
+        if (publish)
+            super.publishData();
     }
             
             

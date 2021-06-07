@@ -51,19 +51,26 @@ public class VideoDisplay extends ExecutableProcessImpl
 {
 	public static final OSHProcessInfo INFO = new OSHProcessInfo("video:VideoDisplay", "Video Display Window", null, VideoDisplay.class);
 	
-	private Time timeStamp;
-	private Count inputWidth;
-	private Count inputHeight;
-	private DataArray imgIn;
+	Time timeStamp;
+	Count inputWidth;
+	Count inputHeight;
+	DataArray imgIn;
 	
 	JFrame window;
 	Graphics graphicCtx;
 	BufferedImage bufImg;
+	String infoTxt;
 	
-    
-    public VideoDisplay()
+	
+	public VideoDisplay()
     {
-    	super(INFO);
+	    this(INFO);
+    }
+	
+	
+    public VideoDisplay(OSHProcessInfo procInfo)
+    {
+    	super(procInfo);
         RasterHelper swe = new RasterHelper();
         
         // inputs
@@ -119,6 +126,8 @@ public class VideoDisplay extends ExecutableProcessImpl
             width*3, 3,
             new int[] {0, 1, 2}, null);
         bufImg = new BufferedImage(colorModel, raster, false, null);
+        
+        infoTxt = String.format("%d x %d (%d bytes)", width, height, width*height*3);
     }
     
 
@@ -127,8 +136,7 @@ public class VideoDisplay extends ExecutableProcessImpl
     {
         // get input encoded frame data
         byte[] frameData = ((DataBlockByte)imgIn.getData()).getUnderlyingObject();
-        System.out.println("Frame size=" + frameData.length);
-        
+                
         if (window == null)
             initJFrame();
         
@@ -142,7 +150,9 @@ public class VideoDisplay extends ExecutableProcessImpl
         // draw image
         graphicCtx.setColor(Color.YELLOW);
         graphicCtx.drawImage(bufImg, 0, 0, null);
-        graphicCtx.drawString(dateTime.toString(), 10, 20);
+        
+        graphicCtx.drawString(infoTxt, 10, 20);
+        graphicCtx.drawString(dateTime.toString(), 10, 35);
     }
             
             
