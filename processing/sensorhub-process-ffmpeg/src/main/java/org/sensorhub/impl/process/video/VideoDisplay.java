@@ -55,8 +55,6 @@ public class VideoDisplay extends ExecutableProcessImpl
 	private Count inputWidth;
 	private Count inputHeight;
 	private DataArray imgIn;
-	private Count numObjs;
-	private DataArray bboxes;
 	
 	JFrame window;
 	Graphics graphicCtx;
@@ -88,26 +86,6 @@ public class VideoDisplay extends ExecutableProcessImpl
                 inputWidth,
                 inputHeight,
                 DataType.BYTE))
-            .build());
-        
-        inputData.add("objects", swe.createRecord()
-            .label("Detected Objects")
-            .addField("numObjects", numObjs = swe.createCount()
-                .id("NUM_OBJS")
-                .label("Num Objects")
-                .build())
-            .addField("bboxes", bboxes = swe.createArray()
-                .withSizeComponent(numObjs)
-                .withElement("bbox", swe.createRecord()
-                    .addField("x", swe.createCount()
-                        .description("X coordinate of upper left corner, in pixels"))
-                    .addField("y", swe.createCount()
-                        .description("Y coordinate of upper left corner, in pixels"))
-                    .addField("width", swe.createCount()
-                        .description("Bbox width in pixels"))
-                    .addField("height", swe.createCount()
-                        .description("Bbox height in pixels")))
-                .build())
             .build());
     }
 
