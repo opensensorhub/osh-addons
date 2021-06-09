@@ -17,7 +17,6 @@ package org.sensorhub.impl.process.video;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.After;
 import org.junit.Assert;
-import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.processing.IProcessModule;
 import org.sensorhub.api.sensor.ISensorModule;
@@ -60,7 +59,7 @@ public class TestFFMpegDecoderProcess
         
         for (IStreamingDataInterface output: process.getOutputs().values())
             output.registerListener(e -> {
-                System.out.println(e.getTimeStamp() + ": " + ((DataEvent)e).getRecords()[0].getAtomCount());
+                //System.out.println(e.getTimeStamp() + ": " + ((DataEvent)e).getRecords()[0].getAtomCount());
                 counter.incrementAndGet();
             });
         

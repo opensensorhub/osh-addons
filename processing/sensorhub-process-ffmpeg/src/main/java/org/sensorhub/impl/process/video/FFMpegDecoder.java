@@ -18,8 +18,6 @@ import static org.bytedeco.ffmpeg.global.avcodec.*;
 import static org.bytedeco.ffmpeg.global.avutil.*;
 import static org.bytedeco.ffmpeg.global.swscale.*;
 import java.util.Arrays;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataType;
@@ -114,9 +112,7 @@ public class FFMpegDecoder extends ExecutableProcessImpl
         paramData.add("codec", codecParam = swe.createText()
             .definition(SWEHelper.getPropertyUri("Codec"))
             .label("Codec Name")
-            .addAllowedValues(Stream.of(CodecEnum.values())
-                .map(e -> e.toString())
-                .collect(Collectors.toList()))
+            .addAllowedValues(CodecEnum.class)
             .build());
         
         paramData.add("decimFactor", decimFactorParam = swe.createCount()
@@ -203,7 +199,7 @@ public class FFMpegDecoder extends ExecutableProcessImpl
         }
         catch (IllegalArgumentException e)
         {
-            throw new ProcessException("Unsupported codec. Must be one of " + Arrays.toString(CodecEnum.values()), e);
+            reportError("Unsupported codec. Must be one of " + Arrays.toString(CodecEnum.values()));
         }
         
         // set decimation factor
