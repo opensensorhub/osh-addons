@@ -76,8 +76,12 @@ public class RayIntersectEllipsoid extends ExecutableProcessImpl
         inputData.add("rayDirection", rayDirection);
         
         //// PARAMETERS ////
-        heightAdjustment = sweHelper.newQuantity(null, "Ellipsoid Height Adjustment", "Ellipsoid height offset used when computing the intersection", "m");
-        heightAdjustment.assignNewDataBlock();
+        heightAdjustment = sweHelper.createQuantity()
+            .definition(GeoPosHelper.DEF_ALTITUDE_ELLIPSOID)
+            .label("Ellipsoid Height Adjustment")
+            .description("Ellipsoid height offset used when computing the intersection")
+            .uom("m")
+            .build();
         paramData.add("heightAdjustment", heightAdjustment);
                 
         //// OUTPUTS ////

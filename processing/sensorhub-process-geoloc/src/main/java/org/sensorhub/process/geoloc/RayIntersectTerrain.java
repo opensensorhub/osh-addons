@@ -15,6 +15,8 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.process.geoloc;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.Text;
 import org.sensorhub.algo.geoloc.Ellipsoid;
@@ -40,11 +42,12 @@ public class RayIntersectTerrain extends RayIntersectEllipsoid
 {
     public static final OSHProcessInfo INFO = new OSHProcessInfo("RayIntersectTerrain", "Ray Terrain Intersection", "Compute 3D intersection between a ray and a terrain model", RayIntersectSphere.class);
     
-    private Text srtmDataPath;
-    private GeoTransforms transforms;
-    private SRTMUtil util;
-    private Vect3d lla;
-    private double initAlti;
+    protected Text srtmDataPath;
+    
+    protected GeoTransforms transforms;
+    protected SRTMUtil util;
+    protected Vect3d lla;
+    protected double initAlti;
     
 
     public RayIntersectTerrain()
@@ -52,8 +55,10 @@ public class RayIntersectTerrain extends RayIntersectEllipsoid
         super(INFO);
                 
         // change parameters
-        srtmDataPath = new SWEHelper().newText(null, "SRTM Data Path", "Local absolute path to SRTM data folder");
-        srtmDataPath.assignNewDataBlock();
+        srtmDataPath = new SWEHelper().createText()
+            .label("SRTM Data Path")
+            .description("Local absolute path to SRTM data folder")
+            .build();
         paramData.add("srtmDataPath", srtmDataPath);        
     }
     
@@ -68,6 +73,9 @@ public class RayIntersectTerrain extends RayIntersectEllipsoid
         
         // init SRTM data set
         String dataPath = srtmDataPath.getData().getStringValue();
+        var path = Path.of(dataPath);
+        if (dataPath == null || !Files.isDirectory(path) || !Files.isReadable(path))
+            reportError("Missing or inaccessible SRTM data directory: " + dataPath);
         util = new SRTMUtil(dataPath);
         
         // set init altitude

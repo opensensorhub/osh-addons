@@ -44,23 +44,25 @@ import org.vast.swe.helper.GeoPosHelper;
 public class ECEFPosMatrix extends ExecutableProcessImpl
 {
     public static final OSHProcessInfo INFO = new OSHProcessInfo("ECEFPos", "ECEF Matrix", "Compute ECEF position matrix from ECEF location and local orientation", ECEFPosMatrix.class);
-    private Vector platformLoc;
-    private Vector platformAtt;
-    private Vector mountLoc;
-    private Vector mountOrient;
-    private Matrix rotMatrix;
-    private Matrix posMatrix;
-    private GeoTransforms transforms;
-    private NadirPointing pointing;
-    private boolean isEnu;
-    private boolean isLatLon;
-    private Vect3d locEcefPlat;
-    private Vect3d locPlatMount;
-    private Quat4d att;
-    private Mat3d rotEcefEnu;
-    private Mat3d rotEnuPlat;
-    private Mat3d rotPlatMount;
-    private Mat4d posMat;
+    
+    protected Vector platformLoc;
+    protected Vector platformAtt;
+    protected Vector mountLoc;
+    protected Vector mountOrient;
+    protected Matrix rotMatrix;
+    protected Matrix posMatrix;
+    
+    protected GeoTransforms transforms;
+    protected NadirPointing pointing;
+    protected boolean isEnu;
+    protected boolean isLatLon;
+    protected Vect3d locEcefPlat;
+    protected Vect3d locPlatMount;
+    protected Quat4d att;
+    protected Mat3d rotEcefEnu;
+    protected Mat3d rotEnuPlat;
+    protected Mat3d rotPlatMount;
+    protected Mat4d posMat;
     
 
     public ECEFPosMatrix()

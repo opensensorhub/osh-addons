@@ -44,12 +44,13 @@ public class RayIntersectSphere extends ExecutableProcessImpl
     protected Vector rayOrigin;
     protected Vector rayDirection;
     protected Vector intersection;
-    private Quantity sphereRadius;
-    private EllipsoidIntersect rie;
+    protected Quantity sphereRadius;
+    
+    protected EllipsoidIntersect rie;
     protected Vect3d origin;
     protected Vect3d dir;
     protected Vect3d intersect;
-    private double radius;
+    protected double radius;
     
 
     public RayIntersectSphere()
@@ -63,13 +64,17 @@ public class RayIntersectSphere extends ExecutableProcessImpl
         inputData.add("rayOrigin", rayOrigin);
         
         // ray direction in reference frame
-        rayDirection = sweHelper.newLocationVectorXYZ(null, SWEConstants.NIL_UNKNOWN, "1");
+        rayDirection = sweHelper.newUnitVectorXYZ(null, SWEConstants.NIL_UNKNOWN);
         inputData.add("rayDirection", rayDirection);
         
         //// PARAMETERS ////
         // sphere radius
-        sphereRadius = sweHelper.newQuantity(SWEHelper.getPropertyUri("Radius"), "Sphere Radius", null, "m");
-        sphereRadius.createDataBlock();
+        sphereRadius = sweHelper.createQuantity()
+            .definition(SWEHelper.getQudtUri("Radius"))
+            .label("Sphere Radius")
+            .description("Radius of sphere to interest with")
+            .uom("m")
+            .build();
         paramData.add("sphereRadius", sphereRadius);        
         
         //// OUTPUTS ////

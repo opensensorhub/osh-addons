@@ -36,11 +36,12 @@ import org.vast.swe.helper.GeoPosHelper;
 public class ECEFToLLA extends ExecutableProcessImpl
 {
     public static final OSHProcessInfo INFO = new OSHProcessInfo("ECEF2LLA", "ECEF to LLA", "ECEF to geographic coordinates conversion", ECEFToLLA.class);
-    private Vector ecefLoc;
-    private Vector llaLoc;
-    private GeoTransforms transforms;
-    private Vect3d ecef;
-    private Vect3d lla;
+    
+    protected Vector ecefLoc;
+    protected Vector llaLoc;
+    protected GeoTransforms transforms;
+    protected Vect3d ecef;
+    protected Vect3d lla;
 
     
     public ECEFToLLA()
