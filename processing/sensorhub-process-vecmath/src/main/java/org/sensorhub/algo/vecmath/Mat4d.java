@@ -585,19 +585,19 @@ public class Mat4d implements Serializable
         {
             double c, s, m;
             c = Math.cos(angleRadians);
-            s = Math.sin(angleRadians);
+            s = -Math.sin(angleRadians);
     
             m = m10;
-            m10 = s * m20 + c * m;
-            m20 = c * m20 - s * m;
+            m10 = -s * m20 + c * m;
+            m20 = c * m20 + s * m;
             
             m = m11;
-            m11 = s * m21 + c * m;
-            m21 = c * m21 - s * m;
+            m11 = -s * m21 + c * m;
+            m21 = c * m21 + s * m;
             
             m = m12;
-            m12 = s * m22 + c * m;
-            m22 = c * m22 - s * m;
+            m12 = -s * m22 + c * m;
+            m22 = c * m22 + s * m;
         }
         
         return this;
@@ -615,7 +615,7 @@ public class Mat4d implements Serializable
         {
             double c, s, m;
             c = Math.cos(angleRadians);
-            s = Math.sin(angleRadians);
+            s = -Math.sin(angleRadians);
     
             m = m00;
             m00 = s * m20 + c * m;
@@ -645,19 +645,19 @@ public class Mat4d implements Serializable
         {
             double c, s, m;
             c = Math.cos(angleRadians);
-            s = Math.sin(angleRadians);
+            s = -Math.sin(angleRadians);
     
             m = m00;
-            m00 = s * m10 + c * m;
-            m10 = c * m10 - s * m;
+            m00 = -s * m10 + c * m;
+            m10 = c * m10 + s * m;
             
             m = m01;
-            m01 = s * m11 + c * m;
-            m11 = c * m11 - s * m;
+            m01 = -s * m11 + c * m;
+            m11 = c * m11 + s * m;
             
             m = m02;
-            m02 = s * m12 + c * m;
-            m12 = c * m12 - s * m;
+            m02 = -s * m12 + c * m;
+            m12 = c * m12 + s * m;
         }
         
         return this;
