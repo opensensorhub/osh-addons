@@ -12,7 +12,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.test.process.geoloc;
+package org.sensorhub.process.geoloc;
 
 import static org.junit.Assert.assertEquals;
 import net.opengis.swe.v20.DataBlock;
@@ -20,7 +20,6 @@ import org.junit.Test;
 import org.sensorhub.algo.geoloc.GeoTransforms;
 import org.sensorhub.algo.geoloc.SRTMUtil;
 import org.sensorhub.algo.vecmath.Vect3d;
-import org.sensorhub.process.geoloc.RayIntersectTerrain;
 import org.sensorhub.process.vecmath.VecMathHelper;
 import org.vast.sensorML.SMLUtils;
 import org.vast.sensorML.SimpleProcessImpl;

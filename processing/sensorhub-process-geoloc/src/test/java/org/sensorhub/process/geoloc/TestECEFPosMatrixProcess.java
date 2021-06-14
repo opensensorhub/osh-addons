@@ -12,7 +12,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.test.process.geoloc;
+package org.sensorhub.process.geoloc;
 
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
@@ -20,7 +20,6 @@ import org.sensorhub.algo.geoloc.GeoTransforms;
 import org.sensorhub.algo.vecmath.Mat4d;
 import org.sensorhub.algo.vecmath.Quat4d;
 import org.sensorhub.algo.vecmath.Vect3d;
-import org.sensorhub.process.geoloc.ECEFPosMatrix;
 import org.sensorhub.process.vecmath.VecMathHelper;
 import org.vast.sensorML.SMLUtils;
 import org.vast.sensorML.SimpleProcessImpl;
