@@ -22,6 +22,7 @@ import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Text;
+import net.opengis.swe.v20.Time;
 import org.bytedeco.ffmpeg.avcodec.AVCodec;
 import org.bytedeco.ffmpeg.avcodec.AVCodecContext;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
@@ -67,8 +68,10 @@ public class FFMpegDecoder extends ExecutableProcessImpl
 	    }
 	}
 	
+	Time inputTimeStamp;
 	Count inputWidth, inputHeight;
 	DataArray imgIn;
+	Time outputTimeStamp;
 	Count outputWidth, outputHeight;
     DataArray imgOut;
     Text codecParam;
@@ -94,6 +97,9 @@ public class FFMpegDecoder extends ExecutableProcessImpl
     	// inputs
         inputData.add("codedFrame", swe.createRecord()
             .label("Video Frame")
+            .addField("time", inputTimeStamp = swe.createTime()
+                .asSamplingTimeIsoUTC()
+                .build())
             .addField("width", inputWidth = swe.createCount()
                 .id("IN_WIDTH")
                 .label("Input Frame Width")
@@ -124,6 +130,9 @@ public class FFMpegDecoder extends ExecutableProcessImpl
         // outputs
         outputData.add("rgbFrame", swe.createRecord()
             .label("Video Frame")
+            .addField("time", outputTimeStamp = swe.createTime()
+                .asSamplingTimeIsoUTC()
+                .build())
             .addField("width", outputWidth = swe.createCount()
                 .id("OUT_WIDTH")
                 .label("Output Frame Width")
@@ -276,6 +285,10 @@ public class FFMpegDecoder extends ExecutableProcessImpl
                 frameData = new byte[av_frame.width() * av_frame.height() * 3];
                 sws_frame.data(0).get(frameData);
                 ((DataBlockByte)imgOut.getData()).setUnderlyingObject(frameData);
+                
+                // also copy frame timestamp
+                var ts = inputTimeStamp.getData().getDoubleValue();
+                outputTimeStamp.getData().setDoubleValue(ts);
                 
                 publish = true;
             }

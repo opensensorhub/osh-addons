@@ -79,14 +79,13 @@ public class VideoDisplay extends ExecutableProcessImpl
     	super(procInfo);
         RasterHelper swe = new RasterHelper();
         
-        // inputs
-        inputData.add("timeStamp", timeStamp = swe.createTime()
-            .asSamplingTimeIsoUTC()
-            .label("Input Frame Timestamp")
-            .build());
-    	
+        // inputs    	
         inputData.add("rgbFrame", swe.createRecord()
             .label("Video Frame")
+            .addField("time", timeStamp = swe.createTime()
+                .asSamplingTimeIsoUTC()
+                .label("Frame Timestamp")
+                .build())
             .addField("width", inputWidth = swe.createCount()
                 .id("IN_WIDTH")
                 .label("Input Frame Width")
