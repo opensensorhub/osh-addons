@@ -24,9 +24,13 @@ import org.sensorhub.api.config.DisplayInfo;
  */
 public class Connection {
 
-    @DisplayInfo(label = "URL", desc = "MISB STANAG 4609 MPEG-TS data to be streamed")
+    @DisplayInfo(label = "File Path", desc = "MISB STANAG 4609 MPEG-TS file to be streamed")
     @DisplayInfo.FieldType(value = DisplayInfo.FieldType.Type.FILESYSTEM_PATH)
     public String transportStreamPath;
+    
+    @DisplayInfo(label = "FPS", desc = "Number of frames per second to enforce during playback of a file."
+        + " 0 means the stream will be played as fast as possible.")
+    public int fps = 0;
 
     @DisplayInfo(label = "Server Ip", desc = "Server IP address of MISB STANAG 4609 MPEG-TS data to be streamed")
     @DisplayInfo.FieldType(value = DisplayInfo.FieldType.Type.REMOTE_ADDRESS)

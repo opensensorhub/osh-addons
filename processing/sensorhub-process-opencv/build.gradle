@@ -9,13 +9,16 @@ dependencies {
   embeddedApi('org.bytedeco:opencv-platform:4.5.1-1.5.5') {
     exclude group: 'org.bytedeco', module: 'javacpp'
   }
+  
+  testImplementation project(':sensorhub-driver-v4l')
+  testImplementation project(':sensorhub-process-ffmpeg')
 }
 
 // add info to OSGi manifest
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.impl.process.cv')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.process.opencv')
     attributes('-fixupmessages': 'Classes found in the wrong directory; is:=ignore')
     attributes('-exportcontents': 'org.bytedeco.opencv.*, org.opencv.*')
   }

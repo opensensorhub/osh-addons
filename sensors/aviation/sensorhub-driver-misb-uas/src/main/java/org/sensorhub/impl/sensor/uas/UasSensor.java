@@ -22,7 +22,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.vast.util.Asserts;
 import java.util.ArrayList;
 
 /**
@@ -44,7 +44,7 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
     ArrayList<UasOutput> uasOutputs = new ArrayList<>();
 
     @Override
-    public void doInit() throws SensorHubException {
+    protected void doInit() throws SensorHubException {
 
         super.doInit();
 
@@ -57,7 +57,8 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
         // Get the stream processor
         if ((null != config.connection.transportStreamPath) && (!config.connection.transportStreamPath.isEmpty())) {
 
-            mpegTsProcessor = new MpegTsProcessor(config.connection.transportStreamPath);
+            Asserts.checkArgument(config.connection.fps >= 0, "FPS must be >= 0");
+            mpegTsProcessor = new MpegTsProcessor(config.connection.transportStreamPath, config.connection.fps);
 
         } else {
 
@@ -165,7 +166,7 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
     }
 
     @Override
-    public void doStart() throws SensorHubException {
+    protected void doStart() throws SensorHubException {
 
         super.doStart();
 
@@ -203,7 +204,7 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
     }
 
     @Override
-    public void doStop() throws SensorHubException {
+    protected void doStop() throws SensorHubException {
 
         super.doStop();
 

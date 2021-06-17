@@ -43,7 +43,9 @@ import static org.junit.Assert.*;
  */
 public class MpegTsProcessorTest {
 
-    static final String TEST_MPEGTS_FILE = "src/test/resources/org/sensorhub/impl/sensor/uas/sample-stream.ts";
+    static final String TEST_MPEGTS_FILE = "/home/alex/Projects/OGC/Testbed17/Video_Data/S06.ts";
+        //"src/test/resources/org/sensorhub/impl/sensor/uas/sample-stream.ts";
+    static final int SLEEP_DURATION_MS = 1000;
     
     @Test
     public void testOpenStreamFails() {
@@ -132,8 +134,6 @@ public class MpegTsProcessorTest {
     @Test
     public void testStreamProcessing() {
 
-        final int SLEEP_30_S = 30000;
-
         MpegTsProcessor mpegTsProcessor = new MpegTsProcessor(TEST_MPEGTS_FILE);
 
         mpegTsProcessor.openStream();
@@ -154,7 +154,7 @@ public class MpegTsProcessorTest {
 
         try {
 
-            Thread.sleep(SLEEP_30_S);
+            Thread.sleep(SLEEP_DURATION_MS);
 
         } catch (Exception e) {
 
@@ -180,7 +180,6 @@ public class MpegTsProcessorTest {
     @Test
     public void testStreamProcessingDecodeVideo() {
 
-        final int SLEEP_30_S = 30000;
         final JFrame window = new JFrame();
         window.setSize(640, 480);
         window.setVisible(true);
@@ -221,7 +220,7 @@ public class MpegTsProcessorTest {
 
         try {
 
-            Thread.sleep(SLEEP_30_S);
+            Thread.sleep(SLEEP_DURATION_MS);
 
         } catch (Exception e) {
 
@@ -248,8 +247,6 @@ public class MpegTsProcessorTest {
 
     @Test
     public void testStreamProcessingMISB() {
-
-        final int SLEEP_30_S = 30000;
 
         MpegTsProcessor mpegTsProcessor =
                 new MpegTsProcessor(TEST_MPEGTS_FILE);
@@ -286,7 +283,7 @@ public class MpegTsProcessorTest {
 
         try {
 
-            Thread.sleep(SLEEP_30_S);
+            Thread.sleep(SLEEP_DURATION_MS);
 
         } catch (Exception e) {
 

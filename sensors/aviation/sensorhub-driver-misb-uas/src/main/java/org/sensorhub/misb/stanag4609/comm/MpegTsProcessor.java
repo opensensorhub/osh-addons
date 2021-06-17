@@ -166,6 +166,13 @@ public class MpegTsProcessor extends Thread {
      * Time base units for data stream timing used to compute a timestamp for each packet extracted
      */
     private double dataStreamTimeBase;
+    
+    /**
+     * FPS to enforce when playing back from file.
+     * 0 means the file will be played back as fast as possible
+     */
+    int fps;
+    
 
     /**
      * Constructor
@@ -175,9 +182,23 @@ public class MpegTsProcessor extends Thread {
      */
     public MpegTsProcessor(String source) {
 
+        this(source, 0);
+    }
+    
+    
+    /**
+     * Constructor with more options when playing back from file
+     *
+     * @param source A string representation of the file or url to use as the source of the transport stream to
+     *               demux
+     * @param fps The desired playback FPS (use 0 for decoding the TS file as fast as possible)
+     */
+    public MpegTsProcessor(String source, int fps) {
+
         super(WORKER_THREAD_NAME);
 
-        streamSource = source;
+        this.streamSource = source;
+        this.fps = fps;
     }
 
     /**
@@ -432,10 +453,8 @@ public class MpegTsProcessor extends Thread {
     @Override
     public void run() {
 
-        while (!terminateProcessing.get()) {
-
-            processStreamPackets();
-        }
+        processStreamPackets();
+        logger.info("End of MISB TS stream");
     }
 
     /**
@@ -448,7 +467,8 @@ public class MpegTsProcessor extends Thread {
         AVPacket avPacket = new AVPacket();
 
         // Read frames
-        while (av_read_frame(avFormatContext, avPacket) >= 0) {
+        int retCode;
+        while (!terminateProcessing.get() && (retCode = av_read_frame(avFormatContext, avPacket)) >= 0) {
 
             // If it is a video or data frame and there is a listener registered
             if ((avPacket.stream_index() == videoStreamId) && (null != videoDataBufferListener)) {
@@ -459,7 +479,13 @@ public class MpegTsProcessor extends Thread {
 
                 // Pass data buffer to interested listener
                 videoDataBufferListener.onDataBuffer(new DataBufferRecord(avPacket.pts() * videoStreamTimeBase, dataBuffer));
-
+                
+                if (fps > 0)
+                {
+                    try { Thread.sleep(1000/fps); }
+                    catch (InterruptedException e) { }
+                }
+                
             } else if ((avPacket.stream_index() == dataStreamId) && (null != metadataDataBufferListener)) {
 
                 // Process the data packet
