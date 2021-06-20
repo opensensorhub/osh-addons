@@ -61,7 +61,7 @@ public interface IResourceHandler<T extends Entity>
     
     
     //public default void subscribeToEntity(ResourceId id, Query q, Subscriber<T> subscriber) {}
-    public default void subscribeToCollection(ResourcePath path, Query q, Subscriber<T> subscriber) {}
+    public default void subscribeToCollection(ResourcePath path, Query q, Subscriber<Entity<?>> subscriber) {}
     
     
     public default ResourcePath getParentPath(ResourcePath path)

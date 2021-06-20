@@ -272,7 +272,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     
     
     @Override
-    public void subscribeToCollection(ResourcePath path, Query q, Subscriber<Sensor> subscriber)
+    public void subscribeToCollection(ResourcePath path, Query q, Subscriber<Entity<?>> subscriber)
     {
         securityHandler.checkPermission(securityHandler.sta_read_obs);
         

@@ -255,7 +255,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     
     
     @Override
-    public void subscribeToCollection(ResourcePath path, Query q, Subscriber<Observation> subscriber)
+    public void subscribeToCollection(ResourcePath path, Query q, Subscriber<Entity<?>> subscriber)
     {
         securityHandler.checkPermission(securityHandler.sta_read_obs);
         
@@ -462,12 +462,14 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
                 return data.getDoubleValue(index);
 
             case BYTE:
-            case SHORT:
-            case INT:
-            case LONG:
             case UBYTE:
+            case SHORT:
             case USHORT:
+            case INT:
+                return data.getIntValue(index);
+                
             case UINT:
+            case LONG:            
             case ULONG:
                 return data.getLongValue(index);
 
