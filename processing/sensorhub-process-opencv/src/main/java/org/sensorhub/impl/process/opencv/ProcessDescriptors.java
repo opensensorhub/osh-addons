@@ -12,7 +12,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.process.video;
+package org.sensorhub.impl.process.opencv;
 
 import org.sensorhub.impl.processing.AbstractProcessProvider;
 
@@ -22,8 +22,10 @@ public class ProcessDescriptors extends AbstractProcessProvider
     
     public ProcessDescriptors()
     {
-        addImpl(FFMpegDecoder.INFO);
-        addImpl(VideoDisplay.INFO);
+        addImpl(FaceDetection.INFO);
+        addImpl(ObjectTracking.INFO);
+        addImpl(BboxCenter.INFO);
+        addImpl(VideoDisplayCV.INFO);
     }
 
 }

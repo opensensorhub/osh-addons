@@ -100,6 +100,19 @@ public class VideoDisplay extends ExecutableProcessImpl
                 DataType.BYTE))
             .build());
     }
+    
+    
+    @Override
+    public void init() throws ProcessException
+    {
+        super.init();
+        
+        // close previous window if needed
+        if (window != null) {
+            window.dispose();
+            window = null;
+        }
+    }
 
 
     /*
@@ -188,6 +201,7 @@ public class VideoDisplay extends ExecutableProcessImpl
         
         if (window != null) {
             window.dispose();
+            window = null;
         }
     }
 }

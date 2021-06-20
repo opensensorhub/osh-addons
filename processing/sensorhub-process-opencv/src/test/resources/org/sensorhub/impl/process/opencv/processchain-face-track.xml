@@ -1,0 +1,109 @@
+<sml:AggregateProcess xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sml="http://www.opengis.net/sensorml/2.0" xmlns:swe="http://www.opengis.net/swe/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:gmd="http://www.isotc211.org/2005/gmd" gml:id="CHAIN1">
+  <gml:identifier codeSpace="uid">0c58ed65-e63d-4d1e-9ef0-b7db0be3685c</gml:identifier>
+  <sml:components>
+    <sml:ComponentList>
+      <sml:component name="source0">
+        <sml:SimpleProcess gml:id="P1">
+          <gml:identifier codeSpace="uid">urn:osh:sensor:v4l-cam:001</gml:identifier>
+          <sml:typeOf xlink:href="urn:osh:process:datasource:stream"/>
+          <sml:configuration>
+            <sml:Settings>
+              <sml:setValue ref="parameters/producerURI">urn:osh:sensor:v4l-cam:001</sml:setValue>
+            </sml:Settings>
+          </sml:configuration>
+        </sml:SimpleProcess>
+      </sml:component>
+      <sml:component name="decoder">
+        <sml:SimpleProcess gml:id="P2">
+          <sml:typeOf xlink:href="urn:osh:process:video:FFMpegDecoder"/>
+          <sml:configuration>
+            <sml:Settings>
+              <sml:setValue ref="inputs/codedFrame/width">640</sml:setValue>
+              <sml:setValue ref="inputs/codedFrame/height">480</sml:setValue>
+              <sml:setValue ref="parameters/codec">H264</sml:setValue>
+              <sml:setValue ref="parameters/decimFactor">3</sml:setValue>
+            </sml:Settings>
+          </sml:configuration>
+        </sml:SimpleProcess>
+      </sml:component>
+      <sml:component name="face_detect">
+        <sml:SimpleProcess gml:id="P3">
+          <sml:typeOf xlink:href="urn:osh:process:opencv:FaceDetection"/>
+          <sml:configuration>
+            <sml:Settings>
+              <sml:setValue ref="parameters/detectionMode">ONE_SHOT</sml:setValue>
+              <sml:setValue ref="parameters/configFile">src/test/resources/haarcascade_frontalface_alt.xml</sml:setValue>
+            </sml:Settings>
+          </sml:configuration>
+        </sml:SimpleProcess>
+      </sml:component>
+      <sml:component name="obj_track">
+        <sml:SimpleProcess gml:id="P3">
+          <sml:typeOf xlink:href="urn:osh:process:opencv:ObjectTracking"/>
+          <sml:configuration>
+            <sml:Settings>
+              <sml:setValue ref="parameters/algorithm">CSRT</sml:setValue>
+            </sml:Settings>
+          </sml:configuration>
+        </sml:SimpleProcess>
+      </sml:component>
+      <sml:component name="display">
+        <sml:SimpleProcess gml:id="P5">
+          <sml:typeOf xlink:href="urn:osh:process:opencv:VideoDisplayCV"/>
+        </sml:SimpleProcess>
+      </sml:component>
+    </sml:ComponentList>
+  </sml:components>
+  <sml:connections>
+    <sml:ConnectionList>
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/source0/outputs/camOutput_H264/img"/>
+          <sml:destination ref="components/decoder/inputs/codedFrame/img"/>
+        </sml:Link>
+      </sml:connection>
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/source0/outputs/camOutput_H264/time"/>
+          <sml:destination ref="components/decoder/inputs/codedFrame/time"/>
+        </sml:Link>
+      </sml:connection>
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/decoder/outputs/rgbFrame"/>
+          <sml:destination ref="components/face_detect/inputs/rgbFrame"/>
+        </sml:Link>
+      </sml:connection>
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/decoder/outputs/rgbFrame"/>
+          <sml:destination ref="components/obj_track/inputs/rgbFrame"/>
+        </sml:Link>
+      </sml:connection>
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/face_detect/outputs/detectedFaces"/>
+          <sml:destination ref="components/obj_track/parameters/objectRois"/>
+        </sml:Link>
+      </sml:connection>
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/decoder/outputs/rgbFrame"/>
+          <sml:destination ref="components/display/inputs/rgbFrame"/>
+        </sml:Link>
+      </sml:connection>
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/obj_track/outputs/trackedObjects/numObjs"/>
+          <sml:destination ref="components/display/inputs/rois/numRois"/>
+        </sml:Link>
+      </sml:connection>
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/obj_track/outputs/trackedObjects/bboxList"/>
+          <sml:destination ref="components/display/inputs/rois/bboxList"/>
+        </sml:Link>
+      </sml:connection>
+    </sml:ConnectionList>
+  </sml:connections>
+</sml:AggregateProcess>

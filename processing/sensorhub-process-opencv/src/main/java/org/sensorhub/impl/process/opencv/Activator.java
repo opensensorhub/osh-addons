@@ -12,7 +12,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.process.cv;
+package org.sensorhub.impl.process.opencv;
 
 import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;

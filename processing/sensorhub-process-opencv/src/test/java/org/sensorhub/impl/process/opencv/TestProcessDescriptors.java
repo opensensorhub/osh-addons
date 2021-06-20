@@ -8,22 +8,21 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
+Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.process.video;
+package org.sensorhub.impl.process.opencv;
 
 import org.sensorhub.impl.processing.AbstractProcessProvider;
 
 
-public class ProcessDescriptors extends AbstractProcessProvider
+public class TestProcessDescriptors extends AbstractProcessProvider
 {
     
-    public ProcessDescriptors()
+    public TestProcessDescriptors()
     {
-        addImpl(FFMpegDecoder.INFO);
-        addImpl(VideoDisplay.INFO);
+        //addImpl(VideoDisplay.INFO);
     }
 
 }
