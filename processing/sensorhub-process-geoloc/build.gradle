@@ -3,8 +3,8 @@ ext.details = 'Common geolocation algorithms and process blocks'
 version = '1.0.0'
 
 dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-process-vecmath')
-  implementation 'org.vast.opengis:ogc-services-sps:' + oshCoreVersion
 }
 
 test {
