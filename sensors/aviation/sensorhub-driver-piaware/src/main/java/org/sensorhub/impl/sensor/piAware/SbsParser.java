@@ -93,7 +93,8 @@ public class SbsParser
 					rec.isOnGround = parseFlag(vals[21]);
 					break;
 				default:
-					System.err.println("MsgType not recognized: " + rec.messageSubType);
+					logger.debug("MsgType not recognized: {}", rec.messageSubType);
+					logger.debug(inline);
 				}
 				rec.callsign =  flightNums.get(rec.hexIdent);
 				return rec;
