@@ -35,6 +35,7 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
+import net.opengis.swe.v20.Vector;
 
 /**
  * 
@@ -62,11 +63,43 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> implements IM
 	public String getName() {
 		return "SbsOutput";
 	}
+	
+	 public Vector newLocationVectorLLA(String def)
+	    {
+	        GeoPosHelper geoFac = new GeoPosHelper();
+
+	        return geoFac.createVector()
+	            .definition(def != null ? def : GeoPosHelper.DEF_LOCATION)
+	            .refFrame(SWEConstants.REF_FRAME_4979)
+	            .addCoordinate("lat", geoFac.createQuantity()
+	                .definition(GeoPosHelper.DEF_LATITUDE_GEODETIC)
+					.description("Latitude- North and East positive. South and West negative.")
+	                .label("Geodetic Latitude")
+	                .axisId("Lat")
+	                .uomCode("deg")
+	                .build())
+	            .addCoordinate("lon", geoFac.createQuantity()
+	                .definition(GeoPosHelper.DEF_LONGITUDE)
+					.description("Longitude- North and East positive. South and West negative.")
+	                .label("Longitude")
+	                .axisId("Lon")
+	                .uomCode("deg")
+	                .build())
+	            .addCoordinate("alt", geoFac.createQuantity()
+	                .definition(GeoPosHelper.DEF_ALTITUDE_ELLIPSOID)
+					.description("Mode C altitude. Height relative to 1013.2mb (Flight Level). Not height AMSL..")
+	                .label("Ellipsoidal Height")
+	                .axisId("h")
+	                .uomCode("[ft_i]")
+	                .build())
+	            .build();
+	    }
+
 
 	protected void init() {
 		SWEHelper fac = new SWEHelper();
         GeoPosHelper geoFac = new GeoPosHelper();
-
+        Vector vec = newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
 		// SWE Common data structure
 		DataRecordBuilder builder = fac.createDataRecord()
 			.addSamplingTimeIsoUTC("messageTime")
@@ -92,22 +125,23 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> implements IM
 				.definition("")
 				.uomCode("deg")
 				.build())
-			.addField("latitude", fac.createQuantity()
-				.description("Latitude- North and East positive. South and West negative.")
-				.definition("")
-				.build())
-			.addField("longitude", fac.createQuantity()
-				.description("Longitude- North and East positive. South and West negative.")
-				.definition("")
-				.build())
-			.addField("altitude", fac.createQuantity()
-					.description("Mode C altitude. Height relative to 1013.2mb (Flight Level). Not height AMSL..")
-					.definition("")
-					.uomCode("[ft_i]")
-					.build())
-//			.addField("location", fac.createVector()
+//			.addField("latitude", fac.createQuantity()
+//				.description("Latitude- North and East positive. South and West negative.")
+//				.definition("")
+//				.build())
+//			.addField("longitude", fac.createQuantity()
+//				.description("Longitude- North and East positive. South and West negative.")
+//				.definition("")
+//				.build())
+//			.addField("altitude", fac.createQuantity()
+//					.description("Mode C altitude. Height relative to 1013.2mb (Flight Level). Not height AMSL..")
+//					.definition("")
+//					.uomCode("[ft_i]")
+//					.build())
+			.addField("location", vec) //fac.createVector()
 //		        .from(geoFac.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC))
-//		        .description("Lat-Lon-Alt of aircraft")
+		        //geoFac.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC)
+		        //.description("Lat-Lon-Alt of aircraft")
 //		        .build())
 			.addField("verticalRate", fac.createQuantity()
 				.description("64 foot resolution")
