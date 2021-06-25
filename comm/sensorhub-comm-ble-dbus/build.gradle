@@ -9,6 +9,7 @@ rootProject.allprojects {
 }
 
 dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-comm-ble')
   embeddedImpl 'org.freedesktop:dbus:2.8'
 }
@@ -17,5 +18,13 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
     attributes('Bundle-Activator': 'org.sensorhub.impl.comm.ble.dbus.Activator')
+    attributes('-fixupmessages': 'The default package \'.\' is not permitted by the Import-Package syntax.; is:=ignore')
+    attributes('-exportcontents': 'org.sensorhub.api.comm.ble')
+    attributes('Import-Package': '''
+      !cx.ath.*, !java.*, !javax.crypto.*, !javax.imageio.*,
+      !javax.net.*, !javax.naming.*, !javax.management.*, !javax.security.*, !javax.sql.*, !javax.swing.*,
+      !javax.transaction.*, !javax.xml.*, !com.sun.*,
+      org.osgi.service.repository;resolution:=optional, 
+      *''')
   }
 }
