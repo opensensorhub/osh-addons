@@ -13,6 +13,12 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.intellisense.Activator')
+    attributes('Import-Package': '''
+      !java.*, !javax.crypto.*, !javax.imageio.*, !javax.net.*, !javax.naming.*, !javax.management.*, !javax.security.*, 
+      !javax.sql.*, !javax.swing.*, !javax.transaction.*, !javax.xml.*, !org.apache.avalon.*, !org.apache.log.*,
+      !org.apache.log4j.*, !org.apache.xerces.*, !org.w3c.dom.*, !org.xml.sax.*,!com.sun.*, !org.ietf.jgss.*,
+      org.osgi.service.repository;resolution:=optional, 
+      *''')
   }
 }
 
