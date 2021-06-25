@@ -4,3 +4,11 @@ ext.details = 'Common API for Bluetooth LE implementations (e.g. GATT support)'
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion  
 }
+
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.comm.ble.Activator')
+    attributes('-exportcontents': 'org.sensorhub.api.comm.ble')
+  }
+}

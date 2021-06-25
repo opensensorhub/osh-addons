@@ -31,6 +31,7 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.onvif.Activator')
+    attributes('-fixupmessages': 'The default package \'.\' is not permitted by the Import-Package syntax.; is:=ignore')
   }
 }
 

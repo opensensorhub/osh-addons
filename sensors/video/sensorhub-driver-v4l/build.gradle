@@ -27,6 +27,11 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.v4l.Activator')
+    attributes('-exportcontents': 'org.sensorhub.impl.sensor.v4l')
+    attributes('Import-Package': '''
+      !javax.imageio.*, !java.*, !javax.*,
+      org.osgi.service.repository;resolution:=optional,
+      *''')
   }
 }
 

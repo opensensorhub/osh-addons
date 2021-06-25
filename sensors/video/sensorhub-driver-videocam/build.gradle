@@ -18,3 +18,12 @@ configurations {
 artifacts {
   testArtifacts packageTests
 }
+
+// add info to OSGi manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.videocam.Activator')
+    attributes('-exportcontents': 'org.sensorhub.impl.sensor.videocam, org.sensorhub.impl.sensor.videocam.ptz')
+  }
+}

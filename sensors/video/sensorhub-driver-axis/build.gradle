@@ -6,9 +6,9 @@ dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-driver-rtpcam')
   embeddedImpl('net.sf.jipcam:jipcam:0.9.1') {
-    exclude group: 'javax.servlet', module: 'servlet-api'
-    exclude group: 'commons-cli', module: 'commons-cli'
-    exclude group: 'commons-httpclient', module: 'commons-httpclient'
+//    exclude group: 'javax.servlet', module: 'servlet-api'
+//    exclude group: 'commons-cli', module: 'commons-cli'
+//    exclude group: 'commons-httpclient', module: 'commons-httpclient'
   }
   testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
 }
@@ -24,6 +24,14 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.axis.Activator')
+    attributes('-fixupmessages': 'The default package \'.\' is not permitted by the Import-Package syntax.; is:=ignore')
+    attributes('Import-Package': '''
+      !com.ibm.*, !com.ms.*, !com.sun.*, !java.*, !javax.crypto.*, !javax.imageio.*,
+      !javax.net.*, !javax.naming.*, !javax.management.*, !javax.security.*, !javax.sql.*, !javax.swing.*,
+      !javax.transaction.*, !javax.xml.*, !javax.jms.*, !javax.mail.*, !javax.sound.*, !netscape.*,
+      !org.apache.avalon.*, !org.apache.log.*, !org.apache.log4j.*, !org.apache.xerces.*, !org.w3c.dom.*, !org.xml.*,
+      !sun.audio.*, !sun.awt.*,
+      *''')
   }
 }
 
