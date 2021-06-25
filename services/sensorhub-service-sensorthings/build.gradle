@@ -2,12 +2,14 @@ description = 'SensorThings API'
 ext.details = 'Implementation of OGC SensorThing API based on FROST server'
 version = '0.1.0'
 
+
+def thisProjectDir = projectDir
 rootProject.allprojects {
   repositories {
-    maven { url "https://dl.bintray.com/fraunhoferiosb/Maven" }
+    maven { url "file:///$thisProjectDir/libs" }
   }
 }
-  
+
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-datastore-h2:' + oshCoreVersion
