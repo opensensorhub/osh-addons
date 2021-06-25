@@ -22,11 +22,9 @@ osgi {
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.station.Activator')
     // remove unused packages from imports
     attributes('Import-Package': '''
-      !java.*,
-      !javax.crypto.*, !javax.imageio.*,
-      !javax.net.*, !javax.naming.*, !javax.management.*, !javax.security.*, !javax.sql.*, !javax.swing.*,
-      !javax.transaction.*, !javax.xml.*, !org.apache.avalon.*, !org.apache.log.*,  !org.apache.log4j.*, !org.apache.xerces.*, 
-      !org.ietf.jgss.*, !org.joda.*,
+      !java.*, !javax.crypto.*, !javax.imageio.*, !javax.net.*, !javax.naming.*, !javax.management.*, !javax.security.*, 
+      !javax.sql.*, !javax.swing.*, !javax.transaction.*, !javax.xml.*, !org.apache.avalon.*, !org.apache.log.*,  
+      !org.apache.log4j.*, !org.apache.xerces.*, !org.ietf.jgss.*, !org.joda.*,
       org.osgi.service.repository;resolution:=optional, 
       *''')
   }
