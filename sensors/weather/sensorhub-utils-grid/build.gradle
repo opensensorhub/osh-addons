@@ -10,20 +10,26 @@ rootProject.allprojects {
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  embeddedImpl ('edu.ucar:grib:4.6.10') {
-    exclude group: 'com.amazonaws', module: 'aws-java-sdk-s3'
-    exclude group: 'edu.ucar', module: 'jj2000'  
-    exclude group: 'org.apache.httpcomponents', module: 'httpcore'
-    exclude group: 'org.apache.httpcomponents', module: 'httpclient'
-    exclude group: 'org.apache.httpcomponents', module: 'httpmime'
-    exclude group: 'com.google.guava', module: 'guava'
-  }
+  embeddedImpl ('edu.ucar:grib:4.6.10')
 }
 
 // add info to OSGi manifest
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Botts Innovative Research Inc.')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.utils.grid.Activator')
+
+    attributes('-fixupmessages': 'The default package \'.\' is not permitted by the Import-Package syntax.; is:=ignore')
+
+    // remove unused packages from imports
+    attributes('Import-Package': '''
+      !com.amazonaws.*, !com.sun.org.apache.xpath.*, !commonj.work, !java.*, !javax.crypto.*, !javax.imageio.*,
+      !javax.net.*, !javax.naming.*, !javax.management.*, !javax.security.*, !javax.sql.*, !javax.swing.*,
+      !javax.transaction.*, !javax.xml.*, !kotlin.*, !oracle.*, !org.apache.avalon.*, !org.apache.log.*,
+      !org.apache.log4j.*, !org.apache.xerces.*, !org.bouncycastle.jce.*, !org.ietf.jgss.*, !org.jaxen.*,
+      !org.jboss.*, !org.joda.*, !org.quartz.jobs.*, !org.terracotta.*, !scala.util.*, !ucar.jpeg.*,
+      !weblogic.*, !org.w3c.dom.*, !org.xml.*, org.osgi.service.repository;resolution:=optional, 
+      *''')
   }
 }
 
