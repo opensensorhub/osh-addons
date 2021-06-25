@@ -14,13 +14,13 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.process.geoloc;
 
-import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Vector;
 import org.sensorhub.algo.geoloc.Ellipsoid;
 import org.sensorhub.algo.geoloc.EllipsoidIntersect;
 import org.sensorhub.algo.vecmath.Vect3d;
 import org.sensorhub.api.processing.OSHProcessInfo;
+import org.sensorhub.process.vecmath.VecMathHelper;
 import org.vast.process.ExecutableProcessImpl;
 import org.vast.process.ProcessException;
 import org.vast.process.ProcessInfo;
@@ -43,7 +43,7 @@ import org.vast.swe.helper.GeoPosHelper;
  */
 public class RayIntersectEllipsoid extends ExecutableProcessImpl
 {
-    public static final OSHProcessInfo INFO = new OSHProcessInfo("RayIntersectEllipsoid", "Ray Ellipsoid Intersection", "Compute 3D intersection between a ray and an ellipsoid", RayIntersectEllipsoid.class);
+    public static final OSHProcessInfo INFO = new OSHProcessInfo("geoloc:RayIntersectEllipsoid", "Ray Ellipsoid Intersection", "Compute 3D intersection between a ray and an ellipsoid", RayIntersectEllipsoid.class);
     
     protected Vector rayOrigin;
     protected Vector rayDirection;
@@ -109,25 +109,17 @@ public class RayIntersectEllipsoid extends ExecutableProcessImpl
     public void execute() throws ProcessException
     {
         // get ray origin input
-        DataBlock originData = rayOrigin.getData();
-        origin.x = originData.getDoubleValue(0);
-        origin.y = originData.getDoubleValue(1);
-        origin.z = originData.getDoubleValue(2);
+        VecMathHelper.toVect3d(rayOrigin.getData(), origin);
         
         // get ray direction input
-        DataBlock dirData = rayDirection.getData();
-        dir.x = dirData.getDoubleValue(0);
-        dir.y = dirData.getDoubleValue(1);
-        dir.z = dirData.getDoubleValue(2);
+        VecMathHelper.toVect3d(rayDirection.getData(), dir);
         
+        // do actual computation
         boolean ok = rie.computeIntersection(origin, dir, intersect);
         if (!ok)
             getLogger().debug("No intersection found");
         
         // set intersection point output
-        DataBlock intersectData = intersection.getData();
-        intersectData.setDoubleValue(0, intersect.x);
-        intersectData.setDoubleValue(1, intersect.y);
-        intersectData.setDoubleValue(2, intersect.z);
+        VecMathHelper.fromVect3d(intersect, intersection.getData());
     }
 }

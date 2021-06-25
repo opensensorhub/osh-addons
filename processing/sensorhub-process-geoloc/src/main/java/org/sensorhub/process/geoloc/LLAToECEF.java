@@ -35,7 +35,8 @@ import org.vast.swe.helper.GeoPosHelper;
  */
 public class LLAToECEF extends ExecutableProcessImpl
 {
-    public static final OSHProcessInfo INFO = new OSHProcessInfo("LLA2ECEF", "LLA to ECEF", "Geographic to ECEF coordinates conversion", LLAToECEF.class);
+    public static final OSHProcessInfo INFO = new OSHProcessInfo("geoloc:LLA2ECEF", "LLA to ECEF",
+        "Geographic to ECEF coordinates conversion", LLAToECEF.class);
     
     protected Vector ecefLoc;
     protected Vector llaLoc;

@@ -34,8 +34,10 @@ public class TestRayIntersectTerrainProcess
     {
         RayIntersectTerrain p = new RayIntersectTerrain();
         
-        // set params        
-        p.getParameterList().getComponent("srtmDataPath").getData().setStringValue(srtmRoot);
+        // set params
+        var srtmPathParam = p.getParameterList().getComponent("srtmDataPath");
+        srtmPathParam.assignNewDataBlock();
+        srtmPathParam.getData().setStringValue(srtmRoot);
         
         // prepare for exec
         p.init();

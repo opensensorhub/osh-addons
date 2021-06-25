@@ -43,7 +43,8 @@ import org.vast.swe.helper.GeoPosHelper;
  */
 public class ECEFPosMatrix extends ExecutableProcessImpl
 {
-    public static final OSHProcessInfo INFO = new OSHProcessInfo("ECEFPos", "ECEF Matrix", "Compute ECEF position matrix from ECEF location and local orientation", ECEFPosMatrix.class);
+    public static final OSHProcessInfo INFO = new OSHProcessInfo("geoloc:ECEFPos", "ECEF Matrix",
+        "Compute ECEF position matrix from ECEF location and local orientation", ECEFPosMatrix.class);
     
     protected Vector platformLoc;
     protected Vector platformAtt;

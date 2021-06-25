@@ -40,7 +40,7 @@ import org.vast.swe.SWEHelper;
  */
 public class RayIntersectTerrain extends RayIntersectEllipsoid
 {
-    public static final OSHProcessInfo INFO = new OSHProcessInfo("RayIntersectTerrain", "Ray Terrain Intersection", "Compute 3D intersection between a ray and a terrain model", RayIntersectSphere.class);
+    public static final OSHProcessInfo INFO = new OSHProcessInfo("geoloc:RayIntersectTerrain", "Ray Terrain Intersection", "Compute 3D intersection between a ray and a terrain model", RayIntersectSphere.class);
     
     protected Text srtmDataPath;
     
