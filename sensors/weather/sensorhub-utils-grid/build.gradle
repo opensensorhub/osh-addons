@@ -30,6 +30,8 @@ osgi {
       !org.jboss.*, !org.joda.*, !org.quartz.jobs.*, !org.terracotta.*, !scala.util.*, !ucar.jpeg.*,
       !weblogic.*, !org.w3c.dom.*, !org.xml.*, org.osgi.service.repository;resolution:=optional, 
       *''')
+
+    attributes('-exportcontents': 'org.sensorhub.impl.utils.grid')
   }
 }
 
