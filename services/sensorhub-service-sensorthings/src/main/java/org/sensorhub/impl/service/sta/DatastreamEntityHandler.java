@@ -322,6 +322,8 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     {
         var recordStruct = toSweCommon(abstractDs);
         return new DataStreamInfo.Builder()
+            .withName(abstractDs.getName())
+            .withDescription(abstractDs.getDescription())
             .withProcedure(procID)
             .withRecordDescription(recordStruct)
             .withRecordEncoding(new TextEncodingImpl())

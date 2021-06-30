@@ -15,6 +15,7 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.security.oauth;
 
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.security.SecurityModuleConfig;
 
 
@@ -47,4 +48,9 @@ public class OAuthClientConfig extends SecurityModuleConfig
     
     @DisplayInfo(label="OAuth Scope", desc="Defines what information OSH will have access to")
     public String authzScope;
+    
+    
+    @Required
+    @DisplayInfo(desc="Name of JSON attribute in UserInfo resource to use as OSH user ID")
+    public String userIdField = "id";
 }

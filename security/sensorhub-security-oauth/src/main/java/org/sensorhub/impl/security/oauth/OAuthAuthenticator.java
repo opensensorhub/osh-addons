@@ -16,7 +16,9 @@ package org.sensorhub.impl.security.oauth;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -42,6 +44,8 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
 import org.slf4j.Logger;
+import org.vast.util.Asserts;
+import com.google.common.cache.CacheBuilder;
 import com.google.gson.stream.JsonReader;
 
 
@@ -51,13 +55,21 @@ public class OAuthAuthenticator extends LoginAuthenticator
     
     private Logger log;
     private OAuthClientConfig config;
-    private String generatedState;
+    private Map<String, Boolean> generatedState;
     
 
     public OAuthAuthenticator(OAuthClientConfig config, Logger log)
     {
-        this.log = log;
-        this.config = config;
+        this.log = Asserts.checkNotNull(log, Logger.class);
+        
+        this.config = Asserts.checkNotNull(config, OAuthClientConfig.class);
+        Asserts.checkNotNullOrEmpty("The userIdField config property must be configured", config.userIdField);
+        
+        this.generatedState = CacheBuilder.newBuilder()
+            .concurrencyLevel(4)
+            .expireAfterWrite(30, TimeUnit.SECONDS)
+            .<String, Boolean>build()
+            .asMap();
     }
     
     
@@ -103,7 +115,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
             }
             
             // if calling back from provider with auth code
-            if (generatedState != null && request.getParameter(OAuth.OAUTH_CODE) != null)
+            if (request.getParameter(OAuth.OAUTH_STATE) != null)
             {
                 try
                 {
@@ -113,11 +125,17 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     log.debug("OAuth Code = " + code);
                     
                     // check state parameter
-                    if (!generatedState.equals(oar.getState()))
+                    if (generatedState.remove(oar.getState()) == null)
                         throw OAuthProblemException.error("Invalid state parameter");
 
-                    OAuthClientRequest authRequest = OAuthClientRequest.tokenLocation(config.tokenEndpoint).setCode(code).setClientId(config.clientID).setClientSecret(config.clientSecret)
-                            .setRedirectURI(redirectUrl).setGrantType(GrantType.AUTHORIZATION_CODE).buildBodyMessage();
+                    OAuthClientRequest authRequest = OAuthClientRequest
+                        .tokenLocation(config.tokenEndpoint)
+                        .setCode(code)
+                        .setClientId(config.clientID)
+                        .setClientSecret(config.clientSecret)
+                        .setRedirectURI(redirectUrl)
+                        .setGrantType(GrantType.AUTHORIZATION_CODE)
+                        .buildBodyMessage();
                     authRequest.addHeader("Accept", "application/json");
 
                     OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
@@ -128,7 +146,10 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     log.debug("OAuth Token = " + accessToken);
 
                     // request user info
-                    OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint).setAccessToken(accessToken).buildQueryMessage();
+                    OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint)
+                        .setAccessToken(accessToken)
+                        //.buildQueryMessage();
+                        .buildHeaderMessage();
                     OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, HttpMethod.GET, OAuthResourceResponse.class);
 
                     // parse user info
@@ -144,11 +165,19 @@ public class OAuthAuthenticator extends LoginAuthenticator
                         session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, userAuth);
                         return userAuth;
                     }
+                    else
+                        log.error("Unknown user: {}", userId);
                     
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     return Authentication.SEND_FAILURE;
                 }
-                catch (OAuthProblemException | OAuthSystemException | IOException e)
+                catch (OAuthProblemException e)
+                {
+                    log.error("Error received from authorization endpoint: {} - {}", e.getError(), e.getDescription());
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    return Authentication.SEND_FAILURE;
+                }
+                catch (OAuthSystemException | IOException e)
                 {
                     log.error("Cannot complete authentication at endpoint " + config.tokenEndpoint, e);
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
@@ -162,9 +191,15 @@ public class OAuthAuthenticator extends LoginAuthenticator
                 try
                 {
                     // generate request to auth provider
-                    this.generatedState = UUID.randomUUID().toString();
-                    OAuthClientRequest authRequest = OAuthClientRequest.authorizationLocation(config.authzEndpoint).setClientId(config.clientID).setRedirectURI(redirectUrl)
-                            .setResponseType(OAuth.OAUTH_CODE).setScope(config.authzScope).setState(generatedState).buildQueryMessage();
+                    var state = UUID.randomUUID().toString();
+                    generatedState.put(state, Boolean.TRUE);
+                    OAuthClientRequest authRequest = OAuthClientRequest.authorizationLocation(config.authzEndpoint)
+                        .setClientId(config.clientID)
+                        .setRedirectURI(redirectUrl)
+                        .setResponseType(OAuth.OAUTH_CODE)
+                        .setScope(config.authzScope)
+                        .setState(state)
+                        .buildQueryMessage();
 
                     // send as redirect
                     String loginUrl = authRequest.getLocationUri();
@@ -195,7 +230,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
         while (reader.hasNext())
         {
             String name = reader.nextName();
-            if ("id".equals(name) || "user_id".equals(name) || "uid".equals(name))
+            if (config.userIdField.equals(name))
                 userId = reader.nextString();
             else
                 reader.skipValue();
