@@ -118,8 +118,9 @@ public class VmtiTargetPack extends AbstractDataSet {
         // first decode mandatory target ID
         int targetID = decodeOID();
         Tag tag = TagRegistry.getInstance().getByTagSetAndId(VTARGET_PACK_LOCAL_SET, (byte)0);
-        valuesMap.put(tag, targetID);
-        logger.debug("Tag {}: {} = {}", tag.getLocalSetTag(), tag.getName(), valuesMap.get(tag));
+        valuesMap.put(tag, targetID);        
+        if (logger.isTraceEnabled())
+            logger.trace("Tag {}: {} = {}", tag.getLocalSetTag(), tag.getName(), valuesMap.get(tag));
         
         // Extract decoded elements from the set
         while (hasMoreElements()) {
@@ -170,16 +171,17 @@ public class VmtiTargetPack extends AbstractDataSet {
                         break;
                         
                     default:
-                        logger.error("Unsupported tag: {}", tag.getLocalSetTag());
+                        logger.trace("Unsupported tag: {}", tag.getLocalSetTag());
                         break;
                 }
 
             } else {
 
-                logger.info("Unknown VMTI Set tag: \n \t{}", dataElement.toJsonString());
+                logger.error("Unknown VMTI Set tag: \n \t{}", dataElement.toJsonString());
             }
             
-            logger.debug("Tag {}: {} = {}", tag.getLocalSetTag(), tag.getName(), valuesMap.get(tag));
+            if (logger.isTraceEnabled())
+                logger.trace("Tag {}: {} = {}", tag.getLocalSetTag(), tag.getName(), valuesMap.get(tag));
         }
 
         return valuesMap;

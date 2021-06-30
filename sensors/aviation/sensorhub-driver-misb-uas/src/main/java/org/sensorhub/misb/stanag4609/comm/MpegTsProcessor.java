@@ -498,7 +498,6 @@ public class MpegTsProcessor extends Thread {
                 {
                     var now = System.currentTimeMillis();
                     var sleepDuration = 1000/fps - (now-lastFrameTime);
-                    System.out.println(sleepDuration);
                     if (sleepDuration > 0) {
                         try { Thread.sleep(sleepDuration); }
                         catch (InterruptedException e) { }

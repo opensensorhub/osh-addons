@@ -140,16 +140,17 @@ public class VmtiLocalSet extends AbstractDataSet {
                         break;
                         
                     default:
-                        logger.error("Unsupported tag: {}", tag.getLocalSetTag());
+                        logger.trace("Unsupported tag: {}", tag.getLocalSetTag());
                         break;
                 }
 
             } else {
 
-                logger.info("Unknown VMTI Set tag: \n \t{}", dataElement.toJsonString());
+                logger.error("Unknown VMTI Set tag: \n \t{}", dataElement.toJsonString());
             }
             
-            logger.debug("Tag {}: {} = {}", tag.getLocalSetTag(), tag.getName(), valuesMap.get(tag));
+            if (logger.isTraceEnabled())
+                logger.trace("Tag {}: {} = {}", tag.getLocalSetTag(), tag.getName(), valuesMap.get(tag));
         }
 
         return valuesMap;

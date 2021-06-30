@@ -447,13 +447,13 @@ public class UasDataLinkSet extends AbstractDataSet {
                         break;
 
                     default:
-                        logger.error("Unsupported tag: {}", tag.getLocalSetTag());
+                        logger.trace("Unsupported tag: {}", tag.getLocalSetTag());
                         break;
                 }
 
             } else {
 
-                logger.info("Unknown UAS Data Link Set tag: \n \t{}", dataElement.toJsonString());
+                logger.error("Unknown UAS Data Link Set tag: \n \t{}", dataElement.toJsonString());
             }
         }
 
