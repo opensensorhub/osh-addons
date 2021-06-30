@@ -173,6 +173,11 @@ public class MpegTsProcessor extends Thread {
      */
     int fps;
     
+    /**
+     * If true, play the video file continuously in a loop
+     */
+    boolean loop;
+    
 
     /**
      * Constructor
@@ -182,7 +187,7 @@ public class MpegTsProcessor extends Thread {
      */
     public MpegTsProcessor(String source) {
 
-        this(source, 0);
+        this(source, 0, false);
     }
     
     
@@ -192,13 +197,15 @@ public class MpegTsProcessor extends Thread {
      * @param source A string representation of the file or url to use as the source of the transport stream to
      *               demux
      * @param fps The desired playback FPS (use 0 for decoding the TS file as fast as possible)
+     * @param loop 
      */
-    public MpegTsProcessor(String source, int fps) {
+    public MpegTsProcessor(String source, int fps, boolean loop) {
 
         super(WORKER_THREAD_NAME);
 
         this.streamSource = source;
         this.fps = fps;
+        this.loop = loop;
     }
 
     /**
@@ -453,8 +460,14 @@ public class MpegTsProcessor extends Thread {
     @Override
     public void run() {
 
-        processStreamPackets();
-        logger.info("End of MISB TS stream");
+        do {
+            processStreamPackets();
+            logger.info("End of MISB TS stream");
+            if (loop) {
+                avformat.av_seek_frame(avFormatContext, 0, 0, avformat.AVSEEK_FLAG_ANY);
+            }
+        }
+        while (loop);
     }
 
     /**
@@ -467,6 +480,7 @@ public class MpegTsProcessor extends Thread {
         AVPacket avPacket = new AVPacket();
 
         // Read frames
+        long lastFrameTime = System.currentTimeMillis();
         int retCode;
         while (!terminateProcessing.get() && (retCode = av_read_frame(avFormatContext, avPacket)) >= 0) {
 
@@ -482,8 +496,14 @@ public class MpegTsProcessor extends Thread {
                 
                 if (fps > 0)
                 {
-                    try { Thread.sleep(1000/fps); }
-                    catch (InterruptedException e) { }
+                    var now = System.currentTimeMillis();
+                    var sleepDuration = 1000/fps - (now-lastFrameTime);
+                    System.out.println(sleepDuration);
+                    if (sleepDuration > 0) {
+                        try { Thread.sleep(sleepDuration); }
+                        catch (InterruptedException e) { }
+                    }
+                    lastFrameTime = now;
                 }
                 
             } else if ((avPacket.stream_index() == dataStreamId) && (null != metadataDataBufferListener)) {
@@ -545,7 +565,7 @@ public class MpegTsProcessor extends Thread {
         logger.debug("stopProcessingStream");
 
         if (streamOpened) {
-
+            loop = false;
             terminateProcessing.set(true);
         }
     }

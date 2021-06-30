@@ -58,7 +58,7 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
         if ((null != config.connection.transportStreamPath) && (!config.connection.transportStreamPath.isEmpty())) {
 
             Asserts.checkArgument(config.connection.fps >= 0, "FPS must be >= 0");
-            mpegTsProcessor = new MpegTsProcessor(config.connection.transportStreamPath, config.connection.fps);
+            mpegTsProcessor = new MpegTsProcessor(config.connection.transportStreamPath, config.connection.fps, config.connection.loop);
 
         } else {
 

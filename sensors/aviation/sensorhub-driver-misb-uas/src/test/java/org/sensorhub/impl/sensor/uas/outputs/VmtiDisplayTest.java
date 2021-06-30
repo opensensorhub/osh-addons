@@ -74,12 +74,13 @@ public class VmtiDisplayTest {
         config.connection.transportStreamPath = new File(resource.toURI()).getPath();
         config.outputs.enableTargetIndicators = true;
         config.outputs.enableVideo = true;
+        config.connection.fps = 30;
+        //config.connection.loop = true;
 
         UasSensor driver = new UasSensor();
         driver.setConfiguration(config);
         driver.init();
-        driver.start();
-        
+                
         class Target {
             int x;
             int y;
@@ -196,5 +197,7 @@ public class VmtiDisplayTest {
                 }
             }
         });
+        
+        driver.start();
     }
 }

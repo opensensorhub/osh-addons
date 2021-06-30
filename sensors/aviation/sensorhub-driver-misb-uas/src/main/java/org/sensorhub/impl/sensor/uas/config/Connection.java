@@ -31,6 +31,9 @@ public class Connection {
     @DisplayInfo(label = "FPS", desc = "Number of frames per second to enforce during playback of a file."
         + " 0 means the stream will be played as fast as possible.")
     public int fps = 0;
+    
+    @DisplayInfo(desc = "Continuously loop video playback (only available when reading from file).")
+    public boolean loop = false;
 
     @DisplayInfo(label = "Server Ip", desc = "Server IP address of MISB STANAG 4609 MPEG-TS data to be streamed")
     @DisplayInfo.FieldType(value = DisplayInfo.FieldType.Type.REMOTE_ADDRESS)
