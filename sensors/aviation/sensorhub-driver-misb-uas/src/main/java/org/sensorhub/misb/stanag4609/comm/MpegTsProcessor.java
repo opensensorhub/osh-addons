@@ -480,7 +480,8 @@ public class MpegTsProcessor extends Thread {
         AVPacket avPacket = new AVPacket();
 
         // Read frames
-        long lastFrameTime = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
+        long frameCount = 0;
         int retCode;
         while (!terminateProcessing.get() && (retCode = av_read_frame(avFormatContext, avPacket)) >= 0) {
 
@@ -490,20 +491,21 @@ public class MpegTsProcessor extends Thread {
                 // Process video packet
                 byte[] dataBuffer = new byte[avPacket.size()];
                 avPacket.data().get(dataBuffer);
-
-                // Pass data buffer to interested listener
-                videoDataBufferListener.onDataBuffer(new DataBufferRecord(avPacket.pts() * videoStreamTimeBase, dataBuffer));
-                
+                                
+                // if FPS is set, we may have to wait a little
                 if (fps > 0)
                 {
                     var now = System.currentTimeMillis();
-                    var sleepDuration = 1000/fps - (now-lastFrameTime);
+                    var sleepDuration = frameCount*1000/fps - (now - startTime);                     
                     if (sleepDuration > 0) {
                         try { Thread.sleep(sleepDuration); }
                         catch (InterruptedException e) { }
                     }
-                    lastFrameTime = now;
                 }
+                
+                // Pass data buffer to interested listener
+                frameCount++;
+                videoDataBufferListener.onDataBuffer(new DataBufferRecord(avPacket.pts() * videoStreamTimeBase, dataBuffer));
                 
             } else if ((avPacket.stream_index() == dataStreamId) && (null != metadataDataBufferListener)) {
 
