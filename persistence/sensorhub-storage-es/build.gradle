@@ -25,6 +25,12 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
     attributes('Bundle-Activator': 'org.sensorhub.impl.persistence.es.Activator')
+    attributes('Import-Package': '''
+      !android.*,!com.carrotsearch.*, !com.fasterxml.*, !com.google.*, !com.jcraft.*, !com.ning.*, !com.sun.*,
+      !java.*, !javassist.*, !javax.*, !lzma.*, !net.jpountz.*, !org.apache.*, !org.bouncycastle.*, !org.eclipse.jetty.*, 
+      !org.ietf.*, !org.jboss.*, !org.joda.*, !org.noggit.*, !org.osgi.service.log.*, !org.w3c.dom.*, !org.xml.*, !sun.*, 
+      
+      *''')
   }
 }
 
