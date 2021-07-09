@@ -32,6 +32,13 @@ osgi {
     attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.onvif.Activator')
     attributes('-fixupmessages': 'The default package \'.\' is not permitted by the Import-Package syntax.; is:=ignore')
+    attributes('Import-Package': '''
+      !com.ibm.*,!com.ms.*,!com.sun.*,!java.*,!javax.activation.*,!javax.annotation.*,!javax.crypto.*,!javax.imageio.*,
+      !javax.jms.*,!javax.jws.*,!javax.lang.*,!javax.mail.*,!javax.management.*,!javax.naming.*,!javax.net.*,
+      !javax.security.*,!javax.sound.*, !javax.swing.*, !javax.tools.*, !javax.validation.*, !javax.xml.*, !net.sf.cglib.*,
+      !netscape.*, !org.apache.*, !org.codehaus.*, !org.ietf.*, !org.jvnet.*, !org.osgi.service.*, !org.relaxng.*,
+      !org.springframework.*, !org.w3c.*, !org.xml.*, !sun.*, 
+      *''')
   }
 }
 
