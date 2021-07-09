@@ -10,7 +10,8 @@ dependencies {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.impl.service.commrelay')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.service.commrelay.Activator')
+    attributes('-exportcontents': 'org.sensorhub.impl.service.commrelay')
   }
 }
 
