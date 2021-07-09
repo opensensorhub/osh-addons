@@ -36,6 +36,9 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.nexrad.Activator')
+    attributes('Import-Package': '''
+      !com.amazonaws.*, !com.fasterxml.*, !java.*, !javax.*, !org.apache.*, !org.joda.*, !org.w3c.*, !ucar.*, 
+      *''')
   }
 }
 
