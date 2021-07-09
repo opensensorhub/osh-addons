@@ -22,6 +22,9 @@ osgi {
       Classes found in the wrong directory: \\{META-INF/versions/,
       Input file does not exist: objenesis
     ''')
+    attributes('Import-Package': '''
+      !javax.crypto.*, !com.sun.*, !java.*, !sun.*, 
+      *''')
   }
 }
 
