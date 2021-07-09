@@ -22,6 +22,9 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.kinect.Activator')
+    attributes('Import-Package': '''
+      !javax.*, !java.*, 
+      *''')
   }
 }
 
