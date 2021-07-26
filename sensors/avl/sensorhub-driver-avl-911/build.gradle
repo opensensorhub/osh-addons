@@ -17,6 +17,11 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.avl.Activator')
+    attributes('Export-Package': 'org.sensorhub.impl.sensor.avl')
+    attributes('Import-Package': '''
+      !java.io.*,!java.lang.*,!java.net.*,!java.nio.file.*,!java.text.*, !java.time.*,!java.util.*,
+      org.osgi.service.repository;resolution:=optional,
+      *''')
   }
 }
 
