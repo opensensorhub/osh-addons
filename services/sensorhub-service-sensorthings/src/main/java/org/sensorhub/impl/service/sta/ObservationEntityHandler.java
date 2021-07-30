@@ -19,6 +19,7 @@ import java.security.AccessControlException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.stream.Collectors;
 import org.joda.time.DateTimeZone;
@@ -34,9 +35,11 @@ import org.sensorhub.impl.event.DelegatingSubscriberAdapter;
 import org.sensorhub.impl.procedure.DataStreamTransactionHandler;
 import org.sensorhub.impl.procedure.ProcedureSubscriptionHandler;
 import org.sensorhub.impl.service.sta.filter.ObsFilterVisitor;
+import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockDouble;
 import org.vast.data.DataBlockInt;
 import org.vast.data.DataBlockLong;
+import org.vast.data.DataBlockMixed;
 import org.vast.data.DataBlockString;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
@@ -84,6 +87,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     int maxPageSize = 100;
     boolean truncateIds = false;
     Cache<Long, DataStreamTransactionHandler> dsHandlerCache;
+    Cache<Long, Boolean> dsResultHasTsCache;
     
     
     static class EventPublisherInfo
@@ -111,6 +115,12 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             .concurrencyLevel(4)
             .expireAfterAccess(1, TimeUnit.HOURS)
             .build();
+        
+        /*this.dsResultHasTsCache = CacheBuilder.newBuilder()
+            .maximumSize(10000)
+            .concurrencyLevel(4)
+            .expireAfterAccess(1, TimeUnit.HOURS)
+            .build();*/
     }
 
 
@@ -227,7 +237,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         if (obs == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
 
-        return toFrostObservation(key, obs, q);
+        return toFrostObservation(key, obs, checkResultHasTimeStamp(obs), q);
     }
 
 
@@ -240,12 +250,12 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         ObsFilter filter = getFilter(path, q);
         int skip = q.getSkip(0);
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
-
+        
         // collect result to entity set
         var entitySet = obsReadStore.selectEntries(filter)
             .skip(skip)
             .limit(limit+1) // request limit+1 elements to handle paging
-            .map(e -> toFrostObservation(e.getKey(), e.getValue(), q))
+            .map(e -> toFrostObservation(e.getKey(), e.getValue(), checkResultHasTimeStamp(e.getValue()), q))
             .collect(Collectors.toCollection(EntitySetImpl::new));
 
         return FrostUtils.handlePaging(entitySet, path, q, limit);
@@ -267,7 +277,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             {
                 for (var obs: item.getObservations())
                 {
-                    var staObs = toFrostObservation(BigInteger.ONE, obs, q);
+                    var staObs = toFrostObservation(BigInteger.ONE, obs, checkResultHasTimeStamp(obs), q);
                     subscriber.onNext(staObs);
                 }
             }           
@@ -276,6 +286,25 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         // if subscribe failed, it means topic was not available
         if (!ok)
             throw new AccessControlException("Resource unavailable: " + path);
+    }
+    
+    
+    protected boolean checkResultHasTimeStamp(IObsData obs)
+    {
+        /*var dsID = obs.getDataStreamID();
+        
+        try
+        {
+            return dsResultHasTsCache.get(dsID, () -> {
+                var dsInfo = obsReadStore.getDataStreams().get(new DataStreamKey(dsID));
+                return SWEDataUtils.getTimeStampIndexer(dsInfo.getRecordStructure()) != null;
+            });
+        }
+        catch (ExecutionException e)
+        {
+            throw new IllegalStateException(e.getCause());
+        }*/
+        return true;
     }
 
 
@@ -334,31 +363,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             resultTime = Instant.parse(obs.getResultTime().asISO8601()).truncatedTo(ChronoUnit.MILLIS);
 
         // result
-        Object result = obs.getResult();
-        DataBlock dataBlk;
-
-        if (result instanceof Integer)
-        {
-            dataBlk = new DataBlockInt(1);
-            dataBlk.setIntValue((Integer)result);
-        }
-        else if (result instanceof Long)
-        {
-            dataBlk = new DataBlockLong(1);
-            dataBlk.setLongValue((Long)result);
-        }
-        else if (result instanceof Number)
-        {
-            dataBlk = new DataBlockDouble(1);
-            dataBlk.setDoubleValue(((Number)result).doubleValue());
-        }
-        else if (result instanceof String)
-        {
-            dataBlk = new DataBlockString();
-            dataBlk.setStringValue((String)result);
-        }
-        else
-            throw new IllegalArgumentException("Unsupported result type: " + result.getClass().getSimpleName());
+        DataBlock dataBlk = createDataBlock(phenomenonTime, obs.getResult());
 
         return new ObsData.Builder()
             .withDataStream(pm.toLocalID(dsId.asLong()))
@@ -368,15 +373,73 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             .withResult(dataBlk)
             .build();
     }
-
-
-    protected void addToDataBlock(Object obj)
+    
+    
+    protected DataBlock createDataBlock(Instant timeStamp, Object val)
     {
-
+        var tsBlk = new DataBlockDouble(1);
+        tsBlk.setDoubleValue(timeStamp.toEpochMilli() / 1000.);
+        
+        var dataBlk = createDataBlock(val);
+        if (dataBlk instanceof DataBlockMixed)
+        {
+            ((DataBlockMixed)dataBlk).getUnderlyingObject()[0] = tsBlk;
+            return dataBlk;
+        }
+        else
+        {
+            var wrapBlk = new DataBlockMixed(2, 2);
+            ((DataBlockMixed)wrapBlk).getUnderlyingObject()[0] = tsBlk;
+            ((DataBlockMixed)wrapBlk).getUnderlyingObject()[1] = (AbstractDataBlock)dataBlk;
+            return wrapBlk;
+        }
     }
 
 
-    protected Observation toFrostObservation(BigInteger key, IObsData obsData, Query q)
+    protected DataBlock createDataBlock(Object val)
+    {
+        DataBlock dataBlk;
+        
+        if (val instanceof Integer)
+        {
+            dataBlk = new DataBlockInt(1);
+            dataBlk.setIntValue((Integer)val);
+        }
+        else if (val instanceof Long)
+        {
+            dataBlk = new DataBlockLong(1);
+            dataBlk.setLongValue((Long)val);
+        }
+        else if (val instanceof Number)
+        {
+            dataBlk = new DataBlockDouble(1);
+            dataBlk.setDoubleValue(((Number)val).doubleValue());
+        }
+        else if (val instanceof String)
+        {
+            dataBlk = new DataBlockString();
+            dataBlk.setStringValue((String)val);
+        }
+        else if (val instanceof ArrayList)
+        {
+            var elts = (ArrayList)val;
+            var numElts = elts.size();
+            var blkSize = numElts + 1;
+            dataBlk = new DataBlockMixed(blkSize, blkSize);
+            for (int i = 0; i < numElts; i++)
+            {
+                var childBlk = (AbstractDataBlock)createDataBlock(elts.get(i));
+                ((DataBlockMixed)dataBlk).getUnderlyingObject()[i+1] = childBlk;
+            }
+        }
+        else
+            throw new IllegalArgumentException("Unsupported result type: " + val.getClass().getSimpleName());
+        
+        return dataBlk;
+    }
+
+
+    protected Observation toFrostObservation(BigInteger key, IObsData obsData, boolean resultHasTimeStamp, Query q)
     {
         Observation obs = new Observation();
 
@@ -402,24 +465,23 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         }
 
         // result
-        boolean isExternalDatastream = !pm.isInWritableDatabase(obsData.getDataStreamID());
         DataBlock data = obsData.getResult();
-        if ((isExternalDatastream && data.getAtomCount() == 2) || data.getAtomCount() == 1)
-        {
-            int resultValueIdx = isExternalDatastream ? 1 : 0;
+        int resultStartIdx = resultHasTimeStamp ? 1 : 0;
+        if ((resultHasTimeStamp && data.getAtomCount() == 2) || data.getAtomCount() == 1)
+        {   
             Datastream ds = new Datastream(new ResourceIdLong(obsData.getDataStreamID()));
             ds.setExportObject(false);
             obs.setDatastream(ds);
-            obs.setResult(getResultValue(data, resultValueIdx));
+            obs.setResult(getResultValue(data, resultStartIdx));
         }
         else
         {
             MultiDatastream ds = new MultiDatastream(new ResourceIdLong(obsData.getDataStreamID()));
             ds.setExportObject(false);
             obs.setMultiDatastream(ds);
-            Object[] result = new Object[data.getAtomCount()-1];
-            for (int i = 1; i < data.getAtomCount(); i++)
-                result[i-1] = getResultValue(data, i);
+            Object[] result = new Object[data.getAtomCount()-resultStartIdx];
+            for (int i = resultStartIdx, j = 0; i < data.getAtomCount(); i++, j++)
+                result[j] = getResultValue(data, i);
             obs.setResult(result);
         }
 
