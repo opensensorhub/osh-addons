@@ -50,8 +50,8 @@ import net.opengis.gml.v32.AbstractFeature;
  */
 public class LocationEntityHandler implements IResourceHandler<Location>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find 'Location' entity with ID #";
-    static final String MISSING_ASSOC = "Missing reference to 'Location' entity";
+    static final String NOT_FOUND_MESSAGE = "Cannot find Location ";
+    static final String MISSING_ASSOC = "Missing reference to Location entity";
         
     OSHPersistenceManager pm;
     ISTALocationStore locationDataStore;

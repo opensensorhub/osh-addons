@@ -71,9 +71,9 @@ import net.opengis.sensorml.v20.DocumentList;
  */
 public class SensorEntityHandler implements IResourceHandler<Sensor>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find 'Sensor' entity with ID #";
-    static final String NOT_WRITABLE_MESSAGE = "Cannot modify read-only 'Sensor' entity #";
-    static final String MISSING_ASSOC = "Missing reference to 'Sensor' entity";
+    static final String NOT_FOUND_MESSAGE = "Cannot find Sensor ";
+    static final String NOT_WRITABLE_MESSAGE = "Cannot modify read-only Sensor ";
+    static final String MISSING_ASSOC = "Missing reference to Sensor entity";
     static final String FORMAT_SML2 = "http://www.opengis.net/sensorml-json/2.0";
 
     OSHPersistenceManager pm;
@@ -243,7 +243,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         securityHandler.checkPermission(securityHandler.sta_read_sensor);
 
         var proc = procReadStore.getCurrentVersion(id.asLong());
-        if (proc == null || !isSensorVisible(id.asLong()))
+        if (proc == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
         
         return toFrostSensor(id.asLong(), proc, q);
@@ -260,7 +260,6 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
 
         var entitySet = procReadStore.selectEntries(filter)
-            .filter(e -> isSensorVisible(e.getKey().getInternalID()))
             //.peek(e -> System.out.println(e.getValue().getUniqueIdentifier() + ": " + e.getValue().getValidTime()))
             .skip(skip)
             .limit(limit+1) // request limit+1 elements to handle paging
@@ -492,13 +491,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     {
         long localID = pm.toLocalID(publicID);
         if (procWriteStore.getCurrentVersionKey(localID) == null)
-            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
-    }
-
-
-    protected boolean isSensorVisible(long publicID)
-    {
-        return true;
+            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
     }
 
 
@@ -509,7 +502,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         // TODO also check that current user has the right to write this procedure!
 
         if (!pm.isInWritableDatabase(publicID))
-            throw new UnsupportedOperationException(NOT_WRITABLE_MESSAGE + publicID);
+            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
     }
     
     

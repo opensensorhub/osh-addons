@@ -47,8 +47,8 @@ import de.fraunhofer.iosb.ilt.frostserver.util.NoSuchEntityException;
  */
 public class HistoricalLocationEntityHandler implements IResourceHandler<HistoricalLocation>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find 'HistoricalLocation' entity with ID #";
-    static final String MISSING_ASSOC = "Missing reference to 'HistoricalLocation' entity";
+    static final String NOT_FOUND_MESSAGE = "Cannot find HistoricalLocation ";
+    static final String MISSING_ASSOC = "Missing reference to HistoricalLocation";
         
     OSHPersistenceManager pm;
     ISTALocationStore locationDataStore;

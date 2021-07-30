@@ -18,10 +18,8 @@ import java.math.BigInteger;
 import java.security.AccessControlException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Flow.Subscriber;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.joda.time.DateTimeZone;
 import org.sensorhub.api.datastore.obs.IObsStore;
@@ -77,7 +75,7 @@ import net.opengis.swe.v20.DataBlock;
 @SuppressWarnings("rawtypes")
 public class ObservationEntityHandler implements IResourceHandler<Observation>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find 'Observation' entity with ID #";
+    static final String NOT_FOUND_MESSAGE = "Cannot find Observation ";
 
     OSHPersistenceManager pm;
     STASecurity securityHandler;
@@ -131,7 +129,8 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             return pm.writeDatabase.executeTransaction(() -> {
                 
                 // handle associations / deep inserts
-                ResourceId dsId = pm.dataStreamHandler.handleDatastreamAssoc(obs.getDatastream());
+                var ds = obs.getDatastream() != null ? obs.getDatastream() : obs.getMultiDatastream();
+                ResourceId dsId = pm.dataStreamHandler.handleDatastreamAssoc(ds);
                 
                 // get transaction handler for existing datastream
                 long localDsID = pm.toLocalID(dsId.asLong());
@@ -225,7 +224,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             key = expandPublicId(key);
 
         IObsData obs = obsReadStore.get(key);
-        if (obs == null || !isObsVisible(obs))
+        if (obs == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
 
         return toFrostObservation(key, obs, q);
@@ -244,7 +243,6 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
 
         // collect result to entity set
         var entitySet = obsReadStore.selectEntries(filter)
-            .filter(getDatastreamVisiblePredicate())
             .skip(skip)
             .limit(limit+1) // request limit+1 elements to handle paging
             .map(e -> toFrostObservation(e.getKey(), e.getValue(), q))
@@ -278,27 +276,6 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         // if subscribe failed, it means topic was not available
         if (!ok)
             throw new AccessControlException("Resource unavailable: " + path);
-    }
-
-
-    public Predicate<Entry<BigInteger, IObsData>> getDatastreamVisiblePredicate()
-    {
-        return new Predicate<Entry<BigInteger, IObsData>>()
-        {
-            long lastDatastreamID;
-            boolean visible;
-
-            @Override
-            public boolean test(Entry<BigInteger, IObsData> e)
-            {
-                long dsID = e.getValue().getDataStreamID();
-                if (lastDatastreamID == dsID)
-                    return visible;
-
-                lastDatastreamID = dsID;
-                return visible = pm.dataStreamHandler.isDatastreamVisible(dsID);
-            }
-        };
     }
 
 
@@ -503,14 +480,6 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
                 create(obs);
             }
         }
-    }
-
-
-    protected boolean isObsVisible(IObsData obsData)
-    {
-        // TODO also check that current user has the right to read this entity!
-
-        return pm.dataStreamHandler.isDatastreamVisible(obsData.getDataStreamID());
     }
     
     

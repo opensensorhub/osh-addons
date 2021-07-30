@@ -47,8 +47,8 @@ import de.fraunhofer.iosb.ilt.frostserver.util.NoSuchEntityException;
  */
 public class ThingEntityHandler implements IResourceHandler<Thing>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find 'Thing' entity with ID #";
-    static final String MISSING_ASSOC = "Missing reference to 'Thing' entity";
+    static final String NOT_FOUND_MESSAGE = "Cannot find Thing ";
+    static final String MISSING_ASSOC = "Missing reference to Thing entity";
     
     OSHPersistenceManager pm;
     ISTAThingStore thingDataStore;
@@ -171,7 +171,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         
         if (thingDataStore != null)
         {
-            thing = isThingVisible(id.asLong()) ? thingDataStore.getCurrentVersion(id.asLong()) : null;
+            thing = thingDataStore.getCurrentVersion(id.asLong());
         }
         else
         {
@@ -198,7 +198,6 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
             int limit = Math.min(q.getTopOrDefault(), maxPageSize);
             
             var entitySet = thingDataStore.selectEntries(filter)
-                .filter(e -> isThingVisible(e.getKey().getInternalID()))
                 .skip(skip)
                 .limit(limit+1) // request limit+1 elements to handle paging
                 .map(e -> toFrostThing(e.getKey().getInternalID(), e.getValue(), q))
@@ -347,12 +346,6 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         
         if (!hasThing)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + thingID);
-    }
-    
-    
-    protected boolean isThingVisible(long thingID)
-    {
-        return true;
     }
 
 }

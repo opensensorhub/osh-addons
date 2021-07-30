@@ -52,9 +52,9 @@ import net.opengis.gml.v32.AbstractGeometry;
  */
 public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find 'FeatureOfInterest' entity with ID #";
-    static final String NOT_WRITABLE_MESSAGE = "Cannot modify read-only 'FeatureOfInterest' entity #";
-    static final String MISSING_ASSOC = "Missing reference to 'Feature Of Interest' entity";
+    static final String NOT_FOUND_MESSAGE = "Cannot find FeatureOfInterest ";
+    static final String NOT_WRITABLE_MESSAGE = "Cannot modify read-only FeatureOfInterest ";
+    static final String MISSING_ASSOC = "Missing reference to FeatureOfInterest entity";
         
     OSHPersistenceManager pm;
     IFoiStore foiReadStore;
@@ -197,7 +197,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     {
         securityHandler.checkPermission(securityHandler.sta_read_foi);
         
-        var foi = isFoiVisible(id.asLong()) ? foiReadStore.getCurrentVersion(id.asLong()) : null;
+        var foi = foiReadStore.getCurrentVersion(id.asLong());
         
         if (foi == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
@@ -216,7 +216,6 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
         
         var entitySet = foiReadStore.selectEntries(filter)
-            .filter(e -> isFoiVisible(e.getKey().getInternalID()))
             .skip(skip)
             .limit(limit+1) // request limit+1 elements to handle paging
             .map(e -> toFrostFoi(e.getKey().getInternalID(), e.getValue(), q))
@@ -319,7 +318,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
      */
     protected void checkFoiID(long publicID) throws NoSuchEntityException
     {
-        boolean hasFoi = isFoiVisible(publicID) && foiReadStore.getCurrentVersionKey(publicID) != null;
+        boolean hasFoi = foiReadStore.getCurrentVersionKey(publicID) != null;
         if (!hasFoi)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
     }
@@ -332,18 +331,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     {
         long localID = pm.toLocalID(publicID);
         if (foiWriteStore.getCurrentVersionKey(localID) == null)
-            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
-    }
-    
-    
-    protected boolean isFoiVisible(long publicID)
-    {
-        // TODO also check that current user has the right to read this procedure!
-        
-        // TODO check that feature is either in writable database 
-        // or associated with a visible sensor
-        
-        return true;
+            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
     }
     
     

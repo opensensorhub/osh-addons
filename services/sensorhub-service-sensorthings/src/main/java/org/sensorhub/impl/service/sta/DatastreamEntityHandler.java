@@ -62,7 +62,6 @@ import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.HasUom;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.ScalarComponent;
-import net.opengis.swe.v20.TextEncoding;
 import net.opengis.swe.v20.Vector;
 
 
@@ -77,9 +76,9 @@ import net.opengis.swe.v20.Vector;
 @SuppressWarnings("rawtypes")
 public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastream>
 {
-    static final String NOT_FOUND_MESSAGE = "Cannot find 'Datastream' entity with ID #";
-    static final String NOT_WRITABLE_MESSAGE = "Cannot modify read-only 'Datastream' entity #";
-    static final String MISSING_ASSOC = "Missing reference to 'Datastream' or 'MultiDatastream' entity";
+    static final String NOT_FOUND_MESSAGE = "Cannot find Datastream ";
+    static final String NOT_WRITABLE_MESSAGE = "Cannot modify read-only Datastream ";
+    static final String MISSING_ASSOC = "Missing reference to Datastream or MultiDatastream entity";
     static final String UCUM_URI_PREFIX = "http://unitsofmeasure.org/ucum.html#";
     static final String BAD_LINK_THING = "A new Datastream SHALL link to an Thing entity";
 
@@ -245,7 +244,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
 
         var dsKey = new DataStreamKey(id.asLong());
         var dsInfo = dataStreamReadStore.get(dsKey);
-        if (dsInfo == null || !isDatastreamVisible(id.asLong(), dsInfo))
+        if (dsInfo == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
 
         return toFrostDatastream(id.asLong(), dsInfo, q);
@@ -263,7 +262,6 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
 
         var entitySet = dataStreamReadStore.selectEntries(filter)
-            .filter(e -> isDatastreamVisible(e.getKey().getInternalID(), e.getValue()))
             .skip(skip)
             .limit(limit+1) // request limit+1 elements to handle paging
             .map(e -> toFrostDatastream(e.getKey().getInternalID(), e.getValue(), q))
@@ -665,7 +663,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     {
         long localID = pm.toLocalID(publicID);
         if (!dataStreamWriteStore.containsKey(new DataStreamKey(localID)))
-            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
+            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
     }
 
 
@@ -674,24 +672,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         // TODO also check that current user has the right to write this procedure!
 
         if (!pm.isInWritableDatabase(publicID))
-            throw new UnsupportedOperationException(NOT_WRITABLE_MESSAGE + publicID);
-    }
-
-
-    protected boolean isDatastreamVisible(long publicID, IDataStreamInfo dsInfo)
-    {
-        if (!(dsInfo.getRecordEncoding() instanceof TextEncoding))
-            return false;
-
-        // TODO check that current user has the right to read this entity!
-        
-        return true;
-    }
-
-
-    protected boolean isDatastreamVisible(long publicID)
-    {
-        return true;
+            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
     }
     
     
