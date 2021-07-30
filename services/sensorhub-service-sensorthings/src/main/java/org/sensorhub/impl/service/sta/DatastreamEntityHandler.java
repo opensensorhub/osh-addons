@@ -35,6 +35,7 @@ import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.unit.Unit;
 import org.vast.util.Asserts;
+import org.vast.util.TimeExtent;
 import com.github.fge.jsonpatch.JsonPatch;
 import de.fraunhofer.iosb.ilt.frostserver.model.Datastream;
 import de.fraunhofer.iosb.ilt.frostserver.model.MultiDatastream;
@@ -45,6 +46,7 @@ import de.fraunhofer.iosb.ilt.frostserver.model.core.AbstractDatastream;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.EntitySet;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.EntitySetImpl;
+import de.fraunhofer.iosb.ilt.frostserver.model.ext.TimeInterval;
 import de.fraunhofer.iosb.ilt.frostserver.model.ext.UnitOfMeasurement;
 import de.fraunhofer.iosb.ilt.frostserver.path.EntityPathElement;
 import de.fraunhofer.iosb.ilt.frostserver.path.EntityType;
@@ -460,7 +462,11 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         dataStream.setName(rec.getLabel() != null ?
             rec.getLabel() : StringUtils.capitalize(rec.getName()));
         dataStream.setDescription(rec.getDescription());
-
+        
+        // time ranges
+        dataStream.setPhenomenonTime(toTimeInterval(dsInfo.getPhenomenonTimeRange()));
+        dataStream.setResultTime(toTimeInterval(dsInfo.getResultTimeRange()));
+        
         // link to Thing
         long thingID =  isExternalDatastream ?
             STAService.HUB_THING_ID :
@@ -476,6 +482,17 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         dataStream.setSensor(sensor);
 
         return dataStream;
+    }
+    
+    
+    protected TimeInterval toTimeInterval(TimeExtent te)
+    {
+        if (te == null)
+            return null;
+        
+        return TimeInterval.create(
+            te.begin().toEpochMilli(),
+            te.end().toEpochMilli());
     }
 
 
