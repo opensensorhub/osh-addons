@@ -15,12 +15,10 @@ Copyright (C) 2012-2021 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.hivemq;
 
 import java.nio.ByteBuffer;
-import java.security.AccessControlException;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
-import org.sensorhub.api.security.ISecurityManager;
+import org.sensorhub.api.comm.mqtt.MqttException;
 import org.sensorhub.utils.MapWithWildcards;
 import org.slf4j.Logger;
 import com.hivemq.embedded.EmbeddedExtension;
@@ -29,17 +27,13 @@ import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.extension.sdk.api.client.ClientContext;
 import com.hivemq.extension.sdk.api.client.parameter.InitializerInput;
-import com.hivemq.extension.sdk.api.interceptor.publish.PublishInboundInterceptor;
-import com.hivemq.extension.sdk.api.interceptor.publish.parameter.PublishInboundInput;
-import com.hivemq.extension.sdk.api.interceptor.publish.parameter.PublishInboundOutput;
-import com.hivemq.extension.sdk.api.interceptor.subscribe.SubscribeInboundInterceptor;
-import com.hivemq.extension.sdk.api.interceptor.subscribe.parameter.SubscribeInboundInput;
-import com.hivemq.extension.sdk.api.interceptor.subscribe.parameter.SubscribeInboundOutput;
-import com.hivemq.extension.sdk.api.interceptor.unsubscribe.UnsubscribeInboundInterceptor;
-import com.hivemq.extension.sdk.api.interceptor.unsubscribe.parameter.UnsubscribeInboundInput;
-import com.hivemq.extension.sdk.api.interceptor.unsubscribe.parameter.UnsubscribeInboundOutput;
+import com.hivemq.extension.sdk.api.events.client.ClientLifecycleEventListener;
+import com.hivemq.extension.sdk.api.events.client.ClientLifecycleEventListenerProvider;
+import com.hivemq.extension.sdk.api.events.client.parameters.AuthenticationSuccessfulInput;
+import com.hivemq.extension.sdk.api.events.client.parameters.ClientLifecycleEventListenerProviderInput;
+import com.hivemq.extension.sdk.api.events.client.parameters.ConnectionStartInput;
+import com.hivemq.extension.sdk.api.events.client.parameters.DisconnectEventInput;
 import com.hivemq.extension.sdk.api.packets.general.Qos;
-import com.hivemq.extension.sdk.api.packets.publish.AckReasonCode;
 import com.hivemq.extension.sdk.api.parameter.ExtensionStartInput;
 import com.hivemq.extension.sdk.api.parameter.ExtensionStartOutput;
 import com.hivemq.extension.sdk.api.parameter.ExtensionStopInput;
@@ -52,10 +46,6 @@ import com.hivemq.extension.sdk.api.services.publish.Publish;
 
 public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServer
 {
-    static final String LOG_SUBSCRIBE_MSG = "Received SUBSCRIBE request for topic {}: ";
-    static final String LOG_UNSUBSCRIBE_MSG = "Received UNSUBSCRIBE request for topic {}: ";
-    static final String LOG_PUBLISH_MSG = "Received PUBLISH message on topic {}: ";
-    
     ISensorHub parentHub;
     MapWithWildcards<IMqttHandler> handlers = new MapWithWildcards<>();
     Logger log;
@@ -69,220 +59,95 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     
     
     @Override
-    public void extensionStart(@NotNull
-    ExtensionStartInput extensionStartInput, @NotNull
-    ExtensionStartOutput extensionStartOutput)
+    public void extensionStart(ExtensionStartInput extensionStartInput, ExtensionStartOutput extensionStartOutput)
     {
-        /*Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> {
-            try
-            {
-                Publish message = Builders.publish()
-                    .topic("/swa/v1.0/datastreams/ef448p/observations")
-                    .qos(Qos.AT_MOST_ONCE)
-                    .payload(Charset.forName("UTF-8").encode("payload-" + Instant.now()))
-                    .retain(false)
-                    .build();
-                Services.publishService().publish(message);
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-        }, 0, 1, TimeUnit.SECONDS);*/
-        
-        
+        // set authenticator to validate credentials on CONNECT
+        var oshAuth = new OshAuthenticator(parentHub.getSecurityManager(), this);
         Services.securityRegistry().setAuthenticatorProvider(authProviderInput -> {
-            return new OshAuth(parentHub.getSecurityManager(), this);
+            return oshAuth;
         });
         
+        // set authorizers to authorize and handle incoming SUBSCRIBE and PUBLISH
+        var oshAuthz = new OshAuthorizers(this);
         Services.securityRegistry().setAuthorizerProvider(authorizerProviderInput -> {
-            return new OshAuth(parentHub.getSecurityManager(), this);
+            return oshAuthz;
         });
-        
-        
-        // create a new subscribe inbound interceptor
-        final var subscribeInboundInterceptor = new SubscribeInboundInterceptor() {
-            @Override
-            public void onInboundSubscribe(@NotNull
-            SubscribeInboundInput subscribeIn, @NotNull
-            SubscribeInboundOutput subscribeOut)
-            {
-                for (var sub: subscribeIn.getSubscribePacket().getSubscriptions())
-                {
-                    var topic = sub.getTopicFilter();
-                
-                    // try to find a handler
-                    // if none was found, proceed normally with HiveMQ pipeline
-                    var handler = handlers.get(topic);
-                    if (handler == null)
-                    {
-                        log.debug(LOG_SUBSCRIBE_MSG + "Handled by HiveMQ", topic);
-                        return;
-                    }
-                    
-                    log.debug(LOG_SUBSCRIBE_MSG + "Handled by {}", topic, handler.getClass().getSimpleName());
-                    
-                    // notify handler asynchronously
-                    var async = subscribeOut.async(Duration.ofMillis(1000));
-                    Services.extensionExecutorService().submit(() -> {
-                        try
-                        {
-                            var userID = subscribeIn.getConnectionInformation().getConnectionAttributeStore()
-                                .getAsString(OshAuth.MQTT_USER_PROP)
-                                .orElse(ISecurityManager.ANONYMOUS_USER);
-                            
-                            // subscribe using OSH handler
-                            handler.subscribe(userID, topic, OshExtension.this);
-                        }
-                        catch (AccessControlException e)
-                        {
-                            log.error("Unauthorized SUBSCRIBE", e);
-                        }
-                        catch (Exception e)
-                        {
-                            log.error("Error handling SUBSCRIBE message", e);
-                            throw e;
-                        }
-                        finally
-                        {
-                            async.resume();
-                        }   
-                    });
-                }
-            }
-        };
-        
-        
-        // create a new unsubscribe inbound interceptor
-        final var unsubscribeInboundInterceptor = new UnsubscribeInboundInterceptor() {
-            @Override
-            public void onInboundUnsubscribe(@NotNull
-            UnsubscribeInboundInput unsubscribeIn, @NotNull
-            UnsubscribeInboundOutput unsubscribeOut)
-            {
-                for (var topic: unsubscribeIn.getUnsubscribePacket().getTopicFilters())
-                {
-                    // try to find a handler
-                    // if none was found, proceed normally with HiveMQ pipeline
-                    var handler = handlers.get(topic);
-                    if (handler == null)
-                    {
-                        log.debug(LOG_UNSUBSCRIBE_MSG + "Handled by HiveMQ", topic);
-                        return;
-                    }
-                    
-                    log.debug(LOG_UNSUBSCRIBE_MSG + "Handled by {}", topic, handler.getClass().getSimpleName());
-                    
-                    // notify handler asynchronously
-                    var async = unsubscribeOut.async(Duration.ofMillis(1000));
-                    Services.extensionExecutorService().submit(() -> {
-                        try
-                        {
-                            var userID = unsubscribeIn.getConnectionInformation().getConnectionAttributeStore()
-                                .getAsString(OshAuth.MQTT_USER_PROP)
-                                .orElse(ISecurityManager.ANONYMOUS_USER);
-                            
-                            // subscribe using OSH handler
-                            handler.unsubscribe(userID, topic, OshExtension.this);
-                        }
-                        catch (AccessControlException e)
-                        {
-                            log.error("Unauthorized UNSUBSCRIBE", e);
-                        }
-                        catch (Exception e)
-                        {
-                            log.error("Error handling UNSUBSCRIBE message", e);
-                            throw e;
-                        }
-                        finally
-                        {
-                            async.resume();
-                        }   
-                    });
-                }
-            }
-        };
-        
-                
-        // create a new publish inbound interceptor
-        final var publishInboundInterceptor = new PublishInboundInterceptor()
-        {
-            @Override
-            public void onInboundPublish(
-                final @NotNull PublishInboundInput publishIn,
-                final @NotNull PublishInboundOutput publishOut)
-            {
-                var topic = publishIn.getPublishPacket().getTopic();
-                                
-                // try to find a handler
-                // if none was found, proceed normally with HiveMQ pipeline
-                var handler = handlers.get(topic);
-                if (handler == null)
-                {
-                    log.debug(LOG_PUBLISH_MSG + "Handled by HiveMQ", topic);
-                    return;
-                }
-                
-                // publish to handler asynchronously
-                log.debug(LOG_PUBLISH_MSG + "Handled by {}", topic, handler.getClass().getSimpleName());
-                var async = publishOut.async(Duration.ofMillis(1000));
-                Services.extensionExecutorService().submit(() -> {
-                    try
-                    {
-                        var userID = publishIn.getConnectionInformation().getConnectionAttributeStore()
-                            .getAsString(OshAuth.MQTT_USER_PROP)
-                            .orElse(ISecurityManager.ANONYMOUS_USER);
-                        
-                        // publish via OSH handler
-                        handler.publish(userID, topic, publishIn.getPublishPacket().getPayload().get());
-                        
-                        // prevent direct delivery by MQTT server to force message to go
-                        // through OSH eventbus, but don't send any error
-                        publishOut.preventPublishDelivery();
-                    }
-                    catch (AccessControlException e)
-                    {
-                        publishOut.preventPublishDelivery(AckReasonCode.NOT_AUTHORIZED);
-                    }
-                    catch (Exception e)
-                    {
-                        log.error("Error dispatching PUBLISH message", e);
-                        publishOut.preventPublishDelivery(AckReasonCode.IMPLEMENTATION_SPECIFIC_ERROR, e.getMessage());
-                    }
-                    finally
-                    {
-                        async.resume();
-                    }
-                });     
-            }
-        };
 
-        // create a new client initializer
-        final var clientInitializer = new ClientInitializer()
-        {
+        // set client initializer to handle UNSUBSCRIBE and prevent direct PUBLISH
+        var unSubHandler = new OshUnsubscribeHandler(OshExtension.this);
+        Services.initializerRegistry().setClientInitializer(new ClientInitializer() {
             @Override
-            public void initialize(
-                final @NotNull InitializerInput initializerInput,
-                final @NotNull ClientContext clientContext)
+            public void initialize(InitializerInput initializerInput, ClientContext clientContext)
             {
                 // add interceptors to the context of the connecting client
-                clientContext.addSubscribeInboundInterceptor(subscribeInboundInterceptor);
-                clientContext.addUnsubscribeInboundInterceptor(unsubscribeInboundInterceptor);
-                clientContext.addPublishInboundInterceptor(publishInboundInterceptor);
+                clientContext.addUnsubscribeInboundInterceptor(unSubHandler);                
+                clientContext.addPublishInboundInterceptor(oshAuthz.publishHandler);
             }
-        };
+        });
 
-        //register the client initializer
-        Services.initializerRegistry().setClientInitializer(clientInitializer);
+        // set client listener to clean subscriptions on DISCONNECT
+        // according to HiveMQ docs, this should handle both clean and dirty disconnect cases
+        Services.eventRegistry().setClientLifecycleEventListener(new ClientLifecycleEventListenerProvider() {
+            @Override
+            public ClientLifecycleEventListener getClientLifecycleEventListener(ClientLifecycleEventListenerProviderInput clientLifecycleEventListenerProviderInput)
+            {
+                return new ClientLifecycleEventListener() {
+                    @Override
+                    public void onMqttConnectionStart(ConnectionStartInput connectionStartInput)
+                    {                        
+                    }
+
+                    @Override
+                    public void onAuthenticationSuccessful(AuthenticationSuccessfulInput authenticationSuccessfulInput)
+                    {                        
+                    }
+
+                    @Override
+                    public void onDisconnect(DisconnectEventInput disconnectEventInput)
+                    {
+                        var clientId = disconnectEventInput.getClientInformation().getClientId();
+                        log.debug("Client {} disconnected", clientId); 
+                        
+                        Services.subscriptionStore().getSubscriptions(clientId)
+                            .thenAccept(set -> set.forEach(ts -> {
+                                var topic = ts.getTopicFilter();
+                                var handler = handlers.get(topic);
+                                if (handler != null)
+                                {
+                                    log.debug("Unsubscribing {} from {}", clientId, topic);
+                                    try {
+                                        handler.onUnsubscribe("anon", topic, OshExtension.this);
+                                    }
+                                    catch (MqttException e)
+                                    {
+                                    }
+                                }                                
+                            })
+                        );                        
+                    }
+                };
+            }        
+        });
+        
+        /*// start watchdog to clean resources for unused topics
+        var subscriptionStore = Services.subscriptionStore();
+        Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> {
+            subscriptionStore.iterateAllSubscriptions(new IterationCallback<SubscriptionsForClientResult>() {
+                @Override
+                public void iterate(IterationContext context, SubscriptionsForClientResult subscriptionsForClient) {
+                    // this callback is called for every client with its subscriptions
+                    final String clientId = subscriptionsForClient.getClientId();
+                    final Set<TopicSubscription> subscriptions = subscriptionsForClient.getSubscriptions();
+                    log.debug("{}: {}", clientId, subscriptions);
+                }
+            });
+        }, 0, 1, TimeUnit.SECONDS);*/
     }
 
 
     @Override
-    public void extensionStop(@NotNull
-    ExtensionStopInput extensionStopInput, @NotNull
-    ExtensionStopOutput extensionStopOutput)
+    public void extensionStop(ExtensionStopInput extensionStopInput, ExtensionStopOutput extensionStopOutput)
     {
-        // TODO Auto-generated method stub
     }
 
 
@@ -294,11 +159,18 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
 
 
     @Override
+    public void unregisterHandler(String topicPrefix, IMqttHandler handler)
+    {
+        handlers.remove(topicPrefix + "*");
+    }
+
+
+    @Override
     public CompletableFuture<Boolean> publish(String topic, ByteBuffer payload)
     {
         Publish message = Builders.publish()
             .topic(topic)
-            .qos(Qos.AT_MOST_ONCE)
+            .qos(Qos.AT_LEAST_ONCE)
             .payload(payload)
             .retain(false)
             .build();

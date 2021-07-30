@@ -39,35 +39,18 @@ public interface IMqttServer
      * @since Apr 14, 2021
      */
     public interface IMqttHandler
-    {
-        
-        /**
-         * Allow handler to check if user can publish on the given topic
-         * @param userID 
-         * @param topic
-         * @throws IllegalArgumentException if topic syntax is invalid
-         * @throws AccessControlException if publishing to topic is not authorized
-         */
-        void checkPublish(String userID, String topic);
-        
-        
-        /**
-         * Allow handler to check if user can subscribe on the given topic
-         * @param userID 
-         * @param topic
-         * @throws IllegalArgumentException if topic syntax is invalid
-         * @throws AccessControlException if publishing to topic is not authorized
-         */
-        void checkSubscribe(String userID, String topic);
-        
+    {        
         
         /**
          * Notify the handler of an incoming publish message
          * @param userID 
          * @param topic
          * @param payload
+         * @throws InvalidTopicException if the topic is invalid
+         * @throws InvalidPayloadException if the payload is invalid
+         * @throws AccessControlException if the user is not allowed to publish to the topic
          */
-        void publish(String userID, String topic, ByteBuffer payload);
+        void onPublish(String userID, String topic, ByteBuffer payload) throws InvalidTopicException, InvalidPayloadException;
     
         
         /**
@@ -75,8 +58,10 @@ public interface IMqttServer
          * @param userID 
          * @param server 
          * @param topic
+         * @throws InvalidTopicException if the topic is invalid
+         * @throws AccessControlException if the user is not allowed to subscribe to the topic
          */
-        void subscribe(String userID, String topic, IMqttServer server);
+        void onSubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException;
     
         
         /**
@@ -85,7 +70,8 @@ public interface IMqttServer
          * @param server 
          * @param topic
          */
-        void unsubscribe(String userID, String topic, IMqttServer server);
+        @SuppressWarnings("javadoc")
+        void onUnsubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException;
     }
     
     
@@ -96,6 +82,14 @@ public interface IMqttServer
      * @param handler
      */
     void registerHandler(String topicPrefix, IMqttHandler handler);
+    
+    
+    /**
+     * Unregister a handler for the given topic prefix
+     * @param topicPrefix
+     * @param handler
+     */
+    void unregisterHandler(String topicPrefix, IMqttHandler handler);
     
     
     /**

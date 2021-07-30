@@ -55,7 +55,7 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
         {
             this.hiveMQ = hiveMqBuilder.build();
             InternalConfigurations.PAYLOAD_PERSISTENCE_TYPE.set(PersistenceType.FILE);
-            InternalConfigurations.RETAINED_MESSAGE_PERSISTENCE_TYPE.set(PersistenceType.FILE);                
+            InternalConfigurations.RETAINED_MESSAGE_PERSISTENCE_TYPE.set(PersistenceType.FILE);
             hiveMQ.start().join();
         }
         catch (final Exception e)
@@ -77,6 +77,13 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
     public void registerHandler(String topicPrefix, IMqttHandler handler)
     {
         oshExtension.registerHandler(topicPrefix, handler);
+    }
+    
+    
+    @Override
+    public void unregisterHandler(String topicPrefix, IMqttHandler handler)
+    {
+        oshExtension.unregisterHandler(topicPrefix, handler);
     }
     
     

@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.comm.mqtt.IMqttServer.IMqttHandler;
+import org.sensorhub.api.comm.mqtt.InvalidPayloadException;
+import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import com.google.common.base.Charsets;
 import de.fraunhofer.iosb.ilt.frostserver.formatter.ResultFormatter;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
@@ -66,7 +68,7 @@ public class STAMqttConnector implements IMqttHandler
         ResourcePath path;
         Query query;
         ResultFormatter formatter;
-        AtomicInteger numSubscribers = new AtomicInteger(0);        
+        AtomicInteger numSubscribers = new AtomicInteger(0);
         
         MqttSubscriber(String topic, ResourcePath path, Query query, IMqttServer server)
         {
@@ -117,86 +119,10 @@ public class STAMqttConnector implements IMqttHandler
         
         this.pm = (OSHPersistenceManager)PersistenceManagerFactory.getInstance().create();
     }
-
-
-    @Override
-    public void checkPublish(String userID, String topic)
-    {
-        // no need to check access rights here since it will be done in publish() method        
-        checkTopicAccessible(userID, topic);
-    }
-
-
-    @Override
-    public void checkSubscribe(String userID, String topic)
-    {
-        checkSubscribeAccessRights(userID, topic);
-        checkTopicAccessible(userID, topic);
-    }
-    
-    
-    protected void checkTopicAccessible(String userID, String topic)
-    {
-        if (!topicRegex.matcher(topic).matches())
-            throw new IllegalArgumentException();
-        
-        var path = getResourcePath(topic);
-        if (!pm.validatePath(path))
-            throw new AccessControlException("Unknown resource " + path);
-    }
-    
-    
-    protected void checkSubscribeAccessRights(String userID, String topic)
-    {
-        var path = getResourcePath(topic);
-        var entityType = path.getMainElementType();
-        
-        var securityHandler = service.getSecurityHandler();
-        securityHandler.setCurrentUser(userID);
-        
-        switch (entityType)
-        {
-            case THING:
-                securityHandler.checkPermission(securityHandler.sta_read_thing);
-                break;
-                
-            case SENSOR:
-                securityHandler.checkPermission(securityHandler.sta_read_sensor);
-                break;
-                
-            case DATASTREAM:
-            case MULTIDATASTREAM:
-                securityHandler.checkPermission(securityHandler.sta_read_datastream);
-                break;
-                
-            case FEATUREOFINTEREST:
-                securityHandler.checkPermission(securityHandler.sta_read_foi);
-                break;
-                
-            case LOCATION:
-            case HISTORICALLOCATION:
-                securityHandler.checkPermission(securityHandler.sta_read_location);
-                break;
-                
-            case OBSERVATION:
-                securityHandler.checkPermission(securityHandler.sta_read_obs);
-                break;
-                
-            default:
-                throw new AccessControlException("Subscribe to resource " + entityType + " not allowed");
-        }
-    }
     
     
     @Override
-    public void subscribe(String userID, String topic, IMqttServer server)
-    {
-        // create subscription if needed
-        maybeAddSubscription(userID, topic, server);
-    }
-
-
-    protected void maybeAddSubscription(String userID, String topic, IMqttServer server)
+    public void onSubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException
     {
         var path = getResourcePath(topic);
         
@@ -229,7 +155,7 @@ public class STAMqttConnector implements IMqttHandler
     
     
     @Override
-    public void unsubscribe(String userID, String topic, IMqttServer server)
+    public void onUnsubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException
     {
         synchronized (subscribers)
         {
@@ -248,7 +174,7 @@ public class STAMqttConnector implements IMqttHandler
 
 
     @Override
-    public void publish(String userID, String topic, ByteBuffer payload)
+    public void onPublish(String userID, String topic, ByteBuffer payload) throws InvalidTopicException, InvalidPayloadException
     {
         var collectionUrl = "/" + topic.replaceFirst(endpoint, "");
         
@@ -264,8 +190,12 @@ public class STAMqttConnector implements IMqttHandler
         {
             if (resp.getCode() == 403)
                 throw new AccessControlException("");
+            else if (resp.getCode() == 404)
+                throw new InvalidTopicException(resp.getMessage());
+            else if (resp.getCode() == 400)
+                throw new InvalidPayloadException(resp.getMessage());
             else
-                throw new IllegalStateException("Invalid topic or payload: " + resp.getMessage(), null);
+                throw new IllegalStateException("Internal STA error: " + resp.getMessage(), null);
         }
     }
     
@@ -278,5 +208,16 @@ public class STAMqttConnector implements IMqttHandler
         // remove base URL part
         resourcePath = "/" + resourcePath.replaceFirst(endpoint, "");
         return PathParser.parsePath(pm.getIdManager(), "/", resourcePath);
+    }
+    
+    
+    protected void stop()
+    {
+        synchronized (subscribers)
+        {
+            for (var sub: subscribers.values())
+                sub.subscription.cancel();
+            subscribers.clear();
+        }
     }
 }
