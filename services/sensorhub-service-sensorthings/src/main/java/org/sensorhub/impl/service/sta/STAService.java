@@ -63,6 +63,7 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
     GenericFeature hubThing;
     ServletV1P0 servlet;
     ProcedureId virtualGroupId;
+    STAMqttConnector mqttConnector;
 
 
     @Override
@@ -148,9 +149,36 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
     }
 
 
-    protected ProcedureId getProcedureGroupID()
+    protected void deploy() throws SensorHubException
     {
-        return virtualGroupId;
+        Properties staSettings = new Properties();
+        staSettings.setProperty(TAG_SERVICE_ROOT_URL, httpServer.getPublicEndpointUrl(config.endPoint));
+        staSettings.setProperty(TAG_TEMP_PATH, "/tmp");
+        staSettings.setProperty(PREFIX_PERSISTENCE+TAG_IMPLEMENTATION_CLASS, OSHPersistenceManager.class.getCanonicalName());
+        staSettings.setProperty(PREFIX_PERSISTENCE+SERVICE_INSTANCE_ID, Integer.toString(System.identityHashCode(this)));
+        //staSettings.setProperty(TAG_USE_ABSOLUTE_NAVIGATION_LINKS, "false");
+
+        // deploy ourself to HTTP server
+        var endpoint = getEndPoint();
+        var wildcardEndpoint = endpoint + "*";
+        httpServer.deployServlet(servlet, wildcardEndpoint);
+        httpServer.addServletSecurity(wildcardEndpoint, config.security.requireAuth);
+        var coreSettings = new CoreSettings(staSettings);
+        servlet.getServletContext().setAttribute(TAG_CORE_SETTINGS, coreSettings);
+        
+        // also enable MQTT extension if an MQTT server is available
+        if (config.enableMqtt)
+        {
+            getParentHub().getModuleRegistry().waitForModuleType(IMqttServer.class, ModuleState.STARTED)
+                .thenAccept(mqtt -> {
+                    if (mqtt != null)
+                    {
+                        mqttConnector = new STAMqttConnector(this, endpoint, coreSettings);
+                        mqtt.registerHandler(endpoint, mqttConnector);
+                        getLogger().info("SensorThings MQTT handler registered");
+                    }
+                });
+        }
     }
 
 
@@ -158,11 +186,7 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
     protected void doStop()
     {
         // undeploy servlet
-        if (servlet != null)
-        {
-            undeploy();
-            servlet = null;
-        }
+        undeploy();
 
         // close database
         if (writeDatabase != null)
@@ -177,45 +201,33 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
     }
 
 
-    protected void deploy() throws SensorHubException
-    {
-        Properties staSettings = new Properties();
-        staSettings.setProperty(TAG_SERVICE_ROOT_URL, httpServer.getPublicEndpointUrl(config.endPoint));
-        staSettings.setProperty(TAG_TEMP_PATH, "/tmp");
-        staSettings.setProperty(PREFIX_PERSISTENCE+TAG_IMPLEMENTATION_CLASS, OSHPersistenceManager.class.getCanonicalName());
-        staSettings.setProperty(PREFIX_PERSISTENCE+SERVICE_INSTANCE_ID, Integer.toString(System.identityHashCode(this)));
-        //staSettings.setProperty(TAG_USE_ABSOLUTE_NAVIGATION_LINKS, "false");
-
-        // deploy ourself to HTTP server
-        var endpoint = config.endPoint + "/v1.0/";
-        var wildcardEndpoint = endpoint + "*";
-        httpServer.deployServlet(servlet, wildcardEndpoint);
-        httpServer.addServletSecurity(wildcardEndpoint, config.security.requireAuth);
-        var coreSettings = new CoreSettings(staSettings);
-        servlet.getServletContext().setAttribute(TAG_CORE_SETTINGS, coreSettings);
-        
-        // also enable MQTT extension if an MQTT server is available
-        if (config.enableMqtt)
-        {
-            getParentHub().getModuleRegistry().waitForModuleType(IMqttServer.class, ModuleState.STARTED)
-                .thenAccept(mqtt -> {
-                    if (mqtt != null)
-                    {
-                        mqtt.registerHandler(endpoint, new STAMqttConnector(this, endpoint, coreSettings));
-                        getLogger().info("SensorThings MQTT handler registered");
-                    }
-                });
-        }
-    }
-
-
     protected void undeploy()
     {
         // return silently if HTTP server missing on stop
         if (httpServer == null || !httpServer.isStarted())
             return;
+        
+        // also stop MQTT extension if it was enabled
+        if (mqttConnector != null)
+        {
+            getParentHub().getModuleRegistry().waitForModuleType(IMqttServer.class, ModuleState.STARTED)
+                .thenAccept(mqtt -> {
+                    if (mqtt != null)
+                    {
+                        mqtt.unregisterHandler(getEndPoint(), mqttConnector);
+                        getLogger().info("SensorThings MQTT handler unregistered");
+                        mqttConnector.stop();
+                        mqttConnector = null;
+                    }
+                });
+        }
 
-        httpServer.undeployServlet(servlet);
+        if (servlet != null)
+        {
+            httpServer.undeployServlet(servlet);
+            servlet.destroy();
+            servlet = null;
+        }
     }
 
 
@@ -225,6 +237,18 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
         // unregister security handler
         if (securityHandler != null)
             securityHandler.unregister();
+    }
+    
+    
+    protected String getEndPoint()
+    {
+        return config.endPoint + "/v1.0/";
+    }
+
+
+    protected ProcedureId getProcedureGroupID()
+    {
+        return virtualGroupId;
     }
 
 
