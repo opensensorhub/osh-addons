@@ -19,21 +19,20 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
-import java.util.Collections;
+import java.security.AccessControlException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.servlet.http.HttpUtils;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.comm.mqtt.InvalidPayloadException;
 import org.sensorhub.api.comm.mqtt.IMqttServer.IMqttHandler;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.comm.mqtt.MqttOutputStream;
 import org.sensorhub.impl.service.sweapi.resource.ResourceContext;
+import org.sensorhub.impl.service.sweapi.resource.ResourceFormat;
 import org.sensorhub.impl.service.sweapi.stream.StreamHandler;
 import org.vast.util.Asserts;
-import com.google.common.base.Strings;
 
 
 /**
@@ -122,7 +121,7 @@ public class SWEApiMqttConnector implements IMqttHandler
             var sub = subscribers.compute(topic, (k, v) -> {
                 // create subscriber if needed
                 if (v == null)
-                    v = new MqttSubscriber(server, topic);                
+                    v = new MqttSubscriber(server, topic);
                 return v;
             });
             
@@ -136,13 +135,21 @@ public class SWEApiMqttConnector implements IMqttHandler
             sub.numSubscribers.incrementAndGet();
             sub.maybeStart();
         }
+        catch (SecurityException | InvalidTopicException e)
+        {
+            throw e;
+        }
         catch (InvalidRequestException e)
         {
             throw new InvalidTopicException(e.getMessage());
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             throw new IllegalStateException("Internal error subscribing to topic " + topic, e);
+        }
+        finally
+        {                
+            servlet.clearCurrentUser();
         }
     }
     
@@ -168,30 +175,83 @@ public class SWEApiMqttConnector implements IMqttHandler
     @Override
     public void onPublish(String userID, String topic, ByteBuffer payload) throws InvalidTopicException, InvalidPayloadException
     {                
-        
+        try
+        {
+            var ctx = getResourceContext(topic, payload);
+            ctx.setRequestContentType(ResourceFormat.JSON.getMimeType());
+            servlet.getSecurityHandler().setCurrentUser(userID);
+            servlet.getRootHandler().doPost(ctx);
+        }
+        catch (SecurityException | InvalidTopicException e)
+        {
+            throw e;
+        }
+        catch (InvalidRequestException e)
+        {
+            handleInvalidRequestException(e);
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException("Internal error publishing to topic " + topic, e);
+        }
+        finally
+        {                
+            servlet.clearCurrentUser();
+        }
     }
     
     
     private ResourceContext getResourceContext(String topic, MqttSubscriber streamHandler) throws InvalidTopicException
     {
+        return new ResourceContext(
+            servlet,
+            getResourceUri(topic),
+            streamHandler);
+    }
+    
+    
+    private ResourceContext getResourceContext(String topic, ByteBuffer payload) throws InvalidTopicException
+    {
+        return new ResourceContext(
+            servlet,
+            getResourceUri(topic),
+            new ByteBufferInputStream(payload));
+    }
+    
+    
+    private URI getResourceUri(String topic) throws InvalidTopicException
+    {
         try
         {
-            var topicUri = new URI(topic);
+            // remove the base URL part
+            topic = topic.replaceFirst(endpoint, "");
             
-            // extract path, removing the base URL part
-            var path = topicUri.getPath();
-            path = "/" + path.replaceFirst(endpoint, "");
-            
-            // parse query params
-            Map<String, String[]> params = Strings.isNullOrEmpty(topicUri.getQuery()) ?
-                Collections.emptyMap() :
-                HttpUtils.parseQueryString(topicUri.getQuery());
-            
-            return new ResourceContext(servlet, path, params, streamHandler);
+            // parse URI (this also URL decodes the query string)
+            return new URI(topic);
         }
         catch (URISyntaxException e)
         {
-            throw new InvalidTopicException("Invalid URI syntax");
+            throw new InvalidTopicException("Invalid SWE API resource URI");
+        }        
+    }
+    
+    
+    private void handleInvalidRequestException(InvalidRequestException e) throws InvalidTopicException, InvalidPayloadException, SecurityException
+    {
+        switch (e.getErrorCode())
+        {
+            case NOT_FOUND:
+            case BAD_REQUEST:
+                throw new InvalidTopicException(e.getMessage());
+                
+            case BAD_PAYLOAD:
+                throw new InvalidPayloadException(e.getMessage());
+                
+            case FORBIDDEN:
+                throw new AccessControlException("Forbidden");
+                
+            default:
+                throw new IllegalStateException("Internal error", e);
         }
     }
     
