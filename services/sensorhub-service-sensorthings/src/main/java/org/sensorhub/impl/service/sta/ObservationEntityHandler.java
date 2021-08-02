@@ -15,7 +15,6 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sta;
 
 import java.math.BigInteger;
-import java.security.AccessControlException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
@@ -280,12 +279,12 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
                     var staObs = toFrostObservation(BigInteger.ONE, obs, checkResultHasTimeStamp(obs), q);
                     subscriber.onNext(staObs);
                 }
-            }           
+            }
         });
         
         // if subscribe failed, it means topic was not available
         if (!ok)
-            throw new AccessControlException("Resource unavailable: " + path);
+            throw new IllegalArgumentException("Resource unavailable: " + path);
     }
     
     

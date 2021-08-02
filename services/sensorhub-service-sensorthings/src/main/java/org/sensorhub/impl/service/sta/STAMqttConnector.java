@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
@@ -62,13 +63,14 @@ public class STAMqttConnector implements IMqttHandler
     
     class MqttSubscriber implements Subscriber<Entity<?>>
     {
-        Subscription subscription;
+        volatile Subscription subscription;
         IMqttServer server;
         String topic;
         ResourcePath path;
         Query query;
         ResultFormatter formatter;
         AtomicInteger numSubscribers = new AtomicInteger(0);
+        AtomicBoolean started = new AtomicBoolean();
         
         MqttSubscriber(String topic, ResourcePath path, Query query, IMqttServer server)
         {
@@ -82,8 +84,15 @@ public class STAMqttConnector implements IMqttHandler
         @Override
         public void onSubscribe(Subscription subscription)
         {
+            // cancel right away if a subscription already exists
+            if (this.subscription != null)
+            {
+                subscription.cancel();
+                return;
+            }
+            
             this.subscription = subscription;
-            subscription.request(Long.MAX_VALUE); // no flow control for now
+            maybeStart(); // start if we haven't started before
         }
 
         @Override
@@ -105,6 +114,18 @@ public class STAMqttConnector implements IMqttHandler
         public void onComplete()
         {
         }
+        
+        public void maybeStart()
+        {
+            if (subscription != null && started.compareAndSet(false, true))
+                subscription.request(Long.MAX_VALUE); // no flow control for now
+        }
+        
+        public void close()
+        {
+            if (subscription != null)
+                subscription.cancel();
+        }
     }
     
     
@@ -124,32 +145,37 @@ public class STAMqttConnector implements IMqttHandler
     @Override
     public void onSubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException
     {
-        var path = getResourcePath(topic);
-        
-        var queryIdx = topic.indexOf('?');
-        var queryString = queryIdx > 0 ? topic.substring(queryIdx+1) : "";
-        var query = QueryParser.parseQuery(queryString, coreSettings);
-        query.validate(path);
-        
-        synchronized (subscribers)
+        try
         {
+            var path = getResourcePath(topic);
+            
+            var queryIdx = topic.indexOf('?');
+            var queryString = queryIdx > 0 ? topic.substring(queryIdx+1) : "";
+            var query = QueryParser.parseQuery(queryString, coreSettings);
+            query.validate(path);
+            
             // register new subscription if needed
-            subscribers.compute(topic, (k,v) -> {
-                
+            var sub = subscribers.compute(topic, (k, v) -> {
+                // create subscriber if needed
                 if (v == null)
-                {
-                    // create subscriber
                     v = new MqttSubscriber(topic, path, query, server);
-                    
-                    // subscribe to collection events
-                    service.getSecurityHandler().setCurrentUser(userID);
-                    var handler = pm.getHandler(path);
-                    handler.subscribeToCollection(path, query, v);
-                }
                 
-                v.numSubscribers.incrementAndGet();
                 return v;
             });
+            
+            // always evaluate request because we need to check for permissions
+            // even if subscriber was already created
+            service.getSecurityHandler().setCurrentUser(userID);
+            var handler = pm.getHandler(path);
+            handler.subscribeToCollection(path, query, sub);
+            
+            // start stream if all went well
+            sub.numSubscribers.incrementAndGet();
+            sub.maybeStart();
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new InvalidTopicException(e.getMessage());
         }
     }
     
@@ -157,19 +183,18 @@ public class STAMqttConnector implements IMqttHandler
     @Override
     public void onUnsubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException
     {
-        synchronized (subscribers)
-        {
-            subscribers.computeIfPresent(topic, (k, sub) -> {
-                var numSub = sub.numSubscribers.decrementAndGet();
-                if (numSub <= 0)
-                {
-                    if (sub.subscription != null)
-                        sub.subscription.cancel();
-                    sub = null;
-                }
-                return sub;
-            });
-        }
+        subscribers.computeIfPresent(topic, (k, sub) -> {
+            var numSub = sub.numSubscribers.decrementAndGet();
+            if (numSub <= 0)
+            {
+                service.getLogger().debug("No more clients listening on topic {}. Cancelling subscription.", topic);
+                sub.close();
+                sub = null;
+            }
+            else
+                service.getLogger().debug("{} client(s) still listening on topic {}", numSub, topic);
+            return sub;
+        });
     }
 
 
@@ -188,7 +213,7 @@ public class STAMqttConnector implements IMqttHandler
         var resp = frostService.execute(req);
         if (!resp.isSuccessful())
         {
-            if (resp.getCode() == 403)
+            if (resp.getCode() == 403 || service.getSecurityHandler().getPermissionError() != null)
                 throw new AccessControlException("");
             else if (resp.getCode() == 404)
                 throw new InvalidTopicException(resp.getMessage());
@@ -213,11 +238,8 @@ public class STAMqttConnector implements IMqttHandler
     
     protected void stop()
     {
-        synchronized (subscribers)
-        {
-            for (var sub: subscribers.values())
-                sub.subscription.cancel();
-            subscribers.clear();
-        }
+        for (var sub: subscribers.values())
+            sub.close();
+        subscribers.clear();
     }
 }
