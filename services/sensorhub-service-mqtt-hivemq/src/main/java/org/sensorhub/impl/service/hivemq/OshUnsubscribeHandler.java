@@ -15,6 +15,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.hivemq;
 
 import java.time.Duration;
+import java.util.concurrent.ExecutionException;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.security.ISecurityManager;
 import org.slf4j.Logger;
@@ -52,8 +53,19 @@ public class OshUnsubscribeHandler implements UnsubscribeInboundInterceptor
                     .getAsString(OshAuthenticator.MQTT_USER_PROP)
                     .orElse(ISecurityManager.ANONYMOUS_USER);
                 
+                // get client subscriptions
+                var clientId = unsubscribeIn.getClientInformation().getClientId();
+                var clientSubs = Services.subscriptionStore().getSubscriptions(clientId).get();
+                
+                // process each topic
                 for (var topic: unsubscribeIn.getUnsubscribePacket().getTopicFilters())
                 {
+                    // only go further if client has actually subscribed to this topic
+                    // just test equality for now since we don't implement topic filters with wildcards
+                    var found = clientSubs.stream().anyMatch(sub -> topic.equals(sub.getTopicFilter()));
+                    if (!found)
+                        continue;
+                    
                     // try to find a handler
                     // if none was found, proceed normally with HiveMQ pipeline
                     var handler = oshExt.handlers.get(topic);
@@ -74,7 +86,7 @@ public class OshUnsubscribeHandler implements UnsubscribeInboundInterceptor
                     }
                 }
             }
-            catch (RuntimeException e)
+            catch (RuntimeException | ExecutionException | InterruptedException e)
             {
                 log.error("Error handling UNSUBSCRIBE message", e);
             }
