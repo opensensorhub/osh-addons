@@ -69,7 +69,7 @@ public class OshAuthenticator implements SimpleAuthenticator
                         }
                     }
                 }
-                else
+                else if (!oshExt.service.getConfiguration().requireAuth)
                 {
                     authInput.getConnectionInformation().getConnectionAttributeStore().putAsString(MQTT_USER_PROP, ISecurityManager.ANONYMOUS_USER);
                     authOutput.authenticateSuccessfully();

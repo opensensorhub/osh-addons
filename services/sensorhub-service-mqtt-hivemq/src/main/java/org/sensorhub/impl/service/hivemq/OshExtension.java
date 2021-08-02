@@ -46,14 +46,14 @@ import com.hivemq.extension.sdk.api.services.publish.Publish;
 
 public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServer
 {
-    ISensorHub parentHub;
+    MqttServer service;
     MapWithWildcards<IMqttHandler> handlers = new MapWithWildcards<>();
     Logger log;
     
     
     public OshExtension(ISensorHub parentHub, MqttServer service)
     {
-        this.parentHub = parentHub;
+        this.service = service;
         this.log = service.getLogger();
     }
     
@@ -62,7 +62,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     public void extensionStart(ExtensionStartInput extensionStartInput, ExtensionStartOutput extensionStartOutput)
     {
         // set authenticator to validate credentials on CONNECT
-        var oshAuth = new OshAuthenticator(parentHub.getSecurityManager(), this);
+        var oshAuth = new OshAuthenticator(service.getParentHub().getSecurityManager(), this);
         Services.securityRegistry().setAuthenticatorProvider(authProviderInput -> {
             return oshAuth;
         });

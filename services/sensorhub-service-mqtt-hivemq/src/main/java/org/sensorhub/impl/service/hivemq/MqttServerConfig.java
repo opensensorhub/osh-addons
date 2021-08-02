@@ -14,10 +14,17 @@ Copyright (C) 2012-2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.hivemq;
 
+import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.module.ModuleConfig;
 
 
 public class MqttServerConfig extends ModuleConfig
 {
+    
+    @DisplayInfo(desc="TCP port where the MQTT service will be made available")
     int tcpPort;
+    
+    
+    @DisplayInfo(label="Require Authentication", desc="Set to require remote users to be authentified before they can use this service")
+    public boolean requireAuth = false;
 }
