@@ -74,14 +74,15 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
         });
 
         // set client initializer to handle UNSUBSCRIBE and prevent direct PUBLISH
-        var unSubHandler = new OshUnsubscribeHandler(OshExtension.this);
+        var unSubHandler = new OshUnsubscribeHandler(this);
+        var publishHandler = new OshPublishHandler(this);
         Services.initializerRegistry().setClientInitializer(new ClientInitializer() {
             @Override
             public void initialize(InitializerInput initializerInput, ClientContext clientContext)
             {
                 // add interceptors to the context of the connecting client
                 clientContext.addUnsubscribeInboundInterceptor(unSubHandler);                
-                clientContext.addPublishInboundInterceptor(oshAuthz.publishHandler);
+                clientContext.addPublishInboundInterceptor(publishHandler);
             }
         });
 

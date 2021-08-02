@@ -21,9 +21,6 @@ import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.security.ISecurityManager;
 import org.slf4j.Logger;
 import org.vast.util.Asserts;
-import com.hivemq.extension.sdk.api.auth.PublishAuthorizer;
-import com.hivemq.extension.sdk.api.auth.parameter.PublishAuthorizerInput;
-import com.hivemq.extension.sdk.api.auth.parameter.PublishAuthorizerOutput;
 import com.hivemq.extension.sdk.api.interceptor.publish.PublishInboundInterceptor;
 import com.hivemq.extension.sdk.api.interceptor.publish.parameter.PublishInboundInput;
 import com.hivemq.extension.sdk.api.interceptor.publish.parameter.PublishInboundOutput;
@@ -33,14 +30,14 @@ import com.hivemq.extension.sdk.api.services.Services;
 
 /**
  * <p>
- * Publish handler implemented as authorizer so we can handle authorization
- * and return proper error codes while we are processing requests.
+ * Publish handler implemented as an inbound interceptor. No need for a
+ * separate authorizer class since we can ACK proper error codes here.
  * </p>
  *
  * @author Alex Robin
  * @since Jul 30, 2021
  */
-public class OshPublishHandler implements PublishAuthorizer, PublishInboundInterceptor
+public class OshPublishHandler implements PublishInboundInterceptor
 {
     static final String LOG_PUBLISH_MSG = "Received PUBLISH clientId={}, topic={}: ";
     static final int REQ_TIMEOUT_MS = 5000;
@@ -57,72 +54,70 @@ public class OshPublishHandler implements PublishAuthorizer, PublishInboundInter
     
     
     @Override
-    public void authorizePublish(PublishAuthorizerInput publishIn, PublishAuthorizerOutput publishOut)
+    public void onInboundPublish(final PublishInboundInput publishIn, final PublishInboundOutput publishOut)
     {
         var async = publishOut.async(Duration.ofMillis(REQ_TIMEOUT_MS));
         Services.extensionExecutorService().submit(() -> {
+            
+            // get topic name and user ID
+            var topic = publishIn.getPublishPacket().getTopic();
+            var userID = publishIn.getConnectionInformation().getConnectionAttributeStore()
+                .getAsString(OshAuthenticator.MQTT_USER_PROP)
+                .orElse(ISecurityManager.ANONYMOUS_USER);
+            
+            AckReasonCode reasonCode = AckReasonCode.SUCCESS;
+            String errorMsg = null;
+            
             try
             {
-                // get topic name and user ID
-                var topic = publishIn.getPublishPacket().getTopic();
-                var userID = publishIn.getConnectionInformation().getConnectionAttributeStore()
-                    .getAsString(OshAuthenticator.MQTT_USER_PROP)
-                    .orElse(ISecurityManager.ANONYMOUS_USER);
+                // if a handler is found, use it to authorize/publish on this topic
+                var handler = oshExt.handlers.get(topic);
+                if (handler != null)
+                {                    
+                    // publish via OSH handler
+                    log.debug(LOG_PUBLISH_MSG + "Handled by {}",
+                        publishIn.getClientInformation().getClientId(), topic, handler.getClass().getSimpleName());
+                    handler.onPublish(userID, topic, publishIn.getPublishPacket().getPayload().get());
+                }
                 
-                try
+                // reject in all other cases
+                else
                 {
-                    // if a handler is found, use it to authorize/publish on this topic
-                    var handler = oshExt.handlers.get(topic);
-                    if (handler != null)
-                    {                    
-                        // publish via OSH handler
-                        log.debug(LOG_PUBLISH_MSG + "Handled by {}",
-                            publishIn.getClientInformation().getClientId(), topic, handler.getClass().getSimpleName());
-                        handler.onPublish(userID, topic, publishIn.getPublishPacket().getPayload().get());
-                        publishOut.authorizeSuccessfully();                    
-                    }
-                    
-                    // reject in all other cases
-                    else
-                    {
-                        publishOut.failAuthorization(AckReasonCode.TOPIC_NAME_INVALID);
-                    }
+                    reasonCode = AckReasonCode.TOPIC_NAME_INVALID;
                 }
-                catch (AccessControlException e)
-                {
-                    log.debug("Not authorized: {}", e.getMessage());
-                    publishOut.failAuthorization(AckReasonCode.NOT_AUTHORIZED);
-                }
-                catch (InvalidTopicException e)
-                {
-                    log.debug("Invalid topic: {}", topic, e);
-                    publishOut.failAuthorization(AckReasonCode.TOPIC_NAME_INVALID, e.getMessage());
-                }
-                catch (InvalidPayloadException e)
-                {
-                    log.debug("Invalid payload: {}", e);
-                    publishOut.failAuthorization(AckReasonCode.PAYLOAD_FORMAT_INVALID, e.getMessage());
-                }
-                catch (Exception e)
-                {
-                    log.error("Internal error handling PUBLISH message", e);
-                    publishOut.failAuthorization(AckReasonCode.IMPLEMENTATION_SPECIFIC_ERROR, "Internal error");
-                }
+            }
+            catch (AccessControlException e)
+            {
+                log.debug("Not authorized: {}", e.getMessage());
+                reasonCode = AckReasonCode.NOT_AUTHORIZED;
+            }
+            catch (InvalidTopicException e)
+            {
+                log.debug("Invalid topic {}: {}", topic, e.getMessage());
+                reasonCode = AckReasonCode.TOPIC_NAME_INVALID;
+                errorMsg = e.getMessage();
+            }
+            catch (InvalidPayloadException e)
+            {
+                log.debug("Invalid payload: {}", e.getMessage());
+                reasonCode = AckReasonCode.PAYLOAD_FORMAT_INVALID;
+                errorMsg = e.getMessage();
+            }
+            catch (Exception e)
+            {
+                log.error("Internal error handling PUBLISH message", e);
+                reasonCode = AckReasonCode.IMPLEMENTATION_SPECIFIC_ERROR;
+                errorMsg = "Internal error";
             }
             finally
             {
+                // always prevent direct delivery by MQTT server to force message to go
+                // through OSH eventbus, but don't send any error
+                publishOut.preventPublishDelivery(reasonCode, errorMsg);
+                
                 async.resume();
             }
-        });        
-    }
-    
-    
-    @Override
-    public void onInboundPublish(final PublishInboundInput publishIn, final PublishInboundOutput publishOut)
-    {
-        // always prevent direct delivery by MQTT server to force message to go
-        // through OSH eventbus, but don't send any error
-        //publishOut.preventPublishDelivery();
+        });
     }
 
 }

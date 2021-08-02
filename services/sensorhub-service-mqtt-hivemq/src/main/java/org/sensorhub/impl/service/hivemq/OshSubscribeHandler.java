@@ -23,11 +23,14 @@ import org.vast.util.Asserts;
 import com.hivemq.extension.sdk.api.auth.SubscriptionAuthorizer;
 import com.hivemq.extension.sdk.api.auth.parameter.SubscriptionAuthorizerInput;
 import com.hivemq.extension.sdk.api.auth.parameter.SubscriptionAuthorizerOutput;
+import com.hivemq.extension.sdk.api.interceptor.subscribe.SubscribeInboundInterceptor;
+import com.hivemq.extension.sdk.api.interceptor.subscribe.parameter.SubscribeInboundInput;
+import com.hivemq.extension.sdk.api.interceptor.subscribe.parameter.SubscribeInboundOutput;
 import com.hivemq.extension.sdk.api.packets.subscribe.SubackReasonCode;
 import com.hivemq.extension.sdk.api.services.Services;
 
 
-public class OshSubscribeHandler implements SubscriptionAuthorizer
+public class OshSubscribeHandler implements SubscribeInboundInterceptor, SubscriptionAuthorizer
 {
     static final String LOG_SUBSCRIBE_MSG = "Received SUBSCRIBE clientId={}, topic={}: ";
     static final int REQ_TIMEOUT_MS = 5000;
@@ -40,6 +43,14 @@ public class OshSubscribeHandler implements SubscriptionAuthorizer
     {
         this.oshExt = Asserts.checkNotNull(oshExt, OshExtension.class);
         this.log = oshExt.log;
+    }
+
+
+    @Override
+    public void onInboundSubscribe(SubscribeInboundInput subscribeIn, SubscribeInboundOutput subscribeOut)
+    {
+        // TODO canonicalize all topic names (especially the query part) ?
+        // need to call the handler to canonicalize        
     }
     
     
@@ -80,7 +91,7 @@ public class OshSubscribeHandler implements SubscriptionAuthorizer
             }
             catch (InvalidTopicException e)
             {
-                log.debug("Invalid topic: {}", topic);
+                log.debug("Invalid topic {}: {}", topic, e.getMessage());
                 subscribeOut.failAuthorization(SubackReasonCode.TOPIC_FILTER_INVALID, e.getMessage());
             }
             catch (Exception e)

@@ -25,13 +25,13 @@ import com.hivemq.extension.sdk.api.auth.parameter.SubscriptionAuthorizerOutput;
 public class OshAuthorizers implements PublishAuthorizer, SubscriptionAuthorizer
 {
     OshSubscribeHandler subscribeHandler;
-    OshPublishHandler publishHandler;
+    //OshPublishHandler publishHandler;
     
     
     OshAuthorizers(OshExtension oshExt)
     {
         this.subscribeHandler = new OshSubscribeHandler(oshExt);
-        this.publishHandler = new OshPublishHandler(oshExt);
+        //this.publishHandler = new OshPublishHandler(oshExt);
     }
         
     
@@ -45,6 +45,6 @@ public class OshAuthorizers implements PublishAuthorizer, SubscriptionAuthorizer
     @Override
     public void authorizePublish(PublishAuthorizerInput authInput, PublishAuthorizerOutput authOutput)
     {
-        publishHandler.authorizePublish(authInput, authOutput); 
+        //publishHandler.authorizePublish(authInput, authOutput); 
     }
 }
