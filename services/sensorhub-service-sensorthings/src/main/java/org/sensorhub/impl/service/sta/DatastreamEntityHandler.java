@@ -457,9 +457,8 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
 
         // common properties
         dataStream.setId(new ResourceIdLong(publicID));
-        dataStream.setName(rec.getLabel() != null ?
-            rec.getLabel() : StringUtils.capitalize(rec.getName()));
-        dataStream.setDescription(rec.getDescription());
+        dataStream.setName(dsInfo.getName());
+        dataStream.setDescription(dsInfo.getDescription());
         
         // time ranges
         dataStream.setPhenomenonTime(toTimeInterval(dsInfo.getPhenomenonTimeRange()));
@@ -661,16 +660,13 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
      */
     protected void checkDatastreamIDInWriteStore(long publicID) throws NoSuchEntityException
     {
-        long localID = pm.toLocalID(publicID);
-        if (!dataStreamWriteStore.containsKey(new DataStreamKey(localID)))
-            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
+        checkDatastreamID(publicID);
+        checkDatastreamWritable(publicID);
     }
 
 
     protected void checkDatastreamWritable(long publicID)
     {
-        // TODO also check that current user has the right to write this procedure!
-
         if (!pm.isInWritableDatabase(publicID))
             throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
     }

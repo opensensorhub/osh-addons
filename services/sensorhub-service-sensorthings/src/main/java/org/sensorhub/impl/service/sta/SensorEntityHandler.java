@@ -489,9 +489,8 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
      */
     protected void checkSensorIDInWriteStore(long publicID) throws NoSuchEntityException
     {
-        long localID = pm.toLocalID(publicID);
-        if (procWriteStore.getCurrentVersionKey(localID) == null)
-            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
+        checkSensorID(publicID);
+        checkProcedureWritable(publicID);
     }
 
 
