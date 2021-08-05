@@ -20,7 +20,6 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 import au.edu.jcu.v4l4j.DeviceInfo;
 import au.edu.jcu.v4l4j.ImageFormat;
 import au.edu.jcu.v4l4j.VideoDevice;
-import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 
 
 /**
@@ -112,7 +111,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
             videoDevice = new VideoDevice(config.deviceName);
             return videoDevice.getDeviceInfo();
         }
-        catch (V4L4JException e)
+        catch (Throwable e)
         {
             throw new SensorException("Cannot initialize video device " + config.deviceName, e);
         }
