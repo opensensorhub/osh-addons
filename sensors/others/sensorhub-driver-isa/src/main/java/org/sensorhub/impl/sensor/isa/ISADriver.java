@@ -1,11 +1,15 @@
 package org.sensorhub.impl.sensor.isa;
 
 import java.io.IOException;
+import java.time.Instant;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.procedure.IProcedureGroupDriver;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.isa.ISASensor.StatusType;
+import org.vast.sensorML.SMLHelper;
+import org.vast.swe.SWEConstants;
+import net.opengis.sensorml.v20.PhysicalSystem;
 import java.io.BufferedReader;
 import java.util.Collections;
 import java.util.Map;
@@ -77,45 +81,64 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements IProce
         // add unique ID based on serial number
         this.uniqueID = "urn:osh:sensor:isa:" + config.networkID;
         this.xmlID = "ISA_" + config.networkID.toUpperCase();
+        var timeStamp = Instant.ofEpochMilli(config.lastUpdated.getTime() / 1000);
+        double[][] sensorLocations;
         
         // bio sensors
-        for (int i = 1; i < 2; i++)
+        sensorLocations = new double[][] {
+            { 34.706226, -86.671218, 193 },
+            { 34.700880, -86.671344, 193 },
+            { 34.698622, -86.671385, 193 },
+            { 34.694515, -86.671524, 193 },
+            { 34.669423, -86.679080, 193 }            
+        };
+        
+        for (int i = 0; i < 5; i++)
         {
-            registerSensor(new BiologicalSensor(this, String.format("BIO%03d", i))
+            var loc = sensorLocations[i];
+            registerSensor(new BiologicalSensor(this, String.format("BIO%03d", i+1))
                 .setManufacturer("Bio Sensors, Inc.")
                 .setModelNumber("BD456")
                 .setSoftwareVersion("FW2021.32.156")
-                .addStatusOutputs(StatusType.RADIO));
+                .addStatusOutputs(StatusType.RADIO)
+                .setFixedLocation(timeStamp, loc[0], loc[1], loc[2]));
         }
         
         // chem sensors
-        for (int i = 1; i < 2; i++)
+        sensorLocations = new double[][] {
+            { 34.706226, -86.671218, 193 },
+            { 34.700880, -86.671344, 193 },
+            { 34.698622, -86.671385, 193 },
+            { 34.694515, -86.671524, 193 },
+            { 34.669423, -86.679080, 193 }            
+        };
+        
+        for (int i = 0; i < 3; i++)
         {
-            registerSensor(new ChemicalSensor(this, String.format("CHEM%03d", i))
+            var loc = sensorLocations[i];
+            registerSensor(new ChemicalSensor(this, String.format("CHEM%03d", i+1))
                 .setManufacturer("Chem Sensors, Inc.")
                 .setModelNumber("CD456")
                 .setSoftwareVersion("FW2021.32.156")
-                .addStatusOutputs(StatusType.RADIO));
+                .addStatusOutputs(StatusType.RADIO)
+                .setFixedLocation(timeStamp, loc[0], loc[1], loc[2]));
         }
         
         // weather sensors
-        for (int i = 1; i < 2; i++)
+        sensorLocations = new double[][] {
+            { 34.677990, -86.682758, 193 },
+            { 34.705657, -86.674131, 193 }            
+        };        
+        
+        for (int i = 0; i < 2; i++)
         {
-            registerSensor(new MeteorologicalSensor(this, String.format("ATM%03d", i))
+            var loc = sensorLocations[i];
+            registerSensor(new MeteorologicalSensor(this, String.format("ATM%03d", i+1))
                 .setManufacturer("Vaisala, Inc.")
                 .setModelNumber("AWS310")
                 .setSoftwareVersion("V51.458a")
-                .addStatusOutputs(StatusType.ELEC_DC, StatusType.RADIO));
-        }
-        
-        // image sensors
-        for (int i = 1; i < 2; i++)
-        {
-            registerSensor(new ImagerSensor(this, String.format("IMG%03d", i), "H264")
-                .setManufacturer("Axis Imaging, Inc.")
-                .setModelNumber("M3104-L")
-                .setSoftwareVersion("1.28b")
-                .addStatusOutputs(StatusType.ELEC_DC, StatusType.RADIO));
+                .addStatusOutputs(StatusType.ELEC_DC, StatusType.RADIO)
+                .setFixedLocation(timeStamp, loc[0], loc[1], loc[2]));
         }
     }
     
@@ -133,14 +156,12 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements IProce
         synchronized (sensorDescLock)
         {
         	super.updateSensorDescription();
-        	ISAHelper helper = new ISAHelper();
         	
-        	// set identifiers in SensorML
-        	sensorDescription = helper.createPhysicalSystem()
-        	    .id(this.xmlID)
-        	    .uniqueID(this.uniqueID)
+        	// add description to SensorML
+        	new SMLHelper().edit((PhysicalSystem)sensorDescription)
         	    .name("ISA Sensor Network")
         	    .description("Network of sensors connected via the Integrated Sensor Architecture protocols")
+        	    .definition(SWEConstants.DEF_SENSOR_NETWORK)
         	    .build();
         }
     }
@@ -152,24 +173,7 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements IProce
     	if (started)
             return;
         
-        /*// start main measurement thread
-        Thread t = new Thread(new Runnable()
-        {
-            public void run()
-            {
-                while (started)
-                {
-                    //getMeasurement();
-                }
-                
-                dataIn = null;
-            }
-        });
-        
-        started = true;
-        t.start();*/
-    	
-    	// start simulated measurement timer
+        // start simulated measurement timer
     	timer = new Timer("ISA Driver");
         timer.schedule(new TimerTask() {
                         
@@ -179,7 +183,10 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements IProce
                 for (var sensor: allSensors.values())
                 {
                     for (var output: sensor.getOutputs().values())
-                        ((ISAOutput)output).sendRandomMeasurement();
+                    {
+                        if (output instanceof ISAOutput)
+                            ((ISAOutput)output).sendRandomMeasurement();
+                    }
                 }
             }
             

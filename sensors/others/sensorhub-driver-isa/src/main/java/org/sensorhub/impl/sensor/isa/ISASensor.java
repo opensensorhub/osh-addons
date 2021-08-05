@@ -14,8 +14,10 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.isa;
 
+import java.time.Instant;
 import org.sensorhub.impl.sensor.AbstractSensorDriver;
 import org.vast.sensorML.SMLHelper;
+import org.vast.swe.SWEConstants;
 import net.opengis.sensorml.v20.PhysicalSystem;
 
 
@@ -47,6 +49,7 @@ public abstract class ISASensor extends AbstractSensorDriver
             .id(getShortID())
             .uniqueID(getUniqueIdentifier())
             .name(name)
+            .definition(SWEConstants.DEF_SENSOR)
             .addClassifier(sml.classifiers.sensorType(getSensorType()))
             .build();
     }
@@ -95,6 +98,15 @@ public abstract class ISASensor extends AbstractSensorDriver
                 .addIdentifier(sml.identifiers.softwareVersion(version));
             return this;
         }
+    }
+    
+    
+    protected ISASensor setFixedLocation(Instant time, double lat, double lon, double alt)
+    {
+        setSamplingPointFoi(lat, lon, alt);
+        addLocationOutput(Double.NaN);
+        locationOutput.updateLocation(time.toEpochMilli(), lon, lat, alt, false);
+        return this;
     }
     
     

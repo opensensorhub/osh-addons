@@ -14,6 +14,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.isa;
 
+import net.opengis.sensorml.v20.PhysicalSystem;
 
 public class BiologicalSensor extends ISASensor
 {
@@ -21,6 +22,17 @@ public class BiologicalSensor extends ISASensor
     public BiologicalSensor(ISADriver parent, String id)
     {
         super(parent, id, "Biological Sensor " + id);
+        
+        sml.edit((PhysicalSystem)smlDescription)
+            .addCharacteristicList("operating", sml.characteristics.operatingCharacteristics()
+                .add("voltage", sml.characteristics.operatingVoltage(12, "V"))
+                .add("current", sml.characteristics.operatingCurrent(1.5, "A"))
+                .add("batt_capacity", sml.characteristics.batteryCapacity(200, "W.h")))
+            .addCapabilityList("measurement", sml.capabilities.systemCapabilities()
+                .add("resolution", sml.capabilities.resolution(1, "[ppm]"))
+                .add("accuracy", sml.capabilities.absoluteAccuracy(10, "[ppm]"))
+                .add("integ_time", sml.capabilities.integrationTime(14, "s"))
+                .add("sampling_freq", sml.capabilities.samplingFrequency(1/60)));        
         
         addOutput(new BioReadingOutput(this), false);
     } 
