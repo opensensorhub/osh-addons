@@ -10,7 +10,8 @@ dependencies {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.process.utils.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.process.utils.Activator')
+    attributes('-exportcontents': 'org.sensorhub.impl.process.utils')
   }
 }
 
