@@ -25,6 +25,7 @@ osgi {
     attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.axis.Activator')
     attributes('-fixupmessages': 'The default package \'.\' is not permitted by the Import-Package syntax.; is:=ignore')
+    attributes('-exportcontents': 'org.sensorhub.impl.sensor.axis')
     attributes('Import-Package': '''
       !com.ibm.*, !com.ms.*, !com.sun.*, !java.*, !javax.crypto.*, !javax.imageio.*,
       !javax.net.*, !javax.naming.*, !javax.management.*, !javax.security.*, !javax.sql.*, !javax.swing.*,
