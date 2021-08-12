@@ -15,9 +15,13 @@ dependencies {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.process.video.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.process.video.Activator')
     attributes('-fixupmessages': 'Classes found in the wrong directory; is:=ignore')
-    attributes('-exportcontents': 'org.sensorhub.impl.service.sos.video, org.bytedeco.ffmpeg.*')
+    attributes('-exportcontents': 'org.sensorhub.impl.service.sos.video, org.bytedeco.ffmpeg')
+    attributes('Import-Package': '''
+      !javax.*, !java.*, !org.apache.*, !sun.*,
+      org.osgi.service.repository;resolution:=optional,
+      *''')
   }
 }
 
