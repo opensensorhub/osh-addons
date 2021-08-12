@@ -88,9 +88,8 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig> implements IMulti
             {
                 if (config.commSettings == null)
                     throw new SensorHubException("No communication settings specified");
-                
-                // start comm provider
-                commProvider = config.commSettings.getProvider();
+
+                commProvider = config.commSettings.getProvider(getParentHub().getModuleRegistry());
                 commProvider.start();
             }
             catch (Exception e)

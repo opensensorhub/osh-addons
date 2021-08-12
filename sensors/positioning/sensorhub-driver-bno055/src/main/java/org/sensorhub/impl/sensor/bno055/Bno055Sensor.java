@@ -143,7 +143,7 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
             // we need to recreate comm provider here because it can be changed by UI
             if (config.commSettings == null)
                 throw new SensorHubException("No communication settings specified");
-            commProvider = config.commSettings.getProvider();
+            commProvider = config.commSettings.getProvider(getParentHub().getModuleRegistry());
             commProvider.start();
 
             // connect to comm data streams

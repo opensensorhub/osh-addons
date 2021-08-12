@@ -82,7 +82,7 @@ public class PwmServoActuators extends AbstractSensorModule<PwmServosConfig>
                 if (config.commSettings == null)
                     throw new SensorHubException("No communication settings specified");
                 
-                i2cCommProvider = (JdkDioI2CCommProvider)config.commSettings.getProvider();
+                i2cCommProvider = (JdkDioI2CCommProvider)config.commSettings.getProvider(getParentHub().getModuleRegistry());
                 i2cCommProvider.start();
             }
             catch (Exception e)

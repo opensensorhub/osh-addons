@@ -159,8 +159,8 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
             {
                 if (config.commSettings == null)
                     throw new SensorHubException("No communication settings specified");
-                
-                commProvider = config.commSettings.getProvider();
+
+                commProvider = config.commSettings.getProvider(getParentHub().getModuleRegistry());
                 commProvider.start();
             }
             catch (Exception e)

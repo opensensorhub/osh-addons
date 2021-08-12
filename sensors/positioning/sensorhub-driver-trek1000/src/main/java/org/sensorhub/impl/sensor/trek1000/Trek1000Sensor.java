@@ -107,8 +107,8 @@ public class Trek1000Sensor extends AbstractSensorModule<Trek1000Config>
             {
                 if (config.commSettings == null)
                     throw new SensorException("No communication settings specified");
-                
-                commProvider = config.commSettings.getProvider();
+
+                commProvider = config.commSettings.getProvider(getParentHub().getModuleRegistry());
                 commProvider.start();
             }
             catch (Exception e)

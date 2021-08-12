@@ -94,7 +94,7 @@ public class CommRelayService extends AbstractModule<CommRelayConfig>
                 if (config.incomingCommSettings == null)
                     throw new SensorHubException("No incoming communication settings specified");
                 
-                incoming = config.incomingCommSettings.getProvider();
+                incoming = config.incomingCommSettings.getProvider(getParentHub().getModuleRegistry());
                 incoming.start();
             }
             catch (Exception e)
@@ -112,7 +112,7 @@ public class CommRelayService extends AbstractModule<CommRelayConfig>
                 if (config.outgoingCommSettings == null)
                     throw new SensorHubException("No outgoing communication settings specified");
                 
-                outgoing = config.outgoingCommSettings.getProvider();
+                outgoing = config.outgoingCommSettings.getProvider(getParentHub().getModuleRegistry());
                 outgoing.start();
             }
             catch (Exception e)
