@@ -1,3 +1,6 @@
+plugins {
+  id "biz.aQute.bnd" version "5.3.0" apply false
+}
 apply from: gradle.oshCoreDir + '/common.gradle'
 version = oshCoreVersion
 description = 'OSH Add-ons'
@@ -50,3 +53,15 @@ distributions {
 }
 
 apply from: gradle.oshCoreDir + '/release.gradle'
+
+// task to generate OSGi bundle index
+task osgiIndex(type: aQute.bnd.gradle.Index) {
+  repositoryName 'OpenSensorHub Bundle Repository'
+  destinationDirectory = layout.buildDirectory.dir('osgi')
+  //base = '.'//'https://repo.opensensorhub.org/'
+  gzip = false
+  bundles = fileTree('.') {
+    include '*/sensorhub*/build/libs/*bundle.jar'
+    include '*/*/*/build/libs/*bundle.jar'
+  }
+}
