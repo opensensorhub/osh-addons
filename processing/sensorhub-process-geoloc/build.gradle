@@ -16,6 +16,7 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
     attributes('Bundle-Activator': 'org.sensorhub.process.geoloc.Activator')
+    attributes('-exportcontents': 'org.sensorhub.algo.geoloc,org.sensorhub.process.cam, org.sensorhub.process.geoloc')
   }
 }
 

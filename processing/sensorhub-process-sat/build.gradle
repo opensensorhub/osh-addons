@@ -11,6 +11,7 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
     attributes('Bundle-Activator': 'org.sensorhub.impl.process.sat.Activator')
+    attributes('-exportcontents': 'org.sensorhub.impl.process.sat, org.vast.physics')
   }
 }
 
