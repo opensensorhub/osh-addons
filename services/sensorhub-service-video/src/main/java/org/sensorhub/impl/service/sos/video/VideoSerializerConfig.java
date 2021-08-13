@@ -8,16 +8,23 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
+Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.sta;
+package org.sensorhub.impl.service.sos.video;
 
-import org.osgi.framework.BundleActivator;
-import org.sensorhub.utils.OshBundleActivator;
+import org.sensorhub.api.comm.CommProviderConfig;
+import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.service.ServiceConfig;
 
 
-public class Activator extends OshBundleActivator implements BundleActivator
+/**
+ * <p>
+ * Configuration class for the Video Service module
+ * </p>
+ *
+ */
+public class VideoSerializerConfig extends ServiceConfig
 {
 }
