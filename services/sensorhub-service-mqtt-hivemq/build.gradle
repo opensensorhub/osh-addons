@@ -12,6 +12,25 @@ dependencies {
     exclude group: 'ch.qos.logback', module: 'logback-classic'
     exclude group: 'com.google.guava', module: 'guava'
     exclude group: 'com.hivemq', module: 'hivemq-extension-sdk'
+    exclude group: 'io.dropwizard.metrics'
+    exclude group: 'io.netty'
+    exclude group: 'org.slf4j', module: 'jul-to-slf4j'
+    exclude group: 'com.github.oshi', module: 'oshi-core'
+    exclude group: 'org.jetbrains.xodus'
+    exclude group: 'io.github.microutils ', module: 'kotlin-logging'
+    exclude group: 'org.bouncycastle'
+    exclude group: 'com.sun.xml.bind'
+    exclude group: 'com.google.inject'
+    exclude group: 'javax.annotation'
+    exclude group: 'commons-io'
+    exclude group: 'org.apache.commons'
+    exclude group: 'jakarta.xml.bind'
+    exclude group: 'net.openhft'
+    exclude group: 'com.fasterxml.jackson.core'
+    exclude group: 'org.jctools'
+    exclude group: 'jakarta.activation'
+    exclude group: 'com.fasterxml.jackson.core'
+
   }
   embeddedImpl 'com.hivemq:hivemq-extension-sdk:4.6.1'
 }
@@ -21,6 +40,7 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
     attributes('Bundle-Activator': 'org.sensorhub.impl.service.hivemq.Activator')
+    attributes('-exportcontents': 'org.sensorhub.impl.service.hivemq')
   }
 }
 
