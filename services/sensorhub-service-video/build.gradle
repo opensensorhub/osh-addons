@@ -13,6 +13,10 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
     attributes('Bundle-Activator': 'org.sensorhub.impl.service.sos.video.Activator')
+    attributes('Import-Package': '''
+      !javax.*, !java.*, !org.w3c.*, !org.xml.*,
+      org.osgi.service.repository;resolution:=optional,
+      *''')
   }
 }
 
