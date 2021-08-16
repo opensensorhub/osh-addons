@@ -3,7 +3,7 @@ ext.details = 'Driver for simulated home weather station'
 version = '0.1-SNAPSHOT'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
 }
 
 // add info to OSGi manifest

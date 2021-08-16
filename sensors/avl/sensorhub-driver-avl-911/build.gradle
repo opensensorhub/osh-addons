@@ -3,7 +3,7 @@ ext.details = "Driver for Automatic Vehicle Location providing location and stat
 version = '1.0.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
 }
 
 // exclude tests requiring connection to the sensor

@@ -3,8 +3,8 @@ ext.details = 'Demo sensor simulating a live video feed by replaying a video fil
 version = '0.1'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile 'com.googlecode.mp4parser:isoparser:1.0.5.4'
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'com.googlecode.mp4parser:isoparser:1.0.5.4'
 }
 
 // exclude tests requiring connection to the sensor

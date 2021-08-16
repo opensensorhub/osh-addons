@@ -3,8 +3,8 @@ ext.details = 'Connector to retrieve live observations from USGS water stations'
 version = '0.1.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile project(':sensorhub-storage-usgswater')
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-storage-usgswater')
 }
 
 // add info to OSGi manifest

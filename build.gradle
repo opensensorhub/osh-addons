@@ -31,7 +31,7 @@ configurations {
 // distributions content
 distributions {
   dev {
-    baseName = 'osh-addons-dev'
+    distributionBaseName = 'osh-addons-dev'
     contents {
       into('lib') {
         from project.configurations.dev
@@ -40,7 +40,7 @@ distributions {
   }
 
   stable {
-    baseName = 'osh-addons-stable'
+    distributionBaseName = 'osh-addons-stable'
     contents {
       into('lib') {
         from project.configurations.stable

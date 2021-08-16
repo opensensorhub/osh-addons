@@ -9,8 +9,8 @@ rootProject.allprojects {
 }
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile ('edu.ucar:grib:4.6.10') {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  api ('edu.ucar:grib:4.6.10') {
     exclude group: 'com.amazonaws', module: 'aws-java-sdk-s3'
     exclude group: 'edu.ucar', module: 'jj2000'  
     exclude group: 'org.apache.httpcomponents', module: 'httpcore'

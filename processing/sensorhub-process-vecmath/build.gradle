@@ -3,7 +3,7 @@ ext.details = 'Vector math algorithms and process blocks'
 version = '1.0.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
 }
 
 // add info to OSGi manifest

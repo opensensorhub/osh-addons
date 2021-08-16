@@ -1,7 +1,5 @@
 package org.sensorhub.impl.persistence.perst;
 import org.sensorhub.api.persistence.IRecordStoreInfo;
-import org.sensorhub.impl.persistence.perst.BasicStorageConfig;
-import org.sensorhub.impl.persistence.perst.BasicStorageImpl;
 import org.vast.swe.SWEUtils;
 import net.opengis.swe.v20.BinaryEncoding;
 import net.opengis.swe.v20.ByteOrder;
@@ -48,7 +46,7 @@ public class PatchSoloVideoDb
         System.out.println("\n");        
         //db.updateRecordStore("camOutput", camOutputRec);
         
-        TimeSeriesImpl videoStore = (TimeSeriesImpl)db.getRecordStores().get("camOutput");
+        IRecordStoreInfo videoStore = db.getRecordStores().get("camOutput");
         BinaryEncoding dataEncoding = (BinaryEncoding)videoStore.getRecommendedEncoding().copy();
         dataEncoding.setByteOrder(ByteOrder.BIG_ENDIAN);
         //videoStore.recommendedEncoding = dataEncoding;

@@ -8,6 +8,6 @@ rootProject.allprojects {
 }
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile 'jdk:jdk.dio:1.0.1'
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'jdk:jdk.dio:1.0.1'
 }

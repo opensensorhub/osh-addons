@@ -3,7 +3,7 @@ ext.details = 'Connector to retrieve historical observations from USGS water dat
 version = '0.1.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
 }
 
 // add info to OSGi manifest

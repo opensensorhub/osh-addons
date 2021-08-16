@@ -3,9 +3,9 @@ ext.details = 'Driver for pulling measurements from Intellisense Flood Sensor AP
 version = '0.1.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.3.6'
-  compile group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.3.3'
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.apache.httpcomponents:httpclient:4.3.6'
+  implementation 'org.apache.httpcomponents:httpcore:4.3.3'
 }
 
 // add info to OSGi manifest
