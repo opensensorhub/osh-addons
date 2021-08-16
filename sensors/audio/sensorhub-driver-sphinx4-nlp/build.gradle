@@ -20,8 +20,8 @@ test {
 // add info to OSGi manifest
 jar {
     manifest {
-        instruction 'Bundle-Vendor', 'Nicolas Garay'
-        instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.audio.transcription.Activator'
+        attributes 'Bundle-Vendor': 'Nicolas Garay'
+        attributes 'Bundle-Activator': 'org.sensorhub.impl.sensor.audio.transcription.Activator'
     }
 }
 

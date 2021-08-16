@@ -14,8 +14,8 @@ dependencies {
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Environment Systems'
-    instruction 'Bundle-Activator', 'uk.co.envsys.sensorhub.sensor.httpweather.Activator'
+    attributes 'Bundle-Vendor': 'Environment Systems'
+    attributes 'Bundle-Activator': 'uk.co.envsys.sensorhub.sensor.httpweather.Activator'
   }
 }
 

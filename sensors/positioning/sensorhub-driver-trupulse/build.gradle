@@ -10,8 +10,8 @@ dependencies {
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Sensia Software LLC'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.trupulse.Activator'
+    attributes 'Bundle-Vendor': 'Sensia Software LLC'
+    attributes 'Bundle-Activator': 'org.sensorhub.impl.sensor.trupulse.Activator'
   }
 }
 

@@ -11,8 +11,8 @@ dependencies {
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Joshua Wolfe'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.twitter.Activator'
+    attributes 'Bundle-Vendor': 'Joshua Wolfe'
+    attributes 'Bundle-Activator': 'org.sensorhub.impl.sensor.twitter.Activator'
   }
 }
 

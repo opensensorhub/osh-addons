@@ -16,8 +16,8 @@ test {
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.ahrs.Activator'
+    attributes 'Bundle-Vendor': 'Botts Innovative Research, Inc.'
+    attributes 'Bundle-Activator': 'org.sensorhub.impl.sensor.ahrs.Activator'
   }
 }
 

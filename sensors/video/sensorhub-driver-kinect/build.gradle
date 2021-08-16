@@ -20,8 +20,8 @@ rootProject.allprojects {
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.kinect.Activator'
+    attributes 'Bundle-Vendor': 'Botts Innovative Research, Inc.'
+    attributes 'Bundle-Activator': 'org.sensorhub.impl.sensor.kinect.Activator'
   }
 }
 
