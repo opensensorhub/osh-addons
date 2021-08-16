@@ -48,6 +48,7 @@ import net.opengis.swe.v20.DataType;
 public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> implements IMultiSourceDataInterface  
 {
     static final String DEF_FLIGHTPLAN_REC = SWEHelper.getPropertyUri("aero/FlightPlan");
+    static final String DEF_AIRCRAFT_TYPE = SWEHelper.getPropertyUri("aero/AircraftType/ICAO");
     static final String DEF_AIRPORT_CODE = SWEHelper.getPropertyUri("aero/AirportCode/ICAO");
     static final String DEF_WAYPOINT = SWEHelper.getPropertyUri("aero/Waypoint");
     static final String DEF_WAYPOINT_TYPE = SWEHelper.getPropertyUri("aero/WaypointType");
@@ -79,6 +80,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         dataStruct.addComponent("time", fac.newTimeIsoUTC(SWEConstants.DEF_SAMPLING_TIME, "Issue Time", null));
         dataStruct.addComponent("flightId", fac.newText(ENTITY_ID_URI, "Flight ID", null));
         dataStruct.addComponent("flightNumber", fac.newText(DEF_FLIGHT_NUM, "Flight Number", null));
+        dataStruct.addComponent("aircraftType", fac.newCategory(DEF_AIRCRAFT_TYPE, "Aircraft Type", "Model of aircraft operated on this flight", null));
         dataStruct.addComponent("srcAirport", fac.newText(DEF_AIRPORT_CODE, "Departure Airport", "ICAO identification code of departure airport"));
         dataStruct.addComponent("destAirport", fac.newText(DEF_AIRPORT_CODE, "Arrival Airport", "ICAO identification code of arrival airport"));
         dataStruct.addComponent("altAirports", fac.newText(DEF_AIRPORT_CODE, "Alternate Airports", "ICAO identification codes of alternate airports"));
@@ -121,6 +123,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         dataBlk.setDoubleValue(i++, fltPlan.getMessageTime());
         dataBlk.setStringValue(i++, oshFlightId);
         dataBlk.setStringValue(i++, fltPlan.ident);
+        dataBlk.setStringValue(i++, fltPlan.aircrafttype);
         dataBlk.setStringValue(i++, fltPlan.orig);
         dataBlk.setStringValue(i++, fltPlan.dest);
         dataBlk.setStringValue(i++, null);
