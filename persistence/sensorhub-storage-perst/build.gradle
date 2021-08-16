@@ -13,7 +13,7 @@ dependencies {
   implementation project(':sensorhub-storage-compat')
   embeddedImpl 'org.garret:perst-fixed:4.39'
   //embeddedImpl files('libs/org/garret/perst-fixed/4.39/perst-fixed-4.39.jar')
-  testCompile group:'org.sensorhub', name:'sensorhub-core', version:oshCoreVersion, configuration: 'testArtifacts'
+  testImplementation group:'org.sensorhub', name:'sensorhub-core', version:oshCoreVersion, configuration: 'testArtifacts'
 }
 
 // add info to OSGI manifest

@@ -17,7 +17,7 @@ dependencies {
   embeddedImpl 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.Core:1.10.1'
   embeddedImpl 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.HTTP.Common:1.10.1'
   
-  testCompile 'org.jglue.fluent-json:fluent-json:2.0.3'
+  testImplementation 'org.jglue.fluent-json:fluent-json:2.0.3'
 }
 
 // add info to OSGi manifest

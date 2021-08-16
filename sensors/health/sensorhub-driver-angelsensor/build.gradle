@@ -5,7 +5,7 @@ version = '0.1-SNAPSHOT'
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-comm-ble')
-  testCompile project(':sensorhub-comm-ble-dbus')
+  testImplementation project(':sensorhub-comm-ble-dbus')
 }
 
 // exclude tests requiring connection to the sensor

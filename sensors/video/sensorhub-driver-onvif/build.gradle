@@ -17,7 +17,7 @@ dependencies {
   }
 
   embeddedImpl fileTree(dir: 'lib', include: ['*.jar'])
-  testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
+  testImplementation project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
 }
 
 // exclude tests requiring connection to the sensor

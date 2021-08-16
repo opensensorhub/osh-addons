@@ -10,7 +10,7 @@ dependencies {
     exclude group: 'commons-cli', module: 'commons-cli'
     exclude group: 'commons-httpclient', module: 'commons-httpclient'
   }
-  testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
+  testImplementation project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
 }
 
 // exclude tests requiring connection to the sensor

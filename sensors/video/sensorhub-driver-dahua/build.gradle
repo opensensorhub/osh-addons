@@ -5,7 +5,7 @@ version = '1.0.0'
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-driver-rtpcam')
-  testCompile project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
+  testImplementation project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
 }
 
 // exclude tests requiring connection to the sensor
