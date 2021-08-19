@@ -3,9 +3,9 @@ ext.details = 'Driver for Angel Sensor BLE wrist band'
 version = '0.1-SNAPSHOT'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile project(':sensorhub-comm-ble')
-  testCompile project(':sensorhub-comm-ble-dbus')
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-comm-ble')
+  testImplementation project(':sensorhub-comm-ble-dbus')
 }
 
 // exclude tests requiring connection to the sensor
@@ -17,8 +17,8 @@ test {
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Sensia Software LLC'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.angel.Activator'
+    attributes 'Bundle-Vendor': 'Sensia Software LLC'
+    attributes 'Bundle-Activator': 'org.sensorhub.impl.sensor.angel.Activator'
   }
 }
 

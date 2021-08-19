@@ -144,6 +144,30 @@
     "autoStart": true
   },
   {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "storageConfig": {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "memoryCacheSize": 4096,
+      "objectCacheSize": 100,
+      "storagePath": "/var/osh/data/weather_obs2.dat",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.ObsStorageImpl",
+      "autoStart": false
+    },
+    "autoPurgeConfig": {
+      "objClass": "org.sensorhub.impl.persistence.MaxAgeAutoPurgeConfig",
+      "maxRecordAge": 86400,
+      "enabled": true,
+      "purgePeriod": 600.0
+    },
+    "dataSourceID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "id": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc3",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "name": "Weather Data Storage (Rolling)",
+    "autoStart": true
+  },
+  {
     "objClass": "org.sensorhub.impl.sensor.avl.AVLConfig",
     "fleetID": "911:fleet",
     "agencyName": "Huntsville Fire Department",
@@ -639,6 +663,18 @@
         "offeringID": "urn:mysos:offering03",
         "name": "Simulated Weather",
         "description": "Simulated Weather sensor",
+        "enabled": true
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+        "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc3",
+        "hiddenOutputs": [],
+        "liveDataTimeout": 10.0,
+        "maxFois": 10,
+        "offeringID": "urn:mysos:offering04",
+        "name": "Simulated Weather (Rolling)",
+        "description": "Simulated Weather data from a rolling data archive",
         "enabled": true
       },
       {

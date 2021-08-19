@@ -3,7 +3,7 @@ ext.details = 'Helper classes for video camera drivers'
 version = '1.0.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
 }
 
 task packageTests(type: Jar) {

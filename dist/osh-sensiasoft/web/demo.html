@@ -13,6 +13,14 @@
       h4 {margin-bottom: 12px;}
       p {margin-bottom: 15px;}
     </style>
+    <script type="text/javascript">
+      function setTime(a, numSeconds) {
+        var now = new Date();
+        var nSecondsAgo = new Date(now.getTime()-numSeconds*1000);
+        a.href = a.href.replace(/phenomenonTime.*/g, "phenomenonTime," + nSecondsAgo.toISOString() + "/" + now.toISOString());
+        return true;
+      }
+    </script>
   </head>
   <body class="rst-content">
    <div class="section">
@@ -72,9 +80,9 @@
     <ul>
 	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=DescribeSensor&procedure=urn:osh:sensor:simweather:0123456879">DescribeSensor</a></li>
 	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather">GetResultTemplate (all measured properties)</a></li>
-	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T20:58:00Z">GetResult Historical (all measured properties)</a></li>
+	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering04&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime" onmousedown="return setTime(this, 3600)">GetResult Historical (all measured properties)</a></li>
 	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/AirTemperature">GetResultTemplate (only temperature)</a></li>
-	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/AirTemperature&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T20:58:00Z">GetResult Historical (only temperature)</a></li>
+	    <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering04&observedProperty=http://sensorml.com/ont/swe/property/AirTemperature&temporalFilter=phenomenonTime" onmousedown="return setTime(this, 3600)">GetResult Historical (only temperature)</a></li>
     </ul>
     
     <h4>UAV Navigation Data</h4>
@@ -98,8 +106,8 @@
       <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering02&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T19:59:00Z&replaySpeed=1">Get Historical Simulated GPS with Real-Time Playback</a></li>
       <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering02&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T19:59:00Z&replaySpeed=4">Get Historical Simulated GPS with 4 x Real-Time Playback</a></li>
       <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering02&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&temporalFilter=phenomenonTime,now/2116-01-01T00:00:00Z">Get Real-Time Simulated GPS from Now Until 2116</a></li>
-      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,now">GetResult Latest Weather (all measured properties)</a></li>
-      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T20:58:00Z">GetResult Historical Weather (all measured properties)</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering04&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,now">GetResult Latest Weather (all measured properties)</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering04&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime" onmousedown="return setTime(this, 3600)">GetResult Historical Weather (all measured properties)</a></li>
     </ul>
     
     
@@ -154,7 +162,7 @@
     </p>
     <ul>
       <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,now&responseFormat=application/json">GetResult Latest Weather (JSON)</a></li>
-      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T20:58:00Z&responseFormat=application/json">GetResult Historical Weather (JSON)</a></li>
+      <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,2016-08-11T19:58:00Z/2016-08-11T19:59:00Z&responseFormat=application/json">GetResult Historical Weather (JSON)</a></li>
       <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:mysos:offering03&observedProperty=http://sensorml.com/ont/swe/property/Weather&responseFormat=application/json">GetResultTemplate Weather (JSON)</a></li>
       <li><a href="sensorhub/sos?service=SOS&version=2.0&request=DescribeSensor&procedure=urn:osh:sensor:simgps:d136b6ea&procedureDescriptionFormat=http://www.opengis.net/sensorml-json/2.0">DescribeSensor GPS (JSON)</a></li>
       <li><a href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:mysos:avl&observedProperty=http://www.opengis.net/def/property/OGC/0/SensorLocation&temporalFilter=phenomenonTime,2014-03-29T06:16:12Z/2014-03-29T14:26:12Z&responseFormat=application/json">GetResult Historical AVL (JSON)</a></li>

@@ -3,9 +3,9 @@ ext.details = 'An OpenSensorHub driver for the Microsoft Kinect using the OpenKi
 version = '1.0.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile project(':sensorhub-driver-videocam')
-  compile group: 'net.java.dev.jna', name: 'jna', version: '5.1.0'
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-driver-videocam')
+  implementation 'net.java.dev.jna:jna:5.1.0'
   embedded 'org.openkinect:freenect:1.0'
 }
 
@@ -20,8 +20,8 @@ rootProject.allprojects {
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Botts Innovative Research, Inc.'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.kinect.Activator'
+    attributes 'Bundle-Vendor': 'Botts Innovative Research, Inc.'
+    attributes 'Bundle-Activator': 'org.sensorhub.impl.sensor.kinect.Activator'
   }
 }
 

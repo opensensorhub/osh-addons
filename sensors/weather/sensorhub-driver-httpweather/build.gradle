@@ -4,14 +4,14 @@ ext.details = 'Provides HTTP endpoint for weather stations to push measurements 
 version = '0.1-SNAPSHOT'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
 }
 
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Environment Systems'
-    instruction 'Bundle-Activator', 'uk.co.envsys.sensorhub.sensor.httpweather.Activator'
+    attributes 'Bundle-Vendor': 'Environment Systems'
+    attributes 'Bundle-Activator': 'uk.co.envsys.sensorhub.sensor.httpweather.Activator'
   }
 }
 

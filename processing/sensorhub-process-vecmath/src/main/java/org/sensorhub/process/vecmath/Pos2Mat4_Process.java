@@ -29,6 +29,7 @@ import net.opengis.swe.v20.Vector;
 import org.sensorhub.algo.vecmath.Mat4d;
 import org.vast.process.SMLException;
 import org.vast.sensorML.ExecutableProcessImpl;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.helper.VectorHelper;
 
 
@@ -58,8 +59,7 @@ public class Pos2Mat4_Process extends ExecutableProcessImpl
         
         // create location input
         Vector tData = vecHelper.newLocationVectorXYZ(null, null, "m");
-        tData.setReferenceFrame(null);
-        tData.setReferenceFrame(null);
+        tData.setReferenceFrame(SWEConstants.NIL_TEMPLATE);
         inputData.add("location", tData);
         txData = (Quantity)tData.getComponent(0);
         tyData = (Quantity)tData.getComponent(1);
@@ -67,7 +67,7 @@ public class Pos2Mat4_Process extends ExecutableProcessImpl
         
         // create euler input
         Vector eulerData = vecHelper.newEulerAngles(VectorHelper.DEF_ORIENTATION_EULER, "rad");
-        eulerData.setReferenceFrame(null);
+        eulerData.setReferenceFrame(SWEConstants.NIL_TEMPLATE);
         inputData.add("orientation", eulerData);
         r1Data = (Quantity)eulerData.getComponent(0);
         r2Data = (Quantity)eulerData.getComponent(1);

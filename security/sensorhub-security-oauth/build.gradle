@@ -3,15 +3,15 @@ ext.details = 'Provides federated authentication through OAuth2 providers such a
 version = '0.9.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile 'org.apache.oltu.oauth2:org.apache.oltu.oauth2.client:1.0.1'
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.apache.oltu.oauth2:org.apache.oltu.oauth2.client:1.0.1'
 }
 
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Sensia Software LLC'
-    instruction 'Bundle-Activator', 'org.sensorhub.process.math.Activator'
+    attributes 'Bundle-Vendor': 'Sensia Software LLC'
+    attributes 'Bundle-Activator': 'org.sensorhub.process.math.Activator'
   }
 }
 

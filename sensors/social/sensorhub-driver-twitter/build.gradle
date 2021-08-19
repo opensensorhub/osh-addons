@@ -3,16 +3,16 @@ ext.details = 'Twitter Sensor via Twitter\'s API'
 version = '0.0.1'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile 'com.twitter:hbc-core:2.2.0'
-  compile 'com.twitter:hbc-twitter4j:2.2.0'
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'com.twitter:hbc-core:2.2.0'
+  implementation 'com.twitter:hbc-twitter4j:2.2.0'
 }
 
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Joshua Wolfe'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.twitter.Activator'
+    attributes 'Bundle-Vendor': 'Joshua Wolfe'
+    attributes 'Bundle-Activator': 'org.sensorhub.impl.sensor.twitter.Activator'
   }
 }
 

@@ -3,14 +3,15 @@ ext.details = 'Algorithms used for satellite navigation (TLEs, ephemeris, etc...
 version = '1.0.0'
 
 dependencies {
-  compile project(':sensorhub-process-geoloc')
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-process-geoloc')
 }
 
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Sensia Software LLC'
-    instruction 'Bundle-Activator', 'org.sensorhub.process.geoloc.Activator'
+    attributes 'Bundle-Vendor': 'Sensia Software LLC'
+    attributes 'Bundle-Activator': 'org.sensorhub.process.geoloc.Activator'
   }
 }
 

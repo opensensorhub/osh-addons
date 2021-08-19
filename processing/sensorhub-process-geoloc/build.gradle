@@ -3,8 +3,9 @@ ext.details = 'Common geolocation algorithms and process blocks'
 version = '1.0.0'
 
 dependencies {
-  compile project(':sensorhub-process-vecmath')
-  compile 'org.vast.opengis:ogc-services-sps:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.vast.opengis:ogc-services-sps:' + oshCoreVersion
+  api project(':sensorhub-process-vecmath')
 }
 
 test {
@@ -14,8 +15,8 @@ test {
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Sensia Software LLC'
-    instruction 'Bundle-Activator', 'org.sensorhub.process.geoloc.Activator'
+    attributes 'Bundle-Vendor': 'Sensia Software LLC'
+    attributes 'Bundle-Activator': 'org.sensorhub.process.geoloc.Activator'
   }
 }
 

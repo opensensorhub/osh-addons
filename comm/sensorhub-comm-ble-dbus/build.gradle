@@ -9,6 +9,7 @@ rootProject.allprojects {
 }
 
 dependencies {
-  compile project(':sensorhub-comm-ble')
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-comm-ble')
   embedded 'org.freedesktop:dbus:2.8'
 }
