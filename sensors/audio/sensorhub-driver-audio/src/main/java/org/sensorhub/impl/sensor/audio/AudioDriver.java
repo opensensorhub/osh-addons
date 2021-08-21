@@ -16,7 +16,6 @@ package org.sensorhub.impl.sensor.audio;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -30,6 +29,7 @@ public class AudioDriver extends AbstractSensorModule<AudioConfig>
 {
 	AudioOutput output;
 	Thread fileReader;
+	
 	String [] supportedFormats = { "wav" };
 	Logger logger;
 	Path filePath;  // TODO support reading all files in dir
@@ -49,20 +49,24 @@ public class AudioDriver extends AbstractSensorModule<AudioConfig>
 	}
 
 	@Override
-	public void start() throws SensorHubException
+	public void start() throws SensorHubException {
+		//  Start 
+	
+	}
+	
+	public void startSingleFile() throws SensorHubException
 	{
-//		fileReader = new JavaReader(config, output);
-		//  Extract baseTime from filename (if it has basetime)
-		// GUI_Decode_2019-03-27 132356.wav
 		Path p = Paths.get(config.wavFile);
-		double baseTime = beastKitBaseTimeParser(p.getFileName().toString());
+		double baseTime = filenameTimeParser(p.getFileName().toString());
 		output.baseTime = baseTime;
 //		output.baseTime = System.currentTimeMillis() / 1000;;
 		fileReader = new FfmpegReader(config, output);
 		fileReader.start();
 	}
 	
-	public double beastKitBaseTimeParser(String fname) {
+	//  Extract baseTime from filename 
+	// GUI_Decode_2019-03-27 132356.wav
+	public double filenameTimeParser(String fname) {
 //		String fname = "GUI_Decode_2019-03-27 132356.wav";
 		String dateStr = fname.substring(11, fname.length() - 4);
 		System.err.println(dateStr);

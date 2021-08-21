@@ -3,15 +3,19 @@ ext.details = 'Initial cut of an audio driver for reading/processing/serving aud
 version = '0.1.0'
 
 dependencies {
-  compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  compile 'org.bytedeco:ffmpeg-platform:4.2.2-1.5.3'
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.bytedeco:ffmpeg-platform:4.2.2-1.5.3'
+}
+
+test {
+    useJUnit()
 }
 
 // add info to OSGi manifest
 jar {
   manifest {
-    instruction 'Bundle-Vendor', 'Botts Innovative Research Inc.'
-    instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.audio.Activator'
+    attributes 'Bundle-Vendor': 'Botts Innovative Research Inc.'
+    attributes 'Bundle-Activator': 'org.sensorhub.impl.sensor.audio.Activator'
   }
 }
 
