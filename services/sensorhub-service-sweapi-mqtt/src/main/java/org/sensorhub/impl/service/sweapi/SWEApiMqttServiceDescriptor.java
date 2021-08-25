@@ -22,41 +22,26 @@ import org.sensorhub.impl.module.JarModuleProvider;
 
 /**
  * <p>
- * Descriptor of SensorWeb API service module, needed for automatic discovery by
- * the ModuleRegistry.
+ * Descriptor of SensorWeb API MQTT service module, needed for automatic
+ * discovery by the ModuleRegistry.
  * </p>
  *
  * @author Alex Robin
  * @since Oct 12, 2020
  */
-public class SWEApiWithMqttServiceDescriptor extends JarModuleProvider implements IModuleProvider
+public class SWEApiMqttServiceDescriptor extends JarModuleProvider implements IModuleProvider
 {
-
-    @Override
-    public String getModuleName()
-    {
-        return "SWE API Service with MQTT support";
-    }
-
-
-    @Override
-    public String getModuleDescription()
-    {
-        return "Data access service compliant with the OGC SWE API standard";
-    }
-
-
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return SWEApiWithMqttService.class;
+        return SWEApiMqttService.class;
     }
 
 
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return SWEApiWithMqttServiceConfig.class;
+        return SWEApiMqttServiceConfig.class;
     }
 
 }

@@ -14,20 +14,18 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sweapi;
 
-import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.service.ServiceConfig;
 
 
 /**
  * <p>
- * Configuration class for the SWE API service module with MQTT support
+ * Configuration class for the SWE API MQTT service module
  * </p>
  *
  * @author Alex Robin
  * @since Jul 28, 2021
  */
-public class SWEApiWithMqttServiceConfig extends SWEApiServiceConfig
+public class SWEApiMqttServiceConfig extends ServiceConfig
 {
-    
-    @DisplayInfo(desc="Set to true to enable MQTT support")
-    public boolean enableMqtt = true;
+
 }
