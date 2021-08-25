@@ -14,12 +14,16 @@ Copyright (C) 2012-2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.hivemq;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.module.AbstractModule;
+import com.google.common.io.ByteStreams;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.embedded.EmbeddedHiveMQ;
 import com.hivemq.embedded.EmbeddedHiveMQBuilder;
@@ -36,6 +40,8 @@ import com.hivemq.migration.meta.PersistenceType;
  */
 public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqttServer
 {
+    private static final String CONFIG_FILE_NAME = "config.xml";
+    
     EmbeddedHiveMQ hiveMQ;
     OshExtension oshExtension;
     
@@ -45,10 +51,31 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
     {
         oshExtension = new OshExtension(getParentHub(), this);
         
+        // if config is not provided, create config folder
+        File configFolder = new File(config.configFolder);
+        if (!configFolder.exists())
+            configFolder.mkdirs();
+        
+        // if no config was provided, copy default config
+        File configFile = new File(configFolder, CONFIG_FILE_NAME);
+        if (!configFile.exists())
+        {
+            try (var outFile = new FileOutputStream(configFile))
+            {
+                var defaultConfig = getClass().getResourceAsStream(CONFIG_FILE_NAME);
+                ByteStreams.copy(defaultConfig, outFile);
+            }
+            catch (IOException e)
+            {
+                throw new SensorHubException("Error creating config file", e);
+            }
+        }
+        
+        // init embedded HiveMQ server
         EmbeddedHiveMQBuilder hiveMqBuilder = EmbeddedHiveMQ.builder()
-            .withConfigurationFolder(Path.of("hivemq-config"))
-            .withDataFolder(Path.of("hivemq-data"))
-            .withExtensionsFolder(Path.of("hivemq-ext"))
+            .withConfigurationFolder(Path.of(config.configFolder))
+            .withDataFolder(Path.of(config.dataFolder))
+            .withExtensionsFolder(Path.of(config.configFolder))
             .withEmbeddedExtension(oshExtension);
         
         try
@@ -91,13 +118,5 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
     public CompletableFuture<Boolean> publish(String topic, ByteBuffer payload)
     {
         return oshExtension.publish(topic, payload);
-    }
-    
-    
-    public static void main(String[] args) throws Exception
-    {
-        var hiveMq = new MqttServer();
-        hiveMq.start();
-        Thread.currentThread().join();
     }
 }
