@@ -29,7 +29,7 @@ import org.sensorhub.api.comm.mqtt.InvalidPayloadException;
 import org.sensorhub.api.comm.mqtt.IMqttServer.IMqttHandler;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.comm.mqtt.MqttOutputStream;
-import org.sensorhub.impl.service.sweapi.resource.ResourceContext;
+import org.sensorhub.impl.service.sweapi.resource.RequestContext;
 import org.sensorhub.impl.service.sweapi.resource.ResourceFormat;
 import org.sensorhub.impl.service.sweapi.stream.StreamHandler;
 import org.vast.util.Asserts;
@@ -201,18 +201,18 @@ public class SWEApiMqttConnector implements IMqttHandler
     }
     
     
-    private ResourceContext getResourceContext(String topic, MqttSubscriber streamHandler) throws InvalidTopicException
+    private RequestContext getResourceContext(String topic, MqttSubscriber streamHandler) throws InvalidTopicException
     {
-        return new ResourceContext(
+        return new RequestContext(
             servlet,
             getResourceUri(topic),
             streamHandler);
     }
     
     
-    private ResourceContext getResourceContext(String topic, ByteBuffer payload) throws InvalidTopicException
+    private RequestContext getResourceContext(String topic, ByteBuffer payload) throws InvalidTopicException
     {
-        return new ResourceContext(
+        return new RequestContext(
             servlet,
             getResourceUri(topic),
             new ByteBufferInputStream(payload));
