@@ -16,9 +16,12 @@ package org.sensorhub.impl.security.oauth;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -46,6 +49,7 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.slf4j.Logger;
 import org.vast.util.Asserts;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.net.HttpHeaders;
 import com.google.gson.stream.JsonReader;
 
 
@@ -102,7 +106,31 @@ public class OAuthAuthenticator extends LoginAuthenticator
             HttpServletRequest request = (HttpServletRequest) req;
             HttpServletResponse response = (HttpServletResponse) resp;
             String redirectUrl = config.redirectURL != null ? config.redirectURL : request.getRequestURL().toString();
+            
+            // catch logout case
+            if (request.getServletPath() != null && request.getServletPath().equals("/logout"))
+            {
+                try
+                {
+                    request.logout();
+                    var session = request.getSession(false);
+                    if (session != null)
+                        session.invalidate();
+                    
+                    log.debug("Log out from auth provider @ " + config.logoutEndpoint);
+                    var adminUrl = request.getRequestURL().toString().replace("logout", "admin");
+                    response.sendRedirect(config.logoutEndpoint + "?redirect_uri=" + adminUrl);
+                    return Authentication.SEND_CONTINUE;
+                }
+                catch (ServletException e)
+                {
+                    log.error("Error while logging out", e);
+                }
+                
+            }
+            
             HttpSession session = request.getSession(true);
+            String accessToken = null;
             
             // check for cached auth
             Authentication cachedAuth = (Authentication) session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
@@ -114,35 +142,108 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     return cachedAuth;
             }
             
-            // if calling back from provider with auth code
+            var auth = request.getHeader(HttpHeaders.AUTHORIZATION);
+            OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
+            
+            // if calling back from provider with auth code, get access token
             if (request.getParameter(OAuth.OAUTH_STATE) != null)
+            {
+                String code = null;
+                try
+                {
+                    // decode request received from auth provider
+                    OAuthAuthzResponse oar = OAuthAuthzResponse.oauthCodeAuthzResponse(request);
+                    
+                    // check state parameter
+                    // only continue if state is valid
+                    if (generatedState.remove(oar.getState()) != null)
+                    {
+                        code = oar.getCode();
+                        log.debug("OAuth Code = " + code);
+                    }
+                }
+                catch (OAuthProblemException e)
+                {
+                    log.error("Bad auth code callback: {} - {}", e.getError(), e.getDescription());
+                }
+                
+                try
+                {
+                    if (code != null)
+                    {
+                        OAuthClientRequest authRequest = OAuthClientRequest
+                            .tokenLocation(config.tokenEndpoint)
+                            .setGrantType(GrantType.AUTHORIZATION_CODE)
+                            .setCode(code)
+                            .setClientId(config.clientID)
+                            .setClientSecret(config.clientSecret)
+                            .setRedirectURI(redirectUrl)
+                            .buildBodyMessage();
+                        authRequest.addHeader("Accept", "application/json");
+    
+                        OAuthJSONAccessTokenResponse oAuthResponse = oAuthClient.accessToken(authRequest, HttpMethod.POST);
+                        accessToken = oAuthResponse.getAccessToken();
+                    }
+                }
+                catch (OAuthProblemException e)
+                {
+                    log.error("Error received from token endpoint: {} - {}", e.getError(), e.getDescription());
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    return Authentication.SEND_FAILURE;
+                }
+                catch (OAuthSystemException e)
+                {
+                    log.error("Error while requesting access token from " + config.tokenEndpoint, e);
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
+                    return Authentication.SEND_FAILURE;
+                }
+            }
+            
+            // else check if credentials are provided in authorization header
+            if (accessToken == null && auth != null)
             {
                 try
                 {
-                    // first request temporary access token
-                    OAuthAuthzResponse oar = OAuthAuthzResponse.oauthCodeAuthzResponse(request);
-                    String code = oar.getCode();
-                    log.debug("OAuth Code = " + code);
+                    var credentials = parseBasicAuth(auth);
+                    if (credentials == null)
+                    {
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                        return Authentication.SEND_FAILURE;
+                    }
                     
-                    // check state parameter
-                    if (generatedState.remove(oar.getState()) == null)
-                        throw OAuthProblemException.error("Invalid state parameter");
-
+                    // try to execute direct grant flow
                     OAuthClientRequest authRequest = OAuthClientRequest
                         .tokenLocation(config.tokenEndpoint)
-                        .setCode(code)
+                        .setGrantType(GrantType.PASSWORD)
                         .setClientId(config.clientID)
                         .setClientSecret(config.clientSecret)
-                        .setRedirectURI(redirectUrl)
-                        .setGrantType(GrantType.AUTHORIZATION_CODE)
+                        .setUsername(credentials[0])
+                        .setPassword(credentials[1])
                         .buildBodyMessage();
                     authRequest.addHeader("Accept", "application/json");
 
-                    OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
                     OAuthJSONAccessTokenResponse oAuthResponse = oAuthClient.accessToken(authRequest, HttpMethod.POST);
-
-                    // read access token and store in session
-                    String accessToken = oAuthResponse.getAccessToken();
+                    accessToken = oAuthResponse.getAccessToken();
+                }
+                catch (OAuthProblemException e)
+                {
+                    log.error("Error received from token endpoint: {} - {}", e.getError(), e.getDescription());
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    return Authentication.SEND_FAILURE;
+                }
+                catch (OAuthSystemException e)
+                {
+                    log.error("Error while requesting access token from " + config.tokenEndpoint, e);
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
+                    return Authentication.SEND_FAILURE;
+                }
+            }
+            
+            // if token was obtained, get user info
+            if (accessToken != null)
+            {
+                try
+                {
                     log.debug("OAuth Token = " + accessToken);
 
                     // request user info
@@ -158,7 +259,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     String userId = parseUserInfoJson(jsonReader);
                     
                     // login and return UserAuth object
-                    UserIdentity user = login(userId, "NONE", req);
+                    UserIdentity user = login(userId, "", req);
                     if (user != null)
                     {
                         UserAuthentication userAuth = new UserAuthentication(getAuthMethod(), user);
@@ -203,6 +304,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
 
                     // send as redirect
                     String loginUrl = authRequest.getLocationUri();
+                    log.debug("Redirecting to auth provider login @ " + loginUrl);
                     response.sendRedirect(response.encodeRedirectURL(loginUrl));
                     return Authentication.SEND_CONTINUE;
                 }
@@ -219,6 +321,30 @@ public class OAuthAuthenticator extends LoginAuthenticator
             log.error("Cannot send HTTP error", e);
             return Authentication.SEND_FAILURE;
         }
+    }
+    
+    
+    private String[] parseBasicAuth(String credentials)
+    {
+        int space = credentials.indexOf(' ');
+        if (space > 0)
+        {
+            String method = credentials.substring(0, space);
+            if ("basic".equalsIgnoreCase(method))
+            {
+                credentials = credentials.substring(space + 1);
+                credentials = new String(Base64.getDecoder().decode(credentials), StandardCharsets.ISO_8859_1);
+                int i = credentials.indexOf(':');
+                if (i > 0)
+                {
+                    String username = credentials.substring(0, i);
+                    String password = credentials.substring(i + 1);
+                    return new String[] {username, password};
+                }
+            }
+        }
+        
+        return null;
     }
 
 

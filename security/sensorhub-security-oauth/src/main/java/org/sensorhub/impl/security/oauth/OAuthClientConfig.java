@@ -26,6 +26,10 @@ public class OAuthClientConfig extends SecurityModuleConfig
     public String authzEndpoint;
     
     
+    @DisplayInfo(label="Logout Endpoint", desc="URL of OAuth provider's logout endpoint")
+    public String logoutEndpoint;
+    
+    
     @DisplayInfo(label="Token Endpoint", desc="URL of OAuth provider's token endpoint")
     public String tokenEndpoint;
     

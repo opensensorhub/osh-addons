@@ -14,12 +14,7 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.security.oauth;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.server.Authentication;
-import org.eclipse.jetty.server.Authentication.User;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.module.AbstractModule;
 
@@ -32,7 +27,7 @@ import org.sensorhub.impl.module.AbstractModule;
  * @author Alex Robin
  * @since Nov 29, 2016
  */
-public class OAuthClient extends AbstractModule<OAuthClientConfig> implements Authenticator
+public class OAuthClient extends AbstractModule<OAuthClientConfig>
 {
     Authenticator authenticator;
     
@@ -40,7 +35,7 @@ public class OAuthClient extends AbstractModule<OAuthClientConfig> implements Au
     @Override
     public void setConfiguration(OAuthClientConfig config)
     {
-        super.setConfiguration(config);        
+        super.setConfiguration(config);
         authenticator = new OAuthAuthenticator(config, getLogger());
     }
     
@@ -48,14 +43,14 @@ public class OAuthClient extends AbstractModule<OAuthClientConfig> implements Au
     @Override
     protected void doStart() throws SensorHubException
     {
-        getParentHub().getSecurityManager().registerAuthenticator(this);
+        getParentHub().getSecurityManager().registerAuthenticator(authenticator);
     }
 
 
     @Override
     protected void doStop() throws SensorHubException
     {
-        getParentHub().getSecurityManager().registerAuthenticator(authenticator);
+        //getParentHub().getSecurityManager().registerAuthenticator(null);
         this.authenticator = null;
     }
 
@@ -64,40 +59,4 @@ public class OAuthClient extends AbstractModule<OAuthClientConfig> implements Au
     public void cleanup() throws SensorHubException
     {
     }
-
-
-    @Override
-    public void setConfiguration(AuthConfiguration configuration)
-    {
-        authenticator.setConfiguration(configuration);
-    }
-
-
-    @Override
-    public String getAuthMethod()
-    {
-        return authenticator.getAuthMethod();
-    }
-
-
-    @Override
-    public void prepareRequest(ServletRequest request)
-    {
-        authenticator.prepareRequest(request);        
-    }
-
-
-    @Override
-    public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
-    {
-        return authenticator.validateRequest(request, response, mandatory);
-    }
-
-
-    @Override
-    public boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, User validatedUser) throws ServerAuthException
-    {
-        return authenticator.secureResponse(request, response, mandatory, validatedUser);
-    }
-
 }
