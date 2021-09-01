@@ -25,7 +25,6 @@ import org.joda.time.DateTimeZone;
 import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.event.IEventPublisher;
-import org.sensorhub.api.feature.FeatureId;
 import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.api.obs.IObsData;
 import org.sensorhub.api.obs.ObsData;
@@ -366,7 +365,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
 
         return new ObsData.Builder()
             .withDataStream(pm.toLocalID(dsId.asLong()))
-            .withFoi(foiId == null ? IObsData.NO_FOI : new FeatureId(pm.toLocalID(foiId.asLong()), foiUri))
+            .withFoi(foiId == null ? IObsData.NO_FOI : pm.toLocalID(foiId.asLong()))
             .withPhenomenonTime(phenomenonTime)
             .withResultTime(resultTime)
             .withResult(dataBlk)
@@ -456,9 +455,9 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             obs.setResultTime(TimeInstant.create(obsData.getResultTime().toEpochMilli(), DateTimeZone.UTC));
 
         // FOI
-        if (obsData.getFoiID().getInternalID() != 0)
+        if (obsData.hasFoi())
         {
-            FeatureOfInterest foi = new FeatureOfInterest(new ResourceIdLong(obsData.getFoiID().getInternalID()));
+            FeatureOfInterest foi = new FeatureOfInterest(new ResourceIdLong(obsData.getFoiID()));
             foi.setExportObject(false);
             obs.setFeatureOfInterest(foi);
         }
