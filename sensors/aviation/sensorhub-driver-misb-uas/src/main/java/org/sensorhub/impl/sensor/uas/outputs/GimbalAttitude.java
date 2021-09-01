@@ -20,7 +20,6 @@ import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.vast.swe.SWEHelper;
 
 /**
  * Output specification and provider for MISB-TS STANAG 4609 ST0601.16 UAS Metadata
@@ -30,9 +29,9 @@ import org.vast.swe.SWEHelper;
  */
 public class GimbalAttitude extends UasOutput {
 
-    private static final String SENSOR_OUTPUT_NAME = "GimbalAttitude";
+    private static final String SENSOR_OUTPUT_NAME = "sensorAttitude";
     private static final String SENSOR_OUTPUT_LABEL = "Gimbal Attitude";
-    private static final String SENSOR_OUTPUT_DESCRIPTION = "Yaw, Pitch, and Roll of Gimbal as Decoded from MPEG-TS MISB STANAG 4609 Metadata";
+    private static final String SENSOR_OUTPUT_DESCRIPTION = "Yaw (azimuth), pitch (elevation), and roll of sensor relative to the platform frame";
 
     private static final Logger logger = LoggerFactory.getLogger(GimbalAttitude.class);
 
@@ -60,9 +59,9 @@ public class GimbalAttitude extends UasOutput {
         dataStruct = sweFactory.createRecord()
                 .name(getName())
                 .label(SENSOR_OUTPUT_LABEL).description(SENSOR_OUTPUT_DESCRIPTION)
-                .definition(SWEHelper.getPropertyUri(SENSOR_OUTPUT_NAME))
+                .definition(UasHelper.MISB_DEF_URI_PREFIX + "SensorAttitude")
                 .addField("time", sweFactory.createTimeStamp())
-                .addField("attitude", sweFactory.createGimbalAttitude())
+                .addField("attitude", sweFactory.createSensorAttitude())
                 .build();
 
         dataEncoding = sweFactory.newTextEncoding(",", "\n");

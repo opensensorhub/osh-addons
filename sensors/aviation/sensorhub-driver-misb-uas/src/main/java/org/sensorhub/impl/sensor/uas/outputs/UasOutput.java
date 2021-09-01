@@ -23,9 +23,6 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,8 +33,6 @@ import java.util.Map;
  * @since Oct. 6, 2020
  */
 public abstract class UasOutput extends AbstractSensorOutput<UasSensor> implements DecodedSetListener {
-
-    private static final Logger logger = LoggerFactory.getLogger(UasOutput.class);
 
     protected DataRecord dataStruct;
     protected DataEncoding dataEncoding;

@@ -31,7 +31,7 @@ import java.net.URL;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class AirframePositionTest {
+public class SensorLocationTest {
 
     private UasSensor driver = null;
 
@@ -59,12 +59,12 @@ public class AirframePositionTest {
     }
 
     @Test
-    public void testAirframePosition() throws Exception {
+    public void testSensorLocation() throws Exception {
 
         driver.start();
 
         // register listener on data interface
-        IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
+        IStreamingDataInterface di = driver.getObservationOutputs().get(SensorLocation.SENSOR_OUTPUT_NAME);
         var dataWriter = SWEHelper.createDataWriter(di.getRecommendedEncoding());
         dataWriter.setDataComponents(di.getRecordDescription());
         dataWriter.setOutput(System.out);
@@ -86,10 +86,7 @@ public class AirframePositionTest {
             assertTrue(dataBlock.getDoubleValue(0) > 0);
             assertTrue(dataBlock.getDoubleValue(1) >= -90 && dataBlock.getDoubleValue(1) <= 90);
             assertTrue(dataBlock.getDoubleValue(2) >= -180 && dataBlock.getDoubleValue(2) <= 180);
-            assertTrue(dataBlock.getDoubleValue(3) >= Double.MIN_VALUE && dataBlock.getDoubleValue(3) <= Double.MAX_VALUE);
-            assertTrue(dataBlock.getDoubleValue(4) >= 0 && dataBlock.getDoubleValue(4) <= 360);
-            assertTrue(dataBlock.getDoubleValue(5) >= -90 && dataBlock.getDoubleValue(5) <= 90);
-            assertTrue(dataBlock.getDoubleValue(6) >= -180 && dataBlock.getDoubleValue(6) <= 180);
+            assertTrue(dataBlock.getDoubleValue(3) >= -100 && dataBlock.getDoubleValue(3) <= 30000);
 
             synchronized (syncObject) {
 

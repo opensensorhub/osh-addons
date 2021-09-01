@@ -27,30 +27,30 @@ import org.slf4j.LoggerFactory;
  * @author Nick Garay
  * @since Oct. 6, 2020
  */
-public class Identification extends UasOutput {
+public class SensorParams extends UasOutput {
 
-    private static final String SENSOR_OUTPUT_NAME = "platformInfo";
-    private static final String SENSOR_OUTPUT_LABEL = "Platform Identification";
-    private static final String SENSOR_OUTPUT_DESCRIPTION = "Platform identification as decoded from MISB ST0601 metadata";
+    private static final String SENSOR_OUTPUT_NAME = "sensorParams";
+    private static final String SENSOR_OUTPUT_LABEL = "Imaging Sensor Parameters";
+    private static final String SENSOR_OUTPUT_DESCRIPTION = "Geometric and radiometric parameters of imaging sensor";
 
-    private static final Logger logger = LoggerFactory.getLogger(Identification.class);
+    private static final Logger logger = LoggerFactory.getLogger(SensorParams.class);
 
     /**
      * Constructor
      *
      * @param parentSensor Sensor driver providing this output
      */
-    public Identification(UasSensor parentSensor) {
+    public SensorParams(UasSensor parentSensor) {
 
         super(SENSOR_OUTPUT_NAME, parentSensor);
 
-        logger.debug("Identification created");
+        logger.debug("SensorParams created");
     }
 
     @Override
     public void init() {
 
-        logger.debug("Initializing Identification");
+        logger.debug("Initializing SensorParams");
 
         // Get an instance of SWE Factory suitable to build components
         UasHelper sweFactory = new UasHelper();
@@ -59,15 +59,14 @@ public class Identification extends UasOutput {
         dataStruct = sweFactory.createRecord()
                 .name(getName())
                 .label(SENSOR_OUTPUT_LABEL).description(SENSOR_OUTPUT_DESCRIPTION)
-                .definition(UasHelper.MISB_DEF_URI_PREFIX + "PlatformIdentification")
+                .definition(UasHelper.MISB_DEF_URI_PREFIX  + "SensorParameters")
                 .addField("time", sweFactory.createTimeStamp())
-                .addField("designation", sweFactory.createPlatformDesignation())
-                .addField("tailNumber", sweFactory.createPlatformTailNumber())
+                .addField("params", sweFactory.createSensorParams())
                 .build();
 
         dataEncoding = sweFactory.newTextEncoding(",", "\n");
 
-        logger.debug("Initializing Identification Complete");
+        logger.debug("Initializing SensorParams Complete");
     }
 
     @Override
@@ -91,12 +90,12 @@ public class Identification extends UasOutput {
                     dataBlock.setDoubleValue(0, (Double) value);
                     break;
     
-                case 0x0A: // "Platform Designation", "Model name for the platform"
-                    dataBlock.setStringValue(1, (String) value);
+                case 0x10: // "Sensor Horizontal Field of View", "Horizontal field of view of selected imaging sensor", "deg"
+                    dataBlock.setDoubleValue(1, (Double) value);
                     break;
     
-                case 0x04: // "Platform Tail Number", "Identifier of platform as posted"
-                    dataBlock.setStringValue(2, (String) value);
+                case 0x11: // "Sensor Vertical Field of View", "Vertical field of view of selected imaging sensor", "deg"
+                    dataBlock.setDoubleValue(2, (Double) value);
                     break;
     
                 default:
@@ -108,6 +107,6 @@ public class Identification extends UasOutput {
     @Override
     protected void publish(DataBlock dataBlock) {
 
-        eventHandler.publish(new DataEvent(latestRecordTime, Identification.this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, SensorParams.this, dataBlock));
     }
 }

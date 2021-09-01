@@ -20,7 +20,6 @@ import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.vast.swe.SWEHelper;
 
 /**
  * Output specification and provider for MISB-TS STANAG 4609 ST0601.16 UAS Metadata
@@ -28,30 +27,30 @@ import org.vast.swe.SWEHelper;
  * @author Nick Garay
  * @since Oct. 6, 2020
  */
-public class AirframePosition extends UasOutput {
+public class AirframeAttitude extends UasOutput {
 
-    private static final String SENSOR_OUTPUT_NAME = "AirframePosition";
-    private static final String SENSOR_OUTPUT_LABEL = "Airframe Position";
-    private static final String SENSOR_OUTPUT_DESCRIPTION = "Position as Decoded from MPEG-TS MISB STANAG 4609 Metadata";
+    static final String SENSOR_OUTPUT_NAME = "platformAttitude";
+    private static final String SENSOR_OUTPUT_LABEL = "Platform Attitude";
+    private static final String SENSOR_OUTPUT_DESCRIPTION = "Attitude/orientation of UAS platform around its center of mass";
 
-    private static final Logger logger = LoggerFactory.getLogger(AirframePosition.class);
+    private static final Logger logger = LoggerFactory.getLogger(AirframeAttitude.class);
 
     /**
      * Constructor
      *
      * @param parentSensor Sensor driver providing this output
      */
-    public AirframePosition(UasSensor parentSensor) {
+    public AirframeAttitude(UasSensor parentSensor) {
 
         super(SENSOR_OUTPUT_NAME, parentSensor);
 
-        logger.debug("AirframePosition created");
+        logger.debug("AirframeAttitude created");
     }
 
     @Override
     public void init() {
 
-        logger.debug("Initializing AirframePosition");
+        logger.debug("Initializing AirframeAttitude");
 
         // Get an instance of SWE Factory suitable to build components
         UasHelper sweFactory = new UasHelper();
@@ -60,15 +59,14 @@ public class AirframePosition extends UasOutput {
         dataStruct = sweFactory.createRecord()
                 .name(getName())
                 .label(SENSOR_OUTPUT_LABEL).description(SENSOR_OUTPUT_DESCRIPTION)
-                .definition(SWEHelper.getPropertyUri(SENSOR_OUTPUT_NAME))
+                .definition(UasHelper.MISB_DEF_URI_PREFIX + "PlatformAttitude")
                 .addField("time", sweFactory.createTimeStamp())
-                .addField("platformLocation", sweFactory.createPlatformLocation())
-                .addField("platformHPR", sweFactory.createPlatformHPR())
+                .addField("attitude", sweFactory.createPlatformHPR())
                 .build();
 
         dataEncoding = sweFactory.newTextEncoding(",", "\n");
 
-        logger.debug("Initializing AirframePosition Complete");
+        logger.debug("Initializing AirframeAttitude Complete");
     }
 
     @Override
@@ -92,28 +90,16 @@ public class AirframePosition extends UasOutput {
                     dataBlock.setDoubleValue(0, (Double) value);
                     break;
     
-                case 0x0D: // "Sensor Latitude", "Sensor latitude", "deg"
+                case 0x05: // "Platform Heading Angle", "Aircraft heading angle", "deg"
                     dataBlock.setDoubleValue(1, (Double) value);
                     break;
     
-                case 0x0E: // "Sensor Longitude", "Sensor longitude", "deg"
+                case 0x06: // "Platform Pitch Angle", "Aircraft pitch angle", "deg"
                     dataBlock.setDoubleValue(2, (Double) value);
                     break;
     
-                case 0x0F: // "Sensor True Altitude", "Altitude of sensor as measured from Mean Sea Level (MSL)", "m"
-                    dataBlock.setDoubleValue(3, (Double) value);
-                    break;
-    
-                case 0x05: // "Platform Heading Angle", "Aircraft heading angle", "deg"
-                    dataBlock.setDoubleValue(4, (Double) value);
-                    break;
-    
-                case 0x06: // "Platform Pitch Angle", "Aircraft pitch angle", "deg"
-                    dataBlock.setDoubleValue(5, (Double) value);
-                    break;
-    
                 case 0x07: // "Platform Roll Angle", "Platform roll angle", "deg"
-                    dataBlock.setDoubleValue(6, (Double) value);
+                    dataBlock.setDoubleValue(3, (Double) value);
                     break;
     
                 default:
@@ -125,6 +111,6 @@ public class AirframePosition extends UasOutput {
     @Override
     protected void publish(DataBlock dataBlock) {
 
-        eventHandler.publish(new DataEvent(latestRecordTime, AirframePosition.this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, AirframeAttitude.this, dataBlock));
     }
 }

@@ -103,41 +103,43 @@ public class FullTelemetryTest {
             assertTrue(platformLocation.getDoubleValue(1) >= -180 && platformLocation.getDoubleValue(1) <= 180);
             assertTrue(platformLocation.getDoubleValue(2) >= Double.MIN_VALUE && platformLocation.getDoubleValue(2) <= Double.MAX_VALUE);
 
-            DataBlock imageFrame = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[6];
-            assertTrue(imageFrame.getDoubleValue(0) > 0);
-            assertTrue(imageFrame.getDoubleValue(1) > 0);
-            assertTrue(imageFrame.getDoubleValue(2) >= -90 && imageFrame.getDoubleValue(2) <= 90);
-            assertTrue(imageFrame.getDoubleValue(3) >= -180 && imageFrame.getDoubleValue(3) <= 180);
-            assertTrue(imageFrame.getDoubleValue(4) > 0);
+            DataBlock sensorParams = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[6];
+            assertTrue(sensorParams.getDoubleValue(0) > 0);
+            assertTrue(sensorParams.getDoubleValue(1) > 0);
+            
+            DataBlock imageFrame = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[7];
+            assertTrue(imageFrame.getDoubleValue(0) >= -90 && imageFrame.getDoubleValue(0) <= 90);
+            assertTrue(imageFrame.getDoubleValue(1) >= -180 && imageFrame.getDoubleValue(1) <= 180);
+            assertTrue(imageFrame.getDoubleValue(2) > 0);
+            assertTrue(imageFrame.getDoubleValue(3) >= -90 && imageFrame.getDoubleValue(3) <= 90);
+            assertTrue(imageFrame.getDoubleValue(4) >= -180 && imageFrame.getDoubleValue(4) <= 180);
             assertTrue(imageFrame.getDoubleValue(5) >= -90 && imageFrame.getDoubleValue(5) <= 90);
             assertTrue(imageFrame.getDoubleValue(6) >= -180 && imageFrame.getDoubleValue(6) <= 180);
             assertTrue(imageFrame.getDoubleValue(7) >= -90 && imageFrame.getDoubleValue(7) <= 90);
             assertTrue(imageFrame.getDoubleValue(8) >= -180 && imageFrame.getDoubleValue(8) <= 180);
             assertTrue(imageFrame.getDoubleValue(9) >= -90 && imageFrame.getDoubleValue(9) <= 90);
             assertTrue(imageFrame.getDoubleValue(10) >= -180 && imageFrame.getDoubleValue(10) <= 180);
-            assertTrue(imageFrame.getDoubleValue(11) >= -90 && imageFrame.getDoubleValue(11) <= 90);
-            assertTrue(imageFrame.getDoubleValue(12) >= -180 && imageFrame.getDoubleValue(12) <= 180);
 
-            DataBlock imageSourceSensor = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[7];
+            DataBlock imageSourceSensor = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[8];
             assertNotNull(imageSourceSensor.getStringValue(0));
 
-            DataBlock imageCoordinateSystem = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[8];
+            DataBlock imageCoordinateSystem = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[9];
             assertNotNull(imageCoordinateSystem.getStringValue(0));
 
-            DataBlock slantRange = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[9];
+            DataBlock slantRange = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[10];
             assertTrue(slantRange.getDoubleValue(0) > 0);
 
-            DataBlock attitude = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[10];
+            DataBlock attitude = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[11];
             assertTrue(attitude.getDoubleValue(0) >= -360 && attitude.getDoubleValue(0) <= 360);
             assertTrue(attitude.getDoubleValue(1) >= -90 && attitude.getDoubleValue(1) <= 90);
             assertTrue(attitude.getDoubleValue(2) >= -180 && attitude.getDoubleValue(2) <= 180);
 
-            DataBlock platformHPR = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[11];
+            DataBlock platformHPR = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[12];
             assertTrue(platformHPR.getDoubleValue(0) >= 0 && platformHPR.getDoubleValue(0) <= 360);
             assertTrue(platformHPR.getDoubleValue(1) >= -90 && platformHPR.getDoubleValue(1) <= 90);
             assertTrue(platformHPR.getDoubleValue(2) >= -180 && platformHPR.getDoubleValue(2) <= 180);
 
-            DataBlock platformGroundSpeed = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[12];
+            DataBlock platformGroundSpeed = ((DataBlockMixed) newDataEvent.getRecords()[0]).getUnderlyingObject()[13];
             assertTrue(platformGroundSpeed.getDoubleValue(0) >= 0);
 
             synchronized (syncObject) {

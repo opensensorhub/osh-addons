@@ -30,16 +30,15 @@ public class UasHelper extends GeoPosHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(UasHelper.class);
 
-    public static final String MISB_DEF_ROOT = SWEConstants.SML_ONTOLOGY_ROOT + "misb/";
+    public static final String MISB_DEF_URI_PREFIX = SWEConstants.SML_ONTOLOGY_ROOT + "misb/property/";
     
     
     public Quantity createPlatformGroundSpeed() {
 
         return createQuantity()
-                .name("platformGroundSpeed")
                 .label("Platform Ground Speed")
-                .description("Speed projected to the ground of an airborne platform passing overhead")
-                .definition(SWEHelper.getPropertyUri("PlatformGroundSpeed"))
+                .description("Speed of the airborne platform relative to the ground")
+                .definition(SWEHelper.getPropertyUri("GroundSpeed"))
                 .uomCode("m/s")
                 .build();
     }
@@ -47,10 +46,9 @@ public class UasHelper extends GeoPosHelper {
     public Quantity createSlantRange() {
 
         return createQuantity()
-                .name("slantRange")
                 .label("Slant Range")
                 .description("Slant range in meters")
-                .definition(SWEHelper.getPropertyUri("SlantRange"))
+                .definition(MISB_DEF_URI_PREFIX + "SlantRange")
                 .uomCode("m")
                 .build();
     }
@@ -58,117 +56,118 @@ public class UasHelper extends GeoPosHelper {
     public Text createImageCoordinateSystem() {
 
         return createText()
-                .name("imageCoordinateSystem")
                 .label("Image Coordinate System")
                 .description("Name of the image coordinate system used")
-                .definition(SWEHelper.getPropertyUri("ImageCoordinateSystem"))
+                .definition(MISB_DEF_URI_PREFIX + "ImageCoordinateSystem")
                 .build();
     }
 
     public Text createImageSourceSensor() {
 
         return createText()
-                .name("imageSourceSensor")
                 .label("Image Source Sensor")
                 .description("Name of currently active sensor")
-                .definition(SWEHelper.getPropertyUri("ImageSourceSensor"))
+                .definition(MISB_DEF_URI_PREFIX + "ImageSourceSensor")
                 .build();
     }
 
     public DataRecord createImageFrame() {
 
         return createRecord()
-                .name("geoRefImageFrame")
-                .label("Image Frame Geo-reference Data")
-                .description("Data provided by sensor to geo-reference images or video")
-                .definition(SWEHelper.getPropertyUri("ImageFrameData"))
-                .addField("fovHorizontal", createQuantity()
-                        .label("Sensor Horizontal Field of View")
-                        .description("Horizontal field of view of selected imaging sensor")
-                        .definition(SWEHelper.getPropertyUri("FovHorizontal"))
-                        .uomCode("deg")
-                        .build())
-                .addField("fovVertical", createQuantity()
-                        .label("Sensor Vertical Field of View")
-                        .description("Vertical field of view of selected imaging sensor")
-                        .definition(SWEHelper.getPropertyUri("FovVertical"))
-                        .uomCode("deg")
-                        .build())
-                .addField("frameCenterLatLon",
-                        newLocationVectorLatLon(SWEHelper.getPropertyUri("FrameCenterLocation")))
-                .addField("frameCenterEl", createQuantity()
-                        .name("frameCenterEl")
-                        .label("Frame Center Elevation")
-                        .description("Terrain elevation at frame center relative to Mean Sea Level (MSL)")
-                        .definition(SWEHelper.getPropertyUri("FrameCenterElevation"))
-                        .uomCode("m")
-                        .build())
+                .addField("center",
+                        newLocationVectorLLA_MSL(MISB_DEF_URI_PREFIX + "FrameCenterLocation"))
                 .addField("urc",
-                        newLocationVectorLatLon(SWEHelper.getPropertyUri("FrameUpperRightCorner")))
+                        newLocationVectorLatLon(MISB_DEF_URI_PREFIX + "FrameUpperRightCornerLocation"))
                 .addField("lrc",
-                        newLocationVectorLatLon(SWEHelper.getPropertyUri("FrameLowerRightCorner")))
+                        newLocationVectorLatLon(MISB_DEF_URI_PREFIX + "FrameLowerRightCornerLocation"))
                 .addField("llc",
-                        newLocationVectorLatLon(SWEHelper.getPropertyUri("FrameLowerLeftCorner")))
+                        newLocationVectorLatLon(MISB_DEF_URI_PREFIX + "FrameLowerLeftCornerLocation"))
                 .addField("ulc",
-                        newLocationVectorLatLon(SWEHelper.getPropertyUri("FrameUpperLeftCorner")))
+                        newLocationVectorLatLon(MISB_DEF_URI_PREFIX + "FrameUpperLeftCornerLocation"))
+                .build();
+    }
+
+    public DataRecord createSensorParams() {
+
+        return createRecord()
+                .addField("hfov", createQuantity()
+                        .label("Sensor Horizontal Field of View")
+                        .description("Horizontal field of view of imaging sensor")
+                        .definition(MISB_DEF_URI_PREFIX + "HorizontalFov")
+                        .uomCode("deg")
+                        .build())
+                .addField("vfov", createQuantity()
+                        .label("Sensor Vertical Field of View")
+                        .description("Vertical field of view of imaging sensor")
+                        .definition(MISB_DEF_URI_PREFIX + "VerticalFov")
+                        .uomCode("deg")
+                        .build())
                 .build();
     }
 
     public Text createDataLinkVersion() {
 
         return createText()
-                .name("dataLinkVersion")
                 .label("UAS Datalink LS Version Number")
                 .description("Version number of the UAS Datalink LS document used to generate KLV metadata")
-                .definition(SWEHelper.getPropertyUri("UasDataLinkLSVersionNumber"))
+                .definition(MISB_DEF_URI_PREFIX + "UasDataLinkLSVersionNumber")
                 .build();
     }
 
     public Text createPlatformDesignation() {
 
         return createText()
-                .name("platformDesignation")
                 .label("Platform Designation")
                 .description("Model name for the platform")
-                .definition(SWEHelper.getPropertyUri("PlatformDesignation"))
+                .definition(MISB_DEF_URI_PREFIX + "PlatformDesignation")
                 .build();
     }
 
     public Text createPlatformTailNumber() {
 
         return createText()
-                .name("platformTailNumber")
                 .label("Platform Tail Number")
                 .description("Identifier of platform as posted")
-                .definition(SWEHelper.getPropertyUri("PlatformTailNumber"))
+                .definition(MISB_DEF_URI_PREFIX + "PlatformTailNumber")
                 .build();
     }
 
-    public Vector createGimbalAttitude() {
+    public Vector createSensorAttitude() {
 
-        Vector gimbalOrientation = newEulerOrientationNED(SWEConstants.SWE_PROP_URI_PREFIX + "OSH/0/GimbalOrientation");
-        gimbalOrientation.setReferenceFrame("#BODY_FRAME");
-        gimbalOrientation.setLocalFrame("#GIMBAL_FRAME");
-        gimbalOrientation.setDataType(DataType.FLOAT);
-        return gimbalOrientation;
+        return createEulerOrientationYPR("deg")
+                .definition(SWEConstants.DEF_SENSOR_ORIENT)
+                .refFrame("#PLATFORM_FRAME")
+                .localFrame("#GIMBAL_FRAME")
+                .dataType(DataType.FLOAT)
+                .build();
     }
 
     public Vector createPlatformHPR() {
 
-        Vector platformHPR = newEulerOrientationNED(SWEConstants.DEF_PLATFORM_ORIENT);
-        platformHPR.setLocalFrame("#BODY_FRAME");
-        platformHPR.setDataType(DataType.FLOAT);
-        return platformHPR;
+        return createEulerOrientationNED("deg")
+                .definition(SWEConstants.DEF_PLATFORM_ORIENT)
+                .localFrame("#PLATFORM_FRAME")
+                .dataType(DataType.FLOAT)
+                .build();
     }
 
     public Vector createPlatformLocation() {
 
-        Vector platformLocation = newLocationVectorLLA(SWEConstants.DEF_PLATFORM_LOC);
-        platformLocation.setLocalFrame("#BODY_FRAME");
-        return platformLocation;
+        return createLocationVectorLLA_MSL()
+                .definition(SWEConstants.DEF_PLATFORM_LOC)
+                .localFrame("#PLATFORM_FRAME")
+                .build();
     }
 
-    /**
+    public Vector createSensorLocation() {
+
+        return createLocationVectorLLA_MSL()
+                .definition(SWEConstants.DEF_SENSOR_LOC)
+                .localFrame("#SENSOR_FRAME")
+                .build();
+    }
+
+    /*
      * Creates security data record structure according to MISB ST 0102.12
      */
     public DataRecord createSecurityDataRecord() {
@@ -307,7 +306,6 @@ public class UasHelper extends GeoPosHelper {
         return createTime()
                 .asSamplingTimeIsoUTC()
                 .label("Precision Time Stamp")
-                .description("Timestamp for all metadata in this Local Set; used to coordinate with Motion Imagery")
                 .build();
     }
 }

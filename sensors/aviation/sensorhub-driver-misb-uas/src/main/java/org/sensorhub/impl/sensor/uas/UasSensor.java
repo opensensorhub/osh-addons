@@ -129,29 +129,30 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
 
     private void createConfiguredOutputs() {
 
-        if(config.outputs.enableAirframePosition) {
-
-            uasOutputs.add(new AirframePosition(this));
-        }
-
-        if(config.outputs.enableFullTelemetry) {
-
-            uasOutputs.add(new FullTelemetry(this));
-        }
-
         if(config.outputs.enableIdentification) {
 
             uasOutputs.add(new Identification(this));
         }
+        
+        if(config.outputs.enableAirframePosition) {
 
-        if(config.outputs.enableGeoRefImageFrame) {
-
-            uasOutputs.add(new GeoRefImageFrame(this));
+            uasOutputs.add(new SensorLocation(this));
+            uasOutputs.add(new AirframeAttitude(this));
         }
 
         if(config.outputs.enableGimbalAttitude) {
 
             uasOutputs.add(new GimbalAttitude(this));
+        }
+
+        if(config.outputs.enableSensorParams) {
+
+            uasOutputs.add(new SensorParams(this));
+        }
+
+        if(config.outputs.enableGeoRefImageFrame) {
+
+            uasOutputs.add(new GeoRefImageFrame(this));
         }
 
         if(config.outputs.enableSecurity) {
@@ -162,6 +163,11 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
         if(config.outputs.enableTargetIndicators) {
 
             uasOutputs.add(new VmtiOutput(this));
+        }
+
+        if(config.outputs.enableFullTelemetry) {
+
+            uasOutputs.add(new FullTelemetry(this));
         }
     }
 

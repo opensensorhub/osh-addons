@@ -15,6 +15,7 @@ package org.sensorhub.impl.sensor.uas.outputs;
 
 import org.sensorhub.impl.sensor.uas.UasSensor;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
+import org.vast.swe.SWEHelper;
 import net.opengis.swe.v20.DataBlock;
 import org.junit.After;
 import org.junit.Before;
@@ -22,8 +23,7 @@ import org.junit.Test;
 import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
-import org.vast.data.DataBlockMixed;
-import org.vast.swe.SWEHelper;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -31,7 +31,7 @@ import java.net.URL;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class GeoRefImageFrameTest {
+public class AirframeAttitudeTest {
 
     private UasSensor driver = null;
 
@@ -45,7 +45,7 @@ public class GeoRefImageFrameTest {
 
         assert resource != null;
         config.connection.transportStreamPath = new File(resource.toURI()).getPath();
-        config.outputs.enableGeoRefImageFrame = true;
+        config.outputs.enableAirframePosition = true;
 
         driver = new UasSensor();
         driver.setConfiguration(config);
@@ -59,14 +59,14 @@ public class GeoRefImageFrameTest {
     }
 
     @Test
-    public void testGeoRefImageFrame() throws Exception {
+    public void testAirframeAttitude() throws Exception {
 
         driver.start();
 
         // register listener on data interface
-        IStreamingDataInterface di = driver.getObservationOutputs().values().iterator().next();
+        IStreamingDataInterface di = driver.getObservationOutputs().get(AirframeAttitude.SENSOR_OUTPUT_NAME);
         var dataWriter = SWEHelper.createDataWriter(di.getRecommendedEncoding());
-        dataWriter.setDataComponents(di.getRecordDescription().copy());
+        dataWriter.setDataComponents(di.getRecordDescription());
         dataWriter.setOutput(System.out);
 
         IEventListener listener = event -> {
@@ -74,7 +74,7 @@ public class GeoRefImageFrameTest {
             assertTrue(event instanceof DataEvent);
             DataEvent newDataEvent = (DataEvent) event;
 
-            DataBlock dataBlock = ((DataBlockMixed) newDataEvent.getRecords()[0]);
+            DataBlock dataBlock = newDataEvent.getRecords()[0];
             try {
                 dataWriter.write(dataBlock);
                 dataWriter.flush();
@@ -82,24 +82,11 @@ public class GeoRefImageFrameTest {
                 e.printStackTrace();
                 fail("Error writing data");
             }
-
+            
             assertTrue(dataBlock.getDoubleValue(0) > 0);
-
-            assertTrue(dataBlock.getDoubleValue(1) >= -90 && dataBlock.getDoubleValue(1) <= 90);
-            assertTrue(dataBlock.getDoubleValue(2) >= -180 && dataBlock.getDoubleValue(2) <= 180);
-            assertTrue(dataBlock.getDoubleValue(3) > 0);
-
-            assertTrue(dataBlock.getDoubleValue(4) >= -90 && dataBlock.getDoubleValue(4) <= 90);
-            assertTrue(dataBlock.getDoubleValue(5) >= -180 && dataBlock.getDoubleValue(5) <= 180);
-
-            assertTrue(dataBlock.getDoubleValue(6) >= -90 && dataBlock.getDoubleValue(6) <= 90);
-            assertTrue(dataBlock.getDoubleValue(7) >= -180 && dataBlock.getDoubleValue(7) <= 180);
-
-            assertTrue(dataBlock.getDoubleValue(8) >= -90 && dataBlock.getDoubleValue(8) <= 90);
-            assertTrue(dataBlock.getDoubleValue(9) >= -180 && dataBlock.getDoubleValue(9) <= 180);
-
-            assertTrue(dataBlock.getDoubleValue(10) >= -90 && dataBlock.getDoubleValue(10) <= 90);
-            assertTrue(dataBlock.getDoubleValue(11) >= -180 && dataBlock.getDoubleValue(11) <= 180);
+            assertTrue(dataBlock.getDoubleValue(1) >= 0 && dataBlock.getDoubleValue(1) <= 360);
+            assertTrue(dataBlock.getDoubleValue(2) >= -90 && dataBlock.getDoubleValue(2) <= 90);
+            assertTrue(dataBlock.getDoubleValue(3) >= -180 && dataBlock.getDoubleValue(3) <= 180);
 
             synchronized (syncObject) {
 

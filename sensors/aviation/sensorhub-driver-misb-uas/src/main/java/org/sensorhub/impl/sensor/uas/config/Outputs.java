@@ -27,14 +27,14 @@ public class Outputs {
     @DisplayInfo(label = "Airframe Position", desc = "Aircraft location & attitude")
     public boolean enableAirframePosition = false;
 
-    @DisplayInfo(label = "All Combined", desc = "All MISB STANAG 4609 MPEG-TS data")
-    public boolean enableFullTelemetry = false;
-
     @DisplayInfo(label = "Geo Referenced Image Frame Data", desc = "4-corner+ reference frame for image location")
     public boolean enableGeoRefImageFrame = false;
 
     @DisplayInfo(label = "Gimbal Attitude", desc = "Gimbal yaw, pitch, and roll relative to airframe")
     public boolean enableGimbalAttitude = false;
+
+    @DisplayInfo(label = "Sensor Parameters", desc = "Imaging sensor parameters such as FOV")
+    public boolean enableSensorParams;
 
     @DisplayInfo(label = "Identification", desc = "Aircraft identification")
     public boolean enableIdentification = false;
@@ -47,4 +47,7 @@ public class Outputs {
 
     @DisplayInfo(label = "Video", desc = "Video feed")
     public boolean enableVideo = false;
+    
+    @DisplayInfo(label = "All Combined", desc = "All MISB ST0601 metadata")
+    public boolean enableFullTelemetry = false;
 }
