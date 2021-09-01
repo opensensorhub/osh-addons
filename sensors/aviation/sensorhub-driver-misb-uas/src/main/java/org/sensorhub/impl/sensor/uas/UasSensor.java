@@ -22,6 +22,8 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vast.ogc.om.MovingFeature;
+import org.vast.swe.SWEConstants;
 import org.vast.util.Asserts;
 import java.util.ArrayList;
 
@@ -42,6 +44,9 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
     SyncTime syncTime;
     final Object syncTimeLock = new Object();
     ArrayList<UasOutput> uasOutputs = new ArrayList<>();
+    MovingFeature uasFoi;
+    MovingFeature imagedFoi;
+    
 
     @Override
     protected void doInit() throws SensorHubException {
@@ -49,8 +54,8 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
         super.doInit();
 
         // Generate identifiers
-        generateUniqueID("urn:socom:sensor:uas:", config.serialNumber);
-        generateXmlID("MISB_STANAG_UAS_", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:uas:", config.serialNumber);
+        generateXmlID("MISB_UAS_", config.serialNumber);
 
         boolean streamOpened = false;
 
@@ -115,6 +120,21 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
                 mpegTsProcessor.setMetaDataDataBufferListener(setDecoder);
             }
         }
+        
+        // create features of interest
+        uasFoi = new MovingFeature();
+        uasFoi.setUniqueIdentifier(this.uniqueID);
+        uasFoi.setName("UAS " + config.serialNumber + " Imaging Sensor");
+        uasFoi.setDescription("Imaging sensor on-board platform " + config.serialNumber);
+        foiMap.put(uasFoi.getUniqueIdentifier(), uasFoi);
+        
+        imagedFoi = new MovingFeature();
+        imagedFoi.setUniqueIdentifier("urn:osh:foi:imagedArea:" + config.serialNumber);
+        imagedFoi.setName("UAS " + config.serialNumber + " Imaged Area");
+        imagedFoi.setDescription("Area viewed by imaging sensor on-board platform " + config.serialNumber);
+        foiMap.put(imagedFoi.getUniqueIdentifier(), imagedFoi);
+        
+        //foiMap.put(this.uniqueID, new GenericFeatureImpl(new QName("Feature")));
 
         // If the stream failed to open throw an exception indicating problem with configuration
         if (!streamOpened) {
@@ -168,6 +188,15 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
         if(config.outputs.enableFullTelemetry) {
 
             uasOutputs.add(new FullTelemetry(this));
+        }
+    }
+    
+    protected void updateSensorDescription()
+    {
+        synchronized (sensorDescLock)
+        {
+            super.updateSensorDescription();
+            sensorDescription.setDefinition(SWEConstants.DEF_SYSTEM);
         }
     }
 
@@ -309,5 +338,15 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
         }
 
         return currentSyncTime;
+    }
+    
+    public String getUasFoiUID()
+    {
+        return uasFoi.getUniqueIdentifier();
+    }
+    
+    public String getImagedFoiUID()
+    {
+        return imagedFoi.getUniqueIdentifier();
     }
 }

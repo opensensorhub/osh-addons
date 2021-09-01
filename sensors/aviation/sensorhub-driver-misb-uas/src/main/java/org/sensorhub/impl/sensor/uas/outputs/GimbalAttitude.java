@@ -111,6 +111,6 @@ public class GimbalAttitude extends UasOutput {
     @Override
     protected void publish(DataBlock dataBlock) {
 
-        eventHandler.publish(new DataEvent(latestRecordTime, GimbalAttitude.this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, this, parentSensor.getUasFoiUID(), dataBlock));
     }
 }

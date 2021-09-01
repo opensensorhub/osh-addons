@@ -246,6 +246,6 @@ public class VmtiOutput extends UasOutput {
     @Override
     protected void publish(DataBlock dataBlock) {
 
-        eventHandler.publish(new DataEvent(latestRecordTime, VmtiOutput.this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, this, parentSensor.getImagedFoiUID(), dataBlock));
     }
 }

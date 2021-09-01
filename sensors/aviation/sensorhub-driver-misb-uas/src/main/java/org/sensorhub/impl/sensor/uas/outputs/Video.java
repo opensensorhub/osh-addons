@@ -230,7 +230,7 @@ public class Video extends AbstractSensorOutput<UasSensor> implements DataBuffer
 
                     latestRecordTime = System.currentTimeMillis();
 
-                    eventHandler.publish(new DataEvent(latestRecordTime, Video.this, dataBlock));
+                    eventHandler.publish(new DataEvent(latestRecordTime, this, parentSensor.getImagedFoiUID(), dataBlock));
 
                 } else {
 

@@ -111,6 +111,6 @@ public class SensorLocation extends UasOutput {
     @Override
     protected void publish(DataBlock dataBlock) {
 
-        eventHandler.publish(new DataEvent(latestRecordTime, SensorLocation.this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, this, parentSensor.getUasFoiUID(), dataBlock));
     }
 }

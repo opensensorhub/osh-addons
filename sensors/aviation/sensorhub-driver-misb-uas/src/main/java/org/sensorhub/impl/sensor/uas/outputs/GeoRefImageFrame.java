@@ -143,6 +143,6 @@ public class GeoRefImageFrame extends UasOutput {
     @Override
     protected void publish(DataBlock dataBlock) {
 
-        eventHandler.publish(new DataEvent(latestRecordTime, GeoRefImageFrame.this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, this, parentSensor.getImagedFoiUID(), dataBlock));
     }
 }

@@ -107,6 +107,6 @@ public class SensorParams extends UasOutput {
     @Override
     protected void publish(DataBlock dataBlock) {
 
-        eventHandler.publish(new DataEvent(latestRecordTime, SensorParams.this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, this, parentSensor.getUasFoiUID(), dataBlock));
     }
 }
