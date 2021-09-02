@@ -32,7 +32,7 @@ public class BiologicalSensor extends ISASensor
                 .add("resolution", sml.capabilities.resolution(1, "[ppm]"))
                 .add("accuracy", sml.capabilities.absoluteAccuracy(10, "[ppm]"))
                 .add("integ_time", sml.capabilities.integrationTime(14, "s"))
-                .add("sampling_freq", sml.capabilities.samplingFrequency(1/60)));        
+                .add("sampling_freq", sml.capabilities.samplingFrequency(1/60)));
         
         addOutput(new BioReadingOutput(this), false);
     } 

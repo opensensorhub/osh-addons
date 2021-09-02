@@ -16,8 +16,12 @@ package org.sensorhub.impl.sensor.isa;
 
 import java.time.Instant;
 import org.sensorhub.impl.sensor.AbstractSensorDriver;
+import org.vast.ogc.om.SamplingSphere;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEConstants;
+import com.google.common.collect.ImmutableMap;
+import net.opengis.gml.v32.Point;
+import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.PhysicalSystem;
 
 
@@ -107,6 +111,33 @@ public abstract class ISASensor extends AbstractSensorDriver
         addLocationOutput(Double.NaN);
         locationOutput.updateLocation(time.toEpochMilli(), lon, lat, alt, false);
         return this;
+    }
+    
+    
+    protected ISASensor setFixedLocationWithRadius(Instant time, double lat, double lon, double alt, double radius)
+    {
+        setSamplingSphereFoi(lat, lon, alt, radius);
+        addLocationOutput(Double.NaN);
+        locationOutput.updateLocation(time.toEpochMilli(), lon, lat, alt, false);
+        return this;
+    }
+
+
+    protected void setSamplingSphereFoi(double lat, double lon, double alt, double radius)
+    {
+        var sf = new SamplingSphere();
+        sf.setId("FOI_" + getShortID());
+        sf.setUniqueIdentifier(getUniqueIdentifier() + ":foi");
+        sf.setName(getName());
+        sf.setDescription("Sampling volume for " + getName());
+        sf.setHostedProcedureUID(getUniqueIdentifier());
+        Point point = new GMLFactory(true).newPoint();
+        point.setSrsName(SWEConstants.REF_FRAME_4979);
+        point.setSrsDimension(3);
+        point.setPos(new double[] {lat, lon, alt});
+        sf.setShape(point);
+        sf.setRadius(radius);
+        foiMap = ImmutableMap.of(sf.getUniqueIdentifier(), sf);
     }
     
     

@@ -38,7 +38,7 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements IProce
     
     
     public ISADriver()
-    {        
+    {
     }
     
     
@@ -90,7 +90,7 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements IProce
             { 34.700880, -86.671344, 193 },
             { 34.698622, -86.671385, 193 },
             { 34.694515, -86.671524, 193 },
-            { 34.669423, -86.679080, 193 }            
+            { 34.669423, -86.679080, 193 }
         };
         
         for (int i = 0; i < 5; i++)
@@ -101,7 +101,7 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements IProce
                 .setModelNumber("BD456")
                 .setSoftwareVersion("FW2021.32.156")
                 .addStatusOutputs(StatusType.RADIO)
-                .setFixedLocation(timeStamp, loc[0], loc[1], loc[2]));
+                .setFixedLocationWithRadius(timeStamp, loc[0], loc[1], loc[2], 10));
         }
         
         // chem sensors
@@ -110,7 +110,7 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements IProce
             { 34.700880, -86.671344, 193 },
             { 34.698622, -86.671385, 193 },
             { 34.694515, -86.671524, 193 },
-            { 34.669423, -86.679080, 193 }            
+            { 34.669423, -86.679080, 193 }
         };
         
         for (int i = 0; i < 3; i++)
@@ -121,14 +121,14 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements IProce
                 .setModelNumber("CD456")
                 .setSoftwareVersion("FW2021.32.156")
                 .addStatusOutputs(StatusType.RADIO)
-                .setFixedLocation(timeStamp, loc[0], loc[1], loc[2]));
+                .setFixedLocationWithRadius(timeStamp, loc[0], loc[1], loc[2], 100));
         }
         
         // weather sensors
         sensorLocations = new double[][] {
             { 34.677990, -86.682758, 193 },
-            { 34.705657, -86.674131, 193 }            
-        };        
+            { 34.705657, -86.674131, 193 }
+        };
         
         for (int i = 0; i < 2; i++)
         {
@@ -145,7 +145,7 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements IProce
     
     protected void registerSensor(ISASensor sensor)
     {
-        allSensors.put(sensor.getUniqueIdentifier(), sensor);        
+        allSensors.put(sensor.getUniqueIdentifier(), sensor);
         //getParentHub().getProcedureRegistry().register(sensor);
     }
     
