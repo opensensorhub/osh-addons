@@ -142,7 +142,7 @@ public class ObsRecordLoader implements Iterator<Entry<BigInteger, IObsData>>
                         var ts = Instant.ofEpochMilli((long)(dataBlk.getDoubleValue(0)*1000.));
                         var obs = new ObsData.Builder()
                             .withDataStream(reader.dsId)
-                            .withFoi(FilterUtils.toFoiId(dataBlk.getStringValue(1)))
+                            .withFoi(FilterUtils.toLongId(dataBlk.getStringValue(1)))
                             .withPhenomenonTime(ts)
                             .withResult(dataBlk)
                             .build();
