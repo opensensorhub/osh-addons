@@ -22,25 +22,8 @@ import org.vast.util.TimeExtent;
 
 public class USGSTimeSeriesInfo extends DataStreamInfo implements IDataStreamInfo
 {
-    protected String name;
-    protected String description;
     protected String siteNum;
     protected String paramCd;
-
-
-    @Override
-    public String getName()
-    {
-        return name;
-    }
-    
-    
-    @Override
-    public String getDescription()
-    {
-        return description;
-    }
-
 
 
     @Override
@@ -80,29 +63,6 @@ public class USGSTimeSeriesInfo extends DataStreamInfo implements IDataStreamInf
     {
         protected USGSTimeSeriesInfoBuider()
         {
-        }
-
-
-        protected B copyFrom(USGSTimeSeriesInfo base)
-        {
-            super.copyFrom(base);
-            instance.name = base.getName();
-            instance.description = base.getDescription();
-            return (B)this;
-        }
-
-
-        public B withName(String name)
-        {
-            instance.name = name;
-            return (B)this;
-        }
-
-
-        public B withDescription(String desc)
-        {
-            instance.description = desc;
-            return (B)this;
         }
 
 
