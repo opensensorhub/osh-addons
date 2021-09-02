@@ -21,8 +21,8 @@ import javax.xml.namespace.QName;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.procedure.ProcedureId;
 import org.sensorhub.impl.service.sta.filter.ThingFilterVisitor;
-import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
+import org.vast.ogc.gml.IFeature;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.google.common.base.Strings;
@@ -167,7 +167,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     public Thing getById(ResourceId id, Query q) throws NoSuchEntityException
     {
         securityHandler.checkPermission(securityHandler.sta_read_thing);
-        GenericFeature thing = null;
+        IFeature thing = null;
         
         if (thingDataStore != null)
         {
@@ -275,9 +275,9 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     }
     
     
-    protected GenericFeature toGmlFeature(Thing thing, String uid)
+    protected IFeature toGmlFeature(Thing thing, String uid)
     {
-        GenericFeature f = new GenericFeatureImpl(new QName("Thing"));
+        var f = new GenericFeatureImpl(new QName("Thing"));
         
         f.setUniqueIdentifier(uid);
         f.setName(thing.getName());
@@ -293,7 +293,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     }
     
     
-    protected Thing toFrostThing(long internalId, GenericFeature f, Query q)
+    protected Thing toFrostThing(long internalId, IFeature f, Query q)
     {
         // TODO implement expand
         //Set<Property> select = q != null ? q.getSelect() : Collections.emptySet();

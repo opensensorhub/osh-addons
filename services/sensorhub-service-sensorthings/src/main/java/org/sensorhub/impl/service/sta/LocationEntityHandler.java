@@ -22,7 +22,6 @@ import org.geojson.GeoJsonObject;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.impl.service.sta.filter.LocationFilterVisitor;
-import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
@@ -249,7 +248,7 @@ public class LocationEntityHandler implements IResourceHandler<Location>
             "Unsupported location format: %s", location.getEncodingType());
         GeoJsonObject geojson = (GeoJsonObject)location.getLocation();
         
-        GenericFeature f = new GenericFeatureImpl(new QName("Location"));
+        var f = new GenericFeatureImpl(new QName("Location"));
         f.setUniqueIdentifier(uid);
         f.setName(location.getName());
         f.setDescription(location.getDescription());

@@ -39,7 +39,6 @@ import de.fraunhofer.iosb.ilt.frostserver.path.ResourcePath;
 import de.fraunhofer.iosb.ilt.frostserver.query.Query;
 import de.fraunhofer.iosb.ilt.frostserver.util.NoSuchEntityException;
 import net.opengis.gml.v32.AbstractFeature;
-import net.opengis.gml.v32.AbstractGeometry;
 
 
 /**
@@ -278,15 +277,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         foi.setName(f.getName());
         foi.setDescription(f.getDescription());
         foi.setEncodingType(GEOJSON_FORMAT);
-        
-        AbstractGeometry geom = f.getGeometry();
-        if (geom != null)
-        {
-            /*Feature geojson = new Feature();
-            geojson.setGeometry(FrostUtils.toGeoJsonGeom(geom));
-            foi.setFeature(geojson);*/
-            foi.setFeature(FrostUtils.toGeoJsonGeom(geom));
-        }
+        foi.setFeature(FrostUtils.toGeoJsonFeature(f));
         
         return foi;
     }

@@ -30,7 +30,6 @@ import org.sensorhub.impl.database.registry.FilteredFederatedObsDatabase;
 import org.sensorhub.impl.procedure.wrapper.ProcedureWrapper;
 import org.sensorhub.impl.sensor.VirtualProcedureGroupConfig;
 import org.sensorhub.impl.service.AbstractHttpServiceModule;
-import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.sensorML.SMLHelper;
 import com.google.common.base.Strings;
@@ -60,7 +59,7 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
 
     IProcedureObsDatabase readDatabase;
     ISTADatabase writeDatabase;
-    GenericFeature hubThing;
+    GenericFeatureImpl hubThing;
     ServletV1P0 servlet;
     ProcedureId virtualGroupId;
     STAMqttConnector mqttConnector;

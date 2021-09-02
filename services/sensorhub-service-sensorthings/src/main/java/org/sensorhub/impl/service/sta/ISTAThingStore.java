@@ -16,7 +16,7 @@ package org.sensorhub.impl.service.sta;
 
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField;
-import org.vast.ogc.gml.GenericFeature;
+import org.vast.ogc.gml.IFeature;
 
 
 /**
@@ -27,7 +27,7 @@ import org.vast.ogc.gml.GenericFeature;
  * @author Alex Robin
  * @date Oct 29, 2019
  */
-public interface ISTAThingStore extends IFeatureStoreBase<GenericFeature, FeatureField, STAThingFilter>
+public interface ISTAThingStore extends IFeatureStoreBase<IFeature, FeatureField, STAThingFilter>
 {
        
 }

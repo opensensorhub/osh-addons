@@ -25,7 +25,6 @@ import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
 import org.sensorhub.impl.datastore.h2.MVFeatureParentKey;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVThingLocationKey;
-import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.IFeature;
 import org.vast.util.Asserts;
 
@@ -39,7 +38,7 @@ import org.vast.util.Asserts;
  * @author Alex Robin
  * @date Oct 29, 2019
  */
-class STAThingStoreImpl extends MVBaseFeatureStoreImpl<GenericFeature, FeatureField, STAThingFilter> implements ISTAThingStore
+class STAThingStoreImpl extends MVBaseFeatureStoreImpl<IFeature, FeatureField, STAThingFilter> implements ISTAThingStore
 {
     STALocationStoreImpl locationStore;
     
@@ -56,7 +55,7 @@ class STAThingStoreImpl extends MVBaseFeatureStoreImpl<GenericFeature, FeatureFi
     
     
     @Override
-    public synchronized FeatureKey add(long parentID, GenericFeature feature) throws DataStoreException
+    public synchronized FeatureKey add(long parentID, IFeature feature) throws DataStoreException
     {
         Asserts.checkNotNull(feature, IFeature.class);
         
@@ -70,7 +69,7 @@ class STAThingStoreImpl extends MVBaseFeatureStoreImpl<GenericFeature, FeatureFi
     
     
     @Override
-    public GenericFeature put(FeatureKey key, GenericFeature feature)
+    public IFeature put(FeatureKey key, IFeature feature)
     {
         try
         {
@@ -117,7 +116,7 @@ class STAThingStoreImpl extends MVBaseFeatureStoreImpl<GenericFeature, FeatureFi
     
     
     @Override
-    protected Stream<Entry<MVFeatureParentKey, GenericFeature>> getIndexedStream(STAThingFilter filter)
+    protected Stream<Entry<MVFeatureParentKey, IFeature>> getIndexedStream(STAThingFilter filter)
     {
         var locationFilter = filter.getLocations();
         if (locationFilter != null)

@@ -17,9 +17,11 @@ package org.sensorhub.impl.service.sta;
 import java.util.ArrayList;
 import java.util.List;
 import org.geojson.LngLatAlt;
+import org.vast.ogc.gml.IGeoFeature;
 import org.vast.ogc.om.SamplingCurve;
 import org.vast.ogc.om.SamplingPoint;
 import org.vast.ogc.om.SamplingSurface;
+import org.vast.ogc.xlink.IXlinkReference;
 import org.vast.swe.SWEConstants;
 import org.vast.util.Asserts;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
@@ -33,6 +35,7 @@ import de.fraunhofer.iosb.ilt.frostserver.query.Query;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.AbstractGeometry;
 import net.opengis.gml.v32.LinearRing;
+import net.opengis.gml.v32.Measure;
 import net.opengis.gml.v32.impl.GMLFactory;
 
 
@@ -196,6 +199,45 @@ public class FrostUtils
     }
     
     
+    public static org.geojson.GeoJsonObject toGeoJsonFeature(IGeoFeature f)
+    {
+        var geoF = new org.geojson.Feature();
+        
+        AbstractGeometry geom = f.getGeometry();
+        if (geom != null)
+            geoF.setGeometry(FrostUtils.toGeoJsonGeom(geom));
+        
+        for (var prop: f.getProperties().entrySet())
+        {
+            var name = prop.getKey().getLocalPart();
+            var val = prop.getValue();
+            Object serializedVal = null;
+            
+            if (val instanceof Boolean ||
+                val instanceof Number ||
+                val instanceof String)
+            {
+                serializedVal = prop.getValue();
+            }
+            if (val instanceof IXlinkReference<?>)
+            {
+                String href = ((IXlinkReference<?>) val).getHref();
+                if (href != null) 
+                    serializedVal = href;
+            }
+            else if (val instanceof Measure)
+            {
+                serializedVal = ((Measure) val).getValue();
+            }
+            
+            if (serializedVal != null)
+                geoF.getProperties().put(name, serializedVal);
+        }
+        
+        return geoF;
+    }
+    
+    
     public static org.geojson.GeoJsonObject toGeoJsonGeom(net.opengis.gml.v32.AbstractGeometry gmlGeom)
     {
         Asserts.checkArgument(gmlGeom.getSrsName() == null ||
@@ -213,14 +255,14 @@ public class FrostUtils
         }
         else if (gmlGeom instanceof net.opengis.gml.v32.LineString)
         {
-            var line = new org.geojson.LineString();            
+            var line = new org.geojson.LineString();
             var posList = ((net.opengis.gml.v32.LineString)gmlGeom).getPosList();
             var coords = toGeoJsonCoords(gmlGeom.getSrsDimension(), posList);
             line.setCoordinates(coords);
         }
         else if (gmlGeom instanceof net.opengis.gml.v32.Polygon)
         {
-            var poly = new org.geojson.Polygon();            
+            var poly = new org.geojson.Polygon();
             var posList = ((net.opengis.gml.v32.Polygon)gmlGeom).getExterior().getPosList();
             var ring = toGeoJsonCoords(gmlGeom.getSrsDimension(), posList);
             poly.setExteriorRing(ring);
@@ -233,7 +275,7 @@ public class FrostUtils
             }
         }
         
-        return null;        
+        return null;
     }
     
     
