@@ -19,7 +19,7 @@ osgi {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
     attributes('Bundle-Activator': 'org.sensorhub.impl.process.opencv.Activator')
     attributes('-fixupmessages': 'Classes found in the wrong directory; is:=ignore')
-    attributes('-exportcontents': 'org.bytedeco.opencv, org.opencv,org.sensorhub.impl.process.opencv')
+    attributes('-exportcontents': 'org.bytedeco.opencv.*, org.opencv.*, org.sensorhub.impl.process.opencv.*')
     attributes('Import-Package': '''
       !android.*, !java.*, !javax.*, !org.bytedeco.cpython.global.*, !org.bytedeco.javacpp.*,
       !org.bytedeco.numpy.global.*,
