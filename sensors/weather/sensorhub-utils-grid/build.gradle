@@ -28,7 +28,7 @@ osgi {
       !javax.transaction.*, !javax.xml.*, !kotlin.*, !oracle.*, !org.apache.avalon.*, !org.apache.log.*,
       !org.apache.log4j.*, !org.apache.xerces.*, !org.bouncycastle.jce.*, !org.ietf.jgss.*, !org.jaxen.*,
       !org.jboss.*, !org.joda.*, !org.quartz.jobs.*, !org.terracotta.*, !scala.util.*, !ucar.jpeg.*,
-      !weblogic.*, !org.w3c.dom.*, !org.xml.*, org.osgi.service.repository;resolution:=optional, 
+      !weblogic.*, !org.w3c.dom.*, !org.xml.*, 
       *''')
 
     attributes('-exportcontents': 'org.sensorhub.impl.utils.grid')
