@@ -9,4 +9,5 @@
 **/.classpath
 **/.idea
 **/*.iml
-out
+bundles
+felix-cache
