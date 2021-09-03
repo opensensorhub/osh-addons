@@ -11,3 +11,4 @@
 **/*.iml
 bundles
 felix-cache
+out
