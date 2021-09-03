@@ -59,7 +59,6 @@ public class GimbalAttitude extends UasOutput {
         dataStruct = sweFactory.createRecord()
                 .name(getName())
                 .label(SENSOR_OUTPUT_LABEL).description(SENSOR_OUTPUT_DESCRIPTION)
-                .definition(UasHelper.MISB_DEF_URI_PREFIX + "SensorAttitude")
                 .addField("time", sweFactory.createTimeStamp())
                 .addField("attitude", sweFactory.createSensorAttitude())
                 .build();

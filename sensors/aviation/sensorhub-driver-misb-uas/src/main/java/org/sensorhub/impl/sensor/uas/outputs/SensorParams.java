@@ -59,7 +59,6 @@ public class SensorParams extends UasOutput {
         dataStruct = sweFactory.createRecord()
                 .name(getName())
                 .label(SENSOR_OUTPUT_LABEL).description(SENSOR_OUTPUT_DESCRIPTION)
-                .definition(UasHelper.MISB_DEF_URI_PREFIX  + "SensorParameters")
                 .addField("time", sweFactory.createTimeStamp())
                 .addField("params", sweFactory.createSensorParams())
                 .build();

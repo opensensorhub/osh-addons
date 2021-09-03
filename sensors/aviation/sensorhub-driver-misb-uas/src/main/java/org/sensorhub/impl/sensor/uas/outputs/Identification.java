@@ -59,7 +59,6 @@ public class Identification extends UasOutput {
         dataStruct = sweFactory.createRecord()
                 .name(getName())
                 .label(SENSOR_OUTPUT_LABEL).description(SENSOR_OUTPUT_DESCRIPTION)
-                .definition(UasHelper.MISB_DEF_URI_PREFIX + "PlatformIdentification")
                 .addField("time", sweFactory.createTimeStamp())
                 .addField("designation", sweFactory.createPlatformDesignation())
                 .addField("tailNumber", sweFactory.createPlatformTailNumber())

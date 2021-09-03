@@ -21,7 +21,6 @@ import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.vast.swe.SWEHelper;
 
 /**
  * Output specification and provider for MISB-TS STANAG 4609 ST0601.16 UAS Metadata
@@ -62,7 +61,6 @@ public class FullTelemetry extends UasOutput {
                 .name(getName())
                 .label(SENSOR_OUTPUT_LABEL)
                 .description(SENSOR_OUTPUT_DESCRIPTION)
-                .definition(SWEHelper.getPropertyUri(SENSOR_OUTPUT_NAME))
                 .addField("time", sweFactory.createTimeStamp())
                 .addField("dataLinkVersion", sweFactory.createDataLinkVersion())
                 .addField("platformDesignation", sweFactory.createPlatformDesignation())
