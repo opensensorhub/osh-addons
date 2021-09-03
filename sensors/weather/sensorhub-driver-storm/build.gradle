@@ -22,7 +22,6 @@ osgi {
       !org.apache.log4j.*, !org.apache.xerces.*, !org.bouncycastle.jce.*, !org.ietf.jgss.*, !org.jaxen.*,
       !org.jboss.*, !org.joda.*, !org.quartz.jobs.*, !org.terracotta.*, !scala.util.*, !ucar.jpeg.*,
       !weblogic.*, !org.w3c.dom.*, !org.xml.*, !ucar.ma2.*, !ucar.nc2.*, !ucar.unidata.*,
-      org.osgi.service.repository;resolution:=optional,
       *''')
   }
 }
