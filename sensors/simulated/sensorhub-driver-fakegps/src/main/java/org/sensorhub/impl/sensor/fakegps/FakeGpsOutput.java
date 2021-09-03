@@ -216,7 +216,9 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
 	private boolean refreshTrajectory() {
 		FakeGpsConfig config = getParentModule().getConfiguration();
 		if(config.cacheTrajectory) {
-			// If lastApiCallTime is more recent than config pararms, reverse the trajectory 
+
+			// If lastApiCallTime is more recent than config.apiRequestPeriodMinutes param, 
+			// reverse the trajectory instead of calling Google api for new trajectory
 			if(System.currentTimeMillis() - lastApiCallTime < TimeUnit.MINUTES.toMillis(config.apiRequestPeriodMinutes)) {
 				trajPoints = Lists.reverse(trajPoints);
 				currentTrackPos = 0.0;
