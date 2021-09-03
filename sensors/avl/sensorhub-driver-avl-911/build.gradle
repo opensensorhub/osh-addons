@@ -20,7 +20,6 @@ osgi {
     attributes('Export-Package': 'org.sensorhub.impl.sensor.avl')
     attributes('Import-Package': '''
       !java.io.*,!java.lang.*,!java.net.*,!java.nio.file.*,!java.text.*, !java.time.*,!java.util.*,
-      org.osgi.service.repository;resolution:=optional,
       *''')
   }
 }
