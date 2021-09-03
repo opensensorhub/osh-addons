@@ -74,7 +74,7 @@ public class RTPH264Receiver extends Thread
     {
         super(RTPH264Receiver.class.getSimpleName());
         this.remoteHost = remoteHost;
-        this.remotePort = 88;
+        this.remotePort = remotePort;
         this.localPort = localPort;
         this.callback = callback;
     }
@@ -117,7 +117,7 @@ public class RTPH264Receiver extends Thread
         try
         {
             // bind UDP port for receiving RTP packets
-            rtpSocket = new DatagramSocket(this.localPort);
+            rtpSocket = new DatagramSocket(localPort);
             rtpSocket.setReuseAddress(true);
             rtpSocket.setReceiveBufferSize(MAX_DATAGRAM_SIZE);
             rtpSocket.send(new DatagramPacket(new byte[4], 0, 4, InetAddress.getByName(remoteHost), remotePort));

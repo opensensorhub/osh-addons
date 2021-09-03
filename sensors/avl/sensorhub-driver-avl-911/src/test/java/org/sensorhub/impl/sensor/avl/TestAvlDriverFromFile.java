@@ -50,7 +50,7 @@ public class TestAvlDriverFromFile implements IEventListener
         
         MultipleFilesProviderConfig filesConf = new MultipleFilesProviderConfig();
         filesConf.dataFolder = "src/test/resources";
-//        config.commSettings = filesConf;
+        config.commSettings = filesConf;
         
         driver = new AVLDriver();
         driver.init(config);
