@@ -30,7 +30,6 @@ osgi {
     attributes('-exportcontents': 'org.sensorhub.impl.sensor.v4l, org.sensorhub.impl.sensor.v4l')
     attributes('Import-Package': '''
       !javax.imageio.*, !java.*, !javax.*,
-      org.osgi.service.repository;resolution:=optional,
       *''')
   }
 }
