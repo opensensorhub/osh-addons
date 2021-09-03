@@ -16,7 +16,6 @@ osgi {
     attributes('-exportcontents': 'org.sensorhub.impl.service.sos.video')
     attributes('Import-Package': '''
       !javax.crypto.*,!javax.imageio.*,!javax.xml.*,!java.*, !org.w3c.*, !org.xml.*,
-      org.osgi.service.repository;resolution:=optional,
       *''')
   }
 }
