@@ -20,7 +20,6 @@ osgi {
     attributes('-exportcontents': 'org.sensorhub.impl.service.sos.video, org.sensorhub.impl.process.video, org.bytedeco.ffmpeg')
     attributes('Import-Package': '''
       !javax.*, !java.*, !org.apache.*, !sun.*,
-      org.osgi.service.repository;resolution:=optional,
       *''')
   }
 }
