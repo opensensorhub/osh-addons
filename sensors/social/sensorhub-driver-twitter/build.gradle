@@ -18,7 +18,6 @@ osgi {
       !javax.net.*, !javax.naming.*, !javax.management.*, !javax.security.*, !javax.sql.*, !javax.swing.*,
       !javax.transaction.*, !javax.xml.*, !com.sun.*, !org.apache.avalon.*, !org.apache.log.*,
       !org.apache.log4j.*, !org.ietf.jgss.*,
-      org.osgi.service.repository;resolution:=optional,
       *''')
   }
 }
