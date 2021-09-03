@@ -5,7 +5,7 @@ version = '1.0.0'
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   api project(':sensorhub-driver-videocam')
-  testCompile 'org.jcodec:jcodec-javase:0.1.9'
+  testImplementation 'org.jcodec:jcodec-javase:0.1.9'
 }
 
 // exclude tests requiring connection to the sensor
@@ -24,13 +24,6 @@ osgi {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.rtpcam.Activator')
     attributes('-exportcontents': 'org.sensorhub.impl.sensor.rtpcam')
-    attributes('Import-Package': '''
-      !COM.newmonics.*, !afu.org.*, !android.*, !com.google.*, !groovy.*, !java.*, !javax.crypto.*, !javax.imageio.*,
-      !javax.net.*, !javax.naming.*, !javax.management.*, !javax.security.*, !javax.sql.*, !javax.swing.*,
-      !javax.transaction.*, !javax.xml.*, !javax.lang.*, !org.checkerframework.*, !sun.*, !org.codehaus.*,
-      !org.eclipse.*, !org.ietf.jgss.*, !org.osgi.dto.*, !org.osgi.resource.*, !org.w3c.*, !org.xml.*,
-      org.osgi.service.repository;resolution:=optional,
-      *''')
   }
 }
 
