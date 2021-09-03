@@ -1,0 +1,419 @@
+{
+	"info": {
+		"_postman_id": "ce1da905-4dc6-46bf-ad60-6dc4d7c5edc2",
+		"name": "Populate SensorThings",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create Location 1",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"UofC CCIT1\",\n  \"description\": \"University of Calgary, CCIT building #1\",\n  \"encodingType\": \"application/vnd.geo+json\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-114.133, 51.08]\n  }\n}"
+				},
+				"url": {
+					"raw": "{{host}}/sensorhub/sta/v1.0/Locations",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"sensorhub",
+						"sta",
+						"v1.0",
+						"Locations"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Location 2",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"UofC CCIT2\",\n  \"description\": \"University of Calgary, CCIT building #2\",\n  \"encodingType\": \"application/vnd.geo+json\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-114.133, 52.08]\n  }\n}"
+				},
+				"url": {
+					"raw": "{{host}}/sensorhub/sta/v1.0/Locations",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"sensorhub",
+						"sta",
+						"v1.0",
+						"Locations"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Location 3",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"UofC CCIT3\",\n  \"description\": \"University of Calgary, CCIT building #3\",\n  \"encodingType\": \"application/vnd.geo+json\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-114.133, 53.08]\n  }\n}"
+				},
+				"url": {
+					"raw": "{{host}}/sensorhub/sta/v1.0/Locations",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"sensorhub",
+						"sta",
+						"v1.0",
+						"Locations"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Thing",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Air Quality Monitoring System\",\n  \"description\": \"Sensor system monitoring area temperature\",\n  \"properties\": {\n    \"Deployment Condition\": \"Deployed in a third floor balcony\",\n    \"Case Used\": \"Radiation shield\"\n  }\n}"
+				},
+				"url": {
+					"raw": "{{host}}/sensorhub/sta/v1.0/Things",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"sensorhub",
+						"sta",
+						"v1.0",
+						"Things"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Thing with Location",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Another Sensor System\",\n  \"description\": \"Sensor system monitoring doors and windows\",\n  \"Locations\": [\n    {\"@iot.id\": 1}\n  ]\n}"
+				},
+				"url": {
+					"raw": "{{host}}/sensorhub/sta/v1.0/Things",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"sensorhub",
+						"sta",
+						"v1.0",
+						"Things"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Sensor",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"MySensor006\",\n  \"description\": \"DHT22 temperature sensor\",\n  \"encodingType\": \"application/pdf\",\n  \"metadata\": \"https://cdn-shop.adafruit.com/datasheets/DHT22.pdf\"\n}"
+				},
+				"url": {
+					"raw": "{{host}}/sensorhub/sta/v1.0/Sensors",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"sensorhub",
+						"sta",
+						"v1.0",
+						"Sensors"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create ObservedProperty",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Area Temperature\",\n  \"description\": \"The degree or intensity of heat present in the area\",\n  \"definition\": \"http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature\"\n}"
+				},
+				"url": {
+					"raw": "{{host}}/sensorhub/sta/v1.0/ObservedProperties",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"sensorhub",
+						"sta",
+						"v1.0",
+						"ObservedProperties"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Datastream",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Temperature Datastream\",\n  \"description\": \"Datastream of temperature measurements\",\n  \"observationType\": \"http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement\",\n  \"unitOfMeasurement\": {\n    \"name\": \"Degree Celsius\",\n    \"symbol\": \"degC\",\n    \"definition\": \"http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius\"\n  },\n  \"ObservedProperty\":{\n  \t\"name\": \"Air Temperature\",\n  \t\"description\": \"Temperature of the air int he shadow, at 1m above ground\",\n  \t\"definition\": \"\"\n  },\n  \"Sensor\":{\"@iot.id\":102},\n  \"Thing\":{\"@iot.id\":2}\n}"
+				},
+				"url": {
+					"raw": "{{host}}/sensorhub/sta/v1.0/Datastreams",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"sensorhub",
+						"sta",
+						"v1.0",
+						"Datastreams"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create MultiDatastream",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Temperature Datastream\",\n  \"description\": \"Datastream of temperature measurements\",\n  \"observationType\": \"http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement\",\n  \"unitOfMeasurement\": {\n    \"name\": \"Degree Celsius\",\n    \"symbol\": \"degC\",\n    \"definition\": \"http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius\"\n  },\n  \"ObservedProperty\":{\n  \t\"name\": \"Air Temperature\",\n  \t\"description\": \"Temperature of the air int he shadow, at 1m above ground\",\n  \t\"definition\": \"\"\n  },\n  \"Sensor\":{\"@iot.id\":102},\n  \"Thing\":{\"@iot.id\":2}\n}"
+				},
+				"url": {
+					"raw": "{{host}}/sensorhub/sta/v1.0/Datastreams",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"sensorhub",
+						"sta",
+						"v1.0",
+						"Datastreams"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Foi",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Sampling Location CCIT\",\n  \"description\": \"University of Calgary, CCIT building\",\n  \"encodingType\": \"application/vnd.geo+json\",\n  \"feature\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-114.133, 51.08]\n  }\n}"
+				},
+				"url": {
+					"raw": "{{host}}/sensorhub/sta/v1.0/FeaturesOfInterest",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"sensorhub",
+						"sta",
+						"v1.0",
+						"FeaturesOfInterest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Deep Insert Thing",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"description\": \"thing 1\",\n    \"name\": \"thing name 2\",\n    \"properties\": {\n        \"reference\": \"first\"\n    },\n    \"Locations\": [\n        {\n            \"description\": \"location 1\",\n            \"name\": \"location name 1\",\n            \"location\": {\n                \"type\": \"Point\",\n                \"coordinates\": [\n                    -117.05,\n                    51.05\n                ]\n            },\n            \"encodingType\": \"application/vnd.geo+json\"\n        }\n    ],\n    \"Datastreams\": [\n        {\n            \"unitOfMeasurement\": {\n                \"name\": \"Lumen\",\n                \"symbol\": \"lm\",\n                \"definition\": \"http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html/Lumen\"\n            },\n            \"description\": \"datastream 1\",\n            \"name\": \"datastream name 1\",\n            \"observationType\": \"http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement\",\n            \"ObservedProperty\": {\n                \"name\": \"Luminous Flux\",\n                \"definition\": \"http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html/LuminousFlux\",\n                \"description\": \"observedProperty 1\"\n            },\n            \"Sensor\": {\n                \"description\": \"sensor 1\",\n                \"name\": \"sensor name 1\",\n                \"encodingType\": \"application/pdf\",\n                \"metadata\": \"Light flux sensor\"\n            },\n            \"Observations\": [\n                {\n                    \"phenomenonTime\": \"2015-03-03T00:00:00Z\",\n                    \"result\": 3\n                },\n                {\n                    \"phenomenonTime\": \"2015-03-04T00:00:00Z\",\n                    \"result\": 4\n                }\n            ]\n        },\n        {\n            \"unitOfMeasurement\": {\n                \"name\": \"Centigrade\",\n                \"symbol\": \"C\",\n                \"definition\": \"http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html/Celsius\"\n            },\n            \"description\": \"datastream 2\",\n            \"name\": \"datastream name 2\",\n            \"observationType\": \"http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement\",\n            \"ObservedProperty\": {\n                \"name\": \"Temperature\",\n                \"definition\": \"http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html/Temperature\",\n                \"description\": \"observedProperty 2\"\n            },\n            \"Sensor\": {\n                \"description\": \"sensor 2\",\n                \"name\": \"sensor name 2\",\n                \"encodingType\": \"application/pdf\",\n                \"metadata\": \"Temperature sensor\"\n            },\n            \"Observations\": [\n                {\n                    \"phenomenonTime\": \"2015-03-05T00:00:00Z\",\n                    \"result\": 5\n                },\n                {\n                    \"phenomenonTime\": \"2015-03-06T00:00:00Z\",\n                    \"result\": 6\n                }\n            ]\n        }\n    ]\n}"
+				},
+				"url": {
+					"raw": "{{host}}/sensorhub/sta/v1.0/Things",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"sensorhub",
+						"sta",
+						"v1.0",
+						"Things"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Observation",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"MySensor006\",\n  \"description\": \"DHT22 temperature sensor\",\n  \"encodingType\": \"application/pdf\",\n  \"metadata\": \"https://cdn-shop.adafruit.com/datasheets/DHT22.pdf\"\n}"
+				},
+				"url": {
+					"raw": "{{host}}/sensorhub/sta/v1.0/Observations",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"sensorhub",
+						"sta",
+						"v1.0",
+						"Observations"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "password",
+				"value": "{{admin_pwd}}",
+				"type": "string"
+			},
+			{
+				"key": "username",
+				"value": "admin",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "6db945de-856c-4b22-8ff9-c7f169240527",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "faa38b0d-6b2f-4c25-a85d-c262196f270a",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"protocolProfileBehavior": {}
+}

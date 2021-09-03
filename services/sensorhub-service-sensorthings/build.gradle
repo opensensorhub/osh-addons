@@ -1,0 +1,42 @@
+description = 'SensorThings API'
+ext.details = 'Implementation of OGC SensorThing API based on FROST server'
+version = '0.1.0'
+
+
+def thisProjectDir = projectDir
+rootProject.allprojects {
+  repositories {
+    maven { url "file:///$thisProjectDir/libs" }
+  }
+}
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-datastore-h2:' + oshCoreVersion
+  implementation project(':sensorhub-comm-mqtt')
+  embeddedImpl 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.Core:1.10.1'
+  embeddedImpl 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.HTTP.Common:1.10.1'
+  
+  testImplementation 'org.jglue.fluent-json:fluent-json:2.0.3'
+}
+
+// add info to OSGi manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.service.sta.Activator')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com' 
+    }
+  }
+}
+
