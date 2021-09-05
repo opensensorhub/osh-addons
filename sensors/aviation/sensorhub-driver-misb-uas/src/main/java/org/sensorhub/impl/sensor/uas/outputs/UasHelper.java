@@ -21,7 +21,7 @@ import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 /**
- * Factory class for creating MPEG-TS MISB STANAG 4609 Metadata SWE Common data elements
+ * Factory class for creating MISB ST0601 metadata SWE Common data elements
  *
  * @author Nick Garay
  * @since Oct. 6, 2020
@@ -30,7 +30,8 @@ public class UasHelper extends GeoPosHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(UasHelper.class);
 
-    public static final String MISB_DEF_URI_PREFIX = SWEConstants.SML_ONTOLOGY_ROOT + "misb/property/";
+    public static final String MISB_ST0601_DEF_URI_PREFIX = SWEConstants.SML_ONTOLOGY_ROOT + "misb0601/property/";
+    public static final String MISB_ST0903_DEF_URI_PREFIX = SWEConstants.SML_ONTOLOGY_ROOT + "misb0903/property/";
     
     
     public Quantity createPlatformGroundSpeed() {
@@ -48,7 +49,7 @@ public class UasHelper extends GeoPosHelper {
         return createQuantity()
                 .label("Slant Range")
                 .description("Slant range in meters")
-                .definition(MISB_DEF_URI_PREFIX + "SlantRange")
+                .definition(MISB_ST0601_DEF_URI_PREFIX + "SlantRange")
                 .uomCode("m")
                 .build();
     }
@@ -58,7 +59,7 @@ public class UasHelper extends GeoPosHelper {
         return createText()
                 .label("Image Coordinate System")
                 .description("Name of the image coordinate system used")
-                .definition(MISB_DEF_URI_PREFIX + "ImageCoordinateSystem")
+                .definition(MISB_ST0601_DEF_URI_PREFIX + "ImageCoordinateSystem")
                 .build();
     }
 
@@ -67,7 +68,7 @@ public class UasHelper extends GeoPosHelper {
         return createText()
                 .label("Image Source Sensor")
                 .description("Name of currently active sensor")
-                .definition(MISB_DEF_URI_PREFIX + "ImageSourceSensor")
+                .definition(MISB_ST0601_DEF_URI_PREFIX + "ImageSourceSensor")
                 .build();
     }
 
@@ -75,15 +76,15 @@ public class UasHelper extends GeoPosHelper {
 
         return createRecord()
                 .addField("center",
-                        newLocationVectorLLA_MSL(MISB_DEF_URI_PREFIX + "FrameCenterLocation"))
+                        newLocationVectorLLA(MISB_ST0601_DEF_URI_PREFIX + "FrameCenterLocation"))
                 .addField("urc",
-                        newLocationVectorLatLon(MISB_DEF_URI_PREFIX + "FrameUpperRightCornerLocation"))
+                        newLocationVectorLatLon(MISB_ST0601_DEF_URI_PREFIX + "FrameUpperRightCornerLocation"))
                 .addField("lrc",
-                        newLocationVectorLatLon(MISB_DEF_URI_PREFIX + "FrameLowerRightCornerLocation"))
+                        newLocationVectorLatLon(MISB_ST0601_DEF_URI_PREFIX + "FrameLowerRightCornerLocation"))
                 .addField("llc",
-                        newLocationVectorLatLon(MISB_DEF_URI_PREFIX + "FrameLowerLeftCornerLocation"))
+                        newLocationVectorLatLon(MISB_ST0601_DEF_URI_PREFIX + "FrameLowerLeftCornerLocation"))
                 .addField("ulc",
-                        newLocationVectorLatLon(MISB_DEF_URI_PREFIX + "FrameUpperLeftCornerLocation"))
+                        newLocationVectorLatLon(MISB_ST0601_DEF_URI_PREFIX + "FrameUpperLeftCornerLocation"))
                 .build();
     }
 
@@ -93,13 +94,13 @@ public class UasHelper extends GeoPosHelper {
                 .addField("hfov", createQuantity()
                         .label("Sensor Horizontal Field of View")
                         .description("Horizontal field of view of imaging sensor")
-                        .definition(MISB_DEF_URI_PREFIX + "HorizontalFov")
+                        .definition(MISB_ST0601_DEF_URI_PREFIX + "HorizontalFov")
                         .uomCode("deg")
                         .build())
                 .addField("vfov", createQuantity()
                         .label("Sensor Vertical Field of View")
                         .description("Vertical field of view of imaging sensor")
-                        .definition(MISB_DEF_URI_PREFIX + "VerticalFov")
+                        .definition(MISB_ST0601_DEF_URI_PREFIX + "VerticalFov")
                         .uomCode("deg")
                         .build())
                 .build();
@@ -110,7 +111,7 @@ public class UasHelper extends GeoPosHelper {
         return createText()
                 .label("UAS Datalink LS Version Number")
                 .description("Version number of the UAS Datalink LS document used to generate KLV metadata")
-                .definition(MISB_DEF_URI_PREFIX + "UasDataLinkLSVersionNumber")
+                .definition(MISB_ST0601_DEF_URI_PREFIX + "UasDataLinkLSVersionNumber")
                 .build();
     }
 
@@ -119,7 +120,7 @@ public class UasHelper extends GeoPosHelper {
         return createText()
                 .label("Platform Designation")
                 .description("Model name for the platform")
-                .definition(MISB_DEF_URI_PREFIX + "PlatformDesignation")
+                .definition(MISB_ST0601_DEF_URI_PREFIX + "PlatformDesignation")
                 .build();
     }
 
@@ -128,7 +129,7 @@ public class UasHelper extends GeoPosHelper {
         return createText()
                 .label("Platform Tail Number")
                 .description("Identifier of platform as posted")
-                .definition(MISB_DEF_URI_PREFIX + "PlatformTailNumber")
+                .definition(MISB_ST0601_DEF_URI_PREFIX + "PlatformTailNumber")
                 .build();
     }
 

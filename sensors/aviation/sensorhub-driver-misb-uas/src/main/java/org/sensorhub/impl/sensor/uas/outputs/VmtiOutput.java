@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import org.vast.data.DataBlockList;
 import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEConstants;
-import org.vast.swe.SWEHelper;
 
 /**
  * Output specification and provider for moving target indicator (VMTI) data
@@ -78,23 +77,22 @@ public class VmtiOutput extends UasOutput {
         dataStruct = swe.createRecord()
             .name(getName())
             .label(SENSOR_OUTPUT_LABEL).description(SENSOR_OUTPUT_DESCRIPTION)
-            .definition(SWEHelper.getPropertyUri(SENSOR_OUTPUT_NAME))
             .addField("time", swe.createTimeStamp())
             .addField("frameNum", swe.createCount()
-                .definition(UasHelper.MISB_DEF_URI_PREFIX + "FrameNumber")
+                .definition(UasHelper.MISB_ST0903_DEF_URI_PREFIX + "FrameNumber")
                 .label("Frame Number"))
             .addField("numTargets", swe.createCount()
-                .definition(UasHelper.MISB_DEF_URI_PREFIX + "NumTargetsReported")
+                .definition(UasHelper.MISB_ST0903_DEF_URI_PREFIX + "NumTargetsReported")
                 .label("Number of Targets")
                 .id(numTargetsID))
             .addField("targetSeries", swe.createArray()
-                .definition(UasHelper.MISB_DEF_URI_PREFIX + "TargetSeries")
+                .definition(UasHelper.MISB_ST0903_DEF_URI_PREFIX + "TargetSeries")
                 .withVariableSize(numTargetsID)
                 .withElement("target", swe.createRecord()
                     .addField("id", swe.createCount()
-                        .definition(UasHelper.MISB_DEF_URI_PREFIX + "TargetId"))
+                        .definition(UasHelper.MISB_ST0903_DEF_URI_PREFIX + "TargetId"))
                     .addField("centroid", swe.createVector()
-                        .definition(UasHelper.MISB_DEF_URI_PREFIX + "TargetCentroid")
+                        .definition(UasHelper.MISB_ST0903_DEF_URI_PREFIX + "TargetCentroid")
                         .refFrame("#IMAGE_FRAME")
                         .label("Target Centroid")
                         .description("Target centroid in pixel coordinates")
@@ -105,7 +103,7 @@ public class VmtiOutput extends UasOutput {
                             .definition(SWEConstants.DEF_COEF)
                             .axisId("Y")))
                     .addField("location", swe.createLocationVectorLLA()
-                        .definition(UasHelper.MISB_DEF_URI_PREFIX + "TargetLocation")
+                        .definition(UasHelper.MISB_ST0903_DEF_URI_PREFIX + "TargetLocation")
                         .label("Target Location")
                         .description("Target location in geographic coordinates"))
                     //.addField("priority", dataStruct)

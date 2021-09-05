@@ -40,9 +40,9 @@ import java.util.concurrent.LinkedBlockingDeque;
  */
 public class Video extends AbstractSensorOutput<UasSensor> implements DataBufferListener, Runnable {
 
-    private static final String SENSOR_OUTPUT_NAME = "UasVideo";
+    private static final String SENSOR_OUTPUT_NAME = "video";
     private static final String SENSOR_OUTPUT_LABEL = "UAS Video";
-    private static final String SENSOR_OUTPUT_DESCRIPTION = "Decoded MPEG-TS MISB STANAG 4609 Video Feed";
+    private static final String SENSOR_OUTPUT_DESCRIPTION = "Video acquired by on-board image sensor";
 
     private static final Logger logger = LoggerFactory.getLogger(Video.class);
 
