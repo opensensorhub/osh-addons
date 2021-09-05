@@ -84,7 +84,8 @@ public class USGSProcedureStore extends ReadOnlyDataStore<FeatureKey, IProcedure
     @Override
     public Stream<Entry<FeatureKey, IProcedureWithDesc>> selectEntries(ProcedureFilter filter, Set<ProcedureField> fields)
     {
-        if (filter.test(systemEntry.getValue()))
+        if ((filter.getInternalIDs() != null &&filter.getInternalIDs().contains(1L)) ||
+            filter.test(systemEntry.getValue()))
             return Stream.of(systemEntry);
         else
             return Stream.empty();

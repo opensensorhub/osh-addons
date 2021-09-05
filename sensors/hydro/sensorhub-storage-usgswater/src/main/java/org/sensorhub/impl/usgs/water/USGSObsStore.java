@@ -29,6 +29,7 @@ import org.sensorhub.api.datastore.obs.ObsStats;
 import org.sensorhub.api.datastore.obs.ObsStatsQuery;
 import org.sensorhub.api.datastore.obs.IObsStore.ObsField;
 import org.sensorhub.api.obs.IObsData;
+import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.ReadOnlyDataStore;
 import org.slf4j.Logger;
 import org.vast.util.Asserts;
@@ -60,10 +61,16 @@ public class USGSObsStore extends ReadOnlyDataStore<BigInteger, IObsData, ObsFie
         
         // if specific datastreams are requested, lookup site num and param code
         Set<Long> dataStreamIds = new TreeSet<>();
-        if (filter.getDataStreamFilter() != null && filter.getDataStreamFilter().getInternalIDs() != null)
+        if (filter.getDataStreamFilter() != null)
         {
-            for (var dsID: filter.getDataStreamFilter().getInternalIDs())
+            var dsStream = DataStoreUtils.selectDataStreamIDs(dataStreamStore, filter.getDataStreamFilter());
+            var it = dsStream.iterator();
+            if (!it.hasNext())
+                return Stream.empty();
+            
+            while (it.hasNext())
             {
+                var dsID = it.next();
                 var dsInfo = (USGSTimeSeriesInfo)dataStreamStore.get(new DataStreamKey(dsID));
                 queryFilter.siteIds.add(dsInfo.siteNum);
                 queryFilter.otherParamCodes.add(dsInfo.paramCd);

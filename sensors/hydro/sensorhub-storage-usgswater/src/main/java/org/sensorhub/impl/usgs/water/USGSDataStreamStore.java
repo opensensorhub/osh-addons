@@ -28,6 +28,7 @@ import org.sensorhub.api.obs.IDataStreamInfo;
 import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.ReadOnlyDataStore;
 import org.slf4j.Logger;
+import org.vast.util.Asserts;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
@@ -43,6 +44,7 @@ public class USGSDataStreamStore extends ReadOnlyDataStore<DataStreamKey, IDataS
     final USGSDataFilter configFilter;
     final IParamDatabase paramDb;
     final Cache<DataStreamKey, IDataStreamInfo> dsCache;
+    IProcedureStore procStore;
     
 
     public USGSDataStreamStore(USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
@@ -106,7 +108,7 @@ public class USGSDataStreamStore extends ReadOnlyDataStore<DataStreamKey, IDataS
             var internalIDs = filter.getProcedureFilter().getInternalIDs();
             if (internalIDs != null && !internalIDs.contains(1L))
                 return Stream.empty();
-        }        
+        }
         
         // convert datastream filter to USGS filter
         var queryFilter = FilterUtils.from(filter);
@@ -133,8 +135,9 @@ public class USGSDataStreamStore extends ReadOnlyDataStore<DataStreamKey, IDataS
 
 
     @Override
-    public void linkTo(IProcedureStore procedureStore)
+    public void linkTo(IProcedureStore procStore)
     {
+        this.procStore = Asserts.checkNotNull(procStore, IProcedureStore.class);
     }
 
 

@@ -38,6 +38,7 @@ public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IGeoFeature, Foi
     final Logger logger;
     final USGSDataFilter configFilter;
     final IParamDatabase paramDb;
+    IProcedureStore procStore;
     
     
     public USGSFoiStore(USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
@@ -71,6 +72,13 @@ public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IGeoFeature, Foi
     @Override
     public Stream<Entry<FeatureKey, IGeoFeature>> selectEntries(FoiFilter filter, Set<FoiField> fields)
     {
+        if (filter.getParentFilter() != null)
+        {
+            var parentStream = DataStoreUtils.selectProcedureIDs(procStore, filter.getParentFilter());
+            if (parentStream.findAny().isEmpty())
+                return Stream.empty();
+        }
+        
         // convert FOI filter to USGS filter
         var queryFilter = FilterUtils.from(filter);
         
@@ -108,19 +116,20 @@ public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IGeoFeature, Foi
 
     @Override
     public void linkTo(IProcedureStore procStore)
-    {        
+    {
+        this.procStore = Asserts.checkNotNull(procStore, IProcedureStore.class);
     }
 
 
     @Override
     public void linkTo(IObsStore obsStore)
-    {        
+    {
     }
 
 
     @Override
     public void linkTo(IFeatureStore featureStore)
-    {        
+    {
     }
 
 

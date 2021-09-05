@@ -73,6 +73,12 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig> im
         this.procStore = new USGSProcedureStore(config.exposeFilter, paramDb, getLogger());
         this.foiStore = new USGSFoiStore(config.exposeFilter, paramDb,getLogger());
         this.obsStore = new USGSObsStore(config.exposeFilter, paramDb, getLogger());
+        
+        procStore.linkTo(obsStore.getDataStreams());
+        foiStore.linkTo(procStore);
+        foiStore.linkTo(obsStore);
+        obsStore.linkTo(foiStore);
+        obsStore.getDataStreams().linkTo(procStore);
     }
 
 
