@@ -128,6 +128,10 @@ public class OAuthAuthenticator extends LoginAuthenticator
                 }
                 
             }
+        
+            // case of auth not needed
+            if (!mandatory)
+                return Authentication.NOT_CHECKED;
             
             HttpSession session = request.getSession(true);
             String accessToken = null;
