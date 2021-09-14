@@ -204,49 +204,5 @@
     "moduleClass": "org.sensorhub.impl.service.sweapi.SWEApiService",
     "name": "SWE API Service",
     "autoStart": true
-  },
-  {
-    "objClass": "org.sensorhub.impl.service.sta.STAServiceConfig",
-    "hubThing": {
-      "objClass": "org.sensorhub.impl.service.sta.STAServiceConfig$HubThingInfo",
-      "name": "SensorHub Node",
-      "description": "The local sensor hub and its sensors"
-    },
-    "virtualSensorGroup": {
-      "objClass": "org.sensorhub.impl.sensor.VirtualProcedureGroupConfig",
-      "uid": "urn:osh:sta:group",
-      "name": "SensorThings Sensor Group",
-      "description": "Sensors registered via SensorThings API"
-    },
-    "dbConfig": {
-      "objClass": "org.sensorhub.impl.service.sta.STADatabaseConfig",
-      "storagePath": "sta_db.dat",
-      "memoryCacheSize": 5120,
-      "autoCommitBufferSize": 1024,
-      "useCompression": false,
-      "indexObsLocation": false,
-      "databaseNum": 1,
-      "readOnly": false,
-      "autoStart": false
-    },
-    "exposedResources": {
-      "objClass": "org.sensorhub.impl.datastore.view.ProcedureObsDatabaseViewConfig",
-      "includeFilter": {
-        "objClass": "org.sensorhub.api.datastore.procedure.ProcedureFilter",
-        "uniqueIDs": ["urn:osh:sensor:*"]
-      }
-    },
-    "security": {
-      "objClass": "org.sensorhub.api.security.SecurityConfig",
-      "enableAccessControl": false,
-      "requireAuth": true
-    },
-    "enableTransactional": true,
-    "maxObsCount": 1000,
-    "endPoint": "/sta",
-    "id": "192c2157-c5f9-4724-bd48-6380b2dc232d",
-    "moduleClass": "org.sensorhub.impl.service.sta.STAService",
-    "name": "SensorThings API Service",
-    "autoStart": true
   }
 ]
