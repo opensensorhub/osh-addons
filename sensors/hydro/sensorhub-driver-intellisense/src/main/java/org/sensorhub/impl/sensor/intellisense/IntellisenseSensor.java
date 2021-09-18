@@ -14,16 +14,10 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.intellisense;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.IDataProducer;
-import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.vast.sensorML.SMLHelper;
 
@@ -32,7 +26,7 @@ import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.PhysicalSystem;
 
 
-public class IntellisenseSensor extends AbstractSensorModule<IntellisenseConfig> implements IMultiSourceDataProducer 
+public class IntellisenseSensor extends AbstractSensorModule<IntellisenseConfig>
 {
 //	static final Logger log = LoggerFactory.getLogger(IntellisenseSensor.class);
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:intellisense:";
@@ -81,7 +75,7 @@ public class IntellisenseSensor extends AbstractSensorModule<IntellisenseConfig>
             Point stationLoc = gmlFac.newPoint();
             stationLoc.setPos(new double[] {config.deviceLats[cnt], config.deviceLons[cnt++]});
             foi.setLocation(stationLoc);
-            foiMap.put(uid, foi);
+            addFoi(foi);
         }
 	}
 
@@ -155,16 +149,4 @@ public class IntellisenseSensor extends AbstractSensorModule<IntellisenseConfig>
 	public boolean isConnected() {
 		return true;
 	}
-
-    @Override
-    public Map<String, ? extends IDataProducer> getMembers()
-    {
-        return Collections.emptyMap();
-    }
-
-    @Override
-    public Collection<String> getProceduresWithFoi(String foiUID)
-    {
-        return Arrays.asList(getUniqueIdentifier());
-    }
 }

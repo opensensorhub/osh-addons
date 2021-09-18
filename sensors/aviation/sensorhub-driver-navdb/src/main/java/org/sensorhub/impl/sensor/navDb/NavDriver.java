@@ -23,18 +23,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.IDataProducer;
-import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.navDb.NavDbEntry.Type;
 import org.sensorhub.impl.utils.grid.DirectoryWatcher;
@@ -46,7 +40,7 @@ import org.sensorhub.impl.utils.grid.FileListener;
  * @author tcook
  * @since Nov, 2017
  */
-public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMultiSourceDataProducer, FileListener  
+public class NavDriver extends AbstractSensorModule<NavConfig>  implements FileListener
 {
     static final Pattern DATA_FILE_REGEX = Pattern.compile(".+\\.dat");
     
@@ -345,18 +339,4 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements IMult
 	{
 		return true;
 	}
-	
-
-    @Override
-    public Map<String, ? extends IDataProducer> getMembers()
-    {
-        return Collections.emptyMap();
-    }
-    
-
-    @Override
-    public Collection<String> getProceduresWithFoi(String foiUID)
-    {
-        return Arrays.asList(getUniqueIdentifier());
-    }
 }

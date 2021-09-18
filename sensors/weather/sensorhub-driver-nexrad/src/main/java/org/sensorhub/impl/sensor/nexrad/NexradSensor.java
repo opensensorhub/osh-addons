@@ -15,15 +15,9 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.nexrad;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.IDataProducer;
-import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.nexrad.aws.NexradSqsService;
 import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkQueueManager;
@@ -44,7 +38,7 @@ import net.opengis.sensorml.v20.PhysicalSystem;
  *
  * @author Tony Cook <tony.coook@opensensorhub.org>
  */
-public class NexradSensor extends AbstractSensorModule<NexradConfig> implements IMultiSourceDataProducer
+public class NexradSensor extends AbstractSensorModule<NexradConfig>
 {
 	static final Logger logger = LoggerFactory.getLogger(NexradSensor.class);
 	static final String SITE_UID_PREFIX = "urn:osh:sensors:nexrad:";
@@ -150,7 +144,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig> implements 
 			NexradSite site = config.getSite(siteId);
 			stationLoc.setPos(new double [] {site.lat, site.lon, site.elevation});
 			foi.setLocation(stationLoc);
-			foiMap.put(uid, foi);
+			addFoi(foi);
 		}
 
 		dataInterface.start(radialProvider); 
@@ -178,18 +172,4 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig> implements 
 	{
 		return true;
 	}
-
-	
-    @Override
-    public Map<String, ? extends IDataProducer> getMembers()
-    {
-        return Collections.emptyMap();
-    }
-    
-
-    @Override
-    public Collection<String> getProceduresWithFoi(String foiUID)
-    {
-        return Arrays.asList(getUniqueIdentifier());
-    }
 }
