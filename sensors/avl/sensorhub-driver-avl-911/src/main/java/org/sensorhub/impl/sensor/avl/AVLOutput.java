@@ -22,13 +22,10 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import net.opengis.swe.v20.AllowedTokens;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
-import net.opengis.swe.v20.Vector;
-import net.opengis.swe.v20.Category;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
@@ -64,40 +61,34 @@ public class AVLOutput extends AbstractSensorOutput<AVLDriver>
         GeoPosHelper fac = new GeoPosHelper();
 
         // SWE Common data structure
-        dataStruct = fac.newDataRecord(7);
-        dataStruct.setName(getName());
-        dataStruct.setDefinition(SWEHelper.getPropertyUri("AVLData"));
-
-        // time
-        dataStruct.addComponent("time", fac.newTimeStampIsoUTC());
-
-        // Mobile Data Terminal ID
-        dataStruct.addComponent("mdt-id", fac.newCategory(SWEHelper.getPropertyUri("MDT-ID"), "MDT-ID", "Mobile Data Terminal ID", null));
-
-        // Unit ID
-        dataStruct.addComponent("unit-id", fac.newCategory(SWEHelper.getPropertyUri("Unit-ID"), "Unit ID", "Mobile Unit ID", null));
-        
-        // Vehicle ID
-        dataStruct.addComponent("veh-id", fac.newCategory(SWEHelper.getPropertyUri("Vehicle-ID"), "Vehicle ID", "Mobile Vehicle Identification", null));
-        
-        // location (latitude-longitude)	        
-        Vector locVector = fac.newLocationVectorLatLon(SWEConstants.DEF_SENSOR_LOC);
-        locVector.setLabel("Vehicle Location");
-        dataStruct.addComponent("location", locVector);
-
-        // status constraints: (AQ - at-station; ER - enroute; AR - arrived?, OS - out-of-service, AK - completed-returning)
-        Category status = fac.newCategory(SWEHelper.getPropertyUri("Vehicle-Status"), "Unit Status", "Unit-Vehicle Status (AQ, OS, AK, ER, AR)", null);
-        AllowedTokens constraints = fac.newAllowedTokens();
-        constraints.addValue("AQ");
-        constraints.addValue("ER");
-        constraints.addValue("AR");
-        constraints.addValue("OS");
-        constraints.addValue("AK");
-        status.setConstraint(constraints);
-        dataStruct.addComponent("status", status);
-
-        // event (empty if AQ, OS, or AK; event number if ER or AR)
-        dataStruct.addComponent("event-id", fac.newCategory(SWEHelper.getPropertyUri("Event-ID"), "Event ID", "Assigned ID to an emergency event", null));
+        dataStruct = fac.createRecord()
+            .name(getName())
+            .addSamplingTimeIsoUTC("time")
+            .addField("mdt-id", fac.createText()
+                .definition(SWEHelper.getPropertyUri("MDT-ID"))
+                .label("MDT-ID")
+                .description("Mobile Data Terminal ID"))
+            .addField("unit-id", fac.createText()
+                .definition(SWEHelper.getPropertyUri("Unit-ID"))
+                .label("Unit ID")
+                .description("Mobile Unit ID"))
+            .addField("veh-id", fac.createText()
+                .definition(SWEHelper.getPropertyUri("Vehicle-ID"))
+                .label("Vehicle ID")
+                .description("Mobile Vehicle Identification"))
+            .addField("location", fac.createLocationVectorLatLon()
+                .definition(SWEConstants.DEF_SENSOR_LOC)
+                .label("Vehicle Location"))
+            .addField("status", fac.createCategory()
+                .definition(SWEHelper.getPropertyUri("Vehicle-Status"))
+                .label("Unit Status")
+                .description("Unit-Vehicle Status")
+                .addAllowedValues("AQ", "ER", "AR", "OS", "AK"))
+            .addField("event-id", fac.createText()
+                .definition(SWEHelper.getPropertyUri("Event-ID"))
+                .label("Event ID")
+                .description("ID assigned to the emergency event"))
+            .build();
 
         // set encoding to CSV
         dataEncoding = fac.newTextEncoding(",", "\n");
