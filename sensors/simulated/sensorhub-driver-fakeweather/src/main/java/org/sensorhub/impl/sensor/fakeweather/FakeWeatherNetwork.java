@@ -14,18 +14,14 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fakeweather;
 
-import java.util.Map;
 import java.util.Random;
-import java.util.TreeMap;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.vast.ogc.gml.IGeoFeature;
 
 
 public class FakeWeatherNetwork extends AbstractSensorModule<FakeWeatherNetworkConfig>
 {
     FakeWeatherNetworkOutput dataInterface;
-    Map<String, FakeWeatherStation> stations = new TreeMap<>();
     
     
     public FakeWeatherNetwork()
@@ -54,15 +50,8 @@ public class FakeWeatherNetwork extends AbstractSensorModule<FakeWeatherNetworkC
             var lat = (rand.nextDouble() - 0.5) * config.areaSize + config.centerLocation.lat;
             var lon = (rand.nextDouble() - 0.5) * config.areaSize + config.centerLocation.lon;
             var station = new FakeWeatherStation(i, lat, lon);
-            stations.put(station.uid, station);
+            addFoi(station);
         }
-    }
-
-
-    @Override
-    public Map<String, ? extends IGeoFeature> getCurrentFeaturesOfInterest()
-    {
-        return stations;
     }
     
     

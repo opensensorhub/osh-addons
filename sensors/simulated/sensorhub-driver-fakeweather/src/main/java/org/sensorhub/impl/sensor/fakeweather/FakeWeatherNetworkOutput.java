@@ -107,9 +107,9 @@ public class FakeWeatherNetworkOutput extends AbstractSensorOutput<FakeWeatherNe
         TimerTask task = new TimerTask() {
             public void run()
             {
-                for (var station: getParentProducer().stations.values())
-                    sendMeasurement(station);
-            }            
+                for (var station: getParentProducer().getCurrentFeaturesOfInterest().values())
+                    sendMeasurement((FakeWeatherStation)station);
+            }
         };
         
         timer.scheduleAtFixedRate(task, 0, (long)(getAverageSamplingPeriod()*1000));        

@@ -14,10 +14,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fakegps;
 
-import java.util.Map;
-import java.util.TreeMap;
 import org.sensorhub.api.common.SensorHubException;
-import org.vast.ogc.gml.IGeoFeature;
 
 
 /**
@@ -31,8 +28,6 @@ import org.vast.ogc.gml.IGeoFeature;
  */
 public class FakeGpsNetwork extends FakeGpsSensor
 {
-    Map<String, IGeoFeature> fois = new TreeMap<>();
-    
     
     public FakeGpsNetwork()
     {
@@ -47,14 +42,7 @@ public class FakeGpsNetwork extends FakeGpsSensor
         // create FOIs
         for (var route: dataInterface.routes)
             for (var asset: route.assets)
-                fois.put(asset.getUniqueIdentifier(), asset);
-    }
-
-
-    @Override
-    public Map<String, ? extends IGeoFeature> getCurrentFeaturesOfInterest()
-    {
-        return fois;
+                addFoi(asset);
     }
     
     
