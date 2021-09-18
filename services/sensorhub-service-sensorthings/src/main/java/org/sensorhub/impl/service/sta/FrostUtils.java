@@ -17,6 +17,7 @@ package org.sensorhub.impl.service.sta;
 import java.util.ArrayList;
 import java.util.List;
 import org.geojson.LngLatAlt;
+import org.vast.ogc.gml.IFeature;
 import org.vast.ogc.gml.IGeoFeature;
 import org.vast.ogc.om.SamplingCurve;
 import org.vast.ogc.om.SamplingPoint;
@@ -199,11 +200,11 @@ public class FrostUtils
     }
     
     
-    public static org.geojson.GeoJsonObject toGeoJsonFeature(IGeoFeature f)
+    public static org.geojson.GeoJsonObject toGeoJsonFeature(IFeature f)
     {
         var geoF = new org.geojson.Feature();
         
-        AbstractGeometry geom = f.getGeometry();
+        AbstractGeometry geom = f instanceof IGeoFeature ? ((IGeoFeature)f).getGeometry() : null;
         if (geom != null)
             geoF.setGeometry(FrostUtils.toGeoJsonGeom(geom));
         
