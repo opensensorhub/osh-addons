@@ -14,12 +14,9 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
@@ -32,7 +29,8 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.Vector;
 
-public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver> implements IMultiSourceDataInterface  
+
+public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver>
 {
     static final String DEF_FLIGHTPOS_REC = SWEHelper.getPropertyUri("aero/FlightPosition");
     static final String DEF_VERTICAL_RATE = SWEHelper.getPropertyUri("areo/VerticalRate");
@@ -47,16 +45,10 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 	Map<String, Long> latestUpdateTimes = new ConcurrentHashMap<>();
 	Map<String, DataBlock> latestRecords = new ConcurrentHashMap<>();  // key is position uid
 
+	
 	public FlightPositionOutput(FlightAwareDriver parentSensor) 
 	{
-		super(parentSensor);
-	}
-
-
-	@Override
-	public String getName()
-	{
-		return "flightPos";
+		super("flightPos", parentSensor);
 	}
 
 	protected void init()
@@ -72,7 +64,7 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		recordStruct.addComponent("time", fac.newTimeStampIsoGPS());
 
 		// oshFlightId
-		recordStruct.addField("flightId", fac.newText(ENTITY_ID_URI, "Flight ID", null));
+		recordStruct.addField("flightId", fac.newText(FlightPlanOutput.DEF_FLIGH_ID, "Flight ID", null));
 
 		//  location
 		Vector locVector = geoHelper.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
@@ -129,7 +121,10 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		latestRecords.put(oshFlightId, dataBlk);
 		latestRecordTime = System.currentTimeMillis();
         latestUpdateTimes.put(oshFlightId, fltPos.getClock());
-		eventHandler.publish(new DataEvent(latestRecordTime, FlightPositionOutput.this, dataBlk));        	
+		eventHandler.publish(new DataEvent(
+		    latestRecordTime, this,
+		    FlightAwareDriver.FLIGHT_UID_PREFIX + oshFlightId,
+		    dataBlk));
 	}
 
 	public double getAverageSamplingPeriod()
@@ -150,26 +145,4 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 	{
 		return encoding;
 	}
-
-
-	@Override
-	public Collection<String> getEntityIDs()
-	{
-		return parentSensor.getEntityIDs();
-	}
-
-
-	@Override
-	public Map<String, DataBlock> getLatestRecords()
-	{
-		return Collections.unmodifiableMap(latestRecords);
-	}
-
-
-	@Override
-	public DataBlock getLatestRecord(String entityID)
-	{
-		return latestRecords.get(entityID);
-	}
-
 }

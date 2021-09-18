@@ -19,8 +19,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-
-import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.Waypoint;
@@ -45,9 +43,10 @@ import net.opengis.swe.v20.DataType;
  * @author Tony Cook
  * @since Sep 5, 2017
  */
-public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> implements IMultiSourceDataInterface  
+public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver>
 {
     static final String DEF_FLIGHTPLAN_REC = SWEHelper.getPropertyUri("aero/FlightPlan");
+    static final String DEF_FLIGH_ID = SWEHelper.getPropertyUri("aero/FlightID");
     static final String DEF_AIRCRAFT_TYPE = SWEHelper.getPropertyUri("aero/AircraftType/ICAO");
     static final String DEF_AIRPORT_CODE = SWEHelper.getPropertyUri("aero/AirportCode/ICAO");
     static final String DEF_WAYPOINT = SWEHelper.getPropertyUri("aero/Waypoint");
@@ -78,7 +77,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
 		dataStruct.setName(getName());
 		dataStruct.setDefinition(DEF_FLIGHTPLAN_REC);
         dataStruct.addComponent("time", fac.newTimeIsoUTC(SWEConstants.DEF_SAMPLING_TIME, "Issue Time", null));
-        dataStruct.addComponent("flightId", fac.newText(ENTITY_ID_URI, "Flight ID", null));
+        dataStruct.addComponent("flightId", fac.newText(DEF_FLIGH_ID, "Flight ID", null));
         dataStruct.addComponent("flightNumber", fac.newText(DEF_FLIGHT_NUM, "Flight Number", null));
         dataStruct.addComponent("aircraftType", fac.newCategory(DEF_AIRCRAFT_TYPE, "Aircraft Type", "Model of aircraft operated on this flight", null));
         dataStruct.addComponent("srcAirport", fac.newText(DEF_AIRPORT_CODE, "Departure Airport", "ICAO identification code of departure airport"));
@@ -149,7 +148,10 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         latestRecord = dataBlk;
         latestRecordTime = msgTime;
         latestRecords.put(oshFlightId, dataBlk);
-        eventHandler.publish(new DataEvent(latestRecordTime, oshFlightId, this, dataBlk));
+        eventHandler.publish(new DataEvent(
+            latestRecordTime, this,
+            FlightAwareDriver.FLIGHT_UID_PREFIX + oshFlightId,
+            dataBlk));
 	}
 	
 	
@@ -195,36 +197,4 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
 	{
 		return encoding;
 	}
-
-
-	@Override
-	public Collection<String> getEntityIDs()
-	{
-		return parentSensor.getEntityIDs();
-	}
-
-
-	@Override
-	public Map<String, DataBlock> getLatestRecords()
-	{
-		return Collections.unmodifiableMap(latestRecords);
-	}
-
-
-	@Override
-	public DataBlock getLatestRecord(String entityId) {
-		//		for(Map.Entry<String, DataBlock> dbe: latestRecords.entrySet()) {
-		//			String key = dbe.getKey();
-		//			DataBlock val = dbe.getValue();
-		//			System.err.println(key + " : " + val);
-		//		}
-		int lastColonIdx = entityId.lastIndexOf(':');
-		if(lastColonIdx == -1) {
-			return null;
-		}
-		String flightId = entityId.substring(lastColonIdx + 1);
-		return latestRecords.get(flightId);
-	}
-
-
 }

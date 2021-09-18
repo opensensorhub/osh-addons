@@ -24,13 +24,9 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -38,20 +34,16 @@ import org.sensorhub.api.comm.IMessageQueuePush;
 import org.sensorhub.api.comm.IMessageQueuePush.MessageListener;
 import org.sensorhub.api.comm.MessageQueueConfig;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.FoiEvent;
-import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.api.module.IModuleStateManager;
-import org.sensorhub.impl.SensorHub;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.flightAware.FlightAwareConfig.Mode;
+import org.vast.ogc.gml.IFeature;
+import org.vast.ogc.om.MovingFeature;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Asserts;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.impl.GMLFactory;
-import net.opengis.sensorml.v20.AbstractProcess;
-import net.opengis.sensorml.v20.PhysicalSystem;
 
 
 /**
@@ -59,8 +51,7 @@ import net.opengis.sensorml.v20.PhysicalSystem;
  * @author tcook
  * @since Oct 1, 2017
  */
-public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> implements IMultiSourceDataProducer,
-	FlightPlanListener, PositionListener
+public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> implements FlightPlanListener, PositionListener
 {
     private static final String STATE_CACHE_FILE = "fltaware_cache";
     private static final int MAX_CACHE_SIZE = 50000;
@@ -79,8 +70,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	GMLFactory gmlFac = new GMLFactory(true);
 
 	// Dynamically created FOIs
-	Map<String, AbstractFeature> flightFois;
-	Map<String, AbstractFeature> aircraftDesc;
 	Map<String, FlightObject> flightPositions;
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
 	static final String FLIGHT_UID_PREFIX = "urn:osh:aviation:flight:";
@@ -216,8 +205,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 
 	public FlightAwareDriver()
 	{
-		this.flightFois = new ConcurrentSkipListMap<>();
-		this.aircraftDesc = new ConcurrentHashMap<>();
 		this.flightPositions = new ConcurrentHashMap<>();
 	}
 	
@@ -453,22 +440,20 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 	    String uid = FLIGHT_UID_PREFIX + flightId;
 	    
 	    // skip if FOI already exists
-		AbstractFeature fpFoi = flightFois.get(uid);
+		IFeature fpFoi = foiMap.get(uid);
         if (fpFoi != null) 
             return;
         
 		// generate small SensorML for FOI (in this case the system is the FOI)
-		PhysicalSystem foi = smlFac.newPhysicalSystem();
+        MovingFeature foi = new MovingFeature();
 		foi.setId(flightId);
 		foi.setUniqueIdentifier(uid);
 		foi.setName(flightId + " Flight");
-		flightFois.put(uid, foi);
+		
+		// register it
+		addFoi(foi);
 
-		// send event
-		long now = System.currentTimeMillis();
-		eventHandler.publish(new FoiEvent(now, flightId, this, foi, recordTime));
-
-		getLogger().trace("{}: New FOI added: {}; Num FOIs = {}", flightId, uid, flightFois.size());
+		getLogger().trace("{}: New FOI added: {}; Num FOIs = {}", flightId, uid, foiMap.size());
 	}
 	
 
@@ -590,61 +575,4 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     {
         return connected;
     }
-    
-	
-	@Override
-	public Collection<String> getEntityIDs()
-	{
-		return Collections.unmodifiableCollection(flightFois.keySet());
-	}
-
-
-	@Override
-	public AbstractFeature getCurrentFeatureOfInterest()
-	{
-		return null;
-	}
-
-
-	@Override
-	public AbstractProcess getCurrentDescription(String entityID)
-	{
-		return null;
-	}
-
-
-	@Override
-	public double getLastDescriptionUpdate(String entityID)
-	{
-		return 0;
-	}
-
-
-	@Override
-	public AbstractFeature getCurrentFeatureOfInterest(String entityID)
-	{
-		return flightFois.get(entityID);
-	}
-
-
-	@Override
-	public Collection<? extends AbstractFeature> getFeaturesOfInterest()
-	{
-		return Collections.unmodifiableCollection(flightFois.values());
-	}
-
-
-	@Override
-	public Collection<String> getFeaturesOfInterestIDs()
-	{
-		return Collections.unmodifiableCollection(flightFois.keySet());
-	}
-	
-
-	@Override
-	public Collection<String> getEntitiesWithFoi(String foiID)
-	{
-	    String entityID = foiID.substring(foiID.lastIndexOf(':')+1);
-        return Arrays.asList(entityID);
-	}
 }
