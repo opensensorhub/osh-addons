@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IDataProducer;
-import org.sensorhub.api.data.IMultiSourceDataProducer;
+import org.sensorhub.api.procedure.IProcedureGroupDriver;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.station.Station;
 import org.slf4j.Logger;
@@ -18,7 +18,7 @@ import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.PhysicalSystem;
 
 
-public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IMultiSourceDataProducer 
+public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IProcedureGroupDriver<IDataProducer> 
 {
 	static final Logger log = LoggerFactory.getLogger(MetarSensor.class);
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:metar:";
@@ -157,15 +157,8 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 
 
     @Override
-    public Map<String, ? extends IDataProducer> getMembers()
+    public Map<String, IDataProducer> getMembers()
     {
         return Collections.emptyMap();
-    }
-
-
-    @Override
-    public Collection<String> getProceduresWithFoi(String foiUID)
-    {
-        return Arrays.asList(getUniqueIdentifier());
     }
 }
