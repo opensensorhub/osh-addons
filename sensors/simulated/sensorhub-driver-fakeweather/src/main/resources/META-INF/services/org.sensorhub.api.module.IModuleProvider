@@ -1,1 +1,2 @@
 org.sensorhub.impl.sensor.fakeweather.FakeWeatherDescriptor
+org.sensorhub.impl.sensor.fakeweather.FakeWeatherNetworkDescriptor

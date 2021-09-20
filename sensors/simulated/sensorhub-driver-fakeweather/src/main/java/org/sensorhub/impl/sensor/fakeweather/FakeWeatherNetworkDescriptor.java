@@ -43,7 +43,7 @@ public class FakeWeatherNetworkDescriptor extends JarModuleProvider implements I
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return FakeWeatherSensor.class;
+        return FakeWeatherNetwork.class;
     }
     
 
