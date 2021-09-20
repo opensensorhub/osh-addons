@@ -1,13 +1,8 @@
 package org.sensorhub.impl.sensor.station.metar;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.IDataProducer;
-import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.station.Station;
 import org.slf4j.Logger;
@@ -18,7 +13,7 @@ import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.PhysicalSystem;
 
 
-public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IMultiSourceDataProducer 
+public class MetarSensor extends AbstractSensorModule<MetarConfig>
 {
 	static final Logger log = LoggerFactory.getLogger(MetarSensor.class);
 	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:metar:";
@@ -103,7 +98,7 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
             Point stationLoc = gmlFac.newPoint();
             stationLoc.setPos(new double[] {station.getLat(), station.getLon(), station.getElevation()});
             foi.setLocation(stationLoc);
-            foiMap.put(uid, foi);
+            addFoi(foi);
         }
 	}
 
@@ -154,18 +149,4 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig> implements IM
 	{
 		return true;
 	}
-
-
-    @Override
-    public Map<String, ? extends IDataProducer> getMembers()
-    {
-        return Collections.emptyMap();
-    }
-
-
-    @Override
-    public Collection<String> getProceduresWithFoi(String foiUID)
-    {
-        return Arrays.asList(getUniqueIdentifier());
-    }
 }
