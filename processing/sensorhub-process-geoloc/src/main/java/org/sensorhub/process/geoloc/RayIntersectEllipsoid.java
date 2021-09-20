@@ -72,7 +72,7 @@ public class RayIntersectEllipsoid extends ExecutableProcessImpl
         inputData.add("rayOrigin", rayOrigin);
         
         // ray direction in reference frame (ECEF by default)
-        rayDirection = sweHelper.newUnitVectorXYZ(null, SWEConstants.REF_FRAME_ECEF);
+        rayDirection = sweHelper.newUnitVectorXYZ(null, SWEConstants.REF_FRAME_WGS84_ECEF);
         inputData.add("rayDirection", rayDirection);
         
         //// PARAMETERS ////
