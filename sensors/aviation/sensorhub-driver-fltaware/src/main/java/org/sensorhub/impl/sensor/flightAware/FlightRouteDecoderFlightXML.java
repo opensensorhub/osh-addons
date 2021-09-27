@@ -53,7 +53,11 @@ public class FlightRouteDecoderFlightXML implements IFlightRouteDecoder
     {
         try
         {
+            long t0 = System.currentTimeMillis();
             DecodeFlightRouteResult res = api.decodeFlightRoute(fltPlan.id);
+            long t1 = System.currentTimeMillis();
+            log.debug("DecodeFlightRoute call took {}ms", t1-t0);
+            
             if (res == null || res.data == null || res.data.isEmpty())
                 throw new SensorHubException("Empty response returned by FlightXML API");
             

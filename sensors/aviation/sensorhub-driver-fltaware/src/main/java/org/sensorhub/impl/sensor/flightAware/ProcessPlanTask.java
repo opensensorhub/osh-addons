@@ -85,8 +85,8 @@ public class ProcessPlanTask implements Runnable
                     {
                         fltPlan.decodedRoute = flightRouteDecoder.decode(fltPlan, newRoute);
                         if (log.isDebugEnabled())
-                            log.debug("{}_{}: Route decoded ({}): {} -> {}", fltPlan.ident, fltPlan.dest, fltPlan.facility_name, newRoute, fltPlan.decodedRoute);                            
-                    }   
+                            log.debug("{}_{}: Route decoded ({}): {} -> {}", fltPlan.ident, fltPlan.dest, fltPlan.facility_name, newRoute, fltPlan.decodedRoute);
+                    }
                     
                     // publish flight plan
                     cachedInfo.route = newRoute;
