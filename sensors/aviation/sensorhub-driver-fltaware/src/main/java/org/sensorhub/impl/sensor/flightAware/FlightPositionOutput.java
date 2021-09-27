@@ -88,6 +88,9 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		
 		// vertical rate
         recordStruct.addField("verticalRate", fac.newQuantity(DEF_VERTICAL_RATE, "Vertical Rate", null, "[ft_i]/min"));
+        
+        // estimated flag
+        recordStruct.addField("estimated", fac.newBoolean(SWEConstants.DEF_FLAG, "Estimated Flag", null));
 
 		// default encoding is text
 		encoding = fac.newTextEncoding(",", "\n");
@@ -123,6 +126,8 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.heading));
 		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.gs));
         dataBlk.setDoubleValue(i++, fltPos.verticalChange);
+        dataBlk.setBooleanValue(i++, "P".equals(fltPos.updateType));
+        parentSensor.getLogger().debug("{} Position Type: {}", oshFlightId, fltPos.updateType);
         
 		// update latest record and send event
 		latestRecord = dataBlk;
