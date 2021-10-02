@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.sensorhub.impl.usgs.water.CodeEnums.StateCode;
 import org.slf4j.Logger;
-import org.vast.ogc.gml.IGeoFeature;
+import org.vast.ogc.gml.IFeature;
 import org.vast.ogc.om.SamplingPoint;
 import org.vast.swe.SWEHelper;
 import org.vast.util.Asserts;
@@ -61,7 +61,7 @@ public class ObsSiteLoader
     }
     
     
-    public Stream<IGeoFeature> getSites(USGSDataFilter filter)
+    public Stream<IFeature> getSites(USGSDataFilter filter)
     {
         try
         {
@@ -83,9 +83,9 @@ public class ObsSiteLoader
             // skip field names and sizes
             reader.readLine();
             
-            var it = new Iterator<IGeoFeature>() {
+            var it = new Iterator<IFeature>() {
                 GMLFactory gmlFac = new GMLFactory(true);
-                IGeoFeature next;
+                IFeature next;
                 
                 @Override
                 public boolean hasNext()
@@ -94,13 +94,13 @@ public class ObsSiteLoader
                 }
     
                 @Override
-                public IGeoFeature next()
+                public IFeature next()
                 {
                     if (!hasNext())
                         throw new NoSuchElementException();
                     var next = this.next;
                     preloadNext();
-                    return next;                
+                    return next;
                 }
                 
                 public void preloadNext()
@@ -110,7 +110,7 @@ public class ObsSiteLoader
                     
                     try
                     {
-                        // start parsing actual data records        
+                        // start parsing actual data records
                         while ((line = reader.readLine()) != null)
                         {
                             line = line.trim();
@@ -137,7 +137,7 @@ public class ObsSiteLoader
                             site.setUniqueIdentifier(FOI_UID_PREFIX+id);
                             site.setName("USGS Water Site #" + id);
                             site.setDescription(desc);
-                                                
+                            
                             // location
                             Point siteLoc = gmlFac.newPoint();
                             if (Double.isNaN(alt))
@@ -159,7 +159,7 @@ public class ObsSiteLoader
                             site.setSampledFeatureUID(AREA_UID_PREFIX + StateCode.get(stateStr));
                             
                             this.next = site;
-                            break;                    
+                            break;
                         }
                     }
                     catch (Exception e)

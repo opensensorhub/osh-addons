@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.vast.ogc.gml.IGeoFeature;
+import org.vast.ogc.gml.IFeature;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.helper.GeoPosHelper;
 import com.google.gson.JsonElement;
@@ -53,7 +53,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     boolean sendData;
     
     
-    static class MobileAsset implements IGeoFeature
+    static class MobileAsset implements IFeature
     {
         String id;
         String uid;

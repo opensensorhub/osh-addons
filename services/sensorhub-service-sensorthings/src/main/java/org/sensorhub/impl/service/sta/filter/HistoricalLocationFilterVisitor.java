@@ -15,7 +15,6 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sta.filter;
 
 import org.sensorhub.impl.service.sta.STALocationFilter;
-import org.vast.ogc.gml.ITemporalFeature;
 
 
 /**
@@ -55,7 +54,7 @@ public class HistoricalLocationFilterVisitor extends ResourceFilterVisitor<Histo
             if (notEqual)
             {
                 HistoricalLocationFilterVisitor.this.builder.withValuePredicate(
-                    loc -> !timeFilter.test(((ITemporalFeature)loc).getValidTime()));
+                    loc -> !timeFilter.test(loc.getValidTime()));
             }
             else
                 HistoricalLocationFilterVisitor.this.builder.withValidTime(timeFilter);

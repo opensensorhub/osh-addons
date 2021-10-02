@@ -15,7 +15,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.fakeweather;
 
 import java.util.Random;
-import org.vast.ogc.gml.IGeoFeature;
+import org.vast.ogc.gml.IFeature;
 import net.opengis.gml.v32.AbstractGeometry;
 import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.swe.v20.DataBlock;
@@ -29,7 +29,7 @@ import net.opengis.swe.v20.DataBlock;
  * @author Alex Robin
  * @since Jan 29, 2021
  */
-public class FakeWeatherStation implements IGeoFeature
+public class FakeWeatherStation implements IFeature
 {
     String id;
     String uid;
@@ -133,10 +133,7 @@ public class FakeWeatherStation implements IGeoFeature
     public AbstractGeometry getGeometry()
     {
         if (geom == null)
-        {
             geom = new GMLFactory(true).newPoint(lat, lon);
-        }
-        
         return geom;
     }
 

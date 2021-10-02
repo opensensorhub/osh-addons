@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.geojson.LngLatAlt;
 import org.vast.ogc.gml.IFeature;
-import org.vast.ogc.gml.IGeoFeature;
 import org.vast.ogc.om.SamplingCurve;
 import org.vast.ogc.om.SamplingPoint;
 import org.vast.ogc.om.SamplingSurface;
@@ -204,9 +203,8 @@ public class FrostUtils
     {
         var geoF = new org.geojson.Feature();
         
-        AbstractGeometry geom = f instanceof IGeoFeature ? ((IGeoFeature)f).getGeometry() : null;
-        if (geom != null)
-            geoF.setGeometry(FrostUtils.toGeoJsonGeom(geom));
+        if (f.getGeometry() != null)
+            geoF.setGeometry(FrostUtils.toGeoJsonGeom(f.getGeometry()));
         
         for (var prop: f.getProperties().entrySet())
         {

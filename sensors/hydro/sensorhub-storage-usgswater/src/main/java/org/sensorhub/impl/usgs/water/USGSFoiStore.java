@@ -28,12 +28,12 @@ import org.sensorhub.api.datastore.procedure.IProcedureStore;
 import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.ReadOnlyDataStore;
 import org.slf4j.Logger;
-import org.vast.ogc.gml.IGeoFeature;
+import org.vast.ogc.gml.IFeature;
 import org.vast.util.Asserts;
 import org.vast.util.Bbox;
 
 
-public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IGeoFeature, FoiField, FoiFilter> implements IFoiStore
+public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IFeature, FoiField, FoiFilter> implements IFoiStore
 {
     final Logger logger;
     final USGSDataFilter configFilter;
@@ -57,7 +57,7 @@ public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IGeoFeature, Foi
 
 
     @Override
-    public IGeoFeature get(Object key)
+    public IFeature get(Object key)
     {
         var fk = DataStoreUtils.checkFeatureKey(key);
         
@@ -70,7 +70,7 @@ public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IGeoFeature, Foi
 
 
     @Override
-    public Stream<Entry<FeatureKey, IGeoFeature>> selectEntries(FoiFilter filter, Set<FoiField> fields)
+    public Stream<Entry<FeatureKey, IFeature>> selectEntries(FoiFilter filter, Set<FoiField> fields)
     {
         if (filter.getParentFilter() != null)
         {
@@ -134,7 +134,7 @@ public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IGeoFeature, Foi
 
 
     @Override
-    public FeatureKey add(long parentID, IGeoFeature value) throws DataStoreException
+    public FeatureKey add(long parentID, IFeature value) throws DataStoreException
     {
         throw new UnsupportedOperationException(READ_ONLY_ERROR_MSG);
     }
