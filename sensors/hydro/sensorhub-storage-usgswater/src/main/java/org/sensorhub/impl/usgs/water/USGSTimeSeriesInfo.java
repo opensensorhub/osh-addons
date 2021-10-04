@@ -15,8 +15,8 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.usgs.water;
 
 import java.time.Instant;
-import org.sensorhub.api.obs.DataStreamInfo;
-import org.sensorhub.api.obs.IDataStreamInfo;
+import org.sensorhub.api.data.DataStreamInfo;
+import org.sensorhub.api.data.IDataStreamInfo;
 import org.vast.util.TimeExtent;
 
 
