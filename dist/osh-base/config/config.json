@@ -99,14 +99,14 @@
     "autoStart": true
   },
   {
-    "objClass": "org.sensorhub.impl.database.obs.ProcedureObsEventDatabaseConfig",
+    "objClass": "org.sensorhub.impl.database.system.SystemDriverDatabaseConfig",
     "dbConfig": {
-      "objClass": "org.sensorhub.impl.datastore.h2.MVObsDatabaseConfig",
+      "objClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabaseConfig",
       "storagePath": "obs_db.dat",
       "memoryCacheSize": 1024,
       "objectCacheSize": 100,
       "readOnly": false,
-      "moduleClass": "org.sensorhub.impl.datastore.h2.MVObsDatabase"
+      "moduleClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabase"
     },
     "databaseNum": 5,
     "procedureUIDs": ["urn:osh:sensor:*"],
@@ -114,7 +114,7 @@
     "minCommitPeriod": 10000,
     "processEvents": true,
     "id": "d6592d73-f4be-402f-b2cd-48e39fa545ef",
-    "moduleClass": "org.sensorhub.impl.database.obs.ProcedureObsEventDatabase",
+    "moduleClass": "org.sensorhub.impl.database.system.SystemDriverDatabase",
     "name": "All Obs Database",
     "autoStart": true
   },
@@ -130,9 +130,9 @@
     "enableSOAP": true,
     "enableTransactional": true,
     "exposedResources": {
-      "objClass": "org.sensorhub.impl.datastore.view.ProcedureObsDatabaseViewConfig",
+      "objClass": "org.sensorhub.impl.datastore.view.ObsSystemDatabaseViewConfig",
       "includeFilter": {
-        "objClass": "org.sensorhub.api.datastore.procedure.ProcedureFilter",
+        "objClass": "org.sensorhub.api.datastore.system.SystemFilter",
         "uniqueIDs": ["urn:osh:sensor:*"]
       }
     },
@@ -170,9 +170,9 @@
     "objClass": "org.sensorhub.impl.service.sweapi.SWEApiServiceConfig",
     "customFormats": [],
     "exposedResources": {
-      "objClass": "org.sensorhub.impl.datastore.view.ProcedureObsDatabaseViewConfig",
+      "objClass": "org.sensorhub.impl.datastore.view.ObsSystemDatabaseViewConfig",
       "includeFilter": {
-        "objClass": "org.sensorhub.api.datastore.procedure.ProcedureFilter",
+        "objClass": "org.sensorhub.api.datastore.system.SystemFilter",
         "uniqueIDs": ["urn:osh:sensor:*"]
       }
     },

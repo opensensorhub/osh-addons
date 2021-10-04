@@ -24,7 +24,7 @@ import org.sensorhub.api.datastore.feature.IFeatureStore;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.feature.IFoiStore.FoiField;
 import org.sensorhub.api.datastore.obs.IObsStore;
-import org.sensorhub.api.datastore.procedure.IProcedureStore;
+import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.ReadOnlyDataStore;
 import org.slf4j.Logger;
@@ -38,7 +38,7 @@ public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IFeature, FoiFie
     final Logger logger;
     final USGSDataFilter configFilter;
     final IParamDatabase paramDb;
-    IProcedureStore procStore;
+    ISystemDescStore procStore;
     
     
     public USGSFoiStore(USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
@@ -74,7 +74,7 @@ public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IFeature, FoiFie
     {
         if (filter.getParentFilter() != null)
         {
-            var parentStream = DataStoreUtils.selectProcedureIDs(procStore, filter.getParentFilter());
+            var parentStream = DataStoreUtils.selectSystemIDs(procStore, filter.getParentFilter());
             if (parentStream.findAny().isEmpty())
                 return Stream.empty();
         }
@@ -115,9 +115,9 @@ public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IFeature, FoiFie
 
 
     @Override
-    public void linkTo(IProcedureStore procStore)
+    public void linkTo(ISystemDescStore procStore)
     {
-        this.procStore = Asserts.checkNotNull(procStore, IProcedureStore.class);
+        this.procStore = Asserts.checkNotNull(procStore, ISystemDescStore.class);
     }
 
 

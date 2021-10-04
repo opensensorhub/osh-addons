@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
-import org.sensorhub.api.procedure.ProcedureId;
+import org.sensorhub.api.system.SystemId;
 import org.slf4j.Logger;
 import org.vast.data.TextEncodingImpl;
 import org.vast.swe.SWEBuilders.DataComponentBuilder;
@@ -174,7 +174,7 @@ public class ObsSeriesLoader extends ObsSiteLoader
                                 .withName("USGS Water Time Series #" + seriesIdStr)
                                 .withDescription("Time series from site " + siteDesc + " (" + siteNum + ")"
                                                  + (paramDesc.isBlank() ? "" : ", " + paramDesc))
-                                .withProcedure(new ProcedureId(1, USGSWaterDataArchive.UID_PREFIX + "network"))
+                                .withSystem(new SystemId(1, USGSWaterDataArchive.UID_PREFIX + "network"))
                                 .withTimeRange(beginDate, endDate)
                                 .withSiteNum(siteNum)
                                 .withParamCode(paramCd)

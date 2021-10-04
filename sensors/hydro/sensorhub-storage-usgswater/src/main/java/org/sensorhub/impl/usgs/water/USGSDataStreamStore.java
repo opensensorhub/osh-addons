@@ -23,8 +23,8 @@ import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
-import org.sensorhub.api.datastore.procedure.IProcedureStore;
 import org.sensorhub.api.datastore.obs.IDataStreamStore.DataStreamInfoField;
+import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.ReadOnlyDataStore;
 import org.slf4j.Logger;
@@ -44,7 +44,7 @@ public class USGSDataStreamStore extends ReadOnlyDataStore<DataStreamKey, IDataS
     final USGSDataFilter configFilter;
     final IParamDatabase paramDb;
     final Cache<DataStreamKey, IDataStreamInfo> dsCache;
-    IProcedureStore procStore;
+    ISystemDescStore procStore;
     
 
     public USGSDataStreamStore(USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
@@ -98,14 +98,14 @@ public class USGSDataStreamStore extends ReadOnlyDataStore<DataStreamKey, IDataS
     @Override
     public Stream<Entry<DataStreamKey, IDataStreamInfo>> selectEntries(DataStreamFilter filter, Set<DataStreamInfoField> fields)
     {
-        // check if USGS procedures are selected
-        if (filter.getProcedureFilter() != null)
+        // check if USGS systems are selected
+        if (filter.getSystemFilter() != null)
         {
-            var uniqueIDs = filter.getProcedureFilter().getUniqueIDs();
+            var uniqueIDs = filter.getSystemFilter().getUniqueIDs();
             if (uniqueIDs != null && !uniqueIDs.contains(USGSWaterDataArchive.UID_PREFIX + "network"))
                 return Stream.empty();
             
-            var internalIDs = filter.getProcedureFilter().getInternalIDs();
+            var internalIDs = filter.getSystemFilter().getInternalIDs();
             if (internalIDs != null && !internalIDs.contains(1L))
                 return Stream.empty();
         }
@@ -135,9 +135,9 @@ public class USGSDataStreamStore extends ReadOnlyDataStore<DataStreamKey, IDataS
 
 
     @Override
-    public void linkTo(IProcedureStore procStore)
+    public void linkTo(ISystemDescStore procStore)
     {
-        this.procStore = Asserts.checkNotNull(procStore, IProcedureStore.class);
+        this.procStore = Asserts.checkNotNull(procStore, ISystemDescStore.class);
     }
 
 

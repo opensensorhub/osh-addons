@@ -19,7 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import org.sensorhub.api.datastore.feature.FeatureKey;
-import org.sensorhub.api.procedure.ProcedureId;
+import org.sensorhub.api.system.SystemId;
 import org.sensorhub.impl.service.sta.filter.ThingFilterVisitor;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.ogc.gml.IFeature;
@@ -54,7 +54,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     ISTAThingStore thingDataStore;
     STASecurity securityHandler;
     int maxPageSize = 100;
-    ProcedureId procGroupID;
+    SystemId procGroupID;
     
     
     ThingEntityHandler(OSHPersistenceManager pm)
@@ -62,7 +62,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         this.pm = pm;
         this.thingDataStore = pm.writeDatabase != null ? pm.writeDatabase.getThingStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
-        this.procGroupID = pm.service.getProcedureGroupID();
+        this.procGroupID = pm.service.getSystemGroupID();
     }
     
     

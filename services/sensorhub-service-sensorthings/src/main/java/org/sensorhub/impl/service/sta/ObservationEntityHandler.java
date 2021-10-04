@@ -30,9 +30,9 @@ import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.event.IEventPublisher;
 import org.sensorhub.impl.event.DelegatingSubscriberAdapter;
-import org.sensorhub.impl.procedure.DataStreamTransactionHandler;
-import org.sensorhub.impl.procedure.ProcedureSubscriptionHandler;
 import org.sensorhub.impl.service.sta.filter.ObsFilterVisitor;
+import org.sensorhub.impl.system.DataStreamTransactionHandler;
+import org.sensorhub.impl.system.SystemSubscriptionHandler;
 import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockDouble;
 import org.vast.data.DataBlockInt;
@@ -269,7 +269,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         ObsFilter filter = getFilter(path, q);
         
         // subscribe for obs using filter
-        var eventHelper = new ProcedureSubscriptionHandler(pm.readDatabase, pm.eventBus);
+        var eventHelper = new SystemSubscriptionHandler(pm.readDatabase, pm.eventBus);
         var ok = eventHelper.subscribe(filter, new DelegatingSubscriberAdapter<ObsEvent, Observation>(subscriber) {
             public void onNext(ObsEvent item)
             {

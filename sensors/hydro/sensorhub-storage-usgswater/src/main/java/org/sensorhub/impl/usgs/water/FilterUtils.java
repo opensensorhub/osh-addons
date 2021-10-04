@@ -135,11 +135,11 @@ public class FilterUtils
     
     public static USGSDataFilter from(DataStreamFilter filter, USGSDataFilter usgsFilter)
     {
-        /*if (filter.getProcedureFilter() != null)
+        /*if (filter.getSystemFilter() != null)
         {
-            var procFilter = from(filter.getProcedureFilter());
+            var sysFilter = from(filter.getSystemFilter());
             // AND with foi filter options in case it was set
-            usgsFilter = and(usgsFilter, procFilter);
+            usgsFilter = and(usgsFilter, sysFilter);
         }*/
         
         if (filter.getObservedProperties() != null)

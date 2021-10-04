@@ -35,7 +35,7 @@ import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
-import org.sensorhub.api.datastore.procedure.IProcedureStore;
+import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.h2.MVVoidDataType;
 import org.sensorhub.impl.service.sta.STADataStreamStoreTypes.*;
 
@@ -226,9 +226,9 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public DataStreamKey getLatestVersionKey(String procUID, String outputName)
+    public DataStreamKey getLatestVersionKey(String sysUID, String outputName)
     {
-        return delegateStore.getLatestVersionKey(procUID, outputName);
+        return delegateStore.getLatestVersionKey(sysUID, outputName);
     }
 
 
@@ -244,9 +244,9 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public IDataStreamInfo getLatestVersion(String procUID, String outputName)
+    public IDataStreamInfo getLatestVersion(String sysUID, String outputName)
     {
-        return delegateStore.getLatestVersion(procUID, outputName);
+        return delegateStore.getLatestVersion(sysUID, outputName);
     }
 
 
@@ -262,9 +262,9 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public Entry<DataStreamKey, IDataStreamInfo> getLatestVersionEntry(String procUID, String outputName)
+    public Entry<DataStreamKey, IDataStreamInfo> getLatestVersionEntry(String sysUID, String outputName)
     {
-        return delegateStore.getLatestVersionEntry(procUID, outputName);
+        return delegateStore.getLatestVersionEntry(sysUID, outputName);
     }
 
 
@@ -443,7 +443,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
 
 
     @Override
-    public void linkTo(IProcedureStore procedureStore)
+    public void linkTo(ISystemDescStore systemStore)
     {
         throw new UnsupportedOperationException();
     }

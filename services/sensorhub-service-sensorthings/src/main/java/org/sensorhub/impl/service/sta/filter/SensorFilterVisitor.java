@@ -14,27 +14,27 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta.filter;
 
-import org.sensorhub.api.datastore.procedure.ProcedureFilter;
+import org.sensorhub.api.datastore.system.SystemFilter;
 
 
 /**
  * <p>
- * Visitor used to build a ProcedureFilter from STA $filter expression
+ * Visitor used to build a SystemFilter from STA $filter expression
  * </p>
  *
  * @author Alex Robin
  * @date Apr 16, 2021
  */
-public class SensorFilterVisitor extends ResourceFilterVisitor<SensorFilterVisitor, ProcedureFilter.Builder>
+public class SensorFilterVisitor extends ResourceFilterVisitor<SensorFilterVisitor, SystemFilter.Builder>
 {        
     
     public SensorFilterVisitor()
     {
-        this(new ProcedureFilter.Builder());
+        this(new SystemFilter.Builder());
     }
     
     
-    public SensorFilterVisitor(ProcedureFilter.Builder filter)
+    public SensorFilterVisitor(SystemFilter.Builder filter)
     {
         super(filter);
         

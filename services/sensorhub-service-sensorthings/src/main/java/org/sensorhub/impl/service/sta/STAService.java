@@ -19,17 +19,17 @@ import java.util.Properties;
 import javax.xml.namespace.QName;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.database.IProcedureObsDatabase;
+import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
-import org.sensorhub.api.procedure.ProcedureId;
 import org.sensorhub.api.service.IServiceModule;
+import org.sensorhub.api.system.SystemId;
 import org.sensorhub.impl.database.registry.FilteredFederatedObsDatabase;
-import org.sensorhub.impl.procedure.wrapper.ProcedureWrapper;
-import org.sensorhub.impl.sensor.VirtualProcedureGroupConfig;
 import org.sensorhub.impl.service.AbstractHttpServiceModule;
+import org.sensorhub.impl.system.VirtualSystemGroupConfig;
+import org.sensorhub.impl.system.wrapper.SystemWrapper;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.sensorML.SMLHelper;
 import com.google.common.base.Strings;
@@ -57,11 +57,11 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
     static final String DEFAULT_GROUP_UID = "urn:osh:sta:group";
     static final long HUB_THING_ID = 1;
 
-    IProcedureObsDatabase readDatabase;
+    IObsSystemDatabase readDatabase;
     ISTADatabase writeDatabase;
     GenericFeatureImpl hubThing;
     ServletV1P0 servlet;
-    ProcedureId virtualGroupId;
+    SystemId virtualGroupId;
     STAMqttConnector mqttConnector;
 
 
@@ -73,7 +73,7 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
         // TODO check config
         if (config.virtualSensorGroup == null)
         {
-            config.virtualSensorGroup = new VirtualProcedureGroupConfig();
+            config.virtualSensorGroup = new VirtualSystemGroupConfig();
             config.virtualSensorGroup.uid = DEFAULT_GROUP_UID;
             config.virtualSensorGroup.name = "SensorThings Sensor Group";
             config.virtualSensorGroup.description = "Sensors registered via SensorThings API";
@@ -115,7 +115,7 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
         {
             String virtualGroupUID = config.virtualSensorGroup.uid;
             FeatureKey fk;
-            if (!writeDatabase.getProcedureStore().contains(virtualGroupUID))
+            if (!writeDatabase.getSystemDescStore().contains(virtualGroupUID))
             {
                 // register optional group
                 AbstractProcess procGroup = new SMLHelper().createPhysicalSystem()
@@ -124,16 +124,16 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
                     .description(config.virtualSensorGroup.description)
                     .build();
                 
-                fk = writeDatabase.getProcedureStore().add(new ProcedureWrapper(procGroup));
-                virtualGroupId = new ProcedureId(fk.getInternalID(), procGroup.getUniqueIdentifier());
+                fk = writeDatabase.getSystemDescStore().add(new SystemWrapper(procGroup));
+                virtualGroupId = new SystemId(fk.getInternalID(), procGroup.getUniqueIdentifier());
             }
             else
-                fk = writeDatabase.getProcedureStore().getCurrentVersionKey(virtualGroupUID);
-            virtualGroupId = new ProcedureId(fk.getInternalID(), virtualGroupUID);
+                fk = writeDatabase.getSystemDescStore().getCurrentVersionKey(virtualGroupUID);
+            virtualGroupId = new SystemId(fk.getInternalID(), virtualGroupUID);
         }
         
         // create default hub thing
-        String uid = getProcedureGroupID().getUniqueID() + ":thing:hub";
+        String uid = getSystemGroupID().getUniqueID() + ":thing:hub";
         hubThing = new GenericFeatureImpl(new QName("Thing"));
         hubThing.setUniqueIdentifier(uid);
         hubThing.setName(config.hubThing.name);
@@ -245,7 +245,7 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
     }
 
 
-    protected ProcedureId getProcedureGroupID()
+    protected SystemId getSystemGroupID()
     {
         return virtualGroupId;
     }

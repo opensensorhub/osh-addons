@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.time.Instant;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.procedure.IProcedureGroupDriver;
+import org.sensorhub.api.system.ISystemGroupDriver;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.isa.ISASensor.StatusType;
 import org.vast.sensorML.SMLHelper;
@@ -26,7 +26,7 @@ import java.util.TreeMap;
  * @author Alex Robin
  * @since May 19, 2021
  */
-public class ISADriver extends AbstractSensorModule<ISAConfig> implements IProcedureGroupDriver<ISASensor>
+public class ISADriver extends AbstractSensorModule<ISAConfig> implements ISystemGroupDriver<ISASensor>
 { 
     ICommProvider<?> commProvider;
     BufferedReader dataIn;
@@ -146,7 +146,7 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements IProce
     protected void registerSensor(ISASensor sensor)
     {
         allSensors.put(sensor.getUniqueIdentifier(), sensor);
-        //getParentHub().getProcedureRegistry().register(sensor);
+        //getParentHub().getSystemDriverRegistry().register(sensor);
     }
     
     

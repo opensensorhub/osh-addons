@@ -18,21 +18,21 @@ import java.util.concurrent.Callable;
 import org.h2.mvstore.MVStore;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.database.IDatabaseRegistry;
-import org.sensorhub.api.database.IProcedureObsDatabase;
+import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.datastore.command.ICommandStore;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.obs.IObsStore;
-import org.sensorhub.api.datastore.procedure.IProcedureStore;
+import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
-import org.sensorhub.impl.datastore.h2.MVObsDatabase;
+import org.sensorhub.impl.datastore.h2.MVObsSystemDatabase;
 
 
 /**
  * <p>
  * Main SensorThings Database implementation.<br/>
  * Depending on the configuration, this class can either include its own instance
- * of {@link IProcedureObsDatabase} or link to one that already exists as a
+ * of {@link IObsSystemDatabase} or link to one that already exists as a
  * separate module.
  * </p>
  *
@@ -49,7 +49,7 @@ public class STADatabase implements ISTADatabase
     STADatabaseConfig config;
     MVStore mvStore;
     IDatabaseRegistry dbRegistry;
-    IProcedureObsDatabase obsDatabase;
+    IObsSystemDatabase obsDatabase;
     STAThingStoreImpl thingStore;
     STALocationStoreImpl locationStore;
     STAObsPropStoreImpl obsPropStore;
@@ -72,19 +72,19 @@ public class STADatabase implements ISTADatabase
         {
             if (config.externalObsDatabaseID == null)
             {        
-                obsDatabase = new MVObsDatabase();
-                ((MVObsDatabase)obsDatabase).setConfiguration(config);
-                ((MVObsDatabase)obsDatabase).init();
-                ((MVObsDatabase)obsDatabase).waitForState(ModuleState.INITIALIZED, 5000L);
-                ((MVObsDatabase)obsDatabase).start();
-                ((MVObsDatabase)obsDatabase).waitForState(ModuleState.STARTED, 5000L);
-                mvStore = ((MVObsDatabase)obsDatabase).getMVStore();
+                obsDatabase = new MVObsSystemDatabase();
+                ((MVObsSystemDatabase)obsDatabase).setConfiguration(config);
+                ((MVObsSystemDatabase)obsDatabase).init();
+                ((MVObsSystemDatabase)obsDatabase).waitForState(ModuleState.INITIALIZED, 5000L);
+                ((MVObsSystemDatabase)obsDatabase).start();
+                ((MVObsSystemDatabase)obsDatabase).waitForState(ModuleState.STARTED, 5000L);
+                mvStore = ((MVObsSystemDatabase)obsDatabase).getMVStore();
                 externalObsDatabaseUsed = false;
             }
             else
             {
                 // get database module used for writing sensor/datastream/obs/foi entities
-                obsDatabase = (IProcedureObsDatabase)service.getParentHub().getModuleRegistry().getModuleById(config.externalObsDatabaseID);
+                obsDatabase = (IObsSystemDatabase)service.getParentHub().getModuleRegistry().getModuleById(config.externalObsDatabaseID);
                 externalObsDatabaseUsed = true;
             }
         }
@@ -187,9 +187,9 @@ public class STADatabase implements ISTADatabase
 
 
     @Override
-    public IProcedureStore getProcedureStore()
+    public ISystemDescStore getSystemDescStore()
     {
-        return obsDatabase.getProcedureStore();
+        return obsDatabase.getSystemDescStore();
     }
 
 

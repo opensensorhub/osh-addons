@@ -16,11 +16,11 @@ package org.sensorhub.impl.usgs.water;
 
 import java.util.concurrent.Callable;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.database.IProcedureObsDatabaseModule;
+import org.sensorhub.api.database.IObsSystemDatabaseModule;
 import org.sensorhub.api.datastore.command.ICommandStore;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.obs.IObsStore;
-import org.sensorhub.api.datastore.procedure.IProcedureStore;
+import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.ReadOnlyDataStore;
 import org.sensorhub.impl.module.AbstractModule;
@@ -43,12 +43,12 @@ import net.opengis.sensorml.v20.PhysicalSystem;
  * @author Alex Robin
  * @since Mar 13, 2017
  */
-public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig> implements IProcedureObsDatabaseModule<USGSWaterDataConfig>
+public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig> implements IObsSystemDatabaseModule<USGSWaterDataConfig>
 {
     static final String BASE_USGS_URL = "https://waterservices.usgs.gov/nwis/";
     static final String UID_PREFIX = "urn:usgs:water:";
 
-    IProcedureStore procStore;
+    ISystemDescStore procStore;
     IFoiStore foiStore;
     IObsStore obsStore;
     IParamDatabase paramDb;
@@ -70,7 +70,7 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig> im
         ((InMemoryParamDb)paramDb).preloadParams(
             Sets.newHashSet("Physical", "Biological", "Organics", "Inorganics", "Nutrient", "Radiochemical"), null);
         
-        this.procStore = new USGSProcedureStore(config.exposeFilter, paramDb, getLogger());
+        this.procStore = new USGSSystemDescStore(config.exposeFilter, paramDb, getLogger());
         this.foiStore = new USGSFoiStore(config.exposeFilter, paramDb,getLogger());
         this.obsStore = new USGSObsStore(config.exposeFilter, paramDb, getLogger());
         
@@ -236,7 +236,7 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig> im
 
 
     @Override
-    public IProcedureStore getProcedureStore()
+    public ISystemDescStore getSystemDescStore()
     {
         return procStore;
     }

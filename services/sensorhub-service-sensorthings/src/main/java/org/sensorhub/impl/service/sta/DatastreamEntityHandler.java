@@ -24,7 +24,7 @@ import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
-import org.sensorhub.api.procedure.ProcedureId;
+import org.sensorhub.api.system.SystemId;
 import org.sensorhub.impl.service.sta.filter.DatastreamFilterVisitor;
 import org.sensorhub.utils.SWEDataUtils;
 import org.vast.data.TextEncodingImpl;
@@ -116,15 +116,15 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 ResourceId thingId = pm.thingHandler.handleThingAssoc(dataStream.getThing());
                 ResourceId sensorId = pm.sensorHandler.handleSensorAssoc(dataStream.getSensor());
                 
-                // get parent procedure handler
+                // get parent system handler
                 long localSensorID = pm.toLocalID(sensorId.asLong());
-                var procHandler = pm.transactionHandler.getProcedureHandler(localSensorID);
+                var procHandler = pm.transactionHandler.getSystemHandler(localSensorID);
                 if (procHandler == null)
                     throw new NoSuchEntityException(SensorEntityHandler.NOT_FOUND_MESSAGE + sensorId);
                 
                 // create data stream object
-                var procUID = procHandler.getProcedureUID();
-                var dsInfo = toSweDataStream(new ProcedureId(localSensorID, procUID), dataStream);
+                var sysUID = procHandler.getSystemUID();
+                var dsInfo = toSweDataStream(new SystemId(localSensorID, sysUID), dataStream);
 
                 // store in DB + send event
                 var dsHandler = procHandler.addOrUpdateDataStream(
@@ -182,7 +182,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         try
         {
             // create new data stream version
-            var dsInfo = toSweDataStream(oldDsInfo.getProcedureID(), dataStream);
+            var dsInfo = toSweDataStream(oldDsInfo.getSystemID(), dataStream);
 
             // check output name wasn't changed
             if (!dsInfo.getOutputName().equals(oldDsInfo.getOutputName()))
@@ -288,7 +288,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             else if (idElt.getEntityType() == EntityType.SENSOR)
             {
                 ResourceId sensorId = (ResourceId)idElt.getId();
-                builder.withProcedures(sensorId.asLong());
+                builder.withSystems(sensorId.asLong());
             }
             else if (idElt.getEntityType() == EntityType.OBSERVATION)
             {
@@ -318,13 +318,13 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     }
     
     
-    protected IDataStreamInfo toSweDataStream(ProcedureId procID, AbstractDatastream<?> abstractDs) throws NoSuchEntityException
+    protected IDataStreamInfo toSweDataStream(SystemId sysID, AbstractDatastream<?> abstractDs) throws NoSuchEntityException
     {
         var recordStruct = toSweCommon(abstractDs);
         return new DataStreamInfo.Builder()
             .withName(abstractDs.getName())
             .withDescription(abstractDs.getDescription())
-            .withProcedure(procID)
+            .withSystem(sysID)
             .withRecordDescription(recordStruct)
             .withRecordEncoding(new TextEncodingImpl())
             .build();
@@ -473,7 +473,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         dataStream.setThing(thing);
 
         // link to Sensor
-        ResourceIdLong sensorId = new ResourceIdLong(dsInfo.getProcedureID().getInternalID());
+        ResourceIdLong sensorId = new ResourceIdLong(dsInfo.getSystemID().getInternalID());
         Sensor sensor = new Sensor(sensorId);
         sensor.setExportObject(false);
         dataStream.setSensor(sensor);

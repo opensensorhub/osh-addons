@@ -17,8 +17,8 @@ package org.sensorhub.impl.service.sta;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.security.SecurityConfig;
 import org.sensorhub.api.service.HttpServiceConfig;
-import org.sensorhub.impl.datastore.view.ProcedureObsDatabaseViewConfig;
-import org.sensorhub.impl.sensor.VirtualProcedureGroupConfig;
+import org.sensorhub.impl.datastore.view.ObsSystemDatabaseViewConfig;
+import org.sensorhub.impl.system.VirtualSystemGroupConfig;
 
 
 /**
@@ -42,9 +42,9 @@ public class STAServiceConfig extends HttpServiceConfig
     public HubThingInfo hubThing = new HubThingInfo();
     
     
-    @DisplayInfo(desc="Metadata of procedure group that will be created to contain all sensors "
+    @DisplayInfo(desc="Metadata of system group that will be created to contain all sensors "
         + "registered through this service. Only sensors in this group will be modifiable by this service")
-    public VirtualProcedureGroupConfig virtualSensorGroup;
+    public VirtualSystemGroupConfig virtualSensorGroup;
     
     
     @DisplayInfo(label="Database Config", desc="Configuration of database used for persisting entities. "
@@ -54,8 +54,8 @@ public class STAServiceConfig extends HttpServiceConfig
     public STADatabaseConfig dbConfig = new STADatabaseConfig();
     
     
-    @DisplayInfo(desc="Filtered view to select procedures/datastreams/observations exposed as read-only through this service")
-    public ProcedureObsDatabaseViewConfig exposedResources;
+    @DisplayInfo(desc="Filtered view to select systems/datastreams/observations exposed as read-only through this service")
+    public ObsSystemDatabaseViewConfig exposedResources;
     
     
     @DisplayInfo(desc="Security related options")

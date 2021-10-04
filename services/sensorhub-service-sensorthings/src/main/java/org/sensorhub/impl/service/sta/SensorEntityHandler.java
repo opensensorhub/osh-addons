@@ -27,17 +27,17 @@ import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
-import org.sensorhub.api.datastore.procedure.IProcedureStore;
-import org.sensorhub.api.datastore.procedure.ProcedureFilter;
-import org.sensorhub.api.procedure.IProcedureWithDesc;
-import org.sensorhub.api.procedure.ProcedureAddedEvent;
-import org.sensorhub.api.procedure.ProcedureChangedEvent;
-import org.sensorhub.api.procedure.ProcedureEvent;
-import org.sensorhub.api.procedure.ProcedureId;
+import org.sensorhub.api.datastore.system.ISystemDescStore;
+import org.sensorhub.api.datastore.system.SystemFilter;
+import org.sensorhub.api.system.ISystemWithDesc;
+import org.sensorhub.api.system.SystemAddedEvent;
+import org.sensorhub.api.system.SystemChangedEvent;
+import org.sensorhub.api.system.SystemEvent;
+import org.sensorhub.api.system.SystemId;
 import org.sensorhub.impl.event.DelegatingSubscriberAdapter;
-import org.sensorhub.impl.procedure.ProcedureSubscriptionHandler;
-import org.sensorhub.impl.procedure.wrapper.ProcedureWrapper;
 import org.sensorhub.impl.service.sta.filter.SensorFilterVisitor;
+import org.sensorhub.impl.system.SystemSubscriptionHandler;
+import org.sensorhub.impl.system.wrapper.SystemWrapper;
 import org.sensorhub.utils.SWEDataUtils;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Asserts;
@@ -77,22 +77,22 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     static final String FORMAT_SML2 = "http://www.opengis.net/sensorml-json/2.0";
 
     OSHPersistenceManager pm;
-    IProcedureStore procReadStore;
-    IProcedureStore procWriteStore;
+    ISystemDescStore procReadStore;
+    ISystemDescStore procWriteStore;
     IDataStreamStore dataStreamReadStore;
     STASecurity securityHandler;
     int maxPageSize = 100;
-    ProcedureId procGroupID;
+    SystemId procGroupID;
 
 
     SensorEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.procReadStore = pm.readDatabase.getProcedureStore();
-        this.procWriteStore = pm.writeDatabase != null ? pm.writeDatabase.getProcedureStore() : null;
+        this.procReadStore = pm.readDatabase.getSystemDescStore();
+        this.procWriteStore = pm.writeDatabase != null ? pm.writeDatabase.getSystemDescStore() : null;
         this.dataStreamReadStore = pm.readDatabase.getDataStreamStore();
         this.securityHandler = pm.service.getSecurityHandler();
-        this.procGroupID = pm.service.getProcedureGroupID();
+        this.procGroupID = pm.service.getSystemGroupID();
     }
 
 
@@ -107,17 +107,17 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         
         // generate unique ID from name
         Asserts.checkArgument(!Strings.isNullOrEmpty(sensor.getName()), "Sensor name must be set");        
-        String procUID = procGroupID.getUniqueID() + ":" + SWEDataUtils.toNCName(sensor.getName());
+        String sysUID = procGroupID.getUniqueID() + ":" + SWEDataUtils.toNCName(sensor.getName());
         
         try
         {
             return pm.writeDatabase.executeTransaction(() -> {
                 
                 // generate sensorML description
-                AbstractProcess procDesc = toSmlProcess(sensor, procUID);
+                AbstractProcess procDesc = toSmlProcess(sensor, sysUID);
                 
                 // cleanup sml description before storage
-                var procWrapper = new ProcedureWrapper(procDesc)
+                var procWrapper = new SystemWrapper(procDesc)
                     .hideOutputs()
                     .hideTaskableParams()
                     .defaultToValidFromNow();
@@ -126,11 +126,11 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 FeatureKey procKey;
                 if (procGroupID != null)
                 {
-                    var groupHandler = pm.transactionHandler.getProcedureHandler(procGroupID.getInternalID());
-                    procKey = groupHandler.addOrUpdateMember(procWrapper).getProcedureKey();
+                    var groupHandler = pm.transactionHandler.getSystemHandler(procGroupID.getInternalID());
+                    procKey = groupHandler.addOrUpdateMember(procWrapper).getSystemKey();
                 }
                 else
-                    procKey = pm.transactionHandler.addOrUpdateProcedure(procWrapper).getProcedureKey();
+                    procKey = pm.transactionHandler.addOrUpdateSystem(procWrapper).getSystemKey();
                 
                 // handle associations / deep inserts
                 var publicSensorID = pm.toPublicID(procKey.getInternalID());
@@ -165,11 +165,11 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         
         ResourceId id = (ResourceId)entity.getId();
         long publicSensorID = ((ResourceId)entity.getId()).asLong();
-        checkProcedureWritable(publicSensorID);
+        checkSensorWritable(publicSensorID);
         
         // get transaction handler for existing sensor
         long localSensorID = pm.toLocalID(publicSensorID);
-        var procHandler = pm.transactionHandler.getProcedureHandler(localSensorID);
+        var procHandler = pm.transactionHandler.getSystemHandler(localSensorID);
         if (procHandler == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
@@ -177,11 +177,11 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         try
         {
             // generate sensorML description
-            String procUID = procHandler.getProcedureUID();
-            AbstractProcess procDesc = toSmlProcess((Sensor)entity, procUID);
+            String sysUID = procHandler.getSystemUID();
+            AbstractProcess procDesc = toSmlProcess((Sensor)entity, sysUID);
             
             // cleanup sml description before storage
-            var procWrapper = new ProcedureWrapper(procDesc)
+            var procWrapper = new SystemWrapper(procDesc)
                 .hideOutputs()
                 .hideTaskableParams()
                 .defaultToValidFromNow();
@@ -214,11 +214,11 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         securityHandler.checkPermission(securityHandler.sta_delete_sensor);
         
         long publicSensorID = id.asLong();
-        checkProcedureWritable(publicSensorID);
+        checkSensorWritable(publicSensorID);
         
         // get transaction handler for existing sensor
         long localSensorID = pm.toLocalID(publicSensorID);
-        var procHandler = pm.transactionHandler.getProcedureHandler(localSensorID);
+        var procHandler = pm.transactionHandler.getSystemHandler(localSensorID);
         if (procHandler == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
         
@@ -255,7 +255,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     {
         securityHandler.checkPermission(securityHandler.sta_read_sensor);
 
-        ProcedureFilter filter = getFilter(path, q);
+        SystemFilter filter = getFilter(path, q);
         int skip = q.getSkip(0);
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
 
@@ -276,16 +276,16 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         securityHandler.checkPermission(securityHandler.sta_read_obs);
         
         // create obs filter
-        ProcedureFilter filter = getFilter(path, q);
+        SystemFilter filter = getFilter(path, q);
         
         // subscribe for obs using filter
-        var eventHelper = new ProcedureSubscriptionHandler(pm.readDatabase, pm.eventBus);
-        var ok = eventHelper.subscribe(filter, new DelegatingSubscriberAdapter<ProcedureEvent, Sensor>(subscriber) {
-            public void onNext(ProcedureEvent item)
+        var eventHelper = new SystemSubscriptionHandler(pm.readDatabase, pm.eventBus);
+        var ok = eventHelper.subscribe(filter, new DelegatingSubscriberAdapter<SystemEvent, Sensor>(subscriber) {
+            public void onNext(SystemEvent item)
             {
-                if (item instanceof ProcedureAddedEvent || item instanceof ProcedureChangedEvent)
+                if (item instanceof SystemAddedEvent || item instanceof SystemChangedEvent)
                 {
-                    var proc = procReadStore.getCurrentVersion(item.getProcedureUID());
+                    var proc = procReadStore.getCurrentVersion(item.getSystemUID());
                     if (proc != null)
                     {
                         var staSensor = toFrostSensor(1, proc, q);
@@ -301,9 +301,9 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     }
 
 
-    protected ProcedureFilter getFilter(ResourcePath path, Query q)
+    protected SystemFilter getFilter(ResourcePath path, Query q)
     {
-        ProcedureFilter.Builder builder = new ProcedureFilter.Builder()
+        SystemFilter.Builder builder = new SystemFilter.Builder()
             .withCurrentVersion();
 
         EntityPathElement idElt = path.getIdentifiedElement();
@@ -320,7 +320,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                     ResourceId dsId = (ResourceId)idElt.getId();
                     var dsKey = new DataStreamKey(dsId.asLong());
                     IDataStreamInfo dsInfo = dataStreamReadStore.get(dsKey);
-                    builder.withInternalIDs(dsInfo.getProcedureID().getInternalID());
+                    builder.withInternalIDs(dsInfo.getSystemID().getInternalID());
                 }
             }
 
@@ -385,7 +385,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
 
 
     @SuppressWarnings("unchecked")
-    protected Sensor toFrostSensor(long internalId, IProcedureWithDesc proc, Query q)
+    protected Sensor toFrostSensor(long internalId, ISystemWithDesc proc, Query q)
     {
         // TODO add full SensorML doc in metadata
 
@@ -490,15 +490,15 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     protected void checkSensorIDInWriteStore(long publicID) throws NoSuchEntityException
     {
         checkSensorID(publicID);
-        checkProcedureWritable(publicID);
+        checkSensorWritable(publicID);
     }
 
 
-    protected void checkProcedureWritable(long publicID)
+    protected void checkSensorWritable(long publicID)
     {
         checkTransactionsEnabled();
         
-        // TODO also check that current user has the right to write this procedure!
+        // TODO also check that current user has the right to write this sensor!
 
         if (!pm.isInWritableDatabase(publicID))
             throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);

@@ -18,7 +18,7 @@ import java.time.Instant;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.sensorhub.api.data.IDataStreamInfo;
-import org.sensorhub.api.database.IProcedureObsDatabase;
+import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureFilter;
 import org.sensorhub.api.datastore.feature.FeatureKey;
@@ -53,7 +53,7 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
     
     OSHPersistenceManager pm;
     ISTAObsPropStore obsPropDataStore;
-    IProcedureObsDatabase readDatabase;
+    IObsSystemDatabase readDatabase;
     STASecurity securityHandler;
     int maxPageSize = 100;
     

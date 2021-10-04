@@ -23,28 +23,28 @@ import java.util.stream.Stream;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
-import org.sensorhub.api.datastore.procedure.IProcedureStore;
-import org.sensorhub.api.datastore.procedure.ProcedureFilter;
-import org.sensorhub.api.datastore.procedure.IProcedureStore.ProcedureField;
-import org.sensorhub.api.procedure.IProcedureWithDesc;
+import org.sensorhub.api.datastore.system.ISystemDescStore;
+import org.sensorhub.api.datastore.system.SystemFilter;
+import org.sensorhub.api.datastore.system.ISystemDescStore.SystemField;
+import org.sensorhub.api.system.ISystemWithDesc;
 import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.ReadOnlyDataStore;
-import org.sensorhub.impl.procedure.wrapper.ProcedureWrapper;
+import org.sensorhub.impl.system.wrapper.SystemWrapper;
 import org.slf4j.Logger;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Asserts;
 import org.vast.util.Bbox;
 
 
-public class USGSProcedureStore extends ReadOnlyDataStore<FeatureKey, IProcedureWithDesc, ProcedureField, ProcedureFilter> implements IProcedureStore
+public class USGSSystemDescStore extends ReadOnlyDataStore<FeatureKey, ISystemWithDesc, SystemField, SystemFilter> implements ISystemDescStore
 {
     final Logger logger;
     final USGSDataFilter configFilter;
     final IParamDatabase paramDb;
-    Entry<FeatureKey, IProcedureWithDesc> systemEntry;
+    Entry<FeatureKey, ISystemWithDesc> systemEntry;
     
     
-    public USGSProcedureStore(USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
+    public USGSSystemDescStore(USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
     {
         this.configFilter = Asserts.checkNotNull(configFilter, USGSDataFilter.class);
         this.paramDb = Asserts.checkNotNull(paramDb, IParamDatabase.class);
@@ -57,7 +57,7 @@ public class USGSProcedureStore extends ReadOnlyDataStore<FeatureKey, IProcedure
             .name("USGS Water Data Network")
             .description("USGS automated sensor network collecting water-resources data at sites across the US")
             .build();        
-        systemEntry = new SimpleEntry<>(new FeatureKey(1), new ProcedureWrapper(systemDesc));
+        systemEntry = new SimpleEntry<>(new FeatureKey(1), new SystemWrapper(systemDesc));
     }
     
     
@@ -70,7 +70,7 @@ public class USGSProcedureStore extends ReadOnlyDataStore<FeatureKey, IProcedure
 
 
     @Override
-    public IProcedureWithDesc get(Object key)
+    public ISystemWithDesc get(Object key)
     {
         var fk = DataStoreUtils.checkFeatureKey(key);
         
@@ -82,7 +82,7 @@ public class USGSProcedureStore extends ReadOnlyDataStore<FeatureKey, IProcedure
 
 
     @Override
-    public Stream<Entry<FeatureKey, IProcedureWithDesc>> selectEntries(ProcedureFilter filter, Set<ProcedureField> fields)
+    public Stream<Entry<FeatureKey, ISystemWithDesc>> selectEntries(SystemFilter filter, Set<SystemField> fields)
     {
         if ((filter.getInternalIDs() != null &&filter.getInternalIDs().contains(1L)) ||
             filter.test(systemEntry.getValue()))
@@ -102,7 +102,7 @@ public class USGSProcedureStore extends ReadOnlyDataStore<FeatureKey, IProcedure
     @Override
     public String getDatastoreName()
     {
-        return "USGS Water Network Procedure Store";
+        return "USGS Water Network System Description Store";
     }
 
 
@@ -129,7 +129,7 @@ public class USGSProcedureStore extends ReadOnlyDataStore<FeatureKey, IProcedure
 
 
     @Override
-    public FeatureKey add(long parentID, IProcedureWithDesc value) throws DataStoreException
+    public FeatureKey add(long parentID, ISystemWithDesc value) throws DataStoreException
     {
         throw new UnsupportedOperationException(READ_ONLY_ERROR_MSG);
     }

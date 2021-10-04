@@ -19,9 +19,9 @@ import java.io.Writer;
 import java.math.BigInteger;
 import java.util.HashMap;
 import org.sensorhub.api.database.IDatabaseRegistry;
-import org.sensorhub.api.database.IProcedureObsDatabase;
+import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.event.IEventBus;
-import org.sensorhub.impl.procedure.ProcedureObsTransactionHandler;
+import org.sensorhub.impl.system.SystemDatabaseTransactionHandler;
 import org.vast.util.Asserts;
 import com.github.fge.jsonpatch.JsonPatch;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Entity;
@@ -64,9 +64,9 @@ public class OSHPersistenceManager implements PersistenceManager
     HistoricalLocationEntityHandler historicalLocationHandler;
     IEventBus eventBus;
     IDatabaseRegistry dbRegistry;
-    IProcedureObsDatabase readDatabase;
+    IObsSystemDatabase readDatabase;
     ISTADatabase writeDatabase;
-    ProcedureObsTransactionHandler transactionHandler;
+    SystemDatabaseTransactionHandler transactionHandler;
     
     
     public OSHPersistenceManager()
@@ -332,7 +332,7 @@ public class OSHPersistenceManager implements PersistenceManager
         this.dbRegistry = service.getParentHub().getDatabaseRegistry();
         this.readDatabase = service.readDatabase;
         this.writeDatabase = service.writeDatabase;
-        this.transactionHandler = new ProcedureObsTransactionHandler(eventBus, writeDatabase);
+        this.transactionHandler = new SystemDatabaseTransactionHandler(eventBus, writeDatabase);
         
         // setup all entity handlers
         this.securityHandler = service.getSecurityHandler();

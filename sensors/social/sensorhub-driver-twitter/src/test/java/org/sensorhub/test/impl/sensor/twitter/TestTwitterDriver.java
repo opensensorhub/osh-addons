@@ -91,7 +91,7 @@ public class TestTwitterDriver implements IEventListener
 		assertTrue(e instanceof DataEvent);
 		DataEvent dataEvent = (DataEvent)e;
 		
-		System.out.println("\nNo. " + Integer.toString(sampleCount) + ": New data received from sensor " + dataEvent.getProcedureUID());
+		System.out.println("\nNo. " + Integer.toString(sampleCount) + ": New data received from sensor " + dataEvent.getSystemUID());
 		sampleCount++;
 		
 		if (sampleCount >= 2) {

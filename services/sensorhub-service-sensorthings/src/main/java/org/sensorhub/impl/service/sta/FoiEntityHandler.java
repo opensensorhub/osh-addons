@@ -21,7 +21,7 @@ import org.geojson.GeoJsonObject;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.feature.IFoiStore;
-import org.sensorhub.api.procedure.ProcedureId;
+import org.sensorhub.api.system.SystemId;
 import org.sensorhub.impl.service.sta.filter.FoiFilterVisitor;
 import org.sensorhub.utils.SWEDataUtils;
 import org.vast.ogc.gml.GenericFeatureImpl;
@@ -60,7 +60,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     IFoiStore foiWriteStore;
     STASecurity securityHandler;
     int maxPageSize = 100;
-    ProcedureId procGroupID;
+    SystemId procGroupID;
     
     
     FoiEntityHandler(OSHPersistenceManager pm)
@@ -69,7 +69,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         this.foiReadStore = pm.readDatabase.getFoiStore();
         this.foiWriteStore = pm.writeDatabase != null ? pm.writeDatabase.getFoiStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
-        this.procGroupID = pm.service.getProcedureGroupID();
+        this.procGroupID = pm.service.getSystemGroupID();
     }
     
     
@@ -328,7 +328,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     
     protected void checkFoiWritable(long publicID)
     {
-        // TODO also check that current user has the right to write this procedure!
+        // TODO also check that current user has the right to write this FOI!
         
         if (!pm.isInWritableDatabase(publicID))
             throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);

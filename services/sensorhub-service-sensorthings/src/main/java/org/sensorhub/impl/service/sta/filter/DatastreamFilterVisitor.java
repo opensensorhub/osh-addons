@@ -19,7 +19,7 @@ import org.sensorhub.impl.service.sta.STADataStreamFilter;
 
 /**
  * <p>
- * Visitor used to build a ProcedureFilter from STA $filter expression
+ * Visitor used to build a SystemFilter from STA $filter expression
  * </p>
  *
  * @author Alex Robin
@@ -108,7 +108,7 @@ public class DatastreamFilterVisitor extends ResourceFilterVisitor<DatastreamFil
         protected void assignFilter()
         {
             var procFilter = builder.build();
-            DatastreamFilterVisitor.this.builder.withProcedures(procFilter);
+            DatastreamFilterVisitor.this.builder.withSystems(procFilter);
         }
     }
 

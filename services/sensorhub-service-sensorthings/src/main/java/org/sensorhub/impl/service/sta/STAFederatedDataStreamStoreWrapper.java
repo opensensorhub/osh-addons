@@ -29,7 +29,7 @@ import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
-import org.sensorhub.api.datastore.procedure.IProcedureStore;
+import org.sensorhub.api.datastore.system.ISystemDescStore;
 
 
 /**
@@ -72,9 +72,9 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     }
 
 
-    public DataStreamKey getLatestVersionKey(String procUID, String outputName)
+    public DataStreamKey getLatestVersionKey(String sysUID, String outputName)
     {
-        return federatedStore.getLatestVersionKey(procUID, outputName);
+        return federatedStore.getLatestVersionKey(sysUID, outputName);
     }
 
 
@@ -90,9 +90,9 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     }
 
 
-    public IDataStreamInfo getLatestVersion(String procUID, String outputName)
+    public IDataStreamInfo getLatestVersion(String sysUID, String outputName)
     {
-        return federatedStore.getLatestVersion(procUID, outputName);
+        return federatedStore.getLatestVersion(sysUID, outputName);
     }
 
 
@@ -108,9 +108,9 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     }
 
 
-    public Entry<DataStreamKey, IDataStreamInfo> getLatestVersionEntry(String procUID, String outputName)
+    public Entry<DataStreamKey, IDataStreamInfo> getLatestVersionEntry(String sysUID, String outputName)
     {
-        return federatedStore.getLatestVersionEntry(procUID, outputName);
+        return federatedStore.getLatestVersionEntry(sysUID, outputName);
     }
 
 
@@ -307,7 +307,7 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
 
 
     @Override
-    public void linkTo(IProcedureStore procedureStore)
+    public void linkTo(ISystemDescStore systemStore)
     {
         throw new UnsupportedOperationException();
     }

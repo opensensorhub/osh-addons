@@ -14,7 +14,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import org.sensorhub.api.datastore.procedure.ProcedureFilter;
+import org.sensorhub.api.datastore.system.SystemFilter;
 import de.fraunhofer.iosb.ilt.frostserver.query.Query;
 
 /**
@@ -49,7 +49,7 @@ public class DataStoreQueryBuilder
     
     // 5. post process $expand (issue other queries from step 1 and then aggregate results)
     
-    public ProcedureFilter buildSensorFilter(Query q)
+    public SystemFilter buildSensorFilter(Query q)
     {
         return null;
     }

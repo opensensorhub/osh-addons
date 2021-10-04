@@ -15,7 +15,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sta;
 
 import org.sensorhub.api.config.DisplayInfo;
-import org.sensorhub.impl.datastore.h2.MVObsDatabaseConfig;
+import org.sensorhub.impl.datastore.h2.MVObsSystemDatabaseConfig;
 
 
 /**
@@ -26,7 +26,7 @@ import org.sensorhub.impl.datastore.h2.MVObsDatabaseConfig;
  * @author Alex Robin
  * @date Oct 14, 2019
  */
-public class STADatabaseConfig extends MVObsDatabaseConfig
+public class STADatabaseConfig extends MVObsSystemDatabaseConfig
 {
     @DisplayInfo(desc="ID of external database module used for persisting new "
         + "'Sensor', 'Datasteam', 'Observation' and 'FeatureOfInterest' entities.")

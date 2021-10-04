@@ -138,7 +138,7 @@ public class TestIsaDriver implements IEventListener
         
         try
         {
-            System.out.print("\nNew data received from sensor " + dataEvent.getProcedureUID());
+            System.out.print("\nNew data received from sensor " + dataEvent.getSystemUID());
             writer.write(dataEvent.getRecords()[0]);
             writer.flush();
             
