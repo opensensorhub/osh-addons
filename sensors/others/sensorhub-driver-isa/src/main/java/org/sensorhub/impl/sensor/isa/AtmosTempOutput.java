@@ -38,7 +38,7 @@ public class AtmosTempOutput extends ISAOutput
     protected long nextRecordTime = Long.MIN_VALUE;
     protected void sendRandomMeasurement()
     {
-        var now = System.currentTimeMillis();
+        var now = parentSensor.getCurrentTime();
         if (nextRecordTime > now)
             return;
         

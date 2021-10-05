@@ -1,7 +1,9 @@
 package org.sensorhub.impl.sensor.isa;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.system.ISystemGroupDriver;
@@ -32,6 +34,7 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements ISyste
     BufferedReader dataIn;
     String[] msgToken = null;
     Timer timer;
+    Clock clock;
     volatile boolean started;
     
     Map<String, ISASensor> allSensors = new TreeMap<>();
@@ -39,6 +42,29 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements ISyste
     
     public ISADriver()
     {
+        this.clock = new Clock() {
+
+            @Override
+            public ZoneId getZone()
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public Clock withZone(ZoneId zone)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public Instant instant()
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+        };
     }
     
     

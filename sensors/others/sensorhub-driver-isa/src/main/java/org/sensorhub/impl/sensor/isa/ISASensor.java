@@ -170,5 +170,11 @@ public abstract class ISASensor extends AbstractSensorDriver
     {
         return true;
     }
+    
+    
+    public long getCurrentTime()
+    {
+        return ((ISADriver)parentGroup).clock.millis();
+    }
 
 }
