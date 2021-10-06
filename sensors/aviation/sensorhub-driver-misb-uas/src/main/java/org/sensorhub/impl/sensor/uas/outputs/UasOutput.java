@@ -62,16 +62,6 @@ public abstract class UasOutput extends AbstractSensorOutput<UasSensor> implemen
     public abstract void init();
 
     /**
-     * Begins processing data for output
-     */
-    public abstract void start();
-
-    /**
-     * Terminates processing data for output
-     */
-    public abstract void stop();
-
-    /**
      * Sets the data block fields in accordance to the Uas Local Set tag and corresponding object
      * translating the object to the correct form for output.
      *

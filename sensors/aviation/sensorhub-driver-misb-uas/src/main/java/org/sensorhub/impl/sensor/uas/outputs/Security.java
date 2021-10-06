@@ -70,16 +70,6 @@ public class Security extends UasOutput {
     }
 
     @Override
-    public void start() {
-
-    }
-
-    @Override
-    public void stop() {
-
-    }
-
-    @Override
     protected void setData(DataBlock dataBlock, TagSet localSet, int localSetTag, Object value) {
 
         if (localSet == UasDataLinkSet.UAS_LOCAL_SET)

@@ -19,15 +19,11 @@ import org.sensorhub.misb.stanag4609.comm.DataBufferRecord;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import org.vast.util.Asserts;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.Executor;
 
 /**
  * Decodes MISB-TS STANAG 4609 ST0601.16 UAS Metadata
@@ -35,116 +31,61 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Nick Garay
  * @since Oct. 5, 2020
  */
-public class SetDecoder implements DataBufferListener, Runnable {
+public class SetDecoder implements DataBufferListener {
 
     private static final Logger logger = LoggerFactory.getLogger(SetDecoder.class);
-
-    private final AtomicBoolean stopProcessing = new AtomicBoolean(false);
-
-    private final BlockingQueue<DataBufferRecord> dataBufferQueue = new LinkedBlockingDeque<>();
-
+    
     private final List<DecodedSetListener> listeners = new ArrayList<>();
 
-    Thread worker;
-
+    private Executor executor;
+    
     /**
      * Constructor
      */
     public SetDecoder() {
-
-        worker = new Thread(this, this.getClass().getSimpleName());
+        
     }
-
-    /**
-     * Begins processing data for output
-     */
-    public void start() {
-
-        logger.info("Starting worker thread: {}", worker.getName());
-
-        worker.start();
+    
+    public void setExecutor(Executor executor) {
+        this.executor = Asserts.checkNotNull(executor, Executor.class);
     }
 
     @Override
     public void onDataBuffer(DataBufferRecord record) {
 
-        try {
-
-            dataBufferQueue.put(record);
-
-        } catch (InterruptedException e) {
-
-            logger.error("Error in worker thread: {} due to exception: {}", Thread.currentThread().getName(), e.toString());
-        }
+        executor.execute(() -> {
+            try {
+                processBuffer(record);
+            } catch (Throwable e) {
+                logger.error("Error while decoding MISB Local Set", e);
+            }
+        });
     }
 
-    /**
-     * Terminates processing data for output
-     */
-    public void stop() {
+    public void processBuffer(DataBufferRecord record) {
 
-        listeners.clear();
+        byte[] dataBuffer = record.getDataBuffer();
 
-        stopProcessing.set(true);
-    }
+        // Read the set
+        UasDataLinkSet dataLinkSet = new UasDataLinkSet(dataBuffer.length, dataBuffer);
 
-    /**
-     * Check to validate data processing is still running
-     *
-     * @return true if worker thread is active, false otherwise
-     */
-    public boolean isAlive() {
+        List<String> acceptedDesignators = new ArrayList<>();
+        acceptedDesignators.add(UasDataLinkSet.UAS_LOCAL_SET.getDesignator());
 
-        return worker.isAlive();
-    }
+        // If it is a valid set
+        if (dataLinkSet.validateChecksum() && dataLinkSet.validateDesignator(acceptedDesignators)) {
 
-    @Override
-    public void run() {
+            HashMap<Tag, Object> valuesMap = dataLinkSet.decode();
 
-        try {
+            SyncTime syncTime = new SyncTime(dataLinkSet.getPrecisionTimeStamp(), record.getPresentationTimestamp());
 
-            while (!stopProcessing.get()) {
+            synchronized (listeners) {
 
-                DataBufferRecord record = dataBufferQueue.take();
+                for (DecodedSetListener listener : listeners) {
 
-                byte[] dataBuffer = record.getDataBuffer();
-
-                // Read the set
-                UasDataLinkSet dataLinkSet = new UasDataLinkSet(dataBuffer.length, dataBuffer);
-
-                List<String> acceptedDesignators = new ArrayList<>();
-                acceptedDesignators.add(UasDataLinkSet.UAS_LOCAL_SET.getDesignator());
-
-                // If it is a valid set
-                if (dataLinkSet.validateChecksum() && dataLinkSet.validateDesignator(acceptedDesignators)) {
-
-                    HashMap<Tag, Object> valuesMap = dataLinkSet.decode();
-
-                    SyncTime syncTime = new SyncTime(dataLinkSet.getPrecisionTimeStamp(), record.getPresentationTimestamp());
-
-                    synchronized (listeners) {
-
-                        for (DecodedSetListener listener : listeners) {
-
-                            listener.onSetDecoded(syncTime, valuesMap);
-                        }
-                    }
+                    listener.onSetDecoded(syncTime, valuesMap);
                 }
             }
-
-        } catch (InterruptedException e) {
-
-            logger.error("Error in worker thread: {} due to exception: {}", Thread.currentThread().getName(), e.toString());
-
-        } catch (Exception e) {
-
-            StringWriter stringWriter = new StringWriter();
-            e.printStackTrace(new PrintWriter(stringWriter));
-            logger.error("Error in worker thread: {} due to exception: {}", Thread.currentThread().getName(), stringWriter.toString());
-
-        } finally {
-
-            logger.debug("Terminating worker thread: {}", worker.getName());
         }
     }
 

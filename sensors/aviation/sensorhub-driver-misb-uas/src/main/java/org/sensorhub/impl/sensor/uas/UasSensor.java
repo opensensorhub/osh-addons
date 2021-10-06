@@ -26,6 +26,8 @@ import org.vast.ogc.om.MovingFeature;
 import org.vast.swe.SWEConstants;
 import org.vast.util.Asserts;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Sensor driver for the UAS providing sensor description, output registration,
@@ -38,9 +40,10 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
 
     private static final Logger logger = LoggerFactory.getLogger(UasSensor.class);
 
-    Video videoOutput;
     MpegTsProcessor mpegTsProcessor;
+    ExecutorService executor;
     SetDecoder setDecoder;
+    Video videoOutput;
     SyncTime syncTime;
     final Object syncTimeLock = new Object();
     ArrayList<UasOutput> uasOutputs = new ArrayList<>();
@@ -57,6 +60,7 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
         generateUniqueID("urn:osh:sensor:uas:", config.serialNumber);
         generateXmlID("MISB_UAS_", config.serialNumber);
 
+        this.executor = Executors.newSingleThreadExecutor();
         boolean streamOpened = false;
 
         // Get the stream processor
@@ -205,23 +209,16 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
 
         super.doStart();
 
+        this.executor = Executors.newSingleThreadExecutor();
+        
         if (null != setDecoder) {
 
-            setDecoder.start();
-        }
-
-        if (!uasOutputs.isEmpty()) {
-
-            for (UasOutput output: uasOutputs) {
-
-                output.start();
-            }
+            setDecoder.setExecutor(executor);
         }
 
         if (null != videoOutput) {
 
-            // Allocate necessary resources and start outputs
-            videoOutput.start();
+            videoOutput.setExecutor(executor);
         }
 
         try {
@@ -242,29 +239,6 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
     protected void doStop() throws SensorHubException {
 
         super.doStop();
-
-        if (null != setDecoder) {
-
-            for (UasOutput output: uasOutputs) {
-
-                setDecoder.removeListener(output);
-            }
-
-            setDecoder.stop();
-        }
-
-        if (!uasOutputs.isEmpty()) {
-
-            for (UasOutput output: uasOutputs) {
-
-                output.stop();
-            }
-        }
-
-        if (null != videoOutput) {
-
-            videoOutput.stop();
-        }
 
         if (null != mpegTsProcessor) {
 
@@ -288,6 +262,11 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
 
                 // Close stream and cleanup resources
                 mpegTsProcessor.closeStream();
+                
+                if (null != executor) {
+                    
+                    executor.shutdownNow();
+                }
             }
         }
     }
@@ -295,19 +274,7 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
     @Override
     public boolean isConnected() {
 
-        boolean isConnected = true;
-
-        if (!uasOutputs.isEmpty()) {
-
-            isConnected = setDecoder.isAlive();
-
-            for (UasOutput output: uasOutputs) {
-
-                isConnected = output.isAlive();
-            }
-        }
-
-        return mpegTsProcessor.isAlive() && videoOutput.isAlive() && isConnected;
+        return isStarted();
     }
 
     /**
