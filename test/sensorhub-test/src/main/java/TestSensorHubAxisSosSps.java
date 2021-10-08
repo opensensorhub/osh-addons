@@ -35,11 +35,11 @@ public class TestSensorHubAxisSosSps
         SensorHub.main(new String[] {"src/test/resources/config_axis_sos_sps.json", "storage"});
         
         // get procedure ID
-        String procID = PROC_ID;
+        String sysID = PROC_ID;
         /*for (IModule<?> module: SensorHub.getInstance().getModuleRegistry().getLoadedModules())
         {
             if (module instanceof AxisCameraDriver)
-                procID = module.getLocalID();
+                sysID = module.getLocalID();
         }*/
         
         SPSUtils utils = new SPSUtils();
@@ -48,7 +48,7 @@ public class TestSensorHubAxisSosSps
         DescribeTaskingRequest dtReq = new DescribeTaskingRequest();
         dtReq.setVersion("2.0");
         dtReq.setGetServer(ENDPOINT);
-        dtReq.setProcedureID(procID);
+        dtReq.setProcedureID(sysID);
         utils.writeXMLQuery(System.out, dtReq);
         DescribeTaskingResponse dtResp = utils.sendRequest(dtReq, false);
         utils.writeXMLResponse(System.out, dtResp);
@@ -71,7 +71,7 @@ public class TestSensorHubAxisSosSps
             SubmitRequest subReq = new SubmitRequest();
             subReq.setVersion("2.0");
             subReq.setPostServer(ENDPOINT);
-            subReq.setProcedureID(procID);
+            subReq.setProcedureID(sysID);
             subReq.setParameters(taskParams);
             utils.writeXMLQuery(System.out, subReq);
             utils.sendRequest(subReq, false);
@@ -91,7 +91,7 @@ public class TestSensorHubAxisSosSps
         SubmitRequest subReq = new SubmitRequest();
         subReq.setVersion("2.0");
         subReq.setPostServer(ENDPOINT);
-        subReq.setProcedureID(procID);
+        subReq.setProcedureID(sysID);
         subReq.setParameters(taskParams);
         utils.writeXMLQuery(System.out, subReq);
         utils.sendRequest(subReq, false);

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>OpenSensorHub Demo Links</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="keywords" content="OSH,OGC,SOS,sensorweb,sensorthings">
+    <link href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" rel="stylesheet" type="text/css">
+        
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>    
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+
+    <style>
+      body {position: absolute; margin: 0; padding: 0; height: 100%; width: 100%; font-family: "Lato"; background-color: white;}
+      div {box-sizing: border-box;}
+      li {margin-top: 5px;}
+      h3 {margin-top: 40px; margin-bottom: 15px;}
+      h4 {margin-bottom: 12px;}
+      p {margin-bottom: 15px;}
+      table {margin-bottom: 20px; border: 1px gray; border-collapse: collapse; width: 100%; table-layout: fixed;}
+    </style>
+    <script type="text/javascript">
+      function setTime(url) {
+        var now = new Date();
+        var tenSecondsAgo = new Date(now.getTime()-10000);
+        return url.replaceAll("${lastNSeconds}", tenSecondsAgo.toISOString() + "/" + now.toISOString());
+      }
+      
+      function load(url) {
+        var requestUrl = setTime(url);
+        
+        var requestLinkElt = $("#request_url")[0];
+        requestLinkElt.href = requestUrl;
+        requestLinkElt.innerHTML = requestUrl;
+        
+        var $code = $("#response_frame");
+        var codeElt = $code[0];
+        codeElt.innerHTML = "Loading...";
+                
+        $.ajax({
+            type: "GET" ,
+            url: requestUrl,
+            dataType: "text",
+            success: function(data, status, xhr) {                
+                var codeStr = xhr.responseText;
+                
+                if (xhr.responseText.startsWith("<")) {
+                  $code.removeClass("json");
+                  $code.addClass("language-xml");
+                  codeStr = codeStr.replaceAll("<", "&lt;");                  
+                  codeStr = codeStr.replaceAll(">", "&gt;");
+                }
+                else {
+                  $code.removeClass("language-xml");
+                  $code.addClass("json");
+                }
+                
+                codeElt.innerHTML = codeStr;
+                hljs.highlightBlock(codeElt);
+                //console.log(xhr.responseText);
+            }
+        });
+      }
+    </script>
+  </head>
+  <body onload="init()">
+   <div style="float: left; height: 100%; width: 30%; padding: 0 10px 0 10px; overflow-y: scroll;">
+    <h1>OpenSensorHub Demo Links</h1>
+        
+    <p>
+      These example links demonstrate how to access sensor metadata and observation data from an OpenSensorHub (OSH) node
+      using the different web APIs and services available:</p>     
+      <ul>
+        <li>Sensor Observation Service (SOS)</li>
+        <li>SensorWeb API</li>
+        <li>SensorThings API</li>
+      </ul>
+      
+      <p>Transactional operations are not shown here but are also possible:</p>
+      <ul>
+        <li>For SOS, via InsertSensor / InsertObservation / InsertResultTemplate / InsertResult operations</li>
+        <li>For SensorWeb API, by using HTTP POST or PUT requests on the corresponding collections</li>
+        <li>For SensorThings API, by using HTTP POST or PUT requests on the corresponding collections</li>
+      </ul>
+      
+      The full API spec for SensorWeb API is available <a href="apispec/" target="_blank">here</a>
+    </p>
+
+    
+    <h3>Service Capabilities</h3>
+    <table border=1 cellpadding=5>
+	    <tr><td>SOS</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&acceptVersions=2.0.0&request=GetCapabilities">GetCapabilities Request (header sections)</a></td></tr>
+        <tr><td>SensorWeb API</td><td>API Landing Page (TODO)</td></tr>
+        <tr><td>SensorThings API</td><td>Not supported</td></tr>
+    </table>
+
+    
+    <h3>Procedures (Sensors)</h3>
+    <p>List all available procedures</p>
+    <table border=1 cellpadding=5>
+        <tr><td>SOS</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&acceptVersions=2.0.0&request=GetCapabilities">GetCapabilities Request (contents section)</a></td></tr>
+        <tr><td>SensorWeb API</td><td><a onclick="load(this.href); return false;" href="sensorhub/api/procedures">Procedures Collection</a></td></tr>
+        <tr><td>SensorThings API</td><td><a onclick="load(this.href); return false;" href="sensorhub/sta/v1.0/Sensors">Sensors Collection</a></td></tr>
+    </table>
+    
+    <p>Fetch a single procedure by ID</p>
+    <table border=1 cellpadding=5>
+        <tr><td>SOS (XML)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=DescribeSensor&procedure=urn:osh:sensor:simgps:d136b6ea">DescribeSensor Request</a></td></tr>
+        <tr><td>SOS (JSON)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=DescribeSensor&procedure=urn:osh:sensor:simgps:d136b6ea&procedureDescriptionFormat=http://www.opengis.net/sensorml-json/2.0">DescribeSensor Request</a></td></tr>
+        <tr><td>SensorWeb API</td><td><a onclick="load(this.href); return false;" href="sensorhub/api/procedures/c0k1inuv">Procedure Resource (Summary)</a></td></tr>
+        <tr><td>SensorWeb API</td><td><a onclick="load(this.href); return false;" href="sensorhub/api/procedures/c0k1inuv/details">Procedure Resource (Details)</a></td></tr>
+        <tr><td>SensorThings API</td><td><a onclick="load(this.href); return false;" href="sensorhub/sta/v1.0/Sensors(101)">Sensor Resource</a></td></tr>
+    </table>
+
+    
+    <h3>Features of Interest</h3>
+    <p>List all available features of interest</p>
+    <table border=1 cellpadding=5>
+        <tr><td>SOS (XML)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=GetFeatureOfInterest">GetFeatureOfInterest Request (w/o filter)</a></td></tr>
+        <tr><td>SOS (JSON)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=GetFeatureOfInterest&responseFormat=application/json">GetFeatureOfInterest Request (w/o filter)</a></td></tr>
+        <tr><td>SensorWeb API</td><td><a onclick="load(this.href); return false;" href="sensorhub/api/featuresOfInterest">FeaturesOfInterest Collection</a></td></tr>
+        <tr><td>SensorThings API</td><td><a onclick="load(this.href); return false;" href="sensorhub/sta/v1.0/FeaturesOfInterest">FeaturesOfInterest Collection</a></td></tr>
+    </table>
+    
+    <p>Fetch a single feature of interest by ID</p>
+    <table border=1 cellpadding=5>
+        <tr><td>SOS (XML)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=GetFeatureOfInterest&featureOfInterest=urn:osh:sensor:simweather:0123456879-foi">GetFeatureOfInterest Request (with UID query)</a></td></tr>
+        <tr><td>SOS (JSON)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=GetFeatureOfInterest&featureOfInterest=urn:osh:sensor:simweather:0123456879-foi&responseFormat=application/json">GetFeatureOfInterest Request (with UID query)</a></td></tr>
+        <tr><td>SensorWeb API</td><td><a onclick="load(this.href); return false;" href="sensorhub/api/featuresOfInterest/bt8qpjt3">Feature Resource</a></td></tr>
+        <tr><td>SensorThings API</td><td><a onclick="load(this.href); return false;" href="sensorhub/sta/v1.0/FeaturesOfInterest(106)">FeatureOfInterest Resource</a></td></tr>
+    </table>
+
+
+    <h3>Datastreams</h3>
+    <p>List all available datastreams</p>
+    <table border=1 cellpadding=5>
+        <tr><td>SOS</td><td>Not possible, some information provided in capabilities/offerings</a></td></tr>
+        <tr><td>SensorWeb API</td><td><a onclick="load(this.href); return false;" href="sensorhub/api/datastreams">Datastreams Collection</a></td></tr>
+        <tr><td>SensorThings API</td><td><a onclick="load(this.href); return false;" href="sensorhub/sta/v1.0/Datastreams">Datastreams Collection</a></td></tr>
+        <tr><td>SensorThings API</td><td><a onclick="load(this.href); return false;" href="sensorhub/sta/v1.0/MultiDatastreams">MultiDatastreams Collection</a></td></tr>
+    </table>
+    
+    <p>Fetch information about a single datastream by ID</p>
+    <table border=1 cellpadding=5>
+        <tr><td>SOS (XML)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:osh:sensor:simweather:0123456879&observedProperty=http://sensorml.com/ont/swe/property/Weather">GetResultTemplate Request</a></td></tr>
+        <tr><td>SOS (JSON)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=GetResultTemplate&offering=urn:osh:sensor:simweather:0123456879&observedProperty=http://sensorml.com/ont/swe/property/Weather&responseFormat=application/json">GetResultTemplate Request</a></td></tr>
+        <tr><td>SensorWeb API</td><td><a onclick="load(this.href); return false;" href="sensorhub/api/datastreams/6j0e4jr">Datastream Resource</a></td></tr>
+        <tr><td>SensorThings API</td><td><a onclick="load(this.href); return false;" href="sensorhub/sta/v1.0/MultiDatastreams(106)">MultiDatastream Resource</a></td></tr>
+    </table>
+    
+
+    <h3>Observations</h3>
+    <p>List all available observations</p>
+    <table border=1 cellpadding=5>
+        <tr><td>SOS (XML)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=GetObservation&temporalFilter=phenomenonTime,${lastNSeconds}">GetObservation Request (w/o filter)</a></td></tr>
+        <tr><td>SOS (JSON)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=GetObservation&temporalFilter=phenomenonTime,${lastNSeconds}&responseFormat=application/json">GetObservation Request (w/o filter)</a></td></tr>
+        <tr><td>SensorWeb API</td><td><a onclick="load(this.href); return false;" href="sensorhub/api/observations?phenomenonTime=${lastNSeconds}">Observations Collection</a></td></tr>
+        <tr><td>SensorThings API</td><td><a onclick="load(this.href); return false;" href="sensorhub/sta/v1.0/Observations">Observations Collection</a></td></tr>
+    </table>
+    
+    <p>List observations from a specific datastream</p>
+    <table border=1 cellpadding=5>
+        <tr><td>SOS (O&M XML)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=GetObservation&offering=urn:osh:sensor:simweather:0123456879&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,${lastNSeconds}">GetObservation Request (w/o filter)</a></td></tr>
+        <tr><td>SOS (O&M JSON)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=GetObservation&offering=urn:osh:sensor:simweather:0123456879&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,${lastNSeconds}&responseFormat=application/json">GetObservation Request (w/o filter)</a></td></tr>
+        <tr><td>SOS (SWE JSON)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:osh:sensor:simweather:0123456879&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,${lastNSeconds}&responseFormat=application/json">GetResult Request (w/o filter)</a></td></tr>
+        <tr><td>SOS (SWE CSV)</td><td><a onclick="load(this.href); return false;" href="sensorhub/sos?service=SOS&version=2.0&request=GetResult&offering=urn:osh:sensor:simweather:0123456879&observedProperty=http://sensorml.com/ont/swe/property/Weather&temporalFilter=phenomenonTime,${lastNSeconds}">GetResult Request (w/o filter)</a></td></tr>
+        <tr><td>SensorWeb API (O&M JSON)</td><td><a onclick="load(this.href); return false;" href="sensorhub/api/datastreams/6j0e4jr/observations?phenomenonTime=${lastNSeconds}">Datastream Observations Sub-collection</a></td></tr>
+        <tr><td>SensorWeb API (SWE JSON)</td><td><a onclick="load(this.href); return false;" href="sensorhub/api/datastreams/6j0e4jr/observations?f=application/swe%2Bjson">Datastream Observations Sub-collection</a></td></tr>
+        <tr><td>SensorWeb API (SWE CSV)</td><td><a onclick="load(this.href); return false;" href="sensorhub/api/datastreams/6j0e4jr/observations?f=text/plain">Datastream Observations Sub-collection</a></td></tr>
+        <tr><td>SensorThings API</td><td><a onclick="load(this.href); return false;" href="sensorhub/sta/v1.0/MultiDatastreams(106)/Observations">Datastream Observations Sub-collection</a></td></tr>
+    </table> 
+   </div>
+   
+   <div style="float: left; width: 69%; height: calc(100% - 60px); padding: 15px;">
+     <p>Request: <a href="#" id="request_url" target="_blank"></a></p>
+     <pre style="margin: 0; padding: 0; width: 100%; height: calc(100% - 50px);">
+       <code id="response_frame" class="json" style="width: 100%; height: 100%;" id="response_frame"></code>
+     </pre>
+   </div>
+   
+  </body>  
+</html>
+
+
+
+

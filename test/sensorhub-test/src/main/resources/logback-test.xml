@@ -35,5 +35,6 @@
   <logger name="org.eclipse.jetty" level="warn" />
   <logger name="org.eclipse.kura" level="debug" />
   <logger name="org.vast" level="warn"/>
+  <logger name="org.sensorhub.impl.serialization.kryo" level="debug"/>
   
 </configuration>

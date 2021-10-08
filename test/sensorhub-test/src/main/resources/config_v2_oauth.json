@@ -1,0 +1,622 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "httpPort": 8181,
+    "httpsPort": 0,
+    "staticDocRootUrl": "web",
+    "servletsRootUrl": "/sensorhub",
+    "authMethod": "EXTERNAL",
+    "keyStorePath": ".keystore/ssl_keys",
+    "trustStorePath": ".keystore/ssl_trust",
+    "enableCORS": true,
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "name": "HTTP Server",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "customPanels": [],
+    "customForms": [],
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig",
+    "users": [
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "admin",
+        "password": "",
+        "roles": [
+          "admin"
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "anonymous",
+        "name": "Anonymous User",
+        "password": "",
+        "roles": [
+          "anon"
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "test@osh.org",
+        "name": "Keycloak User",
+        "password": "",
+        "roles": [
+          "anon"
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "sensor01",
+        "password": "",
+        "roles": [
+          "sensors"
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "sensor02",
+        "password": "",
+        "roles": [
+          "sensors"
+        ]
+      }
+    ],
+    "roles": [
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "admin",
+        "allow": [
+          "*"
+        ],
+        "deny": []
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "anon",
+        "allow": [
+          "sos[*]/get/*",
+          "stapi[*]/get/*",
+          "swapi[*]/get/*",
+          "swapi[*]/stream/*"
+        ],
+        "deny": []
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "sensors",
+        "allow": [
+          "sos[*]/get/*",
+          "sos[*]/insert/*",
+          "sos[*]/update/*",
+          "stapi[*]/get/*",
+          "swapi[*]/get/*",
+          "swapi[*]/stream/*",
+          "swapi[*]/create/*",
+          "swapi[*]/update/*"
+        ],
+        "deny": []
+      }
+    ],
+    "id": "bd112969-8838-4f62-8d10-1edf1baa6669",
+    "moduleClass": "org.sensorhub.impl.security.BasicSecurityRealm",
+    "name": "Users",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
+    "googleApiUrl": "https://maps.googleapis.com/maps/api/directions/json",
+    "googleApiKey": "{GOOGLE_API_KEY}",
+    "centerLatitude": 34.7304,
+    "centerLongitude": -86.5861,
+    "areaSize": 0.1,
+    "minSpeed": 200.0,
+    "maxSpeed": 200.0,
+    "walkingMode": false,
+    "samplingPeriodSeconds": 1.0,
+    "apiRequestPeriodMinutes": 720,
+    "lastUpdated": "2020-10-01T11:00:04.437+0200",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsSensor",
+    "name": "Simulated GPS Sensor",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsNetworkConfig",
+    "numRoutes": 10,
+    "numAssetsPerRoute": 10,
+    "googleApiUrl": "https://maps.googleapis.com/maps/api/directions/json",
+    "googleApiKey": "{GOOGLE_API_KEY}",
+    "centerLatitude": 34.7304,
+    "centerLongitude": -86.5861,
+    "areaSize": 0.25,
+    "minSpeed": 50.0,
+    "maxSpeed": 100.0,
+    "walkingMode": false,
+    "samplingPeriodSeconds": 1.0,
+    "apiRequestPeriodMinutes": 30,
+    "lastUpdated": "2020-10-01T11:00:04.437+0200",
+    "id": "cea2c3ab-6edb-4947-b62b-a73d583b4849",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsNetwork",
+    "name": "Simulated GPS Network",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.database.system.SystemDriverDatabaseConfig",
+    "dbConfig": {
+      "objClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabaseConfig",
+      "indexObsLocation": false,
+      "storagePath": "gps_h2.dat",
+      "memoryCacheSize": 1024,
+      "autoCommitBufferSize": 1024,
+      "useCompression": false,
+      "readOnly": false,
+      "moduleClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabase",
+      "autoStart": false
+    },
+    "systemUIDs": [
+      "urn:osh:sensor:simgps:*"
+    ],
+    "autoPurgeConfig": {
+      "objClass": "org.sensorhub.impl.database.system.MaxAgeAutoPurgeConfig",
+      "maxRecordAge": 3600.0,
+      "enabled": true,
+      "purgePeriod": 60.0
+    },
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "databaseNum": 5,
+    "id": "d6592d73-f4be-402f-b2cd-48e39fa545ef",
+    "moduleClass": "org.sensorhub.impl.database.system.SystemDriverDatabase",
+    "name": "Simulated GPS Obs Database",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherConfig",
+    "serialNumber": "0123456879",
+    "location": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig$LLALocation",
+      "lat": 34.8038,
+      "lon": -86.7228,
+      "alt": 0.0
+    },
+    "sensorML": "base_description.xml",
+    "lastUpdated": "2020-10-01T11:00:04.443+0200",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "moduleClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor",
+    "name": "Simulated Weather Sensor",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherNetworkConfig",
+    "networkID": "001",
+    "numStations": 50,
+    "centerLocation": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig$LLALocation",
+      "lat": 46.373184,
+      "lon": 6.479491,
+      "alt": 0.0
+    },
+    "areaSize": 0.2,
+    "lastUpdated": "2021-01-28T16:44:00.000+0100",
+    "id": "1cd03573-98ef-476f-898c-b3b98cd97063",
+    "moduleClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherNetwork",
+    "name": "Simulated Weather Network",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.database.system.SystemDriverDatabaseConfig",
+    "dbConfig": {
+      "objClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabaseConfig",
+      "indexObsLocation": false,
+      "storagePath": "weather_obs_h2.dat",
+      "memoryCacheSize": 1024,
+      "autoCommitBufferSize": 1024,
+      "useCompression": false,
+      "readOnly": false,
+      "moduleClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabase",
+      "autoStart": false
+    },
+    "systemUIDs": [
+      "urn:osh:sensor:simweather:0123456879",
+      "urn:osh:sensor:simweathernetwork:001"
+    ],
+    "autoPurgeConfig": {
+      "objClass": "org.sensorhub.impl.database.system.MaxAgeAutoPurgeConfig",
+      "maxRecordAge": 3600.0,
+      "enabled": true,
+      "purgePeriod": 60.0
+    },
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "databaseNum": 6,
+    "id": "d6592d73-f4be-402f-b2cd-48e39fa904c5",
+    "moduleClass": "org.sensorhub.impl.database.system.SystemDriverDatabase",
+    "name": "Simulated Weather Obs Database",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.database.system.SystemDriverDatabaseConfig",
+    "dbConfig": {
+      "objClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabaseConfig",
+      "indexObsLocation": false,
+      "storagePath": "all_obs_h2.dat",
+      "memoryCacheSize": 1024,
+      "autoCommitBufferSize": 1024,
+      "useCompression": false,
+      "readOnly": false,
+      "moduleClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabase",
+      "autoStart": false
+    },
+    "systemUIDs": [
+      "urn:osh:sensor:*"
+    ],
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "databaseNum": 7,
+    "id": "d6592d73-f4be-402f-b2cd-48e39fa90123",
+    "moduleClass": "org.sensorhub.impl.database.system.SystemDriverDatabase",
+    "name": "All Obs Database",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabaseConfig",
+    "indexObsLocation": false,
+    "storagePath": "sos_obs_h2.dat",
+    "memoryCacheSize": 1024,
+    "autoCommitBufferSize": 1024,
+    "useCompression": false,
+    "readOnly": false,
+    "databaseNum": 8,
+    "id": "0309491d-d5cb-4f2f-9b95-166179c66746",
+    "moduleClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabase",
+    "name": "SOS-T Database",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabaseConfig",
+    "indexObsLocation": false,
+    "storagePath": "sweapi_obs_h2.dat",
+    "memoryCacheSize": 1024,
+    "autoCommitBufferSize": 1024,
+    "useCompression": false,
+    "readOnly": false,
+    "databaseNum": 9,
+    "id": "0309491d-d5cb-4f2f-9b95-166179c66747",
+    "moduleClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabase",
+    "name": "SWE API Database",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.usgs.water.USGSWaterDataConfig",
+    "exposeFilter": {
+      "objClass": "org.sensorhub.impl.usgs.water.USGSDataFilter",
+      "siteIds": [],
+      "stateCodes": [
+        "MD"
+      ],
+      "countyCodes": [],
+      "siteTypes": [],
+      "paramCodes": [],
+      "otherParamCodes": []
+    },
+    "databaseNum": 20,
+    "id": "86e2a6f1-5260-481b-a7e2-15247ee9c288",
+    "moduleClass": "org.sensorhub.impl.usgs.water.USGSWaterDataArchive",
+    "name": "USGS Water Database",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.client.sost.SOSTClientConfig",
+    "dataSourceSelector": {
+      "objClass": "org.sensorhub.impl.datastore.view.ObsSystemDatabaseViewConfig",
+      "includeFilter": {
+        "objClass": "org.sensorhub.api.datastore.system.SystemFilter",
+        "uniqueIDs": [
+          "urn:osh:sensor:*"
+        ]
+      }
+    },
+    "sos": {
+      "objClass": "org.sensorhub.impl.comm.HTTPConfig",
+      "resourcePath": "/sensorhub/sos",
+      "remotePort": 8282,
+      "enableTLS": false,
+      "remoteHost": "localhost",
+      "localAddress": "AUTO"
+    },
+    "connection": {
+      "objClass": "org.sensorhub.impl.client.sost.SOSTClientConfig$SOSConnectionConfig",
+      "usePersistentConnection": true,
+      "maxQueueSize": 10,
+      "maxConnectErrors": 10,
+      "checkReachability": true,
+      "connectTimeout": 3000,
+      "reconnectPeriod": 10000,
+      "reconnectAttempts": 0
+    },
+    "id": "cc25835c-3f9e-41f2-9259-df20e03de0af",
+    "moduleClass": "org.sensorhub.impl.client.sost.SOSTClient",
+    "name": "SOS-T Client",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "customDataProviders": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SystemDataProviderConfig",
+        "liveDataTimeout": 10.0,
+        "excludedOutputs": [],
+        "systemUID": "urn:osh:sensor:simweather:0123456879",
+        "maxFois": 10,
+        "enabled": true
+      }
+    ],
+    "customFormats": [
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/mp4",
+        "className": "org.sensorhub.impl.service.sos.video.MP4Serializer"
+      },
+      {
+        "objClass": "org.sensorhub.impl.service.sos.SOSCustomFormatConfig",
+        "mimeType": "video/x-motion-jpeg",
+        "className": "org.sensorhub.impl.service.sos.video.MJPEGSerializer"
+      }
+    ],
+    "maxObsCount": 100,
+    "maxRecordCount": 100000,
+    "maxFois": 10,
+    "defaultLiveTimeout": 600.0,
+    "templateTimeout": 600,
+    "databaseID": "0309491d-d5cb-4f2f-9b95-166179c66746",
+    "exposedResources": {
+      "objClass": "org.sensorhub.impl.datastore.view.ObsSystemDatabaseViewConfig",
+      "includeFilter": {
+        "objClass": "org.sensorhub.api.datastore.system.SystemFilter",
+        "uniqueIDs": [
+          "urn:dahua:*",
+          "urn:osh:sensor:*",
+          "urn:usgs:*"
+        ]
+      }
+    },
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": true,
+      "requireAuth": false
+    },
+    "enableTransactional": true,
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": [
+        "SensorHub",
+        "Video"
+      ],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumbers": [
+          "+33 5 23 56 89 78"
+        ],
+        "faxNumbers": [
+          "+33 5 23 56 89 77"
+        ],
+        "deliveryPoints": [
+          "12 rue Voltaire"
+        ],
+        "city": "Toulouse",
+        "postalCode": "30000",
+        "country": "France",
+        "emails": [
+          "admin@sensiasoft.com"
+        ],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/sos",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "name": "SOS Service",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sps.SPSServiceConfig",
+    "customConnectors": [],
+    "databaseID": "0309491d-d5cb-4f2f-9b95-166179c66746",
+    "exposedResources": {
+      "objClass": "org.sensorhub.impl.datastore.view.ObsSystemDatabaseViewConfig",
+      "includeFilter": {
+        "objClass": "org.sensorhub.api.datastore.system.SystemFilter",
+        "uniqueIDs": [
+          "urn:dahua:*",
+          "urn:osh:sensor:*"
+        ]
+      }
+    },
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": true,
+      "requireAuth": false
+    },
+    "enableTransactional": true,
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "title": "Test SPS Service",
+      "description": "An SPS service automatically deployed by SensorHub",
+      "keywords": [
+        "SensorHub",
+        "Video"
+      ],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumbers": [
+          "+33 5 23 56 89 78"
+        ],
+        "faxNumbers": [
+          "+33 5 23 56 89 77"
+        ],
+        "deliveryPoints": [
+          "12 rue Voltaire"
+        ],
+        "city": "Toulouse",
+        "postalCode": "30000",
+        "country": "France",
+        "emails": [
+          "admin@sensiasoft.com"
+        ],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/sps",
+    "id": "b40628e5-165e-4047-b61c-44ee8f33de2a",
+    "moduleClass": "org.sensorhub.impl.service.sps.SPSService",
+    "name": "SPS Service",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sta.STAServiceConfig",
+    "hubThing": {
+      "objClass": "org.sensorhub.impl.service.sta.STAServiceConfig$HubThingInfo",
+      "name": "SensorHub Node",
+      "description": "The local sensor hub and its sensors"
+    },
+    "virtualSensorGroup": {
+      "objClass": "org.sensorhub.impl.system.VirtualSystemGroupConfig",
+      "uid": "urn:osh:sta:group",
+      "name": "SensorThings Sensor Group",
+      "description": "Sensors registered via SensorThings API"
+    },
+    "dbConfig": {
+      "objClass": "org.sensorhub.impl.service.sta.STADatabaseConfig",
+      "indexObsLocation": false,
+      "storagePath": "sta_db.dat",
+      "memoryCacheSize": 5120,
+      "autoCommitBufferSize": 1024,
+      "useCompression": false,
+      "readOnly": false,
+      "databaseNum": 1,
+      "moduleClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabase",
+      "autoStart": false
+    },
+    "exposedResources": {
+      "objClass": "org.sensorhub.impl.datastore.view.ObsSystemDatabaseViewConfig",
+      "includeFilter": {
+        "objClass": "org.sensorhub.api.datastore.system.SystemFilter",
+        "uniqueIDs": [
+          "urn:osh:sensor:*",
+          "urn:usgs:*"
+        ]
+      }
+    },
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": true,
+      "requireAuth": false
+    },
+    "enableTransactional": true,
+    "enableMqtt": true,
+    "maxObsCount": 1000,
+    "endPoint": "/sta",
+    "id": "192c2157-c5f9-4724-bd48-6380b2dc232d",
+    "moduleClass": "org.sensorhub.impl.service.sta.STAService",
+    "name": "SensorThings API Service",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sweapi.SWEApiServiceConfig",
+    "databaseID": "0309491d-d5cb-4f2f-9b95-166179c66747",
+    "exposedResources": {
+      "objClass": "org.sensorhub.impl.datastore.view.ObsSystemDatabaseViewConfig",
+      "includeFilter": {
+        "objClass": "org.sensorhub.api.datastore.system.SystemFilter",
+        "uniqueIDs": [
+          "urn:android:*",
+          "urn:osh:sensor:*",
+          "urn:usgs:*"
+        ]
+      }
+    },
+    "customFormats": [],
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": true,
+      "requireAuth": false
+    },
+    "enableTransactional": false,
+    "maxObsCount": 100,
+    "maxResponseLimit": 100000,
+    "defaultLiveTimeout": 600.0,
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "voiceNumbers": [],
+        "faxNumbers": [],
+        "deliveryPoints": [],
+        "emails": [],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/api",
+    "id": "9d23a6a7-7455-41d1-9f1d-494be4e2463c",
+    "moduleClass": "org.sensorhub.impl.service.sweapi.SWEApiService",
+    "name": "SWE API Service",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.hivemq.MqttServerConfig",
+    "tcpPort": 0,
+    "id": "80c477d2-f223-4b4b-88a6-0e2b413568ec",
+    "moduleClass": "org.sensorhub.impl.service.hivemq.MqttServer",
+    "name": "MQTT Server",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.security.oauth.OAuthClientConfig",
+    /*"authzEndpoint": "https://auth.digitwin.develop.keleo-solutions.com/auth/realms/jhipster/protocol/openid-connect/auth",*/
+    /*"tokenEndpoint": "https://auth.digitwin.develop.keleo-solutions.com/auth/realms/jhipster/protocol/openid-connect/token",*/
+    /*"userInfoEndpoint": "https://auth.digitwin.develop.keleo-solutions.com/auth/realms/jhipster/protocol/openid-connect/userinfo",*/
+    "authzEndpoint": "https://cloud.georobotix.io/auth/realms/osh-cloud/protocol/openid-connect/auth",
+    "logoutEndpoint": "https://cloud.georobotix.io/auth/realms/osh-cloud/protocol/openid-connect/logout",
+    "tokenEndpoint": "https://cloud.georobotix.io/auth/realms/osh-cloud/protocol/openid-connect/token",
+    "userInfoEndpoint": "https://cloud.georobotix.io/auth/realms/osh-cloud/protocol/openid-connect/userinfo",
+    "redirectURL": "http://localhost:8181/sensorhub/admin",
+    "clientID": "test-osh",
+    "clientSecret": "84ebb68e-6208-473e-8e32-d8b37b2675d2",
+    "authzScope": "email",
+    "userIdField": "preferred_username",
+    "id": "ea78e705-b3c5-413c-9841-bea90e74b2c5",
+    "moduleClass": "org.sensorhub.impl.security.oauth.OAuthClient",
+    "name": "Keycloak OAuth Client",
+    "autoStart": true
+  }
+]

@@ -1,0 +1,105 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <link rel="stylesheet" href="style.css" type="text/css" />
+    <script src="OpenLayers.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js"></script>
+    <script type="text/javascript">
+        var map, layer;
+        var xhReq;
+        var marker;
+        var markers;
+        var epsg4326 = new OpenLayers.Projection("EPSG:4326");
+
+        function init(){
+            map = new OpenLayers.Map( 'map', {            
+              controls: [
+                new OpenLayers.Control.LayerSwitcher(),
+                new OpenLayers.Control.Navigation({zoomBoxEnabled: true, zoomWheelEnabled: true}),
+                new OpenLayers.Control.PanZoomBar(),
+                new OpenLayers.Control.MousePosition(),
+                new OpenLayers.Control.ScaleLine()
+              ]
+            });
+            map.numZoomLevels = 17;
+
+            // OSM background map layer
+            var osm = new OpenLayers.Layer.OSM();
+            map.addLayer(osm);
+
+            // vector layer
+            markerLayer = new OpenLayers.Layer.Markers("Markers");
+            map.addLayer(markerLayer);
+
+            // center map on HSV
+            var center = new OpenLayers.LonLat(-86.5850, 34.7300).transform(epsg4326, map.getProjectionObject());
+            map.setCenter(center, 11);
+
+            // create marker
+            var size = new OpenLayers.Size(30, 30);
+            var offset = new OpenLayers.Pixel(-size.w/2, -size.h/2);
+            var icon = new OpenLayers.Icon('img/draw_point_on.png', size, offset);
+            var markers = new Map();
+
+            // GPS
+            function onMessage(rec) {
+                console.log(rec);
+                document.getElementById("text").innerHTML = rec;
+                var tokens = rec.trim().split(",");
+                
+                var idx = 0;
+                var ts = tokens[idx++];
+                var id = 'target';//tokens[idx++];
+                var lat = parseFloat(tokens[idx++]);
+                var lon = parseFloat(tokens[idx++]);
+                var alt = parseFloat(tokens[idx++]);
+                
+                var marker = markers.get(id);
+                if (marker == null) {
+                    marker = new OpenLayers.Marker(new OpenLayers.LonLat(0, 0), icon.clone());
+                    marker.oshId = id;
+                    markers.set(id, marker);
+                    markerLayer.addMarker(marker);
+                }
+                
+                marker.lonlat = new OpenLayers.LonLat(lon, lat).transform(epsg4326, map.getProjectionObject());
+                markerLayer.redraw();
+            }
+            
+            // query SOS GPS stream
+            var currentUrl = window.location;
+            
+            var mqtt = new Paho.MQTT.Client(currentUrl.hostname, 8083, "js-client-001");
+            //var mqtt = new Paho.MQTT.Client("ogct17.georobotix.io", 8083, "js-client-001");
+            
+            mqtt.onConnectionLost = (responseObject) => {
+              if (responseObject.errorCode !== 0) {
+                console.log("Connection lost: " + responseObject.errorMessage);
+              }
+            }
+            
+            mqtt.onMessageArrived = (msg) => {
+              console.log("New Message: " + msg.payloadString);
+              onMessage(msg.payloadString);
+            }
+            
+            mqtt.connect({
+              onSuccess: () => {
+                console.log("connected");
+                mqtt.subscribe("/api/datastreams/tfy230tgp7xu/observations?f=text/plain");
+                //mqtt.subscribe("/api/datastreams/m1isar991e9i/observations?f=text/plain");
+              }
+            });
+        }
+
+    </script>
+  </head>
+  <body onload="init()" style="font-family: verdana">
+    <h1 id="title">SOS Client Example</h1>
+    <div id="map" style="width:100%; height:768px" class="smallmap"></div>    
+    <div id="text">Waiting for first GPS pos...</div>
+  </body>
+</html>
+
+
+
+
