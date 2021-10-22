@@ -16,10 +16,10 @@ package org.sensorhub.impl.service.hivemq;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
-import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.api.service.ServiceConfig;
 
 
-public class MqttServerConfig extends ModuleConfig
+public class MqttServerConfig extends ServiceConfig
 {
     
     @Required

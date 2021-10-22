@@ -32,7 +32,6 @@ import com.hivemq.extension.sdk.api.services.Services;
 
 public class OshSubscribeHandler implements SubscribeInboundInterceptor, SubscriptionAuthorizer
 {
-    static final String LOG_SUBSCRIBE_MSG = "Received SUBSCRIBE clientId={}, topic={}: ";
     static final int REQ_TIMEOUT_MS = 5000;
     
     final OshExtension oshExt;
@@ -60,29 +59,20 @@ public class OshSubscribeHandler implements SubscribeInboundInterceptor, Subscri
         var async = subscribeOut.async(Duration.ofMillis(REQ_TIMEOUT_MS));
         Services.extensionExecutorService().submit(() -> {
             
-            // get topic name and user ID
+            // get topic name, user ID and client ID
             var topic = subscribeIn.getSubscription().getTopicFilter();
-            var userID = subscribeIn.getConnectionInformation().getConnectionAttributeStore()
+            var userId = subscribeIn.getConnectionInformation().getConnectionAttributeStore()
                 .getAsString(OshAuthenticator.MQTT_USER_PROP)
                 .orElse(ISecurityManager.ANONYMOUS_USER);
+            var clientId = subscribeIn.getClientInformation().getClientId();
             
             try
             {
-                // if a handler is found, use it to authorize/subscribe to this topic
-                var handler = oshExt.handlers.get(topic);
-                if (handler != null)
-                {
-                    log.debug(LOG_SUBSCRIBE_MSG + "Handled by {}",
-                        subscribeIn.getClientInformation().getClientId(), topic, handler.getClass().getSimpleName());
-                    handler.onSubscribe(userID, topic, oshExt);
+                // authorize request if subscribe completes successfully, reject otherwise
+                if (oshExt.subscribeToTopic(userId, clientId, topic))
                     subscribeOut.authorizeSuccessfully();
-                }
-                
-                // reject in all other cases
                 else
-                {
                     subscribeOut.failAuthorization(SubackReasonCode.TOPIC_FILTER_INVALID);
-                }
             }
             catch (AccessControlException e)
             {
@@ -94,7 +84,7 @@ public class OshSubscribeHandler implements SubscribeInboundInterceptor, Subscri
                 log.debug("Invalid topic {}: {}", topic, e.getMessage());
                 subscribeOut.failAuthorization(SubackReasonCode.TOPIC_FILTER_INVALID, e.getMessage());
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
                 log.error("Internal error handling SUBSCRIBE message", e);
                 subscribeOut.failAuthorization(SubackReasonCode.IMPLEMENTATION_SPECIFIC_ERROR, "Internal error");

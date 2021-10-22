@@ -15,9 +15,15 @@ Copyright (C) 2012-2021 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.hivemq;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
+import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.comm.mqtt.MqttException;
 import org.sensorhub.utils.MapWithWildcards;
 import org.slf4j.Logger;
@@ -46,8 +52,12 @@ import com.hivemq.extension.sdk.api.services.publish.Publish;
 
 public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServer
 {
+    static final String LOG_SUBSCRIBE_MSG = "Received SUBSCRIBE clientId={}, topic={}: ";
+    static final String LOG_UNSUBSCRIBE_MSG = "Received UNSUBSCRIBE clientId={}, topic={}: ";
+    
     MqttServer service;
     MapWithWildcards<IMqttHandler> handlers = new MapWithWildcards<>();
+    Map<String, Set<String>> clientTopics = new ConcurrentHashMap<>();
     Logger log;
     
     
@@ -95,12 +105,12 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                 return new ClientLifecycleEventListener() {
                     @Override
                     public void onMqttConnectionStart(ConnectionStartInput connectionStartInput)
-                    {                        
+                    {
                     }
 
                     @Override
                     public void onAuthenticationSuccessful(AuthenticationSuccessfulInput authenticationSuccessfulInput)
-                    {                        
+                    {
                     }
 
                     @Override
@@ -109,9 +119,11 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                         var clientId = disconnectEventInput.getClientInformation().getClientId();
                         log.debug("Client {} disconnected", clientId); 
                         
-                        Services.subscriptionStore().getSubscriptions(clientId)
-                            .thenAccept(set -> set.forEach(ts -> {
-                                var topic = ts.getTopicFilter();
+                        var topicList = clientTopics.remove(clientId);
+                        if (topicList != null)
+                        {
+                            for (var topic: topicList)
+                            {
                                 var handler = handlers.get(topic);
                                 if (handler != null)
                                 {
@@ -122,27 +134,63 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                                     catch (MqttException e)
                                     {
                                     }
-                                }                                
-                            })
-                        );                        
+                                }
+                            }
+                        }
                     }
                 };
-            }        
+            }
         });
-        
-        /*// start watchdog to clean resources for unused topics
-        var subscriptionStore = Services.subscriptionStore();
-        Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> {
-            subscriptionStore.iterateAllSubscriptions(new IterationCallback<SubscriptionsForClientResult>() {
-                @Override
-                public void iterate(IterationContext context, SubscriptionsForClientResult subscriptionsForClient) {
-                    // this callback is called for every client with its subscriptions
-                    final String clientId = subscriptionsForClient.getClientId();
-                    final Set<TopicSubscription> subscriptions = subscriptionsForClient.getSubscriptions();
-                    log.debug("{}: {}", clientId, subscriptions);
-                }
+    }
+    
+    
+    boolean subscribeToTopic(String userId, String clientId, String topic) throws InvalidTopicException
+    {
+        // if a handler is found, use it to authorize/subscribe to this topic
+        var handler = handlers.get(topic);
+        if (handler != null)
+        {
+            AtomicBoolean notSubscribed = new AtomicBoolean();
+            clientTopics.compute(clientId, (k,v) -> {
+                if (v == null)
+                    v = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+                notSubscribed.set(v.add(topic));
+                return v;
             });
-        }, 0, 1, TimeUnit.SECONDS);*/
+            
+            if (notSubscribed.get())
+            {
+                log.debug(LOG_SUBSCRIBE_MSG + "Handled by {}",
+                    clientId, topic, handler.getClass().getSimpleName());
+                handler.onSubscribe(userId, topic, this);
+            }
+            
+            return true;
+        }
+        
+        return false;
+    }
+    
+    
+    boolean unsubscribeFromTopic(String userId, String clientId, String topic) throws InvalidTopicException
+    {
+        var handler = handlers.get(topic);
+        if (handler != null)
+        {
+            var topicList = clientTopics.get(clientId);
+            if (topicList != null && topicList.remove(topic))
+            {
+                log.debug(LOG_UNSUBSCRIBE_MSG + "Handled by {}",
+                    clientId, topic, handler.getClass().getSimpleName());
+                
+                // unsubscribe using OSH handler
+                handler.onUnsubscribe(userId, topic, this);
+                
+                return true;
+            }
+        }
+        
+        return false;
     }
 
 

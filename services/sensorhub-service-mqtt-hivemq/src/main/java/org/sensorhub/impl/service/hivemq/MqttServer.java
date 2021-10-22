@@ -96,7 +96,17 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
     protected void doStop() throws SensorHubException
     {
         if (hiveMQ != null)
-            hiveMQ.stop().join();
+        {
+            try
+            {
+                hiveMQ.close();
+                hiveMQ = null;
+            }
+            catch (Exception e)
+            {
+                throw new SensorHubException("Error closing embedded HiveMQ server", e);
+            }
+        }
     }
     
     

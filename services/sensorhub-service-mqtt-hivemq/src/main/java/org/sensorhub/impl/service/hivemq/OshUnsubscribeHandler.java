@@ -15,7 +15,6 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.hivemq;
 
 import java.time.Duration;
-import java.util.concurrent.ExecutionException;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.security.ISecurityManager;
 import org.slf4j.Logger;
@@ -28,7 +27,6 @@ import com.hivemq.extension.sdk.api.services.Services;
 
 public class OshUnsubscribeHandler implements UnsubscribeInboundInterceptor
 {
-    static final String LOG_UNSUBSCRIBE_MSG = "Received UNSUBSCRIBE clientId={}, topic={}: ";
     static final int REQ_TIMEOUT_MS = 5000;
     
     final OshExtension oshExt;
@@ -49,44 +47,29 @@ public class OshUnsubscribeHandler implements UnsubscribeInboundInterceptor
         Services.extensionExecutorService().submit(() -> {
             try
             {
-                var userID = unsubscribeIn.getConnectionInformation().getConnectionAttributeStore()
+                // get user ID and client ID
+                var userId = unsubscribeIn.getConnectionInformation().getConnectionAttributeStore()
                     .getAsString(OshAuthenticator.MQTT_USER_PROP)
                     .orElse(ISecurityManager.ANONYMOUS_USER);
-                
-                // get client subscriptions
                 var clientId = unsubscribeIn.getClientInformation().getClientId();
-                var clientSubs = Services.subscriptionStore().getSubscriptions(clientId).get();
                 
                 // process each topic
+                
                 for (var topic: unsubscribeIn.getUnsubscribePacket().getTopicFilters())
                 {
-                    // only go further if client has actually subscribed to this topic
-                    // just test equality for now since we don't implement topic filters with wildcards
-                    var found = clientSubs.stream().anyMatch(sub -> topic.equals(sub.getTopicFilter()));
-                    if (!found)
-                        continue;
-                    
-                    // try to find a handler
-                    // if none was found, proceed normally with HiveMQ pipeline
-                    var handler = oshExt.handlers.get(topic);
-                    if (handler != null)
+                    // unsubscribe from
+                    try
                     {
-                        log.debug(LOG_UNSUBSCRIBE_MSG + "Handled by {}",
-                            unsubscribeIn.getClientInformation().getClientId(), topic, handler.getClass().getSimpleName());
-                        
-                        // unsubscribe using OSH handler
-                        try
-                        {
-                            handler.onUnsubscribe(userID, topic, oshExt);
-                        }
-                        catch (InvalidTopicException e)
-                        {
-                            log.debug("Invalid topic: {}", topic);
-                        }
+                        oshExt.unsubscribeFromTopic(userId, clientId, topic);
                     }
+                    catch (InvalidTopicException e)
+                    {
+                        log.debug("Invalid topic: {}", topic);
+                    }
+                    
                 }
             }
-            catch (RuntimeException | ExecutionException | InterruptedException e)
+            catch (Throwable e)
             {
                 log.error("Error handling UNSUBSCRIBE message", e);
             }
