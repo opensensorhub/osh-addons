@@ -27,6 +27,7 @@ import org.sensorhub.api.datastore.obs.IDataStreamStore;
 import org.sensorhub.api.system.SystemId;
 import org.sensorhub.impl.service.sta.filter.DatastreamFilterVisitor;
 import org.sensorhub.utils.SWEDataUtils;
+import org.vast.data.DataIterator;
 import org.vast.data.TextEncodingImpl;
 import org.vast.ogc.om.IObservation;
 import org.vast.swe.SWEBuilders.DataComponentBuilder;
@@ -57,6 +58,7 @@ import de.fraunhofer.iosb.ilt.frostserver.query.Query;
 import de.fraunhofer.iosb.ilt.frostserver.util.NoSuchEntityException;
 import net.opengis.swe.v20.Category;
 import net.opengis.swe.v20.Count;
+import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.HasUom;
@@ -244,7 +246,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
 
         var dsKey = new DataStreamKey(id.asLong());
         var dsInfo = dataStreamReadStore.get(dsKey);
-        if (dsInfo == null)
+        if (dsInfo == null || !isDataStreamVisible(dsInfo, true))
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
 
         return toFrostDatastream(id.asLong(), dsInfo, q);
@@ -261,11 +263,12 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         int skip = q.getSkip(0);
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
 
+        var multiDsRequest = path.getMainElementType() == EntityType.MULTIDATASTREAM;
         var entitySet = dataStreamReadStore.selectEntries(filter)
+            .filter(e -> isDataStreamVisible(e.getValue(), multiDsRequest))
             .skip(skip)
             .limit(limit+1) // request limit+1 elements to handle paging
             .map(e -> toFrostDatastream(e.getKey().getInternalID(), e.getValue(), q))
-            .filter(ds -> ds.getEntityType() == path.getMainElementType())
             .collect(Collectors.toCollection(EntitySetImpl::new));
 
         return FrostUtils.handlePaging(entitySet, path, q, limit);
@@ -308,6 +311,25 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             q.getFilter().accept(visitor);
 
         return builder.build();
+    }
+    
+    
+    protected boolean isDataStreamVisible(IDataStreamInfo dsInfo, boolean multiDs)
+    {
+        var dataStruct = dsInfo.getRecordStructure();
+        
+        if (!multiDs && !isScalarOutput(dataStruct))
+            return false;
+        
+        // skip datastreams that contain a DataArray
+        DataIterator it = new DataIterator(dataStruct);
+        while (it.hasNext())
+        {
+            if (it.next() instanceof DataArray)
+                return false;
+        }
+        
+        return true;
     }
 
 

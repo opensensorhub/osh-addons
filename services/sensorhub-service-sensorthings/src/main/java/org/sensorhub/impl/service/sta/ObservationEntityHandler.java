@@ -309,7 +309,12 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     protected ObsFilter getFilter(ResourcePath path, Query q)
     {
         ObsFilter.Builder builder = new ObsFilter.Builder();
-
+        
+        // restrict to visible datastreams
+        builder.withDataStreams()
+            .withValuePredicate(dsInfo -> pm.dataStreamHandler.isDataStreamVisible(dsInfo, true))
+            .done();
+        
         EntityPathElement idElt = path.getIdentifiedElement();
         if (idElt != null)
         {
@@ -322,6 +327,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
                     .withAllVersions()
                     .done();
             }
+            
             if (idElt.getEntityType() == EntityType.FEATUREOFINTEREST)
             {
                 ResourceId foiId = (ResourceId)idElt.getId();
