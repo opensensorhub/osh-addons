@@ -97,6 +97,7 @@ public class SWEApiMqttConnector implements IMqttHandler
                 onStart.run();
         }
         
+        @Override
         public void close()
         {
             if (onClose != null)
@@ -161,7 +162,7 @@ public class SWEApiMqttConnector implements IMqttHandler
             var numSub = sub.numSubscribers.decrementAndGet();
             if (numSub <= 0)
             {
-                servlet.getLogger().debug("No more clients listening on topic {}. Cancelling subscription.", topic);
+                servlet.getLogger().debug("No more clients listening on topic {}. Cancelling eventbus subscription.", topic);
                 sub.close();
                 sub = null;
             }

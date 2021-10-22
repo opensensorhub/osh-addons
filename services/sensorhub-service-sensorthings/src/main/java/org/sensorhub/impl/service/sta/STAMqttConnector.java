@@ -187,7 +187,7 @@ public class STAMqttConnector implements IMqttHandler
             var numSub = sub.numSubscribers.decrementAndGet();
             if (numSub <= 0)
             {
-                service.getLogger().debug("No more clients listening on topic {}. Cancelling subscription.", topic);
+                service.getLogger().debug("No more clients listening on topic {}. Cancelling eventbus subscription.", topic);
                 sub.close();
                 sub = null;
             }
