@@ -14,7 +14,6 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.process.opencv;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Supplier;
 import net.opengis.swe.v20.Count;
@@ -22,12 +21,12 @@ import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Text;
 import net.opengis.swe.v20.Time;
-import static org.opencv.core.CvType.*;
-import org.bytedeco.javacpp.Loader;
-import org.bytedeco.opencv.opencv_java;
-import org.opencv.core.Mat;
-import org.opencv.core.Rect2d;
-import org.opencv.tracking.*;
+import org.bytedeco.javacpp.BytePointer;
+import static org.bytedeco.opencv.global.opencv_core.*;
+import org.bytedeco.opencv.opencv_core.Mat;
+import org.bytedeco.opencv.opencv_core.Rect;
+import org.bytedeco.opencv.opencv_tracking.*;
+import org.bytedeco.opencv.opencv_video.Tracker;
 import org.sensorhub.api.processing.OSHProcessInfo;
 import org.vast.data.DataBlockByte;
 import org.vast.process.ExecutableProcessImpl;
@@ -62,9 +61,12 @@ public class ObjectTracking extends ExecutableProcessImpl
     DataArray bboxesOut;
     Text algorithm;
     
-    Supplier<legacy_Tracker> trackerSupplier;
-    legacy_Tracker tracker;
-    boolean trackerInitialized;    
+    Supplier<Tracker> trackerSupplier;
+    Tracker tracker;
+    boolean trackerInitialized;
+    
+    Rect cvRect = new Rect();
+    Mat cvMat;
     
     
     public ObjectTracking()
@@ -130,7 +132,6 @@ public class ObjectTracking extends ExecutableProcessImpl
     public void init() throws ProcessException
     {
         super.init();
-        Loader.load(opencv_java.class);
         trackerInitialized = false;
         
         // read algorithm type
@@ -140,33 +141,33 @@ public class ObjectTracking extends ExecutableProcessImpl
             
             switch (algo)
             {
-                case BOOSTING:
-                    trackerSupplier = () -> legacy_TrackerBoosting.create();
+                /*case BOOSTING:
+                    trackerSupplier = () -> TrackerBoosting.create();
                     break;
                     
                 case MIL:
-                    trackerSupplier = () -> legacy_TrackerMIL.create();
-                    break;
+                    trackerSupplier = () -> TrackerMIL.create();
+                    break;*/
                     
                 case KCF:
-                    trackerSupplier = () -> legacy_TrackerKCF.create();
+                    trackerSupplier = () -> TrackerKCF.create();
                     break;
                     
                 case CSRT:
-                    trackerSupplier = () -> legacy_TrackerCSRT.create();
+                    trackerSupplier = () -> TrackerCSRT.create();
                     break;
                     
-                case MEDIAN_FLOW:
-                    trackerSupplier = () -> legacy_TrackerMedianFlow.create();
+                /*case MEDIAN_FLOW:
+                    trackerSupplier = () -> TrackerMedianFlow.create();
                     break;
                     
                 case TLD:
-                    trackerSupplier = () -> legacy_TrackerTLD.create();
+                    trackerSupplier = () -> TrackerTLD.create();
                     break;
                     
                 case MOSSE:
-                    trackerSupplier = () -> legacy_TrackerMOSSE.create();
-                    break;
+                    trackerSupplier = () -> TrackerMOSSE.create();
+                    break;*/
                     
                 default:
                     throw new IllegalArgumentException();
@@ -182,74 +183,119 @@ public class ObjectTracking extends ExecutableProcessImpl
     @Override
     public void execute() throws ProcessException
     {
-        Mat mat;
-        var imgData = imgIn.getData();
-        var timeStamp = inputTimeStamp.getData().getDoubleValue();
-        
-        if (imgData instanceof DataBlockByte)
+        try
         {
-            var imgBytes = ((DataBlockByte)imgData).getUnderlyingObject();
-            var rows = imgIn.getComponentCount();
-            var cols = ((DataArray)imgIn.getElementType()).getComponentCount();
-            var bbuf = ByteBuffer.allocateDirect(imgBytes.length);
-            bbuf.put(imgBytes);
-            bbuf.flip();
-            mat = new Mat(rows, cols, CV_8UC(3), bbuf);//ByteBuffer.wrap(imgBytes));// BytePointer(imgBytes));
-        }
-        else
-            throw new IllegalArgumentException("Only DataBlockByte supported as input");
-        
-        /*else if (imgData instanceof DataBlockByteBuffer)
-        {
-            // optimized version of the above if datablock contains a direct byte buffer
-            // e.g. coming from FFMPEG decoder. This avoids copying the buffer twice between
-            // Java and native code!
-        }*/
-        
-        Rect2d rect = null;
-        if (numInputBboxes.hasData() && numInputBboxes.getData().getIntValue() > 0)
-        {
-            var bbox = bboxesIn.getComponent(0).getData();
-            rect = new Rect2d(
-                bbox.getIntValue(0),
-                bbox.getIntValue(1),
-                bbox.getIntValue(2),
-                bbox.getIntValue(3));
+            var imgData = imgIn.getData();
+            var timeStamp = inputTimeStamp.getData().getDoubleValue();
             
-            tracker = trackerSupplier.get();
-            tracker.init(mat, rect);
-            trackerInitialized = true;
-
-            getLogger().info("Tracker initialized with BBOX: x={}, y={}, w={}, h={}",
-                rect.x, rect.y, rect.width, rect.height);
+            if (imgData instanceof DataBlockByte)
+            {
+                var imgBytes = ((DataBlockByte)imgData).getUnderlyingObject();
+                var rows = imgIn.getComponentCount();
+                var cols = ((DataArray)imgIn.getElementType()).getComponentCount();
+                
+                // reallocate matrix only if image size has changed
+                if (cvMat == null || cvMat.rows() != rows || cvMat.cols() != cols)
+                {
+                    if (cvMat != null)
+                    {
+                        // deallocate previous matrix
+                        cvMat.data().deallocate();
+                        cvMat.deallocate();
+                    }
+                    
+                    cvMat = new Mat(rows, cols, CV_8UC(3), new BytePointer(imgBytes));
+                }
+                else
+                {
+                    cvMat.data().put(imgBytes);
+                }
+            }
+            else
+                throw new IllegalArgumentException("Only DataBlockByte supported as input");
             
-            // reset param
-            bboxesIn.clearData();
+            /*else if (imgData instanceof DataBlockByteBuffer)
+            {
+                // optimized version of the above if datablock contains a direct byte buffer
+                // e.g. coming from FFMPEG decoder. This avoids copying the buffer twice between
+                // Java and native code!
+            }*/
+            
+            if (numInputBboxes.hasData() && numInputBboxes.getData().getIntValue() > 0)
+            {
+                var bbox = bboxesIn.getComponent(0).getData();
+                cvRect.x(bbox.getIntValue(0));
+                cvRect.y(bbox.getIntValue(1));
+                cvRect.width(bbox.getIntValue(2));
+                cvRect.height(bbox.getIntValue(3));
+                
+                if (tracker != null)
+                    tracker.deallocate();
+                
+                if (cvRect.area() > 0)
+                {
+                    tracker = trackerSupplier.get();
+                    tracker.init(cvMat, cvRect);
+                    trackerInitialized = true;
+    
+                    getLogger().info("Tracker initialized with BBOX: x={}, y={}, w={}, h={}",
+                        cvRect.x(), cvRect.y(), cvRect.width(), cvRect.height());
+                }
+                else
+                {
+                    tracker = null;
+                    trackerInitialized = false;
+                    getLogger().info("Tracker reset");
+                }
+                
+                // reset param
+                bboxesIn.clearData();
+            }
+            else if (trackerInitialized)
+            {
+                tracker.update(cvMat, cvRect);
+            }
+            
+            // output bbox
+            outputTimeStamp.getData().setDoubleValue(timeStamp);
+            if (trackerInitialized)
+            {   
+                numOutputBboxes.getData().setIntValue(1);
+                bboxesOut.updateSize();
+                var bboxData = bboxesOut.getData();
+                
+                int idx = 0;
+                bboxData.setIntValue(idx++, cvRect.x());
+                bboxData.setIntValue(idx++, cvRect.y());
+                bboxData.setIntValue(idx++, cvRect.width());
+                bboxData.setIntValue(idx++, cvRect.height());
+            }
+            else
+            {
+                numOutputBboxes.getData().setIntValue(0);
+                bboxesOut.updateSize();
+            }
         }
-        else if (trackerInitialized)
+        finally
         {
-            rect = new Rect2d();
-            tracker.update(mat, rect);
+            
         }
+    }
+    
+    
+    @Override
+    public void dispose()
+    {
+        super.dispose();
         
-        // output bbox
-        outputTimeStamp.getData().setDoubleValue(timeStamp);
-        if (rect != null)
-        {   
-            numOutputBboxes.getData().setIntValue(1);
-            bboxesOut.updateSize();
-            var bboxData = bboxesOut.getData();
-            
-            int idx = 0;
-            bboxData.setIntValue(idx++, (int)rect.x);
-            bboxData.setIntValue(idx++, (int)rect.y);
-            bboxData.setIntValue(idx++, (int)rect.width);
-            bboxData.setIntValue(idx++, (int)rect.height);
+        cvRect.deallocate();
+        
+        if (tracker!= null)
+            tracker.deallocate();
+        
+        if (cvMat != null) {
+            cvMat.data().deallocate();
+            cvMat.deallocate();
         }
-        else
-        {
-            numOutputBboxes.getData().setIntValue(0);
-            bboxesOut.updateSize();
-        }
-    } 
+    }
 }
