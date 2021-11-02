@@ -23,6 +23,7 @@ public abstract class ISAOutput extends AbstractSensorOutput<ISASensor>
 {
     DataComponent dataStruct;
     DataEncoding dataEnc;
+    long nextRecordTime = Long.MIN_VALUE;
     
     
     public ISAOutput(String name, ISASensor parentSensor)
@@ -31,7 +32,7 @@ public abstract class ISAOutput extends AbstractSensorOutput<ISASensor>
     }
     
     
-    protected abstract void sendRandomMeasurement();
+    protected abstract void sendSimulatedMeasurement();
 
 
     @Override

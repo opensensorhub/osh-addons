@@ -101,8 +101,8 @@ public class ChemReadingOutput extends ISAOutput
     }
 
 
-    protected long nextRecordTime = Long.MIN_VALUE;
-    protected void sendRandomMeasurement()
+    @Override
+    protected void sendSimulatedMeasurement()
     {
         var now = parentSensor.getCurrentTime();
         if (nextRecordTime > now)

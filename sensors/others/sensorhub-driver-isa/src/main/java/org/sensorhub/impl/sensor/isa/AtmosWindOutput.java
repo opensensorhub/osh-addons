@@ -1,11 +1,16 @@
 package org.sensorhub.impl.sensor.isa;
 
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.impl.sensor.isa.ISASimulation.RandomWalk;
 import org.vast.swe.SWEConstants;
 
 
 public class AtmosWindOutput extends ISAOutput
 {
+    RandomWalk windSpeedValue = new RandomWalk(15, 10.0, 0.1, 0, 40);
+    RandomWalk windDirectionValue = new RandomWalk(0, 180.0, 0.1, -180, 180);
+    
+    
     static final String[] WIND_CLASSES = {
         "UNKNOWN", "CONSTANT", "GUST", "LIGHT TURBULENCE",
         "MODERATE TURBULENCE", "SEVERE TURBULENCE", "EXTREME TURBULENCE",
@@ -53,8 +58,8 @@ public class AtmosWindOutput extends ISAOutput
     }
 
 
-    protected long nextRecordTime = Long.MIN_VALUE;
-    protected void sendRandomMeasurement()
+    @Override
+    protected void sendSimulatedMeasurement()
     {
         var now = parentSensor.getCurrentTime();
         if (nextRecordTime > now)
@@ -65,8 +70,8 @@ public class AtmosWindOutput extends ISAOutput
         int i = 0;        
         dataBlk.setDoubleValue(i++, ((double)now)/1000.);
         dataBlk.setStringValue(i++, WIND_CLASSES[(int)(Math.random()*WIND_CLASSES.length)]); // wind class
-        dataBlk.setDoubleValue(i++, (int)(Math.random()*100) / 10.); // speed
-        dataBlk.setDoubleValue(i++, (int)(Math.random()*360)); // dir
+        dataBlk.setDoubleValue(i++, windSpeedValue.next()); // speed
+        dataBlk.setDoubleValue(i++, windDirectionValue.next()); // dir
         
         nextRecordTime = now + (long)(getAverageSamplingPeriod()*1000);
         latestRecordTime = now;

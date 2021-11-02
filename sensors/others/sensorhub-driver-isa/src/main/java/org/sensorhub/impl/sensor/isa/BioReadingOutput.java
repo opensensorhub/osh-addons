@@ -1,5 +1,7 @@
 package org.sensorhub.impl.sensor.isa;
 
+import java.time.Instant;
+import java.util.TreeMap;
 import org.sensorhub.api.data.DataEvent;
 import org.vast.swe.SWEConstants;
 
@@ -9,6 +11,15 @@ public class BioReadingOutput extends ISAOutput
     static final String[] BIO_MATERIAL_CLASSES = {
         "UNKNOWN", "BACTERIA", "BIOREGULATOR", "CYTOTOXIN", "NEUROTOXIN", "PATHOGEN",
         "PRION", "RIC", "SPORE", "TOXIN", "TOXMAT", "VIRAL", "UNSPECIFIED"};
+    
+    
+    static class ScheduledMeasurement
+    {
+        String materialClass;
+        double density;
+    }
+    
+    TreeMap<Long, ScheduledMeasurement> scheduledMeasurements = new TreeMap<>();
     
     
     public BioReadingOutput(ISASensor parentSensor)
@@ -69,27 +80,64 @@ public class BioReadingOutput extends ISAOutput
     }
 
 
-    protected long nextRecordTime = Long.MIN_VALUE;
-    protected void sendRandomMeasurement()
+    @Override
+    protected void sendSimulatedMeasurement()
     {
         var now = parentSensor.getCurrentTime();
+        
+        if (!scheduledMeasurements.isEmpty() && scheduledMeasurements.firstKey() > now)
+            nextRecordTime = scheduledMeasurements.firstKey();
+        
         if (nextRecordTime > now)
             return;
         
         var dataBlk = dataStruct.createDataBlock();
         
-        int i =0;        
-        dataBlk.setDoubleValue(i++, ((double)now)/1000.);
-        dataBlk.setStringValue(i++, BIO_MATERIAL_CLASSES[(int)(Math.random()*BIO_MATERIAL_CLASSES.length)]); // material class
-        dataBlk.setIntValue(i++, 1); // channel
-        dataBlk.setDoubleValue(i++, (int)(Math.random()*1000)); // density ppm
-        dataBlk.setBooleanValue(i++, Math.random() > 0.5); // harmful
-        dataBlk.setIntValue(i++, (int)(Math.random()*10000)); // bottle ID
-        dataBlk.setDoubleValue(i++, (int)(Math.random()*10)+1); // integration time
+        int i = 0;
         
-        nextRecordTime = now + (long)(Math.random()*getAverageSamplingPeriod()*1000);
+        // send scheduled measurement if configured
+        if (!scheduledMeasurements.isEmpty())
+        {
+            var meas = scheduledMeasurements.get(nextRecordTime);
+            
+            dataBlk.setDoubleValue(i++, ((double)nextRecordTime)/1000.);
+            dataBlk.setStringValue(i++, meas.materialClass); // material class
+            dataBlk.setIntValue(i++, 1); // channel
+            dataBlk.setDoubleValue(i++, meas.density); // density ppm
+            dataBlk.setBooleanValue(i++, true); // harmful
+            dataBlk.setIntValue(i++, 1); // bottle ID
+            dataBlk.setDoubleValue(i++, 0.8); // integration time
+            
+            // prepare for next measurement
+            var nextKey = scheduledMeasurements.higherKey(nextRecordTime);
+            nextRecordTime = nextKey != null ? nextKey : Long.MAX_VALUE; 
+        }
+        
+        // else default to random measurement
+        else
+        {
+            dataBlk.setDoubleValue(i++, ((double)now)/1000.);
+            dataBlk.setStringValue(i++, BIO_MATERIAL_CLASSES[(int)(Math.random()*BIO_MATERIAL_CLASSES.length)]); // material class
+            dataBlk.setIntValue(i++, 1); // channel
+            dataBlk.setDoubleValue(i++, (int)(Math.random()*1000)); // density ppm
+            dataBlk.setBooleanValue(i++, Math.random() > 0.5); // harmful
+            dataBlk.setIntValue(i++, (int)(Math.random()*10000)); // bottle ID
+            dataBlk.setDoubleValue(i++, (int)(Math.random()*10)+1); // integration time
+            nextRecordTime = now + (long)(Math.random()*getAverageSamplingPeriod()*1000);
+        }
+        
         latestRecordTime = now;
         latestRecord = dataBlk;
         eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlk));
+    }
+    
+    
+    protected void addScheduledMeasurement(Instant time, String materialClass, double density)
+    {
+        var meas = new ScheduledMeasurement();
+        meas.materialClass = materialClass;
+        meas.density = density;
+        scheduledMeasurements.put(time.toEpochMilli(), meas);
+        nextRecordTime = scheduledMeasurements.firstKey();
     }
 }

@@ -1,9 +1,12 @@
 package org.sensorhub.impl.sensor.isa;
 
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.impl.sensor.isa.ISASimulation.RandomWalk;
 
 public class AtmosPressureOutput extends ISAOutput
 {
+    RandomWalk pressValue = new RandomWalk(101325, 1000, 10, 87000, 105000);
+    
     
     public AtmosPressureOutput(ISASensor parentSensor)
     {
@@ -35,8 +38,8 @@ public class AtmosPressureOutput extends ISAOutput
     }
 
 
-    protected long nextRecordTime = Long.MIN_VALUE;
-    protected void sendRandomMeasurement()
+    @Override
+    protected void sendSimulatedMeasurement()
     {
         var now = parentSensor.getCurrentTime();
         if (nextRecordTime > now)
@@ -46,7 +49,7 @@ public class AtmosPressureOutput extends ISAOutput
         
         int i = 0;        
         dataBlk.setDoubleValue(i++, ((double)now)/1000.);
-        dataBlk.setDoubleValue(i++, 101325 + (int)(Math.random()*1000.-500.)); // value
+        dataBlk.setDoubleValue(i++, pressValue.next()); // value
         dataBlk.setDoubleValue(i++, 10); // error
         
         nextRecordTime = now + (long)(getAverageSamplingPeriod()*1000);

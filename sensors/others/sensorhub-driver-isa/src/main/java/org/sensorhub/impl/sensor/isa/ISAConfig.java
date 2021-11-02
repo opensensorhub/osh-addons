@@ -1,5 +1,6 @@
 package org.sensorhub.impl.sensor.isa;
 
+import java.util.Date;
 import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
@@ -15,6 +16,12 @@ public class ISAConfig extends SensorConfig
 	
     @DisplayInfo(label="Communication Settings", desc="Settings for selected communication port")
     public CommProviderConfig<?> commSettings;
+    
+    
+    public Date simulationStartTime;
+    
+    
+    public Date simulationEndTime;
     
     
     public ISAConfig()

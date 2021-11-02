@@ -14,16 +14,15 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.isa;
 
-import java.time.Instant;
 import net.opengis.sensorml.v20.PhysicalSystem;
 
 
-public class BiologicalSensor extends ISASensor
+public class RadiologicalSensor extends ISASensor
 {
 
-    public BiologicalSensor(ISADriver parent, String id)
+    public RadiologicalSensor(ISADriver parent, String id)
     {
-        super(parent, id, "Biological Sensor " + id);
+        super(parent, id, "Radiological Sensor " + id);
         
         sml.edit((PhysicalSystem)smlDescription)
             .addCharacteristicList("operating", sml.characteristics.operatingCharacteristics()
@@ -36,13 +35,13 @@ public class BiologicalSensor extends ISASensor
                 .add("integ_time", sml.capabilities.integrationTime(14, "s"))
                 .add("sampling_freq", sml.capabilities.samplingFrequency(1/60)));
         
-        addOutput(new BioReadingOutput(this), false);
+        addOutput(new RadioReadingOutput(this), false);
     }
     
     
-    public BiologicalSensor addScheduledMeasurement(Instant time, String materialClass, double density)
+    public RadiologicalSensor addTriggerSource(String systemUID, String outputName, String materialClass, double activity)
     {
-        ((BioReadingOutput)getOutputs().get("bio_reading")).addScheduledMeasurement(time, materialClass, density);
+        ((RadioReadingOutput)getOutputs().get("radio_reading")).addTriggerSource(systemUID, outputName, materialClass, activity);
         return this;
     }
 }

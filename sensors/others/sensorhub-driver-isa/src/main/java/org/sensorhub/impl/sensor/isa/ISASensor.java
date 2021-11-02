@@ -16,6 +16,7 @@ package org.sensorhub.impl.sensor.isa;
 
 import java.time.Instant;
 import org.sensorhub.impl.sensor.AbstractSensorDriver;
+import org.vast.ogc.gml.IFeature;
 import org.vast.ogc.om.SamplingSphere;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEConstants;
@@ -109,7 +110,6 @@ public abstract class ISASensor extends AbstractSensorDriver
     {
         setSamplingPointFoi(lat, lon, alt);
         addLocationOutput(Double.NaN);
-        locationOutput.updateLocation(time.toEpochMilli(), lon, lat, alt, false);
         return this;
     }
     
@@ -118,7 +118,6 @@ public abstract class ISASensor extends AbstractSensorDriver
     {
         setSamplingSphereFoi(lat, lon, alt, radius);
         addLocationOutput(Double.NaN);
-        locationOutput.updateLocation(time.toEpochMilli(), lon, lat, alt, false);
         return this;
     }
 
@@ -163,6 +162,23 @@ public abstract class ISASensor extends AbstractSensorDriver
         
         return this;
     }
+    
+    
+    public IFeature getFeatureOfInterest()
+    {
+        return !foiMap.isEmpty() ? foiMap.values().iterator().next() : null;
+    }
+    
+    
+    public void sendLocation(long time)
+    {
+        if (!foiMap.isEmpty())
+        {
+            var foi = foiMap.values().iterator().next();
+            var point = ((Point)foi.getGeometry()).getPos();
+            locationOutput.updateLocation(time/1000., point[1], point[0], point[2], false);
+        }
+    }
 
 
     @Override
@@ -174,7 +190,13 @@ public abstract class ISASensor extends AbstractSensorDriver
     
     public long getCurrentTime()
     {
-        return ((ISADriver)parentGroup).clock.millis();
+        return getSimulation().clock.millis();
+    }
+    
+    
+    public ISASimulation getSimulation()
+    {
+        return ((ISADriver)parentGroup).simulation;
     }
 
 }

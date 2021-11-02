@@ -17,7 +17,8 @@ public class ImageOutput extends ISAOutput
     }
     
     
-    protected void sendRandomMeasurement()
+    @Override
+    protected void sendSimulatedMeasurement()
     {
         
     }
