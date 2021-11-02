@@ -130,13 +130,13 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
         uasFoi.setUniqueIdentifier(this.uniqueID);
         uasFoi.setName("UAS " + config.serialNumber + " Imaging Sensor");
         uasFoi.setDescription("Imaging sensor on-board platform " + config.serialNumber);
-        foiMap.put(uasFoi.getUniqueIdentifier(), uasFoi);
+        addFoi(uasFoi);
         
         imagedFoi = new MovingFeature();
         imagedFoi.setUniqueIdentifier("urn:osh:foi:imagedArea:" + config.serialNumber);
         imagedFoi.setName("UAS " + config.serialNumber + " Imaged Area");
         imagedFoi.setDescription("Area viewed by imaging sensor on-board platform " + config.serialNumber);
-        foiMap.put(imagedFoi.getUniqueIdentifier(), imagedFoi);
+        addFoi(imagedFoi);
         
         //foiMap.put(this.uniqueID, new GenericFeatureImpl(new QName("Feature")));
 
