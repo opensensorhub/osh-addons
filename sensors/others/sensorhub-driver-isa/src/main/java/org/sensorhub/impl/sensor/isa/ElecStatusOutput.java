@@ -53,7 +53,7 @@ public class ElecStatusOutput extends ISAOutput
     @Override
     public double getAverageSamplingPeriod()
     {
-        return 60.;
+        return 30.;
     }
 
 

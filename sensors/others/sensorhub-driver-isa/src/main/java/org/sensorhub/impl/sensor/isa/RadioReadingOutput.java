@@ -3,7 +3,6 @@ package org.sensorhub.impl.sensor.isa;
 import org.sensorhub.api.data.DataEvent;
 import org.vast.ogc.om.SamplingSphere;
 import org.vast.swe.SWEConstants;
-import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Point;
 import net.opengis.swe.v20.DataType;
 
@@ -124,7 +123,7 @@ public class RadioReadingOutput extends ISAOutput
         if (nextRecordTime > now)
             return;
         
-        nextRecordTime = now + (long)(Math.random()*getAverageSamplingPeriod()*1000);
+        nextRecordTime = now + (long)(getAverageSamplingPeriod()*1000);
         if (!triggered)
             return;
         triggered = false;

@@ -1,12 +1,10 @@
 package org.sensorhub.impl.sensor.isa;
 
 import java.io.IOException;
-import java.time.Instant;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.system.ISystemGroupDriver;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.isa.ISASensor.StatusType;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEConstants;
 import net.opengis.sensorml.v20.PhysicalSystem;
@@ -48,7 +46,9 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements ISyste
     {
         super.doInit();
         
-        simulation = new ISASimulation(this);
+        // add unique ID based on serial number
+        this.uniqueID = "urn:osh:sensor:isa:" + config.networkID;
+        this.xmlID = "ISA_" + config.networkID.toUpperCase();
         
         /*// init comm provider
         if (commProvider == null)
@@ -80,87 +80,9 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements ISyste
             throw new RuntimeException("Error while initializing communications ", e);
         }*/
         
-        
-        // add unique ID based on serial number
-        this.uniqueID = "urn:osh:sensor:isa:" + config.networkID;
-        this.xmlID = "ISA_" + config.networkID.toUpperCase();
-        var timeStamp = Instant.ofEpochMilli(config.lastUpdated.getTime() / 1000);
-        double[][] sensorLocations;
-        
-        // radio sensors
-        sensorLocations = new double[][] {
-            { 34.706226, -86.671218, 193 },
-            { 34.698848, -86.671382, 193 },
-            { 34.694702, -86.671473, 193 },
-            { 34.686162, -86.671778, 193 }
-        };
-        
-        for (int i = 0; i < sensorLocations.length; i++)
-        {
-            var loc = sensorLocations[i];
-            registerSensor(new RadiologicalSensor(this, String.format("RADIO%03d", i+1))
-                .addTriggerSource("urn:osh:process:vmti", "targetLocation", RadioReadingOutput.RADIO_MATERIAL_CATEGORY_CODE[1], 1200.0f)
-                .setManufacturer("Radiological Sensors, Inc.")
-                .setModelNumber("RD123")
-                .setSoftwareVersion("FW21.23.89")
-                .addStatusOutputs(StatusType.RADIO)
-                .setFixedLocationWithRadius(timeStamp, loc[0], loc[1], loc[2], 100));
-        }
-        
-        // bio sensors
-        sensorLocations = new double[][] {
-            { 34.708926, -86.679157, 193 },
-            { 34.698967, -86.675548, 193 },
-            { 34.699533, -86.664192, 193 },
-            { 34.688416, -86.677495, 193 }
-        };
-        
-        for (int i = 0; i < sensorLocations.length; i++)
-        {
-            var loc = sensorLocations[i];
-            var sensor = new BiologicalSensor(this, String.format("BIO%03d", i+1))
-                .setManufacturer("Bio Sensors, Inc.")
-                .setModelNumber("BD456")
-                .setSoftwareVersion("FW2021.32.156")
-                .addStatusOutputs(StatusType.RADIO)
-                .setFixedLocation(timeStamp, loc[0], loc[1], loc[2]);
-            
-            registerSensor(sensor);
-        }
-        
-        // chem sensors
-        sensorLocations = new double[][] {
-            { 34.695782, -86.675593, 193 },
-            { 34.691229, -86.666021, 193 }
-        };
-        
-        for (int i = 0; i < sensorLocations.length; i++)
-        {
-            var loc = sensorLocations[i];
-            registerSensor(new ChemicalSensor(this, String.format("CHEM%03d", i+1))
-                .setManufacturer("Chem Sensors, Inc.")
-                .setModelNumber("CD456")
-                .setSoftwareVersion("FW2021.32.156")
-                .addStatusOutputs(StatusType.RADIO)
-                .setFixedLocation(timeStamp, loc[0], loc[1], loc[2]));
-        }
-        
-        // weather sensors
-        sensorLocations = new double[][] {
-            { 34.677990, -86.682758, 193 },
-            { 34.705657, -86.674131, 193 }
-        };
-        
-        for (int i = 0; i < 2; i++)
-        {
-            var loc = sensorLocations[i];
-            registerSensor(new MeteorologicalSensor(this, String.format("ATM%03d", i+1))
-                .setManufacturer("Vaisala, Inc.")
-                .setModelNumber("AWS310")
-                .setSoftwareVersion("V51.458a")
-                .addStatusOutputs(StatusType.ELEC_DC, StatusType.RADIO)
-                .setFixedLocation(timeStamp, loc[0], loc[1], loc[2]));
-        }
+        // init simulation
+        simulation = new ISASimulation(this);
+        simulation.init();
     }
     
     
@@ -181,7 +103,7 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements ISyste
             // add description to SensorML
             new SMLHelper().edit((PhysicalSystem)sensorDescription)
                 .name("ISA Sensor Network")
-                .description("Network of sensors connected via the Integrated Sensor Architecture protocols")
+                .description("Network of sensors connected via the Integrated Sensor Architecture (ISA) protocol")
                 .definition(SWEConstants.DEF_SENSOR_NETWORK)
                 .build();
         }

@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.concurrent.Flow.Subscription;
+import java.util.function.Consumer;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.data.ObsEvent;
 import org.sensorhub.api.event.EventUtils;
@@ -39,14 +40,15 @@ public class SynchronizedClock extends Clock
     volatile Instant lastObsTime;
     
     
-    public SynchronizedClock(ISensorHub hub, String systemUID, String outputName)
+    public SynchronizedClock(ISensorHub hub, String systemUID, String outputName, Consumer<Instant> tick)
     {
         hub.getEventBus().newSubscription(ObsEvent.class)
             .withTopicID(EventUtils.getDataStreamDataTopicID(systemUID, outputName))
             .subscribe(e -> {
                 if (!e.getObservations().isEmpty()) {
                     var obs = e.getObservations().iterator().next();
-                    lastObsTime = obs.getPhenomenonTime(); 
+                    lastObsTime = obs.getPhenomenonTime();
+                    tick.accept(lastObsTime);
                 }
             })
             .thenAccept(s -> {

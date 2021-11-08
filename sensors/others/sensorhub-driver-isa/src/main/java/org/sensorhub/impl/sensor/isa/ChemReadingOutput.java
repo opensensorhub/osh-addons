@@ -124,7 +124,7 @@ public class ChemReadingOutput extends ISAOutput
         dataBlk.setDoubleValue(i++, Double.NaN);
         dataBlk.setDoubleValue(i++, Double.NaN);
         
-        nextRecordTime = now + (long)(Math.random()*getAverageSamplingPeriod()*1000);
+        nextRecordTime = now + (long)(getAverageSamplingPeriod()*1000);
         latestRecordTime = now;
         latestRecord = dataBlk;
         eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlk));

@@ -123,7 +123,7 @@ public class BioReadingOutput extends ISAOutput
             dataBlk.setBooleanValue(i++, Math.random() > 0.5); // harmful
             dataBlk.setIntValue(i++, (int)(Math.random()*10000)); // bottle ID
             dataBlk.setDoubleValue(i++, (int)(Math.random()*10)+1); // integration time
-            nextRecordTime = now + (long)(Math.random()*getAverageSamplingPeriod()*1000);
+            nextRecordTime = now + (long)(getAverageSamplingPeriod()*1000);
         }
         
         latestRecordTime = now;
