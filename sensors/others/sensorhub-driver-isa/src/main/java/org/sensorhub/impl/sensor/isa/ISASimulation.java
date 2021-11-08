@@ -212,6 +212,10 @@ public class ISASimulation
                 if (!e.getObservations().isEmpty()) {
                     var obs = e.getObservations().iterator().next();
                     
+                    // reset if simulation loops around
+                    if (obs.getPhenomenonTime().toEpochMilli() < src.lastTriggerTime.toEpochMilli())
+                        src.lastTriggerTime = Instant.EPOCH;
+                        
                     // throttle at 1Hz
                     if (obs.getPhenomenonTime().toEpochMilli() - src.lastTriggerTime.toEpochMilli() < 1000)
                         return;

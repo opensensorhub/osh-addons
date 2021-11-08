@@ -18,6 +18,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.Flow.Subscription;
 import java.util.function.Consumer;
 import org.sensorhub.api.ISensorHub;
@@ -47,8 +48,18 @@ public class SynchronizedClock extends Clock
             .subscribe(e -> {
                 if (!e.getObservations().isEmpty()) {
                     var obs = e.getObservations().iterator().next();
-                    lastObsTime = obs.getPhenomenonTime();
-                    tick.accept(lastObsTime);
+                    
+                    // reset if simulation looped around
+                    if (lastObsTime != null && obs.getPhenomenonTime().isBefore(lastObsTime))
+                        lastObsTime = null;
+                    
+                    // round time to whole seconds
+                    var time = obs.getPhenomenonTime().truncatedTo(ChronoUnit.SECONDS);
+                    if (lastObsTime == null || time.isAfter(lastObsTime))
+                    {
+                        lastObsTime = time;
+                        tick.accept(lastObsTime);
+                    }
                 }
             })
             .thenAccept(s -> {
