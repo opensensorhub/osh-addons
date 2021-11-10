@@ -13,6 +13,7 @@ public class AudioMetadata
 	int sampleRate;
 	int numChannels;
 	String bitrate;
+	double duration;
 	
 	@Override
 	public String toString() {
@@ -20,7 +21,8 @@ public class AudioMetadata
 		b.append("codec: " + codec + "\n");
 		b.append("sampleRate: " + sampleRate + "\n");
 		b.append("numChannels: " + numChannels + "\n");
-		
+		b.append("duration: " + duration + "\n");
+		b.append("bitrate: " + bitrate + "\n");
 		return b.toString();
 	}
 }

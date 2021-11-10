@@ -18,9 +18,9 @@ public class AudioConfig extends SensorConfig
 	@DisplayInfo(desc="Directory containing multiple audio files to load")
 	String wavDir = "C:/Users/tcook/root/sensorHub/socom/mastodon/data/20190327_SRSE_Vignette_Data/20190327_SRSE_Vignette_Data/Silent_Echo_Data/Audio_Decodes";
 	
-	//  TODO support pattern extraction of baseTime from a filename 
 	@DisplayInfo(desc="baseTimePattern from timetagged filenames")
-	String baseTimePattern = "yyyy-MM-dd HHmmss";
+//	String baseTimePattern = "yyyy-MM-dd HHmmss";
+	String baseTimePattern;
 	
 	//  TODO support this field
 	@DisplayInfo(desc="override startTime")

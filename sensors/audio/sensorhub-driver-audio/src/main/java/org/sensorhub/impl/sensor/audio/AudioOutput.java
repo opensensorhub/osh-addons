@@ -117,22 +117,6 @@ public class AudioOutput extends AbstractSensorOutput<AudioDriver>
             return latestRecord.renew();
     }
 
-    @Deprecated
-    public void publishChunk(double [] buffer, int sampleCount, long samplingRateHz) { // pass these in from config
-		DataBlock block = getNewDataBlock();
-		double offsetTime = (double) sampleCount / (double) samplingRateHz; 
-		block.setDoubleValue(0, (baseTime + offsetTime));
-		block.setLongValue(1, (long)(baseTime + offsetTime) * 1000L);
-		block.setLongValue(2, samplingRateHz);
-		AbstractDataBlock wavData = ((DataBlockMixed)block).getUnderlyingObject()[3];
-        wavData.setUnderlyingObject(buffer);
-        
-        // send event
-        latestRecord = block;
-        latestRecordTime = System.currentTimeMillis();
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AudioOutput.this, latestRecord));
-	}
-	
     int recCnt = 0;
 	public void publishRecord(AudioRecord rec) { // pass these in from config
 		DataBlock block = getNewDataBlock();

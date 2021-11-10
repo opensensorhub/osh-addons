@@ -71,7 +71,7 @@ public class AudioDriver extends AbstractSensorModule<AudioConfig>
 //		Iterator<File> it = WavDirectoryIterator.getFileIterator(p, "wav");
 //		while(it.hasNext()) {
 		//  TODO modify reader for one file at a time
-		fileReader = new FfmpegReader(config, output);
+		fileReader = new FfmpegWavReader(config, output);
 		fileReader.start();
 	}
 	
@@ -83,7 +83,7 @@ public class AudioDriver extends AbstractSensorModule<AudioConfig>
 			double baseTime = WavDirectoryIterator.filenameTimeParser(p.getFileName().toString(), "'");
 			output.baseTime = baseTime;
 //		output.baseTime = System.currentTimeMillis() / 1000;;
-			fileReader = new FfmpegReader(config, output);
+			fileReader = new FfmpegWavReader(config, output);
 			fileReader.start();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
