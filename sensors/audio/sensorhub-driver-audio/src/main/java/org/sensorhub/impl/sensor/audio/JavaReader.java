@@ -7,6 +7,13 @@ import java.nio.file.Paths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Native java wav reader.  Not using so will probably drop this
+ * 
+ * @author tcook
+ *
+ */
+
 public class JavaReader extends Thread
 {
 	AudioConfig config;
@@ -57,7 +64,8 @@ public class JavaReader extends Thread
 				AudioRecord rec = new AudioRecord();
 				rec.sampleData = buffer;
 				rec.sampleIndex = frameCnt;
-				rec.samplingRate = wavFile.getSampleRate();
+				Long sr = wavFile.getSampleRate();
+				rec.samplingRate = sr.intValue();
 				if(output != null)
 					output.publishRecord(rec);
 

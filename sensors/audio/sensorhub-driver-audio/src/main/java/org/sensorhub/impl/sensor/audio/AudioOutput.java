@@ -24,6 +24,8 @@ import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 
+import net.opengis.swe.v20.BinaryEncoding;
+import net.opengis.swe.v20.ByteOrder;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -76,35 +78,34 @@ public class AudioOutput extends AbstractSensorOutput<AudioDriver>
 			.label("WavRecord")
 			.description("Array of Wav files samples")
 			.addSamplingTimeIsoUTC("IsoTime")
-			.addField("julainTimeMs", swe.createTime()
-					.definition(SWEConstants.DEF_SAMPLING_TIME)
-					.description("Time in microseconds since start of file/stream")
-					.refFrame("sampleTime")
-					.label("Sample Julioan Time")
-					.uomCode("us")
-					.dataType(DataType.LONG)
-					.build())
 			.addField("samplingRate", swe.createQuantity()
 				.definition(SWEConstants.OGC_PROP_URI + "SamplingRate")
 				.description("Sampling Rate")
 				.uomCode("Hz")
-				.dataType(DataType.LONG)
+				.dataType(DataType.INT)
 				.build())
+			.addField("numSamples", swe.createCount()
+					.description("Number of Samples in this array")
+					.definition(SWEConstants.OGC_PROP_URI + "NumSamples")
+					.dataType(DataType.INT)
+					.build())
 			.addField("amplitudeArray", swe.createArray()
 				//  Fixed size works, but what about last sample array?
-//				.withVariableSize("NumSamplesPerArray")
 				.withFixedSize(numSamplesPerArray)
 				.withElement("amplitude", swe.createQuantity()
 					.definition(SWEConstants.OGC_PROP_URI + "Amplitude")
 					.description("Amplitude of Sample")
 					.uomCode("db")  //  really normalized amplitude, not db
-					.dataType(DataType.DOUBLE)
+//					.dataType(DataType.DOUBLE)
+					.dataType(DataType.FLOAT)
+//					.dataType(DataType.BYTE)
 					.build())
 				.build())
 			.build();
 		
-//		encoding = swe.newBinaryEncoding();  // why is this deprecated?
-		encoding = swe.newTextEncoding();
+		encoding = SWEHelper.getDefaultBinaryEncoding(struct);
+		((BinaryEncoding)encoding).setByteOrder(ByteOrder.LITTLE_ENDIAN);
+//		encoding = swe.newTextEncoding();
 	}
 	
     // Remove if not needed
@@ -132,20 +133,24 @@ public class AudioOutput extends AbstractSensorOutput<AudioDriver>
         eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AudioOutput.this, latestRecord));
 	}
 	
+    int recCnt = 0;
 	public void publishRecord(AudioRecord rec) { // pass these in from config
 		DataBlock block = getNewDataBlock();
 		double offsetTime = (double) rec.sampleIndex / (double) rec.samplingRate;
 //		System.err.println(" \n>>Offset time" + offsetTime);
-		block.setDoubleValue(0, (baseTime + offsetTime));
-		block.setLongValue(1, (long)((baseTime + offsetTime) * 1000.0));
-		block.setLongValue(2, rec.samplingRate);
+		double latestTime = baseTime + offsetTime;
+		block.setDoubleValue(0, latestTime);
+		block.setIntValue(1, rec.samplingRate);
+		block.setIntValue(2, rec.sampleData.length);
 		AbstractDataBlock wavData = ((DataBlockMixed)block).getUnderlyingObject()[3];
-        wavData.setUnderlyingObject(rec.sampleData);
+        wavData.setUnderlyingObject(rec.getFloatData());
         
         // send event
         latestRecord = block;
         latestRecordTime = System.currentTimeMillis();
         eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AudioOutput.this, latestRecord));
+//        System.err.println(++recCnt + " Records published");
+//        System.err.println("AudioOutput.publish().. RecTime is: " + Instant.ofEpochSecond((long)latestTime));
 	}
 	
 	public void setBaseTime(long baseTime) {

@@ -14,11 +14,15 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.audio;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Iterator;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -32,13 +36,7 @@ public class AudioDriver extends AbstractSensorModule<AudioConfig>
 	
 	String [] supportedFormats = { "wav" };
 	Logger logger;
-	Path filePath;  // TODO support reading all files in dir
-	boolean isDir = false;
 	
-	
-	public AudioDriver() {
-	}
-
 	@Override
 	public void init() throws SensorHubException
 	{
@@ -46,40 +44,51 @@ public class AudioDriver extends AbstractSensorModule<AudioConfig>
 		logger = getLogger();
 		this.output = new AudioOutput(this);
 		addOutput(output, false);
+		
+		if(config.startTimeOverride != null) {
+			//  TODO
+			// verifyValidTime(startTimeOverride
+		}
 	}
 
 	@Override
 	public void start() throws SensorHubException {
-		//  Start 
-	
+		if(config.wavDir != null) {
+			if(config.startTimeOverride != null) {
+				// TODO
+			}
+			startDir();
+		} else if(config.wavFile != null) {
+			startSingleFile();
+		} else {
+			//  TODO: add support for capture from Android/other audio sources
+		}
 	}
 	
-	public void startSingleFile() throws SensorHubException
-	{
-		Path p = Paths.get(config.wavFile);
-		double baseTime = filenameTimeParser(p.getFileName().toString());
-		output.baseTime = baseTime;
-//		output.baseTime = System.currentTimeMillis() / 1000;;
+	public void startDir() {
+//		Path p = Paths.get(config.wavDir);
+//		assert Files.exists(p);
+//		Iterator<File> it = WavDirectoryIterator.getFileIterator(p, "wav");
+//		while(it.hasNext()) {
+		//  TODO modify reader for one file at a time
 		fileReader = new FfmpegReader(config, output);
 		fileReader.start();
 	}
 	
-	//  Extract baseTime from filename 
-	// GUI_Decode_2019-03-27 132356.wav
-	public double filenameTimeParser(String fname) {
-//		String fname = "GUI_Decode_2019-03-27 132356.wav";
-		String dateStr = fname.substring(11, fname.length() - 4);
-		System.err.println(dateStr);
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HHmmss").withZone(ZoneId.of("GMT"));
-		ZonedDateTime zdt = ZonedDateTime.parse(dateStr, formatter);
-		long sec = zdt.toInstant().getEpochSecond();
-		long nano = zdt.toInstant().getNano();
-		double time = sec + nano;
-//		System.err.println(time);
-//		Instant inst = Instant.ofEpochSecond(sec, nano);
-//		System.err.println(inst);
-		
-		return time;
+	//  TODO - I broke this when supporting dir of files- fix it
+	public void startSingleFile() throws SensorHubException
+	{
+		try {
+			Path p = Paths.get(config.wavFile);
+			double baseTime = WavDirectoryIterator.filenameTimeParser(p.getFileName().toString(), "'");
+			output.baseTime = baseTime;
+//		output.baseTime = System.currentTimeMillis() / 1000;;
+			fileReader = new FfmpegReader(config, output);
+			fileReader.start();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override

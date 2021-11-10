@@ -9,7 +9,7 @@ public class AudioConfig extends SensorConfig
 //	Integer numSamplesPerArray = 100;
 	Integer numSamplesPerArray = 256;
 	
-	@DisplayInfo(desc="The rate at which dataRecords are output")
+	@DisplayInfo(desc="The rate at which dataRecords are output in seconds")
 	Double sampleOutputRate = 0.1;
 
 	@DisplayInfo(desc="Wav file to process")
@@ -19,7 +19,11 @@ public class AudioConfig extends SensorConfig
 	String wavDir = "C:/Users/tcook/root/sensorHub/socom/mastodon/data/20190327_SRSE_Vignette_Data/20190327_SRSE_Vignette_Data/Silent_Echo_Data/Audio_Decodes";
 	
 	//  TODO support pattern extraction of baseTime from a filename 
-	@DisplayInfo(desc="baseTimeFormat")
-	String baseTimeFormat;
+	@DisplayInfo(desc="baseTimePattern from timetagged filenames")
+	String baseTimePattern = "yyyy-MM-dd HHmmss";
+	
+	//  TODO support this field
+	@DisplayInfo(desc="override startTime")
+	String startTimeOverride;
 }
 
