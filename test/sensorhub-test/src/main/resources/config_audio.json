@@ -1,0 +1,96 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "name": "HTTP Server",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "httpPort": 8282,
+    "servletsRootUrl": "/sensorhub",
+    "staticDocRootUrl": "web"
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "enabled": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.audio.AudioConfig",
+    "id": "7d081b29-aae7-4b4c-82fd-9dfa00c25888",
+    "name": "AudioWav Raw driver",
+    "moduleClass": "org.sensorhub.impl.sensor.audio.AudioDriver",
+    "numSamplesPerArray": 256,
+    "sampleOutputRate": 0.1,
+    "wavDir": "C:/Data/sensorHub/audio/SilentEchoDemo",
+    "baseTimePattern": "yyyy-MM-dd HHmmss",
+    "autoStart": true
+  },
+  
+  {
+    "objClass": "org.sensorhub.impl.persistence.StreamStorageConfig",
+    "id": "8cc876e4-3bed-4347-8012-20227ac22ec6",
+    "name": "Audio Storage",
+    "moduleClass": "org.sensorhub.impl.persistence.GenericStreamStorage",
+    "enabled": true,
+    "dataSourceID": "7d081b29-aae7-4b4c-82fd-9dfa00c25888",
+    "storageConfig":    
+    {
+      "objClass": "org.sensorhub.impl.persistence.perst.BasicStorageConfig",
+      "moduleClass": "org.sensorhub.impl.persistence.perst.BasicStorageImpl",
+      "memoryCacheSize": 1024,
+      "storagePath": "/opt/osh-node-demo/db/audio1.dat"
+    },
+    "autoPurgeConfig": {
+      "objClass": "org.sensorhub.impl.persistence.MaxAgeAutoPurgeConfig",
+      "maxRecordAge": 864000,
+      "purgePeriod": 86400.0
+    }
+  }, 
+	  
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "name": "SOS Service",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "enabled": true,
+    "endPoint": "/sos",
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "dataProviders" : [
+      {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "AudioWav",
+           "uri": "urn:osh:audio:wav",
+           "sensorID": "7d081b29-aae7-4b4c-82fd-9dfa00c25888",
+           "storageID": "8cc876e4-3bed-4347-8012-20227ac22ec6",
+           "liveDataTimeout": 360000.0,
+           "maxFois": 10
+       }
+    ],
+    "ogcCapabilitiesInfo": {
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": ["SensorHub", "Audio", "Wav"],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "individualName": "Alex Robin",
+        "organizationName": "Sensia Software LLC",
+        "positionName": "Engineer",
+        "voiceNumber": "+33 5 23 56 89 78",
+        "faxNumber": "+33 5 23 56 89 77",
+        "deliveryPoint": "12 rue Voltaire",
+        "city": "Toulouse",
+        "administrativeArea": null,
+        "postalCode": "30000",
+        "country": "France",
+        "email": "admin@sensiasoft.com",
+        "website": null,
+        "hoursOfService": null,
+        "contactInstructions": null
+      }
+    }
+  }
+]

@@ -1,10 +1,12 @@
 description = 'Audio Driver'
-ext.details = 'Initial cut of an audio driver for reading/processing/serving audio data'
+ext.details = 'Initial cut of an audio driver for reading/processing/serving raw uncompressed audio data'
 version = '0.1.0'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation 'org.bytedeco:ffmpeg-platform:4.2.2-1.5.3'
+  implementation 'org.apache.httpcomponents:httpclient:4.3.6'
+  implementation 'org.apache.httpcomponents:httpcore:4.3.3'
 }
 
 test {

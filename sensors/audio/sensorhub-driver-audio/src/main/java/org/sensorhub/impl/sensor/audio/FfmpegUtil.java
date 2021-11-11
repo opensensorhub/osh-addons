@@ -1,10 +1,13 @@
 package org.sensorhub.impl.sensor.audio;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import org.bytedeco.javacpp.Loader;
@@ -69,22 +72,26 @@ public class FfmpegUtil {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Path infile = Paths.get("C:/Data/sensorhub/audio/silentEchoDemo/GUI_Decode_2019-03-27 141801.wav");
-		AudioMetadata md = ffProbe(infile);
-		System.err.println(md);
+//		Path infile = Paths.get("C:/Data/sensorhub/audio/silentEchoDemo/GUI_Decode_2019-03-27 141801.wav");
+//		AudioMetadata md = ffProbe(infile);
+//		System.err.println(md);
+//
+//		infile = Paths.get("C:/Data/sensorhub/audio/Mail06_2019-03-27 141801.wav");
+//		md = ffProbe(infile);
+//		System.err.println(md);
+//		
+//		infile = Paths.get("C:/Data/sensorhub/audio/guitar/D_Bouz_Pickin_2019-03-27 141801.wav");
+//		md = ffProbe(infile);
+//		System.err.println(md);
 
-		infile = Paths.get("C:/Data/sensorhub/audio/Mail06_2019-03-27 141801.wav");
-		md = ffProbe(infile);
-		System.err.println(md);
-		
-		infile = Paths.get("C:/Data/sensorhub/audio/guitar/D_Bouz_Pickin_2019-03-27 141801.wav");
-		md = ffProbe(infile);
-		System.err.println(md);
-
-		infile = Paths.get("C:/Data/sensorhub/audio/snippets/crash.wav");
-		md = ffProbe(infile);
-		System.err.println(md);
-
+		Path p = Paths.get("C:/Data/sensorhub/audio/snippets");
+		assert Files.exists(p);
+		Iterator<File> it = WavDirectoryIterator.getFileIterator(p, "wav");
+		while(it.hasNext()) {
+			File infile = it.next();
+			AudioMetadata md = ffProbe(infile.toPath());
+			System.err.println(infile.getName() + "\n" + md);
+		}
 	}
 
 }

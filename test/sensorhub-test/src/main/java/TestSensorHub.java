@@ -1,3 +1,6 @@
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 import org.sensorhub.impl.SensorHub;
 
 
@@ -37,7 +40,10 @@ public class TestSensorHub
         //SensorHub.main(new String[] {"src/main/resources/config_video_dahua.json", "storage"});
         //SensorHub.main(new String[] {"src/main/resources/config_solo.json", "storage"});
         //SensorHub.main(new String[] {"src/main/resources/config_uwb.json", "storage"});       
-    	SensorHub.main(new String[] {"src/main/resources/config_intellisense.json", "storage"});       
+    	//SensorHub.main(new String[] {"src/main/resources/config_intellisense.json", "storage"});
+    	Files.deleteIfExists(Paths.get("C:/opt/osh-node-demo/db/audio1.dat"));
+    	SensorHub.main(new String[] {"src/main/resources/config_audio.json", "storage"});
+    	
     }
 
 }
