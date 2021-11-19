@@ -4,7 +4,7 @@
     "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
     "name": "HTTP Server",
     "moduleClass": "org.sensorhub.impl.service.HttpServer",
-    "httpPort": 8181,
+    "httpPort": 8989,
     "servletsRootUrl": "/sensorhub",
     "staticDocRootUrl": "web"
   },
@@ -17,8 +17,12 @@
   {
     "objClass": "org.sensorhub.impl.sensor.audio.AudioConfig",
     "id": "7d081b29-aae7-4b4c-82fd-9dfa00c25888",
-    "name": "AudioWav driver test",
+    "name": "AudioWav Raw driver",
     "moduleClass": "org.sensorhub.impl.sensor.audio.AudioDriver",
+    "numSamplesPerArray": 256,
+    "sampleOutputRate": 0.1,
+    "wavDir": "C:/Data/sensorHub/audio/SilentEchoDemo",
+    "baseTimePattern": "yyyy-MM-dd HHmmss",
     "autoStart": true
   },
   
@@ -39,7 +43,7 @@
     "autoPurgeConfig": {
       "objClass": "org.sensorhub.impl.persistence.MaxAgeAutoPurgeConfig",
       "maxRecordAge": 864000,
-      "purgePeriod": 600.0
+      "purgePeriod": 86400.0
     }
   }, 
 	  
