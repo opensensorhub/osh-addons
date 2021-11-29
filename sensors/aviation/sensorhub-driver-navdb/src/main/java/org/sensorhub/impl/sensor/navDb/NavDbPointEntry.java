@@ -17,42 +17,45 @@ package org.sensorhub.impl.sensor.navDb;
 
 /**
  * <p>
- * Base class for all Nav DB entries
+ * Entry class used to store info for point features:<br/>
+ * airports, navaid, waypoint
  * </p>
  *
  * @author Alex Robin
  * @since Nov 11, 2021
  */
-public class NavDbEntry implements Comparable<NavDbEntry>
+public class NavDbPointEntry extends NavDbEntry
 {
-    public enum Type
-    {
-        AIRPORT, NAVAID, WAYPOINT, AIRWAY, SID, STAR, UNKNOWN
-    };
+    public String name;
+    public Double lat;
+    public Double lon;
 
-    public String region; // 3 chars region id
-    public Type type;
-    public String id; // ID is the same as airport ICAO for airports
-    public String airport = ""; // ICAO code of associated airport
-    
 
-    public NavDbEntry(Type type, String id)
+    public NavDbPointEntry(Type type, String id, double lat, double lon) throws NumberFormatException
     {
-        this.type = type;
-        this.id = id;
+        super(type, id.trim());
+        this.lat = lat;
+        this.lon = lon;
+    }
+
+
+    @Override
+    public String toString()
+    {
+        return type + "," + region + "," + airport + "," + id + "," + name + "," + lat + "," + lon;
     }
 
 
     @Override
     public int compareTo(NavDbEntry o)
     {
-        int comp = id.compareTo(o.id);
+        int comp = super.compareTo(o);
         
         if (comp == 0)
-            comp = region.compareTo(o.region);
+            comp = Double.compare(lat, ((NavDbPointEntry)o).lat);
         
         if (comp == 0)
-            comp = airport.compareTo(o.airport);
+            comp = Double.compare(lon, ((NavDbPointEntry)o).lon);
         
         return comp;
     }

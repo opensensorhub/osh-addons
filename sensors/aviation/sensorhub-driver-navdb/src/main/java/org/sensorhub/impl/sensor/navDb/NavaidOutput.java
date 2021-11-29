@@ -17,7 +17,6 @@ package org.sensorhub.impl.sensor.navDb;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -42,162 +41,126 @@ import net.opengis.swe.v20.Text;
  */
 public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMultiSourceDataInterface 
 {
-	private static final int AVERAGE_SAMPLING_PERIOD = 1;
+    private static final int AVERAGE_SAMPLING_PERIOD = 1;
 
-	DataRecord navStruct;
-	DataEncoding encoding;	
-	Map<String, DataBlock> globalRecords = new TreeMap<>();  // key is navDbEntry uid
-	Map<String, DataBlock> domesticRecords = new TreeMap<>();  // US & CAN only
+    DataRecord navStruct;
+    DataEncoding encoding;    
+    Map<String, DataBlock> globalRecords = new TreeMap<>();  // key is navDbEntry uid
+    Map<String, DataBlock> domesticRecords = new TreeMap<>();  // US & CAN only
 
-	public NavaidOutput(NavDriver parentSensor) throws IOException
-	{
-		super(parentSensor);
-	}
+    public NavaidOutput(NavDriver parentSensor) throws IOException
+    {
+        super(parentSensor);
+    }
 
 
-	@Override
-	public String getName()
-	{
-		return "NavaidOutput";
-	}
+    @Override
+    public String getName()
+    {
+        return "NavaidOutput";
+    }
 
-	protected void init()
-	{
-		SWEHelper fac = new SWEHelper();
+    protected void init()
+    {
+        SWEHelper fac = new SWEHelper();
 
-		// Structure is {id, name, lat, lon}
+        // Structure is {id, name, lat, lon}
 
-		// SWE Common data structure
-		navStruct = fac.newDataRecord(4);
-		navStruct.setName(getName());
-		navStruct.setDefinition(SWEHelper.getPropertyUri("aero/Navaid"));
+        // SWE Common data structure
+        navStruct = fac.newDataRecord(4);
+        navStruct.setName(getName());
+        navStruct.setDefinition(SWEHelper.getPropertyUri("aero/Navaid"));
 
-		Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "ICAO Code", "Navaid ICAO identification code");
-		navStruct.addComponent("code", id);
-		//		Text type = fac.newText(SWEHelper.getPropertyUri("Type"), "Type", "Type (Waypoint/Navaid/etc.)" );
-		//		waypt.addComponent("type", type);
-		Text name = fac.newText(SWEHelper.getPropertyUri("Name"), "Name", "Long name" );
-		navStruct.addComponent("name", name);
-		Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg", DataType.DOUBLE);
-		navStruct.addComponent("lat", latQuant);
-		Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.DOUBLE);
-		navStruct.addComponent("lon", lonQuant);
+        Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "ICAO Code", "Navaid ICAO identification code");
+        navStruct.addComponent("code", id);
+        //        Text type = fac.newText(SWEHelper.getPropertyUri("Type"), "Type", "Type (Waypoint/Navaid/etc.)" );
+        //        waypt.addComponent("type", type);
+        Text name = fac.newText(SWEHelper.getPropertyUri("Name"), "Name", "Long name" );
+        navStruct.addComponent("name", name);
+        Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg", DataType.DOUBLE);
+        navStruct.addComponent("lat", latQuant);
+        Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.DOUBLE);
+        navStruct.addComponent("lon", lonQuant);
 
-		// default encoding is text
-		encoding = fac.newTextEncoding(",", "\n");
-	}
+        // default encoding is text
+        encoding = fac.newTextEncoding(",", "\n");
+    }
 
-	public void start() throws SensorHubException {
-		// Nothing to do 
-	}
+    public void start() throws SensorHubException {
+        // Nothing to do 
+    }
 
-	public double[] getLons (List<NavDbEntry> recs) {
-		double [] lons = new double[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			lons[i++] = rec.lon;
-		}
-		return lons;
-	}
+    public void sendEntries(Collection<NavDbPointEntry> recs)
+    {
+        Map<String, DataBlock> newDomesticRecords = new TreeMap<>();
+        Map<String, DataBlock> newGlobalRecords = new TreeMap<>();
+        
+        for(NavDbPointEntry rec: recs) {
+            DataBlock dataBlock = navStruct.createDataBlock();
 
-	public double[] getLats (List<NavDbEntry> recs) {
-		double [] lats = new double[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			lats[i++] = rec.lat;
-		}
-		return lats;
-	}
-
-	public String[] getNames (List<NavDbEntry> recs) {
-		String [] names = new String[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			names[i++] = rec.name;
-		}
-		return names;
-	}
-
-	public String[] getIds (List<NavDbEntry> recs) {
-		String [] ids = new String[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			ids[i++] = rec.id;
-		}
-		return ids;
-	}
-
-	public void sendEntries(List<NavDbEntry> recs)
-	{                
-	    Map<String, DataBlock> newDomesticRecords = new TreeMap<>();
-	    Map<String, DataBlock> newGlobalRecords = new TreeMap<>();
-	    
-		for(NavDbEntry rec: recs) {
-			DataBlock dataBlock = navStruct.createDataBlock();
-
-			dataBlock.setStringValue(0, rec.id);
-			dataBlock.setStringValue(1, rec.name);
-			dataBlock.setDoubleValue(2, rec.lat);
-			dataBlock.setDoubleValue(3, rec.lon);
-			
-			newGlobalRecords.put(rec.id, dataBlock);
-			if("USA".equals(rec.region) || "CAN".equals("rec.region"))
-			    newDomesticRecords.put(rec.id, dataBlock);
-			//long time = System.currentTimeMillis();
-			//eventHandler.publishEvent(new SensorDataEvent(time, uid, NavaidOutput.this, dataBlock));
-		}
-		
-		// switch to new records atomically
+            dataBlock.setStringValue(0, rec.id);
+            dataBlock.setStringValue(1, rec.name);
+            dataBlock.setDoubleValue(2, rec.lat);
+            dataBlock.setDoubleValue(3, rec.lon);
+            
+            newGlobalRecords.put(rec.id, dataBlock);
+            if("USA".equals(rec.region) || "CAN".equals("rec.region"))
+                newDomesticRecords.put(rec.id, dataBlock);
+            //long time = System.currentTimeMillis();
+            //eventHandler.publishEvent(new SensorDataEvent(time, uid, NavaidOutput.this, dataBlock));
+        }
+        
+        // switch to new records atomically
         globalRecords = newGlobalRecords;
-		domesticRecords = newDomesticRecords;
-	}
-	
+        domesticRecords = newDomesticRecords;
+    }
+    
 
-	public double getAverageSamplingPeriod()
-	{
-		return AVERAGE_SAMPLING_PERIOD;
-	}
-
-
-	@Override 
-	public DataComponent getRecordDescription()
-	{
-		return navStruct;
-	}
+    public double getAverageSamplingPeriod()
+    {
+        return AVERAGE_SAMPLING_PERIOD;
+    }
 
 
-	@Override
-	public DataEncoding getRecommendedEncoding()
-	{
-		return encoding;
-	}
-	
-
-	@Override
-	public Collection<String> getEntityIDs()
-	{
-	    return parentSensor.getEntityIDs();
-	}
+    @Override 
+    public DataComponent getRecordDescription()
+    {
+        return navStruct;
+    }
 
 
-	@Override
-	public Map<String, DataBlock> getLatestRecords()
-	{
-	    return Collections.unmodifiableMap(domesticRecords);
-	}
+    @Override
+    public DataEncoding getRecommendedEncoding()
+    {
+        return encoding;
+    }
+    
+
+    @Override
+    public Collection<String> getEntityIDs()
+    {
+        return parentSensor.getEntityIDs();
+    }
 
 
-	@Override
-	public DataBlock getLatestRecord(String entityID)
-	{
-	    return globalRecords.get(entityID);
-	}
-	
-	
-	/*
-	 * Override so SOS service never times out
-	 */
-	@Override
+    @Override
+    public Map<String, DataBlock> getLatestRecords()
+    {
+        return Collections.unmodifiableMap(domesticRecords);
+    }
+
+
+    @Override
+    public DataBlock getLatestRecord(String entityID)
+    {
+        return globalRecords.get(entityID);
+    }
+    
+    
+    /*
+     * Override so SOS service never times out
+     */
+    @Override
     public long getLatestRecordTime()
     {
         return System.currentTimeMillis();

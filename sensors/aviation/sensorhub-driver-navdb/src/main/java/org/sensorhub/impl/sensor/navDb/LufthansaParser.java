@@ -19,6 +19,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import org.sensorhub.impl.sensor.navDb.NavDbEntry.Type;
 
@@ -51,7 +52,7 @@ public class LufthansaParser
 		return coord;
 	}
 
-	private static NavDbEntry parseAirport(String l) {
+	private static NavDbPointEntry parseAirport(String l) {
 		String region = l.substring(1,4);
 		String icao = l.substring(6, 10);
 		String lats = l.substring(32,41);
@@ -66,14 +67,14 @@ public class LufthansaParser
 			System.err.println("ParseAIR EX: " + l);
 			return null;
 		}
-		NavDbEntry airport = new NavDbEntry(Type.AIRPORT, icao, lat, lon);
+		NavDbPointEntry airport = new NavDbPointEntry(Type.AIRPORT, icao, lat, lon);
 		airport.name = name;
 		airport.region = region;
-		airport.id = airport.icao;
+		airport.airport = icao;
 		return airport;
 	}
 
-	private static NavDbEntry parseWaypoint(String l) {
+	private static NavDbPointEntry parseWaypoint(String l) {
 		String region = l.substring(1,4);
 		String id = l.substring(13, 18).trim();
 		String lats = l.substring(32,41);
@@ -88,16 +89,16 @@ public class LufthansaParser
 			System.err.println("ParseWP EX: " + l);
 			return null;
 		}
-		NavDbEntry waypoint = new NavDbEntry(Type.WAYPOINT, id, lat, lon);
+		NavDbPointEntry waypoint = new NavDbPointEntry(Type.WAYPOINT, id, lat, lon);
 		waypoint.name = name;
 		waypoint.region = region;
 		return waypoint;
 	}
 
-	private static NavDbEntry parseTerminalWaypoint(String l) {
+	private static NavDbPointEntry parseTerminalWaypoint(String l) {
 		String region = l.substring(1,4);
 		String icao = l.substring(6, 10);
-		String id= l.substring(13, 18).trim();
+		String id = l.substring(13, 18).trim();
 		String lats = l.substring(32,41);
 		String lons = l.substring(41,51);
 		String name = l.substring(98,122).trim();
@@ -110,14 +111,13 @@ public class LufthansaParser
 			System.err.println("ParseTWP EX: " + l);
 			return null;
 		}
-		NavDbEntry waypoint = new NavDbEntry(Type.WAYPOINT, icao, lat, lon);
+		NavDbPointEntry waypoint = new NavDbPointEntry(Type.WAYPOINT, id, lat, lon);
 		waypoint.name = name;
 		waypoint.region = region;
-		waypoint.id = id;
 		return waypoint;
 	}
 
-	private static NavDbEntry parseNavaid(String l) {
+	private static NavDbPointEntry parseNavaid(String l) {
 		String region = l.substring(1,4);
 		String icao = l.substring(13, 17).trim();
 		String lats = l.substring(32,41);
@@ -129,14 +129,13 @@ public class LufthansaParser
 			lat = parseCoordString(lats);
 			lon = parseCoordString(lons);
 		} catch (NumberFormatException e) {
-//			System.err.println("ParseNV EX: " + l);
+			System.err.println("ParseNV EX: " + l);
 			return null;
 		}
 
-		NavDbEntry navaid = new NavDbEntry(Type.NAVAID, icao, lat, lon);
+		NavDbPointEntry navaid = new NavDbPointEntry(Type.NAVAID, icao, lat, lon);
 		navaid.name = name;
 		navaid.region = region;
-		navaid.id = icao;
 		return navaid;
 	}
 
@@ -153,9 +152,13 @@ public class LufthansaParser
 			String line = br.readLine();
 			if(line == null)
 				break;
-			NavDbEntry entry = null;
+			NavDbPointEntry entry = null;
 			switch(line.charAt(4)) {
 			case 'P':
+			    continuationNum = line.charAt(21);
+                if(!(continuationNum == '1'))
+                    continue;
+                
 				//  if character at 5 is not blank, this is NOT primary airport rec. Skip it
 				if(line.charAt(5) != ' ')
 					continue;
@@ -170,7 +173,8 @@ public class LufthansaParser
 				} else {
 					entry = parseAirport(line);
 				}
-				prevId = entry.icao;
+				if (entry != null)
+				    prevId = entry.id;
 				break;
 			case 'D':
 				continuationNum = line.charAt(21);
@@ -199,6 +203,37 @@ public class LufthansaParser
 
 			entries.add(entry);
 		}
+		
+		int count = 0;
+		for (NavDbEntry entry: entries)
+		    if (entry.type == Type.AIRPORT) count++;
+		System.out.println(count + " airports");
+		
+		count = 0;
+		HashSet<String> set = new HashSet<>();
+        for (NavDbEntry entry: entries)
+            if (entry.type == Type.NAVAID) {
+                boolean added = set.add(entry.id);
+                if (!added && entry.region.equals("USA"))
+                    System.out.println(entry);
+                count++;
+            }
+        System.out.println(count + " navaids");
+        System.out.println(set.size() + " navaids after dedup");
+        
+        count = 0;
+        set.clear();
+        for (NavDbEntry entry: entries)
+            if (entry.type == Type.WAYPOINT) {
+                boolean added = set.add(entry.id);
+                //if (!added && entry.region.equals("USA"))
+                //    System.out.println(entry);
+                count++;
+            }
+        System.out.println(count + " waypoints");
+        System.out.println(set.size() + " waypoints after dedup");
+        
+		
 		return entries;
 	}
 
