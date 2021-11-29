@@ -15,7 +15,8 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.navDb;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
+
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
@@ -37,110 +38,77 @@ import net.opengis.swe.v20.Text;
  */
 public class WaypointOutput extends AbstractSensorOutput<NavDriver>
 {
-	private static final int AVERAGE_SAMPLING_PERIOD = 1;
+    private static final int AVERAGE_SAMPLING_PERIOD = 1;
 
 	DataRecord struct;
 	DataEncoding encoding;
 
+	
 	public WaypointOutput(NavDriver parentSensor) throws IOException
 	{
 		super("waypoints", parentSensor);
 	}
 
-	protected void init()
-	{
-		SWEHelper fac = new SWEHelper();
 
-		// Structure is {id, name, lat, lon}
+    protected void init()
+    {
+        SWEHelper fac = new SWEHelper();
 
-		// SWE Common data structure
-		struct = fac.newDataRecord(4);
-		struct.setName(getName());
-		struct.setDefinition(SWEHelper.getPropertyUri("aero/Waypoint"));
+        // Structure is {id, name, lat, lon}
 
-		Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "Waypoint Code", "Waypoint ICAO identification code");
-		struct.addComponent("code", id);
-		Text name = fac.newText(SWEHelper.getPropertyUri("Name"), "Name", null);
-		struct.addComponent("name", name);
-		Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg", DataType.DOUBLE);
-		struct.addComponent("lat", latQuant);
-		Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.DOUBLE);
-		struct.addComponent("lon", lonQuant);
+        // SWE Common data structure
+        struct = fac.newDataRecord(4);
+        struct.setName(getName());
+        struct.setDefinition(SWEHelper.getPropertyUri("aero/Waypoint"));
 
-		// default encoding is text
-		encoding = fac.newTextEncoding(",", "\n");
-	}
+        Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "Waypoint Code", "Waypoint ICAO identification code");
+        struct.addComponent("code", id);
+        Text name = fac.newText(SWEHelper.getPropertyUri("Name"), "Name", null);
+        struct.addComponent("name", name);
+        Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg", DataType.DOUBLE);
+        struct.addComponent("lat", latQuant);
+        Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.DOUBLE);
+        struct.addComponent("lon", lonQuant);
 
-	public void start() throws SensorHubException {
-		// Nothing to do 
-	}
+        // default encoding is text
+        encoding = fac.newTextEncoding(",", "\n");
+    }
 
-	public double[] getLons (List<NavDbEntry> recs) {
-		double [] lons = new double[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			lons[i++] = rec.lon;
-		}
-		return lons;
-	}
+    public void start() throws SensorHubException {
+        // Nothing to do 
+    }
+	
 
-	public double[] getLats (List<NavDbEntry> recs) {
-		double [] lats = new double[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			lats[i++] = rec.lat;
-		}
-		return lats;
-	}
-
-	public String[] getNames (List<NavDbEntry> recs) {
-		String [] names = new String[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			names[i++] = rec.name;
-		}
-		return names;
-	}
-
-	public String[] getIds (List<NavDbEntry> recs) {
-		String [] ids = new String[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			ids[i++] = rec.id;
-		}
-		return ids;
-	}
-
-	public void sendEntries(List<NavDbEntry> recs)
+	public void sendEntries(Collection<NavDbPointEntry> recs)
 	{
 	    long time = System.currentTimeMillis();
         
-        for(NavDbEntry rec: recs) {
-			DataBlock dataBlock = struct.createDataBlock();
+        for (NavDbPointEntry rec: recs) {
+            DataBlock dataBlock = struct.createDataBlock();
 
-			dataBlock.setStringValue(0, rec.id);
+            dataBlock.setStringValue(0, rec.id);
 			dataBlock.setStringValue(1, rec.name);
 			dataBlock.setDoubleValue(2, rec.lat);
 			dataBlock.setDoubleValue(3, rec.lon);
 			
 			// TODO send as a single ObsEvent w/ multiple IObsData
-			var foiUID = NavDriver.WAYPOINT_UID_PREFIX + rec.id;
+			var foiUID = NavDriver.WAYPOINTS_UID_PREFIX + rec.id;
 			eventHandler.publish(new DataEvent(time, WaypointOutput.this, foiUID, dataBlock));
 		}
 	}
-	
-
-	public double getAverageSamplingPeriod()
-	{
-		return AVERAGE_SAMPLING_PERIOD;
-	}
 
 
-	@Override 
-	public DataComponent getRecordDescription()
-	{
-		return struct;
-	}
+    public double getAverageSamplingPeriod()
+    {
+        return AVERAGE_SAMPLING_PERIOD;
+    }
+
+
+    @Override 
+    public DataComponent getRecordDescription()
+    {
+        return struct;
+    }
 
 
 	@Override

@@ -15,9 +15,8 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.navDb;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
 
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEHelper;
@@ -38,85 +37,48 @@ import net.opengis.swe.v20.Text;
  */
 public class AirportOutput extends AbstractSensorOutput<NavDriver>
 {
-	private static final int AVERAGE_SAMPLING_PERIOD = 1;
+    private static final int AVERAGE_SAMPLING_PERIOD = 1;
 
 	DataRecord navStruct;
 	DataEncoding encoding;
 
+	
 	public AirportOutput(NavDriver parentSensor) throws IOException
 	{
 		super("airports", parentSensor);
 	}
+    
 
-	protected void init()
-	{
-		SWEHelper fac = new SWEHelper();
+    protected void init()
+    {
+        SWEHelper fac = new SWEHelper();
 
-		// Structure is {id, name, lat, lon}
+        // Structure is {id, name, lat, lon}
 
-		// SWE Common data structure
-		navStruct = fac.newDataRecord(4);
-		navStruct.setName(getName());
-		navStruct.setDefinition(SWEHelper.getPropertyUri("aero/Airport"));
+        // SWE Common data structure
+        navStruct = fac.newDataRecord(4);
+        navStruct.setName(getName());
+        navStruct.setDefinition(SWEHelper.getPropertyUri("aero/Airport"));
 
-		Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "ICAO Code", "Airport ICAO identification code");
-		navStruct.addComponent("code", id);
-		Text name = fac.newText(SWEHelper.getPropertyUri("Name"), "Name", "Long name" );
-		navStruct.addComponent("name", name);
-		Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg", DataType.DOUBLE);
-		navStruct.addComponent("lat", latQuant);
-		Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.DOUBLE);
-		navStruct.addComponent("lon", lonQuant);
+        Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "ICAO Code", "Airport ICAO identification code");
+        navStruct.addComponent("code", id);
+        Text name = fac.newText(SWEHelper.getPropertyUri("Name"), "Name", "Long name" );
+        navStruct.addComponent("name", name);
+        Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg", DataType.DOUBLE);
+        navStruct.addComponent("lat", latQuant);
+        Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.DOUBLE);
+        navStruct.addComponent("lon", lonQuant);
 
-		// default encoding is text
-		encoding = fac.newTextEncoding(",", "\n");
-	}
+        // default encoding is text
+        encoding = fac.newTextEncoding(",", "\n");
+    }
+    
 
-	public void start() throws SensorHubException {
-		// Nothing to do 
-	}
-
-	public double[] getLons (List<NavDbEntry> recs) {
-		double [] lons = new double[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			lons[i++] = rec.lon;
-		}
-		return lons;
-	}
-
-	public double[] getLats (List<NavDbEntry> recs) {
-		double [] lats = new double[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			lats[i++] = rec.lat;
-		}
-		return lats;
-	}
-
-	public String[] getNames (List<NavDbEntry> recs) {
-		String [] names = new String[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			names[i++] = rec.name;
-		}
-		return names;
-	}
-
-	public String[] getIds (List<NavDbEntry> recs) {
-		String [] ids = new String[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			ids[i++] = rec.id;
-		}
-		return ids;
-	}
-
-	public void sendEntries(List<NavDbEntry> recs)
+	public void sendEntries(Collection<NavDbPointEntry> recs)
 	{                
 	    long time = System.currentTimeMillis();
         
-        for(NavDbEntry rec: recs) {
+        for (NavDbPointEntry rec: recs) {
 			DataBlock dataBlock = navStruct.createDataBlock();
 
 			dataBlock.setStringValue(0, rec.id);
@@ -125,7 +87,7 @@ public class AirportOutput extends AbstractSensorOutput<NavDriver>
 			dataBlock.setDoubleValue(3, rec.lon);
 			
 			// TODO send as a single ObsEvent w/ multiple IObsData
-            var foiUID = NavDriver.AIRPORT_UID_PREFIX + rec.id;
+            var foiUID = NavDriver.AIRPORTS_UID_PREFIX + rec.id;
             eventHandler.publish(new DataEvent(time, AirportOutput.this, foiUID, dataBlock));
 		}
 	}
@@ -137,11 +99,11 @@ public class AirportOutput extends AbstractSensorOutput<NavDriver>
 	}
 
 
-	@Override 
-	public DataComponent getRecordDescription()
-	{
-		return navStruct;
-	}
+    @Override 
+    public DataComponent getRecordDescription()
+    {
+        return navStruct;
+    }
 
 
 	@Override
