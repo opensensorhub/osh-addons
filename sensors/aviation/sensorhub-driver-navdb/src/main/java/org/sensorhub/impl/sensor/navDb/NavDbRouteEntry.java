@@ -28,8 +28,11 @@ import java.util.List;
  */
 public class NavDbRouteEntry extends NavDbEntry
 {
+    public enum RouteType { RUNWAY, COMMON, ENROUTE }
     public List<NavDbEntryRef> fixes = new ArrayList<>();
     public String transitionId = ""; // ID of transition for SIDs/STARs
+    public char routeTypeCode = 0;
+    public RouteType routeType;
     
     
     public NavDbRouteEntry(Type type, String id)

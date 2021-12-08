@@ -18,6 +18,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import org.sensorhub.impl.sensor.navDb.NavDbEntry.Type;
+import org.sensorhub.impl.sensor.navDb.NavDbRouteEntry.RouteType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -201,7 +202,7 @@ public class Arinc424Parser
     }
     
     
-    private static NavDbRouteEntry parseSIDSTAR(NavDbRouteEntry route, String l, boolean isSID)
+    private static NavDbRouteEntry parseSIDSTAR(NavDbRouteEntry prevEntry, String l, boolean isSID)
     {
         String region = l.substring(1, 4).trim();
         String icao = l.substring(6, 10).trim();
@@ -210,42 +211,45 @@ public class Arinc424Parser
         String transId = l.substring(20, 25).trim();
         String fixId = l.substring(29, 34).trim();
         String fixType = l.substring(36, 38).trim();
+        RouteType routeType = null;
         
         if (isSID) // SID case
         {
-            // skip runway transitions for now
+            // set route type
             if (transType == '1' || transType == '4' || transType == 'F' || transType == 'T')
-                return null;
-            
-            // set default identifier for common route
-            if (transType == '2' || transType == '5' || transType == 'M')
-                transId = "ALL";
+                routeType = RouteType.RUNWAY;
+            else if (transType == '2' || transType == '5' || transType == 'M')
+                routeType = RouteType.COMMON;
+            else if (transType == '3' || transType == '6' || transType == 'S' || transType == 'V')
+                routeType = RouteType.ENROUTE;
         }
         else // STAR case
         {
-            // skip runway transitions for now
-            if (transType == '3' || transType == '6' || transType == '9' || transType == 'S')
-                return null;
-            
-            // set default identifier for common route
-            if (transType == '2' || transType == '5' || transType == '8' || transType == 'M')
-                transId = "ALL";
+            // set route type
+            if (transType == '1' || transType == '4' || transType == '7' || transType == 'F')
+                routeType = RouteType.ENROUTE;
+            else if (transType == '2' || transType == '5' || transType == '8' || transType == 'M')
+                routeType = RouteType.COMMON;
+            else if (transType == '3' || transType == '6' || transType == '9' || transType == 'S')
+                routeType = RouteType.RUNWAY;
         }
         
-        
-        if (route == null || !id.equals(route.id) || !icao.equals(route.airport)|| !transId.equals(route.transitionId))
+        // create a new route entry for each ID/airport/transition ID combination
+        if (prevEntry == null || !id.equals(prevEntry.id) || !icao.equals(prevEntry.airport)|| !transId.equals(prevEntry.transitionId))
         {
-            // create a new route entry for each ID/airport/transition ID combination
-            route = new NavDbRouteEntry(Type.SID, id);
-            route.region = region;
-            route.airport = icao;
-            route.transitionId = transId;
+            prevEntry = new NavDbRouteEntry(Type.SID, id);
+            prevEntry.region = region;
+            prevEntry.airport = icao;
+            prevEntry.transitionId = transId;
+            prevEntry.routeTypeCode = transType;
+            prevEntry.routeType = routeType;
         }
         
+        // add fix to route entry
         if (!fixType.isEmpty() && !fixType.equals("PG")) // skip empty and runway fixes
-            route.addFix(parseRecordType(fixType), fixId);
+            prevEntry.addFix(parseRecordType(fixType), fixId);
         
-        return route;
+        return prevEntry;
     }
     
     

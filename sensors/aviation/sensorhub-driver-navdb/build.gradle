@@ -1,6 +1,6 @@
 description = 'Navigation Database'
 ext.details = 'Adaptor for aeronautical navigation database provider in ARINC 424 format'
-version = '0.5'
+version = '0.6'
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
@@ -13,6 +13,10 @@ jar {
     instruction 'Bundle-Vendor', 'Botts Innovative Research Inc.'
     instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.navDb.NavDriver'
   }
+}
+
+test {
+    exclude 'org.sensorhub.impl.sensor.navDb.TestNavDbDecode.class'
 }
 
 // add info to maven pom
