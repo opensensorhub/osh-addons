@@ -20,12 +20,20 @@ public class NavDbEntryRef
 {
     public Type type;
     public String id;
+    public boolean boundaryCrossing = false;
     
     
     public NavDbEntryRef(Type type, String id)
     {
         this.type = type;
         this.id = id;
+    }
+    
+    
+    public NavDbEntryRef(Type type, String id, boolean boundaryCrossing)
+    {
+        this(type, id);
+        this.boundaryCrossing = boundaryCrossing;
     }
     
     
