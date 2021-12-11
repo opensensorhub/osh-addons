@@ -16,7 +16,7 @@ osgi {
 }
 
 test {
-    exclude 'org.sensorhub.impl.sensor.navDb.TestNavDbDecode.class'
+    exclude '**/TestNavDbDecode.class'
 }
 
 // add info to maven pom

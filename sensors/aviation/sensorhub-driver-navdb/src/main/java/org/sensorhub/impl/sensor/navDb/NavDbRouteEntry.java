@@ -45,6 +45,12 @@ public class NavDbRouteEntry extends NavDbEntry
     {
         fixes.add(new NavDbEntryRef(type, fixId));
     }
+    
+    
+    public void addFix(Type type, String fixId, boolean boundaryCrossing)
+    {
+        fixes.add(new NavDbEntryRef(type, fixId, boundaryCrossing));
+    }
 
 
     @Override

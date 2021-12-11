@@ -52,8 +52,9 @@ public class NavDatabase
 {
     static final Logger log = LoggerFactory.getLogger(NavDatabase.class);
     static final long START_TIMEOUT = 30000;
-    static final Pattern COORD_WPT_REGEX1 = Pattern.compile("[0-9]{2}[0-9NESW][0-9][0-9NESW]");
-    static final Pattern COORD_WPT_REGEX2 = Pattern.compile("([0-9]{2})([0-9]{2})?([0-9]{2})?([NS])/?([0-9]{3})([0-9]{2})?([0-9]{2})?([EW])");
+    static final Pattern LATLON_COORD_REGEX1 = Pattern.compile("[0-9]{2}[0-9NESW][0-9][0-9NESW]");
+    static final Pattern LATLON_COORD_REGEX2 = Pattern.compile("([0-9]{2})([0-9]{2})?([0-9]{2})?([NS])/?([0-9]{3})([0-9]{2})?([0-9]{2})?([EW])");
+    static final Pattern BEARING_DISTANCE_REGEX1 = Pattern.compile("([A-Z]{2,3})([0-9]{3})([0-9]{3})");
     
     Map<String, NavDbPointEntry> airports = new TreeMap<>();
     Multimap<String, NavDbPointEntry> navaids = TreeMultimap.create();
@@ -176,27 +177,39 @@ public class NavDatabase
             }
             
             // if undesignated coordinate waypoint type 1, decode it
-            if (COORD_WPT_REGEX1.matcher(code).matches())
+            if (LATLON_COORD_REGEX1.matcher(code).matches())
             {
                 NavDbPointEntry wpt = decodeCoordinateWaypoint1(code);
                 if (wpt != null)
                 {
                     addWaypointToDecodedRoute(wpt, decodeOutput);
                     previousWaypt = wpt;
+                    continue;
                 }
-                continue;
             }
             
             // if undesignated coordinate waypoint type 2, decode it
-            if (COORD_WPT_REGEX2.matcher(code).matches())
+            if (LATLON_COORD_REGEX2.matcher(code).matches())
             {
                 NavDbPointEntry wpt = decodeCoordinateWaypoint2(code);
                 if (wpt != null)
                 {
                     addWaypointToDecodedRoute(wpt, decodeOutput);
                     previousWaypt = wpt;
+                    continue;
                 }
-                continue;
+            }
+            
+            // if VOR/bearing/distance waypoint, decode it
+            if (BEARING_DISTANCE_REGEX1.matcher(code).matches())
+            {
+                NavDbPointEntry wpt = decodeBearingDistanceWaypoint1(code, previousWaypt);
+                if (wpt != null)
+                {
+                    addWaypointToDecodedRoute(wpt, decodeOutput);
+                    previousWaypt = wpt;
+                    continue;
+                }
             }
             
             // if first or last, try to get airport
@@ -261,32 +274,6 @@ public class NavDatabase
                     continue;
                 }
             }
-            
-            /*// try navaids
-            NavDbPointEntry navaid = findClosestWaypoint(code, Type.NAVAID, previousWaypt);
-            if (navaid != null)
-            {
-                addWaypointToDecodedRoute(navaid, decodeOutput);
-                previousWaypt = navaid;
-                continue;
-            }
-            
-            // try waypoints
-            NavDbPointEntry wpt = findClosestWaypoint(code, Type.WAYPOINT, previousWaypt);
-            if (wpt != null)
-            {
-                addWaypointToDecodedRoute(wpt, decodeOutput);
-                previousWaypt = wpt;
-                continue;
-            }
-            
-            // try airways
-            Collection<NavDbRouteEntry> possibleAirways = airways.get(code);
-            if (possibleAirways != null && !possibleAirways.isEmpty())
-            {
-                previousWaypt = decodeAirway(possibleAirways, previousWaypt, nextCode, decodeOutput);
-                continue;
-            }*/
             
             // otherwise add unknown code to error list
             log.error("Unknown code: {}", code);
@@ -370,7 +357,7 @@ public class NavDatabase
      */
     private NavDbPointEntry decodeCoordinateWaypoint2(String code)
     {
-        Matcher m = COORD_WPT_REGEX2.matcher(code);
+        Matcher m = LATLON_COORD_REGEX2.matcher(code);
         m.find();
         
         // latitude value
@@ -400,6 +387,50 @@ public class NavDatabase
     
     
     /*
+     * Decode waypoint defined by bearing/distance from a known VOR/DME nav point
+     */
+    private NavDbPointEntry decodeBearingDistanceWaypoint1(String code, NavDbPointEntry previousWaypt)
+    {
+        Matcher m = BEARING_DISTANCE_REGEX1.matcher(code);
+        m.find();
+        
+        String navaidId = m.group(1);
+        double bearing = Integer.parseInt(m.group(2));
+        double dist = Integer.parseInt(m.group(3));
+        
+        // look up VOR lat/lon coordinates
+        NavDbPointEntry navaid = findClosestWaypoint(navaidId, Type.NAVAID, previousWaypt);
+        if (navaid == null)
+            return null;
+        
+        double[] latlon = computeBearingDistanceWaypoint(navaid, bearing, dist);
+        return new NavDbPointEntry(Type.WAYPOINT, code, latlon[0], latlon[1]);
+    }
+    
+    
+    /*
+     * Compute the nav point lat/lon location knowing the VOR lat/lon, bearing and distance
+     */
+    public static final double EARTH_RADIUS_KM = 6371.0;
+    public static final double NAUTICALMILES_TO_KILOMETERS = 1. / 0.539956803;
+    protected double[] computeBearingDistanceWaypoint(NavDbPointEntry navaid, double bearingDeg, double distanceNM)
+    {
+        double bearingR = Math.toRadians(bearingDeg);
+        double latR = Math.toRadians(navaid.lat);
+        double lonR = Math.toRadians(navaid.lon);
+
+        // convert to km and normalize to get angular distance
+        double distanceKm = distanceNM * NAUTICALMILES_TO_KILOMETERS;
+        double angularDist = distanceKm/EARTH_RADIUS_KM;
+
+        double latEndR = Math.asin( Math.sin(latR) * Math.cos(angularDist) + Math.cos(latR) * Math.sin(angularDist) * Math.cos(bearingR) );
+        double lonEndR = lonR + Math.atan2( Math.sin(bearingR) * Math.sin(angularDist) * Math.cos(latR), Math.cos(angularDist) - Math.sin(latR) * Math.sin(latEndR) );
+        
+        return new double[] {Math.toDegrees(latEndR), Math.toDegrees(lonEndR)};
+    }
+    
+    
+    /*
      * Decode a SID and return the last waypoint added to the decoded route
      */
     NavDbPointEntry decodeSID(Collection<NavDbRouteEntry> possibleSids, NavDbPointEntry previousWaypt, String nextCode, RouteDecodeOutput decodedRoute)
@@ -422,7 +453,7 @@ public class NavDatabase
             if (sid.routeType == RouteType.COMMON)
             {
                 // find end fix
-                int endIdx = sid.fixes.size();
+                int endIdx = sid.fixes.size()-1;
                 for (int i = 0; i < sid.fixes.size(); i++)
                 {
                     NavDbEntryRef fix = sid.fixes.get(i);
@@ -503,7 +534,7 @@ public class NavDatabase
                 
                 if (startIdx >= 0)
                 {
-                    previousWaypt = decodeFixes(star, startIdx, star.fixes.size(), previousWaypt, decodedRoute);
+                    previousWaypt = decodeFixes(star, startIdx, star.fixes.size()-1, previousWaypt, decodedRoute);
                     break;
                 }
             }
@@ -526,7 +557,7 @@ public class NavDatabase
                     }
                 }
                 
-                previousWaypt = decodeFixes(star, startIdx, star.fixes.size(), previousWaypt, decodedRoute);
+                previousWaypt = decodeFixes(star, startIdx, star.fixes.size()-1, previousWaypt, decodedRoute);
                 break;
             }
         }
@@ -541,37 +572,69 @@ public class NavDatabase
     NavDbPointEntry decodeAirway(Collection<NavDbRouteEntry> possibleAirways, NavDbPointEntry previousWaypt, String nextCode, RouteDecodeOutput decodedRoute)
     {
         boolean found = false;
-        String entryPoint = previousWaypt != null ? previousWaypt.id : "UKNOWN";
+        boolean boundaryCrossing;
+        Collection<NavDbRouteEntry> usedAirways = new ArrayList<>();
         
-        for (NavDbRouteEntry airway: possibleAirways)
+        do
         {
-            int startIdx = -1;
-            int endIdx = -1;
+            boundaryCrossing = false;
             
-            // find start/end fixes
-            for (int i = 0; i < airway.fixes.size(); i++)
+            for (NavDbRouteEntry airway: possibleAirways)
             {
-                NavDbEntryRef fix = airway.fixes.get(i);
+                int startIdx = -1;
+                int endIdx = -1;
+                int boundaryCrossingIdx = -1;
                 
-                if (fix.id.equals(entryPoint))
-                    startIdx = i;
-                else if (fix.id.equals(nextCode))
-                    endIdx = i;
-            }
-            
-            // add all fixes in between to decoded route
-            if (startIdx >= 0 && endIdx >= 0)
-            {
-                previousWaypt = decodeFixes(airway, startIdx, endIdx, previousWaypt, decodedRoute);
-                found = true;
-                break;
+                // don't process the same airway twice!
+                if (usedAirways.contains(airway))
+                    continue;
+                
+                // find start/end fixes
+                for (int i = 0; i < airway.fixes.size(); i++)
+                {
+                    NavDbEntryRef fix = airway.fixes.get(i);
+                    
+                    if (fix.id.equals(previousWaypt.id))
+                        startIdx = i;
+                    
+                    if (fix.id.equals(nextCode))
+                        endIdx = i;
+                    
+                    if (startIdx >= 0 && endIdx >= 0)
+                        break;
+                    
+                    // detect if airway crosses a geographic boundary so we know
+                    // if we need to decode the other side
+                    if (fix.boundaryCrossing)
+                        boundaryCrossingIdx = i;
+                }
+                
+                // if crossing a boundary, decode this section
+                // we'll decode the other side on next iteration
+                if (startIdx >= 0 && endIdx < 0 && boundaryCrossingIdx != startIdx)
+                {
+                    boundaryCrossing = true;
+                    endIdx = boundaryCrossingIdx;
+                    
+                    // remember this airway to avoid processing it again
+                    usedAirways.add(airway);
+                }
+                
+                // add all fixes in between to decoded route
+                if (startIdx >= 0 && endIdx >= 0)
+                {
+                    previousWaypt = decodeFixes(airway, startIdx, endIdx, previousWaypt, decodedRoute);
+                    found = true;
+                    break;
+                }
             }
         }
+        while (boundaryCrossing);
         
         if (!found)
         {
             String code = possibleAirways.iterator().next().id;
-            log.error("Could not find airway {} containing {} and {}", code, entryPoint, nextCode);
+            log.error("Could not find airway {} containing {} and {}", code, previousWaypt.id, nextCode);
             decodedRoute.unknownCodes.add(code);
         }
         
@@ -581,13 +644,13 @@ public class NavDatabase
     
     /*
      * Extract, resolve and decode a list of fixes and return the last waypoint added to the decoded route.
-     * Only fixes between start and end index are extracted
+     * Only fixes between start and end index (included) are extracted
      */
     NavDbPointEntry decodeFixes(NavDbRouteEntry route, int startIdx, int endIdx, NavDbPointEntry previousWaypt, RouteDecodeOutput decodedRoute)
     {
         if (startIdx < endIdx)
         {
-            for (int i = startIdx+1; i < endIdx; i++)
+            for (int i = startIdx+1; i <= endIdx; i++)
             {
                 NavDbEntryRef fixRef = route.fixes.get(i);
                 NavDbPointEntry wpt = findClosestWaypoint(fixRef.id, fixRef.type, previousWaypt);
@@ -597,7 +660,7 @@ public class NavDatabase
         }
         else
         {
-            for (int i = startIdx-1; i > endIdx; i--)
+            for (int i = startIdx-1; i >= endIdx; i--)
             {
                 NavDbEntryRef fixRef = route.fixes.get(i);
                 NavDbPointEntry wpt = findClosestWaypoint(fixRef.id, fixRef.type, previousWaypt);
@@ -652,9 +715,19 @@ public class NavDatabase
         NavDbEntry closestEntry = null;
         for (NavDbEntry entry: possibleEntries)
         {
-            double lat = 0, lon = 0;
+            // case of point entry (waypoint or navaid)
+            if (entry instanceof NavDbPointEntry)
+            {
+                double dist2 = computeDist2((NavDbPointEntry)entry, previousWaypt);
+                if (dist2 < minDist2)
+                {
+                    closestEntry = entry;
+                    minDist2 = dist2;
+                }
+            }
             
-            if (entry instanceof NavDbRouteEntry)
+            // case of airway
+            else if (entry instanceof NavDbRouteEntry)
             {
                 NavDbRouteEntry airway = (NavDbRouteEntry)entry;
                     
@@ -664,30 +737,37 @@ public class NavDatabase
                     NavDbEntryRef fix = airway.fixes.get(i);
                     if (fix.id.equals(previousWaypt.id))
                     {
-                        int nearIdx = (i == 0) ? i+1 : i-1;
-                        NavDbEntryRef nearFix = airway.fixes.get(nearIdx);
-                        NavDbPointEntry wpt = findClosestWaypoint(nearFix.id, nearFix.type, previousWaypt);
-                        lat = wpt.lat;
-                        lon = wpt.lon;
+                        // try previous fix in airway
+                        if (i > 0)
+                        {
+                            NavDbEntryRef prevFix = airway.fixes.get(i-1);
+                            NavDbPointEntry pointEtry = findClosestWaypoint(prevFix.id, prevFix.type, previousWaypt);
+                            
+                            double dist2 = computeDist2(pointEtry, previousWaypt);
+                            if (dist2 < minDist2)
+                            {
+                                closestEntry = entry;
+                                minDist2 = dist2;
+                            }
+                        }
+                        
+                        // try next fix in airway
+                        if (i < airway.fixes.size()-1)
+                        {
+                            NavDbEntryRef nextFix = airway.fixes.get(i+1);
+                            NavDbPointEntry pointEntry = findClosestWaypoint(nextFix.id, nextFix.type, previousWaypt);
+                            
+                            double dist2 = computeDist2(pointEntry, previousWaypt);
+                            if (dist2 < minDist2)
+                            {
+                                closestEntry = entry;
+                                minDist2 = dist2;
+                            }
+                        }
+                        
                         break;
                     }
                 }
-            }
-            else if (entry instanceof NavDbPointEntry)
-            {
-                lat = ((NavDbPointEntry)entry).lat;
-                lon = ((NavDbPointEntry)entry).lon;
-            }
-            else
-                continue;
-            
-            double dLat = lat - previousWaypt.lat;
-            double dLon = lon - previousWaypt.lon;
-            double dist2 = dLat*dLat + dLon*dLon;
-            if (dist2 < minDist2)
-            {
-                closestEntry = entry;
-                minDist2 = dist2;
             }
         }
         
@@ -704,9 +784,7 @@ public class NavDatabase
         NavDbPointEntry closestEntry = null;
         for (NavDbPointEntry entry: possibleEntries)
         {
-            double dLat = entry.lat - previousWaypt.lat;
-            double dLon = entry.lon - previousWaypt.lon;
-            double dist2 = dLat*dLat + dLon*dLon;
+            double dist2 = computeDist2(entry, previousWaypt);
             if (dist2 < minDist2)
             {
                 closestEntry = entry;
@@ -715,6 +793,16 @@ public class NavDatabase
         }
         
         return closestEntry;
+    }
+    
+    
+    protected double computeDist2(NavDbPointEntry p1, NavDbPointEntry p2)
+    {
+        double dLat = p1.lat - p2.lat;
+        double dLon = Math.abs(p1.lon - p2.lon);
+        if (dLon > 180)
+            dLon = 360 - dLon;
+        return dLat*dLat + dLon*dLon;
     }
     
     

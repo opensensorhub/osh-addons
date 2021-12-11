@@ -47,7 +47,7 @@ public class TestNavDbDecode
     
     
     @Test
-    public void testDecodeCoordType1() throws Exception
+    public void testDecodeLatLonCoordType1() throws Exception
     {
         decodeCoordAndCheck("5275N", 52.0, -75.0);
         decodeCoordAndCheck("5040N", 50.0, -40.0);
@@ -73,7 +73,7 @@ public class TestNavDbDecode
     
     
     @Test
-    public void testDecodeCoordType2() throws Exception
+    public void testDecodeLatLonCoordType2() throws Exception
     {
         decodeCoordAndCheck("36N/088W", 36.0, -88.0);
         decodeCoordAndCheck("54N115W", 54.0, -115.0);
@@ -83,10 +83,20 @@ public class TestNavDbDecode
     }
     
     
+    @Test
+    public void testDecodeBearingDistanceType1() throws Exception
+    {
+        //decodeCoordAndCheck("KDTW CRL000010", 49.4218321393345, 2.514777777777778);
+        decodeCoordAndCheck("KDTW CRL297040", 42.349833333, -84.260333333);
+        decodeCoordAndCheck("AIR320014", 54.0, -115.0);
+        decodeCoordAndCheck("LDZ170020", 54.0, -115.0);
+    }
+    
+    
     protected void decodeCoordAndCheck(String routeTxt, double expectedLat, double expectedLon)
     {
         RouteDecodeOutput output = navDB.decodeRoute(routeTxt);
-        NavDbPointEntry wpt = output.decodedRoute.get(0);
+        NavDbPointEntry wpt = output.decodedRoute.get(output.decodedRoute.size()-1);
         assertEquals(expectedLat, wpt.lat, 1e-8);
         assertEquals(expectedLon, wpt.lon, 1e-8);
     }
@@ -123,8 +133,36 @@ public class TestNavDbDecode
         
         String expected = "KFLL FEMON SSI BROUN HARPS WOHPY KELER SAV KRDU";
         checkWaypoints(output, expected);
-        
         assertTrue(output.decodedRoute.get(0).region.equals("USA"));
+    }
+    
+    
+    @Test
+    public void testDecodeAirwayCrossingBoundary() throws Exception
+    {
+        String routeTxt;
+        RouteDecodeOutput output;
+        
+        /*routeTxt = "KATL URABI T565 GUBIS T565 ANIMO RJTT";
+        output = navDB.decodeRoute(routeTxt);
+        checkNoError(output);
+        
+        routeTxt = "KATL URABI T565 ANIMO RJTT";
+        output = navDB.decodeRoute(routeTxt);
+        checkNoError(output);
+        
+        routeTxt = "KDTW BANOT B223 LUMIN B223 WKE RJGG";
+        output = navDB.decodeRoute(routeTxt);
+        checkNoError(output);
+        
+        routeTxt = "RJGG WKE B223 BANOT KDTW";
+        output = navDB.decodeRoute(routeTxt);
+        checkNoError(output);*/
+        
+        //routeTxt = "KDTW ASKIB B933 ODEPI B223 LUMIN B223 WKE V1 CHE Y10 GODIN RJTT";
+        routeTxt = "KDTW TRMML3 GNZOE SSM 5000N/08500W 5500N/08700W 5900N/09000W 6000N/09100W 6500N/10000W 7000N/11000W 7200N/12000W JESRU BARIP LUTEM M137 ASKIB B933 ODEPI B223 LUMIN B223 WKE V1 CHE Y10 GODIN RJTT";
+        output = navDB.decodeRoute(routeTxt);
+        checkNoError(output);
     }
     
     
@@ -257,14 +295,16 @@ public class TestNavDbDecode
         checkNoError(output);
         
         String[] expectedWaypoints = expected.split(" ");
-        assertEquals("Wrong decoded length, ", expectedWaypoints.length, output.decodedRoute.size());
+        int numWaypt = Math.min(expectedWaypoints.length, output.decodedRoute.size());
         
-        for (int i = 1; i < output.decodedRoute.size(); i++)
+        for (int i = 1; i < numWaypt; i++)
         {
             String expectedWptId = expectedWaypoints[i];
             String ourWptId = output.decodedRoute.get(i).id;
             assertEquals(expectedWptId, ourWptId);
         }
+        
+        assertEquals("Wrong decoded length, ", expectedWaypoints.length, output.decodedRoute.size());
     }
     
     
@@ -327,7 +367,7 @@ public class TestNavDbDecode
                 // cleanup firehose waypoints
                 String firstWptId = waypoints.get(1).id;
                 String lastWptId = waypoints.get(waypoints.size()-2).id;
-                cleaupFirehoseWaypoints(expectedWaypoints, firstWptId, lastWptId);
+                cleanupFirehoseWaypoints(expectedWaypoints, firstWptId, lastWptId);
                 
                 // compare decode result with Firehose waypoints
                 if (waypoints.size() == expectedWaypoints.size())
@@ -353,7 +393,7 @@ public class TestNavDbDecode
     }
     
     
-    void cleaupFirehoseWaypoints(List<String> expectedWaypoints, String firstWptId, String lastWptId)
+    void cleanupFirehoseWaypoints(List<String> expectedWaypoints, String firstWptId, String lastWptId)
     {
         // remove SID transition
         ListIterator<String> it = expectedWaypoints.listIterator();

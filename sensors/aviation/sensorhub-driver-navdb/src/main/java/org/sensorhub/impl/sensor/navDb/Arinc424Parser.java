@@ -177,6 +177,7 @@ public class Arinc424Parser
         String id = l.substring(13, 18).trim();
         String fixId = l.substring(29, 34).trim();
         String fixType = l.substring(36, 38).trim();
+        boolean boundaryCrossing = l.charAt(43) != ' ';
         
         if (airway == null || !id.equals(airway.id))
         {
@@ -184,7 +185,7 @@ public class Arinc424Parser
             airway.region = region;
         }
         
-        airway.addFix(parseRecordType(fixType), fixId);
+        airway.addFix(parseRecordType(fixType), fixId, boundaryCrossing);
         
         return airway;
     }
