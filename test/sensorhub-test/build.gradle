@@ -58,3 +58,5 @@ dependencies {
   
   implementation("com.hivemq:hivemq-mqtt-client:1.2.2")
 }
+
+osgi.enabled = false

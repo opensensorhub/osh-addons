@@ -20,9 +20,9 @@ dependencies {
   embeddedImpl 'com.google.guava:guava:19.0'
 
 // UCAR NetCDF dependencies
-  implementation 'edu.ucar:cdm:4.6.9'
-  implementation 'edu.ucar:grib:4.6.9'
-  implementation 'org.slf4j:slf4j-jdk14:1.7.21'
+  embeddedImpl 'edu.ucar:cdm:4.6.9'
+  embeddedImpl 'edu.ucar:grib:4.6.9'
+  //implementation 'org.slf4j:slf4j-jdk14:1.7.21'
 }
 
 // exclude tests requiring connection to the sensor
