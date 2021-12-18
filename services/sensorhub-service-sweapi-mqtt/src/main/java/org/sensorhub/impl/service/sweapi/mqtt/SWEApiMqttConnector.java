@@ -152,7 +152,7 @@ public class SWEApiMqttConnector implements IMqttHandler
         }
         finally
         {
-            servlet.clearCurrentUser();
+            servlet.getSecurityHandler().clearCurrentUser();
         }
     }
     
@@ -198,8 +198,8 @@ public class SWEApiMqttConnector implements IMqttHandler
             throw new IllegalStateException("Internal error publishing to topic " + topic, e);
         }
         finally
-        {                
-            servlet.clearCurrentUser();
+        {
+            servlet.getSecurityHandler().clearCurrentUser();
         }
     }
     
