@@ -9,11 +9,14 @@ dependencies {
   embeddedImpl 'org.eclipse.jetty:jetty-util:9.4.19.v20190610'
   embeddedImpl('com.hivemq:hivemq-community-edition-embedded:2021.1') {
     exclude group: 'org.rocksdb', module: 'rocksdbjni'
-    exclude group: 'ch.qos.logback', module: 'logback-classic'
     exclude group: 'com.google.guava', module: 'guava'
+    exclude group: 'ch.qos.logback', module: 'logback-classic'
+    exclude group: 'org.slf4j', module: 'slf4j-api'
     exclude group: 'com.hivemq', module: 'hivemq-extension-sdk'
   }
-  embeddedImpl 'com.hivemq:hivemq-extension-sdk:4.6.1'
+  embeddedImpl('com.hivemq:hivemq-extension-sdk:4.6.1') {
+    exclude group: 'org.slf4j', module: 'slf4j-api'
+  }
 }
 
 // add info to OSGi manifest
