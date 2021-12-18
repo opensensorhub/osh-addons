@@ -12,7 +12,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.sweapi;
+package org.sensorhub.impl.service.sweapi.mqtt;
 
 import java.io.IOException;
 import java.io.InputStream;

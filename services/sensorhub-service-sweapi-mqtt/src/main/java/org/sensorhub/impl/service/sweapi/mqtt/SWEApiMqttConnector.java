@@ -12,7 +12,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.sweapi;
+package org.sensorhub.impl.service.sweapi.mqtt;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,6 +29,8 @@ import org.sensorhub.api.comm.mqtt.InvalidPayloadException;
 import org.sensorhub.api.comm.mqtt.IMqttServer.IMqttHandler;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.comm.mqtt.MqttOutputStream;
+import org.sensorhub.impl.service.sweapi.InvalidRequestException;
+import org.sensorhub.impl.service.sweapi.SWEApiServlet;
 import org.sensorhub.impl.service.sweapi.resource.RequestContext;
 import org.sensorhub.impl.service.sweapi.resource.ResourceFormat;
 import org.sensorhub.impl.service.sweapi.stream.StreamHandler;
@@ -149,7 +151,7 @@ public class SWEApiMqttConnector implements IMqttHandler
             throw new IllegalStateException("Internal error subscribing to topic " + topic, e);
         }
         finally
-        {                
+        {
             servlet.clearCurrentUser();
         }
     }

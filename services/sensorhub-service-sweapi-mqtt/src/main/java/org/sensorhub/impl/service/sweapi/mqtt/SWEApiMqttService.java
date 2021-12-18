@@ -12,13 +12,15 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.sweapi;
+package org.sensorhub.impl.service.sweapi.mqtt;
 
 import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.api.service.IServiceModule;
 import org.sensorhub.impl.module.AbstractModule;
+import org.sensorhub.impl.service.sweapi.SWEApiService;
+import org.sensorhub.impl.service.sweapi.SWEApiServlet;
 
 
 /**

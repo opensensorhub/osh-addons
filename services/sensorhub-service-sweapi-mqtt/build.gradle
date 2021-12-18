@@ -13,7 +13,6 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
     attributes('Bundle-Activator': 'org.sensorhub.impl.service.sweapi.mqtt.Activator')
-    attributes('-exportcontents': '!*') // to prevent split package issue with sweapi in core
   }
 }
 
