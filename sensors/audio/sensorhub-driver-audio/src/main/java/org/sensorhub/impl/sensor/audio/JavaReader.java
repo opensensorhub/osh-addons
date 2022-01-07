@@ -8,12 +8,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Native java wav reader.  Not using so will probably drop this
+ * Native java wav reader.  Need to factor in audioRecord.metadata, but not using so will probably drop this
  * 
  * @author tcook
  *
  */
-
+@Deprecated // use FFMpeg lib instead
 public class JavaReader extends Thread
 {
 	AudioConfig config;
@@ -65,7 +65,7 @@ public class JavaReader extends Thread
 				rec.sampleData = buffer;
 				rec.sampleIndex = frameCnt;
 				Long sr = wavFile.getSampleRate();
-				rec.samplingRate = sr.intValue();
+				rec.metadata.sampleRate = sr.intValue();
 				if(output != null)
 					output.publishRecord(rec);
 

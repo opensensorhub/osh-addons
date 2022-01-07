@@ -4,7 +4,7 @@
     "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
     "name": "HTTP Server",
     "moduleClass": "org.sensorhub.impl.service.HttpServer",
-    "httpPort": 8282,
+    "httpPort": 8989,
     "servletsRootUrl": "/sensorhub",
     "staticDocRootUrl": "web"
   },
@@ -21,7 +21,7 @@
     "moduleClass": "org.sensorhub.impl.sensor.audio.AudioDriver",
     "numSamplesPerArray": 256,
     "sampleOutputRate": 0.1,
-    "wavDir": "C:/Data/sensorHub/audio/SilentEchoDemo",
+    "wavDir": "C:/Data/sensorHub/audio/silentEchoDemo",
     "baseTimePattern": "yyyy-MM-dd HHmmss",
     "autoStart": true
   },

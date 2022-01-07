@@ -120,11 +120,18 @@ public class AudioOutput extends AbstractSensorOutput<AudioDriver>
     int recCnt = 0;
 	public void publishRecord(AudioRecord rec) { // pass these in from config
 		DataBlock block = getNewDataBlock();
-		double offsetTime = (double) rec.sampleIndex / (double) rec.samplingRate;
-//		System.err.println(" \n>>Offset time" + offsetTime);
-		double latestTime = baseTime + offsetTime;
-		block.setDoubleValue(0, latestTime);
-		block.setIntValue(1, rec.samplingRate);
+		if(rec.metadata.sampleRate == 0) {
+			double latestTime = baseTime + rec.metadata.duration;
+			block.setDoubleValue(0, latestTime);
+	        // System.err.println("AudioOutput.publish().. RecTime is: " + Instant.ofEpochSecond((long)latestTime) + "," + latestTime);
+		} else {
+			double offsetTime = (double) rec.sampleIndex / (double) rec.metadata.sampleRate;
+			// System.err.println(" \n>>Offset time" + offsetTime);
+			double latestTime = baseTime + offsetTime;
+			block.setDoubleValue(0, latestTime);
+	        //System.err.println("AudioOutput.publish().. RecTime is: " + Instant.ofEpochSecond((long)latestTime) + "," + latestTime);
+		}
+		block.setIntValue(1, rec.metadata.sampleRate);
 		block.setIntValue(2, rec.sampleData.length);
 		AbstractDataBlock wavData = ((DataBlockMixed)block).getUnderlyingObject()[3];
         wavData.setUnderlyingObject(rec.getFloatData());
@@ -134,7 +141,6 @@ public class AudioOutput extends AbstractSensorOutput<AudioDriver>
         latestRecordTime = System.currentTimeMillis();
         eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, AudioOutput.this, latestRecord));
 //        System.err.println(++recCnt + " Records published");
-//        System.err.println("AudioOutput.publish().. RecTime is: " + Instant.ofEpochSecond((long)latestTime));
 	}
 	
 	public void setBaseTime(long baseTime) {

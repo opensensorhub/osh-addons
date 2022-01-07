@@ -10,10 +10,10 @@ public class AudioMetadata
 {
 	String format;
 	String codec;
-	int sampleRate;
+	int sampleRate; // Hz
 	int numChannels;
 	String bitrate;
-	double duration;
+	double duration;  // seconds
 	
 	@Override
 	public String toString() {

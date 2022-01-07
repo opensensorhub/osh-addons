@@ -104,7 +104,7 @@ public class FfmpegWavReader extends Thread {
 	double startTime;  //  time of first file 
 	double prevFileDuration = 0.0;
 	double prevStartTime = 0.0;
-	public void init(File inputFile) throws IOException {
+	public AudioMetadata init(File inputFile) throws IOException {
 		// init FFMPEG objects
 //		av_log_set_level(AV_LOG_TRACE);
 		
@@ -158,8 +158,7 @@ public class FfmpegWavReader extends Thread {
 
 		int ok = avformat.avformat_find_stream_info(formatCtx, (AVDictionary)null);
 		if (ok < 0) {
-		   System.err.println("Could not find stream information for stream ");
-		    return;
+		   throw new IOException("Could not find stream information for stream ");
 		}
 		avformat.av_dump_format(formatCtx, 0, inputFile.getCanonicalPath(), 0);
 
@@ -201,6 +200,7 @@ public class FfmpegWavReader extends Thread {
 			floatScale = 0.5 * ((1 << bitsPerSample) - 1);
 		}
 		System.err.println("End init()");
+		return metadata;
 	}
 	
 	private double getTime(String s) {
@@ -222,8 +222,8 @@ public class FfmpegWavReader extends Thread {
 		Iterator<File> it = createIterator();
 		while (it.hasNext()) {
 			try {
-				init(it.next());
-				readWav();
+				// init(it.next()); init moved to readWav
+				readWav(it.next());
 				//Thread.sleep(500L);
 			} catch (InterruptedException | IOException e) {
 				e.printStackTrace();
@@ -231,13 +231,15 @@ public class FfmpegWavReader extends Thread {
 		}
 	}
 
-	//  TODO - break into separate reader>
-	public void readWav() throws InterruptedException {
+	public void readWav(File inputFile) throws IOException, InterruptedException {
 		boolean eof = false;
 		AVInputFormat avFormat;
 		int frameCnt = 0;
 		int arrayCnt = 0;
 		int totCnt = MAGIC_BYTE_OFFSET; // hardwired for wav- need to compute this dynamically.
+		
+		//  Open input file and load metadata
+		AudioMetadata metadata = init(inputFile);
 
 		while (!eof) {
 			int res = av_read_frame(formatCtx, avPacket);
@@ -246,7 +248,6 @@ public class FfmpegWavReader extends Thread {
 				break;
 			}
 			if (res == AVERROR_EAGAIN()) {
-				// System.err.println("EOF reached");
 				// don't think we care about this one
 				break;
 			}
@@ -290,11 +291,11 @@ public class FfmpegWavReader extends Thread {
 				int sampleFmt = av_sample_fmt_is_planar(decodeCtx.sample_fmt());
 				// This means that the data of each channel is in its own buffer.
 				// => frame->extended_data[i] contains data for the i-th channel.
-//				System.err.println("Frame : " + frameCnt);
 				int numSamples = avFrame.nb_samples();
+//				System.err.println("Frame : " + frameCnt);
 //				System.err.println("FrameSamples: " + numSamples);
 				AudioRecord rec = new AudioRecord();
-				// for(int s = 0; s < avFrame.nb_samples(); ++s) {
+				rec.metadata = metadata;
 				for (int c = 0; c < decodeCtx.channels(); ++c) {
 					// float sample = getSample(decodeCtx, avFrame.extended_data(c), s);
 					byte[] tbuff = new byte[numSamples * 2];
@@ -305,7 +306,6 @@ public class FfmpegWavReader extends Thread {
 
 					int sampleCnt = 0;
 					
-//					for (int i = 0; i < numSamples * 2; i += 2) {
 					for (int i = 0; i < numSamples * bytesPerSample; i += bytesPerSample) {
 						double lval = normalizeSample(tbuff[i], tbuff[i + 1]);
 						// if(tbuff[i] != 0 || tbuff[i+1] != 0)
@@ -320,7 +320,7 @@ public class FfmpegWavReader extends Thread {
 						totCnt += 2;
 						if (sampleCnt == config.numSamplesPerArray) {
 							rec.sampleIndex = (sampleCnt * arrayCnt);
-							rec.samplingRate = decodeCtx.sample_rate();
+							rec.metadata.sampleRate = decodeCtx.sample_rate();
 							output.publishRecord(rec);
 							// System.err.println("\n**sampleIdx, arrCnt " + sampleCnt + "," + arrayCnt);
 							rec.sampleData = new double[config.numSamplesPerArray];
@@ -330,12 +330,20 @@ public class FfmpegWavReader extends Thread {
 						}
 					}
 				}
-//				System.err.println();
-
 				av_frame_unref(avFrame);
 			}
 			frameCnt++;
 		}
+		sendEofRecord(metadata);
+	}
+	
+	void sendEofRecord(AudioMetadata metadata) {
+		AudioRecord rec = new AudioRecord();
+		rec.sampleIndex = 0;
+		rec.metadata = metadata;
+		rec.metadata.sampleRate = 0;
+		rec.sampleData = new double[config.numSamplesPerArray];
+		output.publishRecord(rec);
 	}
 
 	void printStreamInformation(AVCodec decoder, AVCodecContext decode_ctx, int audioStreamIndex) {
@@ -356,13 +364,6 @@ public class FfmpegWavReader extends Thread {
 		int sampleSize = av_get_bytes_per_sample(codecCtx.sample_fmt());
 
 		switch (sampleSize) {
-		case 1:
-			// 8bit samples are always unsigned
-			// val = REINTERPRET_CAST(uint8_t*, buffer)[sampleIndex];
-			// make signed
-			// val -= 127;
-			break;
-
 		case 2:
 			// val = REINTERPRET_CAST(int16_t*, buffer)[sampleIndex];
 			// return ByteBuffer.wrap(buff.).getFloat();
@@ -372,20 +373,19 @@ public class FfmpegWavReader extends Thread {
 			byte[] tbuff4 = { 0, 0, sample2, sample1 };
 			float f = ByteBuffer.wrap(tbuff4).getFloat();
 			return f;
+		case 1:
+			// 8bit samples are always unsigned
+			// val = REINTERPRET_CAST(uint8_t*, buffer)[sampleIndex];
+			// make signed
+			// val -= 127;
 		case 4:
 			// val = REINTERPRET_CAST(int32_t*, buffer)[sampleIndex];
-			break;
-
 		case 8:
 			// val = REINTERPRET_CAST(int64_t*, buffer)[sampleIndex];
-			break;
-
 		default:
-			System.err.printf("Invalid sample size %d.\n", sampleSize);
-			return 0;
+			System.err.printf("Unsupported sample size *bytes) %d.\n", sampleSize);
+			return 0.0f;
 		}
-
-		return 0.0F;
 	}
 
 	/**

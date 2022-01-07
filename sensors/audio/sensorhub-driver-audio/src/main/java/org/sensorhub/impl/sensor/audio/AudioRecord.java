@@ -1,12 +1,11 @@
 package org.sensorhub.impl.sensor.audio;
 
-public class AudioRecord {
+public class AudioRecord 
+{
+	AudioMetadata metadata = new AudioMetadata();
 	
 	double [] sampleData;  // normalized array of samples
-//	float [] sampleData;  // normalized array of samples
-	int [] sampleDataInt;  // 0 - 255 testing with compatibilty with JS toolkit player
 	int sampleIndex; // index of first sample in array 
-	int samplingRate; // Hz
 	
 	public byte [] getByteData() {
 		byte[] bdata = new byte[sampleData.length];
