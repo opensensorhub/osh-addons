@@ -176,7 +176,7 @@ public class MpegTsProcessor extends Thread {
     /**
      * If true, play the video file continuously in a loop
      */
-    boolean loop;
+    volatile boolean loop;
     
 
     /**
@@ -476,49 +476,61 @@ public class MpegTsProcessor extends Thread {
      */
     private void processStreamPackets() {
 
-        // Create an AV packet container to pass data to demuxer
-        AVPacket avPacket = new AVPacket();
-
-        // Read frames
-        long startTime = System.currentTimeMillis();
-        long frameCount = 0;
-        int retCode;
-        while (!terminateProcessing.get() && (retCode = av_read_frame(avFormatContext, avPacket)) >= 0) {
-
-            // If it is a video or data frame and there is a listener registered
-            if ((avPacket.stream_index() == videoStreamId) && (null != videoDataBufferListener)) {
-
-                // Process video packet
-                byte[] dataBuffer = new byte[avPacket.size()];
-                avPacket.data().get(dataBuffer);
-                                
-                // if FPS is set, we may have to wait a little
-                if (fps > 0)
-                {
-                    var now = System.currentTimeMillis();
-                    var sleepDuration = frameCount*1000/fps - (now - startTime);                     
-                    if (sleepDuration > 0) {
-                        try { Thread.sleep(sleepDuration); }
-                        catch (InterruptedException e) { }
+        AVPacket avPacket = null;
+        
+        try {
+            // Create an AV packet container to pass data to demuxer
+            avPacket = new AVPacket();
+    
+            // Read frames
+            long startTime = System.currentTimeMillis();
+            long frameCount = 0;
+            int retCode;
+            while (!terminateProcessing.get() && (retCode = av_read_frame(avFormatContext, avPacket)) >= 0) {
+    
+                // If it is a video or data frame and there is a listener registered
+                if ((avPacket.stream_index() == videoStreamId) && (null != videoDataBufferListener)) {
+    
+                    // Process video packet
+                    byte[] dataBuffer = new byte[avPacket.size()];
+                    avPacket.data().get(dataBuffer);
+                                    
+                    // if FPS is set, we may have to wait a little
+                    if (fps > 0)
+                    {
+                        var now = System.currentTimeMillis();
+                        var sleepDuration = frameCount*1000/fps - (now - startTime);
+                        if (sleepDuration > 0) {
+                            try { Thread.sleep(sleepDuration); }
+                            catch (InterruptedException e) { }
+                        }
                     }
+                    
+                    // Pass data buffer to interested listener
+                    frameCount++;
+                    videoDataBufferListener.onDataBuffer(new DataBufferRecord(avPacket.pts() * videoStreamTimeBase, dataBuffer));
+                    
+                } else if ((avPacket.stream_index() == dataStreamId) && (null != metadataDataBufferListener)) {
+    
+                    // Process the data packet
+                    byte[] dataBuffer = new byte[avPacket.size()];
+                    avPacket.data().get(dataBuffer);
+    
+                    // Pass data buffer to interested listener
+                    metadataDataBufferListener.onDataBuffer(new DataBufferRecord(avPacket.pts() * dataStreamTimeBase, dataBuffer));
                 }
-                
-                // Pass data buffer to interested listener
-                frameCount++;
-                videoDataBufferListener.onDataBuffer(new DataBufferRecord(avPacket.pts() * videoStreamTimeBase, dataBuffer));
-                
-            } else if ((avPacket.stream_index() == dataStreamId) && (null != metadataDataBufferListener)) {
-
-                // Process the data packet
-                byte[] dataBuffer = new byte[avPacket.size()];
-                avPacket.data().get(dataBuffer);
-
-                // Pass data buffer to interested listener
-                metadataDataBufferListener.onDataBuffer(new DataBufferRecord(avPacket.pts() * dataStreamTimeBase, dataBuffer));
+    
+                // clear packet
+                avcodec.av_packet_unref(avPacket);
             }
-
-            // Release the packet resources
-            avcodec.av_packet_unref(avPacket);
+        }
+        finally {
+            // fully deallocate packet
+            if (avPacket != null)
+            {
+                avcodec.av_packet_unref(avPacket);
+                avPacket.deallocate();
+            }
         }
     }
 
