@@ -24,7 +24,7 @@ import java.net.MalformedURLException;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
-import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.api.command.CommandException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.sensorhub.impl.sensor.videocam.ptz.PtzPreset;
@@ -119,7 +119,7 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
     
 
     @Override
-    protected boolean execCommand(DataBlock command) throws SensorException
+    protected boolean execCommand(DataBlock command) throws CommandException
     {
     	// associate command data to msg structure definition
         DataChoice commandMsg = (DataChoice) commandData.copy();
@@ -185,7 +185,7 @@ public class AxisPtzControl extends AbstractSensorControl<AxisCameraDriver>
 	    }
 	    catch (Exception e)
 	    {	    	
-	        throw new SensorException("Error connecting to Axis PTZ control", e);
+	        throw new CommandException("Error connecting to Axis PTZ control", e);
 	    }        
        
         return true;

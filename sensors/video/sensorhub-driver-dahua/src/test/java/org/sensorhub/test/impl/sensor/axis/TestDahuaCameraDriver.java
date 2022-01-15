@@ -252,7 +252,7 @@ public class TestDahuaCameraDriver implements IEventListener
         			((DataChoiceImpl)commandDesc).setSelectedItem("rpan");
         			commandData = commandDesc.createDataBlock();
         			commandData.setFloatValue(1, 5.0f);
-        			ci.executeCommand(new CommandData(1, commandData), ack -> {});
+        			ci.submitCommand(new CommandData(1, commandData));
         		}                               
         		this.wait();
         	}

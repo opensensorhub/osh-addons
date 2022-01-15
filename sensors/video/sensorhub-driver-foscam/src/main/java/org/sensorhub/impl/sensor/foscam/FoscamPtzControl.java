@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Collection;
+import org.sensorhub.api.command.CommandException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.sensorhub.impl.sensor.foscam.ptz.FoscamPTZpreset;
@@ -81,7 +82,15 @@ public class FoscamPtzControl extends AbstractSensorControl<FoscamDriver> {
 		DataBlock initCmd;
 		commandData.setSelectedItem(7);
 		initCmd = commandData.createDataBlock();
-		execCommand(initCmd);
+		
+		try
+        {
+            execCommand(initCmd);
+        }
+        catch (CommandException e)
+        {
+            throw new SensorException("Init command failed", e);
+        }
 	}
 
 	protected void stop() {
@@ -93,7 +102,7 @@ public class FoscamPtzControl extends AbstractSensorControl<FoscamDriver> {
 	}
 
 	@Override
-	protected boolean execCommand(DataBlock command) throws SensorException {
+	protected boolean execCommand(DataBlock command) throws CommandException {
 		// associate command data to msg structure definition
 		DataChoice commandMsg = (DataChoice) commandData.copy();
 		commandMsg.setData(command);
@@ -178,7 +187,7 @@ public class FoscamPtzControl extends AbstractSensorControl<FoscamDriver> {
 			}
 
 		} catch (Exception e) {
-			throw new SensorException("Error connecting to Foscam PTZ control", e);
+			throw new CommandException("Error connecting to Foscam PTZ control", e);
 		}
 
 		return true;

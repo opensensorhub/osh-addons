@@ -2,6 +2,7 @@ package org.sensorhub.impl.sensor.domoticz;
 
 import java.io.InputStream;
 import java.net.URL;
+import org.sensorhub.api.command.CommandException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.data.DataChoiceImpl;
@@ -64,7 +65,7 @@ public class DomoticzSelectorControl extends AbstractSensorControl<DomoticzDrive
     
     
     @Override
-	protected boolean execCommand(DataBlock command) throws SensorException {
+	protected boolean execCommand(DataBlock command) throws CommandException {
     	
     	// associate command data to msg structure definition
         DataChoice commandMsg = (DataChoice) commandData.copy();
@@ -101,7 +102,7 @@ public class DomoticzSelectorControl extends AbstractSensorControl<DomoticzDrive
 		}
         catch (Exception e)
         {
-        	throw new SensorException("Error sending command", e);
+        	throw new CommandException("Error sending command", e);
 		}
         
         return true;

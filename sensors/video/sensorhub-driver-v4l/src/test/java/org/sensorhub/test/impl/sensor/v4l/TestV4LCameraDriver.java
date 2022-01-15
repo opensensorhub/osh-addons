@@ -179,7 +179,10 @@ public class TestV4LCameraDriver implements IEventListener
         commandData.setIntValue(fieldIndex++, 10);
         
         // send command to control interface
-        ci.executeCommand(new CommandData(1, commandData), ack -> {});
+        ci.submitCommand(new CommandData.Builder()
+            .withCommandStream(1)
+            .withParams(commandData)
+            .build());
         
         // start capture and wait until we receive the first frame
         // after we changed settings

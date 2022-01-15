@@ -30,7 +30,6 @@ import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.command.CommandData;
 import org.sensorhub.api.command.IStreamingControlInterface;
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.onvif.OnvifCameraConfig;
 import org.sensorhub.impl.sensor.onvif.OnvifCameraDriver;
@@ -122,19 +121,19 @@ public class TestOnvifCameraDriver implements IEventListener
         ((DataChoiceImpl) commandDesc).setSelectedItem("pan");
         commandData = commandDesc.createDataBlock();
         commandData.setFloatValue(1, 0.0f);
-        ci.executeCommand(new CommandData(1, commandData), ack -> {});
+        ci.submitCommand(new CommandData(1, commandData));
 
         // Absolute Tilt
         ((DataChoiceImpl) commandDesc).setSelectedItem("tilt");
         commandData = commandDesc.createDataBlock();
         commandData.setFloatValue(1, 0.0f);
-        ci.executeCommand(new CommandData(1, commandData), ack -> {});
+        ci.submitCommand(new CommandData(1, commandData));
 
         // Absolute Zoom
         ((DataChoiceImpl) commandDesc).setSelectedItem("zoom");
         commandData = commandDesc.createDataBlock();
         commandData.setFloatValue(1, 0.0f);
-        ci.executeCommand(new CommandData(1, commandData), ack -> {});
+        ci.submitCommand(new CommandData(1, commandData));
 
         // Absolute PTZ
         ((DataChoiceImpl) commandDesc).setSelectedItem("ptzPos");
@@ -142,25 +141,25 @@ public class TestOnvifCameraDriver implements IEventListener
         commandData.setFloatValue(1, 0.25f);
         commandData.setFloatValue(2, -0.25f);
         commandData.setFloatValue(3, 0.50f);
-        ci.executeCommand(new CommandData(1, commandData), ack -> {});
+        ci.submitCommand(new CommandData(1, commandData));
         
         // Relative Pan
         ((DataChoiceImpl) commandDesc).setSelectedItem("rpan");
         commandData = commandDesc.createDataBlock();
         commandData.setFloatValue(1, -0.25f);
-        ci.executeCommand(new CommandData(1, commandData), ack -> {});
+        ci.submitCommand(new CommandData(1, commandData));
 
         // Relative Tilt
         ((DataChoiceImpl) commandDesc).setSelectedItem("rtilt");
         commandData = commandDesc.createDataBlock();
         commandData.setFloatValue(1, -0.25f);
-        ci.executeCommand(new CommandData(1, commandData), ack -> {});
+        ci.submitCommand(new CommandData(1, commandData));
 
         // Relative Zoom
         ((DataChoiceImpl) commandDesc).setSelectedItem("rzoom");
         commandData = commandDesc.createDataBlock();
         commandData.setFloatValue(1, 0.50f);
-        ci.executeCommand(new CommandData(1, commandData), ack -> {});
+        ci.submitCommand(new CommandData(1, commandData));
     }
 
     @Override

@@ -30,7 +30,7 @@ import org.onvif.ver10.schema.PTZVector;
 import org.onvif.ver10.schema.Profile;
 import org.onvif.ver10.schema.Vector1D;
 import org.onvif.ver10.schema.Vector2D;
-import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.api.command.CommandException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.sensorhub.impl.sensor.videocam.ptz.PtzConfig;
@@ -112,7 +112,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
     }
     
     @Override
-    protected boolean execCommand(DataBlock command) throws SensorException
+    protected boolean execCommand(DataBlock command) throws CommandException
     {
     	// associate command data to msg structure definition
         DataChoice commandMsg = (DataChoice) commandData.copy();
@@ -184,7 +184,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 	    }
 	    catch (Exception e)
 	    {	    	
-	        throw new SensorException("Error sending PTZ command via ONVIF", e);
+	        throw new CommandException("Error sending PTZ command via ONVIF", e);
 	    }        
        
         return true;

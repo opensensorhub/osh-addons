@@ -24,6 +24,7 @@ import java.util.Collection;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
+import org.sensorhub.api.command.CommandException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
@@ -120,7 +121,15 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
         DataBlock initCmd;
         commandData.setSelectedItem(7);
         initCmd = commandData.createDataBlock();
-        execCommand(initCmd);
+        
+        try
+        {
+            execCommand(initCmd);
+        }
+        catch (CommandException e)
+        {
+            throw new SensorException("Init command failed", e);
+        }
     }
     
     
@@ -137,7 +146,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
     
     
     @Override
-    protected boolean execCommand(DataBlock command) throws SensorException
+    protected boolean execCommand(DataBlock command) throws CommandException
     {
         // reject if commands are too frequent because camera cannot handle 
         // successive commands if they come too fast
@@ -224,7 +233,7 @@ public class DahuaPtzControl extends AbstractSensorControl<DahuaCameraDriver>
 	    }
 	    catch (Exception e)
 	    {
-	    	throw new SensorException("Error connecting to Dahua PTZ control", e);
+	    	throw new CommandException("Error connecting to Dahua PTZ control", e);
 	    }        
        
         return true;
