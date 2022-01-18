@@ -1,0 +1,29 @@
+description = 'Simulated UAV'
+ext.details = 'Simulated UAV with tasking capabilities'
+version = '1.0.0'
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-process-geoloc')
+}
+  
+// add info to OSGi manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.simuav.Activator')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com' 
+    }
+  }
+}
+
