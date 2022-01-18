@@ -199,7 +199,7 @@ public class STAMqttConnector implements IMqttHandler
 
 
     @Override
-    public void onPublish(String userID, String topic, ByteBuffer payload) throws InvalidTopicException, InvalidPayloadException
+    public void onPublish(String userID, String topic, ByteBuffer payload, ByteBuffer correlData) throws InvalidTopicException, InvalidPayloadException
     {
         var collectionUrl = "/" + topic.replaceFirst(endpoint, "");
         
@@ -207,7 +207,7 @@ public class STAMqttConnector implements IMqttHandler
             .withRequestType(RequestType.CREATE)
             .withUrlPath(collectionUrl)
             .withContent(Charsets.UTF_8.decode(payload).toString())
-            .build();                
+            .build();
         
         service.getSecurityHandler().setCurrentUser(userID);
         var resp = frostService.execute(req);

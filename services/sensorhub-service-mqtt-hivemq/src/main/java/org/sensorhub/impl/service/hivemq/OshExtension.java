@@ -217,10 +217,18 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     @Override
     public CompletableFuture<Boolean> publish(String topic, ByteBuffer payload)
     {
+        return publish(topic, payload, null);
+    }
+
+
+    @Override
+    public CompletableFuture<Boolean> publish(String topic, ByteBuffer payload, ByteBuffer correlData)
+    {
         Publish message = Builders.publish()
             .topic(topic)
             .qos(Qos.AT_LEAST_ONCE)
             .payload(payload)
+            .correlationData(correlData)
             .retain(false)
             .build();
         Services.publishService().publish(message);

@@ -73,11 +73,12 @@ public class OshPublishHandler implements PublishInboundInterceptor
                 // if a handler is found, use it to authorize/publish on this topic
                 var handler = oshExt.handlers.get(topic);
                 if (handler != null)
-                {                    
+                {
                     // publish via OSH handler
                     log.debug(LOG_PUBLISH_MSG + "Handled by {}",
                         publishIn.getClientInformation().getClientId(), topic, handler.getClass().getSimpleName());
-                    handler.onPublish(userID, topic, publishIn.getPublishPacket().getPayload().get());
+                    var pkt = publishIn.getPublishPacket();
+                    handler.onPublish(userID, topic, pkt.getPayload().get(), pkt.getCorrelationData().orElse(null));
                 }
                 
                 // reject in all other cases

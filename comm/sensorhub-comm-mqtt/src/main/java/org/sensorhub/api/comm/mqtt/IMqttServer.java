@@ -39,25 +39,26 @@ public interface IMqttServer
      * @since Apr 14, 2021
      */
     public interface IMqttHandler
-    {        
+    {
         
         /**
          * Notify the handler of an incoming publish message
-         * @param userID 
-         * @param topic
-         * @param payload
+         * @param userID Authenticated user who published the message
+         * @param topic MQTT topic where the message was published
+         * @param payload Payload data embedded in the message
+         * @param correlData Correlation data or null if not present
          * @throws InvalidTopicException if the topic is invalid
          * @throws InvalidPayloadException if the payload is invalid
          * @throws AccessControlException if the user is not allowed to publish to the topic
          */
-        void onPublish(String userID, String topic, ByteBuffer payload) throws InvalidTopicException, InvalidPayloadException;
+        void onPublish(String userID, String topic, ByteBuffer payload, ByteBuffer correlData) throws InvalidTopicException, InvalidPayloadException;
     
         
         /**
          * Notify handler of an incoming subscribe request
-         * @param userID 
-         * @param server 
-         * @param topic
+         * @param userID Authenticated user who wants to subscribe
+         * @param topic Topic the user wants to subscribe to
+         * @param server MQTT server where to publish the messages
          * @throws InvalidTopicException if the topic is invalid
          * @throws AccessControlException if the user is not allowed to subscribe to the topic
          */
@@ -66,8 +67,8 @@ public interface IMqttServer
         
         /**
          * Notify handler of an incoming unsubscribe request
-         * @param userID 
-         * @param server 
+         * @param userID Authenticated user who wants to unsubscribe
+         * @param topic Topic the user wants to unsubscribe from
          * @param topic
          */
         @SuppressWarnings("javadoc")
@@ -78,27 +79,38 @@ public interface IMqttServer
     /**
      * Register a handler that will intercept all communications on topics
      * starting with the given prefix
-     * @param topicPrefix
-     * @param handler
+     * @param topicPrefix Prefix of topics to be managed by this handler
+     * @param handler The handler to forward requests to
      */
     void registerHandler(String topicPrefix, IMqttHandler handler);
     
     
     /**
      * Unregister a handler for the given topic prefix
-     * @param topicPrefix
-     * @param handler
+     * @param topicPrefix Prefix of topics that were managed by this handler
+     * @param handler The handler that will stop receiving requests
      */
     void unregisterHandler(String topicPrefix, IMqttHandler handler);
     
     
     /**
      * Publish an outbound message using the MQTT service
-     * @param topic
-     * @param payload
+     * @param topic MQTT topic to publish to
+     * @param payload Payload data
      * @return future that will be completed when PUBLISH operation is
      * confirmed (true) or rejected (false)
      */
     CompletableFuture<Boolean> publish(String topic, ByteBuffer payload);
+    
+    
+    /**
+     * Publish an outbound message using the MQTT service
+     * @param topic MQTT topic to publish to
+     * @param payload Payload data
+     * @param correlData Correlation data or null if not present
+     * @return future that will be completed when PUBLISH operation is
+     * confirmed (true) or rejected (false)
+     */
+    CompletableFuture<Boolean> publish(String topic, ByteBuffer payload, ByteBuffer correlData);
     
 }

@@ -30,6 +30,7 @@ import org.sensorhub.api.comm.mqtt.IMqttServer.IMqttHandler;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.comm.mqtt.MqttOutputStream;
 import org.sensorhub.impl.service.sweapi.InvalidRequestException;
+import org.sensorhub.impl.service.sweapi.InvalidRequestException.ErrorCode;
 import org.sensorhub.impl.service.sweapi.SWEApiServlet;
 import org.sensorhub.impl.service.sweapi.resource.RequestContext;
 import org.sensorhub.impl.service.sweapi.resource.ResourceFormat;
@@ -176,12 +177,25 @@ public class SWEApiMqttConnector implements IMqttHandler
 
 
     @Override
-    public void onPublish(String userID, String topic, ByteBuffer payload) throws InvalidTopicException, InvalidPayloadException
-    {                
+    public void onPublish(String userID, String topic, ByteBuffer payload, ByteBuffer correlData) throws InvalidTopicException, InvalidPayloadException
+    {
         try
         {
             var ctx = getResourceContext(topic, payload);
             ctx.setRequestContentType(ResourceFormat.JSON.getMimeType());
+            
+            if (correlData != null)
+            {
+                int cmdID = 0;
+                if (correlData.remaining() == 4)
+                    cmdID = correlData.getInt();
+                if (cmdID <= 0)
+                    throw new InvalidRequestException(ErrorCode.BAD_PAYLOAD, "Invalid correlation data");
+                //var idStr = StandardCharsets.UTF_8.decode(correlData).toString();
+                //var cmdID = Long.parseLong(idStr);
+                ctx.setCorrelationID(cmdID);
+            }
+            
             servlet.getSecurityHandler().setCurrentUser(userID);
             servlet.getRootHandler().doPost(ctx);
         }

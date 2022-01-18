@@ -129,4 +129,11 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
     {
         return oshExtension.publish(topic, payload);
     }
+
+
+    @Override
+    public CompletableFuture<Boolean> publish(String topic, ByteBuffer payload, ByteBuffer correlData)
+    {
+        return oshExtension.publish(topic, payload, correlData);
+    }
 }
