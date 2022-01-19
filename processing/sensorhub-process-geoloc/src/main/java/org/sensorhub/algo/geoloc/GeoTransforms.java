@@ -33,6 +33,7 @@ public class GeoTransforms
     private final static double RTD = 180. / Math.PI;
     private final static double DTR = Math.PI / 180.;
     private final static double EARTH_OMEGA = 7.2921158553e-5;
+    private final static double MEAN_EARTH_RADIUS = 6371000.;
     
     private Ellipsoid datum;
     
@@ -270,5 +271,113 @@ public class GeoTransforms
         gmst = gmst * DTR;
         
         return gmst;
+    }
+    
+    
+    /**
+     * Compute great-circle distance between two lat/lon points using Haversine formula.
+     * Note that the great-circle distance is a spherical approximation based on the mean earth radius.
+     * @param lat1 Geodetic latitude of first point in radians
+     * @param lon1 Longitude of first point in radians
+     * @param lat2 Geodetic latitude of second point in radians
+     * @param lon2 Longitude of second point in radians
+     * @return The computed distance in meters
+     */
+    public double computeGreatCircleDistanceHaversine(double lat1, double lon1, double lat2, double lon2)
+    {
+        double dLat = lat2 - lat1;
+        double dLon = lon2 - lon1;
+        
+        double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                   Math.cos(lat1) * Math.cos(lat2) *
+                   Math.sin(dLon/2) * Math.sin(dLon/2);
+        
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        
+        return c * MEAN_EARTH_RADIUS;
+    }
+    
+    
+    /**
+     * Compute distance between two lat/lon points on a sphere using the spherical law of cosines.
+     * Note that the great-circle distance is a spherical approximation based on the mean earth radius.
+     * This method is less stable than the Haversine formula for short distances.
+     * @param lat1 Geodetic latitude of first point in radians
+     * @param lon1 Longitude of first point in radians
+     * @param lat2 Geodetic latitude of second point in radians
+     * @param lon2 Longitude of second point in radians
+     * @return The computed distance in meters
+     */
+    public double computeGreatCircleDistanceLawOfCosines(double lat1, double lon1, double lat2, double lon2)
+    {
+        double dLon = lon2 - lon1;
+        double c = Math.acos(Math.sin(lat1)*Math.sin(lat2) +
+                             Math.cos(lat1)*Math.cos(lat2)*Math.cos(dLon));
+        return c * MEAN_EARTH_RADIUS;
+    }
+    
+    
+    /**
+     * Compute distance between two lat/lon points using the equirectangular approximation.
+     * Note that the great-circle distance is a spherical approximation based on the mean earth radius.
+     * This method is faster but less accurate than the Haversine formula for long distances.
+     * @param lat1 Geodetic latitude of first point in radians
+     * @param lon1 Longitude of first point in radians
+     * @param lat2 Geodetic latitude of second point in radians
+     * @param lon2 Longitude of second point in radians
+     * @return The computed distance in meters
+     */
+    public double computeDistanceEquirectangular(double lat1, double lon1, double lat2, double lon2)
+    {
+        double x = (lon2 - lon1) * Math.cos((lat1 + lat2)/2);
+        double y = lat2 - lat1;
+        double c = Math.sqrt(x*x + y*y);
+        return c * MEAN_EARTH_RADIUS;
+    }
+    
+    
+    /**
+     * Compute the initial bearing of the great circle arc between two lat/lon points.
+     * @param lat1 Geodetic latitude of starting point in radians
+     * @param lon1 Longitude of starting point in radians
+     * @param lat2 Geodetic latitude of end point in radians
+     * @param lon2 Longitude of end point in radians
+     * @return The computed initial bearing in radians
+     */
+    public double computeBearing(double lat1, double lon1, double lat2, double lon2)
+    {
+        double y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+        double x = Math.cos(lat1) * Math.sin(lat2) -
+                   Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2-lon1);
+        return Math.atan2(y, x);
+    }
+    
+    
+    /**
+     * Compute an intermediate point on the great circle path between two lat/lon points
+     * @param lat1 Geodetic latitude of starting point in radians
+     * @param lon1 Longitude of starting point in radians
+     * @param lat2 Geodetic latitude of end point in radians
+     * @param lon2 Longitude of end point in radians
+     * @param dist Great circle distance in meters between the two points. The distance
+     * must first be computed with {@link #computeGreatCircleDistanceHaversine} or
+     * {@link #computeGreatCircleDistanceLawOfCosines}
+     * @param f Fraction along the great circle route (f=0 is point 1, f=1 is point 2)
+     * @param latlon Vector that will receive lat/lon coordinates of intermediate point
+     */
+    public void computeIntermediatePoint(double lat1, double lon1, double lat2, double lon2, double dist, double f, Vect3d latlon)
+    {
+        double delta = dist / MEAN_EARTH_RADIUS;
+        double sinDelta = Math.sin(delta);
+        
+        double a = Math.sin((1-f) * delta) / sinDelta;
+        double b = Math.sin(f * delta) / sinDelta;
+        
+        double x = a * Math.cos(lat1) * Math.cos(lon1) + b * Math.cos(lat2) * Math.cos(lon2);
+        double y = a * Math.cos(lat1) * Math.sin(lon1) + b * Math.cos(lat2) * Math.sin(lon2);
+        double z = a * Math.sin(lat1) + b * Math.sin(lat2);
+        
+        latlon.y = Math.atan2(z, Math.sqrt(x*x + y*y)); // lat
+        latlon.x = Math.atan2(y, x); // lon
     }
 }
