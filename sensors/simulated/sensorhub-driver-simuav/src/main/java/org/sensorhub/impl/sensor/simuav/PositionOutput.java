@@ -21,6 +21,7 @@ import org.sensorhub.api.data.DataEvent;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.helper.GeoPosHelper;
 
 
@@ -41,7 +42,8 @@ public class PositionOutput extends UavOutput<SimUavDriver>
             .label("Platform Position")
             .addField("time", fac.createTime()
                 .asSamplingTimeIsoUTC())
-            .addField("pos", fac.createLocationVectorLLA())
+            .addField("pos", fac.createLocationVectorLLA()
+                .definition(SWEConstants.DEF_PLATFORM_LOC))
             .build();
      
         // also generate encoding definition
