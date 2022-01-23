@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.rtree.MVRTreeMap;
 import org.h2.mvstore.rtree.SpatialKey;
-import org.h2.mvstore.rtree.MVRTreeMap.RTreeCursor;
+import org.h2.mvstore.rtree.SpatialDataType;
 import org.sensorhub.api.persistence.DataKey;
 import org.sensorhub.utils.SWEDataUtils.VectorIndexer;
 import org.vast.util.Bbox;
@@ -126,7 +126,7 @@ class MVSamplingLocationIndexImpl
         // first check cached obs cluster
         boolean checkStorage = true;
         ProducerCacheInfo cachedInfo = clusterCache.get(producerID);
-        if (cachedInfo != null)
+        if (cachedInfo != null && cachedInfo.producerTimeRange != null)
         {
             if (cachedInfo.bbox.toJtsPolygon().intersects(roi) &&
                 cachedInfo.producerTimeRange.start <= timeRange[1] &&
@@ -146,14 +146,22 @@ class MVSamplingLocationIndexImpl
             SpatialKey bbox = new SpatialKey(0, (float)env.getMinX(), Math.nextUp((float)env.getMaxX()),
                                                 (float)env.getMinY(), Math.nextUp((float)env.getMaxY()),
                                                 Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
-            //System.out.println(bbox);
-            final RTreeCursor geoCursor = clusterIndex.findIntersectingKeys(bbox);
+            
+            //final RTreeCursor geoCursor = clusterIndex.findIntersectingKeys(bbox);
+            final RTreeCursor<ObsTimePeriod> geoCursor = new RTreeCursor<ObsTimePeriod>(clusterIndex.getRoot(), bbox) {
+                @Override
+                protected boolean check(boolean leaf, SpatialKey key,
+                        SpatialKey test) {
+                    return ((SpatialDataType)clusterIndex.getKeyType()).isOverlap(key, test);
+                }
+            };
             
             // wrap with iterator to filter on producerID
             while (geoCursor.hasNext())
             {
                 SpatialKey key = geoCursor.next();
-                ObsTimePeriod obsCluster = clusterIndex.get(key);
+                ObsTimePeriod obsCluster = geoCursor.getValue();
+                //ObsTimePeriod obsCluster = clusterIndex.get(key);
                 if (!obsCluster.producerID.equals(producerID) ||
                     obsCluster.start > timeRange[1] ||
                     obsCluster.stop < timeRange[0])
