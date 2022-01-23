@@ -102,7 +102,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
      */
     protected MVObsStorageImpl(MVObsStorageImpl parentStore, String producerID)
     {
-        Asserts.checkNotNull(parentStore, "Parent");                
+        Asserts.checkNotNull(parentStore, "Parent");
         this.mvStore = parentStore.mvStore;
         this.producerID = producerID;
         this.processDescMap = parentStore.processDescMap;
@@ -174,6 +174,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
             for (MVTimeSeriesImpl recordStore: recordStores.values())
                 recordStore.close();
             
+            mvStore.compactMoveChunks();
             mvStore.close();
             mvStore = null;
             processDescMap = null;
