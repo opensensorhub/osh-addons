@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Set;
 import org.h2.mvstore.Cursor;
 import org.h2.mvstore.MVMap;
@@ -152,7 +153,7 @@ public class MVTimeSeriesImpl
             coords.y = samplingLocationIndex.locationIndexer.getCoordinateAsDouble(1, data);
             point.geometryChanged();
             return roi.intersects(point) ? elt : null;
-        }        
+        }
     }
     
     
@@ -177,7 +178,21 @@ public class MVTimeSeriesImpl
             
             // if found, also use sampling lolcation index
             if (locationIndexer != null)
+            {
                 this.samplingLocationIndex = new MVSamplingLocationIndexImpl(parentStore.mvStore, rsInfo.getName(), locationIndexer);
+                
+                // if index is empty, build it from existing data
+                // in case indexing is enabled afterwards
+                if (samplingLocationIndex.clusterIndex.isEmpty())
+                {
+                    for (Entry<ProducerTimeKey, DataBlock> entry: recordIndex.entrySet())
+                    {
+                        ProducerTimeKey key = entry.getKey();
+                        ObsKey obsKey = new ObsKey(name, key.producerID, null, key.timeStamp);
+                        samplingLocationIndex.update(obsKey, entry.getValue());
+                    }
+                }
+            }
         }
     }
     
@@ -604,7 +619,7 @@ public class MVTimeSeriesImpl
         }
         
         // get time periods for spatially indexed observations
-        if (roi != null && samplingLocationIndex != null)
+        if (roi != null && samplingLocationIndex != null && getNumRecords(producerID) > 1000)
         {
             Set<ObsTimePeriod> samplingTimeRanges = samplingLocationIndex.getObsTimePeriods(producerID, timeRange, roi);
             
@@ -619,7 +634,7 @@ public class MVTimeSeriesImpl
                 {
                     ObsTimePeriod obsTimePeriod = it.next();
                     
-                    boolean intersect = false;                    
+                    boolean intersect = false;
                     while (foiTimeRange != null)
                     {
                         if (obsTimePeriod.stop < foiTimeRange.start)
