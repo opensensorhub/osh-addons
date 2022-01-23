@@ -412,8 +412,27 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
             producerIDs = this.getProducerIDs();
                 
         for (String producerID: producerIDs) {
-            int count = getDataStore(producerID).removeRecords(filter);
+            IObsStorage dataStore = getDataStore(producerID); 
+            int count = dataStore.removeRecords(filter);
             numDeleted += count;
+            
+            // completely remove producer store if there are no more records in it
+            boolean isEmpty = true;
+            for (String recordType: dataStore.getRecordStores().keySet())
+            {
+                if (dataStore.getNumRecords(recordType) > 0)
+                {
+                    isEmpty = false;
+                    break;
+                }
+            }
+            
+            if (isEmpty)
+            {
+                getLogger().debug("Removing producer {}", producerID);
+                dataStoreInfoMap.remove(producerID);
+                obsStores.remove(producerID);
+            }
         }
         
         return numDeleted;
