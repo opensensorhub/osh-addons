@@ -16,15 +16,17 @@ package org.sensorhub.impl.persistence.h2;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import org.h2.mvstore.Cursor;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
+import org.sensorhub.impl.persistence.IteratorWrapper;
 
 
 /**
@@ -40,7 +42,7 @@ class MVFoiTimesStoreImpl
     private static final String FOI_TIMES_MAP_NAME = "@foiTimes";
     
     MVMap<String, FeatureEntry> idIndex;
-    Map<String, FoiInfo> lastFois = new HashMap<>(); // last FOI for each producer
+    Map<String, FoiInfo> lastFois = new ConcurrentHashMap<>(); // last FOI for each producer
     
     
     static class FoiInfo
@@ -84,7 +86,7 @@ class MVFoiTimesStoreImpl
         if (producerID == null)
             return foiID;
         else
-            return producerID + foiID;
+            return producerID + "|" + foiID;
     }
     
     
@@ -99,22 +101,33 @@ class MVFoiTimesStoreImpl
     int getNumFois(String producerID)
     {
         String[] keyRange = getProducerKeyRange(producerID);
+        String keyPrefix = keyRange[0];
         
         String firstKey = idIndex.ceilingKey(keyRange[0]);
         String lastKey = idIndex.floorKey(keyRange[1]);
-        if (firstKey == null || lastKey == null)
+        if (firstKey == null || !firstKey.startsWith(keyPrefix) ||
+            lastKey == null || !lastKey.startsWith(keyPrefix))
             return 0;
         
         long i0 = idIndex.getKeyIndex(firstKey);
         long i1 = idIndex.getKeyIndex(lastKey);
-        return (int)(i1 - i0);
+        return (int)(i1 - i0 + 1);
     }
     
     
     Iterator<String> getFoiIDs(String producerID)
     {
         String[] keyRange = getProducerKeyRange(producerID);
-        return new RangeCursor<>(idIndex, keyRange[0], keyRange[1]);
+        Iterator<String> cursor = new RangeCursor<>(idIndex, keyRange[0], keyRange[1]);
+        
+        // wrap to remove producer prefix and return clean FOI IDs
+        return new IteratorWrapper<String, String>(cursor) {
+            @Override
+            protected String process(String key)
+            {
+                return key.substring(key.indexOf('|')+1);
+            }
+        };
     }
     
     
@@ -159,11 +172,12 @@ class MVFoiTimesStoreImpl
     {
         // if lastFois has no value for producer (first update or after restart)
         // look for latest FOI observed by this producer
-        FoiInfo lastFoi = lastFois.get(producerID);
+        String nonNullProducerID = producerID != null ? producerID : "";
+        FoiInfo lastFoi = lastFois.get(nonNullProducerID);
         if (lastFoi == null)
         {
             lastFoi = new FoiInfo();
-            lastFois.put(producerID, lastFoi);
+            lastFois.put(nonNullProducerID, lastFoi);
             
             String firstKey = getKey(producerID, "");
             Cursor<String, FeatureEntry> cursor = idIndex.cursor(firstKey);
@@ -209,7 +223,7 @@ class MVFoiTimesStoreImpl
     }
     
     
-    void closeLastFoiPeriod(String producerID, FoiInfo lastFoi)
+    private void closeLastFoiPeriod(String producerID, FoiInfo lastFoi)
     {
         String key = getKey(producerID, lastFoi.uid);
         FeatureEntry entry = idIndex.get(key);
