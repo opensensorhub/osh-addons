@@ -19,9 +19,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.h2.mvstore.MVMap;
+import org.h2.mvstore.rtree.SpatialKey;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataKey;
 import org.sensorhub.api.persistence.IDataFilter;
@@ -33,6 +35,7 @@ import org.sensorhub.api.persistence.IObsStorage;
 import org.sensorhub.api.persistence.ObsPeriod;
 import org.vast.util.Asserts;
 import org.vast.util.Bbox;
+import org.vast.util.DateTimeFormat;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.swe.v20.DataBlock;
 
@@ -152,6 +155,14 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
     @Override
     public synchronized void stop() throws SensorHubException
     {
+        /*// cleanup orphan entries
+        Set<String> producerIDs = dataStoreInfoMap.keySet();
+        for (MVTimeSeriesImpl timeSeries: recordStores.values())
+            timeSeries.samplingLocationIndex.cleanupOrphanEntries(producerIDs);*/
+        
+        if (getLogger().isDebugEnabled())
+            dumpContent();
+        
         super.stop();
         
         dataStoreInfoMap = null;
@@ -396,7 +407,7 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
 
 
     @Override
-    public int removeRecords(IDataFilter filter)
+    public synchronized int removeRecords(IDataFilter filter)
     {
         checkOpen();
         Asserts.checkNotNull(filter, IDataFilter.class);
@@ -410,31 +421,30 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
         // use producer list from filter or use all producers
         if (producerIDs == null || producerIDs.isEmpty())
             producerIDs = this.getProducerIDs();
-                
-        for (String producerID: producerIDs) {
-            IObsStorage dataStore = getDataStore(producerID); 
-            int count = dataStore.removeRecords(filter);
+        
+        // first remove time series records
+        for (String producerID: producerIDs)
+        {
+            MVObsStorageImpl obsStore = (MVObsStorageImpl)getDataStore(producerID); 
+            int count = obsStore.removeRecords(filter, false);
             numDeleted += count;
             
             // completely remove producer store if there are no more records in it
-            boolean isEmpty = true;
-            for (String recordType: dataStore.getRecordStores().keySet())
-            {
-                if (dataStore.getNumRecords(recordType) > 0)
-                {
-                    isEmpty = false;
-                    break;
-                }
-            }
-            
-            if (isEmpty)
+            if (obsStore.getNumRecords(filter.getRecordType()) == 0)
             {
                 getLogger().debug("Removing producer {}", producerID);
                 dataStoreInfoMap.remove(producerID);
-                obsStores.remove(producerID);
+                MVObsStorageImpl producerStore = obsStores.remove(producerID);
+                producerStore.cleanupProducer();
             }
         }
         
+        // also cleanup spatial index
+        MVTimeSeriesImpl timeSeries = recordStores.get(filter.getRecordType());
+        if (timeSeries.samplingLocationIndex != null)
+            timeSeries.samplingLocationIndex.remove(filter);
+        
+        //dumpContent();
         return numDeleted;
     }
 
@@ -553,5 +563,42 @@ public class MVMultiStorageImpl extends MVObsStorageImpl implements IMultiSource
             featureStore.store(foi);
         else
             getDataStore(producerID).storeFoi(producerID, foi);
+    }
+    
+    
+    private void dumpContent()
+    {
+        Collection<String> producerIDs = getProducerIDs();
+        
+        // dump content
+        getLogger().debug("Dump of {}", config.name);
+        getLogger().debug("Num producers = {}", producerIDs.size());
+        for (String recordType: getRecordStores().keySet())
+        {
+            MVTimeSeriesImpl recStore = getRecordStore(recordType);
+            getLogger().debug("Time series {}: Num records = {}", recordType, recStore.recordIndex.size());
+            
+            // check that we don't have orphan producer data
+            for (String key: recStore.foiTimesIndex.idIndex.keySet())
+            {
+                if (!producerIDs.contains(key.substring(0, key.indexOf('|'))))
+                    getLogger().debug("** Orphan FOI times entry: {}", key);
+            }
+            
+            if (recStore.samplingLocationIndex != null)
+            {
+                DateTimeFormat df = new DateTimeFormat();
+                for (Entry<SpatialKey, ObsTimePeriod> entry: recStore.samplingLocationIndex.clusterIndex.entrySet())
+                {
+                    String producerID = entry.getValue().producerID;
+                    if (!producerIDs.contains(producerID))
+                    {
+                        String begin = df.formatIso(entry.getValue().start, 0);
+                        String end = df.formatIso(entry.getValue().stop, 0);
+                        getLogger().debug("** Orphan spatial index entry: {}", begin + "/" + end);
+                    }
+                }
+            }
+        }
     }
 }

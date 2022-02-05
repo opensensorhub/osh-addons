@@ -44,11 +44,11 @@ class ObsTimePeriod
     }
     
     
-    ObsTimePeriod(String producerID, double start)
+    ObsTimePeriod(String producerID, double start, double stop)
     {
         this.producerID = producerID;
         this.start = start;
-        this.stop = Double.POSITIVE_INFINITY;
+        this.stop = stop;
     }
     
     

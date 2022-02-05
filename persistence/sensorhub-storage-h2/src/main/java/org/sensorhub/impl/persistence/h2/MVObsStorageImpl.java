@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
+import org.h2.mvstore.MVStoreTool;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.persistence.DataFilter;
 import org.sensorhub.api.persistence.DataKey;
@@ -174,13 +175,15 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
             for (MVTimeSeriesImpl recordStore: recordStores.values())
                 recordStore.close();
             
-            mvStore.compactMoveChunks();
             mvStore.close();
             mvStore = null;
             processDescMap = null;
             rsInfoMap = null;
             recordStores.clear();
             featureStore = null;
+            
+            // compact storage file
+            MVStoreTool.compact(config.storagePath, false);
         }
     }
 
@@ -433,7 +436,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         // remove old records if requested
         // usually needed if old records are not compatible with new data structure
         if (deleteRecords)
-            recordStores.get(name).remove(new DataFilter(name));
+            recordStores.get(name).remove(new DataFilter(name), true);
         
         mvStore.commit();
     }
@@ -591,10 +594,26 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
     @Override
     public synchronized int removeRecords(IDataFilter filter)
     {
+        return removeRecords(filter, true);
+    }
+
+
+    int removeRecords(IDataFilter filter, boolean cleanSpatialIndex)
+    {
         checkOpen();
         filter = ensureProducerID(filter);
         
-        return getRecordStore(filter.getRecordType()).remove(filter);
+        return getRecordStore(filter.getRecordType()).remove(filter, cleanSpatialIndex);
+    }
+    
+    
+    void cleanupProducer()
+    {
+        if (this.producerID != null)
+        {
+            for (String recordType: getRecordStores().keySet())
+                getRecordStore(recordType).cleanupProducer(this.producerID);
+        }
     }
 
 
@@ -627,11 +646,7 @@ public class MVObsStorageImpl extends AbstractModule<MVStorageConfig> implements
         {
             Iterator<String> it = recordStore.getFoiIDs(producerID);
             while (it.hasNext())
-            {
-                String key = it.next();
-                String foiID = key.replaceFirst(producerID, "");
-                foiIDs.add(foiID);
-            }
+                foiIDs.add(it.next());
         }
         
         // also keep those of the original filter

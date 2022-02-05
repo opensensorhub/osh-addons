@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.h2.mvstore.Cursor;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
+import org.sensorhub.api.persistence.IDataFilter;
+import org.sensorhub.api.persistence.IObsFilter;
 import org.sensorhub.impl.persistence.IteratorWrapper;
 
 
@@ -240,10 +242,95 @@ class MVFoiTimesStoreImpl
     }
     
     
+    void remove(IDataFilter filter)
+    {
+        // if filtering on producer IDs, scan only these sections of the index
+        if (filter.getProducerIDs() != null)
+        {
+            for (String producerID: filter.getProducerIDs())
+            {
+                String[] keyRange = getProducerKeyRange(producerID);
+                RangeCursor<String, FeatureEntry> cursor = new RangeCursor<>(idIndex, keyRange[0], keyRange[1]);
+                
+                while (cursor.hasNext())
+                {
+                    String key = cursor.next();
+                    FeatureEntry entry = cursor.getValue();
+                    maybeRemoveEntry(filter, key, entry);
+                }
+            }
+        }
+        
+        // otherwise do a full index scan
+        else
+        {
+            for (Entry<String, FeatureEntry> entry: idIndex.entrySet())
+                maybeRemoveEntry(filter, entry.getKey(), entry.getValue());
+        }
+    }
+    
+    
+    private void maybeRemoveEntry(IDataFilter filter, String key, FeatureEntry entry)
+    {
+        // don't do anything if FOI is not in the filter list
+        if (filter instanceof IObsFilter &&
+            ((IObsFilter)filter).getFoiIDs() != null && !((IObsFilter)filter).getFoiIDs().contains(entry.uid))
+            return;
+        
+        // check time filter to see if we should remove only certain time periods
+        if (filter.getTimeStampRange() != null)
+        {
+            Iterator<double[]> it = entry.timePeriods.iterator();
+            boolean modified = false;
+            while (it.hasNext())
+            {
+                double[] period = it.next();
+                
+                // don't remove if filter time range does not fully include the period
+                if (filter.getTimeStampRange()[0] > period[0] ||
+                    filter.getTimeStampRange()[1] < period[1])
+                    continue;
+                
+                it.remove();
+                modified = true;
+            }
+            
+            if (!modified)
+                return;
+            
+            // reinsert entry if there are some periods left
+            // otherwise it will get fully removed
+            if (!entry.timePeriods.isEmpty())
+            {
+                idIndex.put(key, entry);
+                return;
+            }
+        }
+        
+        // else fully remove it
+        idIndex.remove(key);
+    }
+    
+    
     void remove(String producerID, String foiID)
     {
         String key = getKey(producerID, foiID);
         idIndex.remove(key);
+    }
+    
+    
+    void cleanupProducer(String producerID)
+    {
+        lastFois.remove(producerID);
+        
+        // remove all remaining producer entries
+        String[] keyRange = getProducerKeyRange(producerID);
+        RangeCursor<String, FeatureEntry> cursor = new RangeCursor<>(idIndex, keyRange[0], keyRange[1]);
+        while (cursor.hasNext())
+        {
+            String key = cursor.next();
+            idIndex.remove(key);
+        }
     }
     
     

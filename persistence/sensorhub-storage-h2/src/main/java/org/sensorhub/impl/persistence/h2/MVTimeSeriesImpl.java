@@ -354,7 +354,7 @@ public class MVTimeSeriesImpl
     }
 
 
-    int remove(IDataFilter filter)
+    int remove(IDataFilter filter, boolean cleanSpatialIndex)
     {
         // remove records
         int count = 0;
@@ -366,7 +366,11 @@ public class MVTimeSeriesImpl
             count++;
         }
         
-        // TODO cleanup foi times and sampling location indexes
+        // also cleanup secondary indexes
+        if (foiTimesIndex != null)
+            foiTimesIndex.remove(filter);
+        if (samplingLocationIndex != null && cleanSpatialIndex)
+            samplingLocationIndex.remove(filter);
         
         return count;
     }
@@ -710,6 +714,14 @@ public class MVTimeSeriesImpl
         if (samplingLocationIndex != null)
             samplingLocationIndex.delete();
         recordIndex.getStore().removeMap(recordIndex);
+    }
+    
+    
+    void cleanupProducer(String producerID)
+    {
+        foiTimesIndex.cleanupProducer(producerID);
+        if (samplingLocationIndex != null)
+            samplingLocationIndex.cleanupProducer(producerID);
     }
     
     

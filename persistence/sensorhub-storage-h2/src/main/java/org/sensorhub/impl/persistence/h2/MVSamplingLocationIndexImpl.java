@@ -24,6 +24,8 @@ import org.h2.mvstore.rtree.MVRTreeMap;
 import org.h2.mvstore.rtree.SpatialKey;
 import org.h2.mvstore.rtree.SpatialDataType;
 import org.sensorhub.api.persistence.DataKey;
+import org.sensorhub.api.persistence.IDataFilter;
+import org.sensorhub.api.persistence.IObsFilter;
 import org.sensorhub.utils.SWEDataUtils.VectorIndexer;
 import org.vast.util.Bbox;
 import com.vividsolutions.jts.geom.Envelope;
@@ -49,7 +51,8 @@ class MVSamplingLocationIndexImpl
     VectorIndexer locationIndexer;
     MVRTreeMap<ObsTimePeriod> clusterIndex;
     Map<String, ProducerCacheInfo> clusterCache = new ConcurrentHashMap<>();
-        
+    //private DateTimeFormat df = new DateTimeFormat();
+    
     static class ProducerCacheInfo
     {
         ObsTimePeriod producerTimeRange;
@@ -86,8 +89,11 @@ class MVSamplingLocationIndexImpl
         
         // update cached producer cluster info
         if (cachedInfo.producerTimeRange == null)
-            cachedInfo.producerTimeRange = new ObsTimePeriod(key.producerID, key.timeStamp);
-        cachedInfo.producerTimeRange.stop = key.timeStamp;
+            cachedInfo.producerTimeRange = new ObsTimePeriod(key.producerID, key.timeStamp, key.timeStamp);
+        else if (key.timeStamp < cachedInfo.producerTimeRange.start)
+            cachedInfo.producerTimeRange.start = key.timeStamp;
+        else if (key.timeStamp > cachedInfo.producerTimeRange.stop)
+            cachedInfo.producerTimeRange.stop = key.timeStamp;
         cachedInfo.bbox.resizeToContain(x, y, 0.0);
         cachedInfo.numRecords++;
         
@@ -119,6 +125,28 @@ class MVSamplingLocationIndexImpl
     }
     
     
+    SpatialKey getSpatialKey(Polygon roi)
+    {        
+        Envelope env = roi.getEnvelopeInternal();
+        return new SpatialKey(0, (float)env.getMinX(), Math.nextUp((float)env.getMaxX()),
+                                 (float)env.getMinY(), Math.nextUp((float)env.getMaxY()),
+                                 Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
+    }
+    
+    
+    RTreeCursor<ObsTimePeriod> getCursor(SpatialKey bbox)
+    {
+        //return clusterIndex.findIntersectingKeys(bbox);
+        return new RTreeCursor<ObsTimePeriod>(clusterIndex.getRoot(), bbox) {
+            @Override
+            protected boolean check(boolean leaf, SpatialKey key,
+                    SpatialKey test) {
+                return ((SpatialDataType)clusterIndex.getKeyType()).isOverlap(key, test);
+            }
+        };
+    }
+    
+    
     Set<ObsTimePeriod> getObsTimePeriods(final String producerID, final double[] timeRange, final Polygon roi)
     {
         TreeSet<ObsTimePeriod> obsTimes = new TreeSet<>(new ObsTimePeriod.Comparator());
@@ -141,39 +169,106 @@ class MVSamplingLocationIndexImpl
         // check storage only if time range goes further than current cluster time range
         if (checkStorage)
         {
-            // iterate through spatial index using bounding rectangle
-            Envelope env = roi.getEnvelopeInternal();
-            SpatialKey bbox = new SpatialKey(0, (float)env.getMinX(), Math.nextUp((float)env.getMaxX()),
-                                                (float)env.getMinY(), Math.nextUp((float)env.getMaxY()),
-                                                Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
+            // get spatial key for roi bounding rectangle
+            SpatialKey bbox = getSpatialKey(roi);
             
-            //final RTreeCursor geoCursor = clusterIndex.findIntersectingKeys(bbox);
-            final RTreeCursor<ObsTimePeriod> geoCursor = new RTreeCursor<ObsTimePeriod>(clusterIndex.getRoot(), bbox) {
-                @Override
-                protected boolean check(boolean leaf, SpatialKey key,
-                        SpatialKey test) {
-                    return ((SpatialDataType)clusterIndex.getKeyType()).isOverlap(key, test);
-                }
-            };
-            
-            // wrap with iterator to filter on producerID
+            // iterate with cursor and post-filter on producerID and time range
+            RTreeCursor<ObsTimePeriod> geoCursor = getCursor(bbox);
             while (geoCursor.hasNext())
             {
-                SpatialKey key = geoCursor.next();
+                geoCursor.next();
                 ObsTimePeriod obsCluster = geoCursor.getValue();
-                //ObsTimePeriod obsCluster = clusterIndex.get(key);
+                
                 if (!obsCluster.producerID.equals(producerID) ||
                     obsCluster.start > timeRange[1] ||
                     obsCluster.stop < timeRange[0])
                     continue;
                 
-                /*System.out.println("Select cluster " + producerID + ": " +
-                        obsCluster.start + " -> " + obsCluster.stop);*/
                 obsTimes.add(obsCluster);
             }
         }
         
         return obsTimes;
+    }
+    
+    
+    void remove(IDataFilter filter)
+    {
+        RTreeCursor<ObsTimePeriod> geoCursor;
+        
+        if (filter instanceof IObsFilter && ((IObsFilter)filter).getRoi() != null)
+        {
+            SpatialKey bbox = getSpatialKey(((IObsFilter)filter).getRoi());
+            geoCursor = getCursor(bbox);
+        }
+        else
+        {
+            // otherwise use cursor to scan the whole index
+            geoCursor = new RTreeCursor<ObsTimePeriod>(clusterIndex.getRoot(), null);
+        }
+        
+        // iterate with cursor and remove items matching filter
+        while (geoCursor.hasNext())
+        {
+            SpatialKey key = geoCursor.next();
+            ObsTimePeriod obsCluster = geoCursor.getValue();
+            maybeRemoveEntry(filter, key, obsCluster);
+        }
+    }
+    
+    
+    private void maybeRemoveEntry(IDataFilter filter, SpatialKey key, ObsTimePeriod obsCluster)
+    {
+        // don't remove if producer is not in the filter list 
+        if (filter.getProducerIDs() != null && !filter.getProducerIDs().contains(obsCluster.producerID))
+            return;
+        
+        // don't remove if FOI is not in the filter list
+        if (filter instanceof IObsFilter &&
+            ((IObsFilter)filter).getFoiIDs() != null && !((IObsFilter)filter).getFoiIDs().contains(obsCluster.foiID))
+            return;
+        
+        // don't remove if filter time range does not fully include the cluster
+        if (filter.getTimeStampRange() != null)
+        {
+            if (filter.getTimeStampRange()[0] > obsCluster.start ||
+                filter.getTimeStampRange()[1] < obsCluster.stop)
+            {
+                /*System.out.println(
+                    "Skipping spatial index entry: " +
+                    df.formatIso(obsCluster.start, 0) + "/" +
+                    df.formatIso(obsCluster.stop, 0));*/
+                return;
+            }
+        }
+        
+        // remove cluster
+        /*System.out.println(
+            "Removing spatial index entry: " +
+            df.formatIso(obsCluster.start, 0) + "/" +
+            df.formatIso(obsCluster.stop, 0));*/
+        clusterIndex.remove(key);
+    }
+    
+    
+    void cleanupProducer(String producerID)
+    {
+        clusterCache.remove(producerID);
+    }
+    
+    
+    void cleanupOrphanEntries(Set<String> producerIDs)
+    {
+        // iterate with cursor and remove all items w/ unknown producer ID
+        RTreeCursor<ObsTimePeriod> geoCursor = new RTreeCursor<>(clusterIndex.getRoot(), null);
+        while (geoCursor.hasNext())
+        {
+            SpatialKey key = geoCursor.next();
+            ObsTimePeriod obsCluster = geoCursor.getValue();
+            if (!producerIDs.contains(obsCluster.producerID))
+                clusterIndex.remove(key);
+        }
+        
     }
     
     
