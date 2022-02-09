@@ -98,8 +98,6 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		dataBlk.setStringValue(i++, oshFlightId);
 		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.lat));
 		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.lon));
-        dataBlk.setBooleanValue(i++, "P".equals(fltPos.updateType));
-        parentSensor.getLogger().debug("{} Position Type: {}", oshFlightId, fltPos.updateType);
 		
 		// fix altitude if 0
         double alt = fltPos.getValue(fltPos.alt);
@@ -120,6 +118,8 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.heading));
 		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.gs));
         dataBlk.setDoubleValue(i++, fltPos.verticalChange);
+        dataBlk.setBooleanValue(i++, "P".equals(fltPos.updateType));
+        parentSensor.getLogger().trace("{} Position Type: {}", oshFlightId, fltPos.updateType);
         
 		// update latest record and send event
 		latestRecord = dataBlk;

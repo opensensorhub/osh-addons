@@ -19,11 +19,8 @@ import java.util.List;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.DecodeFlightRouteResult;
 import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.Waypoint;
-import org.sensorhub.impl.sensor.flightAware.FlightAwareDriver.FlightInfo;
 import org.slf4j.Logger;
-import org.vast.util.Asserts;
 import com.google.common.base.Strings;
-import com.google.common.cache.Cache;
 
 
 /**
@@ -35,7 +32,6 @@ public class FlightRouteDecoderFlightXML implements IFlightRouteDecoder
 {
     Logger log;
     FlightAwareApi api;
-    Cache<String, FlightInfo> flightCache;
         
     
     public FlightRouteDecoderFlightXML(FlightAwareDriver driver)
@@ -44,7 +40,6 @@ public class FlightRouteDecoderFlightXML implements IFlightRouteDecoder
         String user = driver.getConfiguration().userName;
         String passwd = driver.getConfiguration().password;
         this.api = new FlightAwareApi(user, passwd);
-        this.flightCache = Asserts.checkNotNull(driver.flightCache, Cache.class);
     }
     
     
