@@ -170,6 +170,9 @@ public class NavDatabase
                 NavDbPointEntry waypoint = (NavDbPointEntry)entry;
                 if (waypoint.lat != null && waypoint.lon != null)
                 {
+                    // replace previous waypoint if same code
+                    if (previousWaypt != null && previousWaypt.id.equals(waypoint.id))
+                        decodeOutput.decodedRoute.remove(decodeOutput.decodedRoute.size()-1);
                     decodeOutput.decodedRoute.add(waypoint);
                     previousWaypt = waypoint;
                     continue;
