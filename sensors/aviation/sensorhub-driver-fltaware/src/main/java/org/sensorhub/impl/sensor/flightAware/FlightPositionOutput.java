@@ -127,7 +127,7 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.gs));
         dataBlk.setDoubleValue(i++, fltPos.verticalChange);
         dataBlk.setBooleanValue(i++, "P".equals(fltPos.updateType));
-        parentSensor.getLogger().debug("{} Position Type: {}", oshFlightId, fltPos.updateType);
+        parentSensor.getLogger().trace("{} Position Type: {}", oshFlightId, fltPos.updateType);
         
 		// update latest record and send event
 		latestRecord = dataBlk;

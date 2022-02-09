@@ -14,32 +14,33 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.DecodeFlightRouteResult;
 import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.Waypoint;
+import org.sensorhub.impl.sensor.navDb.NavDatabase;
+import org.sensorhub.impl.sensor.navDb.NavDatabase.RouteDecodeOutput;
+import org.sensorhub.impl.sensor.navDb.NavDbPointEntry;
 import org.slf4j.Logger;
 import com.google.common.base.Strings;
 
 
 /**
- * Decoder implementation using the FlightXML API to expand the route
+ * Decoder implementation using the ARINC 424 navigation database provided
+ * in a separate OSH module
  * @author Alex Robin
- * @since Nov 26, 2019
+ * @since Nov 26, 2021
  */
-public class FlightRouteDecoderFlightXML implements IFlightRouteDecoder
+public class FlightRouteDecoderNavDb implements IFlightRouteDecoder
 {
     Logger log;
-    FlightAwareApi api;
+    NavDatabase navDB;
         
     
-    public FlightRouteDecoderFlightXML(FlightAwareDriver driver)
+    public FlightRouteDecoderNavDb(FlightAwareDriver driver, String navDbModuleID)
     {
         this.log = driver.getLogger();
-        String user = driver.getConfiguration().userName;
-        String passwd = driver.getConfiguration().password;
-        this.api = new FlightAwareApi(user, passwd);
+        this.navDB = NavDatabase.getInstance(navDbModuleID);
     }
     
     
@@ -48,30 +49,30 @@ public class FlightRouteDecoderFlightXML implements IFlightRouteDecoder
     {
         try
         {
-            long t0 = System.currentTimeMillis();
-            DecodeFlightRouteResult res = api.decodeFlightRoute(fltPlan.id);
-            long t1 = System.currentTimeMillis();
-            log.debug("DecodeFlightRoute call took {}ms", t1-t0);
+            // call decoder
+            RouteDecodeOutput decodeOut = navDB.decodeRoute(route);
+            if (decodeOut == null || decodeOut.decodedRoute == null || decodeOut.decodedRoute.isEmpty())
+                throw new SensorHubException("Empty response from route decoder");
+            int numWaypoints = decodeOut.decodedRoute.size();
             
-            if (res == null || res.data == null || res.data.isEmpty())
-                throw new SensorHubException("Empty response returned by FlightXML API");
-            
-            // set altitude according to filed altitude
-            int i = 0; 
-            for (Waypoint wp: res.data)
+            // build waypoint list and set altitude according to filed altitude
+            int i = 0;
+            ArrayList<Waypoint> waypoints = new ArrayList<>(numWaypoints);
+            for (NavDbPointEntry entry: decodeOut.decodedRoute)
             {
-                if (i == 0 || i == res.data.size()-1)
+                Waypoint wp = new Waypoint(entry.id, entry.type.toString(), entry.lat, entry.lon);
+                if (i == 0 || i == numWaypoints-1)
                     wp.altitude = 0.0;
                 else if (!Strings.nullToEmpty(fltPlan.alt).trim().isEmpty())
                     wp.altitude = Double.parseDouble(fltPlan.alt);
                 i++;
             }
             
-            return res.data;
+            return waypoints;
         }
-        catch (IOException e)
+        catch (Exception e)
         {
-            throw new SensorHubException("Error calling FlightXML API", e);
+            throw new SensorHubException("Error decoding Firehose route using ARINC database", e);
         }
     }
 
