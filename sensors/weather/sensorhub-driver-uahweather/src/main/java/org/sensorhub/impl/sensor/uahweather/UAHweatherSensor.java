@@ -6,13 +6,12 @@ import net.opengis.sensorml.v20.Term;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.uahweather.UAHweatherConfig;
-import org.sensorhub.impl.sensor.uahweather.UAHweatherOutput;
 import org.vast.sensorML.SMLFactory;
 import org.vast.swe.SWEHelper;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+
 
 public class UAHweatherSensor extends AbstractSensorModule<UAHweatherConfig>
 { 
@@ -41,7 +40,8 @@ public class UAHweatherSensor extends AbstractSensorModule<UAHweatherConfig>
                 if (config.commSettings == null)
                     throw new SensorHubException("No communication settings specified");
                 
-                commProvider = config.commSettings.getProvider();
+                var moduleReg = getParentHub().getModuleRegistry();
+                commProvider = (ICommProvider<?>)moduleReg.loadSubModule(config.commSettings, true);
                 commProvider.start();
             }
             catch (Exception e)

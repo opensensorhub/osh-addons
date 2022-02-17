@@ -85,7 +85,8 @@ public class AVLDriver extends AbstractSensorModule<AVLConfig>
                     throw new SensorHubException("No communication settings specified");
                 
                 // start comm provider
-                commProvider = config.commSettings.getProvider();
+                var moduleReg = getParentHub().getModuleRegistry();
+                commProvider = (ICommProvider<?>)moduleReg.loadSubModule(config.commSettings, true);
                 commProvider.start();
                 if (commProvider.getCurrentError() != null)
                     throw (SensorHubException)commProvider.getCurrentError();

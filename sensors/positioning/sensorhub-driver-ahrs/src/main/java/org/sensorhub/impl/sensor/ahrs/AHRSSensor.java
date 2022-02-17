@@ -92,7 +92,8 @@ public class AHRSSensor extends AbstractSensorModule<AHRSConfig>
                 if (config.commSettings == null)
                     throw new SensorHubException("No communication settings specified");
 
-                commProvider = config.commSettings.getProvider();
+                var moduleReg = getParentHub().getModuleRegistry();
+                commProvider = (ICommProvider<?>)moduleReg.loadSubModule(config.commSettings, true);
                 commProvider.start();
             }
             catch (Exception e)

@@ -74,7 +74,7 @@ public class CommRelayService extends AbstractModule<CommRelayConfig>
                 if (started)
                     log.error("Error while transfering byte stream", e);
             }
-        }            
+        }
     };
         
     
@@ -94,7 +94,8 @@ public class CommRelayService extends AbstractModule<CommRelayConfig>
                 if (config.incomingCommSettings == null)
                     throw new SensorHubException("No incoming communication settings specified");
                 
-                incoming = config.incomingCommSettings.getProvider();
+                var moduleReg = getParentHub().getModuleRegistry();
+                incoming = (ICommProvider<?>)moduleReg.loadSubModule(config.incomingCommSettings, true);
                 incoming.start();
             }
             catch (Exception e)
@@ -112,7 +113,8 @@ public class CommRelayService extends AbstractModule<CommRelayConfig>
                 if (config.outgoingCommSettings == null)
                     throw new SensorHubException("No outgoing communication settings specified");
                 
-                outgoing = config.outgoingCommSettings.getProvider();
+                var moduleReg = getParentHub().getModuleRegistry();
+                outgoing = (ICommProvider<?>)moduleReg.loadSubModule(config.outgoingCommSettings, true);
                 outgoing.start();
             }
             catch (Exception e)
@@ -126,7 +128,7 @@ public class CommRelayService extends AbstractModule<CommRelayConfig>
         try
         {
             TransferThread t1 = new TransferThread(incoming.getInputStream(), outgoing.getOutputStream());
-            TransferThread t2 = new TransferThread(outgoing.getInputStream(), incoming.getOutputStream());       
+            TransferThread t2 = new TransferThread(outgoing.getInputStream(), incoming.getOutputStream());
             started = true;
             t1.start();
             t2.start();

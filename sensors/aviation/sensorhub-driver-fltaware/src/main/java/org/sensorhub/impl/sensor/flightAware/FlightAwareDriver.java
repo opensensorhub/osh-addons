@@ -368,8 +368,8 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
             pubSubConfig.subscriptionName = hostname + prefix + pubSubConfig.topicName;
             
             // load message queue implementation
-	        msgQueue = (IMessageQueuePush)getParentHub().getModuleRegistry().loadClass(pubSubConfig.moduleClass);
-            msgQueue.init(pubSubConfig);
+            var moduleReg = getParentHub().getModuleRegistry();
+	        msgQueue = (IMessageQueuePush)moduleReg.loadSubModule(pubSubConfig, true);
             
             if (!publishOnly)
             {
@@ -384,7 +384,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                         }
                         
                         msgHandler.handle(new String(payload, StandardCharsets.UTF_8));
-                    }                
+                    }
                 });
             }
             
