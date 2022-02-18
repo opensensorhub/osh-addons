@@ -22,7 +22,7 @@ distributions {
         from 'web'
       }
       into('lib') {
-        from project.configurations.compileClasspath
+        from project.configurations.runtimeClasspath
       }
     }
   }
