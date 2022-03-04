@@ -14,6 +14,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sweapi.mqtt;
 
+import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
@@ -52,20 +53,22 @@ public class SWEApiMqttService extends AbstractModule<SWEApiMqttServiceConfig> i
                 
                 // wait for MQTT server to be available
                 getParentHub().getModuleRegistry().waitForModuleType(IMqttServer.class, ModuleState.STARTED)
-                .thenAccept(mqtt -> {
-                    if (mqtt != null)
-                    {
-                        mqttConnector = new SWEApiMqttConnector(servlet, endPoint);
-                        mqtt.registerHandler(endPoint, mqttConnector);
-                        getLogger().info("SensorWeb API MQTT handler registered");
-                        setState(ModuleState.STARTED);
-                    }
-                })
-                .exceptionally(e -> {
-                    reportError("No MQTT server available", e);
-                    return null;
-                });
+                    .thenAccept(mqtt -> {
+                        if (mqtt != null)
+                        {
+                            mqttConnector = new SWEApiMqttConnector(servlet, endPoint);
+                            mqtt.registerHandler(endPoint, mqttConnector);
+                            getLogger().info("SensorWeb API MQTT handler registered");
+                            setState(ModuleState.STARTED);
+                        }
+                    })
+                    .orTimeout(10, TimeUnit.SECONDS)
+                    .exceptionally(e -> {
+                        reportError("No MQTT server available", e);
+                        return null;
+                    });
             })
+            .orTimeout(10, TimeUnit.SECONDS)
             .exceptionally(e -> {
                 reportError("Cannot attach to SWE API service", e);
                 return null;
