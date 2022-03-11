@@ -27,7 +27,7 @@ import net.opengis.swe.v20.DataComponent;
 import org.mp4parser.streaming.StreamingTrack;
 import org.mp4parser.streaming.input.h264.H264NalConsumingTrack;
 import org.mp4parser.streaming.output.mp4.FragmentedMp4Writer;
-import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.api.data.ObsEvent;
 import org.sensorhub.impl.service.sos.AbstractAsyncSerializer;
 import org.sensorhub.impl.service.sos.ISOSAsyncResultSerializer;
 import org.sensorhub.impl.service.sos.SOSServlet;
@@ -38,7 +38,7 @@ import org.vast.ows.sos.SOSException;
 import com.google.common.collect.Sets;
 
 
-public class MP4Serializer extends AbstractAsyncSerializer<GetResultRequest, DataEvent> implements ISOSAsyncResultSerializer
+public class MP4Serializer extends AbstractAsyncSerializer<GetResultRequest, ObsEvent> implements ISOSAsyncResultSerializer
 {
     public static String MP4_MIME_TYPE = "video/mp4";
     private static final Set<String> IMG_ARRAY_COMPONENT_NAMES = Sets.newHashSet("img", "videoFrame");
@@ -174,11 +174,11 @@ public class MP4Serializer extends AbstractAsyncSerializer<GetResultRequest, Dat
 
 
     @Override
-    protected void writeRecord(DataEvent item) throws IOException
+    protected void writeRecord(ObsEvent item) throws IOException
     {
         // mux and write each frame to output stream
-        for (var rec: item.getRecords())
-            h264Source.sendNextFrame(rec, os);
+        for (var obs: item.getObservations())
+            h264Source.sendNextFrame(obs.getResult(), os);
     }
 
 
