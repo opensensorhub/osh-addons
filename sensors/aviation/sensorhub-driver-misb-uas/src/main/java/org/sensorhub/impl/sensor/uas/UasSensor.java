@@ -63,15 +63,16 @@ public class UasSensor extends AbstractSensorModule<UasConfig> {
         this.executor = Executors.newSingleThreadExecutor();
         boolean streamOpened = false;
 
-        // Get the stream processor
-        if ((null != config.connection.transportStreamPath) && (!config.connection.transportStreamPath.isEmpty())) {
-
+        // Initialize the MPEG transport stream processor from the source named in the configuration.
+        // If neither the file source nor a connection string is specified, throw an exception so the user knows that
+        // they have to provide at least one of them.
+        if ((null != config.connection.transportStreamPath) && (!config.connection.transportStreamPath.isBlank())) {
             Asserts.checkArgument(config.connection.fps >= 0, "FPS must be >= 0");
             mpegTsProcessor = new MpegTsProcessor(config.connection.transportStreamPath, config.connection.fps, config.connection.loop);
-
+        } else if ((null != config.connection.connectionString) && (!config.connection.connectionString.isBlank())) {
+            mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString);
         } else {
-
-            mpegTsProcessor = new MpegTsProcessor(config.connection.serverIpAddress + ":" + config.connection.serverIpPort);
+        	throw new SensorHubException("Either the input file path or the connection string must be set");
         }
 
         // Attempt to open the stream

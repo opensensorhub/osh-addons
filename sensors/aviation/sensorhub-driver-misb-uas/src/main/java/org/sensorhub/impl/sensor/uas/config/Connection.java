@@ -35,10 +35,6 @@ public class Connection {
     @DisplayInfo(desc = "Continuously loop video playback (only available when reading from file).")
     public boolean loop = false;
 
-    @DisplayInfo(label = "Server Ip", desc = "Server IP address of MISB STANAG 4609 MPEG-TS data to be streamed")
-    @DisplayInfo.FieldType(value = DisplayInfo.FieldType.Type.REMOTE_ADDRESS)
-    public String serverIpAddress;
-
-    @DisplayInfo(label = "Port", desc = "Server IP port of MISB STANAG 4609 MPEG-TS data to be streamed")
-    public int serverIpPort;
+    @DisplayInfo(label = "Connection String", desc = "Connection string that the driver will pass to ffmpeg to connect to the MISB STANAG 4609 MPEG-TS stream. This value is ignored if an input file path is also set in the configuration. See https://www.ffmpeg.org/ffmpeg-protocols.html#Protocols for details of allowed values.")
+    public String connectionString;
 }
