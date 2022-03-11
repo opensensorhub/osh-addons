@@ -209,8 +209,8 @@ public class ISASimulation
             hub.getEventBus().newSubscription(ObsEvent.class)
             .withTopicID(EventUtils.getDataStreamDataTopicID(src.systemUID, src.outputName))
             .subscribe(e -> {
-                if (!e.getObservations().isEmpty()) {
-                    var obs = e.getObservations().iterator().next();
+                if (e.getObservations().length > 0) {
+                    var obs = e.getObservations()[0];
                     
                     // reset if simulation loops around
                     if (obs.getPhenomenonTime().toEpochMilli() < src.lastTriggerTime.toEpochMilli())
