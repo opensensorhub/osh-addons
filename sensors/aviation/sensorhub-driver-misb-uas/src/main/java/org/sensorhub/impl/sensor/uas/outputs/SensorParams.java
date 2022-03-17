@@ -13,13 +13,14 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.uas.outputs;
 
-import org.sensorhub.impl.sensor.uas.UasSensor;
+import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.impl.sensor.uas.common.ITimeSynchronizedUasDataProducer;
 import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
 import org.sensorhub.misb.stanag4609.tags.TagSet;
-import net.opengis.swe.v20.DataBlock;
-import org.sensorhub.api.data.DataEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import net.opengis.swe.v20.DataBlock;
 
 /**
  * Output specification and provider for MISB-TS STANAG 4609 ST0601.16 UAS Metadata
@@ -40,7 +41,7 @@ public class SensorParams extends UasOutput {
      *
      * @param parentSensor Sensor driver providing this output
      */
-    public SensorParams(UasSensor parentSensor) {
+    public SensorParams(ITimeSynchronizedUasDataProducer parentSensor) {
 
         super(SENSOR_OUTPUT_NAME, parentSensor);
 
