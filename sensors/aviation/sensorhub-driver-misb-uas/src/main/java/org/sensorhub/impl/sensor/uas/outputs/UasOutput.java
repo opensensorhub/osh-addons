@@ -13,18 +13,20 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.uas.outputs;
 
-import org.sensorhub.impl.sensor.uas.UasSensor;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.sensor.uas.common.ITimeSynchronizedUasDataProducer;
 import org.sensorhub.impl.sensor.uas.common.SyncTime;
 import org.sensorhub.impl.sensor.uas.klv.DecodedSetListener;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagSet;
+
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Output specification and provider for MISB-TS STANAG 4609 ST0601.16 UAS Metadata
@@ -32,7 +34,7 @@ import java.util.Map;
  * @author Nick Garay
  * @since Oct. 6, 2020
  */
-public abstract class UasOutput extends AbstractSensorOutput<UasSensor> implements DecodedSetListener {
+public abstract class UasOutput extends AbstractSensorOutput<ITimeSynchronizedUasDataProducer> implements DecodedSetListener {
 
     protected DataRecord dataStruct;
     protected DataEncoding dataEncoding;
@@ -50,7 +52,7 @@ public abstract class UasOutput extends AbstractSensorOutput<UasSensor> implemen
      * @param name         Name assigned to the output
      * @param parentSensor Sensor driver providing this output
      */
-    public UasOutput(String name, UasSensor parentSensor) {
+    public UasOutput(String name, ITimeSynchronizedUasDataProducer parentSensor) {
 
         super(name, parentSensor);
     }

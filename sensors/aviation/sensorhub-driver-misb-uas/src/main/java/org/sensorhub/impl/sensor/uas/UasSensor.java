@@ -13,6 +13,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.uas;
 
+import org.sensorhub.impl.sensor.uas.common.ITimeSynchronizedUasDataProducer;
 import org.sensorhub.impl.sensor.uas.common.SyncTime;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.impl.sensor.uas.klv.SetDecoder;
@@ -36,7 +37,7 @@ import java.util.concurrent.Executors;
  * @author Nick Garay
  * @since Feb. 6, 2020
  */
-public class UasSensor extends AbstractSensorModule<UasConfig> {
+public class UasSensor extends AbstractSensorModule<UasConfig> implements ITimeSynchronizedUasDataProducer {
 
     private static final Logger logger = LoggerFactory.getLogger(UasSensor.class);
 
