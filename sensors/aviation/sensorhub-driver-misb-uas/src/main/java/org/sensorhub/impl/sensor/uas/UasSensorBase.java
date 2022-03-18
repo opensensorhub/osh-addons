@@ -98,10 +98,14 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
         generateIds();
         createFois();
 
-        executor = Executors.newSingleThreadScheduledExecutor();
-
         setDecoder = new SetDecoder();
-        setDecoder.setExecutor(executor);
+    }
+    
+    @Override
+    protected void doStart() throws SensorHubException {
+    	super.doStart();
+    	
+    	setupExecutor();
     }
 
     @Override
@@ -112,6 +116,15 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
 
         if (null != executor) {
             executor.shutdownNow();
+            executor = null;
+        }
+    }
+    
+    protected void setupExecutor() {
+        executor = Executors.newSingleThreadScheduledExecutor();
+        setDecoder.setExecutor(executor);
+        if (videoOutput != null) {
+        	videoOutput.setExecutor(executor);
         }
     }
 
@@ -234,20 +247,13 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
 	
 	        // Set data packet listener to the set decoder
 	        mpegTsProcessor.setMetaDataDataBufferListener(setDecoder);
-	        
-	        if (null != setDecoder) {
-	            setDecoder.setExecutor(executor);
-	        }
-	
-	        if (null != videoOutput) {
-	            videoOutput.setExecutor(executor);
-	        }
 		        
 	    	logger.info("MPEG TS stream for {} opened.", getUniqueIdentifier());
     	}
     }
 
     protected void startStream() throws SensorHubException {
+    	setupExecutor();
         try {
         	if (mpegTsProcessor != null) {
         		mpegTsProcessor.processStream();

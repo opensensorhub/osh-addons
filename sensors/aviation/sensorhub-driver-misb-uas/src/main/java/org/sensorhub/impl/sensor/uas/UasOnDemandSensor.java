@@ -92,9 +92,6 @@ public class UasOnDemandSensor extends UasSensorBase<UasOnDemandConfig> {
         // For now we just have to periodically manually check to see if anyone is subscribed.
         executor.scheduleWithFixedDelay(() -> checkForSubscriptions(),
         		500, 500, TimeUnit.MILLISECONDS);
-        
-        openStream();
-        startStream();
     }
     
     /**
@@ -116,7 +113,8 @@ public class UasOnDemandSensor extends UasSensorBase<UasOnDemandConfig> {
         	// Someone needs the data. Is the stream going?
         	if (mpegTsProcessor == null) {
         		try {
-        			startStream();
+        	        openStream();
+        	        startStream();
         		}
         		catch (Exception e) {
         			logger.error("Failed to start stream", e);
