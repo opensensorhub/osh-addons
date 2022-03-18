@@ -196,11 +196,12 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
     }
 
     /**
-     * Invoked to start streaming data from the source, whether it's a file or a network stream.
+     * Opens the connection to the upstream source but does not (yet) start reading any more than the initial
+     * metadata necessary to get the video frame size.
      */
-    protected void startStream() throws SensorHubException {
+    protected void openStream() throws SensorHubException {
     	if (mpegTsProcessor == null) {
-	    	logger.info("Starting MPEG TS processor for {} ...", getUniqueIdentifier());
+	    	logger.info("Opening MPEG TS connection for {} ...", getUniqueIdentifier());
 	        // Initialize the MPEG transport stream processor from the source named in the configuration.
 	        // If neither the file source nor a connection string is specified, throw an exception so the user knows that
 	        // they have to provide at least one of them.
@@ -241,18 +242,21 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
 	        if (null != videoOutput) {
 	            videoOutput.setExecutor(executor);
 	        }
-	
-	        try {
-	            mpegTsProcessor.processStream();
-	
-	        } catch (IllegalStateException e) {
-	            String message = "Failed to start stream processor";
-	            logger.error(message);
-	            throw new SensorHubException(message, e);
-	        }
-	        
-	    	logger.info("MPEG TS processor for {} started.", getUniqueIdentifier());
+		        
+	    	logger.info("MPEG TS stream for {} opened.", getUniqueIdentifier());
     	}
+    }
+
+    protected void startStream() throws SensorHubException {
+        try {
+        	if (mpegTsProcessor != null) {
+        		mpegTsProcessor.processStream();
+        	}
+        } catch (IllegalStateException e) {
+            String message = "Failed to start stream processor";
+            logger.error(message);
+            throw new SensorHubException(message, e);
+        }
     }
 
     protected void stopStream() throws SensorHubException {

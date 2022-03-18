@@ -32,7 +32,12 @@ public class UasSensor extends UasSensorBase<UasConfig> {
     protected void doInit() throws SensorHubException {
         super.doInit();
 
-        startStream();
+        openStream();
         createConfiguredOutputs();
+    }
+    
+    @Override
+    protected void doStart() throws SensorHubException {
+        startStream();
     }
 }

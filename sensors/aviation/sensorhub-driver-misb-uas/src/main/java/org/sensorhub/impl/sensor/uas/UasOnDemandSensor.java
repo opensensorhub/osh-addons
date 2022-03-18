@@ -92,6 +92,9 @@ public class UasOnDemandSensor extends UasSensorBase<UasOnDemandConfig> {
         // For now we just have to periodically manually check to see if anyone is subscribed.
         executor.scheduleWithFixedDelay(() -> checkForSubscriptions(),
         		500, 500, TimeUnit.MILLISECONDS);
+        
+        openStream();
+        startStream();
     }
     
     /**
