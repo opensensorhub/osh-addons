@@ -17,8 +17,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.uas.common.ITimeSynchronizedUasDataProducer;
+import org.sensorhub.impl.sensor.uas.UasSensorBase;
 import org.sensorhub.impl.sensor.uas.common.SyncTime;
+import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.impl.sensor.uas.klv.DecodedSetListener;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagSet;
@@ -34,7 +35,7 @@ import net.opengis.swe.v20.DataRecord;
  * @author Nick Garay
  * @since Oct. 6, 2020
  */
-public abstract class UasOutput extends AbstractSensorOutput<ITimeSynchronizedUasDataProducer> implements DecodedSetListener {
+public abstract class UasOutput<UasConfigType extends UasConfig> extends AbstractSensorOutput<UasSensorBase<UasConfigType>> implements DecodedSetListener {
 
     protected DataRecord dataStruct;
     protected DataEncoding dataEncoding;
@@ -52,7 +53,7 @@ public abstract class UasOutput extends AbstractSensorOutput<ITimeSynchronizedUa
      * @param name         Name assigned to the output
      * @param parentSensor Sensor driver providing this output
      */
-    public UasOutput(String name, ITimeSynchronizedUasDataProducer parentSensor) {
+    public UasOutput(String name, UasSensorBase<UasConfigType> parentSensor) {
 
         super(name, parentSensor);
     }

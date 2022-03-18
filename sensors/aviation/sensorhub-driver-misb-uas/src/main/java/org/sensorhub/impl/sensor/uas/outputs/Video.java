@@ -17,8 +17,9 @@ import java.util.concurrent.Executor;
 
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.uas.common.ITimeSynchronizedUasDataProducer;
+import org.sensorhub.impl.sensor.uas.UasSensorBase;
 import org.sensorhub.impl.sensor.uas.common.SyncTime;
+import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.sensorhub.misb.stanag4609.comm.DataBufferListener;
 import org.sensorhub.misb.stanag4609.comm.DataBufferRecord;
@@ -39,7 +40,7 @@ import net.opengis.swe.v20.DataStream;
  * @author Nick Garay
  * @since Feb. 6, 2020
  */
-public class Video extends AbstractSensorOutput<ITimeSynchronizedUasDataProducer> implements DataBufferListener {
+public class Video<UasConfigType extends UasConfig> extends AbstractSensorOutput<UasSensorBase<UasConfigType>> implements DataBufferListener {
 
     private static final String SENSOR_OUTPUT_NAME = "video";
     private static final String SENSOR_OUTPUT_LABEL = "UAS Video";
@@ -65,7 +66,7 @@ public class Video extends AbstractSensorOutput<ITimeSynchronizedUasDataProducer
      * @param parentSensor Sensor driver providing this output
      * @param videoFrameDimensions The width and height of the video frame
      */
-    public Video(ITimeSynchronizedUasDataProducer parentSensor, int[] videoFrameDimensions) {
+    public Video(UasSensorBase<UasConfigType> parentSensor, int[] videoFrameDimensions) {
 
         super(SENSOR_OUTPUT_NAME, parentSensor);
 
@@ -142,7 +143,7 @@ public class Video extends AbstractSensorOutput<ITimeSynchronizedUasDataProducer
 
     public void processBuffer(DataBufferRecord record) {
 
-        SyncTime syncTime = ((ITimeSynchronizedUasDataProducer)parentSensor).getSyncTime();
+        SyncTime syncTime = ((UasSensorBase<UasConfigType>)parentSensor).getSyncTime();
 
         // If synchronization time data is available
         if (null != syncTime) {

@@ -16,97 +16,34 @@ package org.sensorhub.impl.sensor.uas;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.event.EventUtils;
 import org.sensorhub.api.event.IEventBus;
-import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.uas.common.ITimeSynchronizedUasDataProducer;
-import org.sensorhub.impl.sensor.uas.common.SyncTime;
-import org.sensorhub.impl.sensor.uas.config.Outputs;
 import org.sensorhub.impl.sensor.uas.config.UasOnDemandConfig;
-import org.sensorhub.impl.sensor.uas.klv.SetDecoder;
-import org.sensorhub.impl.sensor.uas.outputs.AirframeAttitude;
-import org.sensorhub.impl.sensor.uas.outputs.FullTelemetry;
-import org.sensorhub.impl.sensor.uas.outputs.GeoRefImageFrame;
-import org.sensorhub.impl.sensor.uas.outputs.GimbalAttitude;
-import org.sensorhub.impl.sensor.uas.outputs.Identification;
-import org.sensorhub.impl.sensor.uas.outputs.Security;
-import org.sensorhub.impl.sensor.uas.outputs.SensorLocation;
-import org.sensorhub.impl.sensor.uas.outputs.SensorParams;
 import org.sensorhub.impl.sensor.uas.outputs.UasOutput;
-import org.sensorhub.impl.sensor.uas.outputs.Video;
-import org.sensorhub.impl.sensor.uas.outputs.VmtiOutput;
-import org.sensorhub.misb.stanag4609.comm.MpegTsProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.vast.ogc.om.MovingFeature;
-import org.vast.swe.SWEConstants;
-import org.vast.util.Asserts;
 
 /**
- * A sensor that has almost the same functionality as {@link UasSensor}, except that it does not actually start up the
- * stream processor to connect to the upstream source until after it detects that a client is actually subscribed for
- * data from it.
+ * Sensor driver that can read UAS data from a MISB transport stream.
  * <p>
- * As currently written, this class duplicates a large amount of code in the {@link UasSensor} class, but just done in
- * a different order. Some thought needs to be given to factoring out shared functionality into a common superclass.
+ * This is one of two sensors defined in this package (the other being {@link UasSensor}). This one provides the same
+ * functionality as the other, except that it does not stream data from the source when there are no OpenSensorHub
+ * clients subscribed for its data.
  * <p>
  * Since it does not connect to the stream right away, the sensor cannot know video frame information (pixel
- * size and codec) at initialization time. So the user has to provide that info (in configuration).
+ * size and codec) at initialization time. So the user has to provide that info as part of its configuration.
+ * 
+ * @author Chris Dillard
+ * @author Nick Garay
+ * @since March 17, 2022
  */
-public class UasOnDemandSensor extends AbstractSensorModule<UasOnDemandConfig> implements ITimeSynchronizedUasDataProducer {
+public class UasOnDemandSensor extends UasSensorBase<UasOnDemandConfig> {
 	/** Debug logger */
     private static final Logger logger = LoggerFactory.getLogger(UasOnDemandSensor.class);
 
-    /**
-     * Thing that knows how to parse the data out of the bytes from the video stream.
-     */
-    private MpegTsProcessor mpegTsProcessor;
-    
-    /**
-     * Background thread manager. Used for image decoding. At the moment, this is a single thread.
-     */
-    private ScheduledExecutorService executor;
-    
-    /**
-     * Knows how to decode the STANAG 4609 tags from the MPEG data. The various outputs listen to events emitted by this
-     * object.
-     */
-    private SetDecoder setDecoder;
-
-    /**
-     * Sensor output for the video frames.
-     */
-    private Video videoOutput;
-
-    /**
-     * Keeps track of the times in the data stream so that we can put an accurate phenomenon time in the data blocks.
-     */
-    private SyncTime syncTime;
-
-    /**
-     * Lock to prevent simultaneous access to syncTime.
-     */
-    private final Object syncTimeLock = new Object();
-
-    /**
-     * All of the various outputs of this sensor. The list's length varies based on the {@link Outputs} configuration.
-     */
-    private List<UasOutput> uasOutputs = new ArrayList<>();
-
-    /**
-     * Feature for the UAS itself.
-     */
-    private MovingFeature uasFoi;
-
-    /**
-     * Feature for the target (if available).
-     */
-    private MovingFeature imagedFoi;
-    
     /**
      * The only way we can know whether someone is subscribed to our sensor data is to periodically ask the sensor hub's
      * event bus whether there are subscribers for each output's topic. This list here contains those topic names.
@@ -123,99 +60,25 @@ public class UasOnDemandSensor extends AbstractSensorModule<UasOnDemandConfig> i
     protected void doInit() throws SensorHubException {
         super.doInit();
 
-        // Generate identifiers
-        generateUniqueID("urn:osh:sensor:uas:", config.serialNumber);
-        generateXmlID("MISB_UAS_", config.serialNumber);
-
         // Clear the list of data stream topics
         // NOTE: Hopefully this is a temporary workaround. See the javadoc for outputTopicIds above.
         outputTopicIds.clear();
 
         if (config.outputs.enableVideo) {
         	int[] videoDims = new int[] { config.video.videoFrameWidth, config.video.videoFrameHeight };
-        	videoOutput = new Video(this, videoDims);
-            addOutput(videoOutput, false);
-            videoOutput.init();
+        	createVideoOutput(videoDims);
             // Add the video output's topic ID to the list we're watching for subscribers.
             // NOTE: Hopefully this is a temporary workaround. See the javadoc for outputTopicIds above.
             outputTopicIds.add(EventUtils.getDataStreamDataTopicID(videoOutput));
         }
 
-        setDecoder = new SetDecoder();
         // Instantiate configured outputs
         createConfiguredOutputs();
 
-        // For each configured output
-        for (UasOutput output: uasOutputs) {
-            // Initialize the output
-            output.init();
-
-            // Register it as a listener to the set decoder
-            setDecoder.addListener(output);
-
-            // Add it as an output to the driver
-            addOutput(output, false);
-            
+        for (UasOutput<UasOnDemandConfig> output: uasOutputs) {
             // Add this output's topic ID to the list we're watching for subscribers.
             // NOTE: Hopefully this is a temporary workaround. See the javadoc for outputTopicIds above.
             outputTopicIds.add(EventUtils.getDataStreamDataTopicID(output));
-        }
-        
-        // create features of interest
-        uasFoi = new MovingFeature();
-        uasFoi.setUniqueIdentifier(this.uniqueID);
-        uasFoi.setName("UAS " + config.serialNumber + " Imaging Sensor");
-        uasFoi.setDescription("Imaging sensor on-board platform " + config.serialNumber);
-        addFoi(uasFoi);
-        
-        imagedFoi = new MovingFeature();
-        imagedFoi.setUniqueIdentifier("urn:osh:foi:imagedArea:" + config.serialNumber);
-        imagedFoi.setName("UAS " + config.serialNumber + " Imaged Area");
-        imagedFoi.setDescription("Area viewed by imaging sensor on-board platform " + config.serialNumber);
-        addFoi(imagedFoi);
-    }
-
-    private void createConfiguredOutputs() {
-        if (config.outputs.enableIdentification) {
-            uasOutputs.add(new Identification(this));
-        }
-        
-        if (config.outputs.enableAirframePosition) {
-            uasOutputs.add(new SensorLocation(this));
-            uasOutputs.add(new AirframeAttitude(this));
-        }
-
-        if (config.outputs.enableGimbalAttitude) {
-            uasOutputs.add(new GimbalAttitude(this));
-        }
-
-        if (config.outputs.enableSensorParams) {
-            uasOutputs.add(new SensorParams(this));
-        }
-
-        if (config.outputs.enableGeoRefImageFrame) {
-            uasOutputs.add(new GeoRefImageFrame(this));
-        }
-
-        if (config.outputs.enableSecurity) {
-            uasOutputs.add(new Security(this));
-        }
-
-        if (config.outputs.enableTargetIndicators) {
-            uasOutputs.add(new VmtiOutput(this));
-        }
-
-        if (config.outputs.enableFullTelemetry) {
-            uasOutputs.add(new FullTelemetry(this));
-        }
-    }
-    
-    protected void updateSensorDescription()
-    {
-        synchronized (sensorDescLock)
-        {
-            super.updateSensorDescription();
-            sensorDescription.setDefinition(SWEConstants.DEF_SYSTEM);
         }
     }
 
@@ -276,126 +139,5 @@ public class UasOnDemandSensor extends AbstractSensorModule<UasOnDemandConfig> i
         		}
         	}
         }
-    }
-    
-    private void startStream() throws SensorHubException {
-    	logger.info("Starting MPEG TS processor for {} ...", getUniqueIdentifier());
-        // Initialize the MPEG transport stream processor from the source named in the configuration.
-        // If neither the file source nor a connection string is specified, throw an exception so the user knows that
-        // they have to provide at least one of them.
-        if ((null != config.connection.transportStreamPath) && (!config.connection.transportStreamPath.isBlank())) {
-            Asserts.checkArgument(config.connection.fps >= 0, "FPS must be >= 0");
-            mpegTsProcessor = new MpegTsProcessor(config.connection.transportStreamPath, config.connection.fps, config.connection.loop);
-        } else if ((null != config.connection.connectionString) && (!config.connection.connectionString.isBlank())) {
-            mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString);
-        } else {
-        	throw new SensorHubException("Either the input file path or the connection string must be set");
-        }
-        
-        if (mpegTsProcessor.openStream()) {
-        	logger.info("Stream opened for {}", getUniqueIdentifier());
-        	mpegTsProcessor.queryEmbeddedStreams();
-            // If there is a video content in the stream
-            if (config.outputs.enableVideo && mpegTsProcessor.hasVideoStream()) {
-                // Set video stream packet listener to video output
-                mpegTsProcessor.setVideoDataBufferListener(videoOutput);
-            }
-        } else {
-        	throw new SensorHubException("Unable to open stream from data source");
-        }
-
-        // Set data packet listener to the set decoder
-        mpegTsProcessor.setMetaDataDataBufferListener(setDecoder);
-        
-        if (null != setDecoder) {
-            setDecoder.setExecutor(executor);
-        }
-
-        if (null != videoOutput) {
-            videoOutput.setExecutor(executor);
-        }
-
-        try {
-            mpegTsProcessor.processStream();
-
-        } catch (IllegalStateException e) {
-            String message = "Failed to start stream processor";
-            logger.error(message);
-            throw new SensorHubException(message, e);
-        }
-        
-    	logger.info("MPEG TS processor for {} started.", getUniqueIdentifier());
-    }
-    
-    protected void stopStream() throws SensorHubException {
-    	logger.info("Stopping MPEG TS processor for {}", getUniqueIdentifier());
-
-    	if (null != mpegTsProcessor) {
-            mpegTsProcessor.stopProcessingStream();
-
-            try {
-                // Wait for thread to finish
-                mpegTsProcessor.join();
-            } catch (InterruptedException e) {
-                logger.error("Interrupted waiting for stream processor to stop", e);
-                throw new SensorHubException("Interrupted waiting for stream processor to stop", e);
-            } finally {
-                // Close stream and cleanup resources
-                mpegTsProcessor.closeStream();
-                mpegTsProcessor = null;
-            }
-        }
-    }
-
-    @Override
-    protected void doStop() throws SensorHubException {
-        super.doStop();
-        
-        stopStream();
-
-        if (null != executor) {
-            executor.shutdownNow();
-        }
-    }
-
-    @Override
-    public boolean isConnected() {
-        return isStarted();
-    }
-
-    /**
-     * Sets a synchronization time element used to synchronize telemetry with video stream data
-     *
-     * @param syncTime the most recent synchronization data from telemetry stream
-     */
-    public void setStreamSyncTime(SyncTime syncTime) {
-        synchronized (syncTimeLock) {
-            this.syncTime = syncTime;
-        }
-    }
-
-    /**
-     * Returns the latest {@link SyncTime} record or null if not yet received from {@link FullTelemetry}
-     *
-     * @return latest sync time or null
-     */
-    public SyncTime getSyncTime() {
-        SyncTime currentSyncTime;
-
-        synchronized (syncTimeLock) {
-            currentSyncTime = syncTime;
-        }
-
-        return currentSyncTime;
-    }
-    
-    public String getUasFoiUID()
-    {
-        return uasFoi.getUniqueIdentifier();
-    }
-    
-    public String getImagedFoiUID()
-    {
-        return imagedFoi.getUniqueIdentifier();
     }
 }

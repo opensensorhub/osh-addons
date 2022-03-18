@@ -14,7 +14,8 @@
 package org.sensorhub.impl.sensor.uas.outputs;
 
 import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.impl.sensor.uas.common.ITimeSynchronizedUasDataProducer;
+import org.sensorhub.impl.sensor.uas.UasSensorBase;
+import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.impl.sensor.uas.klv.SecurityLocalSet;
 import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
 import org.sensorhub.misb.stanag4609.tags.TagSet;
@@ -29,7 +30,7 @@ import net.opengis.swe.v20.DataBlock;
  * @author Nick Garay
  * @since Oct. 6, 2020
  */
-public class Security extends UasOutput {
+public class Security<UasConfigType extends UasConfig> extends UasOutput<UasConfigType> {
 
     private static final String SENSOR_OUTPUT_NAME = "Security";
     private static final String SENSOR_OUTPUT_LABEL = "Classification Markings";
@@ -42,7 +43,7 @@ public class Security extends UasOutput {
      *
      * @param parentSensor Sensor driver providing this output
      */
-    public Security(ITimeSynchronizedUasDataProducer parentSensor) {
+    public Security(UasSensorBase<UasConfigType> parentSensor) {
 
         super(SENSOR_OUTPUT_NAME, parentSensor);
 

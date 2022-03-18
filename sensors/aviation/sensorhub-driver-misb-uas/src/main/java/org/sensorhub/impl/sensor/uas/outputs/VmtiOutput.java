@@ -19,7 +19,8 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.impl.sensor.uas.common.ITimeSynchronizedUasDataProducer;
+import org.sensorhub.impl.sensor.uas.UasSensorBase;
+import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
 import org.sensorhub.impl.sensor.uas.klv.VmtiLocalSet;
 import org.sensorhub.misb.stanag4609.tags.Tag;
@@ -39,7 +40,7 @@ import net.opengis.swe.v20.DataBlock;
  * @author Alex Robin
  * @since May. 10, 2021
  */
-public class VmtiOutput extends UasOutput {
+public class VmtiOutput<UasConfigType extends UasConfig> extends UasOutput<UasConfigType> {
 
     private static final String SENSOR_OUTPUT_NAME = "TargetIndicators";
     private static final String SENSOR_OUTPUT_LABEL = "Moving Target Indicators";
@@ -59,7 +60,7 @@ public class VmtiOutput extends UasOutput {
      *
      * @param parentSensor Sensor driver providing this output
      */
-    public VmtiOutput(ITimeSynchronizedUasDataProducer parentSensor) {
+    public VmtiOutput(UasSensorBase parentSensor) {
 
         super(SENSOR_OUTPUT_NAME, parentSensor);
 

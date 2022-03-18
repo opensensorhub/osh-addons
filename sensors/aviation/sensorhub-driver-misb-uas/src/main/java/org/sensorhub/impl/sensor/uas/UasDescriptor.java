@@ -20,7 +20,8 @@ import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.module.JarModuleProvider;
 
 /**
- * Descriptor classes provide access to informative data on the OpenSensorHub driver
+ * Class named in META-INF/services/org.sensorhub.api.module.IModuleProvider that informs OpenSensorHub of the existence
+ * of a sensor driver and its configuration class. In this case, it tells OSH about the {@link UasSensor}.
  *
  * @author Nick Garay
  * @since Feb. 6, 2020
