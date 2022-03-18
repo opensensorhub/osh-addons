@@ -39,6 +39,5 @@ When added to an OpenSensorHub node, both of the drivers listed above have the f
 In addition to all of the above configuration, the `UasOnDemandSensor` also has the following configuration:
 
 - **Video:** Provides details about the video frame that the sensor cannot know ahead of time (since it does not read the data stream until interested parties subscribe for its data).
-  - **Video Codec:** Either `H264` or `MJPEG`, indicating how video frames are encoded in the MPEG TS data stream.
   - **Video Width:** The pixel width of video frames.
   - **Video Height:** The pixel height of video frames.
