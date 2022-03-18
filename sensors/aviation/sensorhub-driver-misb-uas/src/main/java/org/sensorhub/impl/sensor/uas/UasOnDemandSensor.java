@@ -35,8 +35,8 @@ import org.slf4j.LoggerFactory;
  * Since it does not connect to the stream right away, the sensor cannot know video frame information (pixel
  * size and codec) at initialization time. So the user has to provide that info as part of its configuration.
  * 
- * @author Chris Dillard
  * @author Nick Garay
+ * @author Chris Dillard
  * @since March 17, 2022
  */
 public class UasOnDemandSensor extends UasSensorBase<UasOnDemandConfig> {

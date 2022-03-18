@@ -30,7 +30,11 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 
 /**
- * Output specification and provider for MISB-TS STANAG 4609 ST0601.16 UAS Metadata
+ * Base class for sensor outputs of the two sensors in this module. Each concrete subclass will represents one or more
+ * of the data elements in MISB-TS STANAG 4609 ST0601.16 UAS Metadata.
+ *
+ * @param <UasConfigType> A type parameter that allows us to use this output on both types of sensors that are defined
+ *   in this module.
  *
  * @author Nick Garay
  * @since Oct. 6, 2020

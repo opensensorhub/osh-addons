@@ -37,6 +37,9 @@ import net.opengis.swe.v20.DataBlock;
 /**
  * Output specification and provider for moving target indicator (VMTI) data
  *
+ * @param <UasConfigType> A type parameter that allows us to use this output on both types of sensors that are defined
+ *   in this module.
+ *
  * @author Alex Robin
  * @since May. 10, 2021
  */
@@ -60,7 +63,7 @@ public class VmtiOutput<UasConfigType extends UasConfig> extends UasOutput<UasCo
      *
      * @param parentSensor Sensor driver providing this output
      */
-    public VmtiOutput(UasSensorBase parentSensor) {
+    public VmtiOutput(UasSensorBase<UasConfigType> parentSensor) {
 
         super(SENSOR_OUTPUT_NAME, parentSensor);
 

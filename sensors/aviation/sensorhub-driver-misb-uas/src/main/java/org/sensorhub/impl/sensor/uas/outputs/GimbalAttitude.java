@@ -26,6 +26,9 @@ import net.opengis.swe.v20.DataBlock;
 /**
  * Output specification and provider for MISB-TS STANAG 4609 ST0601.16 UAS Metadata
  *
+ * @param <UasConfigType> A type parameter that allows us to use this output on both types of sensors that are defined
+ *   in this module.
+ *
  * @author Nick Garay
  * @since Oct. 6, 2020
  */

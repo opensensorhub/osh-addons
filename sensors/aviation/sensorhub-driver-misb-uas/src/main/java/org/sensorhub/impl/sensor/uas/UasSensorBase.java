@@ -30,7 +30,7 @@ import org.vast.swe.SWEConstants;
 import org.vast.util.Asserts;
 
 /**
- * Base class for our sensors that parse an MPEG TS stream.
+ * Base class for two sensors that parse an MPEG TS stream.
  * 
  * This collects the common functionality between the {@link UasSensor} and {@link UasOnDemandSensor}. Nearly
  * all of the code is shared, but just called in a different order.

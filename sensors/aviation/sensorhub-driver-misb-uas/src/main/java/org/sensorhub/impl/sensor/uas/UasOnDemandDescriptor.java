@@ -22,6 +22,10 @@ import org.sensorhub.impl.sensor.uas.config.UasOnDemandConfig;
 /**
  * Class named in META-INF/services/org.sensorhub.api.module.IModuleProvider that informs OpenSensorHub of the existence
  * of a sensor driver and its configuration class. In this case, it tells OSH about the {@link UasOnDemandSensor}.
+ *
+ * @author Nick Garay
+ * @author Chris Dillard
+ * @since March 19, 2022
  */
 public class UasOnDemandDescriptor extends JarModuleProvider implements IModuleProvider {
     public Class<? extends IModule<?>> getModuleClass() {
