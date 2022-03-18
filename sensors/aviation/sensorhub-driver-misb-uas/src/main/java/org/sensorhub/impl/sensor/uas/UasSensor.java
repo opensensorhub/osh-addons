@@ -38,6 +38,8 @@ public class UasSensor extends UasSensorBase<UasConfig> {
     
     @Override
     protected void doStart() throws SensorHubException {
+    	super.doStart();
+    	
         startStream();
     }
 }
