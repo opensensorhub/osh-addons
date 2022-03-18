@@ -15,7 +15,6 @@ package org.sensorhub.impl.sensor.uas;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
@@ -90,8 +89,6 @@ public class UasOnDemandSensor extends UasSensorBase<UasOnDemandConfig> {
     protected void doStart() throws SensorHubException {
         super.doStart();
 
-        executor = Executors.newSingleThreadScheduledExecutor();
-        
         // For now we just have to periodically manually check to see if anyone is subscribed.
         executor.scheduleWithFixedDelay(() -> checkForSubscriptions(),
         		500, 500, TimeUnit.MILLISECONDS);
