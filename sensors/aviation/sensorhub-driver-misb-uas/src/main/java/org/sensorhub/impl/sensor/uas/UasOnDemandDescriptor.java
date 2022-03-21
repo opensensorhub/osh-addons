@@ -35,4 +35,14 @@ public class UasOnDemandDescriptor extends JarModuleProvider implements IModuleP
     public Class<? extends ModuleConfig> getModuleConfigClass() {
         return UasOnDemandConfig.class;
     }
+
+    @Override
+	public String getModuleName() {
+		return super.getModuleName() + " (on demand)";
+	}
+
+	@Override
+	public String getModuleDescription() {
+		return super.getModuleDescription() + ". This version does not connect to the video source until OSH clients request its data.";
+	}
 }
