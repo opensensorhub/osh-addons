@@ -127,10 +127,10 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 if (procGroupID != null)
                 {
                     var groupHandler = pm.transactionHandler.getSystemHandler(procGroupID.getInternalID());
-                    procKey = groupHandler.addOrUpdateMember(procWrapper).getSystemKey();
+                    procKey = groupHandler.addOrUpdateMember(procWrapper).getLocalSystemKey();
                 }
                 else
-                    procKey = pm.transactionHandler.addOrUpdateSystem(procWrapper).getSystemKey();
+                    procKey = pm.transactionHandler.addOrUpdateSystem(procWrapper).getLocalSystemKey();
                 
                 // handle associations / deep inserts
                 var publicSensorID = pm.toPublicID(procKey.getInternalID());
