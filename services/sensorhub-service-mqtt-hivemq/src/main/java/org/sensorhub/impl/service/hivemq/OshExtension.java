@@ -106,6 +106,8 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                     @Override
                     public void onMqttConnectionStart(ConnectionStartInput connectionStartInput)
                     {
+                        var clientId = connectionStartInput.getClientInformation().getClientId();
+                        log.debug("Client {} connected", clientId);
                     }
 
                     @Override
@@ -117,7 +119,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                     public void onDisconnect(DisconnectEventInput disconnectEventInput)
                     {
                         var clientId = disconnectEventInput.getClientInformation().getClientId();
-                        log.debug("Client {} disconnected", clientId); 
+                        log.debug("Client {} disconnected", clientId);
                         
                         var topicList = clientTopics.remove(clientId);
                         if (topicList != null)
