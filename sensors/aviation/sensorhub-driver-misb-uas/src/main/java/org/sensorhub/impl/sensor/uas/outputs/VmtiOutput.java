@@ -14,6 +14,7 @@
 package org.sensorhub.impl.sensor.uas.outputs;
 
 import org.sensorhub.impl.sensor.uas.UasSensor;
+import org.sensorhub.impl.sensor.uas.common.SyncTime;
 import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
 import org.sensorhub.impl.sensor.uas.klv.VmtiLocalSet;
 import org.sensorhub.misb.stanag4609.tags.Tag;
@@ -50,6 +51,7 @@ public class VmtiOutput extends UasOutput {
     double frameCenterLat;
     double frameCenterLon;
     DataBlock vTargetPackTemplateBlock;
+    DataBlock previousDataBlock;
     
     
     /**
@@ -128,12 +130,23 @@ public class VmtiOutput extends UasOutput {
     @Override
     protected void setData(DataBlock dataBlock, TagSet localSet, int localSetTag, Object value) {
 
+        // always clear target list the first time this is called since
+        // we need to do it even in case no VMTI metadata is present
+        if (dataBlock != previousDataBlock)
+        {
+            var seriesData = (DataBlockList)((DataBlockMixed)dataBlock).getUnderlyingObject()[3];
+            seriesData.resize(0);
+            ((DataBlockMixed)dataBlock).updateAtomCount();
+            previousDataBlock = dataBlock;
+        }
+        
         if (localSet == UasDataLinkSet.UAS_LOCAL_SET) {
             
             switch (localSetTag) {
     
                 case 0x02: // Precision Time Stamp
                     dataBlock.setDoubleValue(0, (Double)value);
+                    
                     break;
                     
                 case 0x17: // Frame Center Latitude
@@ -149,6 +162,7 @@ public class VmtiOutput extends UasOutput {
             }
         }
         else if (localSet == VmtiLocalSet.VMTI_LOCAL_SET) {
+            
             
             switch (localSetTag) {
                 
@@ -178,15 +192,15 @@ public class VmtiOutput extends UasOutput {
                     var targetSeries = (Collection<HashMap<Tag, Object>>)value;
                     
                     var seriesData = (DataBlockList)((DataBlockMixed)dataBlock).getUnderlyingObject()[3];
-                    seriesData.resize(0);
-                    
                     for (var targetPack: targetSeries) {
                         var dataBlk = vTargetPackTemplateBlock.clone();
                         setTargetSeriesData(dataBlk, targetPack);
                         seriesData.add(dataBlk);
-                    }                    
+                    }
+                    
+                    ((DataBlockMixed)dataBlock).updateAtomCount();
                     break;
-    
+                    
                 default:
                     break;
             }
@@ -234,6 +248,10 @@ public class VmtiOutput extends UasOutput {
     @Override
     protected void publish(DataBlock dataBlock) {
 
+        // don't publish if frameNum and numTargets are zero
+        if (dataBlock.getIntValue(1) == 0 && dataBlock.getIntValue(2) == 0)
+            return;
+        
         eventHandler.publish(new DataEvent(latestRecordTime, this, parentSensor.getImagedFoiUID(), dataBlock));
     }
 }
