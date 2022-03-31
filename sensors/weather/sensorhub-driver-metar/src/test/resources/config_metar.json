@@ -6,7 +6,7 @@
 	 "moduleClass": "org.sensorhub.impl.service.HttpServer",
 	 "httpPort": 8181,
 	 "servletsRootUrl": "/sensorhub",
-	 "staticDocRootUrl": "web"
+	 "staticDocsRootDir": "web"
  },
  {
 	 "objClass": "org.sensorhub.ui.AdminUIConfig",

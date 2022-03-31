@@ -12,7 +12,7 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.sos.video;
+package org.sensorhub.impl.service.sweapi.video;
 
 import java.io.IOException;
 import java.io.OutputStream;

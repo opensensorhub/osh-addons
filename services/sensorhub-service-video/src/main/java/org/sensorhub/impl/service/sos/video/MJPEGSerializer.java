@@ -20,7 +20,7 @@ import javax.servlet.AsyncContext;
 import javax.servlet.http.HttpServletResponse;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
-import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.api.data.ObsEvent;
 import org.sensorhub.impl.service.sos.AbstractAsyncSerializer;
 import org.sensorhub.impl.service.sos.ISOSAsyncResultSerializer;
 import org.sensorhub.impl.service.sos.SOSServlet;
@@ -31,7 +31,7 @@ import org.vast.ows.sos.SOSException;
 import com.google.common.collect.Sets;
 
 
-public class MJPEGSerializer extends AbstractAsyncSerializer<GetResultRequest, DataEvent> implements ISOSAsyncResultSerializer
+public class MJPEGSerializer extends AbstractAsyncSerializer<GetResultRequest, ObsEvent> implements ISOSAsyncResultSerializer
 {
     private static final String MIME_TYPE_MULTIPART = "multipart/x-mixed-replace; boundary=--myboundary"; 
     private static final byte[] MIME_BOUNDARY_JPEG = new String("--myboundary\r\nContent-Type: image/jpeg\r\nContent-Length: ").getBytes();
@@ -77,13 +77,14 @@ public class MJPEGSerializer extends AbstractAsyncSerializer<GetResultRequest, D
 
 
     @Override
-    protected void writeRecord(DataEvent item) throws IOException
+    protected void writeRecord(ObsEvent item) throws IOException
     {
         // write each record in output stream
         // skip time stamp and any other field around image data to provide raw MJPEG
         // TODO set timestamp in JPEG metadata
-        for (var rec: item.getRecords())
+        for (var obs: item.getObservations())
         {
+            var rec = obs.getResult();
             DataBlock frameBlk = ((DataBlockMixed)rec).getUnderlyingObject()[imgComponentIdx];
             byte[] frameData = (byte[])frameBlk.getUnderlyingObject();
             

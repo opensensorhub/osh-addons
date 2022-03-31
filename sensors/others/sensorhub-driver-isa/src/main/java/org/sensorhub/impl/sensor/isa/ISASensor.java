@@ -196,7 +196,7 @@ public abstract class ISASensor extends AbstractSensorDriver
     
     public ISASimulation getSimulation()
     {
-        return ((ISADriver)parentGroup).simulation;
+        return ((ISADriver)parentSystem).simulation;
     }
 
 }

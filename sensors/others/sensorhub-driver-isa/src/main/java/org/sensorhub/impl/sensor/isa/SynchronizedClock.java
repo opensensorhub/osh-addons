@@ -46,8 +46,8 @@ public class SynchronizedClock extends Clock
         hub.getEventBus().newSubscription(ObsEvent.class)
             .withTopicID(EventUtils.getDataStreamDataTopicID(systemUID, outputName))
             .subscribe(e -> {
-                if (!e.getObservations().isEmpty()) {
-                    var obs = e.getObservations().iterator().next();
+                if (e.getObservations().length > 0) {
+                    var obs = e.getObservations()[0];
                     
                     // reset if simulation looped around
                     if (lastObsTime != null && obs.getPhenomenonTime().isBefore(lastObsTime))

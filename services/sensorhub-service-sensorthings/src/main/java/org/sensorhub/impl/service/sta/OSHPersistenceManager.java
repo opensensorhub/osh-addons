@@ -332,7 +332,7 @@ public class OSHPersistenceManager implements PersistenceManager
         this.dbRegistry = service.getParentHub().getDatabaseRegistry();
         this.readDatabase = service.readDatabase;
         this.writeDatabase = service.writeDatabase;
-        this.transactionHandler = new SystemDatabaseTransactionHandler(eventBus, writeDatabase);
+        this.transactionHandler = new SystemDatabaseTransactionHandler(eventBus, writeDatabase, dbRegistry);
         
         // setup all entity handlers
         this.securityHandler = service.getSecurityHandler();

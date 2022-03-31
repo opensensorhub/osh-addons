@@ -135,7 +135,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                     dsInfo.getRecordEncoding());
                 
                 // associate with thing
-                var localDsID = dsHandler.getDataStreamKey().getInternalID();
+                var localDsID = dsHandler.getLocalDataStreamKey().getInternalID();
                 dataStreamWriteStore.putThingAssoc(thingId.asLong(), localDsID);
                                 
                 long publicDsID = pm.toPublicID(localDsID);
@@ -185,13 +185,9 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         {
             // create new data stream version
             var dsInfo = toSweDataStream(oldDsInfo.getSystemID(), dataStream);
-
-            // check output name wasn't changed
-            if (!dsInfo.getOutputName().equals(oldDsInfo.getOutputName()))
-                throw new IllegalArgumentException("Cannot change a datastream name");
             
             // update in DB
-            return dsHandler.update(dsInfo.getRecordStructure(), dsInfo.getRecordEncoding());
+            return dsHandler.update(dsInfo);
         }
         catch (IllegalArgumentException | NoSuchEntityException e)
         {
