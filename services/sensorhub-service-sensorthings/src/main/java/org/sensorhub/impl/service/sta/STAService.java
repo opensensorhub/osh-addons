@@ -28,11 +28,9 @@ import org.sensorhub.api.service.IServiceModule;
 import org.sensorhub.api.system.SystemId;
 import org.sensorhub.impl.database.registry.FilteredFederatedObsDatabase;
 import org.sensorhub.impl.service.AbstractHttpServiceModule;
-import org.sensorhub.impl.system.VirtualSystemGroupConfig;
 import org.sensorhub.impl.system.wrapper.SystemWrapper;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.sensorML.SMLHelper;
-import com.google.common.base.Strings;
 import de.fraunhofer.iosb.ilt.frostserver.http.common.ServletV1P0;
 import de.fraunhofer.iosb.ilt.frostserver.settings.CoreSettings;
 import net.opengis.sensorml.v20.AbstractProcess;
@@ -69,19 +67,6 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
     public void setConfiguration(STAServiceConfig config)
     {
         super.setConfiguration(config);
-        
-        // TODO check config
-        if (config.virtualSensorGroup == null)
-        {
-            config.virtualSensorGroup = new VirtualSystemGroupConfig();
-            config.virtualSensorGroup.uid = DEFAULT_GROUP_UID;
-            config.virtualSensorGroup.name = "SensorThings Sensor Group";
-            config.virtualSensorGroup.description = "Sensors registered via SensorThings API";
-        }
-        
-        if (Strings.isNullOrEmpty(config.virtualSensorGroup.uid))
-            throw new IllegalArgumentException("Virtual Sensor Group UID cannot be null");
-        
         this.securityHandler = new STASecurity(this, config.security.enableAccessControl);
     }
 
@@ -131,6 +116,8 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
                 fk = writeDatabase.getSystemDescStore().getCurrentVersionKey(virtualGroupUID);
             virtualGroupId = new SystemId(fk.getInternalID(), virtualGroupUID);
         }
+        else
+            virtualGroupId = new SystemId(1, "urn:osh:sta");
         
         // create default hub thing
         String uid = getSystemGroupID().getUniqueID() + ":thing:hub";
