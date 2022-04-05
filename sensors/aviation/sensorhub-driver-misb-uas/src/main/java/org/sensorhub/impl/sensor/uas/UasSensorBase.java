@@ -113,18 +113,32 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
         super.doStop();
         
         stopStream();
-
-        if (null != executor) {
-            executor.shutdownNow();
-            executor = null;
-        }
+        shutdownExecutor();
     }
-    
+
+    /**
+     * Creates the background thread that'll handle video decoding, if it hasn't already been done.
+     * Also tells the setDecoder and videoOutput about the executor.
+     */
     protected void setupExecutor() {
-        executor = Executors.newSingleThreadScheduledExecutor();
-        setDecoder.setExecutor(executor);
+    	if (executor == null) {
+	        executor = Executors.newSingleThreadScheduledExecutor();
+    	}
+    	if (setDecoder != null) {
+    		setDecoder.setExecutor(executor);
+    	}
         if (videoOutput != null) {
         	videoOutput.setExecutor(executor);
+        }
+    }
+
+    /**
+     * Cleanly shuts down the background thread and sets it to null. If it's already null, doesn't do anything.
+     */
+    protected void shutdownExecutor() {
+        if (executor != null) {
+            executor.shutdownNow();
+            executor = null;
         }
     }
 
@@ -253,6 +267,8 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
     }
 
     protected void startStream() throws SensorHubException {
+    	// Start the background thread if it's not already started. (This will also inform the setDecoder and
+    	// videoOutput of the background thread, if necessary.)
     	setupExecutor();
         try {
         	if (mpegTsProcessor != null) {

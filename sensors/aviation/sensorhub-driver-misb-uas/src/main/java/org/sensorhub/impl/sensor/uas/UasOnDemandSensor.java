@@ -129,6 +129,7 @@ public class UasOnDemandSensor extends UasSensorBase<UasOnDemandConfig> {
         	}
         } else {
         	logger.trace("No subscribers detected.");
+        	// No one needs the data. If the processor happens to be running then shut it down.
         	if (mpegTsProcessor != null) {
         		try {
         			stopStream();
