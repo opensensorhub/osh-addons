@@ -99,13 +99,16 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
         createFois();
 
         setDecoder = new SetDecoder();
+
+        // The non-on-demand subclass will override this method to also open up the stream to get video frame size.
     }
     
     @Override
     protected void doStart() throws SensorHubException {
     	super.doStart();
-    	
-    	setupExecutor();
+        setupExecutor();
+        
+        // Both subclasses will override this method to also start the streaming from the video file/URI.
     }
 
     @Override
@@ -122,18 +125,22 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
      */
     protected void setupExecutor() {
     	if (executor == null) {
+    		logger.debug("Executor was null, so creating a new one");
 	        executor = Executors.newSingleThreadScheduledExecutor();
+    	} else {
+    		logger.debug("Already had an exector.");
     	}
     	if (setDecoder != null) {
     		setDecoder.setExecutor(executor);
     	}
-        if (videoOutput != null) {
-        	videoOutput.setExecutor(executor);
-        }
+		if (videoOutput != null) {
+			videoOutput.setExecutor(executor);
+		}
     }
 
     /**
-     * Cleanly shuts down the background thread and sets it to null. If it's already null, doesn't do anything.
+     * Cleanly shuts down the background thread and sets it to null. If it's already null, doesn't do anything. This is
+     * called when the sensor is stopped to clean up the background thread (hopefully).
      */
     protected void shutdownExecutor() {
         if (executor != null) {
@@ -155,6 +162,9 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
      */
     protected void createVideoOutput(int[] videoDims) {
     	videoOutput = new Video<UasConfigType>(this, videoDims);
+    	if (executor != null) {
+    		videoOutput.setExecutor(executor);
+    	}
         addOutput(videoOutput, false);
         videoOutput.init();
     }
@@ -267,9 +277,6 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
     }
 
     protected void startStream() throws SensorHubException {
-    	// Start the background thread if it's not already started. (This will also inform the setDecoder and
-    	// videoOutput of the background thread, if necessary.)
-    	setupExecutor();
         try {
         	if (mpegTsProcessor != null) {
         		mpegTsProcessor.processStream();

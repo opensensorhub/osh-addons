@@ -89,6 +89,8 @@ public class UasOnDemandSensor extends UasSensorBase<UasOnDemandConfig> {
     protected void doStart() throws SensorHubException {
         super.doStart();
 
+        setupExecutor();
+
         // For now we just have to periodically manually check to see if anyone is subscribed.
         executor.scheduleWithFixedDelay(() -> checkForSubscriptions(),
         		500, 500, TimeUnit.MILLISECONDS);

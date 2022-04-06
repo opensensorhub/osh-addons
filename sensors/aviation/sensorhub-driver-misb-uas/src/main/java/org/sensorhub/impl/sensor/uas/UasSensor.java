@@ -32,14 +32,32 @@ public class UasSensor extends UasSensorBase<UasConfig> {
     protected void doInit() throws SensorHubException {
         super.doInit();
 
+        // We need the background thread here since we start reading the video data immediately in order to determine
+        // the video size.
+        setupExecutor();
+
+        // Open up the stream so that we can get the video output.
         openStream();
+        
+        // Create all the other outputs (besides video).
         createConfiguredOutputs();
     }
     
     @Override
     protected void doStart() throws SensorHubException {
     	super.doStart();
-    	
+
+    	// Start up the background thread if it's not already going. Normally doInit() will have just been called, so
+    	// this is redundant (but harmless). But if the user has stopped the sensor and re-started it, then this call
+    	// is necessary.
+        setupExecutor();
+
+        // Make sure the stream is already open. (If the sensor has been previously started, then stopped, then the
+        // stream won't be open.)
+        openStream();
+
+        // Some preliminary data was read from the stream in doInit(), but this call makes it start processing all the
+        // frames.
         startStream();
     }
 }
