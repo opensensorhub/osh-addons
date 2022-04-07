@@ -1,1 +1,2 @@
 org.sensorhub.impl.sensor.uas.UasDescriptor
+org.sensorhub.impl.sensor.uas.UasOnDemandDescriptor

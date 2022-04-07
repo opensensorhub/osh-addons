@@ -13,38 +13,36 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.uas;
 
-import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.module.JarModuleProvider;
+import org.sensorhub.impl.sensor.uas.config.UasOnDemandConfig;
 
 /**
  * Class named in META-INF/services/org.sensorhub.api.module.IModuleProvider that informs OpenSensorHub of the existence
- * of a sensor driver and its configuration class. In this case, it tells OSH about the {@link UasSensor}.
+ * of a sensor driver and its configuration class. In this case, it tells OSH about the {@link UasOnDemandSensor}.
  *
  * @author Nick Garay
- * @since Feb. 6, 2020
+ * @author Chris Dillard
+ * @since March 19, 2022
  */
-public class UasDescriptor extends JarModuleProvider implements IModuleProvider {
-
-    /**
-     * Retrieves the class implementing the OpenSensorHub interface necessary to
-     * perform SOS/SPS/SOS-T operations.
-     *
-     * @return The class used to interact with the sensor/sensor platform.
-     */
+public class UasOnDemandDescriptor extends JarModuleProvider implements IModuleProvider {
     public Class<? extends IModule<?>> getModuleClass() {
-
-        return UasSensor.class;
+        return UasOnDemandSensor.class;
     }
 
-    /**
-     * Identifies the class used to configure this driver
-     * @return The java class used to exposing configuration settings for the driver.
-     */
     public Class<? extends ModuleConfig> getModuleConfigClass() {
-
-        return UasConfig.class;
+        return UasOnDemandConfig.class;
     }
+
+    @Override
+	public String getModuleName() {
+		return super.getModuleName() + " (on demand)";
+	}
+
+	@Override
+	public String getModuleDescription() {
+		return super.getModuleDescription() + ". This version does not connect to the video source until OSH clients request its data.";
+	}
 }
