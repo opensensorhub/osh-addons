@@ -13,26 +13,33 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.uas.outputs;
 
-import org.sensorhub.impl.sensor.uas.UasSensor;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.sensor.uas.UasSensorBase;
 import org.sensorhub.impl.sensor.uas.common.SyncTime;
+import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.impl.sensor.uas.klv.DecodedSetListener;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagSet;
+
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
- * Output specification and provider for MISB-TS STANAG 4609 ST0601.16 UAS Metadata
+ * Base class for sensor outputs of the two sensors in this module. Each concrete subclass will represents one or more
+ * of the data elements in MISB-TS STANAG 4609 ST0601.16 UAS Metadata.
+ *
+ * @param <UasConfigType> A type parameter that allows us to use this output on both types of sensors that are defined
+ *   in this module.
  *
  * @author Nick Garay
  * @since Oct. 6, 2020
  */
-public abstract class UasOutput extends AbstractSensorOutput<UasSensor> implements DecodedSetListener {
+public abstract class UasOutput<UasConfigType extends UasConfig> extends AbstractSensorOutput<UasSensorBase<UasConfigType>> implements DecodedSetListener {
 
     protected DataRecord dataStruct;
     protected DataEncoding dataEncoding;
@@ -50,7 +57,7 @@ public abstract class UasOutput extends AbstractSensorOutput<UasSensor> implemen
      * @param name         Name assigned to the output
      * @param parentSensor Sensor driver providing this output
      */
-    public UasOutput(String name, UasSensor parentSensor) {
+    public UasOutput(String name, UasSensorBase<UasConfigType> parentSensor) {
 
         super(name, parentSensor);
     }

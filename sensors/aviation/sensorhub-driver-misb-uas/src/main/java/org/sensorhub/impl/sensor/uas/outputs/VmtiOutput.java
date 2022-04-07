@@ -13,32 +13,37 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.uas.outputs;
 
-import org.sensorhub.impl.sensor.uas.UasSensor;
-import org.sensorhub.impl.sensor.uas.common.SyncTime;
-import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
-import org.sensorhub.impl.sensor.uas.klv.VmtiLocalSet;
-import org.sensorhub.misb.stanag4609.tags.Tag;
-import org.sensorhub.misb.stanag4609.tags.TagSet;
-import net.opengis.swe.v20.DataArray;
-import net.opengis.swe.v20.DataBlock;
 import java.awt.Point;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map.Entry;
+
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.impl.sensor.uas.UasSensorBase;
+import org.sensorhub.impl.sensor.uas.config.UasConfig;
+import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
+import org.sensorhub.impl.sensor.uas.klv.VmtiLocalSet;
+import org.sensorhub.misb.stanag4609.tags.Tag;
+import org.sensorhub.misb.stanag4609.tags.TagSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.data.DataBlockList;
 import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEConstants;
 
+import net.opengis.swe.v20.DataArray;
+import net.opengis.swe.v20.DataBlock;
+
 /**
  * Output specification and provider for moving target indicator (VMTI) data
+ *
+ * @param <UasConfigType> A type parameter that allows us to use this output on both types of sensors that are defined
+ *   in this module.
  *
  * @author Alex Robin
  * @since May. 10, 2021
  */
-public class VmtiOutput extends UasOutput {
+public class VmtiOutput<UasConfigType extends UasConfig> extends UasOutput<UasConfigType> {
 
     private static final String SENSOR_OUTPUT_NAME = "TargetIndicators";
     private static final String SENSOR_OUTPUT_LABEL = "Moving Target Indicators";
@@ -59,7 +64,7 @@ public class VmtiOutput extends UasOutput {
      *
      * @param parentSensor Sensor driver providing this output
      */
-    public VmtiOutput(UasSensor parentSensor) {
+    public VmtiOutput(UasSensorBase<UasConfigType> parentSensor) {
 
         super(SENSOR_OUTPUT_NAME, parentSensor);
 

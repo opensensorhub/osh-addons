@@ -13,28 +13,37 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.uas.outputs;
 
-import org.sensorhub.impl.sensor.uas.common.SyncTime;
-import org.sensorhub.impl.sensor.uas.UasSensor;
-import org.sensorhub.misb.stanag4609.comm.DataBufferListener;
-import org.sensorhub.misb.stanag4609.comm.DataBufferRecord;
-import net.opengis.swe.v20.*;
+import java.util.concurrent.Executor;
+
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.sensor.uas.UasSensorBase;
+import org.sensorhub.impl.sensor.uas.common.SyncTime;
+import org.sensorhub.impl.sensor.uas.config.UasConfig;
+import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
+import org.sensorhub.misb.stanag4609.comm.DataBufferListener;
+import org.sensorhub.misb.stanag4609.comm.DataBufferRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockMixed;
 import org.vast.util.Asserts;
-import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
-import java.util.concurrent.Executor;
+
+import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
+import net.opengis.swe.v20.DataEncoding;
+import net.opengis.swe.v20.DataStream;
 
 /**
  * Output specification and provider for MISB-TS STANAG 4609 ST0601.16 UAS Metadata
  *
+ * @param <UasConfigType> A type parameter that allows us to use this output on both types of sensors that are defined
+ *   in this module.
+ *
  * @author Nick Garay
  * @since Feb. 6, 2020
  */
-public class Video extends AbstractSensorOutput<UasSensor> implements DataBufferListener {
+public class Video<UasConfigType extends UasConfig> extends AbstractSensorOutput<UasSensorBase<UasConfigType>> implements DataBufferListener {
 
     private static final String SENSOR_OUTPUT_NAME = "video";
     private static final String SENSOR_OUTPUT_LABEL = "UAS Video";
@@ -60,7 +69,7 @@ public class Video extends AbstractSensorOutput<UasSensor> implements DataBuffer
      * @param parentSensor Sensor driver providing this output
      * @param videoFrameDimensions The width and height of the video frame
      */
-    public Video(UasSensor parentSensor, int[] videoFrameDimensions) {
+    public Video(UasSensorBase<UasConfigType> parentSensor, int[] videoFrameDimensions) {
 
         super(SENSOR_OUTPUT_NAME, parentSensor);
 
@@ -137,7 +146,7 @@ public class Video extends AbstractSensorOutput<UasSensor> implements DataBuffer
 
     public void processBuffer(DataBufferRecord record) {
 
-        SyncTime syncTime = ((UasSensor)parentSensor).getSyncTime();
+        SyncTime syncTime = ((UasSensorBase<UasConfigType>)parentSensor).getSyncTime();
 
         // If synchronization time data is available
         if (null != syncTime) {

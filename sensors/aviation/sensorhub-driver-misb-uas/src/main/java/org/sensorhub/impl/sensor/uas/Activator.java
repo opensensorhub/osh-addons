@@ -15,5 +15,8 @@ package org.sensorhub.impl.sensor.uas;
 
 import org.sensorhub.utils.OshBundleActivator;
 
+/**
+ * Class whose presence tells the OpenSensorHub OSGI machinery about this module.
+ */
 public class Activator extends OshBundleActivator {
 }

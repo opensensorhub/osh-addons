@@ -13,22 +13,27 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.uas.outputs;
 
-import org.sensorhub.impl.sensor.uas.UasSensor;
+import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.impl.sensor.uas.UasSensorBase;
+import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.impl.sensor.uas.klv.SecurityLocalSet;
 import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
 import org.sensorhub.misb.stanag4609.tags.TagSet;
-import net.opengis.swe.v20.DataBlock;
-import org.sensorhub.api.data.DataEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import net.opengis.swe.v20.DataBlock;
 
 /**
  * Output specification and provider for MISB-TS STANAG 4609 ST0601.16 UAS Metadata
  *
+ * @param <UasConfigType> A type parameter that allows us to use this output on both types of sensors that are defined
+ *   in this module.
+ *
  * @author Nick Garay
  * @since Oct. 6, 2020
  */
-public class Security extends UasOutput {
+public class Security<UasConfigType extends UasConfig> extends UasOutput<UasConfigType> {
 
     private static final String SENSOR_OUTPUT_NAME = "Security";
     private static final String SENSOR_OUTPUT_LABEL = "Classification Markings";
@@ -41,7 +46,7 @@ public class Security extends UasOutput {
      *
      * @param parentSensor Sensor driver providing this output
      */
-    public Security(UasSensor parentSensor) {
+    public Security(UasSensorBase<UasConfigType> parentSensor) {
 
         super(SENSOR_OUTPUT_NAME, parentSensor);
 
