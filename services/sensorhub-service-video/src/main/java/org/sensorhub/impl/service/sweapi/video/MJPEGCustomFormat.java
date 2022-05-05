@@ -14,8 +14,8 @@ Copyright (C) 2022 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sweapi.video;
 
-import java.math.BigInteger;
 import java.util.List;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
@@ -70,7 +70,7 @@ public class MJPEGCustomFormat implements CustomObsFormat
     }
 
     @Override
-    public ResourceBinding<BigInteger, IObsData> getObsBinding(RequestContext ctx, IdEncoder idEncoder, IDataStreamInfo dsInfo)
+    public ResourceBinding<BigId, IObsData> getObsBinding(RequestContext ctx, IdEncoder idEncoder, IDataStreamInfo dsInfo)
     {
         return new MJPEGSerializer(ctx, idEncoder, dsInfo);
     }

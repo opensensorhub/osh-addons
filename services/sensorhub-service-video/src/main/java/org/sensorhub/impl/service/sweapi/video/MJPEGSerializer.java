@@ -15,11 +15,11 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sweapi.video;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Set;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
 import org.sensorhub.impl.service.sweapi.IdEncoder;
@@ -30,7 +30,7 @@ import org.vast.data.DataBlockMixed;
 import com.google.common.collect.Sets;
 
 
-public class MJPEGSerializer extends ResourceBinding<BigInteger, IObsData>
+public class MJPEGSerializer extends ResourceBinding<BigId, IObsData>
 {
     private static final String MIME_TYPE_MULTIPART = "multipart/x-mixed-replace; boundary=--myboundary"; 
     private static final byte[] MIME_BOUNDARY_JPEG = new String("--myboundary\r\nContent-Type: image/jpeg\r\nContent-Length: ").getBytes();
@@ -73,7 +73,7 @@ public class MJPEGSerializer extends ResourceBinding<BigInteger, IObsData>
     
     
     @Override
-    public void serialize(BigInteger key, IObsData obs, boolean showLinks) throws IOException
+    public void serialize(BigId key, IObsData obs, boolean showLinks) throws IOException
     {
         // skip time stamp and any other field around image data to provide raw MJPEG
         // TODO set timestamp in JPEG metadata
