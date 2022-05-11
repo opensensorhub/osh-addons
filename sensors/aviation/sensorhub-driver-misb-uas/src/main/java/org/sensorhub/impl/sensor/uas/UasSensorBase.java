@@ -8,7 +8,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.uas.common.SyncTime;
-import org.sensorhub.impl.sensor.uas.config.Outputs;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.impl.sensor.uas.klv.SetDecoder;
 import org.sensorhub.impl.sensor.uas.outputs.AirframeAttitude;
@@ -72,11 +71,6 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
      * Lock to prevent simultaneous access to syncTime.
      */
     protected final Object syncTimeLock = new Object();
-
-    /**
-     * All of the various outputs of this sensor. The list's length varies based on the {@link Outputs} configuration.
-     */
-    protected List<UasOutput<UasConfigType>> uasOutputs = new ArrayList<>();
 
     /**
      * Feature for the UAS itself.
@@ -194,41 +188,42 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
      * adds them as listeners to the mpeg decoder.
      */
     protected void createConfiguredOutputs() {
+    	List<UasOutput<UasConfigType>> additionalOutputs = new ArrayList<>();
         if (config.outputs.enableIdentification) {
-            uasOutputs.add(new Identification<UasConfigType>(this));
+            additionalOutputs.add(new Identification<UasConfigType>(this));
         }
         
         if (config.outputs.enableAirframePosition) {
-            uasOutputs.add(new SensorLocation<UasConfigType>(this));
-            uasOutputs.add(new AirframeAttitude<UasConfigType>(this));
+            additionalOutputs.add(new SensorLocation<UasConfigType>(this));
+            additionalOutputs.add(new AirframeAttitude<UasConfigType>(this));
         }
 
         if (config.outputs.enableGimbalAttitude) {
-            uasOutputs.add(new GimbalAttitude<UasConfigType>(this));
+            additionalOutputs.add(new GimbalAttitude<UasConfigType>(this));
         }
 
         if (config.outputs.enableSensorParams) {
-            uasOutputs.add(new SensorParams<UasConfigType>(this));
+            additionalOutputs.add(new SensorParams<UasConfigType>(this));
         }
 
         if (config.outputs.enableGeoRefImageFrame) {
-            uasOutputs.add(new GeoRefImageFrame<UasConfigType>(this));
+            additionalOutputs.add(new GeoRefImageFrame<UasConfigType>(this));
         }
 
         if (config.outputs.enableSecurity) {
-            uasOutputs.add(new Security<UasConfigType>(this));
+            additionalOutputs.add(new Security<UasConfigType>(this));
         }
 
         if (config.outputs.enableTargetIndicators) {
-            uasOutputs.add(new VmtiOutput<UasConfigType>(this));
+            additionalOutputs.add(new VmtiOutput<UasConfigType>(this));
         }
 
         if (config.outputs.enableFullTelemetry) {
-            uasOutputs.add(new FullTelemetry<UasConfigType>(this));
+            additionalOutputs.add(new FullTelemetry<UasConfigType>(this));
         }
 
         // For each configured output
-        for (UasOutput<UasConfigType> output: uasOutputs) {
+        for (UasOutput<UasConfigType> output: additionalOutputs) {
             // Initialize the output
             output.init();
 
