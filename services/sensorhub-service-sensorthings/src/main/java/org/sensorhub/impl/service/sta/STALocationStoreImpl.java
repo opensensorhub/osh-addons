@@ -21,8 +21,8 @@ import java.util.stream.Stream;
 import org.h2.mvstore.MVBTreeMap;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.RangeCursor;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.DataStoreException;
-import org.sensorhub.api.datastore.IdProvider;
 import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FeatureKey;
@@ -32,6 +32,7 @@ import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
 import org.sensorhub.impl.datastore.h2.MVFeatureParentKey;
 import org.sensorhub.impl.datastore.h2.MVVoidDataType;
+import org.sensorhub.impl.datastore.h2.MVDatabaseConfig.IdProviderType;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVLocationThingKeyDataType;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVThingLocationKey;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVThingLocationKeyDataType;
@@ -64,23 +65,26 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
     }
     
     
-    public static STALocationStoreImpl open(STADatabase db, MVDataStoreInfo dataStoreInfo)
+    public static STALocationStoreImpl open(STADatabase db, int idScope, IdProviderType idProviderType, MVDataStoreInfo dataStoreInfo)
     {
-        return new STALocationStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
+        return new STALocationStoreImpl().init(db.getMVStore(), idScope, idProviderType, dataStoreInfo);
     }
     
     
     @Override
-    public synchronized FeatureKey add(long parentID, AbstractFeature feature) throws DataStoreException
+    public synchronized FeatureKey add(BigId parentID, AbstractFeature feature) throws DataStoreException
     {
         Asserts.checkNotNull(feature, IFeature.class);
         
         long internalID = idProvider.newInternalID(feature);
-        var newKey = new MVFeatureParentKey(parentID, internalID);
+        var newKey = new MVFeatureParentKey(
+            parentID.getIdAsLong(),
+            BigId.fromLong(idScope, internalID),
+            FeatureKey.TIMELESS);
 
         // add to store
         put(newKey, feature, true, false);
-        return newKey;       
+        return newKey;
     }
     
     
@@ -102,16 +106,16 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
     
     
     @Override
-    protected STALocationStoreImpl init(MVStore mvStore, MVDataStoreInfo dataStoreInfo, IdProvider<AbstractFeature> idProvider)
+    protected STALocationStoreImpl init(MVStore mvStore, int idScope, IdProviderType idProviderType, MVDataStoreInfo dataStoreInfo)
     {
-        super.init(mvStore, dataStoreInfo, idProvider);
+        super.init(mvStore, idScope, idProviderType, dataStoreInfo);
         
         // thing+time to location map
         // sorted by thing ID, then by time, then by location ID
         String mapName = THING_LOCATIONS_MAP_NAME + ":" + dataStoreInfo.getName();
         this.thingTimeLocationIndex = mvStore.openMap(mapName,
             new MVBTreeMap.Builder<MVThingLocationKey, Boolean>()
-                .keyType(new MVThingLocationKeyDataType())
+                .keyType(new MVThingLocationKeyDataType(idScope))
                 .valueType(new MVVoidDataType()));
         
         // location+time to thing map
@@ -119,7 +123,7 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
         mapName = LOCATION_THINGS_MAP_NAME + ":" + dataStoreInfo.getName();
         this.locationThingTimeIndex = mvStore.openMap(mapName,
             new MVBTreeMap.Builder<MVThingLocationKey, Boolean>()
-                .keyType(new MVLocationThingKeyDataType())
+                .keyType(new MVLocationThingKeyDataType(idScope))
                 .valueType(new MVVoidDataType()));
         
         return this;
@@ -128,7 +132,7 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
     
     public void addAssociation(long thingID, long locationID, Instant time)
     {
-        var key = new MVThingLocationKey(thingID, locationID, time);
+        var key = new MVThingLocationKey(idScope, thingID, locationID, time);
         thingTimeLocationIndex.put(key, Boolean.TRUE);
         locationThingTimeIndex.put(key, Boolean.TRUE);
     }
@@ -144,7 +148,7 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
         var cursor = new RangeCursor<>(thingTimeLocationIndex, first, last);
         
         return cursor.keyStream()
-            .map(k -> new FeatureKey(k.locationID));
+            .map(k -> new FeatureKey(BigId.fromLong(idScope, k.locationID)));
     }
     
     
@@ -162,7 +166,7 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
         var cursor = new RangeCursor<>(thingTimeLocationIndex, first, last);
         
         return cursor.keyStream()
-            .map(k -> new FeatureKey(k.locationID));
+            .map(k -> new FeatureKey(BigId.fromLong(idScope, k.locationID)));
     }
 
 
@@ -182,13 +186,13 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
                 if (currentVersionOnly)
                 {
                     return thingStore.selectKeys(thingFilter)
-                        .flatMap(k -> getCurrentLocationKeysByThing(k.getInternalID()))
+                        .flatMap(k -> getCurrentLocationKeysByThing(k.getInternalID().getIdAsLong()))
                         .map(k -> featuresIndex.getEntry(k));
                 }
                 else
                 {
                     return thingStore.selectKeys(thingFilter)
-                        .flatMap(k -> getLocationKeysByThingAndTime(k.getInternalID(), timeFilter.getMin()))
+                        .flatMap(k -> getLocationKeysByThingAndTime(k.getInternalID().getIdAsLong(), timeFilter.getMin()))
                         .map(k -> featuresIndex.getEntry(k));
                 }
             }
@@ -246,12 +250,12 @@ class STALocationStoreImpl extends MVBaseFeatureStoreImpl<AbstractFeature, Featu
         if (filter.getThings() != null)
         {
             return thingStore.selectKeys(filter.getThings())
-                .flatMap(k -> getHistoricalLocationsByThing(k.getInternalID(), filter.getValidTime()));
+                .flatMap(k -> getHistoricalLocationsByThing(k.getInternalID().getIdAsLong(), filter.getValidTime()));
         }
         else if (filter.getInternalIDs() != null)
         {
             return filter.getInternalIDs().stream()
-                .flatMap(id -> getHistoricalLocationsByLocation(id, filter.getValidTime()));
+                .flatMap(id -> getHistoricalLocationsByLocation(id.getIdAsLong(), filter.getValidTime()));
         }
         else
         {

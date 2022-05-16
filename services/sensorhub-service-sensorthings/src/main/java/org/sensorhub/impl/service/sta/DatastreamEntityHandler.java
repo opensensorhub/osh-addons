@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.DataStreamInfo;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.datastore.DataStoreException;
@@ -80,7 +81,8 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
 {
     static final String NOT_FOUND_MESSAGE = "Cannot find Datastream ";
     static final String NOT_WRITABLE_MESSAGE = "Cannot modify read-only Datastream ";
-    static final String MISSING_ASSOC = "Missing reference to Datastream or MultiDatastream entity";
+    static final String MISSING_ASSOC_MESSAGE = "Missing reference to Datastream or MultiDatastream entity";
+    static final String WRONG_ASSOC_MESSAGE = "Cannot associate with read-only Datastream ";
     static final String UCUM_URI_PREFIX = "http://unitsofmeasure.org/ucum.html#";
     static final String BAD_LINK_THING = "A new Datastream SHALL link to an Thing entity";
 
@@ -95,7 +97,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     {
         this.pm = pm;
         this.dataStreamWriteStore = pm.writeDatabase != null ? pm.writeDatabase.getDataStreamStore() : null;
-        var federatedDataStreamStore = pm.readDatabase.getObservationStore().getDataStreams();
+        var federatedDataStreamStore = pm.readDatabase.getDataStreamStore();
         this.dataStreamReadStore = new STAFederatedDataStreamStoreWrapper(pm.writeDatabase, federatedDataStreamStore);
         this.securityHandler = pm.service.getSecurityHandler();
     }
@@ -119,29 +121,23 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 ResourceId sensorId = pm.sensorHandler.handleSensorAssoc(dataStream.getSensor());
                 
                 // get parent system handler
-                long localSensorID = pm.toLocalID(sensorId.asLong());
-                var procHandler = pm.transactionHandler.getSystemHandler(localSensorID);
-                if (procHandler == null)
+                var sysHandler = pm.transactionHandler.getSystemHandler(sensorId);
+                if (sysHandler == null)
                     throw new NoSuchEntityException(SensorEntityHandler.NOT_FOUND_MESSAGE + sensorId);
                 
                 // create data stream object
-                var sysUID = procHandler.getSystemUID();
-                var dsInfo = toSweDataStream(new SystemId(localSensorID, sysUID), dataStream);
+                var sysUID = sysHandler.getSystemUID();
+                var dsInfo = toSweDataStream(new SystemId(sensorId, sysUID), dataStream);
 
                 // store in DB + send event
-                var dsHandler = procHandler.addOrUpdateDataStream(
-                    dsInfo.getOutputName(),
-                    dsInfo.getRecordStructure(),
-                    dsInfo.getRecordEncoding());
+                var dsHandler = sysHandler.addOrUpdateDataStream(dsInfo);
                 
                 // associate with thing
-                var localDsID = dsHandler.getLocalDataStreamKey().getInternalID();
-                dataStreamWriteStore.putThingAssoc(thingId.asLong(), localDsID);
-                                
-                long publicDsID = pm.toPublicID(localDsID);
-                ResourceId newDsId = new ResourceIdLong(publicDsID);
+                var dsID = dsHandler.getDataStreamKey().getInternalID();
+                dataStreamWriteStore.putThingAssoc(thingId.getIdAsLong(), dsID.getIdAsLong());
                 
                 // handle associations / deep inserts
+                ResourceId newDsId = new ResourceBigId(dsID);
                 pm.observationHandler.handleObservationAssocList(newDsId, dataStream);
                 
                 return newDsId;
@@ -171,12 +167,11 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         
         securityHandler.checkPermission(securityHandler.sta_update_datastream);
         
-        long publicDsID = ((ResourceId)entity.getId()).asLong();
-        checkDatastreamWritable(publicDsID);
+        var id = (ResourceId)entity.getId();
+        checkDatastreamWritable(id);
         
         // get transaction handler for existing datastream
-        long localDsID = pm.toLocalID(publicDsID);
-        var dsHandler = pm.transactionHandler.getDataStreamHandler(localDsID);
+        var dsHandler = pm.transactionHandler.getDataStreamHandler(id);
         if (dsHandler == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + entity.getId());
         var oldDsInfo = dsHandler.getDataStreamInfo();
@@ -195,7 +190,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         }
         catch (Exception e)
         {
-            throw new ServerErrorException("Error updating datastream " + publicDsID, e);
+            throw new ServerErrorException("Error updating datastream " + id, e);
         }
     }
 
@@ -213,13 +208,10 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     {
         checkTransactionsEnabled();
         securityHandler.checkPermission(securityHandler.sta_delete_datastream);
-        
-        long publicDsID = id.asLong();
-        checkDatastreamWritable(publicDsID);
+        checkDatastreamWritable(id);
         
         // get transaction handler for existing datastream
-        long localDsID = pm.toLocalID(publicDsID);
-        var dsHandler = pm.transactionHandler.getDataStreamHandler(localDsID);
+        var dsHandler = pm.transactionHandler.getDataStreamHandler(id);
         if (dsHandler == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
         
@@ -230,7 +222,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         }
         catch (Exception e)
         {
-            throw new ServerErrorException("Error deleting datastream " + publicDsID, e);
+            throw new ServerErrorException("Error deleting datastream " + id, e);
         }
     }
 
@@ -240,12 +232,12 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     {
         securityHandler.checkPermission(securityHandler.sta_read_datastream);
 
-        var dsKey = new DataStreamKey(id.asLong());
+        var dsKey = new DataStreamKey(id);
         var dsInfo = dataStreamReadStore.get(dsKey);
         if (dsInfo == null || !isDataStreamVisible(dsInfo, true))
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
 
-        return toFrostDatastream(id.asLong(), dsInfo, q);
+        return toFrostDatastream(id, dsInfo, q);
     }
 
 
@@ -282,18 +274,18 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             if (idElt.getEntityType() == EntityType.THING)
             {
                 ResourceId thingId = (ResourceId)idElt.getId();
-                builder.withThings(thingId.asLong());
+                builder.withThings(thingId);
             }
             else if (idElt.getEntityType() == EntityType.SENSOR)
             {
                 ResourceId sensorId = (ResourceId)idElt.getId();
-                builder.withSystems(sensorId.asLong());
+                builder.withSystems(sensorId);
             }
             else if (idElt.getEntityType() == EntityType.OBSERVATION)
             {
-                ResourceIdBigInt obsId = (ResourceIdBigInt)idElt.getId();
+                ResourceId obsId = (ResourceId)idElt.getId();
                 builder.withObservations()
-                    .withInternalIDs(obsId.internalID)
+                    .withInternalIDs(obsId)
                     .done();
             }
             else if (idElt.getEntityType() == EntityType.OBSERVEDPROPERTY)
@@ -443,11 +435,11 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     }
 
 
-    protected AbstractDatastream toFrostDatastream(Long publicID, IDataStreamInfo dsInfo, Query q)
+    protected AbstractDatastream toFrostDatastream(BigId id, IDataStreamInfo dsInfo, Query q)
     {
         AbstractDatastream dataStream;
         Set<Property> select = q != null ? q.getSelect() : Collections.emptySet();
-        boolean isExternalDatastream = !pm.isInWritableDatabase(publicID);
+        boolean isExternalDatastream = !pm.isInWritableDatabase(id);
 
         // convert to simple or multi datastream
         DataComponent rec = dsInfo.getRecordStructure();
@@ -474,7 +466,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         }
 
         // common properties
-        dataStream.setId(new ResourceIdLong(publicID));
+        dataStream.setId(new ResourceBigId(id));
         dataStream.setName(dsInfo.getName());
         dataStream.setDescription(dsInfo.getDescription());
         
@@ -483,15 +475,15 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         dataStream.setResultTime(toTimeInterval(dsInfo.getResultTimeRange()));
         
         // link to Thing
-        long thingID =  isExternalDatastream ?
-            STAService.HUB_THING_ID :
-            dataStreamWriteStore.getAssociatedThing(pm.toLocalID(publicID));
-        Thing thing = new Thing(new ResourceIdLong(thingID));
+        var thingID =  isExternalDatastream ?
+            pm.thingHandler.hubId :
+            dataStreamWriteStore.getAssociatedThing(id.getIdAsLong());
+        Thing thing = new Thing(new ResourceBigId(thingID));
         thing.setExportObject(false);
         dataStream.setThing(thing);
 
         // link to Sensor
-        ResourceIdLong sensorId = new ResourceIdLong(dsInfo.getSystemID().getInternalID());
+        var sensorId = new ResourceBigId(dsInfo.getSystemID().getInternalID());
         Sensor sensor = new Sensor(sensorId);
         sensor.setExportObject(false);
         dataStream.setSensor(sensor);
@@ -600,14 +592,16 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
 
     protected ResourceId handleDatastreamAssoc(AbstractDatastream ds) throws NoSuchEntityException
     {
-        Asserts.checkArgument(ds != null, MISSING_ASSOC);
+        Asserts.checkArgument(ds != null, MISSING_ASSOC_MESSAGE);
         ResourceId dsId;
 
         if (ds.getName() == null)
         {
             dsId = (ResourceId)ds.getId();
-            Asserts.checkArgument(dsId != null, MISSING_ASSOC);
-            checkDatastreamIDInWriteStore(dsId.asLong());
+            Asserts.checkArgument(dsId != null, MISSING_ASSOC_MESSAGE);
+            checkDatastreamID(dsId);
+            if (!pm.isInWritableDatabase(dsId))
+                throw new IllegalArgumentException(WRONG_ASSOC_MESSAGE + dsId);
         }
         else
         {
@@ -648,7 +642,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             for (Datastream ds: sensor.getDatastreams())
             {
                 ds.setSensor(new Sensor(sensorId));
-                pm.dataStreamHandler.handleDatastreamAssoc(ds);
+                handleDatastreamAssoc(ds);
             }
         }
 
@@ -657,7 +651,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
             for (MultiDatastream ds: sensor.getMultiDatastreams())
             {
                 ds.setSensor(new Sensor(sensorId));
-                pm.dataStreamHandler.handleDatastreamAssoc(ds);
+                handleDatastreamAssoc(ds);
             }
         }
     }
@@ -666,27 +660,22 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     /*
      * Check that datastream ID is present in database and exposed by service
      */
-    protected void checkDatastreamID(long publicID) throws NoSuchEntityException
+    protected void checkDatastreamID(ResourceId id) throws NoSuchEntityException
     {
-        if (!dataStreamReadStore.containsKey(new DataStreamKey(publicID)))
-            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
+        if (!dataStreamReadStore.containsKey(new DataStreamKey(id)))
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
     }
 
 
-    /*
-     * Check that datastream ID is present in writable database
-     */
-    protected void checkDatastreamIDInWriteStore(long publicID) throws NoSuchEntityException
+    protected void checkDatastreamWritable(ResourceId id) throws NoSuchEntityException
     {
-        checkDatastreamID(publicID);
-        checkDatastreamWritable(publicID);
-    }
-
-
-    protected void checkDatastreamWritable(long publicID)
-    {
-        if (!pm.isInWritableDatabase(publicID))
-            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
+        checkTransactionsEnabled();
+        checkDatastreamID(id);
+        
+        // TODO also check that current user has the right to write this datastream!
+        
+        if (!pm.isInWritableDatabase(id))
+            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + id);
     }
     
     
@@ -695,40 +684,5 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
         if (dataStreamWriteStore == null)
             throw new UnsupportedOperationException(NO_DB_MESSAGE);
     }
-
-
-    /*
-     * Helper methods to convert to/from packed numerical IDs
-     */
-    /*static int MAX_DATASTREAMS_PER_SENSOR = 100;
-    static int MAX_VERSIONS_PER_DATASTREAM = 100;
-    static int MAX_VERSIONS_PER_SENSOR = MAX_DATASTREAMS_PER_SENSOR * MAX_VERSIONS_PER_DATASTREAM;
-    static int LATEST_VERSION = 999;
-
-    static class DatastreamIds
-    {
-        long sensorId;
-        int outputId;
-        int version;
-    }
-
-
-    protected ResourceId generateDatastreamId(long sensorId, int outputId, int version)
-    {
-        long sensorIdPart = sensorId * MAX_VERSIONS_PER_SENSOR;
-        long outputIdPart = outputId * MAX_VERSIONS_PER_DATASTREAM;
-        return new ResourceId(sensorIdPart + outputIdPart + version);
-    }
-
-
-    protected DatastreamIds parseDatastreamId(ResourceId dsId)
-    {
-        long internalId = dsId.getValue();
-        DatastreamIds ids = new DatastreamIds();
-        ids.sensorId = internalId / MAX_VERSIONS_PER_SENSOR;
-        ids.outputId = (int)((internalId / MAX_VERSIONS_PER_DATASTREAM) % MAX_DATASTREAMS_PER_SENSOR);
-        ids.version = (int)(internalId % MAX_VERSIONS_PER_DATASTREAM);
-        return ids;
-    }*/
 
 }

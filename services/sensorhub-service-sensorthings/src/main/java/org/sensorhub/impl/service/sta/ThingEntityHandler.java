@@ -18,8 +18,8 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.feature.FeatureKey;
-import org.sensorhub.api.system.SystemId;
 import org.sensorhub.impl.service.sta.filter.ThingFilterVisitor;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.ogc.gml.IFeature;
@@ -54,7 +54,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     ISTAThingStore thingDataStore;
     STASecurity securityHandler;
     int maxPageSize = 100;
-    SystemId procGroupID;
+    BigId hubId;
     
     
     ThingEntityHandler(OSHPersistenceManager pm)
@@ -62,7 +62,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         this.pm = pm;
         this.thingDataStore = pm.writeDatabase != null ? pm.writeDatabase.getThingStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
-        this.procGroupID = pm.service.getSystemGroupID();
+        this.hubId = BigId.fromLong(pm.writeDatabase.getDatabaseNum(), STAService.HUB_THING_ID);
     }
     
     
@@ -83,7 +83,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
                 return pm.writeDatabase.executeTransaction(() -> {
                     // store feature description in DB
                     FeatureKey key = thingDataStore.add(toGmlFeature(thing, null));
-                    var thingId = new ResourceIdLong(key.getInternalID());
+                    var thingId = new ResourceBigId(key.getInternalID());
                     
                     // handle associations / deep inserts
                     pm.locationHandler.handleLocationAssocList(thingId, thing);
@@ -117,7 +117,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         {
             // retrieve UID of existing feature
             ResourceId id = (ResourceId)entity.getId();
-            var key = thingDataStore.getCurrentVersionKey(id.asLong());
+            var key = thingDataStore.getCurrentVersionKey(id);
             if (key == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
@@ -149,7 +149,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         if (thingDataStore != null)
         {
             var count = thingDataStore.removeEntries(new STAThingFilter.Builder()
-                    .withInternalIDs(id.asLong())
+                    .withInternalIDs(id)
                     .withAllVersions()
                     .build());
             
@@ -171,18 +171,18 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         
         if (thingDataStore != null)
         {
-            thing = thingDataStore.getCurrentVersion(id.asLong());
+            thing = thingDataStore.getCurrentVersion(id);
         }
         else
         {
-            if (id.asLong() == STAService.HUB_THING_ID)
+            if (id.getIdAsLong() == STAService.HUB_THING_ID)
                 thing = pm.service.hubThing;
         }
         
         if (thing == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
         
-        return toFrostThing(id.asLong(), thing, q);
+        return toFrostThing(id, thing, q);
     }
     
 
@@ -208,7 +208,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         else
         {
              var set = new EntitySetImpl<Thing>();
-             set.add(toFrostThing(STAService.HUB_THING_ID, pm.service.hubThing, q));
+             set.add(toFrostThing(hubId, pm.service.hubThing, q));
              return set;
         }
     }
@@ -231,8 +231,8 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
                     idElt.getEntityType() == EntityType.MULTIDATASTREAM)
                 {
                     ResourceId dsId = (ResourceId)idElt.getId();
-                    Long thingID = pm.writeDatabase.getDataStreamStore().getAssociatedThing(pm.toLocalID(dsId.asLong()));
-                    builder.withInternalIDs(thingID != null ? thingID : STAService.HUB_THING_ID);
+                    var thingID = pm.writeDatabase.getDataStreamStore().getAssociatedThing(dsId.getIdAsLong());
+                    builder.withInternalIDs(thingID != null ? thingID : hubId);
                 }
                 else if (idElt.getEntityType() == EntityType.HISTORICALLOCATION)
                 {
@@ -243,7 +243,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
                 else if (idElt.getEntityType() == EntityType.LOCATION)
                 {
                     ResourceId locId = (ResourceId)idElt.getId();
-                    builder.withLocations(locId.asLong());
+                    builder.withLocations(locId);
                 }
             }
             
@@ -255,14 +255,14 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
                 {
                     var dataStreamSet = pm.dataStreamHandler.queryCollection(getParentPath(path), q);
                     
-                    Long thingID = null;
+                    BigId thingID = null;
                     if (!dataStreamSet.isEmpty())
                     {
-                        long dataStreamID = ((ResourceId)dataStreamSet.asList().get(0).getId()).asLong();
-                        thingID = pm.writeDatabase.getDataStreamStore().getAssociatedThing(pm.toLocalID(dataStreamID));
+                        var dataStreamID = ((ResourceBigId)dataStreamSet.asList().get(0).getId());
+                        thingID = pm.writeDatabase.getDataStreamStore().getAssociatedThing(dataStreamID.getIdAsLong());
                     }
                     
-                    builder.withInternalIDs(thingID != null ? thingID : STAService.HUB_THING_ID);
+                    builder.withInternalIDs(thingID != null ? thingID : hubId);
                 }
             }
         }
@@ -293,14 +293,14 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     }
     
     
-    protected Thing toFrostThing(long internalId, IFeature f, Query q)
+    protected Thing toFrostThing(BigId internalId, IFeature f, Query q)
     {
         // TODO implement expand
         //Set<Property> select = q != null ? q.getSelect() : Collections.emptySet();
         
         Thing thing = new Thing();
         
-        thing.setId(new ResourceIdLong(internalId));
+        thing.setId(new ResourceBigId(internalId));
         thing.setName(f.getName());
         thing.setDescription(f.getDescription());
         
@@ -325,7 +325,7 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
         {
             thingId = (ResourceId)thing.getId();
             Asserts.checkArgument(thingId != null, MISSING_ASSOC);
-            checkThingID(thingId.asLong());
+            checkThingID(thingId);
         }
         else
         {
@@ -337,9 +337,9 @@ public class ThingEntityHandler implements IResourceHandler<Thing>
     }
     
     
-    protected void checkThingID(long thingID) throws NoSuchEntityException
+    protected void checkThingID(BigId thingID) throws NoSuchEntityException
     {
-        boolean hasThing = thingID == STAService.HUB_THING_ID;
+        boolean hasThing = hubId.equals(thingID);
         
         if (thingDataStore != null)
             hasThing = thingDataStore.containsKey(new FeatureKey(thingID));

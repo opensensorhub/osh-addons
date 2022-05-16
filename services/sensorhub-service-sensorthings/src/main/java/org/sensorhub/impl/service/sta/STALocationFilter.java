@@ -14,6 +14,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.EmptyFilterIntersection;
 import org.sensorhub.api.datastore.feature.FeatureFilterBase;
 import org.sensorhub.api.resource.ResourceFilter;
@@ -71,7 +72,7 @@ public class STALocationFilter extends FeatureFilterBase<IFeature>
         }
 
 
-        public STALocationFilter.Builder withThings(long... thingIDs)
+        public STALocationFilter.Builder withThings(BigId... thingIDs)
         {
             instance.things = new STAThingFilter.Builder()
                 .withInternalIDs(thingIDs)

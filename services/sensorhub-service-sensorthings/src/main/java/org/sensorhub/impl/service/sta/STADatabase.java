@@ -93,6 +93,10 @@ public class STADatabase implements ISTADatabase
             throw new IllegalArgumentException("Cannot find STA Observation database", e);
         }
         
+        // enforce same database num as obs DB
+        int dbNum = obsDatabase.getDatabaseNum() != null ? obsDatabase.getDatabaseNum() : 0;
+        var idType = config.idProviderType;
+        
         // register obs database with hub
         dbRegistry = service.getParentHub().getDatabaseRegistry();
         dbRegistry.register(obsDatabase);
@@ -102,17 +106,17 @@ public class STADatabase implements ISTADatabase
             mvStore = initMVStore();
         
         // open thing data store
-        thingStore = STAThingStoreImpl.open(this, MVDataStoreInfo.builder()
+        thingStore = STAThingStoreImpl.open(this, dbNum, idType, MVDataStoreInfo.builder()
             .withName(THING_STORE_NAME)
             .build());
         
         // open location data store
-        locationStore = STALocationStoreImpl.open(this, MVDataStoreInfo.builder()
+        locationStore = STALocationStoreImpl.open(this, dbNum, idType, MVDataStoreInfo.builder()
             .withName(LOCATION_STORE_NAME)
             .build());
         
         // open observed property data store
-        obsPropStore = STAObsPropStoreImpl.open(this, MVDataStoreInfo.builder()
+        obsPropStore = STAObsPropStoreImpl.open(this, dbNum, idType, MVDataStoreInfo.builder()
             .withName(OBS_PROP_STORE_NAME)
             .build());
 
@@ -155,7 +159,7 @@ public class STADatabase implements ISTADatabase
             {
                 if (externalObsDatabaseUsed)
                     return obsDatabase.executeTransaction(transaction);
-                else                
+                else
                     return transaction.call();
             }
             catch (Exception e)
@@ -164,18 +168,6 @@ public class STADatabase implements ISTADatabase
                 throw e;
             }
         }
-    }
-    
-    
-    public long toPublicID(long internalID)
-    {
-        return dbRegistry.getPublicID(getDatabaseNum(), internalID);
-    }
-    
-    
-    public long toLocalID(long publicID)
-    {
-        return dbRegistry.getLocalID(getDatabaseNum(), publicID);
     }
     
         
@@ -260,7 +252,7 @@ public class STADatabase implements ISTADatabase
     public void close()
     {
         if (!mvStore.isClosed())
-            mvStore.close();        
+            mvStore.close();
     }
 
 

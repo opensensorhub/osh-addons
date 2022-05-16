@@ -14,7 +14,6 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import java.math.BigInteger;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +21,7 @@ import java.util.ArrayList;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.stream.Collectors;
 import org.joda.time.DateTimeZone;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.data.ObsData;
@@ -77,6 +77,7 @@ import net.opengis.swe.v20.DataBlock;
 public class ObservationEntityHandler implements IResourceHandler<Observation>
 {
     static final String NOT_FOUND_MESSAGE = "Cannot find Observation ";
+    static final String NOT_WRITABLE_MESSAGE = "Cannot modify read-only Observation ";
 
     OSHPersistenceManager pm;
     STASecurity securityHandler;
@@ -84,8 +85,8 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     IObsStore obsWriteStore;
     int maxPageSize = 100;
     boolean truncateIds = false;
-    Cache<Long, DataStreamTransactionHandler> dsHandlerCache;
-    Cache<Long, Boolean> dsResultHasTsCache;
+    Cache<BigId, DataStreamTransactionHandler> dsHandlerCache;
+    Cache<BigId, Boolean> dsResultHasTsCache;
     
     
     static class EventPublisherInfo
@@ -141,34 +142,31 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
                 ResourceId dsId = pm.dataStreamHandler.handleDatastreamAssoc(ds);
                 
                 // get transaction handler for existing datastream
-                long localDsID = pm.toLocalID(dsId.asLong());
-                var dsHandler = dsHandlerCache.get(localDsID, () -> {
-                    return pm.transactionHandler.getDataStreamHandler(localDsID);
+                var dsHandler = dsHandlerCache.get(dsId, () -> {
+                    return pm.transactionHandler.getDataStreamHandler(dsId);
                 });
                 if (dsHandler == null)
                     throw new NoSuchEntityException(DatastreamEntityHandler.NOT_FOUND_MESSAGE + dsId);
                 //var oldDsInfo = dsHandler.getDataStreamInfo();
-        
+                
                 // check linked FOI exists
                 ResourceId foiId = null;
                 String foiUri = null;
                 if (obs.getFeatureOfInterest() != null)
                 {
                     foiId = (ResourceId)obs.getFeatureOfInterest().getId();
-                    long localFoiID = pm.toLocalID(foiId.asLong());
-                    var foi = pm.foiHandler.foiWriteStore.getCurrentVersion(localFoiID);
+                    var foi = pm.foiHandler.foiWriteStore.getCurrentVersion(foiId);
                     if (foi == null)
                         throw new NoSuchEntityException(FoiEntityHandler.NOT_FOUND_MESSAGE + foiId);
                     foiUri = foi.getUniqueIdentifier();
                 }
-        
+                
                 // generate OSH obs
                 var obsData = toObsData(obs, dsId, foiId, foiUri);
                 
                 // store in DB + send event
                 var newObsId = dsHandler.addObs(obsData);
-                                
-                return new ResourceIdBigInt(newObsId);
+                return new ResourceBigId(newObsId);
             });
         }
         catch (IllegalArgumentException | NoSuchEntityException e)
@@ -207,11 +205,11 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     {
         checkTransactionsEnabled();
         securityHandler.checkPermission(securityHandler.sta_delete_obs);
-        ResourceId obsId = id;
+        checkObsWritable(id);
 
         if (obsWriteStore != null)
         {
-            IObsData obs = obsWriteStore.remove(toLocalKey(obsId));
+            IObsData obs = obsWriteStore.remove(id);
             if (obs == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
 
@@ -227,15 +225,11 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     {
         securityHandler.checkPermission(securityHandler.sta_read_obs);
 
-        BigInteger key = id.asBigInt();
-        if (truncateIds)
-            key = expandPublicId(key);
-
-        IObsData obs = obsReadStore.get(key);
+        IObsData obs = obsReadStore.get(id);
         if (obs == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
 
-        return toFrostObservation(key, obs, checkResultHasTimeStamp(obs), q);
+        return toFrostObservation(id, obs, checkResultHasTimeStamp(obs), q);
     }
 
 
@@ -275,7 +269,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             {
                 for (var obs: item.getObservations())
                 {
-                    var staObs = toFrostObservation(BigInteger.ONE, obs, checkResultHasTimeStamp(obs), q);
+                    var staObs = toFrostObservation(BigId.NONE, obs, checkResultHasTimeStamp(obs), q);
                     subscriber.onNext(staObs);
                 }
             }
@@ -323,7 +317,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             {
                 ResourceId dsId = (ResourceId)idElt.getId();
                 builder.withDataStreams()
-                    .withInternalIDs(dsId.asLong())
+                    .withInternalIDs(dsId)
                     .withAllVersions()
                     .done();
             }
@@ -331,7 +325,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             if (idElt.getEntityType() == EntityType.FEATUREOFINTEREST)
             {
                 ResourceId foiId = (ResourceId)idElt.getId();
-                builder.withFois(foiId.asLong());
+                builder.withFois(foiId);
             }
         }
 
@@ -340,19 +334,6 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             q.getFilter().accept(visitor);
 
         return builder.build();
-    }
-
-
-    /*
-     * Create a local DB obs key from the entity ID
-     */
-    protected BigInteger toLocalKey(ResourceId obsId)
-    {
-        BigInteger publicId = obsId.asBigInt();
-        if (truncateIds)
-            publicId = expandPublicId(publicId);
-
-        return pm.toLocalID(publicId);
     }
 
 
@@ -370,8 +351,8 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         DataBlock dataBlk = createDataBlock(phenomenonTime, obs.getResult());
 
         return new ObsData.Builder()
-            .withDataStream(pm.toLocalID(dsId.asLong()))
-            .withFoi(foiId == null ? IObsData.NO_FOI : pm.toLocalID(foiId.asLong()))
+            .withDataStream(dsId)
+            .withFoi(foiId == null ? IObsData.NO_FOI : foiId)
             .withPhenomenonTime(phenomenonTime)
             .withResultTime(resultTime)
             .withResult(dataBlk)
@@ -443,13 +424,13 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
     }
 
 
-    protected Observation toFrostObservation(BigInteger key, IObsData obsData, boolean resultHasTimeStamp, Query q)
+    protected Observation toFrostObservation(BigId id, IObsData obsData, boolean resultHasTimeStamp, Query q)
     {
         Observation obs = new Observation();
 
         // composite ID
-        if (key != null)
-            obs.setId(new ResourceIdBigInt(truncateIds ? truncatePublicId(key) : key));
+        if (id != null)
+            obs.setId(new ResourceBigId(id));
 
         // phenomenon time
         obs.setPhenomenonTime(TimeInstant.create(obsData.getPhenomenonTime().toEpochMilli(), DateTimeZone.UTC));
@@ -463,7 +444,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         // FOI
         if (obsData.hasFoi())
         {
-            FeatureOfInterest foi = new FeatureOfInterest(new ResourceIdLong(obsData.getFoiID()));
+            FeatureOfInterest foi = new FeatureOfInterest(new ResourceBigId(obsData.getFoiID()));
             foi.setExportObject(false);
             obs.setFeatureOfInterest(foi);
         }
@@ -473,14 +454,14 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
         int resultStartIdx = resultHasTimeStamp ? 1 : 0;
         if ((resultHasTimeStamp && data.getAtomCount() == 2) || data.getAtomCount() == 1)
         {   
-            Datastream ds = new Datastream(new ResourceIdLong(obsData.getDataStreamID()));
+            Datastream ds = new Datastream(new ResourceBigId(obsData.getDataStreamID()));
             ds.setExportObject(false);
             obs.setDatastream(ds);
             obs.setResult(getResultValue(data, resultStartIdx));
         }
         else
         {
-            MultiDatastream ds = new MultiDatastream(new ResourceIdLong(obsData.getDataStreamID()));
+            MultiDatastream ds = new MultiDatastream(new ResourceBigId(obsData.getDataStreamID()));
             ds.setExportObject(false);
             obs.setMultiDatastream(ds);
             Object[] result = new Object[data.getAtomCount()-resultStartIdx];
@@ -512,7 +493,7 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
                 return data.getIntValue(index);
                 
             case UINT:
-            case LONG:            
+            case LONG:
             case ULONG:
                 return data.getLongValue(index);
 
@@ -547,28 +528,23 @@ public class ObservationEntityHandler implements IResourceHandler<Observation>
             }
         }
     }
+
+
+    protected void checkObsWritable(ResourceId id) throws NoSuchEntityException
+    {
+        checkTransactionsEnabled();
+        
+        // TODO also check that current user has the right to write this datastream!
+        
+        if (!pm.isInWritableDatabase(id))
+            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + id);
+    }
     
     
     protected void checkTransactionsEnabled()
     {
         if (obsWriteStore == null)
             throw new UnsupportedOperationException(NO_DB_MESSAGE);
-    }
-
-
-    protected BigInteger expandPublicId(BigInteger id)
-    {
-        // insert the 0 nanoseconds part (32-bits) in the ID
-        var localId = pm.toLocalID(id).shiftLeft(32);
-        return pm.toPublicID(localId);
-    }
-
-
-    protected BigInteger truncatePublicId(BigInteger id)
-    {
-        // remove the nanoseconds part (32-bits) of the ID
-        var localId = pm.toLocalID(id).shiftRight(32);
-        return pm.toPublicID(localId);
     }
 
 }

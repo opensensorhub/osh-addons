@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 import org.h2.mvstore.MVBTreeMap;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.RangeCursor;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.DataStreamInfo;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.datastore.DataStoreException;
@@ -56,6 +57,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     
     MVStore mvStore;
     IDataStreamStore delegateStore;
+    int idScope;
     ISTAThingStore thingStore;
     MVBTreeMap<MVDataStreamThingKey, Boolean> thingDataStreamsIndex;
     MVBTreeMap<Long, Long> dataStreamThingIndex;
@@ -97,7 +99,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
             try
             {
                 var dsKey = delegateStore.add(dsInfo);
-                putThingAssoc(thingID, dsKey.getInternalID());
+                putThingAssoc(thingID, dsKey.getInternalID().getIdAsLong());
                 return dsKey;
             }
             catch (Exception e)
@@ -130,7 +132,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
                 IDataStreamInfo pureDsInfo = DataStreamInfo.Builder.from(value).build();
                 
                 IDataStreamInfo oldValue = delegateStore.put(key, pureDsInfo);
-                putThingAssoc(thingID, key.getInternalID());
+                putThingAssoc(thingID, key.getInternalID().getIdAsLong());
                 return oldValue;
             }
             catch (Exception e)
@@ -183,14 +185,15 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     {
         long thingID = dataStreamThingIndex.remove(key);
         var assocKey = new MVDataStreamThingKey(thingID, key);
-        thingDataStreamsIndex.remove(assocKey);        
+        thingDataStreamsIndex.remove(assocKey);
     }
 
 
     @Override
-    public Long getAssociatedThing(long dataStreamID)
+    public BigId getAssociatedThing(long dataStreamID)
     {
-        return dataStreamThingIndex.get(dataStreamID);
+        var id = dataStreamThingIndex.get(dataStreamID);
+        return BigId.fromLong(idScope, id);
     }
     
     
@@ -198,7 +201,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     {
         MVDataStreamThingKey first = new MVDataStreamThingKey(thingID, 0);
         MVDataStreamThingKey last = new MVDataStreamThingKey(thingID, Long.MAX_VALUE);
-        var cursor = new RangeCursor<>(thingDataStreamsIndex, first, last);        
+        var cursor = new RangeCursor<>(thingDataStreamsIndex, first, last);
         return cursor.keyStream()
             .map(k -> k.dataStreamID);
     }
@@ -211,8 +214,9 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
             var thingFilter = ((STADataStreamFilter)filter).getThings();
             if (thingFilter != null)
             {
-                TreeSet<Long> datastreamIDs = thingStore.selectKeys(thingFilter)
-                    .flatMap(id -> getDataStreamIdsByThing(id.getInternalID()))
+                TreeSet<BigId> datastreamIDs = thingStore.selectKeys(thingFilter)
+                    .flatMap(id -> getDataStreamIdsByThing(id.getInternalID().getIdAsLong()))
+                    .map(id -> BigId.fromLong(0, id))
                     .collect(Collectors.toCollection(TreeSet::new));
                 
                 return thingStore.selectKeys(thingFilter)
@@ -220,15 +224,9 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
                         .withInternalIDs(datastreamIDs)
                         .build(), fields));
             }
-        }        
+        }
         
         return delegateStore.selectEntries(filter);
-    }
-
-
-    public DataStreamKey getLatestVersionKey(String sysUID, String outputName)
-    {
-        return delegateStore.getLatestVersionKey(sysUID, outputName);
     }
 
 

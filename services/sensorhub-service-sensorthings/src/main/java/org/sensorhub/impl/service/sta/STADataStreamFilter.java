@@ -14,6 +14,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 
 
@@ -62,7 +63,7 @@ public class STADataStreamFilter extends DataStreamFilter
         }
 
 
-        public Builder withThings(long... thingIDs)
+        public Builder withThings(BigId... thingIDs)
         {
             instance.things = new STAThingFilter.Builder()
                 .withInternalIDs(thingIDs)

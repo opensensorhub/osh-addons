@@ -14,12 +14,12 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.stream.Collectors;
 import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.WriteBuffer;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.impl.service.sta.filter.HistoricalLocationFilterVisitor;
 import org.vast.util.Asserts;
@@ -53,12 +53,27 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
     OSHPersistenceManager pm;
     ISTALocationStore locationDataStore;
     STASecurity securityHandler;
+    int idScope;
     int maxPageSize = 100;
+    
+    
+    static class LocationId
+    {
+        BigId thingID;
+        long time;
+        
+        LocationId(BigId thingID, long time)
+        {
+            this.thingID = thingID;
+            this.time = time;
+        }
+    }
     
     
     HistoricalLocationEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
+        this.idScope = pm.writeDatabase.getDatabaseNum() != null ? pm.writeDatabase.getDatabaseNum() : 0;
         this.locationDataStore = pm.writeDatabase != null ? pm.writeDatabase.getThingLocationStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
     }
@@ -69,7 +84,7 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
     {
         securityHandler.checkPermission(securityHandler.sta_insert_location);
         Asserts.checkArgument(entity instanceof HistoricalLocation);
-        HistoricalLocation location = (HistoricalLocation)entity;
+        //HistoricalLocation location = (HistoricalLocation)entity;
         
         // store feature description in DB
         if (locationDataStore != null)
@@ -86,7 +101,7 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
     {
         securityHandler.checkPermission(securityHandler.sta_update_location);
         Asserts.checkArgument(entity instanceof HistoricalLocation);
-        HistoricalLocation location = (HistoricalLocation)entity;
+        //HistoricalLocation location = (HistoricalLocation)entity;
         ResourceId id = (ResourceId)entity.getId();
         
         if (locationDataStore != null)
@@ -111,7 +126,7 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
         
         if (locationDataStore != null)
         {
-            var f = locationDataStore.remove(new FeatureKey(id.asLong()));
+            var f = locationDataStore.remove(new FeatureKey(id));
             if (f == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
             
@@ -129,13 +144,11 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
         
         if (locationDataStore != null)
         {
-            long[] ids = parseId(id.asLong());
-            long thingID = ids[0];
-            long timeStamp = ids[1];
+            var locId = parseId(id);
             
             var filter = new STALocationFilter.Builder()
-                .withThings(thingID)
-                .validAtTime(Instant.ofEpochSecond(timeStamp))
+                .withThings(locId.thingID)
+                .validAtTime(Instant.ofEpochSecond(locId.time))
                 .build();
             
             return locationDataStore.selectHistoricalLocations(filter)
@@ -183,12 +196,12 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
             if (idElt.getEntityType() == EntityType.THING)
             {
                 ResourceId thingId = (ResourceId)idElt.getId();
-                builder.withThings(thingId.asLong());
+                builder.withThings(thingId);
             }
             else if (idElt.getEntityType() == EntityType.LOCATION)
             {
                 ResourceId locId = (ResourceId)idElt.getId();
-                builder.withInternalIDs(locId.asLong());
+                builder.withInternalIDs(locId);
             }
         }
         
@@ -200,13 +213,13 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
     }
     
     
-    protected HistoricalLocation toFrostHistoricalLocation(long thingID, Instant time, Query q)
+    protected HistoricalLocation toFrostHistoricalLocation(BigId thingID, Instant time, Query q)
     {
         HistoricalLocation location = new HistoricalLocation();
-        location.setId(new ResourceIdLong(generateId(thingID, time)));
+        location.setId(new ResourceBigId(generateId(thingID, time)));
         location.setTime(TimeInstant.create(time.toEpochMilli()));
         
-        Thing thing = new Thing(new ResourceIdLong(thingID));
+        Thing thing = new Thing(new ResourceBigId(thingID));
         thing.setExportObject(false);
         location.setThing(thing);
         
@@ -214,21 +227,21 @@ public class HistoricalLocationEntityHandler implements IResourceHandler<Histori
     }
     
     
-    protected long generateId(long thingID, Instant time)
+    protected BigId generateId(BigId thingID, Instant time)
     {
-        WriteBuffer buf = new WriteBuffer(8); // thingID + timestamp seconds
-        DataUtils.writeVarLong(buf.getBuffer(), thingID);
+        WriteBuffer buf = new WriteBuffer(20); // thingID + timestamp seconds
+        DataUtils.writeVarLong(buf.getBuffer(), thingID.getIdAsLong());
         DataUtils.writeVarLong(buf.getBuffer(), time.getEpochSecond());
-        return new BigInteger(buf.getBuffer().array(), 0, buf.position()).longValue();
+        return BigId.fromBytes(idScope, buf.getBuffer().array(), 0, buf.position());
     }
     
     
-    protected long[] parseId(long id)
+    protected LocationId parseId(BigId id)
     {
-        ByteBuffer buf = ByteBuffer.wrap(BigInteger.valueOf(id).toByteArray());
-        long thingID = DataUtils.readVarLong(buf);
+        ByteBuffer buf = ByteBuffer.wrap(id.getIdAsBytes());
+        var thingID = BigId.fromLong(idScope, DataUtils.readVarLong(buf));
         long time = DataUtils.readVarLong(buf);
-        return new long[] {thingID, time};
+        return new LocationId(thingID, time);
     }
 
 }

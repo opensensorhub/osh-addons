@@ -22,6 +22,7 @@ import java.util.concurrent.Flow.Subscriber;
 import java.util.stream.Collectors;
 import org.isotc211.v2005.gmd.CIOnlineResource;
 import org.isotc211.v2005.gmd.impl.GMDFactory;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureKey;
@@ -73,26 +74,29 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
 {
     static final String NOT_FOUND_MESSAGE = "Cannot find Sensor ";
     static final String NOT_WRITABLE_MESSAGE = "Cannot modify read-only Sensor ";
-    static final String MISSING_ASSOC = "Missing reference to Sensor entity";
+    static final String MISSING_ASSOC_MESSAGE = "Missing reference to Sensor entity";
+    static final String WRONG_ASSOC_MESSAGE = "Cannot associate with read-only Sensor ";
     static final String FORMAT_SML2 = "http://www.opengis.net/sensorml-json/2.0";
 
     OSHPersistenceManager pm;
-    ISystemDescStore procReadStore;
-    ISystemDescStore procWriteStore;
+    ISystemDescStore sysReadStore;
+    ISystemDescStore sysWriteStore;
     IDataStreamStore dataStreamReadStore;
     STASecurity securityHandler;
     int maxPageSize = 100;
-    SystemId procGroupID;
+    String uidPrefix;
+    SystemId sysGroupID;
 
 
     SensorEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
-        this.procReadStore = pm.readDatabase.getSystemDescStore();
-        this.procWriteStore = pm.writeDatabase != null ? pm.writeDatabase.getSystemDescStore() : null;
+        this.sysReadStore = pm.readDatabase.getSystemDescStore();
+        this.sysWriteStore = pm.writeDatabase != null ? pm.writeDatabase.getSystemDescStore() : null;
         this.dataStreamReadStore = pm.readDatabase.getDataStreamStore();
         this.securityHandler = pm.service.getSecurityHandler();
-        this.procGroupID = pm.service.getSystemGroupID();
+        this.uidPrefix = pm.service.getUidPrefix();
+        this.sysGroupID = pm.service.getSystemGroupID();
     }
 
 
@@ -106,35 +110,34 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         securityHandler.checkPermission(securityHandler.sta_insert_sensor);
         
         // generate unique ID from name
-        Asserts.checkArgument(!Strings.isNullOrEmpty(sensor.getName()), "Sensor name must be set");        
-        String sysUID = procGroupID.getUniqueID() + ":" + SWEDataUtils.toNCName(sensor.getName());
+        Asserts.checkArgument(!Strings.isNullOrEmpty(sensor.getName()), "Sensor name must be set");
+        String sysUID = uidPrefix + "sensor:" + SWEDataUtils.toNCName(sensor.getName());
         
         try
         {
             return pm.writeDatabase.executeTransaction(() -> {
                 
                 // generate sensorML description
-                AbstractProcess procDesc = toSmlProcess(sensor, sysUID);
+                AbstractProcess sysDesc = toSmlProcess(sensor, sysUID);
                 
                 // cleanup sml description before storage
-                var procWrapper = new SystemWrapper(procDesc)
+                var sysWrapper = new SystemWrapper(sysDesc)
                     .hideOutputs()
                     .hideTaskableParams()
                     .defaultToValidFromNow();
                 
                 // store in DB + send event
-                FeatureKey procKey;
-                if (procGroupID != null)
+                FeatureKey sysKey;
+                if (sysGroupID != null)
                 {
-                    var groupHandler = pm.transactionHandler.getSystemHandler(procGroupID.getInternalID());
-                    procKey = groupHandler.addOrUpdateMember(procWrapper).getLocalSystemKey();
+                    var groupHandler = pm.transactionHandler.getSystemHandler(sysGroupID.getInternalID());
+                    sysKey = groupHandler.addOrUpdateMember(sysWrapper).getSystemKey();
                 }
                 else
-                    procKey = pm.transactionHandler.addOrUpdateSystem(procWrapper).getLocalSystemKey();
+                    sysKey = pm.transactionHandler.addOrUpdateSystem(sysWrapper).getSystemKey();
                 
                 // handle associations / deep inserts
-                var publicSensorID = pm.toPublicID(procKey.getInternalID());
-                ResourceId newSensorId = new ResourceIdLong(publicSensorID);
+                ResourceId newSensorId = new ResourceBigId(sysKey.getInternalID());
                 pm.dataStreamHandler.handleDatastreamAssocList(newSensorId, sensor);
     
                 return newSensorId;
@@ -164,29 +167,27 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         securityHandler.checkPermission(securityHandler.sta_update_sensor);
         
         ResourceId id = (ResourceId)entity.getId();
-        long publicSensorID = ((ResourceId)entity.getId()).asLong();
-        checkSensorWritable(publicSensorID);
+        checkSensorWritable(id);
         
         // get transaction handler for existing sensor
-        long localSensorID = pm.toLocalID(publicSensorID);
-        var procHandler = pm.transactionHandler.getSystemHandler(localSensorID);
-        if (procHandler == null)
+        var sysHandler = pm.transactionHandler.getSystemHandler(id);
+        if (sysHandler == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
         // update description
         try
         {
             // generate sensorML description
-            String sysUID = procHandler.getSystemUID();
-            AbstractProcess procDesc = toSmlProcess((Sensor)entity, sysUID);
+            String sysUID = sysHandler.getSystemUID();
+            AbstractProcess sysDesc = toSmlProcess((Sensor)entity, sysUID);
             
             // cleanup sml description before storage
-            var procWrapper = new SystemWrapper(procDesc)
+            var sysWrapper = new SystemWrapper(sysDesc)
                 .hideOutputs()
                 .hideTaskableParams()
                 .defaultToValidFromNow();
             
-            return procHandler.update(procWrapper);
+            return sysHandler.update(sysWrapper);
         }
         catch (DataStoreException e)
         {
@@ -212,19 +213,16 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     {
         checkTransactionsEnabled();
         securityHandler.checkPermission(securityHandler.sta_delete_sensor);
-        
-        long publicSensorID = id.asLong();
-        checkSensorWritable(publicSensorID);
+        checkSensorWritable(id);
         
         // get transaction handler for existing sensor
-        long localSensorID = pm.toLocalID(publicSensorID);
-        var procHandler = pm.transactionHandler.getSystemHandler(localSensorID);
-        if (procHandler == null)
+        var sysHandler = pm.transactionHandler.getSystemHandler(id);
+        if (sysHandler == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
         
         try
         {
-            return procHandler.delete();            
+            return sysHandler.delete();
         }
         catch (DataStoreException e)
         {
@@ -242,11 +240,11 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     {
         securityHandler.checkPermission(securityHandler.sta_read_sensor);
 
-        var proc = procReadStore.getCurrentVersion(id.asLong());
-        if (proc == null)
+        var sys = sysReadStore.getCurrentVersion(id);
+        if (sys == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
         
-        return toFrostSensor(id.asLong(), proc, q);
+        return toFrostSensor(id, sys, q);
     }
 
 
@@ -259,7 +257,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         int skip = q.getSkip(0);
         int limit = Math.min(q.getTopOrDefault(), maxPageSize);
 
-        var entitySet = procReadStore.selectEntries(filter)
+        var entitySet = sysReadStore.selectEntries(filter)
             //.peek(e -> System.out.println(e.getValue().getUniqueIdentifier() + ": " + e.getValue().getValidTime()))
             .skip(skip)
             .limit(limit+1) // request limit+1 elements to handle paging
@@ -278,21 +276,21 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         // create obs filter
         SystemFilter filter = getFilter(path, q);
         
-        // subscribe for obs using filter
+        // subscribe for system events using filter
         var eventHelper = new SystemSubscriptionHandler(pm.readDatabase, pm.eventBus);
         var ok = eventHelper.subscribe(filter, new DelegatingSubscriberAdapter<SystemEvent, Sensor>(subscriber) {
             public void onNext(SystemEvent item)
             {
                 if (item instanceof SystemAddedEvent || item instanceof SystemChangedEvent)
                 {
-                    var proc = procReadStore.getCurrentVersion(item.getSystemUID());
-                    if (proc != null)
+                    var sys = sysReadStore.getCurrentVersion(item.getSystemUID());
+                    if (sys != null)
                     {
-                        var staSensor = toFrostSensor(1, proc, q);
+                        var staSensor = toFrostSensor(item.getSystemID(), sys, q);
                         subscriber.onNext(staSensor);
                     }
                 }
-            }           
+            }
         });
         
         // if subscribe failed, it means topic was not available
@@ -318,7 +316,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                     idElt.getEntityType() == EntityType.MULTIDATASTREAM)
                 {
                     ResourceId dsId = (ResourceId)idElt.getId();
-                    var dsKey = new DataStreamKey(dsId.asLong());
+                    var dsKey = new DataStreamKey(dsId);
                     IDataStreamInfo dsInfo = dataStreamReadStore.get(dsKey);
                     builder.withInternalIDs(dsInfo.getSystemID().getInternalID());
                 }
@@ -332,8 +330,8 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 {
                     var dataStreamSet = pm.dataStreamHandler.queryCollection(getParentPath(path), q);
                     builder.withInternalIDs(dataStreamSet.isEmpty() ?
-                        Long.MAX_VALUE :
-                        ((ResourceId)dataStreamSet.iterator().next().getId()).asLong());
+                        BigId.NONE :
+                        ((ResourceId)dataStreamSet.iterator().next().getId()));
                 }
             }
         }
@@ -351,7 +349,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         // TODO use provided SensorML doc in metadata
 
         // create simple SensorML instance
-        var proc = new SMLHelper().createPhysicalSystem()
+        var sys = new SMLHelper().createPhysicalSystem()
             .uniqueID(uid)
             .name(sensor.getName())
             .description(sensor.getDescription())
@@ -370,10 +368,10 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 .build();
                 
             docList.addDocument(doc);
-            proc.getDocumentationList().add("sta_metadata", docList);
+            sys.getDocumentationList().add("sta_metadata", docList);
         }
 
-        return proc;
+        return sys;
     }
 
     public static class SensorMLMetadata
@@ -385,18 +383,18 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
 
 
     @SuppressWarnings("unchecked")
-    protected Sensor toFrostSensor(long internalId, ISystemWithDesc proc, Query q)
+    protected Sensor toFrostSensor(BigId id, ISystemWithDesc sys, Query q)
     {
         // TODO add full SensorML doc in metadata
 
         Sensor sensor = new Sensor();
-        sensor.setId(new ResourceIdLong(internalId));
-        sensor.setName(proc.getName());
-        sensor.setDescription(proc.getDescription());
+        sensor.setId(new ResourceBigId(id));
+        sensor.setName(sys.getName());
+        sensor.setDescription(sys.getDescription());
         
         //if (q.getSelect().contains("metadata"))
         {
-            AbstractProcess fullDesc = proc.getFullDescription();
+            AbstractProcess fullDesc = sys.getFullDescription();
             if (fullDesc != null)
             {    
                 // add metadata link
@@ -413,8 +411,8 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
                 else
                 {
                     var metadata = new SensorMLMetadata();
-                    metadata.uid = proc.getUniqueIdentifier();
-                    TimeExtent validPeriod = proc.getValidTime();
+                    metadata.uid = sys.getUniqueIdentifier();
+                    TimeExtent validPeriod = sys.getValidTime();
                     if (validPeriod != null)
                     {
                         metadata.validTimeBegin = validPeriod.begin();
@@ -455,14 +453,16 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
 
     protected ResourceId handleSensorAssoc(Sensor sensor) throws NoSuchEntityException
     {
-        Asserts.checkArgument(sensor != null, MISSING_ASSOC);
+        Asserts.checkArgument(sensor != null, MISSING_ASSOC_MESSAGE);
         ResourceId sensorId;
 
         if (sensor.getName() == null)
         {
             sensorId = (ResourceId)sensor.getId();
-            Asserts.checkArgument(sensorId != null, MISSING_ASSOC);
-            checkSensorIDInWriteStore(sensorId.asLong());
+            Asserts.checkArgument(sensorId != null, MISSING_ASSOC_MESSAGE);
+            checkSensorID(sensorId);
+            if (!pm.isInWritableDatabase(sensorId))
+                throw new IllegalArgumentException(WRONG_ASSOC_MESSAGE + sensorId);
         }
         else
         {
@@ -477,37 +477,28 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     /*
      * Check that sensorID is present in database and exposed by service
      */
-    protected void checkSensorID(long publicID) throws NoSuchEntityException
+    protected void checkSensorID(ResourceId id) throws NoSuchEntityException
     {
-        if (procReadStore.getCurrentVersionKey(publicID) == null)
-            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
-    }
-    
-    
-    /*
-     * Check that sensorID is present in writable database
-     */
-    protected void checkSensorIDInWriteStore(long publicID) throws NoSuchEntityException
-    {
-        checkSensorID(publicID);
-        checkSensorWritable(publicID);
+        if (sysReadStore.getCurrentVersionKey(id) == null)
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
     }
 
 
-    protected void checkSensorWritable(long publicID)
+    protected void checkSensorWritable(ResourceId id) throws NoSuchEntityException
     {
         checkTransactionsEnabled();
+        checkSensorID(id);
         
         // TODO also check that current user has the right to write this sensor!
 
-        if (!pm.isInWritableDatabase(publicID))
-            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
+        if (!pm.isInWritableDatabase(id))
+            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + id);
     }
     
     
     protected void checkTransactionsEnabled()
     {
-        if (procWriteStore == null)
+        if (sysWriteStore == null)
             throw new UnsupportedOperationException(NO_DB_MESSAGE);
     }
 

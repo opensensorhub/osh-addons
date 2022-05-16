@@ -13,6 +13,7 @@ import org.sensorhub.api.datastore.feature.FeatureFilter;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
+import org.sensorhub.impl.datastore.h2.MVDatabaseConfig.IdProviderType;
 import org.sensorhub.impl.service.sta.ISTAObsPropStore.ObsPropDef;
 
 
@@ -24,9 +25,9 @@ public class STAObsPropStoreImpl extends MVBaseFeatureStoreImpl<ObsPropDef, Feat
     }
     
     
-    public static STAObsPropStoreImpl open(STADatabase db, MVDataStoreInfo dataStoreInfo)
+    public static STAObsPropStoreImpl open(STADatabase db, int idScope, IdProviderType idProviderType, MVDataStoreInfo dataStoreInfo)
     {
-        return (STAObsPropStoreImpl)new STAObsPropStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
+        return (STAObsPropStoreImpl)new STAObsPropStoreImpl().init(db.getMVStore(), idScope, idProviderType, dataStoreInfo);
     }
 
 

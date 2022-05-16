@@ -26,7 +26,7 @@ import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.api.service.IServiceModule;
 import org.sensorhub.api.system.SystemId;
-import org.sensorhub.impl.database.registry.FilteredFederatedObsDatabase;
+import org.sensorhub.impl.database.registry.FilteredFederatedDatabase;
 import org.sensorhub.impl.service.AbstractHttpServiceModule;
 import org.sensorhub.impl.system.wrapper.SystemWrapper;
 import org.vast.ogc.gml.GenericFeatureImpl;
@@ -83,20 +83,26 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
         }
         
         // get filter for FilteredView from config
-        var filter = config.exposedResources.getObsFilter();
-        if (writeDatabase != null)
+        if (config.exposedResources != null)
         {
-            // if a writable database was provided, make sure we always expose
-            // its content via this service by flagging it as unfiltered
-            readDatabase = new FilteredFederatedObsDatabase(
-                getParentHub().getDatabaseRegistry(),
-                (ObsFilter)filter, writeDatabase.getDatabaseNum());
+            if (writeDatabase != null)
+            {
+                var filter = config.exposedResources.getObsFilter();
+            
+                // if a writable database was provided, make sure we always expose
+                // its content via this service by flagging it as unfiltered
+                readDatabase = new FilteredFederatedDatabase(
+                    getParentHub().getDatabaseRegistry(),
+                    (ObsFilter)filter, writeDatabase.getDatabaseNum());
+            }
+            else
+                readDatabase = config.exposedResources.getFilteredView(getParentHub());
         }
         else
-            readDatabase = config.exposedResources.getFilteredView(getParentHub());
+            readDatabase = getParentHub().getDatabaseRegistry().getFederatedDatabase();
         
         // create or retrieve virtual sensor group
-        if (config.virtualSensorGroup != null)
+        if (writeDatabase != null && config.virtualSensorGroup != null)
         {
             String virtualGroupUID = config.virtualSensorGroup.uid;
             FeatureKey fk;
@@ -116,17 +122,19 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
                 fk = writeDatabase.getSystemDescStore().getCurrentVersionKey(virtualGroupUID);
             virtualGroupId = new SystemId(fk.getInternalID(), virtualGroupUID);
         }
-        else
-            virtualGroupId = new SystemId(1, "urn:osh:sta");
         
         // create default hub thing
-        String uid = getSystemGroupID().getUniqueID() + ":thing:hub";
+        String uid = getUidPrefix() + "thing:hub";
         hubThing = new GenericFeatureImpl(new QName("Thing"));
         hubThing.setUniqueIdentifier(uid);
         hubThing.setName(config.hubThing.name);
         hubThing.setDescription(config.hubThing.description);
-        writeDatabase.getThingStore().put(new FeatureKey(1, FeatureKey.TIMELESS), hubThing);
-
+        var hubKey = writeDatabase.getThingStore().getCurrentVersionKey(uid);
+        if (hubKey != null)
+            writeDatabase.getThingStore().put(hubKey, hubThing);
+        else
+            writeDatabase.getThingStore().add(hubThing);
+        
         // deploy servlet
         servlet = new STAServlet(this);
         deploy();
@@ -229,6 +237,12 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
     protected String getEndPoint()
     {
         return config.endPoint + "/v1.0/";
+    }
+
+
+    protected String getUidPrefix()
+    {
+        return config.uidPrefix;
     }
 
 

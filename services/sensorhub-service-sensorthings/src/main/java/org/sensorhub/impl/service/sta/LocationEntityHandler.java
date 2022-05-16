@@ -19,6 +19,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import org.geojson.GeoJsonObject;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.impl.service.sta.filter.LocationFilterVisitor;
@@ -82,7 +83,7 @@ public class LocationEntityHandler implements IResourceHandler<Location>
             try
             {
                 FeatureKey key = locationDataStore.add(toGmlFeature(location, null));
-                return new ResourceIdLong(key.getInternalID());
+                return new ResourceBigId(key.getInternalID());
             }
             catch (DataStoreException e)
             {
@@ -105,7 +106,7 @@ public class LocationEntityHandler implements IResourceHandler<Location>
         if (locationDataStore != null)
         {
             // retrieve UID of existing feature
-            var key = locationDataStore.getCurrentVersionKey(id.asLong());
+            var key = locationDataStore.getCurrentVersionKey(id);
             if (locationDataStore.containsKey(key))
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
                 
@@ -132,7 +133,7 @@ public class LocationEntityHandler implements IResourceHandler<Location>
         if (locationDataStore != null)
         {
             var count = locationDataStore.removeEntries(new STALocationFilter.Builder()
-                    .withInternalIDs(id.asLong())
+                    .withInternalIDs(id)
                     .withAllVersions()
                     .build());
         
@@ -153,12 +154,12 @@ public class LocationEntityHandler implements IResourceHandler<Location>
         
         if (locationDataStore != null)
         {
-            var location = locationDataStore.getCurrentVersion(id.asLong());
+            var location = locationDataStore.getCurrentVersion(id);
             
             if (location == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
             
-            return toFrostLocation(id.asLong(), location, q);
+            return toFrostLocation(id, location, q);
         }
         
         return null;
@@ -205,15 +206,15 @@ public class LocationEntityHandler implements IResourceHandler<Location>
                 if (idElt.getEntityType() == EntityType.THING)
                 {
                     ResourceId thingId = (ResourceId)idElt.getId();
-                    builder.withThings(thingId.asLong())
+                    builder.withThings(thingId)
                         .withCurrentVersion();
                 }
                 else if (idElt.getEntityType() == EntityType.HISTORICALLOCATION)
                 {
                     var resId = (ResourceId)idElt.getId();
-                    long[] ids = pm.historicalLocationHandler.parseId(resId.asLong());
-                    Instant timeStamp = Instant.ofEpochSecond(ids[1]);
-                    builder.withThings(ids[0])
+                    var locId = pm.historicalLocationHandler.parseId(resId);
+                    Instant timeStamp = Instant.ofEpochSecond(locId.time);
+                    builder.withThings(locId.thingID)
                         //.validAtTime(Instant.ofEpochMilli(ids[1]));
                         .withValidTimeDuring(timeStamp, timeStamp.plusSeconds(1));
                 }
@@ -228,11 +229,11 @@ public class LocationEntityHandler implements IResourceHandler<Location>
                     
                     builder.withCurrentVersion()
                         .withThings(thingSet.isEmpty() ?
-                            Long.MAX_VALUE :
-                            ((ResourceId)thingSet.iterator().next().getId()).asLong());
+                            BigId.NONE :
+                            ((ResourceBigId)thingSet.iterator().next().getId()));
                 }
             }
-        }           
+        }
         
         LocationFilterVisitor visitor = new LocationFilterVisitor(builder);
         if (q.getFilter() != null)
@@ -253,20 +254,20 @@ public class LocationEntityHandler implements IResourceHandler<Location>
         f.setName(location.getName());
         f.setDescription(location.getDescription());
         if (geojson != null)
-            f.setGeometry(FrostUtils.toGmlGeometry(geojson));        
+            f.setGeometry(FrostUtils.toGmlGeometry(geojson));
         return f;
     }
     
     
-    protected Location toFrostLocation(long internalId, AbstractFeature f, Query q)
+    protected Location toFrostLocation(BigId internalId, AbstractFeature f, Query q)
     {
         Location location = new Location();
-        location.setId(new ResourceIdLong(internalId));
+        location.setId(new ResourceBigId(internalId));
         location.setName(f.getName());
         location.setDescription(f.getDescription());
         location.setEncodingType(GEOJSON_FORMAT);
         if (f.isSetGeometry())
-            location.setLocation(FrostUtils.toGeoJsonGeom(f.getGeometry()));        
+            location.setLocation(FrostUtils.toGeoJsonGeom(f.getGeometry()));
         return location;
     }
     
@@ -284,7 +285,7 @@ public class LocationEntityHandler implements IResourceHandler<Location>
             {
                 locationId = (ResourceId)location.getId();
                 Asserts.checkArgument(locationId != null, MISSING_ASSOC);
-                checkLocationID(locationId.asLong());
+                checkLocationID(locationId);
             }
             else
             {
@@ -292,14 +293,14 @@ public class LocationEntityHandler implements IResourceHandler<Location>
                 locationId = create(location);
             }
             
-            locationDataStore.addAssociation(thingId.asLong(), locationId.asLong(), now);
+            locationDataStore.addAssociation(thingId.getIdAsLong(), locationId.getIdAsLong(), now);
         }
     }
     
     
-    protected void checkLocationID(long locationID) throws NoSuchEntityException
+    protected void checkLocationID(ResourceId locationID) throws NoSuchEntityException
     {
-        boolean hasLocation = locationDataStore.containsKey(new FeatureKey(locationID));        
+        boolean hasLocation = locationDataStore.containsKey(new FeatureKey(locationID));
         if (!hasLocation)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + locationID);
     }

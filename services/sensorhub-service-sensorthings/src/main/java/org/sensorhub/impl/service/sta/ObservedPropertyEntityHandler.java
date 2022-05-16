@@ -17,6 +17,7 @@ package org.sensorhub.impl.service.sta;
 import java.time.Instant;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.datastore.DataStoreException;
@@ -55,12 +56,14 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
     ISTAObsPropStore obsPropDataStore;
     IObsSystemDatabase readDatabase;
     STASecurity securityHandler;
+    int idScope;
     int maxPageSize = 100;
     
     
     ObservedPropertyEntityHandler(OSHPersistenceManager pm)
     {
         this.pm = pm;
+        this.idScope = pm.writeDatabase.getDatabaseNum() != null ? pm.writeDatabase.getDatabaseNum() : 0;
         this.readDatabase = pm.readDatabase;
         this.obsPropDataStore = pm.writeDatabase != null ? pm.writeDatabase.getObservedPropertyDataStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
@@ -82,8 +85,8 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
             try
             {
                 // store feature description in DB
-                FeatureKey key = obsPropDataStore.add(toGmlDefinition(obsProp));            
-                return new ResourceIdLong(key.getInternalID());
+                FeatureKey key = obsPropDataStore.add(toGmlDefinition(obsProp));
+                return new ResourceBigId(key.getInternalID());
             }
             catch (DataStoreException e)
             {
@@ -108,7 +111,7 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
             
             // store definition in DB
             var def = toGmlDefinition(obsProp);
-            var key = new FeatureKey(id.asLong());
+            var key = new FeatureKey(id);
             obsPropDataStore.put(key, def);
             
             return true;
@@ -131,7 +134,7 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
         
         if (obsPropDataStore != null)
         {
-            var obsProp = obsPropDataStore.remove(new FeatureKey(id.asLong()));
+            var obsProp = obsPropDataStore.remove(new FeatureKey(id));
             
             if (obsProp == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
@@ -150,12 +153,12 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
         
         if (obsPropDataStore != null)
         {
-            var obsProp = obsPropDataStore.get(new FeatureKey(id.asLong()));
+            var obsProp = obsPropDataStore.get(new FeatureKey(id));
             
             if (obsProp == null)
                 throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
             
-            return toFrostObservedProperty(id.asLong(), obsProp, q);
+            return toFrostObservedProperty(id, obsProp, q);
         }
         
         return null;
@@ -180,10 +183,10 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
                 // case of external datastream: parent ID is set to datastream ID
                 // just extract observed properties from record structure
                 // hack: datastream ID is stored in parent ID filter
-                long dsId = filter.getParentFilter().getInternalIDs().iterator().next();
+                var dsId = filter.getParentFilter().getInternalIDs().iterator().next();
                 var dsKey = new DataStreamKey(dsId);
                 IDataStreamInfo dsInfo = readDatabase.getObservationStore().getDataStreams().get(dsKey);
-                return getObservedPropertySet(dsInfo, q);                
+                return getObservedPropertySet(dsInfo, q);
             }
             else
             {
@@ -212,7 +215,7 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
             if (idElt.getEntityType() == EntityType.DATASTREAM ||
                 idElt.getEntityType() == EntityType.MULTIDATASTREAM)
             {
-                long dsId = ((ResourceId)idElt.getId()).asLong();
+                var dsId = (ResourceId)idElt.getId();
                 
                 if (pm.isInWritableDatabase(dsId))
                 {
@@ -238,16 +241,19 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
     }
     
     
-    protected TreeSet<Long> getObservedPropertyIds(IDataStreamInfo dsInfo)
+    protected TreeSet<BigId> getObservedPropertyIds(IDataStreamInfo dsInfo)
     {
-        var obsPropIDs = new TreeSet<Long>();
+        var obsPropIDs = new TreeSet<BigId>();
         
         ScalarIterator it = new ScalarIterator(dsInfo.getRecordStructure());
         while (it.hasNext())
         {
-            String id = it.next().getId();
-            if (id != null)
-                obsPropIDs.add(Long.parseLong(id));
+            String idStr = it.next().getId();
+            if (idStr != null)
+            {
+                long id = Long.parseLong(idStr);
+                obsPropIDs.add(BigId.fromLong(idScope, id));
+            }
         }
         
         return obsPropIDs;
@@ -262,7 +268,7 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
         while (it.hasNext())
         {
             var obsProp = pm.dataStreamHandler.toObservedProperty(it.next(), q.getSelect());
-            obsProp.setId(new ResourceIdLong(1));
+            obsProp.setId(new ResourceBigId(BigId.NONE));
             entitySet.add(obsProp);
         }
         
@@ -279,14 +285,14 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
     }
     
     
-    protected ObservedProperty toFrostObservedProperty(long internalId, ObsPropDef f, Query q)
+    protected ObservedProperty toFrostObservedProperty(BigId id, ObsPropDef f, Query q)
     {
         // TODO implement expand
         //Set<Property> select = q != null ? q.getSelect() : Collections.emptySet();
         
         ObservedProperty obsProp = new ObservedProperty();
         
-        obsProp.setId(new ResourceIdLong(internalId));
+        obsProp.setId(new ResourceBigId(id));
         obsProp.setName(f.getName());
         obsProp.setDescription(f.getDescription());
         obsProp.setDefinition(f.getUniqueIdentifier());
@@ -304,7 +310,7 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
         {
             obsPropId = (ResourceId)obsProp.getId();
             Asserts.checkArgument(obsPropId != null, MISSING_ASSOC);
-            checkObsPropID(obsPropId.asLong());
+            checkObsPropID(obsPropId);
         }
         else
         {
@@ -319,7 +325,7 @@ public class ObservedPropertyEntityHandler implements IResourceHandler<ObservedP
     /*
      * Check that sensorID is present in database and exposed by service
      */
-    protected void checkObsPropID(long obsPropID) throws NoSuchEntityException
+    protected void checkObsPropID(ResourceId obsPropID) throws NoSuchEntityException
     {
         var key = new FeatureKey(obsPropID);
         boolean hasObsProp = obsPropDataStore.containsKey(key);

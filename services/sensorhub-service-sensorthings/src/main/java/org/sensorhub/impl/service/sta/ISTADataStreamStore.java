@@ -14,6 +14,7 @@ Copyright (C) 2019 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sta;
 
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
@@ -40,5 +41,5 @@ public interface ISTADataStreamStore extends IDataStreamStore
     public void putThingAssoc(long thingID, long dsID);
     
     
-    public Long getAssociatedThing(long dataStreamID);
+    public BigId getAssociatedThing(long dataStreamID);
 }

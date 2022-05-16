@@ -31,9 +31,9 @@ public class ResourceIdManager implements IdManager<String>
 {
 
     @Override
-    public Class<ResourceIdLong> getIdClass()
+    public Class<ResourceBigId> getIdClass()
     {
-        return ResourceIdLong.class;
+        return ResourceBigId.class;
     }
 
     
@@ -44,11 +44,14 @@ public class ResourceIdManager implements IdManager<String>
         
         if (input.startsWith("'"))
         {
-            String base36String = input.substring(1, input.length()-1);
-            return new ResourceIdBigInt(base36String);
+            var idStr = input.substring(1, input.length()-1);
+            return new ResourceBigId(idStr);
         }
         else
-            return new ResourceIdLong(input);
+        {
+            long id = Long.parseLong(input);
+            return new ResourceBigId(id);
+        }
     }
 
     

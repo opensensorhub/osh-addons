@@ -42,6 +42,10 @@ public class STAServiceConfig extends HttpServiceConfig
     public HubThingInfo hubThing = new HubThingInfo();
     
     
+    @DisplayInfo(label="UID Prefix", desc="Prefix to use for Things, Sensors and FOIs UIDs")
+    public String uidPrefix = "urn:osh:sta:";
+    
+    
     @DisplayInfo(desc="Metadata of system group that will be created to contain all sensors "
         + "registered through this service. Only sensors in this group will be modifiable by this service")
     public VirtualSystemGroupConfig virtualSensorGroup;

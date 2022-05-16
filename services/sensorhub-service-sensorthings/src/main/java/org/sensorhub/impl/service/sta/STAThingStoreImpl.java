@@ -18,12 +18,15 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.stream.Stream;
 import org.h2.mvstore.RangeCursor;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField;
+import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.h2.MVBaseFeatureStoreImpl;
 import org.sensorhub.impl.datastore.h2.MVDataStoreInfo;
 import org.sensorhub.impl.datastore.h2.MVFeatureParentKey;
+import org.sensorhub.impl.datastore.h2.MVDatabaseConfig.IdProviderType;
 import org.sensorhub.impl.service.sta.STALocationStoreTypes.MVThingLocationKey;
 import org.vast.ogc.gml.IFeature;
 import org.vast.util.Asserts;
@@ -48,23 +51,26 @@ class STAThingStoreImpl extends MVBaseFeatureStoreImpl<IFeature, FeatureField, S
     }
     
     
-    public static STAThingStoreImpl open(STADatabase db, MVDataStoreInfo dataStoreInfo)
+    public static STAThingStoreImpl open(STADatabase db, int idScope, IdProviderType idProviderType, MVDataStoreInfo dataStoreInfo)
     {
-        return (STAThingStoreImpl)new STAThingStoreImpl().init(db.getMVStore(), dataStoreInfo, null);
+        return (STAThingStoreImpl)new STAThingStoreImpl().init(db.getMVStore(), idScope, idProviderType, dataStoreInfo);
     }
     
     
     @Override
-    public synchronized FeatureKey add(long parentID, IFeature feature) throws DataStoreException
+    public synchronized FeatureKey add(BigId parentID, IFeature feature) throws DataStoreException
     {
         Asserts.checkNotNull(feature, IFeature.class);
         
         long internalID = idProvider.newInternalID(feature);
-        var newKey = new MVFeatureParentKey(parentID, internalID);
+        var newKey = new MVFeatureParentKey(
+            parentID.getIdAsLong(),
+            BigId.fromLong(idScope, internalID),
+            FeatureKey.TIMELESS);
 
         // add to store
         put(newKey, feature, true, false);
-        return newKey;       
+        return newKey;
     }
     
     
@@ -73,8 +79,9 @@ class STAThingStoreImpl extends MVBaseFeatureStoreImpl<IFeature, FeatureField, S
     {
         try
         {
-            Asserts.checkNotNull(key, FeatureKey.class);
-            Asserts.checkNotNull(feature, IFeature.class); 
+            ensureFullFeatureKey(key);
+            DataStoreUtils.checkFeatureObject(feature);
+            
             var fk = new MVFeatureParentKey(0L, key.getInternalID(), key.getValidStartTime());
             return put(fk, feature, true, true);
         }
@@ -98,7 +105,7 @@ class STAThingStoreImpl extends MVBaseFeatureStoreImpl<IFeature, FeatureField, S
             .filter(k -> !Objects.equals(k.thingID, lastThing.value))
             .filter(k -> isLatestLocation(k))
             .peek(k -> lastThing.value = k.thingID)
-            .map(k -> new FeatureKey(k.thingID));
+            .map(k -> new FeatureKey(BigId.fromLong(idScope, k.thingID)));
     }
     
     
@@ -122,7 +129,7 @@ class STAThingStoreImpl extends MVBaseFeatureStoreImpl<IFeature, FeatureField, S
         if (locationFilter != null)
         {
             return locationStore.selectKeys(locationFilter)
-                .flatMap(k -> getThingKeysByCurrentLocation(k.getInternalID()))
+                .flatMap(k -> getThingKeysByCurrentLocation(k.getInternalID().getIdAsLong()))
                 .map(k -> featuresIndex.getEntry(k));
         }
         

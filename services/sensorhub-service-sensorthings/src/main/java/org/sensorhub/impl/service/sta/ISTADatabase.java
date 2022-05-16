@@ -55,12 +55,6 @@ public interface ISTADatabase extends IObsSystemDatabase
     ISTAObsPropStore getObservedPropertyDataStore();
     
     
-    public long toPublicID(long internalID);
-    
-    
-    public long toLocalID(long publicID);
-    
-    
     public void close();
     
 }

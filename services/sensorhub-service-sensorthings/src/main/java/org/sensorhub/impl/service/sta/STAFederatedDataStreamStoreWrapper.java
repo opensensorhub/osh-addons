@@ -17,7 +17,6 @@ package org.sensorhub.impl.service.sta;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -51,24 +50,16 @@ public class STAFederatedDataStreamStoreWrapper implements IDataStreamStore
     {
         this.database = database;
         this.staDataStreamStore = database != null ? database.getDataStreamStore() : null;
-        this.federatedStore = federatedStore;        
+        this.federatedStore = federatedStore;
     }
 
 
     public Stream<Entry<DataStreamKey, IDataStreamInfo>> selectEntries(DataStreamFilter filter, Set<DataStreamInfoField> fields)
     {
-        if (filter instanceof STADataStreamFilter)
-        {
-            var thingFilter = ((STADataStreamFilter)filter).getThings();
-            if (thingFilter != null && staDataStreamStore != null)
-                return staDataStreamStore.selectEntries(filter, fields)
-                    .map(e -> {
-                        var publicKey = new DataStreamKey(database.toPublicID(e.getKey().getInternalID()));
-                        return new AbstractMap.SimpleEntry<>(publicKey, e.getValue());
-                    });
-        }        
-        
-        return federatedStore.selectEntries(filter);
+        if (filter instanceof STADataStreamFilter && ((STADataStreamFilter)filter).getThings() != null)
+            return staDataStreamStore.selectEntries(filter, fields);
+        else
+            return federatedStore.selectEntries(filter);
     }
 
 

@@ -15,7 +15,7 @@ Copyright (C) 2020 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.sta;
 
 
-import java.math.BigInteger;
+import org.sensorhub.api.common.BigId;
 import de.fraunhofer.iosb.ilt.frostserver.model.core.Id;
 
 /**
@@ -26,11 +26,6 @@ import de.fraunhofer.iosb.ilt.frostserver.model.core.Id;
  * @author Alex Robin
  * @date Mar 17, 2020
  */
-public interface ResourceId extends Id
+public interface ResourceId extends Id, BigId
 {
-
-    public long asLong();
-    
-    
-    public BigInteger asBigInt();
 }

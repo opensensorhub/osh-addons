@@ -18,10 +18,10 @@ import java.time.Instant;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import org.geojson.GeoJsonObject;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.feature.IFoiStore;
-import org.sensorhub.api.system.SystemId;
 import org.sensorhub.impl.service.sta.filter.FoiFilterVisitor;
 import org.sensorhub.utils.SWEDataUtils;
 import org.vast.ogc.gml.GenericFeatureImpl;
@@ -53,14 +53,15 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
 {
     static final String NOT_FOUND_MESSAGE = "Cannot find FeatureOfInterest ";
     static final String NOT_WRITABLE_MESSAGE = "Cannot modify read-only FeatureOfInterest ";
-    static final String MISSING_ASSOC = "Missing reference to FeatureOfInterest entity";
+    static final String MISSING_ASSOC_MESSAGE = "Missing reference to FeatureOfInterest entity";
+    static final String WRONG_ASSOC_MESSAGE = "Cannot associate with read-only FeatureOfInterest ";
         
     OSHPersistenceManager pm;
     IFoiStore foiReadStore;
     IFoiStore foiWriteStore;
     STASecurity securityHandler;
     int maxPageSize = 100;
-    SystemId procGroupID;
+    String uidPrefix;
     
     
     FoiEntityHandler(OSHPersistenceManager pm)
@@ -69,7 +70,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         this.foiReadStore = pm.readDatabase.getFoiStore();
         this.foiWriteStore = pm.writeDatabase != null ? pm.writeDatabase.getFoiStore() : null;
         this.securityHandler = pm.service.getSecurityHandler();
-        this.procGroupID = pm.service.getSystemGroupID();
+        this.uidPrefix = pm.service.getUidPrefix();
     }
     
     
@@ -84,7 +85,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         
         // generate unique ID from name
         Asserts.checkArgument(!Strings.isNullOrEmpty(foi.getName()), "Feature name must be set");
-        String uid = procGroupID.getUniqueID() + ":foi:" + SWEDataUtils.toNCName(foi.getName());
+        String uid = uidPrefix + "foi:" + SWEDataUtils.toNCName(foi.getName());
         
         try
         {
@@ -95,7 +96,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
                 // publish event?                
                 // handle associations / deep inserts?
                 
-                return new ResourceIdLong(pm.toPublicID(key.getInternalID()));
+                return new ResourceBigId(key.getInternalID());
             });
         }
         catch (IllegalArgumentException | NoSuchEntityException e)
@@ -118,14 +119,13 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         
         securityHandler.checkPermission(securityHandler.sta_update_foi);
         
-        long publicFoiID = ((ResourceId)entity.getId()).asLong();
-        checkFoiWritable(publicFoiID);
+        var id = ((ResourceId)entity.getId());
+        checkFoiWritable(id);
         
         // retrieve UID of existing feature
-        long locaFoiID = pm.toLocalID(publicFoiID);
-        var fEntry = foiWriteStore.getCurrentVersionEntry(locaFoiID);
+        var fEntry = foiWriteStore.getCurrentVersionEntry(id);
         if (fEntry == null)
-            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicFoiID);
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
         
         try
         {
@@ -144,7 +144,7 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         }
         catch (Exception e)
         {
-            throw new ServerErrorException("Error updating feature of interest", e);
+            throw new ServerErrorException("Error updating feature of interest " + id, e);
         }
     }
     
@@ -160,17 +160,14 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     {
         checkTransactionsEnabled();
         securityHandler.checkPermission(securityHandler.sta_delete_foi);
-        
-        long publicFoiID = id.asLong();
-        checkFoiWritable(publicFoiID);
-        long locaFoiID = pm.toLocalID(publicFoiID);
+        checkFoiWritable(id);
         
         try
         {
             return pm.writeDatabase.executeTransaction(() -> {
                 
                 var count = foiWriteStore.removeEntries(new FoiFilter.Builder()
-                        .withInternalIDs(locaFoiID)
+                        .withInternalIDs(id)
                         .withAllVersions()
                         .build());
                 
@@ -196,12 +193,12 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     {
         securityHandler.checkPermission(securityHandler.sta_read_foi);
         
-        var foi = foiReadStore.getCurrentVersion(id.asLong());
+        var foi = foiReadStore.getCurrentVersion(id);
         
         if (foi == null)
             throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
         else
-            return toFrostFoi(id.asLong(), foi, q);
+            return toFrostFoi(id, foi, q);
     }
     
 
@@ -234,9 +231,9 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
         {
             if (idElt.getEntityType() == EntityType.OBSERVATION)
             {
-                ResourceIdBigInt obsId = (ResourceIdBigInt)idElt.getId();
+                ResourceId obsId = (ResourceId)idElt.getId();
                 builder.withObservations()
-                    .withInternalIDs(obsId.internalID)
+                    .withInternalIDs(obsId)
                     .done();
             }
         }
@@ -267,13 +264,13 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     }
     
     
-    protected FeatureOfInterest toFrostFoi(long internalId, IFeature f, Query q)
+    protected FeatureOfInterest toFrostFoi(BigId id, IFeature f, Query q)
     {
         // TODO implement select and expand
         //Set<Property> select = q != null ? q.getSelect() : Collections.emptySet();
         
         FeatureOfInterest foi = new FeatureOfInterest();
-        foi.setId(new ResourceIdLong(internalId));
+        foi.setId(new ResourceBigId(id));
         foi.setName(f.getName());
         foi.setDescription(f.getDescription());
         foi.setEncodingType(GEOJSON_FORMAT);
@@ -285,14 +282,16 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
 
     protected ResourceId handleFoiAssoc(FeatureOfInterest foi) throws NoSuchEntityException
     {
-        Asserts.checkArgument(foi != null, MISSING_ASSOC);
+        Asserts.checkArgument(foi != null, MISSING_ASSOC_MESSAGE);
         ResourceId foiId;
 
         if (foi.getName() == null)
         {
             foiId = (ResourceId)foi.getId();
-            Asserts.checkArgument(foiId != null, MISSING_ASSOC);
-            checkFoiIDInWriteStore(foiId.asLong());
+            Asserts.checkArgument(foiId != null, MISSING_ASSOC_MESSAGE);
+            checkFoiID(foiId);
+            if (!pm.isInWritableDatabase(foiId))
+                throw new IllegalArgumentException(WRONG_ASSOC_MESSAGE + foiId);
         }
         else
         {
@@ -307,31 +306,23 @@ public class FoiEntityHandler implements IResourceHandler<FeatureOfInterest>
     /*
      * Check that foi ID is present in database and exposed by service
      */
-    protected void checkFoiID(long publicID) throws NoSuchEntityException
+    protected void checkFoiID(ResourceId id) throws NoSuchEntityException
     {
-        boolean hasFoi = foiReadStore.getCurrentVersionKey(publicID) != null;
+        boolean hasFoi = foiReadStore.getCurrentVersionKey(id) != null;
         if (!hasFoi)
-            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + publicID);
-    }
-
-
-    /*
-     * Check that foi ID is present in writable database
-     */
-    protected void checkFoiIDInWriteStore(long publicID) throws NoSuchEntityException
-    {
-        long localID = pm.toLocalID(publicID);
-        if (foiWriteStore.getCurrentVersionKey(localID) == null)
-            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
+            throw new NoSuchEntityException(NOT_FOUND_MESSAGE + id);
     }
     
     
-    protected void checkFoiWritable(long publicID)
+    protected void checkFoiWritable(ResourceId id) throws NoSuchEntityException
     {
+        checkTransactionsEnabled();
+        checkFoiID(id);
+        
         // TODO also check that current user has the right to write this FOI!
         
-        if (!pm.isInWritableDatabase(publicID))
-            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + publicID);
+        if (!pm.isInWritableDatabase(id))
+            throw new IllegalArgumentException(NOT_WRITABLE_MESSAGE + id);
     }
     
     

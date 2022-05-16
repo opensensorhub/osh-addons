@@ -79,18 +79,10 @@ public class TestSTAService
     public void testDeepInsertThing() throws Exception
     {
         deepInsertThing(1);
-    }
-    
-    
-    @Test
-    public void testGetThingById() throws Exception
-    {
-        var thing1 = deepInsertThing(3);
-        var thing1Id = 2;
         
-        JsonObject obj = sendGetRequest("Things(" + thing1Id + ")").getAsJsonObject();
-        assertEquals(thing1Id, obj.get("@iot.id").getAsInt());
-        assertThingEquals(thing1, obj);
+        assertEquals(2, sta.writeDatabase.getThingStore().size());
+        assertEquals(1, sta.writeDatabase.getThingLocationStore().size());
+        assertEquals(2, sta.writeDatabase.getDataStreamStore().size());
     }
     
     
@@ -100,6 +92,7 @@ public class TestSTAService
         var thing1 = deepInsertThing(5);
         
         JsonObject obj = sendGetRequest("Things").getAsJsonObject();
+        assertEquals(2, obj.getAsJsonArray("value").size());
         
         assertThingEquals(
             thing1,
@@ -108,15 +101,26 @@ public class TestSTAService
     
     
     @Test
+    public void testGetThingById() throws Exception
+    {
+        var thing1 = deepInsertThing(3);
+        var thingID = thing1.get(ID_PROP).getAsString();
+        
+        JsonObject obj = sendGetRequest("Things(" + thingID + ")").getAsJsonObject();
+        assertEquals(thingID, obj.get("@iot.id").getAsString());
+        assertThingEquals(thing1, obj);
+    }
+    
+    
+    @Test
     public void testGetThingDatastreams() throws Exception
     {
         var thing1 = deepInsertThing(3);
-        var thing1Id = 2;
+        var thing1Id = thing1.get(ID_PROP).getAsString();
         
         var thing2 = deepInsertThing(5);
-        var thing2Id = 3;
+        var thing2Id = thing2.get(ID_PROP).getAsString();
         
-                
         JsonObject obj = sendGetRequest("Things(" + thing1Id + ")/Datastreams").getAsJsonObject();
         
         assertDatastreamEquals(
@@ -144,28 +148,13 @@ public class TestSTAService
     public void testGetThingLocations() throws Exception
     {
         var thing1 = deepInsertThing(3);
-        var thing1Id = 2;
-        //insertDatastream();
+        var thingId = thing1.get(ID_PROP).getAsString();
         
-        JsonObject obj = sendGetRequest("Things(" + thing1Id + ")/Locations").getAsJsonObject();
+        JsonObject obj = sendGetRequest("Things(" + thingId + ")/Locations").getAsJsonObject();
         
         assertLocationEquals(
             thing1.getAsJsonArray("Locations").get(0).getAsJsonObject(),
             obj.getAsJsonArray("value").get(0).getAsJsonObject());
-    }
-    
-    
-    @Test
-    public void testGetDatastreamById() throws Exception
-    {
-        var thing1 = deepInsertThing(1);
-        var ds1Id = toPublicId(1);
-        
-        JsonObject obj = sendGetRequest("Datastreams(" + ds1Id + ")").getAsJsonObject();
-        assertEquals(ds1Id, obj.get("@iot.id").getAsInt());
-        assertDatastreamEquals(
-            thing1.getAsJsonArray("Datastreams").get(0).getAsJsonObject(),
-            obj);
     }
     
     
@@ -185,16 +174,43 @@ public class TestSTAService
     }
     
     
+    protected String getDataStreamId(int idx) throws Exception
+    {
+        JsonObject col = sendGetRequest("Datastreams").getAsJsonObject();
+        return col.getAsJsonArray("value").get(idx).getAsJsonObject().get(ID_PROP).getAsString();
+    }
+    
+    
+    @Test
+    public void testGetDatastreamById() throws Exception
+    {
+        var thing1 = deepInsertThing(1);
+
+        for (int i = 0; i < 2; i++)
+        {
+            var dsId = getDataStreamId(i);
+            JsonObject obj = sendGetRequest("Datastreams(" + dsId + ")").getAsJsonObject();
+            assertEquals(dsId, obj.get("@iot.id").getAsString());
+            assertDatastreamEquals(
+                thing1.getAsJsonArray("Datastreams").get(i).getAsJsonObject(),
+                obj);
+        }
+    }
+    
+    
     @Test
     public void testGetDatastreamSensor() throws Exception
     {
         var thing1 = deepInsertThing(4);
-        var ds1Id = toPublicId(1);
         
-        JsonObject obj = sendGetRequest("Datastreams(" + ds1Id + ")/Sensor").getAsJsonObject();
-        assertSensorEquals(
-            thing1.getAsJsonArray("Datastreams").get(0).getAsJsonObject().get("Sensor").getAsJsonObject(),
-            obj);
+        for (int i = 0; i < 2; i++)
+        {
+            var dsId = getDataStreamId(i);
+            JsonObject obj = sendGetRequest("Datastreams(" + dsId + ")/Sensor").getAsJsonObject();
+            assertSensorEquals(
+                thing1.getAsJsonArray("Datastreams").get(i).getAsJsonObject().get("Sensor").getAsJsonObject(),
+                obj);
+        }
     }
     
     
@@ -202,12 +218,15 @@ public class TestSTAService
     public void testGetDatastreamObsProps() throws Exception
     {
         var thing1 = deepInsertThing(8);
-        var ds1Id = toPublicId(1);
         
-        JsonObject obj = sendGetRequest("Datastreams(" + ds1Id + ")/ObservedProperty").getAsJsonObject();
-        assertObsPropEquals(
-            thing1.getAsJsonArray("Datastreams").get(0).getAsJsonObject().get("ObservedProperty").getAsJsonObject(),
-            obj);
+        for (int i = 0; i < 2; i++)
+        {
+            var dsId = getDataStreamId(i);
+            JsonObject obj = sendGetRequest("Datastreams(" + dsId + ")/ObservedProperty").getAsJsonObject();
+            assertObsPropEquals(
+                thing1.getAsJsonArray("Datastreams").get(i).getAsJsonObject().get("ObservedProperty").getAsJsonObject(),
+                obj);
+        }
     }
     
     
@@ -299,15 +318,12 @@ public class TestSTAService
         HttpResponse<String> response = sendPostRequest("Things", thing);
         
         // add assigned ID if one was received
-        //response.headers().firstValue("Location").ifPresent(s -> thing.addProperty(ID_PROP, s));
+        response.headers().firstValue("Location").ifPresent(url -> {
+            var id = url.substring(url.lastIndexOf('(')+1, url.lastIndexOf(')'));
+            thing.addProperty(ID_PROP, id);
+        });
         
         return thing;
-    }
-    
-    
-    protected long toPublicId(long numId)
-    {
-        return sta.getParentHub().getDatabaseRegistry().getPublicID(sta.writeDatabase.getDatabaseNum(), numId);
     }
     
     
@@ -378,7 +394,7 @@ public class TestSTAService
                 .header("Content-Type", "application/json")
                 .build();
             
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());            
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             int statusCode = response.statusCode();
             if (statusCode != 200)
                 System.err.println(response.body());

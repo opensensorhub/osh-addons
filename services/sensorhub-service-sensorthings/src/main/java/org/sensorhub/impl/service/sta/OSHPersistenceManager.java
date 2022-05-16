@@ -16,9 +16,8 @@ package org.sensorhub.impl.service.sta;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.math.BigInteger;
 import java.util.HashMap;
-import org.sensorhub.api.database.IDatabaseRegistry;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.event.IEventBus;
 import org.sensorhub.impl.system.SystemDatabaseTransactionHandler;
@@ -63,7 +62,6 @@ public class OSHPersistenceManager implements PersistenceManager
     LocationEntityHandler locationHandler;
     HistoricalLocationEntityHandler historicalLocationHandler;
     IEventBus eventBus;
-    IDatabaseRegistry dbRegistry;
     IObsSystemDatabase readDatabase;
     ISTADatabase writeDatabase;
     SystemDatabaseTransactionHandler transactionHandler;
@@ -98,24 +96,24 @@ public class OSHPersistenceManager implements PersistenceManager
                     switch (((EntityPathElement) elt).getEntityType())
                     {
                         case THING:
-                            thingHandler.checkThingID(id.asLong());
+                            thingHandler.checkThingID(id);
                             break;
                             
                         case SENSOR:
-                            sensorHandler.checkSensorID(id.asLong());
+                            sensorHandler.checkSensorID(id);
                             break;
                             
                         case DATASTREAM:
                         case MULTIDATASTREAM:
-                            dataStreamHandler.checkDatastreamID(id.asLong());
+                            dataStreamHandler.checkDatastreamID(id);
                             break;
                             
                         case LOCATION:
-                            locationHandler.checkLocationID(id.asLong());
+                            locationHandler.checkLocationID(id);
                             break;
                             
                         case FEATUREOFINTEREST:
-                            foiHandler.checkFoiID(id.asLong());
+                            foiHandler.checkFoiID(id);
                             break;
                             
                         default:
@@ -127,7 +125,7 @@ public class OSHPersistenceManager implements PersistenceManager
         catch (NoSuchEntityException e)
         {
             return false;
-        }        
+        }
         
         return true;
     }
@@ -165,45 +163,9 @@ public class OSHPersistenceManager implements PersistenceManager
     }
     
     
-    protected long toPublicID(long internalID)
+    protected boolean isInWritableDatabase(BigId internalID)
     {
-        if (writeDatabase != null)
-            return dbRegistry.getPublicID(writeDatabase.getDatabaseNum(), internalID);
-        else
-            return internalID;
-    }
-    
-    
-    protected BigInteger toPublicID(BigInteger internalID)
-    {
-        if (writeDatabase != null)
-            return dbRegistry.getPublicID(writeDatabase.getDatabaseNum(), internalID);
-        else
-            return internalID;
-    }
-    
-    
-    protected long toLocalID(long publicID)
-    {
-        if (writeDatabase != null)
-            return dbRegistry.getLocalID(writeDatabase.getDatabaseNum(), publicID);
-        else
-            return publicID;
-    }
-    
-    
-    protected BigInteger toLocalID(BigInteger publicID)
-    {
-        if (writeDatabase != null)
-            return dbRegistry.getLocalID(writeDatabase.getDatabaseNum(), publicID);
-        else
-            return publicID;
-    }
-    
-    
-    protected boolean isInWritableDatabase(long publicID)
-    {
-        return dbRegistry.getDatabaseNum(publicID) == writeDatabase.getDatabaseNum();
+        return internalID.getScope() == writeDatabase.getDatabaseNum();
     }
 
 
@@ -263,7 +225,7 @@ public class OSHPersistenceManager implements PersistenceManager
                 return customEntity;
             }
             
-            return entity;            
+            return entity;
         }
         
         // case of association with a single entity
@@ -286,7 +248,7 @@ public class OSHPersistenceManager implements PersistenceManager
     @Override
     public boolean delete(EntityPathElement pathElement) throws NoSuchEntityException
     {
-        Asserts.checkNotNull(pathElement, EntityPathElement.class);        
+        Asserts.checkNotNull(pathElement, EntityPathElement.class);
         return getHandler(pathElement.getEntityType()).delete((ResourceId)pathElement.getId());
     }
 
@@ -302,7 +264,7 @@ public class OSHPersistenceManager implements PersistenceManager
     @SuppressWarnings({ "rawtypes" })
     public boolean update(EntityPathElement pathElement, Entity entity) throws NoSuchEntityException, IncompleteEntityException
     {
-        Asserts.checkNotNull(pathElement, EntityPathElement.class);        
+        Asserts.checkNotNull(pathElement, EntityPathElement.class);
         Asserts.checkNotNull(entity, Entity.class);
         entity.setId(pathElement.getId());
         return getHandler(pathElement.getEntityType()).update(entity);
@@ -312,8 +274,8 @@ public class OSHPersistenceManager implements PersistenceManager
     @Override
     public boolean update(EntityPathElement pathElement, JsonPatch patch) throws NoSuchEntityException, IncompleteEntityException
     {
-        Asserts.checkNotNull(pathElement, EntityPathElement.class);        
-        Asserts.checkNotNull(patch, JsonPatch.class);        
+        Asserts.checkNotNull(pathElement, EntityPathElement.class);
+        Asserts.checkNotNull(patch, JsonPatch.class);
         return getHandler(pathElement.getEntityType()).patch((ResourceId)pathElement.getId(), patch);
     }
 
@@ -329,10 +291,9 @@ public class OSHPersistenceManager implements PersistenceManager
         
         // connect to hub resources
         this.eventBus = service.getParentHub().getEventBus();
-        this.dbRegistry = service.getParentHub().getDatabaseRegistry();
         this.readDatabase = service.readDatabase;
         this.writeDatabase = service.writeDatabase;
-        this.transactionHandler = new SystemDatabaseTransactionHandler(eventBus, writeDatabase, dbRegistry);
+        this.transactionHandler = new SystemDatabaseTransactionHandler(eventBus, writeDatabase);
         
         // setup all entity handlers
         this.securityHandler = service.getSecurityHandler();
@@ -368,7 +329,7 @@ public class OSHPersistenceManager implements PersistenceManager
 
     @Override
     public void close()
-    {        
+    {
     }
     
     

@@ -16,6 +16,7 @@ package org.sensorhub.impl.service.sta;
 
 import java.time.Instant;
 import java.util.stream.Stream;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField;
 import net.opengis.gml.v32.AbstractFeature;
@@ -34,7 +35,7 @@ public interface ISTALocationStore extends IFeatureStoreBase<AbstractFeature, Fe
 
     public interface IHistoricalLocation
     {
-        long getThingID();
+        BigId getThingID();
         Instant getTime();
     }
     
