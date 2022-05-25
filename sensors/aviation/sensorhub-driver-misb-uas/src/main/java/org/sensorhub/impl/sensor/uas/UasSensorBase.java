@@ -8,7 +8,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.uas.common.SyncTime;
-import org.sensorhub.impl.sensor.uas.config.Outputs;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.impl.sensor.uas.klv.SetDecoder;
 import org.sensorhub.impl.sensor.uas.outputs.AirframeAttitude;
@@ -74,11 +73,6 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
     protected final Object syncTimeLock = new Object();
 
     /**
-     * All of the various outputs of this sensor. The list's length varies based on the {@link Outputs} configuration.
-     */
-    protected List<UasOutput<UasConfigType>> uasOutputs = new ArrayList<>();
-
-    /**
      * Feature for the UAS itself.
      */
     protected MovingFeature uasFoi;
@@ -99,6 +93,23 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
         createFois();
 
         setDecoder = new SetDecoder();
+        
+        // Every time we init we have to tear down the mpegTsProcessor, just in case they changed some setting that
+        // might cause the video output to be different.
+        if (mpegTsProcessor != null) {
+        	try {
+        		mpegTsProcessor.closeStream();
+        	} catch (Exception e) {
+        		logger.warn("Could not close MPEG TS processor", e);
+        	} finally {
+        		// Regardless of exceptions, go ahead and set it to null. If there were severe problems we can hope
+        		// that garbage collection will take care of it eventually.
+        		mpegTsProcessor = null;
+        	}
+        }
+        // We also have to clear out the video output since its settings may have changed (based on having a new input
+        // video, for example).
+        videoOutput = null;
 
         // The non-on-demand subclass will override this method to also open up the stream to get video frame size.
     }
@@ -121,7 +132,9 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
 
     /**
      * Creates the background thread that'll handle video decoding, if it hasn't already been done.
-     * Also tells the setDecoder and videoOutput about the executor.
+     * Also tells the setDecoder and videoOutput about the executor. This can be called multiple times without causing
+     * problems, and that's done on purpose so that the two subclasses could potentially call it at different times in
+     * their life cycle.
      */
     protected void setupExecutor() {
     	if (executor == null) {
@@ -158,7 +171,8 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
     }
 
     /**
-     * Create and initialize the video output.
+     * Create and initialize the video output. The caller has to be careful not to call this if the video output has
+     * already been created and added to the sensor.
      */
     protected void createVideoOutput(int[] videoDims) {
     	videoOutput = new Video<UasConfigType>(this, videoDims);
@@ -170,44 +184,46 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
     }
 
     /**
-     * Creates outputs other than the video output.
+     * Creates outputs other than the video output. This also initializes those outputs, adds them to the sensor, and
+     * adds them as listeners to the mpeg decoder.
      */
     protected void createConfiguredOutputs() {
+    	List<UasOutput<UasConfigType>> additionalOutputs = new ArrayList<>();
         if (config.outputs.enableIdentification) {
-            uasOutputs.add(new Identification<UasConfigType>(this));
+            additionalOutputs.add(new Identification<UasConfigType>(this));
         }
         
         if (config.outputs.enableAirframePosition) {
-            uasOutputs.add(new SensorLocation<UasConfigType>(this));
-            uasOutputs.add(new AirframeAttitude<UasConfigType>(this));
+            additionalOutputs.add(new SensorLocation<UasConfigType>(this));
+            additionalOutputs.add(new AirframeAttitude<UasConfigType>(this));
         }
 
         if (config.outputs.enableGimbalAttitude) {
-            uasOutputs.add(new GimbalAttitude<UasConfigType>(this));
+            additionalOutputs.add(new GimbalAttitude<UasConfigType>(this));
         }
 
         if (config.outputs.enableSensorParams) {
-            uasOutputs.add(new SensorParams<UasConfigType>(this));
+            additionalOutputs.add(new SensorParams<UasConfigType>(this));
         }
 
         if (config.outputs.enableGeoRefImageFrame) {
-            uasOutputs.add(new GeoRefImageFrame<UasConfigType>(this));
+            additionalOutputs.add(new GeoRefImageFrame<UasConfigType>(this));
         }
 
         if (config.outputs.enableSecurity) {
-            uasOutputs.add(new Security<UasConfigType>(this));
+            additionalOutputs.add(new Security<UasConfigType>(this));
         }
 
         if (config.outputs.enableTargetIndicators) {
-            uasOutputs.add(new VmtiOutput<UasConfigType>(this));
+            additionalOutputs.add(new VmtiOutput<UasConfigType>(this));
         }
 
         if (config.outputs.enableFullTelemetry) {
-            uasOutputs.add(new FullTelemetry<UasConfigType>(this));
+            additionalOutputs.add(new FullTelemetry<UasConfigType>(this));
         }
 
         // For each configured output
-        for (UasOutput<UasConfigType> output: uasOutputs) {
+        for (UasOutput<UasConfigType> output: additionalOutputs) {
             // Initialize the output
             output.init();
 
@@ -234,7 +250,9 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
 
     /**
      * Opens the connection to the upstream source but does not (yet) start reading any more than the initial
-     * metadata necessary to get the video frame size.
+     * metadata necessary to get the video frame size. This can be called multiple times, but will only have any
+     * effect the first time it's called after doInit() since it checks for a null mpegTsProcessor. This also has the
+     * side effect of creating and adding the Video output if it hasn't already happened earlier.
      */
     protected void openStream() throws SensorHubException {
     	if (mpegTsProcessor == null) {
@@ -276,6 +294,10 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
     	}
     }
 
+    /**
+     * This causes the frames of the video to start being processed. If it's from a network stream, that means that
+     * data will start flowing across the wire. If it's from a file stream, the frame are read from disk.
+     */
     protected void startStream() throws SensorHubException {
         try {
         	if (mpegTsProcessor != null) {

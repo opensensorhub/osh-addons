@@ -18,10 +18,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.event.EventUtils;
 import org.sensorhub.api.event.IEventBus;
 import org.sensorhub.impl.sensor.uas.config.UasOnDemandConfig;
-import org.sensorhub.impl.sensor.uas.outputs.UasOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,24 +59,19 @@ public class UasOnDemandSensor extends UasSensorBase<UasOnDemandConfig> {
     protected void doInit() throws SensorHubException {
         super.doInit();
 
-        // Clear the list of data stream topics
-        // NOTE: Hopefully this is a temporary workaround. See the javadoc for outputTopicIds above.
-        outputTopicIds.clear();
-
         if (config.outputs.enableVideo) {
         	int[] videoDims = new int[] { config.video.videoFrameWidth, config.video.videoFrameHeight };
         	createVideoOutput(videoDims);
-            // Add the video output's topic ID to the list we're watching for subscribers.
-            // NOTE: Hopefully this is a temporary workaround. See the javadoc for outputTopicIds above.
-            outputTopicIds.add(EventUtils.getDataStreamDataTopicID(videoOutput));
         }
 
         // Instantiate configured outputs
         createConfiguredOutputs();
 
-        for (UasOutput<UasOnDemandConfig> output: uasOutputs) {
-            // Add this output's topic ID to the list we're watching for subscribers.
-            // NOTE: Hopefully this is a temporary workaround. See the javadoc for outputTopicIds above.
+        // Clear the list of data stream topics
+        // NOTE: Hopefully this is a temporary workaround. See the javadoc for outputTopicIds above.
+        outputTopicIds.clear();
+        for (IStreamingDataInterface output : getObservationOutputs().values()) {
+            // Add the all output topic IDs to the list we're watching for subscribers.
             outputTopicIds.add(EventUtils.getDataStreamDataTopicID(output));
         }
     }
