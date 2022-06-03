@@ -56,10 +56,23 @@ import com.google.gson.stream.JsonReader;
 public class OAuthAuthenticator extends LoginAuthenticator
 {
     private static final String AUTH_METHOD_OAUTH2 = "OAUTH2";
+    private static final String OAUTH_CODE_CALLBACK_PATH = "/oauthcode";
+    private static final String LOGOUT_PATH = "/logout";
     
     private Logger log;
     private OAuthClientConfig config;
-    private Map<String, Boolean> generatedState;
+    private Map<String, OAuthState> generatedState;
+    
+    
+    static class OAuthState
+    {
+        String redirectUrl;
+        
+        OAuthState(String redirectUrl)
+        {
+            this.redirectUrl = redirectUrl;
+        }
+    }
     
 
     public OAuthAuthenticator(OAuthClientConfig config, Logger log)
@@ -71,8 +84,8 @@ public class OAuthAuthenticator extends LoginAuthenticator
         
         this.generatedState = CacheBuilder.newBuilder()
             .concurrencyLevel(4)
-            .expireAfterWrite(30, TimeUnit.SECONDS)
-            .<String, Boolean>build()
+            .expireAfterWrite(60, TimeUnit.SECONDS)
+            .<String, OAuthState>build()
             .asMap();
     }
     
@@ -105,10 +118,9 @@ public class OAuthAuthenticator extends LoginAuthenticator
         {
             HttpServletRequest request = (HttpServletRequest) req;
             HttpServletResponse response = (HttpServletResponse) resp;
-            String redirectUrl = config.redirectURL != null ? config.redirectURL : request.getRequestURL().toString();
             
             // catch logout case
-            if (request.getServletPath() != null && request.getServletPath().equals("/logout"))
+            if (request.getServletPath() != null && LOGOUT_PATH.equals(request.getServletPath()))
             {
                 try
                 {
@@ -118,41 +130,42 @@ public class OAuthAuthenticator extends LoginAuthenticator
                         session.invalidate();
                     
                     log.debug("Log out from auth provider @ " + config.logoutEndpoint);
-                    var adminUrl = request.getRequestURL().toString().replace("logout", "admin");
+                    var adminUrl = request.getRequestURL().toString().replace(request.getServletPath(), "/admin");
                     response.sendRedirect(config.logoutEndpoint + "?redirect_uri=" + adminUrl);
                     return Authentication.SEND_CONTINUE;
                 }
                 catch (ServletException e)
                 {
                     log.error("Error while logging out", e);
+                    return Authentication.SEND_FAILURE;
                 }
-                
             }
         
-            // case of auth not needed
-            if (!mandatory)
-                return Authentication.NOT_CHECKED;
-            
+            // check for cached session
             HttpSession session = request.getSession(true);
-            String accessToken = null;
-            
-            // check for cached auth
-            Authentication cachedAuth = (Authentication) session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
-            if (cachedAuth != null && cachedAuth instanceof Authentication.User)
+            var cachedSession = session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
+            if (cachedSession != null && cachedSession instanceof Authentication.User)
             {
-                if (!_loginService.validate(((Authentication.User)cachedAuth).getUserIdentity()))
+                if (!_loginService.validate(((Authentication.User)cachedSession).getUserIdentity()))
                     session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
                 else
-                    return cachedAuth;
+                    return (Authentication.User)cachedSession;
             }
             
-            var auth = request.getHeader(HttpHeaders.AUTHORIZATION);
+            
+            String accessToken = null;
+            String postLoginRedirectUrl = null;
+            String oauthCallbackUrl = request.getRequestURL().toString().replace(request.getServletPath(), OAUTH_CODE_CALLBACK_PATH);
+            String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
             
             // if calling back from provider with auth code, get access token
-            if (request.getParameter(OAuth.OAUTH_STATE) != null)
+            if (OAUTH_CODE_CALLBACK_PATH.equals(request.getServletPath()) &&
+                request.getParameter(OAuth.OAUTH_STATE) != null)
             {
                 String code = null;
+                OAuthState state = null;
                 try
                 {
                     // decode request received from auth provider
@@ -160,10 +173,17 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     
                     // check state parameter
                     // only continue if state is valid
-                    if (generatedState.remove(oar.getState()) != null)
+                    if ((state = generatedState.remove(oar.getState())) != null)
                     {
                         code = oar.getCode();
+                        postLoginRedirectUrl = state.redirectUrl;
                         log.debug("OAuth Code = " + code);
+                    }
+                    else
+                    {
+                        log.error("Invalid or expired state in oauth callback: {}", oar.getState());
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                        return Authentication.SEND_FAILURE;
                     }
                 }
                 catch (OAuthProblemException e)
@@ -181,7 +201,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
                             .setCode(code)
                             .setClientId(config.clientID)
                             .setClientSecret(config.clientSecret)
-                            .setRedirectURI(redirectUrl)
+                            .setRedirectURI(oauthCallbackUrl)
                             .buildBodyMessage();
                         authRequest.addHeader("Accept", "application/json");
     
@@ -203,12 +223,13 @@ public class OAuthAuthenticator extends LoginAuthenticator
                 }
             }
             
-            // else check if credentials are provided in authorization header
-            if (accessToken == null && auth != null)
+            // if no OAuth token received check if credentials are provided in authorization header
+            // and use back channel direct auth flow
+            if (accessToken == null && authHeader != null && !request.getServletPath().equals("/admin"))
             {
                 try
                 {
-                    var credentials = parseBasicAuth(auth);
+                    var credentials = parseBasicAuth(authHeader);
                     if (credentials == null)
                     {
                         response.sendError(HttpServletResponse.SC_FORBIDDEN);
@@ -231,6 +252,9 @@ public class OAuthAuthenticator extends LoginAuthenticator
                 }
                 catch (OAuthProblemException e)
                 {
+                    if (!mandatory)
+                        return Authentication.UNAUTHENTICATED;
+                    
                     log.error("Error received from token endpoint: {} - {}", e.getError(), e.getDescription());
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     return Authentication.SEND_FAILURE;
@@ -249,7 +273,13 @@ public class OAuthAuthenticator extends LoginAuthenticator
                 try
                 {
                     log.debug("OAuth Token = " + accessToken);
-
+                    String[] chunks = accessToken.split("\\.");
+                    Base64.Decoder decoder = Base64.getUrlDecoder();
+                    String header = new String(decoder.decode(chunks[0]));
+                    String payload = new String(decoder.decode(chunks[1]));
+                    log.debug("OAuth Token Header = " + header);
+                    log.debug("OAuth Token Payload = " + payload);
+                    
                     // request user info
                     OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint)
                         .setAccessToken(accessToken)
@@ -268,13 +298,17 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     {
                         UserAuthentication userAuth = new UserAuthentication(getAuthMethod(), user);
                         session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, userAuth);
-                        return userAuth;
+                        if (postLoginRedirectUrl != null)
+                            response.sendRedirect(response.encodeRedirectURL(postLoginRedirectUrl));
+                        //return userAuth;
+                        return Authentication.SEND_CONTINUE;
                     }
                     else
+                    {
                         log.error("Unknown user: {}", userId);
-                    
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
-                    return Authentication.SEND_FAILURE;
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                        return Authentication.SEND_FAILURE;
+                    }
                 }
                 catch (OAuthProblemException e)
                 {
@@ -289,35 +323,38 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     return Authentication.SEND_FAILURE;
                 }
             }
-
-            // first login at auth provider
-            else
+            else if (!mandatory)
             {
-                try
-                {
-                    // generate request to auth provider
-                    var state = UUID.randomUUID().toString();
-                    generatedState.put(state, Boolean.TRUE);
-                    OAuthClientRequest authRequest = OAuthClientRequest.authorizationLocation(config.authzEndpoint)
-                        .setClientId(config.clientID)
-                        .setRedirectURI(redirectUrl)
-                        .setResponseType(OAuth.OAUTH_CODE)
-                        .setScope(config.authzScope)
-                        .setState(state)
-                        .buildQueryMessage();
+                // case of auth not needed
+                return Authentication.NOT_CHECKED;
+            }
 
-                    // send as redirect
-                    String loginUrl = authRequest.getLocationUri();
-                    log.debug("Redirecting to auth provider login @ " + loginUrl);
-                    response.sendRedirect(response.encodeRedirectURL(loginUrl));
-                    return Authentication.SEND_CONTINUE;
-                }
-                catch (OAuthSystemException e)
-                {
-                    log.error("Cannot redirect to authentication endpoint " + config.authzEndpoint, e);
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
-                    return Authentication.SEND_FAILURE;
-                }
+            // else redirect to auth provider endpoint for first login 
+            try
+            {
+                // generate request to auth provider
+                var state = UUID.randomUUID().toString();
+                postLoginRedirectUrl = config.redirectURL != null ? config.redirectURL : request.getRequestURL().toString();
+                generatedState.put(state, new OAuthState(postLoginRedirectUrl));
+                OAuthClientRequest authRequest = OAuthClientRequest.authorizationLocation(config.authzEndpoint)
+                    .setClientId(config.clientID)
+                    .setRedirectURI(oauthCallbackUrl)
+                    .setResponseType(OAuth.OAUTH_CODE)
+                    .setScope(config.authzScope)
+                    .setState(state)
+                    .buildQueryMessage();
+
+                // send as redirect
+                String loginUrl = authRequest.getLocationUri();
+                log.debug("Redirecting to auth provider login @ " + loginUrl);
+                response.sendRedirect(response.encodeRedirectURL(loginUrl));
+                return Authentication.SEND_CONTINUE;
+            }
+            catch (OAuthSystemException e)
+            {
+                log.error("Cannot redirect to authentication endpoint " + config.authzEndpoint, e);
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
+                return Authentication.SEND_FAILURE;
             }
         }
         catch (IOException e)
