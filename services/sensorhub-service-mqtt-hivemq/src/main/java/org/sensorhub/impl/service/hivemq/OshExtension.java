@@ -14,25 +14,32 @@ Copyright (C) 2012-2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.hivemq;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.comm.mqtt.MqttException;
+import org.sensorhub.api.module.ModuleEvent.ModuleState;
+import org.sensorhub.api.service.IHttpServer;
 import org.sensorhub.utils.MapWithWildcards;
 import org.slf4j.Logger;
+import com.google.common.base.Strings;
 import com.hivemq.embedded.EmbeddedExtension;
 import com.hivemq.extension.sdk.api.ExtensionMain;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.extension.sdk.api.client.ClientContext;
 import com.hivemq.extension.sdk.api.client.parameter.InitializerInput;
+import com.hivemq.extension.sdk.api.client.parameter.ListenerType;
 import com.hivemq.extension.sdk.api.events.client.ClientLifecycleEventListener;
 import com.hivemq.extension.sdk.api.events.client.ClientLifecycleEventListenerProvider;
 import com.hivemq.extension.sdk.api.events.client.parameters.AuthenticationSuccessfulInput;
@@ -58,6 +65,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     MqttServer service;
     MapWithWildcards<IMqttHandler> handlers = new MapWithWildcards<>();
     Map<String, Set<String>> clientTopics = new ConcurrentHashMap<>();
+    volatile WebSocketProxyServlet webSocketProxy;
     Logger log;
     
     
@@ -143,6 +151,46 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                 };
             }
         });
+        
+        // deploy websocket proxy if configured
+        var config = service.getConfiguration();
+        if (config.enableWebSocketProxy && !Strings.isNullOrEmpty(config.webSocketProxyEndpoint))
+        {
+            for (var l: extensionStartInput.getServerInformation().getListener())
+            {
+                if (l.getListenerType() == ListenerType.TCP_LISTENER)
+                {
+                    deployWebSocketProxy(config.webSocketProxyEndpoint, l.getPort());
+                    break;
+                }
+            }
+        }
+    }
+    
+    
+    void deployWebSocketProxy(String endPoint, int mqttPort)
+    {
+        service.getParentHub().getModuleRegistry().waitForModuleType(IHttpServer.class, ModuleState.STARTED)
+            .thenAccept(http -> {
+                if (http != null)
+                {
+                    try
+                    {
+                        var mqttAddress = new InetSocketAddress(InetAddress.getLocalHost(), mqttPort);
+                        webSocketProxy = new WebSocketProxyServlet(mqttAddress, log);
+                        http.deployServlet(webSocketProxy, endPoint);
+                    }
+                    catch (Exception e)
+                    {
+                        service.reportError("Error creating websocket proxy", e);
+                    }
+                }
+            })
+            .orTimeout(10, TimeUnit.SECONDS)
+            .exceptionally(e -> {
+                service.reportError("No HTTP server available to deploy websocket proxy", e);
+                return null;
+            });
     }
     
     
@@ -199,6 +247,19 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     @Override
     public void extensionStop(ExtensionStopInput extensionStopInput, ExtensionStopOutput extensionStopOutput)
     {
+        // stop websocket proxy if enabled
+        if (webSocketProxy != null)
+        {
+            service.getParentHub().getModuleRegistry().waitForModuleType(IHttpServer.class, ModuleState.STARTED)
+                .thenAccept(http -> {
+                    if (http != null)
+                    {
+                        log.debug("Websocket proxy servlet undeployed");
+                        http.undeployServlet(webSocketProxy);
+                        webSocketProxy = null;
+                    }
+                });
+        }
     }
 
 

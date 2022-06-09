@@ -21,7 +21,6 @@ import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.api.service.IServiceModule;
 import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.service.sweapi.SWEApiService;
-import org.sensorhub.impl.service.sweapi.SWEApiServlet;
 
 
 /**
@@ -34,7 +33,6 @@ import org.sensorhub.impl.service.sweapi.SWEApiServlet;
  */
 public class SWEApiMqttService extends AbstractModule<SWEApiMqttServiceConfig> implements IServiceModule<SWEApiMqttServiceConfig>
 {
-    protected SWEApiServlet servlet;
     protected SWEApiMqttConnector mqttConnector;
     protected String endPoint;
 
@@ -48,7 +46,7 @@ public class SWEApiMqttService extends AbstractModule<SWEApiMqttServiceConfig> i
         // try to attach to SWE API service
         getParentHub().getModuleRegistry().waitForModuleType(SWEApiService.class, ModuleState.STARTED)
             .thenAccept(service -> {
-                servlet = service.getServlet();
+                var servlet = service.getServlet();
                 endPoint = service.getConfiguration().endPoint;
                 
                 // wait for MQTT server to be available
@@ -73,6 +71,8 @@ public class SWEApiMqttService extends AbstractModule<SWEApiMqttServiceConfig> i
                 reportError("Cannot attach to SWE API service", e);
                 return null;
             });
+        
+        
     }
     
     
@@ -81,8 +81,7 @@ public class SWEApiMqttService extends AbstractModule<SWEApiMqttServiceConfig> i
     {
         super.doStop();
         
-        // also stop MQTT extension if it was enabled
-        servlet = null;
+        // stop MQTT extension
         if (mqttConnector != null)
         {
             getParentHub().getModuleRegistry().waitForModuleType(IMqttServer.class, ModuleState.STARTED)
