@@ -20,9 +20,9 @@ import java.util.Set;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.common.BigId;
+import org.sensorhub.api.common.IdEncoders;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
-import org.sensorhub.impl.service.sweapi.IdEncoder;
 import org.sensorhub.impl.service.sweapi.resource.RequestContext;
 import org.sensorhub.impl.service.sweapi.resource.ResourceBinding;
 import org.sensorhub.impl.service.sweapi.resource.ResourceLink;
@@ -40,9 +40,9 @@ public class MJPEGSerializer extends ResourceBinding<BigId, IObsData>
     int imgComponentIdx;
 
 
-    public MJPEGSerializer(RequestContext ctx, IdEncoder idEncoder, IDataStreamInfo dsInfo)
+    public MJPEGSerializer(RequestContext ctx, IdEncoders idEncoders, IDataStreamInfo dsInfo)
     {
-        super(ctx, idEncoder);
+        super(ctx, idEncoders);
         
         // disable browser cache to make sure image is refreshed
         ctx.setResponseHeader("Cache-Control", "no-cache");

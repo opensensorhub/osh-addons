@@ -16,10 +16,10 @@ package org.sensorhub.impl.service.sweapi.video;
 
 import java.util.List;
 import org.sensorhub.api.common.BigId;
+import org.sensorhub.api.common.IdEncoders;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
-import org.sensorhub.impl.service.sweapi.IdEncoder;
 import org.sensorhub.impl.service.sweapi.obs.CustomObsFormat;
 import org.sensorhub.impl.service.sweapi.resource.RequestContext;
 import org.sensorhub.impl.service.sweapi.resource.ResourceBinding;
@@ -63,16 +63,16 @@ public class MJPEGCustomFormat implements CustomObsFormat
     }
 
     @Override
-    public ResourceBinding<DataStreamKey, IDataStreamInfo> getSchemaBinding(RequestContext ctx, IdEncoder idEncoder, IDataStreamInfo dsInfo)
+    public ResourceBinding<DataStreamKey, IDataStreamInfo> getSchemaBinding(RequestContext ctx, IdEncoders idEncoders, IDataStreamInfo dsInfo)
     {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public ResourceBinding<BigId, IObsData> getObsBinding(RequestContext ctx, IdEncoder idEncoder, IDataStreamInfo dsInfo)
+    public ResourceBinding<BigId, IObsData> getObsBinding(RequestContext ctx, IdEncoders idEncoders, IDataStreamInfo dsInfo)
     {
-        return new MJPEGSerializer(ctx, idEncoder, dsInfo);
+        return new MJPEGSerializer(ctx, idEncoders, dsInfo);
     }
 
 }
