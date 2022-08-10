@@ -486,16 +486,18 @@ public class MVTimeSeriesImpl
         double[] timeRange = filter.getTimeStampRange();
         if (timeRange != null)
         {
-            // special case when requesting latest record
-            if (timeRange[0] == Double.POSITIVE_INFINITY && timeRange[1] == Double.POSITIVE_INFINITY)
+            // special case when requesting latest record or latest before date
+            // for latest record, time must be set to +INF
+            if (timeRange[0] == timeRange[1])
             {
-                ProducerTimeKey afterAll = new ProducerTimeKey(producerID, Double.POSITIVE_INFINITY);
-                ProducerTimeKey lastProducerKey = recordIndex.floorKey(afterAll);
-                if (lastProducerKey != null)
-                    return new double[] {lastProducerKey.timeStamp, lastProducerKey.timeStamp};
+                ProducerTimeKey requestedTime = new ProducerTimeKey(producerID, timeRange[0]);
+                ProducerTimeKey floorKey = recordIndex.floorKey(requestedTime);
+                if (floorKey != null && floorKey.producerID.equals(producerID))
+                    return new double[] {floorKey.timeStamp, floorKey.timeStamp};
                 else
                     return timeRange;
             }
+            
             else
                 return timeRange;
         }
