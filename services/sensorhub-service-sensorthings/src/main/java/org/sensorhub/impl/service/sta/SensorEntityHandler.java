@@ -222,7 +222,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         
         try
         {
-            return sysHandler.delete();
+            return sysHandler.delete(true);
         }
         catch (DataStoreException e)
         {
