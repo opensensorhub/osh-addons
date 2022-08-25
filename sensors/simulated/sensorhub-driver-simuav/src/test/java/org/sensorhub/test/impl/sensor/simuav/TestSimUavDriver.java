@@ -122,11 +122,7 @@ public class TestSimUavDriver
         cmdRecord.setSelectedItem("AUTO_TAKEOFF");
         cmd = cmdRecord.createDataBlock();
         cmd.setDoubleValue(1, 5);
-        vehicleControl.submitCommand(new CommandData.Builder()
-            .withId(1)
-            .withCommandStream(1)
-            .withParams(cmd)
-            .build());
+        vehicleControl.submitCommand(new CommandData(1, cmd));
         
         // goto waypoint
         cmdRecord.setSelectedItem("WAYPOINT");
@@ -135,11 +131,7 @@ public class TestSimUavDriver
         cmd.setDoubleValue(2, 0.0);
         cmd.setDoubleValue(3, 30.0);
         cmd.setDoubleValue(4, 2.5);
-        vehicleControl.submitCommand(new CommandData.Builder()
-            .withId(3)
-            .withCommandStream(1)
-            .withParams(cmd)
-            .build());
+        vehicleControl.submitCommand(new CommandData(3, cmd));
         
         Thread.sleep(100000);
     }

@@ -22,8 +22,8 @@ import org.sensorhub.api.command.CommandStatusEvent;
 import org.sensorhub.api.command.ICommandData;
 import org.sensorhub.api.command.ICommandStatus;
 import org.sensorhub.api.command.ICommandStatus.CommandStatusCode;
+import org.sensorhub.impl.model.uxs.UxsHelper;
 import org.sensorhub.impl.sensor.simuav.VehicleControl;
-import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 import org.vast.util.TimeExtent;
 import net.opengis.swe.v20.DataComponent;
@@ -56,7 +56,7 @@ public class WaypointTask extends UavTask
             .addField("position", swe.createLocationVectorLLA()
                 .label("Waypoint location"))
             .addField("velocity", swe.createQuantity()
-                .definition(SWEHelper.getQudtUri("Speed"))
+                .definition(UxsHelper.DEF_SPEED_OVER_GROUND)
                 .label("Travel Velocity")
                 .uomCode("m/s"))
             .build();
@@ -120,6 +120,18 @@ public class WaypointTask extends UavTask
             
             simState.lat = Math.toDegrees(newLatLon.y);
             simState.lon = Math.toDegrees(newLatLon.x);
+            
+            // also compute instantaneous heading as bearing to a second point
+            // close to the the current one
+            geo.computeIntermediatePoint(
+                startLat, startLon, destLat, destLon,
+                dist, fHorz+0.01, newLatLon);
+            var lat2 = Math.toDegrees(newLatLon.y);
+            var lon2 = Math.toDegrees(newLatLon.x);
+            
+            var bearing = geo.computeBearing(simState.lat, simState.lon, lat2, lon2);
+            simState.heading = Math.toDegrees(bearing);
+            simState.vx = speed;
         }
         
         // update altitude
@@ -128,7 +140,14 @@ public class WaypointTask extends UavTask
         if (dAlt != 0.0)
         {
             simState.alt = startAlt + dAlt * fVert;
+            simState.vz = speed;
         }
+        
+        // reset velocity
+        if (fHorz >= 1.0)
+            simState.vx = 0.0;
+        if (fVert >= 1.0)
+            simState.vz = 0.0;
         
         // update simulation state
         sim.updateSimulatorState(simState);

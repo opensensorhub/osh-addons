@@ -15,35 +15,33 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.simuav;
 
-import org.sensorhub.impl.sensor.simuav.PositionOutput;
+import org.sensorhub.impl.model.uxs.UxsHelper;
+import org.sensorhub.impl.sensor.simuav.StateOutput;
 import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.data.DataEvent;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import org.vast.swe.SWEConstants;
-import org.vast.swe.helper.GeoPosHelper;
 
 
-public class PositionOutput extends UavOutput<SimUavDriver>
+public class StateOutput extends UavOutput<SimUavDriver>
 {
     DataComponent dataStruct;
     DataEncoding dataEncoding;
 
     
-    public PositionOutput(SimUavDriver parentSensor)
+    public StateOutput(SimUavDriver parentSensor)
     {
-        super("platform_pos", parentSensor);
+        super("platform_state", parentSensor);
         
         // create output data structure
-        GeoPosHelper fac = new GeoPosHelper();
+        var fac = new UxsHelper();
         dataStruct = fac.createRecord()
             .name(getName())
-            .label("Platform Location")
+            .label("Platform State")
             .addField("time", fac.createTime()
                 .asSamplingTimeIsoUTC())
-            .addField("pos", fac.createLocationVectorLLA()
-                .definition(SWEConstants.DEF_PLATFORM_LOC))
+            .addAllFields(fac.createUavMechanicalState())
             .build();
      
         // also generate encoding definition
@@ -67,11 +65,17 @@ public class PositionOutput extends UavOutput<SimUavDriver>
             dataBlock.setDoubleValue(i++, currentState.lat);
             dataBlock.setDoubleValue(i++, currentState.lon);
             dataBlock.setDoubleValue(i++, currentState.alt);
+            dataBlock.setDoubleValue(i++, currentState.heading);
+            dataBlock.setDoubleValue(i++, currentState.pitch);
+            dataBlock.setDoubleValue(i++, currentState.roll);
+            dataBlock.setDoubleValue(i++, currentState.vx);
+            dataBlock.setDoubleValue(i++, currentState.vy);
+            dataBlock.setDoubleValue(i++, currentState.vz);
             
             // update latest record and send event
             latestRecord = dataBlock;
             latestRecordTime = now;
-            eventHandler.publish(new DataEvent(latestRecordTime, PositionOutput.this, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, StateOutput.this, dataBlock));
             
         }, 0, 1000, TimeUnit.MILLISECONDS);
     }

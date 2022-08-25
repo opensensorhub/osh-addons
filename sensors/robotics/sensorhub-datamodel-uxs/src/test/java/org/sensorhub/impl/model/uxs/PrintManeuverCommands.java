@@ -12,24 +12,24 @@ Copyright (C) 2022 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.simuav;
+package org.sensorhub.impl.model.uxs;
 
-
-public class SimulatorState implements Cloneable
+public class PrintManeuverCommands
 {
-    public boolean armed;
-    public boolean landed;
-    public double lat, lon, alt;
-    public double heading, pitch, roll;
-    public double vx, vy, vz;
-    public double gimbalYaw, gimbalPitch, gimbalRoll;
-    public double batt;
-    public double temp;
-    
-    
-    public SimulatorState clone()
+
+    public static void main(String[] args) throws Exception
     {
-        try { return (SimulatorState)super.clone(); }
-        catch (CloneNotSupportedException e) { return null; }
+        var uxs = new UxsHelper();
+        
+        var uavState = uxs.createUavMechanicalState().build();
+        PrintUtils.print(uavState, false, true);
+        
+        var usvState = uxs.createUsvMechanicalState().build();
+        PrintUtils.print(usvState, false, true);
+        
+        var uuvState = uxs.createUuvMechanicalState().build();
+        PrintUtils.print(uuvState, false, true);
+
     }
+
 }

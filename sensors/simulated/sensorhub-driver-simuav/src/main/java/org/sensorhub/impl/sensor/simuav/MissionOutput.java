@@ -15,36 +15,28 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.simuav;
 
-import org.sensorhub.impl.sensor.simuav.PositionOutput;
+import org.sensorhub.impl.model.uxs.UxsHelper;
+import org.sensorhub.impl.sensor.simuav.MissionOutput;
 import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.data.DataEvent;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import org.vast.swe.SWEConstants;
-import org.vast.swe.helper.GeoPosHelper;
 
 
-public class PositionOutput extends UavOutput<SimUavDriver>
+public class MissionOutput extends UavOutput<SimUavDriver>
 {
     DataComponent dataStruct;
     DataEncoding dataEncoding;
 
     
-    public PositionOutput(SimUavDriver parentSensor)
+    public MissionOutput(SimUavDriver parentSensor)
     {
-        super("platform_pos", parentSensor);
+        super("waypoints", parentSensor);
         
         // create output data structure
-        GeoPosHelper fac = new GeoPosHelper();
-        dataStruct = fac.createRecord()
-            .name(getName())
-            .label("Platform Location")
-            .addField("time", fac.createTime()
-                .asSamplingTimeIsoUTC())
-            .addField("pos", fac.createLocationVectorLLA()
-                .definition(SWEConstants.DEF_PLATFORM_LOC))
-            .build();
+        var fac = new UxsHelper();
+        dataStruct = fac.createUavMission().build();
      
         // also generate encoding definition
         dataEncoding = fac.newTextEncoding(",", "\n");
@@ -61,17 +53,16 @@ public class PositionOutput extends UavOutput<SimUavDriver>
             var currentState = parentSensor.currentState;
             
             // build and publish datablock
-            int i = 0;
             DataBlock dataBlock = dataStruct.createDataBlock();
-            dataBlock.setDoubleValue(i++, now/1000.);
-            dataBlock.setDoubleValue(i++, currentState.lat);
-            dataBlock.setDoubleValue(i++, currentState.lon);
-            dataBlock.setDoubleValue(i++, currentState.alt);
+            dataBlock.setDoubleValue(0, now/1000.);
+            dataBlock.setDoubleValue(1, currentState.lat);
+            dataBlock.setDoubleValue(2, currentState.lon);
+            dataBlock.setDoubleValue(3, currentState.alt);
             
             // update latest record and send event
             latestRecord = dataBlock;
             latestRecordTime = now;
-            eventHandler.publish(new DataEvent(latestRecordTime, PositionOutput.this, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, MissionOutput.this, dataBlock));
             
         }, 0, 1000, TimeUnit.MILLISECONDS);
     }

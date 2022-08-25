@@ -41,6 +41,7 @@ public class SimUavDriver extends AbstractSensorModule<SimUavConfig>
 {
     PositionOutput posOutput;
     AttitudeOutput attOutput;
+    StateOutput stateOutput;
     GimbalOutput gimbalOutput;
     StatusOutput statusOutput;
     
@@ -59,9 +60,11 @@ public class SimUavDriver extends AbstractSensorModule<SimUavConfig>
         generateUniqueID("urn:osh:system:simuav:", config.serialNumber);
         generateXmlID("SIMULATED_UAV_", config.serialNumber);
         
-        // init otuputs
+        // init outputs
         posOutput = new PositionOutput(this);
         addOutput(posOutput, false);
+        stateOutput = new StateOutput(this);
+        addOutput(stateOutput, false);
         
         // init control inputs
         addControlInput(new VehicleControl(this));
