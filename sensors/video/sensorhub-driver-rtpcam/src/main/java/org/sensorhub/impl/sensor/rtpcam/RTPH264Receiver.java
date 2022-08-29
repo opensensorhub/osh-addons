@@ -14,6 +14,10 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.rtpcam;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.vast.swe.Base64Decoder;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,9 +26,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.PriorityQueue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.vast.swe.Base64Decoder;
 
 
 /**
@@ -106,7 +107,12 @@ public class RTPH264Receiver extends Thread
         byte[] res = new byte[s.length()*3/4];
         InputStream is = new ByteArrayInputStream(s.getBytes());
         Base64Decoder decoder = new Base64Decoder(is);
-        decoder.read(res);
+        int bytesRead = decoder.read(res);
+        
+        if(bytesRead != res.length){
+            throw new IOException("Stream length doesn't match value read from string input");
+        }
+        
         decoder.close();
         return res;
     }
@@ -319,7 +325,7 @@ public class RTPH264Receiver extends Thread
     
     
     @Override
-    public void start()
+    public synchronized void start()
     {
         started = true;
         super.start();

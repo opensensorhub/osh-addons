@@ -14,13 +14,12 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.rtpcam;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.CharArrayReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import org.eclipse.jetty.util.TypeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.vast.swe.Base64Encoder;
+
+import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -28,10 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collection;
-import org.eclipse.jetty.util.TypeUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.vast.swe.Base64Encoder;
+import java.util.Objects;
 
 
 public class RTSPClient 
@@ -182,7 +178,7 @@ public class RTSPClient
         // write the request line:
         rtspRequestWriter.write(requestType + " ");
         String requestUrl = videoUrl;
-        if (requestType == REQ_SETUP)
+        if (Objects.equals(requestType, REQ_SETUP))
         {
             String controlArg = mediaStreams.get(streamIndex).controlArg;
             if (controlArg.startsWith("rtsp://"))
@@ -199,15 +195,15 @@ public class RTSPClient
         addAuth(requestType, requestUrl);
         
         // depending on request type
-        if (requestType == REQ_SETUP) {
+        if (Objects.equals(requestType, REQ_SETUP)) {
             int rtcpPort = rtpRcvPort+1;
             rtspRequestWriter.write("Transport: RTP/AVP;unicast;client_port=" + rtpRcvPort + "-" + rtcpPort + CRLF);
         }
-        else if (requestType == REQ_DESCRIBE) {
+        else if (Objects.equals(requestType, REQ_DESCRIBE)) {
             rtspRequestWriter.write("Accept: application/sdp" + CRLF);
         }
         else { 
-            if (rtspSessionID != "0") {
+            if (!Objects.equals(rtspSessionID, "0")) {
                 rtspRequestWriter.write("Session: " + rtspSessionID + CRLF);
                 log.trace("rtpsSessionId " + rtspSessionID);
             }
@@ -246,7 +242,7 @@ public class RTSPClient
     {
         try
         {
-            MessageDigest md = MessageDigest.getInstance("MD5");
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] ha1;
             
             // calc A1 digest
@@ -321,9 +317,9 @@ public class RTSPClient
             }
             
             // parse response according to request type
-            if (requestType == REQ_DESCRIBE)
+            if (Objects.equals(requestType, REQ_DESCRIBE))
                 parseDescribeResp();        
-            else if (requestType == REQ_SETUP)
+            else if (Objects.equals(requestType, REQ_SETUP))
                 parseSetupResp();
             else
                 printResponse();

@@ -14,6 +14,20 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.rtpcam;
 
+import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
+import net.opengis.swe.v20.DataEncoding;
+import net.opengis.swe.v20.DataStream;
+import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.api.sensor.ISensorModule;
+import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.sensor.rtpcam.RTSPClient.StreamInfo;
+import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
+import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
+import org.vast.data.AbstractDataBlock;
+import org.vast.data.DataBlockMixed;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -22,19 +36,6 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import net.opengis.swe.v20.DataBlock;
-import net.opengis.swe.v20.DataComponent;
-import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.DataStream;
-import org.sensorhub.api.sensor.ISensorModule;
-import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.rtpcam.RTSPClient.StreamInfo;
-import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
-import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
-import org.vast.data.AbstractDataBlock;
-import org.vast.data.DataBlockMixed;
 
 
 /**
@@ -248,6 +249,7 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
             catch (Exception e)
             {
                 log.error("Error when shutting down frame listener thread", e);
+                Thread.currentThread().interrupt();
             }            
         }
     }
