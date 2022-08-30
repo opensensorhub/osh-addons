@@ -1,15 +1,16 @@
 /***************************** BEGIN LICENSE BLOCK ***************************
 
- The contents of this file are subject to the Mozilla Public License, v. 2.0.
- If a copy of the MPL was not distributed with this file, You can obtain one
- at http://mozilla.org/MPL/2.0/.
+The contents of this file are subject to the Mozilla Public License, v. 2.0.
+If a copy of the MPL was not distributed with this file, You can obtain one
+at http://mozilla.org/MPL/2.0/.
 
- Software distributed under the License is distributed on an "AS IS" basis,
- WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- for the specific language governing rights and limitations under the License.
+Software distributed under the License is distributed on an "AS IS" basis,
+WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+for the specific language governing rights and limitations under the License.
 
- Copyright (C) 2012-2020 Sensia Software LLC. All Rights Reserved.
- ******************************* END LICENSE BLOCK ***************************/
+Copyright (C) 2012-2020 Sensia Software LLC. All Rights Reserved.
+
+******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.service.sos.video;
 
@@ -21,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.xml.namespace.QName;
-
 import org.bytedeco.ffmpeg.avcodec.AVCodec;
 import org.bytedeco.ffmpeg.avcodec.AVCodecContext;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
@@ -53,7 +53,6 @@ import net.opengis.swe.v20.BinaryMember;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-
 import static org.bytedeco.ffmpeg.global.avcodec.*;
 import static org.bytedeco.ffmpeg.global.avutil.*;
 import static org.bytedeco.ffmpeg.global.swscale.*;
@@ -73,7 +72,8 @@ import static org.bytedeco.ffmpeg.global.swscale.*;
  * @author Alex Robin
  * @since Jun 14, 2020
  */
-public class VideoTranscoder implements ISOSCustomSerializer {
+public class VideoTranscoder implements ISOSCustomSerializer
+{
     private static final Logger log = LoggerFactory.getLogger(VideoTranscoder.class);
 
     private static final Set<String> IMG_ARRAY_COMPONENT_NAMES = Sets.newHashSet("img", "videoFrame");
@@ -87,11 +87,13 @@ public class VideoTranscoder implements ISOSCustomSerializer {
         CODEC_TABLE.put("VP9", new CodecConfig("vp9", "libvpx-vp9"));
     }
 
-    static class CodecConfig {
+    static class CodecConfig
+    {
         String decoderName;
         String encoderName;
 
-        CodecConfig(String decName, String encName) {
+        CodecConfig(String decName, String encName)
+        {
             this.decoderName = decName;
             this.encoderName = encName;
         }
@@ -99,20 +101,21 @@ public class VideoTranscoder implements ISOSCustomSerializer {
 
 
     @Override
-    public void write(ISOSDataProvider dataProvider, OWSRequest request) throws IOException {
+    public void write(ISOSDataProvider dataProvider, OWSRequest request) throws IOException
+    {
         request.getHttpResponse().setContentType(OWSUtils.BINARY_MIME_TYPE);
         OutputStream os = new BufferedOutputStream(request.getResponseStream());
-        GetResultRequest gReq = (GetResultRequest) request;
+        GetResultRequest gReq = (GetResultRequest)request;
 
-        String fpsString = (String) gReq.getExtensions().get(new QName("video_fps"));
+        String fpsString = (String)gReq.getExtensions().get(new QName("video_fps"));
         int fps = fpsString != null ? Integer.valueOf(fpsString) : 30;
-        String bitrateString = (String) gReq.getExtensions().get(new QName("video_bitrate"));
-        int bitrate = bitrateString != null ? Integer.valueOf(bitrateString) * 1000 : 150 * 1000;
-        String frameWidthString = (String) gReq.getExtensions().get(new QName("video_width"));
+        String bitrateString = (String)gReq.getExtensions().get(new QName("video_bitrate"));
+        int bitrate = bitrateString != null ? Integer.valueOf(bitrateString)*1000 : 150*1000;
+        String frameWidthString = (String)gReq.getExtensions().get(new QName("video_width"));
         int frameWidth = frameWidthString != null ? Integer.valueOf(frameWidthString) : 320;
-        String frameHeightString = (String) gReq.getExtensions().get(new QName("video_height"));
+        String frameHeightString = (String)gReq.getExtensions().get(new QName("video_height"));
         int frameHeight = frameHeightString != null ? Integer.valueOf(frameHeightString) : 180;
-        String frameSizeScalingString = (String) gReq.getExtensions().get(new QName("video_scale"));
+        String frameSizeScalingString = (String)gReq.getExtensions().get(new QName("video_scale"));
         double frameSizeScale = frameSizeScalingString != null ? Double.valueOf(frameSizeScalingString) : 1.0;
 
         if (fps <= 0)
@@ -136,12 +139,16 @@ public class VideoTranscoder implements ISOSCustomSerializer {
         int imgCompIdx = -1;
 
         try (@SuppressWarnings("unchecked")
-             PointerScope scope = new PointerScope()) {
-            try {
+        PointerScope scope = new PointerScope())
+        {
+            try
+            {
                 // get index of image component
                 DataComponent dataStruct = dataProvider.getResultStructure();
-                for (int i = dataStruct.getComponentCount() - 1; i >= 0; i--) {
-                    if (IMG_ARRAY_COMPONENT_NAMES.contains(dataStruct.getComponent(i).getName())) {
+                for (int i = dataStruct.getComponentCount()-1; i >= 0; i--)
+                {
+                    if (IMG_ARRAY_COMPONENT_NAMES.contains(dataStruct.getComponent(i).getName()))
+                    {
                         imgCompIdx = i;
                         break;
                     }
@@ -153,9 +160,12 @@ public class VideoTranscoder implements ISOSCustomSerializer {
 
                 // get native codec
                 DataEncoding enc = dataProvider.getDefaultResultEncoding();
-                if (enc instanceof BinaryEncoding) {
-                    for (BinaryMember m : ((BinaryEncoding) enc).getMemberList()) {
-                        if (m instanceof BinaryBlock) {
+                if (enc instanceof BinaryEncoding)
+                {
+                    for (BinaryMember m: ((BinaryEncoding)enc).getMemberList())
+                    {
+                        if (m instanceof BinaryBlock)
+                        {
                             String codecID = ((BinaryBlock) m).getCompression();
                             codecConfig = CODEC_TABLE.get(codecID);
                             break;
@@ -178,7 +188,7 @@ public class VideoTranscoder implements ISOSCustomSerializer {
                 // init decoder context
                 decoder = avcodec_find_decoder_by_name(codecConfig.decoderName);
                 decode_ctx = avcodec_alloc_context3(decoder);
-                if (avcodec_open2(decode_ctx, decoder, (PointerPointer<?>) null) < 0) {
+                if (avcodec_open2(decode_ctx, decoder, (PointerPointer<?>)null) < 0) {
                     throw new IllegalStateException("Error initializing decoder " + codecConfig.decoderName);
                 }
 
@@ -197,16 +207,19 @@ public class VideoTranscoder implements ISOSCustomSerializer {
                 //    gReq.getObservables().add(entityComponentUri);
                 // temporary hack to switch btw old and new writer architecture
                 if (writer instanceof AbstractDataWriter)
-                    writer = new FilteredWriter((AbstractDataWriter) writer, gReq.getObservables());
+                    writer = new FilteredWriter((AbstractDataWriter)writer, gReq.getObservables());
                 else
-                    ((DataBlockProcessor) writer).setDataComponentFilter(new FilterByDefinition(gReq.getObservables()));
+                    ((DataBlockProcessor)writer).setDataComponentFilter(new FilterByDefinition(gReq.getObservables()));
                 writer.setDataComponents(dataProvider.getResultStructure());
                 writer.setOutput(os);
-            } catch (IOException e) {
+            }
+            catch (IOException e)
+            {
                 throw new IOException("Error initializing video transcoding", e);
             }
 
-            try {
+            try
+            {
                 // transcode and write all records
                 long pts = 0;
                 DataBlock nextRecord;
@@ -324,18 +337,19 @@ public class VideoTranscoder implements ISOSCustomSerializer {
                     }
                 } finally {
 
-                    if (nativeFrameData != null) {
-
-                        nativeFrameData.deallocate();
-                    }
+                    nativeFrameData.deallocate();
                 }
             } catch (EOFException e) {
                 // this happens if output stream is closed by client
                 // we stop silently in that case
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 throw new IOException("Error while transcoding video data", e);
             }
-        } finally {
+        }
+        finally
+        {
             if (dec_pkt != null) {
                 av_packet_unref(dec_pkt);
                 av_packet_free(dec_pkt);
