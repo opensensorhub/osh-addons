@@ -19,6 +19,8 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.util.Arrays;
+import java.util.Date;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Set;
@@ -27,6 +29,7 @@ import net.opengis.swe.v20.DataComponent;
 import org.mp4parser.streaming.StreamingTrack;
 import org.mp4parser.streaming.input.h264.H264NalConsumingTrack;
 import org.mp4parser.streaming.output.mp4.FragmentedMp4Writer;
+import org.mp4parser.streaming.output.mp4.FragmentedMp4WriterUtils;
 import org.sensorhub.api.data.ObsEvent;
 import org.sensorhub.impl.service.sos.AbstractAsyncSerializer;
 import org.sensorhub.impl.service.sos.ISOSAsyncResultSerializer;
@@ -62,7 +65,8 @@ public class MP4Serializer extends AbstractAsyncSerializer<GetResultRequest, Obs
             if (!hasTime)
             {
                 double samplingTime = nextFrame.getDoubleValue(0);
-                ((FragmentedMp4Writer)sampleSink).setCreationTime((long)(samplingTime * 1000.)); 
+                Date creationTime = new Date((long)(samplingTime * 1000.));
+                FragmentedMp4WriterUtils.setCreationTime((FragmentedMp4Writer)sampleSink, creationTime);
                 hasTime = true;
             }
             
