@@ -225,116 +225,126 @@ public class VideoTranscoder implements ISOSCustomSerializer
                 DataBlock nextRecord;
                 BytePointer nativeFrameData = new BytePointer((long) 50 * 1024);
                 try {
-                    while ((nextRecord = dataProvider.getNextResultRecord()) != null) {
-                        // clone datablock so we don't interfere with other concurrently running streams
-                        nextRecord = nextRecord.clone();
+                while ((nextRecord = dataProvider.getNextResultRecord()) != null) {
+                    // clone datablock so we don't interfere with other concurrently running streams
+                    nextRecord = nextRecord.clone();
 
-                        // get frame data
-                        DataBlock frameBlk = ((DataBlockMixed) nextRecord).getUnderlyingObject()[imgCompIdx];
-                        byte[] frameData = (byte[]) frameBlk.getUnderlyingObject();
+                    // get frame data
+                    DataBlock frameBlk = ((DataBlockMixed)nextRecord).getUnderlyingObject()[imgCompIdx];
+                    byte[] frameData = (byte[])frameBlk.getUnderlyingObject();
 
-                        // grow packet data buffer as needed
-                        if (nativeFrameData.capacity() < frameData.length) {
-                            nativeFrameData.deallocate();
-                            nativeFrameData = new BytePointer(Math.max(frameData.length, nativeFrameData.capacity() * 2));
-                        }
-                        nativeFrameData.position(0);
-                        nativeFrameData.limit(0);
-                        nativeFrameData.put(frameData);
+                    // grow packet data buffer as needed
+                    if (nativeFrameData.capacity() < frameData.length)
+                    {
+                        nativeFrameData.deallocate();
+                        nativeFrameData = new BytePointer(Math.max(frameData.length, nativeFrameData.capacity()*2));
+                    }
+                    nativeFrameData.position(0);
+                    nativeFrameData.limit(0);
+                    nativeFrameData.put(frameData);
 
-                        // decode frame
-                        dec_pkt.data(nativeFrameData);
-                        dec_pkt.size(frameData.length);
-                        int ret1 = avcodec_send_packet(decode_ctx, dec_pkt);
-                        int ret2 = avcodec_receive_frame(decode_ctx, av_frame);
-                        av_packet_unref(dec_pkt);
-                        //System.out.printf("decode: ret1 %d ret2 %d\n", ret1, ret2);
+                    // decode frame
+                    dec_pkt.data(nativeFrameData);
+                    dec_pkt.size(frameData.length);
+                    int ret1 = avcodec_send_packet(decode_ctx, dec_pkt);
+                    int ret2 = avcodec_receive_frame(decode_ctx, av_frame);
+                    av_packet_unref(dec_pkt);
+                    //System.out.printf("decode: ret1 %d ret2 %d\n", ret1, ret2);
 
-                        if (ret2 == 0) {
-                            // init scaler and encoder once we decode the 1st frame
-                            if (sws_ctx == null) {
-                                // determine frame size
-                                if (frameWidthString == null && frameHeightString == null) {
-                                    frameWidth = (int) Math.round(av_frame.width() * frameSizeScale);
-                                    frameHeight = (int) Math.round(av_frame.height() * frameSizeScale);
-                                } else if (frameWidthString != null && frameHeightString == null) {
-                                    frameHeight = (int) Math.round(frameWidth * ((double) av_frame.height() / av_frame.width()));
-                                } else if (frameWidthString == null && frameHeightString != null) {
-                                    frameWidth = (int) Math.round(frameHeight * ((double) av_frame.width() / av_frame.height()));
-                                }
+                    if (ret2 == 0)
+                    {
+                        // init scaler and encoder once we decode the 1st frame
+                        if (sws_ctx == null )
+                        {
+                            // determine frame size
+                            if (frameWidthString == null && frameHeightString == null)
+                            {
+                                frameWidth = (int)Math.round(av_frame.width() * frameSizeScale);
+                                frameHeight = (int)Math.round(av_frame.height() * frameSizeScale);
+                            }
+                            else if (frameWidthString != null && frameHeightString == null)
+                            {
+                                frameHeight = (int)Math.round(frameWidth * ((double)av_frame.height()/av_frame.width()));
+                            }
+                            else if (frameWidthString == null && frameHeightString != null)
+                            {
+                                frameWidth = (int)Math.round(frameHeight * ((double)av_frame.width()/av_frame.height()));
+                            }
 
-                                // make sure frame dimensions are multiple of 2
-                                if (frameWidth % 2 != 0)
-                                    frameWidth++;
-                                if (frameHeight % 2 != 0)
-                                    frameHeight++;
+                            // make sure frame dimensions are multiple of 2
+                            if (frameWidth % 2 != 0)
+                                frameWidth++;
+                            if (frameHeight % 2 != 0)
+                                frameHeight++;
 
-                                // init scaler
-                                sws_frame.format(AV_PIX_FMT_YUV420P);
-                                sws_frame.width(frameWidth);
-                                sws_frame.height(frameHeight);
-                                av_image_alloc(sws_frame.data(), sws_frame.linesize(),
-                                        frameWidth, frameHeight, AV_PIX_FMT_YUV420P, 1);
+                            // init scaler
+                            sws_frame.format(AV_PIX_FMT_YUV420P);
+                            sws_frame.width(frameWidth);
+                            sws_frame.height(frameHeight);
+                            av_image_alloc(sws_frame.data(), sws_frame.linesize(),
+                                    frameWidth, frameHeight, AV_PIX_FMT_YUV420P, 1);
 
-                                sws_ctx = sws_getContext(av_frame.width(), av_frame.height(), AV_PIX_FMT_YUV420P,
-                                        frameWidth, frameHeight, AV_PIX_FMT_YUV420P, SWS_BICUBIC, null, null, (double[]) null);
+                            sws_ctx = sws_getContext(av_frame.width(), av_frame.height(), AV_PIX_FMT_YUV420P,
+                                    frameWidth, frameHeight, AV_PIX_FMT_YUV420P, SWS_BICUBIC, null, null, (double[])null);
 
-                                log.debug("Resizing {}x{} -> {}x{}", av_frame.width(), av_frame.height(), frameWidth, frameHeight);
-                                log.debug("Target bitrate = {}", bitrate);
+                            log.debug("Resizing {}x{} -> {}x{}", av_frame.width(), av_frame.height(), frameWidth, frameHeight);
+                            log.debug("Target bitrate = {}", bitrate);
 
-                                // init encoder
-                                try (AVRational timeBase = new AVRational()) {
-                                    timeBase.num(1);
-                                    timeBase.den(fps);
-                                    encode_ctx.time_base(timeBase);
-                                    encode_ctx.width(frameWidth);
-                                    encode_ctx.height(frameHeight);
-                                    encode_ctx.pix_fmt(encoder.pix_fmts().get(0));
-                                    encode_ctx.bit_rate(bitrate);
-                                    //encode_ctx.sample_rate(fps);
-                                    av_opt_set(encode_ctx.priv_data(), "preset", "ultrafast", 0);
-                                    av_opt_set(encode_ctx.priv_data(), "tune", "zerolatency", 0);
-                                    if (avcodec_open2(encode_ctx, encoder, (PointerPointer<?>) null) < 0) {
-                                        throw new IllegalStateException("Error initializing encoder for codec " + codecConfig.encoderName);
-                                    }
-                                } catch (Exception e) {
-
+                            // init encoder
+                            try (AVRational timeBase = new AVRational()) {
+                                timeBase.num(1);
+                                timeBase.den(fps);
+                                encode_ctx.time_base(timeBase);
+                                encode_ctx.width(frameWidth);
+                                encode_ctx.height(frameHeight);
+                                encode_ctx.pix_fmt(encoder.pix_fmts().get(0));
+                                encode_ctx.bit_rate(bitrate);
+                                //encode_ctx.sample_rate(fps);
+                                av_opt_set(encode_ctx.priv_data(), "preset", "ultrafast", 0);
+                                av_opt_set(encode_ctx.priv_data(), "tune", "zerolatency", 0);
+                                if (avcodec_open2(encode_ctx, encoder, (PointerPointer<?>) null) < 0) {
                                     throw new IllegalStateException("Error initializing encoder for codec " + codecConfig.encoderName);
                                 }
-                            }
+                            } catch (Exception e) {
 
-                            // scale frame to desired resolution (width/height)
-                            sws_scale(sws_ctx, av_frame.data(), av_frame.linesize(), 0, av_frame.height(), sws_frame.data(), sws_frame.linesize());
-
-                            // encode
-                            av_frame.pts(pts++);
-                            ret1 = avcodec_send_frame(encode_ctx, sws_frame);
-                            //System.out.printf("encode: ret1 %d\n", ret1);
-                            //System.out.println("EAGAIN=" + avutil.AVERROR_EAGAIN());
-                            //System.out.println("ENOMEM=" + avutil.AVERROR_ENOMEM());
-
-                            while (ret1 >= 0) {
-                                //av_init_packet(enc_pkt);
-                                ret1 = avcodec_receive_packet(encode_ctx, enc_pkt);
-                                //System.out.printf("encode: ret1 %d ret2 %d\n", ret1, ret2);
-
-                                if (ret1 == 0) {
-                                    // repackage in datablock
-                                    //System.out.println("encoded pkt size = " + enc_pkt.size());
-                                    //frameData = enc_pkt.data().getStringBytes();
-                                    frameData = new byte[enc_pkt.size()];
-                                    enc_pkt.data().get(frameData);
-                                    frameBlk.setUnderlyingObject(frameData);
-
-                                    // write record to output stream
-                                    writer.write(nextRecord);
-                                    writer.flush();
-                                }
-
-                                av_packet_unref(enc_pkt);
+                                throw new IllegalStateException("Error initializing encoder for codec " + codecConfig.encoderName);
                             }
                         }
+
+                        // scale frame to desired resolution (width/height)
+                        sws_scale(sws_ctx, av_frame.data(), av_frame.linesize(), 0, av_frame.height(), sws_frame.data(), sws_frame.linesize());
+
+                        // encode
+                        av_frame.pts(pts++);
+                        ret1 = avcodec_send_frame(encode_ctx, sws_frame);
+                        //System.out.printf("encode: ret1 %d\n", ret1);
+                        //System.out.println("EAGAIN=" + avutil.AVERROR_EAGAIN());
+                        //System.out.println("ENOMEM=" + avutil.AVERROR_ENOMEM());
+
+                        while (ret1 >= 0)
+                        {
+                            //av_init_packet(enc_pkt);
+                            ret1 = avcodec_receive_packet(encode_ctx, enc_pkt);
+                            //System.out.printf("encode: ret1 %d ret2 %d\n", ret1, ret2);
+
+                            if (ret1 == 0)
+                            {
+                                // repackage in datablock
+                                //System.out.println("encoded pkt size = " + enc_pkt.size());
+                                //frameData = enc_pkt.data().getStringBytes();
+                                frameData = new byte[enc_pkt.size()];
+                                enc_pkt.data().get(frameData);
+                                frameBlk.setUnderlyingObject(frameData);
+
+                                // write record to output stream
+                                writer.write(nextRecord);
+                                writer.flush();
+                            }
+
+                            av_packet_unref(enc_pkt);
+                        }
                     }
+                }
                 } finally {
 
                     nativeFrameData.deallocate();
