@@ -204,7 +204,7 @@ public class FFMpegDecoder extends ExecutableProcessImpl
             av_init_packet(dec_pkt);
             av_frame = av_frame_alloc();
             sws_frame = av_frame_alloc();
-            nativeFrameData = new BytePointer(50*1024);
+            nativeFrameData = new BytePointer((long)50*1024);
         }
         catch (IllegalArgumentException e)
         {
