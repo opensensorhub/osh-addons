@@ -285,6 +285,7 @@ public class RTSPClient
             rtspRequestWriter.write(", nonce=\"" + digestNonce + "\"");
             rtspRequestWriter.write(", uri=\"" + digestUri + "\"");
             rtspRequestWriter.write(", response=\"" + response + "\"");
+            rtspRequestWriter.write(", algorithm=\"SHA-256\"");
             rtspRequestWriter.write(CRLF);
             
         }
