@@ -32,7 +32,7 @@ public class V4LCameraParams implements Cloneable
         }
         catch (CloneNotSupportedException e)
         {
-            return null;
+            throw new Error("Superclass clone failed", e);
         }
     }
 }
