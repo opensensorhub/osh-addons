@@ -49,7 +49,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
     }
     
