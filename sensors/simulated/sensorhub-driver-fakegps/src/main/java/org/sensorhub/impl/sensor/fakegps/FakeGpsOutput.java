@@ -19,6 +19,7 @@ import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import net.opengis.gml.v32.AbstractGeometry;
@@ -51,6 +52,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
     long samplingPeriodMillis;
     boolean multipleAssets;
     boolean sendData;
+    SecureRandom random = new SecureRandom();
     
     
     static class MobileAsset implements IFeature
@@ -145,19 +147,21 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         double endLat;
         double endLong;
 
+
+
         if (route.points.isEmpty())
         {
-            startLat = config.centerLatitude + (Math.random() - 0.5) * config.areaSize;
-            startLong = config.centerLongitude + (Math.random() - 0.5) * config.areaSize;
+            startLat = config.centerLatitude + (random.nextDouble() - 0.5) * config.areaSize;
+            startLong = config.centerLongitude + (random.nextDouble() - 0.5) * config.areaSize;
 
             // if fixed start and end locations not given, pick random values within area 
             if (config.startLatitude == null || config.startLongitude == null ||
                 config.stopLatitude == null || config.stopLongitude == null)
             {
-                startLat = config.centerLatitude + (Math.random() - 0.5) * config.areaSize;
-                startLong = config.centerLongitude + (Math.random() - 0.5) * config.areaSize;
-                endLat = config.centerLatitude + (Math.random() - 0.5) * config.areaSize;
-                endLong = config.centerLongitude + (Math.random() - 0.5) * config.areaSize;
+                startLat = config.centerLatitude + (random.nextDouble() - 0.5) * config.areaSize;
+                startLong = config.centerLongitude + (random.nextDouble() - 0.5) * config.areaSize;
+                endLat = config.centerLatitude + (random.nextDouble() - 0.5) * config.areaSize;
+                endLong = config.centerLongitude + (random.nextDouble() - 0.5) * config.areaSize;
             }
 
             // else use start/end locations provided in configuration
@@ -175,8 +179,8 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             var lastPoint = route.points.get(route.points.size() - 1);
             startLat = lastPoint.getY();
             startLong = lastPoint.getX();
-            endLat = config.centerLatitude + (Math.random() - 0.5) * config.areaSize;
-            endLong = config.centerLongitude + (Math.random() - 0.5) * config.areaSize;
+            endLat = config.centerLatitude + (random.nextDouble() - 0.5) * config.areaSize;
+            endLong = config.centerLongitude + (random.nextDouble() - 0.5) * config.areaSize;
         }
 
         try
@@ -185,11 +189,11 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             List<Point2D> waypoints = new ArrayList<>();
             for (int i = 0; i < 10; i++)
             {
-                var wlat = config.centerLatitude + (Math.random() - 0.5) * config.areaSize;
-                var wlon = config.centerLongitude + (Math.random() - 0.5) * config.areaSize;
+                var wlat = config.centerLatitude + (random.nextDouble() - 0.5) * config.areaSize;
+                var wlon = config.centerLongitude + (random.nextDouble() - 0.5) * config.areaSize;
                 waypoints.add(new Point2D.Double(wlon, wlat));
             }
-            
+
             // request directions using Google API
             String dirRequest = config.googleApiUrl + "?key=" + config.googleApiKey +
                 ((config.walkingMode) ? "&mode=walking" : "") +
@@ -198,60 +202,57 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             for (var wp: waypoints)
                 dirRequest += "via:" + wp.getY() + "," + wp.getX() + "|";
             log.debug("Google API request: " + dirRequest);
-            InputStream is = new BufferedInputStream(new URL(dirRequest).openStream());
+            try(InputStream is = new BufferedInputStream(new URL(dirRequest).openStream())) {
 
-            // parse JSON track
-            JsonElement root = JsonParser.parseReader(new InputStreamReader(is));
-            JsonObject rootObj = root.getAsJsonObject();
 
-            //System.out.println(root);
-            JsonElement routes = rootObj.get("routes");
-            if (routes == null || !routes.isJsonArray() || routes.getAsJsonArray().size() == 0)
-            {
-                String errorMsg = "No route available";
-                JsonElement errorField = rootObj.get("error_message");
-                if (errorField != null)
-                    errorMsg = errorField.getAsString();
-                throw new Exception(errorMsg);
-            }
+                // parse JSON track
+                JsonElement root = JsonParser.parseReader(new InputStreamReader(is));
+                JsonObject rootObj = root.getAsJsonObject();
 
-            JsonElement polyline = routes.getAsJsonArray().get(0).getAsJsonObject().get("overview_polyline");
-            String encodedData = polyline.getAsJsonObject().get("points").getAsString();
-
-            try
-            {
-                route.lock.writeLock().lock();
-                
-                // decode polyline data
-                decodePoly(encodedData, route.points);
-                
-                // assign mobile assets to random speed and positions along the route
-                boolean first = true;
-                for (var asset: route.assets)
-                {
-                    if (first)
-                        asset.currentTrackPos = 0.0;
-                    else
-                        asset.currentTrackPos = Math.random() * (route.points.size()-1);
-                    first = false;
-                    
-                    asset.speed = config.minSpeed + Math.random() * Math.abs(config.maxSpeed - config.minSpeed);
-                    if (Math.random() < 0.5)
-                        asset.speed = -asset.speed;
+                //System.out.println(root);
+                JsonElement routes = rootObj.get("routes");
+                if (routes == null || !routes.isJsonArray() || routes.getAsJsonArray().size() == 0) {
+                    String errorMsg = "No route available";
+                    JsonElement errorField = rootObj.get("error_message");
+                    if (errorField != null)
+                        errorMsg = errorField.getAsString();
+                    throw new Exception(errorMsg);
                 }
+
+                JsonElement polyline = routes.getAsJsonArray().get(0).getAsJsonObject().get("overview_polyline");
+                String encodedData = polyline.getAsJsonObject().get("points").getAsString();
+
+                try {
+                    route.lock.writeLock().lock();
+
+                    // decode polyline data
+                    decodePoly(encodedData, route.points);
+
+                    // assign mobile assets to random speed and positions along the route
+                    boolean first = true;
+                    for (var asset : route.assets) {
+                        if (first)
+                            asset.currentTrackPos = 0.0;
+                        else
+                            asset.currentTrackPos = random.nextDouble() * (route.points.size() - 1);
+                        first = false;
+
+                        asset.speed = config.minSpeed + random.nextDouble() * Math.abs(config.maxSpeed - config.minSpeed);
+                        if (random.nextDouble() < 0.5)
+                            asset.speed = -asset.speed;
+                    }
+                } finally {
+                    route.lock.writeLock().unlock();
+                }
+
+                lastApiCallTime = System.currentTimeMillis();
+                parentSensor.clearError();
+                return true;
             }
-            finally
-            {
-                route.lock.writeLock().unlock();
-            }
-            
-            lastApiCallTime = System.currentTimeMillis();
-            parentSensor.clearError();
-            return true;
         }
         catch (Exception e)
         {
-            parentSensor.reportError("Error while retrieving Google directions", e);            
+            parentSensor.reportError("Error while retrieving Google directions", e);
             return false;
         }
     }
@@ -432,10 +433,10 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             // schedule measurements with random delays
             for (var asset: route.assets)
             {
-                var randomDelay = (long)(Math.random() * samplingPeriodMillis);
+                var randomDelay = (random.nextLong() * samplingPeriodMillis);
                 timer.scheduleAtFixedRate(() -> {
                     sendMeasurement(route, asset);
-                }, randomDelay, (long)samplingPeriodMillis, TimeUnit.MILLISECONDS);
+                }, randomDelay, samplingPeriodMillis, TimeUnit.MILLISECONDS);
             }
         }
         
@@ -445,7 +446,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             // update one of the routes (randomly picked)
             if (System.currentTimeMillis() - lastApiCallTime > updatePeriod)
             {
-                int idx = (int)Math.round(Math.random() * (routes.size()-1));
+                int idx = Math.round(random.nextFloat() * (routes.size()-1));
                 getLogger().info("Updating route #{}", idx);
                 var route = routes.get(idx);
                 generateRandomRoute(route);
@@ -465,6 +466,8 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             }
             catch (Exception e)
             {
+                log.warn("Interrupted", e);
+                Thread.currentThread().interrupt();
             }
             
             timer = null;
