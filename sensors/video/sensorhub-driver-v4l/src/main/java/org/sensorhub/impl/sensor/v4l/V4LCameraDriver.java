@@ -50,7 +50,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
         }
         catch (Exception e)
         {
-            LoggerFactory.getLogger(V4LCameraDriver.class).error("Unable to load native v4l library", e.getMessage());
+            LoggerFactory.getLogger(V4LCameraDriver.class).error("Unable to load native v4l library", e);
         }
     }
     
