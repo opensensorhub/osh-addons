@@ -433,7 +433,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             // schedule measurements with random delays
             for (var asset: route.assets)
             {
-                var randomDelay = (random.nextLong() * samplingPeriodMillis);
+                var randomDelay = (long)(random.nextDouble() * samplingPeriodMillis);
                 timer.scheduleAtFixedRate(() -> {
                     sendMeasurement(route, asset);
                 }, randomDelay, samplingPeriodMillis, TimeUnit.MILLISECONDS);
@@ -446,7 +446,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
             // update one of the routes (randomly picked)
             if (System.currentTimeMillis() - lastApiCallTime > updatePeriod)
             {
-                int idx = Math.round(random.nextFloat() * (routes.size()-1));
+                int idx = random.nextInt(routes.size());
                 getLogger().info("Updating route #{}", idx);
                 var route = routes.get(idx);
                 generateRandomRoute(route);
