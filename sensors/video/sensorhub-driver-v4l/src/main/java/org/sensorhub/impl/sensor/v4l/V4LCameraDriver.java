@@ -20,6 +20,7 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 import au.edu.jcu.v4l4j.DeviceInfo;
 import au.edu.jcu.v4l4j.ImageFormat;
 import au.edu.jcu.v4l4j.VideoDevice;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -49,7 +50,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            LoggerFactory.getLogger(V4LCameraDriver.class).error("Unable to load native v4l library", e);
         }
     }
     
