@@ -57,7 +57,7 @@ public class OshAuthenticator implements SimpleAuthenticator
                 if (userID != null)
                 {
                     // check user exists and password matches
-                    var user = users.getUserInfo(userID);
+                    var user = users.get(userID);
                     if (user != null)
                     {
                         Credential storedCredential = Credential.getCredential(user.getPassword());
