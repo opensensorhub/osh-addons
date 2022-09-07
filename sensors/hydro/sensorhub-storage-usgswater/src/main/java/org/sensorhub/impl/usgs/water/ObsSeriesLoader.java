@@ -18,6 +18,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -29,6 +30,7 @@ import java.util.Spliterators;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.system.SystemId;
@@ -36,6 +38,7 @@ import org.slf4j.Logger;
 import org.vast.data.TextEncodingImpl;
 import org.vast.swe.SWEBuilders.DataComponentBuilder;
 import org.vast.swe.SWEHelper;
+import org.vast.util.TimeExtent;
 
 
 /**
@@ -55,9 +58,9 @@ public class ObsSeriesLoader extends ObsSiteLoader
     static final String AREA_UID_PREFIX = USGSWaterDataArchive.UID_PREFIX + "region:";
     
     
-    public ObsSeriesLoader(IParamDatabase paramDb, Logger logger)
+    public ObsSeriesLoader(int idScope, IParamDatabase paramDb, Logger logger)
     {
-        super(paramDb, logger);
+        super(idScope, paramDb, logger);
     }
     
     
@@ -71,6 +74,11 @@ public class ObsSeriesLoader extends ObsSiteLoader
             URL url = new URL(requestUrl);
             BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
             var swe = new SWEHelper();
+            
+            // generate system ID
+            var sysID = new SystemId(
+                BigId.fromLong(idScope, 1),
+                USGSWaterDataArchive.UID_PREFIX + "network");
             
             // skip header comments
             String line = null;
@@ -92,7 +100,7 @@ public class ObsSeriesLoader extends ObsSiteLoader
                 {
                     return next != null;
                 }
-    
+                
                 @Override
                 public Entry<DataStreamKey, IDataStreamInfo> next()
                 {
@@ -100,13 +108,14 @@ public class ObsSeriesLoader extends ObsSiteLoader
                         throw new NoSuchElementException();
                     var next = this.next;
                     preloadNext();
-                    return next;                
+                    return next;
                 }
                 
                 public void preloadNext()
                 {
                     String line = null;
                     this.next = null;
+                    var now = Instant.now();
                     
                     try
                     {
@@ -166,16 +175,23 @@ public class ObsSeriesLoader extends ObsSiteLoader
                                 .addField("value", paramComp)
                                 .build();
                             
-                            // generate key
-                            long dsID = FilterUtils.toDataStreamId(seriesIdStr, paramCd);
+                            // compute valid time range
+                            TimeExtent validTime;
+                            if (Duration.between(endDate, now).getSeconds() < 84600)
+                                validTime = TimeExtent.endNow(beginDate);
+                            else
+                                validTime = TimeExtent.period(beginDate, endDate);
+                            
+                            // generate ds key
+                            var dsID = UsgsUtils.toDataStreamId(idScope, seriesIdStr, paramCd);
                             var dsKey = new DataStreamKey(dsID);
                             
                             var dsInfo = new USGSTimeSeriesInfo.Builder()
                                 .withName("USGS Water Time Series #" + seriesIdStr)
                                 .withDescription("Time series from site " + siteDesc + " (" + siteNum + ")"
                                                  + (paramDesc.isBlank() ? "" : ", " + paramDesc))
-                                .withSystem(new SystemId(1, USGSWaterDataArchive.UID_PREFIX + "network"))
-                                .withTimeRange(beginDate, endDate)
+                                .withSystem(sysID)
+                                .withValidTime(validTime)
                                 .withSiteNum(siteNum)
                                 .withParamCode(paramCd)
                                 .withRecordDescription(recordStruct)
@@ -183,7 +199,7 @@ public class ObsSeriesLoader extends ObsSiteLoader
                                 .build();
                             
                             this.next = new SimpleEntry<>(dsKey, dsInfo);
-                            break;                    
+                            break;
                         }
                     }
                     catch (Exception e)
@@ -207,7 +223,7 @@ public class ObsSeriesLoader extends ObsSiteLoader
     
     protected String buildSiteInfoRequest(USGSDataFilter filter)
     {
-        return FilterUtils.buildRequestUrl(BASE_URL, filter)
+        return UsgsUtils.buildRequestUrl(BASE_URL, filter)
             .append("&outputDataTypeCd=iv") // get only site with IV data available
             .append("&seriesCatalogOutput=true")        
             .toString();

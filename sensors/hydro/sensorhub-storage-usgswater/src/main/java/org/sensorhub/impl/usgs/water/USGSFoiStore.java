@@ -17,6 +17,7 @@ package org.sensorhub.impl.usgs.water;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.FoiFilter;
@@ -35,14 +36,16 @@ import org.vast.util.Bbox;
 
 public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IFeature, FoiField, FoiFilter> implements IFoiStore
 {
-    final Logger logger;
+    final int idScope;
     final USGSDataFilter configFilter;
     final IParamDatabase paramDb;
+    final Logger logger;
     ISystemDescStore procStore;
     
     
-    public USGSFoiStore(USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
+    public USGSFoiStore(int idScope, USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
     {
+        this.idScope = idScope;
         this.configFilter = Asserts.checkNotNull(configFilter, USGSDataFilter.class);
         this.paramDb = Asserts.checkNotNull(paramDb, IParamDatabase.class);
         this.logger = Asserts.checkNotNull(logger, Logger.class);
@@ -62,8 +65,8 @@ public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IFeature, FoiFie
         var fk = DataStoreUtils.checkFeatureKey(key);
         
         var usgsFilter = new USGSDataFilter();
-        usgsFilter.siteIds.add(FilterUtils.toSiteCode(fk.getInternalID()));
-        var results = new ObsSiteLoader(paramDb, logger).getSites(usgsFilter);
+        usgsFilter.siteIds.add(UsgsUtils.toSiteCode(fk.getInternalID()));
+        var results = new ObsSiteLoader(idScope, paramDb, logger).getSites(usgsFilter);
         
         return results.findFirst().orElse(null);
     }
@@ -80,13 +83,13 @@ public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IFeature, FoiFie
         }
         
         // convert FOI filter to USGS filter
-        var queryFilter = FilterUtils.from(filter);
+        var queryFilter = UsgsUtils.from(filter);
         
         // AND with config filter
-        queryFilter = FilterUtils.and(configFilter, queryFilter);
+        queryFilter = UsgsUtils.and(configFilter, queryFilter);
         
         // get list of sites
-        var results = new ObsSiteLoader(paramDb, logger).getSites(queryFilter);
+        var results = new ObsSiteLoader(idScope, paramDb, logger).getSites(queryFilter);
         
         // stream results
         // post-filter using original FOI filter
@@ -94,14 +97,14 @@ public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IFeature, FoiFie
             .filter(filter)
             .limit(filter.getLimit())
             .map(f -> {
-               var fk = new FeatureKey(FilterUtils.toLongId(f.getId()));
+               var fk = new FeatureKey(UsgsUtils.toBigId(idScope, f.getId()));
                return new SimpleEntry<>(fk, f);
             });
     }
     
     
     @Override
-    public Long getParent(long internalID)
+    public BigId getParent(BigId internalID)
     {
         return null;
     }
@@ -134,7 +137,7 @@ public class USGSFoiStore extends ReadOnlyDataStore<FeatureKey, IFeature, FoiFie
 
 
     @Override
-    public FeatureKey add(long parentID, IFeature value) throws DataStoreException
+    public FeatureKey add(BigId parentID, IFeature value) throws DataStoreException
     {
         throw new UnsupportedOperationException(READ_ONLY_ERROR_MSG);
     }

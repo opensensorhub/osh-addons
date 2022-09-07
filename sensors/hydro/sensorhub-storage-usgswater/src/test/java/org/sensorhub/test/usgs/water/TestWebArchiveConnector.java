@@ -18,6 +18,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.impl.usgs.water.CodeEnums.StateCode;
@@ -28,7 +29,9 @@ import org.vast.ogc.om.SamplingPoint;
 
 public class TestWebArchiveConnector
 {
-
+    static int DATABASE_NUM = 5;
+    
+    
     protected USGSWaterDataArchive initDatabase(USGSWaterDataConfig config) throws Exception
     {
         if (config == null)
@@ -36,10 +39,17 @@ public class TestWebArchiveConnector
         
         USGSWaterDataArchive db = new USGSWaterDataArchive();
         config.id = "USGS_TEST_STORAGE";
+        config.databaseNum = DATABASE_NUM;
         db.init(config);
         db.start();
         
         return db;
+    }
+    
+    
+    BigId bigId(long id)
+    {
+        return BigId.fromLong(DATABASE_NUM, id);
     }
     
     
@@ -85,7 +95,7 @@ public class TestWebArchiveConnector
         var db = initDatabase(null);
         
         // query FOIs
-        var f = db.getFoiStore().get(new FeatureKey(2378170L));
+        var f = db.getFoiStore().get(new FeatureKey(bigId(2378170L)));
         assertNotNull(f);
         System.out.println(f.getUniqueIdentifier() + " -> " + f.getDescription() + " @ " + ((SamplingPoint)f).getShape());
         assertEquals("02378170", f.getId());

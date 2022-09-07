@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FeatureFilterBase;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
@@ -29,7 +30,7 @@ import org.vast.util.Bbox;
 import com.google.common.base.Strings;
 
 
-public class FilterUtils
+public class UsgsUtils
 {
     static final Pattern STATE_CODE_REGEX = Pattern.compile("[A-Z a-z]{2}");
     static final Pattern COUNTY_CODE_REGEX = Pattern.compile("[0-9]{5}");
@@ -59,7 +60,7 @@ public class FilterUtils
     {
         if (filter.getInternalIDs() != null)
         {
-            for (long id: filter.getInternalIDs())
+            for (var id: filter.getInternalIDs())
                 usgsFilter.siteIds.add(toSiteCode(id));
         }
         
@@ -77,11 +78,21 @@ public class FilterUtils
             }
             else
             {
-                var startTimeMs = filter.getValidTime().getMin().toEpochMilli();
-                usgsFilter.startTime = new Date(startTimeMs);
+                if (filter.getValidTime().getMin() != Instant.MIN)
+                {
+                    var startTimeMs = filter.getValidTime().getMin().toEpochMilli();
+                    usgsFilter.startTime = new Date(startTimeMs);
+                }
+                else
+                    usgsFilter.startTime = null;
                 
-                var endTimeMs = filter.getValidTime().getMax().toEpochMilli();
-                usgsFilter.endTime = new Date(endTimeMs);
+                if (filter.getValidTime().getMax() != Instant.MAX)
+                {
+                    var endTimeMs = filter.getValidTime().getMax().toEpochMilli();
+                    usgsFilter.endTime = new Date(endTimeMs);
+                }
+                else
+                    usgsFilter.endTime = null;
             }
         }
         
@@ -341,8 +352,10 @@ public class FilterUtils
     }
     
     
-    public static String toSiteCode(long id)
+    public static String toSiteCode(BigId bigId)
     {
+        long id = bigId.getIdAsLong();
+        
         // convert to string and pad with zeroes
         if (id < 10000000)
             return String.format("%08d", id);
@@ -361,24 +374,30 @@ public class FilterUtils
     }
     
     
-    public static long toLongId(String id)
+    public static BigId toBigId(int idScope, String id)
     {
-        return Long.parseLong(id);
+        return BigId.fromLong(idScope, Long.parseLong(id));
     }
     
     
-    public static long toDataStreamId(String tsId, String paramCd)
+    public static BigId toDataStreamId(int idScope, String tsId, String paramCd)
     {
         long seriesId = Long.parseLong(tsId);
         long paramId = Long.parseLong(paramCd);
-        return seriesId << 32 | paramId;
+        return BigId.fromLong(idScope, seriesId << 32 | paramId);
     }
     
     
-    public static FeatureId toFoiId(String id)
+    public static FeatureId toFoiId(int idScope, String id)
     {
         return new FeatureId(
-            toLongId(id),
+            toBigId(idScope, id),
             ObsSiteLoader.FOI_UID_PREFIX+id);
+    }
+    
+    
+    public static BigId toObsId(BigId dsId, Instant ts)
+    {
+        return BigId.NONE;
     }
 }

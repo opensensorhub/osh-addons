@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
@@ -40,15 +41,17 @@ import com.google.common.cache.CacheBuilder;
  */
 public class USGSDataStreamStore extends ReadOnlyDataStore<DataStreamKey, IDataStreamInfo, DataStreamInfoField, DataStreamFilter> implements IDataStreamStore
 {
-    final Logger logger;
+    final int idScope;
     final USGSDataFilter configFilter;
     final IParamDatabase paramDb;
+    final Logger logger;
     final Cache<DataStreamKey, IDataStreamInfo> dsCache;
     ISystemDescStore procStore;
     
 
-    public USGSDataStreamStore(USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
+    public USGSDataStreamStore(int idScope, USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
     {
+        this.idScope = idScope;
         this.configFilter = configFilter;
         this.paramDb = paramDb;
         this.logger = logger;
@@ -68,24 +71,24 @@ public class USGSDataStreamStore extends ReadOnlyDataStore<DataStreamKey, IDataS
         {
             return dsCache.get(fk, () -> {
                 // extract param ID
-                long paramId = fk.getInternalID() & 0xFFFFFFFFL;
+                long paramId = fk.getInternalID().getIdAsLong() & 0xFFFFFFFFL;
                 
                 // create query filter with param code
                 // too bad we cannot filter by time series ID using the web service!
                 var queryFilter = new USGSDataFilter();
-                queryFilter.otherParamCodes.add(FilterUtils.toParamCode(paramId));
+                queryFilter.otherParamCodes.add(UsgsUtils.toParamCode(paramId));
                 
                 // AND with config filter
-                queryFilter = FilterUtils.and(configFilter, queryFilter);
+                queryFilter = UsgsUtils.and(configFilter, queryFilter);
                 
                 // stream results, making sure we return only the selected datastream
                 // since server will return all datastreams with that param code
-                var results = new ObsSeriesLoader(paramDb, logger).getSeries(queryFilter);
+                var results = new ObsSeriesLoader(idScope, paramDb, logger).getSeries(queryFilter);
                 return results
                     .filter(e -> e.getKey().getInternalID() == fk.getInternalID())
                     .findFirst()
-                    .orElse(null)
-                    .getValue();
+                    .map(e -> e.getValue())
+                    .orElse(null);
             });
         }
         catch (ExecutionException e)
@@ -106,24 +109,36 @@ public class USGSDataStreamStore extends ReadOnlyDataStore<DataStreamKey, IDataS
                 return Stream.empty();
             
             var internalIDs = filter.getSystemFilter().getInternalIDs();
-            if (internalIDs != null && !internalIDs.contains(1L))
+            if (internalIDs != null && !internalIDs.contains(BigId.fromLong(idScope, 1)))
                 return Stream.empty();
         }
         
         // convert datastream filter to USGS filter
-        var queryFilter = FilterUtils.from(filter);
+        var queryFilter = UsgsUtils.from(filter);
         
         // AND with config filter
-        queryFilter = FilterUtils.and(configFilter, queryFilter);
+        queryFilter = UsgsUtils.and(configFilter, queryFilter);
         
         // get list of sites
-        var results = new ObsSeriesLoader(paramDb, logger).getSeries(queryFilter);
+        var results = new ObsSeriesLoader(idScope, paramDb, logger).getSeries(queryFilter);
         
         // stream results
         // post-filter using original datastore filter
         return results
+            .peek(e -> dsCache.put(e.getKey(), e.getValue()))
             .filter(e -> filter.test(e.getValue()))
             .limit(filter.getLimit());
+    }
+    
+    
+    @Override
+    public long countMatchingEntries(DataStreamFilter filter)
+    {
+        // special case so system discovery doesn't require sending a request to USGS server
+        if (filter.getLimit() == 1)
+            return 1;
+        
+        else return super.countMatchingEntries(filter);
     }
 
 

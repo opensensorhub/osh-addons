@@ -20,9 +20,11 @@ import java.io.OutputStream;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
+import org.sensorhub.api.datastore.procedure.IProcedureStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.api.datastore.system.SystemFilter;
 import org.sensorhub.api.datastore.system.ISystemDescStore.SystemField;
@@ -38,17 +40,21 @@ import org.vast.util.Bbox;
 
 public class USGSSystemDescStore extends ReadOnlyDataStore<FeatureKey, ISystemWithDesc, SystemField, SystemFilter> implements ISystemDescStore
 {
-    final Logger logger;
+    final int idScope;
     final USGSDataFilter configFilter;
     final IParamDatabase paramDb;
+    final Logger logger;
+    final BigId mainSystemId;
     Entry<FeatureKey, ISystemWithDesc> systemEntry;
     
     
-    public USGSSystemDescStore(USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
+    public USGSSystemDescStore(int idScope, USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
     {
+        this.idScope = idScope;
         this.configFilter = Asserts.checkNotNull(configFilter, USGSDataFilter.class);
         this.paramDb = Asserts.checkNotNull(paramDb, IParamDatabase.class);
         this.logger = Asserts.checkNotNull(logger, Logger.class);
+        this.mainSystemId = BigId.fromLong(idScope, 1);
         
         // create parent network SML description
         SMLHelper sml = new SMLHelper();
@@ -56,8 +62,8 @@ public class USGSSystemDescStore extends ReadOnlyDataStore<FeatureKey, ISystemWi
             .uniqueID(USGSWaterDataArchive.UID_PREFIX + "network")
             .name("USGS Water Data Network")
             .description("USGS automated sensor network collecting water-resources data at sites across the US")
-            .build();        
-        systemEntry = new SimpleEntry<>(new FeatureKey(1), new SystemWrapper(systemDesc));
+            .build();
+        systemEntry = new SimpleEntry<>(new FeatureKey(mainSystemId), new SystemWrapper(systemDesc));
     }
     
     
@@ -74,7 +80,7 @@ public class USGSSystemDescStore extends ReadOnlyDataStore<FeatureKey, ISystemWi
     {
         var fk = DataStoreUtils.checkFeatureKey(key);
         
-        if (fk.getInternalID() == 1)
+        if (mainSystemId.equals(fk.getInternalID()))
             return systemEntry.getValue();
         else
             return null;
@@ -84,7 +90,7 @@ public class USGSSystemDescStore extends ReadOnlyDataStore<FeatureKey, ISystemWi
     @Override
     public Stream<Entry<FeatureKey, ISystemWithDesc>> selectEntries(SystemFilter filter, Set<SystemField> fields)
     {
-        if ((filter.getInternalIDs() != null &&filter.getInternalIDs().contains(1L)) ||
+        if ((filter.getInternalIDs() != null && filter.getInternalIDs().contains(mainSystemId)) ||
             filter.test(systemEntry.getValue()))
             return Stream.of(systemEntry);
         else
@@ -93,7 +99,7 @@ public class USGSSystemDescStore extends ReadOnlyDataStore<FeatureKey, ISystemWi
     
     
     @Override
-    public Long getParent(long internalID)
+    public BigId getParent(BigId internalID)
     {
         return null;
     }
@@ -129,9 +135,17 @@ public class USGSSystemDescStore extends ReadOnlyDataStore<FeatureKey, ISystemWi
 
 
     @Override
-    public FeatureKey add(long parentID, ISystemWithDesc value) throws DataStoreException
+    public FeatureKey add(BigId parentID, ISystemWithDesc value) throws DataStoreException
     {
         throw new UnsupportedOperationException(READ_ONLY_ERROR_MSG);
+    }
+
+
+    @Override
+    public void linkTo(IProcedureStore procedureStore)
+    {
+        // TODO Auto-generated method stub
+        
     }
 
 }
