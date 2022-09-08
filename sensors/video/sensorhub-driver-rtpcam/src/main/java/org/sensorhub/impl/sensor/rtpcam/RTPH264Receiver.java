@@ -106,7 +106,11 @@ public class RTPH264Receiver extends Thread
         byte[] res = new byte[s.length()*3/4];
         InputStream is = new ByteArrayInputStream(s.getBytes());
         Base64Decoder decoder = new Base64Decoder(is);
-        decoder.read(res);
+        int bytesRead = decoder.read(res);
+        if (bytesRead != res.length) {
+        	// This should never happen, since ByteArrayInputStream always has all bytes available immediately
+        	log.warn("Did not read enough bytes while decoding base64 string");
+        }
         decoder.close();
         return res;
     }
@@ -319,7 +323,7 @@ public class RTPH264Receiver extends Thread
     
     
     @Override
-    public void start()
+    public synchronized void start()
     {
         started = true;
         super.start();
