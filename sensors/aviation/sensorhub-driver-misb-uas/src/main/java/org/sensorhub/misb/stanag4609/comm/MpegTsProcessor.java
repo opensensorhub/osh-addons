@@ -504,7 +504,7 @@ public class MpegTsProcessor extends Thread {
                             try { Thread.sleep(sleepDuration); }
                             catch (InterruptedException e) {
                                 logger.error("Interrupted waiting for stream processor to stop", e);
-                                Thread.interrupted();
+                                Thread.currentThread().interrupt();
                             }
                         }
                     }
