@@ -236,7 +236,7 @@ public class VideoTranscoder implements ISOSCustomSerializer
                     // grow packet data buffer as needed
                     if (nativeFrameData.capacity() < frameData.length)
                     {
-                        nativeFrameData.deallocate();
+                        nativeFrameData.close();
                         nativeFrameData = new BytePointer(Math.max(frameData.length, nativeFrameData.capacity()*2));
                     }
                     nativeFrameData.position(0);
@@ -347,7 +347,7 @@ public class VideoTranscoder implements ISOSCustomSerializer
                 }
                 } finally {
 
-                    nativeFrameData.deallocate();
+                    nativeFrameData.close();
                 }
             } catch (EOFException e) {
                 // this happens if output stream is closed by client
