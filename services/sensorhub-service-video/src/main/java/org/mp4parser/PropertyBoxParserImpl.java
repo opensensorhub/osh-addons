@@ -16,6 +16,7 @@
 package org.mp4parser;
 
 import org.mp4parser.tools.Hex;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -108,8 +109,7 @@ public class PropertyBoxParserImpl extends AbstractBoxParser {
                 try {
                     is.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
-                    // ignore - I can't help
+                    LoggerFactory.getLogger(PropertyBoxParserImpl.class).error("I/O error reading properties", e);
                 }
             }
         }
