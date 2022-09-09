@@ -40,6 +40,8 @@ import com.google.gson.stream.JsonWriter;
  */
 public class MFBindingGeoJson extends AbstractFeatureBindingGeoJson<IFeature>
 {
+    boolean isCollection;
+    
     
     public MFBindingGeoJson(RequestContext ctx, IdEncoders idEncoders, boolean forReading) throws IOException
     {
@@ -63,19 +65,18 @@ public class MFBindingGeoJson extends AbstractFeatureBindingGeoJson<IFeature>
                 if (showLinks.get())
                 {
                     var links = new ArrayList<ResourceLink>();
+                    var itemPath = ctx.getRequestUrl() + "/" + (isCollection ? bean.getId() : ""); 
                     
                     links.add(new ResourceLink.Builder()
                         .rel("temporalGeometries")
                         .title("Temporal Geometries")
-                        .href("/" + MFHandler.NAMES[0] + "/" +
-                            bean.getId() + "/" + TemporalGeomHandler.NAMES[0])
+                        .href(itemPath + "/" + TemporalGeomHandler.NAMES[0])
                         .build());
                     
                     links.add(new ResourceLink.Builder()
                         .rel("temporalPropertiesCollection")
                         .title("Temporal Properties")
-                        .href("/" + MFHandler.NAMES[0] + "/" +
-                            bean.getId() + "/" + TemporalPropHandler.NAMES[0])
+                        .href(itemPath + "/" + TemporalPropHandler.NAMES[0])
                         .build());
                     
                     writeLinksAsJson(writer, links);
@@ -98,5 +99,13 @@ public class MFBindingGeoJson extends AbstractFeatureBindingGeoJson<IFeature>
                 return idEncoders.getFoiIdEncoder().encodeID(key.getInternalID());
             }
         };
+    }
+
+
+    @Override
+    public void startCollection() throws IOException
+    {
+        isCollection = true;
+        super.startCollection();
     }
 }

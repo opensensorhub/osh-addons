@@ -33,9 +33,7 @@ public class MFCollectionsHandler extends CollectionHandler
     public MFCollectionsHandler(IEventBus eventBus, ObsSystemDbWrapper db, ResourcePermissions permissions, List<CollectionConfig> collections)
     {
         super();
-        
         addCustomCollections(collections);
-        addSubResource(new MFCollectionItemsHandler(eventBus, db, permissions, collections));
     }
     
     

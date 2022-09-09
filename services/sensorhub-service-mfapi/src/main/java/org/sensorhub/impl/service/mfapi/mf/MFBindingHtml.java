@@ -87,8 +87,7 @@ public class MFBindingHtml extends AbstractFeatureBindingHtml<IFeature, IObsSyst
     protected String getResourceUrl(FeatureKey key)
     {
         var featureId = idEncoders.getFoiIdEncoder().encodeID(key.getInternalID());
-        var featureUrl = ctx.getApiRootURL() + "/" + MFHandler.NAMES[0] + "/" + featureId;
-        return featureUrl;
+        return isCollection ? ctx.getRequestUrl() + "/" + featureId : ctx.getRequestUrl();
     }
     
     

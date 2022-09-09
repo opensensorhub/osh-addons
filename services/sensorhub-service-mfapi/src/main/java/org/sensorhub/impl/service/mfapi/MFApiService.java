@@ -25,6 +25,7 @@ import org.sensorhub.api.service.IServiceModule;
 import org.sensorhub.impl.service.AbstractHttpServiceModule;
 import org.sensorhub.impl.service.mfapi.home.MFCollectionsHandler;
 import org.sensorhub.impl.service.mfapi.home.HomePageHandler;
+import org.sensorhub.impl.service.mfapi.home.MFCollectionItemsHandler;
 import org.sensorhub.impl.service.mfapi.mf.MFHandler;
 import org.sensorhub.impl.service.mfapi.mf.TemporalGeomHandler;
 import org.sensorhub.impl.service.mfapi.mf.TemporalPropHandler;
@@ -111,6 +112,11 @@ public class MFApiService extends AbstractHttpServiceModule<MFApiServiceConfig> 
         // collections
         var collectionHandler = new MFCollectionsHandler(eventBus, db, security.foi_permissions, config.collections);
         rootHandler.addSubResource(collectionHandler);
+        
+        var colItemsHandler = new MFCollectionItemsHandler(eventBus, db, security.foi_permissions, config.collections);
+        colItemsHandler.addSubResource(tgeomHandler);
+        colItemsHandler.addSubResource(tpropHandler);
+        collectionHandler.addSubResource(colItemsHandler);
         
         // deploy servlet
         servlet = new MFApiServlet(this, (MFApiSecurity)securityHandler, rootHandler, getLogger());
