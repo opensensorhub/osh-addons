@@ -81,6 +81,9 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		// vertical rate
         recordStruct.addField("verticalRate", fac.newQuantity(DEF_VERTICAL_RATE, "Vertical Rate", null, "[ft_i]/min"));
 
+        // estimated flag
+        recordStruct.addField("estimated", fac.newBoolean(SWEConstants.DEF_FLAG, "Estimated Flag", null));
+
 		// default encoding is text
 		encoding = fac.newTextEncoding(",", "\n");
 	}
@@ -94,7 +97,9 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		dataBlk.setDoubleValue(i++, fltPos.getClock());
 		dataBlk.setStringValue(i++, oshFlightId);
 		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.lat));
-		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.lon));		
+		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.lon));
+        dataBlk.setBooleanValue(i++, "P".equals(fltPos.updateType));
+        parentSensor.getLogger().debug("{} Position Type: {}", oshFlightId, fltPos.updateType);
 		
 		// fix altitude if 0
         double alt = fltPos.getValue(fltPos.alt);
