@@ -147,7 +147,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                     else
                         getLogger().info("FA connection OK: Last message received {}s ago", lastMsgAge);
                     
-                    getLogger().debug("Queue size={}, Cache size={}", msgHandler.execQueue.size(), flightCache.size());
+                    getLogger().debug("Cache size={}", flightCache.size());
                 }
                 
                 // if no message received for a while
@@ -302,7 +302,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
                     reportStatus("Connected to Firehose channel");
                     connected = true;
                 }
-            }            
+            }
         });
         
         for(String mt: config.messageTypes)
