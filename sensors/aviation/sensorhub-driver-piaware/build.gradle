@@ -1,0 +1,28 @@
+description = 'Driver for PiAware ADS-B flight receiver'
+ext.details = 'Driver for decoding PiAware streaming data using raspberry pi and flight aware receiver software'
+version = '0.2.0'
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    embeddedImpl 'com.google.code.gson:gson:2.8.7'
+}
+
+// add info to OSGi manifest
+osgi {
+    manifest{
+        attributes( 'Bundle-Vendor': 'Botts Innovative Research, Inc.')
+        attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.piAware.Activator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      name 'Tony Cook'
+      organization 'Botts Inc'
+      organizationUrl 'https://opensensorhub.org' 
+    }
+  }
+}
+

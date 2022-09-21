@@ -1,0 +1,12 @@
+[Unit]
+Description=OSH PiAwareDriver
+
+[Service]
+ExecStart=/bin/bash /opt/osh-node/launch.sh
+User=pi
+Group=pi
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
