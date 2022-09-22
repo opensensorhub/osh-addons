@@ -245,9 +245,13 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
                 if (fch != null)
                     fch.close();
             }
-            catch (Exception e)
+            catch (InterruptedException e)
             {
-                log.error("Error when shutting down frame listener thread", e);
+            	Thread.currentThread().interrupt();
+            	log.error("Interrupted while shutting down frame listener thread", e);
+            }
+            catch (Exception e) {
+                log.error("Exception when shutting down frame listener thread", e);
             }            
         }
     }
