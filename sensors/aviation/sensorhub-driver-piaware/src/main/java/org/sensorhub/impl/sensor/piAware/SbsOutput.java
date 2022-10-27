@@ -36,20 +36,17 @@ import net.opengis.swe.v20.Vector;
  * @author Tony Cook
  *
  */
-public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> { //implements IMultiSourceDataInterface {
+public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> { 
 	private static final int AVERAGE_SAMPLING_PERIOD = (int) TimeUnit.MINUTES.toSeconds(20);
 
 	DataRecord recordStruct;
 	DataEncoding recordEncoding;
-//	Map<String, Long> latestUpdateTimes;
-	//Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
 	static final String NAME = "sbsOutput";
 	
 	Logger logger;
 
 	public SbsOutput(PiAwareSensor parentSensor) {
 		super(NAME, parentSensor);
-//		latestUpdateTimes = new HashMap<String, Long>();
 		logger = parentSensor.getLogger();
 		init();
 	}
@@ -96,7 +93,7 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> { //implement
         Vector vec = newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
 		// SWE Common data structure
 		DataRecordBuilder builder = fac.createRecord()
-			.addSamplingTimeIsoUTC("messageTime")
+			.addSamplingTimeIsoUTC("time")
 			.addField("hexIdent", fac.createText()
 				.label("hexIdent")
 				.description("Aircraft Mode S hexadecimal code")
@@ -114,29 +111,12 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> { //implement
 				.description("Speed over ground (not indicated airspeed)")
 				.definition("")
 				.build())
-			.addField("track", fac.createQuantity()
+			.addField("track", fac.createQuantity()  // or heading- what is client looking for?
 				.description("Track of aircraft (not heading). Derived from the velocity E/W and velocity N/S")
 				.definition("")
 				.uomCode("deg")
 				.build())
-//			.addField("latitude", fac.createQuantity()
-//				.description("Latitude- North and East positive. South and West negative.")
-//				.definition("")
-//				.build())
-//			.addField("longitude", fac.createQuantity()
-//				.description("Longitude- North and East positive. South and West negative.")
-//				.definition("")
-//				.build())
-//			.addField("altitude", fac.createQuantity()
-//					.description("Mode C altitude. Height relative to 1013.2mb (Flight Level). Not height AMSL..")
-//					.definition("")
-//					.uomCode("[ft_i]")
-//					.build())
 			.addField("location", vec) //fac.createVector()
-//		        .from(geoFac.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC))
-		        //geoFac.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC)
-		        //.description("Lat-Lon-Alt of aircraft")
-//		        .build())
 			.addField("verticalRate", fac.createQuantity()
 				.description("64 foot resolution")
 				.definition("")
@@ -173,9 +153,6 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> { //implement
 	}
 
 	private DataBlock recordToDataBlock(SbsPojo rec) {
-//		DataBlock dataBlock = latestRecords.get("");
-//		if(dataBlock == null) 		
-		// ???
 		DataBlock dataBlock = recordStruct.createDataBlock();
 
 		int index = 0;
@@ -197,32 +174,6 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> { //implement
 		return dataBlock;
 	}
 
-	// Thinking now that attempting to aggregate different message types and update records doesn't really make sense
-	@Deprecated
-	public boolean updateRecord(SbsPojo rec, DataBlock prevRec) {
-		//  Check for existing record and update only new fields if it exists
-		boolean timeUpdated = false;
-		if(prevRec != null ) {
-			Double prevTime = prevRec.getDoubleValue(0);
-			if(!prevTime.equals(rec.timeMessageGenerated/1000.)) {
-				prevRec.setDoubleValue(0, rec.timeMessageGenerated/1000.);
-				timeUpdated = true;
-			}
-			if(rec.groundSpeed != null) 	prevRec.setDoubleValue(4, rec.groundSpeed);
-			if(rec.track != null) 	prevRec.setDoubleValue(5, rec.track);
-			if(rec.latitude != null) 	prevRec.setDoubleValue(6, rec.latitude);
-			if(rec.longitude != null) 	prevRec.setDoubleValue(7, rec.longitude);
-			if(rec.altitude != null) 	prevRec.setDoubleValue(8, rec.altitude);
-			if(rec.verticalRate != null) 	prevRec.setDoubleValue(9, rec.verticalRate);
-			if(rec.squawk != null) 	prevRec.setStringValue(10, rec.squawk);
-			if(rec.squawkChange != null) 	prevRec.setBooleanValue(11, rec.squawkChange);
-			if(rec.emergency!= null) 	prevRec.setBooleanValue(12, rec.emergency);
-			if(rec.spiIdent != null) 	prevRec.setBooleanValue(13, rec.spiIdent);
-			if(rec.isOnGround != null) 	prevRec.setBooleanValue(14, rec.isOnGround);
-		}
-		return timeUpdated;
-	}
-	
 	public void publishRecord(SbsPojo rec, String foiUid) {
 		try {
 //			DataBlock prevRec =  latestRecords.get(rec.hexIdent);
@@ -247,6 +198,8 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> { //implement
 	private void setDoubleValue(DataBlock block, int index, Double value) {
 		if(value != null)
 			block.setDoubleValue(index, value);
+		else
+			block.setDoubleValue(Double.NaN); // will this work?
 	}
 	
 	private void setStringValue(DataBlock block, int index, String value) {
@@ -283,25 +236,4 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> { //implement
 	public DataEncoding getRecommendedEncoding() {
 		return recordEncoding;
 	}
-
-//	@Override
-//	public Collection<String> getEntityIDs() {
-//		return parentSensor.getEntityIDs();
-//	}
-//
-//	@Override
-//	public Map<String, DataBlock> getLatestRecords() {
-//		return Collections.unmodifiableMap(latestRecords);
-//	}
-//
-//	@Override
-//	public DataBlock getLatestRecord(String entityID) {
-//		// DataBlock db = latestRecords.get(entityID);
-////		for(Map.Entry<String, DataBlock> dbe: latestRecords.entrySet()) {
-////			String key = dbe.getKey();
-////			DataBlock val = dbe.getValue();
-////		}
-//		return latestRecords.get(entityID);
-//	}
-
 }

@@ -22,7 +22,7 @@ public class PiAwareConfig extends SensorConfig
 //    @DisplayInfo(desc="Airline codes to listen for")
 //    public List<String> airlines = new ArrayList<>();
  
-	String piawareDeviceIp = "192.168.1.124";
+	String deviceIp;
 	int rawOutboundPort = 30002;
 	int sbsOutboundPort = 30003;
 	int beastOutboundPort = 30005;

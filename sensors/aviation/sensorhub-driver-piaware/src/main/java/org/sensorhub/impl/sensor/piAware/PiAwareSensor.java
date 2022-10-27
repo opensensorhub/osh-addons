@@ -72,6 +72,10 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 	@Override
 	public void doInit() throws SensorHubException
 	{
+		if(config.deviceIp == null) {
+			throw new SensorHubException("deviceIp is null. Must be set in config for driver to start");
+		}
+
 		// IDs
 		this.uniqueID = SENSOR_UID_PREFIX + "PiAware";
 		this.xmlID = "PiAware";
@@ -96,7 +100,8 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 		
 		@Override
 		public void run() {
-			try (Socket socket = new Socket(config.piawareDeviceIp, config.sbsOutboundPort);
+			logger.info("Start listening on port " + config.deviceIp);
+			try (Socket socket = new Socket(config.deviceIp, config.sbsOutboundPort);
 					BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
 				sbsParser = new SbsParser(getLogger());
@@ -105,21 +110,22 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 				do  {
 					try {
 						line = in.readLine();
-//						System.err.println(line);
 						SbsPojo rec = sbsParser.parse(line);
 						
 						if(!supportedMessageTypes.contains(rec.messageSubType))
 							continue;
+						
+						logger.trace("calling ensureFlightId for {}", rec.hexIdent);
 						String uid = ensureFlightFoi(rec.hexIdent, rec.timeMessageGenerated);
 						
 						rec.hexIdent = PiAwareSensor.SENSOR_UID_PREFIX + rec.hexIdent;
-//						System.err.println("SbsParserThread uid = " + uid);
 						sbsOutput.publishRecord(rec, uid);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
 				} while (line != null && running);
 			} catch (Exception e) {
+				logger.debug("Exception is SBSParserThread", e);
 				e.printStackTrace(System.err);
 				//  Check and reestablish connection if needed
 			}
@@ -148,7 +154,6 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 		String uid = FLIGHT_UID_PREFIX + flightId;
 
 		// skip if FOI already exists
-//		AbstractFeature flightFoi = flightFois.get(uid);
 		IFeature flightFoi = getCurrentFeaturesOfInterest().get(uid);
 		if (flightFoi != null) 
 			return uid;
@@ -158,15 +163,13 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 		foi.setId(flightId);
 		foi.setUniqueIdentifier(uid);
 		foi.setName(flightId + " Flight");
-		//foiMap.put(uid, foi);
 		addFoi(foi);
-//		flightFois.put(uid, foi);
 
 		// send event - don't need to do this anymore?
 		long now = System.currentTimeMillis();
 		eventHandler.publish(new FoiAddedEvent(now, SENSOR_UID_PREFIX + flightId, uid, Instant.now() ));
 
-		getLogger().debug("{}: New FOI added: {}; Num FOIs = {}", flightId, uid, foiMap.size());
+		logger.trace("{}: New FOI added: {}; Num FOIs = {}", flightId, uid, foiMap.size());
 		return uid;
 	}
 
@@ -176,62 +179,4 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 	{
 		return false;
 	}
-
-
-//	@Override
-//	public Collection<String> getEntityIDs()
-//	{
-//		return Collections.unmodifiableCollection(flightFois.keySet());
-//	}
-//
-//
-//	@Override
-//	public AbstractFeature getCurrentFeatureOfInterest()
-//	{
-//		return null;
-//	}
-//
-//
-//	@Override
-//	public AbstractProcess getCurrentDescription(String entityID)
-//	{
-//		return null;
-//	}
-//
-//
-//	@Override
-//	public double getLastDescriptionUpdate(String entityID)
-//	{
-//		return 0;
-//	}
-//
-//
-//	@Override
-//	public AbstractFeature getCurrentFeatureOfInterest(String entityID)
-//	{
-//		return flightFois.get(entityID);
-//	}
-//
-//
-//	@Override
-//	public Collection<? extends AbstractFeature> getFeaturesOfInterest()
-//	{
-//		return Collections.unmodifiableCollection(flightFois.values());
-//	}
-//
-//
-//	@Override
-//	public Collection<String> getFeaturesOfInterestIDs()
-//	{
-//		return Collections.unmodifiableCollection(flightFois.keySet());
-//	}
-//
-//
-//	@Override
-//	public Collection<String> getEntitiesWithFoi(String foiID)
-//	{
-//		String entityID = foiID.substring(foiID.lastIndexOf(':')+1);
-//		return Arrays.asList(entityID);
-//	}
-
 }

@@ -96,7 +96,6 @@ public class SbsParser
 					logger.debug("MsgType not recognized: {}", rec.messageSubType);
 					logger.debug(inline);
 				}
-				rec.callsign =  flightNums.get(rec.hexIdent).trim();
 				return rec;
 			}
 			// TODO- support other MessageTypes, but not seeing any other types in PiAware feed
@@ -139,7 +138,7 @@ public class SbsParser
 	public static void main(String[] args) {
 		SbsParser parser = new SbsParser();
 		PiAwareConfig config = new PiAwareConfig();
-		try (Socket socket = new Socket("192.168.1.124", config.sbsOutboundPort);
+		try (Socket socket = new Socket("192.168.1.134", config.sbsOutboundPort);
 				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
 			String line = null;
@@ -147,8 +146,9 @@ public class SbsParser
 				try {
 					line = in.readLine();
 					SbsPojo rec = parser.parse(line);
+					System.err.println(rec.callsign + "," + rec.dateMessageGeneratedStr + "," + rec.timeMessageGeneratedStr);
 					//if(rec.hexIdent.startsWith("A62F"))
-						System.err.println(line);
+//						System.err.println(line);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

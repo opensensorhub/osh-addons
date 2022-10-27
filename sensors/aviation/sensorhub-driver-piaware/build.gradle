@@ -1,6 +1,6 @@
 description = 'Driver for PiAware ADS-B flight receiver'
 ext.details = 'Driver for decoding PiAware streaming data using raspberry pi and flight aware receiver software'
-version = '0.2.0'
+version = '0.2.1'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

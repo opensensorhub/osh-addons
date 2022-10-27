@@ -9,6 +9,7 @@ import org.sensorhub.impl.sensor.piAware.AircraftReader.AircraftJson.Aircraft;
 
 import com.google.gson.Gson;
 
+@Deprecated // Not being used- confirm and removes
 public class AircraftReader {
 
 	class AircraftJson {
