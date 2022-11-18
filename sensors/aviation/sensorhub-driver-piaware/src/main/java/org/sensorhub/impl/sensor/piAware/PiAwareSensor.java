@@ -48,7 +48,8 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 	static final String FLIGHT_UID_PREFIX = "urn:osh:aviation:flight:";
 
     // Outputs
-	SbsOutput sbsOutput;
+	LocationOutput locationOutput;
+	TrackOutput trackOutput;
 	SbsParser sbsParser;
 	SbsParserThread sbsParserThread;
 	List<Integer> supportedMessageTypes;
@@ -81,16 +82,16 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 		this.xmlID = "PiAware";
 
 		// init outputs
-		this.sbsOutput = new SbsOutput(this);
-		addOutput(sbsOutput, false);
-		sbsOutput.init();
+		this.locationOutput = new LocationOutput(this);
+		addOutput(locationOutput, false);
+		locationOutput.init();
+		this.trackOutput = new TrackOutput(this);
+		addOutput(trackOutput, false);
+		trackOutput.init();
 		
-		// init Map
-		//flightFois = new ConcurrentHashMap<String, AbstractFeature>();  // map type?
-		
-		//
 		supportedMessageTypes = new ArrayList<>();
-		supportedMessageTypes.add(2);
+		supportedMessageTypes.add(1);
+		supportedMessageTypes.add(2); // Not seeing messageType = 2
 		supportedMessageTypes.add(3);
 		supportedMessageTypes.add(4);
 	}
@@ -112,14 +113,24 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 						line = in.readLine();
 						SbsPojo rec = sbsParser.parse(line);
 						
-						if(!supportedMessageTypes.contains(rec.messageSubType))
+						if(!supportedMessageTypes.contains(rec.transmissionType))
 							continue;
 						
 						logger.trace("calling ensureFlightId for {}", rec.hexIdent);
 						String uid = ensureFlightFoi(rec.hexIdent, rec.timeMessageGenerated);
 						
 						rec.hexIdent = PiAwareSensor.SENSOR_UID_PREFIX + rec.hexIdent;
-						sbsOutput.publishRecord(rec, uid);
+						switch(rec.transmissionType) {
+						case 3:
+							locationOutput.publishRecord(rec, uid);
+							break;
+						case 4:
+							trackOutput.publishRecord(rec, uid);
+							break;
+						default:
+							logger.trace("TransmissionType not supported: {} ", rec.transmissionType);
+							break;
+						}
 					} catch (Exception e) {
 						e.printStackTrace();
 					}

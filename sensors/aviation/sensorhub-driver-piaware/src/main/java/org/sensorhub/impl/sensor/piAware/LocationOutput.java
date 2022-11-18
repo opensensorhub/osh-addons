@@ -15,8 +15,6 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.piAware;
 
-import java.util.concurrent.TimeUnit;
-
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
@@ -36,26 +34,20 @@ import net.opengis.swe.v20.Vector;
  * @author Tony Cook
  *
  */
-public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> { 
-	private static final int AVERAGE_SAMPLING_PERIOD = (int) TimeUnit.MINUTES.toSeconds(20);
-
+public class LocationOutput extends AbstractSensorOutput<PiAwareSensor> { 
+	private static final int AVERAGE_SAMPLING_PERIOD = 1;
 	DataRecord recordStruct;
 	DataEncoding recordEncoding;
-	static final String NAME = "sbsOutput";
+	static final String NAME = "locationOutput";
 	
 	Logger logger;
 
-	public SbsOutput(PiAwareSensor parentSensor) {
+	public LocationOutput(PiAwareSensor parentSensor) {
 		super(NAME, parentSensor);
 		logger = parentSensor.getLogger();
 		init();
 	}
 
-//	@Override
-//	public String getName() {
-//		return "SbsOutput";
-//	}
-//	
 	 public Vector newLocationVectorLLA(String def)
 	    {
 	        GeoPosHelper geoFac = new GeoPosHelper();
@@ -93,7 +85,10 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> {
         Vector vec = newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
 		// SWE Common data structure
 		DataRecordBuilder builder = fac.createRecord()
-			.addSamplingTimeIsoUTC("time")
+			.addField("time", geoFac.createTime()
+		        .asSamplingTimeIsoUTC()
+//		        .asSamplingTimeIsoGPS()
+		        .description(""))
 			.addField("hexIdent", fac.createText()
 				.label("hexIdent")
 				.description("Aircraft Mode S hexadecimal code")
@@ -107,25 +102,11 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> {
 				.description("")
 				.definition("")
 				.build())
-			.addField("groundSpeed", fac.createQuantity()
-				.description("Speed over ground (not indicated airspeed)")
-				.definition("")
-				.build())
-			.addField("track", fac.createQuantity()  // or heading- what is client looking for?
-				.description("Track of aircraft (not heading). Derived from the velocity E/W and velocity N/S")
-				.definition("")
-				.uomCode("deg")
-				.build())
-			.addField("location", vec) //fac.createVector()
-			.addField("verticalRate", fac.createQuantity()
-				.description("64 foot resolution")
-				.definition("")
-				.uomCode("[ft_i]/s")
-				.build())
-			.addField("squawk", fac.createText()
-				.description("Assigned Mode A squawk code.")
-				.definition("")
-				.build())
+//			.addField("location", vec) //fac.createVector()
+	        .addField("location", geoFac.createVector()
+	                .from(geoFac.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC))
+	                .description("Location measured by the GPS device")
+	        		.build())
 			.addField("squawkChange", fac.createBoolean()
 				.description("Flag to indicate squawk has changed.")
 				.definition("")
@@ -144,9 +125,9 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> {
 				.build());
 			
 		recordStruct = builder.build();
-		recordStruct.setName("SBS Record");
-		recordStruct.setLabel("SBS Record");
-		recordStruct.setDefinition(SWEConstants.SWE_PROP_URI_PREFIX + "sbsOutput");
+		recordStruct.setName("Location Record");
+		recordStruct.setLabel("Location Record");
+		recordStruct.setDefinition(SWEConstants.SWE_PROP_URI_PREFIX + "locationOutput");
 			
 		// default encoding is text
 		recordEncoding = fac.newTextEncoding(",", "\n");
@@ -156,17 +137,19 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> {
 		DataBlock dataBlock = recordStruct.createDataBlock();
 
 		int index = 0;
-		setDoubleValue(dataBlock, index++, rec.timeMessageGenerated/1000.);
+		Double time = (rec.timeMessageGenerated.doubleValue())/1000.;
+//		System.err.println("   *** " + time + "," + rec.flightID + "," + rec.callsign + "," + rec.groundSpeed);
+
+//		logger.debug("time: {}", t);
+//		logger.debug("callsign: {}", rec.callsign);
+//		setDoubleValue(dataBlock, index++, ((double)rec.timeMessageGenerated)/1000.);
+		setDoubleValue(dataBlock, index++, time);
 		setStringValue(dataBlock, index++, rec.hexIdent);
 		setStringValue(dataBlock, index++, rec.flightID);
 		setStringValue(dataBlock, index++, rec.callsign);
-		setDoubleValue(dataBlock, index++, rec.groundSpeed);
-		setDoubleValue(dataBlock, index++, rec.track);
 		setDoubleValue(dataBlock, index++, rec.latitude);
 		setDoubleValue(dataBlock, index++, rec.longitude);
 		setDoubleValue(dataBlock, index++, rec.altitude);
-		setDoubleValue(dataBlock, index++, rec.verticalRate);
-		setStringValue(dataBlock, index++, rec.squawk);
 		setBooleanValue(dataBlock, index++, rec.squawkChange);
 		setBooleanValue(dataBlock, index++, rec.emergency);
 		setBooleanValue(dataBlock, index++, rec.spiIdent);
@@ -176,17 +159,8 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> {
 
 	public void publishRecord(SbsPojo rec, String foiUid) {
 		try {
-//			DataBlock prevRec =  latestRecords.get(rec.hexIdent);
-//			boolean timeUpdated = true;
-//			if(prevRec != null ) {
-//				timeUpdated = updateRecord(rec, prevRec);
-//			} else {
-//				latestRecord = recordToDataBlock(rec);
-//			}
-//			DataBlock latestRecord = recordToDataBlock(rec);
 			latestRecord = recordToDataBlock(rec);
 			latestRecordTime = System.currentTimeMillis();
-//			latestRecords.put(rec.hexIdent, latestRecord);
 			eventHandler
 				.publish(new DataEvent(latestRecordTime, rec.hexIdent, NAME, foiUid, latestRecord));
 
@@ -199,12 +173,13 @@ public class SbsOutput extends AbstractSensorOutput<PiAwareSensor> {
 		if(value != null)
 			block.setDoubleValue(index, value);
 		else
-			block.setDoubleValue(Double.NaN); // will this work?
+			block.setDoubleValue(index, Double.NaN); // will this work?
 	}
 	
 	private void setStringValue(DataBlock block, int index, String value) {
-		if(value == null)  value = "";
-		block.setStringValue(index, value);
+		if(value == null)  
+			value = "";
+		block.setStringValue(index, value); 
 	}
 	
 	private void setBooleanValue(DataBlock block, int index, Boolean value) {

@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 public class SbsParser 
 {
 	Logger logger;
+	@Deprecated // Don't think I need this
 	Map<String, String>  flightNums = new HashMap<>();  // <hexIdent, flightNumber>
 	
 	public SbsParser() {
@@ -41,14 +42,14 @@ public class SbsParser
 
 			rec.messageType = MessageType.valueOf(vals[0]);
 			if (rec.messageType == MessageType.MSG) {
-				rec.messageSubType = Integer.parseInt(vals[1]);
+				rec.transmissionType = Integer.parseInt(vals[1]);
 				parseCommonFields(rec, vals);
 				rec.timeMessageGenerated = dateTimeToUtc(rec.dateMessageGeneratedStr, rec.timeMessageGeneratedStr);
 				rec.timeMessageLogged = dateTimeToUtc(rec.dateMessageLoggedStr, rec.timeMessageLoggedStr);
-				logger.trace(vals.length + ": " + inline);
-				switch (rec.messageSubType) {
+				switch (rec.transmissionType) {
 				case 1:
 					rec.callsign = vals[10].trim();
+					logger.trace("Parser Message 1: callsign: {}", rec.callsign );
 					if(!flightNums.containsKey(rec.hexIdent) || flightNums.get(rec.hexIdent) == null) {
 						flightNums.put(rec.hexIdent, rec.callsign);
 					}
@@ -93,7 +94,7 @@ public class SbsParser
 					rec.isOnGround = parseFlag(vals[21]);
 					break;
 				default:
-					logger.debug("MsgType not recognized: {}", rec.messageSubType);
+					logger.debug("MsgType not recognized: {}", rec.transmissionType);
 					logger.debug(inline);
 				}
 				return rec;
@@ -127,6 +128,7 @@ public class SbsParser
 		rec.timeMessageGeneratedStr = vals[7];
 		rec.dateMessageLoggedStr = vals[8];
 		rec.timeMessageLoggedStr = vals[9];
+		rec.callsign = vals[10]; // ???
 	}
 	
 	public static long dateTimeToUtc(String date, String time) {
@@ -138,15 +140,18 @@ public class SbsParser
 	public static void main(String[] args) {
 		SbsParser parser = new SbsParser();
 		PiAwareConfig config = new PiAwareConfig();
-		try (Socket socket = new Socket("192.168.1.134", config.sbsOutboundPort);
+		try (Socket socket = new Socket("192.168.1.126", config.sbsOutboundPort);
 				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
 			String line = null;
 			do  {
 				try {
 					line = in.readLine();
+					//System.err.println(line);
 					SbsPojo rec = parser.parse(line);
-					System.err.println(rec.callsign + "," + rec.dateMessageGeneratedStr + "," + rec.timeMessageGeneratedStr);
+					if(rec.transmissionType == 3 ||  rec.transmissionType ==4)
+						System.err.println("TType = " + rec.transmissionType + ", " + rec.hexIdent);
+//					System.err.println(rec.callsign + "," + rec.dateMessageGeneratedStr + "," + rec.timeMessageGeneratedStr);
 					//if(rec.hexIdent.startsWith("A62F"))
 //						System.err.println(line);
 				} catch (Exception e) {

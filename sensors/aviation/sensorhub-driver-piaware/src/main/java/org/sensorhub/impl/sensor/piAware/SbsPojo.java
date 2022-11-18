@@ -6,7 +6,7 @@ public class SbsPojo {
 	}
 
 	MessageType messageType;
-	int messageSubType;
+	int transmissionType;
 
 	Integer sessionId;  //  always 1 ?
 	Integer aircraftId; //  always 1 ?
