@@ -101,6 +101,7 @@ public class SbsParser
 			}
 			// TODO- support other MessageTypes, but not seeing any other types in PiAware feed
 		} catch (Exception e) {
+			System.err.println("inline: " + inline);
 			throw new IOException(e);
 		}
 		return null;

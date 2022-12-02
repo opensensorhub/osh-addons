@@ -11,7 +11,8 @@ public class SbsPojo {
 	Integer sessionId;  //  always 1 ?
 	Integer aircraftId; //  always 1 ?
 	String hexIdent; // Aircraft Mode S hexadecimal code
-	String flightID; // Database Flight record number
+	String flightID; // taken from aircraft.json, not SbsParser
+	String category; // taken from aircraft.json, not SbsParser
 	String dateMessageGeneratedStr;
 	String timeMessageGeneratedStr;
 	String dateMessageLoggedStr;

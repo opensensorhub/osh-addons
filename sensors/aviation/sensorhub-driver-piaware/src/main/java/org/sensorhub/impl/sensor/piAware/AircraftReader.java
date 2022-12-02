@@ -3,66 +3,87 @@ package org.sensorhub.impl.sensor.piAware;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
-import org.sensorhub.impl.sensor.piAware.AircraftReader.AircraftJson.Aircraft;
+import org.sensorhub.impl.sensor.piAware.AircraftJson.Aircraft;
 
 import com.google.gson.Gson;
 
-public class AircraftReader {
+public class AircraftReader { // implements Runnable {
 
-	Map<String, String> aircrafts = new HashMap<>();
+	Map<String, Aircraft> aircraftMap = new HashMap<>(); // hexIdent, Aircraft
+	Path jsonPath; // only for testing locally
+	URL aircraftUrl;
+	ReaderTask readerTask; 
 	
-	class AircraftJson {
-		Double now;
-		Integer messages;
-		Aircraft [] aircraft;
-		
-		class Aircraft {
-			String hex;
-			String flight;
-		}
-		
-		public Aircraft [] getAircraft() {
-			return aircraft;
+	public AircraftReader(Path jsonPath) {
+		this.jsonPath = jsonPath;
+	}
+
+	public AircraftReader(String aircraftUrl) throws MalformedURLException {
+		this.aircraftUrl = new URL(aircraftUrl);
+	}
+
+	public Aircraft getAircraft(String hexIdent) {
+		return aircraftMap.get(hexIdent);
+	}
+
+//	volatile boolean running = false;
+//	@Override
+	class ReaderTask extends TimerTask {
+		public void run() {
+			try (BufferedReader reader = new BufferedReader(new InputStreamReader(aircraftUrl.openStream()))) {
+				Gson gson = new Gson();
+				AircraftJson aircraftJson = gson.fromJson(reader, AircraftJson.class);
+				for(Aircraft aircraft: aircraftJson.aircraft) {
+					if(aircraft.flight != null)
+						aircraft.flight = aircraft.flight.trim();
+					aircraft.hex = aircraft.hex.trim().toUpperCase();
+					// Check for existing aircraft without flightID and update if it's there
+					Aircraft existing = aircraftMap.get(aircraft.hex);
+					if(existing == null) {
+						aircraftMap.put(aircraft.hex, aircraft);
+					} else {
+ 						if(existing.flight == null && aircraft.flight != null)
+							existing.flight = aircraft.flight;
+ 						if(existing.category == null && aircraft.category != null)
+ 							existing.category = aircraft.category;
+					}
+				}
+//				System.err.println(aircraftMap.size() + " planes in map");
+			} catch (Exception e) {
+				e.printStackTrace(System.err);
+			}
 		}
 	}
+	Timer timer;
+	public void startReaderTask() {
+		readerTask = new ReaderTask();
+		timer = new Timer();
+		timer.scheduleAtFixedRate(readerTask, 0, 1000L);
+	}
 	
-	public static Aircraft[] getAircraft(Reader reader) throws Exception {
-//		try (Reader reader = Files.newBufferedReader(Paths.get("src/main/resources/aircraft.json"))) {
-//		try (Reader reader = Files.newBufferedReader(path)) {
-			Gson gson = new Gson();
-			AircraftJson aircraft = gson.fromJson(reader, AircraftJson.class);
-			return aircraft.getAircraft();
-//		} catch (Exception ex) {
-//			throw(ex);
-//		}
+	public void stopReaderTask() {
+		readerTask.cancel();
+		timer.cancel();
 	}
 	
 	public static void main(String[] args) throws Exception {
 		String jsonUrl = "http://192.168.1.126:8080/data/aircraft.json";
-		URL url = new URL(jsonUrl);
-		BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
-		Aircraft [] aircrafts = getAircraft(reader);
-//		StringBuilder sb = new StringBuilder();
-//		while(true) {
-//			String s = is.readLine();
-//			if(s == null || s.trim().length() == 0)  
-//				break;
-//			sb.append(s);
-//		}
-//		Aircraft [] aircrafts = getAircraft(Paths.get("src/main/resources/aircraft.json"));
-		int cnt = 0;
-		for(Aircraft a: aircrafts)
-			if(a.flight != null) {
-				System.out.println(a.hex + " : " + a.flight);
-				cnt++;
-			}
-		System.out.println(cnt + " flights with tail #");
+		AircraftReader reader = new AircraftReader(jsonUrl);
+		reader.startReaderTask();
+		System.err.println("started");
+		Thread.sleep(60_000L);
+//		Aircraft ac = reader.getAircraft("A1AE05");
+//		System.err.println(ac.flight);
+		reader.stopReaderTask();
+		System.err.println("stopped");
 	}
+	
 }

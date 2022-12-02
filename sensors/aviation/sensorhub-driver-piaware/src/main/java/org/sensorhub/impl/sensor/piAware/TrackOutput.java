@@ -45,6 +45,10 @@ public class TrackOutput extends AbstractSensorOutput<PiAwareSensor> {
 				.description("Database Flight record number")
 				.definition("")
 				.build())
+			.addField("category", fac.createText()
+					.description("ADS-B emitter category set")
+					.definition("")
+					.build())
 			.addField("callSign", fac.createText()
 				.description("")
 				.definition("")
@@ -68,7 +72,7 @@ public class TrackOutput extends AbstractSensorOutput<PiAwareSensor> {
 		recordStruct = builder.build();
 		recordStruct.setName("Track Record");
 		recordStruct.setLabel("Track Record");
-		recordStruct.setDefinition(SWEConstants.SWE_PROP_URI_PREFIX + "trackOutput");
+		recordStruct.setDefinition(SWEConstants.SWE_PROP_URI_PREFIX + "Track");
 			
 		// default encoding is text
 		recordEncoding = fac.newTextEncoding(",", "\n");
@@ -85,8 +89,9 @@ public class TrackOutput extends AbstractSensorOutput<PiAwareSensor> {
 //		logger.debug("callsign: {}", rec.callsign);
 //		setDoubleValue(dataBlock, index++, ((double)rec.timeMessageGenerated)/1000.);
 		setDoubleValue(dataBlock, index++, time);
-		setStringValue(dataBlock, index++, rec.hexIdent);
+		setStringValue(dataBlock, index++, rec.hexIdent);	
 		setStringValue(dataBlock, index++, rec.flightID);
+		setStringValue(dataBlock, index++, rec.category);
 		setStringValue(dataBlock, index++, rec.callsign);
         setDoubleValue(dataBlock, index++, rec.groundSpeed);
         setDoubleValue(dataBlock, index++, rec.track);
@@ -99,7 +104,8 @@ public class TrackOutput extends AbstractSensorOutput<PiAwareSensor> {
 			latestRecord = recordToDataBlock(rec);
 			latestRecordTime = System.currentTimeMillis();
 			eventHandler
-				.publish(new DataEvent(latestRecordTime, rec.hexIdent, NAME, foiUid, latestRecord));
+				.publish(new DataEvent(latestRecordTime, PiAwareSensor.SENSOR_UID, NAME, foiUid, latestRecord));
+				//.publish(new DataEvent(latestRecordTime, rec.hexIdent, NAME, foiUid, latestRecord));
 
 		} catch (Exception e) {
 			e.printStackTrace(System.err);

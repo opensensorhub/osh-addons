@@ -15,7 +15,9 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.piAware;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.Socket;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -24,6 +26,7 @@ import java.util.List;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.feature.FoiAddedEvent;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.piAware.AircraftJson.Aircraft;
 import org.vast.ogc.gml.IFeature;
 import org.vast.sensorML.SMLHelper;
 
@@ -43,15 +46,18 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 	GMLFactory gmlFac = new GMLFactory(true);
 
 	// Dynamically created FOIs
-//	Map<String, AbstractFeature> flightFois;
-	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
+	static final String SENSOR_UID = "urn:osh:sensor:aviation:piaware";
 	static final String FLIGHT_UID_PREFIX = "urn:osh:aviation:flight:";
 
     // Outputs
 	LocationOutput locationOutput;
 	TrackOutput trackOutput;
+	
 	SbsParser sbsParser;
 	SbsParserThread sbsParserThread;
+	
+	AircraftReader aircraftReader;
+	
 	List<Integer> supportedMessageTypes;
 
 	public PiAwareSensor()
@@ -78,7 +84,7 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 		}
 
 		// IDs
-		this.uniqueID = SENSOR_UID_PREFIX + "PiAware";
+		this.uniqueID = SENSOR_UID;
 		this.xmlID = "PiAware";
 
 		// init outputs
@@ -111,17 +117,29 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 				do  {
 					try {
 						line = in.readLine();
-						SbsPojo rec = sbsParser.parse(line);
+						if(line == null || line.trim().length() == 0)
+							continue;
+						SbsPojo rec = sbsParser.parse(line.trim());
 						
 						if(!supportedMessageTypes.contains(rec.transmissionType))
 							continue;
 						
 						logger.trace("calling ensureFlightId for {}", rec.hexIdent);
-						String uid = ensureFlightFoi(rec.hexIdent, rec.timeMessageGenerated);
+						String uid = ensureFlightFoi(rec.hexIdent);
 						
-						rec.hexIdent = PiAwareSensor.SENSOR_UID_PREFIX + rec.hexIdent;
+						// check reader map for flightID corresponding to this hexId
+						Aircraft aircraft = aircraftReader.getAircraft(rec.hexIdent);
+						if(aircraft != null) {
+							rec.flightID = aircraft.flight;
+							rec.category = aircraft.category;
+						}
+						
+						
+						rec.hexIdent = uid; //PiAwareSensor.SENSOR_UID + rec.hexIdent;
 						switch(rec.transmissionType) {
 						case 3:
+							if(rec.latitude == null || rec.longitude == null || rec.altitude == null)
+								break;
 							locationOutput.publishRecord(rec, uid);
 							break;
 						case 4:
@@ -150,6 +168,16 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 		sbsParserThread = new SbsParserThread();
 		Thread thread = new Thread(sbsParserThread);
 		thread.start();
+
+		try {
+//			String jsonUrl = "http://192.168.1.126:8080/data/aircraft.json";
+			String jsonUrl = "http://" + config.deviceIp + ":" + config.dataPort + "/" +  
+						config.dataPath + "/" + config.aircraftJsonFile;
+			aircraftReader = new AircraftReader(jsonUrl);
+			aircraftReader.startReaderTask();
+		} catch (MalformedURLException e) {
+			throw new SensorHubException(e.getMessage(), e);
+		}
 	}
 
 	@Override
@@ -157,10 +185,13 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 	{
 		if(sbsParserThread != null)
 			sbsParserThread.running = false;
+		
+		if(aircraftReader != null)
+			aircraftReader.stopReaderTask();
 	}
 
 
-	private String ensureFlightFoi(String flightId, long recordTime)
+	private String ensureFlightFoi(String flightId)
 	{						
 		String uid = FLIGHT_UID_PREFIX + flightId;
 
@@ -178,7 +209,7 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 
 		// send event - don't need to do this anymore?
 		long now = System.currentTimeMillis();
-		eventHandler.publish(new FoiAddedEvent(now, SENSOR_UID_PREFIX + flightId, uid, Instant.now() ));
+		eventHandler.publish(new FoiAddedEvent(now, SENSOR_UID, uid, Instant.now() ));
 
 		logger.trace("{}: New FOI added: {}; Num FOIs = {}", flightId, uid, foiMap.size());
 		return uid;

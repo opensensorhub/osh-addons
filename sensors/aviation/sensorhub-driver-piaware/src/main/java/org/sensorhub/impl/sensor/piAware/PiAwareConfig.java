@@ -14,6 +14,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.piAware;
 
+import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
 
@@ -22,11 +23,21 @@ public class PiAwareConfig extends SensorConfig
 //    @DisplayInfo(desc="Airline codes to listen for")
 //    public List<String> airlines = new ArrayList<>();
  
+    @DisplayInfo(desc="Device IP of piaware receiver")
 	String deviceIp;
+    @DisplayInfo(desc="Port of raw feed")
 	int rawOutboundPort = 30002;
+    @DisplayInfo(desc="Port of sbs feed")
 	int sbsOutboundPort = 30003;
 	int beastOutboundPort = 30005;
+    @DisplayInfo(desc="Port of piaware server")
+	int dataPort = 8080;
 	
-	String dump1090Path = "/run/dump1090";
+    @DisplayInfo(desc="Path of dump1090 processed files running on piaware")
+	String dump1090Path = "/run/dump1090-fa";
+    @DisplayInfo(desc="Path of piaware server")
+	String dataPath = "/data"; 
+    @DisplayInfo(desc="Json file containing additional aircraft info")
 	String aircraftJsonFile = "aircraft.json";
+	
 }

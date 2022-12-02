@@ -95,9 +95,13 @@ public class LocationOutput extends AbstractSensorOutput<PiAwareSensor> {
 				.definition("")
 				.build())
 			.addField("flightId", fac.createText()
-				.description("Database Flight record number")
+				.description("")
 				.definition("")
 				.build())
+			.addField("category", fac.createText()
+					.description("ADS-B emitter category set")
+					.definition("")
+					.build())
 			.addField("callSign", fac.createText()
 				.description("")
 				.definition("")
@@ -127,7 +131,7 @@ public class LocationOutput extends AbstractSensorOutput<PiAwareSensor> {
 		recordStruct = builder.build();
 		recordStruct.setName("Location Record");
 		recordStruct.setLabel("Location Record");
-		recordStruct.setDefinition(SWEConstants.SWE_PROP_URI_PREFIX + "locationOutput");
+		recordStruct.setDefinition(SWEConstants.SWE_PROP_URI_PREFIX + "Location");
 			
 		// default encoding is text
 		recordEncoding = fac.newTextEncoding(",", "\n");
@@ -146,6 +150,7 @@ public class LocationOutput extends AbstractSensorOutput<PiAwareSensor> {
 		setDoubleValue(dataBlock, index++, time);
 		setStringValue(dataBlock, index++, rec.hexIdent);
 		setStringValue(dataBlock, index++, rec.flightID);
+		setStringValue(dataBlock, index++, rec.category);
 		setStringValue(dataBlock, index++, rec.callsign);
 		setDoubleValue(dataBlock, index++, rec.latitude);
 		setDoubleValue(dataBlock, index++, rec.longitude);
@@ -162,7 +167,7 @@ public class LocationOutput extends AbstractSensorOutput<PiAwareSensor> {
 			latestRecord = recordToDataBlock(rec);
 			latestRecordTime = System.currentTimeMillis();
 			eventHandler
-				.publish(new DataEvent(latestRecordTime, rec.hexIdent, NAME, foiUid, latestRecord));
+				.publish(new DataEvent(latestRecordTime, PiAwareSensor.SENSOR_UID, NAME, foiUid, latestRecord));
 
 		} catch (Exception e) {
 			e.printStackTrace(System.err);
