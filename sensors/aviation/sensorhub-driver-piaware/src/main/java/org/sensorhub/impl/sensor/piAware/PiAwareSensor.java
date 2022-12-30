@@ -15,29 +15,34 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.piAware;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.feature.FoiAddedEvent;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.piAware.AircraftJson.Aircraft;
+import org.sensorhub.impl.sensor.piAware.AircraftReader.ReaderTask;
 import org.vast.ogc.gml.IFeature;
 import org.vast.sensorML.SMLHelper;
+import org.vast.swe.SWEHelper;
 
 import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.PhysicalSystem;
 
 
 /**
- * 
  * @author tcook
  * @since Oct 1, 2017
+ * 
+ * TODO - Catch Exceptions on no signal (i.e. antenna disconnect)and try restarting threads
  */
 public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implements IMultiSourceDataProducer
 {
@@ -48,6 +53,8 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 	// Dynamically created FOIs
 	static final String SENSOR_UID = "urn:osh:sensor:aviation:piaware";
 	static final String FLIGHT_UID_PREFIX = "urn:osh:aviation:flight:";
+    static final String DEF_FLIGHT_ID = SWEHelper.getPropertyUri("aero/FlightID");
+    static final String DEF_HEX_ID = SWEHelper.getPropertyUri("aero/HexID");
 
     // Outputs
 	LocationOutput locationOutput;
@@ -55,6 +62,7 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 	
 	SbsParser sbsParser;
 	SbsParserThread sbsParserThread;
+	Socket socket;
 	
 	AircraftReader aircraftReader;
 	
@@ -82,7 +90,7 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 		if(config.deviceIp == null) {
 			throw new SensorHubException("deviceIp is null. Must be set in config for driver to start");
 		}
-
+		
 		// IDs
 		this.uniqueID = SENSOR_UID;
 		this.xmlID = "PiAware";
@@ -100,17 +108,43 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 		supportedMessageTypes.add(2); // Not seeing messageType = 2
 		supportedMessageTypes.add(3);
 		supportedMessageTypes.add(4);
+		
+		// Create socket here and keep track so we can reopen if it gets closed (i.e. power/network outage)
+		try {
+			socket  = new Socket(config.deviceIp, config.sbsOutboundPort);
+		} catch (IOException e) {
+			throw new SensorHubException(e.getMessage(), e);
+		}
+		
 	}
 
+	class SocketChecker extends TimerTask {
+		public void run() {
+			if(socket.isClosed()) {
+				logger.info("Socket connection to piAware closed. Attempting restart.");
+				
+				sbsParserThread.running = false;
+				try {
+					socket  = new Socket(config.deviceIp, config.sbsOutboundPort);
+				} catch (IOException e) {
+					System.err.println(e.getMessage());
+				}
+				
+				sbsParserThread = new SbsParserThread();
+				Thread thread = new Thread(sbsParserThread);
+				thread.start();
+
+			}
+		}
+	}
+	
 	class SbsParserThread implements Runnable {
 		volatile boolean running;  // 
 		
 		@Override
 		public void run() {
 			logger.info("Start listening on port " + config.deviceIp);
-			try (Socket socket = new Socket(config.deviceIp, config.sbsOutboundPort);
-					BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-
+			try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 				sbsParser = new SbsParser(getLogger());
 				running = true;
 				String line = null;
@@ -170,7 +204,6 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 		thread.start();
 
 		try {
-//			String jsonUrl = "http://192.168.1.126:8080/data/aircraft.json";
 			String jsonUrl = "http://" + config.deviceIp + ":" + config.dataPort + "/" +  
 						config.dataPath + "/" + config.aircraftJsonFile;
 			aircraftReader = new AircraftReader(jsonUrl);
@@ -178,6 +211,10 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 		} catch (MalformedURLException e) {
 			throw new SensorHubException(e.getMessage(), e);
 		}
+		
+		SocketChecker socketChecker= new SocketChecker();
+		Timer timer = new Timer();
+		timer.scheduleAtFixedRate(socketChecker, 0, 5000L);
 	}
 
 	@Override

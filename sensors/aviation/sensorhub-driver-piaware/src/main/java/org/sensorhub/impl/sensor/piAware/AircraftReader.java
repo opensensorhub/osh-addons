@@ -37,6 +37,7 @@ public class AircraftReader { // implements Runnable {
 //	volatile boolean running = false;
 //	@Override
 	class ReaderTask extends TimerTask {
+		int errorCnt = 0;
 		public void run() {
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(aircraftUrl.openStream()))) {
 				Gson gson = new Gson();
@@ -58,7 +59,8 @@ public class AircraftReader { // implements Runnable {
 				}
 //				System.err.println(aircraftMap.size() + " planes in map");
 			} catch (Exception e) {
-				e.printStackTrace(System.err);
+				if(++errorCnt < 5)
+					e.printStackTrace(System.err);
 			}
 		}
 	}

@@ -39,7 +39,7 @@ public class LocationOutput extends AbstractSensorOutput<PiAwareSensor> {
 	DataRecord recordStruct;
 	DataEncoding recordEncoding;
 	static final String NAME = "locationOutput";
-	
+
 	Logger logger;
 
 	public LocationOutput(PiAwareSensor parentSensor) {
@@ -91,12 +91,12 @@ public class LocationOutput extends AbstractSensorOutput<PiAwareSensor> {
 		        .description(""))
 			.addField("hexIdent", fac.createText()
 				.label("hexIdent")
-				.description("Aircraft Mode S hexadecimal code")
-				.definition("")
+				.description("Aircraft Mode S (ICAO) hexadecimal code")
+				.definition(PiAwareSensor.DEF_HEX_ID)
 				.build())
 			.addField("flightId", fac.createText()
-				.description("")
-				.definition("")
+				.description("Flight Identifier")
+				.definition(PiAwareSensor.DEF_FLIGHT_ID)
 				.build())
 			.addField("category", fac.createText()
 					.description("ADS-B emitter category set")
