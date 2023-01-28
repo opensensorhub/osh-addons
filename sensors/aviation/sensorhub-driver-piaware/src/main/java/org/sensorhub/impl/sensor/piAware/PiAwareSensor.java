@@ -60,11 +60,15 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 	LocationOutput locationOutput;
 	TrackOutput trackOutput;
 	
+	// Threads/TimerTasks
 	SbsParser sbsParser;
 	SbsParserThread sbsParserThread;
 	Socket socket;
 	
 	AircraftReader aircraftReader;
+	
+	SocketChecker socketChecker;
+	Timer socketTimer;
 	
 	List<Integer> supportedMessageTypes;
 
@@ -212,9 +216,9 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 			throw new SensorHubException(e.getMessage(), e);
 		}
 		
-		SocketChecker socketChecker= new SocketChecker();
-		Timer timer = new Timer();
-		timer.scheduleAtFixedRate(socketChecker, 0, 5000L);
+		socketChecker= new SocketChecker();
+		socketTimer = new Timer();
+		socketTimer.scheduleAtFixedRate(socketChecker, 0, 5000L);
 	}
 
 	@Override
@@ -225,6 +229,12 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 		
 		if(aircraftReader != null)
 			aircraftReader.stopReaderTask();
+
+		if(socketChecker != null) 
+			socketChecker.cancel();
+		
+		if(socketTimer != null)
+			socketTimer.cancel();
 	}
 
 
