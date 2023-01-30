@@ -272,7 +272,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
         watchDogTimer = Executors.newSingleThreadScheduledExecutor();
         
         // connect to pub/sub channel for publishing only
-        if (config.pubSubConfig != null)
+        if (config.pubSubConfig != null && config.pubSubConfig.enablePublish)
             connectToPubSub(true);
         
         // create message handler
