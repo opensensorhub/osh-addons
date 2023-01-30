@@ -39,7 +39,7 @@ public class PositionOutput extends UavOutput<SimUavDriver>
         GeoPosHelper fac = new GeoPosHelper();
         dataStruct = fac.createRecord()
             .name(getName())
-            .label("Platform Position")
+            .label("Platform Location")
             .addField("time", fac.createTime()
                 .asSamplingTimeIsoUTC())
             .addField("pos", fac.createLocationVectorLLA()
@@ -61,11 +61,12 @@ public class PositionOutput extends UavOutput<SimUavDriver>
             var currentState = parentSensor.currentState;
             
             // build and publish datablock
+            int i = 0;
             DataBlock dataBlock = dataStruct.createDataBlock();
-            dataBlock.setDoubleValue(0, now/1000.);
-            dataBlock.setDoubleValue(1, currentState.lat);
-            dataBlock.setDoubleValue(2, currentState.lon);
-            dataBlock.setDoubleValue(3, currentState.alt);
+            dataBlock.setDoubleValue(i++, now/1000.);
+            dataBlock.setDoubleValue(i++, currentState.lat);
+            dataBlock.setDoubleValue(i++, currentState.lon);
+            dataBlock.setDoubleValue(i++, currentState.alt);
             
             // update latest record and send event
             latestRecord = dataBlock;

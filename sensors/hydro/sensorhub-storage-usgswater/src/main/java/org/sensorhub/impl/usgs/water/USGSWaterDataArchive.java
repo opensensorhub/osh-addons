@@ -24,6 +24,7 @@ import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.ReadOnlyDataStore;
 import org.sensorhub.impl.module.AbstractModule;
+import org.vast.util.Asserts;
 import org.vast.util.Bbox;
 import com.google.common.collect.Sets;
 import net.opengis.sensorml.v20.PhysicalSystem;
@@ -70,9 +71,10 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig> im
         ((InMemoryParamDb)paramDb).preloadParams(
             Sets.newHashSet("Physical", "Biological", "Organics", "Inorganics", "Nutrient", "Radiochemical"), null);
         
-        this.procStore = new USGSSystemDescStore(config.exposeFilter, paramDb, getLogger());
-        this.foiStore = new USGSFoiStore(config.exposeFilter, paramDb,getLogger());
-        this.obsStore = new USGSObsStore(config.exposeFilter, paramDb, getLogger());
+        int idScope = Asserts.checkNotNull(config.databaseNum);
+        this.procStore = new USGSSystemDescStore(idScope, config.exposeFilter, paramDb, getLogger());
+        this.foiStore = new USGSFoiStore(idScope, config.exposeFilter, paramDb,getLogger());
+        this.obsStore = new USGSObsStore(idScope, config.exposeFilter, paramDb, getLogger());
         
         procStore.linkTo(obsStore.getDataStreams());
         foiStore.linkTo(procStore);

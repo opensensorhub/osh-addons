@@ -16,6 +16,7 @@
 package org.mp4parser;
 
 import org.mp4parser.tools.Hex;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,11 +32,43 @@ import java.util.regex.Pattern;
  * A Property file based BoxFactory
  */
 public class PropertyBoxParserImpl extends AbstractBoxParser {
+	/**
+	 * MOD CSD:
+	 * Regex that matches an unqualified Java identifier, such as a class name.
+	 * https://stackoverflow.com/questions/5205339/regular-expression-matching-fully-qualified-class-names
+	 */
+	private static final String JAVA_IDENTIFIER_PATTERN = "\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*";
+	
+	/**
+	 * MOD CSD:
+	 * Non-backtracking regex that matches a (possibly fully qualified) Java class name.
+	 */
+    private static final String JAVA_CLASS_NAME_PATTERN = JAVA_IDENTIFIER_PATTERN + "(\\." + JAVA_IDENTIFIER_PATTERN + ")*";
+    
+    /**
+	 * MOD CSD:
+     * Pattern that matches expressions that look like a call to a Java constructor, e.g.
+     * "java.util.Date(123456789)".
+     */
+    private static final String CONSTRUCTOR_INVOCATION_PATTERN = "(" + JAVA_CLASS_NAME_PATTERN + ")\\(([^)]*)\\)";
+
+    /**
+	 * MOD CSD:
+     * Matching group of the class name in CONSTRUCTOR_INVOCATION_PATTERN.
+     */
+    private static final int CLASS_NAME_GROUP = 1;
+
+    /**
+	 * MOD CSD:
+     * Matching group of the parameters in CONSTRUCTOR_INVOCATION_PATTERN.
+     */
+    private static final int PARAMETERS_GROUP = 3;
+    
     static Properties BOX_MAP_CACHE = null;
 
     static String[] EMPTY_STRING_ARRAY = new String[0];
     Properties mapping;
-    Pattern constuctorPattern = Pattern.compile("(.*)\\((.*?)\\)");
+    Pattern constuctorPattern = Pattern.compile(CONSTRUCTOR_INVOCATION_PATTERN);
     StringBuilder buildLookupStrings = new StringBuilder();
     ThreadLocal<String> clazzName = new ThreadLocal<String>();
     ThreadLocal<String[]> param = new ThreadLocal<String[]>();
@@ -76,8 +109,7 @@ public class PropertyBoxParserImpl extends AbstractBoxParser {
                 try {
                     is.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
-                    // ignore - I can't help
+                    LoggerFactory.getLogger(PropertyBoxParserImpl.class).error("I/O error reading properties", e);
                 }
             }
         }
@@ -168,11 +200,11 @@ public class PropertyBoxParserImpl extends AbstractBoxParser {
             if (!matches) {
                 throw new RuntimeException("Cannot work with that constructor: " + constructor);
             }
-            clazzName.set(m.group(1));
-            if (m.group(2).length() == 0) {
+            clazzName.set(m.group(CLASS_NAME_GROUP));
+            if (m.group(PARAMETERS_GROUP).length() == 0) {
                 param.set(EMPTY_STRING_ARRAY);
             } else {
-                param.set(m.group(2).length() > 0 ? m.group(2).split(",") : new String[]{});
+                param.set(m.group(PARAMETERS_GROUP).length() > 0 ? m.group(PARAMETERS_GROUP).split(",") : new String[]{});
             }
         }
 

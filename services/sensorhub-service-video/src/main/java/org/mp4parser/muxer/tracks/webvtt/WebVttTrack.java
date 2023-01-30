@@ -33,7 +33,7 @@ public class WebVttTrack extends AbstractTrack {
     private static final String WEBVTT_FILE_HEADER_STRING = "^\uFEFF?WEBVTT((\\u0020|\u0009).*)?$";
     private static final Pattern WEBVTT_FILE_HEADER =
             Pattern.compile(WEBVTT_FILE_HEADER_STRING);
-    private static final String WEBVTT_METADATA_HEADER_STRING = "\\S*[:=]\\S*";
+    private static final String WEBVTT_METADATA_HEADER_STRING = "[^\\s:=]*+[:=]\\S*+";
     private static final Pattern WEBVTT_METADATA_HEADER =
             Pattern.compile(WEBVTT_METADATA_HEADER_STRING);
     private static final String WEBVTT_CUE_IDENTIFIER_STRING = "^(?!.*(-->)).*$";

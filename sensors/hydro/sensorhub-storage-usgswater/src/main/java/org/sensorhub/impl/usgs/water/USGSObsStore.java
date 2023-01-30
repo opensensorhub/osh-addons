@@ -14,12 +14,12 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.usgs.water;
 
-import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
@@ -35,32 +35,34 @@ import org.slf4j.Logger;
 import org.vast.util.Asserts;
 
 
-public class USGSObsStore extends ReadOnlyDataStore<BigInteger, IObsData, ObsField, ObsFilter> implements IObsStore
+public class USGSObsStore extends ReadOnlyDataStore<BigId, IObsData, ObsField, ObsFilter> implements IObsStore
 {
-    final Logger logger;
+    final int idScope;
     final USGSDataFilter configFilter;
     final IParamDatabase paramDb;
+    final Logger logger;
     final IDataStreamStore dataStreamStore;
     
 
-    public USGSObsStore(USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
+    public USGSObsStore(int idScope, USGSDataFilter configFilter, IParamDatabase paramDb, Logger logger)
     {
+        this.idScope = idScope;
         this.configFilter = Asserts.checkNotNull(configFilter, USGSDataFilter.class);
         this.paramDb = Asserts.checkNotNull(paramDb, IParamDatabase.class);
         this.logger = Asserts.checkNotNull(logger, Logger.class);
-        this.dataStreamStore = new USGSDataStreamStore(configFilter, paramDb, logger);
+        this.dataStreamStore = new USGSDataStreamStore(idScope, configFilter, paramDb, logger);
     }
 
 
     @Override
-    public Stream<Entry<BigInteger, IObsData>> selectEntries(ObsFilter filter, Set<ObsField> fields)
+    public Stream<Entry<BigId, IObsData>> selectEntries(ObsFilter filter, Set<ObsField> fields)
     {
         // convert obs filter to USGS filter
-        var queryFilter = FilterUtils.from(filter);
+        var queryFilter = UsgsUtils.from(filter);
         Instant oldestData = Instant.MAX;
         
         // if specific datastreams are requested, lookup site num and param code
-        Set<Long> dataStreamIds = new TreeSet<>();
+        Set<BigId> dataStreamIds = new TreeSet<>();
         if (filter.getDataStreamFilter() != null)
         {
             var dsStream = DataStoreUtils.selectDataStreamIDs(dataStreamStore, filter.getDataStreamFilter());
@@ -92,10 +94,10 @@ public class USGSObsStore extends ReadOnlyDataStore<BigInteger, IObsData, ObsFie
             queryFilter.startTime = new Date(oldestTs);
         
         // AND with config filter
-        queryFilter = FilterUtils.and(configFilter, queryFilter);
+        queryFilter = UsgsUtils.and(configFilter, queryFilter);
         
         // get observation stream
-        var results = new ObsRecordLoader(paramDb, logger).getObservations(queryFilter, filter.getLimit());
+        var results = new ObsRecordLoader(idScope, paramDb, logger).getObservations(queryFilter, filter.getLimit());
         
         // post-filter on datastream IDs
         if (!dataStreamIds.isEmpty())
@@ -150,7 +152,7 @@ public class USGSObsStore extends ReadOnlyDataStore<BigInteger, IObsData, ObsFie
 
 
     @Override
-    public BigInteger add(IObsData obs)
+    public BigId add(IObsData obs)
     {
         throw new UnsupportedOperationException(READ_ONLY_ERROR_MSG);
     }

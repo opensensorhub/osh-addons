@@ -6,7 +6,7 @@ version = '0.1'
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-process-ffmpeg')
-  embeddedApi('org.bytedeco:opencv-platform:4.5.1-1.5.5') {
+  embeddedApi('org.bytedeco:opencv-platform:4.5.5-1.5.7') {
     exclude group: 'org.bytedeco', module: 'javacpp'
   }
   

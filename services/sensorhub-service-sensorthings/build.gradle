@@ -16,6 +16,7 @@ dependencies {
   implementation project(':sensorhub-comm-mqtt')
   embeddedImpl 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.Core:1.10.1'
   embeddedImpl 'de.fraunhofer.iosb.ilt.FROST-Server:FROST-Server.HTTP.Common:1.10.1'
+  embeddedImpl 'org.apache.httpcomponents:httpclient:4.5.13'
   
   testImplementation 'org.jglue.fluent-json:fluent-json:2.0.3'
 }

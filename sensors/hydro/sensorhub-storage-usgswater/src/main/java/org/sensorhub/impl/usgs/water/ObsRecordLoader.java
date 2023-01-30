@@ -17,7 +17,6 @@ package org.sensorhub.impl.usgs.water;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.math.BigInteger;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -28,13 +27,13 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.TimeUnit;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.data.ObsData;
 import org.slf4j.Logger;
@@ -56,12 +55,13 @@ import net.opengis.swe.v20.DataBlock;
  * @author Alex Robin
  * @since Mar 15, 2017
  */
-public class ObsRecordLoader implements Iterator<Entry<BigInteger, IObsData>>
+public class ObsRecordLoader implements Iterator<Entry<BigId, IObsData>>
 {
     static final String BASE_URL = USGSWaterDataArchive.BASE_USGS_URL + "iv?";
 
-    final Logger logger;
+    final int idScope;
     final IParamDatabase paramDb;
+    final Logger logger;
     USGSDataFilter usgsFilter;
     long originalEndTime = 0;
     long limit;
@@ -69,13 +69,14 @@ public class ObsRecordLoader implements Iterator<Entry<BigInteger, IObsData>>
     long nextBatchStartTime;
     boolean lastBatch;
     BufferedReader reader;
-    ArrayDeque<Entry<BigInteger, IObsData>> nextRecords = new ArrayDeque<>();
+    ArrayDeque<Entry<BigId, IObsData>> nextRecords = new ArrayDeque<>();
     ParamValueParser[] paramReaders;
     DataBlockMixed dataBlkTemplate;
     
     
-    public ObsRecordLoader(IParamDatabase paramDb, Logger logger)
+    public ObsRecordLoader(int idScope, IParamDatabase paramDb, Logger logger)
     {
+        this.idScope = idScope;
         this.paramDb = Asserts.checkNotNull(paramDb, IParamDatabase.class);
         this.logger = Asserts.checkNotNull(logger, Logger.class);
     }
@@ -89,14 +90,14 @@ public class ObsRecordLoader implements Iterator<Entry<BigInteger, IObsData>>
     
 
     @Override
-    public Entry<BigInteger, IObsData> next()
+    public Entry<BigId, IObsData> next()
     {
         if (!hasNext())
             throw new NoSuchElementException();
         var next = nextRecords.poll();
         if (nextRecords.isEmpty())
             preloadNext();
-        return next;                
+        return next;
     }
     
     
@@ -139,16 +140,19 @@ public class ObsRecordLoader implements Iterator<Entry<BigInteger, IObsData>>
                         if (reader instanceof TimeStampParser || reader instanceof SiteNumParser)
                             continue;
                         
+                        if (reader.noValue)
+                            continue;
+                        
                         var ts = Instant.ofEpochMilli((long)(dataBlk.getDoubleValue(0)*1000.));
                         var obs = new ObsData.Builder()
                             .withDataStream(reader.dsId)
-                            .withFoi(FilterUtils.toLongId(dataBlk.getStringValue(1)))
+                            .withFoi(UsgsUtils.toBigId(idScope, dataBlk.getStringValue(1)))
                             .withPhenomenonTime(ts)
                             .withResult(dataBlk)
                             .build();
     
-                        var id = Objects.hash(reader.dsId, ts);
-                        nextRecords.add(new SimpleEntry<>(BigInteger.valueOf(id), obs));
+                        var id = UsgsUtils.toObsId(reader.dsId, ts);
+                        nextRecords.add(new SimpleEntry<>(id, obs));
                         dataBlk = dataBlk.clone();
                     }
                     
@@ -214,7 +218,7 @@ public class ObsRecordLoader implements Iterator<Entry<BigInteger, IObsData>>
     }
     
     
-    public Stream<Entry<BigInteger, IObsData>> getObservations(USGSDataFilter filter, long limit)
+    public Stream<Entry<BigId, IObsData>> getObservations(USGSDataFilter filter, long limit)
     {
         this.usgsFilter = filter;
         this.originalEndTime = filter.endTime != null ? filter.endTime.getTime() : Long.MIN_VALUE;
@@ -254,7 +258,7 @@ public class ObsRecordLoader implements Iterator<Entry<BigInteger, IObsData>>
 
     protected String buildInstantValuesRequest(USGSDataFilter filter)
     {
-        StringBuilder sb = FilterUtils.buildRequestUrl(BASE_URL, filter);
+        StringBuilder sb = UsgsUtils.buildRequestUrl(BASE_URL, filter);
         return sb.toString();
     }
 
@@ -300,7 +304,7 @@ public class ObsRecordLoader implements Iterator<Entry<BigInteger, IObsData>>
             
             var fieldTs = tokens[0];
             var paramCd = tokens[1];
-            if (!FilterUtils.PARAM_CODE_REGEX.matcher(paramCd).matches())
+            if (!UsgsUtils.PARAM_CODE_REGEX.matcher(paramCd).matches())
                 continue;
             
             // use field only if param code is selected
@@ -308,7 +312,7 @@ public class ObsRecordLoader implements Iterator<Entry<BigInteger, IObsData>>
             {
                 logger.debug("Creating parser for param {} @ index={}", paramCd, j);
                 var paramReader = new FloatValueParser(j, i, logger);
-                paramReader.dsId = FilterUtils.toDataStreamId(fieldTs, paramCd);
+                paramReader.dsId = UsgsUtils.toDataStreamId(idScope, fieldTs, paramCd);
                 readers.add(paramReader);
             }
         }
@@ -330,7 +334,8 @@ public class ObsRecordLoader implements Iterator<Entry<BigInteger, IObsData>>
     {
         int fromIndex;
         int toIndex;
-        long dsId;
+        BigId dsId;
+        boolean noValue;
 
         public ParamValueParser(int fromIndex, int toIndex)
         {
@@ -411,11 +416,13 @@ public class ObsRecordLoader implements Iterator<Entry<BigInteger, IObsData>>
             try
             {
                 float f = Float.NaN;
-
+                noValue = false;
+                
                 if (fromIndex >= 0 && fromIndex < tokens.length)
                 {
                     String val = tokens[fromIndex].trim();
                     if (!val.isEmpty() && !val.startsWith("*"))
+                    {
                         try
                         {
                             f = Float.parseFloat(val);
@@ -425,6 +432,9 @@ public class ObsRecordLoader implements Iterator<Entry<BigInteger, IObsData>>
                             //  If value is non-numeric, leave field as NaN
                             logger.trace("Special value: {}", val);
                         }
+                    }
+                    else
+                        noValue = true;
                 }
 
                 data.setFloatValue(toIndex, f);

@@ -28,6 +28,7 @@ import org.sensorhub.impl.usgs.water.CodeEnums.StateCode;
 import org.slf4j.Logger;
 import org.vast.ogc.gml.IFeature;
 import org.vast.ogc.om.SamplingPoint;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.util.Asserts;
 import net.opengis.gml.v32.Point;
@@ -50,12 +51,13 @@ public class ObsSiteLoader
     static final String FOI_UID_PREFIX = USGSWaterDataArchive.UID_PREFIX + "site:";
     static final String AREA_UID_PREFIX = USGSWaterDataArchive.UID_PREFIX + "region:";
     
-    final Logger logger;
+    final int idScope;
     final IParamDatabase paramDb;
+    final Logger logger;
     
-    
-    public ObsSiteLoader(IParamDatabase paramDb, Logger logger)
+    public ObsSiteLoader(int idScope, IParamDatabase paramDb, Logger logger)
     {
+        this.idScope = idScope;
         this.paramDb = Asserts.checkNotNull(paramDb, IParamDatabase.class);
         this.logger = Asserts.checkNotNull(logger, Logger.class);
     }
@@ -143,13 +145,13 @@ public class ObsSiteLoader
                             if (Double.isNaN(alt))
                             {
                                 siteLoc.setSrsDimension(2);
-                                siteLoc.setSrsName(SWEHelper.getEpsgUri(4269)); // NAD83
+                                siteLoc.setSrsName(SWEConstants.REF_FRAME_4326);//SWEHelper.getEpsgUri(4269)); // NAD83
                                 siteLoc.setPos(new double[] {lat, lon});
                             }
                             else
                             {
                                 siteLoc.setSrsDimension(3);
-                                siteLoc.setSrsName(SWEHelper.getEpsgUri(5498)); // NAD83 + NGVD29/NAVD88 height
+                                siteLoc.setSrsName(SWEConstants.REF_FRAME_4979);//SWEHelper.getEpsgUri(5498)); // NAD83 + NGVD29/NAVD88 height
                                 siteLoc.setPos(new double[] {lat, lon, alt});
                             }
                             site.setShape(siteLoc);
@@ -183,9 +185,9 @@ public class ObsSiteLoader
     
     protected String buildSiteInfoRequest(USGSDataFilter filter)
     {
-        return FilterUtils.buildRequestUrl(BASE_URL, filter)
+        return UsgsUtils.buildRequestUrl(BASE_URL, filter)
             .append("&hasDataTypeCd=iv") // get only site with IV data available
-            .append("&siteOutput=expanded")        
+            .append("&siteOutput=expanded")
             .toString();
     }
 }

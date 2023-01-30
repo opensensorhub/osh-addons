@@ -21,6 +21,7 @@ public class SimulatorState implements Cloneable
     public boolean landed;
     public double lat, lon, alt;
     public double heading, pitch, roll;
+    public double vx, vy, vz;
     public double gimbalYaw, gimbalPitch, gimbalRoll;
     public double batt;
     public double temp;

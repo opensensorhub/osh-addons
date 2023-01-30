@@ -80,7 +80,8 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     public void extensionStart(ExtensionStartInput extensionStartInput, ExtensionStartOutput extensionStartOutput)
     {
         // set authenticator to validate credentials on CONNECT
-        var oshAuth = new OshAuthenticator(service.getParentHub().getSecurityManager(), this);
+        var securityManager = service.getParentHub().getSecurityManager();
+        var oshAuth = new OshAuthenticator(securityManager.getUserRegistry(), this);
         Services.securityRegistry().setAuthenticatorProvider(authProviderInput -> {
             return oshAuth;
         });

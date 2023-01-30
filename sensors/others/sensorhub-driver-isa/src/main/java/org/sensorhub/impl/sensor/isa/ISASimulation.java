@@ -26,9 +26,9 @@ import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.data.ObsEvent;
 import org.sensorhub.api.event.EventUtils;
 import org.sensorhub.impl.sensor.isa.ISASensor.StatusType;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.Point;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
 
 
 /**

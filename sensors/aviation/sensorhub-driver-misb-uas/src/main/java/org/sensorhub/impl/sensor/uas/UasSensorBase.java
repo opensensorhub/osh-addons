@@ -321,6 +321,7 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
                 mpegTsProcessor.join();
             } catch (InterruptedException e) {
                 logger.error("Interrupted waiting for stream processor to stop", e);
+                Thread.currentThread().interrupt();
                 throw new SensorHubException("Interrupted waiting for stream processor to stop", e);
             } finally {
                 // Close stream and cleanup resources

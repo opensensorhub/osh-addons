@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,17 +39,17 @@ public class RTSPClient
 {
     static final Logger log = LoggerFactory.getLogger(RTSPClient.class);
     
-    private final static String REQ_OPTIONS = "OPTIONS";
-    private final static String REQ_DESCRIBE = "DESCRIBE";
-    private final static String REQ_SETUP = "SETUP";
-    private final static String REQ_PLAY = "PLAY";
+    private static final String REQ_OPTIONS = "OPTIONS";
+    private static final String REQ_DESCRIBE = "DESCRIBE";
+    private static final String REQ_SETUP = "SETUP";
+    private static final String REQ_PLAY = "PLAY";
     //private final static String REQ_PAUSE = "PAUSE";
-    private final static String REQ_GET_PARAMETER = "GET_PARAMETER";
-    private final static String REQ_TEARDOWN = "TEARDOWN";   
-    final static String CRLF = "\r\n";
-    final static int INIT = 0;
-    final static int READY = 1;
-    final static int PLAYING = 2;
+    private static final String REQ_GET_PARAMETER = "GET_PARAMETER";
+    private static final String REQ_TEARDOWN = "TEARDOWN";   
+    static final String CRLF = "\r\n";
+    static final int INIT = 0;
+    static final int READY = 1;
+    static final int PLAYING = 2;
     
     boolean needAuth;
     boolean connected;
@@ -134,7 +135,7 @@ public class RTSPClient
     public void sendPlay(int streamIndex) throws IOException
     {
         this.streamIndex = streamIndex;
-        log.info("Playing Stream " + mediaStreams.get(streamIndex));
+        log.info("Playing Stream {}", mediaStreams.get(streamIndex));
         sendRequestAndParseResponse(REQ_PLAY);
     }
     
@@ -176,13 +177,13 @@ public class RTSPClient
     
     private void sendRequest(String requestType) throws IOException
     {
-        log.trace("Sending " + requestType + " Request to " + videoUrl);
+        log.trace("Sending {} Request to {}", requestType, videoUrl);
         rtspSeqNb++;
         
         // write the request line:
         rtspRequestWriter.write(requestType + " ");
         String requestUrl = videoUrl;
-        if (requestType == REQ_SETUP)
+        if (Objects.equals(requestType, REQ_SETUP))
         {
             String controlArg = mediaStreams.get(streamIndex).controlArg;
             if (controlArg.startsWith("rtsp://"))
@@ -199,17 +200,17 @@ public class RTSPClient
         addAuth(requestType, requestUrl);
         
         // depending on request type
-        if (requestType == REQ_SETUP) {
+        if (Objects.equals(requestType, REQ_SETUP)) {
             int rtcpPort = rtpRcvPort+1;
             rtspRequestWriter.write("Transport: RTP/AVP;unicast;client_port=" + rtpRcvPort + "-" + rtcpPort + CRLF);
         }
-        else if (requestType == REQ_DESCRIBE) {
+        else if (Objects.equals(requestType, REQ_DESCRIBE)) {
             rtspRequestWriter.write("Accept: application/sdp" + CRLF);
         }
         else { 
-            if (rtspSessionID != "0") {
+            if (!"0".equals(rtspSessionID)) {
                 rtspRequestWriter.write("Session: " + rtspSessionID + CRLF);
-                log.trace("rtpsSessionId " + rtspSessionID);
+                log.trace("rtpsSessionId {}", rtspSessionID);
             }
         }
         
@@ -321,9 +322,9 @@ public class RTSPClient
             }
             
             // parse response according to request type
-            if (requestType == REQ_DESCRIBE)
+            if (Objects.equals(requestType, REQ_DESCRIBE))
                 parseDescribeResp();        
-            else if (requestType == REQ_SETUP)
+            else if (Objects.equals(requestType, REQ_SETUP))
                 parseSetupResp();
             else
                 printResponse();

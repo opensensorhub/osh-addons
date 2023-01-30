@@ -132,7 +132,7 @@ public class V4LCameraControl extends AbstractSensorControl<V4LCameraDriver>
             {
                 List<DiscreteInterval> v4lIntervalList = v4lFrameIntervals.getDiscreteIntervals();
                 for (int i=0; i<v4lIntervalList.size(); i++)
-                    numConstraint.addValue(v4lIntervalList.get(i).denominator / v4lIntervalList.get(i).numerator);
+                    numConstraint.addValue((double) v4lIntervalList.get(i).denominator / v4lIntervalList.get(i).numerator);
             }
             else if (v4lFrameIntervals.getType() == FrameInterval.Type.STEPWISE)
             {

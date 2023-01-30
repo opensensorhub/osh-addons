@@ -502,7 +502,10 @@ public class MpegTsProcessor extends Thread {
                         var sleepDuration = frameCount*1000/fps - (now - startTime);
                         if (sleepDuration > 0) {
                             try { Thread.sleep(sleepDuration); }
-                            catch (InterruptedException e) { }
+                            catch (InterruptedException e) {
+                                logger.error("Interrupted waiting for stream processor to stop", e);
+                                Thread.currentThread().interrupt();
+                            }
                         }
                     }
                     

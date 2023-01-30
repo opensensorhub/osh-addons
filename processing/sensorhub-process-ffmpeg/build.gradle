@@ -6,7 +6,7 @@ version = '0.1'
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
-  embeddedApi 'org.bytedeco:ffmpeg-platform:4.3.2-1.5.5'
+  embeddedApi 'org.bytedeco:ffmpeg-platform:5.0-1.5.7'
   
   testImplementation project(':sensorhub-driver-v4l')
 }
