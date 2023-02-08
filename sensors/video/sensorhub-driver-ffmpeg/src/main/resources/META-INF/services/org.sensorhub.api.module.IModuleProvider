@@ -1,0 +1,2 @@
+org.sensorhub.impl.sensor.ffmpeg.FFMPEGDescriptor
+org.sensorhub.impl.sensor.ffmpeg.UasOnDemandDescriptor
