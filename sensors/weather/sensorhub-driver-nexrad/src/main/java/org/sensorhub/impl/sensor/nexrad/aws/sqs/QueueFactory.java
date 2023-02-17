@@ -47,11 +47,11 @@ public class QueueFactory
 	public static void main(String[] args) {
 		listQueues();
 		
-	deleteQueue("https://sqs.us-west-2.amazonaws.com/384286541835/NexradQueue_SensorHub_00024");
+//		deleteQueue("https://sqs.us-west-2.amazonaws.com/384286541835/NexradQueue_SensorHub_00018");
 	}
 	
 	public static void listQueues() {
-		System.out.println("Listing all queues in your account.\n");
+		System.err.println("Listing all queues in your account.\n");
 		for (String queueUrl : sqs.listQueues().getQueueUrls()) {
 		    System.out.println("  QueueUrl: " + queueUrl);
 		}

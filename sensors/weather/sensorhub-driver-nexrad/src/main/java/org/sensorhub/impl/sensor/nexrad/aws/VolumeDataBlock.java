@@ -23,4 +23,5 @@ public class VolumeDataBlock {
 	float initialDifferentialPhase;
 	short volumeCoveragePattern;
 	short processingStatus;
+	short zdrBias;
 }

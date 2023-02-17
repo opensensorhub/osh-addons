@@ -362,6 +362,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			String siteUID = NexradSensor.SITE_UID_PREFIX + radial.dataHeader.siteId;
 			latestRecord = nexradBlock;			
 			latestRecordTime = System.currentTimeMillis();
+			System.err.println("SEND RADIALS: siteUID: " + siteUID);
 			eventHandler.publish(new DataEvent(latestRecordTime, NexradOutput.this, siteUID, nexradBlock));
 		}
 

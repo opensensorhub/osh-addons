@@ -7,8 +7,8 @@ import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkPathQueue;
 import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkQueueManager;
 
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.sqs.model.Message;
 
-import software.amazon.awssdk.services.sqs.model.Message;
 
 /**
  * <p>Title: MessageProcessingThread.java</p>

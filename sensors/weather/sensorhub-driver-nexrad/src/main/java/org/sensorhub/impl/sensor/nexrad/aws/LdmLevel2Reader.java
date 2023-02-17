@@ -124,7 +124,8 @@ public class LdmLevel2Reader //implements RadialProvider
 					ldmRadial.volumeDataBlock = readVolumeDataBlock(bzis);
 					readElevationDataBlock(bzis);
 					readRadialDataBlock(bzis);
-					// 
+					
+					// only supporting REF, VEL, SW for now, 
 					for(int i=0; i<ldmRadial.dataHeader.dataBlockCount - 3; i++) {
 						MomentDataBlock momentBlock = readMomentDataBlock(bzis);
 //						System.err.println(momentBlock.blockName + ": " + momentBlock.numGates + ": " + momentBlock.rangeToCenterOfFirstGate + ": "  +momentBlock.rangeSampleInterval );
@@ -240,6 +241,9 @@ public class LdmLevel2Reader //implements RadialProvider
 		ok = is.read(b4);
 		hdr.rhoBlockPointer = java.nio.ByteBuffer.wrap(b4).getInt();
 
+		ok = is.read(b4);
+		hdr.cfpBlockPointer = java.nio.ByteBuffer.wrap(b4).getInt();
+
 		return hdr;
 	}
 
@@ -276,6 +280,11 @@ public class LdmLevel2Reader //implements RadialProvider
 
 		ok = is.read(b2);
 		block.processingStatus = java.nio.ByteBuffer.wrap(b2).getShort();
+
+		ok = is.read(b2);
+		block.zdrBias = java.nio.ByteBuffer.wrap(b2).getShort();
+		
+		is.read(new byte[6]);  // "spaare" 6 bytes
 
 		return block;
 	}
@@ -391,13 +400,12 @@ public class LdmLevel2Reader //implements RadialProvider
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		LdmLevel2Reader reader = new LdmLevel2Reader();
-		String p = "C:/Data/sensorhub/Level2/KGRK/KGRK_669_20170228-033456-011-I";
-		//String p = "C:/Users/tcook/root/sensorHub/doppler/issues/KHTX_570_20160712-182557-040-E";
-		for(int i=0; i<1000; i++) {
+//        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_866_20230214-000553-024-I";
+        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_913_20230217-165506-001-S";
+//        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_912_20230217-164530-034-E";
 		List<LdmRadial> rads = reader.read(new File(p));
 //				for(LdmRadial r: rads)
-					System.err.println("Read " + rads.size() + " radials");
-		}
+		System.err.println("Read " + rads.size() + " radials");
 	}
 
 

@@ -10,15 +10,15 @@ rootProject.allprojects {
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
- embeddedImpl platform('software.amazon.awssdk:bom:2.15.0')
- embeddedImpl 'software.amazon.awssdk:aws-core'
+  embeddedImpl platform('software.amazon.awssdk:bom:2.15.0')
+  embeddedImpl 'software.amazon.awssdk:aws-core'
   embeddedImpl 'org.apache.httpcomponents:httpclient:4.5.13'
-// embeddedImpl 'com.amazonaws:aws-java-sdk-sqs:1.10.50'
-// embeddedImpl 'com.amazonaws:aws-java-sdk-sns:1.10.50'
-// embeddedImpl 'com.amazonaws:aws-java-sdk-sqs:1.10.50'
-  embeddedImpl 'software.amazon.awssdk:sns'
-  embeddedImpl 'software.amazon.awssdk:sqs'
-  embeddedImpl 'software.amazon.awssdk:s3'
+  embeddedImpl 'com.amazonaws:aws-java-sdk-sqs:1.11.13'
+  embeddedImpl 'com.amazonaws:aws-java-sdk-sns:1.11.13'
+  embeddedImpl 'com.amazonaws:aws-java-sdk-s3:1.11.13'  
+  //embeddedImpl 'software.amazon.awssdk:sns'
+  //embeddedImpl 'software.amazon.awssdk:sqs'
+  //embeddedImpl 'software.amazon.awssdk:s3'
   embeddedImpl 'org.apache.commons:commons-compress:1.5'
   embeddedImpl 'commons-io:commons-io:2.5'
   embeddedImpl 'joda-time:joda-time:2.9.2'

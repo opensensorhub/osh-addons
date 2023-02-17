@@ -32,4 +32,5 @@ public class DataHeader {
 	public int zdrBlockPointer;
 	public int phiBlockPointer;
 	public int rhoBlockPointer;
+	public int cfpBlockPointer;
 }	
