@@ -15,9 +15,11 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.nexrad;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.feature.FoiAddedEvent;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.nexrad.aws.NexradSqsService;
 import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkQueueManager;
@@ -41,9 +43,9 @@ import net.opengis.sensorml.v20.PhysicalSystem;
 public class NexradSensor extends AbstractSensorModule<NexradConfig>
 {
 	static final Logger logger = LoggerFactory.getLogger(NexradSensor.class);
-	static final String SITE_UID_PREFIX = "urn:osh:sensors:nexrad:";
-
-	NexradOutput dataInterface;
+	static final String SENSOR_UID = "urn:osh:sensor:weather:nexrad";
+	static final String SITE_UID_PREFIX = "urn:osh:sensor:nexrad:";
+	NexradOutput nexradOutput;
 	RadialProvider radialProvider;  // either Realtime or archive AWS source
 	boolean isRealtime;
 
@@ -81,7 +83,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 		super.doInit();
 
 		// generate IDs
-		this.uniqueID = SITE_UID_PREFIX + "network";
+		this.uniqueID = SENSOR_UID;
 		this.xmlID = "NEXRAD_NETWORK";
 
 		if(config.archiveStartTime != null && config.archiveStopTime != null) {
@@ -102,9 +104,9 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 				throw new SensorHubException("Could not instantiate NexradSqsService", e);
 			}
 		}
-		dataInterface = new NexradOutput(this);
-		addOutput(dataInterface, false);
-		dataInterface.init();	
+		nexradOutput = new NexradOutput(this);
+		addOutput(nexradOutput, false);
+		nexradOutput.init();	
 	}
 
 
@@ -116,7 +118,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 			super.updateSensorDescription();
 			
 			sensorDescription.setId("NEXRAD_SENSOR");
-			sensorDescription.setUniqueIdentifier(SITE_UID_PREFIX);
+			sensorDescription.setUniqueIdentifier(SENSOR_UID);  // does this need to be done here and in doInit()
 			sensorDescription.setDescription("Sensor supporting Level II Nexrad data");
 		}
 	}
@@ -127,17 +129,17 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 		SMLHelper smlFac = new SMLHelper();
 		GMLFactory gmlFac = new GMLFactory(true);
 
-		// generate station FOIs and full descriptions
+		// generate station FOIs
 		for (String siteId: config.siteIds)
 		{
-			String uid = SITE_UID_PREFIX + siteId;
+			String siteUID = SITE_UID_PREFIX + siteId;
 			String name = siteId;
 			String description = "Nexrad site " + siteId;
 
 			// generate small SensorML for FOI (in this case the system is the FOI)
-			PhysicalSystem foi = smlFac.newPhysicalSystem();
+			PhysicalSystem foi = smlFac.createPhysicalSystem().build();
 			foi.setId(siteId);
-			foi.setUniqueIdentifier(uid);
+			foi.setUniqueIdentifier(siteUID);
 			foi.setName(name);
 			foi.setDescription(description);
 			Point stationLoc = gmlFac.newPoint();
@@ -145,16 +147,20 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 			stationLoc.setPos(new double [] {site.lat, site.lon, site.elevation});
 			foi.setLocation(stationLoc);
 			addFoi(foi);
+			// Do I need to explicitly publish FOI event?
+			logger.debug("SENSOR_UUD: {}, siteUID: {}", SENSOR_UID, siteUID, foiMap.size());
+
+//			eventHandler.publish(new FoiAddedEvent(System.currentTimeMillis(), SENSOR_UID, siteUID, Instant.now() ));
 		}
 
-		dataInterface.start(radialProvider); 
+		nexradOutput.start(radialProvider); 
 	}
 
 
 	@Override
 	protected void doStop() throws SensorHubException
 	{
-		dataInterface.stop();
+		nexradOutput.stop();
 		if(isRealtime)
 			nexradSqs.stop();
 	}

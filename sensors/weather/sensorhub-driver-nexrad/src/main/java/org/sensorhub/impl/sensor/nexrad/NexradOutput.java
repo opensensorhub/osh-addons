@@ -77,7 +77,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 
 	public NexradOutput(NexradSensor parentSensor)
 	{
-		super("nexradData", parentSensor);
+		super("nexradOutput", parentSensor);
 		nexradSensor = parentSensor;
 		Timer queueTimer = new Timer();  
 		queueTimer.scheduleAtFixedRate(new CheckNumListeners(), 0, LISTENER_CHECK_INTERVAL); //delay in milliseconds
@@ -360,10 +360,13 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 
 			//System.out.printf("r,v,s: %d,%d,%d\n", refMomentData.numGates, velMomentData.numGates, swMomentData.numGates);
 			String siteUID = NexradSensor.SITE_UID_PREFIX + radial.dataHeader.siteId;
+			String outputName = getName();
 			latestRecord = nexradBlock;			
 			latestRecordTime = System.currentTimeMillis();
-			System.err.println("SEND RADIALS: siteUID: " + siteUID);
-			eventHandler.publish(new DataEvent(latestRecordTime, NexradOutput.this, siteUID, nexradBlock));
+			System.err.println("SEND RADIALS: name, siteUID: " + outputName + "," + siteUID);
+			eventHandler.publish(new DataEvent(latestRecordTime, NexradSensor.SENSOR_UID, outputName, siteUID, nexradBlock));
+//			eventHandler.publish(new FoiAddedEvent(System.currentTimeMillis(), NexradSensor.SENSOR_UID, siteUID, Instant.now() ));
+
 		}
 
 	}

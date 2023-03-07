@@ -284,7 +284,7 @@ public class LdmLevel2Reader //implements RadialProvider
 		ok = is.read(b2);
 		block.zdrBias = java.nio.ByteBuffer.wrap(b2).getShort();
 		
-		is.read(new byte[6]);  // "spaare" 6 bytes
+		is.read(new byte[6]);  // "spare" 6 bytes
 
 		return block;
 	}
@@ -401,8 +401,11 @@ public class LdmLevel2Reader //implements RadialProvider
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		LdmLevel2Reader reader = new LdmLevel2Reader();
 //        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_866_20230214-000553-024-I";
-        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_913_20230217-165506-001-S";
+//        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_913_20230217-165506-001-S";
 //        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_912_20230217-164530-034-E";
+
+//		String p = "c:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_166_20230223-011539-027-I";  // Message 128 error
+		String p = "c:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_166_20230223-011539-028-I"; // Message 134 error
 		List<LdmRadial> rads = reader.read(new File(p));
 //				for(LdmRadial r: rads)
 		System.err.println("Read " + rads.size() + " radials");
