@@ -23,8 +23,16 @@ import com.amazonaws.services.s3.model.S3Object;
 
 
 /**
- * <p>Title: MessageOrderQueue.java</p>
- * <p>Description: </p>
+ * <p>Title: ChunkPathQueue.java</p>
+ * <p>Description: This class was originally written to ensure nexrad S3 objects were read and 
+ * processed in order. From observation, the initial messages that we get from the Nexrad SNS
+ * were not strictly in order. Now, I don't think we really need this. It seems after the first
+ * few messages, subsequent messages are in strict order. Also, should not really matter if there
+ * are a few out of order messages. Clients should still be able to construct volumes in that case.
+ * 
+ * Will probably end up dropping this mechanism as it complicates the ingest process.
+ * - Tony, 2023-03-17
+ * </p>
  *
  * @author T
  * @date Jul 27, 2016
@@ -57,7 +65,7 @@ public class ChunkPathQueue
 		queue.add(chunkPath);
 	}
 
-	void dump(BlockingQueue queue) {
+	void dump(BlockingQueue<String> queue) {
 		String [] sarr = (String[]) queue.toArray(new String [] {});
 		Arrays.sort(sarr);
 		logger.debug("QUEUE: ");
@@ -127,7 +135,24 @@ public class ChunkPathQueue
 		return null;
 	}
 
-
+	public S3Object nextObject() throws IOException
+	{
+		assert s3client != null;
+		try
+		{
+//			System.err.println("*** Checking nextFile");
+			String nextFile = next();
+			System.err.println("NextFile: " +  nextFile);
+			S3Object chunk = AwsNexradUtil.getChunk(s3client, AwsNexradUtil.BUCKET_NAME, nextFile);
+			
+			return chunk;
+		}
+		catch (InterruptedException e)
+		{
+			return null;
+		}
+	}
+	
 	public Path nextFile() throws IOException
 	{
 		assert s3client != null;

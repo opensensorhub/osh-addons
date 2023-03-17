@@ -86,7 +86,7 @@ public class ArchiveRadialProvider implements RadialProvider {
 	 * @see org.sensorhub.impl.sensor.nexrad.RadialProvider#getNextRadials()
 	 */
 	@Override
-	public List<Radial> getNextRadials() throws IOException {
+	public List<Radial> getNextRadialsFile(String site) throws IOException {
 		if(volumeIndex >= summaries.size())
 			return null;  // no more data
 		S3ObjectSummary s = summaries.get(volumeIndex++);
@@ -96,6 +96,13 @@ public class ArchiveRadialProvider implements RadialProvider {
 	}
 	
 	public List<Radial> getNextRadials(String site) throws IOException {
+		// TODO = read directly from S3ObjectInputStream
+		return null;
+	}
+
+	@Override
+	public List<Radial> getNextRadials() throws IOException {
+		// TODO Auto-generated method stub
 		return null;
 	}
 

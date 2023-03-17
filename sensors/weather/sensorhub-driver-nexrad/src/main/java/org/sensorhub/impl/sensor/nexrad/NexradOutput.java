@@ -67,7 +67,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 	Timer timer;	
 	InputStream is;
 	int numListeners;
-	NexradSensor nexradSensor;
+//	NexradSensor nexradSensor;
 	//	LdmFilesProvider ldmFilesProvider;
 	ChunkPathQueue chunkQueue;
 
@@ -78,7 +78,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 	public NexradOutput(NexradSensor parentSensor)
 	{
 		super("nexradOutput", parentSensor);
-		nexradSensor = parentSensor;
+//		nexradSensor = parentSensor;
 		Timer queueTimer = new Timer();  
 		queueTimer.scheduleAtFixedRate(new CheckNumListeners(), 0, LISTENER_CHECK_INTERVAL); //delay in milliseconds
 	}
@@ -213,7 +213,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 
 		sendData = true;
 
-		NexradConfig config = nexradSensor.getConfiguration();
+		NexradConfig config = parent.getConfiguration();
 		for(String site: config.siteIds) {
 			Thread t = new GetRadialsThread(site);
 			t.start();
@@ -254,7 +254,9 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			while (sendData)
 			{
 				try {
-					List<Radial> radials = radialProvider.getNextRadials(site);
+					List<Radial> radials = parent.getConfiguration().saveDataAsFiles 
+								? radialProvider.getNextRadialsFile(site)
+								: radialProvider.getNextRadials(site);
 					if(radials == null)
 						continue;
 					//					System.err.println("Read " + radials.size() + " radials");
@@ -363,8 +365,9 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			String outputName = getName();
 			latestRecord = nexradBlock;			
 			latestRecordTime = System.currentTimeMillis();
-			System.err.println("SEND RADIALS: name, siteUID: " + outputName + "," + siteUID);
-			eventHandler.publish(new DataEvent(latestRecordTime, NexradSensor.SENSOR_UID, outputName, siteUID, nexradBlock));
+			System.err.println("SEND RADIALS: name, siteUID, az, el: " + outputName + "," + siteUID + "," +
+					radial.dataHeader.elevationAngle + "," + radial.dataHeader.azimuthAngle);
+//			eventHandler.publish(new DataEvent(latestRecordTime, NexradSensor.SENSOR_UID, outputName, siteUID, nexradBlock));
 		}
 
 	}
@@ -425,7 +428,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			logger.debug("CheckNumListeners = {}",numListeners);
 			if (numListeners > 0) { 
 				try {
-					nexradSensor.setQueueActive();
+					parent.setQueueActive();
 				} catch (IOException e) {
 					//  What should happen in this case? We can't proceed 
 					e.printStackTrace();
@@ -433,7 +436,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 				noListeners = true;
 			} else {
 				if(!noListeners) { 
-					nexradSensor.setQueueIdle();
+					parent.setQueueIdle();
 					noListeners = true;
 				}
 

@@ -14,21 +14,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.sensorhub.impl.sensor.nexrad.RadialProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>Title: LdmLevel2Reader.java</p>
- * <p>Description: </p>
+ * <p>
+ * Title: LdmLevel2Reader.java
+ * </p>
+ * <p>
+ * Description:
+ * </p>
  *
  * @author T
  * @date Mar 9, 2016
  */
-public class Level2Reader
-{
-	byte [] b2 = new byte[2];
-	byte [] b4 = new byte[4];
+public class Level2Reader {
+	byte[] b2 = new byte[2];
+	byte[] b4 = new byte[4];
 	public static final int MESSAGE2_LENGTH = 2356;
 	private static final Logger logger = LoggerFactory.getLogger(Level2Reader.class);
 
@@ -36,20 +38,30 @@ public class Level2Reader
 	}
 
 	public List<Radial> read(File f) throws FileNotFoundException, IOException {
-		String key = f.getName();
-		try(InputStream is = getInputStream(f)) {
-			if(key.endsWith("S")) {
-				VolumeHeader hdr = readVolumeHeader(is);
-				System.err.println(hdr);
-				readMetadataRecord(is);
-			} else if (key.endsWith("I")) {
-				List<Radial> radials = readMessage31(is);
-				return radials;
+		try (InputStream is = getInputStream(f)) {
+			String key = f.getName();
+			return read(is, key);
+		} catch (Exception e) {
+			logger.debug(e.getMessage());
+		}
 
-			} else if (key.endsWith("E")) {
-				List<Radial> radials = readMessage31(is);
-				return radials;
-			}
+		return null;
+	}
+
+	public List<Radial> read(InputStream is, String key) throws FileNotFoundException, IOException {
+		if (key.endsWith("S")) {
+			VolumeHeader hdr = readVolumeHeader(is);
+			System.err.println(hdr);
+			readMetadataRecord(is);
+		} else if (key.endsWith("I")) {
+			List<Radial> radials = readMessage31(is);
+			return radials;
+
+		} else if (key.endsWith("E")) {
+			List<Radial> radials = readMessage31(is);
+			return radials;
+		} else {
+			throw new IOException("Level2Reader does not know how to read data from key: " + key);
 		}
 
 		return null;
@@ -57,7 +69,7 @@ public class Level2Reader
 
 	private InputStream getInputStream(File f) throws FileNotFoundException {
 		int tries = 0;
-		while(tries++ < 10) {
+		while (tries++ < 10) {
 			try {
 				InputStream is = new BufferedInputStream(new FileInputStream(f));
 //				InputStream is = (new FileInputStream(f));
@@ -77,7 +89,7 @@ public class Level2Reader
 
 	public VolumeHeader readVolumeHeader(InputStream is) throws IOException {
 		VolumeHeader hdr = new VolumeHeader();
-		byte [] fn = new byte[12];
+		byte[] fn = new byte[12];
 		int ok = is.read(fn);
 		hdr.archive2filename = new String(fn, StandardCharsets.UTF_8);
 		ok = is.read(b4);
@@ -90,10 +102,10 @@ public class Level2Reader
 	}
 
 	public void readMessage2(InputStream is, int msgSize) throws IOException {
-		byte [] bfull = new byte[msgSize];
+		byte[] bfull = new byte[msgSize];
 		int ok = is.read(bfull);
-		//		System.err.println("Read bytes: " + bfull.length);	
-		byte[]bt = new byte[MESSAGE2_LENGTH];
+		// System.err.println("Read bytes: " + bfull.length);
+		byte[] bt = new byte[MESSAGE2_LENGTH];
 		is.read(bt);
 	}
 
@@ -102,19 +114,20 @@ public class Level2Reader
 		int msgSize = java.nio.ByteBuffer.wrap(b4).getInt();
 		msgSize = Math.abs(msgSize);
 
-		byte [] bfull = new byte[msgSize];
+		byte[] bfull = new byte[msgSize];
 		ok = is.read(bfull);
 
 		List<Radial> ldmRadials = new ArrayList<>();
 
 		ByteArrayInputStream bas = new ByteArrayInputStream(bfull);
 		int radCnt = 1;
-		try (BZip2CompressorInputStream bzis = new BZip2CompressorInputStream(bas) ) {
-			while(true) {
+		try (BZip2CompressorInputStream bzis = new BZip2CompressorInputStream(bas)) {
+			while (true) {
 
 				MessageHeader msgHdr = readMessageHeader(bzis);
-				if(msgHdr == null)  break;
-				switch(msgHdr.messageType) {
+				if (msgHdr == null)
+					break;
+				switch (msgHdr.messageType) {
 				case 2:
 					readMessage2(bzis, msgHdr.messageSize);
 					break;
@@ -124,9 +137,9 @@ public class Level2Reader
 					ldmRadial.volumeDataBlock = readVolumeDataBlock(bzis);
 					readElevationDataBlock(bzis);
 					readRadialDataBlock(bzis);
-					
-					// only supporting REF, VEL, SW for now, 
-					for(int i=0; i<ldmRadial.dataHeader.dataBlockCount - 3; i++) {
+
+					// only supporting REF, VEL, SW for now,
+					for (int i = 0; i < ldmRadial.dataHeader.dataBlockCount - 3; i++) {
 						MomentDataBlock momentBlock = readMomentDataBlock(bzis);
 //						System.err.println(momentBlock.blockName + ": " + momentBlock.numGates + ": " + momentBlock.rangeToCenterOfFirstGate + ": "  +momentBlock.rangeSampleInterval );
 						ldmRadial.momentData.put(momentBlock.blockName, momentBlock);
@@ -147,17 +160,18 @@ public class Level2Reader
 	public MessageHeader readMessageHeader(InputStream is) throws IOException {
 		MessageHeader hdr = new MessageHeader();
 
-		byte [] b12 = new  byte[12];
-		int ok = is.read(b12);  // skip 12 unused bytes
-		if(ok == -1)  return null;
+		byte[] b12 = new byte[12];
+		int ok = is.read(b12); // skip 12 unused bytes
+		if (ok == -1)
+			return null;
 
 		ok = is.read(b2);
 		hdr.messageSize = java.nio.ByteBuffer.wrap(b2).getShort();
 
-		hdr.rdaByte = is.read();  
+		hdr.rdaByte = is.read();
 		hdr.messageType = is.read();
 
-		ok = is.read(b2);  // id seqNum
+		ok = is.read(b2); // id seqNum
 		hdr.sequenceNum = java.nio.ByteBuffer.wrap(b2).getShort();
 
 		ok = is.read(b2);
@@ -195,12 +209,13 @@ public class Level2Reader
 		hdr.azimuthAngle = java.nio.ByteBuffer.wrap(b4).getFloat();
 
 		hdr.compression = is.read();
-		is.read();  // spare byte
+		is.read(); // spare byte
 
 		ok = is.read(b2);
 		hdr.radialLength = java.nio.ByteBuffer.wrap(b2).getShort();
 
-		hdr.azimuthResolutionSpacing = is.read();  // Uncompressed length of the radial in bytes including the Data Header block length
+		hdr.azimuthResolutionSpacing = is.read(); // Uncompressed length of the radial in bytes including the Data
+													// Header block length
 		hdr.radialStatus = is.read();
 		hdr.elevationNum = is.read();
 		hdr.cutStatusNum = is.read();
@@ -271,8 +286,8 @@ public class Level2Reader
 		ok = is.read(b2);
 		block.feedhornHeightAboveGroundMeters = java.nio.ByteBuffer.wrap(b2).getShort();
 
-		//  TODO - skipping some fields that we will prbbly never use
-		for(int i=0; i<5; i++)
+		// TODO - skipping some fields that we will prbbly never use
+		for (int i = 0; i < 5; i++)
 			ok = is.read(b4);
 
 		ok = is.read(b2);
@@ -283,23 +298,23 @@ public class Level2Reader
 
 		ok = is.read(b2);
 		block.zdrBias = java.nio.ByteBuffer.wrap(b2).getShort();
-		
-		is.read(new byte[6]);  // "spare" 6 bytes
+
+		is.read(new byte[6]); // "spare" 6 bytes
 
 		return block;
 	}
 
 	public ElevationDataBlock readElevationDataBlock(InputStream is) throws IOException {
-		//  TODO - add if needed
-		byte [] b12 = new byte [12];
+		// TODO - add if needed
+		byte[] b12 = new byte[12];
 		int ok = is.read(b12);
 
 		return null;
 	}
 
 	public ElevationDataBlock readRadialDataBlock(InputStream is) throws IOException {
-		//  TODO - add if needed
-		byte [] b28 = new byte [28];
+		// TODO - add if needed
+		byte[] b28 = new byte[28];
 		int ok = is.read(b28);
 
 		return null;
@@ -308,13 +323,13 @@ public class Level2Reader
 	public MomentDataBlock readMomentDataBlock(InputStream is) throws IOException {
 		MomentDataBlock block = new MomentDataBlock();
 
-		block.blockType = (char)is.read();
+		block.blockType = (char) is.read();
 
-		byte [] b3 = new byte[3];
+		byte[] b3 = new byte[3];
 		int ok = is.read(b3);
 		block.blockName = new String(b3, StandardCharsets.UTF_8);
 
-		is.read(b4);  // Reserved bytes
+		is.read(b4); // Reserved bytes
 
 		ok = is.read(b2);
 		block.numGates = java.nio.ByteBuffer.wrap(b2).getShort();
@@ -348,34 +363,36 @@ public class Level2Reader
 		return block;
 	}
 
-	public void countBytes(InputStream is) throws IOException { 
+	public void countBytes(InputStream is) throws IOException {
 		int cnt = 0;
-		while(true) {
+		while (true) {
 			int b = is.read();
-			if(b == -1)  break;
+			if (b == -1)
+				break;
 			cnt++;
 		}
 	}
 
-	public void dumpBytes(InputStream is ) throws IOException {
-		int i=0;
-		while(true) {
+	public void dumpBytes(InputStream is) throws IOException {
+		int i = 0;
+		while (true) {
 			int b = is.read();
-			String s = (b >= 32 && b < 125) ? (char)b + "" : "*";
+			String s = (b >= 32 && b < 125) ? (char) b + "" : "*";
 			System.err.println((i++) + ":  " + s + "  ==  " + Integer.toHexString(b));
-			if(b == -1) break;
+			if (b == -1)
+				break;
 		}
 	}
 
-	public void readMetadataRecord(InputStream is) throws IOException { 
+	public void readMetadataRecord(InputStream is) throws IOException {
 		int ok = is.read(b4);
 		int recSize = Math.abs(java.nio.ByteBuffer.wrap(b4).getInt());
 		byte[] bfull = new byte[recSize];
 		ok = is.read(bfull);
 		try (BZip2CompressorInputStream bzis = new BZip2CompressorInputStream(new ByteArrayInputStream(bfull));) {
 			int cnt = 0;
-			for(int i=0; i<134; i++){
-				byte [] bb = new byte[2432];
+			for (int i = 0; i < 134; i++) {
+				byte[] bb = new byte[2432];
 				ok = bzis.read(bb);
 			}
 			System.err.println(cnt + " compressed records read");
@@ -386,30 +403,30 @@ public class Level2Reader
 	}
 
 	public void dumpChunkToFile(InputStream is, Path pout) throws IOException {
-		try(FileOutputStream os = new FileOutputStream(pout.toFile())) {
+		try (FileOutputStream os = new FileOutputStream(pout.toFile())) {
 			int cnt = 0;
-			while(true) {
+			while (true) {
 				int b = is.read();
-				if(b == -1)  break;
+				if (b == -1)
+					break;
 				os.write(b);
 				cnt++;
 			}
-			//			System.err.println("Bytes counted: " + cnt);
+			// System.err.println("Bytes counted: " + cnt);
 		}
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		Level2Reader reader = new Level2Reader();
-//        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_866_20230214-000553-024-I";
+        String p = "C:/Data/sensorhub/Level2/KHTX/KHTX_871_20230316-175934-007-I";
 //        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_913_20230217-165506-001-S";
 //        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_912_20230217-164530-034-E";
 
 //		String p = "c:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_166_20230223-011539-027-I";  // Message 128 error
-		String p = "c:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_166_20230223-011539-028-I"; // Message 134 error
+//		String p = "c:\\Data\\sensorhub\\Level2\\KHTX_166_20230223-011539-028-I"; // Message 134 error
 		List<Radial> rads = reader.read(new File(p));
 //				for(LdmRadial r: rads)
 		System.err.println("Read " + rads.size() + " radials");
 	}
-
 
 }

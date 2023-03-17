@@ -15,8 +15,6 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.nexrad;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,7 +37,9 @@ public class NexradConfig extends SensorConfig
 	public int numThreads;
 	public String queueName = "NexradQueue_SensorHub_001";  // default name
 	public long queueIdleTimeMinutes = 240;
-	public int queueFileLimit = 8;  // number of files in the disk queue to accumulate before forcing older files out 
+	public int queueFileLimit = 8;  // number of files in the disk queue to accumulate before forcing older files out
+	//TODO: support either download or direct S3Object access
+	public boolean saveDataAsFiles = true; // if true, download files before ingesting
 	
 	//  Archive AWS controls
 	public String archiveStartTime;

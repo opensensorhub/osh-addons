@@ -176,7 +176,7 @@ public class NexradSqsService
 
 	public void setQueueIdleTimeMillis(long queueIdleTimeMillis) {
 		this.idleTimeMillis = queueIdleTimeMillis;
-		logger.debug("{} QueueIdleTimeMinutes: {}", idleTimeMillis);
+		logger.debug("{} QueueIdleTimeMillis: {}", idleTimeMillis);
 	}
 	
 	public AmazonS3Client getS3client() {
