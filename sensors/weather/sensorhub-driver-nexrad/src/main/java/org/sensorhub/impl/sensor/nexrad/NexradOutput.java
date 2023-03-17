@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.nexrad.aws.AwsNexradUtil;
-import org.sensorhub.impl.sensor.nexrad.aws.LdmRadial;
+import org.sensorhub.impl.sensor.nexrad.aws.Radial;
 import org.sensorhub.impl.sensor.nexrad.aws.MomentDataBlock;
 import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkPathQueue;
 import org.slf4j.Logger;
@@ -254,7 +254,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			while (sendData)
 			{
 				try {
-					List<LdmRadial> radials = radialProvider.getNextRadials(site);
+					List<Radial> radials = radialProvider.getNextRadials(site);
 					if(radials == null)
 						continue;
 					//					System.err.println("Read " + radials.size() + " radials");
@@ -267,10 +267,10 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 		}
 	}
 
-	private void sendRadials(List<LdmRadial> radials) throws IOException
+	private void sendRadials(List<Radial> radials) throws IOException
 	{
 		int i=0;
-		for(LdmRadial radial: radials) {
+		for(Radial radial: radials) {
 			// build and publish datablock
 			DataArray refArr = (DataArray)nexradStruct.getComponent(13);
 			DataArray velArr = (DataArray)nexradStruct.getComponent(14);
@@ -365,8 +365,6 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			latestRecordTime = System.currentTimeMillis();
 			System.err.println("SEND RADIALS: name, siteUID: " + outputName + "," + siteUID);
 			eventHandler.publish(new DataEvent(latestRecordTime, NexradSensor.SENSOR_UID, outputName, siteUID, nexradBlock));
-//			eventHandler.publish(new FoiAddedEvent(System.currentTimeMillis(), NexradSensor.SENSOR_UID, siteUID, Instant.now() ));
-
 		}
 
 	}
@@ -433,7 +431,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 					e.printStackTrace();
 				}
 				noListeners = true;
-			}else {
+			} else {
 				if(!noListeners) { 
 					nexradSensor.setQueueIdle();
 					noListeners = true;

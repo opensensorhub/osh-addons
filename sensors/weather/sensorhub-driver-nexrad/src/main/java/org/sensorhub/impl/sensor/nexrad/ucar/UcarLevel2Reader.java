@@ -8,7 +8,7 @@ import java.util.List;
 import org.sensorhub.impl.sensor.nexrad.RadialProvider;
 import org.sensorhub.impl.sensor.nexrad.VCP;
 import org.sensorhub.impl.sensor.nexrad.aws.DataHeader;
-import org.sensorhub.impl.sensor.nexrad.aws.LdmRadial;
+import org.sensorhub.impl.sensor.nexrad.aws.Radial;
 import org.sensorhub.impl.sensor.nexrad.aws.MomentDataBlock;
 
 import ucar.ma2.Array;
@@ -100,7 +100,7 @@ public class UcarLevel2Reader
 	//  If hasSplitCuts is true and hiRes also true, use only the 
 	//  even-numbered elevations for Reflectivity, and all elevations
 	//  for vel and sw
-	public List<LdmRadial> read(boolean hiRes) throws IOException {
+	public List<Radial> read(boolean hiRes) throws IOException {
 		VCP vcp = UcarUtil.getVcp(netCdf);
 		boolean hasSplitCuts = false;
 		if(vcp != null)
@@ -127,11 +127,11 @@ public class UcarLevel2Reader
 		
 		short daysSince1970 = getDaysSince1970();
 		
-		List<LdmRadial> radials = new ArrayList<>();
+		List<Radial> radials = new ArrayList<>();
 		for(int i=0; i<numRadialsV.length; i++){
 			for(int j=0; j<numRadialsR[i]; j++) {
 				
-				LdmRadial radial = new LdmRadial();
+				Radial radial = new Radial();
 				radial.dataHeader = new DataHeader();
 				radial.dataHeader.daysSince1970 = daysSince1970;
 				radial.dataHeader.msSinceMidnight = timeR[i][j];
@@ -168,13 +168,13 @@ public class UcarLevel2Reader
 		return radials;
 	}
 	
-	public List<LdmRadial> read() throws IOException {
-		List<LdmRadial> rads = new ArrayList<>();
+	public List<Radial> read() throws IOException {
+		List<Radial> rads = new ArrayList<>();
 		if(UcarUtil.hasSuperRes(netCdf)) {
-			List<LdmRadial> hiResRads = read(true);
+			List<Radial> hiResRads = read(true);
 			rads.addAll(hiResRads);
 		}
-		List<LdmRadial> standardRaesRads = read(false);
+		List<Radial> standardRaesRads = read(false);
 		rads.addAll(standardRaesRads);
 
 		return rads;
@@ -189,14 +189,14 @@ public class UcarLevel2Reader
 		File f = new File("C:/Data/sensorhub/Level2/archive/KBMX/kbmxTest2");
 		UcarLevel2Reader reader = new UcarLevel2Reader(f);
 		UcarUtil.dumpAttributeInfo(reader.netCdf);
-		List<LdmRadial> rads = new ArrayList<>();
+		List<Radial> rads = new ArrayList<>();
 		if(UcarUtil.hasSuperRes(reader.netCdf)) {
-			List<LdmRadial> hiResRads = reader.read(true);
+			List<Radial> hiResRads = reader.read(true);
 			rads.addAll(hiResRads);
 		}
-		List<LdmRadial> standardRaesRads = reader.read(false);
+		List<Radial> standardRaesRads = reader.read(false);
 		rads.addAll(standardRaesRads);
-		for(LdmRadial rad: rads)
+		for(Radial rad: rads)
 			System.err.println(rad);
 		System.err.println("Done");
 	}

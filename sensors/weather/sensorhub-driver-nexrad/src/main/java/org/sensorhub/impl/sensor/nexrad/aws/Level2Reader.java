@@ -25,17 +25,17 @@ import org.slf4j.LoggerFactory;
  * @author T
  * @date Mar 9, 2016
  */
-public class LdmLevel2Reader //implements RadialProvider 
+public class Level2Reader
 {
 	byte [] b2 = new byte[2];
 	byte [] b4 = new byte[4];
 	public static final int MESSAGE2_LENGTH = 2356;
-	private static final Logger logger = LoggerFactory.getLogger(LdmLevel2Reader.class);
+	private static final Logger logger = LoggerFactory.getLogger(Level2Reader.class);
 
-	public LdmLevel2Reader() {
+	public Level2Reader() {
 	}
 
-	public List<LdmRadial> read(File f) throws FileNotFoundException, IOException {
+	public List<Radial> read(File f) throws FileNotFoundException, IOException {
 		String key = f.getName();
 		try(InputStream is = getInputStream(f)) {
 			if(key.endsWith("S")) {
@@ -43,11 +43,11 @@ public class LdmLevel2Reader //implements RadialProvider
 				System.err.println(hdr);
 				readMetadataRecord(is);
 			} else if (key.endsWith("I")) {
-				List<LdmRadial> radials = readMessage31(is);
+				List<Radial> radials = readMessage31(is);
 				return radials;
 
 			} else if (key.endsWith("E")) {
-				List<LdmRadial> radials = readMessage31(is);
+				List<Radial> radials = readMessage31(is);
 				return radials;
 			}
 		}
@@ -97,7 +97,7 @@ public class LdmLevel2Reader //implements RadialProvider
 		is.read(bt);
 	}
 
-	public List<LdmRadial> readMessage31(InputStream is) throws IOException {
+	public List<Radial> readMessage31(InputStream is) throws IOException {
 		int ok = is.read(b4);
 		int msgSize = java.nio.ByteBuffer.wrap(b4).getInt();
 		msgSize = Math.abs(msgSize);
@@ -105,7 +105,7 @@ public class LdmLevel2Reader //implements RadialProvider
 		byte [] bfull = new byte[msgSize];
 		ok = is.read(bfull);
 
-		List<LdmRadial> ldmRadials = new ArrayList<>();
+		List<Radial> ldmRadials = new ArrayList<>();
 
 		ByteArrayInputStream bas = new ByteArrayInputStream(bfull);
 		int radCnt = 1;
@@ -119,7 +119,7 @@ public class LdmLevel2Reader //implements RadialProvider
 					readMessage2(bzis, msgHdr.messageSize);
 					break;
 				case 31:
-					LdmRadial ldmRadial = new LdmRadial();
+					Radial ldmRadial = new Radial();
 					ldmRadial.dataHeader = readDataHeaderBlock(bzis);
 					ldmRadial.volumeDataBlock = readVolumeDataBlock(bzis);
 					readElevationDataBlock(bzis);
@@ -399,14 +399,14 @@ public class LdmLevel2Reader //implements RadialProvider
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
-		LdmLevel2Reader reader = new LdmLevel2Reader();
+		Level2Reader reader = new Level2Reader();
 //        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_866_20230214-000553-024-I";
 //        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_913_20230217-165506-001-S";
 //        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_912_20230217-164530-034-E";
 
 //		String p = "c:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_166_20230223-011539-027-I";  // Message 128 error
 		String p = "c:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_166_20230223-011539-028-I"; // Message 134 error
-		List<LdmRadial> rads = reader.read(new File(p));
+		List<Radial> rads = reader.read(new File(p));
 //				for(LdmRadial r: rads)
 		System.err.println("Read " + rads.size() + " radials");
 	}

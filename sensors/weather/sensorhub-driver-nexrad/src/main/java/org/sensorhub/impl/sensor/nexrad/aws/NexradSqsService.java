@@ -31,7 +31,7 @@ public class NexradSqsService
 {
 	static final Logger logger = LoggerFactory.getLogger(NexradSqsService.class);
 	private int numThreads = 4;  // config can and usually should override this
-	static final String topicArn = "arn:aws:sns:us-east-1:684042711724:NewNEXRADLevel2Object";
+	static final String TOPIC_ARN = "arn:aws:sns:us-east-1:684042711724:NewNEXRADLevel2Object";
 	private String queueName;
 	private List<String> sites;
 	private AwsSqsService sqsService;
@@ -73,7 +73,7 @@ public class NexradSqsService
 	public void start() {
 //		assert chunkQueue != null;
 		assert chunkQueueManager != null;
-		String queueUrl  = QueueFactory.createAndSubscribeQueue(topicArn, queueName);
+		String queueUrl  = QueueFactory.createAndSubscribeQueue(TOPIC_ARN, queueName, true);
 
 		execService = Executors.newFixedThreadPool(numThreads);
 		sqsService = new AwsSqsService(queueUrl);

@@ -1,5 +1,8 @@
 package org.sensorhub.impl.sensor.nexrad.aws.sqs;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
@@ -11,6 +14,9 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.DeleteQueueRequest;
+import com.amazonaws.services.sqs.model.GetQueueAttributesResult;
+import com.amazonaws.services.sqs.model.PurgeQueueRequest;
+import com.amazonaws.services.sqs.model.PurgeQueueResult;
 
 /**
  * <p>Title: QueueFactory.java</p>
@@ -44,10 +50,28 @@ public class QueueFactory
 	}
 	
 
-	public static void main(String[] args) {
+	public static void main_(String[] args) {
 		listQueues();
 		
 		deleteQueue("https://sqs.us-west-2.amazonaws.com/384286541835/NexradQueue_SensorHub_00018");
+	}
+	
+	public static void main(String[] args) {
+		String topicArn = "arn:aws:sns:us-east-1:684042711724:NewNEXRADLevel2Object";
+		String qName = "NexradQueue_SensorHub_00018";
+
+		String queueUrl  = QueueFactory.createAndSubscribeQueue(topicArn, qName);
+//		Topics.subscribeQueue(sns, sqs, topicArn, queueUrl);
+		
+//		GetQueueAttributesResult attributes = sqs.getQueueAttributes(queueUrl, Collection.singletonList("ApproximateNumberOfMessages"));
+		List<String> atts = new ArrayList<>();
+		atts.add("ApproximateNumberOfMessages");
+		GetQueueAttributesResult attributes = sqs.getQueueAttributes(queueUrl, atts);
+	    String size = attributes.getAttributes().get("ApproximateNumberOfMessages");
+	    System.err.println("QueueSize: " + size);
+	    PurgeQueueRequest purgeReq = new PurgeQueueRequest(queueUrl); 
+	    PurgeQueueResult purgeRes = sqs.purgeQueue(purgeReq);
+	    System.err.println(purgeRes);
 	}
 	
 	public static void listQueues() {
@@ -59,13 +83,35 @@ public class QueueFactory
 	}
 	
 	public static String createAndSubscribeQueue(String topicArn, String queueName)  {
+		return createAndSubscribeQueue(topicArn, queueName, false);
+	}
+	
+	/**
+	 * Create a queue and subscribe to an Amazon SNS topic. If the queue already exists, 
+	 * it will not be recreated.
+	 * 
+	 * @param topicArn - amazon resource name for the topic
+	 * @param queueName  - name for the queue to create
+	 * @param purgeExisting - if true, will purge any existing messages in the queue if it already exists
+	 * @return url for the created queue
+	 */
+	public static String createAndSubscribeQueue(String topicArn, String queueName, boolean purgeExisting)  {
 		// Create a queue
 		CreateQueueRequest createQueueRequest = new CreateQueueRequest(queueName);
-		String myQueueUrl = sqs.createQueue(createQueueRequest).getQueueUrl();
-		System.out.println("I am Creating a new SQS queue called " + queueName);
+		String queueUrl = sqs.createQueue(createQueueRequest).getQueueUrl();
 		// TODO - error check that queue was actually created
-		Topics.subscribeQueue(sns, sqs, topicArn, myQueueUrl);
-		return myQueueUrl;
+		Topics.subscribeQueue(sns, sqs, topicArn, queueUrl);
+		
+		if(purgeExisting) {
+//			List<String> atts = new ArrayList<>();
+//			atts.add("ApproximateNumberOfMessages");
+//			GetQueueAttributesResult attributes = sqs.getQueueAttributes(queueUrl, atts);
+//		    String size = attributes.getAttributes().get("ApproximateNumberOfMessages");
+//		    System.err.println("QueueSize: " + size);
+		    PurgeQueueRequest purgeReq = new PurgeQueueRequest(queueUrl); 
+		    PurgeQueueResult purgeRes = sqs.purgeQueue(purgeReq);
+		}
+		return queueUrl;
 	}
 
 	public static void deleteQueue(String queueUrl) {
@@ -81,3 +127,4 @@ public class QueueFactory
 		}
 	}
 }
+ 

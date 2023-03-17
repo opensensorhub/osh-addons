@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.sensorhub.impl.sensor.nexrad.RadialProvider;
 import org.sensorhub.impl.sensor.nexrad.aws.AwsNexradUtil;
-import org.sensorhub.impl.sensor.nexrad.aws.LdmLevel2Reader;
-import org.sensorhub.impl.sensor.nexrad.aws.LdmRadial;
+import org.sensorhub.impl.sensor.nexrad.aws.Level2Reader;
+import org.sensorhub.impl.sensor.nexrad.aws.Radial;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

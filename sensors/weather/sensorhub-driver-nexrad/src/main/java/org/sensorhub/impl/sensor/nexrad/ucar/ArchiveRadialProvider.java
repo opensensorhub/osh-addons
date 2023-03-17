@@ -12,7 +12,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.nexrad.NexradConfig;
 import org.sensorhub.impl.sensor.nexrad.RadialProvider;
 import org.sensorhub.impl.sensor.nexrad.aws.AwsNexradUtil;
-import org.sensorhub.impl.sensor.nexrad.aws.LdmRadial;
+import org.sensorhub.impl.sensor.nexrad.aws.Radial;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.S3Object;
@@ -77,7 +77,7 @@ public class ArchiveRadialProvider implements RadialProvider {
 	 * @see org.sensorhub.impl.sensor.nexrad.RadialProvider#getNextRadial()
 	 */
 	@Override
-	public LdmRadial getNextRadial() {
+	public Radial getNextRadial() {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -86,7 +86,7 @@ public class ArchiveRadialProvider implements RadialProvider {
 	 * @see org.sensorhub.impl.sensor.nexrad.RadialProvider#getNextRadials()
 	 */
 	@Override
-	public List<LdmRadial> getNextRadials() throws IOException {
+	public List<Radial> getNextRadials() throws IOException {
 		if(volumeIndex >= summaries.size())
 			return null;  // no more data
 		S3ObjectSummary s = summaries.get(volumeIndex++);
@@ -95,7 +95,7 @@ public class ArchiveRadialProvider implements RadialProvider {
 		return reader.read();
 	}
 	
-	public List<LdmRadial> getNextRadials(String site) throws IOException {
+	public List<Radial> getNextRadials(String site) throws IOException {
 		return null;
 	}
 

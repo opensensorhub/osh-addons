@@ -148,7 +148,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 			foi.setLocation(stationLoc);
 			addFoi(foi);
 			// Do I need to explicitly publish FOI event?
-			logger.debug("SENSOR_UUD: {}, siteUID: {}", SENSOR_UID, siteUID, foiMap.size());
+			logger.debug("SENSOR_UID: {}, siteUID: {}", SENSOR_UID, siteUID, foiMap.size());
 
 //			eventHandler.publish(new FoiAddedEvent(System.currentTimeMillis(), SENSOR_UID, siteUID, Instant.now() ));
 		}
@@ -161,8 +161,9 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 	protected void doStop() throws SensorHubException
 	{
 		nexradOutput.stop();
-		if(isRealtime)
+		if(isRealtime) {
 			nexradSqs.stop();
+		}
 	}
 
 

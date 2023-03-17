@@ -13,8 +13,8 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.nexrad.NexradConfig;
 import org.sensorhub.impl.sensor.nexrad.NexradSensor;
 import org.sensorhub.impl.sensor.nexrad.RadialProvider;
-import org.sensorhub.impl.sensor.nexrad.aws.LdmLevel2Reader;
-import org.sensorhub.impl.sensor.nexrad.aws.LdmRadial;
+import org.sensorhub.impl.sensor.nexrad.aws.Level2Reader;
+import org.sensorhub.impl.sensor.nexrad.aws.Radial;
 import org.sensorhub.impl.sensor.nexrad.aws.NexradSqsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,13 +42,13 @@ public class RealtimeRadialProvider implements RadialProvider {
 	 * @see org.sensorhub.impl.sensor.nexrad.RadialProvider#getNextRadial()
 	 */
 	@Override
-	public LdmRadial getNextRadial() {
+	public Radial getNextRadial() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public List<LdmRadial> getNextRadials() throws IOException {
+	public List<Radial> getNextRadials() throws IOException {
 		return null;
 	}
 	
@@ -56,14 +56,14 @@ public class RealtimeRadialProvider implements RadialProvider {
 	 * @see org.sensorhub.impl.sensor.nexrad.RadialProvider#getNextRadials()
 	 */
 	@Override
-	public List<LdmRadial> getNextRadials(String site) throws IOException {
+	public List<Radial> getNextRadials(String site) throws IOException {
 		// This won't work for dynamically adding/removing sites- Need event interface
 		ChunkPathQueue chunkQueue = chunkQueueManager.getChunkQueue(site);
 		try {
 			Path p = chunkQueue.nextFile();
 			logger.debug("Reading File {}" , p.toString());
-			LdmLevel2Reader reader = new LdmLevel2Reader();
-			List<LdmRadial> radials = reader.read(p.toFile());
+			Level2Reader reader = new Level2Reader();
+			List<Radial> radials = reader.read(p.toFile());
 //			List<LdmRadial> radials = new ArrayList<>();
 			return radials;
 		} catch (IOException e) {

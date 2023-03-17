@@ -3,7 +3,7 @@ package org.sensorhub.impl.sensor.nexrad;
 import java.io.IOException;
 import java.util.List;
 
-import org.sensorhub.impl.sensor.nexrad.aws.LdmRadial;
+import org.sensorhub.impl.sensor.nexrad.aws.Radial;
 
 /**
  * <p>Title: RadialProvider.java</p>
@@ -18,10 +18,10 @@ import org.sensorhub.impl.sensor.nexrad.aws.LdmRadial;
 
 public interface RadialProvider {
 	
-	public LdmRadial getNextRadial();
+	public Radial getNextRadial();
 	// Deprecate this if we end up going to always passing site in
-	public List<LdmRadial>  getNextRadials() throws IOException;
+	public List<Radial>  getNextRadials() throws IOException;
 
-	public List<LdmRadial>  getNextRadials(String site) throws IOException;
+	public List<Radial>  getNextRadials(String site) throws IOException;
 
 }
