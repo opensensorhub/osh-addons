@@ -38,8 +38,9 @@ The driver can be configured to support one or more Nexrad sites.
 
 - **Nexrad:** *(Settings specific to Nexrad OpenSensorHub driver)*
     - **siteIds:** ArrayList of 4 letter Nexrad site identifiers (e.g. KHTX)
-    - **rootFolder:**  Folder for downloading bzipped files of radials from Nexrad Level II Amazon S3 bucket
-    - **numThreads:**  
+    - **saveDataAsFiles** If true, save file locally before ingesting 
+    - **rootFolder:**  Folder for saving bzipped files of radials from Nexrad Level II Amazon S3 bucket
+    - **numThreads:**  Number of threads to allocate for processing messages
     - **queueName:**  name of Amazon SQS queue to create for holding messages of new files
     - **queueIdleTimeMinutes:**  
     - **queueFileLimit:**  

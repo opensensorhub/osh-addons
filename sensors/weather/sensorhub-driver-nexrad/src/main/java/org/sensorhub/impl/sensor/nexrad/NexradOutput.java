@@ -365,9 +365,10 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			String outputName = getName();
 			latestRecord = nexradBlock;			
 			latestRecordTime = System.currentTimeMillis();
-			System.err.println("SEND RADIALS: name, siteUID, az, el: " + outputName + "," + siteUID + "," +
-					radial.dataHeader.elevationAngle + "," + radial.dataHeader.azimuthAngle);
-//			eventHandler.publish(new DataEvent(latestRecordTime, NexradSensor.SENSOR_UID, outputName, siteUID, nexradBlock));
+			String traceMsg = "SEND RADIALS: name, siteUID, az, el: " + outputName + "," + siteUID + "," +
+					radial.dataHeader.elevationAngle + "," + radial.dataHeader.azimuthAngle;
+			logger.trace(traceMsg);
+			eventHandler.publish(new DataEvent(latestRecordTime, NexradSensor.SENSOR_UID, outputName, siteUID, nexradBlock));
 		}
 
 	}

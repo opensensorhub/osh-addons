@@ -140,9 +140,8 @@ public class ChunkPathQueue
 		assert s3client != null;
 		try
 		{
-//			System.err.println("*** Checking nextFile");
 			String nextFile = next();
-			System.err.println("NextFile: " +  nextFile);
+			logger.debug("NextFile: {}", nextFile);
 			S3Object chunk = AwsNexradUtil.getChunk(s3client, AwsNexradUtil.BUCKET_NAME, nextFile);
 			
 			return chunk;

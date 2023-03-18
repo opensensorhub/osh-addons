@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
@@ -30,30 +31,38 @@ public class NexradConfig extends SensorConfig
     @DisplayInfo(label="Station IDs", desc="List of station IDs to get data for")
     public List<String> siteIds = new ArrayList<String>();
     
+	//  Realtime AWS controls
+    @DisplayInfo(desc="Number of threads to allocate for processing messages")
+	public int numThreads;
+    
+    @DisplayInfo(desc="Name to assign to Nexrad AWS Queue")
+	public String queueName = "NexradQueue_SensorHub_001";  // default name
+
+	@DisplayInfo(desc="Queue idle time in minutes")
+	public long queueIdleTimeMinutes = 240;
+
+	@DisplayInfo(desc="number of files in the disk queue to accumulate before forcing older files out")
+	public int queueFileLimit = 8;  
+
+	@DisplayInfo(desc="If true, download data as files before ingesting")
+	public boolean saveDataAsFiles = false; 
+
 	@DisplayInfo(desc="Path to incoming Nexrad Files")
     public String rootFolder;
 	
-	//  Realtime AWS controls
-	public int numThreads;
-	public String queueName = "NexradQueue_SensorHub_001";  // default name
-	public long queueIdleTimeMinutes = 240;
-	public int queueFileLimit = 8;  // number of files in the disk queue to accumulate before forcing older files out
-	//TODO: support either download or direct S3Object access
-	public boolean saveDataAsFiles = true; // if true, download files before ingesting
 	
 	//  Archive AWS controls
 	public String archiveStartTime;
 	public String archiveStopTime;
 	
-	public NexradSite site;  // 
+//	public NexradSite site;   
 	
-	public NexradSite getSite(String siteId) {
+	public NexradSite getSite(String siteId) throws SensorHubException {
 		try {
-			site = NexradTable.getInstance().getSite(siteId);
-			return site;
+			return NexradTable.getInstance().getSite(siteId);
+//			return site;
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new SensorHubException(e.getMessage(), e);
 		}
-		return null;  // throw exception?
 	}
 }

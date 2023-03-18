@@ -51,7 +51,7 @@ public class Level2Reader {
 	public List<Radial> read(InputStream is, String key) throws FileNotFoundException, IOException {
 		if (key.endsWith("S")) {
 			VolumeHeader hdr = readVolumeHeader(is);
-			System.err.println(hdr);
+//			System.err.println(hdr);
 			readMetadataRecord(is);
 		} else if (key.endsWith("I")) {
 			List<Radial> radials = readMessage31(is);

@@ -44,7 +44,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 {
 	static final Logger logger = LoggerFactory.getLogger(NexradSensor.class);
 	static final String SENSOR_UID = "urn:osh:sensor:weather:nexrad";
-	static final String SITE_UID_PREFIX = "urn:osh:sensor:nexrad:";
+	static final String SITE_UID_PREFIX = "urn:osh:sensor:weather:nexrad:";
 	NexradOutput nexradOutput;
 	RadialProvider radialProvider;  // either Realtime or archive AWS source
 	boolean isRealtime;
