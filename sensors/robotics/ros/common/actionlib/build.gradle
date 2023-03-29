@@ -1,0 +1,50 @@
+description = 'ROS Java Action Library'
+ext.details = 'Integration of ROS Action Library in Java implemented by Ernesto Corbellini'
+version = '1.0.0'
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation 'org.ros.rosjava_core:rosjava:0.3.6'
+    implementation 'org.ros.rosjava_bootstrap:message_generation:0.3.3'
+    implementation 'org.ros.rosjava_messages:std_msgs:0.5.11'
+    implementation 'org.ros.rosjava_messages:actionlib_msgs:1.12.7'
+    testImplementation 'junit:junit:4.12'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+            exclude '**/TestClient.java'
+            exclude '**/TestServer.java'
+            exclude '**/TestClientStateMachine.java'
+        }
+    }
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+//      If tests are to be excluded list them here as follows
+//          exclude '**/TestNameClass.class'
+test {
+    useJUnit()
+}
+
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes('Bundle-Vendor': 'Botts Inc')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'ngaray'
+            name 'Nicolas Garay'
+            organization 'Botts Innovative Research, Inc.'
+            organizationUrl 'www.botts-inc.com'
+        }
+    }
+}

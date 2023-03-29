@@ -1,0 +1,48 @@
+description = 'RPLidar Sensor'
+ext.details = 'ROS interface for OpenSensorHub to receive RP-LIDAR measurements'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+    jcenter()
+    maven {
+        url "https://github.com/rosjava/rosjava_mvn_repo/raw/master"
+    }
+}
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation 'org.ros.rosjava_core:rosjava:0.3.6'
+    implementation 'org.ros.rosjava_bootstrap:message_generation:0.3.3'
+    implementation 'org.ros.rosjava_messages:sensor_msgs:1.12.7'
+    implementation project(':sensorhub-ros-common')
+    testImplementation('junit:junit:4.13')
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+//      If tests are to be excluded list them here as follows
+//          exclude '**/TestNameClass.class'
+test {
+    useJUnit()
+}
+
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes('Bundle-Vendor': 'Botts Inc')
+        attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.rplidar.RpLidarActivator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'ngaray'
+            name 'Nicolas Garay'
+            organization 'Botts Innovative Research, Inc.'
+            organizationUrl 'www.botts-inc.com'
+        }
+    }
+}
