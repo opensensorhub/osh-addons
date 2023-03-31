@@ -87,7 +87,7 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
                     throw new SensorHubException("No communication settings specified");
                 
                 // start comm provider
-                commProvider = config.commSettings.getProvider();
+                commProvider = (ICommProvider<?>)getParentHub().getModuleRegistry().loadSubModule(config.commSettings, true);
                 commProvider.start();
             }
             catch (Exception e)

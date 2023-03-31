@@ -1,0 +1,91 @@
+<sml:AggregateProcess xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sml="http://www.opengis.net/sensorml/2.0" xmlns:swe="http://www.opengis.net/swe/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:gmd="http://www.isotc211.org/2005/gmd" gml:id="CHAIN1">
+  <gml:identifier codeSpace="uid">0c58ed65-e63d-4d1e-9ef0-b7db0be3685c</gml:identifier>
+  <sml:outputs>
+    <sml:OutputList>
+        <sml:output name="targetLocation">
+          <swe:DataRecord>
+            <swe:field name="time">
+              <swe:Time definition="http://www.opengis.net/def/property/OGC/0/SamplingTime" referenceFrame="http://www.opengis.net/def/trs/BIPM/0/UTC">
+                <swe:label>Sampling Time</swe:label>
+                <swe:uom xlink:href="http://www.opengis.net/def/uom/ISO-8601/0/Gregorian"/>
+              </swe:Time>
+            </swe:field>
+            <swe:field name="location">
+              <swe:Vector definition="http://sensorml.com/ont/swe/property/TargetLocation" referenceFrame="http://www.opengis.net/def/crs/EPSG/0/4979">
+                <swe:coordinate name="lat">
+                  <swe:Quantity definition="http://sensorml.com/ont/swe/property/GeodeticLatitude" axisID="Lat">
+                    <swe:label>Geodetic Latitude</swe:label>
+                    <swe:uom code="deg"/>
+                  </swe:Quantity>
+                </swe:coordinate>
+                <swe:coordinate name="lon">
+                  <swe:Quantity definition="http://sensorml.com/ont/swe/property/Longitude" axisID="Lon">
+                    <swe:label>Longitude</swe:label>
+                    <swe:uom code="deg"/>
+                  </swe:Quantity>
+                </swe:coordinate>
+                <swe:coordinate name="alt">
+                  <swe:Quantity definition="http://sensorml.com/ont/swe/property/HeightAboveEllipsoid" axisID="h">
+                    <swe:label>Ellipsoidal Height</swe:label>
+                    <swe:uom code="m"/>
+                  </swe:Quantity>
+                </swe:coordinate>
+              </swe:Vector>
+            </swe:field>
+          </swe:DataRecord>
+        </sml:output>
+    </sml:OutputList>
+  </sml:outputs>
+  <sml:components>
+    <sml:ComponentList>
+      <sml:component name="source0">
+        <sml:SimpleProcess gml:id="P1">
+          <sml:typeOf xlink:href="urn:osh:process:datasource:stream"/>
+          <sml:configuration>
+            <sml:Settings>
+              <sml:setValue ref="parameters/producerURI">urn:lasertech:trupulse360:65799fa71bbd1f3d</sml:setValue>
+            </sml:Settings>
+          </sml:configuration>
+        </sml:SimpleProcess>
+      </sml:component>
+      <sml:component name="geocoder">
+        <sml:SimpleProcess gml:id="P2">
+          <sml:typeOf xlink:href="urn:osh:process:geoloc:TargetGeoloc"/>
+<!--          <sml:configuration>-->
+<!--            <sml:Settings>-->
+<!--              <sml:setValue ref="inputs/imageFrame/width">720</sml:setValue>-->
+<!--              <sml:setValue ref="inputs/imageFrame/height">480</sml:setValue>-->
+<!--              <sml:setValue ref="parameters/feature">CARS</sml:setValue>-->
+<!--            </sml:Settings>-->
+<!--          </sml:configuration>-->
+        </sml:SimpleProcess>
+      </sml:component>
+    </sml:ComponentList>
+  </sml:components>
+  <sml:connections>
+    <sml:ConnectionList>
+
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/source0/outputs/targetLocation"/>
+          <sml:destination ref="components/geocoder/inputs/sensorLocation"/>
+        </sml:Link>
+      </sml:connection>
+
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/source0/outputs/rangeData"/>
+          <sml:destination ref="components/geocoder/inputs/rangeData"/>
+        </sml:Link>
+      </sml:connection>
+
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/geocoder/outputs/targetLocation"/>
+          <sml:destination ref="outputs/targetLocation"/>
+        </sml:Link>
+      </sml:connection>
+
+    </sml:ConnectionList>
+  </sml:connections>
+</sml:AggregateProcess>
