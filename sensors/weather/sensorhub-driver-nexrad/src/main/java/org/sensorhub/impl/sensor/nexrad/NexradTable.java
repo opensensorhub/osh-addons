@@ -111,7 +111,6 @@ public class NexradTable extends HashMap<String, NexradSite>
 		return null;	
 	}
 	
-	
 	public static void main(String[] args) throws Exception  {
 //		NexradTable.outputCsv();
 		System.err.println(NexradTable.getInstance().getSite("LBB"));

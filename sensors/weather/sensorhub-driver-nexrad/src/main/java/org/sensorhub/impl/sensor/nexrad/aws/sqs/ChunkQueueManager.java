@@ -10,6 +10,7 @@ import java.util.Map;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.nexrad.NexradConfig;
 import org.sensorhub.impl.sensor.nexrad.NexradSensor;
+import org.sensorhub.impl.sensor.nexrad.NexradSite;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 
@@ -28,9 +29,10 @@ public class ChunkQueueManager {
 			if(!Files.isDirectory(rootPath))
 				throw new SensorHubException("Configured rootFolder does not exist or is not a directory" + config.rootFolder);
 			
-			for(String site: config.siteIds) {
-				ChunkPathQueue queue = new ChunkPathQueue(Paths.get(config.rootFolder), site);
-				queueMap.put(site, queue);
+//			for(String site: config.siteIds) {
+			for(NexradSite site: sensor.getEnabledSites()) {
+				ChunkPathQueue queue = new ChunkPathQueue(Paths.get(config.rootFolder), site.id);
+				queueMap.put(site.id, queue);
 //				nexradSqsService.setChunkQueue(queue);   
 //				queue.setS3client(sensor.getS3client());  
 
@@ -49,6 +51,17 @@ public class ChunkQueueManager {
 		return queueMap.get(site);
 	}
 
+	// TODO - best way to use config root folder vs direct from S3Object
+	public void enableSite(String siteId) {
+		if(queueMap.containsKey(queueMap))
+			return;
+//		ChunkPathQueue queue = new ChunkPathQueue(Paths.get(config.rootFolder), siteId);
+//		queueMap.put(siteId, queue);
+	}
+	
+	public void disableSite(String siteId) {
+		queueMap.remove(siteId);
+	}
 	public void setS3Client(AmazonS3Client s3client) {
 		for(Map.Entry<String, ChunkPathQueue> entry: queueMap.entrySet()) {
 			ChunkPathQueue queue = entry.getValue();

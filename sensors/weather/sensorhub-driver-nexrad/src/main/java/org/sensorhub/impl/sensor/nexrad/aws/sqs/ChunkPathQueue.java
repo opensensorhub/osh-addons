@@ -68,9 +68,9 @@ public class ChunkPathQueue
 	void dump(BlockingQueue<String> queue) {
 		String [] sarr = (String[]) queue.toArray(new String [] {});
 		Arrays.sort(sarr);
-		logger.debug("QUEUE: ");
+		logger.trace("QUEUE: ");
 		for (String st: sarr)
-			logger.debug("\t" + st);
+			logger.trace("\t" + st);
 
 	}
 
@@ -166,7 +166,6 @@ public class ChunkPathQueue
 			//  If I thread writing of file, I will have to put in a mechanism to notify the listener (NexradOutput)
 			//  when the file writing is complete.  Right now, I don't think it is needed. 
 			AwsNexradUtil.dumpChunkToFile(chunk, pout);
-//			System.err.println("*** Dumped nextFile");
 			return pout;
 		}
 		catch (InterruptedException e)

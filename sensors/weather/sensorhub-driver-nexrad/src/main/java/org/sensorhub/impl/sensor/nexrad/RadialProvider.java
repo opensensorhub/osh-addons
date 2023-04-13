@@ -17,11 +17,6 @@ import org.sensorhub.impl.sensor.nexrad.aws.Radial;
  */
 
 public interface RadialProvider {
-	
-	public Radial getNextRadial();
-	// Deprecate this if we end up going to always passing site in
-	public List<Radial>  getNextRadials() throws IOException;
-
 	// Ingest data without retaining files locally
 	public List<Radial>  getNextRadials(String site) throws IOException;
 	// Ingest data and save files locally

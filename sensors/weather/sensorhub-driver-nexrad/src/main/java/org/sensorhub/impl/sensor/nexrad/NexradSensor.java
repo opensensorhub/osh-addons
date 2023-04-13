@@ -15,11 +15,12 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.sensor.nexrad;
 
 import java.io.IOException;
-import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.feature.FoiAddedEvent;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.nexrad.aws.NexradSqsService;
 import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkQueueManager;
@@ -28,6 +29,7 @@ import org.sensorhub.impl.sensor.nexrad.ucar.ArchiveRadialProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.sensorML.SMLHelper;
+import org.vast.swe.SWEHelper;
 
 import net.opengis.gml.v32.Point;
 import net.opengis.gml.v32.impl.GMLFactory;
@@ -35,10 +37,15 @@ import net.opengis.sensorml.v20.PhysicalSystem;
 
 
 /**
- * <p>
+ * <p>NexradSensor - Sensor Driver for pulling and serving data from AWS S3 Nexrad bucket
  * </p>
  *
  * @author Tony Cook <tony.coook@opensensorhub.org>
+ * 
+ * TODO
+ * 		Add FOIs for all sites
+ * 		Support dynamic addition/removal of individual sites
+ * 			
  */
 public class NexradSensor extends AbstractSensorModule<NexradConfig>
 {
@@ -52,6 +59,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 	NexradSqsService nexradSqs;
 	ChunkQueueManager chunkQueueManager;
 	
+	List<NexradSite> enabledSites = new ArrayList<>();
 	
 	public NexradSensor() throws SensorHubException
 	{
@@ -62,7 +70,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 	{
 		if(!isRealtime) 
 			return;
-		nexradSqs.setQueueActive();
+		nexradSqs.setQueueActive(config.purgeExistingQueueMessages);
 		nexradSqs.setNumThreads(config.numThreads);
 		//		nexradSqs.setChunkQueue(chunkQueue);  // 
 		//		chunkQueue.setS3client(nexradSqs.getS3client());  //
@@ -92,7 +100,15 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 		} else {
 			try {
 				isRealtime = true;
-				nexradSqs = new NexradSqsService(config.queueName, config.siteIds);
+				
+				// add FOIS before initializing ChunkQueueManager
+				try {
+					addFois();
+				} catch (IOException e) {
+					throw new SensorHubException("Could not instantiate NexradTable. ", e);
+				}
+				
+				nexradSqs = new NexradSqsService(config.queueName, config.siteIds, config.purgeExistingQueueMessages);
 				nexradSqs.setQueueIdleTimeMillis(TimeUnit.MINUTES.toMillis(config.queueIdleTimeMinutes));
 				chunkQueueManager = new ChunkQueueManager(this);
 				//  DECOUPLE ME!!!
@@ -109,7 +125,58 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 		nexradOutput.init();	
 	}
 
+	private void addFois() throws IOException {
+		// Add FOIs- one per site
+		SMLHelper smlFac = new SMLHelper();
+		GMLFactory gmlFac = new GMLFactory(true);
 
+		// generate station FOIs
+		NexradTable nexradTable = NexradTable.getInstance();
+		Collection<NexradSite> sites = nexradTable.getAllSites();
+		for (NexradSite site: sites)
+		{
+//			if(!site.id.equals("KLBB"))  continue;
+			String siteUID = SITE_UID_PREFIX + site.id;
+			String name = site.id;
+			String description = "Nexrad site " + site.id;
+
+			// generate small SensorML for FOI (in this case the system is the FOI)
+			PhysicalSystem foi = smlFac.createPhysicalSystem().build();
+			foi.setId(site.id);
+			foi.setUniqueIdentifier(siteUID);
+			foi.setName(name);
+			foi.setDescription(description);
+			Point stationLoc = gmlFac.newPoint();
+			stationLoc.setSrsName(SWEHelper.getEpsgUri(4326));
+			stationLoc.setPos(new double [] {site.lat, site.lon, site.elevation});
+			foi.setLocation(stationLoc);
+			addFoi(foi);
+
+			logger.debug("SENSOR_UID: {}, siteUID: {}", SENSOR_UID, siteUID, foiMap.size());
+			
+			if(config.siteIds.contains(site.id)) {
+				logger.debug("enabling site based on config: {}", site.id);
+				enabledSites.add(site);
+			}
+		}	
+	}
+
+	// NOTE: may not need enabledSites here- just let queueManager deal with it
+	public void enableSite(NexradSite site) {
+		enabledSites.add(site);
+		chunkQueueManager.enableSite(site.id);
+	}
+	
+	// NOTE: may not need enabledSites here- just let queueManager deal with it
+	public void disableSite(NexradSite site) {
+		enabledSites.remove(site);
+		chunkQueueManager.disableSite(site.id);
+	}
+	
+	public List<NexradSite> getEnabledSites() {
+		return enabledSites;
+	}
+	
 	@Override
 	protected void updateSensorDescription()
 	{
@@ -126,33 +193,6 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 	@Override
 	protected void doStart() throws SensorHubException
 	{
-		SMLHelper smlFac = new SMLHelper();
-		GMLFactory gmlFac = new GMLFactory(true);
-
-		// generate station FOIs
-		for (String siteId: config.siteIds)
-		{
-			String siteUID = SITE_UID_PREFIX + siteId;
-			String name = siteId;
-			String description = "Nexrad site " + siteId;
-
-			// generate small SensorML for FOI (in this case the system is the FOI)
-			PhysicalSystem foi = smlFac.createPhysicalSystem().build();
-			foi.setId(siteId);
-			foi.setUniqueIdentifier(siteUID);
-			foi.setName(name);
-			foi.setDescription(description);
-			Point stationLoc = gmlFac.newPoint();
-			NexradSite site = config.getSite(siteId);
-			stationLoc.setPos(new double [] {site.lat, site.lon, site.elevation});
-			foi.setLocation(stationLoc);
-			addFoi(foi);
-			// Do I need to explicitly publish FOI event?
-			logger.debug("SENSOR_UID: {}, siteUID: {}", SENSOR_UID, siteUID, foiMap.size());
-
-//			eventHandler.publish(new FoiAddedEvent(System.currentTimeMillis(), SENSOR_UID, siteUID, Instant.now() ));
-		}
-
 		nexradOutput.start(radialProvider); 
 	}
 

@@ -23,7 +23,7 @@ public class ProcessMessageThread implements Runnable {
 	List<String> sitesToKeep;
 	ChunkPathQueue chunkQueue;
 	ChunkQueueManager chunkQueueManager;
-	boolean processing = true;
+	volatile boolean processing = true;
 	
 	public ProcessMessageThread(AwsSqsService sqsService, AmazonS3Client client, List<String> sites, ChunkQueueManager chunkQueueManager) {
 		this.sqsService = sqsService;
@@ -34,18 +34,22 @@ public class ProcessMessageThread implements Runnable {
 	@Override
 	public void run() {
 		while(processing) {
-			List<Message> messages = this.sqsService.receiveMessages();
-			for(Message msg: messages) {
-				String body = msg.getBody();
-				String chunkPath = AwsNexradUtil.getChunkPath(body);
-				//				String time = AwsNexradUtil.getEventTime(body);
-				String site = chunkPath.substring(0, 4);
+			try {
+				List<Message> messages = this.sqsService.receiveMessages();
+				for(Message msg: messages) {
+					String body = msg.getBody();
+					String chunkPath = AwsNexradUtil.getChunkPath(body);
+					//				String time = AwsNexradUtil.getEventTime(body);
+					String site = chunkPath.substring(0, 4);
 //				System.err.println(chunkPath);
-				if(sitesToKeep.contains(site)) {
-					chunkQueueManager.addChunkPath(site, chunkPath);
+					if(sitesToKeep.contains(site)) {
+						chunkQueueManager.addChunkPath(site, chunkPath);
+					}
 				}
-			}
-			sqsService.deleteMessages(messages);	
+				sqsService.deleteMessages(messages);
+			} catch (Exception e) {
+				e.printStackTrace(System.err);
+			}	
 		}
 	}
 

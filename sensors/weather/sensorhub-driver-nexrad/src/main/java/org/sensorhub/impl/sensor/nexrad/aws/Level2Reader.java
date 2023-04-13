@@ -56,7 +56,6 @@ public class Level2Reader {
 		} else if (key.endsWith("I")) {
 			List<Radial> radials = readMessage31(is);
 			return radials;
-
 		} else if (key.endsWith("E")) {
 			List<Radial> radials = readMessage31(is);
 			return radials;
@@ -139,7 +138,8 @@ public class Level2Reader {
 					readRadialDataBlock(bzis);
 
 					// only supporting REF, VEL, SW for now,
-					for (int i = 0; i < ldmRadial.dataHeader.dataBlockCount - 3; i++) {
+					//for (int i = 0; i < ldmRadial.dataHeader.dataBlockCount; i++) {
+					for (int i = 0; i < 3; i++) {
 						MomentDataBlock momentBlock = readMomentDataBlock(bzis);
 //						System.err.println(momentBlock.blockName + ": " + momentBlock.numGates + ": " + momentBlock.rangeToCenterOfFirstGate + ": "  +momentBlock.rangeSampleInterval );
 						ldmRadial.momentData.put(momentBlock.blockName, momentBlock);
@@ -200,7 +200,7 @@ public class Level2Reader {
 
 		ok = is.read(b2);
 		hdr.daysSince1970 = java.nio.ByteBuffer.wrap(b2).getShort();
-		hdr.daysSince1970 += 1; // ?? Not sure why I need to do this, or if it is true for all cases
+		//hdr.daysSince1970 += 1; // ?? Not sure why I need to do this, or if it is true for all cases
 
 		ok = is.read(b2);
 		hdr.azimuthNum = java.nio.ByteBuffer.wrap(b2).getShort();
@@ -395,8 +395,8 @@ public class Level2Reader {
 				byte[] bb = new byte[2432];
 				ok = bzis.read(bb);
 			}
-			System.err.println(cnt + " compressed records read");
-			countBytes(bzis);
+			logger.debug("{} compressed records read", cnt);
+//			countBytes(bzis);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -418,7 +418,7 @@ public class Level2Reader {
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		Level2Reader reader = new Level2Reader();
-        String p = "C:/Data/sensorhub/Level2/KHTX/KHTX_871_20230316-175934-007-I";
+        String p = "C:\\Data\\sensorhub\\Level2\\KTBW\\KTBW_295_20230413-225802-014-I";
 //        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_913_20230217-165506-001-S";
 //        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_912_20230217-164530-034-E";
 

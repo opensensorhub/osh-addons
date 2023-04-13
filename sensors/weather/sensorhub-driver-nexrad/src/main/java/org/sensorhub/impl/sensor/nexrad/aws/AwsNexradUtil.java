@@ -61,8 +61,8 @@ public class AwsNexradUtil {
 
 	//  Need to figure out why realtime format value of daysSince70 seems to be one day too many
 	public static long toJulianTime(long daysSince70, long msSinceMidnight) {
-//		return TimeUnit.DAYS.toMillis(daysSince70 - 1) + msSinceMidnight;
-		return TimeUnit.DAYS.toMillis(daysSince70) + msSinceMidnight;
+		return TimeUnit.DAYS.toMillis(daysSince70 - 1) + msSinceMidnight;
+//		return TimeUnit.DAYS.toMillis(daysSince70) + msSinceMidnight;
 	}
 
 	public static String getChunkPath(String message) {
@@ -192,7 +192,7 @@ public class AwsNexradUtil {
 	}
 
 
-	public static void main(String[] args) throws Exception {
+	public static void main__(String[] args) throws Exception {
 		AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 		AmazonS3Client s3 = new AmazonS3Client(credentials);
 		//		List<S3ObjectSummary> matches = listFiles(s3, "KEWX", "20160901");

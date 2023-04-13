@@ -44,12 +44,14 @@ public class NexradConfig extends SensorConfig
 	@DisplayInfo(desc="number of files in the disk queue to accumulate before forcing older files out")
 	public int queueFileLimit = 8;  
 
-	@DisplayInfo(desc="If true, download data as files before ingesting")
+	@DisplayInfo(desc="If true, download data as files before ingesting. Default is false")
 	public boolean saveDataAsFiles = false; 
 
 	@DisplayInfo(desc="Path to incoming Nexrad Files")
     public String rootFolder;
 	
+	@DisplayInfo(desc="if true, purge all existing messages from pre-existing queue. Default is true")
+	public boolean purgeExistingQueueMessages = true;
 	
 	//  Archive AWS controls
 	public String archiveStartTime;

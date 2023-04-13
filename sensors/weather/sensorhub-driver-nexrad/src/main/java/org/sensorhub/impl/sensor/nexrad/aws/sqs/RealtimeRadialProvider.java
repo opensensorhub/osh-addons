@@ -33,21 +33,6 @@ public class RealtimeRadialProvider implements RadialProvider {
 		this.chunkQueueManager = chunkManager;
 	}
 
-
-	/* (non-Javadoc)
-	 * @see org.sensorhub.impl.sensor.nexrad.RadialProvider#getNextRadial()
-	 */
-	@Override
-	public Radial getNextRadial() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public List<Radial> getNextRadials() throws IOException {
-		return null;
-	}
-	
 	/* (non-Javadoc)
 	 * @see org.sensorhub.impl.sensor.nexrad.RadialProvider#getNextRadials()
 	 */
@@ -76,15 +61,13 @@ public class RealtimeRadialProvider implements RadialProvider {
 	public List<Radial> getNextRadials(String site) throws IOException {
 		// This won't work for dynamically adding/removing sites- Need event interface
 		ChunkPathQueue chunkQueue = chunkQueueManager.getChunkQueue(site);
-		try {
-			S3Object object = chunkQueue.nextObject();
+		try (S3Object object = chunkQueue.nextObject();) {
+//			S3Object object = chunkQueue.nextObject();
 			//S3ObjectInputStream s3is = object.getObjectContent();
 			BufferedInputStream s3is = new BufferedInputStream(object.getObjectContent());
 			logger.debug("Reading object {}" , object.getKey());
 			Level2Reader reader = new Level2Reader();
 			List<Radial> radials = reader.read(s3is, object.getKey());
-			
-//			List<LdmRadial> radials = new ArrayList<>();
 			return radials;
 		} catch (IOException e) {
 			e.printStackTrace(System.err);

@@ -74,15 +74,6 @@ public class ArchiveRadialProvider implements RadialProvider {
 	}
 
 	/* (non-Javadoc)
-	 * @see org.sensorhub.impl.sensor.nexrad.RadialProvider#getNextRadial()
-	 */
-	@Override
-	public Radial getNextRadial() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	/* (non-Javadoc)
 	 * @see org.sensorhub.impl.sensor.nexrad.RadialProvider#getNextRadials()
 	 */
 	@Override
@@ -99,11 +90,4 @@ public class ArchiveRadialProvider implements RadialProvider {
 		// TODO = read directly from S3ObjectInputStream
 		return null;
 	}
-
-	@Override
-	public List<Radial> getNextRadials() throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 }

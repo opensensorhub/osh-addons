@@ -16,6 +16,7 @@ package org.sensorhub.impl.sensor.nexrad;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -281,7 +282,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			//			
 			MomentDataBlock refMomentData = radial.momentData.get("REF");
 			MomentDataBlock velMomentData = radial.momentData.get("VEL");
-			MomentDataBlock swMomentData = radial.momentData.get("SW");
+			MomentDataBlock swMomentData = radial.momentData.get("SW ");
 			//
 			if(refMomentData == null) {
 				refArr.updateSize(1);
@@ -306,6 +307,8 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			long ms = radial.dataHeader.msSinceMidnight;
 			double utcTime = (double)(AwsNexradUtil.toJulianTime(days, ms)/1000.);
 			long utcTimeMs = AwsNexradUtil.toJulianTime(days, ms);
+			Instant inst = Instant.ofEpochMilli(utcTimeMs);
+//			System.err.println("Radial time: " + inst);
 			nexradBlock.setDoubleValue(0, utcTime);
 			nexradBlock.setStringValue(1, radial.dataHeader.siteId);
 			nexradBlock.setDoubleValue(2, radial.dataHeader.elevationAngle);
@@ -351,12 +354,14 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			if(velMomentData != null) {
 				((DataBlockMixed)nexradBlock).getUnderlyingObject()[14].setUnderlyingObject(velMomentData.getData());
 			} else {
+				System.err.println("VEL is null");
 				((DataBlockMixed)nexradBlock).getUnderlyingObject()[14].setUnderlyingObject(f);
 			}
 
 			if(swMomentData != null) {
 				((DataBlockMixed)nexradBlock).getUnderlyingObject()[15].setUnderlyingObject(swMomentData.getData());
 			} else {
+				System.err.println("SW is null");
 				((DataBlockMixed)nexradBlock).getUnderlyingObject()[15].setUnderlyingObject(f);
 			}
 
@@ -372,7 +377,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 		}
 
 	}
-
+	
 	protected void stop()
 	{
 		if (timer != null)
