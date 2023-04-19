@@ -66,12 +66,16 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 	}
 	
 
-	public void setQueueActive() throws IOException
+	public void setQueueActive() throws SensorHubException
 	{
 		if(!isRealtime) 
 			return;
-		nexradSqs.setQueueActive(config.purgeExistingQueueMessages);
-		nexradSqs.setNumThreads(config.numThreads);
+		try {
+			nexradSqs.activateQueue(config.purgeExistingQueueMessages);
+			nexradSqs.setNumThreads(config.numThreads);
+		} catch (IOException e) {
+			throw new SensorHubException("Could not activate aws queue", e);
+		}
 		//		nexradSqs.setChunkQueue(chunkQueue);  // 
 		//		chunkQueue.setS3client(nexradSqs.getS3client());  //
 		//		nexradSqs.start();
@@ -116,7 +120,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 				chunkQueueManager.setS3Client(nexradSqs.getS3client());
 				radialProvider = new RealtimeRadialProvider(this, chunkQueueManager);
 				setQueueActive();
-			} catch (IOException e) {
+			} catch (Exception e) {
 				throw new SensorHubException("Could not instantiate NexradSqsService", e);
 			}
 		}
@@ -193,6 +197,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 	@Override
 	protected void doStart() throws SensorHubException
 	{
+		setQueueActive();
 		nexradOutput.start(radialProvider); 
 	}
 

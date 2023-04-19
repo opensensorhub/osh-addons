@@ -11,7 +11,7 @@ package org.sensorhub.impl.sensor.nexrad.aws;
  * @date Mar 16, 2016
  */
 public class MessageHeader {
-	short messageSize;
+	short messageSize;  // Message size in halfwords
 	int rdaByte;
 	int messageType;
 	short sequenceNum;

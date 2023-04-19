@@ -22,11 +22,12 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
+import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.nexrad.aws.AwsNexradUtil;
-import org.sensorhub.impl.sensor.nexrad.aws.Radial;
 import org.sensorhub.impl.sensor.nexrad.aws.MomentDataBlock;
+import org.sensorhub.impl.sensor.nexrad.aws.Radial;
 import org.sensorhub.impl.sensor.nexrad.aws.sqs.ChunkPathQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -354,18 +355,15 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			if(velMomentData != null) {
 				((DataBlockMixed)nexradBlock).getUnderlyingObject()[14].setUnderlyingObject(velMomentData.getData());
 			} else {
-				System.err.println("VEL is null");
 				((DataBlockMixed)nexradBlock).getUnderlyingObject()[14].setUnderlyingObject(f);
 			}
 
 			if(swMomentData != null) {
 				((DataBlockMixed)nexradBlock).getUnderlyingObject()[15].setUnderlyingObject(swMomentData.getData());
 			} else {
-				System.err.println("SW is null");
 				((DataBlockMixed)nexradBlock).getUnderlyingObject()[15].setUnderlyingObject(f);
 			}
 
-			//System.out.printf("r,v,s: %d,%d,%d\n", refMomentData.numGates, velMomentData.numGates, swMomentData.numGates);
 			String siteUID = NexradSensor.SITE_UID_PREFIX + radial.dataHeader.siteId;
 			String outputName = getName();
 			latestRecord = nexradBlock;			
@@ -385,6 +383,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			timer.cancel();
 			timer = null;
 		}
+		sendData = false;
 	}
 
 
@@ -435,9 +434,9 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			if (numListeners > 0) { 
 				try {
 					parent.setQueueActive();
-				} catch (IOException e) {
-					//  What should happen in this case? We can't proceed 
-					e.printStackTrace();
+				} catch (SensorHubException e) {
+					//  What should happen in this case? We can't really proceed 
+					e.printStackTrace(System.err);
 				}
 				noListeners = true;
 			} else {

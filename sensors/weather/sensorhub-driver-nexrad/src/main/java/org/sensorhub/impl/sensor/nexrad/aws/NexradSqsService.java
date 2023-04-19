@@ -99,6 +99,7 @@ public class NexradSqsService {
 			}
 			shutdownAndAwaitTermination(execService);
 			QueueFactory.deleteQueue(queueName);
+			queueActive = false;
 		}
 	}
 
@@ -120,7 +121,7 @@ public class NexradSqsService {
 		}
 	}
 
-	public void setQueueActive(boolean purgeExistingMessages) throws IOException {
+	public void activateQueue(boolean purgeExistingMessages) throws IOException {
 		if (!queueActive) {
 			// May need to recreate amazonSqs with new name to avoid reusing queue issues
 //			sqsService = new AwsSqsService(queueUrl);
@@ -141,6 +142,7 @@ public class NexradSqsService {
 		if (!queueActive)
 			return;
 		idleStartTime = System.currentTimeMillis();
+		queueActive = false;
 	}
 
 	class CheckQueueStatus extends TimerTask {

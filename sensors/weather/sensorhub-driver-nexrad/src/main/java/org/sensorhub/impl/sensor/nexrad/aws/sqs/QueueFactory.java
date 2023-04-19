@@ -50,13 +50,12 @@ public class QueueFactory
 	}
 	
 
-	public static void main_(String[] args) {
+	public static void main(String[] args) {
 		listQueues();
-		
-		deleteQueue("https://sqs.us-west-2.amazonaws.com/384286541835/NexradQueue_SensorHub_00018");
+//		deleteQueue("https://sqs.us-west-2.amazonaws.com/384286541835/NexradQueue_SensorHub_00018");
 	}
 	
-	public static void main(String[] args) {
+	public static void main_(String[] args) {
 		String topicArn = "arn:aws:sns:us-east-1:684042711724:NewNEXRADLevel2Object";
 		String qName = "NexradQueue_SensorHub_00018";
 
@@ -108,19 +107,22 @@ public class QueueFactory
 //			GetQueueAttributesResult attributes = sqs.getQueueAttributes(queueUrl, atts);
 //		    String size = attributes.getAttributes().get("ApproximateNumberOfMessages");
 //		    System.err.println("QueueSize: " + size);
+			// NOTE: Can only purge once every 60 s!!
 		    PurgeQueueRequest purgeReq = new PurgeQueueRequest(queueUrl); 
 		    PurgeQueueResult purgeRes = sqs.purgeQueue(purgeReq);
 		}
 		return queueUrl;
 	}
 
+	/**
+	 * Note that a queue with the same url cannot be recreated for 60s after stopping
+	 * @param queueUrl
+	 */
 	public static void deleteQueue(String queueUrl) {
 		if (sqs != null && queueUrl != null) {
 			try {
 				sqs.deleteQueue(new DeleteQueueRequest(queueUrl));
-				System.out.println("Deleted queue: " + queueUrl);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 //			sqs.shutdown();

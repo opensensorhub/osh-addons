@@ -54,10 +54,10 @@ public class Level2Reader {
 //			System.err.println(hdr);
 			readMetadataRecord(is);
 		} else if (key.endsWith("I")) {
-			List<Radial> radials = readMessage31(is);
+			List<Radial> radials = readMessages(is);
 			return radials;
 		} else if (key.endsWith("E")) {
-			List<Radial> radials = readMessage31(is);
+			List<Radial> radials = readMessages(is);
 			return radials;
 		} else {
 			throw new IOException("Level2Reader does not know how to read data from key: " + key);
@@ -108,7 +108,7 @@ public class Level2Reader {
 		is.read(bt);
 	}
 
-	public List<Radial> readMessage31(InputStream is) throws IOException {
+	public List<Radial> readMessages(InputStream is) throws IOException {
 		int ok = is.read(b4);
 		int msgSize = java.nio.ByteBuffer.wrap(b4).getInt();
 		msgSize = Math.abs(msgSize);
@@ -119,13 +119,14 @@ public class Level2Reader {
 		List<Radial> ldmRadials = new ArrayList<>();
 
 		ByteArrayInputStream bas = new ByteArrayInputStream(bfull);
-		int radCnt = 1;
 		try (BZip2CompressorInputStream bzis = new BZip2CompressorInputStream(bas)) {
-			while (true) {
+			boolean eof = false;
+			while (!eof) {
 
 				MessageHeader msgHdr = readMessageHeader(bzis);
 				if (msgHdr == null)
 					break;
+				logger.trace("MessageHeader size: {}", msgHdr.messageSize);
 				switch (msgHdr.messageType) {
 				case 2:
 					readMessage2(bzis, msgHdr.messageSize);
@@ -138,22 +139,20 @@ public class Level2Reader {
 					readRadialDataBlock(bzis);
 
 					// only supporting REF, VEL, SW for now,
-					//for (int i = 0; i < ldmRadial.dataHeader.dataBlockCount; i++) {
-					for (int i = 0; i < 3; i++) {
+					for (int i = 0; i < ldmRadial.dataHeader.dataBlockCount; i++) {
 						MomentDataBlock momentBlock = readMomentDataBlock(bzis);
-//						System.err.println(momentBlock.blockName + ": " + momentBlock.numGates + ": " + momentBlock.rangeToCenterOfFirstGate + ": "  +momentBlock.rangeSampleInterval );
+						logger.trace("{} , {} , {} , {}", 
+momentBlock.blockName, momentBlock.numGates,ldmRadial.dataHeader.elevationAngle, ldmRadial.dataHeader.azimuthAngle );
 						ldmRadial.momentData.put(momentBlock.blockName, momentBlock);
 					}
 					ldmRadials.add(ldmRadial);
-					radCnt++;
-
 					break;
 				default:
 					throw new IOException("Unknown MessageType = " + msgHdr.messageType);
 				}
 			}
 		}
-
+		logger.debug("Read {} radials", ldmRadials.size() );
 		return ldmRadials;
 	}
 
@@ -226,8 +225,14 @@ public class Level2Reader {
 		hdr.radialSpotBlankingStatus = is.read();
 		hdr.azimuthIndexingMode = is.read();
 
+		// Note regarding dataBlockCount from ICD doc. Basically, subtract 3 from this number:
+//		(9) The number of data moments in each radial can vary from 1 to 7 depending on the VCP in use. There will always be 3 data blocks for
+//		"VOL", "ELV", and "RAD" plus the data moment block for "REF". Therefore, this parameter varies from 4 to 10; however, future updates
+//		may add blocks. For forward compatibility, it is recommended that readers do not fail when more blocks are present than expected and
+//		that readers ignore unknown block types.
 		ok = is.read(b2);
 		hdr.dataBlockCount = java.nio.ByteBuffer.wrap(b2).getShort();
+		hdr.dataBlockCount -= 3;
 
 		ok = is.read(b4);
 		hdr.volumeBlockPointer = java.nio.ByteBuffer.wrap(b4).getInt();
@@ -363,6 +368,14 @@ public class Level2Reader {
 		return block;
 	}
 
+	public byte [] readBytes(InputStream is, int size) throws IOException {
+		// TODO - add if needed
+		byte[] bytes = new byte[size];
+		int ok = is.read(bytes);
+
+		return bytes;
+	}
+
 	public void countBytes(InputStream is) throws IOException {
 		int cnt = 0;
 		while (true) {
@@ -416,16 +429,31 @@ public class Level2Reader {
 		}
 	}
 
+	public void testMsgSize(InputStream is) throws IOException {
+//		readBytes(is, 12);  
+		int ok = is.read(b4);
+		int msgSize = java.nio.ByteBuffer.wrap(b4).getInt();
+		System.err.println(msgSize);
+		while(true) {
+			readBytes(is, msgSize * 2 - 2);
+			ok = is.read(b4);
+			msgSize = java.nio.ByteBuffer.wrap(b4).getInt();
+			System.err.println(msgSize);
+		}
+	}
+	
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		Level2Reader reader = new Level2Reader();
         String p = "C:\\Data\\sensorhub\\Level2\\KTBW\\KTBW_295_20230413-225802-014-I";
+//        String p = "C:\\Data\\sensorhub\\Level2\\KTBW\\KTBW_294_20230413-225234-049-I";
 //        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_913_20230217-165506-001-S";
 //        String p = "C:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_912_20230217-164530-034-E";
 
 //		String p = "c:\\Data\\sensorhub\\Level2\\KHTX\\KHTX_166_20230223-011539-027-I";  // Message 128 error
 //		String p = "c:\\Data\\sensorhub\\Level2\\KHTX_166_20230223-011539-028-I"; // Message 134 error
-		List<Radial> rads = reader.read(new File(p));
-//				for(LdmRadial r: rads)
+//        reader.testMsgSize(new BufferedInputStream(new FileInputStream(p)));
+        
+        List<Radial> rads = reader.read(new File(p));
 		System.err.println("Read " + rads.size() + " radials");
 	}
 

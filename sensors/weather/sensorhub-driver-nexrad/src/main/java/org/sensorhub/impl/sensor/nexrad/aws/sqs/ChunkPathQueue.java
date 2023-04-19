@@ -119,11 +119,11 @@ public class ChunkPathQueue
 			char t = chunkName.charAt(chunkName.length() - 1);
 			if (isNext(v,c,t)) {
 				chunkName = queue.take();
-				logger.debug("Take that: {}" , chunkName);
+				logger.debug("Take that from queue: {}" , chunkName);
 				return chunkName;
 			} else if(queue.size() > SIZE_LIMIT) {
 				chunkName = queue.take(); 
-				logger.debug("Force take: {}" , chunkName);
+				logger.debug("Force take from queue: {}" , chunkName);
 				chunk = c;
 				vol = v;
 				type = t;
