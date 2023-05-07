@@ -27,7 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.comm.mqtt.InvalidPayloadException;
 import org.sensorhub.api.comm.mqtt.IMqttServer.IMqttHandler;
+import org.sensorhub.api.comm.mqtt.ImplSpecificException;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
+import org.sensorhub.api.comm.mqtt.MqttException;
 import org.sensorhub.api.comm.mqtt.MqttOutputStream;
 import org.sensorhub.impl.service.sweapi.InvalidRequestException;
 import org.sensorhub.impl.service.sweapi.InvalidRequestException.ErrorCode;
@@ -177,7 +179,7 @@ public class SWEApiMqttConnector implements IMqttHandler
 
 
     @Override
-    public void onPublish(String userID, String topic, ByteBuffer payload, ByteBuffer correlData) throws InvalidTopicException, InvalidPayloadException
+    public void onPublish(String userID, String topic, ByteBuffer payload, ByteBuffer correlData) throws MqttException
     {
         try
         {
@@ -253,7 +255,7 @@ public class SWEApiMqttConnector implements IMqttHandler
     }
     
     
-    private void handleInvalidRequestException(InvalidRequestException e) throws InvalidTopicException, InvalidPayloadException, SecurityException
+    private void handleInvalidRequestException(InvalidRequestException e) throws MqttException, SecurityException
     {
         switch (e.getErrorCode())
         {
@@ -263,6 +265,9 @@ public class SWEApiMqttConnector implements IMqttHandler
                 
             case BAD_PAYLOAD:
                 throw new InvalidPayloadException(e.getMessage());
+
+            case REQUEST_REJECTED:
+                throw new ImplSpecificException(e.getMessage());
                 
             case FORBIDDEN:
                 throw new AccessControlException("Forbidden");

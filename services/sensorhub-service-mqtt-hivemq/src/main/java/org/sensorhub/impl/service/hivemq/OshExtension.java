@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
-import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.comm.mqtt.MqttException;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.api.service.IHttpServer;
@@ -80,18 +79,17 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     public void extensionStart(ExtensionStartInput extensionStartInput, ExtensionStartOutput extensionStartOutput)
     {
         // set authenticator to validate credentials on CONNECT
-        var securityManager = service.getParentHub().getSecurityManager();
-        var oshAuth = new OshAuthenticator(securityManager.getUserRegistry(), this);
+        var oshAuth = new OshAuthenticator(this);
         Services.securityRegistry().setAuthenticatorProvider(authProviderInput -> {
             return oshAuth;
         });
-        
+            
         // set authorizers to authorize and handle incoming SUBSCRIBE and PUBLISH
         var oshAuthz = new OshAuthorizers(this);
         Services.securityRegistry().setAuthorizerProvider(authorizerProviderInput -> {
             return oshAuthz;
         });
-
+        
         // set client initializer to handle UNSUBSCRIBE and prevent direct PUBLISH
         var unsubHandler = new OshUnsubscribeHandler(this);
         var publishHandler = new OshPublishHandler(this);
@@ -195,7 +193,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     }
     
     
-    boolean subscribeToTopic(String userId, String clientId, String topic) throws InvalidTopicException
+    boolean subscribeToTopic(String userId, String clientId, String topic) throws MqttException
     {
         // if a handler is found, use it to authorize/subscribe to this topic
         var handler = handlers.get(topic);
@@ -223,7 +221,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     }
     
     
-    boolean unsubscribeFromTopic(String userId, String clientId, String topic) throws InvalidTopicException
+    boolean unsubscribeFromTopic(String userId, String clientId, String topic) throws MqttException
     {
         var handler = handlers.get(topic);
         if (handler != null)

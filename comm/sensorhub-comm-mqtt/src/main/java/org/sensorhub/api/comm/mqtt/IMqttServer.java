@@ -50,29 +50,33 @@ public interface IMqttServer
          * @throws InvalidTopicException if the topic is invalid
          * @throws InvalidPayloadException if the payload is invalid
          * @throws AccessControlException if the user is not allowed to publish to the topic
+         * @throws MqttException for all other errors
          */
-        void onPublish(String userID, String topic, ByteBuffer payload, ByteBuffer correlData) throws InvalidTopicException, InvalidPayloadException;
+        void onPublish(String userID, String topic, ByteBuffer payload, ByteBuffer correlData) throws MqttException;
     
         
         /**
          * Notify handler of an incoming subscribe request
          * @param userID Authenticated user who wants to subscribe
          * @param topic Topic the user wants to subscribe to
-         * @param server MQTT server where to publish the messages
+         * @param server MQTT server where subscribe request was received
          * @throws InvalidTopicException if the topic is invalid
          * @throws AccessControlException if the user is not allowed to subscribe to the topic
+         * @throws MqttException for all other errors
          */
-        void onSubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException;
+        void onSubscribe(String userID, String topic, IMqttServer server) throws MqttException;
     
         
         /**
          * Notify handler of an incoming unsubscribe request
          * @param userID Authenticated user who wants to unsubscribe
          * @param topic Topic the user wants to unsubscribe from
-         * @param topic
+         * @param server MQTT server where unsubscribe request was received
+         * @throws InvalidTopicException if the topic is invalid
+         * @throws AccessControlException if the user is not allowed to unsubscribe from the topic
+         * @throws MqttException for all other errors
          */
-        @SuppressWarnings("javadoc")
-        void onUnsubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException;
+        void onUnsubscribe(String userID, String topic, IMqttServer server) throws MqttException;
     }
     
     

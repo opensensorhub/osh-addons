@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import org.eclipse.jetty.util.security.Credential;
 import org.sensorhub.api.security.ISecurityManager;
-import org.sensorhub.api.security.IUserRegistry;
 import com.hivemq.extension.sdk.api.auth.SimpleAuthenticator;
 import com.hivemq.extension.sdk.api.auth.parameter.SimpleAuthInput;
 import com.hivemq.extension.sdk.api.auth.parameter.SimpleAuthOutput;
@@ -31,14 +30,14 @@ public class OshAuthenticator implements SimpleAuthenticator
     final static String MQTT_USER_PROP = "MQTT_USER";
     final static int AUTH_TIMEOUT_MS = 5000;
     
-    IUserRegistry users;
-    OshExtension oshExt;
+    final OshExtension oshExt;
+    final ISecurityManager securityMgr;
     
     
-    OshAuthenticator(IUserRegistry users, OshExtension oshExt)
+    OshAuthenticator(OshExtension oshExt)
     {
-        this.users = users;
         this.oshExt = oshExt;
+        this.securityMgr = oshExt.service.getParentHub().getSecurityManager();
     }
 
 
@@ -46,6 +45,7 @@ public class OshAuthenticator implements SimpleAuthenticator
     public void onConnect(SimpleAuthInput authInput, SimpleAuthOutput authOutput)
     {
         var async = authOutput.async(Duration.ofMillis(AUTH_TIMEOUT_MS));
+        
         Services.extensionExecutorService().submit(() -> {
             try
             {
@@ -54,10 +54,10 @@ public class OshAuthenticator implements SimpleAuthenticator
                     .map(buf -> StandardCharsets.UTF_8.decode(buf).array())
                     .orElse(new char[0]);
                 
-                if (userID != null)
+                if (userID != null && securityMgr.isAccessControlEnabled())
                 {
                     // check user exists and password matches
-                    var user = users.get(userID);
+                    var user = securityMgr.getUserRegistry().get(userID);
                     if (user != null)
                     {
                         Credential storedCredential = Credential.getCredential(user.getPassword());
