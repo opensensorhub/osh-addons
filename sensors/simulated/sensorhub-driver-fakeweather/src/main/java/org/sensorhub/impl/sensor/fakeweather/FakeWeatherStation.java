@@ -16,6 +16,7 @@ package org.sensorhub.impl.sensor.fakeweather;
 
 import java.util.Random;
 import org.vast.ogc.gml.IFeature;
+import org.vast.swe.SWEConstants;
 import net.opengis.gml.v32.AbstractGeometry;
 import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.swe.v20.DataBlock;
@@ -133,7 +134,10 @@ public class FakeWeatherStation implements IFeature
     public AbstractGeometry getGeometry()
     {
         if (geom == null)
+        {
             geom = new GMLFactory(true).newPoint(lat, lon);
+            geom.setSrsName(SWEConstants.REF_FRAME_4979);
+        }
         return geom;
     }
 
