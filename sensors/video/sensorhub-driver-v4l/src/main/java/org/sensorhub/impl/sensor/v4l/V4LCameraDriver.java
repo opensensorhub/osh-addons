@@ -73,9 +73,13 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
         
         // init video device
         DeviceInfo deviceInfo = initVideoDevice();
+        var nativeFormats = deviceInfo.getFormatList().getNativeFormats();
+        
+        if (nativeFormats == null || nativeFormats.isEmpty())
+            throw new SensorException("Video device " + config.deviceName + " cannot be used for capture");
         
         // init video output
-        for (ImageFormat fmt: deviceInfo.getFormatList().getNativeFormats())
+        for (ImageFormat fmt: nativeFormats)
         {
             if ("MJPEG".equals(fmt.getName()))
             {
