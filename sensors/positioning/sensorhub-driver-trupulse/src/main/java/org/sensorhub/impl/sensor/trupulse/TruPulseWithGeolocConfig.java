@@ -17,20 +17,17 @@ package org.sensorhub.impl.sensor.trupulse;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.FieldType;
-import org.sensorhub.api.config.DisplayInfo.ModuleType;
 import org.sensorhub.api.config.DisplayInfo.Required;
-import org.sensorhub.api.data.IDataProducerModule;
 import org.sensorhub.api.config.DisplayInfo.FieldType.Type;
 
 
 public class TruPulseWithGeolocConfig extends TruPulseConfig
 {    
     
-    @DisplayInfo(desc="ID of data source to use as location source")
-    @FieldType(Type.MODULE_ID)
-    @ModuleType(IDataProducerModule.class)
+    @DisplayInfo(desc="UID of data source to use as location source")
+    @FieldType(Type.SYSTEM_UID)
     @Required
-    public String locationSourceID;
+    public String locationSourceUID;
         
     
     @DisplayInfo(desc="Name of output streaming location data")

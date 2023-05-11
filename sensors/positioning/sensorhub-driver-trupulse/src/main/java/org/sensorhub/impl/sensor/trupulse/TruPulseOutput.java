@@ -24,8 +24,7 @@ import java.io.InputStreamReader;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.DataRecord;
-import net.opengis.swe.v20.Quantity;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 
 
@@ -54,104 +53,101 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
 
     public void init()
     {
-        SWEHelper fac = new SWEHelper();
+        SWEHelper swe = new SWEHelper();
         
         // build SWE Common record structure
-        lrfData = getOutputDescription();
+        lrfData = swe.createRecord()
+            .addSamplingTimeIsoUTC("time")        
+            .addField("horizDistance", swe.createQuantity()
+                .definition(SWEHelper.getQudtUri("Distance"))
+                .label("Horizontal Distance")
+                .description("Horizontal distance to target")
+                .uomCode("m"))
+            .addField("slopeDistance", swe.createQuantity()
+                .definition(SWEHelper.getQudtUri("Distance"))
+                .label("LineOfSight Distance")
+                .description("Line-of-sight distance to target")
+                .uomCode("m"))
+            .addField("azimuth", swe.createQuantity()
+                .definition(SWEHelper.getPropertyUri("AzimuthAngle"))
+                .refFrame(SWEConstants.REF_FRAME_NED)
+                .axisId("z")
+                .label("Azimuth Angle")
+                .description("Azimuth/Heading angle of line-of-sight measured from true north")
+                .uomCode("deg"))
+            .addField("inclination", swe.createQuantity()
+                .definition(SWEHelper.getPropertyUri("ElevationAngle"))
+                .refFrame(SWEConstants.REF_FRAME_NED)
+                .axisId("y")
+                .label("Elevation Angle")
+                .description("Inclination/Elevation of line-of-sight from the horizontal plane")
+                .uomCode("deg"))
+            .build();
      
         // also generate encoding definition as text block
-        dataEncoding = fac.newTextEncoding(",", "\n");        
-    }
-    
-    
-    public static DataRecord getOutputDescription()
-    {
-        SWEHelper fac = new SWEHelper();
-        
-        DataRecord lrfData = fac.newDataRecord(5);
-        lrfData.setName(OUTPUT_NAME);
-        lrfData.setDefinition("http://sensorml.com/ont/swe/property/LaserRangeData");
-        
-        // add time, horizontalDistance, azimuth, inclination, and slopeDistance
-        lrfData.addComponent("time", fac.newTimeStampIsoUTC());        
-        lrfData.addComponent("horizDistance", fac.newQuantity(SWEHelper.getPropertyUri("HorizontalDistance"), "Horizontal Distance", null, "m"));
-        lrfData.addComponent("slopeDistance", fac.newQuantity(SWEHelper.getPropertyUri("LineOfSightDistance"), "Line-of-Sight Distance", null, "m"));
-        
-        // for azimuth (trueHeading), we also specify a reference frame
-        Quantity q = fac.newQuantity(SWEHelper.getPropertyUri("TrueHeading"), "True Heading", null, "deg");
-        q.setReferenceFrame("http://sensorml.com/ont/swe/property/NED");
-        q.setAxisID("z");
-        lrfData.addComponent("azimuth", q);
-        
-        // for inclination, we also specify a reference frame
-        q = fac.newQuantity(SWEHelper.getPropertyUri("Inclination"), "Inclination", null, "deg");
-        q.setReferenceFrame("http://sensorml.com/ont/swe/property/NED");
-        q.setAxisID("y");
-        lrfData.addComponent("inclination", q);
-        
-        return lrfData;
+        dataEncoding = swe.newTextEncoding(",", "\n");
     }
     
 
     /* TODO: only using HV message; add support for HT and ML */
     private void pollAndSendMeasurement()
     {
-    	double hd = Double.NaN;
-    	double incl = Double.NaN;
-    	double az = Double.NaN;
-    	double sd = Double.NaN;
-    	
-    	try
-    	{
-    	    long msgTime = 0;
-    	    boolean gotHvMsg = false;
-    	    while (!gotHvMsg)
-    		{
-        	    String line = msgReader.readLine();
-        	    msgTime = System.currentTimeMillis();
-        	    String val, unit;
-        	    
+        double hd = Double.NaN;
+        double incl = Double.NaN;
+        double az = Double.NaN;
+        double sd = Double.NaN;
+        
+        try
+        {
+            long msgTime = 0;
+            boolean gotHvMsg = false;
+            while (!gotHvMsg)
+            {
+                String line = msgReader.readLine();
+                msgTime = System.currentTimeMillis();
+                String val, unit;
+                
                 // parse the data string
-        	    TruPulseSensor.log.debug("Message received: {}", line);
+                TruPulseSensor.log.debug("Message received: {}", line);
                 String[] tokens = line.split(",");
                 
                 val = tokens[0];
                 if (!val.equals(MSG_PREFIX))
-        		{
+                {
                     TruPulseSensor.log.warn("Message initial token does NOT equal expected string {}", MSG_PREFIX);
-        			continue;
-        		}
+                    continue;
+                }
         
-            	// check for desired message type HV
+                // check for desired message type HV
                 val = tokens[1];
-            	if (!val.equals(MSG_TYPE_HV))
-            	{
-            	    TruPulseSensor.log.warn("Unsupported message type {}", val);
-        			continue;
-        		}
-            	
-            	// get horizontal distance measure and check units (convert if not meters)
-            	val = tokens[2];
-            	unit = tokens[3];
-            	if (val.length() > 0 && unit.length() > 0)
-            	{
-                	hd = Double.parseDouble(val);
-                	hd = convert(hd, unit);
-            	}
-            	
-            	// get azimuth angle measure (units should be degrees)
-            	val = tokens[4];
+                if (!val.equals(MSG_TYPE_HV))
+                {
+                    TruPulseSensor.log.warn("Unsupported message type {}", val);
+                    continue;
+                }
+                
+                // get horizontal distance measure and check units (convert if not meters)
+                val = tokens[2];
+                unit = tokens[3];
+                if (val.length() > 0 && unit.length() > 0)
+                {
+                    hd = Double.parseDouble(val);
+                    hd = convert(hd, unit);
+                }
+                
+                // get azimuth angle measure (units should be degrees)
+                val = tokens[4];
                 unit = tokens[5];
                 if (val.length() > 0 && unit.length() > 0)
                     az = Double.parseDouble(val);
         
-            	// get inclination angle measure (units should be degrees)
+                // get inclination angle measure (units should be degrees)
                 val = tokens[6];
                 unit = tokens[7];
                 if (val.length() > 0 && unit.length() > 0)
                     incl = Double.parseDouble(val);
         
-            	// get slope distance measure and check units (should be meters)
+                // get slope distance measure and check units (should be meters)
                 val = tokens[8];
                 unit = tokens[9];
                 if (val.length() > 0 && unit.length() > 0)
@@ -161,9 +157,9 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
                 }
                 
                 gotHvMsg = true;
-    		}
-    	    
-    	    // create and populate datablock
+            }
+            
+            // create and populate datablock
             DataBlock dataBlock;
             if (latestRecord == null)
                 dataBlock = lrfData.createDataBlock();
@@ -180,9 +176,9 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
             eventHandler.publish(new DataEvent(latestRecordTime, TruPulseOutput.this, dataBlock)); 
-    	}
-    	catch(IOException e)
-    	{
+        }
+        catch(IOException e)
+        {
            if (sendData)
                 TruPulseSensor.log.error("Unable to parse TruPulse message", e);
         }     
@@ -252,7 +248,7 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     @Override
     public double getAverageSamplingPeriod()
     {
-    	return 1200.0; // 20min
+        return Double.NaN;
     }
 
 
