@@ -125,4 +125,7 @@ public abstract class AbstractGeoPointing implements IGeoPointing
         northDir.sub(northPole, ecefLoc);
         return northDir;
     }
+    
+    
+    public abstract void getRotationMatrixLocalToECEF(final Vect3d ecefLoc, final Vect3d forwardDir, int forwardAxis, int upAxis, Mat3d rotMatrix);
 }

@@ -42,7 +42,8 @@ import org.vast.swe.helper.GeoPosHelper;
  */
 public class CamPtzGeoPointing extends ExecutableProcessImpl
 {
-    public static final OSHProcessInfo INFO = new OSHProcessInfo("PtzGeoPointing", "PTZ Geo-Pointing", "Compute PTZ values to point to a given geographic location", CamPtzGeoPointing.class);
+    public static final OSHProcessInfo INFO = new OSHProcessInfo("PtzGeoPointing", "PTZ Geo-Pointing",
+        "Compute PTZ values to point to a given geographic location", CamPtzGeoPointing.class);
     
     protected Vector targetLocInput;
     protected Quantity targetSizeInput;
@@ -72,7 +73,7 @@ public class CamPtzGeoPointing extends ExecutableProcessImpl
         
         // inputs
         inputData.add("targetLocation", targetLocInput = swe.createLocationVectorLLA()
-            .definition(SWEHelper.getPropertyUri("TargetLocation"))
+            .definition(SWEHelper.getPropertyUri("FeatureOfInterestLocation"))
             .label("Target Location")
             .build());
         
@@ -248,7 +249,7 @@ public class CamPtzGeoPointing extends ExecutableProcessImpl
         }
         catch (Exception e)
         {
-            getLogger().error("Error computing PTZ position", e);
+            reportError("Error computing PTZ position", e);
         }
     }
 }

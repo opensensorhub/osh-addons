@@ -14,8 +14,6 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.process.geoloc;
 
-import net.opengis.swe.v20.DataComponent;
-import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Vector;
@@ -24,7 +22,6 @@ import org.sensorhub.algo.geoloc.NadirPointing;
 import org.sensorhub.algo.vecmath.Mat3d;
 import org.sensorhub.algo.vecmath.Vect3d;
 import org.sensorhub.api.processing.OSHProcessInfo;
-import org.vast.process.DataQueue;
 import org.vast.process.ExecutableProcessImpl;
 import org.vast.process.ProcessException;
 import org.vast.swe.SWEConstants;
@@ -62,11 +59,6 @@ public class LosToTarget extends ExecutableProcessImpl
     protected Vect3d lastSensorPosEcef = new Vect3d();
     protected Vect3d lla = new Vect3d();
     protected Mat3d ecefRot = new Mat3d();
-    
-    protected DataRecord sensorLocInput;
-    protected DataComponent rangeMeasInput;    
-    protected DataQueue sensorLocQueue;
-    protected DataQueue rangeMeasQueue;
     
     
     public LosToTarget()
@@ -157,5 +149,29 @@ public class LosToTarget extends ExecutableProcessImpl
         targetLocData.setDoubleValue(0, Math.toDegrees(lla.y));
         targetLocData.setDoubleValue(1, Math.toDegrees(lla.x));
         targetLocData.setDoubleValue(2, lla.z);
+    }
+
+
+    public Vector getObserverLocationInput()
+    {
+        return observerLocInput;
+    }
+
+
+    public Vector getLosDirectionInput()
+    {
+        return losDirInput;
+    }
+
+
+    public Quantity getTargetDistanceInput()
+    {
+        return targetDistInput;
+    }
+
+
+    public Vector getTargetLocationOutput()
+    {
+        return targetLocOutput;
     }
 }
