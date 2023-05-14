@@ -21,7 +21,9 @@ import org.sensorhub.impl.sensor.uas.UasSensorBase;
 import org.sensorhub.impl.sensor.uas.common.SyncTime;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.impl.sensor.uas.klv.DecodedSetListener;
+import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
 import org.sensorhub.misb.stanag4609.tags.Tag;
+import org.sensorhub.misb.stanag4609.tags.TagRegistry;
 import org.sensorhub.misb.stanag4609.tags.TagSet;
 
 import net.opengis.swe.v20.DataBlock;
@@ -50,6 +52,10 @@ public abstract class UasOutput<UasConfigType extends UasConfig> extends Abstrac
     protected final Object histogramLock = new Object();
 
     protected long lastSetTimeMillis = 0;
+    
+    /* precision time stamp tag */
+    protected Tag precisionTimeStampTag = TagRegistry.getInstance().getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte)0x02);
+    
 
     /**
      * Constructor
@@ -127,6 +133,24 @@ public abstract class UasOutput<UasConfigType extends UasConfig> extends Abstrac
     @Override
     public void onSetDecoded(SyncTime syncTime, HashMap<Tag, Object> valuesMap) {
 
+        // set to current time in loop mode to simulate a real-time stream
+        if (parentSensor.getConfiguration().connection.loop)
+        {
+            var timeStampValue = valuesMap.get(precisionTimeStampTag);
+            if (timeStampValue != null)
+            {
+                var precisionTimeStamp = (double)timeStampValue;
+                
+                // compute simulated timestamp
+                var simTime = parentSensor.getSimulatedTime();
+                var newPrecisionTimeStamp = simTime.getSimlatedTimeStamp(precisionTimeStamp);
+                valuesMap.put(precisionTimeStampTag, newPrecisionTimeStamp);
+                
+                // also shift synctime so that video timestamps are computed correctly
+                syncTime = new SyncTime(newPrecisionTimeStamp, syncTime.getPresentationTimeStamp());
+            }
+        }
+        
         parentSensor.setStreamSyncTime(syncTime);
 
         DataBlock dataBlock;

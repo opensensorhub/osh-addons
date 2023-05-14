@@ -7,6 +7,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.uas.common.SimulationClock;
 import org.sensorhub.impl.sensor.uas.common.SyncTime;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.impl.sensor.uas.klv.SetDecoder;
@@ -72,6 +73,11 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
      */
     protected final Object syncTimeLock = new Object();
 
+    /**
+     * Class used to compute simulated real-time timestamp in loop mode
+     */
+    protected SimulationClock simulatedTime = new SimulationClock();
+    
     /**
      * Feature for the UAS itself.
      */
@@ -385,5 +391,10 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
     public String getImagedFoiUID()
     {
         return imagedFoi.getUniqueIdentifier();
+    }
+    
+    public SimulationClock getSimulatedTime()
+    {
+        return simulatedTime;
     }
 }
