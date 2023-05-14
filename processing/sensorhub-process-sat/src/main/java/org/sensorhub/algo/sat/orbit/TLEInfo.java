@@ -18,20 +18,15 @@
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.vast.physics;
+package org.sensorhub.algo.sat.orbit;
 
 
 /**
- * <p><b>Title:</b><br/>
- * TLEInfo
+ * <p>
+ * Helper class for storing and retrieving two-line element data
  * </p>
  *
- * <p><b>Description:</b><br/>
- * Class for storing and retrieving two-line element data
- * </p>
- *
- * <p>Copyright (c) 2005</p>
- * @author Mike Botts, Alexandre Robin
+ * @author Mike Botts, Alex Robin
  * @since 10/14/98
  */
 public class TLEInfo

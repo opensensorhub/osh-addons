@@ -12,7 +12,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.process.sat;
+package org.sensorhub.process.sat;
 
 import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;

@@ -23,62 +23,63 @@
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.vast.physics;
+package org.sensorhub.algo.sat.orbit;
+
+import java.io.IOException;
 
 
 /**
- * <p><b>Title:</b><br/>
- * OrbitPredictor
+ * <p>
+ * Helper class to compute satellite orbit position/velocity using
+ * two-line elements data and the SGP4 propagator.
  * </p>
  *
- * <p><b>Description:</b><br/>
- * Helper class to compute satellite orbit position/velocity
- * </p>
- *
- * <p>Copyright (c) 2005</p>
  * @author Alexandre Robin
  * @since Feb 25, 2003
  */
 public class TLEOrbitPredictor extends AbstractOrbitPredictor
 {
-	protected TLEProvider tleProvider;
-	protected SGP4Propagator propagator;
-	protected double orbitCycle = Double.NaN;
-	
-	
-	public TLEOrbitPredictor(TLEProvider tleProvider)
-	{
-	    this.tleProvider = tleProvider;
-	    this.propagator = new SGP4Propagator();
-	}
-	
-	
-	public TLEOrbitPredictor(TLEProvider tleProvider, double cycleInDays)
+    protected final TLEProvider tleProvider;
+    protected final SGP4Propagator propagator;
+    protected final String satID;
+    protected final double orbitCycle;
+    
+    
+    public TLEOrbitPredictor(int satID, TLEProvider tleProvider)
     {
-        this(tleProvider);
+        this(satID, tleProvider, Double.NaN);
+    }
+    
+    
+    public TLEOrbitPredictor(int satID, TLEProvider tleProvider, double cycleInDays)
+    {
+        this.satID = String.format("%5d", satID);
+        this.tleProvider = tleProvider;
+        this.propagator = new SGP4Propagator();
         this.orbitCycle = cycleInDays;
     }
-	
-	
-	/* (non-Javadoc)
-	 * @see org.vast.physics.OrbitPredictor#getECIState(double)
-	 */
-	public MechanicalState getECIState(double time)
-	{
-		try
-		{
-			TLEInfo tle = tleProvider.getClosestTLE(time);			
-			MechanicalState state = propagator.getECIOrbitalState(time, tle);			
-			return state;
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-			return null;
-		}
-	}
+    
+    
+    @Override
+    public MechanicalState getECIState(double time, MechanicalState result)
+    {
+        try
+        {
+            TLEInfo tle;
+            synchronized (tleProvider) {
+                tle = tleProvider.getClosestTLE(satID, time);
+            }
+            return propagator.getECIOrbitalState(time, tle, result);
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
 
+    @Override
     public double getCycleInDays()
     {
         return this.orbitCycle;

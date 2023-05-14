@@ -18,7 +18,7 @@
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.vast.physics;
+package org.sensorhub.algo.sat.orbit;
 
 import org.sensorhub.algo.vecmath.Quat4d;
 import org.sensorhub.algo.vecmath.Vect3d;
@@ -26,7 +26,7 @@ import org.sensorhub.algo.vecmath.Vect3d;
 
 public class MechanicalState
 {
-    public double julianTime;
+    public double epochTime; // unix time in seconds (0 at 1970-01-01T00:00:00Z)
 
     public Vect3d linearPosition;
     public Vect3d linearVelocity;
@@ -39,5 +39,90 @@ public class MechanicalState
 
     public MechanicalState()
     {
+    }
+    
+    
+    /**
+     * @return An instance with only the linear position vector
+     * initialized
+     */
+    public static MechanicalState withPos()
+    {
+        var state = new MechanicalState();
+        state.linearPosition = new Vect3d();
+        return state;
+    }
+    
+    
+    /**
+     * @return An instance with only the linear position and angular position
+     * vectors initialized
+     */
+    public static MechanicalState withPosAtt()
+    {
+        var state = new MechanicalState();
+        state.linearPosition = new Vect3d();
+        state.angularPosition = new Quat4d();
+        return state;
+    }
+    
+    
+    /**
+     * @return An instance with only the linear position and linear velocity
+     * vectors initialized
+     */
+    public static MechanicalState withPosOrder1()
+    {
+        var state = new MechanicalState();
+        state.linearPosition = new Vect3d();
+        state.linearVelocity = new Vect3d();
+        return state;
+    }
+    
+    
+    /**
+     * @return An instance with only the linear position, linear velocity,
+     * angular position and angular velocity vectors initialized
+     */
+    public static MechanicalState withPosAttOrder1()
+    {
+        var state = new MechanicalState();
+        state.linearPosition = new Vect3d();
+        state.linearVelocity = new Vect3d();
+        state.angularPosition = new Quat4d();
+        state.angularVelocity = new Quat4d();
+        return state;
+    }
+    
+    
+    /**
+     * @return An instance with only the linear position, linear velocity
+     * and linear acceleration vectors initialized
+     */
+    public static MechanicalState withPosOrder2()
+    {
+        var state = new MechanicalState();
+        state.linearPosition = new Vect3d();
+        state.linearVelocity = new Vect3d();
+        state.linearAcceleration = new Vect3d();
+        return state;
+    }
+    
+    
+    /**
+     * @return An instance with only the linear position, linear velocity,
+     * linear acceleration, angular position, angular velocity and angular
+     * acceleration vectors initialized
+     */
+    public static MechanicalState withPosAttOrder2()
+    {
+        var state = new MechanicalState();
+        state.linearPosition = new Vect3d();
+        state.linearVelocity = new Vect3d();
+        state.linearAcceleration = new Vect3d();
+        state.angularPosition = new Quat4d();
+        state.angularVelocity = new Quat4d();
+        state.angularAcceleration = new Quat4d();
+        return state;
     }
 }

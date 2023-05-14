@@ -12,7 +12,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.process.sat;
+package org.sensorhub.process.sat;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.Time;
@@ -52,13 +52,16 @@ public class ECItoECEF extends ExecutableProcessImpl
         GeoPosHelper sweHelper = new GeoPosHelper();
         
         // create ECI input
-        eciLoc = sweHelper.newLocationVectorECEF(null);
-        eciLoc.setReferenceFrame(SWEConstants.REF_FRAME_ECI_J2000);
+        eciLoc = sweHelper.createLocationVectorXYZ("m")
+            .definition(SWEConstants.REF_FRAME_ECI_J2000)
+            .build();
         inputData.add("eciLoc", eciLoc);
         
         // create time input
-        utcTime = sweHelper.newTimeStampIsoUTC();
-        inputData.add(utcTime);
+        utcTime = sweHelper.createTime()
+            .asSamplingTimeIsoUTC()
+            .build();
+        inputData.add("time", utcTime);
         
         // create ECEFoutput
         ecefLoc = sweHelper.newLocationVectorECEF(null);
@@ -79,12 +82,12 @@ public class ECItoECEF extends ExecutableProcessImpl
     public void execute() throws ProcessException
     {
         double time = utcTime.getData().getDoubleValue(); 
-                
+        
         DataBlock eciData = eciLoc.getData();
         eci.x = eciData.getDoubleValue(0);
-        eci.y = eciData.getDoubleValue(1);        
+        eci.y = eciData.getDoubleValue(1);
         eci.z = eciData.getDoubleValue(2);
-                
+        
         transforms.ECItoECEF(time, eci, ecef, false);
         
         DataBlock ecefData = ecefLoc.getData();

@@ -23,20 +23,15 @@
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.vast.physics;
+package org.sensorhub.algo.sat.orbit;
 
 
 /**
- * <p><b>Title:</b><br/>
- * Orbit Predictor
+ * <p>
+ * Interface for all satellite orbit predictors
  * </p>
  *
- * <p><b>Description:</b><br/>
- * Interface to predict satellite trajectory based on time
- * </p>
- *
- * <p>Copyright (c) 2007</p>
- * @author Alexandre Robin <alexandre.robin@spotimage.fr>
+ * @author Alexandre Robin
  * @date 21 avr. 08
  */
 public interface OrbitPredictor
@@ -48,39 +43,21 @@ public interface OrbitPredictor
     public double getCycleInDays();
     
     
-	/**
-	 * Gets the satellite ECI state at a given point in time
-	 * @param time in seconds past 01/01/1970 (unix time)
-	 * @return Platform state in ECI frame
-	 */
-	public MechanicalState getECIState(double time);
+    /**
+     * Gets the satellite ECI state at a given point in time
+     * @param time in seconds past 01/01/1970 (unix time)
+     * @param result State object to populate with new values (or null to create a new object)
+     * @return New platform state in ECI frame
+     */
+    public MechanicalState getECIState(double time, MechanicalState result);
 
 
-	/**
-	 * Gets the satellite ECEF state at a given point in time
-	 * @param time in seconds past 01/01/1970 (unix time)
-	 * @return Platform state in ECF frame
-	 */
-	public MechanicalState getECEFState(double time);
-
-
-	/**
-	 * Gets the ECI trajectory ad an array of state object 
-	 * @param startTime in seconds past 01/01/1970 (unix time)
-	 * @param stopTime in seconds past 01/01/1970 (unix time)
-	 * @param step step size in seconds
-	 * @return Array of platform states in ECI frame
-	 */
-	public MechanicalState[] getECITrajectory(double startTime, double stopTime, double step);
-
-
-	/**
-	 * Gets the ECEF trajectory ad an array of state object 
-	 * @param startTime in seconds past 01/01/1970 (unix time)
-	 * @param stopTime in seconds past 01/01/1970 (unix time)
-	 * @param step step size in seconds
-	 * @return Array of platform states in ECF frame
-	 */ 
-	public MechanicalState[] getECEFTrajectory(double startTime, double stopTime, double step);
+    /**
+     * Gets the satellite ECEF state at a given point in time
+     * @param time in seconds past 01/01/1970 (unix time)
+     * @param result State object to populate with new values (or null to create a new object).
+     * @return New platform state in ECEF frame
+     */
+    public MechanicalState getECEFState(double time, MechanicalState result);
 
 }

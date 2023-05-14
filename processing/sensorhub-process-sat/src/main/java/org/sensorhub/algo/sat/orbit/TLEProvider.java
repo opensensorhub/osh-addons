@@ -8,11 +8,12 @@
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.vast.physics;
+package org.sensorhub.algo.sat.orbit;
+
+import java.io.IOException;
 
 
 public interface TLEProvider
 {
-
-    public TLEInfo getClosestTLE(double desiredTime) throws Exception;
+    public TLEInfo getClosestTLE(String satID, double desiredTime) throws IOException;
 }

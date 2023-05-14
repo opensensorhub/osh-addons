@@ -12,7 +12,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.process.sat;
+package org.sensorhub.process.sat;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.Time;
@@ -56,7 +56,9 @@ public class ECEFtoECI extends ExecutableProcessImpl
         inputData.add("ecefLoc", ecefLoc);
         
         // create time input
-        utcTime = sweHelper.newTimeStampIsoUTC();
+        utcTime = sweHelper.createTime()
+            .asSamplingTimeIsoUTC()
+            .build();
         inputData.add(utcTime);
         
         // create ECI output
@@ -79,7 +81,7 @@ public class ECEFtoECI extends ExecutableProcessImpl
     public void execute() throws ProcessException
     {
         double time = utcTime.getData().getDoubleValue(); 
-                
+        
         DataBlock ecefData = ecefLoc.getData();
         ecef.x = ecefData.getDoubleValue(0);
         ecef.y = ecefData.getDoubleValue(1);
@@ -89,7 +91,7 @@ public class ECEFtoECI extends ExecutableProcessImpl
         
         DataBlock eciData = eciLoc.getData();
         eciData.setDoubleValue(0, eci.x);
-        eciData.setDoubleValue(1, eci.y);        
+        eciData.setDoubleValue(1, eci.y);
         eciData.setDoubleValue(2, eci.z);
     }
 }

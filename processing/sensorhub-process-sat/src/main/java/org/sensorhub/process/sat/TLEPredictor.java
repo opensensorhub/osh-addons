@@ -1,107 +1,100 @@
 /***************************** BEGIN LICENSE BLOCK ***************************
 
- The contents of this file are Copyright (C) 2014 Sensia Software LLC.
- All Rights Reserved.
+The contents of this file are subject to the Mozilla Public License, v. 2.0.
+If a copy of the MPL was not distributed with this file, You can obtain one
+at http://mozilla.org/MPL/2.0/.
+
+Software distributed under the License is distributed on an "AS IS" basis,
+WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+for the specific language governing rights and limitations under the License.
  
- Contributor(s): 
-    Alexandre Robin <alex.robin@sensiasoftware.com>
+Copyright (C) 2022 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.process.sat;
+package org.sensorhub.process.sat;
 
-import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.api.processing.DataSourceConfig;
-import org.sensorhub.api.processing.ProcessException;
-import org.sensorhub.impl.processing.AbstractStreamProcess;
+import org.sensorhub.algo.sat.orbit.MechanicalState;
+import org.sensorhub.algo.sat.orbit.OrbitPredictor;
+import org.sensorhub.api.processing.OSHProcessInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vast.process.ExecutableProcessImpl;
+import org.vast.process.ProcessException;
+import org.vast.swe.SWEConstants;
+import org.vast.swe.helper.GeoPosHelper;
+import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataRecord;
+import net.opengis.swe.v20.Time;
 
 
 /**
  * <p>
- * Example process for fetching latest TLE and computing satellite pos/vel
+ * Process for fetching latest TLE and computing satellite pos/vel at
+ * the desired time.
  * </p>
  *
- * <p>Copyright (c) 2014 Sensia Software LLC</p>
- * @author Alexandre Robin <alex.robin@sensiasoftware.com>
+ * @author Alex Robin
  * @since Apr 5, 2015
  */
-public class TLEPredictorProcess extends AbstractStreamProcess<TLEPredictorProcessConfig>
+public class TLEPredictor extends ExecutableProcessImpl
 {
-    protected static final Logger log = LoggerFactory.getLogger(TLEPredictorProcess.class);
+    public static final OSHProcessInfo INFO = new OSHProcessInfo("TLEPredictor", "TLE Predictor", "Estimator of satellite position using Two-Line Elements orbit data", ECItoECEF.class);
     
-    protected TLEOutput tleOutput;
-    protected SatelliteStateOutput predictedStateOutput;
-    protected SatelliteStateOutput realTimeStateOutput;
+    protected static final Logger log = LoggerFactory.getLogger(TLEPredictor.class);
     
-    double lastComputedPosTime = Double.NaN;
-    double realTimeOutputPeriod = 1.0;
-    double predictOutputPeriod = 10.0;
-    double predictHorizon = 3 * 24 * 3600; // 3 days
+    Time utcTime;
+    DataRecord stateOut;
+    MechanicalState state;
+    OrbitPredictor orbitPredictor;
     
     
-    @Override
-    public void init(TLEPredictorProcessConfig config) throws SensorHubException
+    public TLEPredictor()
     {
-        this.config = config;        
+        super(INFO);
+        GeoPosHelper swe = new GeoPosHelper();
         
-        // create outputs
-        tleOutput = new TLEOutput(this);
-        addOutput(tleOutput);
+        // create time input
+        utcTime = swe.createTime()
+            .asSamplingTimeIsoUTC()
+            .build();
+        inputData.add(utcTime);
         
-        predictedStateOutput = new SatelliteStateOutput(this, "predictedState", tleOutput, predictOutputPeriod, predictHorizon);
-        addOutput(predictedStateOutput);
+        // create state output
+        stateOut = swe.createRecord()
+            .name("state")
+            .definition(SWEConstants.DEF_PLATFORM_LOC.replace("Location", "State"))
+            .addField("time", swe.createTime().asSamplingTimeIsoUTC())
+            .addField("position", swe.newLocationVectorECEF(GeoPosHelper.DEF_LOCATION, "m"))
+            .addField("velocity", swe.newVelocityVectorECEF(GeoPosHelper.DEF_VELOCITY, "m/s"))
+            .build();
         
-        // real-time state output
-        realTimeStateOutput = new SatelliteStateOutput(this, "currentState", tleOutput, realTimeOutputPeriod, 0.0);
-        addOutput(realTimeStateOutput);
+        // create params
+        
     }
     
     
     @Override
-    protected void doStart() throws SensorHubException
+    public void init() throws ProcessException
     {
-        tleOutput.start();        
-    }
-    
-    
-    @Override
-    protected void doStop()
-    {
-        tleOutput.stop();
-        realTimeStateOutput.stop();
-    }
-    
-    
-    protected void notifyNewTLE()
-    {
-        if (Double.isNaN(lastComputedPosTime))
-        {
-            realTimeStateOutput.start();
-            predictedStateOutput.start();
-        }
-    }
-    
-    
-    @Override
-    protected void process(DataEvent lastEvent) throws ProcessException
-    {
-        // do nothing here, everything happends in methods called by timers
-    }
-    
-    
-    @Override
-    public boolean isPauseSupported()
-    {
-        return false;
+        this.state = MechanicalState.withPosOrder1();
     }
 
-    
+
     @Override
-    public boolean isCompatibleDataSource(DataSourceConfig dataSource)
+    public void execute() throws ProcessException
     {
-        return false;
+        double time = utcTime.getData().getDoubleValue();
+        orbitPredictor.getECEFState(time, state);
+        
+        // send to output
+        DataBlock stateData = stateOut.getData();
+        stateData.setDoubleValue(0, state.epochTime);
+        stateData.setDoubleValue(1, state.linearPosition.x);
+        stateData.setDoubleValue(2, state.linearPosition.y);
+        stateData.setDoubleValue(3, state.linearPosition.z);
+        stateData.setDoubleValue(4, state.linearVelocity.x);
+        stateData.setDoubleValue(5, state.linearVelocity.y);
+        stateData.setDoubleValue(6, state.linearVelocity.z);
     }
 }

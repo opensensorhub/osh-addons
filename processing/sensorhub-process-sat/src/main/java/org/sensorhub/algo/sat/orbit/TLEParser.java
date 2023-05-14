@@ -18,38 +18,34 @@
 
  ******************************* END LICENSE BLOCK ***************************/
 
-package org.vast.physics;
+package org.sensorhub.algo.sat.orbit;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import org.vast.util.Asserts;
 
 
 /**
- * <p><b>Title:</b><br/>
- * TLEInfo
+ * <p>
+ * Class for parsing TLE data from a file and storing in TLEInfo structure
  * </p>
  *
- * <p><b>Description:</b><br/>
- * Class for parsing TLE data format and storing in TLEInfo structure
- * </p>
- *
- * <p>Copyright (c) 2005</p>
  * @author Mike Botts, Alexandre Robin
  * @since 10/14/98
  */
 public class TLEParser implements TLEProvider
 {   
-	private static double SECONDS_PER_DAY = 86400.0;   
-    private static double SECONDS_PER_YEAR = 31536000.0;      // no leapseconds
-    private static double SECONDS_PER_LEAPYEAR = 31622400.0;  // leapseconds
-	private static double DTR =  Math.PI / 180.0;
-	
-	protected String tleFilePath;
-	protected BufferedReader tleReader;
+    private static final double SECONDS_PER_DAY = 86400.0;
+    private static final double SECONDS_PER_YEAR = 31536000.0;      // no leapseconds
+    private static final double SECONDS_PER_LEAPYEAR = 31622400.0;  // leapseconds
+    private static final double DTR = Math.PI / 180.0;
+    
+    protected URL tleFileUrl;
+    protected BufferedReader tleReader;
     protected int lineNumber = 0;
     protected String currentLine1, previousLine1, nextLine1;
     protected String currentLine2, previousLine2, nextLine2;
@@ -57,10 +53,10 @@ public class TLEParser implements TLEProvider
     protected TLEInfo previousTLE;
     
     
-    public TLEParser(String tleFilePath)
+    public TLEParser(URL tleFileUrl)
     {
-    	this.tleFilePath = tleFilePath;
-    	reset();
+        this.tleFileUrl = tleFileUrl;
+        reset();
     }
 
 
@@ -79,31 +75,38 @@ public class TLEParser implements TLEProvider
         lineNumber = 0;
         
         // reopen file at beginning!
+        initReader();
+    }
+    
+    
+    protected void initReader()
+    {
         try
         {
-            tleReader = new BufferedReader(new FileReader(tleFilePath));
+            tleReader = new BufferedReader(new InputStreamReader(tleFileUrl.openStream()));
         }
-        catch (FileNotFoundException e)
+        catch (IOException e)
         {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
 
     /**
      * Reads all TLEs for the given time range
+     * @param satID ID of desired sat/object
      * @param startTime 
      * @param stopTime 
      * @return list of TLE objects
      * @throws IOException 
      */
-    public List<TLEInfo> readTLEList(double startTime, double stopTime) throws IOException
+    public List<TLEInfo> readTLEList(String satID, double startTime, double stopTime) throws IOException
     {
-        List<TLEInfo> tleList = new ArrayList<TLEInfo>();
+        List<TLEInfo> tleList = new ArrayList<>();
         
-        TLEInfo tle = getClosestTLE(startTime);
+        TLEInfo tle = getClosestTLE(satID, startTime);
         tleList.add(tle);
-        while ((tle = readNextTLE(stopTime)) != null)
+        while ((tle = readNextTLE(satID, stopTime)) != null)
             tleList.add(tle);
         
         return tleList;
@@ -112,13 +115,14 @@ public class TLEParser implements TLEProvider
 
     /**
      * Reads the next TLE
+     * @param satID ID of desired sat/object
      * @param stopTime
      * @return TLEInfo object
      * @throws IOException
      */
-    public TLEInfo readNextTLE(double stopTime) throws IOException
+    public TLEInfo readNextTLE(String satID, double stopTime)
     {
-        boolean isLastEntry = readNextEntry();
+        boolean isLastEntry = readNextEntry(satID);
         if (isLastEntry)
             return null;
         
@@ -132,41 +136,42 @@ public class TLEParser implements TLEProvider
     
     /**
      * Reads the closest TLE to the given time 
+     * @param satID ID of desired sat/object
      * @param desiredTime
      * @return TLEInfo object
      * @throws IOException
      */
-    public TLEInfo getClosestTLE(double desiredTime) throws IOException
+    public TLEInfo getClosestTLE(String satID, double desiredTime) throws IOException
     {
         boolean isLastEntry = false;
         
-        // reset of requested time is before previous TLE
+        // reset if requested time is before previous TLE
         if (desiredTime < currentTime)
-        	reset();
+            reset();
         
         // return same TLE if time is within TLE range
         else if (desiredTime < nextTime)
-        	return previousTLE;
+            return previousTLE;
         
         // skip lines until we find first TLE after requested time
         while (desiredTime > nextTime)
         {
-        	// read next 2 lines
-            isLastEntry = readNextEntry();
+            // read next 2 lines
+            isLastEntry = readNextEntry(satID);
             if (isLastEntry)
             {
-            	if (nextTime != Double.POSITIVE_INFINITY)
-            	{
-            		currentTime = nextTime;
-            		nextTime = Double.POSITIVE_INFINITY;
-            	}            	
-            	break;
+                if (nextTime != Double.POSITIVE_INFINITY)
+                {
+                    currentTime = nextTime;
+                    nextTime = Double.POSITIVE_INFINITY;
+                }
+                break;
             }
             
             // read next line time
             currentTime = nextTime;
             nextTime = getJulian(nextLine1);
-        }        
+        }
         
         // if no more lines, use last one
         if (!isLastEntry)
@@ -178,23 +183,46 @@ public class TLEParser implements TLEProvider
             double nextDelta = Math.abs(nextTime - desiredTime);
 
             if (currentDelta > nextDelta)
-            	previousTLE = parseTLE(nextLine1, nextLine2);
+                previousTLE = parseTLE(nextLine1, nextLine2);
             else
-            	previousTLE = parseTLE(currentLine1, currentLine2);
+                previousTLE = parseTLE(currentLine1, currentLine2);
         }
         else
-        	previousTLE = parseTLE(currentLine1, currentLine2);
+            previousTLE = parseTLE(currentLine1, currentLine2);
         
         return previousTLE;
     }
+    
+    
+    /*protected boolean readNextEntry(String satID)
+    {
+        String lineSatID;
+        
+        // read until we find an entry for the desired satID
+        do
+        {
+            boolean isLastEntry = readNextEntry();
+            if (isLastEntry)
+                return true;
+            
+            lineSatID = nextLine1.substring(2, 7);
+        }
+        while (!lineSatID.equals(satID));
+        
+        
+        
+        return false;
+    }*/
     
     
     /**
      * Try to read next TLE entry
      * @return true if EOF
      */
-    protected boolean readNextEntry()
+    protected boolean readNextEntry(String satID)
     {
+        Asserts.checkNotNull(satID, "satID");
+        
         try
         {
             tleReader.mark(140);
@@ -204,11 +232,15 @@ public class TLEParser implements TLEProvider
             currentLine2 = nextLine2;
 
             // skip blank lines and sat name lines and get line 1
+            // also filter on sat ID
+            String lineSatID = "";
             do
             {
                 nextLine1 = tleReader.readLine();
+                if (nextLine1 != null)
+                    lineSatID = nextLine1.substring(2, 7);
             }
-            while ((nextLine1 != null) && ((nextLine1.length() == 0) || (nextLine1.length() == 24)));
+            while (nextLine1 != null && (nextLine1.length() < 69 || !satID.equals(lineSatID)));
 
             // return if EOF
             if (nextLine1 == null)
@@ -223,7 +255,7 @@ public class TLEParser implements TLEProvider
             {
                 nextLine2 = tleReader.readLine();
             }
-            while (nextLine2.length() == 0);
+            while (nextLine2.length() == 0 && nextLine2.length() < 69);
             lineNumber++;
             
             return false;

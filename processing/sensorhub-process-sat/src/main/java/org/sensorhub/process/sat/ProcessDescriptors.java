@@ -12,7 +12,7 @@ Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.process.sat;
+package org.sensorhub.process.sat;
 
 import org.sensorhub.impl.processing.AbstractProcessProvider;
 
@@ -24,6 +24,7 @@ public class ProcessDescriptors extends AbstractProcessProvider
     {
         addImpl(ECEFtoECI.INFO);
         addImpl(ECItoECEF.INFO);
+        addImpl(TLEPredictor.INFO);
     }
 
 }
