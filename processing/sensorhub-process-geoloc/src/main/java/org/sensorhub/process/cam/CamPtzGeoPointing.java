@@ -55,8 +55,8 @@ public class CamPtzGeoPointing extends ExecutableProcessImpl
     protected GeoTransforms geoConv = new GeoTransforms();
     protected NadirPointing nadirPointing = new NadirPointing();
     
-    protected Vect3d lastCamLocECEF = new Vect3d();
-    protected Vect3d lastCamRotNED = new Vect3d();
+    protected Vect3d latestCamLocECEF = new Vect3d();
+    protected Vect3d latestCamRotNED = new Vect3d();
     protected Vect3d targetLocECEF = new Vect3d();
     protected Mat3d rotNEDToECEF = new Mat3d();
     protected Mat3d rotCamToNED = new Mat3d();
@@ -87,12 +87,12 @@ public class CamPtzGeoPointing extends ExecutableProcessImpl
         // outputs
         outputData.add("ptz", ptzOutput = swe.createRecord()
             .addField("pan", swe.createQuantity()
-                .definition(SWEHelper.getPropertyUri("Pan"))
+                .definition(SWEHelper.getPropertyUri("PanAngle"))
                 .label("Pan")
                 .uomCode("deg")
                 .dataType(DataType.FLOAT))
             .addField("tilt", swe.createQuantity()
-                .definition(SWEHelper.getPropertyUri("Tilt"))
+                .definition(SWEHelper.getPropertyUri("TiltAngle"))
                 .label("Tilt")
                 .uomCode("deg")
                 .dataType(DataType.FLOAT))
@@ -135,16 +135,16 @@ public class CamPtzGeoPointing extends ExecutableProcessImpl
             var llaData = camLocationParam.getData();
             if (llaData != null)
             {
-                var lat = lastCamLocECEF.y = Math.toRadians(llaData.getDoubleValue(0));
-                var lon = lastCamLocECEF.x = Math.toRadians(llaData.getDoubleValue(1));
-                var alt = lastCamLocECEF.z = llaData.getDoubleValue(2);
-                getLogger().debug("Last camera location = [{},{},{}]" , lat, lon, alt);
+                var lat = latestCamLocECEF.y = Math.toRadians(llaData.getDoubleValue(0));
+                var lon = latestCamLocECEF.x = Math.toRadians(llaData.getDoubleValue(1));
+                var alt = latestCamLocECEF.z = llaData.getDoubleValue(2);
+                getLogger().debug("Latest camera location = [{},{},{}]" , lat, lon, alt);
                 
                 // convert to ECEF
-                geoConv.LLAtoECEF(lastCamLocECEF, lastCamLocECEF);
+                geoConv.LLAtoECEF(latestCamLocECEF, latestCamLocECEF);
                 
                 // also compute NED to ECEF matrix
-                nadirPointing.getRotationMatrixNEDToECEF(lastCamLocECEF, rotNEDToECEF);
+                nadirPointing.getRotationMatrixNEDToECEF(latestCamLocECEF, rotNEDToECEF);
             }
         }
         catch (Exception e)
@@ -161,7 +161,7 @@ public class CamPtzGeoPointing extends ExecutableProcessImpl
                 var heading = Math.toRadians(yprData.getDoubleValue(0));
                 var pitch = Math.toRadians(yprData.getDoubleValue(1));
                 var roll = Math.toRadians(yprData.getDoubleValue(2));
-                getLogger().debug("Last camera orientation = [{},{},{}]" , heading, pitch, roll);
+                getLogger().debug("Latest camera orientation = [{},{},{}]" , heading, pitch, roll);
                 
                 // compute camera to NED matrix
                 // that is the transpose of R_heading * R_pitch * R_roll
@@ -214,7 +214,7 @@ public class CamPtzGeoPointing extends ExecutableProcessImpl
             geoConv.LLAtoECEF(targetLocLLA, targetLocECEF);
             
             // compute LOS from camera to target
-            Vect3d los = targetLocECEF.sub(lastCamLocECEF);
+            Vect3d los = targetLocECEF.sub(latestCamLocECEF);
             double dist = los.norm();
             los.scale(1./dist); // normalize
             
