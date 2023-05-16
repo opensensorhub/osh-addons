@@ -18,7 +18,7 @@ import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.processing.StreamDataSourceSingle;
+import org.sensorhub.impl.processing.DataStreamSource;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.process.geoloc.LosToTarget;
 import org.vast.process.DataConnection;
@@ -41,7 +41,7 @@ public class TruPulseGeolocOutput extends AbstractSensorOutput<TruPulseSensor> i
 {
     private static String OUTPUT_NAME = "targetLoc";
     
-    StreamDataSourceSingle locationSource;
+    DataStreamSource locationSource;
     
     LosToTarget targetGeolocProcess;
     DataComponent observerLocInput;
@@ -68,12 +68,12 @@ public class TruPulseGeolocOutput extends AbstractSensorOutput<TruPulseSensor> i
             targetGeolocProcess.init();
             
             // setup stream source process to collect data from location datastream
-            locationSource = new StreamDataSourceSingle();
+            locationSource = new DataStreamSource();
             locationSource.setParentHub(parentSensor.getParentHub());
             locationSource.init();
             var params = locationSource.getParameterList();
-            params.getComponent(StreamDataSourceSingle.PRODUCER_URI_PARAM).getData().setStringValue(config.locationSourceUID);
-            params.getComponent(StreamDataSourceSingle.OUTPUT_NAME_PARAM).getData().setStringValue(config.locationOutputName);
+            params.getComponent(DataStreamSource.SYSTEM_UID_PARAM).getData().setStringValue(config.locationSourceUID);
+            params.getComponent(DataStreamSource.OUTPUT_NAME_PARAM).getData().setStringValue(config.locationOutputName);
             locationSource.notifyParamChange();
             
             //TODO find location vector in source output
