@@ -148,13 +148,9 @@ public class SbsParser
 			do  {
 				try {
 					line = in.readLine();
-					//System.err.println(line);
 					SbsPojo rec = parser.parse(line);
-					if(rec.transmissionType == 3 ||  rec.transmissionType ==4)
+					if(rec.transmissionType == 3 ||  rec.transmissionType == 4)
 						System.err.println("TType = " + rec.transmissionType + ", " + rec.hexIdent);
-//					System.err.println(rec.callsign + "," + rec.dateMessageGeneratedStr + "," + rec.timeMessageGeneratedStr);
-					//if(rec.hexIdent.startsWith("A62F"))
-//						System.err.println(line);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

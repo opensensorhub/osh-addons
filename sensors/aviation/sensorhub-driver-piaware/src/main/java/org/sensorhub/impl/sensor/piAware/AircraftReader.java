@@ -34,7 +34,6 @@ public class AircraftReader { // implements Runnable {
 		return aircraftMap.get(hexIdent);
 	}
 
-//	volatile boolean running = false;
 //	@Override
 	class ReaderTask extends TimerTask {
 		int errorCnt = 0;
@@ -77,13 +76,11 @@ public class AircraftReader { // implements Runnable {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		String jsonUrl = "http://192.168.1.126:8080/data/aircraft.json";
+		String jsonUrl = "http://192.168.1.105:8080/data/aircraft.json";
 		AircraftReader reader = new AircraftReader(jsonUrl);
 		reader.startReaderTask();
 		System.err.println("started");
 		Thread.sleep(60_000L);
-//		Aircraft ac = reader.getAircraft("A1AE05");
-//		System.err.println(ac.flight);
 		reader.stopReaderTask();
 		System.err.println("stopped");
 	}

@@ -83,11 +83,6 @@ public class TrackOutput extends AbstractSensorOutput<PiAwareSensor> {
 
 		int index = 0;
 		Double time = (rec.timeMessageGenerated.doubleValue())/1000.;
-//		System.err.println("   *** " + time + "," + rec.flightID + "," + rec.callsign + "," + rec.groundSpeed);
-
-//		logger.debug("time: {}", t);
-//		logger.debug("callsign: {}", rec.callsign);
-//		setDoubleValue(dataBlock, index++, ((double)rec.timeMessageGenerated)/1000.);
 		setDoubleValue(dataBlock, index++, time);
 		setStringValue(dataBlock, index++, rec.hexIdent);	
 		setStringValue(dataBlock, index++, rec.flightID);
@@ -105,7 +100,6 @@ public class TrackOutput extends AbstractSensorOutput<PiAwareSensor> {
 			latestRecordTime = System.currentTimeMillis();
 			eventHandler
 				.publish(new DataEvent(latestRecordTime, PiAwareSensor.SENSOR_UID, NAME, foiUid, latestRecord));
-				//.publish(new DataEvent(latestRecordTime, rec.hexIdent, NAME, foiUid, latestRecord));
 
 		} catch (Exception e) {
 			e.printStackTrace(System.err);

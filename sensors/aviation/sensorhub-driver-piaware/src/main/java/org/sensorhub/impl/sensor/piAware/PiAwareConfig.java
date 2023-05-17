@@ -20,9 +20,6 @@ import org.sensorhub.api.sensor.SensorConfig;
 
 public class PiAwareConfig extends SensorConfig
 {    
-//    @DisplayInfo(desc="Airline codes to listen for")
-//    public List<String> airlines = new ArrayList<>();
- 
     @DisplayInfo(desc="Device IP of piaware receiver")
 	String deviceIp;
     @DisplayInfo(desc="Port of raw feed")

@@ -44,7 +44,7 @@ import net.opengis.sensorml.v20.PhysicalSystem;
  * 
  * TODO - Catch Exceptions on no signal (i.e. antenna disconnect)and try restarting threads
  */
-public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implements IMultiSourceDataProducer
+public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig>
 {
 	// Helpers
 	SMLHelper smlFac = new SMLHelper();
@@ -143,7 +143,7 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig> // implem
 	}
 	
 	class SbsParserThread implements Runnable {
-		volatile boolean running;  // 
+		volatile boolean running;  
 		
 		@Override
 		public void run() {
