@@ -22,7 +22,7 @@ import org.sensorhub.impl.sensor.simuav.UavControl;
 
 public abstract class UavTask
 {
-    protected static final String CMD_URI_PREFIX = "urn:ogc:uxs:messages:";
+    protected static final String CMD_URI_PREFIX = "urn:x-ogc:uxs:messages:";
     
     UavControl<SimUavDriver> controlInput;
     SimUavDriver sim;

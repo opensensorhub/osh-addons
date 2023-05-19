@@ -131,7 +131,8 @@ public class WaypointTask extends UavTask
             
             var bearing = geo.computeBearing(simState.lat, simState.lon, lat2, lon2);
             simState.heading = Math.toDegrees(bearing);
-            simState.vx = speed;
+            simState.vx = speed * Math.cos(bearing);
+            simState.vy = speed * Math.sin(bearing);
         }
         
         // update altitude
@@ -145,7 +146,7 @@ public class WaypointTask extends UavTask
         
         // reset velocity
         if (fHorz >= 1.0)
-            simState.vx = 0.0;
+            simState.vx = simState.vy = 0.0;
         if (fVert >= 1.0)
             simState.vz = 0.0;
         

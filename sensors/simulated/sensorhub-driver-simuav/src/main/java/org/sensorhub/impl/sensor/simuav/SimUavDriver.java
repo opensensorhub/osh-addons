@@ -23,6 +23,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.simuav.feasibility.WaypointTaskFeasibility;
 import org.sensorhub.impl.sensor.simuav.task.UavTask;
 import org.sensorhub.utils.NamedThreadFactory;
 import org.vast.sensorML.SMLHelper;
@@ -67,7 +68,11 @@ public class SimUavDriver extends AbstractSensorModule<SimUavConfig>
         addOutput(stateOutput, false);
         
         // init control inputs
-        addControlInput(new VehicleControl(this));
+        var control1 = new VehicleControl(this);
+        addControlInput(control1);
+        var mission1 = new MissionControl(this, control1);
+        addControlInput(mission1);
+        addControlInput(new WaypointTaskFeasibility(this));
         taskQueue.clear();
         
         // set initial state
