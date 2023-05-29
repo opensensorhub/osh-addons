@@ -124,7 +124,8 @@ public class RTPH264Receiver extends Thread
             rtpSocket = new DatagramSocket(localPort);
             rtpSocket.setReuseAddress(true);
             rtpSocket.setReceiveBufferSize(MAX_DATAGRAM_SIZE);
-            rtpSocket.send(new DatagramPacket(new byte[4], 0, 4, InetAddress.getByName(remoteHost), remotePort));
+            if (remotePort > 0)
+                rtpSocket.send(new DatagramPacket(new byte[4], 0, 4, InetAddress.getByName(remoteHost), remotePort));
 
             final byte[] receiveData = new byte[MAX_DATAGRAM_SIZE];
             final DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
