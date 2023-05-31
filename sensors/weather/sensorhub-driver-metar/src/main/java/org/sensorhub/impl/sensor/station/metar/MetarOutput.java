@@ -21,6 +21,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
@@ -192,6 +193,8 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor>
 						latestRecordTime = System.currentTimeMillis();
 						String stationUID = MetarSensor.STATION_UID_PREFIX + metar.stationId;
 						latestRecord = metarRecordToDataBlock(metar.stationId, metar);
+						eventHandler.publish(new DataEvent(
+						            latestRecordTime, MetarOutput.this, stationUID, latestRecord));
 					} catch (Exception e) {
 						e.printStackTrace(System.err);
 						continue;
