@@ -48,7 +48,7 @@
       "autoStart": false
     },
     "systemUIDs": [
-      "urn:socom:sensor:ugs:0:0"
+      "urn:osh:sensor:metar:network"
     ],
     "minCommitPeriod": 10000,
     "databaseNum": 1,
