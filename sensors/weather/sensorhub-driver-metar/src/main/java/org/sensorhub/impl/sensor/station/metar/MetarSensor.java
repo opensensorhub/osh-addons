@@ -91,7 +91,7 @@ public class MetarSensor extends AbstractSensorModule<MetarConfig>
             PhysicalSystem foi = smlFac.newPhysicalSystem();
             foi.setId(station.getId());
             foi.setUniqueIdentifier(uid);
-//          System.err.println("MetarSensor station/uid: " + station + "/" + uid);
+            logger.debug("MetarSensor station/uid: {}/{}" , station, uid);
             foi.setName(station.getName());
             foi.setDescription(description);
 

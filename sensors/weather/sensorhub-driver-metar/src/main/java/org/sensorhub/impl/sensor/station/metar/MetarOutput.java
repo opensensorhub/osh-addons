@@ -174,7 +174,7 @@ public class MetarOutput extends AbstractSensorOutput<MetarSensor>
 		
 		@Override
 		public void run() {
-			MetarAviationWeatherReader reader = new MetarAviationWeatherReader(serverUrl);
+			MetarAviationWeatherReader reader = new MetarAviationWeatherReader(serverUrl, MetarOutput.this.getLogger());
 			try {
 				List<Metar> metars = reader.read();
 				for(Metar metar: metars) {
