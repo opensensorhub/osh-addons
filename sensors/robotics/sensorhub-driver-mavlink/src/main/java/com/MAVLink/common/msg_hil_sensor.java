@@ -6,11 +6,12 @@
 
 // MESSAGE HIL_SENSOR PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * The IMU readings in SI units in NED body frame
@@ -121,9 +122,9 @@ public class msg_hil_sensor extends MAVLinkMessage {
     public float temperature;
     
     /**
-     * Bitmap for fields that have updated since last message, bit 0 = xacc, bit 12: temperature, bit 31: full reset of attitude/position/velocities/etc was performed in sim.
+     * Bitmap for fields that have updated since last message
      */
-    @Description("Bitmap for fields that have updated since last message, bit 0 = xacc, bit 12: temperature, bit 31: full reset of attitude/position/velocities/etc was performed in sim.")
+    @Description("Bitmap for fields that have updated since last message")
     @Units("")
     public long fields_updated;
     

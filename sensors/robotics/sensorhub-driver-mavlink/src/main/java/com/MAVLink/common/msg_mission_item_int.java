@@ -6,11 +6,12 @@
 
 // MESSAGE MISSION_ITEM_INT PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Message encoding a mission item. This message is emitted to announce
@@ -115,9 +116,9 @@ public class msg_mission_item_int extends MAVLinkMessage {
     public short current;
     
     /**
-     * Autocontinue to next waypoint
+     * Autocontinue to next waypoint. 0: false, 1: true. Set false to pause mission after the item completes.
      */
-    @Description("Autocontinue to next waypoint")
+    @Description("Autocontinue to next waypoint. 0: false, 1: true. Set false to pause mission after the item completes.")
     @Units("")
     public short autocontinue;
     

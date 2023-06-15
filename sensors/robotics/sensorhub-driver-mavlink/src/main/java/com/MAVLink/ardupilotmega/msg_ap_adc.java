@@ -6,11 +6,12 @@
 
 // MESSAGE AP_ADC PACKING
 package com.MAVLink.ardupilotmega;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Raw ADC output.

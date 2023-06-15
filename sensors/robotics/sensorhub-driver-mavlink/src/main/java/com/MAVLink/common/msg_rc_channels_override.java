@@ -6,11 +6,12 @@
 
 // MESSAGE RC_CHANNELS_OVERRIDE PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * The RAW values of the RC channels sent to the MAV to override info received from the RC radio. The standard PPM modulation is as follows: 1000 microseconds: 0%, 2000 microseconds: 100%. Individual receivers/transmitters might violate this specification.  Note carefully the semantic differences between the first 8 channels and the subsequent channels

@@ -29,12 +29,12 @@ public class MAV_TYPE {
    public static final int MAV_TYPE_FLAPPING_WING = 16; /* Flapping wing | */
    public static final int MAV_TYPE_KITE = 17; /* Kite | */
    public static final int MAV_TYPE_ONBOARD_CONTROLLER = 18; /* Onboard companion controller | */
-   public static final int MAV_TYPE_VTOL_DUOROTOR = 19; /* Two-rotor VTOL using control surfaces in vertical operation in addition. Tailsitter. | */
-   public static final int MAV_TYPE_VTOL_QUADROTOR = 20; /* Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter. | */
-   public static final int MAV_TYPE_VTOL_TILTROTOR = 21; /* Tiltrotor VTOL | */
-   public static final int MAV_TYPE_VTOL_RESERVED2 = 22; /* VTOL reserved 2 | */
-   public static final int MAV_TYPE_VTOL_RESERVED3 = 23; /* VTOL reserved 3 | */
-   public static final int MAV_TYPE_VTOL_RESERVED4 = 24; /* VTOL reserved 4 | */
+   public static final int MAV_TYPE_VTOL_TAILSITTER_DUOROTOR = 19; /* Two-rotor Tailsitter VTOL that additionally uses control surfaces in vertical operation. Note, value previously named MAV_TYPE_VTOL_DUOROTOR. | */
+   public static final int MAV_TYPE_VTOL_TAILSITTER_QUADROTOR = 20; /* Quad-rotor Tailsitter VTOL using a V-shaped quad config in vertical operation. Note: value previously named MAV_TYPE_VTOL_QUADROTOR. | */
+   public static final int MAV_TYPE_VTOL_TILTROTOR = 21; /* Tiltrotor VTOL. Fuselage and wings stay (nominally) horizontal in all flight phases. It able to tilt (some) rotors to provide thrust in cruise flight. | */
+   public static final int MAV_TYPE_VTOL_FIXEDROTOR = 22; /* VTOL with separate fixed rotors for hover and cruise flight. Fuselage and wings stay (nominally) horizontal in all flight phases. | */
+   public static final int MAV_TYPE_VTOL_TAILSITTER = 23; /* Tailsitter VTOL. Fuselage and wings orientation changes depending on flight phase: vertical for hover, horizontal for cruise. Use more specific VTOL MAV_TYPE_VTOL_DUOROTOR or MAV_TYPE_VTOL_QUADROTOR if appropriate. | */
+   public static final int MAV_TYPE_VTOL_TILTWING = 24; /* Tiltwing VTOL. Fuselage stays horizontal in all flight phases. The whole wing, along with any attached engine, can tilt between vertical and horizontal mode. | */
    public static final int MAV_TYPE_VTOL_RESERVED5 = 25; /* VTOL reserved 5 | */
    public static final int MAV_TYPE_GIMBAL = 26; /* Gimbal | */
    public static final int MAV_TYPE_ADSB = 27; /* ADSB system | */
@@ -53,6 +53,7 @@ public class MAV_TYPE {
    public static final int MAV_TYPE_IMU = 40; /* IMU | */
    public static final int MAV_TYPE_GPS = 41; /* GPS | */
    public static final int MAV_TYPE_WINCH = 42; /* Winch | */
-   public static final int MAV_TYPE_ENUM_END = 43; /*  | */
+   public static final int MAV_TYPE_GENERIC_MULTIROTOR = 43; /* Generic multirotor that does not fit into a specific type or whose type is unknown | */
+   public static final int MAV_TYPE_ENUM_END = 44; /*  | */
 }
             

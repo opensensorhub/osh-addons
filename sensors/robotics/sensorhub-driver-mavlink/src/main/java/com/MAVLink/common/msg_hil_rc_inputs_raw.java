@@ -6,11 +6,12 @@
 
 // MESSAGE HIL_RC_INPUTS_RAW PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Sent from simulation to autopilot. The RAW values of the RC channels received. The standard PPM modulation is as follows: 1000 microseconds: 0%, 2000 microseconds: 100%. Individual receivers/transmitters might violate this specification.
@@ -114,9 +115,9 @@ public class msg_hil_rc_inputs_raw extends MAVLinkMessage {
     public int chan12_raw;
     
     /**
-     * Receive signal strength indicator in device-dependent units/scale. Values: [0-254], 255: invalid/unknown.
+     * Receive signal strength indicator in device-dependent units/scale. Values: [0-254], UINT8_MAX: invalid/unknown.
      */
-    @Description("Receive signal strength indicator in device-dependent units/scale. Values: [0-254], 255: invalid/unknown.")
+    @Description("Receive signal strength indicator in device-dependent units/scale. Values: [0-254], UINT8_MAX: invalid/unknown.")
     @Units("")
     public short rssi;
     

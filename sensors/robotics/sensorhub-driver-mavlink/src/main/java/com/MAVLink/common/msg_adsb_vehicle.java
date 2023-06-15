@@ -6,11 +6,12 @@
 
 // MESSAGE ADSB_VEHICLE PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * The location and information of an ADSB vehicle

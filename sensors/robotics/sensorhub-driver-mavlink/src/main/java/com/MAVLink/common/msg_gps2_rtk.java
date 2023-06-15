@@ -6,11 +6,12 @@
 
 // MESSAGE GPS2_RTK PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * RTK GPS data. Gives information on the relative baseline calculation the GPS is reporting

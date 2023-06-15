@@ -6,14 +6,15 @@
 
 // MESSAGE OPEN_DRONE_ID_ARM_STATUS PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
- * Status from the transmitter telling the flight controller if the remote ID system is ready for arming.
+ * Transmitter (remote ID system) is enabled and ready to start sending location and other required information. This is streamed by transmitter. A flight controller uses it as a condition to arm.
  */
 public class msg_open_drone_id_arm_status extends MAVLinkMessage {
 

@@ -6,11 +6,12 @@
 
 // MESSAGE HIGHRES_IMU PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * The IMU readings in SI units in NED body frame
@@ -121,9 +122,9 @@ public class msg_highres_imu extends MAVLinkMessage {
     public float temperature;
     
     /**
-     * Bitmap for fields that have updated since last message, bit 0 = xacc, bit 12: temperature
+     * Bitmap for fields that have updated since last message
      */
-    @Description("Bitmap for fields that have updated since last message, bit 0 = xacc, bit 12: temperature")
+    @Description("Bitmap for fields that have updated since last message")
     @Units("")
     public int fields_updated;
     

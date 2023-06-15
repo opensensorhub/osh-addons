@@ -6,11 +6,12 @@
 
 // MESSAGE LOGGING_DATA_ACKED PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * A message containing logged data which requires a LOGGING_ACK to be sent back
@@ -51,9 +52,9 @@ public class msg_logging_data_acked extends MAVLinkMessage {
     public short length;
     
     /**
-     * offset into data where first message starts. This can be used for recovery, when a previous message got lost (set to 255 if no start exists).
+     * offset into data where first message starts. This can be used for recovery, when a previous message got lost (set to UINT8_MAX if no start exists).
      */
-    @Description("offset into data where first message starts. This can be used for recovery, when a previous message got lost (set to 255 if no start exists).")
+    @Description("offset into data where first message starts. This can be used for recovery, when a previous message got lost (set to UINT8_MAX if no start exists).")
     @Units("bytes")
     public short first_message_offset;
     

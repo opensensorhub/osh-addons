@@ -6,14 +6,26 @@
 
 // MESSAGE GIMBAL_DEVICE_SET_ATTITUDE PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
- * Low level message to control a gimbal device's attitude. This message is to be sent from the gimbal manager to the gimbal device component. Angles and rates can be set to NaN according to use case.
+ * Low level message to control a gimbal device's attitude. 
+	  This message is to be sent from the gimbal manager to the gimbal device component. 
+	  The quaternion and angular velocities can be set to NaN according to use case. 
+	  For the angles encoded in the quaternion and the angular velocities holds: 
+	  If the flag GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME is set, then they are relative to the vehicle heading (vehicle frame). 
+	  If the flag GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME is set, then they are relative to absolute North (earth frame). 
+	  If neither of these flags are set, then (for backwards compatibility) it holds: 
+	  If the flag GIMBAL_DEVICE_FLAGS_YAW_LOCK is set, then they are relative to absolute North (earth frame), 
+	  else they are relative to the vehicle heading (vehicle frame). 
+	  Setting both GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME and GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME is not allowed. 
+	  These rules are to ensure backwards compatibility. 
+	  New implementations should always set either GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME or GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME.
  */
 public class msg_gimbal_device_set_attitude extends MAVLinkMessage {
 
@@ -23,30 +35,30 @@ public class msg_gimbal_device_set_attitude extends MAVLinkMessage {
 
     
     /**
-     * Quaternion components, w, x, y, z (1 0 0 0 is the null-rotation, the frame is depends on whether the flag GIMBAL_DEVICE_FLAGS_YAW_LOCK is set, set all fields to NaN if only angular velocity should be used)
+     * Quaternion components, w, x, y, z (1 0 0 0 is the null-rotation). The frame is described in the message description. Set fields to NaN to be ignored.
      */
-    @Description("Quaternion components, w, x, y, z (1 0 0 0 is the null-rotation, the frame is depends on whether the flag GIMBAL_DEVICE_FLAGS_YAW_LOCK is set, set all fields to NaN if only angular velocity should be used)")
+    @Description("Quaternion components, w, x, y, z (1 0 0 0 is the null-rotation). The frame is described in the message description. Set fields to NaN to be ignored.")
     @Units("")
     public float q[] = new float[4];
     
     /**
-     * X component of angular velocity, positive is rolling to the right, NaN to be ignored.
+     * X component of angular velocity (positive: rolling to the right). The frame is described in the message description. NaN to be ignored.
      */
-    @Description("X component of angular velocity, positive is rolling to the right, NaN to be ignored.")
+    @Description("X component of angular velocity (positive: rolling to the right). The frame is described in the message description. NaN to be ignored.")
     @Units("rad/s")
     public float angular_velocity_x;
     
     /**
-     * Y component of angular velocity, positive is pitching up, NaN to be ignored.
+     * Y component of angular velocity (positive: pitching up). The frame is described in the message description. NaN to be ignored.
      */
-    @Description("Y component of angular velocity, positive is pitching up, NaN to be ignored.")
+    @Description("Y component of angular velocity (positive: pitching up). The frame is described in the message description. NaN to be ignored.")
     @Units("rad/s")
     public float angular_velocity_y;
     
     /**
-     * Z component of angular velocity, positive is yawing to the right, NaN to be ignored.
+     * Z component of angular velocity (positive: yawing to the right). The frame is described in the message description. NaN to be ignored.
      */
-    @Description("Z component of angular velocity, positive is yawing to the right, NaN to be ignored.")
+    @Description("Z component of angular velocity (positive: yawing to the right). The frame is described in the message description. NaN to be ignored.")
     @Units("rad/s")
     public float angular_velocity_z;
     

@@ -6,11 +6,12 @@
 
 // MESSAGE SENSOR_OFFSETS PACKING
 package com.MAVLink.ardupilotmega;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Offsets and calibrations values for hardware sensors. This makes it easier to debug the calibration process.

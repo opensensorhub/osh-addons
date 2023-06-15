@@ -6,19 +6,20 @@
 
 // MESSAGE AUTOPILOT_STATE_FOR_GIMBAL_DEVICE PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
- * Low level message containing autopilot state relevant for a gimbal device. This message is to be sent from the gimbal manager to the gimbal device component. The data of this message server for the gimbal's estimator corrections in particular horizon compensation, as well as the autopilot's control intention e.g. feed forward angular control in z-axis.
+ * Low level message containing autopilot state relevant for a gimbal device. This message is to be sent from the autopilot to the gimbal device component. The data of this message are for the gimbal device's estimator corrections, in particular horizon compensation, as well as indicates autopilot control intentions, e.g. feed forward angular control in the z-axis.
  */
 public class msg_autopilot_state_for_gimbal_device extends MAVLinkMessage {
 
     public static final int MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE = 286;
-    public static final int MAVLINK_MSG_LENGTH = 53;
+    public static final int MAVLINK_MSG_LENGTH = 57;
     private static final long serialVersionUID = MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE;
 
     
@@ -37,44 +38,44 @@ public class msg_autopilot_state_for_gimbal_device extends MAVLinkMessage {
     public float q[] = new float[4];
     
     /**
-     * Estimated delay of the attitude data.
+     * Estimated delay of the attitude data. 0 if unknown.
      */
-    @Description("Estimated delay of the attitude data.")
+    @Description("Estimated delay of the attitude data. 0 if unknown.")
     @Units("us")
     public long q_estimated_delay_us;
     
     /**
-     * X Speed in NED (North, East, Down).
+     * X Speed in NED (North, East, Down). NAN if unknown.
      */
-    @Description("X Speed in NED (North, East, Down).")
+    @Description("X Speed in NED (North, East, Down). NAN if unknown.")
     @Units("m/s")
     public float vx;
     
     /**
-     * Y Speed in NED (North, East, Down).
+     * Y Speed in NED (North, East, Down). NAN if unknown.
      */
-    @Description("Y Speed in NED (North, East, Down).")
+    @Description("Y Speed in NED (North, East, Down). NAN if unknown.")
     @Units("m/s")
     public float vy;
     
     /**
-     * Z Speed in NED (North, East, Down).
+     * Z Speed in NED (North, East, Down). NAN if unknown.
      */
-    @Description("Z Speed in NED (North, East, Down).")
+    @Description("Z Speed in NED (North, East, Down). NAN if unknown.")
     @Units("m/s")
     public float vz;
     
     /**
-     * Estimated delay of the speed data.
+     * Estimated delay of the speed data. 0 if unknown.
      */
-    @Description("Estimated delay of the speed data.")
+    @Description("Estimated delay of the speed data. 0 if unknown.")
     @Units("us")
     public long v_estimated_delay_us;
     
     /**
-     * Feed forward Z component of angular velocity, positive is yawing to the right, NaN to be ignored. This is to indicate if the autopilot is actively yawing.
+     * Feed forward Z component of angular velocity (positive: yawing to the right). NaN to be ignored. This is to indicate if the autopilot is actively yawing.
      */
-    @Description("Feed forward Z component of angular velocity, positive is yawing to the right, NaN to be ignored. This is to indicate if the autopilot is actively yawing.")
+    @Description("Feed forward Z component of angular velocity (positive: yawing to the right). NaN to be ignored. This is to indicate if the autopilot is actively yawing.")
     @Units("rad/s")
     public float feed_forward_angular_velocity_z;
     
@@ -106,6 +107,13 @@ public class msg_autopilot_state_for_gimbal_device extends MAVLinkMessage {
     @Units("")
     public short landed_state;
     
+    /**
+     * Z component of angular velocity in NED (North, East, Down). NaN if unknown.
+     */
+    @Description("Z component of angular velocity in NED (North, East, Down). NaN if unknown.")
+    @Units("rad/s")
+    public float angular_velocity_z;
+    
 
     /**
      * Generates the payload for a mavlink message for a message of this type
@@ -136,6 +144,7 @@ public class msg_autopilot_state_for_gimbal_device extends MAVLinkMessage {
         packet.payload.putUnsignedByte(landed_state);
         
         if (isMavlink2) {
+             packet.payload.putFloat(angular_velocity_z);
             
         }
         return packet;
@@ -168,6 +177,7 @@ public class msg_autopilot_state_for_gimbal_device extends MAVLinkMessage {
         this.landed_state = payload.getUnsignedByte();
         
         if (isMavlink2) {
+             this.angular_velocity_z = payload.getFloat();
             
         }
     }
@@ -182,7 +192,7 @@ public class msg_autopilot_state_for_gimbal_device extends MAVLinkMessage {
     /**
      * Constructor for a new message, initializes msgid and all payload variables
      */
-    public msg_autopilot_state_for_gimbal_device( long time_boot_us, float[] q, long q_estimated_delay_us, float vx, float vy, float vz, long v_estimated_delay_us, float feed_forward_angular_velocity_z, int estimator_status, short target_system, short target_component, short landed_state) {
+    public msg_autopilot_state_for_gimbal_device( long time_boot_us, float[] q, long q_estimated_delay_us, float vx, float vy, float vz, long v_estimated_delay_us, float feed_forward_angular_velocity_z, int estimator_status, short target_system, short target_component, short landed_state, float angular_velocity_z) {
         this.msgid = MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE;
 
         this.time_boot_us = time_boot_us;
@@ -197,13 +207,14 @@ public class msg_autopilot_state_for_gimbal_device extends MAVLinkMessage {
         this.target_system = target_system;
         this.target_component = target_component;
         this.landed_state = landed_state;
+        this.angular_velocity_z = angular_velocity_z;
         
     }
 
     /**
      * Constructor for a new message, initializes everything
      */
-    public msg_autopilot_state_for_gimbal_device( long time_boot_us, float[] q, long q_estimated_delay_us, float vx, float vy, float vz, long v_estimated_delay_us, float feed_forward_angular_velocity_z, int estimator_status, short target_system, short target_component, short landed_state, int sysid, int compid, boolean isMavlink2) {
+    public msg_autopilot_state_for_gimbal_device( long time_boot_us, float[] q, long q_estimated_delay_us, float vx, float vy, float vz, long v_estimated_delay_us, float feed_forward_angular_velocity_z, int estimator_status, short target_system, short target_component, short landed_state, float angular_velocity_z, int sysid, int compid, boolean isMavlink2) {
         this.msgid = MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE;
         this.sysid = sysid;
         this.compid = compid;
@@ -221,6 +232,7 @@ public class msg_autopilot_state_for_gimbal_device extends MAVLinkMessage {
         this.target_system = target_system;
         this.target_component = target_component;
         this.landed_state = landed_state;
+        this.angular_velocity_z = angular_velocity_z;
         
     }
 
@@ -238,13 +250,13 @@ public class msg_autopilot_state_for_gimbal_device extends MAVLinkMessage {
         unpack(mavLinkPacket.payload);
     }
 
-                            
+                              
     /**
      * Returns a string with the MSG name and data
      */
     @Override
     public String toString() {
-        return "MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE - sysid:"+sysid+" compid:"+compid+" time_boot_us:"+time_boot_us+" q:"+q+" q_estimated_delay_us:"+q_estimated_delay_us+" vx:"+vx+" vy:"+vy+" vz:"+vz+" v_estimated_delay_us:"+v_estimated_delay_us+" feed_forward_angular_velocity_z:"+feed_forward_angular_velocity_z+" estimator_status:"+estimator_status+" target_system:"+target_system+" target_component:"+target_component+" landed_state:"+landed_state+"";
+        return "MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE - sysid:"+sysid+" compid:"+compid+" time_boot_us:"+time_boot_us+" q:"+q+" q_estimated_delay_us:"+q_estimated_delay_us+" vx:"+vx+" vy:"+vy+" vz:"+vz+" v_estimated_delay_us:"+v_estimated_delay_us+" feed_forward_angular_velocity_z:"+feed_forward_angular_velocity_z+" estimator_status:"+estimator_status+" target_system:"+target_system+" target_component:"+target_component+" landed_state:"+landed_state+" angular_velocity_z:"+angular_velocity_z+"";
     }
 
     /**

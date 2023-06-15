@@ -6,11 +6,12 @@
 
 // MESSAGE CUBEPILOT_FIRMWARE_UPDATE_START PACKING
 package com.MAVLink.cubepilot;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Start firmware update with encapsulated data.

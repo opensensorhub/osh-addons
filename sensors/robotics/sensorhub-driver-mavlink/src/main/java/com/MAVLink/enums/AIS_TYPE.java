@@ -73,12 +73,12 @@ public class AIS_TYPE {
    public static final int AIS_TYPE_PASSENGER = 60; /*  | */
    public static final int AIS_TYPE_PASSENGER_HAZARDOUS_A = 61; /*  | */
    public static final int AIS_TYPE_PASSENGER_HAZARDOUS_B = 62; /*  | */
-   public static final int AIS_TYPE_AIS_TYPE_PASSENGER_HAZARDOUS_C = 63; /*  | */
+   public static final int AIS_TYPE_PASSENGER_HAZARDOUS_C = 63; /*  | */
    public static final int AIS_TYPE_PASSENGER_HAZARDOUS_D = 64; /*  | */
    public static final int AIS_TYPE_PASSENGER_RESERVED_1 = 65; /*  | */
    public static final int AIS_TYPE_PASSENGER_RESERVED_2 = 66; /*  | */
    public static final int AIS_TYPE_PASSENGER_RESERVED_3 = 67; /*  | */
-   public static final int AIS_TYPE_AIS_TYPE_PASSENGER_RESERVED_4 = 68; /*  | */
+   public static final int AIS_TYPE_PASSENGER_RESERVED_4 = 68; /*  | */
    public static final int AIS_TYPE_PASSENGER_UNKNOWN = 69; /*  | */
    public static final int AIS_TYPE_CARGO = 70; /*  | */
    public static final int AIS_TYPE_CARGO_HAZARDOUS_A = 71; /*  | */

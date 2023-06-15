@@ -6,19 +6,20 @@
 
 // MESSAGE MANUAL_CONTROL PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
- * This message provides an API for manually controlling the vehicle using standard joystick axes nomenclature, along with a joystick-like input device. Unused axes can be disabled an buttons are also transmit as boolean values of their 
+ * This message provides an API for manually controlling the vehicle using standard joystick axes nomenclature, along with a joystick-like input device. Unused axes can be disabled and buttons states are transmitted as individual on/off bits of a bitmask
  */
 public class msg_manual_control extends MAVLinkMessage {
 
     public static final int MAVLINK_MSG_ID_MANUAL_CONTROL = 69;
-    public static final int MAVLINK_MSG_LENGTH = 11;
+    public static final int MAVLINK_MSG_LENGTH = 18;
     private static final long serialVersionUID = MAVLINK_MSG_ID_MANUAL_CONTROL;
 
     
@@ -51,9 +52,9 @@ public class msg_manual_control extends MAVLinkMessage {
     public short r;
     
     /**
-     * A bitfield corresponding to the joystick buttons' current state, 1 for pressed, 0 for released. The lowest bit corresponds to Button 1.
+     * A bitfield corresponding to the joystick buttons' 0-15 current state, 1 for pressed, 0 for released. The lowest bit corresponds to Button 1.
      */
-    @Description("A bitfield corresponding to the joystick buttons' current state, 1 for pressed, 0 for released. The lowest bit corresponds to Button 1.")
+    @Description("A bitfield corresponding to the joystick buttons' 0-15 current state, 1 for pressed, 0 for released. The lowest bit corresponds to Button 1.")
     @Units("")
     public int buttons;
     
@@ -63,6 +64,34 @@ public class msg_manual_control extends MAVLinkMessage {
     @Description("The system to be controlled.")
     @Units("")
     public short target;
+    
+    /**
+     * A bitfield corresponding to the joystick buttons' 16-31 current state, 1 for pressed, 0 for released. The lowest bit corresponds to Button 16.
+     */
+    @Description("A bitfield corresponding to the joystick buttons' 16-31 current state, 1 for pressed, 0 for released. The lowest bit corresponds to Button 16.")
+    @Units("")
+    public int buttons2;
+    
+    /**
+     * Set bits to 1 to indicate which of the following extension fields contain valid data: bit 0: pitch, bit 1: roll.
+     */
+    @Description("Set bits to 1 to indicate which of the following extension fields contain valid data: bit 0: pitch, bit 1: roll.")
+    @Units("")
+    public short enabled_extensions;
+    
+    /**
+     * Pitch-only-axis, normalized to the range [-1000,1000]. Generally corresponds to pitch on vehicles with additional degrees of freedom. Valid if bit 0 of enabled_extensions field is set. Set to 0 if invalid.
+     */
+    @Description("Pitch-only-axis, normalized to the range [-1000,1000]. Generally corresponds to pitch on vehicles with additional degrees of freedom. Valid if bit 0 of enabled_extensions field is set. Set to 0 if invalid.")
+    @Units("")
+    public short s;
+    
+    /**
+     * Roll-only-axis, normalized to the range [-1000,1000]. Generally corresponds to roll on vehicles with additional degrees of freedom. Valid if bit 1 of enabled_extensions field is set. Set to 0 if invalid.
+     */
+    @Description("Roll-only-axis, normalized to the range [-1000,1000]. Generally corresponds to roll on vehicles with additional degrees of freedom. Valid if bit 1 of enabled_extensions field is set. Set to 0 if invalid.")
+    @Units("")
+    public short t;
     
 
     /**
@@ -84,6 +113,10 @@ public class msg_manual_control extends MAVLinkMessage {
         packet.payload.putUnsignedByte(target);
         
         if (isMavlink2) {
+             packet.payload.putUnsignedShort(buttons2);
+             packet.payload.putUnsignedByte(enabled_extensions);
+             packet.payload.putShort(s);
+             packet.payload.putShort(t);
             
         }
         return packet;
@@ -106,6 +139,10 @@ public class msg_manual_control extends MAVLinkMessage {
         this.target = payload.getUnsignedByte();
         
         if (isMavlink2) {
+             this.buttons2 = payload.getUnsignedShort();
+             this.enabled_extensions = payload.getUnsignedByte();
+             this.s = payload.getShort();
+             this.t = payload.getShort();
             
         }
     }
@@ -120,7 +157,7 @@ public class msg_manual_control extends MAVLinkMessage {
     /**
      * Constructor for a new message, initializes msgid and all payload variables
      */
-    public msg_manual_control( short x, short y, short z, short r, int buttons, short target) {
+    public msg_manual_control( short x, short y, short z, short r, int buttons, short target, int buttons2, short enabled_extensions, short s, short t) {
         this.msgid = MAVLINK_MSG_ID_MANUAL_CONTROL;
 
         this.x = x;
@@ -129,13 +166,17 @@ public class msg_manual_control extends MAVLinkMessage {
         this.r = r;
         this.buttons = buttons;
         this.target = target;
+        this.buttons2 = buttons2;
+        this.enabled_extensions = enabled_extensions;
+        this.s = s;
+        this.t = t;
         
     }
 
     /**
      * Constructor for a new message, initializes everything
      */
-    public msg_manual_control( short x, short y, short z, short r, int buttons, short target, int sysid, int compid, boolean isMavlink2) {
+    public msg_manual_control( short x, short y, short z, short r, int buttons, short target, int buttons2, short enabled_extensions, short s, short t, int sysid, int compid, boolean isMavlink2) {
         this.msgid = MAVLINK_MSG_ID_MANUAL_CONTROL;
         this.sysid = sysid;
         this.compid = compid;
@@ -147,6 +188,10 @@ public class msg_manual_control extends MAVLinkMessage {
         this.r = r;
         this.buttons = buttons;
         this.target = target;
+        this.buttons2 = buttons2;
+        this.enabled_extensions = enabled_extensions;
+        this.s = s;
+        this.t = t;
         
     }
 
@@ -164,13 +209,13 @@ public class msg_manual_control extends MAVLinkMessage {
         unpack(mavLinkPacket.payload);
     }
 
-                
+                        
     /**
      * Returns a string with the MSG name and data
      */
     @Override
     public String toString() {
-        return "MAVLINK_MSG_ID_MANUAL_CONTROL - sysid:"+sysid+" compid:"+compid+" x:"+x+" y:"+y+" z:"+z+" r:"+r+" buttons:"+buttons+" target:"+target+"";
+        return "MAVLINK_MSG_ID_MANUAL_CONTROL - sysid:"+sysid+" compid:"+compid+" x:"+x+" y:"+y+" z:"+z+" r:"+r+" buttons:"+buttons+" target:"+target+" buttons2:"+buttons2+" enabled_extensions:"+enabled_extensions+" s:"+s+" t:"+t+"";
     }
 
     /**

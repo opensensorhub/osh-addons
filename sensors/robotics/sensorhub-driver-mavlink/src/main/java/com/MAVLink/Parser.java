@@ -6,7 +6,6 @@
 
 package com.MAVLink;
 
-import com.MAVLink.MAVLinkPacket;
 import com.MAVLink.Messages.MAVLinkStats;
 
 /**

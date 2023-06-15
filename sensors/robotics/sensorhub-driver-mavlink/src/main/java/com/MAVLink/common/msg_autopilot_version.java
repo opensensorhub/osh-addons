@@ -6,11 +6,12 @@
 
 // MESSAGE AUTOPILOT_VERSION PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Version and capability of autopilot software. This should be emitted in response to a request with MAV_CMD_REQUEST_MESSAGE.
@@ -58,9 +59,9 @@ public class msg_autopilot_version extends MAVLinkMessage {
     public long os_sw_version;
     
     /**
-     * HW / board version (last 8 bits should be silicon ID, if any). The first 16 bits of this field specify https://github.com/ardupilot/ardupilot/blob/master/Tools/AP_Bootloader/board_types.txt
+     * HW / board version (last 8 bits should be silicon ID, if any). The first 16 bits of this field specify https://github.com/PX4/PX4-Bootloader/blob/master/board_types.txt
      */
-    @Description("HW / board version (last 8 bits should be silicon ID, if any). The first 16 bits of this field specify https://github.com/ardupilot/ardupilot/blob/master/Tools/AP_Bootloader/board_types.txt")
+    @Description("HW / board version (last 8 bits should be silicon ID, if any). The first 16 bits of this field specify https://github.com/PX4/PX4-Bootloader/blob/master/board_types.txt")
     @Units("")
     public long board_version;
     

@@ -13,6 +13,7 @@ public class ATTITUDE_TARGET_TYPEMASK {
    public static final int ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE = 1; /* Ignore body roll rate | */
    public static final int ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE = 2; /* Ignore body pitch rate | */
    public static final int ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE = 4; /* Ignore body yaw rate | */
+   public static final int ATTITUDE_TARGET_TYPEMASK_THRUST_BODY_SET = 32; /* Use 3D body thrust setpoint instead of throttle | */
    public static final int ATTITUDE_TARGET_TYPEMASK_THROTTLE_IGNORE = 64; /* Ignore throttle | */
    public static final int ATTITUDE_TARGET_TYPEMASK_ATTITUDE_IGNORE = 128; /* Ignore attitude | */
    public static final int ATTITUDE_TARGET_TYPEMASK_ENUM_END = 129; /*  | */

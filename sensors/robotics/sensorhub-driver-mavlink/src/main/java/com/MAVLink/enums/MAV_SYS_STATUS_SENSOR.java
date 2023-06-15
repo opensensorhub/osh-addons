@@ -41,6 +41,7 @@ public class MAV_SYS_STATUS_SENSOR {
    public static final int MAV_SYS_STATUS_PREARM_CHECK = 268435456; /* 0x10000000 pre-arm check status. Always healthy when armed | */
    public static final int MAV_SYS_STATUS_OBSTACLE_AVOIDANCE = 536870912; /* 0x20000000 Avoidance/collision prevention | */
    public static final int MAV_SYS_STATUS_SENSOR_PROPULSION = 1073741824; /* 0x40000000 propulsion (actuator, esc, motor or propellor) | */
-   public static final int MAV_SYS_STATUS_SENSOR_ENUM_END = 1073741825; /*  | */
+   public static final int MAV_SYS_STATUS_EXTENSION_USED = 2147483648; /* 0x80000000 Extended bit-field are used for further sensor status bits (needs to be set in onboard_control_sensors_present only) | */
+   public static final int MAV_SYS_STATUS_SENSOR_ENUM_END = 2147483649; /*  | */
 }
             

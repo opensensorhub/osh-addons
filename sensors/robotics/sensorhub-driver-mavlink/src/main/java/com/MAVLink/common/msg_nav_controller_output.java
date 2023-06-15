@@ -6,14 +6,15 @@
 
 // MESSAGE NAV_CONTROLLER_OUTPUT PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
- * The state of the fixed wing navigation and position controller.
+ * The state of the navigation and position controller.
  */
 public class msg_nav_controller_output extends MAVLinkMessage {
 

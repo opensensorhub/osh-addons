@@ -6,11 +6,12 @@
 
 // MESSAGE AHRS3 PACKING
 package com.MAVLink.ardupilotmega;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Status of third AHRS filter if available. This is for ANU research group (Ali and Sean).

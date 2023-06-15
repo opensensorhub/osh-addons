@@ -6,11 +6,12 @@
 
 // MESSAGE GIMBAL_DEVICE_INFORMATION PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Information about a low level gimbal. This message should be requested by the gimbal manager or a ground station using MAV_CMD_REQUEST_MESSAGE. The maximum angles and rates are the limits by hardware. However, the limits by software used are likely different/smaller and dependent on mode/settings/etc..
@@ -51,44 +52,44 @@ public class msg_gimbal_device_information extends MAVLinkMessage {
     public long hardware_version;
     
     /**
-     * Minimum hardware roll angle (positive: rolling to the right, negative: rolling to the left)
+     * Minimum hardware roll angle (positive: rolling to the right, negative: rolling to the left). NAN if unknown.
      */
-    @Description("Minimum hardware roll angle (positive: rolling to the right, negative: rolling to the left)")
+    @Description("Minimum hardware roll angle (positive: rolling to the right, negative: rolling to the left). NAN if unknown.")
     @Units("rad")
     public float roll_min;
     
     /**
-     * Maximum hardware roll angle (positive: rolling to the right, negative: rolling to the left)
+     * Maximum hardware roll angle (positive: rolling to the right, negative: rolling to the left). NAN if unknown.
      */
-    @Description("Maximum hardware roll angle (positive: rolling to the right, negative: rolling to the left)")
+    @Description("Maximum hardware roll angle (positive: rolling to the right, negative: rolling to the left). NAN if unknown.")
     @Units("rad")
     public float roll_max;
     
     /**
-     * Minimum hardware pitch angle (positive: up, negative: down)
+     * Minimum hardware pitch angle (positive: up, negative: down). NAN if unknown.
      */
-    @Description("Minimum hardware pitch angle (positive: up, negative: down)")
+    @Description("Minimum hardware pitch angle (positive: up, negative: down). NAN if unknown.")
     @Units("rad")
     public float pitch_min;
     
     /**
-     * Maximum hardware pitch angle (positive: up, negative: down)
+     * Maximum hardware pitch angle (positive: up, negative: down). NAN if unknown.
      */
-    @Description("Maximum hardware pitch angle (positive: up, negative: down)")
+    @Description("Maximum hardware pitch angle (positive: up, negative: down). NAN if unknown.")
     @Units("rad")
     public float pitch_max;
     
     /**
-     * Minimum hardware yaw angle (positive: to the right, negative: to the left)
+     * Minimum hardware yaw angle (positive: to the right, negative: to the left). NAN if unknown.
      */
-    @Description("Minimum hardware yaw angle (positive: to the right, negative: to the left)")
+    @Description("Minimum hardware yaw angle (positive: to the right, negative: to the left). NAN if unknown.")
     @Units("rad")
     public float yaw_min;
     
     /**
-     * Maximum hardware yaw angle (positive: to the right, negative: to the left)
+     * Maximum hardware yaw angle (positive: to the right, negative: to the left). NAN if unknown.
      */
-    @Description("Maximum hardware yaw angle (positive: to the right, negative: to the left)")
+    @Description("Maximum hardware yaw angle (positive: to the right, negative: to the left). NAN if unknown.")
     @Units("rad")
     public float yaw_max;
     

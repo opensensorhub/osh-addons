@@ -6,14 +6,19 @@
 
 // MESSAGE MESSAGE_INTERVAL PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
- * The interval between messages for a particular MAVLink message ID. This message is the response to the MAV_CMD_GET_MESSAGE_INTERVAL command. This interface replaces DATA_STREAM.
+ * 
+        The interval between messages for a particular MAVLink message ID.
+        This message is sent in response to the MAV_CMD_REQUEST_MESSAGE command with param1=244 (this message) and param2=message_id (the id of the message for which the interval is required).
+	It may also be sent in response to MAV_CMD_GET_MESSAGE_INTERVAL.
+	This interface replaces DATA_STREAM.
  */
 public class msg_message_interval extends MAVLinkMessage {
 

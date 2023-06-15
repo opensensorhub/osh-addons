@@ -6,11 +6,12 @@
 
 // MESSAGE COMMAND_ACK PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Report status of a command. Includes feedback whether the command was executed. The command microservice is documented at https://mavlink.io/en/services/command.html
@@ -37,30 +38,30 @@ public class msg_command_ack extends MAVLinkMessage {
     public short result;
     
     /**
-     * Also used as result_param1, it can be set with a enum containing the errors reasons of why the command was denied or the progress percentage or 255 if unknown the progress when result is MAV_RESULT_IN_PROGRESS.
+     * The progress percentage when result is MAV_RESULT_IN_PROGRESS. Values: [0-100], or UINT8_MAX if the progress is unknown.
      */
-    @Description("Also used as result_param1, it can be set with a enum containing the errors reasons of why the command was denied or the progress percentage or 255 if unknown the progress when result is MAV_RESULT_IN_PROGRESS.")
-    @Units("")
+    @Description("The progress percentage when result is MAV_RESULT_IN_PROGRESS. Values: [0-100], or UINT8_MAX if the progress is unknown.")
+    @Units("%")
     public short progress;
     
     /**
-     * Additional parameter of the result, example: which parameter of MAV_CMD_NAV_WAYPOINT caused it to be denied.
+     * Additional result information. Can be set with a command-specific enum containing command-specific error reasons for why the command might be denied. If used, the associated enum must be documented in the corresponding MAV_CMD (this enum should have a 0 value to indicate 'unused' or 'unknown').
      */
-    @Description("Additional parameter of the result, example: which parameter of MAV_CMD_NAV_WAYPOINT caused it to be denied.")
+    @Description("Additional result information. Can be set with a command-specific enum containing command-specific error reasons for why the command might be denied. If used, the associated enum must be documented in the corresponding MAV_CMD (this enum should have a 0 value to indicate 'unused' or 'unknown').")
     @Units("")
     public int result_param2;
     
     /**
-     * System which requested the command to be executed
+     * System ID of the target recipient. This is the ID of the system that sent the command for which this COMMAND_ACK is an acknowledgement.
      */
-    @Description("System which requested the command to be executed")
+    @Description("System ID of the target recipient. This is the ID of the system that sent the command for which this COMMAND_ACK is an acknowledgement.")
     @Units("")
     public short target_system;
     
     /**
-     * Component which requested the command to be executed
+     * Component ID of the target recipient. This is the ID of the system that sent the command for which this COMMAND_ACK is an acknowledgement.
      */
-    @Description("Component which requested the command to be executed")
+    @Description("Component ID of the target recipient. This is the ID of the system that sent the command for which this COMMAND_ACK is an acknowledgement.")
     @Units("")
     public short target_component;
     

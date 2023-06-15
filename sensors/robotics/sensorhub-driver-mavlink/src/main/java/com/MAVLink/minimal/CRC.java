@@ -23,6 +23,7 @@ public class CRC {
     static {
         MAVLINK_MESSAGE_CRCS = new HashMap<>();
         MAVLINK_MESSAGE_CRCS.put(0, 50);
+        MAVLINK_MESSAGE_CRCS.put(300, 217);
         
     }
 

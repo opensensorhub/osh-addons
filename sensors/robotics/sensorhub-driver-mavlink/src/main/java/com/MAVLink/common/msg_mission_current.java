@@ -6,14 +6,19 @@
 
 // MESSAGE MISSION_CURRENT PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
- * Message that announces the sequence number of the current active mission item. The MAV will fly towards this mission item.
+ * 
+        Message that announces the sequence number of the current target mission item (that the system will fly towards/execute when the mission is running).
+        This message should be streamed all the time (nominally at 1Hz).
+        This message should be emitted following a call to MAV_CMD_DO_SET_MISSION_CURRENT or SET_MISSION_CURRENT.
+      
  */
 public class msg_mission_current extends MAVLinkMessage {
 

@@ -6,11 +6,12 @@
 
 // MESSAGE UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT PACKING
 package com.MAVLink.uAvionix;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Transceiver heartbeat with health report (updated every 10s)

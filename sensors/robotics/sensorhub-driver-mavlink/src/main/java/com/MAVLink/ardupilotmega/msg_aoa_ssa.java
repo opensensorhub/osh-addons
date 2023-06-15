@@ -6,11 +6,12 @@
 
 // MESSAGE AOA_SSA PACKING
 package com.MAVLink.ardupilotmega;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Angle of Attack and Side Slip Angle.

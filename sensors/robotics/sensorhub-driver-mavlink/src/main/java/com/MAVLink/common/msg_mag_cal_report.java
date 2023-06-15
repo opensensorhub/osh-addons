@@ -6,11 +6,12 @@
 
 // MESSAGE MAG_CAL_REPORT PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Reports results of completed compass calibration. Sent until MAG_CAL_ACK received.

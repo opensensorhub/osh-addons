@@ -6,9 +6,9 @@
 
 package com.MAVLink.Messages;
 
-import java.io.Serializable;
-
 import com.MAVLink.MAVLinkPacket;
+
+import java.io.Serializable;
 
 /**
  * Common interface for all MAVLink messages
@@ -24,7 +24,7 @@ public abstract class MAVLinkMessage implements Serializable {
     public boolean isMavlink2;
 
     public abstract MAVLinkPacket pack();
-    public abstract void unpack(com.MAVLink.Messages.MAVLinkPayload payload);
+    public abstract void unpack(MAVLinkPayload payload);
     public abstract String toString();
     public abstract String name();
 }

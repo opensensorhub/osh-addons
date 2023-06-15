@@ -19,6 +19,7 @@ public class WINCH_ACTIONS {
    public static final int WINCH_RETRACT = 6; /* Return the reel to the fully retracted position. Only action and instance command parameters are used, others are ignored. | */
    public static final int WINCH_LOAD_LINE = 7; /* Load the reel with line. The winch will calculate the total loaded length and stop when the tension exceeds a threshold. Only action and instance command parameters are used, others are ignored. | */
    public static final int WINCH_ABANDON_LINE = 8; /* Spool out the entire length of the line. Only action and instance command parameters are used, others are ignored. | */
-   public static final int WINCH_ACTIONS_ENUM_END = 9; /*  | */
+   public static final int WINCH_LOAD_PAYLOAD = 9; /* Spools out just enough to present the hook to the user to load the payload. Only action and instance command parameters are used, others are ignored | */
+   public static final int WINCH_ACTIONS_ENUM_END = 10; /*  | */
 }
             

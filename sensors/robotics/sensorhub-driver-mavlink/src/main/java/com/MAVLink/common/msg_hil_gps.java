@@ -6,15 +6,16 @@
 
 // MESSAGE HIL_GPS PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * The global position, as returned by the Global Positioning System (GPS). This is
-                 NOT the global position estimate of the sytem, but rather a RAW sensor value. See message GLOBAL_POSITION for the global position estimate.
+                 NOT the global position estimate of the system, but rather a RAW sensor value. See message GLOBAL_POSITION_INT for the global position estimate.
  */
 public class msg_hil_gps extends MAVLinkMessage {
 
@@ -52,23 +53,23 @@ public class msg_hil_gps extends MAVLinkMessage {
     public int alt;
     
     /**
-     * GPS HDOP horizontal dilution of position (unitless). If unknown, set to: UINT16_MAX
+     * GPS HDOP horizontal dilution of position (unitless * 100). If unknown, set to: UINT16_MAX
      */
-    @Description("GPS HDOP horizontal dilution of position (unitless). If unknown, set to: UINT16_MAX")
+    @Description("GPS HDOP horizontal dilution of position (unitless * 100). If unknown, set to: UINT16_MAX")
     @Units("")
     public int eph;
     
     /**
-     * GPS VDOP vertical dilution of position (unitless). If unknown, set to: UINT16_MAX
+     * GPS VDOP vertical dilution of position (unitless * 100). If unknown, set to: UINT16_MAX
      */
-    @Description("GPS VDOP vertical dilution of position (unitless). If unknown, set to: UINT16_MAX")
+    @Description("GPS VDOP vertical dilution of position (unitless * 100). If unknown, set to: UINT16_MAX")
     @Units("")
     public int epv;
     
     /**
-     * GPS ground speed. If unknown, set to: 65535
+     * GPS ground speed. If unknown, set to: UINT16_MAX
      */
-    @Description("GPS ground speed. If unknown, set to: 65535")
+    @Description("GPS ground speed. If unknown, set to: UINT16_MAX")
     @Units("cm/s")
     public int vel;
     
@@ -94,9 +95,9 @@ public class msg_hil_gps extends MAVLinkMessage {
     public short vd;
     
     /**
-     * Course over ground (NOT heading, but direction of movement), 0.0..359.99 degrees. If unknown, set to: 65535
+     * Course over ground (NOT heading, but direction of movement), 0.0..359.99 degrees. If unknown, set to: UINT16_MAX
      */
-    @Description("Course over ground (NOT heading, but direction of movement), 0.0..359.99 degrees. If unknown, set to: 65535")
+    @Description("Course over ground (NOT heading, but direction of movement), 0.0..359.99 degrees. If unknown, set to: UINT16_MAX")
     @Units("cdeg")
     public int cog;
     
@@ -108,9 +109,9 @@ public class msg_hil_gps extends MAVLinkMessage {
     public short fix_type;
     
     /**
-     * Number of satellites visible. If unknown, set to 255
+     * Number of satellites visible. If unknown, set to UINT8_MAX
      */
-    @Description("Number of satellites visible. If unknown, set to 255")
+    @Description("Number of satellites visible. If unknown, set to UINT8_MAX")
     @Units("")
     public short satellites_visible;
     
