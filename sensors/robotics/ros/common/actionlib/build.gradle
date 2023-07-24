@@ -2,6 +2,14 @@ description = 'ROS Java Action Library'
 ext.details = 'Integration of ROS Action Library in Java implemented by Ernesto Corbellini'
 version = '1.0.0'
 
+repositories {
+    mavenCentral()
+    jcenter()
+    maven {
+        url "https://github.com/rosjava/rosjava_mvn_repo/raw/master"
+    }
+}
+
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
     implementation 'org.ros.rosjava_core:rosjava:0.3.6'
