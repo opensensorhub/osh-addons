@@ -20,6 +20,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.database.IDatabaseRegistry;
 import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.datastore.command.ICommandStore;
+import org.sensorhub.api.datastore.deployment.IDeploymentStore;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
@@ -182,6 +183,13 @@ public class STADatabase implements ISTADatabase
     public ISystemDescStore getSystemDescStore()
     {
         return obsDatabase.getSystemDescStore();
+    }
+
+
+    @Override
+    public IDeploymentStore getDeploymentStore()
+    {
+        throw new UnsupportedOperationException();
     }
 
 
