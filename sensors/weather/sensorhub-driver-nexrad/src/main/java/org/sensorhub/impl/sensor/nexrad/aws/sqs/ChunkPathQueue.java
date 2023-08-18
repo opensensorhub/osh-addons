@@ -54,10 +54,14 @@ public class ChunkPathQueue
 	static final int SIZE_LIMIT = 8;
 
 	public ChunkPathQueue(Path rootFolder, String site) throws IOException {
+		this(site);
 		this.siteFolder = Paths.get(rootFolder.toString(), site);
-		this.site = site;
 		//  Make sure the target folder exists
 		FileUtils.forceMkdir(this.siteFolder.toFile());
+	}
+	
+	public ChunkPathQueue(String site) throws IOException {
+		this.site = site;
 		queue = new PriorityBlockingQueue<>();
 	}
 

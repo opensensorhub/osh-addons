@@ -31,6 +31,7 @@ public class ProcessMessageThread implements Runnable {
 		this.chunkQueueManager = chunkQueueManager;
 	}
 
+	long msgCnt = 0;
 	@Override
 	public void run() {
 		while(processing) {
@@ -39,11 +40,16 @@ public class ProcessMessageThread implements Runnable {
 				for(Message msg: messages) {
 					String body = msg.getBody();
 					String chunkPath = AwsNexradUtil.getChunkPath(body);
+					if(chunkPath.length() < 4)
+						System.err.println(chunkPath);
 					//				String time = AwsNexradUtil.getEventTime(body);
 					String site = chunkPath.substring(0, 4);
-//				System.err.println(chunkPath);
 					if(sitesToKeep.contains(site)) {
 						chunkQueueManager.addChunkPath(site, chunkPath);
+					}
+					msgCnt++;
+					if(msgCnt % 1000 == 0) {
+						System.err.println("\tThread: " + this.toString() + " msgCnt = " + msgCnt);
 					}
 				}
 				sqsService.deleteMessages(messages);

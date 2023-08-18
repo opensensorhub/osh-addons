@@ -10,6 +10,7 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.util.Topics;
+import com.amazonaws.services.sns.model.SetSubscriptionAttributesRequest;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
@@ -34,12 +35,16 @@ public class QueueFactory
 	static {
 		credentials = null;
 		try {
+			// if you have multiple aws accounts, add string user name to this call.
+			// otherwise "[default]" user credentials will be used
+			// credentials = new ProfileCredentialsProvider("user").getCredentials();
 			credentials = new ProfileCredentialsProvider().getCredentials();
 		} catch (Exception e) {
 			throw new AmazonClientException(
 					"Cannot load the credentials from the credential profiles file. " +
 							"Please make sure that your credentials file is at the correct " +
-							"location (~/.aws/credentials), and is in valid format.",
+							"location (~/.aws/credentials), and is in valid format." +
+							"See: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html",
 							e);
 		}
 
@@ -49,13 +54,28 @@ public class QueueFactory
 		sqs.setRegion(usWest2);
 	}
 	
+	 public void apply(AmazonSNSClient snsClient, String subscriptionArn) {
+
+	        SetSubscriptionAttributesRequest request = new SetSubscriptionAttributesRequest();
+	        request.setSubscriptionArn(subscriptionArn);
+	        request.setAttributeName("FilterPolicy");
+	        
+	        		
+//	        		SetSubscriptionAttributesRequest.builder()
+//	                .subscriptionArn(subscriptionArn)
+//	                .attributeName("FilterPolicy")
+//	                .attributeValue(formatFilterPolicy())
+//	                .build();
+
+	        snsClient.setSubscriptionAttributes(request);
+	    }
 
 	public static void main(String[] args) {
 		listQueues();
-//		deleteQueue("https://sqs.us-west-2.amazonaws.com/384286541835/NexradQueue_SensorHub_00018");
+//		deleteQueue("https://sqs.us-west-2.amazonaws.com/633354997535/NexradQueue_SensorHub");
 	}
 	
-	public static void main_(String[] args) {
+	public static void main_(String[] args) throws Exception {
 		String topicArn = "arn:aws:sns:us-east-1:684042711724:NewNEXRADLevel2Object";
 		String qName = "NexradQueue_SensorHub_00018";
 
@@ -71,6 +91,9 @@ public class QueueFactory
 	    PurgeQueueRequest purgeReq = new PurgeQueueRequest(queueUrl); 
 	    PurgeQueueResult purgeRes = sqs.purgeQueue(purgeReq);
 	    System.err.println(purgeRes);
+	    while(true) {
+	    	Thread.sleep(1000L);
+	    }
 	}
 	
 	public static void listQueues() {
@@ -98,6 +121,7 @@ public class QueueFactory
 		// Create a queue
 		CreateQueueRequest createQueueRequest = new CreateQueueRequest(queueName);
 		String queueUrl = sqs.createQueue(createQueueRequest).getQueueUrl();
+		
 		// TODO - error check that queue was actually created
 		Topics.subscribeQueue(sns, sqs, topicArn, queueUrl);
 		

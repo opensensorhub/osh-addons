@@ -25,13 +25,21 @@ public class ChunkQueueManager {
 		try {
 			queueMap = new HashMap<>();
 			NexradConfig config = sensor.getConfiguration();
-			Path rootPath = Paths.get(config.rootFolder); 
-			if(!Files.isDirectory(rootPath))
-				throw new SensorHubException("Configured rootFolder does not exist or is not a directory" + config.rootFolder);
 			
-//			for(String site: config.siteIds) {
+			// TODO test this logic
+			if(config.saveDataAsFiles ) {
+			Path rootPath = Paths.get(config.rootFolder); 
+			if(config.saveDataAsFiles && !Files.isDirectory(rootPath))
+				throw new SensorHubException("Configured rootFolder does not exist or is not a directory" + config.rootFolder);
+			}
+			
+			// TODO test this logic
 			for(NexradSite site: sensor.getEnabledSites()) {
-				ChunkPathQueue queue = new ChunkPathQueue(Paths.get(config.rootFolder), site.id);
+				ChunkPathQueue queue;
+				if(config.saveDataAsFiles)
+					queue = new ChunkPathQueue(Paths.get(config.rootFolder), site.id);
+				else 
+					queue = new ChunkPathQueue(site.id);
 				queueMap.put(site.id, queue);
 //				nexradSqsService.setChunkQueue(queue);   
 //				queue.setS3client(sensor.getS3client());  
