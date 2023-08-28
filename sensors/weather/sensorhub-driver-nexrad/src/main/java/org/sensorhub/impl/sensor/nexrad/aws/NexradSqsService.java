@@ -55,7 +55,7 @@ public class NexradSqsService {
 	long idleStartTime; // the last time data was requested from the any listener
 	long idleTimeMillis; // how long in milliseconds to allow queue to be idle (no requests) before
 							// disabling
-	boolean queueActive = false;
+	volatile boolean queueActive = false;
 
 	public NexradSqsService(String queueName, List<String> sites, boolean purgeExistingMessages) throws IOException {
 		this.sites = sites;

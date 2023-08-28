@@ -125,6 +125,8 @@ public class QueueFactory
 		// TODO - error check that queue was actually created
 		Topics.subscribeQueue(sns, sqs, topicArn, queueUrl);
 		
+		// check first if it is new queue b/c it is throwing exception for new queues and purgeExisting = true
+		// also if new queue cannot be created within  60s of prev queue with same name being deleted
 		if(purgeExisting) {
 //			List<String> atts = new ArrayList<>();
 //			atts.add("ApproximateNumberOfMessages");

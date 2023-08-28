@@ -139,6 +139,7 @@ public class Level2Reader {
 					readRadialDataBlock(bzis);
 
 					// only supporting REF, VEL, SW for now,
+//					System.err.println("BlockCount: " + ldmRadial.dataHeader.dataBlockCount);
 					for (int i = 0; i < ldmRadial.dataHeader.dataBlockCount; i++) {
 						MomentDataBlock momentBlock = readMomentDataBlock(bzis);
 						logger.trace("{} , {} , {} , {}", 
@@ -339,6 +340,8 @@ momentBlock.blockName, momentBlock.numGates,ldmRadial.dataHeader.elevationAngle,
 		ok = is.read(b2);
 		block.numGates = java.nio.ByteBuffer.wrap(b2).getShort();
 
+//		System.err.println(block.blockName + ": numGates = " + block.numGates);
+		
 		ok = is.read(b2);
 		block.rangeToCenterOfFirstGate = java.nio.ByteBuffer.wrap(b2).getShort();
 

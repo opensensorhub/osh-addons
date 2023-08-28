@@ -8,20 +8,20 @@ package org.sensorhub.impl.sensor.nexrad.aws;
  * @date Mar 16, 2016
  */
 public class VolumeDataBlock {
-	String dataName;  // RVOL always
-	short blockSize; // bytes
-	int majorVersionNum;
-	int minorVersionNum;
-	float latitude;
-	float longitude;
-	short siteHeightAboveSeaLevelMeters;
-	short feedhornHeightAboveGroundMeters;
-	float calibrationConstant;
-	float transmitterPowerHorizontalKw;
-	float transmitterPowerVerticalKw;
-	float zdrCalibaration;
-	float initialDifferentialPhase;
-	short volumeCoveragePattern;
-	short processingStatus;
-	short zdrBias;
+	public String dataName;  // RVOL always
+	public short blockSize; // bytes
+	public int majorVersionNum;
+	public int minorVersionNum;
+	public float latitude;
+	public float longitude;
+	public short siteHeightAboveSeaLevelMeters;
+	public short feedhornHeightAboveGroundMeters;
+	public float calibrationConstant;
+	public float transmitterPowerHorizontalKw;
+	public float transmitterPowerVerticalKw;
+	public float zdrCalibaration;
+	public float initialDifferentialPhase;
+	public short volumeCoveragePattern;
+	public short processingStatus;
+	public short zdrBias;
 }

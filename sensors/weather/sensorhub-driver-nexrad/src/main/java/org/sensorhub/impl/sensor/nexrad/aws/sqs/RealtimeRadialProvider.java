@@ -69,7 +69,7 @@ public class RealtimeRadialProvider implements RadialProvider {
 			Level2Reader reader = new Level2Reader();
 			List<Radial> radials = reader.read(s3is, object.getKey());
 			return radials;
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace(System.err);
 			logger.error(e.getMessage());
 			return null;

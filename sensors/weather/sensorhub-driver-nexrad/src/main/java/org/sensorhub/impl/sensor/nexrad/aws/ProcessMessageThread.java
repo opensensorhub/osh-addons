@@ -40,8 +40,10 @@ public class ProcessMessageThread implements Runnable {
 				for(Message msg: messages) {
 					String body = msg.getBody();
 					String chunkPath = AwsNexradUtil.getChunkPath(body);
-					if(chunkPath.length() < 4)
-						System.err.println(chunkPath);
+					if(chunkPath.length() < 4) {
+						System.err.println("ProcessMessageThread.run(). ChunkPath not understood: " + chunkPath);
+						continue;
+					}
 					//				String time = AwsNexradUtil.getEventTime(body);
 					String site = chunkPath.substring(0, 4);
 					if(sitesToKeep.contains(site)) {

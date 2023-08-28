@@ -16,7 +16,6 @@ package org.sensorhub.impl.sensor.nexrad;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.Instant;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -38,6 +37,7 @@ import org.vast.data.SWEFactory;
 import org.vast.data.TimeImpl;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
@@ -48,6 +48,7 @@ import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Time;
+import net.opengis.swe.v20.Vector;
 
 /**
  * 
@@ -91,9 +92,10 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 		//  Add Location only as ouptut- Alex is adding support for this
 		//		SweHelper.newLocationVectorLLa(...);
 		SWEFactory fac = new SWEFactory();
-
+		GeoPosHelper geoHelper = new GeoPosHelper();
+		
 		// SWE Common data structure
-		nexradStruct = new DataRecordImpl(8);  // was 6 before I added siteId and it still worked?
+		nexradStruct = new DataRecordImpl();  
 		nexradStruct.setName(getName());
 		nexradStruct.setDefinition("http://sensorml.com/ont/swe/propertyx/NexradRadial");
 
@@ -103,10 +105,14 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 		time.setDefinition(SWEConstants.DEF_SAMPLING_TIME);
 		nexradStruct.addComponent("time", time);
 
-		// 88D site identifier (1)
-		nexradStruct.addComponent("siteId", fac.newText());
-		nexradStruct.getFieldList().getProperty(1).setRole(SWEConstants.DEF_SYSTEM_ID); // use site ID as entity ID     
-
+		// 88D site identifier (1) (Not supported for Binary)
+//		nexradStruct.addComponent("siteId", fac.newText());
+//		nexradStruct.getFieldList().getProperty(1).setRole(SWEConstants.DEF_SYSTEM_ID); // use site ID as entity ID     
+		
+		// 1
+		Vector locationVector = geoHelper.createLocationVectorLLA().build();
+		nexradStruct.addField("location", locationVector);  // ???
+				
 		// 2
 		Quantity el = new QuantityImpl();
 		el.getUom().setCode("deg");
@@ -263,7 +269,7 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 						continue;
 					//					System.err.println("Read " + radials.size() + " radials");
 					sendRadials(radials);
-				} catch (IOException e) {
+				} catch (Exception e) {
 					e.printStackTrace();
 					continue;
 				}
@@ -271,34 +277,41 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 		}
 	}
 
-	private void sendRadials(List<Radial> radials) throws IOException
+	private void sendRadials(List<Radial> radials) throws Exception
 	{
 		int i=0;
+		Radial r = radials.get(0);
+//		System.err.println(r);
+		logger.debug(r.toString());
+		
+		int startArrayIdx = 13;
 		for(Radial radial: radials) {
 			// build and publish datablock
-			DataArray refArr = (DataArray)nexradStruct.getComponent(13);
-			DataArray velArr = (DataArray)nexradStruct.getComponent(14);
-			DataArray swArr = (DataArray)nexradStruct.getComponent(15);
-			//
-			//			
+			// Check which products are present in this radial first			
 			MomentDataBlock refMomentData = radial.momentData.get("REF");
 			MomentDataBlock velMomentData = radial.momentData.get("VEL");
 			MomentDataBlock swMomentData = radial.momentData.get("SW ");
+
+			//
+			DataArray refArr = (DataArray)nexradStruct.getComponent(startArrayIdx);
+			DataArray velArr = (DataArray)nexradStruct.getComponent(startArrayIdx);
+			DataArray swArr = (DataArray)nexradStruct.getComponent(startArrayIdx);
+			//
 			//
 			if(refMomentData == null) {
-				refArr.updateSize(1);
+				refArr.updateSize(0);
 			} else {
 				refArr.updateSize(refMomentData.numGates);
 			}
 
 			if(velMomentData == null) {
-				velArr.updateSize(1);
+				velArr.updateSize(0);
 			} else {
 				velArr.updateSize(velMomentData.numGates);
 			}
 
 			if(swMomentData == null) {
-				swArr.updateSize(1);
+				swArr.updateSize(0);
 			} else {
 				swArr.updateSize(swMomentData.numGates);
 			}
@@ -307,61 +320,77 @@ public class NexradOutput extends AbstractSensorOutput<NexradSensor>
 			long days = radial.dataHeader.daysSince1970;
 			long ms = radial.dataHeader.msSinceMidnight;
 			double utcTime = (double)(AwsNexradUtil.toJulianTime(days, ms)/1000.);
-			long utcTimeMs = AwsNexradUtil.toJulianTime(days, ms);
-			Instant inst = Instant.ofEpochMilli(utcTimeMs);
+//			Long utcTimeMs = AwsNexradUtil.toJulianTime(days, ms);
+//			byte[] b = Longs.toByteArray(utcTimeMs);
+//			for(int ii=0;ii<8;ii++) {
+//				int ib = b[ii] & 0xFF;
+//				System.err.println(ii + ":  "  + b[ii] + " " + Integer.toHexString(ib));
+//			}
+//			Long l = Longs.fromByteArray(b);
+//			System.err.println("Longs.fromByteArray: " + l);
+//			Instant inst = Instant.ofEpochMilli(utcTimeMs);
 //			System.err.println("Radial time: " + inst);
-			nexradBlock.setDoubleValue(0, utcTime);
-			nexradBlock.setStringValue(1, radial.dataHeader.siteId);
-			nexradBlock.setDoubleValue(2, radial.dataHeader.elevationAngle);
-			nexradBlock.setDoubleValue(3, radial.dataHeader.azimuthAngle);
+			int idx = 0;
+			nexradBlock.setDoubleValue(idx++, utcTime);
+//			nexradBlock.setStringValue(idx++, radial.dataHeader.siteId);
+			nexradBlock.setDoubleValue(idx++, radial.volumeDataBlock.latitude);
+			nexradBlock.setDoubleValue(idx++, radial.volumeDataBlock.longitude);
+			nexradBlock.setDoubleValue(idx++, radial.volumeDataBlock.feedhornHeightAboveGroundMeters);
+			nexradBlock.setDoubleValue(idx++, radial.dataHeader.elevationAngle);
+			nexradBlock.setDoubleValue(idx++, radial.dataHeader.azimuthAngle);
 			//
-			float [] f = new float[1];
+//			float [] f = new float[0];
 			if(refMomentData != null) {
 				//				System.err.println(refMomentData.numGates);
-				nexradBlock.setShortValue(4, refMomentData.rangeToCenterOfFirstGate);
-				nexradBlock.setShortValue(5, refMomentData.rangeSampleInterval);
-				nexradBlock.setIntValue(6, refMomentData.numGates);
+				nexradBlock.setShortValue(idx++, refMomentData.rangeToCenterOfFirstGate);
+				nexradBlock.setShortValue(idx++, refMomentData.rangeSampleInterval);
+				nexradBlock.setIntValue(idx++, refMomentData.numGates);
 			} else {
-				nexradBlock.setShortValue(4, (short)0);
-				nexradBlock.setShortValue(5, (short)0);
-				nexradBlock.setIntValue(6, 1);
+				nexradBlock.setShortValue(idx++, (short)0);
+				nexradBlock.setShortValue(idx++, (short)0);
+				nexradBlock.setIntValue(idx++, 0);
 			}
 			if(velMomentData != null) {
-				nexradBlock.setShortValue(7, velMomentData.rangeToCenterOfFirstGate);
-				nexradBlock.setShortValue(8, velMomentData.rangeSampleInterval);
-				nexradBlock.setIntValue(9, velMomentData.numGates);
+				nexradBlock.setShortValue(idx++, velMomentData.rangeToCenterOfFirstGate);
+				nexradBlock.setShortValue(idx++, velMomentData.rangeSampleInterval);
+				nexradBlock.setIntValue(idx++, velMomentData.numGates);
 			} else {
-				nexradBlock.setShortValue(7, (short)0);
-				nexradBlock.setShortValue(8, (short)0);
-				nexradBlock.setIntValue(9, 1);
+				nexradBlock.setShortValue(idx++, (short)0);
+				nexradBlock.setShortValue(idx++, (short)0);
+				nexradBlock.setIntValue(idx++, 0);
 			}
 			if(swMomentData != null) {
-				nexradBlock.setShortValue(10, swMomentData.rangeToCenterOfFirstGate);
-				nexradBlock.setShortValue(11, swMomentData.rangeSampleInterval);
-				nexradBlock.setIntValue(12, swMomentData.numGates);
+				nexradBlock.setShortValue(idx++, swMomentData.rangeToCenterOfFirstGate);
+				nexradBlock.setShortValue(idx++, swMomentData.rangeSampleInterval);
+				nexradBlock.setIntValue(idx++, swMomentData.numGates);
 			} else {
-				nexradBlock.setShortValue(10, (short)0);
-				nexradBlock.setShortValue(11, (short)0);
-				nexradBlock.setIntValue(12, 1);
+				nexradBlock.setShortValue(idx++, (short)0);
+				nexradBlock.setShortValue(idx++, (short)0);
+				nexradBlock.setIntValue(idx++, 0);
 			}
+			idx = 13;
 
 			if(refMomentData != null) {
-				//				float [] d = refMomentData.getData();
-				//				for(float ff: d)  System.err.println(ff);
-				((DataBlockMixed)nexradBlock).getUnderlyingObject()[13].setUnderlyingObject(refMomentData.getData());
+//				nexradBlock.setIntValue(idx++, refMomentData.numGates);
+				((DataBlockMixed)nexradBlock).getUnderlyingObject()[idx++].setUnderlyingObject(refMomentData.getData());
 			} else {
-				((DataBlockMixed)nexradBlock).getUnderlyingObject()[13].setUnderlyingObject(f);
+				idx++;
+				//((DataBlockMixed)nexradBlock).getUnderlyingObject()[idx++].setUnderlyingObject(f);
 			}
 			if(velMomentData != null) {
-				((DataBlockMixed)nexradBlock).getUnderlyingObject()[14].setUnderlyingObject(velMomentData.getData());
+//				nexradBlock.setIntValue(idx++, velMomentData.numGates);
+				((DataBlockMixed)nexradBlock).getUnderlyingObject()[idx++].setUnderlyingObject(velMomentData.getData());
 			} else {
-				((DataBlockMixed)nexradBlock).getUnderlyingObject()[14].setUnderlyingObject(f);
-			}
+				idx++;
+				//((DataBlockMixed)nexradBlock).getUnderlyingObject()[idx++].setUnderlyingObject(f);
+			} 	
 
 			if(swMomentData != null) {
-				((DataBlockMixed)nexradBlock).getUnderlyingObject()[15].setUnderlyingObject(swMomentData.getData());
+//				nexradBlock.setIntValue(idx++, swMomentData.numGates);
+				((DataBlockMixed)nexradBlock).getUnderlyingObject()[idx++].setUnderlyingObject(swMomentData.getData());
 			} else {
-				((DataBlockMixed)nexradBlock).getUnderlyingObject()[15].setUnderlyingObject(f);
+				idx++;
+				//((DataBlockMixed)nexradBlock).getUnderlyingObject()[idx++].setUnderlyingObject(f);
 			}
 
 			String siteUID = NexradSensor.SITE_UID_PREFIX + radial.dataHeader.siteId;
