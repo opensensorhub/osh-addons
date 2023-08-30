@@ -37,7 +37,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public abstract class RosServiceClient<RequestType, ResponseType> extends AbstractNodeMain {
 
-    private final Logger logger = LoggerFactory.getLogger(RosServiceClient.class);
+    /**
+     * Logger
+     */
+    protected final Logger logger = LoggerFactory.getLogger(RosServiceClient.class);
 
     /**
      * Name of the node
