@@ -17,16 +17,27 @@ import org.ros.namespace.GraphName;
 import org.ros.node.AbstractNodeMain;
 import org.ros.node.ConnectedNode;
 import org.ros.node.service.ServiceServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * An abstract class for the creation of a ROS Server nodes to particate in a ROS ecosystem.
+ * An abstract class for the creation of a ROS Server nodes to participate in a ROS ecosystem.
+ * The server service implements a service that clients invoke through a message of
+ * <code>RequestType</code> and corresponding message of <code>ResponseType</code>.
+ * Derived classes must implement the service transaction through
+ * {@link RosServiceServer#onProcessRequest(Object, Object)}.
  *
  * @param <RequestType>  The type of request being supported
  * @param <ResponseType> The type of the responses to be sent
  * @author Nicolas Garay
  * @since Mar 20, 2023
  */
-public abstract class RosServerNode<RequestType, ResponseType> extends AbstractNodeMain {
+public abstract class RosServiceServer<RequestType, ResponseType> extends AbstractNodeMain {
+
+    /**
+     * Logger
+     */
+    protected final Logger logger = LoggerFactory.getLogger(RosServiceServer.class);
 
     /**
      * Name of the node
@@ -50,7 +61,7 @@ public abstract class RosServerNode<RequestType, ResponseType> extends AbstractN
      * @param serviceName Name of the service
      * @param serviceType Type of the service being created
      */
-    public RosServerNode(final String nodeName, final String serviceName, final String serviceType) {
+    public RosServiceServer(final String nodeName, final String serviceName, final String serviceType) {
 
         this.nodeName = nodeName;
         this.serviceName = serviceName;
@@ -66,7 +77,7 @@ public abstract class RosServerNode<RequestType, ResponseType> extends AbstractN
     @Override
     public void onStart(ConnectedNode connectedNode) {
 
-        final ServiceServer<RequestType, ResponseType> serviceServer = connectedNode.newServiceServer(this.serviceName, serviceType, this::onMessageCallback);
+        final ServiceServer<RequestType, ResponseType> serviceServer = connectedNode.newServiceServer(this.serviceName, serviceType, this::onProcessRequest);
     }
 
     /**
@@ -75,5 +86,5 @@ public abstract class RosServerNode<RequestType, ResponseType> extends AbstractN
      * @param request  The request received
      * @param response The response to send
      */
-    protected abstract void onMessageCallback(RequestType request, ResponseType response);
+    protected abstract void onProcessRequest(RequestType request, ResponseType response);
 }
