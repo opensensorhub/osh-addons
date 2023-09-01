@@ -72,7 +72,7 @@ public class QueueFactory
 
 	public static void main(String[] args) {
 		listQueues();
-//		deleteQueue("https://sqs.us-west-2.amazonaws.com/633354997535/NexradQueue_SensorHub");
+//		deleteQueue("https://sqs.us-west-2.amazonaws.com/633354997535/NexradQueue_SensorHub_Test");
 	}
 	
 	public static void main_(String[] args) throws Exception {
@@ -126,7 +126,6 @@ public class QueueFactory
 		Topics.subscribeQueue(sns, sqs, topicArn, queueUrl);
 		
 		// check first if it is new queue b/c it is throwing exception for new queues and purgeExisting = true
-		// also if new queue cannot be created within  60s of prev queue with same name being deleted
 		if(purgeExisting) {
 //			List<String> atts = new ArrayList<>();
 //			atts.add("ApproximateNumberOfMessages");
