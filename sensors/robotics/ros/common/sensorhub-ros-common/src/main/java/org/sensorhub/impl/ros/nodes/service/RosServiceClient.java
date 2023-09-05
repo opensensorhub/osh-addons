@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @author Nicolas Garay
  * @since Aug 29, 2023
  */
-public abstract class RosServiceClient<RequestType, ResponseType> extends AbstractNodeMain {
+public class RosServiceClient<RequestType, ResponseType> extends AbstractNodeMain {
 
     /**
      * Logger
@@ -70,7 +70,7 @@ public abstract class RosServiceClient<RequestType, ResponseType> extends Abstra
     /**
      * The listener to invoke with the <code>RES</code> type when the service call completes
      */
-    private final ServiceResponseListener<ResponseType> serviceResponseListener;
+    private ServiceResponseListener<ResponseType> serviceResponseListener;
 
     /**
      * Reports of the service client has connected.
@@ -80,17 +80,15 @@ public abstract class RosServiceClient<RequestType, ResponseType> extends Abstra
     /**
      * Constructor
      *
-     * @param nodeName                name of the node
-     * @param serviceName             name of the service
-     * @param serviceType             the type of the service being invoked
-     * @param serviceResponseListener the listener to callback reporting the service request completion status
+     * @param nodeName    name of the node
+     * @param serviceName name of the service
+     * @param serviceType the type of the service being invoked
      */
-    protected RosServiceClient(final String nodeName, final String serviceName, final String serviceType, final ServiceResponseListener<ResponseType> serviceResponseListener) {
+    public RosServiceClient(final String nodeName, final String serviceName, final String serviceType) {
 
         this.nodeName = nodeName;
         this.serviceName = serviceName;
         this.serviceType = serviceType;
-        this.serviceResponseListener = serviceResponseListener;
     }
 
     @Override
@@ -174,5 +172,15 @@ public abstract class RosServiceClient<RequestType, ResponseType> extends Abstra
     public boolean isConnected() {
 
         return isConnected;
+    }
+
+    /**
+     * Assigns the service response listener
+     *
+     * @param listener The listener invoked when a service response is received
+     */
+    public void setServiceResponseListener(ServiceResponseListener<ResponseType> listener) {
+
+        this.serviceResponseListener = listener;
     }
 }
