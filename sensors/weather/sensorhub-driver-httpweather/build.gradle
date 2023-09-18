@@ -7,6 +7,12 @@ dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
 }
 
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+test {
+  exclude '**/TestHttpWeatherDriver.class'
+}
+
 // add info to OSGi manifest
 osgi {
   manifest {
