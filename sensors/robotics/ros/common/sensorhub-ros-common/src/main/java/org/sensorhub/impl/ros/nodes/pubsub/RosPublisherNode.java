@@ -118,7 +118,6 @@ public class RosPublisherNode<T> extends AbstractNodeMain {
      * Publishes the message on the registered topic
      *
      * @param message the message to publish
-     * @return the id of the goal
      */
     public void publishMessage(T message) {
 
