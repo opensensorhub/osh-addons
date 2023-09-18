@@ -14,20 +14,23 @@ Copyright (C) 2020 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.mfapi;
 
+import java.io.IOException;
 import org.sensorhub.api.security.IAuthorizer;
 import org.sensorhub.api.security.IPermission;
 import org.sensorhub.impl.module.ModuleSecurity;
 import org.sensorhub.impl.security.ItemPermission;
 import org.sensorhub.impl.security.ModulePermissions;
+import org.sensorhub.impl.service.sweapi.RestApiSecurity;
 import org.sensorhub.impl.service.sweapi.RestApiServlet.ResourcePermissions;
 
 
-public class MFApiSecurity extends ModuleSecurity
+public class MFApiSecurity extends ModuleSecurity implements RestApiSecurity
 {
     private static final String NAME_FOI = "fois";
     private static final String LABEL_FOI = "Features of Interest";
     
-    public final IPermission api_read;
+    public final IPermission api_get;
+    public final IPermission api_list;
     public final IPermission api_create;
     public final IPermission api_update;
     public final IPermission api_delete;
@@ -43,8 +46,11 @@ public class MFApiSecurity extends ModuleSecurity
         super(service, "mfapi", enable);
         
         // register permission structure
-        api_read = new ItemPermission(rootPerm, "get");
-        foi_permissions.read = new ItemPermission(api_read, NAME_FOI, LABEL_FOI);
+        api_get = new ItemPermission(rootPerm, "get");
+        foi_permissions.get = new ItemPermission(api_get, NAME_FOI, LABEL_FOI);
+        
+        api_list = new ItemPermission(rootPerm, "list");
+        foi_permissions.list = new ItemPermission(api_list, NAME_FOI, LABEL_FOI);
         
         api_create = new ItemPermission(rootPerm, "create");
         foi_permissions.create = new ItemPermission(api_create, NAME_FOI, LABEL_FOI);
@@ -66,5 +72,19 @@ public class MFApiSecurity extends ModuleSecurity
         
         // register permission tree
         service.getParentHub().getSecurityManager().registerModulePermissions(rootPerm);
+    }
+    
+    
+    @Override
+    public void checkResourcePermission(IPermission perm, String id) throws IOException
+    {
+        checkPermission(perm);
+    }
+
+
+    @Override
+    public void checkParentPermission(IPermission perm, String parentId) throws IOException
+    {
+        checkPermission(perm);
     }
 }

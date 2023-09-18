@@ -30,6 +30,7 @@ import org.sensorhub.impl.service.mfapi.mf.MFHandler;
 import org.sensorhub.impl.service.mfapi.mf.TemporalGeomHandler;
 import org.sensorhub.impl.service.mfapi.mf.TemporalPropHandler;
 import org.sensorhub.impl.service.sweapi.ObsSystemDbWrapper;
+import org.sensorhub.impl.service.sweapi.RestApiService;
 import org.sensorhub.impl.service.sweapi.home.ConformanceHandler;
 import org.sensorhub.utils.NamedThreadFactory;
 import com.google.common.collect.ImmutableSet;
@@ -45,7 +46,7 @@ import com.google.common.collect.ImmutableSet;
  * @author Alex Robin
  * @since Oct 12, 2020
  */
-public class MFApiService extends AbstractHttpServiceModule<MFApiServiceConfig> implements IServiceModule<MFApiServiceConfig>, IEventListener
+public class MFApiService extends AbstractHttpServiceModule<MFApiServiceConfig> implements RestApiService, IServiceModule<MFApiServiceConfig>, IEventListener
 {
     protected MFApiServlet servlet;
     ScheduledExecutorService threadPool;
@@ -183,6 +184,12 @@ public class MFApiService extends AbstractHttpServiceModule<MFApiServiceConfig> 
     public MFApiServlet getServlet()
     {
         return servlet;
+    }
+    
+    
+    public String getPublicEndpointUrl()
+    {
+        return getHttpServer().getPublicEndpointUrl(config.endPoint);
     }
 
 
