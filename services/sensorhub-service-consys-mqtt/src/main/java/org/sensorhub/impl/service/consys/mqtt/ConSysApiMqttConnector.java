@@ -12,7 +12,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.sweapi.mqtt;
+package org.sensorhub.impl.service.consys.mqtt;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -31,27 +31,27 @@ import org.sensorhub.api.comm.mqtt.ImplSpecificException;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.comm.mqtt.MqttException;
 import org.sensorhub.api.comm.mqtt.MqttOutputStream;
-import org.sensorhub.impl.service.sweapi.InvalidRequestException;
-import org.sensorhub.impl.service.sweapi.InvalidRequestException.ErrorCode;
-import org.sensorhub.impl.service.sweapi.SWEApiServlet;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
-import org.sensorhub.impl.service.sweapi.resource.ResourceFormat;
-import org.sensorhub.impl.service.sweapi.stream.StreamHandler;
+import org.sensorhub.impl.service.consys.InvalidRequestException;
+import org.sensorhub.impl.service.consys.InvalidRequestException.ErrorCode;
+import org.sensorhub.impl.service.consys.ConSysApiServlet;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.consys.resource.ResourceFormat;
+import org.sensorhub.impl.service.consys.stream.StreamHandler;
 import org.vast.util.Asserts;
 
 
 /**
  * <p>
  * This class handles communication with the embedded MQTT server and transfers
- * messages to/from the SensorWeb servlet for processing. 
+ * messages to/from the Connected Systems API servlet for processing. 
  * </p>
  *
  * @author Alex Robin
- * @since Jul 29, 2021
+ * @since May 9, 2023
  */
-public class SWEApiMqttConnector implements IMqttHandler
+public class ConSysApiMqttConnector implements IMqttHandler
 {
-    SWEApiServlet servlet;
+    ConSysApiServlet servlet;
     String endpoint;
     Map<String, MqttSubscriber> subscribers = new ConcurrentHashMap<>();
     
@@ -111,7 +111,7 @@ public class SWEApiMqttConnector implements IMqttHandler
     }
     
     
-    public SWEApiMqttConnector(SWEApiServlet servlet, String endpoint)
+    public ConSysApiMqttConnector(ConSysApiServlet servlet, String endpoint)
     {
         this.servlet = servlet;
         this.endpoint = endpoint;

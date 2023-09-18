@@ -12,7 +12,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.sweapi.mqtt;
+package org.sensorhub.impl.service.consys.mqtt;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,12 +22,19 @@ import java.nio.ByteBuffer;
 public class ByteBufferInputStream extends InputStream
 {
     ByteBuffer buf;
-    int mark;
+    int mark = -1;
     
 
     public ByteBufferInputStream(ByteBuffer buf)
     {
         this.buf = buf;
+    }
+    
+    
+    public void setBuffer(ByteBuffer buf)
+    {
+        this.buf = buf;
+        this.mark = -1;
     }
 
 
@@ -63,6 +70,10 @@ public class ByteBufferInputStream extends InputStream
     @Override
     public synchronized void reset() throws IOException
     {
-        buf.position(mark);
+        if (mark > 0)
+        {
+            buf.position(mark);
+            mark = -1;
+        }
     }
 }
