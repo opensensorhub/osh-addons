@@ -1,11 +1,12 @@
 description = 'Flight Aware Adaptor'
 ext.details = 'Flight Aware flight plans and real-time position provider'
-version = '0.7.0'
+version = '0.8.0'
 
 dependencies {
   compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   compile 'org.apache.httpcomponents:httpclient:4.5.2'
   compile project(':sensorhub-driver-navdb')
+  compile 'com.j2html:j2html:1.5.0'
 }
 
 // add info to OSGi manifest

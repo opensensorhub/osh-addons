@@ -14,7 +14,13 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.Waypoint;
@@ -23,6 +29,10 @@ import org.sensorhub.impl.sensor.navDb.NavDatabase.RouteDecodeOutput;
 import org.sensorhub.impl.sensor.navDb.NavDbPointEntry;
 import org.slf4j.Logger;
 import com.google.common.base.Strings;
+import j2html.rendering.FlatHtml;
+import j2html.rendering.HtmlBuilder;
+import j2html.tags.DomContent;
+import static j2html.TagCreator.*;
 
 
 /**
@@ -66,13 +76,104 @@ public class FlightRouteDecoderNavDb implements IFlightRouteDecoder
                 else if (!Strings.nullToEmpty(fltPlan.alt).trim().isEmpty())
                     wp.altitude = Double.parseDouble(fltPlan.alt);
                 i++;
+                waypoints.add(wp);
             }
+            
+            // debug output as HTML
+            if (log.isDebugEnabled())
+                writeToDebugHtmlOutput(fltPlan, route, waypoints);
             
             return waypoints;
         }
         catch (Exception e)
         {
+            if (log.isDebugEnabled())
+                writeToDebugHtmlOutput(fltPlan, route, null);
             throw new SensorHubException("Error decoding Firehose route using ARINC database", e);
+        }
+    }
+    
+    
+    long lastWriteTime = 0;
+    LinkedList<DomContent> htmlFlights = new LinkedList<>();
+    synchronized void writeToDebugHtmlOutput(FlightObject fltPlan, String route, List<Waypoint> decodedRoute)
+    {
+        StringBuilder buf = new StringBuilder();
+        if (decodedRoute != null)
+        {
+            for (Waypoint wpt: decodedRoute)
+                buf.append(wpt.toString()).append(" ");
+            buf.setLength(buf.length()-1);
+        }
+        
+        htmlFlights.add(tr(
+            td(strong(fltPlan.ident + "_" + fltPlan.dest),
+               br(),
+               text("Open in "),
+               a("UAT")
+                 .withHref("https://uat.fltnavwx.com/dci/latest?id=" + fltPlan.ident + "&dest=" + fltPlan.dest)
+                 //.withHref("wwxapp://loadflight?id=" + fltPlan.ident + "&dest=" + fltPlan.dest)
+                 .withTarget("WidgetWx_UAT")/*,
+               text(" or "),
+               a("PROD")
+                 .withHref("https://fltnavwx.com/dci/latest?id=" + fltPlan.ident + "&dest=" + fltPlan.dest)
+                 //.withHref("wwxapp://loadflight?id=" + fltPlan.ident + "&dest=" + fltPlan.dest)
+                 .withTarget("WidgetWx_PROD")*/
+            ),
+            td(Instant.ofEpochSecond(Long.parseLong(fltPlan.fdt)).toString()),
+            td(route),
+            td(decodedRoute != null ?
+                    text(buf.toString()) :
+                    span("ERROR").withStyle("color:red;"))
+        ));
+        
+        if (htmlFlights.size() > 200)
+            htmlFlights.removeFirst();
+        
+        // write out to file every so often
+        long now = System.currentTimeMillis();
+        //if (now - lastWriteTime > 10000)
+        {
+            lastWriteTime = now;
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("decode_output.html")))
+            {
+                HtmlBuilder<Writer> html = FlatHtml.into(writer);//IndentedHtml.into(writer);
+                
+                html.appendStartTag(html().getTagName()).completeTag();
+                head(
+                    style().withText(
+                        "table, th, td {\n" + 
+                        "  border: 1px solid black;\n" + 
+                        "  border-collapse: collapse;\n" +
+                        "  font-family: monospace;\n" +
+                        "}\n" + 
+                        "table tr:first-child {\n" + 
+                        "  font-weight: bold;\n" + 
+                        "  background-color: lightgray;\n" + 
+                        "}"
+                    )
+                ).render(html);
+                html.appendStartTag(body().getTagName()).completeTag();
+                html.appendStartTag(table().getTagName()).appendAttribute("style", "table-layout: fixed; width: 100%").completeTag();
+                
+                tr(
+                    td("Flight Number").withStyle("width: 180px;"),
+                    td("Filed Departure Time").withStyle("width: 180px;"),
+                    td("Route String"),
+                    td("Decoded Route")
+                ).render(html);
+                
+                for (DomContent row: htmlFlights)
+                    row.render(html);
+                
+                html.appendEndTag(table().getTagName());
+                html.appendEndTag(body().getTagName());
+                html.appendEndTag(html().getTagName());
+            }
+            catch (IOException e)
+            {
+                
+            }
         }
     }
 
