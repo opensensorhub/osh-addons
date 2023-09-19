@@ -37,39 +37,39 @@ public class ProcessPlanTask implements Runnable
 {
     Logger log;    
     FlightObject fltPlan;
-	MessageHandler msgHandler;
-	Cache<String, FlightInfo> flightCache;
-	IFlightRouteDecoder flightRouteDecoder;
-	
-	public ProcessPlanTask(MessageHandler msgHandler, FlightObject fltObj) {
-	    this.log = msgHandler.log;
-		this.msgHandler = msgHandler;
-		this.flightCache = Asserts.checkNotNull(msgHandler.driver.flightCache, Cache.class);
-		this.flightRouteDecoder = Asserts.checkNotNull(msgHandler.driver.flightRouteDecoder, IFlightRouteDecoder.class);
-		this.fltPlan = fltObj;		
-	}
-	
-	@Override
-	public void run() {
-		try {		    
-		    // skip if airport codes or route are missing
-		    if (Strings.nullToEmpty(fltPlan.orig).trim().isEmpty() ||
-		        Strings.nullToEmpty(fltPlan.dest).trim().isEmpty() ||
-		        Strings.nullToEmpty(fltPlan.route).trim().isEmpty())
-		        return;
-		    
-		    // save at least the dest airport in cache
-		    FlightInfo cachedInfo = flightCache.get(fltPlan.id, () -> {
-		        FlightInfo info = new FlightInfo();
-		        info.dest = fltPlan.dest;
+    MessageHandler msgHandler;
+    Cache<String, FlightInfo> flightCache;
+    IFlightRouteDecoder flightRouteDecoder;
+    
+    public ProcessPlanTask(MessageHandler msgHandler, FlightObject fltObj) {
+        this.log = msgHandler.log;
+        this.msgHandler = msgHandler;
+        this.flightCache = Asserts.checkNotNull(msgHandler.driver.flightCache, Cache.class);
+        this.flightRouteDecoder = msgHandler.driver.flightRouteDecoder;
+        this.fltPlan = fltObj;        
+    }
+    
+    @Override
+    public void run() {
+        try {            
+            // skip if airport codes or route are missing
+            if (Strings.nullToEmpty(fltPlan.orig).trim().isEmpty() ||
+                Strings.nullToEmpty(fltPlan.dest).trim().isEmpty() ||
+                Strings.nullToEmpty(fltPlan.route).trim().isEmpty())
+                return;
+            
+            // save at least the dest airport in cache
+            FlightInfo cachedInfo = flightCache.get(fltPlan.id, () -> {
+                FlightInfo info = new FlightInfo();
+                info.dest = fltPlan.dest;
                 return info;
-		    });
-		    
-		    // keep only flight plans with status flag set to "F: filed" or "A: active"
-		    if (!("F".equalsIgnoreCase(fltPlan.status) || "A".equalsIgnoreCase(fltPlan.status)))
-		        return;
-		    
-		    // need to synchronize on cache entry so we can properly detect duplicates
+            });
+            
+            // keep only flight plans with status flag set to "F: filed" or "A: active"
+            if (!("F".equalsIgnoreCase(fltPlan.status)))// || "A".equalsIgnoreCase(fltPlan.status)))
+                return;
+            
+            // need to synchronize on cache entry so we can properly detect duplicates
             synchronized (cachedInfo)
             {
                 // if route hasn't changed, don't process further
@@ -81,7 +81,7 @@ public class ProcessPlanTask implements Runnable
                     
                     // decode route or just use already decoded one
                     // i.e. it may have been decoded by another server and sent to us via mq
-                    if (fltPlan.decodedRoute == null)
+                    if (flightRouteDecoder != null && fltPlan.decodedRoute == null)
                     {
                         fltPlan.decodedRoute = flightRouteDecoder.decode(fltPlan, newRoute);
                         if (log.isDebugEnabled())
@@ -98,10 +98,10 @@ public class ProcessPlanTask implements Runnable
                 }
             }
             
-		} catch (Exception e) {
-			log.error("Error while processing flight plan", e);
-		} 	
-	}
+        } catch (Exception e) {
+            log.error("Error while processing flight plan", e);
+        }     
+    }
     
     
     String normalizeRouteString(FlightObject fltObj)
