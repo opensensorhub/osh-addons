@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 import org.vast.ogc.gml.IFeature;
 import org.vast.ogc.om.SamplingPoint;
 import org.vast.swe.SWEConstants;
-import org.vast.swe.SWEHelper;
 import org.vast.util.Asserts;
 import net.opengis.gml.v32.Point;
 import net.opengis.gml.v32.impl.GMLFactory;
@@ -128,7 +127,7 @@ public class ObsSiteLoader
                             double lat = Double.parseDouble(fields[6]);
                             double lon = Double.parseDouble(fields[7]);
                             int stateCd = Integer.parseInt(fields[13]);
-                            int countyCd = Integer.parseInt(fields[14]);
+                            //int countyCd = Integer.parseInt(fields[14]);
                             double alt = fields[19].isEmpty() ? Double.NaN : Double.parseDouble(fields[19]);
                             /*int natAqfrCd = Integer.parseInt(fields[35]);
                             int aqfrCd = Integer.parseInt(fields[36]);
@@ -158,7 +157,7 @@ public class ObsSiteLoader
                             
                             // sampled features (state and county)
                             String stateStr = stateCd<10 ? "0" + stateCd : stateCd + "";
-                            site.setSampledFeatureUID(AREA_UID_PREFIX + StateCode.get(stateStr));
+                            site.setSampledFeature(null, AREA_UID_PREFIX + StateCode.get(stateStr));
                             
                             this.next = site;
                             break;

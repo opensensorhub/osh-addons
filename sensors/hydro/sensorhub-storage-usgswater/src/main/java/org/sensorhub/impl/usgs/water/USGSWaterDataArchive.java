@@ -18,6 +18,8 @@ import java.util.concurrent.Callable;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.database.IObsSystemDatabaseModule;
 import org.sensorhub.api.datastore.command.ICommandStore;
+import org.sensorhub.api.datastore.deployment.EmptyDeploymentStore;
+import org.sensorhub.api.datastore.deployment.IDeploymentStore;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
@@ -241,6 +243,13 @@ public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig> im
     public ISystemDescStore getSystemDescStore()
     {
         return procStore;
+    }
+
+
+    @Override
+    public IDeploymentStore getDeploymentStore()
+    {
+        return new EmptyDeploymentStore();
     }
 
 

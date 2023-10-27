@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.DataStoreException;
+import org.sensorhub.api.datastore.deployment.IDeploymentStore;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
 import org.sensorhub.api.datastore.procedure.IProcedureStore;
@@ -143,6 +144,14 @@ public class USGSSystemDescStore extends ReadOnlyDataStore<FeatureKey, ISystemWi
 
     @Override
     public void linkTo(IProcedureStore procedureStore)
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+
+    @Override
+    public void linkTo(IDeploymentStore deploymentStore)
     {
         // TODO Auto-generated method stub
         
