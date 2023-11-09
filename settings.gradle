@@ -11,13 +11,19 @@ if (gradle.parent == null)
   includeBuild gradle.oshCoreDir
 
 // include all folders with build.gradle as subprojects
+def excludedProjects = [
+  'sensorhub-storage-ndbc'
+]
 FileTree subprojects = fileTree(rootDir).exclude('dist').include('**/build.gradle')
 subprojects.files.each { File f ->
   File projectFolder = f.parentFile
-  if (projectFolder != rootDir) {
+  if (projectFolder != rootDir && !f.absolutePath.contains("ros")) {
     String projectName = ':' + projectFolder.name
     //String projectName = ':' + rootDir.toPath().relativize(projectFolder.toPath()).toString().replace('/', ':')
-    include projectName
-    project(projectName).projectDir = projectFolder
+    //println projectName
+    if (!excludedProjects.contains(projectName.substring(1))) {
+      include projectName
+      project(projectName).projectDir = projectFolder
+    }
   }
 }
