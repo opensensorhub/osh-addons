@@ -38,10 +38,6 @@ public class OAuthClientConfig extends SecurityModuleConfig
     public String userInfoEndpoint;
     
     
-    @DisplayInfo(label="Redirect URL", desc="URL where OAuth provider will redirect the user after proper authentication")
-    public String redirectURL;
-    
-    
     @DisplayInfo(desc="Client ID as provided by your OAuth provider")
     public String clientID;
     
