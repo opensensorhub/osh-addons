@@ -300,9 +300,13 @@ public class OAuthAuthenticator extends LoginAuthenticator
                         UserAuthentication userAuth = new UserAuthentication(getAuthMethod(), user);
                         session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, userAuth);
                         if (postLoginRedirectUrl != null)
+                        {
                             response.sendRedirect(response.encodeRedirectURL(postLoginRedirectUrl));
-                        //return userAuth;
-                        return Authentication.SEND_CONTINUE;
+                            return Authentication.SEND_CONTINUE;
+                        }
+                        else
+                            //return Authentication.SEND_SUCCESS;
+                            return userAuth;
                     }
                     else
                     {
