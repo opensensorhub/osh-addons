@@ -155,7 +155,8 @@ public class OAuthAuthenticator extends LoginAuthenticator
             
             String accessToken = null;
             String postLoginRedirectUrl = null;
-            String oauthCallbackUrl = request.getRequestURL().toString().replace(request.getServletPath(), OAUTH_CODE_CALLBACK_PATH);
+            String requestUrl = request.getRequestURL().toString();
+            String oauthCallbackUrl = requestUrl.substring(0, requestUrl.indexOf(request.getServletPath())) + OAUTH_CODE_CALLBACK_PATH;
             String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
             
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
@@ -177,7 +178,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     {
                         code = oar.getCode();
                         postLoginRedirectUrl = state.redirectUrl;
-                        log.debug("OAuth Code = " + code);
+                        log.debug("OAuth Code={}, Redirect={}", code, postLoginRedirectUrl);
                     }
                     else
                     {
