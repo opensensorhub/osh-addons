@@ -6,11 +6,12 @@
 
 // MESSAGE OBSTACLE_DISTANCE_3D PACKING
 package com.MAVLink.ardupilotmega;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Obstacle located as a 3D vector.

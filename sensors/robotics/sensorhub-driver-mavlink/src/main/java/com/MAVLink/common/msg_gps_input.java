@@ -6,11 +6,12 @@
 
 // MESSAGE GPS_INPUT PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * GPS sensor input message.  This is a raw sensor value sent by the GPS. This is NOT the global position estimate of the system.

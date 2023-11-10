@@ -6,11 +6,12 @@
 
 // MESSAGE PARAM_MAP_RC PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Bind a RC channel to a parameter. The parameter should change according to the RC channel value.

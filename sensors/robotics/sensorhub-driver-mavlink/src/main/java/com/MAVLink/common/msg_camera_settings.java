@@ -6,11 +6,12 @@
 
 // MESSAGE CAMERA_SETTINGS PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Settings of a camera. Can be requested with a MAV_CMD_REQUEST_MESSAGE command.
@@ -37,16 +38,16 @@ public class msg_camera_settings extends MAVLinkMessage {
     public short mode_id;
     
     /**
-     * Current zoom level (0.0 to 100.0, NaN if not known)
+     * Current zoom level as a percentage of the full range (0.0 to 100.0, NaN if not known)
      */
-    @Description("Current zoom level (0.0 to 100.0, NaN if not known)")
+    @Description("Current zoom level as a percentage of the full range (0.0 to 100.0, NaN if not known)")
     @Units("")
     public float zoomLevel;
     
     /**
-     * Current focus level (0.0 to 100.0, NaN if not known)
+     * Current focus level as a percentage of the full range (0.0 to 100.0, NaN if not known)
      */
-    @Description("Current focus level (0.0 to 100.0, NaN if not known)")
+    @Description("Current focus level as a percentage of the full range (0.0 to 100.0, NaN if not known)")
     @Units("")
     public float focusLevel;
     

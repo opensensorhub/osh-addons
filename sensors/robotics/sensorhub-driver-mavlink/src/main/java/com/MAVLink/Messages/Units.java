@@ -1,10 +1,6 @@
 package com.MAVLink.Messages;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 import java.lang.reflect.Field;
 
 @Documented
@@ -19,7 +15,7 @@ import java.lang.reflect.Field;
  * @see <a href="https://github.com/ArduPilot/pymavlink/blob/master/generator/mavschema.xsd#L81">MAVLink Schema</a>
  *
  * A snapshot of the allowable units is available in the UnitsEnum class to prevent typos
- * @see {@link com.MAVLink.Messages.UnitsEnum}
+ * @see {@link UnitsEnum}
  * 
  */
 public @interface Units {

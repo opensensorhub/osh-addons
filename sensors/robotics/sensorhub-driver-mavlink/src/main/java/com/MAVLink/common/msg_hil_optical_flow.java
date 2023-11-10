@@ -6,11 +6,12 @@
 
 // MESSAGE HIL_OPTICAL_FLOW PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Simulated optical flow from a flow sensor (e.g. PX4FLOW or optical mouse sensor)

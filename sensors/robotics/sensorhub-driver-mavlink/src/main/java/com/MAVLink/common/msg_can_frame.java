@@ -6,11 +6,12 @@
 
 // MESSAGE CAN_FRAME PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * A forwarded CAN frame as requested by MAV_CMD_CAN_FORWARD.
@@ -44,9 +45,9 @@ public class msg_can_frame extends MAVLinkMessage {
     public short target_component;
     
     /**
-     * bus number
+     * Bus number
      */
-    @Description("bus number")
+    @Description("Bus number")
     @Units("")
     public short bus;
     

@@ -6,11 +6,12 @@
 
 // MESSAGE CAMERA_CAPTURE_STATUS PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Information about the status of a capture. Can be requested with a MAV_CMD_REQUEST_MESSAGE command.
@@ -37,9 +38,9 @@ public class msg_camera_capture_status extends MAVLinkMessage {
     public float image_interval;
     
     /**
-     * Time since recording started
+     * Elapsed time since recording started (0: Not supported/available). A GCS should compute recording time and use non-zero values of this field to correct any discrepancy.
      */
-    @Description("Time since recording started")
+    @Description("Elapsed time since recording started (0: Not supported/available). A GCS should compute recording time and use non-zero values of this field to correct any discrepancy.")
     @Units("ms")
     public long recording_time_ms;
     

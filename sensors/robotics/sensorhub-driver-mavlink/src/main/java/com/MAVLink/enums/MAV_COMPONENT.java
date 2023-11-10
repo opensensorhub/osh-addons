@@ -117,6 +117,7 @@ public class MAV_COMPONENT {
    public static final int MAV_COMP_ID_QX1_GIMBAL = 159; /* Gimbal ID for QX1. | */
    public static final int MAV_COMP_ID_FLARM = 160; /* FLARM collision alert component. | */
    public static final int MAV_COMP_ID_PARACHUTE = 161; /* Parachute component. | */
+   public static final int MAV_COMP_ID_WINCH = 169; /* Winch component. | */
    public static final int MAV_COMP_ID_GIMBAL2 = 171; /* Gimbal #2. | */
    public static final int MAV_COMP_ID_GIMBAL3 = 172; /* Gimbal #3. | */
    public static final int MAV_COMP_ID_GIMBAL4 = 173; /* Gimbal #4 | */
@@ -145,7 +146,7 @@ public class MAV_COMPONENT {
    public static final int MAV_COMP_ID_UDP_BRIDGE = 240; /* Component to bridge MAVLink to UDP (i.e. from a UART). | */
    public static final int MAV_COMP_ID_UART_BRIDGE = 241; /* Component to bridge to UART (i.e. from UDP). | */
    public static final int MAV_COMP_ID_TUNNEL_NODE = 242; /* Component handling TUNNEL messages (e.g. vendor specific GUI of a component). | */
-   public static final int MAV_COMP_ID_SYSTEM_CONTROL = 250; /* Component for handling system messages (e.g. to ARM, takeoff, etc.). | */
+   public static final int MAV_COMP_ID_SYSTEM_CONTROL = 250; /* Deprecated, don't use. Component for handling system messages (e.g. to ARM, takeoff, etc.). | */
    public static final int MAV_COMPONENT_ENUM_END = 251; /*  | */
 }
             

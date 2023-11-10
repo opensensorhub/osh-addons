@@ -15,10 +15,11 @@ public class GIMBAL_DEVICE_ERROR_FLAGS {
    public static final int GIMBAL_DEVICE_ERROR_FLAGS_AT_YAW_LIMIT = 4; /* Gimbal device is limited by hardware yaw limit. | */
    public static final int GIMBAL_DEVICE_ERROR_FLAGS_ENCODER_ERROR = 8; /* There is an error with the gimbal encoders. | */
    public static final int GIMBAL_DEVICE_ERROR_FLAGS_POWER_ERROR = 16; /* There is an error with the gimbal power source. | */
-   public static final int GIMBAL_DEVICE_ERROR_FLAGS_MOTOR_ERROR = 32; /* There is an error with the gimbal motor's. | */
+   public static final int GIMBAL_DEVICE_ERROR_FLAGS_MOTOR_ERROR = 32; /* There is an error with the gimbal motors. | */
    public static final int GIMBAL_DEVICE_ERROR_FLAGS_SOFTWARE_ERROR = 64; /* There is an error with the gimbal's software. | */
    public static final int GIMBAL_DEVICE_ERROR_FLAGS_COMMS_ERROR = 128; /* There is an error with the gimbal's communication. | */
-   public static final int GIMBAL_DEVICE_ERROR_FLAGS_CALIBRATION_RUNNING = 256; /* Gimbal is currently calibrating. | */
-   public static final int GIMBAL_DEVICE_ERROR_FLAGS_ENUM_END = 257; /*  | */
+   public static final int GIMBAL_DEVICE_ERROR_FLAGS_CALIBRATION_RUNNING = 256; /* Gimbal device is currently calibrating. | */
+   public static final int GIMBAL_DEVICE_ERROR_FLAGS_NO_MANAGER = 512; /* Gimbal device is not assigned to a gimbal manager. | */
+   public static final int GIMBAL_DEVICE_ERROR_FLAGS_ENUM_END = 513; /*  | */
 }
             

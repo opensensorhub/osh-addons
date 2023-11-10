@@ -6,11 +6,12 @@
 
 // MESSAGE OPEN_DRONE_ID_SYSTEM PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Data for filling the OpenDroneID System message. The System Message contains general system information including the operator location/altitude and possible aircraft group and/or category/class information.
@@ -37,16 +38,16 @@ public class msg_open_drone_id_system extends MAVLinkMessage {
     public int operator_longitude;
     
     /**
-     * Area Operations Ceiling relative to WGS84. If unknown: -1000 m.
+     * Area Operations Ceiling relative to WGS84. If unknown: -1000 m. Used only for swarms/multiple UA.
      */
-    @Description("Area Operations Ceiling relative to WGS84. If unknown: -1000 m.")
+    @Description("Area Operations Ceiling relative to WGS84. If unknown: -1000 m. Used only for swarms/multiple UA.")
     @Units("m")
     public float area_ceiling;
     
     /**
-     * Area Operations Floor relative to WGS84. If unknown: -1000 m.
+     * Area Operations Floor relative to WGS84. If unknown: -1000 m. Used only for swarms/multiple UA.
      */
-    @Description("Area Operations Floor relative to WGS84. If unknown: -1000 m.")
+    @Description("Area Operations Floor relative to WGS84. If unknown: -1000 m. Used only for swarms/multiple UA.")
     @Units("m")
     public float area_floor;
     
@@ -65,16 +66,16 @@ public class msg_open_drone_id_system extends MAVLinkMessage {
     public long timestamp;
     
     /**
-     * Number of aircraft in the area, group or formation (default 1).
+     * Number of aircraft in the area, group or formation (default 1). Used only for swarms/multiple UA.
      */
-    @Description("Number of aircraft in the area, group or formation (default 1).")
+    @Description("Number of aircraft in the area, group or formation (default 1). Used only for swarms/multiple UA.")
     @Units("")
     public int area_count;
     
     /**
-     * Radius of the cylindrical area of the group or formation (default 0).
+     * Radius of the cylindrical area of the group or formation (default 0). Used only for swarms/multiple UA.
      */
-    @Description("Radius of the cylindrical area of the group or formation (default 0).")
+    @Description("Radius of the cylindrical area of the group or formation (default 0). Used only for swarms/multiple UA.")
     @Units("m")
     public int area_radius;
     

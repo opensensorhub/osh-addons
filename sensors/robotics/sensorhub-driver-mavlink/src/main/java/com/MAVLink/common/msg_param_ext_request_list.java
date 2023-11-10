@@ -6,11 +6,12 @@
 
 // MESSAGE PARAM_EXT_REQUEST_LIST PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Request all parameters of this component. All parameters should be emitted in response as PARAM_EXT_VALUE.

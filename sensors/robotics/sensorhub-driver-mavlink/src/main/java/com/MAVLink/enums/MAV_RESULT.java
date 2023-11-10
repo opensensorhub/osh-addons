@@ -15,7 +15,11 @@ public class MAV_RESULT {
    public static final int MAV_RESULT_DENIED = 2; /* Command is invalid (is supported but has invalid parameters). Retrying same command and parameters will not work. | */
    public static final int MAV_RESULT_UNSUPPORTED = 3; /* Command is not supported (unknown). | */
    public static final int MAV_RESULT_FAILED = 4; /* Command is valid, but execution has failed. This is used to indicate any non-temporary or unexpected problem, i.e. any problem that must be fixed before the command can succeed/be retried. For example, attempting to write a file when out of memory, attempting to arm when sensors are not calibrated, etc. | */
-   public static final int MAV_RESULT_IN_PROGRESS = 5; /* Command is valid and is being executed. This will be followed by further progress updates, i.e. the component may send further COMMAND_ACK messages with result MAV_RESULT_IN_PROGRESS (at a rate decided by the implementation), and must terminate by sending a COMMAND_ACK message with final result of the operation. The COMMAND_ACK.progress field can be used to indicate the progress of the operation. There is no need for the sender to retry the command, but if done during execution, the component will return MAV_RESULT_IN_PROGRESS with an updated progress. | */
-   public static final int MAV_RESULT_ENUM_END = 6; /*  | */
+   public static final int MAV_RESULT_IN_PROGRESS = 5; /* Command is valid and is being executed. This will be followed by further progress updates, i.e. the component may send further COMMAND_ACK messages with result MAV_RESULT_IN_PROGRESS (at a rate decided by the implementation), and must terminate by sending a COMMAND_ACK message with final result of the operation. The COMMAND_ACK.progress field can be used to indicate the progress of the operation. | */
+   public static final int MAV_RESULT_CANCELLED = 6; /* Command has been cancelled (as a result of receiving a COMMAND_CANCEL message). | */
+   public static final int MAV_RESULT_COMMAND_LONG_ONLY = 7; /* Command is valid, but it is only accepted when sent as a COMMAND_LONG (as it has float values for params 5 and 6). | */
+   public static final int MAV_RESULT_COMMAND_INT_ONLY = 8; /* Command is valid, but it is only accepted when sent as a COMMAND_INT (as it encodes a location in params 5, 6 and 7, and hence requires a reference MAV_FRAME). | */
+   public static final int MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME = 9; /* Command is invalid because a frame is required and the specified frame is not supported. | */
+   public static final int MAV_RESULT_ENUM_END = 10; /*  | */
 }
             

@@ -6,14 +6,21 @@
 
 // MESSAGE CAMERA_IMAGE_CAPTURED PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
- * Information about a captured image. This is emitted every time a message is captured. It may be re-requested using MAV_CMD_REQUEST_MESSAGE, using param2 to indicate the sequence number for the missing image.
+ * Information about a captured image. This is emitted every time a message is captured.
+        MAV_CMD_REQUEST_MESSAGE can be used to (re)request this message for a specific sequence number or range of sequence numbers:
+        MAV_CMD_REQUEST_MESSAGE.param2 indicates the sequence number the first image to send, or set to -1 to send the message for all sequence numbers.
+        MAV_CMD_REQUEST_MESSAGE.param3 is used to specify a range of messages to send:
+        set to 0 (default) to send just the the message for the sequence number in param 2,
+        set to -1 to send the message for the sequence number in param 2 and all the following sequence numbers,
+        set to the sequence number of the final message in the range.
  */
 public class msg_camera_image_captured extends MAVLinkMessage {
 

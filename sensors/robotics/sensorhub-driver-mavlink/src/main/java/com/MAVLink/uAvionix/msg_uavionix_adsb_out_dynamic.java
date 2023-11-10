@@ -6,11 +6,12 @@
 
 // MESSAGE UAVIONIX_ADSB_OUT_DYNAMIC PACKING
 package com.MAVLink.uAvionix;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Dynamic data used to generate ADS-B out transponder data (send at 5Hz)

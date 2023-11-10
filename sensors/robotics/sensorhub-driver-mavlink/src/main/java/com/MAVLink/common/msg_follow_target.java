@@ -6,11 +6,12 @@
 
 // MESSAGE FOLLOW_TARGET PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Current motion information from a designated system
@@ -72,9 +73,9 @@ public class msg_follow_target extends MAVLinkMessage {
     public float acc[] = new float[3];
     
     /**
-     * (1 0 0 0 for unknown)
+     * (0 0 0 0 for unknown)
      */
-    @Description("(1 0 0 0 for unknown)")
+    @Description("(0 0 0 0 for unknown)")
     @Units("")
     public float attitude_q[] = new float[4];
     

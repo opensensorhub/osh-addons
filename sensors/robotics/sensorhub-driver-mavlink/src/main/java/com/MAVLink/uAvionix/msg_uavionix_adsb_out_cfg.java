@@ -6,11 +6,12 @@
 
 // MESSAGE UAVIONIX_ADSB_OUT_CFG PACKING
 package com.MAVLink.uAvionix;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Static data to configure the ADS-B transponder (send within 10 sec of a POR and every 10 sec thereafter)
@@ -72,9 +73,9 @@ public class msg_uavionix_adsb_out_cfg extends MAVLinkMessage {
     public short gpsOffsetLon;
     
     /**
-     * ADS-B transponder reciever and transmit enable flags
+     * ADS-B transponder receiver and transmit enable flags
      */
-    @Description("ADS-B transponder reciever and transmit enable flags")
+    @Description("ADS-B transponder receiver and transmit enable flags")
     @Units("")
     public short rfSelect;
     

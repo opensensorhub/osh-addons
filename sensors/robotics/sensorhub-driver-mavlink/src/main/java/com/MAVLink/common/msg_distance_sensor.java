@@ -6,11 +6,12 @@
 
 // MESSAGE DISTANCE_SENSOR PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Distance sensor information for an onboard rangefinder.
@@ -72,9 +73,9 @@ public class msg_distance_sensor extends MAVLinkMessage {
     public short orientation;
     
     /**
-     * Measurement variance. Max standard deviation is 6cm. 255 if unknown.
+     * Measurement variance. Max standard deviation is 6cm. UINT8_MAX if unknown.
      */
-    @Description("Measurement variance. Max standard deviation is 6cm. 255 if unknown.")
+    @Description("Measurement variance. Max standard deviation is 6cm. UINT8_MAX if unknown.")
     @Units("cm^2")
     public short covariance;
     

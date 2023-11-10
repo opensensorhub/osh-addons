@@ -6,11 +6,12 @@
 
 // MESSAGE SYS_STATUS PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * The general system state. If the system is following the MAVLink standard, the system state is mainly defined by three orthogonal states/modes: The system mode, which is either LOCKED (motors shut down and locked), MANUAL (system under RC control), GUIDED (system with autonomous position control, position setpoint controlled manually) or AUTO (system guided by path/waypoint planner). The NAV_MODE defined the current flight state: LIFTOFF (often an open-loop maneuver), LANDING, WAYPOINTS or VECTOR. This represents the internal navigation state machine. The system status shows whether the system is currently active or not and if an emergency occurred. During the CRITICAL and EMERGENCY states the MAV is still considered to be active, but should start emergency procedures autonomously. After a failure occurred it should first move from active to critical to allow manual intervention and then move to emergency after a certain timeout.
@@ -18,7 +19,7 @@ import com.MAVLink.Messages.Description;
 public class msg_sys_status extends MAVLinkMessage {
 
     public static final int MAVLINK_MSG_ID_SYS_STATUS = 1;
-    public static final int MAVLINK_MSG_LENGTH = 31;
+    public static final int MAVLINK_MSG_LENGTH = 43;
     private static final long serialVersionUID = MAVLINK_MSG_ID_SYS_STATUS;
 
     
@@ -113,6 +114,27 @@ public class msg_sys_status extends MAVLinkMessage {
     @Units("%")
     public byte battery_remaining;
     
+    /**
+     * Bitmap showing which onboard controllers and sensors are present. Value of 0: not present. Value of 1: present.
+     */
+    @Description("Bitmap showing which onboard controllers and sensors are present. Value of 0: not present. Value of 1: present.")
+    @Units("")
+    public long onboard_control_sensors_present_extended;
+    
+    /**
+     * Bitmap showing which onboard controllers and sensors are enabled:  Value of 0: not enabled. Value of 1: enabled.
+     */
+    @Description("Bitmap showing which onboard controllers and sensors are enabled:  Value of 0: not enabled. Value of 1: enabled.")
+    @Units("")
+    public long onboard_control_sensors_enabled_extended;
+    
+    /**
+     * Bitmap showing which onboard controllers and sensors have an error (or are operational). Value of 0: error. Value of 1: healthy.
+     */
+    @Description("Bitmap showing which onboard controllers and sensors have an error (or are operational). Value of 0: error. Value of 1: healthy.")
+    @Units("")
+    public long onboard_control_sensors_health_extended;
+    
 
     /**
      * Generates the payload for a mavlink message for a message of this type
@@ -140,6 +162,9 @@ public class msg_sys_status extends MAVLinkMessage {
         packet.payload.putByte(battery_remaining);
         
         if (isMavlink2) {
+             packet.payload.putUnsignedInt(onboard_control_sensors_present_extended);
+             packet.payload.putUnsignedInt(onboard_control_sensors_enabled_extended);
+             packet.payload.putUnsignedInt(onboard_control_sensors_health_extended);
             
         }
         return packet;
@@ -169,6 +194,9 @@ public class msg_sys_status extends MAVLinkMessage {
         this.battery_remaining = payload.getByte();
         
         if (isMavlink2) {
+             this.onboard_control_sensors_present_extended = payload.getUnsignedInt();
+             this.onboard_control_sensors_enabled_extended = payload.getUnsignedInt();
+             this.onboard_control_sensors_health_extended = payload.getUnsignedInt();
             
         }
     }
@@ -183,7 +211,7 @@ public class msg_sys_status extends MAVLinkMessage {
     /**
      * Constructor for a new message, initializes msgid and all payload variables
      */
-    public msg_sys_status( long onboard_control_sensors_present, long onboard_control_sensors_enabled, long onboard_control_sensors_health, int load, int voltage_battery, short current_battery, int drop_rate_comm, int errors_comm, int errors_count1, int errors_count2, int errors_count3, int errors_count4, byte battery_remaining) {
+    public msg_sys_status( long onboard_control_sensors_present, long onboard_control_sensors_enabled, long onboard_control_sensors_health, int load, int voltage_battery, short current_battery, int drop_rate_comm, int errors_comm, int errors_count1, int errors_count2, int errors_count3, int errors_count4, byte battery_remaining, long onboard_control_sensors_present_extended, long onboard_control_sensors_enabled_extended, long onboard_control_sensors_health_extended) {
         this.msgid = MAVLINK_MSG_ID_SYS_STATUS;
 
         this.onboard_control_sensors_present = onboard_control_sensors_present;
@@ -199,13 +227,16 @@ public class msg_sys_status extends MAVLinkMessage {
         this.errors_count3 = errors_count3;
         this.errors_count4 = errors_count4;
         this.battery_remaining = battery_remaining;
+        this.onboard_control_sensors_present_extended = onboard_control_sensors_present_extended;
+        this.onboard_control_sensors_enabled_extended = onboard_control_sensors_enabled_extended;
+        this.onboard_control_sensors_health_extended = onboard_control_sensors_health_extended;
         
     }
 
     /**
      * Constructor for a new message, initializes everything
      */
-    public msg_sys_status( long onboard_control_sensors_present, long onboard_control_sensors_enabled, long onboard_control_sensors_health, int load, int voltage_battery, short current_battery, int drop_rate_comm, int errors_comm, int errors_count1, int errors_count2, int errors_count3, int errors_count4, byte battery_remaining, int sysid, int compid, boolean isMavlink2) {
+    public msg_sys_status( long onboard_control_sensors_present, long onboard_control_sensors_enabled, long onboard_control_sensors_health, int load, int voltage_battery, short current_battery, int drop_rate_comm, int errors_comm, int errors_count1, int errors_count2, int errors_count3, int errors_count4, byte battery_remaining, long onboard_control_sensors_present_extended, long onboard_control_sensors_enabled_extended, long onboard_control_sensors_health_extended, int sysid, int compid, boolean isMavlink2) {
         this.msgid = MAVLINK_MSG_ID_SYS_STATUS;
         this.sysid = sysid;
         this.compid = compid;
@@ -224,6 +255,9 @@ public class msg_sys_status extends MAVLinkMessage {
         this.errors_count3 = errors_count3;
         this.errors_count4 = errors_count4;
         this.battery_remaining = battery_remaining;
+        this.onboard_control_sensors_present_extended = onboard_control_sensors_present_extended;
+        this.onboard_control_sensors_enabled_extended = onboard_control_sensors_enabled_extended;
+        this.onboard_control_sensors_health_extended = onboard_control_sensors_health_extended;
         
     }
 
@@ -241,13 +275,13 @@ public class msg_sys_status extends MAVLinkMessage {
         unpack(mavLinkPacket.payload);
     }
 
-                              
+                                    
     /**
      * Returns a string with the MSG name and data
      */
     @Override
     public String toString() {
-        return "MAVLINK_MSG_ID_SYS_STATUS - sysid:"+sysid+" compid:"+compid+" onboard_control_sensors_present:"+onboard_control_sensors_present+" onboard_control_sensors_enabled:"+onboard_control_sensors_enabled+" onboard_control_sensors_health:"+onboard_control_sensors_health+" load:"+load+" voltage_battery:"+voltage_battery+" current_battery:"+current_battery+" drop_rate_comm:"+drop_rate_comm+" errors_comm:"+errors_comm+" errors_count1:"+errors_count1+" errors_count2:"+errors_count2+" errors_count3:"+errors_count3+" errors_count4:"+errors_count4+" battery_remaining:"+battery_remaining+"";
+        return "MAVLINK_MSG_ID_SYS_STATUS - sysid:"+sysid+" compid:"+compid+" onboard_control_sensors_present:"+onboard_control_sensors_present+" onboard_control_sensors_enabled:"+onboard_control_sensors_enabled+" onboard_control_sensors_health:"+onboard_control_sensors_health+" load:"+load+" voltage_battery:"+voltage_battery+" current_battery:"+current_battery+" drop_rate_comm:"+drop_rate_comm+" errors_comm:"+errors_comm+" errors_count1:"+errors_count1+" errors_count2:"+errors_count2+" errors_count3:"+errors_count3+" errors_count4:"+errors_count4+" battery_remaining:"+battery_remaining+" onboard_control_sensors_present_extended:"+onboard_control_sensors_present_extended+" onboard_control_sensors_enabled_extended:"+onboard_control_sensors_enabled_extended+" onboard_control_sensors_health_extended:"+onboard_control_sensors_health_extended+"";
     }
 
     /**

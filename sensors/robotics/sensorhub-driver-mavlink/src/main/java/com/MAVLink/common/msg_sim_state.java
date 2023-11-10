@@ -6,11 +6,12 @@
 
 // MESSAGE SIM_STATE PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * Status of simulation environment, if used
@@ -18,7 +19,7 @@ import com.MAVLink.Messages.Description;
 public class msg_sim_state extends MAVLinkMessage {
 
     public static final int MAVLINK_MSG_ID_SIM_STATE = 108;
-    public static final int MAVLINK_MSG_LENGTH = 84;
+    public static final int MAVLINK_MSG_LENGTH = 92;
     private static final long serialVersionUID = MAVLINK_MSG_ID_SIM_STATE;
 
     
@@ -114,16 +115,16 @@ public class msg_sim_state extends MAVLinkMessage {
     public float zgyro;
     
     /**
-     * Latitude
+     * Latitude (lower precision). Both this and the lat_int field should be set.
      */
-    @Description("Latitude")
+    @Description("Latitude (lower precision). Both this and the lat_int field should be set.")
     @Units("deg")
     public float lat;
     
     /**
-     * Longitude
+     * Longitude (lower precision). Both this and the lon_int field should be set.
      */
-    @Description("Longitude")
+    @Description("Longitude (lower precision). Both this and the lon_int field should be set.")
     @Units("deg")
     public float lon;
     
@@ -169,6 +170,20 @@ public class msg_sim_state extends MAVLinkMessage {
     @Units("m/s")
     public float vd;
     
+    /**
+     * Latitude (higher precision). If 0, recipients should use the lat field value (otherwise this field is preferred).
+     */
+    @Description("Latitude (higher precision). If 0, recipients should use the lat field value (otherwise this field is preferred).")
+    @Units("degE7")
+    public int lat_int;
+    
+    /**
+     * Longitude (higher precision). If 0, recipients should use the lon field value (otherwise this field is preferred).
+     */
+    @Description("Longitude (higher precision). If 0, recipients should use the lon field value (otherwise this field is preferred).")
+    @Units("degE7")
+    public int lon_int;
+    
 
     /**
      * Generates the payload for a mavlink message for a message of this type
@@ -204,6 +219,8 @@ public class msg_sim_state extends MAVLinkMessage {
         packet.payload.putFloat(vd);
         
         if (isMavlink2) {
+             packet.payload.putInt(lat_int);
+             packet.payload.putInt(lon_int);
             
         }
         return packet;
@@ -241,6 +258,8 @@ public class msg_sim_state extends MAVLinkMessage {
         this.vd = payload.getFloat();
         
         if (isMavlink2) {
+             this.lat_int = payload.getInt();
+             this.lon_int = payload.getInt();
             
         }
     }
@@ -255,7 +274,7 @@ public class msg_sim_state extends MAVLinkMessage {
     /**
      * Constructor for a new message, initializes msgid and all payload variables
      */
-    public msg_sim_state( float q1, float q2, float q3, float q4, float roll, float pitch, float yaw, float xacc, float yacc, float zacc, float xgyro, float ygyro, float zgyro, float lat, float lon, float alt, float std_dev_horz, float std_dev_vert, float vn, float ve, float vd) {
+    public msg_sim_state( float q1, float q2, float q3, float q4, float roll, float pitch, float yaw, float xacc, float yacc, float zacc, float xgyro, float ygyro, float zgyro, float lat, float lon, float alt, float std_dev_horz, float std_dev_vert, float vn, float ve, float vd, int lat_int, int lon_int) {
         this.msgid = MAVLINK_MSG_ID_SIM_STATE;
 
         this.q1 = q1;
@@ -279,13 +298,15 @@ public class msg_sim_state extends MAVLinkMessage {
         this.vn = vn;
         this.ve = ve;
         this.vd = vd;
+        this.lat_int = lat_int;
+        this.lon_int = lon_int;
         
     }
 
     /**
      * Constructor for a new message, initializes everything
      */
-    public msg_sim_state( float q1, float q2, float q3, float q4, float roll, float pitch, float yaw, float xacc, float yacc, float zacc, float xgyro, float ygyro, float zgyro, float lat, float lon, float alt, float std_dev_horz, float std_dev_vert, float vn, float ve, float vd, int sysid, int compid, boolean isMavlink2) {
+    public msg_sim_state( float q1, float q2, float q3, float q4, float roll, float pitch, float yaw, float xacc, float yacc, float zacc, float xgyro, float ygyro, float zgyro, float lat, float lon, float alt, float std_dev_horz, float std_dev_vert, float vn, float ve, float vd, int lat_int, int lon_int, int sysid, int compid, boolean isMavlink2) {
         this.msgid = MAVLINK_MSG_ID_SIM_STATE;
         this.sysid = sysid;
         this.compid = compid;
@@ -312,6 +333,8 @@ public class msg_sim_state extends MAVLinkMessage {
         this.vn = vn;
         this.ve = ve;
         this.vd = vd;
+        this.lat_int = lat_int;
+        this.lon_int = lon_int;
         
     }
 
@@ -329,13 +352,13 @@ public class msg_sim_state extends MAVLinkMessage {
         unpack(mavLinkPacket.payload);
     }
 
-                                              
+                                                  
     /**
      * Returns a string with the MSG name and data
      */
     @Override
     public String toString() {
-        return "MAVLINK_MSG_ID_SIM_STATE - sysid:"+sysid+" compid:"+compid+" q1:"+q1+" q2:"+q2+" q3:"+q3+" q4:"+q4+" roll:"+roll+" pitch:"+pitch+" yaw:"+yaw+" xacc:"+xacc+" yacc:"+yacc+" zacc:"+zacc+" xgyro:"+xgyro+" ygyro:"+ygyro+" zgyro:"+zgyro+" lat:"+lat+" lon:"+lon+" alt:"+alt+" std_dev_horz:"+std_dev_horz+" std_dev_vert:"+std_dev_vert+" vn:"+vn+" ve:"+ve+" vd:"+vd+"";
+        return "MAVLINK_MSG_ID_SIM_STATE - sysid:"+sysid+" compid:"+compid+" q1:"+q1+" q2:"+q2+" q3:"+q3+" q4:"+q4+" roll:"+roll+" pitch:"+pitch+" yaw:"+yaw+" xacc:"+xacc+" yacc:"+yacc+" zacc:"+zacc+" xgyro:"+xgyro+" ygyro:"+ygyro+" zgyro:"+zgyro+" lat:"+lat+" lon:"+lon+" alt:"+alt+" std_dev_horz:"+std_dev_horz+" std_dev_vert:"+std_dev_vert+" vn:"+vn+" ve:"+ve+" vd:"+vd+" lat_int:"+lat_int+" lon_int:"+lon_int+"";
     }
 
     /**

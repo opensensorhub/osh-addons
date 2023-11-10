@@ -6,11 +6,12 @@
 
 // MESSAGE SCALED_IMU PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * The RAW IMU readings for the usual 9DOF sensor setup. This message should contain the scaled values to the described units

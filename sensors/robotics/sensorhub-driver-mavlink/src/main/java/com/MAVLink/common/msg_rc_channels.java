@@ -6,11 +6,12 @@
 
 // MESSAGE RC_CHANNELS PACKING
 package com.MAVLink.common;
+
 import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Messages.Description;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
 import com.MAVLink.Messages.Units;
-import com.MAVLink.Messages.Description;
 
 /**
  * The PPM values of the RC channels received. The standard PPM modulation is as follows: 1000 microseconds: 0%, 2000 microseconds: 100%.  A value of UINT16_MAX implies the channel is unused. Individual receivers/transmitters might violate this specification.
@@ -163,9 +164,9 @@ public class msg_rc_channels extends MAVLinkMessage {
     public short chancount;
     
     /**
-     * Receive signal strength indicator in device-dependent units/scale. Values: [0-254], 255: invalid/unknown.
+     * Receive signal strength indicator in device-dependent units/scale. Values: [0-254], UINT8_MAX: invalid/unknown.
      */
-    @Description("Receive signal strength indicator in device-dependent units/scale. Values: [0-254], 255: invalid/unknown.")
+    @Description("Receive signal strength indicator in device-dependent units/scale. Values: [0-254], UINT8_MAX: invalid/unknown.")
     @Units("")
     public short rssi;
     
