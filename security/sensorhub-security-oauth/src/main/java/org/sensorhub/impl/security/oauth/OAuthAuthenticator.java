@@ -340,6 +340,8 @@ public class OAuthAuthenticator extends LoginAuthenticator
                 // generate request to auth provider
                 var state = UUID.randomUUID().toString();
                 postLoginRedirectUrl = request.getRequestURL().toString();
+                if (request.getQueryString() != null)
+                    postLoginRedirectUrl += "?" + request.getQueryString();
                 generatedState.put(state, new OAuthState(postLoginRedirectUrl));
                 OAuthClientRequest authRequest = OAuthClientRequest.authorizationLocation(config.authzEndpoint)
                     .setClientId(config.clientID)
