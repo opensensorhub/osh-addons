@@ -102,7 +102,7 @@ public class RosServiceClient<RequestType, ResponseType> extends AbstractNodeMai
 
         try {
 
-            final ServiceClient<RequestType, ResponseType> serviceClient = connectedNode.newServiceClient(this.serviceName, this.serviceType);
+            serviceClient = connectedNode.newServiceClient(this.serviceName, this.serviceType);
 
             isConnected = serviceClient.isConnected();
 
