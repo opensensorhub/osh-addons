@@ -61,6 +61,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
     
     private Logger log;
     private OAuthClientConfig config;
+    private String serverBaseUrl = null;
     private Map<String, OAuthState> generatedState;
     
     
@@ -75,12 +76,18 @@ public class OAuthAuthenticator extends LoginAuthenticator
     }
     
 
-    public OAuthAuthenticator(OAuthClientConfig config, Logger log)
+    public OAuthAuthenticator(OAuthClientConfig config, String serverBaseUrl, Logger log)
     {
         this.log = Asserts.checkNotNull(log, Logger.class);
         
         this.config = Asserts.checkNotNull(config, OAuthClientConfig.class);
         Asserts.checkNotNullOrEmpty("The userIdField config property must be configured", config.userIdField);
+        
+        if (!serverBaseUrl.contains("localhost"))
+        {
+            this.serverBaseUrl = serverBaseUrl.endsWith("/") ?
+                serverBaseUrl.substring(0, serverBaseUrl.length()-1) : serverBaseUrl;
+        }
         
         this.generatedState = CacheBuilder.newBuilder()
             .concurrencyLevel(4)
@@ -155,8 +162,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
             
             String accessToken = null;
             String postLoginRedirectUrl = null;
-            String requestUrl = request.getRequestURL().toString();
-            String oauthCallbackUrl = requestUrl.substring(0, requestUrl.indexOf(request.getServletPath())) + OAUTH_CODE_CALLBACK_PATH;
+            String oauthCallbackUrl = getCallbackBaseUrl(request) + "/" + OAUTH_CODE_CALLBACK_PATH;
             String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
             
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
@@ -339,9 +345,12 @@ public class OAuthAuthenticator extends LoginAuthenticator
             {
                 // generate request to auth provider
                 var state = UUID.randomUUID().toString();
-                postLoginRedirectUrl = request.getRequestURL().toString();
-                if (request.getQueryString() != null)
-                    postLoginRedirectUrl += "?" + request.getQueryString();
+                
+                postLoginRedirectUrl = getCallbackBaseUrl(request)
+                    + (request.getServletPath() != null ? request.getServletPath() : "")
+                    + (request.getPathInfo() != null ? request.getPathInfo() : "")
+                    + (request.getQueryString() != null ? "?" + request.getQueryString() : "");
+                    
                 generatedState.put(state, new OAuthState(postLoginRedirectUrl));
                 OAuthClientRequest authRequest = OAuthClientRequest.authorizationLocation(config.authzEndpoint)
                     .setClientId(config.clientID)
@@ -369,6 +378,18 @@ public class OAuthAuthenticator extends LoginAuthenticator
             log.error("Cannot send HTTP error", e);
             return Authentication.SEND_FAILURE;
         }
+    }
+    
+    
+    private String getCallbackBaseUrl(HttpServletRequest request)
+    {
+        if (serverBaseUrl == null)
+        {
+            var requestUrl = request.getRequestURL();
+            return requestUrl.substring(0, requestUrl.indexOf(request.getServletPath()));
+        }
+        else
+            return serverBaseUrl + request.getContextPath();
     }
     
     
@@ -400,7 +421,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
     {
         String userId = null;
 
-        reader.beginObject();        
+        reader.beginObject();
         while (reader.hasNext())
         {
             String name = reader.nextName();
