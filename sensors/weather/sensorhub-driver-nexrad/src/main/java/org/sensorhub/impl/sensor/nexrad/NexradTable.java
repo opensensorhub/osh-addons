@@ -113,6 +113,6 @@ public class NexradTable extends HashMap<String, NexradSite>
 	
 	public static void main(String[] args) throws Exception  {
 //		NexradTable.outputCsv();
-		System.err.println(NexradTable.getInstance().getSite("LBB"));
+		System.err.println(NexradTable.getInstance().getSite("TBW"));
 	}
 }	

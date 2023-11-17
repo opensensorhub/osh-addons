@@ -71,7 +71,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 		if(!isRealtime) 
 			return;
 		try {
-			nexradSqs.activateQueue(config.purgeExistingQueueMessages);
+			nexradSqs.activateQueue(config.purgeExistingMessages);
 			nexradSqs.setNumThreads(config.numThreads);
 		} catch (IOException e) {
 			throw new SensorHubException("Could not activate aws queue", e);
@@ -112,7 +112,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 					throw new SensorHubException("Could not instantiate NexradTable. ", e);
 				}
 				
-				nexradSqs = new NexradSqsService(config.queueName, config.siteIds, config.purgeExistingQueueMessages);
+				nexradSqs = new NexradSqsService(config.queueName, config.siteIds, config.purgeExistingMessages);
 				nexradSqs.setQueueIdleTimeMillis(TimeUnit.MINUTES.toMillis(config.queueIdleTimeMinutes));
 				chunkQueueManager = new ChunkQueueManager(this);
 				//  DECOUPLE ME!!!
@@ -134,7 +134,7 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 		SMLHelper smlFac = new SMLHelper();
 		GMLFactory gmlFac = new GMLFactory(true);
 
-		// generate station FOIs
+		// generate station FOIs for all stations
 		NexradTable nexradTable = NexradTable.getInstance();
 		Collection<NexradSite> sites = nexradTable.getAllSites();
 		for (NexradSite site: sites)
@@ -156,13 +156,19 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 			foi.setLocation(stationLoc);
 			addFoi(foi);
 
-			logger.debug("SENSOR_UID: {}, siteUID: {}", SENSOR_UID, siteUID, foiMap.size());
-			
-			if(config.siteIds.contains(site.id)) {
-				logger.debug("enabling site based on config: {}", site.id);
+			logger.debug("SENSOR_UID: {}, siteUID: {}, numSites: {}", SENSOR_UID, siteUID, foiMap.size());
+		}
+		
+		//  Put all config.siteIds into enableSites list
+		for(String siteId: config.siteIds) {
+			NexradSite site = nexradTable.getSite(siteId); 
+			if(site != null) {
+				logger.debug("enabling site based on config: {}", siteId);
 				enabledSites.add(site);
+			} else {
+				logger.error("Unkonwn siteId in NexradConfig.siteIds: {}", siteId);
 			}
-		}	
+		}
 	}
 
 	// NOTE: may not need enabledSites here- just let queueManager deal with it

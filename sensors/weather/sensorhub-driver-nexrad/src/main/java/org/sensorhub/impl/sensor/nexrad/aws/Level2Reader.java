@@ -131,6 +131,9 @@ public class Level2Reader {
 				case 2:
 					readMessage2(bzis, msgHdr.messageSize);
 					break;
+				case 5: case 7:
+					System.err.println("VCP Msg detected.Type =" + msgHdr.messageType);
+					break;
 				case 31:
 					Radial ldmRadial = new Radial();
 					ldmRadial.dataHeader = readDataHeaderBlock(bzis);
@@ -153,7 +156,8 @@ momentBlock.blockName, momentBlock.numGates,ldmRadial.dataHeader.elevationAngle,
 				}
 			}
 		}
-		logger.debug("Read {} radials", ldmRadials.size() );
+		logger.trace("Read {} radials", ldmRadials.size() );
+//		logger.trace("Last packet elevation angle: {}", ldmRadials.get(ldmRadials.size() - 1).dataHeader.elevationAngle );
 		return ldmRadials;
 	}
 
@@ -217,7 +221,7 @@ momentBlock.blockName, momentBlock.numGates,ldmRadial.dataHeader.elevationAngle,
 		hdr.azimuthResolutionSpacing = is.read(); // Uncompressed length of the radial in bytes including the Data
 													// Header block length
 		hdr.radialStatus = is.read();
-		hdr.elevationNum = is.read();
+		hdr.elevationNum = is.read(); // doesn't line up with elevations nicely- figure it out
 		hdr.cutStatusNum = is.read();
 
 		ok = is.read(b4);

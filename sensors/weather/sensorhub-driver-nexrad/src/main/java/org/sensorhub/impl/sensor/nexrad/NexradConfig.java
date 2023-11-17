@@ -51,7 +51,7 @@ public class NexradConfig extends SensorConfig
     public String rootFolder;
 	
 	@DisplayInfo(desc="if true, purge all existing messages from pre-existing queue. Default is true")
-	public boolean purgeExistingQueueMessages = false;
+	public boolean purgeExistingMessages = false;
 	
 	//  Archive AWS controls
 	public String archiveStartTime;

@@ -123,7 +123,7 @@ public class ChunkPathQueue
 			char t = chunkName.charAt(chunkName.length() - 1);
 			if (isNext(v,c,t)) {
 				chunkName = queue.take();
-				logger.debug("Take that from queue: {}" , chunkName);
+				logger.trace("Take that from queue: {}" , chunkName);
 				return chunkName;
 			} else if(queue.size() > SIZE_LIMIT) {
 				chunkName = queue.take(); 
@@ -145,7 +145,7 @@ public class ChunkPathQueue
 		try
 		{
 			String nextFile = next();
-			logger.debug("NextFile: {}", nextFile);
+			logger.trace("NextFile: {}", nextFile);
 			S3Object chunk = AwsNexradUtil.getChunk(s3client, AwsNexradUtil.BUCKET_NAME, nextFile);
 			
 			return chunk;
@@ -161,7 +161,6 @@ public class ChunkPathQueue
 		assert s3client != null;
 		try
 		{
-//			System.err.println("*** Checking nextFile");
 			String nextFile = next();
 			S3Object chunk = AwsNexradUtil.getChunk(s3client, AwsNexradUtil.BUCKET_NAME, nextFile);
 			nextFile = nextFile.replaceAll("/", "_");

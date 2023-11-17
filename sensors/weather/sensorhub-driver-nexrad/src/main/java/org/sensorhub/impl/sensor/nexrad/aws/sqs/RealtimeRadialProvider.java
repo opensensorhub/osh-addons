@@ -21,6 +21,9 @@ import com.amazonaws.services.s3.model.S3Object;
  *
  * @author tcook
  * @date Sep 20, 2016
+ * 
+ * NOTE: appears that elevation angle swings over target and back down when elevation changes.
+ *       Then stabilizes to final value
  */
 public class RealtimeRadialProvider implements RadialProvider {
 	NexradSensor sensor;
@@ -42,10 +45,9 @@ public class RealtimeRadialProvider implements RadialProvider {
 		ChunkPathQueue chunkQueue = chunkQueueManager.getChunkQueue(site);
 		try {
 			Path p = chunkQueue.nextFile();
-			logger.debug("Reading File {}" , p.toString());
+			logger.trace("Reading File {}" , p.toString());
 			Level2Reader reader = new Level2Reader();
 			List<Radial> radials = reader.read(p.toFile());
-//			List<LdmRadial> radials = new ArrayList<>();
 			return radials;
 		} catch (IOException e) {
 			e.printStackTrace(System.err);
@@ -61,11 +63,12 @@ public class RealtimeRadialProvider implements RadialProvider {
 	public List<Radial> getNextRadials(String site) throws IOException {
 		// This won't work for dynamically adding/removing sites- Need event interface
 		ChunkPathQueue chunkQueue = chunkQueueManager.getChunkQueue(site);
+		
 		try (S3Object object = chunkQueue.nextObject();) {
 //			S3Object object = chunkQueue.nextObject();
 			//S3ObjectInputStream s3is = object.getObjectContent();
 			BufferedInputStream s3is = new BufferedInputStream(object.getObjectContent());
-			logger.debug("Reading object {}" , object.getKey());
+			logger.trace("Reading object {}" , object.getKey());
 			Level2Reader reader = new Level2Reader();
 			List<Radial> radials = reader.read(s3is, object.getKey());
 			return radials;

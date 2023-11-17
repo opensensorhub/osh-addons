@@ -31,6 +31,13 @@ public class QueueFactory
 	static AWSCredentials credentials;
 	static AmazonSQS sqs;
 	static AmazonSNSClient sns;
+
+	public static void main(String[] args) {
+		listQueues();
+		deleteQueue("https://sqs.us-west-2.amazonaws.com/633354997535/NexradQueue_SensorHub_Test");
+	}
+	
+
 	
 	static {
 		credentials = null;
@@ -70,11 +77,6 @@ public class QueueFactory
 	        snsClient.setSubscriptionAttributes(request);
 	    }
 
-	public static void main(String[] args) {
-		listQueues();
-//		deleteQueue("https://sqs.us-west-2.amazonaws.com/633354997535/NexradQueue_SensorHub_Test");
-	}
-	
 	public static void main_(String[] args) throws Exception {
 		String topicArn = "arn:aws:sns:us-east-1:684042711724:NewNEXRADLevel2Object";
 		String qName = "NexradQueue_SensorHub_00018";
@@ -104,7 +106,7 @@ public class QueueFactory
 		System.out.println();
 	}
 	
-	public static String createAndSubscribeQueue(String topicArn, String queueName)  {
+	public static String createAndSubscribeQueue(String topicArn, String queueName)  {	
 		return createAndSubscribeQueue(topicArn, queueName, false);
 	}
 	

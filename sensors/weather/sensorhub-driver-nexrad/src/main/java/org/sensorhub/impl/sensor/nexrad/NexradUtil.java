@@ -65,7 +65,6 @@ public class NexradUtil
 			is = new DataInputStream(new FileInputStream(path));
 
 			while (is.readShort() != -1) {
-				System.err.println("");
 			}
 			//         System.out.println("--FIRST BREAKPOINT-- FILE POINTER LOCATION = " + is.getFilePointer());
 			double lat = is.readInt() / 1000.0;

@@ -16,6 +16,8 @@ import com.amazonaws.services.sqs.model.Message;
  *
  * @author T
  * @date Mar 2, 2016
+ * 
+ *  TODO: Move to aws.sqs package 
  */
 public class ProcessMessageThread implements Runnable {
 
