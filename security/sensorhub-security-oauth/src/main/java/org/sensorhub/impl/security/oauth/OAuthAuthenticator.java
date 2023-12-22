@@ -161,8 +161,9 @@ public class OAuthAuthenticator extends LoginAuthenticator
             
             
             String accessToken = null;
+            String idToken = null;
             String postLoginRedirectUrl = null;
-            String oauthCallbackUrl = getCallbackBaseUrl(request) + "/" + OAUTH_CODE_CALLBACK_PATH;
+            String oauthCallbackUrl = getCallbackBaseUrl(request) + OAUTH_CODE_CALLBACK_PATH;
             String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
             
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
@@ -213,6 +214,9 @@ public class OAuthAuthenticator extends LoginAuthenticator
                         authRequest.addHeader("Accept", "application/json");
     
                         OAuthJSONAccessTokenResponse oAuthResponse = oAuthClient.accessToken(authRequest, HttpMethod.POST);
+                        log.debug("Token Endpoint Response: {}", oAuthResponse.getBody());
+                        
+                        idToken = oAuthResponse.getParam("id_token");
                         accessToken = oAuthResponse.getAccessToken();
                     }
                 }
@@ -279,25 +283,38 @@ public class OAuthAuthenticator extends LoginAuthenticator
             {
                 try
                 {
-                    log.debug("OAuth Token = " + accessToken);
-                    String[] chunks = accessToken.split("\\.");
-                    Base64.Decoder decoder = Base64.getUrlDecoder();
-                    String header = new String(decoder.decode(chunks[0]));
-                    String payload = new String(decoder.decode(chunks[1]));
-                    log.debug("OAuth Token Header = " + header);
-                    log.debug("OAuth Token Payload = " + payload);
+                    String userId = null;
                     
-                    // request user info
-                    OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint)
-                        .setAccessToken(accessToken)
-                        //.buildQueryMessage();
-                        .buildHeaderMessage();
-                    OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, HttpMethod.GET, OAuthResourceResponse.class);
-
-                    // parse user info
-                    log.debug("UserInfo = " + resourceResponse.getBody());
-                    JsonReader jsonReader = new JsonReader(new StringReader(resourceResponse.getBody()));
-                    String userId = parseUserInfoJson(jsonReader);
+                    if (idToken != null)
+                    {
+                        log.debug("ID Token = " + idToken);
+                        
+                        String[] chunks = idToken.split("\\.");
+                        Base64.Decoder decoder = Base64.getUrlDecoder();
+                        String header = new String(decoder.decode(chunks[0]));
+                        String payload = new String(decoder.decode(chunks[1]));
+                        log.debug("ID Token Header = " + header);
+                        log.debug("ID Token Payload = " + payload);
+                        
+                        JsonReader jsonReader = new JsonReader(new StringReader(payload));
+                        userId = parseUserInfoJson(jsonReader);
+                    }
+                    else
+                    {
+                        log.debug("OAuth Token = " + accessToken);
+                        
+                        // request user info
+                        OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint)
+                            .setAccessToken(accessToken)
+                            //.buildQueryMessage();
+                            .buildHeaderMessage();
+                        OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, HttpMethod.GET, OAuthResourceResponse.class);
+    
+                        // parse user info
+                        log.debug("UserInfo = " + resourceResponse.getBody());
+                        JsonReader jsonReader = new JsonReader(new StringReader(resourceResponse.getBody()));
+                        userId = parseUserInfoJson(jsonReader);
+                    }
                     
                     // login and return UserAuth object
                     UserIdentity user = login(userId, "", req);
