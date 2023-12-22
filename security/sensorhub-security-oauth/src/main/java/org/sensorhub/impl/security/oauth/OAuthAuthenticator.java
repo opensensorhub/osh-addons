@@ -46,6 +46,7 @@ import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.slf4j.Logger;
 import org.vast.util.Asserts;
 import com.google.common.cache.CacheBuilder;
@@ -62,6 +63,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
     private Logger log;
     private OAuthClientConfig config;
     private String serverBaseUrl = null;
+    private boolean enableCORS;
     private Map<String, OAuthState> generatedState;
     
     
@@ -76,7 +78,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
     }
     
 
-    public OAuthAuthenticator(OAuthClientConfig config, String serverBaseUrl, Logger log)
+    public OAuthAuthenticator(OAuthClientConfig config, String serverBaseUrl, boolean enableCORS, Logger log)
     {
         this.log = Asserts.checkNotNull(log, Logger.class);
         
@@ -88,6 +90,8 @@ public class OAuthAuthenticator extends LoginAuthenticator
             this.serverBaseUrl = serverBaseUrl.endsWith("/") ?
                 serverBaseUrl.substring(0, serverBaseUrl.length()-1) : serverBaseUrl;
         }
+        
+        this.enableCORS = enableCORS;
         
         this.generatedState = CacheBuilder.newBuilder()
             .concurrencyLevel(4)
@@ -105,14 +109,14 @@ public class OAuthAuthenticator extends LoginAuthenticator
 
 
     @Override
-    public void prepareRequest(ServletRequest arg0)
+    public void prepareRequest(ServletRequest req)
     {
         // nothing to prepare
     }
 
 
     @Override
-    public boolean secureResponse(ServletRequest arg0, ServletResponse arg1, boolean arg2, User arg3) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse resp, boolean mandatory, User user) throws ServerAuthException
     {
         return false;
     }
@@ -125,7 +129,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
         {
             HttpServletRequest request = (HttpServletRequest) req;
             HttpServletResponse response = (HttpServletResponse) resp;
-            
+           
             // catch logout case
             if (request.getServletPath() != null && LOGOUT_PATH.equals(request.getServletPath()))
             {
@@ -138,6 +142,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     
                     log.debug("Log out from auth provider @ " + config.logoutEndpoint);
                     var adminUrl = request.getRequestURL().toString().replace(request.getServletPath(), "/admin");
+                    setCorsHeaders(request, response);
                     response.sendRedirect(config.logoutEndpoint + "?redirect_uri=" + adminUrl);
                     return Authentication.SEND_CONTINUE;
                 }
@@ -324,6 +329,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
                         session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, userAuth);
                         if (postLoginRedirectUrl != null)
                         {
+                            setCorsHeaders(request, response);
                             response.sendRedirect(response.encodeRedirectURL(postLoginRedirectUrl));
                             return Authentication.SEND_CONTINUE;
                         }
@@ -380,6 +386,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
                 // send as redirect
                 String loginUrl = authRequest.getLocationUri();
                 log.debug("Redirecting to auth provider login @ " + loginUrl);
+                setCorsHeaders(request, response);
                 response.sendRedirect(response.encodeRedirectURL(loginUrl));
                 return Authentication.SEND_CONTINUE;
             }
@@ -450,5 +457,19 @@ public class OAuthAuthenticator extends LoginAuthenticator
         reader.endObject();
         
         return userId;
+    }
+    
+    
+    private void setCorsHeaders(HttpServletRequest req, HttpServletResponse resp) throws ServerAuthException
+    {
+        if (enableCORS)
+        {
+            var origin = req.getHeader("Origin");
+            if (origin != null)
+            {
+                resp.setHeader(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin);
+                resp.setHeader(CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, "true");
+            }
+        }
     }
 }
