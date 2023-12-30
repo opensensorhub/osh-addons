@@ -37,7 +37,7 @@ public class NexradTable extends HashMap<String, NexradSite>
 		return instance;
 	}
 
-	private void buildTable() throws IOException {
+	private synchronized void buildTable() throws IOException {
 		ClassLoader classLoader = getClass().getClassLoader();
 		URL url = classLoader.getResource("NexradLocations.txt");
 		if(url == null)
@@ -64,6 +64,7 @@ public class NexradTable extends HashMap<String, NexradSite>
 				continue;
 			String id = inline.substring(9,13);
 			site = new NexradSite(id);
+			site.id = id;
 			site.name = inline.substring(20, 51).trim();
 			stmp = inline.substring(106,116).trim();
 			lat = Double.parseDouble(stmp);

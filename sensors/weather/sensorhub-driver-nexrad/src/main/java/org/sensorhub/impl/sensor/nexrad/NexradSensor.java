@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.sensorhub.api.common.SensorHubException;
@@ -119,17 +120,20 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 				nexradSqs.setChunkQueueManager(chunkQueueManager);
 				chunkQueueManager.setS3Client(nexradSqs.getS3client());
 				radialProvider = new RealtimeRadialProvider(this, chunkQueueManager);
-				setQueueActive();
+//				setQueueActive();
 			} catch (Exception e) {
 				throw new SensorHubException("Could not instantiate NexradSqsService", e);
 			}
 		}
 		nexradOutput = new NexradOutput(this);
 		addOutput(nexradOutput, false);
-		nexradOutput.init();	
+		nexradOutput.init();
+		
+		Map  featureMap = getCurrentFeaturesOfInterest();
+//		System.err.println(featureMap);
 	}
 
-	private void addFois() throws IOException {
+	private synchronized void addFois() throws IOException {
 		// Add FOIs- one per site
 		SMLHelper smlFac = new SMLHelper();
 		GMLFactory gmlFac = new GMLFactory(true);
@@ -156,12 +160,13 @@ public class NexradSensor extends AbstractSensorModule<NexradConfig>
 			foi.setLocation(stationLoc);
 			addFoi(foi);
 
-			logger.debug("SENSOR_UID: {}, siteUID: {}, numSites: {}", SENSOR_UID, siteUID, foiMap.size());
+			logger.debug("SENSOR_UID: {}, foiUID: {}, foiId: {}, numSites: {}", SENSOR_UID, foi.getUniqueIdentifier(), foi.getId(), foiMap.size());
 		}
 		
 		//  Put all config.siteIds into enableSites list
 		for(String siteId: config.siteIds) {
 			NexradSite site = nexradTable.getSite(siteId); 
+//			System.err.println(foiMap);
 			if(site != null) {
 				logger.debug("enabling site based on config: {}", siteId);
 				enabledSites.add(site);

@@ -30,7 +30,7 @@ NCDCID   ICAO WBAN  NAME                           COUNTRY              ST COUNT
 30001824 KDAX 93235 SACRAMENTO                     UNITED STATES        CA YOLO                           38.50111  -121.67667 30     -8    NEXRAD                                             
 30001825 KDDC 13985 DODGE CITY                     UNITED STATES        KS FORD                           37.76083  -99.96833  2590   -6    NEXRAD                                             
 30001826 KDFX 22015 LAUGHLIN AFB                   UNITED STATES        TX KINNEY                         29.2725   -100.28028 1131   -6    NEXRAD                                             
-30001827 KDGX       JACKSON BRANDON                UNITED STATES        MS RANKIN                         32.28     -89.98444  -99999 -6    NEXRAD                                             
+30001827 KDGX 00000 JACKSON BRANDON                UNITED STATES        MS RANKIN                         32.28     -89.98444  -99999 -6    NEXRAD                                             
 30001828 KDIX 93771 PHILADELPHIA                   UNITED STATES        NJ BURLINGTON                     39.94694  -74.41111  149    -5    NEXRAD                                             
 30001829 KDLH 14913 DULUTH                         UNITED STATES        MN ST. LOUIS                      46.83694  -92.20972  1428   -6    NEXRAD                                             
 30001830 KDMX 94984 DES MOINES                     UNITED STATES        IA POLK                           41.73111  -93.72278  981    -6    NEXRAD                                             
@@ -143,7 +143,7 @@ NCDCID   ICAO WBAN  NAME                           COUNTRY              ST COUNT
 30001609 KVWX 63845 EVANSVILLE                     UNITED STATES        IN GIBSON                         38.26     -87.7247   -99999 -6    NEXRAD                                             
 30001934 KYUX 53116 YUMA                           UNITED STATES        AZ PIMA                           32.49528  -114.65583 174    -7    NEXRAD                                             
 30001938 LPLA 13201 LAJES AB                       AZORES                                                 38.73028  -27.32167  3334   -1    NEXRAD                                             
-30001939 PABC       BETHEL FAA                     UNITED STATES        AK BETHEL                         60.79278  -161.87417 162    -9    NEXRAD                                             
+30001939 PABC 00000 BETHEL FAA                     UNITED STATES        AK BETHEL                         60.79278  -161.87417 162    -9    NEXRAD                                             
 30001940 PACG 25361 SITKA                          UNITED STATES        AK SITKA BOROUGH                  56.85278  -135.52917 270    -9    NEXRAD                                             
 30001941 PAEC 26641 NOME                           UNITED STATES        AK NOME                           64.51139  -165.295   54     -9    NEXRAD                                             
 30001942 PAHG 26548 ANCHORAGE                      UNITED STATES        AK KENAI PENINSULA BOROUGH        60.72639  -151.34917 242    -9    NEXRAD                                             
