@@ -51,6 +51,14 @@ public class OAuthClientConfig extends SecurityModuleConfig
     
     
     @Required
-    @DisplayInfo(desc="Name of JSON attribute in UserInfo resource to use as OSH user ID")
+    @DisplayInfo(desc="Path of JSON attribute to use as OSH user ID")
     public String userIdField = "id";
+    
+    
+    @DisplayInfo(desc="Path of JSON attribute containing the user roles")
+    public String userRolesField = "";
+    
+    
+    @DisplayInfo(desc="Automatically create users with roles returned by the identity provider")
+    public boolean autoAddUser = true;
 }

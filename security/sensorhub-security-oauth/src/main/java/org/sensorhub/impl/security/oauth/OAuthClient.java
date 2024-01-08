@@ -48,9 +48,11 @@ public class OAuthClient extends AbstractModule<OAuthClientConfig>
         if (httpServer == null)
             throw new SensorHubException("HTTP server module is not loaded");
         
+        var userRegistry = getParentHub().getSecurityManager().getUserRegistry();
+        
         var callbackBaseUrl = httpServer.getServerBaseUrl();
         var httpConfig = (HttpServerConfig)httpServer.getConfiguration();
-        authenticator = new OAuthAuthenticator(config, callbackBaseUrl, httpConfig.enableCORS, getLogger());
+        authenticator = new OAuthAuthenticator(config, callbackBaseUrl, httpConfig.enableCORS, userRegistry, getLogger());
         
         getParentHub().getSecurityManager().registerAuthenticator(authenticator);
     }

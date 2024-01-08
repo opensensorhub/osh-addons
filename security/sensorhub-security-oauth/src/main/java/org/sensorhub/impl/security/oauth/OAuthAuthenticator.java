@@ -15,9 +15,10 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.security.oauth;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -47,11 +48,14 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.sensorhub.api.security.IUserRegistry;
 import org.slf4j.Logger;
 import org.vast.util.Asserts;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableList;
 import com.google.common.net.HttpHeaders;
-import com.google.gson.stream.JsonReader;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 
 
 public class OAuthAuthenticator extends LoginAuthenticator
@@ -60,11 +64,12 @@ public class OAuthAuthenticator extends LoginAuthenticator
     private static final String OAUTH_CODE_CALLBACK_PATH = "/oauthcode";
     private static final String LOGOUT_PATH = "/logout";
     
-    private Logger log;
-    private OAuthClientConfig config;
-    private String serverBaseUrl = null;
-    private boolean enableCORS;
-    private Map<String, OAuthState> generatedState;
+    private final Logger log;
+    private final OAuthClientConfig config;
+    private final String serverBaseUrl;
+    private final boolean enableCORS;
+    private final Map<String, OAuthState> generatedState;
+    private final IUserRegistry userRegistry;
     
     
     static class OAuthState
@@ -78,7 +83,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
     }
     
 
-    public OAuthAuthenticator(OAuthClientConfig config, String serverBaseUrl, boolean enableCORS, Logger log)
+    public OAuthAuthenticator(OAuthClientConfig config, String serverBaseUrl, boolean enableCORS, IUserRegistry userRegistry, Logger log)
     {
         this.log = Asserts.checkNotNull(log, Logger.class);
         
@@ -90,8 +95,11 @@ public class OAuthAuthenticator extends LoginAuthenticator
             this.serverBaseUrl = serverBaseUrl.endsWith("/") ?
                 serverBaseUrl.substring(0, serverBaseUrl.length()-1) : serverBaseUrl;
         }
+        else
+            this.serverBaseUrl = null;
         
         this.enableCORS = enableCORS;
+        this.userRegistry = userRegistry;
         
         this.generatedState = CacheBuilder.newBuilder()
             .concurrencyLevel(4)
@@ -289,9 +297,11 @@ public class OAuthAuthenticator extends LoginAuthenticator
                 try
                 {
                     String userId = null;
+                    JsonElement userInfo;
                     
                     if (idToken != null)
                     {
+                        // if ID token, assume it's a JWT token that contains needed info
                         log.debug("ID Token = " + idToken);
                         
                         String[] chunks = idToken.split("\\.");
@@ -300,12 +310,11 @@ public class OAuthAuthenticator extends LoginAuthenticator
                         String payload = new String(decoder.decode(chunks[1]));
                         log.debug("ID Token Header = " + header);
                         log.debug("ID Token Payload = " + payload);
-                        
-                        JsonReader jsonReader = new JsonReader(new StringReader(payload));
-                        userId = parseUserInfoJson(jsonReader);
+                        userInfo = JsonParser.parseString(payload);
                     }
                     else
                     {
+                        // if only an access token, we need to call the userinfo endpoint
                         log.debug("OAuth Token = " + accessToken);
                         
                         // request user info
@@ -314,11 +323,19 @@ public class OAuthAuthenticator extends LoginAuthenticator
                             //.buildQueryMessage();
                             .buildHeaderMessage();
                         OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, HttpMethod.GET, OAuthResourceResponse.class);
-    
-                        // parse user info
                         log.debug("UserInfo = " + resourceResponse.getBody());
-                        JsonReader jsonReader = new JsonReader(new StringReader(resourceResponse.getBody()));
-                        userId = parseUserInfoJson(jsonReader);
+                        userInfo = JsonParser.parseString(resourceResponse.getBody());
+                    }
+                    
+                    // parse user ID and roles from json
+                    userId = parseUserInfoJson(userInfo);
+                    var roles = parseRolesFromJson(userInfo);
+                    
+                    if (config.autoAddUser)
+                    {
+                        // create user with roles returned by ISS (if any)
+                        var oshUser = new OAuthUser(userId, roles);
+                        userRegistry.put(oshUser.getId(), oshUser);
                     }
                     
                     // login and return UserAuth object
@@ -441,22 +458,51 @@ public class OAuthAuthenticator extends LoginAuthenticator
     }
 
 
-    private String parseUserInfoJson(JsonReader reader) throws IOException
+    private String parseUserInfoJson(JsonElement json) throws IOException
     {
-        String userId = null;
-
-        reader.beginObject();
-        while (reader.hasNext())
-        {
-            String name = reader.nextName();
-            if (config.userIdField.equals(name))
-                userId = reader.nextString();
-            else
-                reader.skipValue();
-        }        
-        reader.endObject();
+        var userIdField = goToJsonPath(json, config.userIdField);
         
-        return userId;
+        if (userIdField != null)
+            return userIdField.getAsString();
+        else
+            return null;
+    }
+
+
+    private Collection<String> parseRolesFromJson(JsonElement json) throws IOException
+    {
+        var userRolesField = goToJsonPath(json, config.userRolesField);
+        
+        if (userRolesField != null && userRolesField.isJsonArray())
+        {
+            var list = ImmutableList.<String>builder();
+            list.add("anon");
+            userRolesField.getAsJsonArray().forEach(item -> list.add(item.getAsString()));
+            return list.build();
+        }
+        else
+            return Arrays.asList("anon");
+    }
+    
+    
+    private JsonElement goToJsonPath(JsonElement json, String path) throws IOException
+    {
+        var pathElts = path.split("/");
+        
+        var elt = json;
+        for (var name: pathElts)
+        {
+            if (elt.isJsonObject())
+            {
+                elt = elt.getAsJsonObject().get(name);
+                if (elt == null)
+                    break;
+            }
+            else
+                return null;
+        }
+        
+        return elt;
     }
     
     
