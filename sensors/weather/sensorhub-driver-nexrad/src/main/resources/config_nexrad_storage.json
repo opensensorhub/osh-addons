@@ -1,0 +1,133 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "httpPort": 8282,
+    "httpsPort": 0,
+    "staticDocsRootUrl": "/",
+    "staticDocsRootDir": "web",
+    "servletsRootUrl": "/sensorhub",
+    "authMethod": "NONE",
+    "keyAlias": "jetty",
+    "enableCORS": true,
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "name": "HTTP Server",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "bundleRepoUrls": [],
+    "customPanels": [],
+    "customForms": [],
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.nexrad.NexradConfig",
+    "siteIds": [
+      "KGRK",
+      "KFWS",
+      "KSJT"
+    ],
+    "numThreads": 3,
+    "queueName": "NexradQueue_SensorHub_Test",
+    "queueIdleTimeMinutes": 1440,
+    "queueFileLimit": 8,
+    "saveDataAsFiles": false,
+    "rootFolder": "\\Data\\sensorhub\\Level2",
+    "purgeExistingMessages": false,
+    "lastUpdated": "2023-12-21T18:25:12.434-0600",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d79",
+    "moduleClass": "org.sensorhub.impl.sensor.nexrad.NexradSensor",
+    "name": "Nexrad 88D Network",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "customDataProviders": [],
+    "customFormats": [],
+    "maxObsCount": 100,
+    "maxRecordCount": 100000,
+    "maxFois": 10,
+    "defaultLiveTimeout": 36000.0,
+    "templateTimeout": 600,
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": false,
+      "requireAuth": true
+    },
+    "enableTransactional": false,
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "title": "SOS Nexrad Service",
+      "description": "An SOS service providing realtime nexrad data",
+      "keywords": [
+        "SensorHub",
+        "Weather",
+        "Nexrad"
+      ],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "individualName": "Tony Cook",
+        "organizationName": "Botts Inc.",
+        "positionName": "Engineer",
+        "voiceNumbers": [],
+        "faxNumbers": [],
+        "deliveryPoints": [],
+        "emails": [
+          "tony.cook@botts-inc.com"
+        ],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/sos",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "name": "SOS Service",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.database.system.SystemDriverDatabaseConfig",
+    "dbConfig": {
+      "objClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabaseConfig",
+      "indexObsLocation": false,
+      "storagePath": "./db/db.dat",
+      "memoryCacheSize": 5120,
+      "autoCommitBufferSize": 1024,
+      "autoCommitPeriod": 10,
+      "idProviderType": "SEQUENTIAL",
+      "useCompression": false,
+      "readOnly": false,
+      "compactOnClose": false,
+      "databaseNum": 1,
+      "moduleClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabase",
+      "name": "Backing Store",
+      "description": "Implementation of backing store for System Driver Database",
+      "autoStart": false
+    },
+    "systemUIDs": [
+      "urn:osh:sensor:weather:nexrad"
+    ],
+    "autoPurgeConfig": {
+      "objClass": "org.sensorhub.impl.database.system.MaxAgeAutoPurgeConfig",
+      "maxRecordAge": 3600.0,
+      "enabled": true,
+      "purgePeriod": 300.0
+    },
+    "minCommitPeriod": 10000,
+    "databaseNum": 1,
+    "id": "aa7a4b3c-c5db-4119-9422-6fc0a05ce7c1",
+    "moduleClass": "org.sensorhub.impl.database.system.SystemDriverDatabase",
+    "name": "System Driver Database",
+    "description": "Storage Module for Selected Systems by UID",
+    "autoStart": true
+  }
+]
