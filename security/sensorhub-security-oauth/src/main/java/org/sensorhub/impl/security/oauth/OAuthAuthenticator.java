@@ -48,7 +48,7 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.sensorhub.api.security.IUserRegistry;
+import org.sensorhub.api.security.ISecurityManager;
 import org.slf4j.Logger;
 import org.vast.util.Asserts;
 import com.google.common.cache.CacheBuilder;
@@ -69,7 +69,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
     private final String serverBaseUrl;
     private final boolean enableCORS;
     private final Map<String, OAuthState> generatedState;
-    private final IUserRegistry userRegistry;
+    private final ISecurityManager securityManager;
     
     
     static class OAuthState
@@ -83,7 +83,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
     }
     
 
-    public OAuthAuthenticator(OAuthClientConfig config, String serverBaseUrl, boolean enableCORS, IUserRegistry userRegistry, Logger log)
+    public OAuthAuthenticator(OAuthClientConfig config, String serverBaseUrl, boolean enableCORS, ISecurityManager securityManager, Logger log)
     {
         this.log = Asserts.checkNotNull(log, Logger.class);
         
@@ -99,7 +99,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
             this.serverBaseUrl = null;
         
         this.enableCORS = enableCORS;
-        this.userRegistry = userRegistry;
+        this.securityManager = securityManager;
         
         this.generatedState = CacheBuilder.newBuilder()
             .concurrencyLevel(4)
@@ -335,7 +335,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     {
                         // create user with roles returned by ISS (if any)
                         var oshUser = new OAuthUser(userId, roles);
-                        userRegistry.put(oshUser.getId(), oshUser);
+                        securityManager.getUserRegistry().put(oshUser.getId(), oshUser);
                     }
                     
                     // login and return UserAuth object
