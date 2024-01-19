@@ -151,7 +151,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     log.debug("Log out from auth provider @ " + config.logoutEndpoint);
                     var adminUrl = request.getRequestURL().toString().replace(request.getServletPath(), "/admin");
                     setCorsHeaders(request, response);
-                    response.sendRedirect(config.logoutEndpoint + "?redirect_uri=" + adminUrl);
+                    response.sendRedirect(config.logoutEndpoint + "?client_id=" + config.clientID + "&post_logout_redirect_uri=" + adminUrl);
                     return Authentication.SEND_CONTINUE;
                 }
                 catch (ServletException e)
