@@ -43,5 +43,5 @@ public class Connection {
     public boolean isMJPEG = false;
 
     @DisplayInfo(label = "Ignore Data Timestamps", desc = "This ignores any data timestamps and defaults to current system time. This is necessary if video stream does not contain any timestamps")
-    public boolean ignoreDataTimestamps = false;
+    public boolean ignoreDataTimestamps = true;
 }

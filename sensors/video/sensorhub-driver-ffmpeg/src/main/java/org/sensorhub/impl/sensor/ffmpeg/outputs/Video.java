@@ -35,15 +35,14 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataStream;
 
 /**
- * Output specification and provider for MISB-TS STANAG 4609 ST0601.16 UAS Metadata
  *
- * @param <UasConfigType> A type parameter that allows us to use this output on both types of sensors that are defined
+ * @param <FFMPEGConfigType> A type parameter that allows us to use this output on both types of sensors that are defined
  *   in this module.
  *
- * @author Nick Garay
- * @since Feb. 6, 2020
+ * @author Nick Garay / Drew Botts
+ * @since Feb. 2, 2024
  */
-public class Video<UasConfigType extends FFMPEGConfig> extends AbstractSensorOutput<FFMPEGSensorBase<UasConfigType>> implements DataBufferListener {
+public class Video<FFMPEGConfigType extends FFMPEGConfig> extends AbstractSensorOutput<FFMPEGSensorBase<FFMPEGConfigType>> implements DataBufferListener {
 
     private static final String SENSOR_OUTPUT_NAME = "video";
     private static final String SENSOR_OUTPUT_LABEL = "Video";
@@ -71,7 +70,7 @@ public class Video<UasConfigType extends FFMPEGConfig> extends AbstractSensorOut
      * @param parentSensor Sensor driver providing this output
      * @param videoFrameDimensions The width and height of the video frame
      */
-    public Video(FFMPEGSensorBase<UasConfigType> parentSensor, int[] videoFrameDimensions, String cFormat) {
+    public Video(FFMPEGSensorBase<FFMPEGConfigType> parentSensor, int[] videoFrameDimensions, String cFormat) {
 
         super(SENSOR_OUTPUT_NAME, parentSensor);
 

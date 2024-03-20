@@ -7,7 +7,6 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.PositionConfig.LLALocation;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.ffmpeg.FFMPEGSensor;
 import org.sensorhub.impl.sensor.ffmpeg.FFMPEGSensorBase;
 import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
 import org.slf4j.Logger;
@@ -16,16 +15,16 @@ import org.vast.data.TextEncodingImpl;
 import org.vast.swe.helper.GeoPosHelper;
 
 
-public class Location<FFMPEGConfigType extends FFMPEGConfig>   extends AbstractSensorOutput<FFMPEGSensorBase<FFMPEGConfigType>> {
+public class LocationOutput<FFMPEGConfigType extends FFMPEGConfig>   extends AbstractSensorOutput<FFMPEGSensorBase<FFMPEGConfigType>> {
     private static final String SENSOR_OUTPUT_NAME = "Location";
 
-    private static final Logger logger = LoggerFactory.getLogger(Location.class);
+    private static final Logger logger = LoggerFactory.getLogger(LocationOutput.class);
 
     protected DataRecord dataStruct;
     protected DataEncoding dataEncoding;
     protected DataBlock dataBlock;
 
-    public Location(FFMPEGSensorBase<FFMPEGConfigType> parentSensor){
+    public LocationOutput(FFMPEGSensorBase<FFMPEGConfigType> parentSensor){
         super(SENSOR_OUTPUT_NAME, parentSensor);
     }
 
@@ -66,7 +65,7 @@ public class Location<FFMPEGConfigType extends FFMPEGConfig>   extends AbstractS
         dataBlock.setDoubleValue(2, gpsLocation.lon);
         dataBlock.setDoubleValue(3, gpsLocation.alt);
 
-        eventHandler.publish(new DataEvent(latestRecordTime, Location.this, dataBlock));
+        eventHandler.publish(new DataEvent(latestRecordTime, LocationOutput.this, dataBlock));
     }
 
     @Override

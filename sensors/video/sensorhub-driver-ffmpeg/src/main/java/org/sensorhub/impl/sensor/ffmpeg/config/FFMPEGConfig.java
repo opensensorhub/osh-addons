@@ -14,6 +14,7 @@
 package org.sensorhub.impl.sensor.ffmpeg.config;
 
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.sensor.PositionConfig;
 import org.sensorhub.api.sensor.SensorConfig;
 
 /**
@@ -43,5 +44,13 @@ public class FFMPEGConfig extends SensorConfig {
     @DisplayInfo.Required
     @DisplayInfo(label = "Connection", desc = "Configuration options for source of MISB STANAG 4609 MPEG-TS")
     public Connection connection = new Connection();
+
+    public PositionConfig positionConfig = new PositionConfig();
+
+    @Override
+    public PositionConfig.LLALocation getLocation()
+    {
+        return positionConfig.location;
+    }
 
 }

@@ -5,8 +5,11 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.DefaultLocationOutput;
+import org.sensorhub.impl.sensor.DefaultLocationOutputLLA;
 import org.sensorhub.impl.sensor.ffmpeg.common.SyncTime;
 import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
+import org.sensorhub.impl.sensor.ffmpeg.outputs.LocationOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.Video;
 import org.sensorhub.mpegts.MpegTsProcessor;
 import org.slf4j.Logger;
@@ -60,15 +63,6 @@ public abstract class FFMPEGSensorBase<FFMPEGconfigType extends FFMPEGConfig> ex
      * Temporary Boolean to select MJPEG encoding
      */
     protected Boolean isMJPEG;
-    /**
-     * Feature for the UAS itself.
-     */
-    protected MovingFeature uasFoi;
-
-    /**
-     * Feature for the target (if available).
-     */
-    protected MovingFeature imagedFoi;
 
     /**
      * Performs initialization common to both sensors.
@@ -98,6 +92,7 @@ public abstract class FFMPEGSensorBase<FFMPEGconfigType extends FFMPEGConfig> ex
         videoOutput = null;
 
         // The non-on-demand subclass will override this method to also open up the stream to get video frame size.
+
     }
     
     @Override
@@ -165,6 +160,7 @@ public abstract class FFMPEGSensorBase<FFMPEGconfigType extends FFMPEGConfig> ex
         addOutput(videoOutput, false);
         videoOutput.init();
     }
+
 
 
     /**
