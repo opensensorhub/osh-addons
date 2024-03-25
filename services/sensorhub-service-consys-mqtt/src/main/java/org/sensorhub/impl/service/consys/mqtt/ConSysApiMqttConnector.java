@@ -77,6 +77,12 @@ public class ConSysApiMqttConnector implements IMqttHandler
         {
             os.send();
         }
+        
+        @Override
+        public void sendPacket(long correlId) throws IOException
+        {
+            os.send(correlId);
+        }
 
         @Override
         public OutputStream getOutputStream()
@@ -188,10 +194,12 @@ public class ConSysApiMqttConnector implements IMqttHandler
             
             if (correlData != null)
             {
-                int cmdID = 0;
+                long cmdID = 0;
+                if (correlData.remaining() == 8)
+                    cmdID = correlData.getLong();
                 if (correlData.remaining() == 4)
                     cmdID = correlData.getInt();
-                if (cmdID <= 0)
+                if (cmdID == 0)
                     throw new InvalidRequestException(ErrorCode.BAD_PAYLOAD, "Invalid correlation data");
                 //var idStr = StandardCharsets.UTF_8.decode(correlData).toString();
                 //var cmdID = Long.parseLong(idStr);

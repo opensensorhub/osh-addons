@@ -35,6 +35,7 @@ public class MqttOutputStream extends ByteArrayOutputStream
     protected IMqttServer server;
     protected String topic;
     protected ByteBuffer buffer;
+    protected ByteBuffer correlData;
     protected boolean autoSendOnFlush;
     
     
@@ -44,6 +45,7 @@ public class MqttOutputStream extends ByteArrayOutputStream
         this.server = Asserts.checkNotNull(server, IMqttServer.class);
         this.topic = topic;
         this.buffer = ByteBuffer.wrap(this.buf);
+        this.correlData = ByteBuffer.allocate(8);
         this.autoSendOnFlush = autoSendOnFlush;
     }
     
@@ -64,6 +66,12 @@ public class MqttOutputStream extends ByteArrayOutputStream
     
     public void send() throws IOException
     {
+        send(0);
+    }
+    
+    
+    public void send(long correlId) throws IOException
+    {
         // do nothing if no more bytes have been written since last call
         if (count == 0)
             return;
@@ -73,7 +81,16 @@ public class MqttOutputStream extends ByteArrayOutputStream
             this.buffer = ByteBuffer.wrap(this.buf);
         
         buffer.limit(count);
-        server.publish(topic, buffer);
+        
+        if (correlId != 0)
+        {
+            correlData.clear();
+            correlData.putLong(correlId);
+            correlData.flip();
+            server.publish(topic, buffer, correlData);
+        }
+        else
+            server.publish(topic, buffer);
         //System.out.println("Sending " + count + " bytes");
         
         // reset so we can write again in same buffer
