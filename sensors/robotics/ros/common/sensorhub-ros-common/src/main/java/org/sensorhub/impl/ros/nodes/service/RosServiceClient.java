@@ -1,4 +1,4 @@
-/*
+/**
  * The contents of this file are subject to the Mozilla Public License, v. 2.0.
  * If a copy of the MPL was not distributed with this file, You can obtain one
  * at http://mozilla.org/MPL/2.0/.
@@ -7,8 +7,7 @@
  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
  * for the specific language governing rights and limitations under the License.
  *
- * Copyright (C) 2023 Botts Innovative Research, Inc. All Rights Reserved.
- *
+ * Copyright (C) 2023-2024 Botts Innovative Research, Inc. All Rights Reserved.
  */
 
 package org.sensorhub.impl.ros.nodes.service;
@@ -23,8 +22,7 @@ import org.ros.node.service.ServiceResponseListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Implementation of a ROS Service Client.  Nodes of this type publish a message to a service within the
@@ -65,7 +63,7 @@ public class RosServiceClient<RequestType, ResponseType> extends AbstractNodeMai
     /**
      * Message queue of messages to publish
      */
-    private final Queue<RequestType> messagesQueue = new ConcurrentLinkedQueue<>();
+    private final LinkedBlockingQueue<RequestType> messagesQueue = new LinkedBlockingQueue<>();
 
     /**
      * The listener to invoke with the <code>RES</code> type when the service call completes
@@ -102,11 +100,14 @@ public class RosServiceClient<RequestType, ResponseType> extends AbstractNodeMai
 
         try {
 
-            serviceClient = connectedNode.newServiceClient(this.serviceName, this.serviceType);
+            if (serviceClient == null) {
 
-            isConnected = serviceClient.isConnected();
+                serviceClient = connectedNode.newServiceClient(this.serviceName, this.serviceType);
+            }
 
-            if (isConnected) {
+            if (!isConnected) {
+
+                isConnected = serviceClient.isConnected();
 
                 connectedNode.executeCancellableLoop(new CancellableLoop() {
                     @Override
@@ -114,15 +115,8 @@ public class RosServiceClient<RequestType, ResponseType> extends AbstractNodeMai
 
                         RequestType currentMessage;
 
-                        synchronized (messagesQueue) {
+                        currentMessage = messagesQueue.take();
 
-                            while (messagesQueue.isEmpty()) {
-
-                                messagesQueue.wait();
-                            }
-
-                            currentMessage = messagesQueue.remove();
-                        }
 
                         serviceClient.call(currentMessage, serviceResponseListener);
                     }
@@ -154,11 +148,15 @@ public class RosServiceClient<RequestType, ResponseType> extends AbstractNodeMai
      */
     public void enqueueServiceRequest(RequestType message) {
 
-        synchronized (messagesQueue) {
+        try {
 
-            messagesQueue.add(message);
+            messagesQueue.put(message);
 
-            messagesQueue.notifyAll();
+        } catch (InterruptedException e) {
+
+            logger.error(e.getMessage());
+
+            Thread.currentThread().interrupt();
         }
     }
 
