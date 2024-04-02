@@ -1,6 +1,6 @@
 description = 'Common Library'
 ext.details = 'Defines base classes for configuration, output, nodes, and utilities for ROS integration'
-version = '1.0.0'
+version = '1.1.0'
 
 repositories {
     mavenCentral()
