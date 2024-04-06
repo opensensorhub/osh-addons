@@ -1,0 +1,83 @@
+import org.ros.internal.message.GenerateInterfaces
+
+// Based on work by Spyros Koukas
+// https://github.com/SpyrosKou/Custom-Messages-ROS-Java-System-Example/blob/main/custom-ros-messages/build.gradle
+buildscript {
+    dependencies {
+        classpath "org.ros.rosjava_core:rosjava:0.3.6"
+        classpath "org.ros.rosjava_bootstrap:message_generation:0.3.3"
+    }
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven {
+            url "https://github.com/rosjava/rosjava_mvn_repo/raw/master"
+        }
+    }
+}
+
+plugins {
+    id 'java-library'
+    id 'idea'
+}
+ext {
+    targetDir = file("src/generated-sources/java/")
+}
+
+task generateRosMessages {
+    group 'build'
+
+    def resourcesFolder = "src/main/resources/";
+
+    def stationHandlersMsgsPackageName = "spot_msgs"
+    def stationHandlerMsgsSourceDir = file(resourcesFolder + stationHandlersMsgsPackageName)
+
+    def List<File> sources = new ArrayList();
+    sources.add(stationHandlerMsgsSourceDir);
+
+    def List<String> packages = new ArrayList();
+    packages.add(stationHandlersMsgsPackageName);
+
+    doLast {
+        targetDir.mkdirs()
+        def GenerateInterfaces interfacesGenerator = new GenerateInterfaces();
+        interfacesGenerator.generate(targetDir, packages, sources);
+    }
+}
+
+description = 'Boston Dynamics Spot Messages'
+ext.details = 'Messages Generated from Spot Message IDL'
+
+sourceSets.main.java.srcDirs "src/generated-sources/java"
+compileJava.dependsOn generateRosMessages
+
+repositories {
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven {
+            url "https://github.com/rosjava/rosjava_mvn_repo/raw/master"
+        }
+    }
+}
+
+group 'org.sensorhub.boston_dynamics.spot'
+version = '1.0.0'
+
+dependencies {
+    api 'org.ros.rosjava_bootstrap:message_generation:0.3.3'
+    api 'org.ros.rosjava_messages:std_msgs:0.5.11'
+    api 'org.ros.rosjava_messages:geometry_msgs:1.12.7'
+    api 'org.ros.rosjava_messages:move_base_msgs:1.11.14'
+    api 'org.ros.rosjava_messages:sensor_msgs:1.12.7'
+    api 'org.ros.rosjava_messages:std_srvs:1.10.12'
+    api 'org.ros.rosjava_messages:actionlib_msgs:1.12.7'
+    testImplementation 'junit:junit:4.12'
+}
+
+clean {
+    delete fileTree(targetDir) {
+        include '**/*.*'
+    }
+}
+
