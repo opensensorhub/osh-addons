@@ -1,0 +1,49 @@
+description = 'Boston Dynamics Spot Driver'
+ext.details = "Driver to control Boston Dynamics SPOT platform"
+version = '1.1.0'
+
+repositories {
+    mavenCentral()
+    jcenter()
+    maven {
+        url "https://github.com/rosjava/rosjava_mvn_repo/raw/master"
+    }
+}
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation 'org.ros.rosjava_core:rosjava:0.3.6'
+    implementation 'org.ros.rosjava_messages:std_srvs:1.11.2'
+    implementation project(':sensorhub-driver-videocam')
+    implementation project(':sensorhub-ros-common')
+    implementation project(':sensorhub-spot-messages')
+    testImplementation('junit:junit:4.13')
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+//      If tests are to be excluded list them here as follows
+//          exclude '**/TestNameClass.class'
+test {
+    useJUnit()
+}
+
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes ('Bundle-Vendor': 'Botts Inc')
+        attributes ('Bundle-Activator': 'org.sensorhub.impl.sensor.tasking.SpotActivator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'ngaray'
+            name 'Nick Garay'
+            organization 'Botts Innovative Research, Inc.'
+            organizationUrl 'www.botts-inc.com'
+        }
+    }
+}
