@@ -1,0 +1,16 @@
+description = 'Smart Sensors Common Utilities'
+ext.details = "Utilities for Smart Sensors"
+version = '1.0.0'
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    testImplementation('junit:junit:4.13')
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+//      If tests are to be excluded list them here as follows
+//          exclude '**/TestNameClass.class'
+test {
+    useJUnit()
+}

@@ -1,0 +1,38 @@
+description = 'PiBot Drive Module'
+ext.details = "Driver for Raspberry Pi Robotics Platform"
+version = '1.0.0'
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation project(':sensorhub-rpi-common')
+    implementation 'com.pi4j:pi4j-core:1.2'
+    testImplementation('junit:junit:4.13')
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+//      If tests are to be excluded list them here as follows
+//          exclude '**/TestNameClass.class'
+test {
+    useJUnit()
+}
+
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes('Bundle-Vendor': 'Sentinel, LLC')
+        attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.pibot.drive.Activator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'nickgaray'
+            name 'Nick Garay'
+            organization ''
+            organizationUrl ''
+        }
+    }
+}

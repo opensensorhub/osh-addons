@@ -1,0 +1,37 @@
+description = 'PiBot Buzzer Module'
+ext.details = "Driver for Raspberry Pi Robotics Platform"
+version = '1.0.0'
+
+dependencies {
+    compile 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    compile project(':sentinel-pibot-common')
+    testImplementation('junit:junit:4.13')
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+//      If tests are to be excluded list them here as follows
+//          exclude '**/TestNameClass.class'
+test {
+    useJUnit()
+}
+
+// add info to OSGi manifest
+jar {
+    manifest {
+        instruction 'Bundle-Vendor', 'Sentinel, LLC.'
+        instruction 'Bundle-Activator', 'org.sensorhub.impl.sensor.pibot.Activator'
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'nickgaray'
+            name 'Nick Garay'
+            organization ''
+            organizationUrl ''
+        }
+    }
+}
