@@ -79,13 +79,12 @@ class MVSamplingLocationIndexImpl
         long now = System.currentTimeMillis();
         
         // retrieve previously cached info or create new one
-        ProducerCacheInfo cachedInfo = clusterCache.get(key.producerID);
-        if (cachedInfo == null)
-        {
-            cachedInfo = new ProducerCacheInfo();
-            cachedInfo.lastCommitTime = now;
-            clusterCache.put(key.producerID, cachedInfo);
-        }
+        String cacheKey = key.producerID != null ? key.producerID : "NONE";
+        ProducerCacheInfo cachedInfo = clusterCache.computeIfAbsent(cacheKey, k -> {
+            ProducerCacheInfo newCachedInfo = new ProducerCacheInfo();
+            newCachedInfo.lastCommitTime = now;
+            return newCachedInfo;
+        });
         
         // update cached producer cluster info
         if (cachedInfo.producerTimeRange == null)

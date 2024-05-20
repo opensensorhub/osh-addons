@@ -51,6 +51,7 @@ import org.vast.data.DataBlockUByte;
 import org.vast.data.DataBlockUInt;
 import org.vast.data.DataBlockUShort;
 import org.vast.util.Asserts;
+import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -445,7 +446,7 @@ public class MVTimeSeriesImpl
     
     int[] getEstimatedRecordCounts(String producerID, double[] timeStamps)
     {
-        int[] bins = new int[timeStamps.length];
+        int[] bins = new int[timeStamps.length-1];
         
         boolean first = true;
         long lastKeyIndex = 0;        
@@ -462,7 +463,7 @@ public class MVTimeSeriesImpl
             ProducerTimeKey key = (i == 0) ? recordIndex.ceilingKey(timeKey) : recordIndex.floorKey(timeKey);
             
             // we're done if no more keys can be found for this producer
-            if (key == null || !key.producerID.equals(producerID))
+            if (key == null || (producerID != null && !key.producerID.equals(producerID)))
                 break;
             
             long keyIndex = recordIndex.getKeyIndex(key);
@@ -492,7 +493,7 @@ public class MVTimeSeriesImpl
             {
                 ProducerTimeKey requestedTime = new ProducerTimeKey(producerID, timeRange[0]);
                 ProducerTimeKey floorKey = recordIndex.floorKey(requestedTime);
-                if (floorKey != null && floorKey.producerID.equals(producerID))
+                if (floorKey != null && Objects.equal(floorKey.producerID, producerID))
                     return new double[] {floorKey.timeStamp, floorKey.timeStamp};
                 else
                     return timeRange;
