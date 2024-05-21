@@ -16,13 +16,13 @@ package org.sensorhub.impl.sensor.flightAware;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.sensorhub.api.data.DataEvent;
+import java.util.concurrent.TimeUnit;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
-
+import com.google.common.cache.CacheBuilder;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -39,11 +39,14 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
     private static final int AVERAGE_SAMPLING_PERIOD = 30;
     private static final String INVALID_ALT_MSG = ": Invalid altitude detected.";
 
-	DataRecord recordStruct;
-	DataEncoding encoding;	
+    DataRecord recordStruct;
+    DataEncoding encoding;    
 
-	Map<String, Long> latestUpdateTimes = new ConcurrentHashMap<>();
-	Map<String, DataBlock> latestRecords = new ConcurrentHashMap<>();  // key is position uid
+    Map<String, Long> latestUpdateTimes = new ConcurrentHashMap<>();
+    Map<String, DataBlock> latestRecords = CacheBuilder.newBuilder()
+            .concurrencyLevel(4)
+            .expireAfterAccess(24, TimeUnit.HOURS)
+            .<String, DataBlock>build().asMap();
 
 	
 	public FlightPositionOutput(FlightAwareDriver parentSensor) 
@@ -51,42 +54,44 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		super("flightPos", parentSensor);
 	}
 
-	protected void init()
-	{
-		SWEHelper fac = new SWEHelper();
-		GeoPosHelper geoHelper = new GeoPosHelper();
 
-		// SWE Common data structure
-		recordStruct = fac.newDataRecord(7);
-		recordStruct.setName(getName());
-		recordStruct.setDefinition(DEF_FLIGHTPOS_REC);
+    protected void init()
+    {
+        SWEHelper fac = new SWEHelper();
+        GeoPosHelper geoHelper = new GeoPosHelper();
 
-		recordStruct.addComponent("time", fac.newTimeStampIsoGPS());
+        // SWE Common data structure
+        recordStruct = fac.newDataRecord(7);
+        recordStruct.setName(getName());
+        recordStruct.setDefinition(DEF_FLIGHTPOS_REC);
+
+        recordStruct.addComponent("time", fac.newTimeStampIsoGPS());
 
 		// oshFlightId
 		recordStruct.addField("flightId", fac.newText(FlightPlanOutput.DEF_FLIGH_ID, "Flight ID", null));
 
-		//  location
-		Vector locVector = geoHelper.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
-		locVector.setLabel("Location");
-		locVector.setDescription("Location measured by GPS device");
-		recordStruct.addComponent("location", locVector);
+        //  location
+        Vector locVector = geoHelper.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
+        locVector.setLabel("Location");
+        locVector.setDescription("Location measured by GPS device");
+        recordStruct.addComponent("location", locVector);
 
-		//  heading
-		recordStruct.addField("heading", fac.newQuantity(DEF_HEADING, "True Heading", null, "deg"));
+        //  heading
+        recordStruct.addField("heading", fac.newQuantity(DEF_HEADING, "True Heading", null, "deg"));
 
-		// airspeed
-		recordStruct.addField("groundSpeed", fac.newQuantity(DEF_GROUND_SPEED, "Ground Speed", null, "[kn_i]"));
-		
-		// vertical rate
+        // airspeed
+        recordStruct.addField("groundSpeed", fac.newQuantity(DEF_GROUND_SPEED, "Ground Speed", null, "[kn_i]"));
+        
+        // vertical rate
         recordStruct.addField("verticalRate", fac.newQuantity(DEF_VERTICAL_RATE, "Vertical Rate", null, "[ft_i]/min"));
 
         // estimated flag
         recordStruct.addField("estimated", fac.newBoolean(SWEConstants.DEF_FLAG, "Estimated Flag", null));
 
-		// default encoding is text
-		encoding = fac.newTextEncoding(",", "\n");
-	}
+        // default encoding is text
+        encoding = fac.newTextEncoding(",", "\n");
+    }
+
 
 	public void sendPosition(String oshFlightId, FlightObject fltPos)
 	{                
@@ -113,14 +118,15 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
             else
                 parentSensor.getLogger().debug("{}{} No previous value available", oshFlightId, INVALID_ALT_MSG);
         }
-		dataBlk.setDoubleValue(i++, alt);
-		
-		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.heading));
-		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.gs));
+        dataBlk.setDoubleValue(i++, alt);
+        
+        dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.heading));
+        dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.gs));
         dataBlk.setDoubleValue(i++, fltPos.verticalChange);
         dataBlk.setBooleanValue(i++, "P".equals(fltPos.updateType));
         parentSensor.getLogger().trace("{} Position Type: {}", oshFlightId, fltPos.updateType);
         
+
 		// update latest record and send event
 		latestRecord = dataBlk;
 		latestRecords.put(oshFlightId, dataBlk);
@@ -131,18 +137,19 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		    FlightAwareDriver.FLIGHT_UID_PREFIX + oshFlightId,
 		    dataBlk));
 	}
+	
 
-	public double getAverageSamplingPeriod()
-	{
-		return AVERAGE_SAMPLING_PERIOD;
-	}
+    public double getAverageSamplingPeriod()
+    {
+        return AVERAGE_SAMPLING_PERIOD;
+    }
 
 
-	@Override 
-	public DataComponent getRecordDescription()
-	{
-		return recordStruct;
-	}
+    @Override 
+    public DataComponent getRecordDescription()
+    {
+        return recordStruct;
+    }
 
 
 	@Override

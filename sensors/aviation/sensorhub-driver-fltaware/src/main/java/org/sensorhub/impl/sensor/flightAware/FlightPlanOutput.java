@@ -14,8 +14,6 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +25,7 @@ import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
+import com.google.common.cache.CacheBuilder;
 import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
@@ -56,26 +55,30 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver>
 
     private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toMillis(15); 
 
-	DataComponent dataStruct;
+    DataComponent dataStruct;
     DataArray waypointArray;
-	DataEncoding encoding;	
-	Map<String, Long> latestUpdateTimes = new ConcurrentHashMap<>();
-	Map<String, DataBlock> latestRecords = new ConcurrentHashMap<>();
+    DataEncoding encoding;
+    
+    Map<String, Long> latestUpdateTimes = new ConcurrentHashMap<>();
+    Map<String, DataBlock> latestRecords = CacheBuilder.newBuilder()
+            .concurrencyLevel(4)
+            .expireAfterAccess(24, TimeUnit.HOURS)
+            .<String, DataBlock>build().asMap();
 
 
-	public FlightPlanOutput(FlightAwareDriver parentSensor) 
-	{
-		super("flightPlan", parentSensor);
-	}
+    public FlightPlanOutput(FlightAwareDriver parentSensor) 
+    {
+        super("flightPlan", parentSensor);
+    }
 
-	protected void init()
-	{
-		GeoPosHelper fac = new GeoPosHelper();
+    protected void init()
+    {
+        GeoPosHelper fac = new GeoPosHelper();
 
-		// SWE Common data structure
-		this.dataStruct = fac.newDataRecord();
-		dataStruct.setName(getName());
-		dataStruct.setDefinition(DEF_FLIGHTPLAN_REC);
+        // SWE Common data structure
+        this.dataStruct = fac.newDataRecord();
+        dataStruct.setName(getName());
+        dataStruct.setDefinition(DEF_FLIGHTPLAN_REC);
         dataStruct.addComponent("time", fac.newTimeIsoUTC(SWEConstants.DEF_SAMPLING_TIME, "Issue Time", null));
         dataStruct.addComponent("flightId", fac.newText(DEF_FLIGH_ID, "Flight ID", null));
         dataStruct.addComponent("flightNumber", fac.newText(DEF_FLIGHT_NUM, "Flight Number", null));
@@ -104,12 +107,12 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver>
         waypointArray.setElementCount(numPoints);
         dataStruct.addComponent("waypoints", waypointArray);
 
-		// default encoding is text
-		encoding = fac.newTextEncoding(",", "\n");
-	}
+        // default encoding is text
+        encoding = fac.newTextEncoding(",", "\n");
+    }
 
-	public synchronized void sendFlightPlan(String oshFlightId, FlightObject fltPlan)
-	{
+    public synchronized void sendFlightPlan(String oshFlightId, FlightObject fltPlan)
+    {
         long msgTime = System.currentTimeMillis();
         
         // renew datablock
@@ -148,6 +151,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver>
         latestRecord = dataBlk;
         latestRecordTime = msgTime;
         latestRecords.put(oshFlightId, dataBlk);
+
         eventHandler.publish(new DataEvent(
             latestRecordTime, this,
             FlightAwareDriver.FLIGHT_UID_PREFIX + oshFlightId,
@@ -179,17 +183,18 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver>
 	}
 
 
-	public double getAverageSamplingPeriod()
-	{
-		return AVERAGE_SAMPLING_PERIOD;
-	}
+
+    public double getAverageSamplingPeriod()
+    {
+        return AVERAGE_SAMPLING_PERIOD;
+    }
 
 
-	@Override 
-	public DataComponent getRecordDescription()
-	{
-		return dataStruct;
-	}
+    @Override 
+    public DataComponent getRecordDescription()
+    {
+        return dataStruct;
+    }
 
 
 	@Override
@@ -197,4 +202,5 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver>
 	{
 		return encoding;
 	}
+
 }

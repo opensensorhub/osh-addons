@@ -107,7 +107,7 @@ public class FlightObject
 	public String updateType;
 	public String altChange;  // "C" for climbing, "D" for descending, " " when undetermined
 	public String edt;
-	public String eat;
+	public String eta;
 	public String ete;
 	public String fdt;
 	public String route;
