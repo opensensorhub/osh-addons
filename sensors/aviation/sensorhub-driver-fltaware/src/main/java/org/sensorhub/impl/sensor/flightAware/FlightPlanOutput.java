@@ -29,6 +29,7 @@ import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
+import com.google.common.cache.CacheBuilder;
 import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
@@ -57,26 +58,30 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
 
     private static final int AVERAGE_SAMPLING_PERIOD = (int)TimeUnit.MINUTES.toMillis(15); 
 
-	DataComponent dataStruct;
+    DataComponent dataStruct;
     DataArray waypointArray;
-	DataEncoding encoding;	
-	Map<String, Long> latestUpdateTimes = new ConcurrentHashMap<>();
-	Map<String, DataBlock> latestRecords = new ConcurrentHashMap<>();
+    DataEncoding encoding;    
+    Map<String, Long> latestUpdateTimes = new ConcurrentHashMap<>();
+    //Map<String, DataBlock> latestRecords = new ConcurrentHashMap<>();
+    Map<String, DataBlock> latestRecords = CacheBuilder.newBuilder()
+            .concurrencyLevel(4)
+            .expireAfterAccess(24, TimeUnit.HOURS)
+            .<String, DataBlock>build().asMap();
 
 
-	public FlightPlanOutput(FlightAwareDriver parentSensor) 
-	{
-		super("flightPlan", parentSensor);
-	}
+    public FlightPlanOutput(FlightAwareDriver parentSensor) 
+    {
+        super("flightPlan", parentSensor);
+    }
 
-	protected void init()
-	{
-		GeoPosHelper fac = new GeoPosHelper();
+    protected void init()
+    {
+        GeoPosHelper fac = new GeoPosHelper();
 
-		// SWE Common data structure
-		this.dataStruct = fac.newDataRecord();
-		dataStruct.setName(getName());
-		dataStruct.setDefinition(DEF_FLIGHTPLAN_REC);
+        // SWE Common data structure
+        this.dataStruct = fac.newDataRecord();
+        dataStruct.setName(getName());
+        dataStruct.setDefinition(DEF_FLIGHTPLAN_REC);
         dataStruct.addComponent("time", fac.newTimeIsoUTC(SWEConstants.DEF_SAMPLING_TIME, "Issue Time", null));
         dataStruct.addComponent("flightId", fac.newText(ENTITY_ID_URI, "Flight ID", null));
         dataStruct.addComponent("flightNumber", fac.newText(DEF_FLIGHT_NUM, "Flight Number", null));
@@ -105,12 +110,12 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         waypointArray.setElementCount(numPoints);
         dataStruct.addComponent("waypoints", waypointArray);
 
-		// default encoding is text
-		encoding = fac.newTextEncoding(",", "\n");
-	}
+        // default encoding is text
+        encoding = fac.newTextEncoding(",", "\n");
+    }
 
-	public synchronized void sendFlightPlan(String oshFlightId, FlightObject fltPlan)
-	{
+    public synchronized void sendFlightPlan(String oshFlightId, FlightObject fltPlan)
+    {
         long msgTime = System.currentTimeMillis();
         
         // renew datablock
@@ -150,81 +155,81 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         latestRecordTime = msgTime;
         latestRecords.put(oshFlightId, dataBlk);
         eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, oshFlightId, this, dataBlk));
-	}
-	
-	
-	protected boolean isDuplicate(String flightId, DataBlock newRec)
-	{
-	    DataBlock oldRec = latestRecords.get(flightId);
-	    
-	    // we're sure it's not duplicate if we never received anything
-	    // or if the data blocks have different sizes
-	    if (oldRec == null || oldRec.getAtomCount() != newRec.getAtomCount())
-	        return false;
-	    
-	    // compare all fields except the first (issue time)
-	    // because it's always set to current time
-	    for (int i=1; i<newRec.getAtomCount(); i++)
-	    {
-	        String oldVal = oldRec.getStringValue(i);
-	        String newVal = newRec.getStringValue(i);	        
-	        if (oldVal != null && !oldVal.equals(newVal))
-	            return false;	        
-	    }
-	    
-	    parentSensor.getLogger().debug("Duplicate flight plan received for flight {}", flightId);
-	    return true;
-	}
+    }
+    
+    
+    protected boolean isDuplicate(String flightId, DataBlock newRec)
+    {
+        DataBlock oldRec = latestRecords.get(flightId);
+        
+        // we're sure it's not duplicate if we never received anything
+        // or if the data blocks have different sizes
+        if (oldRec == null || oldRec.getAtomCount() != newRec.getAtomCount())
+            return false;
+        
+        // compare all fields except the first (issue time)
+        // because it's always set to current time
+        for (int i=1; i<newRec.getAtomCount(); i++)
+        {
+            String oldVal = oldRec.getStringValue(i);
+            String newVal = newRec.getStringValue(i);            
+            if (oldVal != null && !oldVal.equals(newVal))
+                return false;            
+        }
+        
+        parentSensor.getLogger().debug("Duplicate flight plan received for flight {}", flightId);
+        return true;
+    }
 
 
-	public double getAverageSamplingPeriod()
-	{
-		return AVERAGE_SAMPLING_PERIOD;
-	}
+    public double getAverageSamplingPeriod()
+    {
+        return AVERAGE_SAMPLING_PERIOD;
+    }
 
 
-	@Override 
-	public DataComponent getRecordDescription()
-	{
-		return dataStruct;
-	}
+    @Override 
+    public DataComponent getRecordDescription()
+    {
+        return dataStruct;
+    }
 
 
-	@Override
-	public DataEncoding getRecommendedEncoding()
-	{
-		return encoding;
-	}
+    @Override
+    public DataEncoding getRecommendedEncoding()
+    {
+        return encoding;
+    }
 
 
-	@Override
-	public Collection<String> getEntityIDs()
-	{
-		return parentSensor.getEntityIDs();
-	}
+    @Override
+    public Collection<String> getEntityIDs()
+    {
+        return parentSensor.getEntityIDs();
+    }
 
 
-	@Override
-	public Map<String, DataBlock> getLatestRecords()
-	{
-		return Collections.unmodifiableMap(latestRecords);
-	}
+    @Override
+    public Map<String, DataBlock> getLatestRecords()
+    {
+        return Collections.unmodifiableMap(latestRecords);
+    }
 
 
-	@Override
-	public DataBlock getLatestRecord(String entityId) {
-		//		for(Map.Entry<String, DataBlock> dbe: latestRecords.entrySet()) {
-		//			String key = dbe.getKey();
-		//			DataBlock val = dbe.getValue();
-		//			System.err.println(key + " : " + val);
-		//		}
-		int lastColonIdx = entityId.lastIndexOf(':');
-		if(lastColonIdx == -1) {
-			return null;
-		}
-		String flightId = entityId.substring(lastColonIdx + 1);
-		return latestRecords.get(flightId);
-	}
+    @Override
+    public DataBlock getLatestRecord(String entityId) {
+        //        for(Map.Entry<String, DataBlock> dbe: latestRecords.entrySet()) {
+        //            String key = dbe.getKey();
+        //            DataBlock val = dbe.getValue();
+        //            System.err.println(key + " : " + val);
+        //        }
+        int lastColonIdx = entityId.lastIndexOf(':');
+        if(lastColonIdx == -1) {
+            return null;
+        }
+        String flightId = entityId.substring(lastColonIdx + 1);
+        return latestRecords.get(flightId);
+    }
 
 
 }
