@@ -1,0 +1,45 @@
+description = 'Universal Controller Driver'
+ext.details = "Driver to be able to read inputs from a gamepad device such as from a PS2 or Xbox controller OR read from a Wii Remote with or without nunchuk."
+version = '1.0.0'
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation 'net.java.jinput:jinput:2.0.10'
+    implementation fileTree(dir: 'lib', include: ['*.jar'])
+    testImplementation('junit:junit:4.13.1')
+}
+
+def thisProjectDir = projectDir
+rootProject.allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+//      If tests are to be excluded list them here as follows
+//          exclude '**/TestNameClass.class'
+test {
+    useJUnit()
+}
+
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes ('Bundle-Vendor': 'Botts Inc')
+        attributes ('Bundle-Activator': 'com.sample.impl.sensor.universalcontroller.Activator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'alexalmanza'
+            name 'Alex Almanza'
+            organization 'Botts Innovative Research'
+            organizationUrl 'https://botts-inc.com'
+        }
+    }
+}
