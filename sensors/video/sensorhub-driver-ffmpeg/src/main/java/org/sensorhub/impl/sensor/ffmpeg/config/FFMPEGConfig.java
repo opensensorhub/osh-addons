@@ -19,18 +19,19 @@ import org.sensorhub.api.sensor.SensorConfig;
  * Configuration settings for the FFMPEG driver exposed via the OpenSensorHub Admin panel.
  * <p>
  * Configuration settings take the form of
- * <code>
+ * <pre><code>
  * DisplayInfo(desc="Description of configuration field to show in UI")
  * public Type configOption;
- * </code>
+ * </code></pre>
  * <p>
- * Containing an annotation describing the setting and if applicable its range of values
- * as well as a public access variable of the given Type
+ * Containing an annotation describing the setting and if applicable,
+ * its range of values as well as a public access variable of the given Type.
  *
  * @author Drew Botts
  * @since Feb. 6, 2023
  */
 public class FFMPEGConfig extends SensorConfig {
+    public PositionConfig positionConfig = new PositionConfig();
 
     /**
      * The unique identifier for the configured UAS sensor platform.
@@ -43,12 +44,8 @@ public class FFMPEGConfig extends SensorConfig {
     @DisplayInfo(label = "Connection", desc = "Configuration options for source of MISB STANAG 4609 MPEG-TS")
     public Connection connection = new Connection();
 
-    public PositionConfig positionConfig = new PositionConfig();
-
     @Override
-    public PositionConfig.LLALocation getLocation()
-    {
+    public PositionConfig.LLALocation getLocation() {
         return positionConfig.location;
     }
-
 }

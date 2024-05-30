@@ -11,7 +11,6 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.ffmpeg.config;
 
-
 import org.sensorhub.api.config.DisplayInfo;
 
 /**
@@ -22,15 +21,14 @@ import org.sensorhub.api.config.DisplayInfo;
  * @since Feb 2023
  */
 public class Connection {
-
     @DisplayInfo(label = "File Path", desc = "VIDEO file to be streamed")
     @DisplayInfo.FieldType(value = DisplayInfo.FieldType.Type.FILESYSTEM_PATH)
     public String transportStreamPath;
-    
+
     @DisplayInfo(label = "FPS", desc = "Number of frames per second to enforce during playback of a file."
-        + " 0 means the stream will be played as fast as possible.")
+            + " 0 means the stream will be played as fast as possible.")
     public int fps = 0;
-    
+
     @DisplayInfo(desc = "Continuously loop video playback (only available when reading from file).")
     public boolean loop = false;
 

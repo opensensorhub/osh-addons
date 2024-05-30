@@ -17,7 +17,6 @@ import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
 /**
  * Sensor driver that can read video data that is compatible with FFMPEG.
  *
- *
  * @author Drew Botts
  * @since Feb. 2023
  */
@@ -26,30 +25,28 @@ public class FFMPEGSensor extends FFMPEGSensorBase<FFMPEGConfig> {
     protected void doInit() throws SensorHubException {
         super.doInit();
 
-        // We need the background thread here since we start reading the video data immediately in order to determine
-        // the video size.
+        // We need the background thread here since we start reading the video data immediately to determine the video size.
         setupExecutor();
 
         // Open up the stream so that we can get the video output.
         openStream();
-
     }
-    
+
     @Override
     protected void doStart() throws SensorHubException {
-    	super.doStart();
+        super.doStart();
 
-    	// Start up the background thread if it's not already going. Normally doInit() will have just been called, so
-    	// this is redundant (but harmless). But if the user has stopped the sensor and re-started it, then this call
-    	// is necessary.
+        // Start up the background thread if it's not already going.
+        // Normally doInit() will have just been called, so this is redundant (but harmless).
+        // But if the user has stopped the sensor and re-started it, then this call is necessary.
         setupExecutor();
 
-        // Make sure the stream is already open. (If the sensor has been previously started, then stopped, then the
-        // stream won't be open.)
+        // Make sure the stream is already open.
+        // If the sensor has been previously started, then stopped, the stream won't be open.
         openStream();
 
-        // Some preliminary data was read from the stream in doInit(), but this call makes it start processing all the
-        // frames.
+        // Some preliminary data was read from the stream in doInit(),
+        // but this call makes it start processing all the frames.
         startStream();
     }
 }

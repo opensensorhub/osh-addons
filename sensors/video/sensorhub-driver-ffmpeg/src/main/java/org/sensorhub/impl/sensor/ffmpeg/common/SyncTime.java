@@ -18,9 +18,8 @@ package org.sensorhub.impl.sensor.ffmpeg.common;
  * @since Apr. 2, 2020
  */
 public class SyncTime {
-
-    private double precisionTimeStamp;
-    private double presentationTimeStamp;
+    private final double precisionTimeStamp;
+    private final double presentationTimeStamp;
 
     /**
      * Constructor
@@ -31,7 +30,6 @@ public class SyncTime {
      *                              telemetry data as given by the precisionTimeStamp
      */
     public SyncTime(double precisionTimeStamp, double presentationTimeStamp) {
-
         this.precisionTimeStamp = precisionTimeStamp;
         this.presentationTimeStamp = presentationTimeStamp;
     }

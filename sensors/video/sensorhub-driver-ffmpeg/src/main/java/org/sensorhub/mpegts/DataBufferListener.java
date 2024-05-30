@@ -19,6 +19,5 @@ package org.sensorhub.mpegts;
  * @since Feb. 6, 2020
  */
 public interface DataBufferListener {
-
-    void onDataBuffer(DataBufferRecord record);
+    void onDataBuffer(DataBufferRecord dataBufferRecord);
 }

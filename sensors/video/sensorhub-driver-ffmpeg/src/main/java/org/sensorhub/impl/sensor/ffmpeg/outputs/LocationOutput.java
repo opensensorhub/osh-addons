@@ -25,17 +25,16 @@ import org.slf4j.LoggerFactory;
 import org.vast.data.TextEncodingImpl;
 import org.vast.swe.helper.GeoPosHelper;
 
-
-public class LocationOutput<FFMPEGConfigType extends FFMPEGConfig>   extends AbstractSensorOutput<FFMPEGSensorBase<FFMPEGConfigType>> {
+public class LocationOutput<T extends FFMPEGConfig> extends AbstractSensorOutput<FFMPEGSensorBase<T>> {
     private static final String SENSOR_OUTPUT_NAME = "Location";
 
-    private static final Logger logger = LoggerFactory.getLogger(LocationOutput.class);
+    private static final Logger logger = LoggerFactory.getLogger(LocationOutput.class.getSimpleName());
 
     protected DataRecord dataStruct;
     protected DataEncoding dataEncoding;
     protected DataBlock dataBlock;
 
-    public LocationOutput(FFMPEGSensorBase<FFMPEGConfigType> parentSensor){
+    public LocationOutput(FFMPEGSensorBase<T> parentSensor) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
     }
 
@@ -54,20 +53,14 @@ public class LocationOutput<FFMPEGConfigType extends FFMPEGConfig>   extends Abs
                 .build();
 
         dataEncoding = new TextEncodingImpl(",", "\n");
-
     }
 
     public void setLocation(LLALocation gpsLocation) {
-
         if (latestRecord == null) {
-
             dataBlock = dataStruct.createDataBlock();
-
         } else {
-
             dataBlock = latestRecord.renew();
         }
-
 
         latestRecordTime = System.currentTimeMillis() / 1000;
 
