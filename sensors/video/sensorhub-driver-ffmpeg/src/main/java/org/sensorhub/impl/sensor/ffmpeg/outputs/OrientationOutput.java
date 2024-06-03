@@ -16,59 +16,51 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.api.sensor.PositionConfig.LLALocation;
+import org.sensorhub.api.sensor.PositionConfig.EulerOrientation;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.ffmpeg.FFMPEGSensor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vast.data.TextEncodingImpl;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.helper.GeoPosHelper;
 
-public class LocationOutput<FFMPEGConfig> extends AbstractSensorOutput<FFMPEGSensor> {
-    private static final String SENSOR_OUTPUT_NAME = "Location";
-
-    private static final Logger logger = LoggerFactory.getLogger(LocationOutput.class.getSimpleName());
+public class OrientationOutput extends AbstractSensorOutput<FFMPEGSensor> {
+    private static final String SENSOR_OUTPUT_NAME = "sensorOrientation";
 
     protected DataRecord dataStruct;
     protected DataEncoding dataEncoding;
     protected DataBlock dataBlock;
 
-    public LocationOutput(FFMPEGSensor parentSensor) {
+    public OrientationOutput(FFMPEGSensor parentSensor) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
     }
 
-    protected void init() {
+    public void doInit() {
         GeoPosHelper geoPosHelper = new GeoPosHelper();
 
         dataStruct = geoPosHelper.createRecord()
                 .name(getName())
-                .label("Location")
-                .definition(GeoPosHelper.getPropertyUri("location-output"))
-                .addField("Sampling Time", geoPosHelper.createTime()
-                        .asSamplingTimeIsoUTC()
-                        .name("time")
-                        .description("time stamp: when the message was received"))
-                .addField("Sensor Location", geoPosHelper.createLocationVectorLLA())
+                .label("Sensor Orientation")
+                .addSamplingTimeIsoUTC("time")
+                .addField("orientation", geoPosHelper.createVector()
+                        .from(geoPosHelper.newEulerOrientationNED(SWEConstants.DEF_SENSOR_ORIENT)))
                 .build();
 
         dataEncoding = new TextEncodingImpl(",", "\n");
     }
 
-    public void setLocation(LLALocation gpsLocation) {
-        if (latestRecord == null) {
-            dataBlock = dataStruct.createDataBlock();
-        } else {
-            dataBlock = latestRecord.renew();
-        }
+    public void setLocation(EulerOrientation orientation) {
+        dataBlock = (latestRecord == null) ? dataStruct.createDataBlock() : latestRecord.renew();
 
         latestRecordTime = System.currentTimeMillis() / 1000;
 
         dataBlock.setLongValue(0, latestRecordTime);
-        dataBlock.setDoubleValue(1, gpsLocation.lat);
-        dataBlock.setDoubleValue(2, gpsLocation.lon);
-        dataBlock.setDoubleValue(3, gpsLocation.alt);
+        dataBlock.setDoubleValue(1, orientation.heading);
+        dataBlock.setDoubleValue(2, orientation.pitch);
+        dataBlock.setDoubleValue(3, orientation.roll);
 
-        eventHandler.publish(new DataEvent(latestRecordTime, LocationOutput.this, dataBlock));
+        latestRecord = dataBlock;
+        latestRecordTime = System.currentTimeMillis();
+        eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlock));
     }
 
     @Override

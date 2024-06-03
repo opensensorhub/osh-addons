@@ -31,18 +31,19 @@ import org.sensorhub.api.sensor.SensorConfig;
  * @since Feb. 6, 2023
  */
 public class FFMPEGConfig extends SensorConfig {
-    public PositionConfig positionConfig = new PositionConfig();
-
     /**
-     * The unique identifier for the configured UAS sensor platform.
+     * The unique identifier for the configured FFMPEG sensor platform.
      */
     @DisplayInfo.Required
     @DisplayInfo(label = "Video Stream ID", desc = "Serial number or unique identifier for video stream.")
     public String serialNumber = "video001";
 
     @DisplayInfo.Required
-    @DisplayInfo(label = "Connection", desc = "Configuration options for source of MISB STANAG 4609 MPEG-TS")
+    @DisplayInfo(label = "Connection", desc = "Configuration options for source of FFMPEG")
     public Connection connection = new Connection();
+
+    @DisplayInfo(desc = "Geographic position")
+    public PositionConfig positionConfig = new PositionConfig();
 
     @Override
     public PositionConfig.LLALocation getLocation() {

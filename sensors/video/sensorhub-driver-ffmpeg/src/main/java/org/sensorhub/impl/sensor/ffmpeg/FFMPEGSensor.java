@@ -15,6 +15,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.ffmpeg.common.SyncTime;
 import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
+import org.sensorhub.impl.sensor.ffmpeg.outputs.OrientationOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.Video;
 import org.sensorhub.mpegts.MpegTsProcessor;
 import org.slf4j.Logger;
@@ -51,6 +52,8 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * Sensor output for the video frames.
      */
     protected Video videoOutput;
+
+    protected OrientationOutput orientationOutput;
 
     /**
      * Keeps track of the times in the data stream so that we can put an accurate phenomenon time in the data blocks.
@@ -91,11 +94,22 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
 
         // Open up the stream so that we can get the video output.
         openStream();
+
+        if (config.positionConfig.orientation != null) {
+            orientationOutput = new OrientationOutput(this);
+            orientationOutput.doInit();
+            addOutput(orientationOutput, true);
+        }
     }
 
     @Override
     protected void doStart() throws SensorHubException {
         super.doStart();
+
+        // Set the sensor orientation
+        if (orientationOutput != null && config.positionConfig.orientation != null) {
+            orientationOutput.setLocation(config.positionConfig.orientation);
+        }
 
         // Start up the background thread if it's not already going.
         // Normally doInit() will have just been called, so this is redundant (but harmless).
