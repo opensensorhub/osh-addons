@@ -1,4 +1,4 @@
-description = 'FFMPEG VIDEO DRIVER'
+description = 'FFMPEG Video Driver'
 ext.details = "Driver for connecting to ffmpeg capable video streams"
 version = '2.0.0'
 
