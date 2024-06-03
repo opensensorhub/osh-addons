@@ -139,7 +139,7 @@ public class Video extends AbstractSensorOutput<FFMPEGSensor> implements DataBuf
         Boolean ignoreDataTimestamp = (parentSensor).getIgnoreDataTimestamp();
 
         // If synchronization time data is available
-        if (null != syncTime || ignoreDataTimestamp) {
+        if (syncTime != null || ignoreDataTimestamp) {
             byte[] dataBuffer = dataBufferRecord.getDataBuffer();
 
             DataBlock dataBlock;

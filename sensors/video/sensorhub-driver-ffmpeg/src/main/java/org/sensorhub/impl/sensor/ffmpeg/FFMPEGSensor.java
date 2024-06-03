@@ -205,10 +205,10 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
             // Initialize the MPEG transport stream processor from the source named in the configuration.
             // If neither the file source nor a connection string is specified,
             // throw an exception so the user knows that they have to provide at least one of them.
-            if ((null != config.connection.transportStreamPath) && (!config.connection.transportStreamPath.isBlank())) {
+            if ((config.connection.transportStreamPath != null) && (!config.connection.transportStreamPath.isBlank())) {
                 Asserts.checkArgument(config.connection.fps >= 0, "FPS must be >= 0");
                 mpegTsProcessor = new MpegTsProcessor(config.connection.transportStreamPath, config.connection.fps, config.connection.loop);
-            } else if ((null != config.connection.connectionString) && (!config.connection.connectionString.isBlank())) {
+            } else if ((config.connection.connectionString != null) && (!config.connection.connectionString.isBlank())) {
                 mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString);
             } else {
                 throw new SensorHubException("Either the input file path or the connection string must be set");
@@ -257,7 +257,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
     protected void stopStream() throws SensorHubException {
         logger.info("Stopping MPEG TS processor for {}", getUniqueIdentifier());
 
-        if (null != mpegTsProcessor) {
+        if (mpegTsProcessor != null) {
             mpegTsProcessor.stopProcessingStream();
 
             try {

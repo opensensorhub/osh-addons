@@ -26,19 +26,19 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.bytedeco.ffmpeg.global.avformat.av_read_frame;
+
 /**
  * The class provides a wrapper to bytedeco.org JavaCpp-Platform.
  * "Bytedeco makes native libraries available to the Java platform
  * by offering ready-to-use bindings generated with the co-developed
  * JavaCPP technology."
  * <p>
- * Of particular interest is the platform support for ffmpeg, specifically
- * avutils which is used to demux the MPEG-TS streams into h264 video packets
- * and MISB STANAG 4609 Metadata packets.
+ * Of particular interest is the platform support for ffmpeg,
+ * specifically avutils which is used to demux the MPEG-TS streams into h264 video packets.
  * <p>
- * The MpegTsProcessor allows for easy interface and management of the
- * logical stream, allowing client applications to register callbacks
- * for video and metadata buffers for further domain-specific processing.
+ * The MpegTsProcessor allows for easy interface and management of the logical stream,
+ * allowing client applications to register callbacks for video and metadata buffers for further domain-specific processing.
  * <p>
  * <H1>Example Usage:</H1>
  * <pre><code>
@@ -230,7 +230,7 @@ public class MpegTsProcessor extends Thread {
     }
 
     /**
-     * Required to identify if the transport stream contains a video stream stream.
+     * Required to identify if the transport stream contains a video stream.
      * Should be invoked after {@link MpegTsProcessor#queryEmbeddedStreams()} and used in conjunction
      * with {@link MpegTsProcessor#setVideoDataBufferListener(DataBufferListener)}
      * to register callbacks for appropriate buffers.
@@ -252,7 +252,6 @@ public class MpegTsProcessor extends Thread {
      * @throws IllegalStateException if there is no video stream embedded
      */
     public double getVideoStreamAvgFrameRate() throws IllegalStateException {
-
         if (INVALID_STREAM_ID == videoStreamId) {
 
             String message = "Stream does not contain video frames";
@@ -298,15 +297,14 @@ public class MpegTsProcessor extends Thread {
     }
 
     /**
-     * Registers a video buffer listener to call if clients are interested in demuxed
-     * video buffers
+     * Registers a video buffer listener to call if clients are interested in demuxed video buffers
      *
      * @param videoDataBufferListener the listener to invoke when a video buffer is retrieved from
      *                                the transport stream.
      * @throws NullPointerException if the data buffer listener is null
      */
     public void setVideoDataBufferListener(DataBufferListener videoDataBufferListener) throws NullPointerException {
-        if (null == videoDataBufferListener) {
+        if (videoDataBufferListener == null) {
             throw new NullPointerException("Attempt to set null videoStreamPacketListener");
         }
 
@@ -317,7 +315,7 @@ public class MpegTsProcessor extends Thread {
      * Starts the threaded process for demuxing the transport stream.
      * Should only be invoked if the stream is successfully opened.
      * <p>
-     * Call this method instead of invoke {@link MpegTsProcessor#start()} directly,
+     * Call this method instead of invoking {@link MpegTsProcessor#start()} directly,
      * as this method will ensure the codec context is set up for use with the transport stream.
      *
      * @throws IllegalStateException if the stream has not been opened or failed to open.
@@ -342,7 +340,7 @@ public class MpegTsProcessor extends Thread {
     public void run() {
         do {
             processStreamPackets();
-            logger.info("End of MISB TS stream");
+            logger.info("End of the FFMPEG stream");
             if (loop) {
                 avformat.av_seek_frame(avFormatContext, 0, 0, avformat.AVSEEK_FLAG_ANY);
             }
@@ -364,9 +362,9 @@ public class MpegTsProcessor extends Thread {
             // Read frames
             long startTime = System.currentTimeMillis();
             long frameCount = 0;
-            while (!terminateProcessing.get()) {
+            while (!terminateProcessing.get() && (av_read_frame(avFormatContext, avPacket)) >= 0) {
                 // If it is a video or data frame and there is a listener registered
-                if ((avPacket.stream_index() == videoStreamId) && (null != videoDataBufferListener)) {
+                if ((avPacket.stream_index() == videoStreamId) && (videoDataBufferListener != null)) {
 
                     // Process the video packet
                     byte[] dataBuffer = new byte[avPacket.size()];
@@ -408,7 +406,7 @@ public class MpegTsProcessor extends Thread {
      * This method is invoked by {@link MpegTsProcessor#closeStream()} to ensure cleanup is neat and orderly.
      */
     private void closeCodecContext() {
-        if (null != avCodecContext) {
+        if (avCodecContext != null) {
             avcodec.avcodec_close(avCodecContext);
             avcodec.avcodec_free_context(avCodecContext);
 
@@ -425,7 +423,7 @@ public class MpegTsProcessor extends Thread {
         if (streamOpened) {
             closeCodecContext();
 
-            if (null != avFormatContext) {
+            if (avFormatContext != null) {
                 avformat.avformat_close_input(avFormatContext);
             }
 
@@ -461,7 +459,7 @@ public class MpegTsProcessor extends Thread {
         // Get the associated codec from the id stored in the context
         AVCodec codec = avcodec.avcodec_find_decoder(avCodecContext.codec_id());
 
-        if (null == codec) {
+        if (codec == null) {
             String message = "Unsupported codec";
 
             logger.error(message);
