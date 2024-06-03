@@ -18,14 +18,13 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.PositionConfig.LLALocation;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.ffmpeg.FFMPEGSensorBase;
-import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
+import org.sensorhub.impl.sensor.ffmpeg.FFMPEGSensor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.data.TextEncodingImpl;
 import org.vast.swe.helper.GeoPosHelper;
 
-public class LocationOutput<T extends FFMPEGConfig> extends AbstractSensorOutput<FFMPEGSensorBase<T>> {
+public class LocationOutput<FFMPEGConfig> extends AbstractSensorOutput<FFMPEGSensor> {
     private static final String SENSOR_OUTPUT_NAME = "Location";
 
     private static final Logger logger = LoggerFactory.getLogger(LocationOutput.class.getSimpleName());
@@ -34,7 +33,7 @@ public class LocationOutput<T extends FFMPEGConfig> extends AbstractSensorOutput
     protected DataEncoding dataEncoding;
     protected DataBlock dataBlock;
 
-    public LocationOutput(FFMPEGSensorBase<T> parentSensor) {
+    public LocationOutput(FFMPEGSensor parentSensor) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
     }
 

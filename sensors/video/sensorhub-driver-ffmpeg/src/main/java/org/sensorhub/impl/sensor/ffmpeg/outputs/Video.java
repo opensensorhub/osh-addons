@@ -17,9 +17,8 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataStream;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.ffmpeg.FFMPEGSensorBase;
+import org.sensorhub.impl.sensor.ffmpeg.FFMPEGSensor;
 import org.sensorhub.impl.sensor.ffmpeg.common.SyncTime;
-import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.sensorhub.mpegts.DataBufferListener;
 import org.sensorhub.mpegts.DataBufferRecord;
@@ -32,11 +31,10 @@ import org.vast.util.Asserts;
 import java.util.concurrent.Executor;
 
 /**
- * @param <T> A type parameter that allows us to use this output on both types of sensors that are defined in this module.
  * @author Nick Garay / Drew Botts
  * @since Feb. 2, 2024
  */
-public class Video<T extends FFMPEGConfig> extends AbstractSensorOutput<FFMPEGSensorBase<T>> implements DataBufferListener {
+public class Video extends AbstractSensorOutput<FFMPEGSensor> implements DataBufferListener {
     private static final String SENSOR_OUTPUT_NAME = "video";
     private static final String SENSOR_OUTPUT_LABEL = "Video";
     private static final String SENSOR_OUTPUT_DESCRIPTION = "Video stream using ffmpeg library";
@@ -61,7 +59,7 @@ public class Video<T extends FFMPEGConfig> extends AbstractSensorOutput<FFMPEGSe
      * @param parentSensor         Sensor driver providing this output
      * @param videoFrameDimensions The width and height of the video frame
      */
-    public Video(FFMPEGSensorBase<T> parentSensor, int[] videoFrameDimensions, String cFormat) {
+    public Video(FFMPEGSensor parentSensor, int[] videoFrameDimensions, String cFormat) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
 
         logger.debug("Video created");
