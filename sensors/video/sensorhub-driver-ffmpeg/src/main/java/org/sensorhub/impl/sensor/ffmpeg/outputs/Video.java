@@ -49,6 +49,8 @@ public class Video extends AbstractSensorOutput<FFMPEGSensor> implements DataBuf
     private DataEncoding dataEncoding;
 
     private static final int MAX_NUM_TIMING_SAMPLES = 10;
+    long lastSetTimeMillis = 0;
+    private int setCount = 0;
     private final long[] timingHistogram = new long[MAX_NUM_TIMING_SAMPLES];
     private final Object histogramLock = new Object();
     private Executor executor;
@@ -142,12 +144,8 @@ public class Video extends AbstractSensorOutput<FFMPEGSensor> implements DataBuf
         if (syncTime != null || ignoreDataTimestamp) {
             byte[] dataBuffer = dataBufferRecord.getDataBuffer();
 
-            DataBlock dataBlock;
-            if (latestRecord == null) {
-                dataBlock = dataStruct.createDataBlock();
-            } else {
-                dataBlock = latestRecord.renew();
-            }
+            DataBlock dataBlock = createDataBlock();
+            updateTimingHistogram();
 
             if (Boolean.TRUE.equals(ignoreDataTimestamp)) {
                 dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
@@ -168,5 +166,39 @@ public class Video extends AbstractSensorOutput<FFMPEGSensor> implements DataBuf
         } else {
             logger.warn("Synchronization record not yet available from Telemetry, dropping video packet");
         }
+    }
+
+    /**
+     * Creates a new data block for the output.
+     *
+     * @return A new data block
+     */
+    private DataBlock createDataBlock() {
+        if (latestRecord == null) {
+            return dataStruct.createDataBlock();
+        } else {
+            return latestRecord.renew();
+        }
+    }
+
+    /**
+     * Updates the timing histogram with the latest set time.
+     */
+    private void updateTimingHistogram() {
+        synchronized (histogramLock) {
+            if (setCount == 0) {
+                lastSetTimeMillis = System.currentTimeMillis();
+            }
+
+            int setIndex = setCount % MAX_NUM_TIMING_SAMPLES;
+
+            // Get a sampling time for the latest set based on the previous set sampling time.
+            timingHistogram[setIndex] = System.currentTimeMillis() - lastSetTimeMillis;
+
+            // Set the latest sampling time to now.
+            lastSetTimeMillis = timingHistogram[setIndex];
+        }
+
+        ++setCount;
     }
 }
