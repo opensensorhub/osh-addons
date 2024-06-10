@@ -39,10 +39,10 @@ public class FFMPEGConfig extends SensorConfig {
     public String serialNumber = "video001";
 
     @DisplayInfo.Required
-    @DisplayInfo(label = "Connection", desc = "Configuration options for source of FFMPEG")
+    @DisplayInfo(label = "Connection", desc = "Configuration options for source of FFMPEG.")
     public Connection connection = new Connection();
 
-    @DisplayInfo(desc = "Geographic position")
+    @DisplayInfo(label = "Position", desc = "Location and orientation of the sensor.")
     public PositionConfig positionConfig = new PositionConfig();
 
     @Override
