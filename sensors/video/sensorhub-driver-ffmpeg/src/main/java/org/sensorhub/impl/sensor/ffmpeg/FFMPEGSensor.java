@@ -16,7 +16,7 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.ffmpeg.common.SyncTime;
 import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.OrientationOutput;
-import org.sensorhub.impl.sensor.ffmpeg.outputs.Video;
+import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
 import org.sensorhub.mpegts.MpegTsProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +51,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
     /**
      * Sensor output for the video frames.
      */
-    protected Video videoOutput;
+    protected VideoOutput videoOutput;
 
     protected OrientationOutput orientationOutput;
 
@@ -184,7 +184,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * The caller must be careful not to call this if the video output has already been created and added to the sensor.
      */
     protected void createVideoOutput(int[] videoDims, String codecFormat) {
-        videoOutput = new Video(this, videoDims, codecFormat);
+        videoOutput = new VideoOutput(this, videoDims, codecFormat);
         if (executor != null) {
             videoOutput.setExecutor(executor);
         }

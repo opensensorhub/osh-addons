@@ -34,12 +34,12 @@ import java.util.concurrent.Executor;
  * @author Nick Garay / Drew Botts
  * @since Feb. 2, 2024
  */
-public class Video extends AbstractSensorOutput<FFMPEGSensor> implements DataBufferListener {
+public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements DataBufferListener {
     private static final String SENSOR_OUTPUT_NAME = "video";
     private static final String SENSOR_OUTPUT_LABEL = "Video";
     private static final String SENSOR_OUTPUT_DESCRIPTION = "Video stream using ffmpeg library";
 
-    private static final Logger logger = LoggerFactory.getLogger(Video.class.getSimpleName());
+    private static final Logger logger = LoggerFactory.getLogger(VideoOutput.class.getSimpleName());
 
     private final int videoFrameWidth;
     private final int videoFrameHeight;
@@ -61,7 +61,7 @@ public class Video extends AbstractSensorOutput<FFMPEGSensor> implements DataBuf
      * @param parentSensor         Sensor driver providing this output
      * @param videoFrameDimensions The width and height of the video frame
      */
-    public Video(FFMPEGSensor parentSensor, int[] videoFrameDimensions, String cFormat) {
+    public VideoOutput(FFMPEGSensor parentSensor, int[] videoFrameDimensions, String cFormat) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
 
         logger.debug("Video created");
