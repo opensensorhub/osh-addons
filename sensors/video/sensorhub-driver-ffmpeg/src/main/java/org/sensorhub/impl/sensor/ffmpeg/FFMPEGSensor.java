@@ -13,13 +13,10 @@ package org.sensorhub.impl.sensor.ffmpeg;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.ffmpeg.common.SyncTime;
 import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.OrientationOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
 import org.sensorhub.mpegts.MpegTsProcessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vast.swe.SWEConstants;
 import org.vast.util.Asserts;
 
@@ -33,11 +30,6 @@ import java.util.concurrent.ScheduledExecutorService;
  * @since Feb. 2023
  */
 public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
-    /**
-     * Debug logger
-     */
-    private static final Logger logger = LoggerFactory.getLogger(FFMPEGSensor.class.getSimpleName());
-
     /**
      * Thing that knows how to parse the data out of the bytes from the video stream.
      */
@@ -54,16 +46,6 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
     protected VideoOutput videoOutput;
 
     protected OrientationOutput orientationOutput;
-
-    /**
-     * Keeps track of the times in the data stream so that we can put an accurate phenomenon time in the data blocks.
-     */
-    protected SyncTime syncTime;
-
-    /**
-     * Lock to prevent simultaneous access to syncTime.
-     */
-    protected final Object syncTimeLock = new Object();
 
     @Override
     protected void doInit() throws SensorHubException {
@@ -183,8 +165,8 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * Create and initialize the video output.
      * The caller must be careful not to call this if the video output has already been created and added to the sensor.
      */
-    protected void createVideoOutput(int[] videoDims, String codecFormat) {
-        videoOutput = new VideoOutput(this, videoDims, codecFormat);
+    protected void createVideoOutput(int[] videoDims) {
+        videoOutput = new VideoOutput(this, videoDims);
         if (executor != null) {
             videoOutput.setExecutor(executor);
         }
@@ -205,9 +187,9 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
             // Initialize the MPEG transport stream processor from the source named in the configuration.
             // If neither the file source nor a connection string is specified,
             // throw an exception so the user knows that they have to provide at least one of them.
-            if ((config.connection.transportStreamPath != null) && (!config.connection.transportStreamPath.isBlank())) {
+            if ((config.connection.filePath != null) && (!config.connection.filePath.isBlank())) {
                 Asserts.checkArgument(config.connection.fps >= 0, "FPS must be >= 0");
-                mpegTsProcessor = new MpegTsProcessor(config.connection.transportStreamPath, config.connection.fps, config.connection.loop);
+                mpegTsProcessor = new MpegTsProcessor(config.connection.filePath, config.connection.fps, config.connection.loop);
             } else if ((config.connection.connectionString != null) && (!config.connection.connectionString.isBlank())) {
                 mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString);
             } else {
@@ -223,8 +205,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
                     // we go ahead and do that now.
                     if (videoOutput == null) {
                         int[] videoDimensions = mpegTsProcessor.getVideoStreamFrameDimensions();
-                        String codecFormat = "string";
-                        createVideoOutput(videoDimensions, codecFormat);
+                        createVideoOutput(videoDimensions);
                     }
                     // Set video stream packet listener to video output
                     mpegTsProcessor.setVideoDataBufferListener(videoOutput);
@@ -273,49 +254,5 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
                 mpegTsProcessor = null;
             }
         }
-    }
-
-    /**
-     * Sets a synchronization time element used to synchronize telemetry with video stream data
-     *
-     * @param syncTime The most recent synchronization data from telemetry stream
-     */
-    public void setStreamSyncTime(SyncTime syncTime) {
-        synchronized (syncTimeLock) {
-            this.syncTime = syncTime;
-        }
-    }
-
-    /**
-     * Returns the latest {@link SyncTime} record or null if not yet received
-     *
-     * @return The latest sync time or null
-     */
-    public SyncTime getSyncTime() {
-        SyncTime currentSyncTime;
-
-        synchronized (syncTimeLock) {
-            currentSyncTime = syncTime;
-        }
-
-        return currentSyncTime;
-    }
-
-    /**
-     * Returns the ignoreDataTimestamp flag
-     *
-     * @return ignoreDataTimestamp
-     */
-    public Boolean getIgnoreDataTimestamp() {
-        return config.connection.ignoreDataTimestamps;
-    }
-
-    /**
-     * Returns the isMJPEG flag
-     *
-     * @return isMJPEG
-     */
-    public Boolean getIsMJPEG() {
-        return config.connection.isMJPEG;
     }
 }

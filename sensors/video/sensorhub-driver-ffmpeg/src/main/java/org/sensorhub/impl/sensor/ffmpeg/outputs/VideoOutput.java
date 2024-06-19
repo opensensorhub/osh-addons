@@ -18,7 +18,6 @@ import net.opengis.swe.v20.DataStream;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.ffmpeg.FFMPEGSensor;
-import org.sensorhub.impl.sensor.ffmpeg.common.SyncTime;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.sensorhub.mpegts.DataBufferListener;
 import org.sensorhub.mpegts.DataBufferRecord;
@@ -43,7 +42,6 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
 
     private final int videoFrameWidth;
     private final int videoFrameHeight;
-    private final String codecFormat;
 
     private DataComponent dataStruct;
     private DataEncoding dataEncoding;
@@ -61,14 +59,13 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
      * @param parentSensor         Sensor driver providing this output
      * @param videoFrameDimensions The width and height of the video frame
      */
-    public VideoOutput(FFMPEGSensor parentSensor, int[] videoFrameDimensions, String cFormat) {
+    public VideoOutput(FFMPEGSensor parentSensor, int[] videoFrameDimensions) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
 
-        logger.debug("Video created");
+        logger.debug("Video output created");
 
         videoFrameWidth = videoFrameDimensions[0];
         videoFrameHeight = videoFrameDimensions[1];
-        codecFormat = cFormat;
     }
 
     /**
@@ -79,16 +76,8 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
 
         // Get an instance of SWE Factory suitable to build components
         VideoCamHelper sweFactory = new VideoCamHelper();
-        Boolean isMJPEG = (parentSensor).getIsMJPEG();
-        DataStream outputDef;
 
-        logger.debug(codecFormat);
-        if (Boolean.TRUE.equals(isMJPEG)) {
-            outputDef = sweFactory.newVideoOutputMJPEG(getName(), videoFrameWidth, videoFrameHeight);
-        } else {
-            outputDef = sweFactory.newVideoOutputH264(getName(), videoFrameWidth, videoFrameHeight);
-        }
-
+        DataStream outputDef = sweFactory.newVideoOutputH264(getName(), videoFrameWidth, videoFrameHeight);
         dataStruct = outputDef.getElementType();
         dataStruct.setLabel(SENSOR_OUTPUT_LABEL);
         dataStruct.setDescription(SENSOR_OUTPUT_DESCRIPTION);
@@ -137,35 +126,21 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
     }
 
     public void processBuffer(DataBufferRecord dataBufferRecord) {
-        SyncTime syncTime = (parentSensor).getSyncTime();
-        Boolean ignoreDataTimestamp = (parentSensor).getIgnoreDataTimestamp();
+        byte[] dataBuffer = dataBufferRecord.getDataBuffer();
 
-        // If synchronization time data is available
-        if (syncTime != null || ignoreDataTimestamp) {
-            byte[] dataBuffer = dataBufferRecord.getDataBuffer();
+        DataBlock dataBlock = createDataBlock();
+        updateTimingHistogram();
 
-            DataBlock dataBlock = createDataBlock();
-            updateTimingHistogram();
+        dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
 
-            if (Boolean.TRUE.equals(ignoreDataTimestamp)) {
-                dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
-            } else {
-                double sampleTime = syncTime.getPrecisionTimeStamp() + (dataBufferRecord.getPresentationTimestamp() - syncTime.getPresentationTimeStamp());
-                dataBlock.setDoubleValue(0, sampleTime);
-            }
+        // Set underlying video frame data
+        AbstractDataBlock frameData = ((DataBlockMixed) dataBlock).getUnderlyingObject()[1];
+        frameData.setUnderlyingObject(dataBuffer);
 
-            // Set underlying video frame data
-            AbstractDataBlock frameData = ((DataBlockMixed) dataBlock).getUnderlyingObject()[1];
-            frameData.setUnderlyingObject(dataBuffer);
+        latestRecord = dataBlock;
+        latestRecordTime = System.currentTimeMillis();
 
-            latestRecord = dataBlock;
-            latestRecordTime = System.currentTimeMillis();
-
-            eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlock));
-
-        } else {
-            logger.warn("Synchronization record not yet available from Telemetry, dropping video packet");
-        }
+        eventHandler.publish(new DataEvent(latestRecordTime, this, dataBlock));
     }
 
     /**

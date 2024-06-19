@@ -23,7 +23,7 @@ import org.sensorhub.api.config.DisplayInfo;
 public class Connection {
     @DisplayInfo(label = "File Path", desc = "VIDEO file to be streamed")
     @DisplayInfo.FieldType(value = DisplayInfo.FieldType.Type.FILESYSTEM_PATH)
-    public String transportStreamPath;
+    public String filePath;
 
     @DisplayInfo(label = "FPS", desc = "Number of frames per second to enforce during playback of a file."
             + " 0 means the stream will be played as fast as possible.")
@@ -33,11 +33,5 @@ public class Connection {
     public boolean loop = false;
 
     @DisplayInfo(label = "Connection String", desc = "Connection string that the driver will pass to ffmpeg to connect to the MPEG-TS stream. This value is ignored if an input file path is also set in the configuration. See https://www.ffmpeg.org/ffmpeg-protocols.html#Protocols for details of allowed values.")
-    public String connectionString;
-
-    @DisplayInfo(label = "MJPEG", desc = "Select if video codec format is MJPEG. Otherwise driver will use H264.")
-    public boolean isMJPEG = false;
-
-    @DisplayInfo(label = "Ignore Data Timestamps", desc = "This ignores any data timestamps and defaults to current system time. This is necessary if video stream does not contain any timestamps.")
-    public boolean ignoreDataTimestamps = true;
+    public String connectionString ="rtsp://admin:12345@192.168.1.175/ch1";
 }
