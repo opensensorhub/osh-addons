@@ -14,18 +14,27 @@ package org.sensorhub.impl.sensor.ffmpeg.config;
 import org.sensorhub.api.config.DisplayInfo;
 
 /**
- * Configuration settings for the FFMPEG driver exposed via the OpenSensorHub Admin panel.
+ * Configuration settings for the FFmpeg driver exposed via the OpenSensorHub Admin panel.
  * Specifically, establish connections for video streams that are compatible with FFMPEG
  */
 public class Connection {
+    /**
+     * Connection string that the driver will pass to FFmpeg to connect to the stream.
+     */
     @DisplayInfo.Required
-    @DisplayInfo(label = "Connection String", desc = "Connection string that the driver will pass to ffmpeg to connect to the MPEG-TS stream. See https://www.ffmpeg.org/ffmpeg-protocols.html#Protocols for details of allowed values. May also be a file path.")
+    @DisplayInfo(label = "Connection String", desc = "Connection string that the driver will pass to FFmpeg to connect to the stream. See https://www.ffmpeg.org/ffmpeg-protocols.html#Protocols for details of allowed values. May also be a file path.")
     public String connectionString;
 
+    /**
+     * FPS of the video playback, used only when reading from a file.
+     */
     @DisplayInfo.ValueRange
     @DisplayInfo(label = "FPS", desc = "Number of frames per second to enforce during playback of a file. 0 means the stream will be played as fast as possible. Only used when reading from file.")
     public int fps;
 
+    /**
+     * Continuously loop video playback, used only when reading from a file.
+     */
     @DisplayInfo(desc = "Continuously loop video playback. Only used when reading from file.")
     public boolean loop = false;
 }

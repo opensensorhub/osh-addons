@@ -21,9 +21,6 @@ import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
  * Class named in META-INF/services/org.sensorhub.api.module.IModuleProvider that informs OpenSensorHub of
  * a sensor driver and its configuration class.
  * In this case, it tells OSH about the {@link FFMPEGSensor}.
- *
- * @author Drew Botts
- * @since Feb. 2023
  */
 public class FFMPEGDescriptor extends JarModuleProvider implements IModuleProvider {
     /**

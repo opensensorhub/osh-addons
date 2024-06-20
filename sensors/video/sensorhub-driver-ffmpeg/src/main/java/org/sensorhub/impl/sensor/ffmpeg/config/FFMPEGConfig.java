@@ -16,32 +16,26 @@ import org.sensorhub.api.sensor.PositionConfig;
 import org.sensorhub.api.sensor.SensorConfig;
 
 /**
- * Configuration settings for the FFMPEG driver exposed via the OpenSensorHub Admin panel.
- * <p>
- * Configuration settings take the form of
- * <pre><code>
- * DisplayInfo(desc="Description of configuration field to show in UI")
- * public Type configOption;
- * </code></pre>
- * <p>
- * Containing an annotation describing the setting and if applicable,
- * its range of values as well as a public access variable of the given Type.
- *
- * @author Drew Botts
- * @since Feb. 6, 2023
+ * Configuration settings for the FFmpeg driver exposed via the OpenSensorHub Admin panel.
  */
 public class FFMPEGConfig extends SensorConfig {
     /**
-     * The unique identifier for the configured FFMPEG sensor platform.
+     * The unique identifier for the configured FFmpeg sensor platform.
      */
     @DisplayInfo.Required
     @DisplayInfo(label = "Video Stream ID", desc = "Serial number or unique identifier for video stream.")
     public String serialNumber = "video001";
 
+    /**
+     * Configuration options for the connection to the FFmpeg video stream.
+     */
     @DisplayInfo.Required
     @DisplayInfo(label = "Connection", desc = "Configuration options for source of FFMPEG.")
     public Connection connection = new Connection();
 
+    /**
+     * Configuration options for the location and orientation of the sensor.
+     */
     @DisplayInfo(label = "Position", desc = "Location and orientation of the sensor.")
     public PositionConfig positionConfig = new PositionConfig();
 

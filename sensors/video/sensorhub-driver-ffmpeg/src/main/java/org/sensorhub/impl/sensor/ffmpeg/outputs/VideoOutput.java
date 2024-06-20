@@ -30,8 +30,7 @@ import org.vast.util.Asserts;
 import java.util.concurrent.Executor;
 
 /**
- * @author Nick Garay / Drew Botts
- * @since Feb. 2, 2024
+ * Output for video data from the FFMPEG sensor.
  */
 public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements DataBufferListener {
     private static final String SENSOR_OUTPUT_NAME = "video";
@@ -54,7 +53,7 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
     private Executor executor;
 
     /**
-     * Constructor
+     * Creates a new video output.
      *
      * @param parentSensor         Sensor driver providing this output
      * @param videoFrameDimensions The width and height of the video frame
@@ -71,7 +70,7 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
     /**
      * Initializes the data structure for the output, defining the fields, their ordering, and data types.
      */
-    public void init() {
+    public void doInit() {
         logger.debug("Initializing Video");
 
         // Get an instance of SWE Factory suitable to build components
@@ -125,6 +124,11 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
         return accumulator / (double) MAX_NUM_TIMING_SAMPLES;
     }
 
+    /**
+     * Sets the video frame data in the output.
+     *
+     * @param dataBufferRecord The data buffer record containing the video frame data.
+     */
     public void processBuffer(DataBufferRecord dataBufferRecord) {
         byte[] dataBuffer = dataBufferRecord.getDataBuffer();
 

@@ -23,10 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * Sensor driver that can read video data that is compatible with FFMPEG.
- *
- * @author Drew Botts
- * @since Feb. 2023
+ * Sensor driver that can read video data that is compatible with FFmpeg.
  */
 public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
     /**
@@ -44,6 +41,9 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      */
     protected VideoOutput videoOutput;
 
+    /**
+     * Sensor output for the orientation data.
+     */
     protected OrientationOutput orientationOutput;
 
     @Override
@@ -175,7 +175,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
             videoOutput.setExecutor(executor);
         }
         addOutput(videoOutput, false);
-        videoOutput.init();
+        videoOutput.doInit();
     }
 
     /**
@@ -184,6 +184,8 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * This can be called multiple times, but will only have any effect the first time it's called after doInit()
      * since it checks for a null mpegTsProcessor.
      * This also has the side effect of creating and adding the Video output if it hasn't already happened earlier.
+     *
+     * @throws SensorHubException If there is a problem opening the stream.
      */
     protected void openStream() throws SensorHubException {
         if (mpegTsProcessor == null) {
@@ -228,6 +230,8 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * This causes the frames of the video to start being processed.
      * If it's from a network stream, that means that data will start flowing across the wire.
      * If it's from a file stream, the frames are read from disk.
+     *
+     * @throws SensorHubException If there is a problem starting the stream processor.
      */
     protected void startStream() throws SensorHubException {
         try {
@@ -241,6 +245,11 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
         }
     }
 
+    /**
+     * Stops the stream processor and cleans up resources.
+     *
+     * @throws SensorHubException If there is a problem stopping the stream processor.
+     */
     protected void stopStream() throws SensorHubException {
         logger.info("Stopping MPEG TS processor for {}", getUniqueIdentifier());
 

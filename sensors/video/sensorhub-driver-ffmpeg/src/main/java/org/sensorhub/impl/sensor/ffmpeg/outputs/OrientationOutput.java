@@ -23,6 +23,9 @@ import org.vast.data.TextEncodingImpl;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.helper.GeoPosHelper;
 
+/**
+ * Output for orientation data associated with the FFMPEG sensor.
+ */
 public class OrientationOutput extends AbstractSensorOutput<FFMPEGSensor> {
     private static final String SENSOR_OUTPUT_NAME = "sensorOrientation";
 
@@ -30,10 +33,16 @@ public class OrientationOutput extends AbstractSensorOutput<FFMPEGSensor> {
     protected DataEncoding dataEncoding;
     protected DataBlock dataBlock;
 
+    /**
+     * Constructs a new sensor output for orientation data.
+     */
     public OrientationOutput(FFMPEGSensor parentSensor) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
     }
 
+    /**
+     * Initializes the output and its data structure.
+     */
     public void doInit() {
         GeoPosHelper geoPosHelper = new GeoPosHelper();
 
@@ -48,6 +57,11 @@ public class OrientationOutput extends AbstractSensorOutput<FFMPEGSensor> {
         dataEncoding = new TextEncodingImpl(",", "\n");
     }
 
+    /**
+     * Sets the orientation data.
+     *
+     * @param orientation The euler orientation to set.
+     */
     public void setOrientation(EulerOrientation orientation) {
         dataBlock = (latestRecord == null) ? dataStruct.createDataBlock() : latestRecord.renew();
 
