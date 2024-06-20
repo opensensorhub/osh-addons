@@ -88,6 +88,6 @@ public class DH390OrientationOutput extends AbstractSensorOutput<DH390Driver> {
 
     @Override
     public double getAverageSamplingPeriod() {
-        return 0;
+        return Double.NaN;
     }
 }

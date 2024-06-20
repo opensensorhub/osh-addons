@@ -89,6 +89,6 @@ public class OrientationOutput extends AbstractSensorOutput<FFMPEGSensor> {
 
     @Override
     public double getAverageSamplingPeriod() {
-        return 0;
+        return Double.NaN;
     }
 }
