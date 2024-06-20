@@ -48,7 +48,7 @@ public class OrientationOutput extends AbstractSensorOutput<FFMPEGSensor> {
         dataEncoding = new TextEncodingImpl(",", "\n");
     }
 
-    public void setLocation(EulerOrientation orientation) {
+    public void setOrientation(EulerOrientation orientation) {
         dataBlock = (latestRecord == null) ? dataStruct.createDataBlock() : latestRecord.renew();
 
         latestRecordTime = System.currentTimeMillis() / 1000;

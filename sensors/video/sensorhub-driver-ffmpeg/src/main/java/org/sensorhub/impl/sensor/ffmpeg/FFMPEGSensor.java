@@ -94,7 +94,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
 
         // Set the sensor orientation
         if (orientationOutput != null && config.positionConfig.orientation != null) {
-            orientationOutput.setLocation(config.positionConfig.orientation);
+            orientationOutput.setOrientation(config.positionConfig.orientation);
         }
 
         // Start up the background thread if it's not already going.
