@@ -16,22 +16,16 @@ import org.sensorhub.api.config.DisplayInfo;
 /**
  * Configuration settings for the FFMPEG driver exposed via the OpenSensorHub Admin panel.
  * Specifically, establish connections for video streams that are compatible with FFMPEG
- *
- * @author Drew Botts
- * @since Feb 2023
  */
 public class Connection {
-    @DisplayInfo(label = "File Path", desc = "VIDEO file to be streamed")
-    @DisplayInfo.FieldType(value = DisplayInfo.FieldType.Type.FILESYSTEM_PATH)
-    public String filePath;
+    @DisplayInfo.Required
+    @DisplayInfo(label = "Connection String", desc = "Connection string that the driver will pass to ffmpeg to connect to the MPEG-TS stream. See https://www.ffmpeg.org/ffmpeg-protocols.html#Protocols for details of allowed values. May also be a file path.")
+    public String connectionString;
 
-    @DisplayInfo(label = "FPS", desc = "Number of frames per second to enforce during playback of a file."
-            + " 0 means the stream will be played as fast as possible.")
-    public int fps = 0;
+    @DisplayInfo.ValueRange
+    @DisplayInfo(label = "FPS", desc = "Number of frames per second to enforce during playback of a file. 0 means the stream will be played as fast as possible. Only used when reading from file.")
+    public int fps;
 
-    @DisplayInfo(desc = "Continuously loop video playback (only available when reading from file).")
+    @DisplayInfo(desc = "Continuously loop video playback. Only used when reading from file.")
     public boolean loop = false;
-
-    @DisplayInfo(label = "Connection String", desc = "Connection string that the driver will pass to ffmpeg to connect to the MPEG-TS stream. This value is ignored if an input file path is also set in the configuration. See https://www.ffmpeg.org/ffmpeg-protocols.html#Protocols for details of allowed values.")
-    public String connectionString ="rtsp://admin:12345@192.168.1.175/ch1";
 }

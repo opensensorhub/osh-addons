@@ -18,7 +18,6 @@ import org.sensorhub.impl.sensor.ffmpeg.outputs.OrientationOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
 import org.sensorhub.mpegts.MpegTsProcessor;
 import org.vast.swe.SWEConstants;
-import org.vast.util.Asserts;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -50,9 +49,13 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
     @Override
     protected void doInit() throws SensorHubException {
         super.doInit();
+        logger.info("Initializing FFMPEG sensor for {}", getUniqueIdentifier());
 
         generateUniqueID("urn:osh:sensor:ffmpeg:", config.serialNumber);
         generateXmlID("FFMPEG_", config.serialNumber);
+
+        if (config.connection.fps < 0)
+            throw new SensorHubException("FPS must be a positive value");
 
         // Every time we do init we have to tear down the mpegTsProcessor,
         // just in case they changed some setting that might cause the video output to be different.
@@ -67,6 +70,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
                 mpegTsProcessor = null;
             }
         }
+
         // We also have to clear out the video output since its settings may have changed
         // (based on having a new input video, for example).
         videoOutput = null;
@@ -184,18 +188,20 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
     protected void openStream() throws SensorHubException {
         if (mpegTsProcessor == null) {
             logger.info("Opening MPEG TS connection for {} ...", getUniqueIdentifier());
-            // Initialize the MPEG transport stream processor from the source named in the configuration.
-            // If neither the file source nor a connection string is specified,
-            // throw an exception so the user knows that they have to provide at least one of them.
-            if ((config.connection.filePath != null) && (!config.connection.filePath.isBlank())) {
-                Asserts.checkArgument(config.connection.fps >= 0, "FPS must be >= 0");
-                mpegTsProcessor = new MpegTsProcessor(config.connection.filePath, config.connection.fps, config.connection.loop);
-            } else if ((config.connection.connectionString != null) && (!config.connection.connectionString.isBlank())) {
-                mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString);
+
+            // Regex to determine if the connection string is a file path.
+            String fileRegex = "^(?:[a-zA-Z]:)?(?:[\\/\\\\][^\\/\\\\:*?\"<>|]+)+$";
+
+            // For files, the FPS and loop settings are used to control playback.
+            if (config.connection.connectionString.matches(fileRegex)) {
+                logger.info("Opening file stream with FPS: {} and loop: {}", config.connection.fps, config.connection.loop);
+                mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString, config.connection.fps, config.connection.loop);
             } else {
-                throw new SensorHubException("Either the input file path or the connection string must be set");
+                logger.info("Opening network stream");
+                mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString);
             }
 
+            // Initialize the MPEG transport stream processor from the source named in the configuration.
             if (mpegTsProcessor.openStream()) {
                 logger.info("Stream opened for {}", getUniqueIdentifier());
                 mpegTsProcessor.queryEmbeddedStreams();
