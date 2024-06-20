@@ -27,6 +27,7 @@ import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockMixed;
 import org.vast.util.Asserts;
 
+import java.util.ArrayList;
 import java.util.concurrent.Executor;
 
 /**
@@ -46,9 +47,7 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
     private DataEncoding dataEncoding;
 
     private static final int MAX_NUM_TIMING_SAMPLES = 10;
-    long lastSetTimeMillis = 0;
-    private int setCount = 0;
-    private final long[] timingHistogram = new long[MAX_NUM_TIMING_SAMPLES];
+    private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
     private final Object histogramLock = new Object();
     private Executor executor;
 
@@ -113,15 +112,15 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
 
     @Override
     public double getAverageSamplingPeriod() {
-        long accumulator = 0;
+        double sum = 0;
 
         synchronized (histogramLock) {
-            for (int idx = 0; idx < MAX_NUM_TIMING_SAMPLES; ++idx) {
-                accumulator += timingHistogram[idx];
+            for (double sample : intervalHistogram) {
+                sum += sample;
             }
         }
 
-        return accumulator / (double) MAX_NUM_TIMING_SAMPLES;
+        return sum / intervalHistogram.size();
     }
 
     /**
@@ -161,23 +160,18 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
     }
 
     /**
-     * Updates the timing histogram with the latest set time.
+     * Updates the interval histogram with the latest set time.
      */
     private void updateTimingHistogram() {
         synchronized (histogramLock) {
-            if (setCount == 0) {
-                lastSetTimeMillis = System.currentTimeMillis();
+            if (latestRecord != null) {
+                long interval = System.currentTimeMillis() - latestRecordTime;
+                intervalHistogram.add(interval / 1000d);
+
+                if (intervalHistogram.size() > MAX_NUM_TIMING_SAMPLES) {
+                    intervalHistogram.remove(0);
+                }
             }
-
-            int setIndex = setCount % MAX_NUM_TIMING_SAMPLES;
-
-            // Get a sampling time for the latest set based on the previous set sampling time.
-            timingHistogram[setIndex] = System.currentTimeMillis() - lastSetTimeMillis;
-
-            // Set the latest sampling time to now.
-            lastSetTimeMillis = timingHistogram[setIndex];
         }
-
-        ++setCount;
     }
 }
