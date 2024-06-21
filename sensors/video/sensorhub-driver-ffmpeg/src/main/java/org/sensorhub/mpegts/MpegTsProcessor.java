@@ -11,8 +11,6 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.mpegts;
 
-import org.bytedeco.ffmpeg.avcodec.AVCodec;
-import org.bytedeco.ffmpeg.avcodec.AVCodecContext;
 import org.bytedeco.ffmpeg.avcodec.AVCodecParameters;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avformat.AVFormatContext;
@@ -24,6 +22,10 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.bytedeco.ffmpeg.global.avformat.av_read_frame;
@@ -34,7 +36,7 @@ import static org.bytedeco.ffmpeg.global.avformat.av_read_frame;
  * by offering ready-to-use bindings generated with the co-developed
  * JavaCPP technology."
  * <p>
- * Of particular interest is the platform support for ffmpeg,
+ * Of particular interest is the platform support for FFmpeg,
  * specifically avutils which is used to demux the MPEG-TS streams into h264 video packets.
  * <p>
  * The MpegTsProcessor allows for easy interface and management of the logical stream,
@@ -79,30 +81,13 @@ public class MpegTsProcessor extends Thread {
      */
     private static final String WORKER_THREAD_NAME = "STREAM-PROCESSOR";
 
-    /**
-     * ID of invalid sub streams within actual stream.
-     */
-    protected static final int INVALID_STREAM_ID = -1;
+    private final StreamContext videoStreamContext = new StreamContext();
+    private final StreamContext audioStreamContext = new StreamContext();
 
     /**
-     * Context used by underlying ffmpeg library to decode stream.
+     * Context used by underlying FFmpeg library to decode stream.
      */
     private AVFormatContext avFormatContext;
-
-    /**
-     * Codec context, holds information about the codec used in transport stream.
-     */
-    private AVCodecContext avCodecContext;
-
-    /**
-     * Container for possible video sub stream id.
-     */
-    private int videoStreamId = INVALID_STREAM_ID;
-
-    /**
-     * Listener for video buffers extracted from the transport stream.
-     */
-    private DataBufferListener videoDataBufferListener;
 
     /**
      * Flag indicating if processing of the transport stream should be terminated.
@@ -120,11 +105,6 @@ public class MpegTsProcessor extends Thread {
     private final String streamSource;
 
     /**
-     * Time base units for video stream timing used to compute a timestamp for each packet extracted.
-     */
-    private double videoStreamTimeBase;
-
-    /**
      * FPS to enforce when playing back from file.
      * Zero means the file will be played back as fast as possible.
      */
@@ -138,18 +118,18 @@ public class MpegTsProcessor extends Thread {
     /**
      * Constructor
      *
-     * @param source A string representation of the file or url to use as the source of the transport stream to demux
+     * @param source A string representation of the file or url to use as the source of the transport stream to demux.
      */
     public MpegTsProcessor(String source) {
         this(source, 0, false);
     }
 
     /**
-     * Constructor with more options when playing back from file
+     * Constructor with more options when playing back from file.
      *
-     * @param source A string representation of the file or url to use as the source of the transport stream to demux
-     * @param fps    The desired playback FPS (use 0 for decoding the TS file as fast as possible)
-     * @param loop   If true, play the video file continuously in a loop
+     * @param source A string representation of the file or url to use as the source of the transport stream to demux.
+     * @param fps    The desired playback FPS (use 0 for decoding the TS file as fast as possible).
+     * @param loop   If true, play the video file continuously in a loop.
      */
     public MpegTsProcessor(String source, int fps, boolean loop) {
         super(WORKER_THREAD_NAME);
@@ -163,7 +143,7 @@ public class MpegTsProcessor extends Thread {
      * Attempts to open the stream given the {@link MpegTsProcessor#streamSource}.
      * Opening the stream entails establishing appropriate connection and ability to extract stream information.
      *
-     * @return true if the stream is opened successfully, false otherwise.
+     * @return True if the stream is opened successfully, false otherwise.
      */
     public boolean openStream() {
         logger.debug("openStream");
@@ -199,32 +179,28 @@ public class MpegTsProcessor extends Thread {
      * with {@link MpegTsProcessor#hasVideoStream()} to determine what streams are available for consumption.
      */
     public void queryEmbeddedStreams() {
-        logger.debug("queryAvailableStreams");
+        logger.debug("queryEmbeddedStreams");
 
         if (!streamOpened) {
-            String message = "Stream is not opened, stream must be open to query available sub-streams";
-
-            logger.error(message);
-
-            throw new IllegalStateException(message);
+            throw new IllegalStateException("Stream is not opened, stream must be open to query available sub-streams");
         }
 
         for (int streamId = 0; streamId < avFormatContext.nb_streams(); ++streamId) {
             int codecType = avFormatContext.streams(streamId).codecpar().codec_type();
 
             AVRational timeBase = avFormatContext.streams(streamId).time_base();
+            double timeBaseUnits = (double) timeBase.num() / timeBase.den();
 
-            double num = timeBase.num();
-            double den = timeBase.den();
-
-            double timeBaseUnits = num / den;
-
-            if (INVALID_STREAM_ID == videoStreamId && avutil.AVMEDIA_TYPE_VIDEO == codecType) {
+            if (!videoStreamContext.hasStream() && codecType == avutil.AVMEDIA_TYPE_VIDEO) {
                 logger.debug("Video stream present with id: {}", streamId);
 
-                videoStreamId = streamId;
+                videoStreamContext.setStreamId(streamId);
+                videoStreamContext.setStreamTimeBase(timeBaseUnits);
+            } else if (!audioStreamContext.hasStream() && codecType == avutil.AVMEDIA_TYPE_AUDIO) {
+                logger.debug("Audio stream present with id: {}", streamId);
 
-                videoStreamTimeBase = timeBaseUnits;
+                audioStreamContext.setStreamId(streamId);
+                audioStreamContext.setStreamTimeBase(timeBaseUnits);
             }
         }
     }
@@ -236,11 +212,17 @@ public class MpegTsProcessor extends Thread {
      * to register callbacks for appropriate buffers.
      */
     public boolean hasVideoStream() {
-        boolean hasVideoStream = videoStreamId != INVALID_STREAM_ID;
+        return videoStreamContext.hasStream();
+    }
 
-        logger.debug("hasVideoStream: {}", hasVideoStream);
-
-        return hasVideoStream;
+    /**
+     * Required to identify if the transport stream contains an audio stream.
+     * Should be invoked after {@link MpegTsProcessor#queryEmbeddedStreams()} and used in conjunction
+     * with {@link MpegTsProcessor#setAudioDataBufferListener(DataBufferListener)}
+     * to register callbacks for appropriate buffers.
+     */
+    public boolean hasAudioStream() {
+        return audioStreamContext.hasStream();
     }
 
     /**
@@ -248,22 +230,16 @@ public class MpegTsProcessor extends Thread {
      * Should be invoked after {@link MpegTsProcessor#hasVideoStream()}
      * to retrieve the video average frame rate.
      *
-     * @return average frame rate for video
+     * @return The average frame rate for the video.
      * @throws IllegalStateException if there is no video stream embedded
      */
     public double getVideoStreamAvgFrameRate() throws IllegalStateException {
-        if (INVALID_STREAM_ID == videoStreamId) {
-
-            String message = "Stream does not contain video frames";
-
-            logger.error(message);
-            throw new IllegalStateException(message);
+        if (!videoStreamContext.hasStream()) {
+            throw new IllegalStateException("Stream does not contain video frames");
         }
 
-        AVRational rational = avFormatContext.streams(videoStreamId).avg_frame_rate();
-        double num = rational.num();
-        double den = rational.den();
-        return num / den;
+        AVRational rational = avFormatContext.streams(videoStreamContext.getStreamId()).avg_frame_rate();
+        return (double) rational.num() / rational.den();
     }
 
     /**
@@ -271,8 +247,8 @@ public class MpegTsProcessor extends Thread {
      * Should be invoked after {@link MpegTsProcessor#queryEmbeddedStreams()} and
      * {@link MpegTsProcessor#hasVideoStream()} to retrieve the video frame dimensions.
      *
-     * @return an int[] where index 0 is the width and index 1 is the height of the frames.
-     * @throws IllegalStateException if there is no video stream embedded
+     * @return An int[] where index 0 is the width and index 1 is the height of the frames.
+     * @throws IllegalStateException If there is no video stream embedded.
      */
     public int[] getVideoStreamFrameDimensions() {
         final int WIDTH_IDX = 0;
@@ -280,14 +256,11 @@ public class MpegTsProcessor extends Thread {
 
         logger.debug("getVideoStreamFrameDimensions");
 
-        if (INVALID_STREAM_ID == videoStreamId) {
-            String message = "Stream does not contain video frames";
-
-            logger.error(message);
-            throw new IllegalStateException(message);
+        if (!videoStreamContext.hasStream()) {
+            throw new IllegalStateException("Stream does not contain video frames");
         }
 
-        AVCodecParameters codecParameters = avFormatContext.streams(videoStreamId).codecpar();
+        AVCodecParameters codecParameters = avFormatContext.streams(videoStreamContext.getStreamId()).codecpar();
 
         int[] dimensions = {codecParameters.width(), codecParameters.height()};
 
@@ -299,16 +272,21 @@ public class MpegTsProcessor extends Thread {
     /**
      * Registers a video buffer listener to call if clients are interested in demuxed video buffers
      *
-     * @param videoDataBufferListener the listener to invoke when a video buffer is retrieved from
+     * @param videoDataBufferListener The listener to invoke when a video buffer is retrieved from
      *                                the transport stream.
-     * @throws NullPointerException if the data buffer listener is null
      */
-    public void setVideoDataBufferListener(DataBufferListener videoDataBufferListener) throws NullPointerException {
-        if (videoDataBufferListener == null) {
-            throw new NullPointerException("Attempt to set null videoStreamPacketListener");
-        }
+    public void setVideoDataBufferListener(@Nonnull DataBufferListener videoDataBufferListener) {
+        videoStreamContext.setDataBufferListener(videoDataBufferListener);
+    }
 
-        this.videoDataBufferListener = videoDataBufferListener;
+    /**
+     * Registers an audio buffer listener to call if clients are interested in demuxed audio buffers
+     *
+     * @param audioDataBufferListener The listener to invoke when an audio buffer is retrieved from
+     *                                the transport stream.
+     */
+    public void setAudioDataBufferListener(@Nonnull DataBufferListener audioDataBufferListener) {
+        audioStreamContext.setDataBufferListener(audioDataBufferListener);
     }
 
     /**
@@ -318,100 +296,67 @@ public class MpegTsProcessor extends Thread {
      * Call this method instead of invoking {@link MpegTsProcessor#start()} directly,
      * as this method will ensure the codec context is set up for use with the transport stream.
      *
-     * @throws IllegalStateException if the stream has not been opened or failed to open.
+     * @throws IllegalStateException If the stream has not been opened or failed to open.
      */
     public void processStream() throws IllegalStateException {
         logger.debug("processStream");
 
         if (streamOpened) {
             // Allocate the codec contexts and attempt to open them
-            openCodecContext();
+            videoStreamContext.openCodecContext(avFormatContext);
+            audioStreamContext.openCodecContext(avFormatContext);
 
             start();
         } else {
-            String message = "Stream has not been opened or failed to open";
-
-            logger.error(message);
-            throw new IllegalStateException(message);
+            throw new IllegalStateException("Stream has not been opened or failed to open");
         }
     }
 
     @Override
     public void run() {
-        do {
-            processStreamPackets();
-            logger.info("End of the FFMPEG stream");
-            if (loop) {
-                avformat.av_seek_frame(avFormatContext, 0, 0, avformat.AVSEEK_FLAG_ANY);
+        if (fps > 0) {
+            // Use a scheduled executor to enforce the FPS
+            ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+            long initialDelay = 0;
+            long period = fps > 0 ? (1000 / fps) : 0;
+
+            executor.scheduleAtFixedRate(() -> {
+                if (terminateProcessing.get()) {
+                    executor.shutdown();
+                } else {
+                    processPacket();
+                }
+            }, initialDelay, period, TimeUnit.MILLISECONDS);
+        } else {
+            // Process packets as fast as possible
+            while (!terminateProcessing.get()) {
+                processPacket();
             }
         }
-        while (loop);
     }
 
     /**
-     * Stream processing where the demuxing is invoked on underlying ffmpeg libraries and callbacks,
+     * Stream processing where the demuxing is invoked on underlying FFmpeg libraries and callbacks,
      * if registered, are invoked for appropriate buffers.
      */
-    private void processStreamPackets() {
-        AVPacket avPacket = null;
+    private void processPacket() {
+        AVPacket avPacket = new AVPacket();
 
-        try {
-            // Create an AV packet container to pass data to demuxer
-            avPacket = new AVPacket();
-
-            // Read frames
-            long startTime = System.currentTimeMillis();
-            long frameCount = 0;
-            while (!terminateProcessing.get() && (av_read_frame(avFormatContext, avPacket)) >= 0) {
-                // If it is a video or data frame and there is a listener registered
-                if ((avPacket.stream_index() == videoStreamId) && (videoDataBufferListener != null)) {
-
-                    // Process the video packet
-                    byte[] dataBuffer = new byte[avPacket.size()];
-                    avPacket.data().get(dataBuffer);
-
-                    // If FPS is set, we may have to wait a little
-                    if (fps > 0) {
-                        var now = System.currentTimeMillis();
-                        var sleepDuration = frameCount * 1000 / fps - (now - startTime);
-                        if (sleepDuration > 0) {
-                            try {
-                                Thread.sleep(sleepDuration);
-                            } catch (InterruptedException e) {
-                                logger.error("Interrupted waiting for stream processor to stop", e);
-                                Thread.currentThread().interrupt();
-                            }
-                        }
-                    }
-
-                    // Pass data buffer to interested listener
-                    frameCount++;
-                    videoDataBufferListener.onDataBuffer(new DataBufferRecord(avPacket.pts() * videoStreamTimeBase, dataBuffer));
-                }
-
-                // clear packet
-                avcodec.av_packet_unref(avPacket);
+        if (av_read_frame(avFormatContext, avPacket) < 0) {
+            logger.info("End of the FFmpeg stream");
+            if (loop) {
+                avformat.av_seek_frame(avFormatContext, 0, 0, avformat.AVSEEK_FLAG_ANY);
+            } else {
+                stopProcessingStream();
             }
-        } finally {
-            // Fully deallocate packet
-            if (avPacket != null) {
-                avcodec.av_packet_unref(avPacket);
-                avPacket.deallocate();
-            }
+        } else {
+            videoStreamContext.processPacket(avPacket);
+            audioStreamContext.processPacket(avPacket);
         }
-    }
 
-    /**
-     * Closes the codec context and cleans up its associated resources.
-     * This method is invoked by {@link MpegTsProcessor#closeStream()} to ensure cleanup is neat and orderly.
-     */
-    private void closeCodecContext() {
-        if (avCodecContext != null) {
-            avcodec.avcodec_close(avCodecContext);
-            avcodec.avcodec_free_context(avCodecContext);
-
-            avCodecContext = null;
-        }
+        // Fully deallocate packet
+        avcodec.av_packet_unref(avPacket);
+        avPacket.deallocate();
     }
 
     /**
@@ -421,7 +366,8 @@ public class MpegTsProcessor extends Thread {
         logger.debug("closeStream");
 
         if (streamOpened) {
-            closeCodecContext();
+            videoStreamContext.closeCodecContext();
+            audioStreamContext.closeCodecContext();
 
             if (avFormatContext != null) {
                 avformat.avformat_close_input(avFormatContext);
@@ -432,7 +378,7 @@ public class MpegTsProcessor extends Thread {
     }
 
     /**
-     * Indicate to processor to stop processing packets from the stream
+     * Indicate to processor to stop processing packets from the stream.
      */
     public void stopProcessingStream() {
         logger.debug("stopProcessingStream");
@@ -440,41 +386,6 @@ public class MpegTsProcessor extends Thread {
         if (streamOpened) {
             loop = false;
             terminateProcessing.set(true);
-        }
-    }
-
-    /**
-     * Opens the codec context, and sets it up according to the {@link MpegTsProcessor#videoStreamId}.
-     * This method is invoked by {@link MpegTsProcessor#openStream()} to ensure resources are allocated
-     * and codec context is set up according to contents of the transport stream.
-     *
-     * @throws IllegalStateException if the codec is unsupported.
-     */
-    private void openCodecContext() throws IllegalStateException {
-        avCodecContext = avcodec.avcodec_alloc_context3(null);
-
-        // Store the codec parameters in the codec context
-        avcodec.avcodec_parameters_to_context(avCodecContext, avFormatContext.streams(videoStreamId).codecpar());
-
-        // Get the associated codec from the id stored in the context
-        AVCodec codec = avcodec.avcodec_find_decoder(avCodecContext.codec_id());
-
-        if (codec == null) {
-            String message = "Unsupported codec";
-
-            logger.error(message);
-            throw new IllegalStateException(message);
-        }
-
-        // Attempt to open the codec
-        int returnCode = avcodec.avcodec_open2(avCodecContext, codec, (PointerPointer<?>) null);
-
-        // If codec could not be opened
-        if (returnCode < 0) {
-            String message = "Cannot open codec";
-
-            logger.error(message);
-            throw new IllegalStateException(message);
         }
     }
 }
