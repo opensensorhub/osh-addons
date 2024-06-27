@@ -261,12 +261,30 @@ public class MpegTsProcessor extends Thread {
         }
 
         AVCodecParameters codecParameters = avFormatContext.streams(videoStreamContext.getStreamId()).codecpar();
-
         int[] dimensions = {codecParameters.width(), codecParameters.height()};
 
         logger.debug("Frame [width, height] = [ {}, {} ]", dimensions[WIDTH_IDX], dimensions[HEIGHT_IDX]);
 
         return dimensions;
+    }
+
+    /**
+     * Retrieves the sample rate for the embedded audio.
+     * Should be invoked after {@link MpegTsProcessor#queryEmbeddedStreams()} and
+     * {@link MpegTsProcessor#hasAudioStream()} to retrieve the audio sample rate.
+     *
+     * @return The audio sample rate.
+     * @throws IllegalStateException If there is no audio stream embedded.
+     */
+    public int getAudioSampleRate() {
+        if (!audioStreamContext.hasStream()) {
+            throw new IllegalStateException("Stream does not contain audio data");
+        }
+
+        int sampleRate = avFormatContext.streams(audioStreamContext.getStreamId()).codecpar().sample_rate();
+
+        logger.debug("Audio sample rate: {}", sampleRate);
+        return sampleRate;
     }
 
     /**

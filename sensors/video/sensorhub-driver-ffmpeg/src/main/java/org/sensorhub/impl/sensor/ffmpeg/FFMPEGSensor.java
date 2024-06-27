@@ -14,6 +14,7 @@ package org.sensorhub.impl.sensor.ffmpeg;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
+import org.sensorhub.impl.sensor.ffmpeg.outputs.AudioOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.OrientationOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
 import org.sensorhub.mpegts.MpegTsProcessor;
@@ -40,6 +41,11 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * Sensor output for the video frames.
      */
     protected VideoOutput videoOutput;
+
+    /**
+     * Sensor output for the audio data.
+     */
+    protected AudioOutput audioOutput;
 
     /**
      * Sensor output for the orientation data.
@@ -74,6 +80,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
         // We also have to clear out the video output since its settings may have changed
         // (based on having a new input video, for example).
         videoOutput = null;
+        audioOutput = null;
 
         // We need the background thread here since we start reading the video data immediately to determine the video size.
         setupExecutor();
@@ -148,9 +155,11 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
         } else {
             logger.debug("Already had an executor.");
         }
-        if (videoOutput != null) {
+
+        if (videoOutput != null)
             videoOutput.setExecutor(executor);
-        }
+        if (audioOutput != null)
+            audioOutput.setExecutor(executor);
     }
 
     /**
@@ -179,6 +188,19 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
     }
 
     /**
+     * Create and initialize the audio output.
+     * The caller must be careful not to call this if the audio output has already been created and added to the sensor.
+     */
+    protected void createAudioOutput(int sampleRate) {
+        audioOutput = new AudioOutput(this, sampleRate);
+        if (executor != null) {
+            audioOutput.setExecutor(executor);
+        }
+        addOutput(audioOutput, false);
+        audioOutput.doInit();
+    }
+
+    /**
      * Opens the connection to the upstream source but does not yet start reading any more than the initial
      * metadata necessary to get the video frame size.
      * This can be called multiple times, but will only have any effect the first time it's called after doInit()
@@ -192,7 +214,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
             logger.info("Opening MPEG TS connection for {} ...", getUniqueIdentifier());
 
             // Regex to determine if the connection string is a file path.
-            String fileRegex = "^(?:[a-zA-Z]:)?(?:[\\/\\\\][^\\/\\\\:*?\"<>|]+)+$";
+            String fileRegex = "^(?:[a-zA-Z]:)?[\\\\/].*";
 
             // For files, the FPS and loop settings are used to control playback.
             if (config.connection.connectionString.matches(fileRegex)) {
@@ -207,16 +229,27 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
             if (mpegTsProcessor.openStream()) {
                 logger.info("Stream opened for {}", getUniqueIdentifier());
                 mpegTsProcessor.queryEmbeddedStreams();
+
                 // If there is a video content in the stream
                 if (mpegTsProcessor.hasVideoStream()) {
                     // In case we were waiting until we got video data to make the video frame output,
                     // we go ahead and do that now.
                     if (videoOutput == null) {
-                        int[] videoDimensions = mpegTsProcessor.getVideoStreamFrameDimensions();
-                        createVideoOutput(videoDimensions);
+                        createVideoOutput(mpegTsProcessor.getVideoStreamFrameDimensions());
                     }
                     // Set video stream packet listener to video output
                     mpegTsProcessor.setVideoDataBufferListener(videoOutput);
+                }
+
+                // If there is an audio content in the stream
+                if (mpegTsProcessor.hasAudioStream()) {
+                    // In case we were waiting until we got audio data to make the audio output,
+                    // we go ahead and do that now.
+                    if (audioOutput == null) {
+                        createAudioOutput(mpegTsProcessor.getAudioSampleRate());
+                    }
+                    // Set audio stream packet listener to audio output
+                    mpegTsProcessor.setAudioDataBufferListener(audioOutput);
                 }
             } else {
                 throw new SensorHubException("Unable to open stream from data source");

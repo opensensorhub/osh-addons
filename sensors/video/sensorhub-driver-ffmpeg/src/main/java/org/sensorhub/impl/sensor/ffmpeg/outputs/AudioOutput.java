@@ -22,8 +22,8 @@ import org.slf4j.LoggerFactory;
 import org.vast.cdm.common.CDMException;
 import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockMixed;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
-import org.vast.swe.helper.RasterHelper;
 import org.vast.util.Asserts;
 
 import java.util.ArrayList;
@@ -32,15 +32,15 @@ import java.util.concurrent.Executor;
 /**
  * Output for video data from the FFMPEG sensor.
  */
-public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements DataBufferListener {
-    private static final String SENSOR_OUTPUT_NAME = "video";
-    private static final String SENSOR_OUTPUT_LABEL = "Video";
-    private static final String SENSOR_OUTPUT_DESCRIPTION = "Video stream using ffmpeg library";
+public class AudioOutput extends AbstractSensorOutput<FFMPEGSensor> implements DataBufferListener {
+    private static final String SENSOR_OUTPUT_NAME = "audio";
+    private static final String SENSOR_OUTPUT_LABEL = "Audio";
+    private static final String SENSOR_OUTPUT_DESCRIPTION = "Audio stream using ffmpeg library";
+    private static final String NUM_SAMPLES_ID = "numSamplesID";
 
-    private static final Logger logger = LoggerFactory.getLogger(VideoOutput.class.getSimpleName());
+    private static final Logger logger = LoggerFactory.getLogger(AudioOutput.class.getSimpleName());
 
-    private final int videoFrameWidth;
-    private final int videoFrameHeight;
+    private final int sampleRate;
 
     private DataComponent dataStruct;
     private DataEncoding dataEncoding;
@@ -53,47 +53,76 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
     /**
      * Creates a new video output.
      *
-     * @param parentSensor         Sensor driver providing this output.
-     * @param videoFrameDimensions The width and height of the video frame.
+     * @param parentSensor Sensor driver providing this output
      */
-    public VideoOutput(FFMPEGSensor parentSensor, int[] videoFrameDimensions) {
+    public AudioOutput(FFMPEGSensor parentSensor, int sampleRate) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
 
-        logger.debug("Video output created.");
+        this.sampleRate = sampleRate;
 
-        videoFrameWidth = videoFrameDimensions[0];
-        videoFrameHeight = videoFrameDimensions[1];
+        logger.debug("Video output created");
     }
 
     /**
      * Initializes the data structure for the output, defining the fields, their ordering, and data types.
      */
     public void doInit() {
-        logger.debug("Initializing video output.");
+        logger.debug("Initializing audio output.");
 
-        RasterHelper sweHelper = new RasterHelper();
+        SWEHelper sweHelper = new SWEHelper();
         dataStruct = sweHelper.createRecord()
                 .name(getName())
                 .description(SENSOR_OUTPUT_DESCRIPTION)
                 .label(SENSOR_OUTPUT_LABEL)
-                .definition(SWEHelper.getPropertyUri("VideoFrame"))
+                .definition(SWEHelper.getPropertyUri("AudioFrame"))
                 .addField("sampleTime", sweHelper.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
                         .description("Time of data collection"))
-                .addField("img", sweHelper.newRgbImage(videoFrameWidth, videoFrameHeight, DataType.BYTE))
+                .addField("sampleRate", sweHelper.createQuantity()
+                        .label("Sample Rate")
+                        .description("Number of audio samples per second")
+                        .definition(SWEHelper.getQudtUri("DataRate"))
+                        .uomCode("Hz")
+                        .dataType(DataType.INT))
+                .addField("numSamples", sweHelper.createCount()
+                        .id(NUM_SAMPLES_ID)
+                        .label("Num Samples")
+                        .description("Number of audio samples packaged in this record")
+                        .dataType(DataType.INT))
+                .addField("samples", sweHelper.createArray()
+                        .withVariableSize(NUM_SAMPLES_ID)
+                        .withElement("sample", sweHelper.createCount()
+                                .label("Audio Sample")
+                                .definition(SWEConstants.DEF_DN)
+                                .dataType(DataType.BYTE)))
                 .build();
+
 
         BinaryEncoding dataEnc = sweHelper.newBinaryEncoding(ByteOrder.BIG_ENDIAN, ByteEncoding.RAW);
 
-        BinaryComponent timeEnc = sweHelper.newBinaryComponent();
-        timeEnc.setRef("/" + dataStruct.getComponent(0).getName());
-        timeEnc.setCdmDataType(DataType.DOUBLE);
-        dataEnc.addMemberAsComponent(timeEnc);
+        // Sample time
+        BinaryComponent comp = sweHelper.newBinaryComponent();
+        comp.setRef("/" + dataStruct.getComponent(0).getName());
+        comp.setCdmDataType(DataType.DOUBLE);
+        dataEnc.addMemberAsComponent(comp);
 
+        // Sample rate
+        comp = sweHelper.newBinaryComponent();
+        comp.setRef("/" + dataStruct.getComponent(1).getName());
+        comp.setCdmDataType(DataType.INT);
+        dataEnc.addMemberAsComponent(comp);
+
+        // Number of samples
+        comp = sweHelper.newBinaryComponent();
+        comp.setRef("/" + dataStruct.getComponent(2).getName());
+        comp.setCdmDataType(DataType.INT);
+        dataEnc.addMemberAsComponent(comp);
+
+        // Samples
         BinaryBlock compressedBlock = sweHelper.newBinaryBlock();
-        compressedBlock.setRef("/" + dataStruct.getComponent(1).getName());
-        compressedBlock.setCompression("H264");
+        compressedBlock.setRef("/" + dataStruct.getComponent(3).getName());
+        compressedBlock.setCompression("AAC");
         dataEnc.addMemberAsBlock(compressedBlock);
 
         try {
@@ -144,9 +173,9 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
     }
 
     /**
-     * Sets the video frame data in the output.
+     * Sets the audio data in the output.
      *
-     * @param dataBufferRecord The data buffer record containing the video frame data.
+     * @param dataBufferRecord The data buffer record containing the audio data.
      */
     public void processBuffer(DataBufferRecord dataBufferRecord) {
         long timestamp = System.currentTimeMillis();
@@ -155,11 +184,14 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
         DataBlock dataBlock = latestRecord == null ? dataStruct.createDataBlock() : latestRecord.renew();
         updateIntervalHistogram();
 
-        dataBlock.setDoubleValue(0, timestamp / 1000d);
+        int index = 0;
+        dataBlock.setDoubleValue(index++, timestamp / 1000d);
+        dataBlock.setIntValue(index++, sampleRate);
+        dataBlock.setIntValue(index++, dataBuffer.length);
 
-        // Set underlying video frame data
-        AbstractDataBlock frameData = ((DataBlockMixed) dataBlock).getUnderlyingObject()[1];
-        frameData.setUnderlyingObject(dataBuffer);
+        // set encoded data
+        AbstractDataBlock audioData = ((DataBlockMixed) dataBlock).getUnderlyingObject()[index];
+        audioData.setUnderlyingObject(dataBuffer);
 
         latestRecord = dataBlock;
         latestRecordTime = timestamp;
