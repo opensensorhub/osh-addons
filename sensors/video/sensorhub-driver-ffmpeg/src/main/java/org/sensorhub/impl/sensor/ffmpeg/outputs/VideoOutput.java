@@ -13,8 +13,8 @@ package org.sensorhub.impl.sensor.ffmpeg.outputs;
 
 import net.opengis.swe.v20.*;
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.ffmpeg.FFMPEGSensor;
 import org.sensorhub.mpegts.DataBufferListener;
 import org.sensorhub.mpegts.DataBufferRecord;
 import org.slf4j.Logger;
@@ -32,10 +32,9 @@ import java.util.concurrent.Executor;
 /**
  * Output for video data from the FFMPEG sensor.
  */
-public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements DataBufferListener {
-    private static final String SENSOR_OUTPUT_NAME = "video";
-    private static final String SENSOR_OUTPUT_LABEL = "Video";
-    private static final String SENSOR_OUTPUT_DESCRIPTION = "Video stream using ffmpeg library";
+public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutput<T> implements DataBufferListener {
+    private final String outputLabel;
+    private final String outputDescription;
 
     private static final Logger logger = LoggerFactory.getLogger(VideoOutput.class.getSimpleName());
 
@@ -56,13 +55,28 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
      * @param parentSensor         Sensor driver providing this output.
      * @param videoFrameDimensions The width and height of the video frame.
      */
-    public VideoOutput(FFMPEGSensor parentSensor, int[] videoFrameDimensions) {
-        super(SENSOR_OUTPUT_NAME, parentSensor);
+    public VideoOutput(T parentSensor, int[] videoFrameDimensions) {
+        this(parentSensor, videoFrameDimensions, "video", "Video", "Video stream using ffmpeg library");
+    }
 
-        logger.debug("Video output created.");
+    /**
+     * Creates a new video output.
+     *
+     * @param parentSensor         Sensor driver providing this output.
+     * @param videoFrameDimensions The width and height of the video frame.
+     * @param name                 The name of the output.
+     * @param outputLabel          The label of the output.
+     * @param outputDescription    The description of the output.
+     */
+    public VideoOutput(T parentSensor, int[] videoFrameDimensions, String name, String outputLabel, String outputDescription) {
+        super(name, parentSensor);
+        this.outputLabel = outputLabel;
+        this.outputDescription = outputDescription;
 
         videoFrameWidth = videoFrameDimensions[0];
         videoFrameHeight = videoFrameDimensions[1];
+
+        logger.debug("Video output created.");
     }
 
     /**
@@ -74,8 +88,8 @@ public class VideoOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
         RasterHelper sweHelper = new RasterHelper();
         dataStruct = sweHelper.createRecord()
                 .name(getName())
-                .description(SENSOR_OUTPUT_DESCRIPTION)
-                .label(SENSOR_OUTPUT_LABEL)
+                .label(outputLabel)
+                .description(outputDescription)
                 .definition(SWEHelper.getPropertyUri("VideoFrame"))
                 .addField("sampleTime", sweHelper.createTime()
                         .asSamplingTimeIsoUTC()

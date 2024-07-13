@@ -40,12 +40,12 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
     /**
      * Sensor output for the video frames.
      */
-    protected VideoOutput videoOutput;
+    protected VideoOutput<FFMPEGSensor> videoOutput;
 
     /**
      * Sensor output for the audio data.
      */
-    protected AudioOutput audioOutput;
+    protected AudioOutput<FFMPEGSensor> audioOutput;
 
     /**
      * Sensor output for the orientation data.
@@ -179,7 +179,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * The caller must be careful not to call this if the video output has already been created and added to the sensor.
      */
     protected void createVideoOutput(int[] videoDims) {
-        videoOutput = new VideoOutput(this, videoDims);
+        videoOutput = new VideoOutput<>(this, videoDims);
         if (executor != null) {
             videoOutput.setExecutor(executor);
         }
@@ -192,7 +192,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * The caller must be careful not to call this if the audio output has already been created and added to the sensor.
      */
     protected void createAudioOutput(int sampleRate) {
-        audioOutput = new AudioOutput(this, sampleRate);
+        audioOutput = new AudioOutput<>(this, sampleRate);
         if (executor != null) {
             audioOutput.setExecutor(executor);
         }
@@ -228,7 +228,6 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
             // Initialize the MPEG transport stream processor from the source named in the configuration.
             if (mpegTsProcessor.openStream()) {
                 logger.info("Stream opened for {}", getUniqueIdentifier());
-                mpegTsProcessor.queryEmbeddedStreams();
 
                 // If there is a video content in the stream
                 if (mpegTsProcessor.hasVideoStream()) {

@@ -13,8 +13,8 @@ package org.sensorhub.impl.sensor.ffmpeg.outputs;
 
 import net.opengis.swe.v20.*;
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.ffmpeg.FFMPEGSensor;
 import org.sensorhub.mpegts.DataBufferListener;
 import org.sensorhub.mpegts.DataBufferRecord;
 import org.slf4j.Logger;
@@ -32,7 +32,7 @@ import java.util.concurrent.Executor;
 /**
  * Output for video data from the FFMPEG sensor.
  */
-public class AudioOutput extends AbstractSensorOutput<FFMPEGSensor> implements DataBufferListener {
+public class AudioOutput<T extends ISensorModule<?>> extends AbstractSensorOutput<T> implements DataBufferListener {
     private static final String SENSOR_OUTPUT_NAME = "audio";
     private static final String SENSOR_OUTPUT_LABEL = "Audio";
     private static final String SENSOR_OUTPUT_DESCRIPTION = "Audio stream using ffmpeg library";
@@ -55,7 +55,7 @@ public class AudioOutput extends AbstractSensorOutput<FFMPEGSensor> implements D
      *
      * @param parentSensor Sensor driver providing this output
      */
-    public AudioOutput(FFMPEGSensor parentSensor, int sampleRate) {
+    public AudioOutput(T parentSensor, int sampleRate) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
 
         this.sampleRate = sampleRate;

@@ -6,8 +6,7 @@ version = '1.0.0'
 //    implementation('org.bytedeco:javacv-platform:1.5.2')
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-    implementation project(':sensorhub-driver-videocam')
-    implementation project(':sensorhub-process-ffmpeg')
+    embeddedApi 'org.bytedeco:ffmpeg-platform:5.0-1.5.7'
     testImplementation('junit:junit:4.13.1')
     testImplementation('org.jcodec:jcodec-javase:0.1.9')
 }

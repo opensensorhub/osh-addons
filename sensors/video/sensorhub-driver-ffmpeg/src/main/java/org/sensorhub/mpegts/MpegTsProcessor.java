@@ -163,6 +163,7 @@ public class MpegTsProcessor extends Thread {
                 logger.error("Failed to find stream info");
             } else {
                 streamOpened = true;
+                queryEmbeddedStreams();
 
                 logger.debug("Stream opened {}", streamSource);
             }
@@ -174,17 +175,10 @@ public class MpegTsProcessor extends Thread {
     }
 
     /**
-     * Required to identify if the transport stream contains a video stream and/or a data stream.
-     * Should be invoked after {@link MpegTsProcessor#openStream()} and used in conjunction
-     * with {@link MpegTsProcessor#hasVideoStream()} to determine what streams are available for consumption.
+     * Required to identify if the transport stream contains a video stream and/or an audio stream.
+     * Invoked after {@link MpegTsProcessor#openStream()}.
      */
-    public void queryEmbeddedStreams() {
-        logger.debug("queryEmbeddedStreams");
-
-        if (!streamOpened) {
-            throw new IllegalStateException("Stream is not opened, stream must be open to query available sub-streams");
-        }
-
+    private void queryEmbeddedStreams() {
         for (int streamId = 0; streamId < avFormatContext.nb_streams(); ++streamId) {
             int codecType = avFormatContext.streams(streamId).codecpar().codec_type();
 
@@ -207,8 +201,7 @@ public class MpegTsProcessor extends Thread {
 
     /**
      * Required to identify if the transport stream contains a video stream.
-     * Should be invoked after {@link MpegTsProcessor#queryEmbeddedStreams()} and used in conjunction
-     * with {@link MpegTsProcessor#setVideoDataBufferListener(DataBufferListener)}
+     * Should be used in conjunction with {@link MpegTsProcessor#setVideoDataBufferListener(DataBufferListener)}
      * to register callbacks for appropriate buffers.
      */
     public boolean hasVideoStream() {
@@ -217,8 +210,7 @@ public class MpegTsProcessor extends Thread {
 
     /**
      * Required to identify if the transport stream contains an audio stream.
-     * Should be invoked after {@link MpegTsProcessor#queryEmbeddedStreams()} and used in conjunction
-     * with {@link MpegTsProcessor#setAudioDataBufferListener(DataBufferListener)}
+     * Should be used in conjunction with {@link MpegTsProcessor#setAudioDataBufferListener(DataBufferListener)}
      * to register callbacks for appropriate buffers.
      */
     public boolean hasAudioStream() {
@@ -244,8 +236,7 @@ public class MpegTsProcessor extends Thread {
 
     /**
      * Required to identify the width and height of the video frames.
-     * Should be invoked after {@link MpegTsProcessor#queryEmbeddedStreams()} and
-     * {@link MpegTsProcessor#hasVideoStream()} to retrieve the video frame dimensions.
+     * Should be invoked after {@link MpegTsProcessor#hasVideoStream()} to retrieve the video frame dimensions.
      *
      * @return An int[] where index 0 is the width and index 1 is the height of the frames.
      * @throws IllegalStateException If there is no video stream embedded.
@@ -270,8 +261,7 @@ public class MpegTsProcessor extends Thread {
 
     /**
      * Retrieves the sample rate for the embedded audio.
-     * Should be invoked after {@link MpegTsProcessor#queryEmbeddedStreams()} and
-     * {@link MpegTsProcessor#hasAudioStream()} to retrieve the audio sample rate.
+     * Should be invoked after {@link MpegTsProcessor#hasAudioStream()} to retrieve the audio sample rate.
      *
      * @return The audio sample rate.
      * @throws IllegalStateException If there is no audio stream embedded.
