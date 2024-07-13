@@ -13,13 +13,26 @@ package org.sensorhub.impl.sensor.flir.dh390;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.ffmpeg.outputs.AudioOutput;
+import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
+import org.sensorhub.mpegts.MpegTsProcessor;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Sensor driver for the FLIR DH-390 camera.
  */
 public class DH390Driver extends AbstractSensorModule<DH390Config> {
-
+    protected VideoOutput<DH390Driver> visualVideoOutput;
+    protected VideoOutput<DH390Driver> thermalVideoOutput;
+    protected AudioOutput<DH390Driver> audioOutput;
     protected DH390OrientationOutput orientationOutput;
+    protected MpegTsProcessor visualMpegTsProcessor;
+    protected MpegTsProcessor thermalMpegTsProcessor;
+    protected ScheduledExecutorService executor;
+    String visualConnectionString;
+    String thermalConnectionString;
 
     /**
      * Initialize the sensor driver and its outputs.
@@ -30,8 +43,27 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
     protected void doInit() throws SensorHubException {
         super.doInit();
 
+        logger.info("Initializing FLIR DH-390 sensor driver.");
+
         generateUniqueID("urn:osh:sensor:flir:dh-390:", config.serialNumber);
         generateXmlID("FLIR_DH-390_", config.serialNumber);
+
+        if (visualMpegTsProcessor != null)
+            visualMpegTsProcessor.closeStream();
+        if (thermalMpegTsProcessor != null)
+            thermalMpegTsProcessor.closeStream();
+
+        visualMpegTsProcessor = null;
+        thermalMpegTsProcessor = null;
+        visualVideoOutput = null;
+        thermalVideoOutput = null;
+
+        // Create connection strings for the visual and thermal cameras
+        String connectionString = "rtsp://" + config.connection.userName + ":" + config.connection.password + "@" + config.connection.ipAddress;
+        visualConnectionString = connectionString + "/ch1";
+        thermalConnectionString = connectionString + "/ch2";
+
+        setupStreams();
 
         // Initialize the orientation output
         if (config.positionConfig.orientation != null) {
@@ -54,6 +86,9 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
         if (orientationOutput != null && config.positionConfig.orientation != null) {
             orientationOutput.setOrientation(config.positionConfig.orientation);
         }
+
+        setupStreams();
+        startStreams();
     }
 
     /**
@@ -64,6 +99,9 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
     @Override
     protected void doStop() throws SensorHubException {
         super.doStop();
+
+        stopStreams();
+        shutdownExecutor();
     }
 
     /**
@@ -83,6 +121,205 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
 
             if (!sensorDescription.isSetDescription())
                 sensorDescription.setDescription("FLIR DH-390 Camera");
+        }
+    }
+
+    protected void setupStreams() throws SensorHubException {
+        openStreamVisual();
+        openStreamThermal();
+        setupExecutor();
+    }
+
+    /**
+     * Creates the background thread that will handle video decoding if it hasn't already been done.
+     * Also tells the setDecoder and videoOutput about the executor.
+     */
+    protected void setupExecutor() {
+        if (executor == null) {
+            logger.debug("Executor was null, so creating a new one");
+            executor = Executors.newSingleThreadScheduledExecutor();
+        } else {
+            logger.debug("Already had an executor.");
+        }
+
+        if (visualVideoOutput != null)
+            visualVideoOutput.setExecutor(executor);
+        if (thermalVideoOutput != null)
+            thermalVideoOutput.setExecutor(executor);
+        if (audioOutput != null)
+            audioOutput.setExecutor(executor);
+    }
+
+    /**
+     * Cleanly shuts down the background thread and sets it to null.
+     * If it's already null, doesn't do anything.
+     * This is called when the sensor is stopped to clean up the background thread (hopefully).
+     */
+    protected void shutdownExecutor() {
+        if (executor != null) {
+            executor.shutdownNow();
+            executor = null;
+        }
+    }
+
+    /**
+     * Opens the connection to the upstream source but does not yet start reading any more than the initial
+     * metadata necessary to get the video frame size.
+     * This can be called multiple times, but will only have any effect the first time it's called after doInit()
+     * since it checks for a null mpegTsProcessor.
+     * This also has the side effect of creating and adding the Video output if it hasn't already happened earlier.
+     *
+     * @throws SensorHubException If there is a problem opening the stream.
+     */
+    protected void openStreamVisual() throws SensorHubException {
+        if (visualMpegTsProcessor == null) {
+            logger.info("Opening MPEG TS connection for {} ...", getUniqueIdentifier());
+
+            visualMpegTsProcessor = new MpegTsProcessor(visualConnectionString);
+
+            // Initialize the MPEG transport stream processor from the source named in the configuration.
+            if (visualMpegTsProcessor.openStream()) {
+                logger.info("Stream opened for {}", getUniqueIdentifier());
+
+                // If there is a video content in the stream
+                if (visualMpegTsProcessor.hasVideoStream()) {
+                    // In case we were waiting until we got video data to make the video frame output,
+                    // we go ahead and do that now.
+                    if (visualVideoOutput == null) {
+                        visualVideoOutput = new VideoOutput<>(this, visualMpegTsProcessor.getVideoStreamFrameDimensions(), "visual", "Visual", "Visual stream using ffmpeg library");
+                        if (executor != null) {
+                            visualVideoOutput.setExecutor(executor);
+                        }
+                        addOutput(visualVideoOutput, false);
+                        visualVideoOutput.doInit();
+                    }
+                    // Set video stream packet listener to video output
+                    visualMpegTsProcessor.setVideoDataBufferListener(visualVideoOutput);
+                }
+
+                // If there is an audio content in the stream
+                if (visualMpegTsProcessor.hasAudioStream()) {
+                    // In case we were waiting until we got audio data to make the audio output,
+                    // we go ahead and do that now.
+                    if (audioOutput == null) {
+                        audioOutput = new AudioOutput<>(this, visualMpegTsProcessor.getAudioSampleRate());
+                        if (executor != null) {
+                            audioOutput.setExecutor(executor);
+                        }
+                        addOutput(audioOutput, false);
+                        audioOutput.doInit();
+                    }
+                    // Set audio stream packet listener to audio output
+                    visualMpegTsProcessor.setAudioDataBufferListener(audioOutput);
+                }
+            } else {
+                throw new SensorHubException("Unable to open stream from data source");
+            }
+
+            logger.info("MPEG TS stream for {} opened.", getUniqueIdentifier());
+        }
+    }
+
+    /**
+     * Opens the connection to the upstream source but does not yet start reading any more than the initial
+     * metadata necessary to get the video frame size.
+     * This can be called multiple times, but will only have any effect the first time it's called after doInit()
+     * since it checks for a null mpegTsProcessor.
+     * This also has the side effect of creating and adding the Video output if it hasn't already happened earlier.
+     *
+     * @throws SensorHubException If there is a problem opening the stream.
+     */
+    protected void openStreamThermal() throws SensorHubException {
+        if (thermalMpegTsProcessor == null) {
+            logger.info("Opening MPEG TS connection for {} ...", getUniqueIdentifier());
+
+            thermalMpegTsProcessor = new MpegTsProcessor(thermalConnectionString);
+
+            // Initialize the MPEG transport stream processor from the source named in the configuration.
+            if (thermalMpegTsProcessor.openStream()) {
+                logger.info("Stream opened for {}", getUniqueIdentifier());
+
+                // If there is a video content in the stream
+                if (thermalMpegTsProcessor.hasVideoStream()) {
+                    // In case we were waiting until we got video data to make the video frame output,
+                    // we go ahead and do that now.
+                    if (thermalVideoOutput == null) {
+                        thermalVideoOutput = new VideoOutput<>(this, thermalMpegTsProcessor.getVideoStreamFrameDimensions(), "thermal", "Thermal", "Thermal stream using ffmpeg library");
+                        if (executor != null) {
+                            thermalVideoOutput.setExecutor(executor);
+                        }
+                        addOutput(thermalVideoOutput, false);
+                        thermalVideoOutput.doInit();
+                    }
+                    // Set video stream packet listener to video output
+                    thermalMpegTsProcessor.setVideoDataBufferListener(thermalVideoOutput);
+                }
+            } else {
+                throw new SensorHubException("Unable to open stream from data source");
+            }
+
+            logger.info("MPEG TS stream for {} opened.", getUniqueIdentifier());
+        }
+    }
+
+    /**
+     * This causes the frames of the video to start being processed.
+     *
+     * @throws SensorHubException If there is a problem starting the stream processor.
+     */
+    protected void startStreams() throws SensorHubException {
+        try {
+            if (visualMpegTsProcessor != null) {
+                visualMpegTsProcessor.processStream();
+            }
+            if (thermalMpegTsProcessor != null) {
+                thermalMpegTsProcessor.processStream();
+            }
+        } catch (IllegalStateException e) {
+            String message = "Failed to start stream processor";
+            logger.error(message);
+            throw new SensorHubException(message, e);
+        }
+    }
+
+    /**
+     * Stops the stream processor and cleans up resources.
+     *
+     * @throws SensorHubException If there is a problem stopping the stream processor.
+     */
+    protected void stopStreams() throws SensorHubException {
+        logger.info("Stopping MPEG TS processor for {}", getUniqueIdentifier());
+
+        if (visualMpegTsProcessor != null) {
+            visualMpegTsProcessor.stopProcessingStream();
+
+            try {
+                // Wait for thread to finish
+                visualMpegTsProcessor.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new SensorHubException("Interrupted waiting for stream processor to stop", e);
+            } finally {
+                // Close stream and cleanup resources
+                visualMpegTsProcessor.closeStream();
+                visualMpegTsProcessor = null;
+            }
+        }
+
+        if (thermalMpegTsProcessor != null) {
+            thermalMpegTsProcessor.stopProcessingStream();
+
+            try {
+                // Wait for thread to finish
+                thermalMpegTsProcessor.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new SensorHubException("Interrupted waiting for stream processor to stop", e);
+            } finally {
+                // Close stream and cleanup resources
+                thermalMpegTsProcessor.closeStream();
+                thermalMpegTsProcessor = null;
+            }
         }
     }
 }
