@@ -34,6 +34,11 @@ public class StreamContext {
     private DataBufferListener dataBufferListener;
 
     /**
+     * Name of the codec associated with the stream.
+     */
+    private String codecName;
+
+    /**
      * Returns the ID of the stream associated with this context.
      *
      * @return The stream ID.
@@ -88,6 +93,24 @@ public class StreamContext {
     }
 
     /**
+     * Returns the name of the codec associated with the stream.
+     *
+     * @return The codec name.
+     */
+    public String getCodecName() {
+        return codecName;
+    }
+
+    /**
+     * Sets the name of the codec associated with the stream.
+     *
+     * @param codecName The codec name.
+     */
+    private void setCodecName(String codecName) {
+        this.codecName = codecName;
+    }
+
+    /**
      * Returns whether this context has a valid stream ID.
      *
      * @return {@code true} if the stream ID is valid, {@code false} otherwise
@@ -129,6 +152,9 @@ public class StreamContext {
         if (codec == null) {
             throw new IllegalStateException("Unsupported codec");
         }
+
+        // Store the codec name
+        setCodecName(codec.name().getString());
 
         // Attempt to open the codec
         int returnCode = avcodec.avcodec_open2(codecContext, codec, (PointerPointer<?>) null);

@@ -165,6 +165,10 @@ public class MpegTsProcessor extends Thread {
                 streamOpened = true;
                 queryEmbeddedStreams();
 
+                // Allocate the codec contexts and attempt to open them
+                videoStreamContext.openCodecContext(avFormatContext);
+                audioStreamContext.openCodecContext(avFormatContext);
+
                 logger.debug("Stream opened {}", streamSource);
             }
         } else {
@@ -298,6 +302,26 @@ public class MpegTsProcessor extends Thread {
     }
 
     /**
+     * Retrieves the codec name for the video stream.
+     * Should be invoked after {@link MpegTsProcessor#hasVideoStream()} to retrieve the video codec name.
+     *
+     * @return The codec name for the video stream.
+     */
+    public String getVideoCodecName() {
+        return videoStreamContext.getCodecName();
+    }
+
+    /**
+     * Retrieves the codec name for the audio stream.
+     * Should be invoked after {@link MpegTsProcessor#hasAudioStream()} to retrieve the audio codec name.
+     *
+     * @return The codec name for the audio stream.
+     */
+    public String getAudioCodecName() {
+        return audioStreamContext.getCodecName();
+    }
+
+    /**
      * Starts the threaded process for demuxing the transport stream.
      * Should only be invoked if the stream is successfully opened.
      * <p>
@@ -310,10 +334,6 @@ public class MpegTsProcessor extends Thread {
         logger.debug("processStream");
 
         if (streamOpened) {
-            // Allocate the codec contexts and attempt to open them
-            videoStreamContext.openCodecContext(avFormatContext);
-            audioStreamContext.openCodecContext(avFormatContext);
-
             start();
         } else {
             throw new IllegalStateException("Stream has not been opened or failed to open");

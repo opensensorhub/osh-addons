@@ -178,8 +178,8 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * Create and initialize the video output.
      * The caller must be careful not to call this if the video output has already been created and added to the sensor.
      */
-    protected void createVideoOutput(int[] videoDims) {
-        videoOutput = new VideoOutput<>(this, videoDims);
+    protected void createVideoOutput(int[] videoDims, String codecName) {
+        videoOutput = new VideoOutput<>(this, videoDims, codecName);
         if (executor != null) {
             videoOutput.setExecutor(executor);
         }
@@ -191,8 +191,8 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * Create and initialize the audio output.
      * The caller must be careful not to call this if the audio output has already been created and added to the sensor.
      */
-    protected void createAudioOutput(int sampleRate) {
-        audioOutput = new AudioOutput<>(this, sampleRate);
+    protected void createAudioOutput(int sampleRate, String codecName) {
+        audioOutput = new AudioOutput<>(this, sampleRate, codecName);
         if (executor != null) {
             audioOutput.setExecutor(executor);
         }
@@ -234,7 +234,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
                     // In case we were waiting until we got video data to make the video frame output,
                     // we go ahead and do that now.
                     if (videoOutput == null) {
-                        createVideoOutput(mpegTsProcessor.getVideoStreamFrameDimensions());
+                        createVideoOutput(mpegTsProcessor.getVideoStreamFrameDimensions(), mpegTsProcessor.getVideoCodecName());
                     }
                     // Set video stream packet listener to video output
                     mpegTsProcessor.setVideoDataBufferListener(videoOutput);
@@ -245,7 +245,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
                     // In case we were waiting until we got audio data to make the audio output,
                     // we go ahead and do that now.
                     if (audioOutput == null) {
-                        createAudioOutput(mpegTsProcessor.getAudioSampleRate());
+                        createAudioOutput(mpegTsProcessor.getAudioSampleRate(), mpegTsProcessor.getAudioCodecName());
                     }
                     // Set audio stream packet listener to audio output
                     mpegTsProcessor.setAudioDataBufferListener(audioOutput);

@@ -40,6 +40,7 @@ public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
 
     private final int videoFrameWidth;
     private final int videoFrameHeight;
+    private final String codecName;
 
     private DataComponent dataStruct;
     private DataEncoding dataEncoding;
@@ -55,8 +56,8 @@ public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
      * @param parentSensor         Sensor driver providing this output.
      * @param videoFrameDimensions The width and height of the video frame.
      */
-    public VideoOutput(T parentSensor, int[] videoFrameDimensions) {
-        this(parentSensor, videoFrameDimensions, "video", "Video", "Video stream using ffmpeg library");
+    public VideoOutput(T parentSensor, int[] videoFrameDimensions, String codecName) {
+        this(parentSensor, videoFrameDimensions, codecName, "video", "Video", "Video stream using ffmpeg library");
     }
 
     /**
@@ -68,13 +69,14 @@ public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
      * @param outputLabel          The label of the output.
      * @param outputDescription    The description of the output.
      */
-    public VideoOutput(T parentSensor, int[] videoFrameDimensions, String name, String outputLabel, String outputDescription) {
+    public VideoOutput(T parentSensor, int[] videoFrameDimensions, String codecName, String name, String outputLabel, String outputDescription) {
         super(name, parentSensor);
+
+        this.videoFrameWidth = videoFrameDimensions[0];
+        this.videoFrameHeight = videoFrameDimensions[1];
+        this.codecName = codecName;
         this.outputLabel = outputLabel;
         this.outputDescription = outputDescription;
-
-        videoFrameWidth = videoFrameDimensions[0];
-        videoFrameHeight = videoFrameDimensions[1];
 
         logger.debug("Video output created.");
     }
@@ -107,7 +109,7 @@ public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
 
         BinaryBlock compressedBlock = sweHelper.newBinaryBlock();
         compressedBlock.setRef("/" + dataStruct.getComponent(1).getName());
-        compressedBlock.setCompression("H264");
+        compressedBlock.setCompression(codecName);
         dataEnc.addMemberAsBlock(compressedBlock);
 
         try {

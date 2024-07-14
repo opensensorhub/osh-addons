@@ -186,7 +186,7 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
                     // In case we were waiting until we got video data to make the video frame output,
                     // we go ahead and do that now.
                     if (visualVideoOutput == null) {
-                        visualVideoOutput = new VideoOutput<>(this, visualMpegTsProcessor.getVideoStreamFrameDimensions(), "visual", "Visual", "Visual stream using ffmpeg library");
+                        visualVideoOutput = new VideoOutput<>(this, visualMpegTsProcessor.getVideoStreamFrameDimensions(), visualMpegTsProcessor.getVideoCodecName(), "visual", "Visual", "Visual stream using ffmpeg library");
                         if (executor != null) {
                             visualVideoOutput.setExecutor(executor);
                         }
@@ -202,7 +202,7 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
                     // In case we were waiting until we got audio data to make the audio output,
                     // we go ahead and do that now.
                     if (audioOutput == null) {
-                        audioOutput = new AudioOutput<>(this, visualMpegTsProcessor.getAudioSampleRate());
+                        audioOutput = new AudioOutput<>(this, visualMpegTsProcessor.getAudioSampleRate(), visualMpegTsProcessor.getAudioCodecName());
                         if (executor != null) {
                             audioOutput.setExecutor(executor);
                         }
@@ -244,7 +244,7 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
                     // In case we were waiting until we got video data to make the video frame output,
                     // we go ahead and do that now.
                     if (thermalVideoOutput == null) {
-                        thermalVideoOutput = new VideoOutput<>(this, thermalMpegTsProcessor.getVideoStreamFrameDimensions(), "thermal", "Thermal", "Thermal stream using ffmpeg library");
+                        thermalVideoOutput = new VideoOutput<>(this, thermalMpegTsProcessor.getVideoStreamFrameDimensions(), thermalMpegTsProcessor.getVideoCodecName(), "thermal", "Thermal", "Thermal stream using ffmpeg library");
                         if (executor != null) {
                             thermalVideoOutput.setExecutor(executor);
                         }

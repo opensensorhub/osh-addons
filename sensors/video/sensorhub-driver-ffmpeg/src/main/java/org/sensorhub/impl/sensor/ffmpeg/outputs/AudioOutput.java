@@ -33,14 +33,15 @@ import java.util.concurrent.Executor;
  * Output for video data from the FFMPEG sensor.
  */
 public class AudioOutput<T extends ISensorModule<?>> extends AbstractSensorOutput<T> implements DataBufferListener {
-    private static final String SENSOR_OUTPUT_NAME = "audio";
-    private static final String SENSOR_OUTPUT_LABEL = "Audio";
-    private static final String SENSOR_OUTPUT_DESCRIPTION = "Audio stream using ffmpeg library";
     private static final String NUM_SAMPLES_ID = "numSamplesID";
+
+    private final String outputLabel;
+    private final String outputDescription;
 
     private static final Logger logger = LoggerFactory.getLogger(AudioOutput.class.getSimpleName());
 
     private final int sampleRate;
+    private final String codecName;
 
     private DataComponent dataStruct;
     private DataEncoding dataEncoding;
@@ -55,10 +56,17 @@ public class AudioOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
      *
      * @param parentSensor Sensor driver providing this output
      */
-    public AudioOutput(T parentSensor, int sampleRate) {
-        super(SENSOR_OUTPUT_NAME, parentSensor);
+    public AudioOutput(T parentSensor, int sampleRate, String codecName) {
+        this(parentSensor, sampleRate, codecName, "audio", "Audio", "Audio stream using ffmpeg library");
+    }
+
+    public AudioOutput(T parentSensor, int sampleRate, String codecName, String outputName, String outputLabel, String outputDescription) {
+        super(outputName, parentSensor);
 
         this.sampleRate = sampleRate;
+        this.codecName = codecName;
+        this.outputLabel = outputLabel;
+        this.outputDescription = outputDescription;
 
         logger.debug("Video output created");
     }
@@ -72,8 +80,8 @@ public class AudioOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
         SWEHelper sweHelper = new SWEHelper();
         dataStruct = sweHelper.createRecord()
                 .name(getName())
-                .description(SENSOR_OUTPUT_DESCRIPTION)
-                .label(SENSOR_OUTPUT_LABEL)
+                .description(outputDescription)
+                .label(outputLabel)
                 .definition(SWEHelper.getPropertyUri("AudioFrame"))
                 .addField("sampleTime", sweHelper.createTime()
                         .asSamplingTimeIsoUTC()
@@ -122,7 +130,7 @@ public class AudioOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
         // Samples
         BinaryBlock compressedBlock = sweHelper.newBinaryBlock();
         compressedBlock.setRef("/" + dataStruct.getComponent(3).getName());
-        compressedBlock.setCompression("AAC");
+        compressedBlock.setCompression(codecName);
         dataEnc.addMemberAsBlock(compressedBlock);
 
         try {
