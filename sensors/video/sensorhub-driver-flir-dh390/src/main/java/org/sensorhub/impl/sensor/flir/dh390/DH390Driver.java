@@ -17,6 +17,7 @@ import org.sensorhub.impl.sensor.ffmpeg.outputs.AudioOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
 import org.sensorhub.mpegts.MpegTsProcessor;
 
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -132,6 +133,9 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
      * Also tells the setDecoder and videoOutput about the executor.
      */
     protected void setupExecutor() {
+        if (executor == null)
+            executor = Executors.newSingleThreadScheduledExecutor();
+
         if (visualVideoOutput != null)
             visualVideoOutput.setExecutor(executor);
         if (thermalVideoOutput != null)
