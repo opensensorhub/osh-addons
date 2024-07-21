@@ -17,7 +17,6 @@ import org.sensorhub.impl.sensor.ffmpeg.outputs.AudioOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
 import org.sensorhub.mpegts.MpegTsProcessor;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -42,8 +41,6 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
     @Override
     protected void doInit() throws SensorHubException {
         super.doInit();
-
-        logger.info("Initializing FLIR DH-390 sensor driver.");
 
         generateUniqueID("urn:osh:sensor:flir:dh-390:", config.serialNumber);
         generateXmlID("FLIR_DH-390_", config.serialNumber);
@@ -125,8 +122,8 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
     }
 
     protected void setupStreams() throws SensorHubException {
-        openStreamVisual();
         openStreamThermal();
+        openStreamVisual();
         setupExecutor();
     }
 
@@ -135,13 +132,6 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
      * Also tells the setDecoder and videoOutput about the executor.
      */
     protected void setupExecutor() {
-        if (executor == null) {
-            logger.debug("Executor was null, so creating a new one");
-            executor = Executors.newSingleThreadScheduledExecutor();
-        } else {
-            logger.debug("Already had an executor.");
-        }
-
         if (visualVideoOutput != null)
             visualVideoOutput.setExecutor(executor);
         if (thermalVideoOutput != null)
@@ -173,20 +163,16 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
      */
     protected void openStreamVisual() throws SensorHubException {
         if (visualMpegTsProcessor == null) {
-            logger.info("Opening MPEG TS connection for {} ...", getUniqueIdentifier());
-
             visualMpegTsProcessor = new MpegTsProcessor(visualConnectionString);
 
             // Initialize the MPEG transport stream processor from the source named in the configuration.
             if (visualMpegTsProcessor.openStream()) {
-                logger.info("Stream opened for {}", getUniqueIdentifier());
-
                 // If there is a video content in the stream
                 if (visualMpegTsProcessor.hasVideoStream()) {
                     // In case we were waiting until we got video data to make the video frame output,
                     // we go ahead and do that now.
                     if (visualVideoOutput == null) {
-                        visualVideoOutput = new VideoOutput<>(this, visualMpegTsProcessor.getVideoStreamFrameDimensions(), visualMpegTsProcessor.getVideoCodecName(), "visual", "Visual", "Visual stream using ffmpeg library");
+                        visualVideoOutput = new VideoOutput<>(this, visualMpegTsProcessor.getVideoStreamFrameDimensions(), visualMpegTsProcessor.getVideoCodecName(), "visual", "Visual Camera", "Visual stream using ffmpeg library");
                         if (executor != null) {
                             visualVideoOutput.setExecutor(executor);
                         }
@@ -215,8 +201,6 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
             } else {
                 throw new SensorHubException("Unable to open stream from data source");
             }
-
-            logger.info("MPEG TS stream for {} opened.", getUniqueIdentifier());
         }
     }
 
@@ -231,20 +215,16 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
      */
     protected void openStreamThermal() throws SensorHubException {
         if (thermalMpegTsProcessor == null) {
-            logger.info("Opening MPEG TS connection for {} ...", getUniqueIdentifier());
-
             thermalMpegTsProcessor = new MpegTsProcessor(thermalConnectionString);
 
             // Initialize the MPEG transport stream processor from the source named in the configuration.
             if (thermalMpegTsProcessor.openStream()) {
-                logger.info("Stream opened for {}", getUniqueIdentifier());
-
                 // If there is a video content in the stream
                 if (thermalMpegTsProcessor.hasVideoStream()) {
                     // In case we were waiting until we got video data to make the video frame output,
                     // we go ahead and do that now.
                     if (thermalVideoOutput == null) {
-                        thermalVideoOutput = new VideoOutput<>(this, thermalMpegTsProcessor.getVideoStreamFrameDimensions(), thermalMpegTsProcessor.getVideoCodecName(), "thermal", "Thermal", "Thermal stream using ffmpeg library");
+                        thermalVideoOutput = new VideoOutput<>(this, thermalMpegTsProcessor.getVideoStreamFrameDimensions(), thermalMpegTsProcessor.getVideoCodecName(), "thermal", "Thermal Camera", "Thermal stream using ffmpeg library");
                         if (executor != null) {
                             thermalVideoOutput.setExecutor(executor);
                         }
@@ -257,8 +237,6 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
             } else {
                 throw new SensorHubException("Unable to open stream from data source");
             }
-
-            logger.info("MPEG TS stream for {} opened.", getUniqueIdentifier());
         }
     }
 
@@ -288,8 +266,6 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
      * @throws SensorHubException If there is a problem stopping the stream processor.
      */
     protected void stopStreams() throws SensorHubException {
-        logger.info("Stopping MPEG TS processor for {}", getUniqueIdentifier());
-
         if (visualMpegTsProcessor != null) {
             visualMpegTsProcessor.stopProcessingStream();
 
