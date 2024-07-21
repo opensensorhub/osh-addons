@@ -40,7 +40,7 @@ import static org.bytedeco.ffmpeg.global.avformat.av_read_frame;
  * specifically avutils which is used to demux the MPEG-TS streams into h264 video packets.
  * <p>
  * The MpegTsProcessor allows for easy interface and management of the logical stream,
- * allowing client applications to register callbacks for video and metadata buffers for further domain-specific processing.
+ * allowing client applications to register callbacks for video and data buffers for further domain-specific processing.
  * <p>
  * <H1>Example Usage:</H1>
  * <pre><code>
@@ -83,6 +83,7 @@ public class MpegTsProcessor extends Thread {
 
     private final StreamContext videoStreamContext = new StreamContext();
     private final StreamContext audioStreamContext = new StreamContext();
+    private final StreamContext dataStreamContext = new StreamContext();
 
     /**
      * Context used by underlying FFmpeg library to decode stream.
@@ -95,7 +96,7 @@ public class MpegTsProcessor extends Thread {
     private final AtomicBoolean terminateProcessing = new AtomicBoolean(false);
 
     /**
-     * Flag indicating whether the stream has been opened or connected to successfully.
+     * Flag indicating whether the stream has been opened or connected successfully.
      */
     private boolean streamOpened = false;
 
@@ -199,6 +200,11 @@ public class MpegTsProcessor extends Thread {
 
                 audioStreamContext.setStreamId(streamId);
                 audioStreamContext.setStreamTimeBase(timeBaseUnits);
+            } else if (!dataStreamContext.hasStream() && codecType == avutil.AVMEDIA_TYPE_DATA) {
+                logger.debug("Data stream present with id: {}", streamId);
+
+                dataStreamContext.setStreamId(streamId);
+                dataStreamContext.setStreamTimeBase(timeBaseUnits);
             }
         }
     }
@@ -219,6 +225,15 @@ public class MpegTsProcessor extends Thread {
      */
     public boolean hasAudioStream() {
         return audioStreamContext.hasStream();
+    }
+
+    /**
+     * Required to identify if the transport stream contains a data stream.
+     * Should be used in conjunction with {@link MpegTsProcessor#setDataDataBufferListener(DataBufferListener)}
+     * to register callbacks for appropriate buffers.
+     */
+    public boolean hasDataStream() {
+        return dataStreamContext.hasStream();
     }
 
     /**
@@ -302,6 +317,16 @@ public class MpegTsProcessor extends Thread {
     }
 
     /**
+     * Registers a data buffer listener to call if clients are interested in demuxed data buffers
+     *
+     * @param dataDataBufferListener The listener to invoke when a data buffer is retrieved from
+     *                               the transport stream.
+     */
+    public void setDataDataBufferListener(@Nonnull DataBufferListener dataDataBufferListener) {
+        dataStreamContext.setDataBufferListener(dataDataBufferListener);
+    }
+
+    /**
      * Retrieves the codec name for the video stream.
      * Should be invoked after {@link MpegTsProcessor#hasVideoStream()} to retrieve the video codec name.
      *
@@ -380,6 +405,7 @@ public class MpegTsProcessor extends Thread {
         } else {
             videoStreamContext.processPacket(avPacket);
             audioStreamContext.processPacket(avPacket);
+            dataStreamContext.processPacket(avPacket);
         }
 
         // Fully deallocate packet
