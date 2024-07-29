@@ -14,6 +14,7 @@ package org.sensorhub.mpegts;
 import org.bytedeco.ffmpeg.avcodec.AVCodecParameters;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avformat.AVFormatContext;
+import org.bytedeco.ffmpeg.avutil.AVDictionary;
 import org.bytedeco.ffmpeg.avutil.AVRational;
 import org.bytedeco.ffmpeg.global.avcodec;
 import org.bytedeco.ffmpeg.global.avformat;
@@ -116,6 +117,8 @@ public class MpegTsProcessor extends Thread {
      */
     volatile boolean loop;
 
+    DisconnectListener disconnectListener;
+
     /**
      * Constructor
      *
@@ -154,7 +157,12 @@ public class MpegTsProcessor extends Thread {
         // Create a new AV Format Context for I/O
         avFormatContext = new AVFormatContext(null);
 
-        int returnCode = avformat.avformat_open_input(avFormatContext, streamSource, null, null);
+        // Set timeout
+        var options = new AVDictionary(null);
+        avutil.av_dict_set(options, "timeout", "3000000", 0);
+
+        int returnCode = avformat.avformat_open_input(avFormatContext, streamSource, null, options);
+        logger.debug("returnCode: {}", returnCode);
 
         // Attempt to open the stream, streamPath can be a file or URL
         if (returnCode == 0) {
@@ -176,6 +184,10 @@ public class MpegTsProcessor extends Thread {
             logger.error("Failed to open stream: {}", streamSource);
         }
 
+        return streamOpened;
+    }
+
+    public boolean isStreamOpened() {
         return streamOpened;
     }
 
@@ -326,6 +338,10 @@ public class MpegTsProcessor extends Thread {
         dataStreamContext.setDataBufferListener(dataDataBufferListener);
     }
 
+    public void setDisconnectListener(@Nonnull DisconnectListener disconnectListener) {
+        this.disconnectListener = disconnectListener;
+    }
+
     /**
      * Retrieves the codec name for the video stream.
      * Should be invoked after {@link MpegTsProcessor#hasVideoStream()} to retrieve the video codec name.
@@ -395,8 +411,10 @@ public class MpegTsProcessor extends Thread {
     private void processPacket() {
         AVPacket avPacket = new AVPacket();
 
-        if (av_read_frame(avFormatContext, avPacket) < 0) {
-            logger.info("End of the FFmpeg stream");
+        int ret = av_read_frame(avFormatContext, avPacket);
+
+        if (ret < 0) {
+            logger.info("Ret: {}", ret);
             if (loop) {
                 avformat.av_seek_frame(avFormatContext, 0, 0, avformat.AVSEEK_FLAG_ANY);
             } else {
@@ -411,6 +429,11 @@ public class MpegTsProcessor extends Thread {
         // Fully deallocate packet
         avcodec.av_packet_unref(avPacket);
         avPacket.deallocate();
+
+        // Check for disconnect
+        if (ret == -138 && disconnectListener != null) {
+            disconnectListener.onDisconnect();
+        }
     }
 
     /**

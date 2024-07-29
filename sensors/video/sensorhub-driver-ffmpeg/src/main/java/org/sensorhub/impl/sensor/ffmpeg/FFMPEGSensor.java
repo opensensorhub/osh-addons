@@ -18,6 +18,7 @@ import org.sensorhub.impl.sensor.ffmpeg.outputs.AudioOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.OrientationOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
 import org.sensorhub.mpegts.MpegTsProcessor;
+import org.sensorhub.mpegts.DisconnectListener;
 import org.vast.swe.SWEConstants;
 
 import java.util.concurrent.Executors;
@@ -26,7 +27,7 @@ import java.util.concurrent.ScheduledExecutorService;
 /**
  * Sensor driver that can read video data that is compatible with FFmpeg.
  */
-public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
+public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> implements DisconnectListener {
     /**
      * Thing that knows how to parse the data out of the bytes from the video stream.
      */
@@ -51,6 +52,8 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * Sensor output for the orientation data.
      */
     protected OrientationOutput orientationOutput;
+
+    ScheduledExecutorService restartExecutor;
 
     @Override
     protected void doInit() throws SensorHubException {
@@ -207,11 +210,11 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * since it checks for a null mpegTsProcessor.
      * This also has the side effect of creating and adding the Video output if it hasn't already happened earlier.
      *
-     * @throws SensorHubException If there is a problem opening the stream.
+     * @return {@code true} if the stream was opened or already open, {@code false} otherwise.
      */
-    protected void openStream() throws SensorHubException {
+    protected boolean openStream() {
         if (mpegTsProcessor == null) {
-            logger.info("Opening MPEG TS connection for {} ...", getUniqueIdentifier());
+            logger.info("Opening MPEG TS connection.");
 
             // Regex to determine if the connection string is a file path.
             String fileRegex = "^(?:[a-zA-Z]:)?[\\\\/].*";
@@ -224,38 +227,44 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
                 logger.info("Opening network stream");
                 mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString);
             }
+        }
 
-            // Initialize the MPEG transport stream processor from the source named in the configuration.
-            if (mpegTsProcessor.openStream()) {
-                logger.info("Stream opened for {}", getUniqueIdentifier());
+        if (mpegTsProcessor.isStreamOpened()) {
+            logger.info("Stream already opened.");
+            return true;
+        }
 
-                // If there is a video content in the stream
-                if (mpegTsProcessor.hasVideoStream()) {
-                    // In case we were waiting until we got video data to make the video frame output,
-                    // we go ahead and do that now.
-                    if (videoOutput == null) {
-                        createVideoOutput(mpegTsProcessor.getVideoStreamFrameDimensions(), mpegTsProcessor.getVideoCodecName());
-                    }
-                    // Set video stream packet listener to video output
-                    mpegTsProcessor.setVideoDataBufferListener(videoOutput);
+        // Initialize the MPEG transport stream processor from the source named in the configuration.
+        if (mpegTsProcessor.openStream()) {
+            mpegTsProcessor.setDisconnectListener(this);
+
+            // If there is a video content in the stream
+            if (mpegTsProcessor.hasVideoStream()) {
+                // In case we were waiting until we got video data to make the video frame output,
+                // we go ahead and do that now.
+                if (videoOutput == null) {
+                    createVideoOutput(mpegTsProcessor.getVideoStreamFrameDimensions(), mpegTsProcessor.getVideoCodecName());
                 }
+                // Set video stream packet listener to video output
+                mpegTsProcessor.setVideoDataBufferListener(videoOutput);
+            }
 
-                // If there is an audio content in the stream
-                if (mpegTsProcessor.hasAudioStream()) {
-                    // In case we were waiting until we got audio data to make the audio output,
-                    // we go ahead and do that now.
-                    if (audioOutput == null) {
-                        createAudioOutput(mpegTsProcessor.getAudioSampleRate(), mpegTsProcessor.getAudioCodecName());
-                    }
-                    // Set audio stream packet listener to audio output
-                    mpegTsProcessor.setAudioDataBufferListener(audioOutput);
+            // If there is an audio content in the stream
+            if (mpegTsProcessor.hasAudioStream()) {
+                // In case we were waiting until we got audio data to make the audio output,
+                // we go ahead and do that now.
+                if (audioOutput == null) {
+                    createAudioOutput(mpegTsProcessor.getAudioSampleRate(), mpegTsProcessor.getAudioCodecName());
                 }
-            } else {
-                throw new SensorHubException("Unable to open stream from data source");
+                // Set audio stream packet listener to audio output
+                mpegTsProcessor.setAudioDataBufferListener(audioOutput);
             }
 
             logger.info("MPEG TS stream for {} opened.", getUniqueIdentifier());
+            return true;
         }
+
+        return false;
     }
 
     /**
@@ -290,7 +299,8 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
 
             try {
                 // Wait for thread to finish
-                mpegTsProcessor.join();
+                logger.info("Waiting for stream processor to stop");
+                mpegTsProcessor.join(1000);
             } catch (InterruptedException e) {
                 logger.error("Interrupted waiting for stream processor to stop", e);
                 Thread.currentThread().interrupt();
@@ -300,6 +310,38 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
                 mpegTsProcessor.closeStream();
                 mpegTsProcessor = null;
             }
+        }
+    }
+
+    @Override
+    public void onDisconnect() {
+        logger.info("Disconnect occurred.");
+
+        try {
+            stopStream();
+
+            restartExecutor = Executors.newSingleThreadScheduledExecutor();
+            restartExecutor.scheduleAtFixedRate(this::tryStartStream, 0, 5, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (SensorHubException e) {
+            logger.error("Error restarting stream after disconnect", e);
+        }
+    }
+
+    /**
+     * Try to restart the stream after a disconnect.
+     */
+    protected void tryStartStream() {
+        try {
+            boolean opened = openStream();
+            if (opened) {
+                if (restartExecutor != null) {
+                    restartExecutor.shutdown();
+                    restartExecutor = null;
+                }
+                startStream();
+            }
+        } catch (SensorHubException e) {
+            logger.error("Error restarting stream after disconnect", e);
         }
     }
 }
