@@ -18,7 +18,6 @@ import org.sensorhub.impl.sensor.ffmpeg.outputs.AudioOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.OrientationOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
 import org.sensorhub.mpegts.MpegTsProcessor;
-import org.sensorhub.mpegts.DisconnectListener;
 import org.vast.swe.SWEConstants;
 
 import java.util.concurrent.Executors;
@@ -27,7 +26,7 @@ import java.util.concurrent.ScheduledExecutorService;
 /**
  * Sensor driver that can read video data that is compatible with FFmpeg.
  */
-public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> implements DisconnectListener {
+public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
     /**
      * Thing that knows how to parse the data out of the bytes from the video stream.
      */
@@ -52,8 +51,6 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> implements 
      * Sensor output for the orientation data.
      */
     protected OrientationOutput orientationOutput;
-
-    ScheduledExecutorService restartExecutor;
 
     @Override
     protected void doInit() throws SensorHubException {
@@ -236,8 +233,6 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> implements 
 
         // Initialize the MPEG transport stream processor from the source named in the configuration.
         if (mpegTsProcessor.openStream()) {
-            mpegTsProcessor.setDisconnectListener(this);
-
             // If there is a video content in the stream
             if (mpegTsProcessor.hasVideoStream()) {
                 // In case we were waiting until we got video data to make the video frame output,
@@ -278,6 +273,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> implements 
         try {
             if (mpegTsProcessor != null) {
                 mpegTsProcessor.processStream();
+                mpegTsProcessor.setReconnect(true);
             }
         } catch (IllegalStateException e) {
             String message = "Failed to start stream processor";
@@ -310,38 +306,6 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> implements 
                 mpegTsProcessor.closeStream();
                 mpegTsProcessor = null;
             }
-        }
-    }
-
-    @Override
-    public void onDisconnect() {
-        logger.info("Disconnect occurred.");
-
-        try {
-            stopStream();
-
-            restartExecutor = Executors.newSingleThreadScheduledExecutor();
-            restartExecutor.scheduleAtFixedRate(this::tryStartStream, 0, 5, java.util.concurrent.TimeUnit.SECONDS);
-        } catch (SensorHubException e) {
-            logger.error("Error restarting stream after disconnect", e);
-        }
-    }
-
-    /**
-     * Try to restart the stream after a disconnect.
-     */
-    protected void tryStartStream() {
-        try {
-            boolean opened = openStream();
-            if (opened) {
-                if (restartExecutor != null) {
-                    restartExecutor.shutdown();
-                    restartExecutor = null;
-                }
-                startStream();
-            }
-        } catch (SensorHubException e) {
-            logger.error("Error restarting stream after disconnect", e);
         }
     }
 }

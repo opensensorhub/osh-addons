@@ -253,9 +253,11 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
         try {
             if (visualMpegTsProcessor != null) {
                 visualMpegTsProcessor.processStream();
+                visualMpegTsProcessor.setReconnect(true);
             }
             if (thermalMpegTsProcessor != null) {
                 thermalMpegTsProcessor.processStream();
+                thermalMpegTsProcessor.setReconnect(true);
             }
         } catch (IllegalStateException e) {
             String message = "Failed to start stream processor";

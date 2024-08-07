@@ -107,7 +107,7 @@ public class MpegTsProcessor extends Thread {
     private final String streamSource;
 
     /**
-     * FPS to enforce when playing back from file.
+     * FPS to enforce when playing back from a file.
      * Zero means the file will be played back as fast as possible.
      */
     int fps;
@@ -117,7 +117,10 @@ public class MpegTsProcessor extends Thread {
      */
     volatile boolean loop;
 
-    DisconnectListener disconnectListener;
+    /**
+     * Executor to restart the stream in case of failure.
+     */
+    protected ScheduledExecutorService restartExecutor;
 
     /**
      * Constructor
@@ -129,7 +132,7 @@ public class MpegTsProcessor extends Thread {
     }
 
     /**
-     * Constructor with more options when playing back from file.
+     * Constructor with more options when playing back from a file.
      *
      * @param source A string representation of the file or url to use as the source of the transport stream to demux.
      * @param fps    The desired playback FPS (use 0 for decoding the TS file as fast as possible).
@@ -338,10 +341,6 @@ public class MpegTsProcessor extends Thread {
         dataStreamContext.setDataBufferListener(dataDataBufferListener);
     }
 
-    public void setDisconnectListener(@Nonnull DisconnectListener disconnectListener) {
-        this.disconnectListener = disconnectListener;
-    }
-
     /**
      * Retrieves the codec name for the video stream.
      * Should be invoked after {@link MpegTsProcessor#hasVideoStream()} to retrieve the video codec name.
@@ -409,16 +408,17 @@ public class MpegTsProcessor extends Thread {
      * if registered, are invoked for appropriate buffers.
      */
     private void processPacket() {
+        if (!streamOpened) return;
+
         AVPacket avPacket = new AVPacket();
 
         int ret = av_read_frame(avFormatContext, avPacket);
 
         if (ret < 0) {
-            logger.info("Ret: {}", ret);
             if (loop) {
                 avformat.av_seek_frame(avFormatContext, 0, 0, avformat.AVSEEK_FLAG_ANY);
             } else {
-                stopProcessingStream();
+                closeStream();
             }
         } else {
             videoStreamContext.processPacket(avPacket);
@@ -429,11 +429,6 @@ public class MpegTsProcessor extends Thread {
         // Fully deallocate packet
         avcodec.av_packet_unref(avPacket);
         avPacket.deallocate();
-
-        // Check for disconnect
-        if (ret == -138 && disconnectListener != null) {
-            disconnectListener.onDisconnect();
-        }
     }
 
     /**
@@ -452,6 +447,10 @@ public class MpegTsProcessor extends Thread {
 
             streamOpened = false;
         }
+
+        if (restartExecutor != null) {
+            restartExecutor.shutdown();
+        }
     }
 
     /**
@@ -463,6 +462,28 @@ public class MpegTsProcessor extends Thread {
         if (streamOpened) {
             loop = false;
             terminateProcessing.set(true);
+        }
+    }
+
+    /**
+     * Set the flag to attempt reconnection to the stream in case of failure.
+     * When set to true, the processor will attempt to reconnect to the stream if the connection is lost.
+     *
+     * @param reconnect True to attempt reconnection, false otherwise.
+     */
+    public void setReconnect(boolean reconnect) {
+        if (reconnect) {
+            restartExecutor = Executors.newScheduledThreadPool(1);
+            restartExecutor.scheduleAtFixedRate(() -> {
+                if (!streamOpened) {
+                    logger.debug("Attempting to reconnect to stream.");
+                    openStream();
+                }
+            }, 5, 5, TimeUnit.SECONDS);
+        } else {
+            if (restartExecutor != null) {
+                restartExecutor.shutdown();
+            }
         }
     }
 }
