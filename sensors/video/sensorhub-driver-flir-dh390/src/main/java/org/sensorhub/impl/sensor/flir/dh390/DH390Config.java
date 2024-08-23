@@ -43,4 +43,9 @@ public class DH390Config extends SensorConfig {
     public PositionConfig.LLALocation getLocation() {
         return positionConfig.location;
     }
+
+    @Override
+    public PositionConfig.EulerOrientation getOrientation() {
+        return positionConfig.orientation;
+    }
 }

@@ -15,7 +15,6 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.AudioOutput;
-import org.sensorhub.impl.sensor.ffmpeg.outputs.OrientationOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
 import org.sensorhub.mpegts.MpegTsProcessor;
 import org.vast.swe.SWEConstants;
@@ -46,11 +45,6 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * Sensor output for the audio data.
      */
     protected AudioOutput<FFMPEGSensor> audioOutput;
-
-    /**
-     * Sensor output for the orientation data.
-     */
-    protected OrientationOutput orientationOutput;
 
     @Override
     protected void doInit() throws SensorHubException {
@@ -87,22 +81,11 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
 
         // Open up the stream so that we can get the video output.
         openStream();
-
-        if (config.positionConfig.orientation != null) {
-            orientationOutput = new OrientationOutput(this);
-            orientationOutput.doInit();
-            addOutput(orientationOutput, true);
-        }
     }
 
     @Override
     protected void doStart() throws SensorHubException {
         super.doStart();
-
-        // Set the sensor orientation
-        if (orientationOutput != null && config.positionConfig.orientation != null) {
-            orientationOutput.setOrientation(config.positionConfig.orientation);
-        }
 
         // Start up the background thread if it's not already going.
         // Normally doInit() will have just been called, so this is redundant (but harmless).

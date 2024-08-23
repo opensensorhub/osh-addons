@@ -27,7 +27,6 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
     protected VideoOutput<DH390Driver> visualVideoOutput;
     protected VideoOutput<DH390Driver> thermalVideoOutput;
     protected AudioOutput<DH390Driver> audioOutput;
-    protected DH390OrientationOutput orientationOutput;
     protected MpegTsProcessor visualMpegTsProcessor;
     protected MpegTsProcessor thermalMpegTsProcessor;
     protected ScheduledExecutorService executor;
@@ -62,13 +61,6 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
         thermalConnectionString = connectionString + "/ch2";
 
         setupStreams();
-
-        // Initialize the orientation output
-        if (config.positionConfig.orientation != null) {
-            orientationOutput = new DH390OrientationOutput(this);
-            orientationOutput.doInit();
-            addOutput(orientationOutput, true);
-        }
     }
 
     /**
@@ -79,11 +71,6 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
     @Override
     protected void doStart() throws SensorHubException {
         super.doStart();
-
-        // Set the sensor orientation
-        if (orientationOutput != null && config.positionConfig.orientation != null) {
-            orientationOutput.setOrientation(config.positionConfig.orientation);
-        }
 
         setupStreams();
         startStreams();
