@@ -56,7 +56,7 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
         thermalVideoOutput = null;
 
         // Create connection strings for the visual and thermal cameras
-        String connectionString = "rtsp://" + config.connection.userName + ":" + config.connection.password + "@" + config.connection.ipAddress;
+        String connectionString = "rtsp://" + config.connection.username + ":" + config.connection.password + "@" + config.connection.ipAddress;
         visualConnectionString = connectionString + "/ch1";
         thermalConnectionString = connectionString + "/ch2";
 

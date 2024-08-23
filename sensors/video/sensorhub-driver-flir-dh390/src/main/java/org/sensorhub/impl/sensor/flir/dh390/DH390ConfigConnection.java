@@ -28,8 +28,8 @@ public class DH390ConfigConnection {
      * Username used to connect to the camera.
      */
     @DisplayInfo.Required
-    @DisplayInfo(label = "User Name", desc = "User name for the camera.")
-    public String userName;
+    @DisplayInfo(label = "Username", desc = "Username for the camera.")
+    public String username;
 
     /**
      * Password used to connect to the camera.
