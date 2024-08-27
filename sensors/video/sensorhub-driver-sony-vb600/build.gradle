@@ -1,0 +1,38 @@
+description = "Sony SNC-VB600 Driver"
+ext.details = "Driver for connecting to the Sony Network Camera VB600."
+version = "1.0.0"
+
+// To build in entire java cv platform of projects use
+//    implementation("org.bytedeco:javacv-platform:1.5.2")
+dependencies {
+    implementation("org.sensorhub:sensorhub-core:$oshCoreVersion")
+    implementation project(":sensorhub-driver-ffmpeg")
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+//      If tests are to be excluded list them here as follows
+//          exclude "**/TestNameClass.class"
+test {
+    useJUnit()
+}
+
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes("Bundle-Vendor": "Botts Innovative Research, Inc.")
+        attributes("Bundle-Activator": "org.sensorhub.impl.sensor.sony.vb600.vb600Activator")
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id "drew.botts"
+            name "Drew Botts"
+            organization "Botts Innovative Research, Inc."
+            organizationUrl "http://www.botts-inc.com"
+        }
+    }
+}

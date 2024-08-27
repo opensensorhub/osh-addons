@@ -19,6 +19,7 @@ import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
 import org.sensorhub.mpegts.MpegTsProcessor;
 import org.vast.swe.SWEConstants;
 
+import java.net.UnknownHostException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -84,7 +85,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
     }
 
     @Override
-    protected void doStart() throws SensorHubException {
+    protected void doStart() throws SensorHubException, UnknownHostException, InterruptedException {
         super.doStart();
 
         // Start up the background thread if it's not already going.
