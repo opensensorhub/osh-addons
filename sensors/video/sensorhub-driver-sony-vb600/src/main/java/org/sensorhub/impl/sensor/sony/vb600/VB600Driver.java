@@ -52,12 +52,12 @@ public class VB600Driver extends AbstractSensorModule<VB600Config> {
 
         if (config.connection.hasUsernameAndPassword) {
             // Create connection strings camera
-            visualConnectionString = "rtsp://" + config.connection.username + ":" + config.connection.password + "@" + config.connection.ipAddress + ":554/videos/01";
+            visualConnectionString = "rtsp://" + config.connection.username + ":" + config.connection.password + "@" + config.connection.ipAddress + ":554/media/video1";
         }
         else
         {
             // Create connection strings camera
-            visualConnectionString = "rtsp://" + config.connection.ipAddress + ":554/videos/01";
+            visualConnectionString = "rtsp://" + config.connection.ipAddress + ":554/media/video1";
         }
         setupStream();
     }

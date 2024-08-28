@@ -24,9 +24,7 @@ public class VB600ConfigConnection {
     @DisplayInfo(label = "IP Address", desc = "IP address of the camera.")
     public String ipAddress;
 
-    @DisplayInfo.Required
-    @DisplayInfo(label = "Username and Password", desc = "If the camera has a username and password to access")
-    public Boolean hasUsernameAndPassword = false;
+
 
     /**
      * Username used to connect to the camera.
@@ -40,6 +38,9 @@ public class VB600ConfigConnection {
     @DisplayInfo.FieldType(DisplayInfo.FieldType.Type.PASSWORD)
     @DisplayInfo(label = "Password", desc = "Password for the camera.")
     public String password;
+
+    @DisplayInfo(label = "Has Username and Password", desc = "If the camera has a username and password to access")
+    public boolean hasUsernameAndPassword;
 
     }
 
