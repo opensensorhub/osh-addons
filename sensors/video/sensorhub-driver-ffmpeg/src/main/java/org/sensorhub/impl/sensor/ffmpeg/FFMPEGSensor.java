@@ -85,7 +85,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
     }
 
     @Override
-    protected void doStart() throws SensorHubException, UnknownHostException, InterruptedException {
+    protected void doStart() throws SensorHubException {
         super.doStart();
 
         // Start up the background thread if it's not already going.

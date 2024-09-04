@@ -68,7 +68,7 @@ public class VB600Driver extends AbstractSensorModule<VB600Config> {
      * @throws SensorHubException If there is an error starting the sensor driver.
      */
     @Override
-    protected void doStart() throws SensorHubException, UnknownHostException, InterruptedException {
+    protected void doStart() throws SensorHubException {
         super.doStart();
 
         setupStream();
