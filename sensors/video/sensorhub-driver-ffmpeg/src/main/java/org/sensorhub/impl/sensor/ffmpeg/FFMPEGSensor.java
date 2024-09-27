@@ -19,6 +19,7 @@ import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
 import org.sensorhub.mpegts.MpegTsProcessor;
 import org.vast.swe.SWEConstants;
 
+import java.net.UnknownHostException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
