@@ -7,9 +7,9 @@ at http://mozilla.org/MPL/2.0/.
 Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
- 
+
 Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
- 
+
 ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.security.oauth;
@@ -63,33 +63,33 @@ public class OAuthAuthenticator extends LoginAuthenticator
     private static final String AUTH_METHOD_OAUTH2 = "OAUTH2";
     private static final String OAUTH_CODE_CALLBACK_PATH = "/oauthcode";
     private static final String LOGOUT_PATH = "/logout";
-    
+
     private final Logger log;
     private final OAuthClientConfig config;
     private final String serverBaseUrl;
     private final boolean enableCORS;
     private final Map<String, OAuthState> generatedState;
     private final ISecurityManager securityManager;
-    
-    
+
+
     static class OAuthState
     {
         String redirectUrl;
-        
+
         OAuthState(String redirectUrl)
         {
             this.redirectUrl = redirectUrl;
         }
     }
-    
+
 
     public OAuthAuthenticator(OAuthClientConfig config, String serverBaseUrl, boolean enableCORS, ISecurityManager securityManager, Logger log)
     {
         this.log = Asserts.checkNotNull(log, Logger.class);
-        
+
         this.config = Asserts.checkNotNull(config, OAuthClientConfig.class);
         Asserts.checkNotNullOrEmpty("The userIdField config property must be configured", config.userIdField);
-        
+
         if (!serverBaseUrl.contains("localhost"))
         {
             this.serverBaseUrl = serverBaseUrl.endsWith("/") ?
@@ -97,18 +97,18 @@ public class OAuthAuthenticator extends LoginAuthenticator
         }
         else
             this.serverBaseUrl = null;
-        
+
         this.enableCORS = enableCORS;
         this.securityManager = securityManager;
-        
+
         this.generatedState = CacheBuilder.newBuilder()
             .concurrencyLevel(4)
             .expireAfterWrite(60, TimeUnit.SECONDS)
             .<String, OAuthState>build()
             .asMap();
     }
-    
-    
+
+
     @Override
     public String getAuthMethod()
     {
@@ -137,7 +137,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
         {
             HttpServletRequest request = (HttpServletRequest) req;
             HttpServletResponse response = (HttpServletResponse) resp;
-           
+
             // catch logout case
             if (request.getServletPath() != null && LOGOUT_PATH.equals(request.getServletPath()))
             {
@@ -147,7 +147,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     var session = request.getSession(false);
                     if (session != null)
                         session.invalidate();
-                    
+
                     log.debug("Log out from auth provider @ " + config.logoutEndpoint);
                     var adminUrl = request.getRequestURL().toString().replace(request.getServletPath(), "/admin");
                     setCorsHeaders(request, response);
@@ -160,27 +160,28 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     return Authentication.SEND_FAILURE;
                 }
             }
-        
+
             // check for cached session
             HttpSession session = request.getSession(true);
             var cachedSession = session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
-            if (cachedSession != null && cachedSession instanceof Authentication.User)
+            if (cachedSession != null && cachedSession instanceof User)
             {
-                if (!_loginService.validate(((Authentication.User)cachedSession).getUserIdentity()))
+                if (!_loginService.validate(((User)cachedSession).getUserIdentity()))
                     session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
                 else
-                    return (Authentication.User)cachedSession;
+                    return (User)cachedSession;
             }
-            
-            
+
+
+            String clientCredentialsToken = null;
             String accessToken = null;
             String idToken = null;
             String postLoginRedirectUrl = null;
             String oauthCallbackUrl = getCallbackBaseUrl(request) + OAUTH_CODE_CALLBACK_PATH;
             String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-            
+
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
-            
+
             // if calling back from provider with auth code, get access token
             if (OAUTH_CODE_CALLBACK_PATH.equals(request.getServletPath()) &&
                 request.getParameter(OAuth.OAUTH_STATE) != null)
@@ -191,7 +192,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
                 {
                     // decode request received from auth provider
                     OAuthAuthzResponse oar = OAuthAuthzResponse.oauthCodeAuthzResponse(request);
-                    
+
                     // check state parameter
                     // only continue if state is valid
                     if ((state = generatedState.remove(oar.getState())) != null)
@@ -211,7 +212,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
                 {
                     log.error("Bad auth code callback: {} - {}", e.getError(), e.getDescription());
                 }
-                
+
                 try
                 {
                     if (code != null)
@@ -225,10 +226,10 @@ public class OAuthAuthenticator extends LoginAuthenticator
                             .setRedirectURI(oauthCallbackUrl)
                             .buildBodyMessage();
                         authRequest.addHeader("Accept", "application/json");
-    
+
                         OAuthJSONAccessTokenResponse oAuthResponse = oAuthClient.accessToken(authRequest, HttpMethod.POST);
                         log.debug("Token Endpoint Response: {}", oAuthResponse.getBody());
-                        
+
                         idToken = oAuthResponse.getParam("id_token");
                         accessToken = oAuthResponse.getAccessToken();
                     }
@@ -246,98 +247,121 @@ public class OAuthAuthenticator extends LoginAuthenticator
                     return Authentication.SEND_FAILURE;
                 }
             }
-            
-            // if no OAuth token received check if credentials are provided in authorization header
-            // and use back channel direct auth flow
-            if (accessToken == null && authHeader != null && !request.getServletPath().equals("/admin"))
-            {
-                try
-                {
-                    var credentials = parseBasicAuth(authHeader);
-                    if (credentials == null)
-                    {
+
+            if (authHeader != null && !request.getServletPath().equals("/admin")) {
+
+                clientCredentialsToken = parseBearerToken(authHeader);
+
+                // if no OAuth token received check if credentials are provided in authorization header
+                // and use back channel direct auth flow
+                if (clientCredentialsToken == null && accessToken == null) {
+
+                    try {
+
+                        var credentials = parseBasicAuth(authHeader);
+
+                        if (credentials == null) {
+
+                            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                            return Authentication.SEND_FAILURE;
+                        }
+
+                        // try to execute direct grant flow
+                        OAuthClientRequest authRequest = OAuthClientRequest
+                                .tokenLocation(config.tokenEndpoint)
+                                .setGrantType(GrantType.PASSWORD)
+                                .setClientId(config.clientID)
+                                .setClientSecret(config.clientSecret)
+                                .setUsername(credentials[0])
+                                .setPassword(credentials[1])
+                                .buildBodyMessage();
+                        authRequest.addHeader("Accept", "application/json");
+
+                        OAuthJSONAccessTokenResponse oAuthResponse = oAuthClient.accessToken(authRequest, HttpMethod.POST);
+                        accessToken = oAuthResponse.getAccessToken();
+
+                    } catch (OAuthProblemException e) {
+
+                        if (!mandatory)
+                            return Authentication.UNAUTHENTICATED;
+
+                        log.error("Error received from token endpoint: {} - {}", e.getError(), e.getDescription());
                         response.sendError(HttpServletResponse.SC_FORBIDDEN);
                         return Authentication.SEND_FAILURE;
-                    }
-                    
-                    // try to execute direct grant flow
-                    OAuthClientRequest authRequest = OAuthClientRequest
-                        .tokenLocation(config.tokenEndpoint)
-                        .setGrantType(GrantType.PASSWORD)
-                        .setClientId(config.clientID)
-                        .setClientSecret(config.clientSecret)
-                        .setUsername(credentials[0])
-                        .setPassword(credentials[1])
-                        .buildBodyMessage();
-                    authRequest.addHeader("Accept", "application/json");
 
-                    OAuthJSONAccessTokenResponse oAuthResponse = oAuthClient.accessToken(authRequest, HttpMethod.POST);
-                    accessToken = oAuthResponse.getAccessToken();
-                }
-                catch (OAuthProblemException e)
-                {
-                    if (!mandatory)
-                        return Authentication.UNAUTHENTICATED;
-                    
-                    log.error("Error received from token endpoint: {} - {}", e.getError(), e.getDescription());
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
-                    return Authentication.SEND_FAILURE;
-                }
-                catch (OAuthSystemException e)
-                {
-                    log.error("Error while requesting access token from " + config.tokenEndpoint, e);
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
-                    return Authentication.SEND_FAILURE;
+                    } catch (OAuthSystemException e) {
+
+                        log.error("Error while requesting access token from " + config.tokenEndpoint, e);
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
+                        return Authentication.SEND_FAILURE;
+                    }
                 }
             }
-            
+
             // if token was obtained, get user info
-            if (accessToken != null)
+            if (clientCredentialsToken != null || accessToken != null)
             {
                 try
                 {
                     String userId = null;
                     JsonElement userInfo;
-                    
-                    if (idToken != null)
-                    {
-                        // if ID token, assume it's a JWT token that contains needed info
-                        log.debug("ID Token = " + idToken);
-                        
-                        String[] chunks = idToken.split("\\.");
+
+                    if (clientCredentialsToken == null) {
+
+                        if (idToken != null)
+                        {
+                            // if ID token, assume it's a JWT token that contains needed info
+                            log.debug("ID Token = " + idToken);
+
+                            String[] chunks = idToken.split("\\.");
+                            Base64.Decoder decoder = Base64.getUrlDecoder();
+                            String header = new String(decoder.decode(chunks[0]));
+                            String payload = new String(decoder.decode(chunks[1]));
+                            log.debug("ID Token Header = " + header);
+                            log.debug("ID Token Payload = " + payload);
+                            userInfo = JsonParser.parseString(payload);
+                        }
+                        else
+                        {
+                            // if only an access token, we need to call the userinfo endpoint
+                            log.debug("OAuth Token = " + accessToken);
+
+                            // request user info
+                            OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint)
+                                    .setAccessToken(accessToken)
+                                    //.buildQueryMessage();
+                                    .buildHeaderMessage();
+                            OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, HttpMethod.GET, OAuthResourceResponse.class);
+                            log.debug("UserInfo = " + resourceResponse.getBody());
+                            userInfo = JsonParser.parseString(resourceResponse.getBody());
+                        }
+
+                    } else {
+
+                        // if client credentials token, assume it's a JWT token that contains needed info
+                        log.debug("Client Credentials Token = " + clientCredentialsToken);
+
+                        String[] chunks = clientCredentialsToken.split("\\.");
+
                         Base64.Decoder decoder = Base64.getUrlDecoder();
                         String header = new String(decoder.decode(chunks[0]));
                         String payload = new String(decoder.decode(chunks[1]));
-                        log.debug("ID Token Header = " + header);
-                        log.debug("ID Token Payload = " + payload);
+                        log.debug("Client Credentials Token Header = " + header);
+                        log.debug("Client Token Payload = " + payload);
                         userInfo = JsonParser.parseString(payload);
                     }
-                    else
-                    {
-                        // if only an access token, we need to call the userinfo endpoint
-                        log.debug("OAuth Token = " + accessToken);
-                        
-                        // request user info
-                        OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint)
-                            .setAccessToken(accessToken)
-                            //.buildQueryMessage();
-                            .buildHeaderMessage();
-                        OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, HttpMethod.GET, OAuthResourceResponse.class);
-                        log.debug("UserInfo = " + resourceResponse.getBody());
-                        userInfo = JsonParser.parseString(resourceResponse.getBody());
-                    }
-                    
+
                     // parse user ID and roles from json
                     userId = parseUserInfoJson(userInfo);
                     var roles = parseRolesFromJson(userInfo);
-                    
+
                     if (config.autoAddUser)
                     {
                         // create user with roles returned by ISS (if any)
                         var oshUser = new OAuthUser(userId, roles);
                         securityManager.getUserRegistry().put(oshUser.getId(), oshUser);
                     }
-                    
+
                     // login and return UserAuth object
                     UserIdentity user = login(userId, "", req);
                     if (user != null)
@@ -385,12 +409,12 @@ public class OAuthAuthenticator extends LoginAuthenticator
             {
                 // generate request to auth provider
                 var state = UUID.randomUUID().toString();
-                
+
                 postLoginRedirectUrl = getCallbackBaseUrl(request)
                     + (request.getServletPath() != null ? request.getServletPath() : "")
                     + (request.getPathInfo() != null ? request.getPathInfo() : "")
                     + (request.getQueryString() != null ? "?" + request.getQueryString() : "");
-                    
+
                 generatedState.put(state, new OAuthState(postLoginRedirectUrl));
                 OAuthClientRequest authRequest = OAuthClientRequest.authorizationLocation(config.authzEndpoint)
                     .setClientId(config.clientID)
@@ -420,8 +444,8 @@ public class OAuthAuthenticator extends LoginAuthenticator
             return Authentication.SEND_FAILURE;
         }
     }
-    
-    
+
+
     private String getCallbackBaseUrl(HttpServletRequest request)
     {
         if (serverBaseUrl == null)
@@ -432,8 +456,8 @@ public class OAuthAuthenticator extends LoginAuthenticator
         else
             return serverBaseUrl + request.getContextPath();
     }
-    
-    
+
+
     private String[] parseBasicAuth(String credentials)
     {
         int space = credentials.indexOf(' ');
@@ -453,15 +477,29 @@ public class OAuthAuthenticator extends LoginAuthenticator
                 }
             }
         }
-        
+
         return null;
     }
 
+    private String parseBearerToken(String credentials)
+    {
+        int space = credentials.indexOf(' ');
+        if (space > 0)
+        {
+            String method = credentials.substring(0, space);
+            if ("bearer".equalsIgnoreCase(method))
+            {
+                return credentials.substring(space + 1);
+            }
+        }
+
+        return null;
+    }
 
     private String parseUserInfoJson(JsonElement json) throws IOException
     {
         var userIdField = goToJsonPath(json, config.userIdField);
-        
+
         if (userIdField != null)
             return userIdField.getAsString();
         else
@@ -472,7 +510,7 @@ public class OAuthAuthenticator extends LoginAuthenticator
     private Collection<String> parseRolesFromJson(JsonElement json) throws IOException
     {
         var userRolesField = goToJsonPath(json, config.userRolesField);
-        
+
         if (userRolesField != null && userRolesField.isJsonArray())
         {
             var list = ImmutableList.<String>builder();
@@ -483,12 +521,12 @@ public class OAuthAuthenticator extends LoginAuthenticator
         else
             return Arrays.asList("anon");
     }
-    
-    
+
+
     private JsonElement goToJsonPath(JsonElement json, String path) throws IOException
     {
         var pathElts = path.split("/");
-        
+
         var elt = json;
         for (var name: pathElts)
         {
@@ -501,11 +539,11 @@ public class OAuthAuthenticator extends LoginAuthenticator
             else
                 return null;
         }
-        
+
         return elt;
     }
-    
-    
+
+
     private void setCorsHeaders(HttpServletRequest req, HttpServletResponse resp) throws ServerAuthException
     {
         if (enableCORS)
