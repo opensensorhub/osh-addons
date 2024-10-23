@@ -24,5 +24,8 @@ public class OAuthBearerTokenConfig {
     public String audience = null;
 
     @DisplayInfo(label="JSON Web Key Set Endpoint", desc="Endpoint to retrieve Web Key Tokens for verification of bearer tokens")
-    public String jwks_uri = null;
+    public String jwksUri = null;
+
+    @DisplayInfo(label="JWK Cache Duration", desc="Length of time in minutes in which to hold a public key in cache")
+    public int cacheDuration = 60;
 }

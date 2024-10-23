@@ -15,7 +15,7 @@ package org.sensorhub.impl.security.oauth;
 
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
-import com.auth0.jwk.UrlJwkProvider;
+import com.auth0.jwk.JwkProviderBuilder;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -60,6 +60,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -319,11 +321,13 @@ public class OAuthAuthenticator extends LoginAuthenticator {
 
                         String header = new String(decoder.decode(chunks[0]));
 
-                        log.debug("Client Credentials Token Header = " + header);
+                        log.debug("Client Credentials Token Header = {}", header);
 
                         JsonElement headerData = JsonParser.parseString(header);
 
-                        JwkProvider jwkProvider = new UrlJwkProvider(new URL(config.bearerTokenConfig.jwks_uri));
+                        JwkProvider jwkProvider = new JwkProviderBuilder(new URL(config.bearerTokenConfig.jwksUri))
+                                .cached(1, Duration.of(config.bearerTokenConfig.cacheDuration, ChronoUnit.MINUTES))
+                                .build();
 
                         DecodedJWT decodedJWT;
                         try {
@@ -341,7 +345,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
 
                             String payload = decodedJWT.getPayload();
 
-                            log.debug("Client Token Payload = " + payload);
+                            log.debug("Client Token Payload = {}", payload);
 
                             userInfo = JsonParser.parseString(payload);
 
