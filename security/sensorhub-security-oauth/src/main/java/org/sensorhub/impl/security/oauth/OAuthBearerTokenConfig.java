@@ -24,5 +24,5 @@ public class OAuthBearerTokenConfig {
     public String audience = null;
 
     @DisplayInfo(label="JSON Web Key Set Endpoint", desc="Endpoint to retrieve Web Key Tokens for verification of bearer tokens")
-    public String jwks_uri = "http://192.168.1.248:9595/realms/OpenSensorHub/protocol/openid-connect/certs";
+    public String jwks_uri = null;
 }
