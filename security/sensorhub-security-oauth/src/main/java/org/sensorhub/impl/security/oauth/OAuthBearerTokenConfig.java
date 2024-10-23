@@ -28,4 +28,7 @@ public class OAuthBearerTokenConfig {
 
     @DisplayInfo(label="JWK Cache Duration", desc="Length of time in minutes in which to hold a public key in cache")
     public int cacheDuration = 60;
+
+    @DisplayInfo(label="JWK Cache Size", desc="Number of public keys to hold in cache")
+    public int cacheSize = 1;
 }

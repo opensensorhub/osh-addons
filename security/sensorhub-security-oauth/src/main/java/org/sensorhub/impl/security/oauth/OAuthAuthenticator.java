@@ -313,7 +313,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                     } else {
 
                         // if client credentials token, assume it's a JWT token that contains needed info
-                        log.debug("Client Credentials Token = " + clientCredentialsToken);
+                        log.debug("Client Credentials Token = {}", clientCredentialsToken);
 
                         String[] chunks = clientCredentialsToken.split("\\.");
 
@@ -325,9 +325,11 @@ public class OAuthAuthenticator extends LoginAuthenticator {
 
                         JsonElement headerData = JsonParser.parseString(header);
 
-                        JwkProvider jwkProvider = new JwkProviderBuilder(new URL(config.bearerTokenConfig.jwksUri))
-                                .cached(1, Duration.of(config.bearerTokenConfig.cacheDuration, ChronoUnit.MINUTES))
-                                .build();
+                        JwkProvider jwkProvider =
+                                new JwkProviderBuilder(new URL(config.bearerTokenConfig.jwksUri))
+                                        .cached(config.bearerTokenConfig.cacheSize,
+                                                Duration.of(config.bearerTokenConfig.cacheDuration, ChronoUnit.MINUTES))
+                                        .build();
 
                         DecodedJWT decodedJWT;
                         try {
