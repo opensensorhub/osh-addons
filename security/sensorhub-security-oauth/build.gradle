@@ -1,10 +1,12 @@
 description = 'OAuth2 Authentication'
 ext.details = 'Provides federated authentication through OAuth2 providers such as Google, Twitter, etc.'
-version = '0.9.0'
+version = '1.0.0'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   embeddedImpl 'org.apache.oltu.oauth2:org.apache.oltu.oauth2.client:1.0.1'
+  embeddedImpl 'com.auth0:java-jwt:4.4.0'
+  embeddedImpl 'com.auth0:jwks-rsa:0.22.1'
 }
 
 // add info to OSGi manifest
