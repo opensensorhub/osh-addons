@@ -1,13 +1,14 @@
-description = 'FFMPEG Video Driver'
+description = 'FFMPEG VIDEO DRIVER'
 ext.details = "Driver for connecting to ffmpeg capable video streams"
-version = '1.0.0'
+version = '2.0.0'
 
 // To build in entire java cv platform of projects use
 //    implementation('org.bytedeco:javacv-platform:1.5.2')
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-    embeddedApi 'org.bytedeco:ffmpeg-platform:5.0-1.5.7'
-    testImplementation('junit:junit:4.13.1')
+    implementation project(':sensorhub-driver-videocam')
+    implementation project(':sensorhub-process-ffmpeg')
+    testImplementation('junit:junit:4.13')
     testImplementation('org.jcodec:jcodec-javase:0.1.9')
 }
 
@@ -23,7 +24,7 @@ test {
 osgi {
     manifest {
         attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
-        attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.ffmpeg.Activator')
+        attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.uas.Activator')
     }
 }
 
