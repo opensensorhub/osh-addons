@@ -17,7 +17,7 @@ dependencies {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.impl.process.opencv')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.process.opencv.Activator')
   }
 }
 

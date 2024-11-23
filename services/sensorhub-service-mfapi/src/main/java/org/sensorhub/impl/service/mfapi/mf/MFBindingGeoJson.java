@@ -53,10 +53,9 @@ public class MFBindingGeoJson extends AbstractFeatureBindingGeoJson<IFeature>
     protected GeoJsonBindings getJsonBindings()
     {
         return new GeoJsonBindings() {
-            @Override
             protected void writeDateTimeValue(JsonWriter writer, OffsetDateTime dateTime) throws IOException
             {
-                super.writeDateTimeValue(writer, dateTime.truncatedTo(ChronoUnit.SECONDS));
+                super.writeDateTimeValue(writer, dateTime.truncatedTo(ChronoUnit.SECONDS).toInstant());
             }
             
             @Override
