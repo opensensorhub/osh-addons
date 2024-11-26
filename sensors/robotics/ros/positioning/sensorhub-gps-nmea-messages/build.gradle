@@ -8,10 +8,12 @@ buildscript {
         classpath "org.ros.rosjava_bootstrap:message_generation:0.3.3"
     }
     repositories {
-        jcenter()
         mavenCentral()
         maven {
-            url "https://github.com/rosjava/rosjava_mvn_repo/raw/master"
+            url "https://raw.githubusercontent.com/rosjava/rosjava_mvn_repo/master/"
+        }
+        maven {
+            url "https://artifacts.camunda.com/artifactory/public/"
         }
     }
 }
@@ -23,6 +25,10 @@ plugins {
 ext {
     targetDir = file("src/generated-sources/java")
 }
+
+description = 'GPS NMEA Messages'
+ext.details = 'ROS GPS NMEA Messages Library'
+version = '1.0.0'
 
 task generateRosMessages {
     group 'build'
@@ -53,10 +59,12 @@ compileJava.dependsOn generateRosMessages
 
 repositories {
     repositories {
-        jcenter()
         mavenCentral()
         maven {
-            url "https://github.com/rosjava/rosjava_mvn_repo/raw/master"
+            url "https://raw.githubusercontent.com/rosjava/rosjava_mvn_repo/master/"
+        }
+        maven {
+            url "https://artifacts.camunda.com/artifactory/public/"
         }
     }
 }
@@ -80,3 +88,21 @@ clean {
     }
 }
 
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes('Bundle-Vendor': 'Botts Inc')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'ngaray'
+            name 'Nicolas Garay'
+            organization 'Botts Innovative Research, Inc.'
+            organizationUrl 'www.botts-inc.com'
+        }
+    }
+}

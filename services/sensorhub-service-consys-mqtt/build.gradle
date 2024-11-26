@@ -12,7 +12,7 @@ dependencies {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Sensia Software LLC')
-    attributes('Bundle-Activator': 'org.sensorhub.impl.service.sweapi.mqtt.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.service.consys.mqtt.Activator')
   }
 }
 
@@ -23,7 +23,7 @@ ext.pom >>= {
       id 'alexrobin'
       name 'Alex Robin'
       organization 'Sensia Software LLC'
-      organizationUrl 'http://www.sensiasoftware.com' 
+      organizationUrl 'http://www.sensiasoftware.com'
     }
-  } 
+  }
 }
