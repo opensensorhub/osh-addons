@@ -345,7 +345,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
 
                             decodedJWT = verifier.verify(clientCredentialsToken);
 
-                            String payload = decodedJWT.getPayload();
+                            String payload = new String(decoder.decode(decodedJWT.getPayload()));
 
                             log.debug("Client Token Payload = {}", payload);
 
