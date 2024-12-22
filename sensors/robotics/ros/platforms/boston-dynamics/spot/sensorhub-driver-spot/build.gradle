@@ -12,11 +12,11 @@ repositories {
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-    implementation 'org.ros.rosjava_core:rosjava:0.3.6'
-    implementation 'org.ros.rosjava_messages:std_srvs:1.11.2'
-    implementation project(':sensorhub-driver-videocam')
-    implementation project(':sensorhub-ros-common')
-    implementation project(':sensorhub-spot-messages')
+    embeddedImpl 'org.ros.rosjava_core:rosjava:0.3.6'
+    embeddedImpl 'org.ros.rosjava_messages:std_srvs:1.11.2'
+    embeddedImpl project(':sensorhub-driver-videocam')
+    embeddedImpl project(':sensorhub-ros-common')
+    embeddedImpl project(':sensorhub-spot-messages')
     testImplementation('junit:junit:4.13')
 }
 

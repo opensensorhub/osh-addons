@@ -21,8 +21,8 @@ dependencies {
 //    implementation 'org.ros.rosjava_messages:opencv_apps:1.11.12'
 //    implementation 'org.ros.rosjava_messages:visualization_msgs:1.12.7'
 //    implementation 'org.ros.rosjava_messages:moveit_msgs:0.6.1'
-    implementation project(':sensorhub-transbot-messages')
-    implementation project(':sensorhub-ros-common')
+    embeddedImpl project(':sensorhub-transbot-messages')
+    embeddedImpl project(':sensorhub-ros-common')
     testImplementation('junit:junit:4.13')
 }
 
