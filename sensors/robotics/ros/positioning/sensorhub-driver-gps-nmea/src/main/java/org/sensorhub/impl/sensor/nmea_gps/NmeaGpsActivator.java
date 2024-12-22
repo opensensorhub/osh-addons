@@ -12,7 +12,8 @@
 
 package org.sensorhub.impl.sensor.nmea_gps;
 
+import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;
 
-public class NmeaGpsActivator extends OshBundleActivator {
+public class NmeaGpsActivator extends OshBundleActivator implements BundleActivator {
 }

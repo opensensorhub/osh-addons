@@ -11,7 +11,8 @@
  */
 package org.sensorhub.impl.sensor.track;
 
+import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;
 
-public class TrackControlActivator extends OshBundleActivator {
+public class TrackControlActivator extends OshBundleActivator  implements BundleActivator {
 }

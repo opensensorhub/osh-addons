@@ -12,7 +12,8 @@
 
 package org.sensorhub.impl.sensor.imu;
 
+import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;
 
-public class ImuActivator extends OshBundleActivator {
+public class ImuActivator extends OshBundleActivator implements BundleActivator {
 }

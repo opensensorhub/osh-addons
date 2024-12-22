@@ -13,7 +13,8 @@
 
 package org.sensorhub.impl.sensor.astracam;
 
+import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;
 
-public class AstraCamActivator extends OshBundleActivator {
+public class AstraCamActivator extends OshBundleActivator implements BundleActivator {
 }
