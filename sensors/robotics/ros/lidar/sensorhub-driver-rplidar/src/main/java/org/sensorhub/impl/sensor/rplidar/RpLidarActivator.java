@@ -12,8 +12,7 @@
 
 package org.sensorhub.impl.sensor.rplidar;
 
-import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;
 
-public class RpLidarActivator extends OshBundleActivator  implements BundleActivator {
+public class RpLidarActivator extends OshBundleActivator {
 }

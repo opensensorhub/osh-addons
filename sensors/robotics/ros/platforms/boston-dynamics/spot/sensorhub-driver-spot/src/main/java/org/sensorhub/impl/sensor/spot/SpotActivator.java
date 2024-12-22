@@ -9,15 +9,16 @@
  for the specific language governing rights and limitations under the License.
 
  Copyright (C) 2023 - 2024 Botts Innovative Research, Inc. All Rights Reserved.
+
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.spot;
 
-import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;
 
 /**
+ *
  * @author Nick Garay
  * @since Sept. 25, 2023
  */
-public class SpotActivator extends OshBundleActivator implements BundleActivator {
+public class SpotActivator extends OshBundleActivator {
 }

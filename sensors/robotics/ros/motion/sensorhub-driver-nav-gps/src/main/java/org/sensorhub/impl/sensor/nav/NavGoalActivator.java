@@ -11,8 +11,7 @@
  */
 package org.sensorhub.impl.sensor.nav;
 
-import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;
 
-public class NavGoalActivator extends OshBundleActivator  implements BundleActivator {
+public class NavGoalActivator extends OshBundleActivator {
 }

@@ -11,8 +11,7 @@
  */
 package org.sensorhub.impl.sensor.movebase;
 
-import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;
 
-public class MoveBaseActivator extends OshBundleActivator  implements BundleActivator {
+public class MoveBaseActivator extends OshBundleActivator {
 }

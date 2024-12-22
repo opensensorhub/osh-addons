@@ -11,8 +11,7 @@
  */
 package org.sensorhub.impl.sensor.remotecontrol;
 
-import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;
 
-public class RemoteControlActivator extends OshBundleActivator implements BundleActivator {
+public class RemoteControlActivator extends OshBundleActivator {
 }

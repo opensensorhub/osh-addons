@@ -12,8 +12,7 @@
 
 package org.sensorhub.impl.sensor.transbot.battery;
 
-import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;
 
-public class BatteryActivator extends OshBundleActivator implements BundleActivator {
+public class BatteryActivator extends OshBundleActivator {
 }
