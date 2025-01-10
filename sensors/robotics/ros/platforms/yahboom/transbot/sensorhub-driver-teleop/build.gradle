@@ -17,7 +17,7 @@ dependencies {
     embeddedImpl 'org.ros.rosjava_messages:std_msgs:0.5.11'
     embeddedImpl 'org.ros.rosjava_messages:sensor_msgs:1.12.7'
     embeddedImpl 'org.ros.rosjava_messages:geometry_msgs:1.12.7'
-    embeddedImpl project(':sensorhub-ros-common')
+    implementation project(':sensorhub-ros-common')
     testImplementation('junit:junit:4.13')
 }
 

@@ -20,10 +20,10 @@ dependencies {
     embeddedImpl 'org.ros.rosjava_messages:move_base:1.11.14'
     embeddedImpl 'org.ros.rosjava_messages:move_base_msgs:1.11.14'
     embeddedImpl 'org.ros.rosjava_messages:actionlib_msgs:1.12.7'
-    embeddedImpl project(':sensorhub-process-vecmath')
-    embeddedImpl project(':sensorhub-process-geoloc')
-    embeddedImpl project(':actionlib')
-    embeddedImpl project(':sensorhub-ros-common')
+    implementation project(':sensorhub-process-vecmath')
+    implementation project(':sensorhub-process-geoloc')
+    implementation project(':actionlib')
+    implementation project(':sensorhub-ros-common')
     testImplementation('junit:junit:4.13')
 }
 
