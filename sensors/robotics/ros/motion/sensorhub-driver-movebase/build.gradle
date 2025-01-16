@@ -12,6 +12,7 @@ repositories {
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    embeddedApi 'org.ros.rosjava_messages:std_msgs:0.5.11'
     embeddedApi 'org.ros.rosjava_messages:geometry_msgs:1.12.7'
     embeddedApi 'org.ros.rosjava_messages:move_base_msgs:1.11.14'
     embeddedApi 'org.ros.rosjava_messages:actionlib_msgs:1.12.7'
