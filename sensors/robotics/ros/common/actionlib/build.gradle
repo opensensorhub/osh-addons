@@ -12,10 +12,10 @@ repositories {
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-    embeddedImpl 'org.ros.rosjava_core:rosjava:0.3.6'
-    embeddedImpl 'org.ros.rosjava_bootstrap:message_generation:0.3.3'
-    embeddedImpl 'org.ros.rosjava_messages:std_msgs:0.5.11'
-    embeddedImpl 'org.ros.rosjava_messages:actionlib_msgs:1.12.7'
+    embeddedApi 'org.ros.rosjava_core:rosjava:0.3.6'
+    embeddedApi 'org.ros.rosjava_bootstrap:message_generation:0.3.3'
+    embeddedApi 'org.ros.rosjava_messages:std_msgs:0.5.11'
+    embeddedApi 'org.ros.rosjava_messages:actionlib_msgs:1.12.7'
     testImplementation 'junit:junit:4.12'
 }
 
