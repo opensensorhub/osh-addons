@@ -1,0 +1,144 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "name": "HTTP Server",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "httpPort": 8181,
+    "servletsRootUrl": "/sensorhub",
+    "authMethod": "BASIC",
+    "staticDocRootUrl": "web"
+  },
+
+    {
+    "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig",
+    "users": [
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "admin",
+        "name": "Administrator",
+        "password": "osh4ndbc2025",
+        "roles": [
+          "admin"
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "anonymous",
+        "name": "Anonymous User",
+        "password": "",
+        "roles": [
+          "anon"
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "sensor",
+        "name": "Smart Sensors",
+        "password": "pwd",
+        "roles": [
+          "sost"
+        ]
+      }
+    ],
+    "roles": [
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "admin",
+        "allow": [
+          "*"
+        ],
+        "deny": []
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "anon",
+        "allow": [
+          "sos[*]/get/*"
+        ],
+        "deny": []
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "sost",
+        "allow": [
+          "sos[*]/get/*",
+          "sos[*]/insert/*",
+          "sos[*]/update/*"
+        ],
+        "deny": []
+      }
+    ],
+    "id": "bd112969-8838-4f62-8d10-1edf1baa6669",
+    "moduleClass": "org.sensorhub.impl.security.BasicSecurityRealm",
+    "name": "Users",
+    "autoStart": true
+  },
+
+   {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "customPanels": [],
+    "customForms": [],
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "autoStart": true
+  },
+
+  {
+    "objClass": "org.sensorhub.impl.sensor.ndbc.BuoyConfig",
+    "id": "7d081b29-aae7-4b4c-82fd-9dfa00c25888",
+    "name": "NDBC Buoy Config",
+    "moduleClass": "org.sensorhub.impl.sensor.ndbc.BuoySensor",
+    "autoStart": true
+  },
+
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "name": "SOS Service",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "enabled": true,
+    "endPoint": "/sos",
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": true,
+      "requireAuth": false
+    },
+
+    "dataProviders" : [
+      {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "NDBC Buoy Data",
+           "uri": "urn:osh:hydro:ndbc",
+           "sensorID": "7d081b29-aae7-4b4c-82fd-9dfa00c25888",
+           "storageID": "8cc876e4-3bed-4347-8012-20227ac22ec6",
+           "liveDataTimeout": 360000.0,
+           "maxFois": 10
+       }
+    ],
+    "ogcCapabilitiesInfo": {
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": ["SensorHub", "Audio", "Wav"],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "individualName": "Tony Cook",
+        "organizationName": "Botts Innovative Research Inc.",
+        "positionName": "Byte PUsher",
+        "voiceNumber": "512-734-5758",
+        "email": "tony.cook@botts-inc.com",
+        "website": null,
+        "hoursOfService": null,
+        "contactInstructions": null
+      }
+    }
+  }
+]
