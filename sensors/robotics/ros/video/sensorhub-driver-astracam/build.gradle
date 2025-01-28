@@ -12,10 +12,7 @@ repositories {
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-    implementation 'org.ros.rosjava_core:rosjava:0.3.6'
-    implementation 'org.ros.rosjava_bootstrap:message_generation:0.3.3'
-    implementation 'org.ros.rosjava_messages:sensor_msgs:1.12.7'
-    implementation 'org.ros.rosjava_messages:geometry_msgs:1.12.7'
+    embeddedImpl 'io.netty:netty:3.5.2.Final'
     implementation project(':sensorhub-ros-common')
     implementation project(':sensorhub-driver-videocam')
     testImplementation('junit:junit:4.13')

@@ -38,6 +38,8 @@ test {
     useJUnit()
 }
 
+//osgi.enabled = false
+
 // add info to OSGi manifest
 osgi {
     manifest {
