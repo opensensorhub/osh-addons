@@ -8,10 +8,29 @@
  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
  for the specific language governing rights and limitations under the License.
 
- Copyright (C) 2012-2024 Sensia Software LLC. All Rights Reserved.
+ Copyright (C) 2012-2025 Sensia Software LLC. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.security.oauth;
+
+import java.io.IOException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
@@ -21,11 +40,6 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ImmutableList;
-import com.google.common.net.HttpHeaders;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import org.apache.oltu.oauth2.client.OAuthClient;
 import org.apache.oltu.oauth2.client.URLConnectionClient;
 import org.apache.oltu.oauth2.client.request.OAuthBearerClientRequest;
@@ -49,21 +63,11 @@ import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.sensorhub.api.security.ISecurityManager;
 import org.slf4j.Logger;
 import org.vast.util.Asserts;
-
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.security.interfaces.RSAPublicKey;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableList;
+import com.google.common.net.HttpHeaders;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 
 
 public class OAuthAuthenticator extends LoginAuthenticator {
@@ -165,12 +169,12 @@ public class OAuthAuthenticator extends LoginAuthenticator {
             }
 
 
-            String clientCredentialsToken = null;
             String accessToken = null;
             String idToken = null;
             String postLoginRedirectUrl = null;
             String oauthCallbackUrl = getCallbackBaseUrl(request) + OAUTH_CODE_CALLBACK_PATH;
             String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            JsonElement userInfo = null;
 
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
 
@@ -227,23 +231,73 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                 }
             }
 
-            if (authHeader != null && !request.getServletPath().equals("/admin")) {
+            // if no OAuth token received check if credentials are provided in authorization header
+            // and use back channel direct auth flow
+            if (accessToken == null && authHeader != null && !request.getServletPath().equals("/admin")) {
+                try {
+                    var credentials = parseBasicAuth(authHeader);
+                    if (credentials == null) {
+                        var clientCredentialsToken = parseBearerToken(authHeader);
 
-                clientCredentialsToken = parseBearerToken(authHeader);
+                        if (clientCredentialsToken != null) {
+                            // if client credentials token, assume it's a JWT token that contains needed info
+                            log.debug("Client Credentials Token = {}", clientCredentialsToken);
 
-                // if no OAuth token received check if credentials are provided in authorization header
-                // and use back channel direct auth flow
-                if (clientCredentialsToken == null && accessToken == null) {
+                            String[] chunks = clientCredentialsToken.split("\\.");
 
-                    try {
+                            Base64.Decoder decoder = Base64.getUrlDecoder();
 
-                        var credentials = parseBasicAuth(authHeader);
+                            String header = new String(decoder.decode(chunks[0]));
 
-                        if (credentials == null) {
+                            log.debug("Client Credentials Token Header = {}", header);
+
+                            JsonElement headerData = JsonParser.parseString(header);
+
+                            JwkProvider jwkProvider =
+                                    new JwkProviderBuilder(new URL(config.bearerTokenConfig.jwksUri))
+                                            .cached(config.bearerTokenConfig.cacheSize,
+                                                    Duration.of(config.bearerTokenConfig.cacheDuration, ChronoUnit.MINUTES))
+                                            .build();
+
+                            DecodedJWT decodedJWT;
+                            try {
+
+                                RSAPublicKey publicKey = (RSAPublicKey) jwkProvider.get(parseKidFromJson(headerData)).getPublicKey();
+                                Algorithm algorithm = Algorithm.RSA256(publicKey);
+
+                                JWTVerifier verifier = JWT.require(algorithm)
+                                        // specify any specific claim validations
+                                        .withIssuer(config.bearerTokenConfig.issuer)
+                                        .withAudience(config.bearerTokenConfig.audience)
+                                        .build();
+
+                                decodedJWT = verifier.verify(clientCredentialsToken);
+
+                                String payload = new String(decoder.decode(decodedJWT.getPayload()));
+
+                                log.debug("Client Token Payload = {}", payload);
+
+                                userInfo = JsonParser.parseString(payload);
+
+                            } catch (JWTVerificationException e) {
+
+                                log.error("Failed to verify client credentials token: {}", e.getMessage());
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                                return Authentication.SEND_FAILURE;
+
+                            } catch (JwkException e) {
+
+                                log.error("Cannot complete authentication at endpoint: {}", e.getMessage());
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
+                                return Authentication.SEND_FAILURE;
+                            }
+
+                        } else {
 
                             response.sendError(HttpServletResponse.SC_FORBIDDEN);
                             return Authentication.SEND_FAILURE;
                         }
+                    } else {
 
                         // try to execute direct grant flow
                         OAuthClientRequest authRequest = OAuthClientRequest
@@ -258,32 +312,27 @@ public class OAuthAuthenticator extends LoginAuthenticator {
 
                         OAuthJSONAccessTokenResponse oAuthResponse = oAuthClient.accessToken(authRequest, HttpMethod.POST);
                         accessToken = oAuthResponse.getAccessToken();
-
-                    } catch (OAuthProblemException e) {
-
-                        if (!mandatory)
-                            return Authentication.UNAUTHENTICATED;
-
-                        log.error("Error received from token endpoint: {} - {}", e.getError(), e.getDescription());
-                        response.sendError(HttpServletResponse.SC_FORBIDDEN);
-                        return Authentication.SEND_FAILURE;
-
-                    } catch (OAuthSystemException e) {
-
-                        log.error("Error while requesting access token from " + config.tokenEndpoint, e);
-                        response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
-                        return Authentication.SEND_FAILURE;
                     }
+                } catch (OAuthProblemException e) {
+                    if (!mandatory)
+                        return Authentication.UNAUTHENTICATED;
+
+                    log.error("Error received from token endpoint: {} - {}", e.getError(), e.getDescription());
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    return Authentication.SEND_FAILURE;
+                } catch (OAuthSystemException e) {
+                    log.error("Error while requesting access token from " + config.tokenEndpoint, e);
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
+                    return Authentication.SEND_FAILURE;
                 }
             }
 
             // if token was obtained, get user info
-            if (clientCredentialsToken != null || accessToken != null) {
+            if ((accessToken != null) || (userInfo != null)) {
                 try {
                     String userId = null;
-                    JsonElement userInfo;
 
-                    if (clientCredentialsToken == null) {
+                    if (userInfo == null) {
 
                         if (idToken != null) {
                             // if ID token, assume it's a JWT token that contains needed info
@@ -309,59 +358,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                             log.debug("UserInfo = " + resourceResponse.getBody());
                             userInfo = JsonParser.parseString(resourceResponse.getBody());
                         }
-
-                    } else {
-
-                        // if client credentials token, assume it's a JWT token that contains needed info
-                        log.debug("Client Credentials Token = {}", clientCredentialsToken);
-
-                        String[] chunks = clientCredentialsToken.split("\\.");
-
-                        Base64.Decoder decoder = Base64.getUrlDecoder();
-
-                        String header = new String(decoder.decode(chunks[0]));
-
-                        log.debug("Client Credentials Token Header = {}", header);
-
-                        JsonElement headerData = JsonParser.parseString(header);
-
-                        JwkProvider jwkProvider =
-                                new JwkProviderBuilder(new URL(config.bearerTokenConfig.jwksUri))
-                                        .cached(config.bearerTokenConfig.cacheSize,
-                                                Duration.of(config.bearerTokenConfig.cacheDuration, ChronoUnit.MINUTES))
-                                        .build();
-
-                        DecodedJWT decodedJWT;
-                        try {
-
-                            RSAPublicKey publicKey = (RSAPublicKey) jwkProvider.get(parseKidFromJson(headerData)).getPublicKey();
-                            Algorithm algorithm = Algorithm.RSA256(publicKey);
-
-                            JWTVerifier verifier = JWT.require(algorithm)
-                                    // specify any specific claim validations
-                                    .withIssuer(config.bearerTokenConfig.issuer)
-                                    .withAudience(config.bearerTokenConfig.audience)
-                                    .build();
-
-                            decodedJWT = verifier.verify(clientCredentialsToken);
-
-                            String payload = new String(decoder.decode(decodedJWT.getPayload()));
-
-                            log.debug("Client Token Payload = {}", payload);
-
-                            userInfo = JsonParser.parseString(payload);
-
-                        } catch (JWTVerificationException e) {
-                            log.error("Failed to verify client credentials token: {}", e.getMessage());
-                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-                            return Authentication.SEND_FAILURE;
-                        } catch (JwkException e) {
-                            log.error("Cannot complete authentication at endpoint: {}", e.getMessage());
-                            response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
-                            return Authentication.SEND_FAILURE;
-                        }
                     }
-
                     // parse user ID and roles from json
                     userId = parseUserInfoJson(userInfo);
                     var roles = parseRolesFromJson(userInfo);
@@ -403,7 +400,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                 return Authentication.NOT_CHECKED;
             }
 
-            // else redirect to auth provider endpoint for first login 
+            // else redirect to auth provider endpoint for first login
             try {
                 // generate request to auth provider
                 var state = UUID.randomUUID().toString();
@@ -447,6 +444,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
         } else
             return serverBaseUrl + request.getContextPath();
     }
+
 
 
     private String[] parseBasicAuth(String credentials) {
