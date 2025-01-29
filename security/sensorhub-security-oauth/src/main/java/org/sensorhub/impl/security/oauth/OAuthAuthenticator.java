@@ -13,25 +13,6 @@
 
 package org.sensorhub.impl.security.oauth;
 
-import java.io.IOException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.security.interfaces.RSAPublicKey;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
 import com.auth0.jwk.JwkProviderBuilder;
@@ -40,6 +21,11 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableList;
+import com.google.common.net.HttpHeaders;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import org.apache.oltu.oauth2.client.OAuthClient;
 import org.apache.oltu.oauth2.client.URLConnectionClient;
 import org.apache.oltu.oauth2.client.request.OAuthBearerClientRequest;
@@ -63,11 +49,21 @@ import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.sensorhub.api.security.ISecurityManager;
 import org.slf4j.Logger;
 import org.vast.util.Asserts;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ImmutableList;
-import com.google.common.net.HttpHeaders;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
+
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 
 public class OAuthAuthenticator extends LoginAuthenticator {
@@ -147,7 +143,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                     if (session != null)
                         session.invalidate();
 
-                    log.debug("Log out from auth provider @ " + config.logoutEndpoint);
+                    log.debug("Log out from auth provider @ {}", config.logoutEndpoint);
                     var adminUrl = request.getRequestURL().toString().replace(request.getServletPath(), "/admin");
                     setCorsHeaders(request, response);
                     response.sendRedirect(config.logoutEndpoint + "?client_id=" + config.clientID + "&post_logout_redirect_uri=" + adminUrl);
@@ -225,7 +221,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     return Authentication.SEND_FAILURE;
                 } catch (OAuthSystemException e) {
-                    log.error("Error while requesting access token from " + config.tokenEndpoint, e);
+                    log.error("Error while requesting access token from {}", config.tokenEndpoint, e);
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
                     return Authentication.SEND_FAILURE;
                 }
@@ -236,7 +232,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
             if (accessToken == null && authHeader != null && !request.getServletPath().equals("/admin")) {
                 try {
                     var credentials = parseBasicAuth(authHeader);
-                    if (credentials == null) {
+                    if (credentials.length == 0) {
                         var clientCredentialsToken = parseBearerToken(authHeader);
 
                         if (clientCredentialsToken != null) {
@@ -321,7 +317,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     return Authentication.SEND_FAILURE;
                 } catch (OAuthSystemException e) {
-                    log.error("Error while requesting access token from " + config.tokenEndpoint, e);
+                    log.error("Error while requesting access token from {}", config.tokenEndpoint, e);
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
                     return Authentication.SEND_FAILURE;
                 }
@@ -336,26 +332,25 @@ public class OAuthAuthenticator extends LoginAuthenticator {
 
                         if (idToken != null) {
                             // if ID token, assume it's a JWT token that contains needed info
-                            log.debug("ID Token = " + idToken);
+                            log.debug("ID Token = {}", idToken);
 
                             String[] chunks = idToken.split("\\.");
                             Base64.Decoder decoder = Base64.getUrlDecoder();
                             String header = new String(decoder.decode(chunks[0]));
                             String payload = new String(decoder.decode(chunks[1]));
-                            log.debug("ID Token Header = " + header);
-                            log.debug("ID Token Payload = " + payload);
+                            log.debug("ID Token Header = {}", header);
+                            log.debug("ID Token Payload = {}", payload);
                             userInfo = JsonParser.parseString(payload);
                         } else {
                             // if only an access token, we need to call the userinfo endpoint
-                            log.debug("OAuth Token = " + accessToken);
+                            log.debug("OAuth Token = {}", accessToken);
 
                             // request user info
                             OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint)
                                     .setAccessToken(accessToken)
-                                    //.buildQueryMessage();
                                     .buildHeaderMessage();
                             OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, HttpMethod.GET, OAuthResourceResponse.class);
-                            log.debug("UserInfo = " + resourceResponse.getBody());
+                            log.debug("UserInfo = {}", resourceResponse.getBody());
                             userInfo = JsonParser.parseString(resourceResponse.getBody());
                         }
                     }
@@ -379,7 +374,6 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                             response.sendRedirect(response.encodeRedirectURL(postLoginRedirectUrl));
                             return Authentication.SEND_CONTINUE;
                         } else
-                            //return Authentication.SEND_SUCCESS;
                             return userAuth;
                     } else {
                         log.error("Unknown user: {}", userId);
@@ -391,7 +385,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     return Authentication.SEND_FAILURE;
                 } catch (OAuthSystemException | IOException e) {
-                    log.error("Cannot complete authentication at endpoint " + config.tokenEndpoint, e);
+                    log.error("Cannot complete authentication at endpoint {}", config.tokenEndpoint, e);
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
                     return Authentication.SEND_FAILURE;
                 }
@@ -421,12 +415,12 @@ public class OAuthAuthenticator extends LoginAuthenticator {
 
                 // send as redirect
                 String loginUrl = authRequest.getLocationUri();
-                log.debug("Redirecting to auth provider login @ " + loginUrl);
+                log.debug("Redirecting to auth provider login @ {}", loginUrl);
                 setCorsHeaders(request, response);
                 response.sendRedirect(response.encodeRedirectURL(loginUrl));
                 return Authentication.SEND_CONTINUE;
             } catch (OAuthSystemException e) {
-                log.error("Cannot redirect to authentication endpoint " + config.authzEndpoint, e);
+                log.error("Cannot redirect to authentication endpoint {}", config.authzEndpoint, e);
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
                 return Authentication.SEND_FAILURE;
             }
@@ -463,7 +457,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
             }
         }
 
-        return null;
+        return new String[] {};
     }
 
     String parseKidFromJson(JsonElement json) throws IOException {
@@ -507,7 +501,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
             userRolesField.getAsJsonArray().forEach(item -> list.add(item.getAsString()));
             return list.build();
         } else
-            return Arrays.asList("anon");
+            return List.of("anon");
     }
 
 
