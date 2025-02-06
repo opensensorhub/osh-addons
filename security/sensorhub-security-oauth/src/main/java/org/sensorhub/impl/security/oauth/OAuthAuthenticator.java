@@ -13,6 +13,7 @@
 
 package org.sensorhub.impl.security.oauth;
 
+import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
 import com.auth0.jwk.JwkProviderBuilder;
@@ -20,7 +21,6 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HttpHeaders;
@@ -57,6 +57,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPublicKey;
@@ -78,6 +79,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
     private final Map<String, OAuthState> generatedState;
     private final ISecurityManager securityManager;
 
+    private JwkProvider jwkProvider = null;
 
     static class OAuthState {
         String redirectUrl;
@@ -108,6 +110,19 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                 .expireAfterWrite(60, TimeUnit.SECONDS)
                 .<String, OAuthState>build()
                 .asMap();
+
+        try {
+
+            this.jwkProvider =
+                    new JwkProviderBuilder(new URL(config.bearerTokenConfig.jwksUri))
+                            .cached(config.bearerTokenConfig.cacheSize,
+                                    Duration.of(config.bearerTokenConfig.cacheDuration, ChronoUnit.MINUTES))
+                            .build();
+
+        } catch (MalformedURLException e) {
+
+            log.error("Malformed JWK URI: {}", config.bearerTokenConfig.jwksUri, e);
+        }
     }
 
 
@@ -235,30 +250,52 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                     if (credentials.length == 0) {
                         var clientCredentialsToken = parseBearerToken(authHeader);
 
+                        // Validate client credentials token
                         if (clientCredentialsToken != null) {
-                            // if client credentials token, assume it's a JWT token that contains needed info
-                            log.debug("Client Credentials Token = {}", clientCredentialsToken);
+
+                            log.debug("Client Credentials Token: {}", clientCredentialsToken);
 
                             String[] chunks = clientCredentialsToken.split("\\.");
 
+                            // In validation we do not need to decode the entire token, just the header to perform validation
+                            // the userInfo will be extracted further below as we assign this token if valid as the accessToken
+                            // and idToken
                             Base64.Decoder decoder = Base64.getUrlDecoder();
 
                             String header = new String(decoder.decode(chunks[0]));
 
-                            log.debug("Client Credentials Token Header = {}", header);
-
                             JsonElement headerData = JsonParser.parseString(header);
 
-                            JwkProvider jwkProvider =
-                                    new JwkProviderBuilder(new URL(config.bearerTokenConfig.jwksUri))
-                                            .cached(config.bearerTokenConfig.cacheSize,
-                                                    Duration.of(config.bearerTokenConfig.cacheDuration, ChronoUnit.MINUTES))
-                                            .build();
-
-                            DecodedJWT decodedJWT;
                             try {
 
-                                RSAPublicKey publicKey = (RSAPublicKey) jwkProvider.get(parseKidFromJson(headerData)).getPublicKey();
+                                String kid = parseKidFromJson(headerData);
+
+                                Jwk jwk = null;
+
+                                try {
+                                    // Attempt to retrieve the JWK from the cache
+                                    jwk = jwkProvider.get(kid);
+
+                                } catch (JwkException e) {
+
+                                  log.info("JWK provider returned an error: {}", e.getMessage());
+                                }
+
+                                // If it does not exist, it is because it has expired and needs to be reset
+                                if (jwk == null) {
+
+                                    log.info("Creating a new JWK provider that will expire in {} minutes", config.bearerTokenConfig.cacheDuration);
+
+                                    this.jwkProvider =
+                                            new JwkProviderBuilder(new URL(config.bearerTokenConfig.jwksUri))
+                                                    .cached(config.bearerTokenConfig.cacheSize,
+                                                            Duration.of(config.bearerTokenConfig.cacheDuration, ChronoUnit.MINUTES))
+                                                    .build();
+
+                                    jwk = jwkProvider.get(kid);
+                                }
+
+                                RSAPublicKey publicKey = (RSAPublicKey) jwk.getPublicKey();
                                 Algorithm algorithm = Algorithm.RSA256(publicKey);
 
                                 JWTVerifier verifier = JWT.require(algorithm)
@@ -267,13 +304,11 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                                         .withAudience(config.bearerTokenConfig.audience)
                                         .build();
 
-                                decodedJWT = verifier.verify(clientCredentialsToken);
+                                verifier.verify(clientCredentialsToken);
 
-                                String payload = new String(decoder.decode(decodedJWT.getPayload()));
+                                accessToken = idToken = clientCredentialsToken;
 
-                                log.debug("Client Token Payload = {}", payload);
-
-                                userInfo = JsonParser.parseString(payload);
+                                log.info("Using Client Credentials token as Id token");
 
                             } catch (JWTVerificationException e) {
 
@@ -324,36 +359,34 @@ public class OAuthAuthenticator extends LoginAuthenticator {
             }
 
             // if token was obtained, get user info
-            if ((accessToken != null) || (userInfo != null)) {
+            if ((accessToken != null)) {
                 try {
                     String userId = null;
 
-                    if (userInfo == null) {
+                    if (idToken != null) {
+                        // if ID token, assume it's a JWT token that contains needed info
+                        log.debug("ID Token = {}", idToken);
 
-                        if (idToken != null) {
-                            // if ID token, assume it's a JWT token that contains needed info
-                            log.debug("ID Token = {}", idToken);
+                        String[] chunks = idToken.split("\\.");
+                        Base64.Decoder decoder = Base64.getUrlDecoder();
+                        String header = new String(decoder.decode(chunks[0]));
+                        String payload = new String(decoder.decode(chunks[1]));
+                        log.debug("ID Token Header = {}", header);
+                        log.debug("ID Token Payload = {}", payload);
+                        userInfo = JsonParser.parseString(payload);
+                    } else {
+                        // if only an access token, we need to call the userinfo endpoint
+                        log.debug("OAuth Token = {}", accessToken);
 
-                            String[] chunks = idToken.split("\\.");
-                            Base64.Decoder decoder = Base64.getUrlDecoder();
-                            String header = new String(decoder.decode(chunks[0]));
-                            String payload = new String(decoder.decode(chunks[1]));
-                            log.debug("ID Token Header = {}", header);
-                            log.debug("ID Token Payload = {}", payload);
-                            userInfo = JsonParser.parseString(payload);
-                        } else {
-                            // if only an access token, we need to call the userinfo endpoint
-                            log.debug("OAuth Token = {}", accessToken);
-
-                            // request user info
-                            OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint)
-                                    .setAccessToken(accessToken)
-                                    .buildHeaderMessage();
-                            OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, HttpMethod.GET, OAuthResourceResponse.class);
-                            log.debug("UserInfo = {}", resourceResponse.getBody());
-                            userInfo = JsonParser.parseString(resourceResponse.getBody());
-                        }
+                        // request user info
+                        OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint)
+                                .setAccessToken(accessToken)
+                                .buildHeaderMessage();
+                        OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, HttpMethod.GET, OAuthResourceResponse.class);
+                        log.debug("UserInfo = {}", resourceResponse.getBody());
+                        userInfo = JsonParser.parseString(resourceResponse.getBody());
                     }
+
                     // parse user ID and roles from json
                     userId = parseUserInfoJson(userInfo);
                     var roles = parseRolesFromJson(userInfo);
