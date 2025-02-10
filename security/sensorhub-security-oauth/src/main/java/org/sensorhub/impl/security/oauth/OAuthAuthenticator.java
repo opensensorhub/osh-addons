@@ -270,30 +270,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
 
                                 String kid = parseKidFromJson(headerData);
 
-                                Jwk jwk = null;
-
-                                try {
-                                    // Attempt to retrieve the JWK from the cache
-                                    jwk = jwkProvider.get(kid);
-
-                                } catch (JwkException e) {
-
-                                  log.info("JWK provider returned an error: {}", e.getMessage());
-                                }
-
-                                // If it does not exist, it is because it has expired and needs to be reset
-                                if (jwk == null) {
-
-                                    log.info("Creating a new JWK provider that will expire in {} minutes", config.bearerTokenConfig.cacheDuration);
-
-                                    this.jwkProvider =
-                                            new JwkProviderBuilder(new URL(config.bearerTokenConfig.jwksUri))
-                                                    .cached(config.bearerTokenConfig.cacheSize,
-                                                            Duration.of(config.bearerTokenConfig.cacheDuration, ChronoUnit.MINUTES))
-                                                    .build();
-
-                                    jwk = jwkProvider.get(kid);
-                                }
+                                Jwk jwk = jwkProvider.get(kid);
 
                                 RSAPublicKey publicKey = (RSAPublicKey) jwk.getPublicKey();
                                 Algorithm algorithm = Algorithm.RSA256(publicKey);
