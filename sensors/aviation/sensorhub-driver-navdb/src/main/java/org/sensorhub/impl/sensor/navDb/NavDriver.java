@@ -212,7 +212,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig> implements IMulti
     {
         try
         {
-            watcher = new DirectoryWatcher(Paths.get(config.navDbPath), StandardWatchEventKinds.ENTRY_CREATE);
+            watcher = new DirectoryWatcher(Paths.get(config.navDbPath), StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
             watcherThread = new Thread(watcher);
             watcher.addListener(this);
             watcherThread.start();

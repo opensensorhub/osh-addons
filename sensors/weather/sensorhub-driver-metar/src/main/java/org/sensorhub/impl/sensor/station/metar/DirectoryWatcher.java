@@ -84,7 +84,7 @@ public class DirectoryWatcher implements Runnable
 
 	public static void main(String[] args) throws Exception {
 //		DirectoryWatcher watcher = new DirectoryWatcher(Paths.get("C:/Data/tmp"),StandardWatchEventKinds.ENTRY_CREATE);
-		DirectoryWatcher watcher = new DirectoryWatcher(Paths.get(args[0]),StandardWatchEventKinds.ENTRY_CREATE);
+		DirectoryWatcher watcher = new DirectoryWatcher(Paths.get(args[0]),StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
 
 		watcher.run();
 	}
