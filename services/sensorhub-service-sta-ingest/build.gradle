@@ -1,0 +1,29 @@
+description = 'STA Ingest'
+ext.details = 'SensorThings API Ingest'
+
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  testImplementation 'org.sensorhub:sensorhub-datastore-h2:' + oshCoreVersion
+  embeddedImpl 'de.fraunhofer.iosb.ilt:FROST-Client:0.45'
+}
+
+// add info to OSGI manifest
+osgi {
+  manifest {
+    attributes 'Bundle-Vendor': 'Botts Innovative Research'
+    attributes 'Bundle-Activator': 'org.sensorhub.impl.service.sta.ingest.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'earocorn'
+      name 'Alex Almanza'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'https://www.botts-inc.com'
+    }
+  } 
+}
