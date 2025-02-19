@@ -1,0 +1,7 @@
+package com.botts.impl.process.helpers;
+
+import org.osgi.framework.BundleActivator;
+import org.sensorhub.utils.OshBundleActivator;
+
+public class Activator extends OshBundleActivator implements BundleActivator {
+}
