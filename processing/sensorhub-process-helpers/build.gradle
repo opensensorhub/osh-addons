@@ -7,10 +7,10 @@ dependencies {
 }
   
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
-    attributes 'Bundle-Vendor': 'Sensia Software LLC'
-    attributes 'Bundle-Activator': 'org.sensorhub.process.math.Activator'
+    attributes 'Bundle-Vendor': 'Botts Innovative Research, Inc.'
+    attributes 'Bundle-Activator': 'com.botts.impl.process.helpers.Activator'
   }
 }
 
@@ -18,10 +18,10 @@ jar {
 ext.pom >>= {
   developers {
     developer {
-      id 'alexrobin'
-      name 'Alex Robin'
-      organization 'Sensia Software LLC'
-      organizationUrl 'http://www.sensiasoftware.com' 
+      id 'earocorn'
+      name 'Alex Almanza'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'https://www.botts-inc.com'
     }
   }
 }

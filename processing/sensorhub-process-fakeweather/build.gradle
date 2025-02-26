@@ -8,7 +8,7 @@ dependencies {
 }
 
 // add info to OSGi manifest
-jar {
+osgi {
   manifest {
     attributes 'Bundle-Vendor': 'Botts Innovative Research'
     attributes 'Bundle-Activator': 'org.sensorhub.process.weather.Activator'
