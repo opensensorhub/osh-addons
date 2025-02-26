@@ -1,4 +1,4 @@
-package org.sensorhub.impl.service.sta.ingest;
+package com.botts.impl.service.sta.ingest;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;

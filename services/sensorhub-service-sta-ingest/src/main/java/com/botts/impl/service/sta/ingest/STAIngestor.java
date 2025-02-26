@@ -1,4 +1,4 @@
-package org.sensorhub.impl.service.sta.ingest;
+package com.botts.impl.service.sta.ingest;
 
 import de.fraunhofer.iosb.ilt.sta.MqttException;
 import de.fraunhofer.iosb.ilt.sta.ServiceFailureException;
@@ -9,20 +9,16 @@ import net.opengis.OgcProperty;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.AbstractSWEIdentifiable;
 import org.sensorhub.api.common.BigId;
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.datastore.DataStoreException;
-import org.sensorhub.api.system.ISystemWithDesc;
 import org.sensorhub.impl.system.SystemDatabaseTransactionHandler;
 import org.sensorhub.impl.system.SystemTransactionHandler;
 import org.sensorhub.impl.system.SystemUtils;
 import org.sensorhub.impl.system.wrapper.SystemWrapper;
-import org.slf4j.Logger;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 public class STAIngestor
 {

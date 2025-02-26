@@ -12,7 +12,7 @@ Copyright (C) 2024 Botts Innovative Research, Inc. All Rights Reserved.
 
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.sta.ingest;
+package com.botts.impl.service.sta.ingest;
 
 import com.google.common.base.Strings;
 import de.fraunhofer.iosb.ilt.sta.MqttException;
@@ -23,11 +23,9 @@ import org.sensorhub.api.event.IEventBus;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.system.SystemDatabaseTransactionHandler;
-import org.slf4j.Logger;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.time.Instant;
 import java.util.Objects;
 
 

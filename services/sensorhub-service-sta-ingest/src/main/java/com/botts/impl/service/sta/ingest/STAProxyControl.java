@@ -1,4 +1,4 @@
-package org.sensorhub.impl.service.sta.ingest;
+package com.botts.impl.service.sta.ingest;
 
 import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.command.*;
