@@ -1,4 +1,4 @@
-package com.botts.impl.process.helpers.module;
+package com.botts.process.helpers.module;
 
 import net.opengis.swe.v20.AbstractSWEIdentifiable;
 import net.opengis.swe.v20.DataBlock;

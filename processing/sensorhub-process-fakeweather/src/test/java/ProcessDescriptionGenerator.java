@@ -1,7 +1,7 @@
-import com.botts.impl.process.helpers.ProcessHelper;
+import com.botts.process.helpers.ProcessHelper;
 import net.opengis.sensorml.v20.AggregateProcess;
 import org.junit.Test;
-import org.sensorhub.process.weather.WeatherProcess;
+import com.botts.process.weather.WeatherProcess;
 import org.vast.data.SWEFactory;
 import org.vast.process.ProcessException;
 import org.vast.xml.XMLWriterException;
