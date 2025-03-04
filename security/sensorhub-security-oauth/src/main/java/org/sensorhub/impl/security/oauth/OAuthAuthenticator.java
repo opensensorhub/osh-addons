@@ -8,11 +8,12 @@
  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
  for the specific language governing rights and limitations under the License.
 
- Copyright (C) 2012-2024 Sensia Software LLC. All Rights Reserved.
+ Copyright (C) 2012-2025 Sensia Software LLC. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.security.oauth;
 
+import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
 import com.auth0.jwk.JwkProviderBuilder;
@@ -20,7 +21,6 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HttpHeaders;
@@ -57,6 +57,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPublicKey;
@@ -78,6 +79,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
     private final Map<String, OAuthState> generatedState;
     private final ISecurityManager securityManager;
 
+    private JwkProvider jwkProvider = null;
 
     static class OAuthState {
         String redirectUrl;
@@ -108,6 +110,19 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                 .expireAfterWrite(60, TimeUnit.SECONDS)
                 .<String, OAuthState>build()
                 .asMap();
+
+        try {
+
+            this.jwkProvider =
+                    new JwkProviderBuilder(new URL(config.bearerTokenConfig.jwksUri))
+                            .cached(config.bearerTokenConfig.cacheSize,
+                                    Duration.of(config.bearerTokenConfig.cacheDuration, ChronoUnit.MINUTES))
+                            .build();
+
+        } catch (MalformedURLException e) {
+
+            log.error("Malformed JWK URI: {}", config.bearerTokenConfig.jwksUri, e);
+        }
     }
 
 
@@ -143,7 +158,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                     if (session != null)
                         session.invalidate();
 
-                    log.debug("Log out from auth provider @ " + config.logoutEndpoint);
+                    log.debug("Log out from auth provider @ {}", config.logoutEndpoint);
                     var adminUrl = request.getRequestURL().toString().replace(request.getServletPath(), "/admin");
                     setCorsHeaders(request, response);
                     response.sendRedirect(config.logoutEndpoint + "?client_id=" + config.clientID + "&post_logout_redirect_uri=" + adminUrl);
@@ -165,12 +180,12 @@ public class OAuthAuthenticator extends LoginAuthenticator {
             }
 
 
-            String clientCredentialsToken = null;
             String accessToken = null;
             String idToken = null;
             String postLoginRedirectUrl = null;
             String oauthCallbackUrl = getCallbackBaseUrl(request) + OAUTH_CODE_CALLBACK_PATH;
             String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            JsonElement userInfo = null;
 
             OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
 
@@ -221,29 +236,76 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     return Authentication.SEND_FAILURE;
                 } catch (OAuthSystemException e) {
-                    log.error("Error while requesting access token from " + config.tokenEndpoint, e);
+                    log.error("Error while requesting access token from {}", config.tokenEndpoint, e);
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
                     return Authentication.SEND_FAILURE;
                 }
             }
 
-            if (authHeader != null && !request.getServletPath().equals("/admin")) {
+            // if no OAuth token received check if credentials are provided in authorization header
+            // and use back channel direct auth flow
+            if (accessToken == null && authHeader != null && !request.getServletPath().equals("/admin")) {
+                try {
+                    var credentials = parseBasicAuth(authHeader);
+                    if (credentials.length == 0) {
+                        var clientCredentialsToken = parseBearerToken(authHeader);
 
-                clientCredentialsToken = parseBearerToken(authHeader);
+                        // Validate client credentials token
+                        if (clientCredentialsToken != null) {
 
-                // if no OAuth token received check if credentials are provided in authorization header
-                // and use back channel direct auth flow
-                if (clientCredentialsToken == null && accessToken == null) {
+                            log.debug("Client Credentials Token: {}", clientCredentialsToken);
 
-                    try {
+                            String[] chunks = clientCredentialsToken.split("\\.");
 
-                        var credentials = parseBasicAuth(authHeader);
+                            // In validation we do not need to decode the entire token, just the header to perform validation
+                            // the userInfo will be extracted further below as we assign this token if valid as the accessToken
+                            // and idToken
+                            Base64.Decoder decoder = Base64.getUrlDecoder();
 
-                        if (credentials == null) {
+                            String header = new String(decoder.decode(chunks[0]));
+
+                            JsonElement headerData = JsonParser.parseString(header);
+
+                            try {
+
+                                String kid = parseKidFromJson(headerData);
+
+                                Jwk jwk = jwkProvider.get(kid);
+
+                                RSAPublicKey publicKey = (RSAPublicKey) jwk.getPublicKey();
+                                Algorithm algorithm = Algorithm.RSA256(publicKey);
+
+                                JWTVerifier verifier = JWT.require(algorithm)
+                                        // specify any specific claim validations
+                                        .withIssuer(config.bearerTokenConfig.issuer)
+                                        .withAudience(config.bearerTokenConfig.audience)
+                                        .build();
+
+                                verifier.verify(clientCredentialsToken);
+
+                                accessToken = idToken = clientCredentialsToken;
+
+                                log.info("Using Client Credentials token as Id token");
+
+                            } catch (JWTVerificationException e) {
+
+                                log.error("Failed to verify client credentials token: {}", e.getMessage());
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                                return Authentication.SEND_FAILURE;
+
+                            } catch (JwkException e) {
+
+                                log.error("Cannot complete authentication at endpoint: {}", e.getMessage());
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
+                                return Authentication.SEND_FAILURE;
+                            }
+
+                        } else {
 
                             response.sendError(HttpServletResponse.SC_FORBIDDEN);
                             return Authentication.SEND_FAILURE;
                         }
+                    } else {
 
                         // try to execute direct grant flow
                         OAuthClientRequest authRequest = OAuthClientRequest
@@ -258,108 +320,48 @@ public class OAuthAuthenticator extends LoginAuthenticator {
 
                         OAuthJSONAccessTokenResponse oAuthResponse = oAuthClient.accessToken(authRequest, HttpMethod.POST);
                         accessToken = oAuthResponse.getAccessToken();
-
-                    } catch (OAuthProblemException e) {
-
-                        if (!mandatory)
-                            return Authentication.UNAUTHENTICATED;
-
-                        log.error("Error received from token endpoint: {} - {}", e.getError(), e.getDescription());
-                        response.sendError(HttpServletResponse.SC_FORBIDDEN);
-                        return Authentication.SEND_FAILURE;
-
-                    } catch (OAuthSystemException e) {
-
-                        log.error("Error while requesting access token from " + config.tokenEndpoint, e);
-                        response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
-                        return Authentication.SEND_FAILURE;
                     }
+                } catch (OAuthProblemException e) {
+                    if (!mandatory)
+                        return Authentication.UNAUTHENTICATED;
+
+                    log.error("Error received from token endpoint: {} - {}", e.getError(), e.getDescription());
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    return Authentication.SEND_FAILURE;
+                } catch (OAuthSystemException e) {
+                    log.error("Error while requesting access token from {}", config.tokenEndpoint, e);
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
+                    return Authentication.SEND_FAILURE;
                 }
             }
 
             // if token was obtained, get user info
-            if (clientCredentialsToken != null || accessToken != null) {
+            if ((accessToken != null)) {
                 try {
                     String userId = null;
-                    JsonElement userInfo;
 
-                    if (clientCredentialsToken == null) {
+                    if (idToken != null) {
+                        // if ID token, assume it's a JWT token that contains needed info
+                        log.debug("ID Token = {}", idToken);
 
-                        if (idToken != null) {
-                            // if ID token, assume it's a JWT token that contains needed info
-                            log.debug("ID Token = " + idToken);
-
-                            String[] chunks = idToken.split("\\.");
-                            Base64.Decoder decoder = Base64.getUrlDecoder();
-                            String header = new String(decoder.decode(chunks[0]));
-                            String payload = new String(decoder.decode(chunks[1]));
-                            log.debug("ID Token Header = " + header);
-                            log.debug("ID Token Payload = " + payload);
-                            userInfo = JsonParser.parseString(payload);
-                        } else {
-                            // if only an access token, we need to call the userinfo endpoint
-                            log.debug("OAuth Token = " + accessToken);
-
-                            // request user info
-                            OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint)
-                                    .setAccessToken(accessToken)
-                                    //.buildQueryMessage();
-                                    .buildHeaderMessage();
-                            OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, HttpMethod.GET, OAuthResourceResponse.class);
-                            log.debug("UserInfo = " + resourceResponse.getBody());
-                            userInfo = JsonParser.parseString(resourceResponse.getBody());
-                        }
-
-                    } else {
-
-                        // if client credentials token, assume it's a JWT token that contains needed info
-                        log.debug("Client Credentials Token = {}", clientCredentialsToken);
-
-                        String[] chunks = clientCredentialsToken.split("\\.");
-
+                        String[] chunks = idToken.split("\\.");
                         Base64.Decoder decoder = Base64.getUrlDecoder();
-
                         String header = new String(decoder.decode(chunks[0]));
+                        String payload = new String(decoder.decode(chunks[1]));
+                        log.debug("ID Token Header = {}", header);
+                        log.debug("ID Token Payload = {}", payload);
+                        userInfo = JsonParser.parseString(payload);
+                    } else {
+                        // if only an access token, we need to call the userinfo endpoint
+                        log.debug("OAuth Token = {}", accessToken);
 
-                        log.debug("Client Credentials Token Header = {}", header);
-
-                        JsonElement headerData = JsonParser.parseString(header);
-
-                        JwkProvider jwkProvider =
-                                new JwkProviderBuilder(new URL(config.bearerTokenConfig.jwksUri))
-                                        .cached(config.bearerTokenConfig.cacheSize,
-                                                Duration.of(config.bearerTokenConfig.cacheDuration, ChronoUnit.MINUTES))
-                                        .build();
-
-                        DecodedJWT decodedJWT;
-                        try {
-
-                            RSAPublicKey publicKey = (RSAPublicKey) jwkProvider.get(parseKidFromJson(headerData)).getPublicKey();
-                            Algorithm algorithm = Algorithm.RSA256(publicKey);
-
-                            JWTVerifier verifier = JWT.require(algorithm)
-                                    // specify any specific claim validations
-                                    .withIssuer(config.bearerTokenConfig.issuer)
-                                    .withAudience(config.bearerTokenConfig.audience)
-                                    .build();
-
-                            decodedJWT = verifier.verify(clientCredentialsToken);
-
-                            String payload = new String(decoder.decode(decodedJWT.getPayload()));
-
-                            log.debug("Client Token Payload = {}", payload);
-
-                            userInfo = JsonParser.parseString(payload);
-
-                        } catch (JWTVerificationException e) {
-                            log.error("Failed to verify client credentials token: {}", e.getMessage());
-                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-                            return Authentication.SEND_FAILURE;
-                        } catch (JwkException e) {
-                            log.error("Cannot complete authentication at endpoint: {}", e.getMessage());
-                            response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
-                            return Authentication.SEND_FAILURE;
-                        }
+                        // request user info
+                        OAuthClientRequest bearerClientRequest = new OAuthBearerClientRequest(config.userInfoEndpoint)
+                                .setAccessToken(accessToken)
+                                .buildHeaderMessage();
+                        OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, HttpMethod.GET, OAuthResourceResponse.class);
+                        log.debug("UserInfo = {}", resourceResponse.getBody());
+                        userInfo = JsonParser.parseString(resourceResponse.getBody());
                     }
 
                     // parse user ID and roles from json
@@ -382,7 +384,6 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                             response.sendRedirect(response.encodeRedirectURL(postLoginRedirectUrl));
                             return Authentication.SEND_CONTINUE;
                         } else
-                            //return Authentication.SEND_SUCCESS;
                             return userAuth;
                     } else {
                         log.error("Unknown user: {}", userId);
@@ -394,7 +395,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     return Authentication.SEND_FAILURE;
                 } catch (OAuthSystemException | IOException e) {
-                    log.error("Cannot complete authentication at endpoint " + config.tokenEndpoint, e);
+                    log.error("Cannot complete authentication at endpoint {}", config.tokenEndpoint, e);
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
                     return Authentication.SEND_FAILURE;
                 }
@@ -403,7 +404,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                 return Authentication.NOT_CHECKED;
             }
 
-            // else redirect to auth provider endpoint for first login 
+            // else redirect to auth provider endpoint for first login
             try {
                 // generate request to auth provider
                 var state = UUID.randomUUID().toString();
@@ -424,12 +425,12 @@ public class OAuthAuthenticator extends LoginAuthenticator {
 
                 // send as redirect
                 String loginUrl = authRequest.getLocationUri();
-                log.debug("Redirecting to auth provider login @ " + loginUrl);
+                log.debug("Redirecting to auth provider login @ {}", loginUrl);
                 setCorsHeaders(request, response);
                 response.sendRedirect(response.encodeRedirectURL(loginUrl));
                 return Authentication.SEND_CONTINUE;
             } catch (OAuthSystemException e) {
-                log.error("Cannot redirect to authentication endpoint " + config.authzEndpoint, e);
+                log.error("Cannot redirect to authentication endpoint {}", config.authzEndpoint, e);
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
                 return Authentication.SEND_FAILURE;
             }
@@ -449,6 +450,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
     }
 
 
+
     private String[] parseBasicAuth(String credentials) {
         int space = credentials.indexOf(' ');
         if (space > 0) {
@@ -465,7 +467,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
             }
         }
 
-        return null;
+        return new String[] {};
     }
 
     String parseKidFromJson(JsonElement json) throws IOException {
@@ -509,7 +511,7 @@ public class OAuthAuthenticator extends LoginAuthenticator {
             userRolesField.getAsJsonArray().forEach(item -> list.add(item.getAsString()));
             return list.build();
         } else
-            return Arrays.asList("anon");
+            return List.of("anon");
     }
 
 

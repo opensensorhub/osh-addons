@@ -12,15 +12,6 @@ repositories {
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-    implementation 'org.ros.rosjava_core:rosjava:0.3.6'
-//    implementation 'org.ros.rosjava_messages:geometry_msgs:1.12.7'
-//    implementation 'org.ros.rosjava_messages:sensor_msgs:1.10.2'
-//    implementation 'org.ros.rosjava_messages:astra_camera:0.2.2'
-//    implementation 'org.ros.rosjava_messages:geographic_msgs:0.5.2'
-//    implementation 'org.ros.rosjava_messages:tf2_geometry_msgs:0.4.7'
-//    implementation 'org.ros.rosjava_messages:opencv_apps:1.11.12'
-//    implementation 'org.ros.rosjava_messages:visualization_msgs:1.12.7'
-//    implementation 'org.ros.rosjava_messages:moveit_msgs:0.6.1'
     implementation project(':sensorhub-transbot-messages')
     implementation project(':sensorhub-ros-common')
     testImplementation('junit:junit:4.13')

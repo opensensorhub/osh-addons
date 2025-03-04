@@ -1,6 +1,6 @@
 description = 'OAuth2 Authentication'
 ext.details = 'Provides federated authentication through OAuth2 providers such as Google, Twitter, etc.'
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
