@@ -52,6 +52,7 @@ public interface AircraftStateRecord extends IDataAccessor, IAircraftState
             .addField("heading", fac.createTrueHeading())
             .addField("gs", fac.createGroundSpeed())
             .addField("alt_rate", fac.createVerticalRate())
+            .addField("cas", fac.createCalibratedAirspeed())
             .addField("tas", fac.createTrueAirspeed())
             .addField("mach", fac.createMachNumber())
             .addField("sat", fac.createStaticAirTemp())
@@ -164,10 +165,11 @@ public interface AircraftStateRecord extends IDataAccessor, IAircraftState
     void setTrueAirSpeed(double val);
 
     @Override
-    default double getCalibratedAirSpeed()
-    {
-        return Double.NaN;
-    }
+    @SweMapping(path="cas")
+    double getCalibratedAirSpeed();
+    
+    @SweMapping(path="cas")
+    void setCalibratedAirSpeed(double val);
 
     @Override
     @SweMapping(path="mach")

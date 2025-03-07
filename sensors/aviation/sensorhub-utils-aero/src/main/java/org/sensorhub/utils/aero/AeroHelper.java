@@ -405,7 +405,7 @@ public class AeroHelper extends GeoPosHelper
     {
         return createQuantity()
             .definition(DEF_CALIBRATED_AIRSPEED)
-            .label("True Airspeed")
+            .label("Calibrated Airspeed")
             .uom("[kn_i]")
             .dataType(DataType.FLOAT);
     }
