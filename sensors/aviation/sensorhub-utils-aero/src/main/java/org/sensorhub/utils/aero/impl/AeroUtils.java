@@ -51,11 +51,11 @@ import net.opengis.sensorml.v20.AbstractProcess;
 public class AeroUtils
 {
     // System URIs
-    public static final String AERO_SYSTEM_URI_PREFIX = "urn:osh:aero:system:";
+    public static final String AERO_SYSTEM_URI_PREFIX = "urn:osh:system:aero:";
     public static final String AERO_FOI_REGISTRY_UID = AERO_SYSTEM_URI_PREFIX + "foiregistry";
     
     // FOI URIs
-    public static final String AERO_FOI_URI_PREFIX = "urn:osh:aero:foi:";
+    public static final String AERO_FOI_URI_PREFIX = "urn:osh:foi:aero:";
     public static final String FOI_TAIL_UID_PREFIX = AERO_FOI_URI_PREFIX + "tail:";
     public static final String FOI_FLIGHT_UID_PREFIX = AERO_FOI_URI_PREFIX + "flight:";
     public static final String FOI_AIRPORT_UID_PREFIX = AERO_FOI_URI_PREFIX + "airport:";

@@ -36,8 +36,8 @@ import net.opengis.swe.v20.DataType;
 public class AeroHelper extends GeoPosHelper
 {
     // SWE definition URIs
-    public static final String AERO_DEF_URI_PREFIX = "urn:osh:aero:def:";
-    public static final String AERO_RECORD_URI_PREFIX = "urn:osh:aero:def:record:";
+    public static final String AERO_DEF_URI_PREFIX = "urn:osh:def:aero:";
+    public static final String AERO_RECORD_URI_PREFIX = "urn:osh:def:aero:record:";
     
     public static final String ICAO_CODESPACE = AERO_DEF_URI_PREFIX + "ICAO";
     public static final String DEF_TAIL_NUMBER = AERO_DEF_URI_PREFIX + "TailNumber";
