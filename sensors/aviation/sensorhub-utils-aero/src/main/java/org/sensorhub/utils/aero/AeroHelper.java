@@ -54,7 +54,7 @@ public class AeroHelper extends GeoPosHelper
     public static final String DEF_DEPARTURE_TIME = AERO_DEF_URI_PREFIX + "DepartureTime";
     public static final String DEF_ARRIVAL_TIME = AERO_DEF_URI_PREFIX + "ArrivalTime";
     public static final String DEF_COST_INDEX = AERO_DEF_URI_PREFIX + "CostIndex";
-    public static final String DEF_SAR_FACTOR = AERO_DEF_URI_PREFIX + "FuelCorrectionFactorSAR";
+    public static final String DEF_FF_FACTOR = AERO_DEF_URI_PREFIX + "FuelCorrectionFactor";
     
     public static final String DEF_TRACKANGLE_TRUE = AERO_DEF_URI_PREFIX + "TrueTrack";
     public static final String DEF_TRACKANGLE_MAGNETIC = AERO_DEF_URI_PREFIX + "MagneticTrack";
@@ -71,7 +71,8 @@ public class AeroHelper extends GeoPosHelper
     public static final String DEF_FUEL_ON_BOARD = AERO_DEF_URI_PREFIX + "FuelOnBoard";
     public static final String DEF_WIND_SPEED = SWEHelper.getCfUri("wind_speed");
     public static final String DEF_WIND_DIR = SWEHelper.getCfUri("wind_to_direction");
-        
+
+    public static final String DEF_CODED_ROUTE = AERO_DEF_URI_PREFIX + "CodedRoute";
     public static final String DEF_WAYPOINT_TYPE = AERO_DEF_URI_PREFIX + "WaypointType";
     public static final String DEF_WAYPOINT_CODE = AERO_DEF_URI_PREFIX + "WaypointCode";
     
@@ -104,13 +105,13 @@ public class AeroHelper extends GeoPosHelper
     
     
     /**
-     * @return The cost index field
+     * @return The fuel correction factor field
      */
-    public QuantityBuilder createSarFactor()
+    public QuantityBuilder createFuelFactor()
     {
         return createQuantity()
-            .definition(DEF_SAR_FACTOR)
-            .label("SAR Correction Factor")
+            .definition(DEF_FF_FACTOR)
+            .label("Fuel Correction Factor")
             .uom("1");
     }
     
@@ -553,6 +554,17 @@ public class AeroHelper extends GeoPosHelper
             .label("Waypoint Code")
             .description("Waypoint ICAO identification code")
             .codeSpace(ICAO_CODESPACE);
+    }
+    
+    
+    /**
+     * @return The waypoint code field
+     */
+    public TextBuilder createCodedRoute()
+    {
+        return createText()
+            .definition(DEF_CODED_ROUTE)
+            .label("Coded Route");
     }
     
     
