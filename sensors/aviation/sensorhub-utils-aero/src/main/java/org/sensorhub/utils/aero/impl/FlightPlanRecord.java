@@ -168,10 +168,11 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
     void setCruiseSpeed(double val);
     
     @Override
-    default double getCruiseMach()
-    {
-        return Double.NaN;
-    }
+    @SweMapping(path="cruiseMach")
+    double getCruiseMach();
+
+    @SweMapping(path="cruiseMach")
+    void setCruiseMach(double val);
     
     @Override
     @SweMapping(path="costIndex")
