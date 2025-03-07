@@ -1,0 +1,27 @@
+description = 'Aeronautics Utilities'
+ext.details = 'Common classes for use in aviation applications (e.g. aircraft state, flight plans, etc.)'
+version = '0.1.0'
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+}
+
+// add info to OSGi manifest
+jar {
+  manifest {
+    attributes 'Bundle-Vendor': 'Sensia Software LLC'
+    attributes 'Bundle-Activator': 'org.sensorhub.utils.aero.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoft.com' 
+    }
+  }
+}
