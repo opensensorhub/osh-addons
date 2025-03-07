@@ -244,7 +244,8 @@ public class AeroUtils
     
     public static String getFlightID(String flightNum, String destIcao, LocalDate flightDate)
     {
-        return flightNum + "_" + destIcao + "_" + flightDate;
+        return String.format("%s_%s_%04d%02d%02d", flightNum, destIcao,
+            flightDate.getYear(), flightDate.getMonthValue(), flightDate.getDayOfMonth());
     }
     
     
