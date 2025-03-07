@@ -44,7 +44,7 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
         return fac.createRecord()
             .name(name)
             .definition(DEF_FP_REC) 
-            .addField("time", fac.createTime().asSamplingTimeIsoUTC())
+            .addField("time", fac.createIssueTime())
             .addField("source", fac.createMessageSource()
                 .addAllowedValues(FlightPlanSource.class))
             .addField("flightNum", fac.createFlightNumber())

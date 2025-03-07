@@ -163,6 +163,18 @@ public class AeroHelper extends GeoPosHelper
     /**
      * @return The departure time field
      */
+    public TimeBuilder createIssueTime()
+    {
+        return createTime()
+            .asSamplingTimeIsoUTC()
+            .definition(SWEConstants.DEF_SAMPLING_TIME)
+            .label("Issue Time");
+    }
+    
+    
+    /**
+     * @return The departure time field
+     */
     public TimeBuilder createDepartureTime()
     {
         return createTime()
