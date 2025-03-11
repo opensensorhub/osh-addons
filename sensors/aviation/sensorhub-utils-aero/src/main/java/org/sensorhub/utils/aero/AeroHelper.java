@@ -62,6 +62,7 @@ public class AeroHelper extends GeoPosHelper
     public static final String DEF_ALT_RATE = AERO_DEF_URI_PREFIX + "AltitudeRate";
     public static final String DEF_TRUE_AIRSPEED = AERO_DEF_URI_PREFIX + "TrueAirspeed";
     public static final String DEF_CALIBRATED_AIRSPEED = AERO_DEF_URI_PREFIX + "CalibratedAirspeed";
+    public static final String DEF_INDICATED_AIRSPEED = AERO_DEF_URI_PREFIX + "IndicatedAirspeed";
     public static final String DEF_MACH_NUMBER = AERO_DEF_URI_PREFIX + "MachNumber";
     public static final String DEF_STATIC_AIRTEMP = AERO_DEF_URI_PREFIX + "StaticAirTemperature";
     public static final String DEF_TOTAL_AIRTEMP = AERO_DEF_URI_PREFIX + "TotalAirTemperature";
@@ -419,6 +420,19 @@ public class AeroHelper extends GeoPosHelper
         return createQuantity()
             .definition(DEF_CALIBRATED_AIRSPEED)
             .label("Calibrated Airspeed")
+            .uom("[kn_i]")
+            .dataType(DataType.FLOAT);
+    }
+    
+    
+    /**
+     * @return The indicated airspeed (IAS) field in knots
+     */
+    public QuantityBuilder createIndicatedAirspeed()
+    {
+        return createQuantity()
+            .definition(DEF_CALIBRATED_AIRSPEED)
+            .label("Indicated Airspeed")
             .uom("[kn_i]")
             .dataType(DataType.FLOAT);
     }
