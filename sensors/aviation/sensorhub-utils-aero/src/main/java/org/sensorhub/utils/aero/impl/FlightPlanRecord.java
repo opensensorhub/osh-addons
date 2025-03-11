@@ -182,11 +182,11 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
     void setCostIndex(double val);
     
     @Override
-    @SweMapping(path="sarFac")
-    double getSARFactor();
+    @SweMapping(path="fuelFactor")
+    double getFuelFactor();
 
-    @SweMapping(path="sarFac")
-    void setSARFactor(double val);
+    @SweMapping(path="fuelFactor")
+    void setFuelFactor(double val);
     
     @Override
     @SweMapping(path="codedRoute")

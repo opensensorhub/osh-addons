@@ -154,7 +154,7 @@ public interface IFlightPlan extends IFlightIdentification, IAircraftIdentificat
     /**
      * @return The fuel burn correction factor (NaN if unknown)
      */
-    double getSARFactor();
+    double getFuelFactor();
     
     
     /**

@@ -56,7 +56,7 @@ public class TestFlightPlanRecord
         fp.setTailNumber(tailNum);
         fp.setAircraftType(acType);
         fp.setCostIndex(ci);
-        fp.setSARFactor(sar);
+        fp.setFuelFactor(sar);
         fp.setCodedRoute(route);
         
         System.out.println(fp);
@@ -72,7 +72,7 @@ public class TestFlightPlanRecord
         assertEquals(tailNum, fp.getTailNumber());
         assertEquals(acType, fp.getAircraftType());
         assertEquals(ci, fp.getCostIndex(), 1e-5);
-        assertEquals(sar, fp.getSARFactor(), 1e-5);
+        assertEquals(sar, fp.getFuelFactor(), 1e-5);
         assertEquals(route, fp.getCodedRoute());
     }
 
