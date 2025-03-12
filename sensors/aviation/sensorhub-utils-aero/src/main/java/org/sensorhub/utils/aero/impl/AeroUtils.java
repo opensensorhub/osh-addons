@@ -22,6 +22,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
@@ -30,12 +31,12 @@ import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.system.ISystemDriver;
 import org.sensorhub.api.system.ISystemGroupDriver;
-import org.sensorhub.utils.Lambdas;
 import org.sensorhub.utils.aero.IFlightIdentification;
 import org.vast.ogc.om.MovingFeature;
 import org.vast.ogc.om.SamplingPoint;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEConstants;
+import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import net.opengis.sensorml.v20.AbstractProcess;
 
@@ -67,10 +68,10 @@ public class AeroUtils
     static Map<String, String> icaoTzData;
         
     // cache for most recent FOI IDs to speed things up
-    static Map<String, String> latestFois = CacheBuilder.newBuilder()
+    static Cache<String, String> latestFois = CacheBuilder.newBuilder()
         .concurrencyLevel(2)
         .expireAfterAccess(1, TimeUnit.HOURS)
-        .<String, String>build().asMap();
+        .<String, String>build();
     
     static AtomicBoolean registryCreated = new AtomicBoolean();
     
@@ -126,18 +127,25 @@ public class AeroUtils
                     .validFrom(validTime)
                     .build();
                 
-                reg.register(new ISystemDriver() {
-                    public void registerListener(IEventListener listener) { }
-                    public void unregisterListener(IEventListener listener) { }
-                    public String getName() { return sys.getName(); }
-                    public String getDescription() { return sys.getDescription(); }
-                    public String getUniqueIdentifier() { return sys.getUniqueIdentifier(); }
-                    public String getParentSystemUID() { return null; }
-                    public ISystemGroupDriver<? extends ISystemDriver> getParentSystem() { return null; }
-                    public AbstractProcess getCurrentDescription() { return sys; }
-                    public long getLatestDescriptionUpdate() { return validTime.toEpochSecond()*1000; }
-                    public boolean isEnabled() { return true; }
-                });
+                try
+                {
+                    reg.register(new ISystemDriver() {
+                        public void registerListener(IEventListener listener) { }
+                        public void unregisterListener(IEventListener listener) { }
+                        public String getName() { return sys.getName(); }
+                        public String getDescription() { return sys.getDescription(); }
+                        public String getUniqueIdentifier() { return sys.getUniqueIdentifier(); }
+                        public String getParentSystemUID() { return null; }
+                        public ISystemGroupDriver<? extends ISystemDriver> getParentSystem() { return null; }
+                        public AbstractProcess getCurrentDescription() { return sys; }
+                        public long getLatestDescriptionUpdate() { return validTime.toEpochSecond()*1000; }
+                        public boolean isEnabled() { return true; }
+                    }).get();
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException("Error creating Aero FOI Registry", e);
+                }
             }
         }
     }
@@ -158,18 +166,24 @@ public class AeroUtils
             String uid = FOI_FLIGHT_UID_PREFIX + flightId;
             
             // register FOI if ID is not in cache
-            return latestFois.computeIfAbsent(uid, Lambdas.checked(fid -> {
-                
-                // generate small FOI object
-                MovingFeature foi = new MovingFeature();
-                foi.setId(flightId);
-                foi.setUniqueIdentifier(fid);
-                foi.setName("Flight " + flightId);
-                
-                // register it
-                hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
-                return fid;
-            }));
+            try
+            {
+                return latestFois.get(uid, () -> {
+                    // generate small FOI object
+                    MovingFeature foi = new MovingFeature();
+                    foi.setId(flightId);
+                    foi.setUniqueIdentifier(uid);
+                    foi.setName("Flight " + flightId);
+                    
+                    // register it
+                    hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
+                    return uid;
+                });
+            }
+            catch (ExecutionException e)
+            {
+                throw new IllegalStateException("Error creating flight FOI " + uid, e.getCause());
+            }
         }
         
         return null;
@@ -191,18 +205,24 @@ public class AeroUtils
             String uid = FOI_TAIL_UID_PREFIX + tailId;
             
             // register FOI if ID is not in cache
-            return latestFois.computeIfAbsent(uid, Lambdas.checked(fid -> {
-                
-                // generate small FOI object
-                MovingFeature foi = new MovingFeature();
-                foi.setId(tailId);
-                foi.setUniqueIdentifier(fid);
-                foi.setName("Tail " + tailId);
-                
-                // register it
-                hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
-                return fid;
-            }));
+            try
+            {
+                return latestFois.get(uid, () -> {
+                    // generate small FOI object
+                    MovingFeature foi = new MovingFeature();
+                    foi.setId(tailId);
+                    foi.setUniqueIdentifier(uid);
+                    foi.setName("Tail " + tailId);
+                    
+                    // register it
+                    hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
+                    return uid;
+                });
+            }
+            catch (ExecutionException e)
+            {
+                throw new IllegalStateException("Error creating tail FOI " + uid, e.getCause());
+            }
         }
         
         return null;
@@ -224,18 +244,24 @@ public class AeroUtils
             String uid = FOI_AIRPORT_UID_PREFIX + icao;
             
             // register FOI if ID is not in cache
-            return latestFois.computeIfAbsent(uid, Lambdas.checked(fid -> {
-                
-                // generate small FOI object
-                var foi = new SamplingPoint();
-                foi.setId(icao);
-                foi.setUniqueIdentifier(fid);
-                foi.setName("Airport " + icao);
-                
-                // register it
-                hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
-                return fid;
-            }));
+            try
+            {
+                return latestFois.get(uid, () -> {
+                    // generate small FOI object
+                    var foi = new SamplingPoint();
+                    foi.setId(icao);
+                    foi.setUniqueIdentifier(uid);
+                    foi.setName("Airport " + icao);
+                    
+                    // register it
+                    hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
+                    return uid;
+                });
+            }
+            catch (ExecutionException e)
+            {
+                throw new IllegalStateException("Error creating airport FOI " + uid, e.getCause());
+            }
         }
         
         return null;
