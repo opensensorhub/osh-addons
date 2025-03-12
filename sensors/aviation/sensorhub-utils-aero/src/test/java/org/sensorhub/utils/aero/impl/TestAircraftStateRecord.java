@@ -42,6 +42,7 @@ public class TestAircraftStateRecord
         var gs = 526;
         var altRate = 1230;
         var tas = 429;
+        var cas = 256;
         var mach = 0.79;
         var sat = -48;
         var zfw = 312000;
@@ -58,6 +59,7 @@ public class TestAircraftStateRecord
         state.setGroundSpeed(gs);
         state.setVerticalRate(altRate);
         state.setTrueAirSpeed(tas);
+        state.setCalibratedAirSpeed(cas);
         state.setMach(mach);
         state.setStaticAirTemperature(sat);
         state.setZeroFuelWeight(zfw);
@@ -79,7 +81,7 @@ public class TestAircraftStateRecord
         assertEquals(gs, state.getGroundSpeed(), 1e-5);
         assertEquals(altRate, state.getVerticalRate(), 1e-5);
         assertEquals(tas, state.getTrueAirSpeed(), 1e-5);
-        assertEquals(Double.NaN, state.getCalibratedAirSpeed(), 1e-5);
+        assertEquals(cas, state.getCalibratedAirSpeed(), 1e-5);
         assertEquals(mach, state.getMach(), 1e-5);
         assertEquals(sat, state.getStaticAirTemperature(), 1e-5);
         assertEquals(Double.NaN, state.getStaticAirPressure(), 1e-5);
