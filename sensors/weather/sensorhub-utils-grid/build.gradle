@@ -4,7 +4,10 @@ version = '0.3.3'
 
 rootProject.allprojects {
   repositories {
-    maven { url 'https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases' }
+    maven {
+      name 'unidata'
+      url 'https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases'
+    }
   }
 }
 
