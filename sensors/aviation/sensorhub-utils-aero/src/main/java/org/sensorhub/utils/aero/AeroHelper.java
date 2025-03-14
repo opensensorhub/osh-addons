@@ -68,6 +68,7 @@ public class AeroHelper extends GeoPosHelper
     public static final String DEF_TOTAL_AIRTEMP = AERO_DEF_URI_PREFIX + "TotalAirTemperature";
     public static final String DEF_STATIC_AIRPRESS = AERO_DEF_URI_PREFIX + "StaticAirPressure";
     public static final String DEF_TOTAL_AIRPRESS = AERO_DEF_URI_PREFIX + "TotalAirPressure";
+    public static final String DEF_GROSS_WEIGHT = AERO_DEF_URI_PREFIX + "GrossWeight";
     public static final String DEF_ZERO_FUEL_WEIGHT = AERO_DEF_URI_PREFIX + "ZeroFuelWeight";
     public static final String DEF_FUEL_ON_BOARD = AERO_DEF_URI_PREFIX + "FuelOnBoard";
     public static final String DEF_WIND_SPEED = SWEHelper.getCfUri("wind_speed");
@@ -499,6 +500,19 @@ public class AeroHelper extends GeoPosHelper
             .definition(DEF_TOTAL_AIRTEMP)
             .label("Total Air Pressure")
             .uom("hPa")
+            .dataType(DataType.FLOAT);
+    }
+    
+    
+    /**
+     * @return The gross weight field in lb
+     */
+    public QuantityBuilder createGrossWeight()
+    {
+        return createQuantity()
+            .definition(DEF_GROSS_WEIGHT)
+            .label("Gross Weight")
+            .uom("[lb_av]")
             .dataType(DataType.FLOAT);
     }
     
