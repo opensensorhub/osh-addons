@@ -87,25 +87,32 @@ public class FlightObject
 	transient String json; // original json message as received from firehose
 	
     public String type;  // pos or fp
-	public String ident;  // tail
+	public String ident;  // flight number of tail
 	public String status;
 	public String air_ground;  // always "A" for us so far
 	public String aircrafttype;  // ICAO aircraft type code
 	public String alt;
+	public String alt_gnss;
 	public String pitr;  //  Timestamp value that should be supplied to the "pitr" connection initiation command when reconnecting and you wish to resume firehose playback at that approximate position
 	public String clock;  // posix epoch timestamp
 	public String id; // faFlightId
 	public String gs;  // ground speed knots
 	public String speed;  // fixed cruising speed in knots
-	public String heading;
+	public String speed_ias;  // indicated airspeed knots
+	public String speed_tas;  // true airspeed knots
+    public String mach;  // mach number
+	public String heading; // true track/course 
+	public String heading_true; // true heading
+	public String heading_magnetic; // magnetic heading
 	public String lat;
 	public String lon;
 	public String orig; // 	ICAO airport code, waypoint, or latitude/longitude pair
 	public String dest; // 	ICAO airport code, waypoint, or latitude/longitude pair
-	public String reg;
+	public String reg; // tail/registration number
 	public String squawk;
 	public String updateType;
 	public String altChange;  // "C" for climbing, "D" for descending, " " when undetermined
+    public String vertRate;
 	public String edt;
 	public String eta;
 	public String ete;

@@ -44,29 +44,36 @@ public class ProcessPositionTask implements Runnable
 
 	@Override
 	public void run() {
-		if (obj.ident == null || obj.ident.length() == 0) {
-			log.error("obj.ident is empty or null");
-			return;
-		}
-		
-		if (obj.dest == null || obj.dest.length() == 0) {		    
-		    // Position message from FlightAware did not contain dest airport
-		    log.trace("{}: Position message without destination", obj.ident);
-		    
-		    // try to fetch from cache
-		    FlightInfo cachedInfo = flightCache.getIfPresent(obj.id);  
-		    if (cachedInfo == null || cachedInfo.dest == null)
-		    {
-		        if (!msgHandler.isReplay())
-		            log.trace("{}: Destination airport not found in cache", obj.id);
-		        return;
-		    }
-		    else
-		        obj.dest = cachedInfo.dest;
-		}
-		
-		log.trace("{}_{}: New position received", obj.ident, obj.dest);
-		msgHandler.newFlightPosition(obj);
+		try
+        {
+            if (obj.ident == null || obj.ident.length() == 0) {
+            	log.error("obj.ident is empty or null");
+            	return;
+            }
+            
+            if (obj.dest == null || obj.dest.length() == 0) {		    
+                // Position message from FlightAware did not contain dest airport
+                log.trace("{}: Position message without destination", obj.ident);
+                
+                // try to fetch from cache
+                FlightInfo cachedInfo = flightCache.getIfPresent(obj.id);  
+                if (cachedInfo == null || cachedInfo.dest == null)
+                {
+                    if (!msgHandler.isReplay())
+                        log.trace("{}: Destination airport not found in cache", obj.id);
+                    return;
+                }
+                else
+                    obj.dest = cachedInfo.dest;
+            }
+            
+            log.trace("{}_{}: New position received", obj.ident, obj.dest);
+            msgHandler.newFlightPosition(obj);
+        }
+        catch (Exception e)
+        {
+            log.error("Error processing message:\n{}", obj.json, e);
+        }
 	}
 
 }

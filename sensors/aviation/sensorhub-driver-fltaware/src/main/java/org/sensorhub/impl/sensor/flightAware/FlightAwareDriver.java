@@ -26,8 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -38,13 +36,11 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModuleStateManager;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.flightAware.FlightAwareConfig.Mode;
-import org.vast.ogc.gml.IFeature;
-import org.vast.ogc.om.MovingFeature;
+import org.sensorhub.utils.aero.impl.AeroUtils;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Asserts;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.impl.GMLFactory;
 
 
@@ -53,7 +49,7 @@ import net.opengis.gml.v32.impl.GMLFactory;
  * @author tcook
  * @since Oct 1, 2017
  */
-public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> implements FlightPlanListener, PositionListener
+public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig>
 {
     private static final String STATE_CACHE_FILE = "fltaware_cache";
     private static final int MAX_CACHE_SIZE = 50000;
@@ -72,9 +68,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     GMLFactory gmlFac = new GMLFactory(true);
 
     // Dynamically created FOIs
-    Map<String, AbstractFeature> flightFois;
-    Map<String, AbstractFeature> aircraftDesc;
-    Map<String, FlightObject> flightPositions;
     static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
     static final String FLIGHT_UID_PREFIX = "urn:osh:aviation:flight:";
 
@@ -83,9 +76,9 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     Cache<String, FlightInfo> flightCache;
     ScheduledExecutorService watchDogTimer;
     FlightAwareClient firehoseClient;
-    IMessageQueuePush msgQueue;
+    IMessageQueuePush<?> msgQueue;
     MessageHandler msgHandler;
-    boolean connected;
+    volatile boolean connected;
     int numAttempts;
     int retryInterval;  
     long lastRetryTime;
@@ -209,9 +202,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
 
 	public FlightAwareDriver()
 	{
-        this.flightFois = new ConcurrentSkipListMap<>();
-        this.aircraftDesc = new ConcurrentHashMap<>();
-        this.flightPositions = new ConcurrentHashMap<>();
 	}
 	
 	
@@ -230,7 +220,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
     protected void doInit() throws SensorHubException
 	{
 		// IDs
-		this.uniqueID = SENSOR_UID_PREFIX + "flightAware";
+		this.uniqueID = AeroUtils.AERO_SYSTEM_URI_PREFIX + "flightAware";
 		this.xmlID = "FLTAWARE_FIREHOSE";
 
         // init flight plan output
@@ -292,8 +282,12 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
             msgHandler = new MessageHandlerWithForward(this, msgQueue);
         else
             msgHandler = new MessageHandler(this);
-        msgHandler.addPlanListener(this);
-        msgHandler.addPositionListener(this);
+        
+        // set outputs as listeners
+        if (flightPlanOutput != null)
+            msgHandler.addPlanListener(flightPlanOutput);
+        if (flightPositionOutput != null)
+            msgHandler.addPositionListener(flightPositionOutput);
         
         // configure firehose feed
         firehoseClient = new FlightAwareClient(config.hostname, config.userName, config.password, getLogger(), new IMessageHandler() {
@@ -349,8 +343,12 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
         
         // create message handler
         msgHandler = new MessageHandler(this);
-        msgHandler.addPlanListener(this);
-        msgHandler.addPositionListener(this);
+        
+        // set outputs as listeners
+        if (flightPlanOutput != null)
+            msgHandler.addPlanListener(flightPlanOutput);
+        if (flightPositionOutput != null)
+            msgHandler.addPositionListener(flightPositionOutput);
         
         // start pub/sub receiver
         connectToPubSub(false);
@@ -381,7 +379,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
             
             // load message queue implementation
             var moduleReg = getParentHub().getModuleRegistry();
-	        msgQueue = (IMessageQueuePush)moduleReg.loadSubModule(pubSubConfig, true);
+	        msgQueue = (IMessageQueuePush<?>)moduleReg.loadSubModule(this, pubSubConfig, true);
             
             if (!publishOnly)
             {
@@ -406,7 +404,8 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
         }
         catch (Exception e)
         {
-            throw new IllegalStateException("Cannot load message queue implementation", e);
+            msgQueue = null;
+            throw new IllegalStateException("Cannot start message queue", e);
         }
     }
     
@@ -419,11 +418,6 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
             watchDogTimer = null;
         }
         
-        if (msgHandler != null) {
-            msgHandler.stop();
-            msgHandler = null;
-        }
-        
         if (msgQueue != null) {
             msgQueue.stop();
             msgQueue = null;
@@ -434,84 +428,15 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig> i
             firehoseClient = null;
         }
         
+        if (msgHandler != null) {
+            msgHandler.stop();
+            msgHandler = null;
+        }
+        
         // also save state on stop
         saveCache();
         if (flightCache != null)
             flightCache.invalidateAll();
-    }
-    
-    
-    private String getOshFlightId(FlightObject fltObj)
-    {
-        return fltObj.ident + '_' + fltObj.dest;
-    }
-    
-
-	private void ensureFlightFoi(String flightId, long recordTime)
-	{						
-	    String uid = FLIGHT_UID_PREFIX + flightId;
-	    
-	    // skip if FOI already exists
-		IFeature fpFoi = foiMap.get(uid);
-        if (fpFoi != null) 
-            return;
-        
-		// generate small SensorML for FOI (in this case the system is the FOI)
-        MovingFeature foi = new MovingFeature();
-		foi.setId(flightId);
-		foi.setUniqueIdentifier(uid);
-		foi.setName(flightId + " Flight");
-		
-		// register it
-		addFoi(foi);
-
-		getLogger().trace("{}: New FOI added: {}; Num FOIs = {}", flightId, uid, foiMap.size());
-	}
-	
-
-    @Override
-    public void newPosition(FlightObject fltPos)
-    {
-        //  Should never send null pos, but check it anyway
-        if(fltPos == null)
-            return;
-        
-        // Check for and add Pos and LawBox FOIs if they aren't already in cache
-        String oshFlightId = getOshFlightId(fltPos);
-        ensureFlightFoi(oshFlightId, fltPos.getClock());
-        FlightObject prevPos = flightPositions.get(oshFlightId);
-        if(prevPos != null) {
-            // Calc vert change in ft/minute
-            Long prevTime = prevPos.getClock() ;
-            Long newTime = fltPos.getClock() ;
-            Double prevAlt = prevPos.getAltitude();
-            Double newAlt = fltPos.getAltitude();
-//            System.err.println(" ??? " + oshFlightId + ":" + prevAlt + "," + newAlt + "," + prevTime + "," + newTime);
-            if(prevAlt != null && newAlt != null && prevTime != null && newTime != null && (!prevTime.equals(newTime)) ) {
-                // check math here!!!
-                fltPos.verticalChange = (newAlt - prevAlt)/( (newTime - prevTime)/60.);
-//                System.err.println(" ***  " + oshFlightId + ":" + prevAlt + "," + newAlt + "," + prevTime + "," + newTime + " ==> " + pos.verticalChange);
-            }
-        }
-        
-        flightPositions.put(oshFlightId, fltPos);
-        flightPositionOutput.sendPosition(oshFlightId, fltPos);
-    }
-    
-
-    @Override
-    public void newFlightPlan(FlightObject fltPlan)
-    {
-        //  Should never send null plan
-        if (fltPlan == null)
-            return;
-        
-        // Add new FlightPlan FOI if new
-        String oshFlightId = getOshFlightId(fltPlan);
-        ensureFlightFoi(oshFlightId, fltPlan.getMessageTime()*1000);
-
-        // send new data to outputs
-        flightPlanOutput.sendFlightPlan(oshFlightId, fltPlan);
     }
 
     
