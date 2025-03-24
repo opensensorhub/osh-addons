@@ -60,7 +60,7 @@ public class AeroUtils
     public static final String FOI_TAIL_UID_PREFIX = AERO_FOI_URI_PREFIX + "tail:";
     public static final String FOI_FLIGHT_UID_PREFIX = AERO_FOI_URI_PREFIX + "flight:";
     public static final String FOI_AIRPORT_UID_PREFIX = AERO_FOI_URI_PREFIX + "airport:";
-    public static final String FOI_NOTAM_UID_PREFIX = AERO_FOI_URI_PREFIX + "notam:";
+    public static final String FOI_SUA_UID_PREFIX = AERO_FOI_URI_PREFIX + "sua:";
 
     public static final Pattern FLIGHTID_REGEX = Pattern.compile("[A-Z0-9]{3}[0-9]{1,4}_[A-Z]{4}_[0-9]{4}-[0-9]{2}-[0-9]{2}");
     
@@ -197,14 +197,14 @@ public class AeroUtils
     }
 
 
-    public static String ensureNotamFoi(IModule<?> m, String notamId) {
-        return ensureNotamFoi(m.getParentHub(), notamId);
+    public static String ensureSuaFoi(IModule<?> m, String notamId) {
+        return ensureSuaFoi(m.getParentHub(), notamId);
     }
 
-    public static String ensureNotamFoi(ISensorHub hub, String notamId) {
+    public static String ensureSuaFoi(ISensorHub hub, String notamId) {
         if (hub.getSystemDriverRegistry() != null) {
             ensureAeroFoiRegistry(hub);
-            String uid = FOI_NOTAM_UID_PREFIX + notamId;
+            String uid = FOI_SUA_UID_PREFIX + notamId;
 
             // register FOI if ID is not in cache
             try {
