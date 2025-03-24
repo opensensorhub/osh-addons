@@ -60,7 +60,8 @@ public class AeroUtils
     public static final String FOI_TAIL_UID_PREFIX = AERO_FOI_URI_PREFIX + "tail:";
     public static final String FOI_FLIGHT_UID_PREFIX = AERO_FOI_URI_PREFIX + "flight:";
     public static final String FOI_AIRPORT_UID_PREFIX = AERO_FOI_URI_PREFIX + "airport:";
-        
+    public static final String FOI_SUA_UID_PREFIX = AERO_FOI_URI_PREFIX + "sua:";
+
     public static final Pattern FLIGHTID_REGEX = Pattern.compile("[A-Z0-9]{3}[0-9]{1,4}_[A-Z]{4}_[0-9]{4}-[0-9]{2}-[0-9]{2}");
     
     
@@ -194,8 +195,37 @@ public class AeroUtils
     {
         return ensureTailFoi(m.getParentHub(), tailId);
     }
-    
-    
+
+
+    public static String ensureSuaFoi(IModule<?> m, String suaId) {
+        return ensureSuaFoi(m.getParentHub(), suaId);
+    }
+
+    public static String ensureSuaFoi(ISensorHub hub, String suaId) {
+        if (hub.getSystemDriverRegistry() != null) {
+            ensureAeroFoiRegistry(hub);
+            String uid = FOI_SUA_UID_PREFIX + suaId;
+
+            // register FOI if ID is not in cache
+            try {
+                return latestFois.get(uid, () -> {
+                    // generate small FOI object
+                    MovingFeature foi = new MovingFeature();
+                    foi.setId(suaId);
+                    foi.setUniqueIdentifier(uid);
+                    foi.setName("Tail " + suaId);
+
+                    // register it
+                    hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
+                    return uid;
+                });
+            } catch (ExecutionException e) {
+                throw new IllegalStateException("Error creating tail FOI " + uid, e.getCause());
+            }
+        }
+        return null;
+    }
+
     public static String ensureTailFoi(ISensorHub hub, String tailId)
     {
         if (hub.getSystemDriverRegistry() != null)
