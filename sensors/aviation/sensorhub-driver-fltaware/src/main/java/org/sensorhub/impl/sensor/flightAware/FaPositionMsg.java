@@ -63,7 +63,7 @@ public interface FaPositionMsg extends IDataAccessor
                 .addAllowedValues(UpdateType.class))
             .addField("gs", fac.createGroundSpeed())
             .addField("track", fac.createTrueTrack())
-            .addField("alt_gnss", fac.createGeomAlt())
+            .addField("alt_gnss", fac.createGnssAlt())
             .addField("alt_baro", fac.createBaroAlt())
             .addField("alt_rate", fac.createVerticalRate())
             .addField("heading", fac.createTrueHeading())

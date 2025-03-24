@@ -299,15 +299,30 @@ public class AeroHelper extends GeoPosHelper
     
     
     /**
-     * @return The geometric/GNSS altitude field in ft
+     * @return The GNSS altitude field in ft
+     */
+    public QuantityBuilder createGnssAlt()
+    {
+        return createQuantity()
+            .definition(DEF_ALTITUDE_ELLIPSOID)
+            .refFrame(SWEConstants.REF_FRAME_WGS84_HAE)
+            .label("GNSS Altitude")
+            .description("Altitude above WGS84 ellipsoid")
+            .uom("[ft_i]")
+            .dataType(DataType.FLOAT);
+    }
+    
+    
+    /**
+     * @return The geometric altitude field in ft
      */
     public QuantityBuilder createGeomAlt()
     {
         return createQuantity()
-            .definition(DEF_ALTITUDE_ELLIPSOID)
-            .refFrame(SWEConstants.REF_FRAME_4979)
+            .definition(DEF_ALTITUDE_MSL)
+            .refFrame(SWEConstants.VERTICAL_CRS_MSL_HEIGHT)
             .label("Geometric Altitude")
-            .description("Altitude above WGS84 ellipsoid")
+            .description("Altitude above MSL")
             .uom("[ft_i]")
             .dataType(DataType.FLOAT);
     }
