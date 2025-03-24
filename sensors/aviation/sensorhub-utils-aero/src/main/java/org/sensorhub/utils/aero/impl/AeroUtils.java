@@ -197,23 +197,23 @@ public class AeroUtils
     }
 
 
-    public static String ensureSuaFoi(IModule<?> m, String notamId) {
-        return ensureSuaFoi(m.getParentHub(), notamId);
+    public static String ensureSuaFoi(IModule<?> m, String suaId) {
+        return ensureSuaFoi(m.getParentHub(), suaId);
     }
 
-    public static String ensureSuaFoi(ISensorHub hub, String notamId) {
+    public static String ensureSuaFoi(ISensorHub hub, String suaId) {
         if (hub.getSystemDriverRegistry() != null) {
             ensureAeroFoiRegistry(hub);
-            String uid = FOI_SUA_UID_PREFIX + notamId;
+            String uid = FOI_SUA_UID_PREFIX + suaId;
 
             // register FOI if ID is not in cache
             try {
                 return latestFois.get(uid, () -> {
                     // generate small FOI object
                     MovingFeature foi = new MovingFeature();
-                    foi.setId(notamId);
+                    foi.setId(suaId);
                     foi.setUniqueIdentifier(uid);
-                    foi.setName("Tail " + notamId);
+                    foi.setName("Tail " + suaId);
 
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
