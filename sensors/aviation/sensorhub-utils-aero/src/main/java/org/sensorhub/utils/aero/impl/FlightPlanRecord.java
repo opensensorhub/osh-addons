@@ -202,4 +202,13 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
     @SweMapping(path="waypoints")
     WaypointRecord addWaypoint();
     
+    
+    /**
+     * @return Unique flight identifier composed of flight number, destination and flight date
+     */
+    default String getFlightID()
+    {
+        return AeroUtils.getFlightID(this);
+    }
+    
 }

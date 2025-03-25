@@ -32,10 +32,12 @@ import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.system.ISystemDriver;
 import org.sensorhub.api.system.ISystemGroupDriver;
 import org.sensorhub.utils.aero.IFlightIdentification;
+import org.sensorhub.utils.aero.IFlightPlan;
 import org.vast.ogc.om.MovingFeature;
 import org.vast.ogc.om.SamplingPoint;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEConstants;
+import org.vast.util.Asserts;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import net.opengis.sensorml.v20.AbstractProcess;
@@ -298,8 +300,47 @@ public class AeroUtils
     }
     
     
+    /**
+     * Generate a unique flight identifier including flight number, destination and date
+     * @param fp Flight plan to generate flight ID from
+     * @return The unique flight identifier
+     */
+    public static String getFlightID(IFlightPlan fp)
+    {
+        return getFlightID(
+            fp.getFlightNumber(),
+            fp.getDestinationAirport(),
+            fp.getFlightDate());
+    }
+    
+    
+    /**
+     * Generate a unique flight identifier including flight number, destination and date
+     * @param flightNum Flight number
+     * @param destIcao ICAO code of destination airport
+     * @param flightDateTime Date and time of originally scheduled departure (will be truncated to day precision to form the ID)
+     * @return The unique flight identifier
+     */
+    public static String getFlightID(String flightNum, String destIcao, Instant flightDateTime)
+    {
+        var flightDate = LocalDate.ofInstant(flightDateTime, ZoneOffset.UTC);
+        return getFlightID(flightNum, destIcao, flightDate);
+    }
+    
+    
+    /**
+     * Generate a unique flight identifier including flight number, destination and date
+     * @param flightNum Flight number
+     * @param destIcao ICAO code of destination airport
+     * @param flightDate Date of flight
+     * @return The unique flight identifier
+     */
     public static String getFlightID(String flightNum, String destIcao, LocalDate flightDate)
     {
+        Asserts.checkNotNull(flightNum, "flightNum");
+        Asserts.checkNotNull(destIcao, "destIcao");
+        Asserts.checkNotNull(flightDate, "flightDate");
+        
         return String.format("%s_%s_%04d%02d%02d", flightNum, destIcao,
             flightDate.getYear(), flightDate.getMonthValue(), flightDate.getDayOfMonth());
     }
