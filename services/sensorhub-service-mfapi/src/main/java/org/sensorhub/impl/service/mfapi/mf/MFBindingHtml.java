@@ -18,12 +18,12 @@ import java.io.IOException;
 import org.sensorhub.api.common.IdEncoders;
 import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.datastore.feature.FeatureKey;
-import org.sensorhub.impl.service.sweapi.feature.AbstractFeatureBindingHtml;
-import org.sensorhub.impl.service.sweapi.feature.FeatureUtils;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
-import org.sensorhub.impl.service.sweapi.system.SystemHandler;
+import org.sensorhub.impl.service.consys.feature.AbstractFeatureBindingHtml;
+import org.sensorhub.impl.service.consys.feature.FeatureUtils;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.consys.system.SystemHandler;
 import org.vast.ogc.gml.IFeature;
-import j2html.tags.DomContent;
+import j2html.tags.specialized.DivTag;
 import static j2html.TagCreator.*;
 
 
@@ -42,7 +42,7 @@ public class MFBindingHtml extends AbstractFeatureBindingHtml<IFeature, IObsSyst
     
     public MFBindingHtml(RequestContext ctx, IdEncoders idEncoders, boolean isSummary, IObsSystemDatabase db) throws IOException
     {
-        super(ctx, idEncoders, isSummary, db);
+        super(ctx, idEncoders, db, isSummary, true);
         
         // set collection title depending on path
         if (ctx.getParentID() != null)
@@ -92,7 +92,7 @@ public class MFBindingHtml extends AbstractFeatureBindingHtml<IFeature, IObsSyst
     
     
     @Override
-    protected DomContent getLinks(String resourceUrl, FeatureKey key)
+    protected DivTag getLinks(String resourceUrl, FeatureKey key, IFeature f)
     {
         return div(
             a("Temporal Geometries").withHref(resourceUrl + "/tgeometries").withClasses(CSS_LINK_BTN_CLASSES),

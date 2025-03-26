@@ -16,9 +16,9 @@ package org.sensorhub.impl.service.mfapi.home;
 
 import java.io.IOException;
 import org.sensorhub.impl.service.mfapi.MFApiServiceConfig;
-import org.sensorhub.impl.service.sweapi.home.ConformanceHandler;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
-import org.sensorhub.impl.service.sweapi.resource.ResourceBindingHtml;
+import org.sensorhub.impl.service.consys.home.ConformanceHandler;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.consys.resource.ResourceBindingHtml;
 import com.google.common.base.Strings;
 import j2html.tags.ContainerTag;
 import j2html.tags.DomContent;

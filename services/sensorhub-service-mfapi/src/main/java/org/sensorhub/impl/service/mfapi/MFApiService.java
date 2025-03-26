@@ -29,9 +29,9 @@ import org.sensorhub.impl.service.mfapi.home.MFCollectionItemsHandler;
 import org.sensorhub.impl.service.mfapi.mf.MFHandler;
 import org.sensorhub.impl.service.mfapi.mf.TemporalGeomHandler;
 import org.sensorhub.impl.service.mfapi.mf.TemporalPropHandler;
-import org.sensorhub.impl.service.sweapi.ObsSystemDbWrapper;
-import org.sensorhub.impl.service.sweapi.RestApiService;
-import org.sensorhub.impl.service.sweapi.home.ConformanceHandler;
+import org.sensorhub.impl.service.consys.ObsSystemDbWrapper;
+import org.sensorhub.impl.service.consys.RestApiService;
+import org.sensorhub.impl.service.consys.home.ConformanceHandler;
 import org.sensorhub.utils.NamedThreadFactory;
 import com.google.common.collect.ImmutableSet;
 

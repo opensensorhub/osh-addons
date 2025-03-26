@@ -14,7 +14,7 @@ Copyright (C) 2020 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.mfapi;
 
-import org.sensorhub.impl.service.sweapi.RestApiServlet;
+import org.sensorhub.impl.service.consys.RestApiServlet;
 import org.slf4j.Logger;
 
 

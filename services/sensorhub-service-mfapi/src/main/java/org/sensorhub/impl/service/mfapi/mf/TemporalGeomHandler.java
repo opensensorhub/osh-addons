@@ -24,17 +24,17 @@ import org.sensorhub.api.datastore.SpatialFilter;
 import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.event.IEventBus;
-import org.sensorhub.impl.service.sweapi.InvalidRequestException;
-import org.sensorhub.impl.service.sweapi.ObsSystemDbWrapper;
-import org.sensorhub.impl.service.sweapi.ServiceErrors;
-import org.sensorhub.impl.service.sweapi.RestApiServlet.ResourcePermissions;
-import org.sensorhub.impl.service.sweapi.resource.BaseResourceHandler;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
-import org.sensorhub.impl.service.sweapi.resource.ResourceFormat;
+import org.sensorhub.impl.service.consys.InvalidRequestException;
+import org.sensorhub.impl.service.consys.ObsSystemDbWrapper;
+import org.sensorhub.impl.service.consys.ServiceErrors;
+import org.sensorhub.impl.service.consys.RestApiServlet.ResourcePermissions;
+import org.sensorhub.impl.service.consys.resource.BaseResourceHandler;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.consys.resource.ResourceFormat;
 import org.sensorhub.impl.system.DataStreamTransactionHandler;
 import org.vast.swe.helper.GeoPosHelper;
-import org.sensorhub.impl.service.sweapi.resource.ResourceBinding;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext.ResourceRef;
+import org.sensorhub.impl.service.consys.resource.ResourceBinding;
+import org.sensorhub.impl.service.consys.resource.RequestContext.ResourceRef;
 
 
 public class TemporalGeomHandler extends BaseResourceHandler<BigId, IObsData, ObsFilter, IObsStore>

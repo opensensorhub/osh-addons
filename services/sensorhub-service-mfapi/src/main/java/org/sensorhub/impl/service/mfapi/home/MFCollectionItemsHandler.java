@@ -22,11 +22,11 @@ import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.event.IEventBus;
 import org.sensorhub.impl.service.mfapi.MFApiServiceConfig.CollectionConfig;
 import org.sensorhub.impl.service.mfapi.mf.MFHandler;
-import org.sensorhub.impl.service.sweapi.InvalidRequestException;
-import org.sensorhub.impl.service.sweapi.ObsSystemDbWrapper;
-import org.sensorhub.impl.service.sweapi.RestApiServlet.ResourcePermissions;
-import org.sensorhub.impl.service.sweapi.ServiceErrors;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext.ResourceRef;
+import org.sensorhub.impl.service.consys.InvalidRequestException;
+import org.sensorhub.impl.service.consys.ObsSystemDbWrapper;
+import org.sensorhub.impl.service.consys.RestApiServlet.ResourcePermissions;
+import org.sensorhub.impl.service.consys.ServiceErrors;
+import org.sensorhub.impl.service.consys.resource.RequestContext.ResourceRef;
 
 
 public class MFCollectionItemsHandler extends MFHandler

@@ -20,8 +20,8 @@ import org.sensorhub.api.security.IPermission;
 import org.sensorhub.impl.module.ModuleSecurity;
 import org.sensorhub.impl.security.ItemPermission;
 import org.sensorhub.impl.security.ModulePermissions;
-import org.sensorhub.impl.service.sweapi.RestApiSecurity;
-import org.sensorhub.impl.service.sweapi.RestApiServlet.ResourcePermissions;
+import org.sensorhub.impl.service.consys.RestApiSecurity;
+import org.sensorhub.impl.service.consys.RestApiServlet.ResourcePermissions;
 
 
 public class MFApiSecurity extends ModuleSecurity implements RestApiSecurity

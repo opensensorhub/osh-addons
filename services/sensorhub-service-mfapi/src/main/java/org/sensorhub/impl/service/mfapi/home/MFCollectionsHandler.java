@@ -18,12 +18,12 @@ import java.util.List;
 import java.util.Map;
 import org.sensorhub.api.event.IEventBus;
 import org.sensorhub.impl.service.mfapi.MFApiServiceConfig.CollectionConfig;
-import org.sensorhub.impl.service.sweapi.ObsSystemDbWrapper;
-import org.sensorhub.impl.service.sweapi.RestApiServlet.ResourcePermissions;
-import org.sensorhub.impl.service.sweapi.home.CollectionHandler;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
-import org.sensorhub.impl.service.sweapi.resource.ResourceFormat;
-import org.sensorhub.impl.service.sweapi.resource.ResourceLink;
+import org.sensorhub.impl.service.consys.ObsSystemDbWrapper;
+import org.sensorhub.impl.service.consys.RestApiServlet.ResourcePermissions;
+import org.sensorhub.impl.service.consys.home.CollectionHandler;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.consys.resource.ResourceFormat;
+import org.sensorhub.impl.service.consys.resource.ResourceLink;
 import org.vast.swe.SWEConstants;
 
 

@@ -16,11 +16,11 @@ package org.sensorhub.impl.service.mfapi.home;
 
 import java.io.IOException;
 import org.sensorhub.impl.service.mfapi.MFApiServiceConfig;
-import org.sensorhub.impl.service.sweapi.BaseHandler;
-import org.sensorhub.impl.service.sweapi.InvalidRequestException;
-import org.sensorhub.impl.service.sweapi.ServiceErrors;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
-import org.sensorhub.impl.service.sweapi.resource.ResourceFormat;
+import org.sensorhub.impl.service.consys.BaseHandler;
+import org.sensorhub.impl.service.consys.InvalidRequestException;
+import org.sensorhub.impl.service.consys.ServiceErrors;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.consys.resource.ResourceFormat;
 
 
 public class HomePageHandler extends BaseHandler

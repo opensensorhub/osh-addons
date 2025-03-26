@@ -15,15 +15,16 @@ Copyright (C) 2020 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.mfapi.mf;
 
 import java.io.IOException;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import org.sensorhub.api.common.IdEncoders;
+import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.feature.FeatureWrapper;
-import org.sensorhub.impl.service.sweapi.feature.AbstractFeatureBindingGeoJson;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
-import org.sensorhub.impl.service.sweapi.resource.ResourceLink;
+import org.sensorhub.impl.service.consys.feature.AbstractFeatureBindingGeoJson;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.consys.resource.ResourceLink;
 import org.vast.ogc.gml.GeoJsonBindings;
 import org.vast.ogc.gml.IFeature;
 import org.vast.util.Asserts;
@@ -38,14 +39,14 @@ import com.google.gson.stream.JsonWriter;
  * @author Alex Robin
  * @since Aug 15, 2022
  */
-public class MFBindingGeoJson extends AbstractFeatureBindingGeoJson<IFeature>
+public class MFBindingGeoJson extends AbstractFeatureBindingGeoJson<IFeature, IObsSystemDatabase>
 {
     boolean isCollection;
     
     
-    public MFBindingGeoJson(RequestContext ctx, IdEncoders idEncoders, boolean forReading) throws IOException
+    public MFBindingGeoJson(RequestContext ctx, IdEncoders idEncoders, IObsSystemDatabase db, boolean forReading) throws IOException
     {
-        super(ctx, idEncoders, forReading);
+        super(ctx, idEncoders, db, forReading);
     }
     
     
@@ -53,15 +54,15 @@ public class MFBindingGeoJson extends AbstractFeatureBindingGeoJson<IFeature>
     protected GeoJsonBindings getJsonBindings()
     {
         return new GeoJsonBindings() {
-            protected void writeDateTimeValue(JsonWriter writer, OffsetDateTime dateTime) throws IOException
+            protected void writeDateTimeValue(JsonWriter writer, Instant dateTime) throws IOException
             {
-                super.writeDateTimeValue(writer, dateTime.truncatedTo(ChronoUnit.SECONDS).toInstant());
+                super.writeDateTimeValue(writer, dateTime.truncatedTo(ChronoUnit.SECONDS));
             }
             
             @Override
             protected void writeCustomJsonProperties(JsonWriter writer, IFeature bean) throws IOException
             {
-                if (showLinks.get())
+                if (showLinks)
                 {
                     var links = new ArrayList<ResourceLink>();
                     var itemPath = ctx.getRequestUrl() + "/" + (isCollection ? bean.getId() : ""); 

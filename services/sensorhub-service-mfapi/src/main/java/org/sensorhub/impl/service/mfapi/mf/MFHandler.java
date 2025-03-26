@@ -22,18 +22,18 @@ import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.event.IEventBus;
-import org.sensorhub.impl.service.sweapi.InvalidRequestException;
-import org.sensorhub.impl.service.sweapi.ObsSystemDbWrapper;
-import org.sensorhub.impl.service.sweapi.ResourceParseException;
-import org.sensorhub.impl.service.sweapi.RestApiServlet.ResourcePermissions;
-import org.sensorhub.impl.service.sweapi.ServiceErrors;
-import org.sensorhub.impl.service.sweapi.feature.AbstractFeatureHandler;
-import org.sensorhub.impl.service.sweapi.feature.DynamicFoiBindingGeoJson;
-import org.sensorhub.impl.service.sweapi.resource.BaseResourceHandler;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
-import org.sensorhub.impl.service.sweapi.resource.ResourceFormat;
-import org.sensorhub.impl.service.sweapi.resource.ResourceBinding;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext.ResourceRef;
+import org.sensorhub.impl.service.consys.InvalidRequestException;
+import org.sensorhub.impl.service.consys.ObsSystemDbWrapper;
+import org.sensorhub.impl.service.consys.ResourceParseException;
+import org.sensorhub.impl.service.consys.RestApiServlet.ResourcePermissions;
+import org.sensorhub.impl.service.consys.ServiceErrors;
+import org.sensorhub.impl.service.consys.feature.AbstractFeatureHandler;
+import org.sensorhub.impl.service.consys.feature.DynamicFoiBindingGeoJson;
+import org.sensorhub.impl.service.consys.resource.BaseResourceHandler;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.consys.resource.ResourceFormat;
+import org.sensorhub.impl.service.consys.resource.ResourceBinding;
+import org.sensorhub.impl.service.consys.resource.RequestContext.ResourceRef;
 import org.vast.ogc.gml.IFeature;
 
 
@@ -64,9 +64,9 @@ public class MFHandler extends AbstractFeatureHandler<IFeature, FoiFilter, FoiFi
         else if (format.isOneOf(ResourceFormat.AUTO, ResourceFormat.JSON, ResourceFormat.GEOJSON))
         {
             if (ctx.getParameterMap().containsKey("snapshot"))
-                return new DynamicFoiBindingGeoJson(ctx, idEncoders, forReading, db);
+                return new DynamicFoiBindingGeoJson(ctx, idEncoders, db, forReading);
             else
-                return new MFBindingGeoJson(ctx, idEncoders, forReading);
+                return new MFBindingGeoJson(ctx, idEncoders, db, forReading);
         }
         else
             throw ServiceErrors.unsupportedFormat(format);
