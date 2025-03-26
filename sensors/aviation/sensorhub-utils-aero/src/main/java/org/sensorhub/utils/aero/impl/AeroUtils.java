@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -35,6 +36,7 @@ import org.sensorhub.utils.aero.IFlightIdentification;
 import org.sensorhub.utils.aero.IFlightPlan;
 import org.vast.ogc.om.MovingFeature;
 import org.vast.ogc.om.SamplingPoint;
+import org.vast.ogc.om.SamplingSurface;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEConstants;
 import org.vast.util.Asserts;
@@ -59,12 +61,12 @@ public class AeroUtils
     
     // FOI URIs
     public static final String AERO_FOI_URI_PREFIX = "urn:osh:foi:aero:";
-    public static final String FOI_TAIL_UID_PREFIX = AERO_FOI_URI_PREFIX + "tail:";
-    public static final String FOI_FLIGHT_UID_PREFIX = AERO_FOI_URI_PREFIX + "flight:";
-    public static final String FOI_AIRPORT_UID_PREFIX = AERO_FOI_URI_PREFIX + "airport:";
+    public static final String FOI_TAIL_UID_PREFIX = AERO_FOI_URI_PREFIX + "ac:";
+    public static final String FOI_FLIGHT_UID_PREFIX = AERO_FOI_URI_PREFIX + "flt:";
+    public static final String FOI_AIRPORT_UID_PREFIX = AERO_FOI_URI_PREFIX + "apt:";
     public static final String FOI_SUA_UID_PREFIX = AERO_FOI_URI_PREFIX + "sua:";
 
-    public static final Pattern FLIGHTID_REGEX = Pattern.compile("[A-Z0-9]{3}[0-9]{1,4}_[A-Z]{4}_[0-9]{4}-[0-9]{2}-[0-9]{2}");
+    public static final Pattern FLIGHTID_REGEX = Pattern.compile("[A-Z0-9]{3}[0-9]{1,4}_[A-Z]{4}_[0-9]{4}[0-9]{2}[0-9]{2}");
     
     
     // map of ICAO airport codes to time zone identifiers
@@ -176,7 +178,11 @@ public class AeroUtils
                     MovingFeature foi = new MovingFeature();
                     foi.setId(flightId);
                     foi.setUniqueIdentifier(uid);
-                    foi.setName("Flight " + flightId);
+                    
+                    var flightInfo = parseFlightIdentification(flightId);
+                    foi.setName("Flight " + flightInfo.getFlightNumber() +
+                                " to " + flightInfo.getDestinationAirport() + 
+                                " (" + LocalDate.ofInstant(flightInfo.getFlightDate(), ZoneOffset.UTC) + ")");
                     
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
@@ -212,17 +218,17 @@ public class AeroUtils
             try {
                 return latestFois.get(uid, () -> {
                     // generate small FOI object
-                    MovingFeature foi = new MovingFeature();
+                    var foi = new SamplingSurface();
                     foi.setId(suaId);
                     foi.setUniqueIdentifier(uid);
-                    foi.setName("Tail " + suaId);
+                    foi.setName("SUA " + suaId);
 
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
                     return uid;
                 });
             } catch (ExecutionException e) {
-                throw new IllegalStateException("Error creating tail FOI " + uid, e.getCause());
+                throw new IllegalStateException("Error creating SUA FOI " + uid, e.getCause());
             }
         }
         return null;
@@ -244,7 +250,7 @@ public class AeroUtils
                     MovingFeature foi = new MovingFeature();
                     foi.setId(tailId);
                     foi.setUniqueIdentifier(uid);
-                    foi.setName("Tail " + tailId);
+                    foi.setName("Aircraft " + tailId);
                     
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
@@ -362,7 +368,7 @@ public class AeroUtils
             
             public Instant getFlightDate()
             {
-                var date = LocalDate.parse(tokens[2]);
+                var date = LocalDate.parse(tokens[2], DateTimeFormatter.BASIC_ISO_DATE);
                 return date.atStartOfDay().toInstant(ZoneOffset.UTC);
             }
         };
