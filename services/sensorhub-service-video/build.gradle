@@ -1,12 +1,12 @@
-description = 'SOS Extensions for Video'
-ext.details = 'Sensor Observation Service extensions for supporting video'
+description = 'Service Extensions for Video'
+ext.details = 'OGC web service and API extensions for supporting video'
 version = '1.3.0'
 
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
-  implementation 'org.sensorhub:sensorhub-service-sweapi:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-service-consys:' + oshCoreVersion
 }
 
 // add info to OSGi manifest
