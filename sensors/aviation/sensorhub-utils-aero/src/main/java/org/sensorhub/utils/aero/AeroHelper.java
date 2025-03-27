@@ -218,7 +218,8 @@ public class AeroHelper extends GeoPosHelper
     {
         return createCategory()
             .definition(DEF_AIRPORT_CODE)
-            .label("Aircraft Code")
+            .label("Airport Code")
+            .description("4-letters ICAO airport code")
             .codeSpace(ICAO_CODESPACE);
     }
     
@@ -231,6 +232,7 @@ public class AeroHelper extends GeoPosHelper
         return createCategory()
             .definition(DEF_ORIGIN_AIRPORT)
             .label("Origin Airport")
+            .description("ICAO code of departure airport")
             .codeSpace(ICAO_CODESPACE);
     }
     
@@ -243,6 +245,7 @@ public class AeroHelper extends GeoPosHelper
         return createCategory()
             .definition(DEF_DESTINATION_AIRPORT)
             .label("Destination Airport")
+            .description("ICAO code of arrival airport")
             .codeSpace(ICAO_CODESPACE);
     }
     
@@ -277,7 +280,7 @@ public class AeroHelper extends GeoPosHelper
     {
         return createQuantity()
             .definition(DEF_LATITUDE_GEODETIC)
-            .refFrame(SWEConstants.REF_FRAME_WGS84_HAE)
+            .refFrame(SWEConstants.REF_FRAME_4326)
             .label("Geodetic Latitude")
             .axisId("Lat")
             .uomCode("deg");
@@ -291,7 +294,7 @@ public class AeroHelper extends GeoPosHelper
     {
         return createQuantity()
             .definition(DEF_LONGITUDE)
-            .refFrame(SWEConstants.REF_FRAME_WGS84_HAE)
+            .refFrame(SWEConstants.REF_FRAME_4326)
             .label("Longitude")
             .axisId("Lon")
             .uomCode("deg");
@@ -303,11 +306,8 @@ public class AeroHelper extends GeoPosHelper
      */
     public QuantityBuilder createGnssAlt()
     {
-        return createQuantity()
-            .definition(DEF_ALTITUDE_ELLIPSOID)
-            .refFrame(SWEConstants.REF_FRAME_WGS84_HAE)
+        return createAltitudeWGS84()
             .label("GNSS Altitude")
-            .description("Altitude above WGS84 ellipsoid")
             .uom("[ft_i]")
             .dataType(DataType.FLOAT);
     }
@@ -318,11 +318,8 @@ public class AeroHelper extends GeoPosHelper
      */
     public QuantityBuilder createGeomAlt()
     {
-        return createQuantity()
-            .definition(DEF_ALTITUDE_MSL)
-            .refFrame(SWEConstants.VERTICAL_CRS_MSL_HEIGHT)
+        return createAltitudeMSL()
             .label("Geometric Altitude")
-            .description("Altitude above MSL")
             .uom("[ft_i]")
             .dataType(DataType.FLOAT);
     }
@@ -595,7 +592,7 @@ public class AeroHelper extends GeoPosHelper
         return createCategory()
             .definition(DEF_WAYPOINT_CODE)
             .label("Waypoint Code")
-            .description("Waypoint ICAO identification code")
+            .description("4-letters ICAO waypoint code")
             .codeSpace(ICAO_CODESPACE);
     }
     
