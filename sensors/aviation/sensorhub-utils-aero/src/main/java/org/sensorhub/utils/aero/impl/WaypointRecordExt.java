@@ -16,7 +16,7 @@ package org.sensorhub.utils.aero.impl;
 
 import java.time.Instant;
 import org.sensorhub.utils.aero.AeroHelper;
-import org.sensorhub.utils.aero.IFlightPlan.IWaypointWithState;
+import org.sensorhub.utils.aero.IWaypointWithState;
 import net.opengis.swe.v20.DataRecord;
 
 

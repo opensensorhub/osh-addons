@@ -15,7 +15,7 @@ Copyright (C) 2025 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.utils.aero.impl;
 
 import org.sensorhub.utils.aero.AeroHelper;
-import org.sensorhub.utils.aero.IFlightPlan.IWaypoint;
+import org.sensorhub.utils.aero.IWaypoint;
 import org.vast.data.IDataAccessor;
 import org.vast.swe.SWEBuilders.DataRecordBuilder;
 import net.opengis.swe.v20.DataRecord;
@@ -61,10 +61,10 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
     
     @Override
     @SweMapping(path="code")
-    String getName();
+    String getCode();
 
     @SweMapping(path="code")
-    void setName(String val);
+    void setCode(String val);
     
     /*@Override
     @SweMapping(path="type")

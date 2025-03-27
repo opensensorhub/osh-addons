@@ -41,7 +41,7 @@ public class TestWaypointRecord
         var mach = 0.79;
         var fob = 64500;
         
-        wpt.setName(code);
+        wpt.setCode(code);
         wpt.setLatitude(lat);
         wpt.setLongitude(lon);
         wpt.setBaroAltitude(alt);
@@ -53,7 +53,7 @@ public class TestWaypointRecord
         
         System.out.println(wpt);
 
-        assertEquals(code, wpt.getName());
+        assertEquals(code, wpt.getCode());
         assertEquals(lat, wpt.getLatitude(), 1e-18);
         assertEquals(lon, wpt.getLongitude(), 1e-18);
         assertEquals(alt, wpt.getBaroAltitude(), 1e-5);

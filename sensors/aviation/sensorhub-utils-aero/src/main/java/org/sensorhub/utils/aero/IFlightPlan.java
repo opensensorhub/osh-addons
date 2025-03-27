@@ -35,68 +35,6 @@ public interface IFlightPlan extends IFlightIdentification, IAircraftIdentificat
     }
     
     
-    public interface IWaypoint
-    {
-        /**
-         * @return Waypoint name (3 to 5 letters ICAO code) 
-         */
-        String getName();
-        
-        /**
-         * @return Type of waypoint (null if unknown)
-         */
-        String getType();
-        
-        /**
-         * @return Geodetic latitude of waypoint (deg, WGS84)
-         */
-        double getLatitude();
-        
-        /**
-         * @return Longitude of waypoint (deg, WGS84)
-         */
-        double getLongitude();
-        
-        /**
-         * @return Barometric altitude at waypoint (ft)
-         */
-        double getBaroAltitude();
-    }
-    
-    
-    public interface IWaypointWithState extends IWaypoint
-    {
-        /**
-         * @return Estimated time at waypoint (UTC)
-         */
-        Instant getTime();
-        
-        
-        /**
-         * @return Estimated ground speed at waypoint (knot)
-         */
-        double getGroundSpeed();
-        
-        
-        /**
-         * @return Estimated true airspeed (TAS) at waypoint (knot)
-         */
-        double getTrueAirSpeed();
-        
-        
-        /**
-         * @return Estimated mach at waypoint
-         */
-        double getMach();
-        
-        
-        /**
-         * @return Estimated fuel on board at waypoint (lbs)
-         */
-        double getFuelOnBoard();
-    }
-    
-    
     /**
      * @return The time at which the flight plan was issued (UTC)
      */
