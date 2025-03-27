@@ -33,7 +33,7 @@ import java.util.stream.StreamSupport;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
-import org.sensorhub.api.system.SystemId;
+import org.sensorhub.api.feature.FeatureId;
 import org.slf4j.Logger;
 import org.vast.data.TextEncodingImpl;
 import org.vast.swe.SWEBuilders.DataComponentBuilder;
@@ -76,7 +76,7 @@ public class ObsSeriesLoader extends ObsSiteLoader
             var swe = new SWEHelper();
             
             // generate system ID
-            var sysID = new SystemId(
+            var sysID = new FeatureId(
                 BigId.fromLong(idScope, 1),
                 USGSWaterDataArchive.UID_PREFIX + "network");
             
