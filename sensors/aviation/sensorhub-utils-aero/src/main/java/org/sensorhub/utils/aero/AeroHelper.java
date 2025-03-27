@@ -274,34 +274,6 @@ public class AeroHelper extends GeoPosHelper
     
     
     /**
-     * @return The latitude field
-     */
-    public QuantityBuilder createLatitude()
-    {
-        return createQuantity()
-            .definition(DEF_LATITUDE_GEODETIC)
-            .refFrame(SWEConstants.REF_FRAME_4326)
-            .label("Geodetic Latitude")
-            .axisId("Lat")
-            .uomCode("deg");
-    }
-    
-    
-    /**
-     * @return The longitude field
-     */
-    public QuantityBuilder createLongitude()
-    {
-        return createQuantity()
-            .definition(DEF_LONGITUDE)
-            .refFrame(SWEConstants.REF_FRAME_4326)
-            .label("Longitude")
-            .axisId("Lon")
-            .uomCode("deg");
-    }
-    
-    
-    /**
      * @return The GNSS altitude field in ft
      */
     public QuantityBuilder createGnssAlt()
