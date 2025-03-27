@@ -19,15 +19,14 @@ import java.util.Collection;
 
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.utils.aero.AeroHelper;
+import org.sensorhub.utils.aero.INavDatabase.INavDbWaypoint;
 import org.vast.swe.SWEHelper;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
-import net.opengis.swe.v20.DataType;
-import net.opengis.swe.v20.Quantity;
-import net.opengis.swe.v20.Text;
 
 
 /**
@@ -39,7 +38,7 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver>
 {
     private static final int AVERAGE_SAMPLING_PERIOD = 1;
 
-	DataRecord navStruct;
+	DataRecord dataStruct;
 	DataEncoding encoding;
 	
 
@@ -51,47 +50,41 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver>
 
     protected void init()
     {
-        SWEHelper fac = new SWEHelper();
-
-        // Structure is {id, name, lat, lon}
+        var fac = new AeroHelper();
 
         // SWE Common data structure
-        navStruct = fac.newDataRecord(4);
-        navStruct.setName(getName());
-        navStruct.setDefinition(SWEHelper.getPropertyUri("aero/Navaid"));
-
-        Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "ICAO Code", "Navaid ICAO identification code");
-        navStruct.addComponent("code", id);
-        //        Text type = fac.newText(SWEHelper.getPropertyUri("Type"), "Type", "Type (Waypoint/Navaid/etc.)" );
-        //        waypt.addComponent("type", type);
-        Text name = fac.newText(SWEHelper.getPropertyUri("Name"), "Name", "Long name" );
-        navStruct.addComponent("name", name);
-        Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg", DataType.DOUBLE);
-        navStruct.addComponent("lat", latQuant);
-        Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.DOUBLE);
-        navStruct.addComponent("lon", lonQuant);
+        dataStruct = fac.createRecord()
+            .name(getName())
+            .definition(AeroHelper.AERO_RECORD_URI_PREFIX + "Navaid")
+            .addField("code", fac.createWaypointCode()
+                .label("Navaid Code"))
+            .addField("name", fac.createText()
+                .definition(SWEHelper.getPropertyUri("EntityName"))
+                .label("Long Name"))
+            .addField("lat", fac.createLatitude())
+            .addField("lon", fac.createLongitude())
+            .build();
 
         // default encoding is text
         encoding = fac.newTextEncoding(",", "\n");
     }
 
 
-	public void sendEntries(Collection<NavDbPointEntry> recs)
+	public void sendEntries(Collection<INavDbWaypoint> recs)
 	{                
 	    long time = System.currentTimeMillis();
         
-        for(NavDbPointEntry rec: recs) {
-			DataBlock dataBlock = navStruct.createDataBlock();
+        for(var rec: recs) {
+			DataBlock dataBlock = dataStruct.createDataBlock();
 
-			dataBlock.setStringValue(0, rec.id);
-			dataBlock.setStringValue(1, rec.name);
-			dataBlock.setDoubleValue(2, rec.lat);
-			dataBlock.setDoubleValue(3, rec.lon);
+			dataBlock.setStringValue(0, rec.getCode());
+            dataBlock.setStringValue(1, rec.getName());
+            dataBlock.setDoubleValue(2, rec.getLatitude());
+            dataBlock.setDoubleValue(3, rec.getLongitude());
 			
 			//if("USA".equals(rec.region) || "CAN".equals("rec.region"))
 			// TODO send as a single ObsEvent w/ multiple IObsData
-            var foiUID = NavDriver.NAVAIDS_UID_PREFIX + rec.id;
-            eventHandler.publish(new DataEvent(time, NavaidOutput.this, foiUID, dataBlock));
+            eventHandler.publish(new DataEvent(time, NavaidOutput.this, dataBlock));
 		}
 	}
 	
@@ -105,7 +98,7 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver>
     @Override 
     public DataComponent getRecordDescription()
     {
-        return navStruct;
+        return dataStruct;
     }
 
 

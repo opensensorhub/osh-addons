@@ -20,15 +20,14 @@ import java.util.Collection;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.utils.aero.AeroHelper;
+import org.sensorhub.utils.aero.INavDatabase.INavDbWaypoint;
 import org.vast.swe.SWEHelper;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
-import net.opengis.swe.v20.DataType;
-import net.opengis.swe.v20.Quantity;
-import net.opengis.swe.v20.Text;
 
 
 /**
@@ -40,7 +39,7 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver>
 {
     private static final int AVERAGE_SAMPLING_PERIOD = 1;
 
-	DataRecord struct;
+	DataRecord dataStruct;
 	DataEncoding encoding;
 
 	
@@ -52,23 +51,19 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver>
 
     protected void init()
     {
-        SWEHelper fac = new SWEHelper();
-
-        // Structure is {id, name, lat, lon}
+        var fac = new AeroHelper();
 
         // SWE Common data structure
-        struct = fac.newDataRecord(4);
-        struct.setName(getName());
-        struct.setDefinition(SWEHelper.getPropertyUri("aero/Waypoint"));
-
-        Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "Waypoint Code", "Waypoint ICAO identification code");
-        struct.addComponent("code", id);
-        Text name = fac.newText(SWEHelper.getPropertyUri("Name"), "Name", null);
-        struct.addComponent("name", name);
-        Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg", DataType.DOUBLE);
-        struct.addComponent("lat", latQuant);
-        Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.DOUBLE);
-        struct.addComponent("lon", lonQuant);
+        dataStruct = fac.createRecord()
+            .name(getName())
+            .definition(AeroHelper.AERO_RECORD_URI_PREFIX + "Waypoint")
+            .addField("code", fac.createWaypointCode())
+            .addField("name", fac.createText()
+                .definition(SWEHelper.getPropertyUri("EntityName"))
+                .label("Long Name"))
+            .addField("lat", fac.createLatitude())
+            .addField("lon", fac.createLongitude())
+            .build();
 
         // default encoding is text
         encoding = fac.newTextEncoding(",", "\n");
@@ -79,21 +74,20 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver>
     }
 	
 
-	public void sendEntries(Collection<NavDbPointEntry> recs)
+	public void sendEntries(Collection<INavDbWaypoint> recs)
 	{
 	    long time = System.currentTimeMillis();
         
-        for (NavDbPointEntry rec: recs) {
-            DataBlock dataBlock = struct.createDataBlock();
+        for (var rec: recs) {
+            DataBlock dataBlock = dataStruct.createDataBlock();
 
-            dataBlock.setStringValue(0, rec.id);
-			dataBlock.setStringValue(1, rec.name);
-			dataBlock.setDoubleValue(2, rec.lat);
-			dataBlock.setDoubleValue(3, rec.lon);
+            dataBlock.setStringValue(0, rec.getCode());
+            dataBlock.setStringValue(1, rec.getName());
+            dataBlock.setDoubleValue(2, rec.getLatitude());
+            dataBlock.setDoubleValue(3, rec.getLongitude());
 			
 			// TODO send as a single ObsEvent w/ multiple IObsData
-			var foiUID = NavDriver.WAYPOINTS_UID_PREFIX + rec.id;
-			eventHandler.publish(new DataEvent(time, WaypointOutput.this, foiUID, dataBlock));
+			eventHandler.publish(new DataEvent(time, WaypointOutput.this, dataBlock));
 		}
 	}
 
@@ -107,7 +101,7 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver>
     @Override 
     public DataComponent getRecordDescription()
     {
-        return struct;
+        return dataStruct;
     }
 
 

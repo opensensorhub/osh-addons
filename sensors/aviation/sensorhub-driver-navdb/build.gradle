@@ -4,7 +4,7 @@ version = '0.6'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  implementation project(':sensorhub-utils-grid')
+  implementation project(':sensorhub-utils-aero')
 }
 
 // add info to OSGi manifest

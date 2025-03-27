@@ -108,7 +108,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
             for (Waypoint wpt: fltObj.decodedRoute)
             {
                 var fpWpt = flightPlan.addWaypoint();
-                fpWpt.setName(wpt.name);
+                fpWpt.setCode(wpt.name);
                 fpWpt.setLatitude(wpt.latitude);
                 fpWpt.setLongitude(wpt.longitude);
                 fpWpt.setBaroAltitude(wpt.altitude);

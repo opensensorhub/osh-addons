@@ -20,7 +20,9 @@ import org.sensorhub.api.comm.MessageQueueConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.FieldType;
 import org.sensorhub.api.config.DisplayInfo.FieldType.Type;
+import org.sensorhub.api.config.DisplayInfo.ModuleType;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.utils.aero.INavDatabase;
 
 
 public class FlightAwareConfig extends SensorConfig
@@ -66,6 +68,8 @@ public class FlightAwareConfig extends SensorConfig
     @DisplayInfo(desc="Check to enable decoding of routes received from Firehose")
     public boolean decodeRoutes;
     
-    @DisplayInfo(label="NavDB ID", desc="ID of navigation database module")
+    @DisplayInfo(label="NavDB Module ID", desc="ID of navigation database module")
+    @FieldType(Type.MODULE_ID)
+    @ModuleType(INavDatabase.class)
     public String navDbModuleId;
 }

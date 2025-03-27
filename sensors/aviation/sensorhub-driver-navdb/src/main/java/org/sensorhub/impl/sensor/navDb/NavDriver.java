@@ -15,24 +15,18 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.navDb;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardWatchEventKinds;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.utils.grid.DirectoryWatcher;
-import org.sensorhub.impl.utils.grid.FileListener;
+import org.sensorhub.utils.aero.INavDatabase;
+import org.sensorhub.utils.aero.INavDatabase.INavDbWaypoint;
+import org.sensorhub.utils.aero.impl.AeroUtils;
 
 
 /**
@@ -41,23 +35,13 @@ import org.sensorhub.impl.utils.grid.FileListener;
  * @author Tony Cook
  * @since Nov, 2017
  */
-public class NavDriver extends AbstractSensorModule<NavConfig>  implements FileListener
+public class NavDriver extends AbstractSensorModule<NavConfig>
 {
-    static final Pattern DATA_FILE_REGEX = Pattern.compile(".+\\.dat");
-    static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
-    static final String AIRPORTS_UID_PREFIX = SENSOR_UID_PREFIX + "airports:";
-    static final String WAYPOINTS_UID_PREFIX = SENSOR_UID_PREFIX + "waypoints:";
-    static final String NAVAIDS_UID_PREFIX = SENSOR_UID_PREFIX + "navaids:";
-    
-    Thread watcherThread;
-    DirectoryWatcher watcher;
-    AtomicBoolean loading = new AtomicBoolean(false);
-    
     AirportOutput airptOutput;
 	WaypointOutput wayptOutput;
 	NavaidOutput navaidOutput;
 
-    NavDatabase navDB;
+    INavDatabase navDB;
     boolean airports = true;
     boolean waypoints = true;
     boolean navaids = true;
@@ -85,7 +69,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements FileL
 		super.doInit();
 		
 		// IDs
-		this.uniqueID = SENSOR_UID_PREFIX + "navDb";
+		this.uniqueID = AeroUtils.AERO_SYSTEM_URI_PREFIX + "navDb";
 		this.xmlID = "NAVDB";
         
         // Initialize Outputs
@@ -122,9 +106,10 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements FileL
 	@Override
 	protected void doStart() throws SensorHubException
 	{
-	    loading.set(false);
-	    startDirectoryWatcher();
-	    readLatestDataFile();
+	    this.navDB = INavDatabase.getInstance(getParentHub(), config.navDbModuleId);
+	    loadAirports();
+	    loadNavaids();
+	    loadWaypoints();
     }
 
 	
@@ -134,13 +119,11 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements FileL
             readSelectedAirportIcaos(config.airportFilterPath) : null;
         
         // build filtered list of airports
-        List<NavDbPointEntry> filteredAirports = navDB.getAirports().values().stream()
+        var filteredAirports = navDB.getAirports().values().stream()
             .filter(airport -> {
-                return selectedAirports == null || selectedAirports.contains(airport.id);
+                return selectedAirports == null || selectedAirports.contains(airport.getName());
             })
             .collect(Collectors.toList());
-        
-        // TODO create airport features
         
         // send entries to output
         airptOutput.sendEntries(filteredAirports);
@@ -165,96 +148,6 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements FileL
         // send entries to output
         wayptOutput.sendEntries(waypts);
         getLogger().info("{} waypoints loaded", waypts.size());
-    }
-
-    
-    private void startDirectoryWatcher() throws SensorHubException
-    {
-        try
-        {
-            watcher = new DirectoryWatcher(Paths.get(config.navDbPath), StandardWatchEventKinds.ENTRY_CREATE);
-            watcherThread = new Thread(watcher);
-            watcher.addListener(this);
-            watcherThread.start();
-            getLogger().info("Watching directory {} for data updates", config.navDbPath);
-        }
-        catch (IOException e)
-        {
-            throw new SensorHubException("Error creating directory watcher on " + config.navDbPath, e);
-        }
-    }
-    
-    
-    private void readLatestDataFile() throws SensorHubException
-    {
-        // list all available nav DB data files
-        File dir = new File(config.navDbPath);
-        File[] navDbFiles = dir.listFiles(new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return DATA_FILE_REGEX.matcher(name).matches();
-            }
-        });
-        
-        // skip if nothing is available
-        if (navDbFiles.length == 0)
-        {
-            getLogger().warn("No Nav DB file available");
-            return;
-        }
-        
-        // get the one with latest time stamp
-        File latestFile = navDbFiles[0];
-        for (File f: navDbFiles)
-        {
-            if (f.lastModified() > latestFile.lastModified())
-                latestFile = f;
-        }
-        
-        // trigger reader
-        newFile(latestFile.toPath());
-    }
-
-
-    /*
-     * called whenever we get a new Nav DB file
-     */
-    @Override
-    public void newFile(Path p)
-    {
-        // only continue when it's a new nav DB file
-        if (!DATA_FILE_REGEX.matcher(p.getFileName().toString()).matches())
-            return;
-        
-        // skip if already loading
-        if (!loading.compareAndSet(false, true))
-            return;
-        
-        getLogger().info("Loading new Nav DB file: {}", p);
-        
-        try
-        {
-            // switch to new Nav DB atomically
-            NavDatabase db = new NavDatabase();
-            db.reload(p.toString());
-            navDB = db;
-            
-            // reload in-memory entities           
-            if (airports)
-                loadAirports();
-            if (navaids)
-                loadNavaids();
-            if (waypoints)
-                loadWaypoints();
-            
-            reportStatus("Loaded database file \"" + p + "\"");
-        }
-        catch (Exception e)
-        {
-            reportError("Error reading database file \"" + p + "\"", e);
-            return;
-        }
-        
-        loading.set(false);
     }
 
 
@@ -282,13 +175,13 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements FileL
     }
     
 
-    public List<NavDbEntry> getSelectedAirports(List<NavDbEntry> navDbEntries, String deltaPath)
+    public List<INavDbWaypoint> getSelectedAirports(List<INavDbWaypoint> navDbEntries, String deltaPath)
     {
         var icaos = readSelectedAirportIcaos(deltaPath);
-        List<NavDbEntry> deltaAirports = new ArrayList<>();
+        List<INavDbWaypoint> deltaAirports = new ArrayList<>();
         
-        for (NavDbEntry a: navDbEntries) {
-            if (icaos.contains(a.id) && a.type == NavDbEntry.Type.AIRPORT) {
+        for (var a: navDbEntries) {
+            if (icaos.contains(a.getCode()) && a.getType().equals("AIRPORT")) {
                 deltaAirports.add(a);
             }
         }
@@ -300,8 +193,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements FileL
 	@Override
 	protected void doStop() throws SensorHubException
 	{
-	    if (watcherThread != null)
-            watcherThread.interrupt();
+	    
     }
 
 
@@ -310,10 +202,4 @@ public class NavDriver extends AbstractSensorModule<NavConfig>  implements FileL
 	{
 		return true;
 	}
-    
-    
-    public NavDatabase getNavDatabase()
-    {
-        return navDB;
-    }
 }
