@@ -25,7 +25,7 @@ import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
-import org.sensorhub.api.system.SystemId;
+import org.sensorhub.api.feature.FeatureId;
 import org.sensorhub.impl.service.sta.filter.DatastreamFilterVisitor;
 import org.sensorhub.utils.SWEDataUtils;
 import org.vast.data.DataIterator;
@@ -127,7 +127,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
                 
                 // create data stream object
                 var sysUID = sysHandler.getSystemUID();
-                var dsInfo = toSweDataStream(new SystemId(sensorId, sysUID), dataStream);
+                var dsInfo = toSweDataStream(new FeatureId(sensorId, sysUID), dataStream);
 
                 // store in DB + send event
                 var dsHandler = sysHandler.addOrUpdateDataStream(dsInfo);
@@ -328,7 +328,7 @@ public class DatastreamEntityHandler implements IResourceHandler<AbstractDatastr
     }
     
     
-    protected IDataStreamInfo toSweDataStream(SystemId sysID, AbstractDatastream<?> abstractDs) throws NoSuchEntityException
+    protected IDataStreamInfo toSweDataStream(FeatureId sysID, AbstractDatastream<?> abstractDs) throws NoSuchEntityException
     {
         var recordStruct = toSweCommon(abstractDs);
         return new DataStreamInfo.Builder()

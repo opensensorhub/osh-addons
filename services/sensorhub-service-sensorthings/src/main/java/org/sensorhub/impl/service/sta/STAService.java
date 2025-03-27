@@ -23,9 +23,9 @@ import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.event.IEventListener;
+import org.sensorhub.api.feature.FeatureId;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.api.service.IServiceModule;
-import org.sensorhub.api.system.SystemId;
 import org.sensorhub.impl.database.registry.FilteredFederatedDatabase;
 import org.sensorhub.impl.service.AbstractHttpServiceModule;
 import org.sensorhub.impl.system.wrapper.SystemWrapper;
@@ -59,7 +59,7 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
     ISTADatabase writeDatabase;
     GenericFeatureImpl hubThing;
     ServletV1P0 servlet;
-    SystemId virtualGroupId;
+    FeatureId virtualGroupId;
     STAMqttConnector mqttConnector;
 
 
@@ -116,11 +116,11 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
                     .build();
                 
                 fk = writeDatabase.getSystemDescStore().add(new SystemWrapper(procGroup));
-                virtualGroupId = new SystemId(fk.getInternalID(), procGroup.getUniqueIdentifier());
+                virtualGroupId = new FeatureId(fk.getInternalID(), procGroup.getUniqueIdentifier());
             }
             else
                 fk = writeDatabase.getSystemDescStore().getCurrentVersionKey(virtualGroupUID);
-            virtualGroupId = new SystemId(fk.getInternalID(), virtualGroupUID);
+            virtualGroupId = new FeatureId(fk.getInternalID(), virtualGroupUID);
         }
         
         // create default hub thing
@@ -246,7 +246,7 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
     }
 
 
-    protected SystemId getSystemGroupID()
+    protected FeatureId getSystemGroupID()
     {
         return virtualGroupId;
     }

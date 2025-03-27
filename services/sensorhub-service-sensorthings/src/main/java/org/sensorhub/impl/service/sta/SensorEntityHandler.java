@@ -30,11 +30,11 @@ import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.api.datastore.system.SystemFilter;
+import org.sensorhub.api.feature.FeatureId;
 import org.sensorhub.api.system.ISystemWithDesc;
 import org.sensorhub.api.system.SystemAddedEvent;
 import org.sensorhub.api.system.SystemChangedEvent;
 import org.sensorhub.api.system.SystemEvent;
-import org.sensorhub.api.system.SystemId;
 import org.sensorhub.impl.event.DelegatingSubscriberAdapter;
 import org.sensorhub.impl.service.sta.filter.SensorFilterVisitor;
 import org.sensorhub.impl.system.SystemSubscriptionHandler;
@@ -86,7 +86,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     STASecurity securityHandler;
     int maxPageSize = 100;
     String uidPrefix;
-    SystemId sysGroupID;
+    FeatureId sysGroupID;
 
 
     SensorEntityHandler(OSHPersistenceManager pm)
