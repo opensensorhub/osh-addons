@@ -15,10 +15,6 @@ osgi {
   }
 }
 
-test {
-    exclude '**/TestNavDbDecode.class'
-}
-
 // add info to maven pom
 ext.pom >>= {
   developers {
