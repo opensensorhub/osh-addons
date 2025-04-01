@@ -26,6 +26,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.flightAware.DecodeFlightRouteResponse.Waypoint;
 import org.sensorhub.utils.aero.INavDatabase;
 import org.slf4j.Logger;
+import org.vast.util.Asserts;
 import com.google.common.base.Strings;
 import j2html.rendering.FlatHtml;
 import j2html.rendering.HtmlBuilder;
@@ -45,10 +46,10 @@ public class FlightRouteDecoderNavDb implements IFlightRouteDecoder
     INavDatabase navDB;
         
     
-    public FlightRouteDecoderNavDb(FlightAwareDriver driver, String navDbModuleID)
+    public FlightRouteDecoderNavDb(FlightAwareDriver driver, INavDatabase navDB) throws SensorHubException
     {
         this.log = driver.getLogger();
-        this.navDB = INavDatabase.getInstance(driver.getParentHub(), navDbModuleID);
+        this.navDB = Asserts.checkNotNull(navDB, INavDatabase.class);
     }
     
     

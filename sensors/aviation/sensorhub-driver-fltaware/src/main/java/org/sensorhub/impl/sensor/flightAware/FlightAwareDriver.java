@@ -36,6 +36,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModuleStateManager;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.flightAware.FlightAwareConfig.Mode;
+import org.sensorhub.utils.aero.INavDatabase;
 import org.sensorhub.utils.aero.impl.AeroUtils;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Asserts;
@@ -247,8 +248,9 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig>
         if (config.decodeRoutes)
         {
             // init flight route decoder
-            if (config.navDbModuleId != null)
-                this.flightRouteDecoder = new FlightRouteDecoderNavDb(this, config.navDbModuleId);//"5f722e2d-226d-4ff7-81a8-6f92b80efe18");
+            var navDB = INavDatabase.getInstance(getParentHub());
+            if (navDB != null)
+                this.flightRouteDecoder = new FlightRouteDecoderNavDb(this, navDB);
             else
                 this.flightRouteDecoder = new FlightRouteDecoderFlightXML(this);
         }

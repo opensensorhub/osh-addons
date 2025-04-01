@@ -62,13 +62,42 @@ public interface INavDatabase
     public IDecodedRoute decodeRoute(String codedRouteString);
     
     
-    public static INavDatabase getInstance(ISensorHub hub, String moduleID)
+    
+    public static INavDatabase getInstance(ISensorHub hub) throws SensorHubException
     {
-        return getInstance(hub, moduleID, 30000);
+        return getInstance(hub, 10000);
     }
     
     
-    public static INavDatabase getInstance(ISensorHub hub, String moduleID, int timeout)
+    public static INavDatabase getInstance(ISensorHub hub, int timeout) throws SensorHubException
+    {
+        for (var m: hub.getModuleRegistry().getLoadedModules())
+        {
+            if (m instanceof INavDatabase)
+            {
+                var navDb = (INavDatabase)m;
+            
+                try {
+                    Async.waitForCondition(() -> navDb.isReady(), timeout);
+                } catch (TimeoutException e) {
+                    throw new SensorHubException("Navigation database did not start in the last " + timeout/1000 + "s");
+                }
+            
+                return navDb;
+            }
+        }
+        
+        throw new SensorHubException("No navigation database found");
+    }
+    
+    
+    public static INavDatabase getInstance(ISensorHub hub, String moduleID) throws SensorHubException
+    {
+        return getInstance(hub, moduleID, 10000);
+    }
+    
+    
+    public static INavDatabase getInstance(ISensorHub hub, String moduleID, int timeout) throws SensorHubException
     {
         ModuleRegistry reg;
         try
@@ -79,14 +108,14 @@ public interface INavDatabase
             try {
                 Async.waitForCondition(() -> navDb.isReady(), timeout);
             } catch (TimeoutException e) {
-                throw new IllegalStateException("Navigation database did not start in the last " + timeout/1000 + "s");
+                throw new SensorHubException("Navigation database did not start in the last " + timeout/1000 + "s");
             }
             
             return navDb;
         }
-        catch (SensorHubException | ClassCastException e)
+        catch (ClassCastException e)
         {
-            throw new IllegalStateException("No navigation database found", e);
+            throw new SensorHubException("No navigation database found", e);
         }
     }
 }
