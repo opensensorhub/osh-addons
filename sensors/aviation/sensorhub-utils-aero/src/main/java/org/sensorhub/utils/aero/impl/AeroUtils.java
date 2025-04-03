@@ -23,6 +23,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.event.IEventListener;
@@ -178,7 +179,8 @@ public class AeroUtils
             }
             catch (Exception e)
             {
-                throw new IllegalStateException("Error creating flight FOI " + uid, e.getCause());
+                throw new IllegalStateException("Error creating flight FOI " + uid,
+                    e instanceof ExecutionException ? e.getCause() : e);
             }
         }
         
@@ -223,7 +225,8 @@ public class AeroUtils
             }
             catch (Exception e)
             {
-                throw new IllegalStateException("Error creating SUA FOI " + uid, e.getCause());
+                throw new IllegalStateException("Error creating SUA FOI " + uid,
+                    e instanceof ExecutionException ? e.getCause() : e);
             }
         }
         
@@ -256,7 +259,8 @@ public class AeroUtils
             }
             catch (Exception e)
             {
-                throw new IllegalStateException("Error creating tail FOI " + uid, e.getCause());
+                throw new IllegalStateException("Error creating tail FOI " + uid,
+                    e instanceof ExecutionException ? e.getCause() : e);
             }
         }
         
@@ -296,7 +300,8 @@ public class AeroUtils
             }
             catch (Exception e)
             {
-                throw new IllegalStateException("Error creating airport FOI " + uid, e.getCause());
+                throw new IllegalStateException("Error creating airport FOI " + uid,
+                    e instanceof ExecutionException ? e.getCause() : e);
             }
         }
         
