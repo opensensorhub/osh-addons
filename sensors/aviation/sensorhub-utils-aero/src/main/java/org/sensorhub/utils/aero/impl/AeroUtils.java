@@ -23,9 +23,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.event.IEventListener;
@@ -40,8 +37,6 @@ import org.vast.ogc.om.SamplingSurface;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEConstants;
 import org.vast.util.Asserts;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import net.opengis.sensorml.v20.AbstractProcess;
 
 
@@ -71,14 +66,6 @@ public class AeroUtils
     
     // map of ICAO airport codes to time zone identifiers
     static Map<String, String> icaoTzData;
-        
-    // cache for most recent FOI IDs to speed things up
-    static Cache<String, String> latestFois = CacheBuilder.newBuilder()
-        .concurrencyLevel(2)
-        .expireAfterAccess(1, TimeUnit.HOURS)
-        .<String, String>build();
-    
-    static AtomicBoolean registryCreated = new AtomicBoolean();
     
     
     /**
@@ -116,7 +103,7 @@ public class AeroUtils
     
     public static synchronized void ensureAeroFoiRegistry(ISensorHub hub)
     {
-        if (registryCreated.compareAndSet(false, true))
+        if (!hub.getSystemDriverRegistry().isRegistered(AERO_FOI_REGISTRY_UID))
         {
             var reg = hub.getSystemDriverRegistry();
             if (reg != null && !reg.isRegistered(AERO_FOI_REGISTRY_UID))
@@ -167,13 +154,14 @@ public class AeroUtils
         if (hub.getSystemDriverRegistry() != null)
         {
             ensureAeroFoiRegistry(hub);
-            
             String uid = FOI_FLIGHT_UID_PREFIX + flightId;
             
-            // register FOI if ID is not in cache
+            // register FOI if ID is not in DB
             try
             {
-                return latestFois.get(uid, () -> {
+                var foiDb = hub.getDatabaseRegistry().getFederatedDatabase().getFoiStore();
+                if (!foiDb.contains(uid))
+                {
                     // generate small FOI object
                     MovingFeature foi = new MovingFeature();
                     foi.setId(flightId);
@@ -186,10 +174,9 @@ public class AeroUtils
                     
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
-                    return uid;
-                });
+                }
             }
-            catch (ExecutionException e)
+            catch (Exception e)
             {
                 throw new IllegalStateException("Error creating flight FOI " + uid, e.getCause());
             }
@@ -205,18 +192,24 @@ public class AeroUtils
     }
 
 
-    public static String ensureSuaFoi(IModule<?> m, String suaId) {
+    public static String ensureSuaFoi(IModule<?> m, String suaId)
+    {
         return ensureSuaFoi(m.getParentHub(), suaId);
     }
 
-    public static String ensureSuaFoi(ISensorHub hub, String suaId) {
-        if (hub.getSystemDriverRegistry() != null) {
+    public static String ensureSuaFoi(ISensorHub hub, String suaId)
+    {
+        if (hub.getSystemDriverRegistry() != null)
+        {
             ensureAeroFoiRegistry(hub);
             String uid = FOI_SUA_UID_PREFIX + suaId;
 
-            // register FOI if ID is not in cache
-            try {
-                return latestFois.get(uid, () -> {
+            // register FOI if ID is not in DB
+            try
+            {
+                var foiDb = hub.getDatabaseRegistry().getFederatedDatabase().getFoiStore();
+                if (!foiDb.contains(uid))
+                {
                     // generate small FOI object
                     var foi = new SamplingSurface();
                     foi.setId(suaId);
@@ -226,11 +219,14 @@ public class AeroUtils
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
                     return uid;
-                });
-            } catch (ExecutionException e) {
+                }
+            }
+            catch (Exception e)
+            {
                 throw new IllegalStateException("Error creating SUA FOI " + uid, e.getCause());
             }
         }
+        
         return null;
     }
 
@@ -238,14 +234,15 @@ public class AeroUtils
     {
         if (hub.getSystemDriverRegistry() != null)
         {
-            ensureAeroFoiRegistry(hub);
-            
+            ensureAeroFoiRegistry(hub);            
             String uid = FOI_TAIL_UID_PREFIX + tailId;
             
-            // register FOI if ID is not in cache
+            // register FOI if ID is not in DB
             try
             {
-                return latestFois.get(uid, () -> {
+                var foiDb = hub.getDatabaseRegistry().getFederatedDatabase().getFoiStore();
+                if (!foiDb.contains(uid))
+                {
                     // generate small FOI object
                     MovingFeature foi = new MovingFeature();
                     foi.setId(tailId);
@@ -255,9 +252,9 @@ public class AeroUtils
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
                     return uid;
-                });
+                }
             }
-            catch (ExecutionException e)
+            catch (Exception e)
             {
                 throw new IllegalStateException("Error creating tail FOI " + uid, e.getCause());
             }
@@ -277,14 +274,15 @@ public class AeroUtils
     {
         if (hub.getSystemDriverRegistry() != null)
         {
-            ensureAeroFoiRegistry(hub);
-        
+            ensureAeroFoiRegistry(hub);        
             String uid = FOI_AIRPORT_UID_PREFIX + icao;
             
             // register FOI if ID is not in cache
             try
             {
-                return latestFois.get(uid, () -> {
+                var foiDb = hub.getDatabaseRegistry().getFederatedDatabase().getFoiStore();
+                if (!foiDb.contains(uid))
+                {
                     // generate small FOI object
                     var foi = new SamplingPoint();
                     foi.setId(icao);
@@ -294,9 +292,9 @@ public class AeroUtils
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
                     return uid;
-                });
+                }
             }
-            catch (ExecutionException e)
+            catch (Exception e)
             {
                 throw new IllegalStateException("Error creating airport FOI " + uid, e.getCause());
             }
