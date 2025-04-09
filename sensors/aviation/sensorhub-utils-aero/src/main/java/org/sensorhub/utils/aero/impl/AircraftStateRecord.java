@@ -39,6 +39,7 @@ public interface AircraftStateRecord extends IDataAccessor, IAircraftState
         AeroHelper fac = new AeroHelper();
         
         return fac.createRecord()
+            .name(name)
             .definition(DEF_AIRCRAFT_STATE_RECORD)
             .label("Aircraft State")
             .description("Record containing aircraft state parameters for a given tail")

@@ -33,7 +33,7 @@ import net.opengis.swe.v20.DataRecord;
  */
 public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
 {
-    public static final String DEF_FP_REC = AeroHelper.AERO_RECORD_URI_PREFIX + "FlightPlan";
+    public static final String DEF_FLIGHTPLAN_REC = AeroHelper.AERO_RECORD_URI_PREFIX + "FlightPlan";
     
     
     public static DataRecord getSchema(String name)
@@ -43,7 +43,8 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
         
         return fac.createRecord()
             .name(name)
-            .definition(DEF_FP_REC) 
+            .definition(DEF_FLIGHTPLAN_REC)
+            .label("Flight Plan")
             .addField("time", fac.createIssueTime())
             .addField("source", fac.createMessageSource()
                 .addAllowedValues(FlightPlanSource.class))
