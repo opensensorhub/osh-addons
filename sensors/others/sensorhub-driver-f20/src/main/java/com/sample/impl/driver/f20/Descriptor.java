@@ -8,9 +8,11 @@
  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
  for the specific language governing rights and limitations under the License.
 
- Copyright (C) 2020-2021 Botts Innovative Research, Inc. All Rights Reserved.
+ The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
+ Developer are Copyright (C) 2025 the Initial Developer. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
+
 package com.sample.impl.driver.f20;
 
 import org.sensorhub.api.module.IModule;
@@ -18,30 +20,13 @@ import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.module.JarModuleProvider;
 
-/**
- * Descriptor classes provide access to informative data on the OpenSensorHub driver
- *
- * @author your_name
- * @since date
- */
 public class Descriptor extends JarModuleProvider implements IModuleProvider {
 
-    /**
-     * Retrieves the class implementing the OpenSensorHub interface necessary to
-     * perform SOS/SPS/SOS-T operations.
-     *
-     * @return The class used to interact with the sensor/sensor platform.
-     */
     public Class<? extends IModule<?>> getModuleClass() {
 
         return F20Driver.class;
     }
 
-    /**
-     * Identifies the class used to configure this driver
-     *
-     * @return The java class used to exposing configuration settings for the driver.
-     */
     public Class<? extends ModuleConfig> getModuleConfigClass() {
 
         return F20Config.class;

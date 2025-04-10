@@ -8,9 +8,11 @@
  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
  for the specific language governing rights and limitations under the License.
 
- Copyright (C) 2020-2021 Botts Innovative Research, Inc. All Rights Reserved.
+ The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
+ Developer are Copyright (C) 2025 the Initial Developer. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
+
 package com.sample.impl.driver.f20;
 
 import com.google.gson.Gson;
@@ -23,12 +25,7 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-/**
- * Sensor driver providing sensor description, output registration, initialization and shutdown of driver and outputs.
- *
- * @author your_name
- * @since date
- */
+
 public class F20Driver extends AbstractSensorModule<F20Config> {
 
     private static final Logger logger = LoggerFactory.getLogger(F20Driver.class);
@@ -67,8 +64,6 @@ public class F20Driver extends AbstractSensorModule<F20Config> {
         } catch (MqttException e) {
             throw new SensorHubException("Error creating MQTT connection: " + e.getMessage(), e);
         }
-
-        // TODO: Perform other initialization
     }
 
     @Override
@@ -82,25 +77,19 @@ public class F20Driver extends AbstractSensorModule<F20Config> {
                 throw new SensorHubException("Error subscribing to topic " + config.topicId + " : " + e.getMessage(), e);
             }
         }
-
-        // TODO: Perform other startup procedures
     }
 
     @Override
     public void doStop() throws SensorHubException {
-
-        if (null != output) {
-
-            output.doStop();
+        try {
+            mqttClient.unsubscribe(config.topicId);
+        } catch (MqttException e) {
+            throw new SensorHubException("", e);
         }
-
-        // TODO: Perform other shutdown procedures
     }
 
     @Override
     public boolean isConnected() {
-
-        // Determine if sensor is connected
-        return output.isAlive();
+        return mqttClient.isConnected();
     }
 }

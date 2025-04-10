@@ -4,8 +4,6 @@ version = '1.0.0'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-//    implementation project(':sensorhub-service-video')
-//    implementation project(':sensorhub-driver-videocam')
     implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
     testImplementation('junit:junit:4.13.1')
 }
@@ -30,10 +28,10 @@ osgi {
 ext.pom >>= {
     developers {
         developer {
-            id 'some id'
-            name 'Your name'
-            organization ''
-            organizationUrl ''
+            id 'earocorn'
+            name 'Alex Almanza'
+            organization 'Botts Innovative Research, Inc.'
+            organizationUrl 'https://www.botts-inc.com'
         }
     }
 }
