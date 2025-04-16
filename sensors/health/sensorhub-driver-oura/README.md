@@ -1,6 +1,6 @@
-# [NAME]
+# [Driver for Oura Ring]
 
-Sensor adapter for [NAME].
+Sensor adapter for [Oura Ring].
 
 ## Configuration
 
@@ -9,6 +9,7 @@ Select ```Sensors``` from the left hand accordion control and right click for co
 - **Module Name:** A name for the instance of the driver
 - **Serial Number:** The platforms serial number, or a unique identifier
 - **Auto Start:** Check the box to start this module when OSH node is launched
+- **Ring ID:** Add information to identify each oura ring in --/resources/Oura.csvs
 
 Storage:
 Select ```Storage``` from the left hand accordion control and right click for context sensitive menu in accordion control
