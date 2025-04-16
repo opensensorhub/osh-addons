@@ -14,7 +14,7 @@ Copyright (C) 2025 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.utils.aero;
 
-import java.time.Instant;
+import java.time.LocalDate;
 
 
 /**
@@ -46,8 +46,8 @@ public interface IFlightIdentification
     
     
     /**
-     * @return Original flight departure date (local time)
+     * @return Original flight departure date (local time at departure airport)
      */
-    Instant getFlightDate();
+    LocalDate getFlightDate();
     
 }

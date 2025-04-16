@@ -152,14 +152,14 @@ public class AeroHelper extends GeoPosHelper
     
     
     /**
-     * @return The flight date field
+     * @return The flight date field (local time at departure airport)
      */
-    public TimeBuilder createFlightDate()
+    public TextBuilder createFlightDate()
     {
-        return createTime()
-            .asSamplingTimeIsoUTC()
+        return createText()
             .definition(DEF_FLIGHT_DATE)
-            .label("Flight Date");
+            .label("Flight Date")
+            .description("Original departure date (local time at departure airport)");
     }
     
     

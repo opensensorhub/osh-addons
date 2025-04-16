@@ -16,6 +16,7 @@ package org.sensorhub.utils.aero.impl;
 
 import static org.junit.Assert.*;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import org.junit.Test;
 import org.vast.data.DataBlockProxy;
@@ -34,7 +35,7 @@ public class TestFlightPlanRecord
         var time = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         var source = "SWIM";
         var flightNum = "DAL156";
-        var fltDate = Instant.parse("2024-11-05T10:20:00Z");
+        var fltDate = LocalDate.parse("2024-11-05");
         var origApt = "KDEN";
         var destApt = "KATL";
         var altApts = "KMCI,KBHM";

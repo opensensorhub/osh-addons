@@ -15,6 +15,7 @@ Copyright (C) 2025 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.utils.aero.impl;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import org.sensorhub.utils.aero.AeroHelper;
 import org.sensorhub.utils.aero.IFlightPlan;
@@ -98,12 +99,23 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
     @SweMapping(path="flightNum")
     void setFlightNumber(String val);
     
-    @Override
     @SweMapping(path="flightDate")
-    Instant getFlightDate();
+    String getFlightDateString();
 
     @SweMapping(path="flightDate")
-    void setFlightDate(Instant val);
+    void setFlightDate(String val);
+    
+    @Override
+    default LocalDate getFlightDate()
+    {
+        var flightDateStr = getFlightDateString();
+        return flightDateStr != null ? LocalDate.parse(flightDateStr) : null;
+    }
+    
+    default void setFlightDate(LocalDate date)
+    {
+        setFlightDate(date != null ? date.toString() : null);
+    }
     
     @Override
     @SweMapping(path="origAirport")

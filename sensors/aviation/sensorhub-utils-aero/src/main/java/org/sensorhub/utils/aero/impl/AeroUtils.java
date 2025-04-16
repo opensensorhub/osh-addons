@@ -16,10 +16,8 @@ package org.sensorhub.utils.aero.impl;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,7 +60,7 @@ public class AeroUtils
     public static final String FOI_AIRPORT_UID_PREFIX = AERO_FOI_URI_PREFIX + "apt:";
     public static final String FOI_SUA_UID_PREFIX = AERO_FOI_URI_PREFIX + "sua:";
 
-    public static final Pattern FLIGHTID_REGEX = Pattern.compile("[A-Z0-9]{3}[0-9]{1,4}_[A-Z]{4}_[0-9]{4}[0-9]{2}[0-9]{2}");
+    public static final Pattern FLIGHTID_REGEX = Pattern.compile("[A-Z0-9]{4,7}_[A-Z]{4}_[0-9]{4}[0-9]{2}[0-9]{2}");
     
     
     // map of ICAO airport codes to time zone identifiers
@@ -171,7 +169,7 @@ public class AeroUtils
                     var flightInfo = parseFlightIdentification(flightId);
                     foi.setName("Flight " + flightInfo.getFlightNumber() +
                                 " to " + flightInfo.getDestinationAirport() + 
-                                " (" + LocalDate.ofInstant(flightInfo.getFlightDate(), ZoneOffset.UTC) + ")");
+                                " (" + flightInfo.getFlightDate() + ")");
                     
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
@@ -327,20 +325,6 @@ public class AeroUtils
      * Generate a unique flight identifier including flight number, destination and date
      * @param flightNum Flight number
      * @param destIcao ICAO code of destination airport
-     * @param flightDateTime Date and time of originally scheduled departure (will be truncated to day precision to form the ID)
-     * @return The unique flight identifier
-     */
-    public static String getFlightID(String flightNum, String destIcao, Instant flightDateTime)
-    {
-        var flightDate = LocalDate.ofInstant(flightDateTime, ZoneOffset.UTC);
-        return getFlightID(flightNum, destIcao, flightDate);
-    }
-    
-    
-    /**
-     * Generate a unique flight identifier including flight number, destination and date
-     * @param flightNum Flight number
-     * @param destIcao ICAO code of destination airport
      * @param flightDate Date of flight
      * @return The unique flight identifier
      */
@@ -369,10 +353,9 @@ public class AeroUtils
             public String getOriginAirport() { return null; }            
             public String getDestinationAirport() { return tokens[1]; }
             
-            public Instant getFlightDate()
+            public LocalDate getFlightDate()
             {
-                var date = LocalDate.parse(tokens[2], DateTimeFormatter.BASIC_ISO_DATE);
-                return date.atStartOfDay().toInstant(ZoneOffset.UTC);
+                return LocalDate.parse(tokens[2], DateTimeFormatter.BASIC_ISO_DATE);
             }
         };
     }

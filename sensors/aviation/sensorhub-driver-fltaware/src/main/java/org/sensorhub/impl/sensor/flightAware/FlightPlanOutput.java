@@ -16,7 +16,7 @@ package org.sensorhub.impl.sensor.flightAware;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.data.DataEvent;
@@ -88,7 +88,6 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         flightPlan.setIssueTime(toInstant(fltObj.pitr));
         flightPlan.setSource("FA");
         flightPlan.setFlightNumber(trim(fltObj.ident));
-        flightPlan.setFlightDate(toInstant(fltObj.fdt));
         flightPlan.setOriginAirport(trim(fltObj.orig));
         flightPlan.setDestinationAirport(trim(fltObj.dest));
         flightPlan.setDepartureTime(toInstant(fltObj.edt));
@@ -101,6 +100,10 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         flightPlan.setCostIndex(Double.NaN);
         flightPlan.setFuelFactor(Double.NaN);
         flightPlan.setCodedRoute(trim(fltObj.route));
+        
+        // compute flight date
+        var fdt = toInstant(fltObj.fdt);
+        computeFlightDate(flightPlan, fdt);
         
         // decoded waypoints
         if (fltObj.decodedRoute != null)
@@ -116,11 +119,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         }
         
         // create FOI if needed
-        var flightDate = LocalDate.ofInstant(flightPlan.getFlightDate(), ZoneOffset.UTC);
-        var flightId = AeroUtils.getFlightID(
-            flightPlan.getFlightNumber(),
-            flightPlan.getDestinationAirport(),
-            flightDate);
+        var flightId = AeroUtils.getFlightID(flightPlan);
         String foiUid = AeroUtils.ensureFlightFoi(getParentProducer(), flightId);
         
         // skip if same as last record for a given foi
@@ -147,6 +146,17 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         
         long epochSeconds = Long.parseLong(val);
         return Instant.ofEpochSecond(epochSeconds);
+    }
+    
+    
+    protected void computeFlightDate(FlightPlanRecord ofp, Instant fdt)
+    {
+        var orig = ofp.getOriginAirport();
+        if (fdt != null && orig != null)
+        {
+            var tz = AeroUtils.getAirportTimeZones().get(orig);
+            ofp.setFlightDate(LocalDate.ofInstant(fdt, ZoneId.of(tz)));
+        }
     }
     
     
