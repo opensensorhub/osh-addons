@@ -147,7 +147,8 @@ public class AeroHelper extends GeoPosHelper
     {
         return createText()
             .definition(DEF_FLIGHT_ID)
-            .label("Flight ID");
+            .label("Flight ID")
+            .description("Fully unique flight ID, composed of flight number, destination airport code and flight date");
     }
     
     

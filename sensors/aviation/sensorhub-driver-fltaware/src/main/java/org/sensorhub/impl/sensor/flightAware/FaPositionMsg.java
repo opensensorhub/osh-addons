@@ -51,6 +51,7 @@ public interface FaPositionMsg extends IDataAccessor
     {
         AeroHelper fac = new AeroHelper(); 
         return fac.createRecord()
+            .name(name)
             .definition(DEF_FA_POS_REC)
             .addField("time", fac.createIssueTime())
             .addField("tail", fac.createTailNumber())

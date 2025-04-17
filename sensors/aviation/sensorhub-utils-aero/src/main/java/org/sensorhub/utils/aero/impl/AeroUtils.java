@@ -174,6 +174,8 @@ public class AeroUtils
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
                 }
+                
+                return uid;
             }
             catch (Exception e)
             {
@@ -218,8 +220,9 @@ public class AeroUtils
 
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
-                    return uid;
                 }
+                
+                return uid;
             }
             catch (Exception e)
             {
@@ -252,8 +255,9 @@ public class AeroUtils
                     
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
-                    return uid;
                 }
+                
+                return uid;
             }
             catch (Exception e)
             {
@@ -293,8 +297,9 @@ public class AeroUtils
                     
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
-                    return uid;
                 }
+                
+                return uid;
             }
             catch (Exception e)
             {
