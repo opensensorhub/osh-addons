@@ -13,7 +13,7 @@
 
  ******************************* END LICENSE BLOCK ***************************/
 
-package com.sample.impl.driver.f20;
+package com.botts.impl.driver.f20;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
@@ -27,17 +27,30 @@ public class F20Config extends SensorConfig {
     @DisplayInfo(desc = "Serial number or unique identifier")
     public String serialNumber = "001";
 
+    /**
+     * MQTT broker to communicate with F20 device
+     */
     @DisplayInfo.Required
     @DisplayInfo(label = "MQTT Broker")
+    @DisplayInfo.FieldType(DisplayInfo.FieldType.Type.REMOTE_ADDRESS)
     public String broker = "tcp://mqtt.broker:1883";
 
+    /**
+     * Topic ID of F20 data stream
+     */
     @DisplayInfo.Required
     @DisplayInfo(desc = "MQTT Topic ID")
     public String topicId;
 
+    /**
+     * Username to authenticate with MQTT broker
+     */
     @DisplayInfo(desc = "Username")
     public String username;
 
+    /**
+     * Password to authenticate with MQTT broker
+     */
     @DisplayInfo(desc = "Password")
     @DisplayInfo.FieldType(DisplayInfo.FieldType.Type.PASSWORD)
     public String password;

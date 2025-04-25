@@ -13,9 +13,9 @@
 
  ******************************* END LICENSE BLOCK ***************************/
 
-package com.sample.impl.driver.f20.rain;
+package com.botts.impl.driver.f20.rain;
 
-import com.sample.impl.driver.f20.F20Driver;
+import com.botts.impl.driver.f20.F20Driver;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -68,7 +68,7 @@ public class RainOutput extends AbstractSensorOutput<F20Driver> {
         // Get an instance of SWE Factory suitable to build components
         GeoPosHelper sweFactory = new GeoPosHelper();
 
-        // TODO: Create data record description
+        // Create data record description
         dataStruct = sweFactory.createRecord()
                 .name(SENSOR_OUTPUT_NAME)
                 .label(SENSOR_OUTPUT_LABEL)
@@ -152,6 +152,5 @@ public class RainOutput extends AbstractSensorOutput<F20Driver> {
         latestRecordTime = currentTime;
 
         eventHandler.publish(new DataEvent(latestRecordTime, RainOutput.this, dataBlock));
-
     }
 }

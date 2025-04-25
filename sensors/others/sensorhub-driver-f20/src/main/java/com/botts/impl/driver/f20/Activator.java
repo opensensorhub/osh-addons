@@ -13,22 +13,9 @@
 
  ******************************* END LICENSE BLOCK ***************************/
 
-package com.sample.impl.driver.f20;
+package com.botts.impl.driver.f20;
 
-import org.sensorhub.api.module.IModule;
-import org.sensorhub.api.module.IModuleProvider;
-import org.sensorhub.api.module.ModuleConfig;
-import org.sensorhub.impl.module.JarModuleProvider;
+import org.sensorhub.utils.OshBundleActivator;
 
-public class Descriptor extends JarModuleProvider implements IModuleProvider {
-
-    public Class<? extends IModule<?>> getModuleClass() {
-
-        return F20Driver.class;
-    }
-
-    public Class<? extends ModuleConfig> getModuleConfigClass() {
-
-        return F20Config.class;
-    }
+public class Activator extends OshBundleActivator {
 }

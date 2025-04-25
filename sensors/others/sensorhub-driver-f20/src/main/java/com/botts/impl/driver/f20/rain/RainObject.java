@@ -13,9 +13,17 @@
 
  ******************************* END LICENSE BLOCK ***************************/
 
-package com.sample.impl.driver.f20;
+package com.botts.impl.driver.f20.rain;
 
-import org.sensorhub.utils.OshBundleActivator;
+import java.util.List;
 
-public class Activator extends OshBundleActivator {
+/**
+ * JSON object of sensor observation from MQTT stream
+ */
+class RainObject {
+
+    protected String id;
+    protected String time;
+    protected List<String> value;
+
 }

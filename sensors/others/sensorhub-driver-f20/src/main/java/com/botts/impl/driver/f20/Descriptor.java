@@ -13,17 +13,22 @@
 
  ******************************* END LICENSE BLOCK ***************************/
 
-package com.sample.impl.driver.f20.rain;
+package com.botts.impl.driver.f20;
 
-import java.util.List;
+import org.sensorhub.api.module.IModule;
+import org.sensorhub.api.module.IModuleProvider;
+import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.impl.module.JarModuleProvider;
 
-/**
- * JSON object of sensor observation from MQTT stream
- */
-public class RainObject {
+public class Descriptor extends JarModuleProvider implements IModuleProvider {
 
-    public String id;
-    public String time;
-    public List<String> value;
+    public Class<? extends IModule<?>> getModuleClass() {
 
+        return F20Driver.class;
+    }
+
+    public Class<? extends ModuleConfig> getModuleConfigClass() {
+
+        return F20Config.class;
+    }
 }

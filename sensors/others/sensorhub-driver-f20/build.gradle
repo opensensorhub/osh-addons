@@ -20,7 +20,7 @@ test {
 osgi {
     manifest {
         attributes ('Bundle-Vendor': 'Botts Innovative Research, Inc.')
-        attributes ('Bundle-Activator': 'com.sample.impl.driver.f20.Activator')
+        attributes ('Bundle-Activator': 'com.botts.impl.driver.f20.Activator')
     }
 }
 

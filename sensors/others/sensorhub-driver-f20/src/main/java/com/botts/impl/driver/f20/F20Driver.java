@@ -13,10 +13,10 @@
 
  ******************************* END LICENSE BLOCK ***************************/
 
-package com.sample.impl.driver.f20;
+package com.botts.impl.driver.f20;
 
 import com.google.gson.Gson;
-import com.sample.impl.driver.f20.rain.RainOutput;
+import com.botts.impl.driver.f20.rain.RainOutput;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -51,6 +51,7 @@ public class F20Driver extends AbstractSensorModule<F20Config> {
         output.doInit();
 
         try {
+            // Create MQTT client and connect to MQTT broker specified by config
             mqttClient = new MqttClient(
                     config.broker,
                     getUniqueIdentifier(),
@@ -70,8 +71,8 @@ public class F20Driver extends AbstractSensorModule<F20Config> {
     public void doStart() throws SensorHubException {
 
         if (null != output) {
-            // Allocate necessary resources and start outputs
             try {
+                // Begin subscription to MQTT topic ID, and let our output class handle the MQTT data stream
                 mqttClient.subscribe(config.topicId, ((topic, message) -> output.handleMessage(topic, message)));
             } catch (MqttException e) {
                 throw new SensorHubException("Error subscribing to topic " + config.topicId + " : " + e.getMessage(), e);
@@ -82,12 +83,14 @@ public class F20Driver extends AbstractSensorModule<F20Config> {
     @Override
     public void doStop() throws SensorHubException {
         try {
+            // Unsubscribe from MQTT topic
             mqttClient.unsubscribe(config.topicId);
         } catch (MqttException e) {
             throw new SensorHubException("", e);
         }
     }
 
+    // Use MQTT client connection status as connection status of this driver
     @Override
     public boolean isConnected() {
         return mqttClient.isConnected();
