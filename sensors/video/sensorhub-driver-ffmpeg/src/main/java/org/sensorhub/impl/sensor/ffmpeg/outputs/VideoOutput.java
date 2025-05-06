@@ -33,21 +33,21 @@ import java.util.concurrent.Executor;
  * Output for video data from the FFMPEG sensor.
  */
 public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutput<T> implements DataBufferListener {
+    private static final String CODEC_MJPEG = "JPEG";
+    private static final String CODEC_H264 = "H264";
+    private static final Logger logger = LoggerFactory.getLogger(VideoOutput.class.getSimpleName());
+    private static final int MAX_NUM_TIMING_SAMPLES = 10;
+
     private final String outputLabel;
     private final String outputDescription;
-
-    private static final Logger logger = LoggerFactory.getLogger(VideoOutput.class.getSimpleName());
-
     private final int videoFrameWidth;
     private final int videoFrameHeight;
     private final String codecName;
+    private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
+    private final Object histogramLock = new Object();
 
     private DataComponent dataStruct;
     private DataEncoding dataEncoding;
-
-    private static final int MAX_NUM_TIMING_SAMPLES = 10;
-    private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
-    private final Object histogramLock = new Object();
     private Executor executor;
 
     /**
@@ -74,9 +74,17 @@ public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
 
         this.videoFrameWidth = videoFrameDimensions[0];
         this.videoFrameHeight = videoFrameDimensions[1];
-        this.codecName = codecName;
         this.outputLabel = outputLabel;
         this.outputDescription = outputDescription;
+
+        // Translate the codec name to the compression format needed by OSH
+        if (codecName.equalsIgnoreCase("mjpeg") || codecName.equalsIgnoreCase("jpeg")) {
+            this.codecName = CODEC_MJPEG;
+        } else if (codecName.equalsIgnoreCase("h264")) {
+            this.codecName = CODEC_H264;
+        } else {
+            throw new IllegalArgumentException("Unsupported codec: " + codecName);
+        }
 
         logger.debug("Video output created.");
     }
