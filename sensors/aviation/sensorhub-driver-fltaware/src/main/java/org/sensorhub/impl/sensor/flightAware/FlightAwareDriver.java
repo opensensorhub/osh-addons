@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
@@ -31,7 +30,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.comm.IMessageQueuePush;
 import org.sensorhub.api.comm.IMessageQueuePush.MessageListener;
-import org.sensorhub.api.comm.MessageQueueConfig;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModuleStateManager;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -373,15 +371,9 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig>
     {
         try
         {
-            // generate full subscription name
-            MessageQueueConfig pubSubConfig = (MessageQueueConfig)config.pubSubConfig.clone();
-            String prefix = pubSubConfig.subscriptionName == null ? "" : pubSubConfig.subscriptionName + "-";
-            String hostname = InetAddress.getLocalHost().getHostName().toLowerCase() + "-";
-            pubSubConfig.subscriptionName = hostname + prefix + pubSubConfig.topicName;
-            
             // load message queue implementation
             var moduleReg = getParentHub().getModuleRegistry();
-	        msgQueue = (IMessageQueuePush<?>)moduleReg.loadSubModule(this, pubSubConfig, true);
+	        msgQueue = (IMessageQueuePush<?>)moduleReg.loadSubModule(this, config.pubSubConfig, true);
             
             if (!publishOnly)
             {
