@@ -16,8 +16,10 @@ package org.sensorhub.utils.aero.impl;
 
 import org.sensorhub.utils.aero.AeroHelper;
 import org.sensorhub.utils.aero.IWaypoint;
+import org.vast.data.DataBlockProxy;
 import org.vast.data.IDataAccessor;
 import org.vast.swe.SWEBuilders.DataRecordBuilder;
+import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataRecord;
 
 
@@ -40,7 +42,7 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
     }
     
     
-    public static DataRecordBuilder getRecordBuilder(String name)
+    static DataRecordBuilder getRecordBuilder(String name)
     {
         AeroHelper fac = new AeroHelper();
         
@@ -56,6 +58,14 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
             .addField("lat", fac.createLatitude())
             .addField("lon", fac.createLongitude())
             .addField("alt", fac.createBaroAlt());
+    }
+    
+    
+    public static WaypointRecord create(DataBlock dblk)
+    {
+        var proxy = DataBlockProxy.generate(WaypointRecord.getSchema(""), WaypointRecord.class);
+        proxy.wrap(dblk);
+        return proxy;
     }
     
     

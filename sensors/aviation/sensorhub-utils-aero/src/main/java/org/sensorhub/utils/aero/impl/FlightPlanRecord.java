@@ -19,8 +19,10 @@ import java.time.LocalDate;
 import java.util.Collection;
 import org.sensorhub.utils.aero.AeroHelper;
 import org.sensorhub.utils.aero.IFlightPlan;
+import org.vast.data.DataBlockProxy;
 import org.vast.data.IDataAccessor;
 import org.vast.swe.SWEConstants;
+import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataRecord;
 
 
@@ -75,6 +77,14 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
                 .withVariableSize(numWptsCompId)
                 .withElement("wpt", WaypointRecord.getSchema("")))
             .build();
+    }
+    
+    
+    public static FlightPlanRecord create(DataBlock dblk)
+    {
+        var proxy = DataBlockProxy.generate(FlightPlanRecord.getSchema(""), FlightPlanRecord.class);
+        proxy.wrap(dblk);
+        return proxy;
     }
     
     
