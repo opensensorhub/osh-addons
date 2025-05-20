@@ -24,6 +24,7 @@ When added to an OpenSensorHub node, both of the drivers listed above have the f
   - **Connection String:** A string that indicates the source of the "live" MPEG TS stream. As currently implemented, this is an ffmpeg connection string, and can take a number of forms. Common examples are URLs, e.g. `https://myserver.local/path/to/stream.m2ts`, or TCP endpoints, e.g. `tcp://192.168.1.200:1234`. See the [ffmpeg documentation for more details of the format of this string](https://www.ffmpeg.org/ffmpeg-protocols.html). Only one of **File Path** and **Connection String** should be set. (Though if both are set, **File Path** is used.)
   - **FPS:** When **File Path** is set, this indicates how fast the data is streamed. A value of `0` means "stream as quickly as possible", and can be used to load historical data into the OSH historical database quickly.
   - **Loop:** When checked and **File Path** is set, indicates that the data should be looped to create a continuous stream of data.
+  - **Inject Extradata:** Only for H264. When checked, injects Annex B extradata into the video stream before every keyframe. This is necessary for late-join decoders (those that receive live data from the driver after the driver has started).
 
 - **Outputs:** Each of the following causes a specific output (data stream) to be separately emitted by the sensor.
   - **Airframe Position:** If enabled, the sensor will have a separate output that provides lat, lon, alt, heading, pitch, and roll of the airframe.

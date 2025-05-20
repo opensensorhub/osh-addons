@@ -196,6 +196,9 @@ public abstract class FFMPEGSensorBase<FFMPEGconfigType extends FFMPEGConfig> ex
 	        } else {
 	        	throw new SensorHubException("Either the input file path or the connection string must be set");
 	        }
+            if (mpegTsProcessor != null) {
+                mpegTsProcessor.injectExtradata(config.connection.injectExtradata);
+            }
 	        
 	        if (mpegTsProcessor.openStream()) {
 	        	logger.info("Stream opened for {}", getUniqueIdentifier());
