@@ -22,10 +22,12 @@ import org.bytedeco.ffmpeg.avutil.AVRational;
 import org.bytedeco.ffmpeg.global.avcodec;
 import org.bytedeco.ffmpeg.global.avformat;
 import org.bytedeco.ffmpeg.global.avutil;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.bytedeco.ffmpeg.global.avformat.av_read_frame;
@@ -177,6 +179,9 @@ public class MpegTsProcessor extends Thread {
      * If true, play the video file continuously in a loop
      */
     volatile boolean loop;
+
+    byte[] spsPpsHeader;
+    boolean doInjectExtradata = false;
     
 
     /**
@@ -206,6 +211,10 @@ public class MpegTsProcessor extends Thread {
         this.streamSource = source;
         this.fps = fps;
         this.loop = loop;
+    }
+
+    public void injectExtradata(boolean doInject) {
+        this.doInjectExtradata = doInject;
     }
 
     /**
@@ -271,6 +280,7 @@ public class MpegTsProcessor extends Thread {
         for (int streamId = 0; streamId < avFormatContext.nb_streams(); ++streamId) {
 
             int codecType = avFormatContext.streams(streamId).codecpar().codec_type();
+            int codecId = avFormatContext.streams(streamId).codecpar().codec_id();
 
             AVRational timeBase = avFormatContext.streams(streamId).time_base();
 
@@ -288,6 +298,8 @@ public class MpegTsProcessor extends Thread {
                 videoStreamTimeBase = timeBaseUnits;
             }
 
+
+
 //            if (INVALID_STREAM_ID == dataStreamId && avutil.AVMEDIA_TYPE_DATA == codecType) {
 //
 //                logger.debug("Data stream present with id: {}", streamId);
@@ -296,6 +308,12 @@ public class MpegTsProcessor extends Thread {
 //
 //                dataStreamTimeBase = timeBaseUnits;
 //            }
+        }
+        int extraSize = avFormatContext.streams(videoStreamId).codecpar().extradata_size();
+        // Get extradata if the data exists, the option was set in the config, and the codec is H264.
+        if (extraSize > 0 && doInjectExtradata && avFormatContext.streams(videoStreamId).codecpar().codec_id() == avcodec.AV_CODEC_ID_H264) {
+            //spsPpsHeader = new byte[extraSize];
+            spsPpsHeader = getAnnexBExtradata(avFormatContext.streams(videoStreamId).codecpar().extradata(), extraSize);
         }
     }
 
@@ -493,6 +511,8 @@ public class MpegTsProcessor extends Thread {
                 // If it is a video or data frame and there is a listener registered
                 if ((avPacket.stream_index() == videoStreamId) && (null != videoDataBufferListener)) {
 
+                    boolean isKeyFrame = (avPacket.flags() & avcodec.AV_PKT_FLAG_KEY) != 0;
+
                     // Process video packet
                     byte[] dataBuffer = new byte[avPacket.size()];
                     avPacket.data().get(dataBuffer);
@@ -511,8 +531,13 @@ public class MpegTsProcessor extends Thread {
                         }
                     }
 
-                    // Pass data buffer to interested listener
+
                     frameCount++;
+                    // Inject available extradata before keyframe
+                    if (isKeyFrame && spsPpsHeader != null) {
+                        videoDataBufferListener.onDataBuffer(new DataBufferRecord(avPacket.pts() * videoStreamTimeBase, spsPpsHeader));
+                    }
+                    // Pass data buffer to interested listener
                     videoDataBufferListener.onDataBuffer(new DataBufferRecord(avPacket.pts() * videoStreamTimeBase, dataBuffer));
                 }
 //                 else if ((avPacket.stream_index() == dataStreamId) && (null != metadataDataBufferListener)) {
@@ -626,6 +651,47 @@ public class MpegTsProcessor extends Thread {
 
             throw new IllegalStateException(message);
         }
+    }
+
+    private byte[] getAnnexBExtradata(BytePointer extradata, int size) {
+        if (extradata == null || size < 7) return null;
+
+        byte[] data = new byte[size];
+        extradata.get(data);
+
+        // Check for Annex B start code, either 0x000001 or 0x00000001
+        if (data[0] == 0x00 && data[1] == 0x00 && (data[2] == 0x01 || (data[2] == 0x00 && data[3] == 0x01))) {
+            // Already in Annex B format, use directly
+            return data;
+        }
+
+        // Otherwise, we need to convert AVCC to Annex B format
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int pos = 5;
+        int numSps = data[pos++] & 0x1F;
+        try {
+            for (int i = 0; i < numSps; i++) {
+                if (pos + 2 > data.length) return null;
+                int spsLen = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
+                if (pos + spsLen > data.length) return null;
+                out.write(new byte[]{0x00, 0x00, 0x00, 0x01});
+                out.write(data, pos, spsLen);
+                pos += spsLen;
+            }
+
+            int numPps = data[pos++] & 0xFF;
+            for (int i = 0; i < numPps; i++) {
+                if (pos + 2 > data.length) return null;
+                int ppsLen = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
+                if (pos + ppsLen > data.length) return null;
+                out.write(new byte[]{0x00, 0x00, 0x00, 0x01});
+                out.write(data, pos, ppsLen);
+                pos += ppsLen;
+            }
+        } catch (Exception e) {
+            logger.error("Error extracting SPS and PPS from AVCC extradata", e);
+        }
+        return out.toByteArray();
     }
 
 //    public String getCodecFormat() {

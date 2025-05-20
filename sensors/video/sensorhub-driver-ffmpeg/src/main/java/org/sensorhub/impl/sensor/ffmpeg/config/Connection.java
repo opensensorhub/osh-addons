@@ -42,6 +42,9 @@ public class Connection {
     @DisplayInfo(label = "MJPEG", desc = "Select if video codec format is MJPEG. Otherwise driver will use H264.")
     public boolean isMJPEG = false;
 
+    @DisplayInfo(label = "Inject Extradata for Streaming", desc = "Injects extradata into the video stream. Set true if this driver is being used to output a live video stream for late-join decoders.")
+    public boolean injectExtradata = true;
+
     @DisplayInfo(label = "Ignore Data Timestamps", desc = "This ignores any data timestamps and defaults to current system time. This is necessary if video stream does not contain any timestamps")
     public boolean ignoreDataTimestamps = true;
 }
