@@ -2,11 +2,16 @@ description = 'Gridded Dataset Utilities'
 ext.details = 'Various utilities for handling grid formats based on Unidata library'
 version = '0.3.3'
 
+def thisProjectDir = projectDir
 rootProject.allprojects {
   repositories {
-    maven {
+    /*maven {
       name 'unidata'
       url 'https://artifacts.unidata.ucar.edu/repository/unidata-all'
+    }*/
+    maven {
+      name 'unidata-local'
+      url "file:///$thisProjectDir/libs"
     }
   }
 }
