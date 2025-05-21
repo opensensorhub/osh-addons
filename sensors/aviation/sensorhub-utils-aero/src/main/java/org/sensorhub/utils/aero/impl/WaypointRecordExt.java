@@ -33,6 +33,8 @@ import net.opengis.swe.v20.DataRecord;
  */
 public interface WaypointRecordExt extends WaypointRecord, IWaypointWithState
 {
+    public static final DataRecord SCHEMA = getSchema("");
+    
     
     public static DataRecord getSchema(String name)
     {
@@ -58,9 +60,15 @@ public interface WaypointRecordExt extends WaypointRecord, IWaypointWithState
     }
     
     
+    public static WaypointRecordExt create()
+    {
+        return create(SCHEMA.createDataBlock());
+    }
+    
+    
     public static WaypointRecordExt create(DataBlock dblk)
     {
-        var proxy = DataBlockProxy.generate(WaypointRecordExt.getSchema(""), WaypointRecordExt.class);
+        var proxy = DataBlockProxy.generate(SCHEMA, WaypointRecordExt.class);
         proxy.wrap(dblk);
         return proxy;
     }

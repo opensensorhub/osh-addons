@@ -38,6 +38,8 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
 {
     public static final String DEF_FLIGHTPLAN_REC = AeroHelper.AERO_RECORD_URI_PREFIX + "FlightPlan";
     
+    public static final DataRecord SCHEMA = getSchema("");
+    
     
     public static DataRecord getSchema(String name)
     {
@@ -80,9 +82,15 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
     }
     
     
+    public static FlightPlanRecord create()
+    {
+        return create(SCHEMA.createDataBlock());
+    }
+    
+    
     public static FlightPlanRecord create(DataBlock dblk)
     {
-        var proxy = DataBlockProxy.generate(FlightPlanRecord.getSchema(""), FlightPlanRecord.class);
+        var proxy = DataBlockProxy.generate(SCHEMA, FlightPlanRecord.class);
         proxy.wrap(dblk);
         return proxy;
     }

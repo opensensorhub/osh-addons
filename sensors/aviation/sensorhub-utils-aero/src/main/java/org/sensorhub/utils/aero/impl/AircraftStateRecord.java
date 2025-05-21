@@ -35,6 +35,8 @@ public interface AircraftStateRecord extends IDataAccessor, IAircraftState
 {
     public static final String DEF_AIRCRAFT_STATE_RECORD = AeroHelper.AERO_RECORD_URI_PREFIX + "AircraftState";
     
+    public static final DataRecord SCHEMA = getSchema("");    
+    
     
     public static DataRecord getSchema(String name)
     {
@@ -65,9 +67,15 @@ public interface AircraftStateRecord extends IDataAccessor, IAircraftState
     }
     
     
+    public static AircraftStateRecord create()
+    {
+        return create(SCHEMA.createDataBlock());
+    }
+    
+    
     public static AircraftStateRecord create(DataBlock dblk)
     {
-        var proxy = DataBlockProxy.generate(AircraftStateRecord.getSchema(""), AircraftStateRecord.class);
+        var proxy = DataBlockProxy.generate(SCHEMA, AircraftStateRecord.class);
         proxy.wrap(dblk);
         return proxy;
     }

@@ -35,12 +35,13 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
 {
     public static final String DEF_WAYPOINT_REC = AeroHelper.AERO_RECORD_URI_PREFIX + "Waypoint";
     
+    public static final DataRecord SCHEMA = getSchema("");
+    
     
     public static DataRecord getSchema(String name)
     {
         return getRecordBuilder(name).build();
     }
-    
     
     static DataRecordBuilder getRecordBuilder(String name)
     {
@@ -61,9 +62,15 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
     }
     
     
+    public static WaypointRecord create()
+    {
+        return create(SCHEMA.createDataBlock());
+    }
+    
+    
     public static WaypointRecord create(DataBlock dblk)
     {
-        var proxy = DataBlockProxy.generate(WaypointRecord.getSchema(""), WaypointRecord.class);
+        var proxy = DataBlockProxy.generate(SCHEMA, WaypointRecord.class);
         proxy.wrap(dblk);
         return proxy;
     }
