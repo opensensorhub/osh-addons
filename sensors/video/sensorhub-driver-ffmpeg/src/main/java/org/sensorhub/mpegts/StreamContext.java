@@ -5,9 +5,16 @@ import org.bytedeco.ffmpeg.avcodec.AVCodecContext;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avformat.AVFormatContext;
 import org.bytedeco.ffmpeg.global.avcodec;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayOutputStream;
 
 public class StreamContext {
+
+    private static final Logger logger = LoggerFactory.getLogger(StreamContext.class);
     /**
      * ID of invalid sub streams within the media stream.
      */
@@ -37,6 +44,12 @@ public class StreamContext {
      * Name of the codec associated with the stream.
      */
     private String codecName;
+
+    private int codecId;
+
+    private byte[] extraData = null;
+
+    private boolean isInjectingExtradata = false;
 
     /**
      * Returns the ID of the stream associated with this context.
@@ -110,6 +123,10 @@ public class StreamContext {
         this.codecName = codecName;
     }
 
+    private void setCodecId(int codecId) { this.codecId = codecId; }
+
+    public void setInjectingExtradata(boolean isInjectingExtradata) { this.isInjectingExtradata = isInjectingExtradata; }
+
     /**
      * Returns whether this context has a valid stream ID.
      *
@@ -155,11 +172,20 @@ public class StreamContext {
 
         // Store the codec name
         setCodecName(codec.name().getString());
+        setCodecId(codec.id());
 
         // Attempt to open the codec
         int returnCode = avcodec.avcodec_open2(codecContext, codec, (PointerPointer<?>) null);
         if (returnCode < 0) {
             throw new IllegalStateException("Cannot open codec");
+        }
+
+        if (isInjectingExtradata && codecId == avcodec.AV_CODEC_ID_H264) {
+            BytePointer extra = avFormatContext.streams(getStreamId()).codecpar().extradata();
+            int extraLen = avFormatContext.streams(getStreamId()).codecpar().extradata_size();
+            extraData = getAnnexBExtradata(extra, extraLen);
+        } else {
+            extraData = null;
         }
     }
 
@@ -178,7 +204,61 @@ public class StreamContext {
         byte[] dataBuffer = new byte[avPacket.size()];
         avPacket.data().get(dataBuffer);
 
+        // Add extradata if the packet has an h264 keyframe
+        if (extraData != null && (avPacket.flags() & avcodec.AV_PKT_FLAG_KEY) != 0) {
+            getDataBufferListener().onDataBuffer(new DataBufferRecord(avPacket.pts() * getStreamTimeBase(), extraData));
+        }
         // Pass data buffer to the interested listener
         getDataBufferListener().onDataBuffer(new DataBufferRecord(avPacket.pts() * getStreamTimeBase(), dataBuffer));
+    }
+
+    /**
+     * Converts the given extradata from AVCC format to Annex B format.
+     * If the data is already in Annex B format, it is returned directly.
+     *
+     * @param extradata A BytePointer containing the codec extradata. Must not be null.
+     * @param size The size of the extradata in bytes.
+     * @return A byte array containing the Annex B formatted extradata, or {@code null} if the data
+     *         is invalid, cannot be processed, or if an error occurs during processing.
+     */
+    private byte[] getAnnexBExtradata(BytePointer extradata, int size) {
+        if (extradata == null || size < 7) return null;
+
+        byte[] data = new byte[size];
+        extradata.get(data);
+
+        // Check for Annex B start code, either 0x000001 or 0x00000001
+        if (data[0] == 0x00 && data[1] == 0x00 && (data[2] == 0x01 || (data[2] == 0x00 && data[3] == 0x01))) {
+            // Already in Annex B format, use directly
+            return data;
+        }
+
+        // Otherwise, we need to convert AVCC to Annex B format
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int pos = 5;
+        int numSps = data[pos++] & 0x1F;
+        try {
+            for (int i = 0; i < numSps; i++) {
+                if (pos + 2 > data.length) return null;
+                int spsLen = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
+                if (pos + spsLen > data.length) return null;
+                out.write(new byte[]{0x00, 0x00, 0x00, 0x01});
+                out.write(data, pos, spsLen);
+                pos += spsLen;
+            }
+
+            int numPps = data[pos++] & 0xFF;
+            for (int i = 0; i < numPps; i++) {
+                if (pos + 2 > data.length) return null;
+                int ppsLen = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
+                if (pos + ppsLen > data.length) return null;
+                out.write(new byte[]{0x00, 0x00, 0x00, 0x01});
+                out.write(data, pos, ppsLen);
+                pos += ppsLen;
+            }
+        } catch (Exception e) {
+            logger.error("Error extracting SPS and PPS from AVCC extradata", e);
+        }
+        return out.toByteArray();
     }
 }
