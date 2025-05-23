@@ -147,7 +147,6 @@ public class AeroUtils
         return ensureFlightFoi(m.getParentHub(), flightId);
     }
     
-    
     public static String ensureFlightFoi(ISensorHub hub, String flightId)
     {
         if (hub.getSystemDriverRegistry() != null)
@@ -185,12 +184,6 @@ public class AeroUtils
         }
         
         return null;
-    }
-    
-    
-    public static String ensureTailFoi(IModule<?> m, String tailId)
-    {
-        return ensureTailFoi(m.getParentHub(), tailId);
     }
 
 
@@ -232,6 +225,12 @@ public class AeroUtils
         }
         
         return null;
+    }
+    
+    
+    public static String ensureTailFoi(IModule<?> m, String tailId)
+    {
+        return ensureTailFoi(m.getParentHub(), tailId);
     }
 
     public static String ensureTailFoi(ISensorHub hub, String tailId)
