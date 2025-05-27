@@ -42,6 +42,9 @@ When added to an OpenSensorHub node, the driver has the following configuration 
     - **Loop:**
       When **Connection String** is a file,
       this indicates that the data should be looped to create a continuous stream of data.
+    - **Inject Extradata:**
+      Only for H264. When checked, injects Annex B extradata into the video stream before every keyframe. 
+      This is necessary for late-join decoders (those that receive live data from the driver after the driver has started).
 
 - **Position:**
     - **Location:** (Optional)
