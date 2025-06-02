@@ -54,12 +54,14 @@ public abstract class Coder<I, O> implements Runnable {
 
     // Blocks while a frame is being processed
     public synchronized Queue<O> getPackets() {
-        if (doRun.get()) {
-            waitingThread = Thread.currentThread();
-            try {
-                waitingThread.wait();
-            } catch (InterruptedException e) {
-                logger.error("Interrupted while waiting for packets", e);
+        waitingThread = Thread.currentThread();
+        synchronized (waitingThread) {
+            if (doRun.get()) {
+                try {
+                    waitingThread.wait();
+                } catch (InterruptedException e) {
+                    logger.error("Interrupted while waiting for packets", e);
+                }
             }
         }
 
