@@ -12,10 +12,10 @@
 package org.sensorhub.impl.sensor.BNO085;
 
 import org.sensorhub.impl.sensor.BNO085.config.Bno085Config;
-import com.sample.impl.sensor.BNO085.outputs.*;
+import org.sensorhub.impl.sensor.BNO085.outputs.*;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.BNO085.outputs.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
