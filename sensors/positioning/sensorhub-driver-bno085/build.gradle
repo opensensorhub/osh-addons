@@ -1,0 +1,42 @@
+description = 'BNO085'
+ext.details = "BNO085 Sensor over i2c Connection"
+version = '1.0.0'
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+//    implementation project(':sensorhub-service-video')
+//    implementation project(':sensorhub-driver-videocam')
+    testImplementation('junit:junit:4.13.1')
+
+// Pi4j Dependencies
+    implementation 'com.pi4j:pi4j-core:2.8.0'
+    implementation 'com.pi4j:pi4j-plugin-linuxfs:2.8.0'
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+//      If tests are to be excluded list them here as follows
+//          exclude '**/TestNameClass.class'
+test {
+    useJUnit()
+}
+
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes ('Bundle-Vendor': 'Botts Inc')
+        attributes ('Bundle-Activator': 'com.sample.impl.sensor.BNO085.Activator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'bno085'
+            name 'Bill Brown'
+            organization 'Botts-inc'
+            organizationUrl 'https://botts-inc.com/'
+        }
+    }
+}
