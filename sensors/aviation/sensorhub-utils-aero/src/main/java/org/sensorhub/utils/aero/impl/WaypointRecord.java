@@ -52,10 +52,10 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
             .definition(DEF_WAYPOINT_REC) 
             .label("Waypoint")
             .addField("code", fac.createWaypointCode())
-            /*.addField("type", fac.createCategory()
+            .addField("type", fac.createCategory()
                 .definition(AeroHelper.DEF_WAYPOINT_TYPE)
                 .label("Waypoint Type")
-                .description("Type of navigation point (airport, waypoint, VOR, VORTAC, DME, etc."))*/
+                .addAllowedValues(WaypointType.class))
             .addField("lat", fac.createLatitude())
             .addField("lon", fac.createLongitude())
             .addField("alt", fac.createBaroAlt());
@@ -83,16 +83,12 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
     @SweMapping(path="code")
     void setCode(String val);
     
-    /*@Override
+    @Override
     @SweMapping(path="type")
     String getType();
 
     @SweMapping(path="type")
-    void setType(String val);*/
-    default String getType()
-    {
-        return null;
-    }
+    void setType(String val);
     
     @Override
     @SweMapping(path="lat")

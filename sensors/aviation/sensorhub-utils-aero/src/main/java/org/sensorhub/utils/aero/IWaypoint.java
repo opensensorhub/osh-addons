@@ -16,6 +16,15 @@ package org.sensorhub.utils.aero;
 
 public interface IWaypoint
 {
+    public enum WaypointType
+    {
+        AIRPORT,
+        REDISPATCH,
+        ETOPS_ENTRY,
+        ETOPS_EXIT,
+        ALTERNATE
+    }
+    
     /**
      * @return Waypoint code (3 to 5 letters ICAO code) 
      */
