@@ -3,13 +3,12 @@ package org.sensorhub.impl.process.video.transcoder;
 import static org.bytedeco.ffmpeg.global.avutil.*;
 
 import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.bytedeco.ffmpeg.global.avcodec.*;
 
-import org.bytedeco.ffmpeg.avcodec.AVCodec;
 import org.bytedeco.ffmpeg.avcodec.AVCodecContext;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avutil.AVFrame;
@@ -21,44 +20,50 @@ public abstract class Coder<I, O> implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(Coder.class);
 
-    String codecName;
-    protected Queue<I> inPackets; // ONLY allow the main loop to poll
-    protected Queue<O> outPackets; // ONLY allow the main loop to add
-    private I inPacket;
-    private O outPacket;
+    int codecId;
+    protected AVCodecContext codec_ctx;
+    protected volatile Queue<I> inPackets; // ONLY allow the main loop to poll
+    protected volatile Queue<O> outPackets; // ONLY allow the main loop to add
+    protected I inPacket;
+    protected O outPacket;
     //volatile boolean isProcessing = false; // Set to true at the start of the loop, false at the end
-    //boolean isGettingPackets = false;
-    Thread waitingThread;
+    volatile boolean isGettingPackets = false;
+    final Object waitingObj = new Object();
     Class<I> inputClass;
     Class<O> outputClass;
+    HashMap<String, String> options;
 
     public AtomicBoolean doRun = new AtomicBoolean(true);
 
-    public Coder(String codecName, Class<I> inputClass, Class<O> outputClass) {
+    public Coder(int codecId, Class<I> inputClass, Class<O> outputClass, HashMap<String, String> options) {
         super();
 
         assert inputClass == AVPacket.class || inputClass == AVFrame.class;
         assert outputClass == AVPacket.class || outputClass == AVFrame.class;
+        assert options != null;
 
-        this.codecName = codecName;
-        this.inPackets = new ConcurrentLinkedQueue<I>();
-        this.outPackets = new ConcurrentLinkedQueue<O>();
+        this.codecId = codecId;
+        this.inPackets = new ArrayDeque<>();
+        this.outPackets = new ArrayDeque<>();
         this.inputClass = inputClass;
         this.outputClass = outputClass;
+        this.options = options;
     }
 
     // Add packet to queue
-    public synchronized void addPacket(final I packet) {
+    public void addPacket(final I packet) {
         inPackets.add(packet);
     }
 
     // Blocks while a frame is being processed
-    public synchronized Queue<O> getPackets() {
-        waitingThread = Thread.currentThread();
-        synchronized (waitingThread) {
+    public Queue<O> getPackets() {
+
+        synchronized (waitingObj) {
             if (doRun.get()) {
                 try {
-                    waitingThread.wait();
+                    logger.debug("Waiting");
+                    waitingObj.wait();
+                    logger.debug("Done");
                 } catch (InterruptedException e) {
                     logger.error("Interrupted while waiting for packets", e);
                 }
@@ -66,45 +71,86 @@ public abstract class Coder<I, O> implements Runnable {
         }
 
         if (outPackets.isEmpty()) {
-            return null;
+            return new ArrayDeque<O>();
         }
 
         //isGettingPackets = true;
         Queue<O> packets = new ArrayDeque<O>(outPackets);
-        outPackets.clear();
-        //isGettingPackets = false;
-        waitingThread = null;
+        deallocateOutQueue();
         return packets;
     }
 
+    protected abstract void deallocateOutQueue();
+
     // To be implemented by subclasses, encoder/decoder
-    protected abstract void initCodec(AVCodec codec, AVCodecContext ctx);
+    protected abstract void initCodec();
 
     public void stop() {
         doRun.set(false);
     }
 
     // Take data from input queue and send to encoder/decoder
-    protected abstract void sendPacket(AVCodecContext codec_ctx, I packet);
+    protected abstract void sendInPacket();
 
     // Take data from encoder/decoder and send to output queue
-    protected abstract void receivePacket(AVCodecContext codec_ctx, O packet);
+    protected abstract void receiveOutPacket();
 
     // Allocate packets/frames
-    protected abstract void allocatePackets(I inPacket, O outPacket);
+    protected abstract void allocatePackets();
 
     // Deallocate packets/frames
-    protected abstract void deallocatePackets(I inPacket, O outPacket);
+    protected abstract void deallocatePackets();
+
+    // Set options in codec context. Context must be allocated prior to calling.
+    protected void initOptions(AVCodecContext codec_ctx) {
+
+        if (options.containsKey("fps")) {
+            codec_ctx.time_base(av_make_q(1, Integer.parseInt(options.get("fps"))));
+        } else {
+            codec_ctx.time_base(av_make_q(1, 30));
+        }
+
+        if (options.containsKey("bit_rate")) {
+            codec_ctx.bit_rate(Integer.parseInt(options.get("bit_rate")) * 1000);
+        } else {
+            codec_ctx.bit_rate(150*1000);
+        }
+
+        if (options.containsKey("width")) {
+            codec_ctx.width(Integer.parseInt(options.get("width")));
+        } else {
+            codec_ctx.width(640);
+        }
+
+        if (options.containsKey("height")) {
+            codec_ctx.height(Integer.parseInt(options.get("height")));
+        } else {
+            codec_ctx.height(480);
+        }
+
+        if (options.containsKey("pix_fmt")) {
+            if (options.get("pix_fmt").equals("yuv420p")) {
+                codec_ctx.pix_fmt(AV_PIX_FMT_YUV420P);
+            } else if (options.get("pix_fmt").equals("rgb24")) {
+                codec_ctx.pix_fmt(AV_PIX_FMT_RGB24);
+            }
+            // TODO Add more uncompressed formats (or find a better way of doing this)
+        } else {
+            codec_ctx.pix_fmt(AV_PIX_FMT_YUV420P);
+        }
+
+        av_opt_set(codec_ctx.priv_data(), "preset", "ultrafast", 0);
+        av_opt_set(codec_ctx.priv_data(), "tune", "zerolatency", 0);
+        codec_ctx.strict_std_compliance(AVCodecContext.FF_COMPLIANCE_UNOFFICIAL);
+    }
 
     @Override
     public void run() {
-        AVCodecContext codec_ctx = null;
-        AVCodec codec = null;
+        initCodec();
+        inPacket = (I)(new Object());
+        outPacket = (O)(new Object());
 
-        // init decoder context
-        initCodec(codec, codec_ctx);
-
-        allocatePackets(inPacket, outPacket);
+        allocatePackets();
 
         // init FFMPEG objects
         av_log_set_level(logger.isDebugEnabled() ? AV_LOG_INFO : AV_LOG_FATAL);
@@ -120,26 +166,26 @@ public abstract class Coder<I, O> implements Runnable {
             while (!inPackets.isEmpty()) {
                 // Get data from in queue
                 // Send data to encoder/decoder
-                sendPacket(codec_ctx, inPacket);
+                sendInPacket();
 
                 // Receive data from encoder/decoder
                 // Add data to out queue
-                receivePacket(codec_ctx, outPacket);
+                receiveOutPacket();
 
                 //isProcessing = false;
-                if (waitingThread != null) {
-                    waitingThread.notify();
+                // Wake a thread waiting for packets.
+                synchronized (waitingObj) {
+                    waitingObj.notify();
                 }
             }
         }
 
         // End of coding
-        if (waitingThread != null) {
-            waitingThread.notify();
+        synchronized (waitingObj) {
+            waitingObj.notifyAll();
         }
 
-        deallocatePackets(inPacket, outPacket);
-
+        deallocatePackets();
         avcodec_free_context(codec_ctx);
     }
 }

@@ -30,9 +30,7 @@ import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.RasterHelper;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.bytedeco.ffmpeg.global.avcodec.*;
 import static org.bytedeco.ffmpeg.global.avutil.*;
@@ -57,22 +55,22 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
 	public static final OSHProcessInfo INFO = new OSHProcessInfo("video:FFMpegTranscoder", "FFMPEG Video Transcoder", null, FFMpegTranscoder.class);
 
-	enum CodecEnum {
+	public enum CodecEnum {
         //AUTO("auto"),
-        H264("h264"),
-        H265("hevc"),
-        MJPEG("mjpeg"),
-        VP8("vp8"),
-        VP9("vp9"),
-        MPEG2("mpeg2video"),
-        RGB("rgb24"),
-        YUV("yuv420p");
+        H264(AV_CODEC_ID_H264),
+        H265(AV_CODEC_ID_H265),
+        MJPEG(AV_CODEC_ID_MJPEG),
+        VP8(AV_CODEC_ID_VP8),
+        VP9(AV_CODEC_ID_VP9),
+        MPEG2(AV_CODEC_ID_MPEG2TS), // Not 100% sure if this one is correct
+        RGB(AV_PIX_FMT_RGB24),  // Keeping the uncompressed formats in this enum; shouldn't cause problems
+        YUV(AV_PIX_FMT_YUV420P);
 
-	    String ffmpegName;
+	    int ffmpegId;
 
-	    CodecEnum(String ffmpegName)
+	    CodecEnum(int ffmpegId)
 	    {
-	        this.ffmpegName = ffmpegName;
+	        this.ffmpegId = ffmpegId;
 	    }
 	}
 
@@ -81,7 +79,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     Count inputWidth, inputHeight;
     DataArray imgIn;
     Time outputTimeStamp;
-    Count outputWidth, outputHeight;
+    Count outputWidth, outputHeight, inputFps, inputBitrate;
     DataArray imgOut;
     Text inCodecParam;
     Text outCodecParam;
@@ -109,6 +107,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     CodecEnum inCodec;
     CodecEnum outCodec;
     Runnable inputProcess;
+    int swsPixFmt = AV_PIX_FMT_YUV420P;
 
 
     public FFMpegTranscoder()
@@ -118,24 +117,18 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
         // inputs
         inputData.add("codedFrame", swe.createRecord()
-                .label("Video Frame")
-                .addField("time", inputTimeStamp = swe.createTime()
+                .name("inFrame")
+                .label("Input Video Frame")
+                .description("")
+                .definition(SWEHelper.getPropertyUri("VideoFrame"))
+                .addField("sampleTime", swe.createTime()
                         .asSamplingTimeIsoUTC()
-                        .build())
-                .addField("width", inputWidth = swe.createCount()
-                        .id("IN_WIDTH")
-                        .label("Input Frame Width")
-                        .build())
-                .addField("height", inputHeight = swe.createCount()
-                        .id("IN_HEIGHT")
-                        .label("Input Frame Height")
-                        .build())
-                .addField("img", imgIn = swe.newRgbImage(
-                        inputWidth,
-                        inputHeight,
-                        DataType.BYTE))
+                        .label("Sample Time")
+                        .description("Time of data collection"))
+                .addField("img", swe.newRgbImage(swe.createCount().id("width").build(), swe.createCount().id("height").build(), DataType.BYTE))
                 .build());
 
+        // TODO Add width/height parameters for scaling
         // parameters
         paramData.add("inCodec", inCodecParam = swe.createText()
                 .definition(SWEHelper.getPropertyUri("Codec"))
@@ -157,22 +150,15 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
         // outputs
         outputData.add("outFrame", swe.createRecord()
-                .label("Video Frame")
-                .addField("time", outputTimeStamp = swe.createTime()
+                .name("outFrame")
+                .label("Output Video Frame")
+                .description("")
+                .definition(SWEHelper.getPropertyUri("VideoFrame"))
+                .addField("sampleTime", swe.createTime()
                         .asSamplingTimeIsoUTC()
-                        .build())
-                .addField("width", outputWidth = swe.createCount()
-                        .id("OUT_WIDTH")
-                        .label("Output Frame Width")
-                        .build())
-                .addField("height", outputHeight = swe.createCount()
-                        .id("OUT_HEIGHT")
-                        .label("Output Frame Height")
-                        .build())
-                .addField("img", imgOut = swe.newRgbImage(
-                        outputWidth,
-                        outputHeight,
-                        DataType.BYTE))
+                        .label("Sample Time")
+                        .description("Time of data collection"))
+                .addField("img", swe.newRgbImage(swe.createCount().id("width").build(), swe.createCount().id("height").build(), DataType.BYTE))
                 .build());
     }
 
@@ -182,6 +168,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     {
         boolean outputSizeChanged = false;
 
+        // TODO Figure out if this allows for video to be resized, or is just accommodating changing inputs
         // we need to set output frame dimensions if it was set to a fixed value
         if (inputWidth.getData() != null && inputWidth.getData().getIntValue() > 0)
         {
@@ -247,34 +234,91 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             }
 
              */
+            // Set options for the codecs
+            // May add more, so using hashmap
+            // May need two hashmaps. For fps, need to work around the decimation factor (or just remove it)
+            HashMap<String, String> decOptions = new HashMap<>();
+            HashMap<String, String> encOptions = new HashMap<>();
+            DataComponent temp;
+            temp = inputFps;
+            int fps = 0;
+            if (temp != null) {
+                fps = temp.getData().getIntValue();
+            }
+            if (fps > 0) {
+                decOptions.put("fps", String.valueOf(fps));
+                encOptions.put("fps", String.valueOf(fps));
+            }
+            decOptions.put("pix_fmt", "yuv420p");
+            if (outCodec == CodecEnum.RGB) {
+                encOptions.put("pix_fmt", "rgb24");
+            } else {
+                encOptions.put("pix_fmt", "yuv420p");
+            }
+
+            temp = inputBitrate;
+            int bitrate = 0;
+            if (temp != null) {
+                bitrate = temp.getData().getIntValue();
+            }
+            if (bitrate > 0) {
+                //decOptions.put("bit_rate", String.valueOf(bitrate));
+                //encOptions.put("bit_rate", String.valueOf(bitrate)); // Just assuming input br is the same as out, could this change?
+            }
+            int width = 0;
+            temp = inputWidth;
+            if (temp != null) {
+                width = temp.getData().getIntValue();
+            }
+            if (width > 0) {
+                //decOptions.put("width", String.valueOf(width));
+                encOptions.put("width", String.valueOf(width));
+            }
+            temp = inputHeight;
+            int height = 0;
+            if (temp != null) {
+                height = temp.getData().getIntValue();
+            }
+            if (height > 0) {
+                //decOptions.put("height", String.valueOf(height));
+                encOptions.put("height", String.valueOf(height));
+            }
+
+
+
             // TODO Make sure all possible combinations work
             // execute runs the input process
             // processThreads are always running, passing available data from decoder to encoder and encoder to output
-            if (inCodec == CodecEnum.RGB) {
-                if (outCodec == CodecEnum.RGB) {
+            if (inCodec == CodecEnum.RGB || inCodec == CodecEnum.YUV) {
+                if (outCodec == CodecEnum.RGB || outCodec == CodecEnum.YUV) {
                     inputProcess = null;
                 } else {
                     // Encoder
-                    // Input -> SWS Scale -> Encoder -> Output
-                    encoder = new Encoder(outCodec.ffmpegName);
-                    encoderThread = new Thread(encoder);
+                    // Input -> SW Scale -> Encoder -> Output
+                    encoder = new Encoder(outCodec.ffmpegId, encOptions);
+                    //encoderThread = new Thread(encoder);
                     processThreads.add(new Thread(this::encoder_to_output));
+                    processThreads.add(new Thread(encoder));
                     inputProcess = this::input_to_encoder;
                 }
             } else {
-                if (outCodec == CodecEnum.RGB) {
+                if (outCodec == CodecEnum.RGB || outCodec == CodecEnum.YUV) {
                     // Decoder
                     // Input -> Decoder -> SWS Scale -> Output
-                    decoder = new Decoder(inCodec.ffmpegName);
+                    decoder = new Decoder(inCodec.ffmpegId, decOptions);
+                    //decoderThread = new Thread(decoder);
                     processThreads.add(new Thread(this::decoder_to_output));
+                    processThreads.add(new Thread(decoder));
                     inputProcess = this::input_to_decoder;
                 } else {
                     // Transcoder
                     // Input -> Decoder -> SWS Scale -> Encoder -> Output
-                    decoder = new Decoder(inCodec.ffmpegName);
-                    encoder = new Encoder(outCodec.ffmpegName);
+                    decoder = new Decoder(inCodec.ffmpegId, decOptions);
+                    encoder = new Encoder(outCodec.ffmpegId, encOptions);
                     processThreads.add(new Thread(this::decoder_to_encoder));
                     processThreads.add(new Thread(this::encoder_to_output));
+                    processThreads.add(new Thread(decoder));
+                    processThreads.add(new Thread(encoder));
                     inputProcess = this::input_to_decoder;
                 }
             }
@@ -322,6 +366,8 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             throw new ProcessException("Decimation factor must be > 0. Current value is " + decimFactor);
         if (decimFactor == 0)
             decimFactor = 1;
+
+        super.init();
     }
 
 
@@ -332,16 +378,24 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     {
         int frameWidth = av_frame.width();
         int frameHeight = av_frame.height();
-
+        int inPixFmt = AV_PIX_FMT_YUV420P;
+        int outPixFmt = AV_PIX_FMT_YUV420P;
+        if (inCodec == CodecEnum.RGB) {
+            inPixFmt = AV_PIX_FMT_RGB24;
+        }
+        if (outCodec == CodecEnum.RGB) {
+            outPixFmt = AV_PIX_FMT_RGB24;
+        }
+        getLogger().debug("Resizing {}x{} -> {}x{}", av_frame.width(), av_frame.height(), frameWidth, frameHeight);
         // init scaler
-        sws_frame.format(AV_PIX_FMT_RGB24);
+        sws_frame.format(inPixFmt);
         sws_frame.width(frameWidth);
         sws_frame.height(frameHeight);
         av_image_alloc(sws_frame.data(), sws_frame.linesize(),
-                frameWidth, frameHeight, AV_PIX_FMT_RGB24, 1);
+                frameWidth, frameHeight, inPixFmt, 1);
 
-        sws_ctx = sws_getContext(frameWidth, frameHeight, AV_PIX_FMT_YUV420P,
-                frameWidth, frameHeight, AV_PIX_FMT_RGB24, SWS_BICUBIC, null, null, (double[])null);
+        sws_ctx = sws_getContext(frameWidth, frameHeight, inPixFmt,
+                frameWidth, frameHeight, outPixFmt, SWS_BICUBIC, null, null, (double[])null);
 
         getLogger().debug("Resizing {}x{} -> {}x{}", av_frame.width(), av_frame.height(), frameWidth, frameHeight);
     }
@@ -349,8 +403,9 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     private void decoder_to_encoder() {
         while (!Thread.currentThread().isInterrupted()) {
             for (AVFrame frame : decoder.getPackets()) {
-                swsScale(frame);
+                //swsScale(frame);
                 encoder.addPacket(frame);
+                //av_frame_free(frame);
             }
         }
     }
@@ -374,7 +429,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         dec_pkt.data(nativeFrameData);
         dec_pkt.size(frameData.length);
 
-        decoder.addPacket(dec_pkt);
+        decoder.addPacket(new AVPacket(dec_pkt));
     }
 
     private void input_to_encoder() {
@@ -400,7 +455,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         }
 
         // Scale frame
-        swsScale(av_frame);
+        //swsScale(av_frame);
 
         // Send frame to encoder
         encoder.addPacket(av_frame);
@@ -418,10 +473,12 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
                 var ts = inputTimeStamp.getData().getDoubleValue();
                 outputTimeStamp.getData().setDoubleValue(ts);
                 try {
+                    logger.debug("Publishing");
                     super.publishData();
                 } catch (InterruptedException e) {
                     logger.error("Error publishing output packet", e);
                 }
+                av_packet_free(packet);
             }
         }
     }
@@ -429,7 +486,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     private void decoder_to_output() {
         while (!Thread.currentThread().isInterrupted()) {
             for (AVFrame frame : decoder.getPackets()) {
-                swsScale(frame);
+                //swsScale(frame);
                 byte[] frameData = new byte[frame.width() * frame.height() * 3];
                 frame.data(0).get(frameData);
                 //frame.data().get(frameData);
@@ -442,12 +499,13 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
                 } catch (InterruptedException e) {
                     logger.error("Error publishing output frame", e);
                 }
+                av_frame_free(frame);
             }
         }
     }
 
     /**
-     * Takes an uncompressed frame and converts it to RGB, changing the size to that specified in the parameters.
+     * Takes an uncompressed frame scales itand converts it to RGB, changing the size to that specified in the parameters.
      * @param frame
      */
     private void swsScale(AVFrame frame) {
@@ -462,16 +520,17 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         frame.linesize(0, sws_frame.linesize(0));
         frame.width(sws_frame.width());
         frame.height(sws_frame.height());
-        frame.format(AV_PIX_FMT_RGB24);
+        //frame.format(AV_PIX_FMT_RGB24);
     }
 
     @Override
     public void execute() throws ProcessException
     {
         // Skip every decimFactor'th frame
+        /*
         if (frameCounter++ % decimFactor == 0) {
             return;
-        }
+        }*/
 
 
         // Start process. Encoding, decoding, or transcoding (or nothing)
