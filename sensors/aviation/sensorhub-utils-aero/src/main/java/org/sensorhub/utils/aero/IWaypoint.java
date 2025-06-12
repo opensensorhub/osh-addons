@@ -19,6 +19,12 @@ public interface IWaypoint
     public enum WaypointType
     {
         AIRPORT,
+        NAVAID,
+        WAYPOINT
+    }
+    
+    public enum WaypointInfo
+    {
         REDISPATCH,
         ETOPS_ENTRY,
         ETOPS_EXIT,
@@ -49,4 +55,9 @@ public interface IWaypoint
      * @return Barometric altitude at waypoint (ft)
      */
     double getBaroAltitude();
+    
+    /**
+     * @return Waypoint info (null if none provided)
+     */
+    String getInfo();
 }

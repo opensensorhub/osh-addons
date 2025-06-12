@@ -54,11 +54,14 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
             .addField("code", fac.createWaypointCode())
             .addField("type", fac.createCategory()
                 .definition(AeroHelper.DEF_WAYPOINT_TYPE)
-                .label("Waypoint Type")
-                .addAllowedValues(WaypointType.class))
+                .label("Waypoint Type"))
             .addField("lat", fac.createLatitude())
             .addField("lon", fac.createLongitude())
-            .addField("alt", fac.createBaroAlt());
+            .addField("alt", fac.createBaroAlt())
+            .addField("info", fac.createText()
+                .definition(AeroHelper.DEF_WAYPOINT_INFO)
+                .label("Waypoint Info")
+                .description("Comma separated list of info tags for the waypoint (e.g. ETOPS, REDISPATCH, etc.)"));
     }
     
     
@@ -110,5 +113,12 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
 
     @SweMapping(path="alt")
     void setBaroAltitude(double val);
+    
+    @Override
+    @SweMapping(path="info")
+    String getInfo();
+
+    @SweMapping(path="info")
+    void setInfo(String val);
     
 }
