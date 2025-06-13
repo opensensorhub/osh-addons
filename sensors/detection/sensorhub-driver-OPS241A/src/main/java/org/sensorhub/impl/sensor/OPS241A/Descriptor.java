@@ -11,11 +11,11 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.OPS241A;
 
-import org.sensorhub.impl.sensor.OPS241A.config.OPS241AConfig;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.module.JarModuleProvider;
+import org.sensorhub.impl.sensor.OPS241A.config.OPS241AConfig;
 
 /**
  * Descriptor classes provide access to informative data on the OpenSensorHub driver.

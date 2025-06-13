@@ -9,9 +9,8 @@
 
  Copyright (C) 2020-2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.OPS241A.outputs;
+package org.sensorhub.impl.sensor.OPS241A;
 
-import org.sensorhub.impl.sensor.OPS241A.OPS241ASensor;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -58,7 +57,7 @@ public class OPS241AOutput extends AbstractSensorOutput<OPS241ASensor> {
      * Initializes the data structure for the output, defining the fields, their ordering, and data types.
      */
     public void doInit() {
-        logger.info("Initializing Accelerometer Output");
+        logger.info("Initializing OPS241A-Output");
         // Get an instance of SWE Factory suitable to build components
         SWEHelper sweFactory = new SWEHelper();
 
@@ -71,12 +70,8 @@ public class OPS241AOutput extends AbstractSensorOutput<OPS241ASensor> {
                         .asSamplingTimeIsoUTC()
                         .label("Time Stamp")
                         .description("Time of data collection"))
-                .addField("acceleration_X", sweFactory.createQuantity()
-                        .uom("m/s^2").label("X").description("X-axis acceleration"))
-                .addField("acceleration_Y", sweFactory.createQuantity()
-                        .uom("m/s^2").label("Y").description("Y-axis acceleration"))
-                .addField("acceleration_Z", sweFactory.createQuantity()
-                        .uom("m/s^2").label("Z").description("Z-axis acceleration"));
+                .addField("detectionSpeed", sweFactory.createQuantity()
+                        .uom(parentSensor.uom).label("velocity").description("detected velocity"));
 
         dataStruct = recordBuilder.build();
 
@@ -104,7 +99,7 @@ public class OPS241AOutput extends AbstractSensorOutput<OPS241ASensor> {
         return accumulator / (double) MAX_NUM_TIMING_SAMPLES;
     }
 
-    public void SetData(float x, float y, float z) {
+    public void SetData(double speed) {
                DataBlock dataBlock;
         try {
             if (latestRecord == null) {
@@ -122,9 +117,8 @@ public class OPS241AOutput extends AbstractSensorOutput<OPS241ASensor> {
             ++setCount;
 
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
-            dataBlock.setDoubleValue(1, x);
-            dataBlock.setDoubleValue(2, y);
-            dataBlock.setDoubleValue(3, z);
+            dataBlock.setDoubleValue(1, speed);
+
 
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();

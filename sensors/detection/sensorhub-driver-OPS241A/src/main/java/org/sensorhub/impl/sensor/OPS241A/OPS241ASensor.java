@@ -11,24 +11,28 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.OPS241A;
 
-import org.sensorhub.impl.sensor.OPS241A.config.OPS241AConfig;
-import org.sensorhub.impl.sensor.OPS241A.outputs.*;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 
+import org.sensorhub.impl.sensor.OPS241A.config.OPS241AConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// Pi4J Variables:
-import com.pi4j.Pi4J;
-import com.pi4j.context.Context;
-import com.pi4j.io.i2c.I2C;
-import com.pi4j.io.i2c.I2CConfig;
-import com.pi4j.io.i2c.I2CProvider;
+// REQUIRED IF USING OSH RXTX CONFIGURATION
+//import org.sensorhub.api.comm.ICommProvider;
+//import org.vast.swe.DataInputStreamLI;
+//import org.vast.swe.DataOutputStreamLI;
 
-import java.util.ArrayList;
-import java.util.List;
-
+// REQUIRED FOR HANDLING MY RXTX CONNECTION
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Enumeration;
+import gnu.io.CommPortIdentifier;
+import gnu.io.PortInUseException;
+import gnu.io.SerialPort;
+import gnu.io.UnsupportedCommOperationException;
 
 /**
  * Driver implementation for the sensor.
@@ -36,17 +40,20 @@ import java.util.List;
  * This class is responsible for providing sensor information, managing output registration,
  * and performing initialization and shutdown for the driver and its outputs.
  */
-public class OPS241ASensor extends AbstractSensorModule<OPS241AConfig>{
+public class OPS241ASensor extends AbstractSensorModule<OPS241AConfig> implements Runnable{
     static final String UID_PREFIX = "osh:OPS241A:";
     static final String XML_PREFIX = "OPS241A";
 
     private static final Logger logger = LoggerFactory.getLogger(OPS241ASensor.class);
 
-    ///  REQUIRED VARIABLES FOR SENSOR OPERATION
-    // I2C Initialization Variables from Pi4j
-    I2C i2c;
-    Context pi4j;
-    I2CProvider i2CProvider;
+    /// GLOBAL VARIABLES FOR SENSOR OPERATION
+    SerialPort serialPort;
+    InputStream dataIn;
+    OutputStream dataOut;
+    OPS241AOutput ops241aOutput;
+
+    String uom;
+    String unitCommand;
 
     // Local variables
     private volatile boolean keepRunning = false;
@@ -55,30 +62,76 @@ public class OPS241ASensor extends AbstractSensorModule<OPS241AConfig>{
     String BoldOn = "\033[1m";  // ANSI code to turn on bold
     String BoldOff = "\033[0m"; // ANSI code to turn on bold
 
-    ///  INITIALIZE BNO085 SENSOR OVER I2C
+    ///  INITIALIZE
     @Override
-    public void doInit() throws SensorHubException {
+    public void doInit() throws SensorHubException  {
         super.doInit();
-
-        // Create I2C connection
-        createI2cConnection();
 
         // Create SensorHub Identifiers using designated prefix and serial number from Admin Panel
         generateUniqueID(UID_PREFIX, config.serialNumber);
         generateXmlID(XML_PREFIX, config.serialNumber);
 
+        // ASSIGN LOCAL VARIABLES uom and unitCommand for Sensor and Output configuration
+        establishUnits(config.unit);
+
+        // INITIALIZE OUTPUT INSTANCE
+        ops241aOutput = new OPS241AOutput(this);
+        addOutput(ops241aOutput, false);
+        ops241aOutput.doInit();
+
+    }
+
+    private void establishUnits(OPS241AConfig.Units unit) {
+        switch (unit){
+            case METERS_PER_SECOND:
+                unitCommand = OPS241aConstants.M_PER_SEC_CMD;
+                uom = OPS241AConfig.Units.METERS_PER_SECOND.toString();
+                break;
+            case CENTIMETERS_PER_SECOND:
+                unitCommand = OPS241aConstants.CM_PER_SEC_CMD;
+                uom = OPS241AConfig.Units.CENTIMETERS_PER_SECOND.toString();
+                break;
+            case FEET_PER_SECOND:
+                unitCommand = OPS241aConstants.FT_PER_SEC_CMD;
+                uom = OPS241AConfig.Units.FEET_PER_SECOND.toString();
+                break;
+            case KILOMETERS_PER_HOUR:
+                unitCommand = OPS241aConstants.KM_PER_HR_CMD;
+                uom = OPS241AConfig.Units.KILOMETERS_PER_HOUR.toString();
+                break;
+            case MILES_PER_HOUR:
+                unitCommand = OPS241aConstants.MILES_PER_HR_CMD;
+                uom = OPS241AConfig.Units.MILES_PER_HOUR.toString();
+                break;
+        }
     }
 
     @Override
     public void doStart() throws SensorHubException, InterruptedException {
         super.doStart();
+
+        try {
+            establishRxTxConnection(config.connection.portAddress, config.connection.baudRate); // ESTABLISH RxTx CONNECTION
+            sendSensorCommand(OPS241aConstants.RESET_SETTINGS_CMD);                             // RESET SENSOR TO REMOVE ANY PREVIOUS CONFIGURATION
+            sendSensorCommand(unitCommand);                                                     // Set Sensor Units
+        } catch (IOException | UnsupportedCommOperationException | PortInUseException e) {
+            throw new RuntimeException(e);
+        }
+
+        // Set variable to continue readings
         keepRunning = true;
+
+        // CREATE THREAD THAT CONTINUALLY READS SENSOR REPORT
+        Thread readOPS241A = new Thread( this, "OPS241A Worker");
+        readOPS241A.start();
+
     }
 
     @Override
     public void doStop() throws SensorHubException, InterruptedException {
         super.doStop();
         keepRunning = false;
+        serialPort.close();
     }
 
     @Override
@@ -86,28 +139,92 @@ public class OPS241ASensor extends AbstractSensorModule<OPS241AConfig>{
         return true; //output.isAlive()
     }
 
-    public void createI2cConnection(){
-        // Initialize pi4j and i2c configuration
-        pi4j = Pi4J.newAutoContext();
-        i2CProvider = pi4j.provider("linuxfs-i2c");
+    ///  THE FOLLOWING (2) METHODS HANDLE SENSOR READINGS. THE SENSOR WILL SEND NUMERICAL VALUES INDICATING READINGS
+    /// OR THE SENSOR WILL SEND JSON STYLE MESSAGES
+    public void handleJsonMsg(String jsonMsg) {
+        System.out.println(jsonMsg);
+        logger.info("Sensor Message: {}", jsonMsg);
+    }
 
-        I2CConfig i2cConfig = I2C.newConfigBuilder(pi4j)
-                .bus(config.connection.I2C_BUS_NUMBER)
-                .device(config.connection.SENSOR_ADDRESS)
-                .name("bno055")
-                .build();
-        System.out.println("Building I2C Connection...");
-        logger.info("Building I2C Connection...");
+    public void handleSensorReading (String sensorReading) {
         try {
-            this.i2c = i2CProvider.create(i2cConfig);
-            System.out.println(BoldOn + "I2C Connection Established" + BoldOff + "\n\tBus/Port:" + config.connection.I2C_BUS_NUMBER + "\n\tSensor Address: 0x" + Integer.toHexString(config.connection.SENSOR_ADDRESS));
-            logger.info("{}I2C Connection Established{}\n\tBus/Port:{}\n\tSensor Address: 0x{}", BoldOn, BoldOff, config.connection.I2C_BUS_NUMBER, Integer.toHexString(config.connection.SENSOR_ADDRESS));
-
-        } catch (Exception e) {
-            System.out.println("I2C Connection Failed...check I2C bus and Sensor Address");
-            logger.error("I2C Connection Failed...check I2C bus and Sensor Address");
-            throw new RuntimeException(e);
+//            System.out.println(Double.parseDouble(sensorReading));
+            ops241aOutput.SetData(Double.parseDouble(sensorReading));
+        } catch (NumberFormatException e) {
+            System.out.println("Unknown reading: " + sensorReading);
         }
     }
+
+    // SEND A COMMAND TO THE SENSOR TO UPDATE SETTINGS OR RETRIEVE INFORMATION
+    public void sendSensorCommand(String cmd) throws IOException {
+        dataOut.write((cmd+ "\r\n").getBytes());
+        dataOut.flush();
+    }
+    // CREATE A RXTX CONNECTION
+    public void establishRxTxConnection(String portAddress, int baudRate) throws IOException, PortInUseException, UnsupportedCommOperationException {
+        // ESTABLISH RXTX CONNECTION
+        Enumeration<?> portList = CommPortIdentifier.getPortIdentifiers();
+        CommPortIdentifier portId = null;
+
+        while(portList.hasMoreElements()){
+            CommPortIdentifier id = (CommPortIdentifier) portList.nextElement();
+            if(id.getName().equals(portAddress)){
+                portId = id;
+                break;
+            }
+        }
+
+        if (portId == null){
+            System.out.println("Could not find '" + portAddress + "'");
+            return;
+        }
+
+        serialPort = portId.open("OPS241Reader", 2000);
+        serialPort.setSerialPortParams(
+            baudRate,
+            SerialPort.DATABITS_8,
+            SerialPort.STOPBITS_1,
+            SerialPort.PARITY_NONE
+        );
+
+        dataIn = serialPort.getInputStream();
+        dataOut = serialPort.getOutputStream();
+
+        dataOut.write((OPS241aConstants.RESET_SETTINGS_CMD + "\r\n").getBytes());
+
+
+    }
+
+    @Override
+    public void run() {
+        ByteArrayOutputStream reportLine = new ByteArrayOutputStream();
+        int b;
+
+        while (keepRunning){
+            try {
+                if ((b = dataIn.read()) != -1) {
+                    if (b == '\n' || b == '\r') {
+                        if (reportLine.size() > 0) {
+                            String line = reportLine.toString().trim();
+                            reportLine.reset();
+
+                            if(line.startsWith("{") && line.endsWith("}")){
+                                handleJsonMsg(line);
+                            } else {
+                                handleSensorReading(line);
+                            }
+                        }
+                    } else {
+                        reportLine.write(b);
+                    }
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+        }
+
+    }
+
 
 }

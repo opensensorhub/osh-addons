@@ -11,9 +11,11 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.OPS241A.config;
 
-import org.sensorhub.impl.sensor.OPS241A.OPS241ASensor;
+import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.impl.comm.UARTConfig;
+import org.sensorhub.impl.sensor.OPS241A.OPS241ASensor;
 
 /**
  * Configuration settings for the {@link OPS241ASensor} driver exposed via the OpenSensorHub Admin panel.
@@ -29,6 +31,26 @@ import org.sensorhub.api.sensor.SensorConfig;
  * }</pre>
  */
 public class OPS241AConfig extends SensorConfig {
+
+public enum Units {
+    METERS_PER_SECOND("m/s"),
+    CENTIMETERS_PER_SECOND("cm/s"),
+    FEET_PER_SECOND("ft/s"),
+    KILOMETERS_PER_HOUR("km/hr"),
+    MILES_PER_HOUR("miles/hr");
+
+    private final String label;
+
+    Units(String label) {
+        this.label = label;
+    }
+
+    @Override
+    public String toString() {
+        return label;
+    }
+}
+
     /**
      * The unique identifier for the configured sensor (or sensor platform).
      */
@@ -36,9 +58,18 @@ public class OPS241AConfig extends SensorConfig {
     @DisplayInfo(desc = "Serial number or unique identifier")
     public String serialNumber;
 
-    @DisplayInfo.Required
-    @DisplayInfo(label = "I2C Settings", desc = "Configuration options for the I2C Connection")
-    public i2cConfig connection = new i2cConfig();
+//    @DisplayInfo(desc="Communication settings to connect to IMU data stream")
+//    public CommProviderConfig<?> commSettings;
+
+    @DisplayInfo(desc="My RxTx Settings")
+    public rxtxConfig connection = new rxtxConfig();
+
+    @DisplayInfo(label="Measurement Units", desc="Select the units you want to output")
+    public Units unit = Units.FEET_PER_SECOND;
+
+
+
+
 
 
 }
