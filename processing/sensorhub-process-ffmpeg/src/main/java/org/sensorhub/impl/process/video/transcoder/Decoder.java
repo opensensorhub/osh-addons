@@ -39,19 +39,18 @@ public class Decoder extends Coder<AVPacket, AVFrame> {
     protected void receiveOutPacket() {
         synchronized (outPackets) {
             while (avcodec_receive_frame(codec_ctx, outPacket) >= 0) {
-                outPackets.add(new AVFrame(outPacket));
+                //av_packet_free(inPacket);
+                outPackets.add(av_frame_clone(outPacket));
+
+
+                logger.debug("Decode Packet added");
             }
         }
     }
 
     @Override
     protected void deallocateOutQueue() {
-        synchronized (outPackets) {
-            for (AVFrame packet : outPackets) {
-                av_frame_free(packet);
-            }
-            outPackets.clear();
-        }
+        outPackets.clear();
     }
 
     @Override

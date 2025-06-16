@@ -22,6 +22,7 @@ import org.bytedeco.javacpp.BytePointer;
 import org.sensorhub.api.processing.OSHProcessInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vast.data.DataArrayImpl;
 import org.vast.data.DataBlockByte;
 import org.vast.data.DataBlockCompressed;
 import org.vast.process.ExecutableProcessImpl;
@@ -108,6 +109,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     CodecEnum outCodec;
     Runnable inputProcess;
     int swsPixFmt = AV_PIX_FMT_YUV420P;
+    RasterHelper swe = new RasterHelper();
 
 
     public FFMpegTranscoder()
@@ -121,11 +123,11 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
                 .label("Input Video Frame")
                 .description("")
                 .definition(SWEHelper.getPropertyUri("VideoFrame"))
-                .addField("sampleTime", swe.createTime()
+                .addField("sampleTime", inputTimeStamp = swe.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
-                        .description("Time of data collection"))
-                .addField("img", swe.newRgbImage(swe.createCount().id("width").build(), swe.createCount().id("height").build(), DataType.BYTE))
+                        .description("Time of data collection").build())
+                .addField("img", imgIn = swe.newRgbImage(swe.createCount().id("width").build(), swe.createCount().id("height").build(), DataType.BYTE))
                 .build());
 
         // TODO Add width/height parameters for scaling
@@ -142,23 +144,17 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
                 .addAllowedValues(FFMpegTranscoder.CodecEnum.class)
                 .build());
 
-        paramData.add("decimFactor", decimFactorParam = swe.createCount()
-                .definition(SWEConstants.DEF_COEF)
-                .label("Decimation Factor")
-                .description("Decimation factor of input frames. Only 1 frame every 'decimFactor' frames will be outputted")
-                .build());
-
         // outputs
         outputData.add("outFrame", swe.createRecord()
                 .name("outFrame")
                 .label("Output Video Frame")
                 .description("")
                 .definition(SWEHelper.getPropertyUri("VideoFrame"))
-                .addField("sampleTime", swe.createTime()
+                .addField("sampleTime", outputTimeStamp =  swe.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
-                        .description("Time of data collection"))
-                .addField("img", swe.newRgbImage(swe.createCount().id("width").build(), swe.createCount().id("height").build(), DataType.BYTE))
+                        .description("Time of data collection").build())
+                .addField("img", imgOut = swe.newRgbImage(swe.createCount().id("width").build(), swe.createCount().id("height").build(), DataType.BYTE))
                 .build());
     }
 
@@ -198,7 +194,6 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     @Override
     public void init() throws ProcessException
     {
-        super.init();
         frameCounter = 0;
         if (processThreads != null) {
             processThreads.clear();
@@ -242,7 +237,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             DataComponent temp;
             temp = inputFps;
             int fps = 0;
-            if (temp != null) {
+            if (temp != null && temp.getData() != null) {
                 fps = temp.getData().getIntValue();
             }
             if (fps > 0) {
@@ -258,7 +253,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
             temp = inputBitrate;
             int bitrate = 0;
-            if (temp != null) {
+            if (temp != null && temp.getData() != null) {
                 bitrate = temp.getData().getIntValue();
             }
             if (bitrate > 0) {
@@ -267,7 +262,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             }
             int width = 0;
             temp = inputWidth;
-            if (temp != null) {
+            if (temp != null && temp.getData() != null) {
                 width = temp.getData().getIntValue();
             }
             if (width > 0) {
@@ -276,7 +271,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             }
             temp = inputHeight;
             int height = 0;
-            if (temp != null) {
+            if (temp != null && temp.getData() != null) {
                 height = temp.getData().getIntValue();
             }
             if (height > 0) {
@@ -361,12 +356,17 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         }
 
         // set decimation factor
-        decimFactor = decimFactorParam.getData().getIntValue();
+        // TODO Figure out why decimFactor has no data
+        /*
+        decimFactor = 1;
+        if (decimFactorParam != null && decimFactorParam.getData() != null) {
+            decimFactor = decimFactorParam.getData().getIntValue();
+        }
         if (decimFactor < 0)
             throw new ProcessException("Decimation factor must be > 0. Current value is " + decimFactor);
         if (decimFactor == 0)
             decimFactor = 1;
-
+        */
         super.init();
     }
 
@@ -402,15 +402,28 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
     private void decoder_to_encoder() {
         while (!Thread.currentThread().isInterrupted()) {
-            for (AVFrame frame : decoder.getPackets()) {
+            // Block until frames are received
+            Queue<AVFrame> frames = decoder.getPackets();
+
+            for (AVFrame frame : frames) {
+                logger.debug("transfer frame:");
+                logger.debug("  format: {}", frame.format());
+                logger.debug("  width: {}", frame.width());
+                logger.debug("  height: {}", frame.height());
+                logger.debug("  data[0]: {}", frame.data(0));
+                logger.debug("Sent frame to encoder");
                 //swsScale(frame);
-                encoder.addPacket(frame);
-                //av_frame_free(frame);
+                encoder.addPacket(av_frame_clone(frame));
+                av_frame_free(frame);
             }
         }
     }
 
     private void input_to_decoder() {
+        if (imgIn == null) {
+            logger.warn("Input image is null");
+            return;
+        }
         // get input encoded frame data
         byte[] frameData = ((DataBlockCompressed)imgIn.getData()).getUnderlyingObject();
         //System.out.println("Frame size=" + frameData.length);
@@ -466,11 +479,27 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     private void encoder_to_output() {
         while (!Thread.currentThread().isInterrupted()) {
             for (AVPacket packet : encoder.getPackets()) {
+
                 byte[] frameData = new byte[packet.size()];
                 packet.data().get(frameData);
+                /*
+                if (imgOut.getArraySizeComponent().getData().getIntValue() != packet.size()) {
+                    logger.debug("Updating output size");
+                    //imgOut.setElementCount(swe.createCount().value(1).build());
+                    //((DataArrayImpl)imgOut.getComponent("row")).setElementCount(swe.createCount().value(packet.size()).build());
+                    //imgOut.getData()
+                    //imgOut.
+                    //imgOut.getComponent("width").setData(swe.createCount().value(packet.size()).build().getData());
+                    //imgOut.getComponent("height").setData(swe.createCount().value(1).build().getData());
+                } */
                 ((DataBlockByte) imgOut.getData()).setUnderlyingObject(frameData);
                 // also copy frame timestamp
-                var ts = inputTimeStamp.getData().getDoubleValue();
+                double ts;
+                if (inputTimeStamp != null && inputTimeStamp.getData() != null) {
+                    ts = inputTimeStamp.getData().getDoubleValue();
+                } else {
+                    ts = System.currentTimeMillis();
+                }
                 outputTimeStamp.getData().setDoubleValue(ts);
                 try {
                     logger.debug("Publishing");
@@ -487,13 +516,21 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         while (!Thread.currentThread().isInterrupted()) {
             for (AVFrame frame : decoder.getPackets()) {
                 //swsScale(frame);
-                byte[] frameData = new byte[frame.width() * frame.height() * 3];
+                int size = frame.width() * frame.height() * 3;
+                byte[] frameData = new byte[size];
                 frame.data(0).get(frameData);
                 //frame.data().get(frameData);
+                if (imgOut.getComponent("width").getData().getIntValue() != frame.width() || imgOut.getComponent("height").getData().getIntValue() != frame.height()) {
+                    logger.debug("Updating size");
+                    imgOut.getComponent("width").setData(swe.createCount().value(frame.width()).build().getData());
+                    imgOut.getComponent("height").setData(swe.createCount().value(frame.height()).build().getData());
+                    imgOut.updateSize(); // Not sure if this line is necessary
+                }
                 ((DataBlockByte) imgOut.getData()).setUnderlyingObject(frameData);
                 // also copy frame timestamp
                 var ts = inputTimeStamp.getData().getDoubleValue();
                 outputTimeStamp.getData().setDoubleValue(ts);
+
                 try {
                     super.publishData();
                 } catch (InterruptedException e) {

@@ -2,7 +2,7 @@ package org.sensorhub.impl.process.video.transcoder;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.impl.process.video.FFmpegProcessConfig;
-import org.sensorhub.impl.process.video.transcoder2.FFMpegTranscoder2;
+//import org.sensorhub.impl.process.video.transcoder2.FFMpegTranscoder2;
 
 public class FFmpegTranscoderConfig extends FFmpegProcessConfig {
 

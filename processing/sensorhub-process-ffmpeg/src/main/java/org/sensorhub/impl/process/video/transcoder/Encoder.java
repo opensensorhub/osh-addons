@@ -3,6 +3,7 @@ package org.sensorhub.impl.process.video.transcoder;
 import org.bytedeco.ffmpeg.avcodec.AVCodec;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avutil.AVFrame;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
 
 import java.util.HashMap;
@@ -19,12 +20,7 @@ public class Encoder extends Coder<AVFrame, AVPacket> {
 
     @Override
     protected void deallocateOutQueue() {
-        synchronized (outPackets) {
-            for (AVPacket packet : outPackets) {
-                av_packet_free(packet);
-            }
-            outPackets.clear();
-        }
+       outPackets.clear();
     }
 
     @Override
@@ -45,15 +41,29 @@ public class Encoder extends Coder<AVFrame, AVPacket> {
         inPacket = inPackets.poll();
         //pts++;
         //inPacket.pts(pts);
-        avcodec_send_frame(codec_ctx, inPacket); // TODO Something causing this to crash
+        logger.debug("add frame in encoder:");
+        logger.debug("  format: {}", inPacket.format());
+        logger.debug("  width: {}", inPacket.width());
+        logger.debug("  height: {}", inPacket.height());
+        logger.debug("  data[0]: {}", inPacket.data(0));
+        logger.debug("Sent frame to encoder");
+        avcodec_send_frame(codec_ctx, inPacket);
+
     }
 
     @Override
     protected void receiveOutPacket() {
         synchronized (outPackets) {
-            while (avcodec_receive_packet(codec_ctx, outPacket) >= 0) {
-                outPackets.add(new AVPacket(outPacket));
+            int ret = 0;
+            while (( ret = avcodec_receive_packet(codec_ctx, outPacket) ) >= 0) {
+                //av_frame_free(inPacket);
+                logger.debug("Packet received from encoder");
+                outPackets.add(av_packet_clone(outPacket));
             }
+            BytePointer errorBuffer = new BytePointer(AV_ERROR_MAX_STRING_SIZE);
+
+            av_strerror(ret, errorBuffer, AV_ERROR_MAX_STRING_SIZE);
+            logger.debug("Receive Error: {}", errorBuffer.getString());
         }
     }
 

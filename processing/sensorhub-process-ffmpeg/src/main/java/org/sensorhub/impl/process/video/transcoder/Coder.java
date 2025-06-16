@@ -15,10 +15,10 @@ import org.bytedeco.ffmpeg.avutil.AVFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+// TODO Need to handle case where queues fill faster than packets can be processed. Should check queue size and free space when necessary to avoid crash.
 public abstract class Coder<I, O> implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(Coder.class);
+    protected static final Logger logger = LoggerFactory.getLogger(Coder.class);
 
     int codecId;
     protected AVCodecContext codec_ctx;
@@ -71,12 +71,16 @@ public abstract class Coder<I, O> implements Runnable {
         }
 
         if (outPackets.isEmpty()) {
+            logger.debug("No output packets");
             return new ArrayDeque<O>();
         }
 
+        logger.debug("Grabbing output packets");
         //isGettingPackets = true;
-        Queue<O> packets = new ArrayDeque<O>(outPackets);
-        deallocateOutQueue();
+        //Queue<O> packets = new ArrayDeque<O>(outPackets);
+        //deallocateOutQueue();
+        Queue<O> packets = outPackets;
+        outPackets = new ArrayDeque<>();
         return packets;
     }
 
@@ -119,13 +123,13 @@ public abstract class Coder<I, O> implements Runnable {
         if (options.containsKey("width")) {
             codec_ctx.width(Integer.parseInt(options.get("width")));
         } else {
-            codec_ctx.width(640);
+            codec_ctx.width(1280);
         }
 
         if (options.containsKey("height")) {
             codec_ctx.height(Integer.parseInt(options.get("height")));
         } else {
-            codec_ctx.height(480);
+            codec_ctx.height(720);
         }
 
         if (options.containsKey("pix_fmt")) {
@@ -152,8 +156,9 @@ public abstract class Coder<I, O> implements Runnable {
 
         allocatePackets();
 
-        // init FFMPEG objects
+        // init FFMPEG logging
         av_log_set_level(logger.isDebugEnabled() ? AV_LOG_INFO : AV_LOG_FATAL);
+        //av_log_set_level(AV_LOG_DEBUG);
 
         // Actual start of run
         // Codec should be initialized by now
@@ -166,15 +171,19 @@ public abstract class Coder<I, O> implements Runnable {
             while (!inPackets.isEmpty()) {
                 // Get data from in queue
                 // Send data to encoder/decoder
+                logger.debug("{}: Sending packet", this.getClass().getName());
                 sendInPacket();
 
                 // Receive data from encoder/decoder
                 // Add data to out queue
+                logger.debug("{}: Receiving packet", this.getClass().getName());
                 receiveOutPacket();
 
                 //isProcessing = false;
                 // Wake a thread waiting for packets.
+
                 synchronized (waitingObj) {
+                    logger.debug("Notifying waiting thread");
                     waitingObj.notify();
                 }
             }
