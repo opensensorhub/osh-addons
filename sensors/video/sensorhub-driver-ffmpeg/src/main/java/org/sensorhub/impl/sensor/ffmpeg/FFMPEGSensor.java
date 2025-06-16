@@ -208,6 +208,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
                 logger.info("Opening network stream");
                 mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString);
             }
+            mpegTsProcessor.setInjectVideoExtradata(config.connection.injectExtradata);
         }
 
         if (mpegTsProcessor.isStreamOpened()) {

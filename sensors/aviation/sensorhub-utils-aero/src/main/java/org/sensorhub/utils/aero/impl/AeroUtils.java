@@ -353,6 +353,7 @@ public class AeroUtils
         
         return new IFlightIdentification()
         {
+            public String getFlightID() { return flightId; }
             public String getFlightNumber() { return tokens[0]; }                        
             public String getOriginAirport() { return null; }            
             public String getDestinationAirport() { return tokens[1]; }
