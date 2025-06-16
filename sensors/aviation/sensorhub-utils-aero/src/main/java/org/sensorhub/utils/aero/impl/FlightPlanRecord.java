@@ -51,9 +51,10 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
             .definition(DEF_FLIGHTPLAN_REC)
             .label("Flight Plan")
             .addField("time", fac.createIssueTime())
+            .addField("flightId", fac.createFlightID())
             .addField("source", fac.createMessageSource()
                 .addAllowedValues(FlightPlanSource.class))
-            .addField("flightNum", fac.createFlightNumber())
+            .addField("flightNumber", fac.createFlightNumber())
             .addField("flightDate", fac.createFlightDate())
             .addField("origAirport", fac.createOriginAirport())
             .addField("destAirport", fac.createDestinationAirport())
@@ -61,7 +62,7 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
             .addField("departTime", fac.createDepartureTime())
             .addField("arrivalTime", fac.createArrivalTime())
             .addField("tailNum", fac.createTailNumber())
-            .addField("acType", fac.createAircraftType())
+            .addField("aircraftType", fac.createAircraftType())
             .addField("cruiseAlt", fac.createBaroAlt()
                 .label("Cruise Altitude"))
             .addField("cruiseSpeed", fac.createTrueAirspeed()
@@ -71,7 +72,7 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
             .addField("costIndex", fac.createCostIndex())
             .addField("fuelFactor", fac.createFuelFactor())
             .addField("codedRoute", fac.createCodedRoute())
-            .addField("numWpts", fac.createCount()
+            .addField("numPoints", fac.createCount()
                 .definition(SWEConstants.DEF_NUM_POINTS)
                 .id(numWptsCompId)
                 .label("Number of Waypoints"))
@@ -104,6 +105,13 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
     void setIssueTime(Instant val);
     
     @Override
+    @SweMapping(path="flightId")
+    String getFlightID();
+
+    @SweMapping(path="flightId")
+    void setFlightID(String val);
+    
+    @Override
     @SweMapping(path="source")
     String getSource();
 
@@ -111,10 +119,10 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
     void setSource(String val);
     
     @Override
-    @SweMapping(path="flightNum")
+    @SweMapping(path="flightNumber")
     String getFlightNumber();
 
-    @SweMapping(path="flightNum")
+    @SweMapping(path="flightNumber")
     void setFlightNumber(String val);
     
     @SweMapping(path="flightDate")
@@ -178,10 +186,10 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
     void setTailNumber(String val);
     
     @Override
-    @SweMapping(path="acType")
+    @SweMapping(path="aircraftType")
     String getAircraftType();
 
-    @SweMapping(path="acType")
+    @SweMapping(path="aircraftType")
     void setAircraftType(String val);
     
     @Override
@@ -232,14 +240,5 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
     
     @SweMapping(path="waypoints")
     WaypointRecord addWaypoint();
-    
-    
-    /**
-     * @return Unique flight identifier composed of flight number, destination and flight date
-     */
-    default String getFlightID()
-    {
-        return AeroUtils.getFlightID(this);
-    }
     
 }

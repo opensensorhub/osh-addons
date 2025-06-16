@@ -86,7 +86,7 @@ public class Bno085Sensor extends AbstractSensorModule<Bno085Config> implements 
     }
 
     @Override
-    public void doStart() throws SensorHubException, InterruptedException {
+    public void doStart() throws SensorHubException {
         super.doStart();
         byte[] timeIntervalArray;
         long timeIntervalMicro = config.outputs.timeIntervalSeconds * 1000000L; // BNO085 Sensor uses µS to set sensor features
@@ -103,7 +103,7 @@ public class Bno085Sensor extends AbstractSensorModule<Bno085Config> implements 
     }
 
     @Override
-    public void doStop() throws SensorHubException, InterruptedException {
+    public void doStop() throws SensorHubException {
         super.doStop();
         keepRunning = false;
 
@@ -111,8 +111,12 @@ public class Bno085Sensor extends AbstractSensorModule<Bno085Config> implements 
             logger.info("{}Turning off Sensor on BNO085{}", BoldOn, BoldOff);
             setFeature(id,(byte)0,(byte)0,(byte)0,(byte)0);
         }
-
-        resetSensor();
+ 
+       try{
+         resetSensor();}
+       catch(Exception e){
+             logger.error("I2C connection failed. Check bus number and address.");
+       }
     }
 
     @Override

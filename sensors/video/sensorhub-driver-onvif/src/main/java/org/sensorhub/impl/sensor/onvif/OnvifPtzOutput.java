@@ -23,12 +23,12 @@ import java.util.TimerTask;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.TextEncoding;
-import org.onvif.ver10.schema.FloatRange;
-import org.onvif.ver10.schema.PTZVector;
-import org.onvif.ver10.schema.Profile;
+import org.onvif.ver10.schema.*;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vast.data.SWEFactory;
 
 import de.onvif.soap.OnvifDevice;
@@ -42,16 +42,20 @@ import de.onvif.soap.OnvifDevice;
  * </p>
  *
  * 
- * @author Joshua Wolfe <developer.wolfe@gmail.com>
+ * @author Kyle Fitzpatrick, Joshua Wolfe <developer.wolfe@gmail.com>
  * @since June 13, 2017
  */
 
 public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
 {
+    private static final Logger log = LoggerFactory.getLogger(OnvifPtzOutput.class);
+
     DataComponent settingsDataStruct;
     TextEncoding textEncoding;
     Timer timer;
     VideoCamHelper videoHelper;
+    OnvifDevice camera = null;
+    Profile profile = null;
 
     // Set default timezone to GMT; check TZ in init below
     TimeZone tz = TimeZone.getTimeZone("UTC");
@@ -60,6 +64,7 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
     public OnvifPtzOutput(OnvifCameraDriver driver)
     {
         super("ptzOutput", driver);
+        VideoCamHelper videoHelper = new VideoCamHelper();
 
         // set default values
         double minPan = -180.0;
@@ -69,44 +74,59 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
         double minZoom = 1.0;
         double maxZoom = 9999;
 
-        FloatRange panSpaces = driver.camera.getPtz().getPanSpaces(driver.profile.getToken());
-        minPan = panSpaces.getMin();
-        maxPan = panSpaces.getMax();
-
-        FloatRange tiltSpaces = driver.camera.getPtz().getPanSpaces(driver.profile.getToken());
-        minTilt = tiltSpaces.getMin();
-        maxTilt = tiltSpaces.getMax();
-
-        FloatRange zoomSpaces = driver.camera.getPtz().getPanSpaces(driver.profile.getToken());
-        minZoom = zoomSpaces.getMin();
-        maxZoom = zoomSpaces.getMax();
-        
+        if (driver.ptzProfile != null) {
+            PTZConfiguration devicePtzConfig = driver.ptzProfile.getPTZConfiguration();
+            if (devicePtzConfig != null) {
+                PanTiltLimits panTiltLimits = devicePtzConfig.getPanTiltLimits();
+                if (panTiltLimits != null) {
+                    minPan = panTiltLimits.getRange().getXRange().getMin();
+                    maxPan = panTiltLimits.getRange().getXRange().getMax();
+                    minTilt = panTiltLimits.getRange().getYRange().getMin();
+                    maxTilt = panTiltLimits.getRange().getYRange().getMax();
+                }
+                ZoomLimits zoomLimits = devicePtzConfig.getZoomLimits();
+                if (zoomLimits != null) {
+                    minZoom = zoomLimits.getRange().getXRange().getMin();
+                    maxZoom = zoomLimits.getRange().getXRange().getMax();
+                }
+            }
+        }
         // Build SWE Common Data structure
-        videoHelper = new VideoCamHelper();
         settingsDataStruct = videoHelper.newPtzOutput(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom);
     }
 
     protected void init()
-    {    	
-        videoHelper = new VideoCamHelper();
+    {
+
     	
     	SWEFactory fac = new SWEFactory();
         textEncoding =  fac.newTextEncoding();
     	textEncoding.setBlockSeparator("\n");
     	textEncoding.setTokenSeparator(",");
     }
-    
+
     protected void start()
     {
+
         if (timer != null)
             return;
         timer = new Timer();
+
+        camera = parentSensor.camera;
+        profile = parentSensor.ptzProfile;
+
+        // Immediately stop ptz output if ptz is not supported
+        if (profile == null) {
+            stop();
+            return;
+        }
 
         // start the timer thread
         try
         {
             final DataComponent dataStruct = settingsDataStruct.copy();
             dataStruct.assignNewDataBlock();
+            PTZStatus ptzStatus = camera.getPtz().getStatus(profile.getToken());
 
             TimerTask timerTask = new TimerTask()
             {
@@ -116,19 +136,22 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
                     // send http query
                     try
                     {
-						OnvifDevice camera = parentSensor.camera;
-						Profile profile = parentSensor.profile;
-
                         dataStruct.renewDataBlock();
 
                         // set sampling time
                         double time = System.currentTimeMillis() / 1000.;
                         dataStruct.getComponent("time").getData().setDoubleValue(time);
 
-						PTZVector ptzVec = camera.getPtz().getPosition(profile.getToken());
-						dataStruct.getComponent("pan").getData().setFloatValue(ptzVec.getPanTilt().getX());
-						dataStruct.getComponent("tilt").getData().setFloatValue(ptzVec.getPanTilt().getY());
-						dataStruct.getComponent("zoomFactor").getData().setIntValue((int) ptzVec.getZoom().getX());
+                        if (ptzStatus != null) {
+                            PTZVector ptzVec = ptzStatus.getPosition();
+
+                            if (ptzVec != null) {
+                                dataStruct.getComponent("pan").getData().setDoubleValue(ptzVec.getPanTilt().getX());
+                                dataStruct.getComponent("tilt").getData().setDoubleValue(ptzVec.getPanTilt().getY());
+                                dataStruct.getComponent("zoomFactor").getData().setDoubleValue(ptzVec.getZoom().getX());
+                            }
+                        }
+
 
 						latestRecord = dataStruct.getData();
 						latestRecordTime = System.currentTimeMillis();

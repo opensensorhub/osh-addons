@@ -1,6 +1,6 @@
 description = 'FFMPEG Video Driver'
 ext.details = "Driver for connecting to ffmpeg capable video streams"
-version = '1.0.0'
+version = '1.1.0'
 
 // To build in entire java cv platform of projects use
 //    implementation('org.bytedeco:javacv-platform:1.5.2')
