@@ -20,8 +20,8 @@ import org.slf4j.LoggerFactory;
 
 // REQUIRED IF USING OSH RXTX CONFIGURATION
 //import org.sensorhub.api.comm.ICommProvider;
-//import org.vast.swe.DataInputStreamLI;
-//import org.vast.swe.DataOutputStreamLI;
+import org.vast.swe.DataInputStreamLI;
+import org.vast.swe.DataOutputStreamLI;
 
 // REQUIRED FOR HANDLING MY RXTX CONNECTION
 import java.io.ByteArrayOutputStream;
@@ -111,7 +111,7 @@ public class OPS241ASensor extends AbstractSensorModule<OPS241AConfig> implement
         super.doStart();
 
         try {
-            establishRxTxConnection(config.connection.portAddress, config.connection.baudRate); // ESTABLISH RxTx CONNECTION
+            establishRxTxConnection(config.RxTxSettings.portAddress, config.RxTxSettings.baudRate); // ESTABLISH RxTx CONNECTION
             sendSensorCommand(OPS241aConstants.RESET_SETTINGS_CMD);                             // RESET SENSOR TO REMOVE ANY PREVIOUS CONFIGURATION
             sendSensorCommand(unitCommand);                                                     // Set Sensor Units
         } catch (IOException | UnsupportedCommOperationException | PortInUseException e) {
@@ -123,7 +123,7 @@ public class OPS241ASensor extends AbstractSensorModule<OPS241AConfig> implement
 
         // CREATE THREAD THAT CONTINUALLY READS SENSOR REPORT
         Thread readOPS241A = new Thread( this, "OPS241A Worker");
-        readOPS241A.start();
+        readOPS241A.start();    // This starts the the run() method
 
     }
 
@@ -131,7 +131,9 @@ public class OPS241ASensor extends AbstractSensorModule<OPS241AConfig> implement
     public void doStop() throws SensorHubException, InterruptedException {
         super.doStop();
         keepRunning = false;
-        serialPort.close();
+        if (serialPort != null){
+            serialPort.close();
+        }
     }
 
     @Override
@@ -166,8 +168,12 @@ public class OPS241ASensor extends AbstractSensorModule<OPS241AConfig> implement
         Enumeration<?> portList = CommPortIdentifier.getPortIdentifiers();
         CommPortIdentifier portId = null;
 
+        System.out.println(BoldOn + "PORT LIST: " + BoldOff + portList );
+        System.out.println(BoldOn + "EACH ITEM: " + BoldOff );
+
         while(portList.hasMoreElements()){
             CommPortIdentifier id = (CommPortIdentifier) portList.nextElement();
+            System.out.println("id: " + id + "\nid name: " + id.getName());
             if(id.getName().equals(portAddress)){
                 portId = id;
                 break;
@@ -225,6 +231,5 @@ public class OPS241ASensor extends AbstractSensorModule<OPS241AConfig> implement
         }
 
     }
-
 
 }

@@ -36,8 +36,8 @@ public enum Units {
     METERS_PER_SECOND("m/s"),
     CENTIMETERS_PER_SECOND("cm/s"),
     FEET_PER_SECOND("ft/s"),
-    KILOMETERS_PER_HOUR("km/hr"),
-    MILES_PER_HOUR("miles/hr");
+    KILOMETERS_PER_HOUR("kph"),
+    MILES_PER_HOUR("mph");
 
     private final String label;
 
@@ -62,10 +62,10 @@ public enum Units {
 //    public CommProviderConfig<?> commSettings;
 
     @DisplayInfo(desc="My RxTx Settings")
-    public rxtxConfig connection = new rxtxConfig();
+    public rxtxConfig RxTxSettings = new rxtxConfig();
 
     @DisplayInfo(label="Measurement Units", desc="Select the units you want to output")
-    public Units unit = Units.FEET_PER_SECOND;
+    public Units unit = Units.MILES_PER_HOUR;
 
 
 

@@ -29,7 +29,7 @@ reports the processed data. Flexible control over the reporting format, sample r
 
 
 ### Finding SpeedTrap
-```ping speed02```
+```ping speed02.local```
 ```ssh 192.168.50.253```
 
 
