@@ -20,9 +20,9 @@ import org.sensorhub.api.comm.ICommConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.sensor.SensorConfig;
-import de.onvif.discovery.OnvifDiscovery;
+//import de.onvif.discovery.OnvifDiscovery;
 import org.sensorhub.impl.comm.TCPConfig;
-import org.sensorhub.impl.sensor.rtpcam.RTPCameraConfig;
+//import org.sensorhub.impl.sensor.rtpcam.RTPCameraConfig;
 
 import java.net.URL;
 import java.util.*;

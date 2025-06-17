@@ -1,11 +1,12 @@
 description = 'ONVIF Video Camera'
-ext.details = 'Driver for IP video cameras using the ONFIV standard'
+ext.details = 'Driver for IP video cameras using the ONVIF standard'
 version = '0.0.2'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  implementation project(':sensorhub-driver-rtpcam')
+  //implementation project(':sensorhub-driver-rtpcam')
   implementation project(':sensorhub-driver-ffmpeg')
+  implementation project(':sensorhub-driver-videocam')
   embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-api:3.1.11'
   embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-service:3.1.11'
   embeddedImpl 'org.apache.cxf:cxf-rt-transports-http-jetty:3.1.11'
@@ -45,7 +46,7 @@ dependencies {
   }
 
   embeddedImpl fileTree(dir: 'lib', include: ['*.jar'])
-  testImplementation project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
+  //testImplementation project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
 }
 
 
