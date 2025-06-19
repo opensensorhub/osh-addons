@@ -110,7 +110,8 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     Runnable inputProcess;
     int swsPixFmt = AV_PIX_FMT_YUV420P;
     RasterHelper swe = new RasterHelper();
-
+    BinaryBlock compressedBlock;
+    BinaryEncoding dataEnc;
 
     public FFMpegTranscoder()
     {
@@ -156,6 +157,8 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
                         .description("Time of data collection").build())
                 .addField("img", imgOut = swe.newRgbImage(swe.createCount().id("width").build(), swe.createCount().id("height").build(), DataType.BYTE))
                 .build());
+
+
     }
 
 
@@ -207,6 +210,24 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         {
             inCodec = FFMpegTranscoder.CodecEnum.valueOf(inCodecParam.getData().getStringValue());
             outCodec = FFMpegTranscoder.CodecEnum.valueOf(outCodecParam.getData().getStringValue());
+
+            dataEnc = swe.newBinaryEncoding(ByteOrder.BIG_ENDIAN, ByteEncoding.RAW);
+
+            BinaryComponent timeEnc = swe.newBinaryComponent();
+            timeEnc.setRef("/" + ((DataRecord)outputData.get(0)).getComponent(0).getName());
+            timeEnc.setCdmDataType(DataType.DOUBLE);
+            dataEnc.addMemberAsComponent(timeEnc);
+
+            compressedBlock = swe.newBinaryBlock();
+            compressedBlock.setRef("/" + ((DataRecord)outputData.get(0)).getComponent(1).getName());
+            compressedBlock.setCompression(outCodecParam.getData().getStringValue().toUpperCase());
+            dataEnc.addMemberAsBlock(compressedBlock);
+            try {
+                SWEHelper.assignBinaryEncoding((DataRecord) outputData.get(0), dataEnc);
+            } catch (Exception e) {
+                logger.warn("Invalid encoding");
+            }
+
             /*
             if (inCodec != CodecEnum.RGB) {
                 decoder = new Decoder(inCodec.ffmpegName);
@@ -420,7 +441,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     }
 
     private void input_to_decoder() {
-        if (imgIn == null) {
+        if (imgIn == null || imgIn.getData() == null || imgIn.getData().getUnderlyingObject() == null) {
             logger.warn("Input image is null");
             return;
         }
@@ -492,7 +513,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
                     //imgOut.getComponent("width").setData(swe.createCount().value(packet.size()).build().getData());
                     //imgOut.getComponent("height").setData(swe.createCount().value(1).build().getData());
                 } */
-                ((DataBlockByte) imgOut.getData()).setUnderlyingObject(frameData);
+                ((DataBlockCompressed) imgOut.getData()).setUnderlyingObject(frameData);
                 // also copy frame timestamp
                 double ts;
                 if (inputTimeStamp != null && inputTimeStamp.getData() != null) {

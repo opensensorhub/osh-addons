@@ -14,10 +14,8 @@ import org.sensorhub.impl.processing.AbstractProcessModule;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.vast.data.AbstractDataBlock;
-import org.vast.data.DataArrayImpl;
-import org.vast.data.DataBlockCompressed;
-import org.vast.data.DataBlockMixed;
+import org.vast.cdm.common.CDMException;
+import org.vast.data.*;
 import org.vast.process.*;
 import org.vast.sensorML.SMLHelper;
 import org.vast.sensorML.SimpleProcessImpl;
@@ -63,13 +61,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
 
         // Determine type and get video output stream
         if (sensorModule instanceof AbstractSensorModule<?>) {
-            var opt = ((AbstractSensorModule) sensorModule).getOutputs().values().stream().filter(output -> {
-                var desc = ((IStreamingDataInterface)output).getRecordDescription();
-                // True if desc definition is video frame or name is img, videoframe, or video
-                return desc != null && ( (desc.getDefinition() != null && desc.getDefinition().equals("http://sensorml.com/ont/swe/property/VideoFrame"))
-                    || (desc.getName() != null && (desc.getName().equalsIgnoreCase("img") || desc.getName().equalsIgnoreCase("videoframe")
-                        || desc.getName().equalsIgnoreCase("video"))));
-            }).findFirst();
+            var opt = ((AbstractSensorModule) sensorModule).getOutputs().values().stream().filter(output -> (isVideoData(((IStreamingDataInterface)output).getRecordDescription()))).findFirst();
 
             if (opt.isPresent()) {
                 inputVideoOutport = (IStreamingDataInterface) opt.get();
@@ -77,14 +69,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
                 throw new SensorException("No video stream output found for module " + sensorModule.getName() + ".");
             }
         } else if (sensorModule instanceof AbstractProcessModule<?>) {
-            var opt = ((AbstractProcessModule) sensorModule).getOutputs().values().stream().filter(output -> {
-                var desc = ((IStreamingDataInterface)output).getRecordDescription();
-                // True if desc definition is video frame or name is img, videoframe, or video
-                return desc != null && ( (desc.getDefinition() != null && desc.getDefinition().equals("http://sensorml.com/ont/swe/property/VideoFrame"))
-                        || (desc.getName() != null && (desc.getName().equalsIgnoreCase("img") || desc.getName().equalsIgnoreCase("videoframe")
-                        || desc.getName().equalsIgnoreCase("video"))));
-            }).findFirst();
-
+            var opt = ((AbstractProcessModule) sensorModule).getOutputs().values().stream().filter(output -> (isVideoData(((IStreamingDataInterface)output).getRecordDescription()))).findFirst();
             if (opt.isPresent()) {
                 inputVideoOutport = (IStreamingDataInterface) opt.get();
             } else {
@@ -93,6 +78,9 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         } else {
             throw new SensorException("Module type " + sensorModule.getClass().getName() + " not supported.");
         }
+
+        height = smlHelper.createCount().value(inputVideoOutport.getRecordDescription().getComponent("img").getComponentCount()).build();
+        width = smlHelper.createCount().value(inputVideoOutport.getRecordDescription().getComponent("img").getComponent("row").getComponentCount()).build();
 
         // Create an executable process
         IProcessExec executable;
@@ -106,13 +94,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         initExcProcess(executable);
 
         // Get input port, create connection
-        var opt = executable.getInputList().stream().filter(input -> {
-            var desc = ((DataRecord)input);
-            // True if desc definition is video frame or name is img, videoframe, or video
-            return desc != null && ( (desc.getDefinition() != null && desc.getDefinition().equals("http://sensorml.com/ont/swe/property/VideoFrame"))
-                    || (desc.getName() != null && (desc.getName().equalsIgnoreCase("img") || desc.getName().equalsIgnoreCase("videoframe")
-                    || desc.getName().equalsIgnoreCase("video"))));
-        }).findFirst();
+        var opt = executable.getInputList().stream().filter(input -> (isVideoData((DataRecord)input))).findFirst();
 
         if (opt.isPresent()) {
             inputVideoInport = opt.get();
@@ -120,19 +102,17 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             throw new SensorException("No video stream input found for process " + executable.getInstanceName() + ".");
         }
 
-        var opt2 = executable.getOutputList().stream().filter(output -> {
-            var desc = ((DataRecord)output);
-            // True if desc definition is video frame or name is img, videoframe, or video
-            return desc != null && ( (desc.getDefinition() != null && desc.getDefinition().equals("http://sensorml.com/ont/swe/property/VideoFrame"))
-                    || (desc.getName() != null && (desc.getName().equalsIgnoreCase("img") || desc.getName().equalsIgnoreCase("videoframe")
-                    || desc.getName().equalsIgnoreCase("video"))));
-        }).findFirst();
+        setArraySize(inputVideoInport);
+
+        var opt2 = executable.getOutputList().stream().filter(output -> isVideoData((DataRecord)output)).findFirst();
 
         if (opt2.isPresent()) {
             outputVideoOutport = opt2.get();
         } else {
             throw new SensorException("No video stream output found for process " + executable.getInstanceName() + ".");
         }
+
+        setArraySize(outputVideoOutport);
 
         // TODO: Video output never seems to have data. Figure out why this is.
         dataQueue = new DataQueue();
@@ -147,14 +127,12 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
 
         //addInput();
 
-        height = smlHelper.createCount().value(inputVideoOutport.getRecordDescription().getComponent("img").getComponentCount()).build();
-        width = smlHelper.createCount().value(inputVideoOutport.getRecordDescription().getComponent("img").getComponent("row").getComponentCount()).build();
-        ((DataArray)SMLHelper.getIOComponent(inputVideoInport).getComponent("img")).setElementCount(height);
-        ((DataArray)SMLHelper.getIOComponent(inputVideoInport).getComponent("img").getComponent("row")).setElementCount(width);
-        ((DataArray)SMLHelper.getIOComponent(outputVideoOutport).getComponent("img")).setElementCount(height);
-        ((DataArray)SMLHelper.getIOComponent(outputVideoOutport).getComponent("img").getComponent("row")).setElementCount(width);
+        videoOutput = new VideoDataInterface("inputVideo", width, height, ((DataArray)SMLHelper.getIOComponent(outputVideoOutport).getComponent("img")).isVariableSize(), this);
+        //((VideoDataInterface)videoOutput).setSize(width, height);
+        //var videoOutputRecord = videoOutput.getRecordDescription();
+        //((DataArray)SMLHelper.getIOComponent(videoOutputRecord).getComponent("img")).setElementCount(height);
+        //((DataArray)SMLHelper.getIOComponent(videoOutputRecord).getComponent("img").getComponent("row")).setElementCount(width);
 
-        videoOutput = new VideoDataInterface("inputVideo", width, height, this);
 
         inputVideoOutport.registerListener(new DataQueuePusher(dataQueue));
         //eventHandler.registerListener(new DataQueuePusher(dataQueue));
@@ -185,7 +163,6 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         //((VideoDataInterface)videoOutput).setSize(width, height);
 
         //((DataArrayImpl)imgOut.getComponent("row")).setElementCount(swe.createCount().value(packet.size()).build());
-        addOutput(videoOutput);
 
         try {
             process.setExecutableImpl(executable);
@@ -194,7 +171,18 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             throw new SensorException("Could not initialize process.", e);
         }
 
+        // Adding output last so that the structure (and compression/encoding) can be copied after process init
+        ((VideoDataInterface)videoOutput).setStruct(outQueue.getSourceComponent());
+        addOutput(videoOutput);
+
         setState(ModuleEvent.ModuleState.INITIALIZED);
+    }
+
+    private void setArraySize(AbstractSWEIdentifiable videoComponent) {
+        ((DataArray) SMLHelper.getIOComponent(videoComponent).getComponent("img")).setElementCount(height);
+        ((DataArray)SMLHelper.getIOComponent(videoComponent).getComponent("img").getComponent("row")).setElementCount(width);
+        ((DataArray)SMLHelper.getIOComponent(videoComponent).getComponent("img")).getArraySizeComponent().setValue(height.getValue());
+        ((DataArray)SMLHelper.getIOComponent(videoComponent).getComponent("img").getComponent("row")).getArraySizeComponent().setValue(width.getValue());
     }
 
     private <T extends Throwable> void onError(T throwable) {
@@ -250,9 +238,10 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
     }
 
     // TODO: Start using this method to avoid long repeat code
+    // Best way to have data struct detected as video is by adding the VideoFrame sml definition
     boolean isVideoData(DataComponent dataDescription) {
         return dataDescription != null && ( (dataDescription.getDefinition() != null && dataDescription.getDefinition().equals("http://sensorml.com/ont/swe/property/VideoFrame"))
-                || (dataDescription.getName() != null && (dataDescription.getName().equalsIgnoreCase("img") || dataDescription.getName().equalsIgnoreCase("videoframe")
+                || (dataDescription.getName() != null && (dataDescription.getName().equalsIgnoreCase("videoframe")
                 || dataDescription.getName().equalsIgnoreCase("video"))));
     }
 
@@ -261,16 +250,20 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
     public abstract void initExcProcess(IProcessExec executable);
 
     protected class VideoDataInterface extends AbstractSensorOutput<FFmpegProcess> {
-        DataRecord dataStruct;
+        DataComponent dataStruct;
         RasterHelper swe;
         //Count width, height;
         private final Object histogramLock = new Object();
         private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
         private static final int MAX_NUM_TIMING_SAMPLES = 10;
+        BinaryEncoding dataEnc;
+        BinaryBlock compressedBlock;
 
-        protected VideoDataInterface(String name, Count width, Count height, FFmpegProcess parent) {
+        protected VideoDataInterface(String name, Count width, Count height, boolean isVariable, FFmpegProcess parent) {
             super(name, parent);
             swe = new RasterHelper();
+            DataArray img;
+            // This is just the default structure. Overwritten during the init.
             this.dataStruct = swe.createRecord()
                     .name(name)
                     .label("Video Stream")
@@ -280,16 +273,48 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
                             .asSamplingTimeIsoUTC()
                             .label("Sample Time")
                             .description("Time of data collection"))
-                    .addField("img", swe.newRgbImage(width, height, DataType.BYTE))
+                    .addField("img", img = swe.newRgbImage(swe.createCount().id("width").build(), swe.createCount().id("height").build(), DataType.BYTE))
                     .build();
+
+            if (isVariable) {
+                img.updateSize(height.getValue());
+                ((DataArray) img.getComponent("row")).updateSize(width.getValue());
+            } else {
+                img.setElementCount(height);
+                ((DataArray) img.getComponent("row")).setElementCount(width);
+            }
+
+            dataEnc = swe.newBinaryEncoding(ByteOrder.BIG_ENDIAN, ByteEncoding.RAW);
+
+            BinaryComponent timeEnc = swe.newBinaryComponent();
+            timeEnc.setRef("/" + dataStruct.getComponent(0).getName());
+            timeEnc.setCdmDataType(DataType.DOUBLE);
+            dataEnc.addMemberAsComponent(timeEnc);
+
+            compressedBlock = swe.newBinaryBlock();
+            compressedBlock.setRef("/" + dataStruct.getComponent(1).getName());
+            compressedBlock.setCompression(""); //TODO: CHANGE THIS TO ACCURATELY REFLECT COMPRESSION
+            dataEnc.addMemberAsBlock(compressedBlock);
+
+            try {
+                SWEHelper.assignBinaryEncoding(dataStruct, dataEnc);
+            } catch (CDMException e) {
+                throw new RuntimeException("Invalid binary encoding configuration", e);
+            }
 
             dataStruct.renewDataBlock();
             latestRecord = dataStruct.createDataBlock();
         }
 
-
-        protected void setStruct(DataRecord newStruct) {
-            this.dataStruct = newStruct;
+        public void setStruct(DataComponent newStruct) {
+            dataStruct = newStruct;
+            if (newStruct.hasData()) {
+                dataStruct.setData(newStruct.getData());
+            } else {
+                dataStruct.setData(newStruct.createDataBlock());
+            }
+            dataStruct.renewDataBlock();
+            latestRecord = dataStruct.createDataBlock();
         }
 
         @Override
@@ -297,33 +322,46 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             return dataStruct;
         }
 
-        /*
+
         public void setSize(Count width, Count height) {
-            this.width = width;
-            this.height = height;
-        }*/
+            ((DataArray)SMLHelper.getIOComponent(dataStruct).getComponent("img")).getArraySizeComponent().setValue(height.getValue());
+            ((DataArray)SMLHelper.getIOComponent(dataStruct).getComponent("img").getComponent("row")).getArraySizeComponent().setValue(width.getValue());
+            dataStruct.renewDataBlock();
+            latestRecord = dataStruct.getData();
+        }
 
         @Override
         public DataEncoding getRecommendedEncoding() {
+            if (dataEnc != null) {
+                return dataEnc;
+            }
             return swe.newBinaryEncoding(ByteOrder.BIG_ENDIAN, ByteEncoding.RAW);
         }
 
+        // TODO Avg sampling period
         @Override
         public double getAverageSamplingPeriod() {
             return Double.NaN;
         }
-        // TODO Add a data publishing method
 
         public void publishData() {
-            /*
+            if (!dataStruct.hasData()) { return; }
 
-            updateIntervalHistogram();*/
+            var curtime = System.currentTimeMillis();
             logger.debug("Publishing output");
-            //latestRecord.setUnderlyingObject(dataStruct.get)[1];
+            //(DataBlockCompressed)
+            //latestRecord.setUnderlyingObject(data);
+            //((DataBlock)latestRecord).setUnderlyingObject(dataStruct.getData().getUnderlyingObject());
+            //((DataBlockMixed)latestRecord).getUnderlyingObject()[1].setUnderlyingObject(dataStruct.getComponent("img").getData().getUnderlyingObject());
+            //((DataBlockMixed)latestRecord).setDoubleValue(curtime / 1000d);
+            dataStruct.getData().setDoubleValue(curtime / 1000d);
             latestRecord = dataStruct.getData().clone();
-            eventHandler.publish(new DataEvent(System.currentTimeMillis(), this, latestRecord));
+            latestRecordTime = curtime;
+            eventHandler.publish(new DataEvent(curtime, this, latestRecord));
+            dataStruct.renewDataBlock();
         }
 
+        // TODO Either use this somewhere or remove
         private void updateIntervalHistogram() {
             synchronized (histogramLock) {
                 if (latestRecord != null && latestRecordTime != Long.MIN_VALUE) {
@@ -339,6 +377,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
     }
 
 
+    // Listens for event from dara
     protected class DataQueuePusher implements IEventListener {
         DataQueue dataQueue;
 
@@ -353,14 +392,24 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
                 return;
             }
             try {
-                // Force data through if coming from a sensor
+                // If event data is from source component, add to queue and publish
                 if (e.getSource() instanceof AbstractDataInterface<?> output) {
+                    if (output.getRecordDescription() == null || output.getLatestRecord() == null) {
+                        return;
+                    }
+                    // Set the image data in the queue
                     if (isVideoData(output.getRecordDescription())) {
+                        if (!dataQueue.getSourceComponent().hasData()) {
+                            dataQueue.getSourceComponent().assignNewDataBlock();
+                        }
                         dataQueue.getSourceComponent().setData(output.getLatestRecord().clone());
+                        //((DataBlockCompressed)dataQueue.getSourceComponent().getData()).setUnderlyingObject(((DataBlockMixed) output.getLatestRecord()).getUnderlyingObject()[1]);
+                        //((DataBlockCompressed)dataQueue.getSourceComponent().getData()).setUnderlyingObject(((AbstractDataBlock)output.getLatestRecord().getUnderlyingObject()).getByteValue());
                         dataQueue.publishData();
+
                         logger.debug("Published data queue");
                     } else {
-                        logger.debug("Not video");
+                        //logger.debug("Not video");
                     }
                 }
             } catch (Exception ex) {

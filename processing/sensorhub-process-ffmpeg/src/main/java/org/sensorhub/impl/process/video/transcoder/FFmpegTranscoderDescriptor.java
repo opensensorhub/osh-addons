@@ -19,10 +19,10 @@ import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.processing.AbstractProcessProvider;
 
 
-public class FFmpegTranscodeDescriptor extends AbstractProcessProvider
+public class FFmpegTranscoderDescriptor extends AbstractProcessProvider
 {
     
-    public FFmpegTranscodeDescriptor()
+    public FFmpegTranscoderDescriptor()
     {
         addImpl(FFMpegTranscoder.INFO);
     }
