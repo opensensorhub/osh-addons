@@ -52,7 +52,7 @@ public class FFMpegDecoder extends ExecutableProcessImpl
 {
 	public static final OSHProcessInfo INFO = new OSHProcessInfo("video:FFMpegDecoder", "FFMPEG Video Decoder", null, FFMpegDecoder.class);
 	
-	enum CodecEnum {
+    enum CodecEnum {
 	    //AUTO("auto"),
 	    H264("h264"),
 	    H265("hevc"),
@@ -97,6 +97,7 @@ public class FFMpegDecoder extends ExecutableProcessImpl
     	// inputs
         inputData.add("codedFrame", swe.createRecord()
             .label("Video Frame")
+            .definition(SWEHelper.getPropertyUri("VideoFrame"))
             .addField("time", inputTimeStamp = swe.createTime()
                 .asSamplingTimeIsoUTC()
                 .build())
@@ -130,6 +131,7 @@ public class FFMpegDecoder extends ExecutableProcessImpl
         // outputs
         outputData.add("rgbFrame", swe.createRecord()
             .label("Video Frame")
+            .definition(SWEHelper.getPropertyUri("VideoFrame"))
             .addField("time", outputTimeStamp = swe.createTime()
                 .asSamplingTimeIsoUTC()
                 .build())
