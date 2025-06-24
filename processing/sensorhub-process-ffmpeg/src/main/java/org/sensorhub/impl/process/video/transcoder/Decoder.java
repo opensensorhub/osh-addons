@@ -31,9 +31,9 @@ public class Decoder extends Coder<AVPacket, AVFrame> {
     @Override
     protected void sendInPacket() {
         inPacket = inPackets.poll();
-        logger.debug("decode send:");
-        logger.debug("  data[0]: {}", inPacket.data());
-        logger.debug("Sent frame to encoder");
+        //logger.debug("decode send:");
+        //logger.debug("  data[0]: {}", inPacket.data());
+        //logger.debug("Sent frame to encoder");
         avcodec_send_packet(codec_ctx, av_packet_clone(inPacket));
         //av_packet_free(inPacket);
     }
@@ -46,7 +46,7 @@ public class Decoder extends Coder<AVPacket, AVFrame> {
                 //av_packet_free(inPacket);
                 outPackets.add(av_frame_clone(outPacket));
                 //av_frame_free(outPacket);
-                logger.debug("Decode Packet added");
+                //logger.debug("Decode Packet added");
             }
         }
     }

@@ -22,4 +22,9 @@ public class FFmpegTranscoderProcess extends FFmpegProcess {
         executable.getParameterList().getComponent("inCodec").setData(inCodec);
         executable.getParameterList().getComponent("outCodec").setData(outCodec);
     }
+
+    @Override
+    public void afterInit() {
+        videoOutput.setStructCompression(((FFmpegTranscoderConfig)config).outCodec.toString());
+    }
 }

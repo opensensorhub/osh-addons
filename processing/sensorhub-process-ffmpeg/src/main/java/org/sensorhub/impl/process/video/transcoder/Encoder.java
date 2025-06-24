@@ -30,8 +30,12 @@ public class Encoder extends Coder<AVFrame, AVPacket> {
         codec_ctx = avcodec_alloc_context3(codec);
 
         initOptions(codec_ctx);
+        int ret = avcodec_open2(codec_ctx, codec, (PointerPointer<?>)null);
+        if (ret < 0) {
+            BytePointer errorBuffer = new BytePointer(AV_ERROR_MAX_STRING_SIZE);
 
-        if (avcodec_open2(codec_ctx, codec, (PointerPointer<?>)null) < 0) {
+            av_strerror(ret, errorBuffer, AV_ERROR_MAX_STRING_SIZE);
+            logger.debug("Receive Error: {}", errorBuffer.getString());
             throw new IllegalStateException("Error initializing " + codec.name().getString() + " encoder");
         }
     }
@@ -41,12 +45,14 @@ public class Encoder extends Coder<AVFrame, AVPacket> {
         inPacket = inPackets.poll();
         //pts++;
         //inPacket.pts(pts);
+        /*
         logger.debug("add frame in encoder:");
         logger.debug("  format: {}", inPacket.format());
         logger.debug("  width: {}", inPacket.width());
         logger.debug("  height: {}", inPacket.height());
         logger.debug("  data[0]: {}", inPacket.data(0));
         logger.debug("Sent frame to encoder");
+         */
         avcodec_send_frame(codec_ctx, av_frame_clone(inPacket));
         //av_frame_free(inPacket);
 
@@ -63,7 +69,7 @@ public class Encoder extends Coder<AVFrame, AVPacket> {
         int ret = 0;
         while (( ret = avcodec_receive_packet(codec_ctx, outPacket) ) >= 0) {
             //av_frame_free(inPacket);
-            logger.debug("Packet received from encoder");
+            //logger.debug("Packet received from encoder");
             outPackets.add(av_packet_clone(outPacket));
             //av_packet_free(outPacket);
         }

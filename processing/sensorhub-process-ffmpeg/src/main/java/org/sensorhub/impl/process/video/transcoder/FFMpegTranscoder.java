@@ -373,25 +373,29 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
                 bitrate = temp.getData().getIntValue();
             }
             if (bitrate > 0) {
-                //decOptions.put("bit_rate", String.valueOf(bitrate));
-                //encOptions.put("bit_rate", String.valueOf(bitrate)); // Just assuming input br is the same as out, could this change?
+                decOptions.put("bit_rate", String.valueOf(bitrate));
+                encOptions.put("bit_rate", String.valueOf(bitrate)); // Just assuming input br is the same as out, could this change?
             }
             int width = 0;
             temp = inputWidth;
-            if (temp != null && temp.getData() != null) {
+            if (temp != null && temp.getData() != null && temp.getData().getIntValue() > 0) {
                 width = temp.getData().getIntValue();
+            } else {
+                width = imgIn.getComponent("row").getComponentCount();
             }
             if (width > 0) {
-                //decOptions.put("width", String.valueOf(width));
+                decOptions.put("width", String.valueOf(width));
                 encOptions.put("width", String.valueOf(width));
             }
             temp = inputHeight;
             int height = 0;
-            if (temp != null && temp.getData() != null) {
+            if (temp != null && temp.getData() != null && temp.getData().getIntValue() > 0) {
                 height = temp.getData().getIntValue();
+            } else {
+                height = imgIn.getComponentCount();
             }
             if (height > 0) {
-                //decOptions.put("height", String.valueOf(height));
+                decOptions.put("height", String.valueOf(height));
                 encOptions.put("height", String.valueOf(height));
             }
 
@@ -609,7 +613,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
                     }
                     outputTimeStamp.getData().setDoubleValue(ts);
                     try {
-                        logger.debug("Publishing");
+                        //logger.debug("Publishing");
                         super.publishData();
                     } catch (Exception e) {
                         logger.error("Error publishing output packet", e);

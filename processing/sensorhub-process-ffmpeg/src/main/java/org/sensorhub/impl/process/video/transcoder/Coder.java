@@ -60,18 +60,18 @@ public abstract class Coder<I, O> implements Runnable {
 
         synchronized (waitingObj) {
             if (doRun.get()) {
-                logger.debug("Waiting");
+                //logger.debug("Waiting");
                 waitingObj.wait();
-                logger.debug("Done");
+                //logger.debug("Done");
             }
         }
 
         if (outPackets.isEmpty()) {
-            logger.debug("No output packets");
+            //logger.debug("No output packets");
             return new ArrayDeque<O>();
         }
 
-        logger.debug("Grabbing output packets");
+        //logger.debug("Grabbing output packets");
         //isGettingPackets = true;
         //Queue<O> packets = new ArrayDeque<O>(outPackets);
         //deallocateOutQueue();
@@ -113,19 +113,19 @@ public abstract class Coder<I, O> implements Runnable {
         if (options.containsKey("bit_rate")) {
             codec_ctx.bit_rate(Integer.parseInt(options.get("bit_rate")) * 1000);
         } else {
-            codec_ctx.bit_rate(150*1000);
+            //codec_ctx.bit_rate(150*1000);
         }
 
         if (options.containsKey("width")) {
             codec_ctx.width(Integer.parseInt(options.get("width")));
         } else {
-            codec_ctx.width(1280);
+            codec_ctx.width(1920);
         }
 
         if (options.containsKey("height")) {
             codec_ctx.height(Integer.parseInt(options.get("height")));
         } else {
-            codec_ctx.height(720);
+            codec_ctx.height(1080);
         }
 
         if (options.containsKey("pix_fmt")) {
@@ -136,12 +136,16 @@ public abstract class Coder<I, O> implements Runnable {
             }
             // TODO Add more uncompressed formats (or find a better way of doing this)
         } else {
-            codec_ctx.pix_fmt(AV_PIX_FMT_YUV420P);
+            if (codecId == AV_CODEC_ID_MJPEG) {
+                codec_ctx.pix_fmt(AV_PIX_FMT_YUVJ420P);
+            } else {
+                codec_ctx.pix_fmt(AV_PIX_FMT_YUV420P);
+            }
         }
 
         av_opt_set(codec_ctx.priv_data(), "preset", "ultrafast", 0);
         av_opt_set(codec_ctx.priv_data(), "tune", "zerolatency", 0);
-        //codec_ctx.strict_std_compliance(AVCodecCon);
+        codec_ctx.strict_std_compliance(FF_COMPLIANCE_UNOFFICIAL); // Needed so that yuvj420p works (used for mjpeg)
     }
 
     @Override
@@ -170,22 +174,22 @@ public abstract class Coder<I, O> implements Runnable {
             while (!inPackets.isEmpty()) {
                 if (!doRun.get() || Thread.currentThread().isInterrupted()) { break; }
 
-                logger.debug("Queue size: {}", inPackets.size());
+                //logger.debug("Queue size: {}", inPackets.size());
                 // Get data from in queue
                 // Send data to encoder/decoder
-                logger.debug("{}: Sending packet", this.getClass().getName());
+                //logger.debug("{}: Sending packet", this.getClass().getName());
                 sendInPacket();
 
                 // Receive data from encoder/decoder
                 // Add data to out queue
-                logger.debug("{}: Receiving packet", this.getClass().getName());
+                //logger.debug("{}: Receiving packet", this.getClass().getName());
                 receiveOutPacket();
 
                 //isProcessing = false;
                 // Wake a thread waiting for packets.
 
                 synchronized (waitingObj) {
-                    logger.debug("Notifying waiting thread");
+                    //logger.debug("Notifying waiting thread");
                     waitingObj.notify();
                 }
             }

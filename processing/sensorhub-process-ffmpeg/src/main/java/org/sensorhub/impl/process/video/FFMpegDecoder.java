@@ -249,6 +249,10 @@ public class FFMpegDecoder extends ExecutableProcessImpl
     {
         // get input encoded frame data
         byte[] frameData = ((DataBlockCompressed)imgIn.getData()).getUnderlyingObject();
+        if (frameData == null) {
+            getLogger().debug("Frame data is null");
+            return;
+        }
         //System.out.println("Frame size=" + frameData.length);
         
         // grow packet data buffer as needed
@@ -286,7 +290,7 @@ public class FFMpegDecoder extends ExecutableProcessImpl
                 
                 frameData = new byte[av_frame.width() * av_frame.height() * 3];
                 sws_frame.data(0).get(frameData);
-                ((DataBlockByte)imgOut.getData()).setUnderlyingObject(frameData);
+                ((DataBlockByte)imgOut.getData()).setUnderlyingObject(frameData.clone());
                 
                 // also copy frame timestamp
                 var ts = inputTimeStamp.getData().getDoubleValue();
