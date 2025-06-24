@@ -31,7 +31,11 @@ public class Decoder extends Coder<AVPacket, AVFrame> {
     @Override
     protected void sendInPacket() {
         inPacket = inPackets.poll();
-        avcodec_send_packet(codec_ctx, inPacket);
+        logger.debug("decode send:");
+        logger.debug("  data[0]: {}", inPacket.data());
+        logger.debug("Sent frame to encoder");
+        avcodec_send_packet(codec_ctx, av_packet_clone(inPacket));
+        //av_packet_free(inPacket);
     }
 
     // Receive uncompressed frame from decoder
@@ -41,8 +45,7 @@ public class Decoder extends Coder<AVPacket, AVFrame> {
             while (avcodec_receive_frame(codec_ctx, outPacket) >= 0) {
                 //av_packet_free(inPacket);
                 outPackets.add(av_frame_clone(outPacket));
-
-
+                //av_frame_free(outPacket);
                 logger.debug("Decode Packet added");
             }
         }
@@ -66,5 +69,13 @@ public class Decoder extends Coder<AVPacket, AVFrame> {
     protected void deallocatePackets() {
         av_packet_free(inPacket);
         av_frame_free(outPacket);
+        for (AVFrame frame : outPackets) {
+            av_frame_free(frame);
+        }
+        for (AVPacket packet : inPackets) {
+            av_packet_free(packet);
+        }
+        outPackets.clear();
+        inPackets.clear();
     }
 }

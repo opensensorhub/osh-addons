@@ -56,17 +56,13 @@ public abstract class Coder<I, O> implements Runnable {
     }
 
     // Blocks while a frame is being processed
-    public Queue<O> getPackets() {
+    public Queue<O> getPackets() throws InterruptedException {
 
         synchronized (waitingObj) {
             if (doRun.get()) {
-                try {
-                    logger.debug("Waiting");
-                    waitingObj.wait();
-                    logger.debug("Done");
-                } catch (InterruptedException e) {
-                    logger.error("Interrupted while waiting for packets", e);
-                }
+                logger.debug("Waiting");
+                waitingObj.wait();
+                logger.debug("Done");
             }
         }
 
@@ -145,7 +141,7 @@ public abstract class Coder<I, O> implements Runnable {
 
         av_opt_set(codec_ctx.priv_data(), "preset", "ultrafast", 0);
         av_opt_set(codec_ctx.priv_data(), "tune", "zerolatency", 0);
-        codec_ctx.strict_std_compliance(AVCodecContext.FF_COMPLIANCE_UNOFFICIAL);
+        //codec_ctx.strict_std_compliance(AVCodecCon);
     }
 
     @Override
@@ -155,6 +151,8 @@ public abstract class Coder<I, O> implements Runnable {
         outPacket = (O)(new Object());
 
         allocatePackets();
+        this.inPackets = new ArrayDeque<>();
+        this.outPackets = new ArrayDeque<>();
 
         // init FFMPEG logging
         av_log_set_level(logger.isDebugEnabled() ? AV_LOG_INFO : AV_LOG_FATAL);
@@ -164,11 +162,15 @@ public abstract class Coder<I, O> implements Runnable {
         // Codec should be initialized by now
         doRun.set(true);
 
-        while (doRun.get()) {
+        while (doRun.get() && !Thread.currentThread().isInterrupted()) {
             while (inPackets.isEmpty()) {
+                if (!doRun.get() || Thread.currentThread().isInterrupted()) { break; }
                 Thread.onSpinWait();
             }
             while (!inPackets.isEmpty()) {
+                if (!doRun.get() || Thread.currentThread().isInterrupted()) { break; }
+
+                logger.debug("Queue size: {}", inPackets.size());
                 // Get data from in queue
                 // Send data to encoder/decoder
                 logger.debug("{}: Sending packet", this.getClass().getName());
@@ -196,5 +198,6 @@ public abstract class Coder<I, O> implements Runnable {
 
         deallocatePackets();
         avcodec_free_context(codec_ctx);
+        codec_ctx = null;
     }
 }

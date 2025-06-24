@@ -32,11 +32,11 @@ import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.RasterHelper;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.bytedeco.ffmpeg.global.avcodec.*;
 import static org.bytedeco.ffmpeg.global.avutil.*;
 import static org.bytedeco.ffmpeg.global.swscale.*;
-
 
 /**
  * <p>
@@ -75,7 +75,8 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 	    }
 	}
 
-
+    AtomicBoolean doRun = new AtomicBoolean(true);
+    AtomicBoolean isRunning = new AtomicBoolean(false);
     Time inputTimeStamp;
     Count inputWidth, inputHeight;
     DataArray imgIn;
@@ -88,9 +89,10 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
     Encoder encoder = null;
     Decoder decoder = null;
-    Thread decoderThread = null;
-    Thread encoderThread = null;
     List<Thread> processThreads = null;
+
+    HashMap<String, String> decOptions = new HashMap<>();
+    HashMap<String, String> encOptions = new HashMap<>();
 
     //AVCodec decoder = null;
     //AVCodecContext decode_ctx = null;
@@ -161,6 +163,82 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
     }
 
+    private void initProcessThreads() {
+        try {
+            stopProcessThreads();
+        } catch (Exception e){
+            logger.error("Transcoder could not stop process threads during re-init.", e);
+        }
+        processThreads.clear();
+        inputProcess = null;
+        encoder = null;
+        decoder = null;
+
+        if (inCodec == CodecEnum.RGB || inCodec == CodecEnum.YUV) {
+            if (outCodec == CodecEnum.RGB || outCodec == CodecEnum.YUV) {
+                inputProcess = null;
+            } else {
+                // Encoder
+                // Input -> SW Scale -> Encoder -> Output
+                encoder = new Encoder(outCodec.ffmpegId, encOptions);
+                //encoderThread = new Thread(encoder);
+                processThreads.add(new Thread(this::encoder_to_output));
+                processThreads.add(new Thread(encoder));
+                inputProcess = this::input_to_encoder;
+            }
+        } else {
+            if (outCodec == CodecEnum.RGB || outCodec == CodecEnum.YUV) {
+                // Decoder
+                // Input -> Decoder -> SWS Scale -> Output
+                decoder = new Decoder(inCodec.ffmpegId, decOptions);
+                //decoderThread = new Thread(decoder);
+                processThreads.add(new Thread(this::decoder_to_output));
+                processThreads.add(new Thread(decoder));
+                inputProcess = this::input_to_decoder;
+            } else {
+                // Transcoder
+                // Input -> Decoder -> SWS Scale -> Encoder -> Output
+                decoder = new Decoder(inCodec.ffmpegId, decOptions);
+                encoder = new Encoder(outCodec.ffmpegId, encOptions);
+                processThreads.add(new Thread(this::decoder_to_encoder));
+                processThreads.add(new Thread(this::encoder_to_output));
+                processThreads.add(new Thread(decoder));
+                processThreads.add(new Thread(encoder));
+                inputProcess = this::input_to_decoder;
+            }
+        }
+    }
+
+    private void startProcessThreads() {
+        doRun.set(true);
+        if (processThreads == null || processThreads.isEmpty() || processThreads.get(0).getState() != Thread.State.NEW) {
+            initProcessThreads();
+        }
+
+        for (Thread thread : processThreads) {
+            thread.start();
+        }
+        if (encoder != null) {
+            encoder.doRun.set(true);
+        }
+        if (decoder != null) {
+            decoder.doRun.set(true);
+        }
+        isRunning.set(true);
+
+    }
+
+    private void stopProcessThreads() throws InterruptedException {
+        doRun.set(false); //TODO These atomic booleans may be entirely unnecessary, remove
+        if (processThreads != null) {
+            for (Thread thread : processThreads) {
+                thread.interrupt();
+                thread.join();
+            }
+        }
+        isRunning.set(false);
+    }
+
 
     @Override
     public void notifyParamChange()
@@ -193,10 +271,25 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         }
     }
 
+    @Override
+    public void stop() {
+        if (isRunning.get()) {
+            try {
+                stopProcessThreads();
+            } catch (InterruptedException e) {
+                logger.warn("Interrupted while stopping process threads");
+            }
+        }
+        super.stop();
+    }
+
 
     @Override
     public void init() throws ProcessException
     {
+        doRun.set(true);
+        isRunning.set(false);
+
         frameCounter = 0;
         if (processThreads != null) {
             processThreads.clear();
@@ -253,8 +346,10 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             // Set options for the codecs
             // May add more, so using hashmap
             // May need two hashmaps. For fps, need to work around the decimation factor (or just remove it)
-            HashMap<String, String> decOptions = new HashMap<>();
-            HashMap<String, String> encOptions = new HashMap<>();
+            // TODO Put this in its own function
+            decOptions = new HashMap<>();
+            encOptions = new HashMap<>();
+
             DataComponent temp;
             temp = inputFps;
             int fps = 0;
@@ -300,47 +395,15 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
                 encOptions.put("height", String.valueOf(height));
             }
 
-
+            dec_pkt = av_packet_alloc();
+            av_init_packet(dec_pkt);
 
             // TODO Make sure all possible combinations work
             // execute runs the input process
             // processThreads are always running, passing available data from decoder to encoder and encoder to output
-            if (inCodec == CodecEnum.RGB || inCodec == CodecEnum.YUV) {
-                if (outCodec == CodecEnum.RGB || outCodec == CodecEnum.YUV) {
-                    inputProcess = null;
-                } else {
-                    // Encoder
-                    // Input -> SW Scale -> Encoder -> Output
-                    encoder = new Encoder(outCodec.ffmpegId, encOptions);
-                    //encoderThread = new Thread(encoder);
-                    processThreads.add(new Thread(this::encoder_to_output));
-                    processThreads.add(new Thread(encoder));
-                    inputProcess = this::input_to_encoder;
-                }
-            } else {
-                if (outCodec == CodecEnum.RGB || outCodec == CodecEnum.YUV) {
-                    // Decoder
-                    // Input -> Decoder -> SWS Scale -> Output
-                    decoder = new Decoder(inCodec.ffmpegId, decOptions);
-                    //decoderThread = new Thread(decoder);
-                    processThreads.add(new Thread(this::decoder_to_output));
-                    processThreads.add(new Thread(decoder));
-                    inputProcess = this::input_to_decoder;
-                } else {
-                    // Transcoder
-                    // Input -> Decoder -> SWS Scale -> Encoder -> Output
-                    decoder = new Decoder(inCodec.ffmpegId, decOptions);
-                    encoder = new Encoder(outCodec.ffmpegId, encOptions);
-                    processThreads.add(new Thread(this::decoder_to_encoder));
-                    processThreads.add(new Thread(this::encoder_to_output));
-                    processThreads.add(new Thread(decoder));
-                    processThreads.add(new Thread(encoder));
-                    inputProcess = this::input_to_decoder;
-                }
-            }
-            for (Thread thread : processThreads) {
-                thread.start();
-            }
+            initProcessThreads();
+
+
             logger.debug("Using coder process: {}", inputProcess);
             // TODO Get rid of old code
             /*
@@ -357,18 +420,21 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             av_log_set_level(getLogger().isDebugEnabled() ? AV_LOG_INFO : AV_LOG_FATAL);
 
             */
-            dec_pkt = av_packet_alloc();
+            /*
+
             if (encoder != null) {
                 enc_pkt = av_packet_alloc();
             } else {
                 enc_pkt = null;
             }
-            av_init_packet(dec_pkt);
+
             if (enc_pkt != null) {
                 av_init_packet(enc_pkt);
             }
             av_frame = av_frame_alloc();
             sws_frame = av_frame_alloc();
+
+             */
             nativeFrameData = new BytePointer((long)50*1024);
         }
         catch (IllegalArgumentException e)
@@ -391,10 +457,10 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         super.init();
     }
 
-
     /*
      * To init scaler once we know the input frame size
      */
+    /*
     protected void initScaler(AVFrame av_frame)
     {
         int frameWidth = av_frame.width();
@@ -420,33 +486,40 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
         getLogger().debug("Resizing {}x{} -> {}x{}", av_frame.width(), av_frame.height(), frameWidth, frameHeight);
     }
-
+*/
     private void decoder_to_encoder() {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (doRun.get() && !Thread.currentThread().isInterrupted()) {
             // Block until frames are received
-            Queue<AVFrame> frames = decoder.getPackets();
+            Queue<AVFrame> frames = null;
+            try {
+                 frames = decoder.getPackets();
+            } catch (InterruptedException e) {
+                logger.debug("Interrupted while decoding frames");
+                Thread.currentThread().interrupt();
+                return;
+            }
 
-            for (AVFrame frame : frames) {
-                logger.debug("transfer frame:");
-                logger.debug("  format: {}", frame.format());
-                logger.debug("  width: {}", frame.width());
-                logger.debug("  height: {}", frame.height());
-                logger.debug("  data[0]: {}", frame.data(0));
-                logger.debug("Sent frame to encoder");
-                //swsScale(frame);
-                encoder.addPacket(av_frame_clone(frame));
-                av_frame_free(frame);
+            if (frames != null && !frames.isEmpty()) {
+                for (AVFrame frame : frames) {
+                    if (Thread.currentThread().isInterrupted()) {
+                        return;
+                    }
+
+                    //swsScale(frame);
+                    encoder.addPacket(av_frame_clone(frame));
+                    av_frame_free(frame);
+                }
             }
         }
     }
-
+    // TODO Update this to match input_to_encoder
     private void input_to_decoder() {
         if (imgIn == null || imgIn.getData() == null || imgIn.getData().getUnderlyingObject() == null) {
             logger.warn("Input image is null");
             return;
         }
         // get input encoded frame data
-        byte[] frameData = ((DataBlockCompressed)imgIn.getData()).getUnderlyingObject();
+        byte[] frameData = ((DataBlockCompressed)imgIn.getData()).getUnderlyingObject().clone();
         //System.out.println("Frame size=" + frameData.length);
 
         // grow packet data buffer as needed
@@ -463,7 +536,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         dec_pkt.data(nativeFrameData);
         dec_pkt.size(frameData.length);
 
-        decoder.addPacket(new AVPacket(dec_pkt));
+        decoder.addPacket(av_packet_clone(dec_pkt));
     }
 
     private void input_to_encoder() {
@@ -498,66 +571,97 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
 
     private void encoder_to_output() {
-        while (!Thread.currentThread().isInterrupted()) {
-            for (AVPacket packet : encoder.getPackets()) {
+        while (doRun.get() && !Thread.currentThread().isInterrupted()) {
+            Queue<AVPacket> packets = null;
+            try {
+                packets = encoder.getPackets();
+            } catch (InterruptedException e) {
+                logger.debug("Interrupted while decoding packets");
+                Thread.currentThread().interrupt();
+                return;
+            }
 
-                byte[] frameData = new byte[packet.size()];
-                packet.data().get(frameData);
-                /*
-                if (imgOut.getArraySizeComponent().getData().getIntValue() != packet.size()) {
-                    logger.debug("Updating output size");
-                    //imgOut.setElementCount(swe.createCount().value(1).build());
-                    //((DataArrayImpl)imgOut.getComponent("row")).setElementCount(swe.createCount().value(packet.size()).build());
-                    //imgOut.getData()
-                    //imgOut.
-                    //imgOut.getComponent("width").setData(swe.createCount().value(packet.size()).build().getData());
-                    //imgOut.getComponent("height").setData(swe.createCount().value(1).build().getData());
-                } */
-                ((DataBlockCompressed) imgOut.getData()).setUnderlyingObject(frameData);
-                // also copy frame timestamp
-                double ts;
-                if (inputTimeStamp != null && inputTimeStamp.getData() != null) {
-                    ts = inputTimeStamp.getData().getDoubleValue();
-                } else {
-                    ts = System.currentTimeMillis();
+            if (packets != null && !packets.isEmpty()) {
+                for (AVPacket packet : packets) {
+                    if (Thread.currentThread().isInterrupted()) {
+                        return;
+                    }
+                    byte[] frameData = new byte[packet.size()];
+                    packet.data().get(frameData);
+
+                    /*
+                    if (imgOut.getArraySizeComponent().getData().getIntValue() != packet.size()) {
+                        logger.debug("Updating output size");
+                        //imgOut.setElementCount(swe.createCount().value(1).build());
+                        //((DataArrayImpl)imgOut.getComponent("row")).setElementCount(swe.createCount().value(packet.size()).build());
+                        //imgOut.getData()
+                        //imgOut.
+                        //imgOut.getComponent("width").setData(swe.createCount().value(packet.size()).build().getData());
+                        //imgOut.getComponent("height").setData(swe.createCount().value(1).build().getData());
+                    } */
+                    ((DataBlockCompressed) imgOut.getData()).setUnderlyingObject(frameData.clone());
+                    // also copy frame timestamp
+                    double ts;
+                    if (inputTimeStamp != null && inputTimeStamp.getData() != null) {
+                        ts = inputTimeStamp.getData().getDoubleValue();
+                    } else {
+                        ts = System.currentTimeMillis();
+                    }
+                    outputTimeStamp.getData().setDoubleValue(ts);
+                    try {
+                        logger.debug("Publishing");
+                        super.publishData();
+                    } catch (Exception e) {
+                        logger.error("Error publishing output packet", e);
+                        return;
+                    }
+                    frameData = null;
+                    av_packet_free(packet);
+                    packet = null;
                 }
-                outputTimeStamp.getData().setDoubleValue(ts);
-                try {
-                    logger.debug("Publishing");
-                    super.publishData();
-                } catch (InterruptedException e) {
-                    logger.error("Error publishing output packet", e);
-                }
-                av_packet_free(packet);
             }
         }
     }
 
     private void decoder_to_output() {
-        while (!Thread.currentThread().isInterrupted()) {
-            for (AVFrame frame : decoder.getPackets()) {
-                //swsScale(frame);
-                int size = frame.width() * frame.height() * 3;
-                byte[] frameData = new byte[size];
-                frame.data(0).get(frameData);
-                //frame.data().get(frameData);
-                if (imgOut.getComponent("width").getData().getIntValue() != frame.width() || imgOut.getComponent("height").getData().getIntValue() != frame.height()) {
-                    logger.debug("Updating size");
-                    imgOut.getComponent("width").setData(swe.createCount().value(frame.width()).build().getData());
-                    imgOut.getComponent("height").setData(swe.createCount().value(frame.height()).build().getData());
-                    imgOut.updateSize(); // Not sure if this line is necessary
-                }
-                ((DataBlockByte) imgOut.getData()).setUnderlyingObject(frameData);
-                // also copy frame timestamp
-                var ts = inputTimeStamp.getData().getDoubleValue();
-                outputTimeStamp.getData().setDoubleValue(ts);
+        while (doRun.get() && !Thread.currentThread().isInterrupted()) {
+            Queue<AVFrame> frames = null;
+            try {
+                frames = decoder.getPackets();
+            } catch (InterruptedException e) {
+                logger.debug("Interrupted while decoding frames");
+                Thread.currentThread().interrupt();
+                return;
+            }
 
-                try {
-                    super.publishData();
-                } catch (InterruptedException e) {
-                    logger.error("Error publishing output frame", e);
+            if (frames != null && !frames.isEmpty()) {
+                for (AVFrame frame : frames) {
+                    if (Thread.currentThread().isInterrupted()) {
+                        return;
+                    }
+                    //swsScale(frame);
+                    int size = frame.width() * frame.height() * 3;
+                    byte[] frameData = new byte[size];
+                    frame.data(0).get(frameData);
+                    //frame.data().get(frameData);
+                    if (imgOut.getComponent("width").getData().getIntValue() != frame.width() || imgOut.getComponent("height").getData().getIntValue() != frame.height()) {
+                        logger.debug("Updating size");
+                        imgOut.getComponent("width").setData(swe.createCount().value(frame.width()).build().getData());
+                        imgOut.getComponent("height").setData(swe.createCount().value(frame.height()).build().getData());
+                        imgOut.updateSize(); // Not sure if this line is necessary
+                    }
+                    ((DataBlockByte) imgOut.getData()).setUnderlyingObject(frameData);
+                    // also copy frame timestamp
+                    var ts = inputTimeStamp.getData().getDoubleValue();
+                    outputTimeStamp.getData().setDoubleValue(ts);
+
+                    try {
+                        super.publishData();
+                    } catch (InterruptedException e) {
+                        logger.error("Error publishing output frame", e);
+                    }
+                    av_frame_free(frame);
                 }
-                av_frame_free(frame);
             }
         }
     }
@@ -566,6 +670,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
      * Takes an uncompressed frame scales itand converts it to RGB, changing the size to that specified in the parameters.
      * @param frame
      */
+    /*
     private void swsScale(AVFrame frame) {
         if (sws_ctx == null )
             initScaler(frame);
@@ -580,6 +685,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         frame.height(sws_frame.height());
         //frame.format(AV_PIX_FMT_RGB24);
     }
+     */
 
     @Override
     public void execute() throws ProcessException
@@ -589,7 +695,10 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         if (frameCounter++ % decimFactor == 0) {
             return;
         }*/
-
+        // Start the threads if not already started
+        if (!isRunning.get()) {
+            startProcessThreads();
+        }
 
         // Start process. Encoding, decoding, or transcoding (or nothing)
         if (inputProcess != null) {
@@ -710,29 +819,24 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             nativeFrameData = null;
         }
 
-        disposeCoder(encoderThread, encoder);
-        disposeCoder(decoderThread, decoder);
-
-        if (dec_pkt != null) {
-            av_packet_free(dec_pkt);
+        doRun.set(false);
+        if (encoder != null) {
+            encoder.doRun.set(false);
         }
-
-        if (enc_pkt != null) {
-            av_packet_free(enc_pkt);
+        if (decoder != null) {
+            decoder.doRun.set(false);
         }
-
-        if (av_frame != null) {
-            av_frame_free(av_frame);
-            av_frame = null;
+        if (processThreads != null) {
+            for (Thread t : processThreads) {
+                t.interrupt();
+                try {
+                    t.join();
+                } catch (InterruptedException e) {
+                    logger.error("Error waiting for process thread {} to finish", t.getName());
+                }
+            }
         }
-        
-        if (sws_ctx != null) {
-            sws_freeContext(sws_ctx);
-            sws_ctx = null;
-        }
-        if (sws_frame != null) {
-            av_frame_free(sws_frame);
-            sws_frame = null;
-        }
+        //disposeCoder(encoderThread, encoder);
+        //disposeCoder(decoderThread, decoder);
     }
 }

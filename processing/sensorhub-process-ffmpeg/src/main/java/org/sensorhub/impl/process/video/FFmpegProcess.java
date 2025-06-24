@@ -23,13 +23,18 @@ import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.RasterHelper;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessConfig> {
     SimpleProcessImpl process;
     IModule<?> sensorModule;
+    IProcessExec executable;
     IStreamingDataInterface inputVideoOutport;
     AbstractSWEIdentifiable inputVideoInport, outputVideoOutport;
     DataQueue dataQueue, outQueue;
@@ -37,20 +42,31 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
     SMLHelper smlHelper;
     RasterHelper rasterHelper;
     boolean started = false;
-    Future<?> execFuture;
+    Thread execFuture;
     Count width, height;
+    String uuid = UUID.randomUUID().toString();
 
     public FFmpegProcess() {
         super();
         smlHelper = new SMLHelper();
         process = new SimpleProcessImpl();
-        process.setUniqueIdentifier(UUID.randomUUID().toString());
+        process.setUniqueIdentifier(uuid);
         processDescription = process;
 
     }
 
     @Override
     public void doInit() throws SensorException, SensorHubException {
+
+        //
+        execFuture = null;
+        process = new SimpleProcessImpl();
+        process.setUniqueIdentifier(uuid);
+        processDescription = process;
+        executable = null;
+        sensorModule = null;
+        width = null;
+        height = null;
 
         // Get input module from registry
         if (hasParentHub()) {
@@ -83,7 +99,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         width = smlHelper.createCount().value(inputVideoOutport.getRecordDescription().getComponent("img").getComponent("row").getComponentCount()).build();
 
         // Create an executable process
-        IProcessExec executable;
+
         try {
             executable = config.execProcess.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
@@ -187,12 +203,16 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
 
     private <T extends Throwable> void onError(T throwable) {
         //throw new SensorException("Error starting process.", throwable);
+        logger.error(throwable.getMessage());
     }
 
+
+
     @Override
-    public void doStart() throws SensorException {
+    public void doStart() throws SensorException, SensorHubException {
 
         try {
+            process.init();
             process.start(this::onError);
         } catch (ProcessException e) {
             throw new SensorException("Could not start process.", e);
@@ -200,41 +220,54 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
 
         started = true;
 
-        execFuture = Executors.newSingleThreadExecutor().submit(new Runnable() {
+        execFuture = new Thread(new Runnable() {
             @Override
             public void run()
             {
-                getLogger().debug("Process thread started");
-
+                logger.debug("Process thread started");
                 try
                 {
-                    while (started) {
-                        outQueue.transferData(true);
-                        ((VideoDataInterface)videoOutput).publishData();
-
+                    while (!Thread.currentThread().isInterrupted()) {
+                        try {
+                            outQueue.transferData(true);
+                            ((VideoDataInterface)videoOutput).publishData();
+                        } catch (InterruptedException e) {
+                            logger.debug("Process output queue interrupted.");
+                            return;
+                        }
                     }
                 }
                 catch (Throwable e)
                 {
                     started = false;
-                    getLogger().error("Error during execution", e);
+                    logger.error("Error during execution", e);
                 }
 
-                getLogger().debug("Process thread stopped");
+                logger.debug("Process thread stopped");
             }
         });
+        execFuture.start();
     }
 
     @Override
-    public void doStop() {
+    public void doStop() throws SensorHubException {
+        // TODO Move some of this to doInit()
         started = false;
         process.stop();
+        //process.dispose();
 
         if (execFuture != null)
         {
-            execFuture.cancel(true);
-            execFuture = null;
+            execFuture.interrupt();
+            try {
+                execFuture.join();
+            } catch (InterruptedException e) {
+                logger.warn("Interrupted while joining process.", e);
+            }
+
         }
+
+        setState(ModuleEvent.ModuleState.STOPPED);
     }
 
     // TODO: Start using this method to avoid long repeat code

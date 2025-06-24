@@ -47,24 +47,30 @@ public class Encoder extends Coder<AVFrame, AVPacket> {
         logger.debug("  height: {}", inPacket.height());
         logger.debug("  data[0]: {}", inPacket.data(0));
         logger.debug("Sent frame to encoder");
-        avcodec_send_frame(codec_ctx, inPacket);
+        avcodec_send_frame(codec_ctx, av_frame_clone(inPacket));
+        //av_frame_free(inPacket);
 
     }
 
     @Override
     protected void receiveOutPacket() {
+        /*
         synchronized (outPackets) {
-            int ret = 0;
-            while (( ret = avcodec_receive_packet(codec_ctx, outPacket) ) >= 0) {
-                //av_frame_free(inPacket);
-                logger.debug("Packet received from encoder");
-                outPackets.add(av_packet_clone(outPacket));
-            }
-            BytePointer errorBuffer = new BytePointer(AV_ERROR_MAX_STRING_SIZE);
 
-            av_strerror(ret, errorBuffer, AV_ERROR_MAX_STRING_SIZE);
-            logger.debug("Receive Error: {}", errorBuffer.getString());
         }
+
+         */
+        int ret = 0;
+        while (( ret = avcodec_receive_packet(codec_ctx, outPacket) ) >= 0) {
+            //av_frame_free(inPacket);
+            logger.debug("Packet received from encoder");
+            outPackets.add(av_packet_clone(outPacket));
+            //av_packet_free(outPacket);
+        }
+        BytePointer errorBuffer = new BytePointer(AV_ERROR_MAX_STRING_SIZE);
+
+        //av_strerror(ret, errorBuffer, AV_ERROR_MAX_STRING_SIZE);
+        //logger.debug("Receive Error: {}", errorBuffer.getString());
     }
 
     @Override
@@ -78,5 +84,13 @@ public class Encoder extends Coder<AVFrame, AVPacket> {
     protected void deallocatePackets() {
         av_frame_free(inPacket);
         av_packet_free(outPacket);
+        for (AVPacket packet : outPackets) {
+            av_packet_free(packet);
+        }
+        for (AVFrame frame : inPackets) {
+            av_frame_free(frame);
+        }
+        outPackets.clear();
+        inPackets.clear();
     }
 }
