@@ -25,11 +25,11 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.TextEncoding;
-import org.sensorhub.api.data.IMultiSourceDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 
 /**
@@ -42,20 +42,50 @@ import org.vast.swe.SWEHelper;
  * @since March 22, 2017
  */
 
-public class DissolvedOxygenOutput extends AbstractSensorOutput <USGSWaterDriver> implements IMultiSourceDataInterface
+public class DissolvedOxygenOutput extends AbstractSensorOutput <USGSWaterDriver> //implements IMultiSourceDataInterface
 {
     DataRecord dataStruct;
     TextEncoding encoding;
     Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
-
+    
     public DissolvedOxygenOutput(USGSWaterDriver driver)
     {
-        super("oxygen", driver);
+    	super("dissolved_oxygen", driver);
     }
   
+    protected void init() {
+        SWEHelper swe = new SWEHelper();
+        GeoPosHelper geoFac = new GeoPosHelper();
+
+    	dataStruct = swe.createRecord()
+    			.name(getName())
+    	        .definition("http://sensorml.com/ont/swe/property/DissolvedOxygen")
+
+    			.addField("time", "time", swe.createTime()
+    		            .asSamplingTimeIsoUTC()
+    		            .build())
+    			
+    			.addField("site", swe.createText()
+    					.label("id")
+    					.description("siteId")
+//    					.definition(SWEHelper.getPropertyUri(""))
+    					.build())
+    			
+    			.addField("location", geoFac.newLocationVectorLatLon(SWEHelper.getPropertyUri("location")))
+    			
+    			.addField(getName(), swe.createQuantity()
+    					.label(getName())
+    					.definition("")
+    					.description("Dissolved Oxygen parameter, USGS code 00300")
+    					.uom("mg/L")  // where do I get UOM?
+    					.build())
+    	.build();
+    	
+        encoding = swe.newTextEncoding(",", "\n");	
+    }
     
-    protected void init()
-    {   
+    @Deprecated // Remove after v2 migration completed
+    protected void initV1() {  
         SWEHelper swe = new SWEHelper();
         
         dataStruct = swe.newDataRecord(5);
@@ -65,7 +95,7 @@ public class DissolvedOxygenOutput extends AbstractSensorOutput <USGSWaterDriver
         
         // Set definitions to NULL so these outputs are not observable
         dataStruct.addField("site", swe.newText(null, "Site ID", null));
-        dataStruct.getFieldList().getProperty("site").setRole(ENTITY_ID_URI); // tag with entity ID role
+//        dataStruct.getFieldList().getProperty("site").setRole(ENTITY_ID_URI); // tag with entity ID role
         dataStruct.addField("location", swe.newVector(null, SWEConstants.REF_FRAME_4326, new String[]{"lat","lon"}, new String[] {"Geodetic Latitude", "Longitude"}, new String[] {"deg", "deg"}, new String[] {"Lat", "Long"}));
         dataStruct.addField("dissolved_oxygen", swe.newQuantity(null, "Dissolved Oxygen", "Dissolved Oxygen parameter, USGS code 00300", "mg/L"));
         
@@ -94,8 +124,9 @@ public class DissolvedOxygenOutput extends AbstractSensorOutput <USGSWaterDriver
     		
     		latestRecordTime = System.currentTimeMillis();
     		latestRecord = dataBlock;
-    		latestRecords.put(rec.getSiteCode(), latestRecord); 
-    		eventHandler.publish(new DataEvent(latestRecordTime, rec.getSiteCode(), DissolvedOxygenOutput.this, dataBlock));
+    		latestRecords.put(USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), latestRecord); 
+//    		eventHandler.publish(new DataEvent(latestRecordTime, rec.getSiteCode(), DischargeOutput.this, dataBlock));
+			eventHandler.publish(new DataEvent(latestRecordTime, USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), getName(), latestRecord));
     	}
     }
 
@@ -122,27 +153,6 @@ public class DissolvedOxygenOutput extends AbstractSensorOutput <USGSWaterDriver
 	{	
 	}
 	
-    @Override
-    public Collection<String> getEntityIDs()
-    {
-        return parentSensor.getEntityIDs();
-    }
-
-
-    @Override
-    public Map<String, DataBlock> getLatestRecords()
-    {
-        return Collections.unmodifiableMap(latestRecords);
-    }
-
-
-    @Override
-    public DataBlock getLatestRecord(String entityID)
-    {
-        return latestRecords.get(entityID);
-    }
-
-
 	@Override
 	public double getAverageSamplingPeriod() {
 		return 0;

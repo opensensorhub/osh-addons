@@ -20,16 +20,18 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEConstants;
+import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
+
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.TextEncoding;
-import org.sensorhub.api.data.IMultiSourceDataInterface;
-import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.vast.swe.SWEConstants;
-import org.vast.swe.SWEHelper;
 
 
 /**
@@ -42,7 +44,7 @@ import org.vast.swe.SWEHelper;
  * @since March 22, 2017
  */
 
-public class WaterTempCelsiusOutput extends AbstractSensorOutput <USGSWaterDriver> implements IMultiSourceDataInterface
+public class WaterTempCelsiusOutput extends AbstractSensorOutput <USGSWaterDriver> 
 {
     DataRecord dataStruct;
     TextEncoding encoding;
@@ -53,8 +55,40 @@ public class WaterTempCelsiusOutput extends AbstractSensorOutput <USGSWaterDrive
         super("waterTemp", driver);
     }
   
-    
     protected void init()
+    {   
+		  SWEHelper swe = new SWEHelper();
+		  GeoPosHelper geoFac = new GeoPosHelper();
+
+		  dataStruct = swe.createRecord()
+    			.name(getName())
+    			.definition("http://sensorml.com/ont/swe/property/WaterTempCelsius") 
+
+    			.addField("time", "time", swe.createTime()
+    		            .asSamplingTimeIsoUTC()
+    		            .build())
+    			
+    			.addField("site", swe.createText()
+    					.label("id")
+    					.description("siteId")
+//    					.definition(SWEHelper.getPropertyUri(""))
+    					.build())
+    			
+    			.addField("location", geoFac.newLocationVectorLatLon(SWEHelper.getPropertyUri("location")))
+    			
+    			.addField(getName(), swe.createQuantity()
+    					.label(getName())
+    					.description("Water Temperature parameter, USGS code 00010")
+    					.uom("Cel")  // where do I get UOM?
+//    					.dataType(DataType.FLOAT)
+    					.build())
+    	  .build();
+    	
+        encoding = swe.newTextEncoding(",", "\n");    	
+    }
+
+    @Deprecated // Remove after v2 migration completed
+    protected void initV1()
     {   
         SWEHelper swe = new SWEHelper();
         
@@ -65,7 +99,7 @@ public class WaterTempCelsiusOutput extends AbstractSensorOutput <USGSWaterDrive
         
         // Set definitions to NULL so these outputs are not observable
         dataStruct.addField("site", swe.newText(null, "Site ID", null));
-        dataStruct.getFieldList().getProperty("site").setRole(ENTITY_ID_URI); // tag with entity ID role
+//        dataStruct.getFieldList().getProperty("site").setRole(ENTITY_ID_URI); // tag with entity ID role
         dataStruct.addField("location", swe.newVector(null, SWEConstants.REF_FRAME_4326, new String[]{"lat","lon"}, new String[] {"Geodetic Latitude", "Longitude"}, new String[] {"deg", "deg"}, new String[] {"Lat", "Long"}));
         dataStruct.addField("water_temp_celsius", swe.newQuantity(null, "Water Temperature", "Water Temperature parameter, USGS code 00010", "Cel"));
         
@@ -95,7 +129,8 @@ public class WaterTempCelsiusOutput extends AbstractSensorOutput <USGSWaterDrive
     		latestRecordTime = System.currentTimeMillis();
     		latestRecord = dataBlock;
     		latestRecords.put(USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), latestRecord); 
-    		eventHandler.publish(new DataEvent(latestRecordTime, rec.getSiteCode(), WaterTempCelsiusOutput.this, dataBlock));
+//    		eventHandler.publish(new DataEvent(latestRecordTime, rec.getSiteCode(), DischargeOutput.this, dataBlock));
+			eventHandler.publish(new DataEvent(latestRecordTime, USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), getName(), latestRecord));
     	}
     }
 
@@ -122,28 +157,7 @@ public class WaterTempCelsiusOutput extends AbstractSensorOutput <USGSWaterDrive
 	{	
 	}
 	
-    @Override
-    public Collection<String> getEntityIDs()
-    {
-        return parentSensor.getEntityIDs();
-    }
-
-
-    @Override
-    public Map<String, DataBlock> getLatestRecords()
-    {
-        return Collections.unmodifiableMap(latestRecords);
-    }
-
-
-    @Override
-    public DataBlock getLatestRecord(String entityID)
-    {
-        return latestRecords.get(entityID);
-    }
-
-
-	@Override
+ 	@Override
 	public double getAverageSamplingPeriod() {
 		return 0;
 	}

@@ -54,13 +54,13 @@ public class ObsSiteLoader
     final IParamDatabase paramDb;
     final Logger logger;
     
+//    public ObsSiteLoader(Logger logger)
     public ObsSiteLoader(int idScope, IParamDatabase paramDb, Logger logger)
     {
         this.idScope = idScope;
         this.paramDb = Asserts.checkNotNull(paramDb, IParamDatabase.class);
-        this.logger = Asserts.checkNotNull(logger, Logger.class);
+        this.logger = Asserts.checkNotNull(logger, Logger.class);    
     }
-    
     
     public Stream<IFeature> getSites(USGSDataFilter filter)
     {

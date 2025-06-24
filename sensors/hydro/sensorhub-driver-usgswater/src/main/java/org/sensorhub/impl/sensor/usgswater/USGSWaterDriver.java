@@ -18,9 +18,13 @@ package org.sensorhub.impl.sensor.usgswater;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.PhysicalSystem;
+
+import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.usgs.water.ObsSiteLoader;
-import org.sensorhub.impl.usgs.water.RecordStore;
+import org.sensorhub.impl.usgs.water.USGSDataFilter;
+import org.sensorhub.impl.usgs.water.UsgsUtils;
+//import org.sensorhub.impl.usgs.water.RecordStore;
 import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,21 +50,21 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.IMultiSourceDataProducer;
+//import org.sensorhub.api.data.IMultiSourceDataProducer;
 import org.vast.sensorML.SMLHelper;
 
 
 /**
  * <p>
  * Implementation of sensor interface for USGS Water Data using IP
- * protocol. This particular class stores configuration parameters.
+ * protocol. This particular class stores configuration paramCodes.
  * </p>
  * 
  * @author Lee Butler
  * @since March 22, 2017
  */
 
-public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> implements IMultiSourceDataProducer
+public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> //implements IMultiSourceDataProducer
 {
 	static final Logger log = LoggerFactory.getLogger(USGSWaterDriver.class);
 	static final String BASE_URL = "https://waterservices.usgs.gov/nwis/iv?sites=";
@@ -76,7 +80,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     Set<String> foiIDs;
     Map<String, AbstractFeature> siteFois = new LinkedHashMap<>();
     Map<String, PhysicalSystem> siteDesc = new LinkedHashMap<>();
-    Map<String, RecordStore> dataStores = new LinkedHashMap<>();
+//    Map<String, RecordStore> dataStores = new LinkedHashMap<>();
     
     
     List<USGSDataRecord> waterTempRecList = new ArrayList<USGSDataRecord>();
@@ -130,7 +134,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
         this.uniqueID = "urn:usgs:water:live";
         this.xmlID = "USGS_WATER_DATA_NETWORK";
         
-        if (config.exposeFilter.parameters.contains(ObsParam.WATER_TEMP))
+        if (config.exposeFilter.paramCodes.contains(ObsParam.WATER_TEMP))
         {
         	this.tempCelOut = new WaterTempCelsiusOutput(this);
         	addOutput(tempCelOut, false);
@@ -138,42 +142,42 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
         }
         
         
-        if (config.exposeFilter.parameters.contains(ObsParam.DISCHARGE))
+        if (config.exposeFilter.paramCodes.contains(ObsParam.DISCHARGE))
         {
         	this.dischargeOut = new DischargeOutput(this);
         	addOutput(dischargeOut, false);
         	dischargeOut.init();
         }
         
-        if (config.exposeFilter.parameters.contains(ObsParam.GAGE_HEIGHT))
+        if (config.exposeFilter.paramCodes.contains(ObsParam.GAGE_HEIGHT))
         {
         	this.gageHeightOut = new GageHeightOutput(this);
         	addOutput(gageHeightOut, false);
         	gageHeightOut.init();
         }
         
-        if (config.exposeFilter.parameters.contains(ObsParam.CONDUCTANCE))
+        if (config.exposeFilter.paramCodes.contains(ObsParam.CONDUCTANCE))
         {
         	this.conductanceOut = new SpecificConductanceOutput(this);
         	addOutput(conductanceOut, false);
         	conductanceOut.init();
         }
         
-        if (config.exposeFilter.parameters.contains(ObsParam.OXY))
+        if (config.exposeFilter.paramCodes.contains(ObsParam.OXY))
         {
         	this.oxyOut = new DissolvedOxygenOutput(this);
         	addOutput(oxyOut, false);
         	oxyOut.init();
         }
         
-        if (config.exposeFilter.parameters.contains(ObsParam.PH))
+        if (config.exposeFilter.paramCodes.contains(ObsParam.PH))
         {
         	this.pHOut = new PhOutput(this);
         	addOutput(pHOut, false);
         	pHOut.init();
         }
         // COMMENT OUT FOR NOW
-//        if (config.exposeFilter.parameters.isEmpty())
+//        if (config.exposeFilter.paramCodes.isEmpty())
 //        {
 //        	this.allOut = new AllWaterOutput(this);
 //        	addOutput(allOut, false);
@@ -402,7 +406,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     public void sendRequests(String requestUrl, Map<String, AbstractFeature> fois) throws IOException
     {
     	AbstractFeature foiValue;
-    	Set<ObsParam> params = config.exposeFilter.parameters;
+    	Set<ObsParam> params = config.exposeFilter.paramCodes;
     	
     	String siteId, point;
     	boolean siteSet, timeSet;
@@ -569,11 +573,22 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 
 	protected void loadFois() throws SensorHubException
     {
+		var fk = DataStoreUtils.checkFeatureKey(key);
+	        
+		var usgsFilter = new USGSDataFilter();
+		usgsFilter.siteIds.add(UsgsUtils.toSiteCode(fk.getInternalID()));
+		var results = new ObsSiteLoader(idScope, paramDb, logger).getSites(usgsFilter);
+	        
+	    //return results.findFirst().orElse(null);
+    }
+	
+	protected void loadFois_orig() throws SensorHubException
+    {
         // request and parse site info
         try
         {
-            ObsSiteLoader parser = new ObsSiteLoader(this);
-            parser.preloadSites(config.exposeFilter, siteFois);
+//            ObsSiteLoader parser = new ObsSiteLoader(this);
+//            parser.preloadSites(config.exposeFilter, siteFois);
         }
         catch (Exception e)
         {
@@ -639,56 +654,56 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
     @Override
     public void cleanup() {}
     
-    @Override
-    public Collection<String> getEntityIDs()
-    {
-        return Collections.unmodifiableCollection(siteFois.keySet());
-    }
-    
-    
-    @Override
-    public AbstractFeature getCurrentFeatureOfInterest()
-    {
-        return null;
-    }
-
-
-    @Override
-    public AbstractProcess getCurrentDescription(String entityID)
-    {
-        return null;
-    }
-
-
-    @Override
-    public double getLastDescriptionUpdate(String entityID)
-    {
-        return 0;
-    }
-
-
-    @Override
-    public AbstractFeature getCurrentFeatureOfInterest(String entityID)
-    {
-        return siteFois.get(entityID);
-    }
-
-
-    @Override
-    public Collection<? extends AbstractFeature> getFeaturesOfInterest()
-    {
-        return Collections.unmodifiableCollection(siteFois.values());
-    }
-
-
-    @Override
-    public Collection<String> getEntitiesWithFoi(String foiID)
-    {
-        return Arrays.asList(foiID);
-    }
-
-	@Override
-	public Collection<String> getFeaturesOfInterestIDs() {
-		return Collections.unmodifiableCollection(foiIDs);
-	}
+//    @Override
+//    public Collection<String> getEntityIDs()
+//    {
+//        return Collections.unmodifiableCollection(siteFois.keySet());
+//    }
+//    
+//    
+//    @Override
+//    public AbstractFeature getCurrentFeatureOfInterest()
+//    {
+//        return null;
+//    }
+//
+//
+//    @Override
+//    public AbstractProcess getCurrentDescription(String entityID)
+//    {
+//        return null;
+//    }
+//
+//
+//    @Override
+//    public double getLastDescriptionUpdate(String entityID)
+//    {
+//        return 0;
+//    }
+//
+//
+//    @Override
+//    public AbstractFeature getCurrentFeatureOfInterest(String entityID)
+//    {
+//        return siteFois.get(entityID);
+//    }
+//
+//
+//    @Override
+//    public Collection<? extends AbstractFeature> getFeaturesOfInterest()
+//    {
+//        return Collections.unmodifiableCollection(siteFois.values());
+//    }
+//
+//
+//    @Override
+//    public Collection<String> getEntitiesWithFoi(String foiID)
+//    {
+//        return Arrays.asList(foiID);
+//    }
+//
+//	@Override
+//	public Collection<String> getFeaturesOfInterestIDs() {
+//		return Collections.unmodifiableCollection(foiIDs);
+//	}
 }

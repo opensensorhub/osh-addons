@@ -1,0 +1,192 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "name": "HTTP Server",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "httpPort": 8484,
+    "servletsRootUrl": "/sensorhub",
+    "staticDocRootUrl": "web"
+  },
+    {
+    "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig",
+    "users": [
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "admin",
+        "name": "Administrator",
+        "password": "botts-admin-osh-02",
+        "roles": [
+          "admin"
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "anonymous",
+        "name": "Anonymous User",
+        "password": "",
+        "roles": [
+          "anon"
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "sensor",
+        "name": "Smart Sensors",
+        "password": "sensor@SofWerx",
+        "roles": [
+          "sost"
+        ]
+      }
+    ],
+    "roles": [
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "admin",
+        "allow": [
+          "*"
+        ],
+        "deny": []
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "anon",
+        "allow": [
+          "sos[*]/get/*"
+        ],
+        "deny": []
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "sost",
+        "allow": [
+          "sos[*]/get/*",
+          "sos[*]/insert/*",
+          "sos[*]/update/*"
+        ],
+        "deny": []
+      }
+    ],
+    "id": "bd112969-8838-4f62-8d10-1edf1baa6669",
+    "moduleClass": "org.sensorhub.impl.security.BasicSecurityRealm",
+    "name": "Users",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "enabled": true
+  },
+
+  {
+    "objClass": "com.botts.impl.sensor.beastkit.BeastKitConfig",
+    "id": "7d081b29-aae7-4b4c-82fd-9dfa00c25888",
+    "name": "BeastKit Sensor(s)",
+    "moduleClass": "com.botts.impl.sensor.beastkit.BeastKitSensor",
+    "serialNumber": "Beast_1",
+    "simMode": true,
+    "autoStart": true
+  },
+
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsNetworkConfig",
+    "googleApiUrl": "https://maps.googleapis.com/maps/api/directions/json",
+    "googleApiKey": "AIzaSyBOoKGBC9-EU0bQLIlVW_cfHKSJ_xp1Kp0",
+    "centerLatitude": 34.73,
+    "centerLongitude": -86.585,
+    "areaSize": 0.1,
+    "vehicleSpeed": 50.0,
+    "walkingMode": false,
+    "numRoutes": 1,
+    "numAssets": 2,
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsNetwork",
+    "name": "Fake GPS Network",
+    "autoStart": true
+  },
+ 
+  {
+    "objClass": "org.sensorhub.impl.database.system.SystemDriverDatabaseConfig",
+    "dbConfig": {
+      "objClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabaseConfig",
+      "indexObsLocation": false,
+      "storagePath": "./db.dat",
+      "memoryCacheSize": 5120,
+      "autoCommitBufferSize": 1024,
+      "autoCommitPeriod": 10,
+      "idProviderType": "SEQUENTIAL",
+      "useCompression": false,
+      "readOnly": false,
+      "compactOnClose": false,
+      "databaseNum": 1,
+      "moduleClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabase",
+      "name": "Backing Store",
+      "description": "Implementation of backing store for System Driver Database",
+      "autoStart": false
+    },
+    "systemUIDs": [
+      "urn:osh:sensor:beastkit:Beast_1"
+    ],
+    "minCommitPeriod": 10000,
+    "databaseNum": 1,
+    "id": "aa7a4b3c-c5db-4119-9422-6fc0a05ce7c1",
+    "moduleClass": "org.sensorhub.impl.database.system.SystemDriverDatabase",
+    "name": "System Driver Database",
+    "description": "Storage Module for Selected Systems by UID",
+    "autoStart": true
+  },
+
+
+
+  {
+    "objClass": "org.sensorhub.impl.service.sos.SOSServiceConfig",
+    "id": "5cb05c9c-9e08-4fa1-8731-ff41e246bdc1",
+    "name": "SOS Service",
+    "moduleClass": "org.sensorhub.impl.service.sos.SOSService",
+    "enabled": true,
+    "endPoint": "/sos",
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "dataProviders" : [
+      {
+           "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+           "enabled": true,
+           "name": "BeastKit",
+           "uri": "urn:osh:beastkit",
+           "sensorID": "7d081b29-aae7-4b4c-82fd-9dfa00c25888",
+           "storageID": "8cc876e4-3bed-4347-8012-20227ac22ec6",
+           "liveDataTimeout": 3600.0,
+           "maxFois": 10
+       },
+        {
+        "objClass": "org.sensorhub.impl.service.sos.SensorDataProviderConfig",
+        "sensorID": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+        "storageID": "5cb05c9c-9e08-4fa1-8731-ff4ff948bdc1",
+        "excludedOutputs": [],
+        "liveDataTimeout": 10.0,
+        "latestRecordSource": "STREAM",
+        "maxFois": 10,
+        "offeringID": "urn:osh:gps",
+        "name": "Fake GPS",
+        "description": "Fake GPS sensor",
+        "enabled": true
+      }
+    ],
+    "ogcCapabilitiesInfo": {
+      "title": "Test SOS Service",
+      "description": "An SOS service automatically deployed by SensorHub",
+      "keywords": ["SensorHub", "BeastKit"],
+      "fees": "NONE",
+      "accessConstraints": "NONE",
+      "serviceProvider": {
+        "individualName": "Drew Botts",
+        "organizationName": "Botts Inc",
+        "positionName": "Engineer",
+        "hoursOfService": null,
+        "contactInstructions": null
+      }
+    }
+  }
+]

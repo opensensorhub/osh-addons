@@ -15,21 +15,21 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.usgswater;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEConstants;
+import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
+
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.TextEncoding;
-import org.sensorhub.api.data.IMultiSourceDataInterface;
-import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.vast.swe.SWEConstants;
-import org.vast.swe.SWEHelper;
 
 
 /**
@@ -42,7 +42,7 @@ import org.vast.swe.SWEHelper;
  * @since March 22, 2017
  */
 
-public class GageHeightOutput extends AbstractSensorOutput <USGSWaterDriver> implements IMultiSourceDataInterface
+public class GageHeightOutput extends AbstractSensorOutput <USGSWaterDriver> 
 {
     DataRecord dataStruct;
     TextEncoding encoding;
@@ -50,11 +50,42 @@ public class GageHeightOutput extends AbstractSensorOutput <USGSWaterDriver> imp
 
     public GageHeightOutput(USGSWaterDriver driver)
     {
-        super("gageHeight", driver);
+        super("gage_height", driver);
     }
-  
+
+    protected void init() 
+    {
+        SWEHelper swe = new SWEHelper();
+        GeoPosHelper geoFac = new GeoPosHelper();
+
+    	dataStruct = swe.createRecord()
+    			.name(getName())
+    			.definition("http://sensorml.com/ont/swe/property/GageHeight") 
+
+    			.addField("time", "time", swe.createTime()
+    		            .asSamplingTimeIsoUTC()
+    		            .build())
+    			
+    			.addField("site", swe.createText()
+    					.label("id")
+    					.description("siteId")
+//    					.definition(SWEHelper.getPropertyUri(""))
+    					.build())
+    			
+    			.addField("location", geoFac.newLocationVectorLatLon(SWEHelper.getPropertyUri("location")))
+    			
+    			.addField(getName(), swe.createQuantity()
+    					.label(getName())
+    					.definition("\"Discharge parameter, USGS code 00060\"")
+    					.uom("[cft_i]/s")  // where do I get UOM?
+    					.build())
+    	.build();
+    	
+        encoding = swe.newTextEncoding(",", "\n");
+    }
     
-    protected void init()
+    @Deprecated // Remove after v2 migration completed
+    protected void initV1()
     {   
         SWEHelper swe = new SWEHelper();
         
@@ -65,7 +96,7 @@ public class GageHeightOutput extends AbstractSensorOutput <USGSWaterDriver> imp
         
         // Set definitions to NULL so these outputs are not observable
         dataStruct.addField("site", swe.newText(null, "Site ID", null));
-        dataStruct.getFieldList().getProperty("site").setRole(ENTITY_ID_URI); // tag with entity ID role
+//        dataStruct.getFieldList().getProperty("site").setRole(ENTITY_ID_URI); // tag with entity ID role
         dataStruct.addField("location", swe.newVector(null, SWEConstants.REF_FRAME_4326, new String[]{"lat","lon"}, new String[] {"Geodetic Latitude", "Longitude"}, new String[] {"deg", "deg"}, new String[] {"Lat", "Long"}));
         dataStruct.addField("gage_height", swe.newQuantity(null, "Gage Height", "Gage Height parameter, USGS code 00065", "[ft_i]"));
         
@@ -94,8 +125,9 @@ public class GageHeightOutput extends AbstractSensorOutput <USGSWaterDriver> imp
     		
     		latestRecordTime = System.currentTimeMillis();
     		latestRecord = dataBlock;
-    		latestRecords.put(USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), latestRecord); 
-    		eventHandler.publish(new DataEvent(latestRecordTime, rec.getSiteCode(), GageHeightOutput.this, dataBlock));
+       		latestRecords.put(USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), latestRecord); 
+//    		eventHandler.publish(new DataEvent(latestRecordTime, rec.getSiteCode(), DischargeOutput.this, dataBlock));
+			eventHandler.publish(new DataEvent(latestRecordTime, USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), getName(), latestRecord));
     	}
     }
 
@@ -122,27 +154,6 @@ public class GageHeightOutput extends AbstractSensorOutput <USGSWaterDriver> imp
 	{	
 	}
 	
-    @Override
-    public Collection<String> getEntityIDs()
-    {
-        return parentSensor.getEntityIDs();
-    }
-
-
-    @Override
-    public Map<String, DataBlock> getLatestRecords()
-    {
-        return Collections.unmodifiableMap(latestRecords);
-    }
-
-
-    @Override
-    public DataBlock getLatestRecord(String entityID)
-    {
-        return latestRecords.get(entityID);
-    }
-
-
 	@Override
 	public double getAverageSamplingPeriod() {
 		return 0;

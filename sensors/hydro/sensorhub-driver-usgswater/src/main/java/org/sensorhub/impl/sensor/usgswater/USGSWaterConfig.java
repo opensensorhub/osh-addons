@@ -30,11 +30,11 @@ public class USGSWaterConfig extends SensorConfig {
 //    	exposeFilter.stateCodes.add(StateCode.NY);
 //    	exposeFilter.countyCodes.add("01003");
 //    	exposeFilter.countyCodes.add("01089");
-        exposeFilter.parameters.add(ObsParam.DISCHARGE);
-        exposeFilter.parameters.add(ObsParam.GAGE_HEIGHT);
-        exposeFilter.parameters.add(ObsParam.OXY);
-        exposeFilter.parameters.add(ObsParam.PH);
-        exposeFilter.parameters.add(ObsParam.WATER_TEMP);
-        exposeFilter.parameters.add(ObsParam.CONDUCTANCE);
+        exposeFilter.paramCodes.add(ObsParam.DISCHARGE);
+        exposeFilter.paramCodes.add(ObsParam.GAGE_HEIGHT);
+        exposeFilter.paramCodes.add(ObsParam.OXY);
+        exposeFilter.paramCodes.add(ObsParam.PH);
+        exposeFilter.paramCodes.add(ObsParam.WATER_TEMP);
+        exposeFilter.paramCodes.add(ObsParam.CONDUCTANCE);
     }
 }

@@ -13,11 +13,15 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.usgswater;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+
+import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
+import org.vast.swe.SWEConstants;
+import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
+
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
@@ -25,12 +29,6 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.TextEncoding;
-import org.sensorhub.api.data.IMultiSourceDataInterface;
-import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.usgs.water.CodeEnums.ObsParam;
-import org.vast.swe.SWEConstants;
-import org.vast.swe.SWEHelper;
 
 
 /**
@@ -43,28 +41,91 @@ import org.vast.swe.SWEHelper;
  * @since March 22, 2017
  */
 
-public class AllWaterOutput extends AbstractSensorOutput <USGSWaterDriver> implements IMultiSourceDataInterface
+public class AllWaterOutput extends AbstractSensorOutput <USGSWaterDriver> //implements IMultiSourceDataInterface
 {
 	DataChoice dataChoice;
     DataRecord dataStruct;
     TextEncoding encoding;
-    Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
+//    Map<String, DataBlock> latestRecords = new LinkedHashMap<String, DataBlock>();
+	static final String NAME = "allData";
 
     public AllWaterOutput(USGSWaterDriver driver)
     {
-        super("allData", driver);
+        super(NAME, driver);
     }
     
     
     protected void init()
     {
-        SWEHelper swe = new SWEHelper();
+		SWEHelper swe = new SWEHelper();
+        GeoPosHelper geoFac = new GeoPosHelper();
+
+        dataChoice = swe.newDataChoice();
+        dataChoice.setName(getName());
+        dataChoice.setDefinition("http://sensorml.com/ont/swe/property/WaterProperties");
+        
+        for (ObsParam param: parentSensor.getConfiguration().exposeFilter.paramCodes)
+        {
+        	String paramName = param.name().toLowerCase();
+//        	dataStruct = swe.newDataRecord(5);
+        	dataStruct = swe.createRecord()
+        			.name(getName())
+        			.definition("http://sensorml.com/ont/swe/property/WaterProperties") // ??
+        			.addField("time", "time", swe.createTime()
+        		            .asSamplingTimeIsoUTC()
+        		            .build())
+        			
+        			
+        			.addField("site", swe.createText()
+        					.label("id")
+        					.description("Five-digit WMO Station Identifier")
+        					.definition(SWEHelper.getPropertyUri("wmoId"))
+        					.build())
+        			
+        			.addField("location", geoFac.newLocationVectorLatLon(SWEHelper.getPropertyUri("location")))
+        			
+        			.addField(paramName, swe.createQuantity()
+        					.label(param.name())
+//        					.uom(param.getCode())  // where do I get UOM?
+        					.dataType(DataType.FLOAT)
+        					.build())
+        	.build();
+
+        	dataChoice.addItem(getItemName(param), dataStruct);
+//        	dataStruct.clearData();  // I don't think I need this anymore - TC 1/31/25
+        	
+        	// OLD CCODE BELOW until I am done with it - TC 1/31/25
+            // Set definitions to NULL so these outputs are not observable
+//            dataStruct.addField("site", swe.newText(null, "Site ID", null));
+            // Is setRole() needed anymore? ENTITY_ID_URI doesn't seem to be defined anywhere- TC 1/31/25
+            // dataStruct.getFieldList().getProperty("site").setRole(ENTITY_ID_URI); // tag with entity ID role
+//            dataStruct.addField("location", swe.newVector(null, SWEConstants.REF_FRAME_4326, new String[]{"lat","lon"}, new String[] {"Geodetic Latitude", "Longitude"}, new String[] {"deg", "deg"}, new String[] {"Lat", "Long"}));
+            
+//        	DataComponent c = swe.newQuantity(
+//        			null,
+//        			getLabel(param),
+//        			getDesc(param),
+//        			getUom(param),
+//        			DataType.FLOAT);
+//        	
+//        	dataStruct.addField(paramName, c);
+//        	dataChoice.addItem(getItemName(param), dataStruct);
+//        	dataStruct.clearData();
+        }
+        
+        // use text encoding with "," separators
+        encoding = swe.newTextEncoding(",", "\n");
+    }
+    
+    @Deprecated // Remove after v2 migration completed
+    protected void initV1() {
+       SWEHelper swe = new SWEHelper();
         
         dataChoice = swe.newDataChoice();
         dataChoice.setName(getName());
         dataChoice.setDefinition("http://sensorml.com/ont/swe/property/WaterProperties");
         
-        for (ObsParam param: parentSensor.getConfiguration().exposeFilter.parameters)
+        for (ObsParam param: parentSensor.getConfiguration().exposeFilter.paramCodes)
         {
         	String paramName = param.name().toLowerCase();
         	dataStruct = swe.newDataRecord(5);
@@ -72,7 +133,7 @@ public class AllWaterOutput extends AbstractSensorOutput <USGSWaterDriver> imple
         	
             // Set definitions to NULL so these outputs are not observable
             dataStruct.addField("site", swe.newText(null, "Site ID", null));
-            dataStruct.getFieldList().getProperty("site").setRole(ENTITY_ID_URI); // tag with entity ID role
+            //dataStruct.getFieldList().getProperty("site").setRole(ENTITY_ID_URI); // tag with entity ID role
             dataStruct.addField("location", swe.newVector(null, SWEConstants.REF_FRAME_4326, new String[]{"lat","lon"}, new String[] {"Geodetic Latitude", "Longitude"}, new String[] {"deg", "deg"}, new String[] {"Lat", "Long"}));
             
         	DataComponent c = swe.newQuantity(
@@ -174,8 +235,10 @@ public class AllWaterOutput extends AbstractSensorOutput <USGSWaterDriver> imple
 
     		latestRecordTime = System.currentTimeMillis();
     		latestRecord = dataBlock;
-    		latestRecords.put(USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), latestRecord); 
-    		eventHandler.publish(new DataEvent(latestRecordTime, rec.getSiteCode(), AllWaterOutput.this, dataBlock));
+//    		latestRecords.put(USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), latestRecord); 
+//    		eventHandler.publish(new DataEvent(latestRecordTime, rec.getSiteCode(), AllWaterOutput.this, dataBlock));
+			eventHandler.publish(new DataEvent(latestRecordTime, USGSWaterDriver.UID_PREFIX + rec.getSiteCode(), NAME, latestRecord));
+
     	}
     }
     
@@ -203,24 +266,25 @@ public class AllWaterOutput extends AbstractSensorOutput <USGSWaterDriver> imple
 	public void stop()
 	{	
 	}
-	
-    @Override
-    public Collection<String> getEntityIDs()
-    {
-        return parentSensor.getEntityIDs();
-    }
+
+	// Not sure abput this one
+//    @Override
+//    public Collection<String> getEntityIDs()
+//    {
+//        return parentSensor.getEntityIDs();
+//    }
 
 
-    @Override
-    public Map<String, DataBlock> getLatestRecords()
-    {
-        return Collections.unmodifiableMap(latestRecords);
-    }
-
-
-    @Override
-    public DataBlock getLatestRecord(String entityID)
-    {
-        return latestRecords.get(entityID);
-    }
+//    @Override
+//    public Map<String, DataBlock> getLatestRecords()
+//    {
+//        return Collections.unmodifiableMap(latestRecords);
+//    }
+//
+//
+//    @Override
+//    public DataBlock getLatestRecord(String entityID)
+//    {
+//        return latestRecords.get(entityID);
+//    }
 }
