@@ -45,13 +45,14 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
     boolean started = false;
     Thread execFuture;
     Count width, height;
-    String uuid = UUID.randomUUID().toString();
     boolean onlyConnectImg = false;
+    String uuid;
 
     public FFmpegProcess() {
         super();
         smlHelper = new SMLHelper();
         process = new SimpleProcessImpl();
+        uuid = UUID.randomUUID().toString();
         process.setUniqueIdentifier(uuid);
         processDescription = process;
 
@@ -60,10 +61,8 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
     @Override
     public void doInit() throws SensorException, SensorHubException {
 
-        //
         execFuture = null;
         process = new SimpleProcessImpl();
-        process.setUniqueIdentifier(uuid);
         processDescription = process;
         executable = null;
         sensorModule = null;
@@ -252,31 +251,37 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
     }
 
  */
-
-    private <T extends Throwable> void onError(T throwable) {
-        //throw new SensorException("Error starting process.", throwable);
-        logger.error(throwable.getMessage());
+    // TODO Figure out why this is necessary, and if there's a better way to fix this problem
+    @Override
+    public void beforeStart() {
+        uuid = UUID.randomUUID().toString(); // Setting uuid before each start to avoid DB registration issues.
+        process.setUniqueIdentifier(uuid);
     }
-
-
 
     @Override
     public void doStart() throws SensorException, SensorHubException {
 
-        try {
-            logger.debug("doStart");
-            process.init();
-            process.start(this::onError);
-        } catch (ProcessException e) {
-            throw new SensorException("Could not start process.", e);
-        }
-
-        started = true;
-
         execFuture = new Thread(new Runnable() {
+
+            private <T extends Throwable> void onError(T throwable) {
+                //throw new SensorException("Error starting process.", throwable);
+                logger.error(throwable.getMessage());
+            }
+
             @Override
             public void run()
             {
+                try {
+                    logger.debug("doStart");
+                    process.init();
+                    process.start(this::onError);
+                } catch (ProcessException e) {
+                    logger.error("Could not initialize process.", e);
+                    return;
+                }
+                started = true;
+
+
                 logger.debug("Process thread started");
                 try
                 {
@@ -317,7 +322,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             } catch (InterruptedException e) {
                 logger.warn("Interrupted while joining process.", e);
             }
-
+            execFuture = null;
         }
 
         setState(ModuleEvent.ModuleState.STOPPED);
