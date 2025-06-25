@@ -9,6 +9,7 @@ dependencies {
 // Pi4j Dependencies
     implementation 'com.pi4j:pi4j-core:2.8.0'
     implementation 'com.pi4j:pi4j-plugin-linuxfs:2.8.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
 }
 
 // exclude tests requiring connection to the sensor

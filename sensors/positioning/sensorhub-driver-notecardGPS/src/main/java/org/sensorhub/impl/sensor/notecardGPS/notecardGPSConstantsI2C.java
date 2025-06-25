@@ -6,12 +6,14 @@ public class notecardGPSConstantsI2C {
     public final static int I2C_BUS = 1;
     public final static int SENSOR_ADDRESS = 0x17;
 
+
+
     public final static String RESTORE = "{\"req\":\"card.restore\",\"delete\":"+true+"}";
     public final static String ENABLE_ACCELEROMETER = "{\"req\":\"card.motion.mode\",\"start\":true}";
     public final static String DISABLE_ACCELEROMETER = "{\"req\":\"card.motion.mode\",\"stop\":true}";
 
-    public final static String HUBSET = "{\"req\":\"hub.set\",\"product\":\"com.botts-inc.bill.brown:my0card0test\",\"mode\":\"periodic\",\"outbound\":5,\"inbound\":6}";
-    public final static String HUBSET_MIN = "{\"req\":\"hub.set\",\"product\":\"com.botts-inc.bill.brown:gps\",\"mode\":\"minimum\"}";
+//    public final static String HUBSET = "{\"req\":\"hub.set\",\"product\":\"com.botts-inc.bill.brown:my0card0test\",\"mode\":\"periodic\",\"outbound\":5,\"inbound\":6}";
+//    public final static String HUBSET_MIN = "{\"req\":\"hub.set\",\"product\":\"com.botts-inc.bill.brown:gps\",\"mode\":\"minimum\"}";
     public final static String HUBSET_OFF = "{\"req\":\"hub.set\",\"product\":\"com.botts-inc.bill.brown:gps\",\"mode\":\"off\"}";
     public final static String CHECK_SIGNAL = "{\"req\":\"hub.signal\"}";
     public final static String CHECK_STATUS = "{\"req\":\"hub.status\"}";

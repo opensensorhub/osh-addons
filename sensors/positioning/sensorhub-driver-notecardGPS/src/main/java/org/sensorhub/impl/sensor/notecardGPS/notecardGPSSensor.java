@@ -19,12 +19,17 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
+
 // Pi4J Variables:
 import com.pi4j.Pi4J;
 import com.pi4j.context.Context;
 import com.pi4j.io.i2c.I2C;
 import com.pi4j.io.i2c.I2CConfig;
 import com.pi4j.io.i2c.I2CProvider;
+
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 
 
 /**
@@ -55,7 +60,7 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
     String BoldOn = "\033[1m";  // ANSI code to turn on bold
     String BoldOff = "\033[0m"; // ANSI code to turn on bold
 
-    ///  INITIALIZE BNO085 SENSOR OVER I2C
+    ///  INITIALIZE Notecard OVER I2C
     @Override
     public void doInit() throws SensorHubException {
         super.doInit();
@@ -72,28 +77,35 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
         addOutput(notecardGPSOutput, false);
         notecardGPSOutput.doInit();
 
-//        try {
-//            resetSensor();  // Reset Sensor after initialization to clean/flush any past data
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//        }
-
+        // RESTORE NOTECARD TO FACTOR SETTINGS
+        Transaction(notecardGPSConstantsI2C.RESTORE);
     }
 
     @Override
     public void doStart() throws SensorHubException {
         super.doStart();
-        byte[] timeIntervalArray;
 
-//        keepRunning = true;
-//        Thread readBNO085 = new Thread(this, "BNO085 Worker");
-//        readBNO085.start();
+        String HubSet = "{\"req\":\"hub.set\",\"product\":\"" + config.NCconfig.NHproductUID + "\",\"mode\":\"minimum\"}";
+
+        // CONFIGURE THE NOTECARD
+        Transaction(HubSet);
+        Transaction(notecardGPSConstantsI2C.ENABLE_ACCELEROMETER);
+        Transaction(notecardGPSConstantsI2C.TURNON_TRIANGLULATION);
+        Transaction(notecardGPSConstantsI2C.SET_LOCATION_CONT);
+
+        keepRunning = true;
+        Thread readNoteCardworker = new Thread(this, "Notecard Worker");
+        readNoteCardworker.start();
     }
 
     @Override
     public void doStop() throws SensorHubException {
         super.doStop();
         keepRunning = false;
+        Transaction(notecardGPSConstantsI2C.HUBSET_OFF);
+        Transaction(notecardGPSConstantsI2C.DISABLE_ACCELEROMETER);
+        Transaction(notecardGPSConstantsI2C.TURNOFF_TRIANGLULATION);
+        Transaction(notecardGPSConstantsI2C.DISABLE_GPS);
     }
 
     @Override
@@ -104,17 +116,132 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
     @Override
     public void run() {
         while (keepRunning){
-//            readSensor();
-
-//            try {
-////                Thread.sleep(config.outputs.timeIntervalSeconds * 1000L); // Thread uses milliseconds
-//            } catch (InterruptedException e) {
-//                throw new RuntimeException(e);
-//            }
+            try {
+                Transaction(notecardGPSConstantsI2C.GET_LOC);
+                Thread.sleep(config.NCconfig.gpsSampleRate * 1000L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
 
+    // SENSOR SPECIFIC METHODS
+    public void Transaction(String jsonMsg){
+
+        System.out.println(BoldOn + "Sending Message: " + BoldOff + jsonMsg);
+
+        try {
+            // Using the json message provided, create a byte array for transaction over i2c
+            byte[] messageBytes = (jsonMsg + "\n").getBytes(StandardCharsets.UTF_8);    // Must add '\n' to the end of the message
+            int length = messageBytes.length;                                           // Length is required when sending a message transaction to notecard
+
+            // Create a new Byte Array [<length of array>, <each byte of array>]
+            byte[] reqBytes = new byte[length + 1];
+            reqBytes[0] = (byte) length;                                                // prepend the length
+            System.arraycopy(messageBytes, 0, reqBytes, 1, length);     // create combined array with length at the beginning
+
+            // Send Message to Notecard
+            i2c.write(reqBytes);
+            Thread.sleep(300);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        readNotecard(jsonMsg);
+    }
+
+    public void readNotecard(String prevReq) {
+        // Poll the Notecard  and retrieve the length of stored message in the i2c que
+        int msgLength = getMsgQueLength();
+        StringBuilder response = new StringBuilder();
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        if(msgLength<=0){
+            response.append("No Data in Que");
+        }
+
+        while(msgLength>0){
+            try {
+                // SEND REQUEST TO NOTECARD THAT A READ IS ABOUT TO HAPPEN
+                byte[]readReq = new byte[]{0x00, (byte) (msgLength)};
+                i2c.write(readReq);
+                Thread.sleep(300);
+
+                // READ DESIGNATED DATA FROM NOTECARD
+                byte[] buffer = new byte[msgLength+2];    // in addition to the message length, the notecard sends a prefix [<how much is left>, <how much in this message>]
+                i2c.read(buffer);
+                Thread.sleep(300);
+
+                // CONTINUE TO WRITE BUFFER MESSAGES TO OUTPUT
+                out.write(buffer,2,buffer.length-2); // skip prefix of buffer
+
+                // UPDATE MSG LENGTH TO CONTINUE LOOP OR COMPLETE
+                msgLength = getMsgQueLength();
+
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        byte[] jsonBytes = out.toByteArray();
+        String json = convertSignedBytesToJson(jsonBytes);
+
+        /// IF REQUEST IS CARD.LOCATION, THEN GATHER DATA FOR OUTPUT
+        if(!notecardGPSConstantsI2C.GET_LOC.equals(prevReq)){
+            // Convert JSON to Object and Send Output
+            Gson gson = new Gson();
+            GPSmsg gpsmsg = gson.fromJson(json,GPSmsg.class);
+
+            notecardGPSOutput.SetData( gpsmsg.status, gpsmsg.mode, gpsmsg.time, gpsmsg.lat, gpsmsg.lon );
+
+        }
+
+        response.append(json);
+        System.out.println(BoldOn + "RESPONSE: \n" + BoldOff + response);
+    }
+
+    public String convertSignedBytesToJson(byte[] buffer){
+        StringBuilder json = new StringBuilder();
+        for (byte b : buffer) {
+            char c = (char) (b & 0xFF);
+            json.append(c);
+        }
+
+        return json.toString();
+    }
+
+    public int getMsgQueLength(){
+        int msgLength;
+
+        try {
+            // SEND AN EMPTY READ REQUEST TO NOTECARD. THIS WILL LINE UP THE READ QUE WITH LENGTH OF MESSAGE (IF ANY)
+            byte[] requestRead = new byte[]{0x00, (byte) 0};
+            i2c.write(requestRead);
+
+            Thread.sleep(300);
+
+            // NOW READ A SINGLE BYTE FROM THE QUE
+            byte[] buffer = new byte[1];
+            i2c.read(buffer);
+            Thread.sleep(300);
+
+            msgLength = (buffer[0] & 0xFF); // convert to unsigned byte so that value remains positive between 0 and 255.
+
+        }catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return msgLength;
+    }
+
+    static class GPSmsg {
+        public String status;
+        public String mode;
+        public float lat;
+        public float lon;
+        public long time;
+    }
 
 
     public void createI2cConnection(){
