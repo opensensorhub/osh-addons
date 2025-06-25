@@ -271,22 +271,17 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
             videoOutput = null;
             audioOutput = null;
 
+            if (user == null || user.isBlank())
+                user = "";
+            if (password == null || password.isBlank())
+                password = "";
 
-            // Add credentials if provided
-            if ((user != null || password != null) && (!user.isBlank() || !password.isBlank())) {
-                // In the case that only user or password has a value, make sure the other is set to an empty string.
-                if (user == null || user.isBlank())
-                    user = "";
-                else if (password == null || password.isBlank())
-                    password = "";
-
-                //visualConnectionString = "rtsp://" + user + ":" + password + "@" + streamURI.getHost() + ":"
-                //        + streamURI.getPort() + streamURI.getPath();
+            // Add credentials if provided and not already included in uri
+            if ((!user.isBlank() || !password.isBlank()) && !streamURI.getAuthority().contains("@")) {
                 visualConnectionString = new StringBuilder(streamURI.toString())
                         .insert(streamURI.toString().indexOf("://") + 3, user + ":" + password + "@").toString();
             } else {
                 visualConnectionString = streamURI.toString();
-
             }
             log.trace("Stream endpoint: {}", visualConnectionString);
             setupStream();
