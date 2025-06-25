@@ -52,6 +52,18 @@ public class Decoder extends Coder<AVPacket, AVFrame> {
     }
 
     @Override
+    protected void deallocateInputPacket(AVPacket packet) {
+        av_packet_free(packet);
+        packet = null;
+    }
+
+    @Override
+    protected void deallocateOutputPacket(AVFrame packet) {
+        av_frame_free(packet);
+        packet = null;
+    }
+
+    @Override
     protected void deallocateOutQueue() {
         outPackets.clear();
     }

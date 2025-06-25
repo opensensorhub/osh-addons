@@ -35,18 +35,18 @@ import java.util.concurrent.FutureTask;
 public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessConfig> {
     SimpleProcessImpl process;
     IModule<?> sensorModule;
-    IProcessExec executable;
-    IStreamingDataInterface inputVideoOutport;
-    AbstractSWEIdentifiable inputVideoInport, outputVideoOutport;
+    protected IProcessExec executable;
+    protected IStreamingDataInterface inputVideoOutport; // Output from the source sensor/process (input to this process)
+    AbstractSWEIdentifiable inputVideoInport, outputVideoOutport; // Input to executable process. Output from executable process.
     DataQueue dataQueue, outQueue;
-    protected VideoDataInterface videoOutput;
+    protected VideoDataInterface videoOutput; // Data output interface for this process module.
     SMLHelper smlHelper;
     RasterHelper rasterHelper;
     boolean started = false;
     Thread execFuture;
     Count width, height;
     boolean onlyConnectImg = false;
-    String uuid;
+    protected String uuid;
 
     public FFmpegProcess() {
         super();
@@ -59,8 +59,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
     }
 
     @Override
-    public void doInit() throws SensorException, SensorHubException {
-
+    public void beforeInit() throws SensorHubException {
         execFuture = null;
         process = new SimpleProcessImpl();
         processDescription = process;
@@ -68,9 +67,26 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         sensorModule = null;
         width = null;
         height = null;
-        boolean isVariable;
         onlyConnectImg = false;
 
+        uuid = UUID.randomUUID().toString(); // Creating new uuid before each init to avoid DB registration issues.
+        process.setUniqueIdentifier(uuid);
+
+        // Create an executable process
+        try {
+            executable = config.execProcess.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw new SensorHubException("Could not instantiate process.", e);
+        }
+        // Use config to modify inputs, outputs, params, etc. for the process
+        initExcProcess(executable);
+        super.beforeInit();
+    }
+
+    @Override
+    public void doInit() throws SensorException, SensorHubException {
+
+        boolean isVariable;
         // Get input module from registry
         if (hasParentHub()) {
             sensorModule = getParentHub().getModuleRegistry().getModuleById(config.videoUID);
@@ -98,24 +114,14 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             throw new SensorException("Module type " + sensorModule.getClass().getName() + " not supported.");
         }
 
+        // Get width, height, and whether the array is of variable size. All other I/O array components will be adjusted
+        // to match the sensor video output with the setArraySize method.
         isVariable = ((DataArray)SMLHelper.getIOComponent(inputVideoOutport.getRecordDescription()).getComponent("img")).isVariableSize();
         height = smlHelper.createCount().value(inputVideoOutport.getRecordDescription().getComponent("img").getComponentCount()).build();
         width = smlHelper.createCount().value(inputVideoOutport.getRecordDescription().getComponent("img").getComponent("row").getComponentCount()).build();
 
-        // Create an executable process
-
-        try {
-            executable = config.execProcess.getDeclaredConstructor().newInstance();
-        } catch (Exception e) {
-            throw new SensorException("Could not instantiate process.", e);
-        }
-
-        // Use config to modify inputs, outputs, params, etc. for the process
-        initExcProcess(executable);
-
         // Get input port, create connection
         var opt = executable.getInputList().stream().filter(input -> (isVideoData((DataRecord)input))).findFirst();
-
         if (opt.isPresent()) {
             inputVideoInport = opt.get();
         } else {
@@ -125,7 +131,6 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         setArraySize(inputVideoInport, isVariable);
 
         var opt2 = executable.getOutputList().stream().filter(output -> isVideoData((DataRecord)output)).findFirst();
-
         if (opt2.isPresent()) {
             outputVideoOutport = opt2.get();
         } else {
@@ -143,7 +148,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             executable.connect(SMLHelper.getIOComponent(inputVideoInport), dataQueue);
         } catch (ProcessException e) {
             try {
-                // If there's an issue connecting, it could be that one of the data structures has more/less than img & time
+                // If there's an issue connecting, it could be that one of the video frame data structures has more/less than img & time
                 // In this case, we only want to connect the img components
                 dataQueue = new DataQueue();
                 dataQueue.setSource(null, SMLHelper.getIOComponent(inputVideoOutport.getRecordDescription()).getComponent("img"));
@@ -156,27 +161,10 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
 
         }
 
-        //addInput();
-
         videoOutput = new VideoDataInterface("inputVideo", width, height, isVariable, this);
-        //((VideoDataInterface)videoOutput).setSize(width, height);
-        //var videoOutputRecord = videoOutput.getRecordDescription();
-        //((DataArray)SMLHelper.getIOComponent(videoOutputRecord).getComponent("img")).setElementCount(height);
-        //((DataArray)SMLHelper.getIOComponent(videoOutputRecord).getComponent("img").getComponent("row")).setElementCount(width);
-
-
         inputVideoOutport.registerListener(new DataQueuePusher(dataQueue));
-        //eventHandler.registerListener(new DataQueuePusher(dataQueue));
-        //IEventListener
-        //.getParentHub().getEventBus().get;
-        //((IDataProducerModule<?>) sensorModule).getOutputs().
-        //eventHandler.publish();
-        //dataQueue.publishData();
-        //ListenerSubscriber
-        // TODO: Register listener to push to the DataQueues
-        // TODO 1) Register data listener on video sensor, simple process, invoke some method with the data (?)
-        // TODO 2) Push the data received into their respective DataQueue (either dataQueue or outQueue)
         outQueue = new DataQueue();
+
         if (onlyConnectImg) {
             outQueue.setSource(executable, SMLHelper.getIOComponent(outputVideoOutport).getComponent("img"));
             outQueue.setDestination(null, SMLHelper.getIOComponent(videoOutput.getRecordDescription()).getComponent("img"));
@@ -195,16 +183,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             }
         }
 
-        //eventHandler.registerListener(new DataQueuePusher(outQueue));
-
-
-
-
-
-        //((VideoDataInterface)videoOutput).setSize(width, height);
-
-        //((DataArrayImpl)imgOut.getComponent("row")).setElementCount(swe.createCount().value(packet.size()).build());
-
+        // Set the process executable
         try {
             process.setExecutableImpl(executable);
             process.init();
@@ -213,6 +192,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         }
 
         // Adding output last so that the structure (and compression/encoding) can be copied after process init
+        // Note: This may no longer be necessary with the setCompression method added to the videoDataInterface
         if (!onlyConnectImg) {
             videoOutput.setStruct(outQueue.getSourceComponent());
         } else {
@@ -221,15 +201,16 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         }
         addOutput(videoOutput);
 
-        setState(ModuleEvent.ModuleState.INITIALIZED);
+        super.doInit();
     }
 
     private void setArraySize(AbstractSWEIdentifiable videoComponent, boolean isVariable) {
         var img = ((DataArray) SMLHelper.getIOComponent(videoComponent).getComponent("img"));
         if (isVariable && !img.isVariableSize()) {
-            // TODO
+            // Convert to variable size
+            // TODO Add logic to convert non-variable to variable
         } else if (!isVariable &&  img.isVariableSize()) {
-            // Make non-variable. This feels like a hack
+            // Convert to non-variable size. This feels like a hack
             ((SimpleLink<?>)img.getElementCountProperty()).setHref(null);
             ((SimpleLink<?>)((DataArray)img.getComponent("row")).getElementCountProperty()).setHref(null);
         }
@@ -238,50 +219,39 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         img.getArraySizeComponent().setValue(height.getValue());
         ((DataArray)img.getComponent("row")).getArraySizeComponent().setValue(width.getValue());
     }
-/*
-    private void setArraySize(AbstractSWEIdentifiable videoComponent, boolean isVariable) {
-        DataArray img = ((DataArray) SMLHelper.getIOComponent(videoComponent).getComponent("img"));
-        if (isVariable) {
-            img.updateSize(height.getValue());
-            ((DataArray) img.getComponent("row")).updateSize(width.getValue());
-        } else {
-            img.setElementCount(height);
-            ((DataArray) img.getComponent("row")).setElementCount(width);
-        }
-    }
 
- */
     // TODO Figure out why this is necessary, and if there's a better way to fix this problem
     @Override
-    public void beforeStart() {
-        uuid = UUID.randomUUID().toString(); // Setting uuid before each start to avoid DB registration issues.
-        process.setUniqueIdentifier(uuid);
+    public void beforeStart() throws SensorHubException {
+        //uuid = UUID.randomUUID().toString(); // Setting uuid before each start to avoid DB registration issues.
+        //process.setUniqueIdentifier(uuid);
+        super.beforeStart();
+    }
+
+    private <T extends Throwable> void onError(T throwable) {
+        //throw new SensorException("Error starting process.", throwable);
+        logger.error(throwable.getMessage());
     }
 
     @Override
     public void doStart() throws SensorException, SensorHubException {
 
-        execFuture = new Thread(new Runnable() {
+        try {
+            logger.debug("doStart");
+            // Reinit executable. Not always necessary, but doesn't hurt.
+            executable.init();
+            process.start(this::onError);
+        } catch (ProcessException e) {
+            logger.error("Could not initialize process.", e);
+            return;
+        }
+        started = true;
 
-            private <T extends Throwable> void onError(T throwable) {
-                //throw new SensorException("Error starting process.", throwable);
-                logger.error(throwable.getMessage());
-            }
+        execFuture = new Thread(new Runnable() {
 
             @Override
             public void run()
             {
-                try {
-                    logger.debug("doStart");
-                    process.init();
-                    process.start(this::onError);
-                } catch (ProcessException e) {
-                    logger.error("Could not initialize process.", e);
-                    return;
-                }
-                started = true;
-
-
                 logger.debug("Process thread started");
                 try
                 {
@@ -305,6 +275,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             }
         });
         execFuture.start();
+        super.doStart();
     }
 
     @Override
@@ -325,7 +296,8 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             execFuture = null;
         }
 
-        setState(ModuleEvent.ModuleState.STOPPED);
+        super.doStop();
+        //setState(ModuleEvent.ModuleState.STOPPED);
     }
 
     // TODO: Start using this method to avoid long repeat code
@@ -392,6 +364,10 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             compressedBlock = swe.newBinaryBlock();
             compressedBlock.setRef("/" + dataStruct.getComponent(1).getName());
             if (codec != null) {
+
+                if (codec.equalsIgnoreCase("MJPEG")) {
+                    codec = "JPEG";
+                }
                 compressedBlock.setCompression(codec);
             }
             dataEnc.addMemberAsBlock(compressedBlock);
@@ -455,12 +431,6 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             if (!dataStruct.hasData()) { return; }
 
             var curtime = System.currentTimeMillis();
-            //logger.debug("Publishing output");
-            //(DataBlockCompressed)
-            //latestRecord.setUnderlyingObject(data);
-            //((DataBlock)latestRecord).setUnderlyingObject(dataStruct.getData().getUnderlyingObject());
-            //((DataBlockMixed)latestRecord).getUnderlyingObject()[1].setUnderlyingObject(dataStruct.getComponent("img").getData().getUnderlyingObject());
-            //((DataBlockMixed)latestRecord).setDoubleValue(curtime / 1000d);
             dataStruct.getData().setDoubleValue(curtime / 1000d);
             // TODO This boolean is being used a bit too much all over the place
             if (onlyConnectImg) {
@@ -524,7 +494,6 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
                                         break;
                                     }
                                 }
-                                //dataQueue.getSourceComponent().setData(blockArray[1]);
                             }
                             if (imgData != null) {
                                 dataQueue.getSourceComponent().setData(imgData.clone());
@@ -532,38 +501,19 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
                                 logger.debug("Could not find image data");
                                 return;
                             }
-                            //dataQueue.getSourceComponent().setData(((AbstractDataBlock[])output.getLatestRecord().getUnderlyingObject())[1].clone());
                         } else {
                             // 2) Otherwise, we can just copy the entire record
                             dataQueue.getSourceComponent().setData(output.getLatestRecord().clone());
                         }
-                        //((DataBlockCompressed)dataQueue.getSourceComponent().getData()).setUnderlyingObject(((DataBlockMixed) output.getLatestRecord()).getUnderlyingObject()[1]);
-                        //((DataBlockCompressed)dataQueue.getSourceComponent().getData()).setUnderlyingObject(((AbstractDataBlock)output.getLatestRecord().getUnderlyingObject()).getByteValue());
                         dataQueue.publishData();
-
-                        //logger.debug("Published data queue");
                     } else {
-                        //logger.debug("Not video");
+                        // This probably isn't necessary or even reachable
+                        logger.debug("Not video");
                     }
                 }
             } catch (Exception ex) {
                 logger.error("Could not publish data queue.", ex);
             }
-            /*
-            logger.debug("Received event");
-            if (e.getSource() instanceof AbstractDataInterface<?> output) {
-                logger.debug("Received data interface event");
-                try {
-                    if (output.getRecordDescription().getId().equals(dataQueue.getSourceComponent().getId())) {
-                        dataQueue.publishData();
-                        logger.debug("Published data queue");
-                    }
-                } catch (Exception ex) {
-                    logger.error("Could not publish data queue.", ex);
-                }
-            }
-
-             */
         }
     }
 }

@@ -21,6 +21,7 @@ public abstract class Coder<I, O> implements Runnable {
     protected static final Logger logger = LoggerFactory.getLogger(Coder.class);
 
     int codecId;
+    private static final int MAX_QUEUE_SIZE = 500;
     protected AVCodecContext codec_ctx;
     protected volatile Queue<I> inPackets; // ONLY allow the main loop to poll
     protected volatile Queue<O> outPackets; // ONLY allow the main loop to add
@@ -79,6 +80,29 @@ public abstract class Coder<I, O> implements Runnable {
         outPackets = new ArrayDeque<>();
         return packets;
     }
+
+    // Safety net queue purging.
+    // Sometimes, queues can grow very large (like when a thread hangs up or is paused in the debugger).
+    // Can recover, so we don't want memory issues from too many items in the queues.
+    private void queuePurge() {
+        synchronized (inPackets) {
+            if (inPackets.size() > MAX_QUEUE_SIZE) { logger.warn("Input queue is larger than max ({} > {}). Purging queue.", inPackets.size(), MAX_QUEUE_SIZE); }
+            while (inPackets.size() > MAX_QUEUE_SIZE) {
+                deallocateInputPacket(inPackets.poll());
+            }
+        }
+
+        synchronized (outPackets) {
+            if (outPackets.size() > MAX_QUEUE_SIZE) { logger.warn("Output queue is larger than max ({} > {}). Purging queue.", outPackets.size(), MAX_QUEUE_SIZE); }
+            while (outPackets.size() > MAX_QUEUE_SIZE) {
+                deallocateOutputPacket(outPackets.poll());
+            }
+        }
+    }
+
+    protected abstract void deallocateInputPacket(I packet);
+
+    protected abstract void deallocateOutputPacket(O packet);
 
     protected abstract void deallocateOutQueue();
 
@@ -173,6 +197,8 @@ public abstract class Coder<I, O> implements Runnable {
             }
             while (!inPackets.isEmpty()) {
                 if (!doRun.get() || Thread.currentThread().isInterrupted()) { break; }
+
+                queuePurge();
 
                 //logger.debug("Queue size: {}", inPackets.size());
                 // Get data from in queue

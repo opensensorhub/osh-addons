@@ -68,15 +68,23 @@ public class Encoder extends Coder<AVFrame, AVPacket> {
          */
         int ret = 0;
         while (( ret = avcodec_receive_packet(codec_ctx, outPacket) ) >= 0) {
-            //av_frame_free(inPacket);
-            //logger.debug("Packet received from encoder");
             outPackets.add(av_packet_clone(outPacket));
-            //av_packet_free(outPacket);
         }
-        BytePointer errorBuffer = new BytePointer(AV_ERROR_MAX_STRING_SIZE);
-
+        //BytePointer errorBuffer = new BytePointer(AV_ERROR_MAX_STRING_SIZE);
         //av_strerror(ret, errorBuffer, AV_ERROR_MAX_STRING_SIZE);
         //logger.debug("Receive Error: {}", errorBuffer.getString());
+    }
+
+    @Override
+    protected void deallocateInputPacket(AVFrame packet) {
+        av_frame_free(packet);
+        packet = null;
+    }
+
+    @Override
+    protected void deallocateOutputPacket(AVPacket packet) {
+        av_packet_free(packet);
+        packet = null;
     }
 
     @Override
