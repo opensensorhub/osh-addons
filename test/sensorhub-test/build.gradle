@@ -22,7 +22,7 @@ dependencies {
   //implementation project(':sensorhub-storage-perst')
   implementation project(':sensorhub-driver-fakegps')
   implementation project(':sensorhub-driver-fakeweather')
-  implementation project(':sensorhub-driver-isa')
+//  implementation project(':sensorhub-driver-isa')
   implementation project(':sensorhub-driver-misb-uas')
   //implementation project(':sensorhub-driver-ahrs')
   //implementation project(':sensorhub-driver-angelsensor')

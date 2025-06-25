@@ -107,7 +107,7 @@ public class OPS241ASensor extends AbstractSensorModule<OPS241AConfig> implement
     }
 
     @Override
-    public void doStart() throws SensorHubException, InterruptedException {
+    public void doStart() throws SensorHubException {
         super.doStart();
 
         try {
@@ -128,7 +128,7 @@ public class OPS241ASensor extends AbstractSensorModule<OPS241AConfig> implement
     }
 
     @Override
-    public void doStop() throws SensorHubException, InterruptedException {
+    public void doStop() throws SensorHubException {
         super.doStop();
         keepRunning = false;
         if (serialPort != null){
