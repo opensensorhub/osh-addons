@@ -28,7 +28,7 @@ import org.sensorhub.api.sensor.SensorConfig;
  * public Type configOption = "default value";
  * }</pre>
  */
-public class notecardGPSConfig extends SensorConfig {
+public class Config extends SensorConfig {
     /**
      * The unique identifier for the configured sensor (or sensor platform).
      */
@@ -37,19 +37,14 @@ public class notecardGPSConfig extends SensorConfig {
     public String serialNumber;
 
     @DisplayInfo.Required
-    @DisplayInfo(label = "I2C Settings", desc = "Configuration options for the I2C Connection")
+    @DisplayInfo(label = "Notecard Settings", desc = "Configuration options for the Notecard")
+    public noteCardConfig NCconfig = new noteCardConfig();
+
+    @DisplayInfo.Required
+    @DisplayInfo(label = "I²C Settings", desc = "Configuration options for the I2C Connection")
     public i2cConfig connection = new i2cConfig();
 
-    @DisplayInfo.Required
-    @DisplayInfo(label="NoteHub Product UID", desc="Provide the Product UID associated with your NoteHub.io Project")
-    public String NHproductUID = "com.botts-inc.bill.brown:gps";
 
-    @DisplayInfo.Required
-    @DisplayInfo(label="GPS Sample Rate(minutes)", desc="Provide the sample rate at which the GPS is expected to gather readings")
-    public int gpsSampleRate = 1;
-
-    @DisplayInfo(label = "Sync with Notehub.io", desc="Do you want data from this notecard to sync with NoteHub.io?")
-    public boolean isNoteHubSync = false;
 
 
 

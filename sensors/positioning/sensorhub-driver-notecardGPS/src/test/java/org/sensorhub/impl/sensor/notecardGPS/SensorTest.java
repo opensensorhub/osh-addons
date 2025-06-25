@@ -9,7 +9,7 @@
 
  Copyright (C) 2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.not;
+package org.sensorhub.impl.sensor.notecardGPS;
 
 import org.junit.Test;
 
@@ -22,7 +22,7 @@ public class SensorTest extends TestBase {
         assertTrue(sensor.isStarted());
         assertTrue(sensor.isConnected());
 
-        assertEquals(Bno085Sensor.UID_PREFIX + "123456789", sensor.getUniqueIdentifier());
+        assertEquals(notecardGPSSensor.UID_PREFIX + "123456789", sensor.getUniqueIdentifier());
         assertEquals("Sensor Template", sensor.getName());
         assertEquals("Description of the sensor", sensor.getDescription());
     }

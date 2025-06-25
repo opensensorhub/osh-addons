@@ -11,7 +11,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.notecardGPS;
 
-import org.sensorhub.impl.sensor.notecardGPS.config.notecardGPSConfig;
+import org.sensorhub.impl.sensor.notecardGPS.config.Config;
 import org.sensorhub.impl.sensor.notecardGPS.outputs.*;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -26,9 +26,6 @@ import com.pi4j.io.i2c.I2C;
 import com.pi4j.io.i2c.I2CConfig;
 import com.pi4j.io.i2c.I2CProvider;
 
-import java.util.ArrayList;
-import java.util.List;
-
 
 /**
  * Driver implementation for the sensor.
@@ -36,7 +33,7 @@ import java.util.List;
  * This class is responsible for providing sensor information, managing output registration,
  * and performing initialization and shutdown for the driver and its outputs.
  */
-public class notecardGPSSensor extends AbstractSensorModule<notecardGPSConfig> implements Runnable {
+public class notecardGPSSensor extends AbstractSensorModule<Config> implements Runnable {
     static final String UID_PREFIX = "osh:notecardGPS:";
     static final String XML_PREFIX = "notecardGPS";
 
@@ -109,11 +106,11 @@ public class notecardGPSSensor extends AbstractSensorModule<notecardGPSConfig> i
         while (keepRunning){
 //            readSensor();
 
-            try {
-//                Thread.sleep(config.outputs.timeIntervalSeconds * 1000L); // Thread uses milliseconds
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+//            try {
+////                Thread.sleep(config.outputs.timeIntervalSeconds * 1000L); // Thread uses milliseconds
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
         }
     }
 

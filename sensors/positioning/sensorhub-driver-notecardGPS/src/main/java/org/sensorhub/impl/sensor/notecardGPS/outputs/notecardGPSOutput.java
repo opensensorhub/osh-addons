@@ -21,13 +21,19 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.swe.SWEBuilders;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
+
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 
 /**
- * Output specification and provider for {@link Bno085Sensor}.
+ * Output specification and provider for {@link notecardGPSSensor}.
  */
-public class AccelerometerOutput extends AbstractSensorOutput<notecardGPSSensor> {
+public class notecardGPSOutput extends AbstractSensorOutput<notecardGPSSensor> {
     static final String SENSOR_OUTPUT_NAME = "NotecardGPS";
     static final String SENSOR_OUTPUT_LABEL = "GPS";
     static final String SENSOR_OUTPUT_DESCRIPTION = "This is the output for the GPS module on the Blues Notecard";
@@ -50,7 +56,7 @@ public class AccelerometerOutput extends AbstractSensorOutput<notecardGPSSensor>
      *
      * @param parentSensor Sensor driver providing this output.
      */
-    public AccelerometerOutput(notecardGPSSensor parentSensor) {
+    public notecardGPSOutput(notecardGPSSensor parentSensor) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
     }
 
@@ -58,9 +64,10 @@ public class AccelerometerOutput extends AbstractSensorOutput<notecardGPSSensor>
      * Initializes the data structure for the output, defining the fields, their ordering, and data types.
      */
     public void doInit() {
-        logger.info("Initializing Accelerometer Output");
+        logger.info("Initializing Notecard GPS Output");
         // Get an instance of SWE Factory suitable to build components
         SWEHelper sweFactory = new SWEHelper();
+        GeoPosHelper geoFactory = new GeoPosHelper();
 
 
         // Create the data record description
@@ -72,12 +79,17 @@ public class AccelerometerOutput extends AbstractSensorOutput<notecardGPSSensor>
                         .asSamplingTimeIsoUTC()
                         .label("Time Stamp")
                         .description("Time of data collection"))
-                .addField("acceleration_X", sweFactory.createQuantity()
-                        .uom("m/s^2").label("X").description("X-axis acceleration"))
-                .addField("acceleration_Y", sweFactory.createQuantity()
-                        .uom("m/s^2").label("Y").description("Y-axis acceleration"))
-                .addField("acceleration_Z", sweFactory.createQuantity()
-                        .uom("m/s^2").label("Z").description("Z-axis acceleration"));
+                .addField("status", sweFactory.createText()
+                        .label("Status")
+                        .description("Information of GPS Status"))
+                .addField("mode", sweFactory.createText()
+                        .label("Mode")
+                        .description("Periodic or Continuous"))
+                .addField("collectionTime", sweFactory.createTime()
+                        .asSamplingTimeIsoUTC()
+                        .label("Time Collected")
+                        .description("Time of GPS"))
+                .addField("Location", geoFactory.createLocationVectorLatLon());
 
         dataStruct = recordBuilder.build();
 
@@ -105,7 +117,7 @@ public class AccelerometerOutput extends AbstractSensorOutput<notecardGPSSensor>
         return accumulator / (double) MAX_NUM_TIMING_SAMPLES;
     }
 
-    public void SetData(float x, float y, float z) {
+    public void SetData(String status, String mode, long gpsTime, float lat, float lon) {
                DataBlock dataBlock;
         try {
             if (latestRecord == null) {
@@ -122,18 +134,26 @@ public class AccelerometerOutput extends AbstractSensorOutput<notecardGPSSensor>
             }
             ++setCount;
 
+            // Convert Unix Epoch time provided by GPS to OffsetDateTime
+            Instant gpsTimeInstant = Instant.ofEpochSecond(gpsTime);
+            OffsetDateTime odt = gpsTimeInstant.atOffset(ZoneOffset.UTC);
+
+
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
-            dataBlock.setDoubleValue(1, x);
-            dataBlock.setDoubleValue(2, y);
-            dataBlock.setDoubleValue(3, z);
+            dataBlock.setStringValue(1, status);
+            dataBlock.setStringValue(2, mode);
+            dataBlock.setDateTime(3, odt);
+            dataBlock.setFloatValue(4, lat);
+            dataBlock.setFloatValue(5, lon);
+
 
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
 
-            eventHandler.publish(new DataEvent(latestRecordTime, AccelerometerOutput.this, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, notecardGPSOutput.this, dataBlock));
 
         } catch (Exception e) {
-            System.err.println("Error reading from BNO085: " + e.getMessage());
+            System.err.println("Error reading from GPS: " + e.getMessage());
             e.printStackTrace();
         }
     }

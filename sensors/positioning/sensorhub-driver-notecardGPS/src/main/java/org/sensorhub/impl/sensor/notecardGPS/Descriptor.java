@@ -11,7 +11,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.notecardGPS;
 
-import org.sensorhub.impl.sensor.notecardGPS.config.notecardGPSConfig;
+import org.sensorhub.impl.sensor.notecardGPS.config.Config;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
@@ -38,6 +38,6 @@ public class Descriptor extends JarModuleProvider implements IModuleProvider {
      */
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass() {
-        return notecardGPSConfig.class;
+        return Config.class;
     }
 }

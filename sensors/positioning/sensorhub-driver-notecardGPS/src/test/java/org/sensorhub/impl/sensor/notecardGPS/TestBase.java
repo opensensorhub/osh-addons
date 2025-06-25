@@ -9,9 +9,9 @@
 
  Copyright (C) 2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.BNO085;
+package org.sensorhub.impl.sensor.notecardGPS;
 
-import org.sensorhub.impl.sensor.BNO085.config.Bno085Config;
+import org.sensorhub.impl.sensor.notecardGPS.config.Config;
 import org.junit.After;
 import org.junit.Before;
 
@@ -24,7 +24,7 @@ public class TestBase {
 
     @Before
     public void init() throws Exception {
-        notecardGPSConfig config = new notecardGPSConfig();
+        Config config = new Config();
         config.serialNumber = "123456789";
         config.name = "Sensor Template";
         config.description = "Description of the sensor";

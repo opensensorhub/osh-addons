@@ -1,11 +1,9 @@
 description = 'Blues Notecard GPS'
-ext.details = "BLues Notecard GPS Module over i2c Connection"
+ext.details = "Blues Notecard GPS Module over i2c Connection"
 version = '1.0.0'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-//    implementation project(':sensorhub-service-video')
-//    implementation project(':sensorhub-driver-videocam')
     testImplementation('junit:junit:4.13.1')
 
 // Pi4j Dependencies
