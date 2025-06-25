@@ -64,6 +64,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         VP8(AV_CODEC_ID_VP8),
         VP9(AV_CODEC_ID_VP9),
         MPEG2(AV_CODEC_ID_MPEG2TS), // Not 100% sure if this one is correct
+        MPEG4(AV_CODEC_ID_MPEG4),
         RGB(AV_PIX_FMT_RGB24),  // Keeping the uncompressed formats in this enum; shouldn't cause problems
         YUV(AV_PIX_FMT_YUV420P);
 
@@ -94,10 +95,6 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     HashMap<String, String> decOptions = new HashMap<>();
     HashMap<String, String> encOptions = new HashMap<>();
 
-    //AVCodec decoder = null;
-    //AVCodecContext decode_ctx = null;
-    //AVCodec encoder = null;
-    //AVCodecContext encode_ctx = null;
     SwsContext sws_ctx = null;
     AVFrame av_frame = null;
     AVFrame sws_frame = null;
@@ -301,8 +298,8 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         // TODO: Automatically detect input codec from compression in data struct?
         try
         {
-            inCodec = FFMpegTranscoder.CodecEnum.valueOf(inCodecParam.getData().getStringValue());
-            outCodec = FFMpegTranscoder.CodecEnum.valueOf(outCodecParam.getData().getStringValue());
+            inCodec = FFMpegTranscoder.CodecEnum.valueOf(inCodecParam.getData().getStringValue().toUpperCase());
+            outCodec = FFMpegTranscoder.CodecEnum.valueOf(outCodecParam.getData().getStringValue().toUpperCase());
 
             dataEnc = swe.newBinaryEncoding(ByteOrder.BIG_ENDIAN, ByteEncoding.RAW);
 
@@ -321,28 +318,6 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
                 logger.warn("Invalid encoding");
             }
 
-            /*
-            if (inCodec != CodecEnum.RGB) {
-                decoder = new Decoder(inCodec.ffmpegName);
-                decoderThread = new Thread(decoder);
-                decoderThread.start();
-            } else {
-                decoder = null;
-                decoderThread = null;
-                logger.debug("No decoder needed for RGB input");
-            }
-
-            if (outCodec != CodecEnum.RGB) {
-                encoder = new Encoder(outCodec.ffmpegName);
-
-                encoderThread.start();
-            } else {
-                encoder = null;
-                encoderThread = null;
-                logger.debug("No encoder needed for RGB output");
-            }
-
-             */
             // Set options for the codecs
             // May add more, so using hashmap
             // May need two hashmaps. For fps, need to work around the decimation factor (or just remove it)
@@ -409,88 +384,17 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
 
             logger.debug("Using coder process: {}", inputProcess);
-            // TODO Get rid of old code
-            /*
-            // init decoder context
-            decoder = avcodec_find_decoder_by_name(inCodec.ffmpegName);
-            decode_ctx = avcodec_alloc_context3(decoder);
-            if (avcodec_open2(decode_ctx, decoder, (PointerPointer<?>)null) < 0) {
-                throw new IllegalStateException("Error initializing " + inCodec + " decoder");
-            }
 
-
-
-            // init FFMPEG objects
-            av_log_set_level(getLogger().isDebugEnabled() ? AV_LOG_INFO : AV_LOG_FATAL);
-
-            */
-            /*
-
-            if (encoder != null) {
-                enc_pkt = av_packet_alloc();
-            } else {
-                enc_pkt = null;
-            }
-
-            if (enc_pkt != null) {
-                av_init_packet(enc_pkt);
-            }
-            av_frame = av_frame_alloc();
-            sws_frame = av_frame_alloc();
-
-             */
             nativeFrameData = new BytePointer((long)50*1024);
         }
         catch (IllegalArgumentException e)
         {
-            reportError("Unsupported codec. Must be one of " + Arrays.toString(FFMpegTranscoder.CodecEnum.values()));
+            reportError("Unsupported codec" + inCodecParam.getData().getStringValue() + ". Must be one of " + Arrays.toString(FFMpegTranscoder.CodecEnum.values()));
         }
 
-        // set decimation factor
-        // TODO Figure out why decimFactor has no data
-        /*
-        decimFactor = 1;
-        if (decimFactorParam != null && decimFactorParam.getData() != null) {
-            decimFactor = decimFactorParam.getData().getIntValue();
-        }
-        if (decimFactor < 0)
-            throw new ProcessException("Decimation factor must be > 0. Current value is " + decimFactor);
-        if (decimFactor == 0)
-            decimFactor = 1;
-        */
         super.init();
     }
 
-    /*
-     * To init scaler once we know the input frame size
-     */
-    /*
-    protected void initScaler(AVFrame av_frame)
-    {
-        int frameWidth = av_frame.width();
-        int frameHeight = av_frame.height();
-        int inPixFmt = AV_PIX_FMT_YUV420P;
-        int outPixFmt = AV_PIX_FMT_YUV420P;
-        if (inCodec == CodecEnum.RGB) {
-            inPixFmt = AV_PIX_FMT_RGB24;
-        }
-        if (outCodec == CodecEnum.RGB) {
-            outPixFmt = AV_PIX_FMT_RGB24;
-        }
-        getLogger().debug("Resizing {}x{} -> {}x{}", av_frame.width(), av_frame.height(), frameWidth, frameHeight);
-        // init scaler
-        sws_frame.format(inPixFmt);
-        sws_frame.width(frameWidth);
-        sws_frame.height(frameHeight);
-        av_image_alloc(sws_frame.data(), sws_frame.linesize(),
-                frameWidth, frameHeight, inPixFmt, 1);
-
-        sws_ctx = sws_getContext(frameWidth, frameHeight, inPixFmt,
-                frameWidth, frameHeight, outPixFmt, SWS_BICUBIC, null, null, (double[])null);
-
-        getLogger().debug("Resizing {}x{} -> {}x{}", av_frame.width(), av_frame.height(), frameWidth, frameHeight);
-    }
-*/
     private void decoder_to_encoder() {
         while (doRun.get() && !Thread.currentThread().isInterrupted()) {
             // Block until frames are received
@@ -593,16 +497,6 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
                     byte[] frameData = new byte[packet.size()];
                     packet.data().get(frameData);
 
-                    /*
-                    if (imgOut.getArraySizeComponent().getData().getIntValue() != packet.size()) {
-                        logger.debug("Updating output size");
-                        //imgOut.setElementCount(swe.createCount().value(1).build());
-                        //((DataArrayImpl)imgOut.getComponent("row")).setElementCount(swe.createCount().value(packet.size()).build());
-                        //imgOut.getData()
-                        //imgOut.
-                        //imgOut.getComponent("width").setData(swe.createCount().value(packet.size()).build().getData());
-                        //imgOut.getComponent("height").setData(swe.createCount().value(1).build().getData());
-                    } */
                     ((DataBlockCompressed) imgOut.getData()).setUnderlyingObject(frameData.clone());
                     // also copy frame timestamp
                     double ts;
@@ -670,35 +564,9 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         }
     }
 
-    /**
-     * Takes an uncompressed frame scales itand converts it to RGB, changing the size to that specified in the parameters.
-     * @param frame
-     */
-    /*
-    private void swsScale(AVFrame frame) {
-        if (sws_ctx == null )
-            initScaler(frame);
-
-        sws_scale(sws_ctx, frame.data(), frame.linesize(), 0, frame.height(), sws_frame.data(), sws_frame.linesize());
-
-        // Replace the data in the input frame with the scaled frame
-        frame.data().deallocate(); // This line may cause issues
-        frame.data(0, sws_frame.data(0));
-        frame.linesize(0, sws_frame.linesize(0));
-        frame.width(sws_frame.width());
-        frame.height(sws_frame.height());
-        //frame.format(AV_PIX_FMT_RGB24);
-    }
-     */
-
     @Override
     public void execute() throws ProcessException
     {
-        // Skip every decimFactor'th frame
-        /*
-        if (frameCounter++ % decimFactor == 0) {
-            return;
-        }*/
         // Start the threads if not already started
         if (!isRunning.get()) {
             startProcessThreads();
@@ -713,83 +581,6 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             publish = true;
             return;
         }
-        // TODO All code below should be moved elsewhere or removed entirely
-
-
-        //decoder.addPacket(dec_pkt);
-
-        /*
-        avcodec_send_packet(decode_ctx, dec_pkt);
-        // Receive the packet to be re-encoded (or output as-is)
-        int ret2 = avcodec_receive_frame(decode_ctx, av_frame);
-        av_packet_unref(dec_pkt);
-        */
-
-
-        //System.out.printf("decode: ret1 %d ret2 %d\n", ret1, ret2);
-/*
-        if (true)
-        {
-            // init scaler once we decode the 1st frame
-            if (sws_ctx == null )
-                initScaler(av_frame);
-
-
-                publish = false;
-                return;
-            }
-            publish = true;
-
-            // apply scaler (needed to convert from YUV to RGB)
-            //sws_scale(sws_ctx, av_frame.data(), av_frame.linesize(), 0, av_frame.height(), sws_frame.data(), sws_frame.linesize());
-
-            // write decoded data to output
-            // TODO use special datablock to encapsulate native buffer
-            // would be more efficient when passing frame to other native libraries (e.g. OpenCV)
-
-            frameData = new byte[av_frame.width() * av_frame.height() * 3];
-            sws_frame.data(0).get(frameData);
-
-            // Re-encode if the output codec is set (not RGB)
-            if (outCodec != CodecEnum.RGB) {
-
-                var outCodec = FFMpegTranscoder.CodecEnum.valueOf(outCodecParam.getData().getStringValue());
-
-                // init encoder context
-                if (outCodec != FFMpegTranscoder.CodecEnum.RGB) {
-                    // Account for h264 encoder name
-                    // TODO: Separate encoder enum (if there's more than just h264 with this issue) (or use codec id)
-                    var codec = outCodec == FFMpegTranscoder.CodecEnum.H264 ? "libx264" : outCodec.ffmpegName;
-                    encoder = avcodec_find_encoder_by_name(codec);
-                    encode_ctx = avcodec_alloc_context3(encoder);
-
-                    byte[] errorBuf = new byte[64];
-                    av_strerror(-22, errorBuf, 64);
-                    logger.debug("Error: " + new String(errorBuf));
-
-                    if (avcodec_open2(encode_ctx, encoder, (PointerPointer<?>) null) < 0) {
-                        throw new IllegalStateException("Error initializing " + codec + " encoder");
-                    }
-                } else {
-                    encoder = null;
-                    encode_ctx = null;
-                }
-
-
-                avcodec_send_frame(encode_ctx, sws_frame);
-                avcodec_receive_packet(encode_ctx, enc_pkt);
-                enc_pkt.data().get(frameData);
-                ((DataBlockByte) imgOut.getData()).setUnderlyingObject(frameData);
-            } else {
-                ((DataBlockByte) imgOut.getData()).setUnderlyingObject(frameData);
-            }
-
-
-
-            publish = true;
-
-        }
-        */
     }
 
 

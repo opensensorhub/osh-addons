@@ -83,9 +83,10 @@ public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
         } else if (codecName.equalsIgnoreCase("h264")) {
             this.codecName = CODEC_H264;
         } else {
-            throw new IllegalArgumentException("Unsupported codec: " + codecName);
+            logger.warn("Codec {} not H264/MJPEG. Use a transcoder to convert the video.", codecName);
+            this.codecName = codecName;
+            //throw new IllegalArgumentException("Unsupported codec: " + codecName);
         }
-
         logger.debug("Video output created.");
     }
 
