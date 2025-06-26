@@ -1,6 +1,6 @@
 description = 'ONVIF Video Camera'
 ext.details = 'Driver for IP video cameras using the ONVIF standard'
-version = '1.0.0'
+version = '1.1.0'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
@@ -41,6 +41,15 @@ dependencies {
   embeddedImpl fileTree(dir: 'lib', include: ['*.jar'])
 }
 
+tasks.register('copyReadme', Copy) {
+  from "${projectDir}/README.md"
+  into "${projectDir}/src/main/resources/org/sensorhub/impl/sensor/onvif"
+  onlyIf { file("${projectDir}/README.md").exists() }
+}
+
+processResources {
+  dependsOn copyReadme
+}
 
 
 // exclude tests requiring connection to the sensor
