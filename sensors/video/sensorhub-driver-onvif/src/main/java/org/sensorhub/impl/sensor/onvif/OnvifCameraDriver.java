@@ -22,15 +22,7 @@ import java.util.TreeSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-//import javax.xml.soap.SOAPException;
 import de.onvif.discovery.OnvifDiscovery;
-import jakarta.xml.ws.http.HTTPException;
-import net.opengis.gml.v32.TimePosition;
-import net.opengis.gml.v32.impl.TimeInstantImpl;
-import net.opengis.swe.v20.Text;
-//import org.bytedeco.ffmpeg.avutil.AVDictionary;
-//import org.bytedeco.ffmpeg.global.avutil;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.onvif.ver10.schema.*;
 import org.sensorhub.api.common.SensorHubException;
