@@ -268,10 +268,16 @@ public class IpCommNetwork extends AbstractModule<IpNetworkConfig> implements IC
                     final String mac;
                     StringBuilder buf = new StringBuilder();
                     byte[] bytes = netInt.getHardwareAddress();
-                    for (byte b: bytes)
-                        buf.append(String.format("%02X", b)).append(':');
-                    mac = buf.substring(0, buf.length()-1);
-                    
+                    if (bytes != null)
+                    {
+                        for (byte b: bytes)
+                            buf.append(String.format("%02X", b)).append(':');
+                        mac = buf.substring(0, buf.length()-1);
+                    }
+                    // If interface is loopback, VPN, or other non-physical interface, it won't have physical address in some operating systems
+                    else
+                        mac = "NONE";
+
                     // IP address
                     Enumeration<InetAddress> ipList = netInt.getInetAddresses();
                     InetAddress ipAdd = getDefaultInetAddress(ipList);
