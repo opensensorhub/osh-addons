@@ -19,5 +19,9 @@ public class noteCardConfig {
     public int gpsSampleRate = 10;
 
     @DisplayInfo(label = "Sync with Notehub.io", desc="Do you want data from this notecard to sync with NoteHub.io?")
-    public boolean isNoteHubSync = false;
+    public boolean isNoteHubSync = true;
+
+    @DisplayInfo(label = "Reset sensor upon initialization", desc="By checking this box, the sensor will reset upon initialization. " +
+            "The sensor will temporarily lose connection but module will reestablish connection")
+    public boolean isResetSensor = true;
 }

@@ -13,6 +13,7 @@ package org.sensorhub.impl.sensor.notecardGPS.config;
 
 import org.sensorhub.impl.sensor.notecardGPS.notecardGPSSensor;
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.config.DisplayInfo.FieldType.Type;
 import org.sensorhub.api.sensor.SensorConfig;
 
 /**
@@ -43,9 +44,6 @@ public class Config extends SensorConfig {
     @DisplayInfo.Required
     @DisplayInfo(label = "I²C Settings", desc = "Configuration options for the I2C Connection")
     public i2cConfig connection = new i2cConfig();
-
-
-
 
 
 

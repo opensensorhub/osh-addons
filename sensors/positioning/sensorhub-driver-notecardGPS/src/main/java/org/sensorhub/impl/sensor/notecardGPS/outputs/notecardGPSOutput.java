@@ -75,10 +75,10 @@ public class notecardGPSOutput extends AbstractSensorOutput<notecardGPSSensor> {
                 .name(SENSOR_OUTPUT_NAME)
                 .label(SENSOR_OUTPUT_LABEL)
                 .description(SENSOR_OUTPUT_DESCRIPTION)
-                .addField("timestamp", sweFactory.createTime()
+                .addField("oshTimestamp", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
-                        .label("Time Stamp")
-                        .description("Time of data collection"))
+                        .label("OSH Time Stamp")
+                        .description("Timestamp of when OSH collected data"))
                 .addField("status", sweFactory.createText()
                         .label("Status")
                         .description("Information of GPS Status"))
@@ -87,8 +87,8 @@ public class notecardGPSOutput extends AbstractSensorOutput<notecardGPSSensor> {
                         .description("Periodic or Continuous"))
                 .addField("collectionTime", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
-                        .label("Time Collected")
-                        .description("Time of GPS"))
+                        .label("GPS Collection Time")
+                        .description("Timestamp of when GPS data was actually taken"))
                 .addField("Location", geoFactory.createLocationVectorLatLon());
 
         dataStruct = recordBuilder.build();
@@ -137,6 +137,9 @@ public class notecardGPSOutput extends AbstractSensorOutput<notecardGPSSensor> {
             // Convert Unix Epoch time provided by GPS to OffsetDateTime
             Instant gpsTimeInstant = Instant.ofEpochSecond(gpsTime);
             OffsetDateTime odt = gpsTimeInstant.atOffset(ZoneOffset.UTC);
+
+            // Add helpful message to status
+            status = (status.equals("GPS inactive {gps-inactive}")) ? status + "{If this is first time starting, may take several minutes for GPS to initialize}" : status;
 
 
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);

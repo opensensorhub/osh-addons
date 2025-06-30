@@ -56,7 +56,8 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
     // Local variables
     private volatile boolean keepRunning = false;
 
-    // Cosmetic debugging Variables Used to make font bold
+    // Cosmetic debugging Variables Used to make font bold to view in terminal
+    boolean viewInTerminal = true; // Set this boolean to true if you want to see messags display in terminal
     String BoldOn = "\033[1m";  // ANSI code to turn on bold
     String BoldOff = "\033[0m"; // ANSI code to turn on bold
 
@@ -64,9 +65,6 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
     @Override
     public void doInit() throws SensorHubException {
         super.doInit();
-
-        // Create I2C connection
-        createI2cConnection();
 
         // Create SensorHub Identifiers using designated prefix and serial number from Admin Panel
         generateUniqueID(UID_PREFIX, config.serialNumber);
@@ -77,40 +75,34 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
         addOutput(notecardGPSOutput, false);
         notecardGPSOutput.doInit();
 
-        // RESTORE NOTECARD TO FACTOR SETTINGS
-        Transaction(notecardGPSConstantsI2C.RESTORE);
+        // Establish Initial Connection to Restore Sensor
+        createI2cConnection();
+
+        // RESTORE NOTECARD TO FACTORY SETTINGS IF SELECTED IN ADMIN CONFIGURATION PANEL
+        if(config.NCconfig.isResetSensor){
+            resetNotecard();
+        }
+
     }
 
     @Override
     public void doStart() throws SensorHubException {
         super.doStart();
-
         String HubSet = "{\"req\":\"hub.set\",\"product\":\"" + config.NCconfig.NHproductUID + "\",\"mode\":\"minimum\"}";
 
         // CONFIGURE THE NOTECARD
         Transaction(HubSet);
+        if (config.NCconfig.isNoteHubSync){
+            Transaction(notecardGPSConstantsI2C.HUB_SYNC);
+        }
         Transaction(notecardGPSConstantsI2C.ENABLE_ACCELEROMETER);
         Transaction(notecardGPSConstantsI2C.TURNON_TRIANGLULATION);
+        Transaction(notecardGPSConstantsI2C.DISABLE_GPS);
         Transaction(notecardGPSConstantsI2C.SET_LOCATION_CONT);
 
         keepRunning = true;
         Thread readNoteCardworker = new Thread(this, "Notecard Worker");
         readNoteCardworker.start();
-    }
-
-    @Override
-    public void doStop() throws SensorHubException {
-        super.doStop();
-        keepRunning = false;
-        Transaction(notecardGPSConstantsI2C.HUBSET_OFF);
-        Transaction(notecardGPSConstantsI2C.DISABLE_ACCELEROMETER);
-        Transaction(notecardGPSConstantsI2C.TURNOFF_TRIANGLULATION);
-        Transaction(notecardGPSConstantsI2C.DISABLE_GPS);
-    }
-
-    @Override
-    public boolean isConnected() {
-        return true; //output.isAlive()
     }
 
     @Override
@@ -125,11 +117,31 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
         }
     }
 
+    @Override
+    public void doStop() throws SensorHubException {
+        super.doStop();
+        keepRunning = false;
+        if (config.NCconfig.isNoteHubSync){
+            Transaction(notecardGPSConstantsI2C.HUB_SYNC);
+        }
+        Transaction(notecardGPSConstantsI2C.HUBSET_OFF);
+        Transaction(notecardGPSConstantsI2C.DISABLE_ACCELEROMETER);
+        Transaction(notecardGPSConstantsI2C.TURNOFF_TRIANGLULATION);
+        Transaction(notecardGPSConstantsI2C.DISABLE_GPS);
+    }
+
+    @Override
+    public boolean isConnected() {
+        return true; //output.isAlive()
+    }
+
 
     // SENSOR SPECIFIC METHODS
     public void Transaction(String jsonMsg){
 
-        System.out.println(BoldOn + "Sending Message: " + BoldOff + jsonMsg);
+        if(viewInTerminal){
+            System.out.println(BoldOn + "Sending Message: " + BoldOff + jsonMsg);
+        }
 
         try {
             // Using the json message provided, create a byte array for transaction over i2c
@@ -189,17 +201,19 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
         String json = convertSignedBytesToJson(jsonBytes);
 
         /// IF REQUEST IS CARD.LOCATION, THEN GATHER DATA FOR OUTPUT
-        if(!notecardGPSConstantsI2C.GET_LOC.equals(prevReq)){
+        if(notecardGPSConstantsI2C.GET_LOC.equals(prevReq)){
             // Convert JSON to Object and Send Output
             Gson gson = new Gson();
             GPSmsg gpsmsg = gson.fromJson(json,GPSmsg.class);
-
-            notecardGPSOutput.SetData( gpsmsg.status, gpsmsg.mode, gpsmsg.time, gpsmsg.lat, gpsmsg.lon );
-
+            if(gpsmsg != null){
+                notecardGPSOutput.SetData( gpsmsg.status, gpsmsg.mode, gpsmsg.time, gpsmsg.lat, gpsmsg.lon );
+            }
         }
 
         response.append(json);
-        System.out.println(BoldOn + "RESPONSE: \n" + BoldOff + response);
+        if (viewInTerminal) {
+            System.out.println(BoldOn + "RESPONSE: \n" + BoldOff + response);
+        }
     }
 
     public String convertSignedBytesToJson(byte[] buffer){
@@ -243,6 +257,45 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
         public long time;
     }
 
+    public void resetNotecard(){
+        if(viewInTerminal){
+            System.out.println("Resetting Sensor...preparing to temporarily lose I²C connection");
+        }
+        Transaction(notecardGPSConstantsI2C.RESTORE);
+        // When using RESTORE, Notecard will temporarily lose connection, poll I²C until connection is lost
+        while(true){
+            try {
+                getMsgQueLength();
+            }catch (Exception e) {
+                if(viewInTerminal){
+                    System.err.println("Lost i2c Connection. Attempting to reestablish...");
+                }
+                //Keep trying to re-establish connection for 10 seconds
+                boolean reconnected = false;
+                for (int seconds = 1; seconds <= 10; seconds ++){
+                    try {
+                        Thread.sleep(1000);
+                        createI2cConnection();
+                        if(viewInTerminal){
+                            System.out.println("Connection reestablished after " + seconds + " second(s)");
+                        }
+                        reconnected = true;
+                        break;
+                    } catch (RuntimeException connEx){
+                        System.out.println("Failed to establish connection seconds");
+                    } catch (InterruptedException ie){
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(ie);
+                    }
+                }
+                if (!reconnected){
+                    throw new RuntimeException("Unable to establish i2c connection after 10 seconds");
+                }
+                break;
+            }
+        }
+    }
+
 
     public void createI2cConnection(){
         // Initialize pi4j and i2c configuration
@@ -254,15 +307,21 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
                 .device(config.connection.SENSOR_ADDRESS)
                 .name("notecardGPS")
                 .build();
-        System.out.println("Building I2C Connection...");
+        if(viewInTerminal){
+            System.out.println("Building I2C Connection...");
+        }
         logger.info("Building I2C Connection...");
         try {
             this.i2c = i2CProvider.create(i2cConfig);
-            System.out.println(BoldOn + "I2C Connection Established" + BoldOff + "\n\tBus/Port:" + config.connection.I2C_BUS_NUMBER + "\n\tSensor Address: 0x" + Integer.toHexString(config.connection.SENSOR_ADDRESS));
+            if(viewInTerminal){
+                System.out.println(BoldOn + "I2C Connection Established" + BoldOff + "\n\tBus/Port:" + config.connection.I2C_BUS_NUMBER + "\n\tSensor Address: 0x" + Integer.toHexString(config.connection.SENSOR_ADDRESS));
+            }
             logger.info("{}I2C Connection Established{}\n\tBus/Port:{}\n\tSensor Address: 0x{}", BoldOn, BoldOff, config.connection.I2C_BUS_NUMBER, Integer.toHexString(config.connection.SENSOR_ADDRESS));
 
         } catch (Exception e) {
-            System.out.println("I2C Connection Failed...check I2C bus and Sensor Address");
+            if(viewInTerminal){
+                System.out.println("I2C Connection Failed...check I2C bus and Sensor Address");
+            }
             logger.error("I2C Connection Failed...check I2C bus and Sensor Address");
             throw new RuntimeException(e);
         }

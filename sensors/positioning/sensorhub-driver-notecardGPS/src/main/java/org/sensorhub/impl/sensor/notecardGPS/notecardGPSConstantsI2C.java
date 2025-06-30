@@ -28,7 +28,7 @@ public class notecardGPSConstantsI2C {
     public final static String TURNOFF_TRIANGLULATION = "{\"req\":\"card.triangulate\",\"mode\":\"-\"}";
     public final static String CHECK_TRIANGLULATION = "{\"req\":\"card.triangulate\"}";
     public final static String CONNECTIVITY = "{\"req\":\"card.transport\"}";
-    public final static String SET_LOCATION_PER = "{\"req\":\"card.location.mode\",\"mode\":\"periodic\",\"seconds\":5}";
+    public final static String SET_LOCATION_PER = "{\"req\":\"card.location.mode\",\"mode\":\"periodic\",\"seconds\":60}";
     public final static String SET_LOCATION_CONT = "{\"req\":\"card.location.mode\",\"mode\":\"continuous\"}";
     public final static String DISABLE_GPS = "{\"req\":\"card.location.mode\",\"mode\":\"off\"}";
 
