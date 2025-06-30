@@ -37,8 +37,6 @@ Next, make sure a serial number is in place and the desired units for the speed 
 is selected). Next, select <em>Apply Changes</em> to save the configuration and initialize the module.
 Once configured, <em>Start</em> the module to begin Radar Detection.
 
-![my image](APimage.png)
-
 **References:**
 - [OPS241-A Datasheet](https://zwavel.com/heesbeen/OPS241A_datasheet.pdf)
 - [API Interface Spec](https://omnipresense.com/wp-content/uploads/2025/05/AN-010-AA_API_Interface.pdf)
