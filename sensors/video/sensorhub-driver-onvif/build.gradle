@@ -1,6 +1,6 @@
 description = 'ONVIF Video Camera'
 ext.details = 'Driver for IP video cameras using the ONVIF standard'
-version = '1.1.1'
+version = '1.1.2'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
