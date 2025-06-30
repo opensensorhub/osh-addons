@@ -24,7 +24,6 @@ import net.opengis.swe.v20.*;
 import org.onvif.ver10.schema.*;
 import org.onvif.ver20.ptz.wsdl.PTZ;
 import org.sensorhub.api.command.CommandException;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.slf4j.Logger;
