@@ -23,7 +23,6 @@ dependencies {
   implementation 'org.apache.cxf.services.wsn:cxf-services-wsn-core:4.0.0'
   implementation 'org.apache.cxf:cxf-rt-frontend-jaxws:4.0.0'
 
-
   embeddedImpl('net.sf.jipcam:jipcam:0.9.1') {
     exclude group: 'javax.servlet', module: 'servlet-api'
     exclude group: 'commons-cli', module: 'commons-cli'
