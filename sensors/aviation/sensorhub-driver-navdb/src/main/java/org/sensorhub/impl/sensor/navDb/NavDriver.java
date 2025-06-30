@@ -14,6 +14,12 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.navDb;
 
+import java.nio.file.Files;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.Comparator;
+import java.util.regex.Matcher;
+import java.util.stream.Stream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -54,7 +60,8 @@ public class NavDriver extends AbstractSensorModule<NavConfig> implements IMulti
     static final String AIRPORTS_UID_PREFIX = SENSOR_UID_PREFIX + "airports:";
     static final String WAYPOINTS_UID_PREFIX = SENSOR_UID_PREFIX + "waypoints:";
     static final String NAVAID_UID_PREFIX = SENSOR_UID_PREFIX + "navaids:";
-    
+    static final Pattern LIDO_AIRAC_DATE = Pattern.compile(".*\\/LIDO_(.*)_000000Z.*");
+
     Thread watcherThread;
     DirectoryWatcher watcher;
     AtomicBoolean loading = new AtomicBoolean(false);
@@ -225,63 +232,67 @@ public class NavDriver extends AbstractSensorModule<NavConfig> implements IMulti
     }
     
     
-    private void readLatestDataFile() throws SensorHubException
-    {
-        // list all available nav DB data files
-        File dir = new File(config.navDbPath);
-        File[] navDbFiles = dir.listFiles(new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return DATA_FILE_REGEX.matcher(name).matches();
+    private void readLatestDataFile() throws SensorHubException {
+        Path path = Paths.get(config.navDbPath);
+        try (Stream<Path> stream = Files.walk(path)) {
+            List<File> navDbFiles = stream.filter(Files::isRegularFile)
+                    .filter(p -> DATA_FILE_REGEX.matcher(p.getFileName().toString()).matches())
+                    .map(Path::toFile)
+                    .sorted(Comparator.comparingLong(File::lastModified).reversed()) // Sort by modification time
+                    .collect(Collectors.toList()); // Store into a list
+
+            // skip if nothing is available
+            if (navDbFiles.size() == 0) {
+                getLogger().warn("No NavDB data file available");
+                return;
             }
-        });
-        
-        // skip if nothing is available
-        if (navDbFiles.length == 0)
-        {
-            getLogger().warn("No Nav DB file available");
-            return;
+
+            // trigger reader on the latest
+            newFile(navDbFiles.get(0).toPath());
+        } catch (IOException e) {
+            getLogger().error("Error while reading directory: " + e.getMessage());
         }
-        
-        // get the one with latest time stamp
-        File latestFile = navDbFiles[0];
-        for (File f: navDbFiles)
-        {
-            if (f.lastModified() > latestFile.lastModified())
-                latestFile = f;
-        }
-        
-        // trigger reader
-        newFile(latestFile.toPath());
     }
 
 
-    /*
-     * called whenever we get a new Nav DB file
-     */
-    @Override
-    public void newFile(Path p)
-    {
-        // only continue when it's a new nav DB file
-        if (!DATA_FILE_REGEX.matcher(p.getFileName().toString()).matches())
-            return;
-        
+    private Path getValidFile(Path path) {
+        if (Files.isDirectory(path)) {
+            // scan directory for grib file
+            try (Stream<Path> stream = Files.list(path)) {
+                List<Path> matchingFiles = (stream.filter(p -> Files.isRegularFile(p) &&
+                                DATA_FILE_REGEX.matcher(p.getFileName().toString()).matches())
+                        .collect(Collectors.toList()));
+                if (matchingFiles.size() != 1) {
+                    return null;
+                }
+                return matchingFiles.get(0);
+            } catch (IOException e) {
+                getLogger().error("Cannot read directory : " + e.getMessage());
+            }
+        } else// only continue when it's a new turbulence GRIB file
+            if (DATA_FILE_REGEX.matcher(path.getFileName().toString()).matches()) {
+                return path;
+            }
+        return null;
+    }
+
+    private void processFile(Path p) {
         // skip if already loading
         if (!loading.compareAndSet(false, true))
             return;
-        
+
         getLogger().info("Loading new Nav DB file: {}", p);
-        
-        try
-        {
+
+        try {
             // switch to new Nav DB atomically
             NavDatabase db = new NavDatabase();
             db.reload(p.toString());
             navDB = db;
-            
+
             // reload in-memory entities
             // and switch to new entities atomically
             Set<String> newEntityIDs = new TreeSet<>();
-            
+
             if (airports)
                 loadAirports(newEntityIDs);
             if (navaids)
@@ -289,16 +300,51 @@ public class NavDriver extends AbstractSensorModule<NavConfig> implements IMulti
             if (waypoints)
                 loadWaypoints(newEntityIDs);
             entityIDs = newEntityIDs;
-            
+
+            // extract AIRAC date from path
+            long timestamp = this.getAIRACFromPath(p);
+            navOutput.setLatestRecordTime(timestamp);
+            wayptOutput.setLatestRecordTime(timestamp);
+            navaidOutput.setLatestRecordTime(timestamp);
             reportStatus("Loaded database file \"" + p + "\"");
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             reportError("Error reading database file \"" + p + "\"", e);
             return;
         }
-        
+
         loading.set(false);
+    }
+
+    private long getAIRACFromPath(Path path) {
+        // extract AIRAC date from path
+        Matcher matcher = LIDO_AIRAC_DATE.matcher(path.toFile().getAbsolutePath());
+        if(matcher.matches()) {
+            String airacDate = matcher.group(1);
+            // format YYYYMMDD, eg 20250225
+            int dateInt = Integer.parseInt(airacDate);
+
+            // Extract year, month, and day using integer division and modulo
+            int year = dateInt / 10000;         // First 4 digits (2025)
+            int month = (dateInt / 100) % 100;  // Middle 2 digits (02)
+            int day = dateInt % 100;            // Last 2 digits (25)
+            long timestamp = LocalDate.of(year, month, day)
+                    .atStartOfDay(ZoneOffset.UTC)
+                    .toInstant().toEpochMilli();
+            return timestamp;
+        } else {
+          return System.currentTimeMillis();
+        }
+
+    }
+    /*
+     * called whenever we get a new Nav DB file
+     */
+    @Override
+    public void newFile(Path path) {
+        Path p = this.getValidFile(path);
+        if(p != null) {
+            this.processFile(p);
+        }
     }
 
 
@@ -378,4 +424,5 @@ public class NavDriver extends AbstractSensorModule<NavConfig> implements IMulti
     {
         return navDB;
     }
+
 }

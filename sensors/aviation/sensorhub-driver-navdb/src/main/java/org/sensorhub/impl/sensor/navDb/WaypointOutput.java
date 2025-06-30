@@ -148,15 +148,9 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver> implements I
     {
         return records.get(entityID);
     }
-    
-    
-    /*
-     * Override so SOS service never times out
-     */
-    @Override
-    public long getLatestRecordTime()
-    {
-        return System.currentTimeMillis();
+
+    public void setLatestRecordTime(long latestRecordTime) {
+        this.latestRecordTime = latestRecordTime;
     }
 
 }
