@@ -1,36 +1,27 @@
 description = 'ONVIF Video Camera'
 ext.details = 'Driver for IP video cameras using the ONVIF standard'
-version = '1.1.0'
+version = '1.1.2'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-driver-ffmpeg')
   implementation project(':sensorhub-driver-videocam')
+
   embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-api:3.1.11'
   embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-service:3.1.11'
   embeddedImpl 'org.apache.cxf:cxf-rt-transports-http-jetty:3.1.11'
-  embeddedImpl 'org.apache.cxf:cxf-rt-bindings-soap:3.1.11'
-  implementation 'jakarta.activation:jakarta.activation-api:2.1.3'
-  implementation 'jakarta.xml.soap:jakarta.xml.soap-api:2.0.0'
-  implementation 'jakarta.jms:jakarta.jms-api:3.1.0'
-  implementation 'jakarta.jws:jakarta.jws-api:3.0.0'
-  implementation 'jakarta.xml.ws:jakarta.xml.ws-api:3.0.1'
-  implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
+  embeddedImpl 'org.apache.cxf:cxf-rt-bindings-soap:4.0.0'
   implementation 'jakarta.xml.soap:jakarta.xml.soap-api:2.0.1'
   implementation 'com.sun.activation:jakarta.activation:2.0.1'
+  implementation 'jakarta.xml.ws:jakarta.xml.ws-api:3.0.1'
+  implementation 'org.apache.cxf.xjc-utils:cxf-xjc-runtime:4.0.0'
+  implementation 'jakarta.activation:jakarta.activation-api:2.1.3'
+  implementation 'jakarta.jms:jakarta.jms-api:3.1.0'
+  implementation 'jakarta.jws:jakarta.jws-api:3.0.0'
+  implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
   implementation 'javax.xml.bind:jaxb-api:2.3.1'
-
-  // Onvif stuff (temp)
   implementation 'org.apache.cxf.services.wsn:cxf-services-wsn-core:4.0.0'
   implementation 'org.apache.cxf:cxf-rt-frontend-jaxws:4.0.0'
-  implementation 'org.apache.cxf.services.wsn:cxf-services-wsn-core:4.0.0'
-  implementation 'org.apache.cxf:cxf-codegen-plugin:4.0.5'
-  implementation 'org.apache.cxf.xjcplugins:cxf-xjc-boolean:4.0.2'
-  implementation 'org.apache.cxf.xjcplugins:cxf-xjc-ts:4.0.2'
-  implementation 'org.apache.cxf.xjc-utils:cxf-xjc-runtime:4.0.0'
-  implementation 'org.apache.maven.plugins:maven-compiler-plugin:3.13.0'
-  implementation 'org.apache.maven.plugins:maven-checkstyle-plugin:3.6.0'
-  implementation 'org.apache.maven:maven-model-builder:3.9.9'
 
   embeddedImpl('net.sf.jipcam:jipcam:0.9.1') {
     exclude group: 'javax.servlet', module: 'servlet-api'
