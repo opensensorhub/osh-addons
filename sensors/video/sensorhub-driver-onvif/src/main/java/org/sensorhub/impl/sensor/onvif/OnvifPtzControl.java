@@ -196,79 +196,88 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
         // build SWE data structure for the tasking parameters
         VideoCamHelper videoHelper = new VideoCamHelper();
 
-		commandData = videoHelper.getPtzTaskParameters(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom, presetsMap.values());
-		commandData.setUpdatable(true);
+		DataChoice commandData = helper.newDataChoice();
+		commandData.setName(name);
+
+		// Pan, Tilt, Zoom
+		Quantity pan = videoHelper.getPanComponent(minPan, maxPan);
+		//commandData.addItem(VideoCamHelper.TASKING_PAN, pan);
+		Quantity tilt = videoHelper.getTiltComponent(minTilt, maxTilt);
+		//commandData.addItem(VideoCamHelper.TASKING_TILT, tilt);
+		Quantity zoom = videoHelper.getZoomComponent(minZoom, maxZoom);
+		//commandData.addItem(VideoCamHelper.TASKING_ZOOM, zoom);
+
+		// Add only the commands supported by this camera
+		// PTZ Position (supports pan, tilt, and zoom simultaneously
+		// TODO Have unique units for each type of movement
+		DataRecord ptzPos = helper.newDataRecord();
+		ptzPos.setName("ptzPosition");
+		ptzPos.setDefinition(getPropertyUri("PtzPosition"));
+		ptzPos.setLabel("Absolute PTZ Position");
+		if (devicePtzConfig.getDefaultAbsolutePantTiltPositionSpace() != null) {
+			// Add absolute PTZ
+			ptzPos.addComponent("pan", pan.copy());
+			ptzPos.addComponent("tilt", tilt.copy());
+			log.debug("Add absolute pt");
+		}
+		if (devicePtzConfig.getDefaultAbsoluteZoomPositionSpace() != null) {
+			ptzPos.addComponent("zoom", zoom.copy());
+			log.debug("Add absolute z");
+		}
+		if (ptzPos.getComponentCount() > 0) {
+			commandData.addItem("Absolute Movement", ptzPos);
+		}
+
+		// Relative PTZ Position (simultaneous ptz pos)
+		DataRecord ptzRelPos = helper.newDataRecord();
+		ptzRelPos.setName("ptzRelPosition");
+		ptzRelPos.setDefinition(getPropertyUri("PtzRelPosition")); // This probably doesn't resolve to anything
+		ptzRelPos.setLabel("Relative PTZ Position");
+		if (devicePtzConfig.getDefaultRelativePanTiltTranslationSpace() != null) {
+			// Add relative PT
+			ptzRelPos.addComponent("pan", pan.copy());
+			ptzRelPos.addComponent("tilt", tilt.copy());
+			log.debug("Add relative pt");
+		}
+		if (devicePtzConfig.getDefaultRelativeZoomTranslationSpace() != null) {
+			// Add relative zoom
+			ptzRelPos.addComponent("zoom", zoom.copy());
+			log.debug("Add relative z");
+		}
+		if (ptzRelPos.getComponentCount() > 0) {
+			commandData.addItem("Relative Movement", ptzRelPos);
+		}
+
+		// Continuous PTZ Position (simultaneous ptz pos)
+		DataRecord ptzContPos = helper.newDataRecord();
+		ptzContPos.setName("ptzContinuousPosition");
+		ptzContPos.setDefinition(getPropertyUri("PtzContPosition")); // This probably doesn't resolve to anything
+		ptzContPos.setLabel("Continuous PTZ Position");
+		if (devicePtzConfig.getDefaultContinuousPanTiltVelocitySpace() != null) {
+			ptzContPos.addComponent("pan", pan.copy());
+			ptzContPos.addComponent("tilt", tilt.copy());
+		}
+		if (devicePtzConfig.getDefaultContinuousZoomVelocitySpace() != null) {
+			ptzContPos.addComponent("zoom", zoom.copy());
+		}
+		if (ptzContPos.getComponentCount() > 0) {
+			commandData.addItem("Continuous Movement", ptzPos);
+		}
+
+		//commandData = videoHelper.getPtzTaskParameters(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom, presetsMap.values());
+		//commandData.setUpdatable(true);
 
 		// Replace presets with list instead of text entry.
-		commandData.removeComponent(VideoCamHelper.TASKING_PTZPRESET);
-		Category presetComp = helper.createCategory().addAllowedValues(mapToAllowedValues()).build();
-		commandData.addItem(VideoCamHelper.TASKING_PTZPRESET, presetComp);
+		// PTZ Presets
+		Category presetComp = helper.createCategory().name("Preset").addAllowedValues(mapToAllowedValues()).build();
+		commandData.addItem(presetComp.getName(), presetComp);
 
-		var presetAdd = helper.createText().name("presetAdd").label("Add a Preset").dataType(DataType.UTF_STRING).build();
+		var presetAdd = helper.createText().name("Add Preset").label("Add a Preset").dataType(DataType.UTF_STRING).build();
 		commandData.addItem(presetAdd.getName(), presetAdd);
 
-		var presetRemove = helper.createCategory().name("presetRemove").label("Remove a Preset").addAllowedValues(mapToAllowedValues()).build();
+		var presetRemove = helper.createCategory().name("Remove Preset").label("Remove a Preset").addAllowedValues(mapToAllowedValues()).build();
 		commandData.addItem(presetRemove.getName(), presetRemove);
 
-		// Remove components for commands that are not supported
-		if (devicePtzConfig.getDefaultAbsolutePantTiltPositionSpace() == null) {
-			// Remove absolute PTZ
-			commandData.removeComponent(VideoCamHelper.TASKING_PAN);
-			commandData.removeComponent(VideoCamHelper.TASKING_TILT);
-			commandData.removeComponent(VideoCamHelper.TASKING_PTZ_POS);
-			log.debug("Removed absolute pt");
-		}
-		if (devicePtzConfig.getDefaultAbsoluteZoomPositionSpace() == null) {
-			commandData.removeComponent(VideoCamHelper.TASKING_ZOOM);
-			// Zoom is nested in the ptz pos item
-			commandData.getItem(VideoCamHelper.TASKING_PTZ_POS).removeComponent(VideoCamHelper.TASKING_ZOOM);
-			log.debug("Removed absolute z");
-		}
-		if (devicePtzConfig.getDefaultRelativePanTiltTranslationSpace() == null) {
-			// Remove relative PT
-			commandData.removeComponent(VideoCamHelper.TASKING_RPAN);
-			commandData.removeComponent(VideoCamHelper.TASKING_RTILT);
-			log.debug("Removed relative pt");
-		}
-		if (devicePtzConfig.getDefaultRelativeZoomTranslationSpace() == null) {
-			// Remove relative zoom
-			commandData.removeComponent(VideoCamHelper.TASKING_RZOOM);
-			log.debug("Removed relative z");
-		}
-
-		// Added support for continuous move
-		if (devicePtzConfig.getDefaultContinuousPanTiltVelocitySpace() != null) {
-			//Vector speedComponent = videoHelper.createVelocityVector(null).build();
-			//speedComponent.getCoordinate("vx").;
-			DataRecord ptzPos = new DataRecordImpl(3);
-			ptzPos.setName("ptzCont");
-			//ptzPos.setDefinition(getPropertyUri("PtzPosition"));
-			ptzPos.setLabel("Continuous PTZ Movement Vector");
-			float panSpeed = (speed.getPanTilt() == null) ? 0 : speed.getPanTilt().getX();
-			float tiltSpeed = (speed.getPanTilt() == null) ? 0 : speed.getPanTilt().getY();
-			float zoomSpeed = (speed.getZoom() == null) ? 0 : speed.getZoom().getX();
-
-			// Making these from scratch to avoid allowed ranges. Speed values differ significantly from camera to camera.
-			//var panComp = videoHelper.getPanComponent(-panSpeed, panSpeed);
-
-			var panComp = helper.createQuantity().name("Pan").description("Gimbal rotation speed (usually horizontal)")
-					.label("Pan").definition(getPropertyUri("Pan")).uom("1").dataType(DataType.FLOAT).build();
-			panComp.setValue(0.0);
-			//var tiltComp = videoHelper.getTiltComponent(-tiltSpeed, tiltSpeed);
-			var tiltComp = helper.createQuantity().name("Tilt").description("Gimbal rotation speed (usually up-down)")
-					.label("Tilt").definition(getPropertyUri("Tilt")).uom("1").dataType(DataType.FLOAT).build();
-			tiltComp.setValue(0.0);
-
-			//var zoomComp = videoHelper.getZoomComponent(-zoomSpeed, zoomSpeed);
-			var zoomComp = helper.createQuantity().name("ZoomFactor").description("Camera specific zoom factor")
-					.label("Zoom").definition(getPropertyUri("ZoomFactor")).uom("1").dataType(DataType.FLOAT).build();
-			zoomComp.setValue(0.0);
-			ptzPos.addComponent("cpan", panComp);
-			ptzPos.addComponent("ctilt", tiltComp);
-			ptzPos.addComponent("czoom", zoomComp);
-			ptzPos.setUpdatable(true);
-			commandData.addItem(ptzPos.getName(), ptzPos);
-		}
 	}
 
     @Override
@@ -293,83 +302,47 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 			PTZVector position = status.getPosition();
 
 			// Note: Some tasking is not supported for certain cameras
-			// ABSOLUTE PAN
-        	if (itemID.equals(VideoCamHelper.TASKING_PAN))
+
+			// RELATIVE MOVEMENT
+        	if (itemID.equals("Relative Movement"))
         	{
-        		float pan = data.getFloatValue();
-				Vector2D targetPanTilt = new Vector2D();
+				Float pan;
+				try {
+					 pan = component.getComponent("pan").getData().getFloatValue();
+				} catch (Exception e) {
+					pan = Float.NaN;
+				}
+				Float tilt;
+				try {
+					tilt = component.getComponent("tilt").getData().getFloatValue();
+				} catch (Exception e) {
+					tilt = Float.NaN;
+				}
+				Float zoom;
+				try {
+					zoom = component.getComponent("zoom").getData().getFloatValue();
+				} catch (Exception e) {
+					zoom = Float.NaN;
+				}
 
-				targetPanTilt.setSpace(config.getDefaultAbsolutePantTiltPositionSpace());
-				targetPanTilt.setX(pan);
-				targetPanTilt.setY(position.getPanTilt().getY());
-				position.setPanTilt(targetPanTilt);
+				if (!pan.isNaN() && !tilt.isNaN()) {
+					Vector2D targetPanTilt = new Vector2D();
+					targetPanTilt.setX(pan);
+					targetPanTilt.setY(tilt);
+					targetPanTilt.setSpace(config.getDefaultRelativePanTiltTranslationSpace());
+					position.setPanTilt(targetPanTilt);
+				}
 
-				ptz.absoluteMove(ptzProfile.getToken(), position, speed);
-
-        	}
-			// ABSOLUTE TILT
-        	else if (itemID.equals(VideoCamHelper.TASKING_TILT))
-        	{
-        		float tilt = data.getFloatValue();
-				Vector2D targetPanTilt = new Vector2D();
-
-				targetPanTilt.setSpace(config.getDefaultAbsolutePantTiltPositionSpace());
-				targetPanTilt.setX(position.getPanTilt().getX());
-				targetPanTilt.setY(tilt);
-				position.setPanTilt(targetPanTilt);
-
-				camera.getPtz().absoluteMove(ptzProfile.getToken(), position, speed);
-        	}
-			// ABSOLUTE ZOOM
-        	else if (itemID.equals(VideoCamHelper.TASKING_ZOOM))
-        	{
-        		float zoom = data.getFloatValue();
-				Vector1D zoomVec = new Vector1D();
-
-				zoomVec.setSpace(config.getDefaultAbsoluteZoomPositionSpace());
-				zoomVec.setX(zoom);
-				position.setZoom(zoomVec);
-
-        		camera.getPtz().absoluteMove(ptzProfile.getToken(), position, speed);
-        	}
-			// RELATIVE PAN
-        	else if (itemID.equals(VideoCamHelper.TASKING_RPAN))
-        	{
-        		float rpan = data.getFloatValue();
-				Vector2D targetPanTilt = new Vector2D();
-
-				targetPanTilt.setX(rpan);
-				targetPanTilt.setY(0.0f);
-				targetPanTilt.setSpace(config.getDefaultRelativePanTiltTranslationSpace());
-				position.setPanTilt(targetPanTilt);
+				if (!zoom.isNaN()) {
+					Vector1D zoomVec = new Vector1D();
+					zoomVec.setX(zoom);
+					zoomVec.setSpace(config.getDefaultRelativeZoomTranslationSpace());
+					position.setZoom(zoomVec);
+				}
 
 				camera.getPtz().relativeMove(ptzProfile.getToken(), position, speed);
         	}
-			// RELATIVE TILT
-        	else if (itemID.equals(VideoCamHelper.TASKING_RTILT))
-        	{
-        		float rtilt = data.getFloatValue();
-				Vector2D targetPanTilt = new Vector2D();
 
-				targetPanTilt.setX(0.0f);
-				targetPanTilt.setY(rtilt);
-				targetPanTilt.setSpace(config.getDefaultRelativePanTiltTranslationSpace());
-				position.setPanTilt(targetPanTilt);
-
-				camera.getPtz().relativeMove(ptzProfile.getToken(), position, speed);
-        	}
-			// RELATIVE ZOOM
-        	else if (itemID.equals(VideoCamHelper.TASKING_RZOOM))
-        	{
-				float rzoom = data.getFloatValue();
-				Vector1D zoomVec = new Vector1D();
-
-				zoomVec.setX(rzoom);
-				zoomVec.setSpace(config.getDefaultRelativeZoomTranslationSpace());
-				position.setZoom(zoomVec);
-
-        		camera.getPtz().relativeMove(ptzProfile.getToken(), position, speed);
-        	}
 			// GO TO PRESET
         	else if (itemID.equals(VideoCamHelper.TASKING_PTZPRESET))
         	{
@@ -381,6 +354,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 					throw new CommandException("Could not find this preset to execute.");
 				}
         	}
+
 			// ADD PRESET
 			else if (itemID.equalsIgnoreCase("presetAdd")) {
 				String presetName = data.getStringValue();
