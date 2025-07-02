@@ -121,8 +121,8 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
         videoOutput = null;
         audioOutput = null;
 
-        String user = config.networkConfig.user;
-        String password = config.networkConfig.password;
+        String user = config.networkConfig.user == null ? "" : config.networkConfig.user;
+        String password = config.networkConfig.password == null ? "" : config.networkConfig.password;
 
         // Attempt camera connection
         String resolvePort = (config.networkConfig.remotePort == 0) ? "" : ":" + config.networkConfig.remotePort;
