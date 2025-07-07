@@ -63,8 +63,47 @@ public class AeroUtils
     public static final Pattern FLIGHTID_REGEX = Pattern.compile("[A-Z0-9]{4,7}_[A-Z]{4}_[0-9]{4}[0-9]{2}[0-9]{2}");
     
     
+    // map of IATA to ICAO airport codes
+    static Map<String, String> iataToIcaoMap;
+    
     // map of ICAO airport codes to time zone identifiers
     static Map<String, String> icaoTzData;
+    
+    
+    /**
+     * @return A map of ICAO airport codes to time zone identifiers.
+     */
+    public static synchronized Map<String, String> getAirportCodes()
+    {
+        if (iataToIcaoMap == null)
+        {
+            iataToIcaoMap = new HashMap<>();
+            
+            // iata-icao.csv downloaded https://github.com/ip2location/ip2location-iata-icao
+            var is = AeroUtils.class.getResourceAsStream("iata-icao.csv");
+            try (var reader = new BufferedReader(new InputStreamReader(is)))
+            {
+                String line;
+                reader.readLine(); // skip header
+                while ((line = reader.readLine()) != null)
+                {
+                    line = line.trim();
+                    if (!line.isEmpty()) {
+                        var tokens = line.split(",");
+                        var iata = tokens[2].replaceAll("\"", "");
+                        var icao = tokens[3].replaceAll("\"", "");
+                        iataToIcaoMap.put(iata, icao);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new IllegalStateException("Error reading airport time zone data", e);
+            }
+        }
+        
+        return iataToIcaoMap;
+    }
     
     
     /**
