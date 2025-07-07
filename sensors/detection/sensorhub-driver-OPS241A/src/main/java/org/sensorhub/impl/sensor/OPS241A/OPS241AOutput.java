@@ -69,9 +69,13 @@ public class OPS241AOutput extends AbstractSensorOutput<OPS241ASensor> {
                 .addField("timestamp", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Time Stamp")
-                        .description("Time of data collection"))
+                        .description("Time of data collection")
+                        .definition(SWEHelper.getPropertyUri("timestamp")))
                 .addField("detectionSpeed", sweFactory.createQuantity()
-                        .uom(parentSensor.uom).label("velocity").description("detected velocity"));
+                        .uom(parentSensor.uom)
+                        .label("velocity")
+                        .description("detected velocity")
+                        .definition(SWEHelper.getPropertyUri("detection_speed")));
 
         dataStruct = recordBuilder.build();
 

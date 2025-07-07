@@ -71,13 +71,23 @@ public class GravityOutput extends AbstractSensorOutput<Bno085Sensor> {
                 .addField("timestamp", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Time Stamp")
-                        .description("Time of data collection"))
+                        .description("Time of data collection")
+                        .definition(SWEHelper.getPropertyUri("timestamp")))
                 .addField("gravity_X", sweFactory.createQuantity()
-                        .uom("m/s^2").label("X").description("X-axis gravity"))
+                        .uom("m/s^2")
+                        .label("X")
+                        .description("X-axis gravity")
+                        .definition(SWEHelper.getPropertyUri("gravityX")))
                 .addField("gravity_Y", sweFactory.createQuantity()
-                        .uom("m/s^2").label("Y").description("Y-axis gravity"))
+                        .uom("m/s^2")
+                        .label("Y")
+                        .description("Y-axis gravity")
+                        .definition(SWEHelper.getPropertyUri("gravityY")))
                 .addField("gravity_Z", sweFactory.createQuantity()
-                        .uom("m/s^2").label("Z").description("Z-axis gravity"));
+                        .uom("m/s^2")
+                        .label("Z")
+                        .description("Z-axis gravity")
+                        .definition(SWEHelper.getPropertyUri("gravityZ")));
         dataStruct = recordBuilder.build();
 
         dataEncoding = sweFactory.newTextEncoding(",", "\n");

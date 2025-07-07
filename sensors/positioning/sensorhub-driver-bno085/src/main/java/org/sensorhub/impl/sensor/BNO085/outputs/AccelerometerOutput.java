@@ -70,13 +70,23 @@ public class AccelerometerOutput extends AbstractSensorOutput<Bno085Sensor> {
                 .addField("timestamp", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Time Stamp")
-                        .description("Time of data collection"))
+                        .description("Time of data collection")
+                        .definition(SWEHelper.getPropertyUri("timestamp")))
                 .addField("acceleration_X", sweFactory.createQuantity()
-                        .uom("m/s^2").label("X").description("X-axis acceleration"))
+                        .uom("m/s^2")
+                        .label("X")
+                        .description("X-axis acceleration")
+                        .definition(SWEHelper.getPropertyUri("accelerationX")))
                 .addField("acceleration_Y", sweFactory.createQuantity()
-                        .uom("m/s^2").label("Y").description("Y-axis acceleration"))
+                        .uom("m/s^2")
+                        .label("Y")
+                        .description("Y-axis acceleration")
+                        .definition(SWEHelper.getPropertyUri("accelerationY")))
                 .addField("acceleration_Z", sweFactory.createQuantity()
-                        .uom("m/s^2").label("Z").description("Z-axis acceleration"));
+                        .uom("m/s^2")
+                        .label("Z")
+                        .description("Z-axis acceleration")
+                        .definition(SWEHelper.getPropertyUri("accelerationZ")));
 
         dataStruct = recordBuilder.build();
 

@@ -70,13 +70,23 @@ public class MagFieldCalibratedOutput extends AbstractSensorOutput<Bno085Sensor>
                 .addField("timestamp", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Time Stamp")
-                        .description("Time of data collection"))
+                        .description("Time of data collection")
+                        .definition(SWEHelper.getPropertyUri("timestamp")))
                 .addField("magnetic_field_calibrated_X", sweFactory.createQuantity()
-                        .uom("µT").label("X").description("X-axis magnetic field"))
+                        .uom("µT")
+                        .label("X")
+                        .description("X-axis magnetic field")
+                        .definition(SWEHelper.getPropertyUri("magnetic_field_calibrated_X")))
                 .addField("magnetic_field_calibrated_Y", sweFactory.createQuantity()
-                        .uom("µT").label("Y").description("Y-axis magnetic field"))
+                        .uom("µT")
+                        .label("Y")
+                        .description("Y-axis magnetic field")
+                        .definition(SWEHelper.getPropertyUri("magnetic_field_calibrated_Y")))
                 .addField("magnetic_field_calibrated_Z", sweFactory.createQuantity()
-                        .uom("µT").label("Z").description("Z-axis magnetic field"));
+                        .uom("µT")
+                        .label("Z")
+                        .description("Z-axis magnetic field")
+                        .definition(SWEHelper.getPropertyUri("magnetic_field_calibrated_Z")));
 
         dataStruct = recordBuilder.build();
 

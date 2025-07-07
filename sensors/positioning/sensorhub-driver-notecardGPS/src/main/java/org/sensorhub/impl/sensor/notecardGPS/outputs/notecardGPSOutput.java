@@ -78,7 +78,8 @@ public class notecardGPSOutput extends AbstractSensorOutput<notecardGPSSensor> {
                 .addField("oshTimestamp", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("OSH Time Stamp")
-                        .description("Timestamp of when OSH collected data"))
+                        .description("Timestamp of when OSH collected data")
+                        .definition(SWEHelper.getPropertyUri("oshTimestamp")))
                 .addField("status", sweFactory.createText()
                         .label("Status")
                         .description("Information of GPS Status")
@@ -90,7 +91,8 @@ public class notecardGPSOutput extends AbstractSensorOutput<notecardGPSSensor> {
                 .addField("collectionTime", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("GPS Collection Time")
-                        .description("Timestamp of when GPS data was actually taken"))
+                        .description("Timestamp of when GPS data was actually taken")
+                        .definition(SWEHelper.getPropertyUri("collectionTime")))
                 .addField("Location", geoFactory.createLocationVectorLatLon());
 
         dataStruct = recordBuilder.build();

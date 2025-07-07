@@ -32,10 +32,12 @@ public class notecardMSGControl extends AbstractSensorControl<notecardGPSSensor>
                 .description("Send a note to Notehub.io Cloud")
                     .addField("noteTitle", fac.createText()
                             .label("Note File Title")
-                            .description("Input the name of the file that will be displayed in notehub.io"))
+                            .description("Input the name of the file that will be displayed in notehub.io")
+                            .definition(SWEHelper.getPropertyUri("noteTitle")))
                     .addField("noteMessage", fac.createText()
                             .label("Note Message")
-                            .description("This is a note message"))
+                            .description("This is a note message")
+                            .definition(SWEHelper.getPropertyUri("noteMessage")))
                     .build();
 
     }
