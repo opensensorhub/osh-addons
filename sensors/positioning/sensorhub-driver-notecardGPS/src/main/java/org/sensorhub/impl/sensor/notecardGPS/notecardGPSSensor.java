@@ -52,12 +52,14 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
 
     // Class Variables to handle output operations during the sensor's primary readSensor() method
     notecardGPSOutput notecardGPSOutput;
+    notecardMSGControl notecardMSGControl;
 
     // Local variables
     private volatile boolean keepRunning = false;
+    private final Object notecardLock = new Object();
 
     // Cosmetic debugging Variables Used to make font bold to view in terminal
-    boolean viewInTerminal = true; // Set this boolean to true if you want to see messags display in terminal
+    boolean viewInTerminal = false; // Set this boolean to true if you want to see messags display in terminal
     String BoldOn = "\033[1m";  // ANSI code to turn on bold
     String BoldOff = "\033[0m"; // ANSI code to turn on bold
 
@@ -70,10 +72,17 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
         generateUniqueID(UID_PREFIX, config.serialNumber);
         generateXmlID(XML_PREFIX, config.serialNumber);
 
+        viewInTerminal = config.NCconfig.viewNCinTerminal;
+
         // Initialize Sensor Outputs
         notecardGPSOutput = new notecardGPSOutput(this);
         addOutput(notecardGPSOutput, false);
         notecardGPSOutput.doInit();
+
+        // Initialize Control
+        notecardMSGControl = new notecardMSGControl(this);
+        addControlInput(notecardMSGControl);
+        notecardMSGControl.doInit();
 
         // Establish Initial Connection to Restore Sensor
         createI2cConnection();
@@ -92,9 +101,6 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
 
         // CONFIGURE THE NOTECARD
         Transaction(HubSet);
-        if (config.NCconfig.isNoteHubSync){
-            Transaction(notecardGPSConstantsI2C.HUB_SYNC);
-        }
         Transaction(notecardGPSConstantsI2C.ENABLE_ACCELEROMETER);
         Transaction(notecardGPSConstantsI2C.TURNON_TRIANGLULATION);
         Transaction(notecardGPSConstantsI2C.DISABLE_GPS);
@@ -121,9 +127,8 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
     public void doStop() throws SensorHubException {
         super.doStop();
         keepRunning = false;
-        if (config.NCconfig.isNoteHubSync){
-            Transaction(notecardGPSConstantsI2C.HUB_SYNC);
-        }
+
+        Transaction(notecardGPSConstantsI2C.HUB_SYNC);
         Transaction(notecardGPSConstantsI2C.HUBSET_OFF);
         Transaction(notecardGPSConstantsI2C.DISABLE_ACCELEROMETER);
         Transaction(notecardGPSConstantsI2C.TURNOFF_TRIANGLULATION);
@@ -138,29 +143,30 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
 
     // SENSOR SPECIFIC METHODS
     public void Transaction(String jsonMsg){
+        synchronized (notecardLock){
+            if(viewInTerminal){
+                System.out.println(BoldOn + "Sending Message: " + BoldOff + jsonMsg);
+            }
 
-        if(viewInTerminal){
-            System.out.println(BoldOn + "Sending Message: " + BoldOff + jsonMsg);
+            try {
+                // Using the json message provided, create a byte array for transaction over i2c
+                byte[] messageBytes = (jsonMsg + "\n").getBytes(StandardCharsets.UTF_8);    // Must add '\n' to the end of the message
+                int length = messageBytes.length;                                           // Length is required when sending a message transaction to notecard
+
+                // Create a new Byte Array [<length of array>, <each byte of array>]
+                byte[] reqBytes = new byte[length + 1];
+                reqBytes[0] = (byte) length;                                                // prepend the length
+                System.arraycopy(messageBytes, 0, reqBytes, 1, length);     // create combined array with length at the beginning
+
+                // Send Message to Notecard
+                i2c.write(reqBytes);
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            readNotecard(jsonMsg);
         }
-
-        try {
-            // Using the json message provided, create a byte array for transaction over i2c
-            byte[] messageBytes = (jsonMsg + "\n").getBytes(StandardCharsets.UTF_8);    // Must add '\n' to the end of the message
-            int length = messageBytes.length;                                           // Length is required when sending a message transaction to notecard
-
-            // Create a new Byte Array [<length of array>, <each byte of array>]
-            byte[] reqBytes = new byte[length + 1];
-            reqBytes[0] = (byte) length;                                                // prepend the length
-            System.arraycopy(messageBytes, 0, reqBytes, 1, length);     // create combined array with length at the beginning
-
-            // Send Message to Notecard
-            i2c.write(reqBytes);
-            Thread.sleep(300);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-        readNotecard(jsonMsg);
     }
 
     public void readNotecard(String prevReq) {
