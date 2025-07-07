@@ -25,6 +25,7 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.TextEncoding;
 import org.onvif.ver10.schema.*;
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.slf4j.Logger;
@@ -126,7 +127,15 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
         {
             final DataComponent dataStruct = settingsDataStruct.copy();
             dataStruct.assignNewDataBlock();
-            PTZStatus ptzStatus = camera.getPtz().getStatus(profile.getToken());
+            PTZStatus ptzStatus = null;
+            try {
+                ptzStatus = camera.getPtz().getStatus(profile.getToken());
+            } catch (Exception e) {
+                getLogger().warn("Error getting PTZ status. Unregistering output.", e);
+                //parentSensor.removePtzOutput();
+                return;
+            }
+            PTZStatus finalPtz =  ptzStatus;
 
             TimerTask timerTask = new TimerTask()
             {
@@ -142,8 +151,8 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
                         double time = System.currentTimeMillis() / 1000.;
                         dataStruct.getComponent("time").getData().setDoubleValue(time);
 
-                        if (ptzStatus != null) {
-                            PTZVector ptzVec = ptzStatus.getPosition();
+                        if (finalPtz != null) {
+                            PTZVector ptzVec = finalPtz.getPosition();
 
                             if (ptzVec != null) {
                                 dataStruct.getComponent("pan").getData().setDoubleValue(ptzVec.getPanTilt().getX());

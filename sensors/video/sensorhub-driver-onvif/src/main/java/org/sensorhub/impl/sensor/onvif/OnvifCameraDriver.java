@@ -23,6 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import de.onvif.discovery.OnvifDiscovery;
+import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.onvif.ver10.schema.*;
 import org.sensorhub.api.common.SensorHubException;
@@ -338,6 +339,13 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
             executor.shutdownNow();
             executor = null;
         }
+    }
+
+    public void removePtzOutput() {
+        if (ptzPosOutput != null) {
+            getObservationOutputs().remove(ptzPosOutput.getName());
+        }
+        ptzPosOutput = null;
     }
 
     /**
