@@ -18,7 +18,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -36,6 +38,7 @@ import org.vast.ogc.om.SamplingSurface;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEConstants;
 import org.vast.util.Asserts;
+import org.vast.util.TimeExtent;
 import net.opengis.sensorml.v20.AbstractProcess;
 
 
@@ -208,6 +211,12 @@ public class AeroUtils
                     foi.setName("Flight " + flightInfo.getFlightNumber() +
                                 " to " + flightInfo.getDestinationAirport() + 
                                 " (" + flightInfo.getFlightDate() + ")");
+
+                    var begin = flightInfo.getFlightDate()
+                        .atStartOfDay().toInstant(ZoneOffset.UTC)
+                        .minus(1, ChronoUnit.DAYS);
+                    var end = begin.plus(3, ChronoUnit.DAYS);
+                    foi.setValidTime(TimeExtent.period(begin, end));
                     
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
