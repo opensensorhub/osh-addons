@@ -287,10 +287,14 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 
         try
         {
-
 			PTZConfiguration config = ptzProfile.getPTZConfiguration();
-			PTZStatus status = ptz.getStatus(ptzProfile.getToken());
-			PTZVector position = status.getPosition();
+			PTZVector position = null;
+			try {
+				PTZStatus status = ptz.getStatus(ptzProfile.getToken());
+				position = status.getPosition();
+			} catch (Exception e) {
+				position = new PTZVector();
+			}
 
 			// Note: Some tasking is not supported for certain cameras
 			// ABSOLUTE PAN
