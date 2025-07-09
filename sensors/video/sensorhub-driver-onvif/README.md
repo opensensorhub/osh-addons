@@ -2,6 +2,11 @@
 
 This is a driver for sending PTZ commands to and streaming video/audio from ONVIF-compatible IP cameras.
 
+TAPO C73 SUGGESTED RANGES
+Pan: +/-180
+Tilt: +90, -59
+Zoom: N/A
+
 ## Features
 
 - Auto-discovery of ONVIF devices and stream endpoints
