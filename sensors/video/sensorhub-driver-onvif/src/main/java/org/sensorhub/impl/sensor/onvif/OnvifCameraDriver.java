@@ -103,7 +103,7 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
         }
         float range = (max - min);
         //out = ((in + 1) / 2) * range - min;
-        out = ((in - min) / range * 2) - 1;
+        out = (((in - min) / range * 2) - 1);
         return out;
         //return ((in - min) / range * 2f) - 1;
     }
@@ -136,7 +136,7 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
                 return in;
         }
         float range = (max - min);
-        out = ((in + 1) / 2) * range + min;
+        out = (((in + 1) / 2) * range + min);
 
         return out;
         //return ((in + 1) / 2f * range) + min;
@@ -177,6 +177,16 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
         } else {
             zoomMax = 2f;
             zoomMin = -1f;
+        }
+        if (config.ptzRanges.invertPan) {
+            float temp = panMax;
+            panMax = panMin;
+            panMin = temp;
+        }
+        if (config.ptzRanges.invertTilt) {
+            float temp = tiltMax;
+            tiltMax = tiltMin;
+            tiltMin = temp;
         }
 
         TreeSet<URL> temp = (TreeSet<URL>) OnvifDiscovery.discoverOnvifURLs();
@@ -327,7 +337,12 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
 
         // generate identifiers.
         streamURI = URI.create(config.streamingConfig.streamEndpoint);
-        String streamId = streamingProfile.getName() + ":" + streamingProfile.getVideoEncoderConfiguration().getEncoding();
+        String streamId;
+        try {
+            streamId = (streamingProfile.getName()) + ":" + streamingProfile.getVideoEncoderConfiguration().getEncoding();
+        } catch (NullPointerException e) {
+            streamId = "noVideo";
+        }
 
         generateUniqueID("urn:onvif:cam:", serialNumber + (streamId != null ? (":" + streamId) : ""));
         generateXmlID("ONVIF_CAM_", serialNumber + (streamId != null ? (":" + streamId) : ""));

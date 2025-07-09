@@ -77,11 +77,17 @@ public class OnvifCameraConfig extends SensorConfig {
         @DisplayInfo(label = "Pan Min (deg)", desc="Leave empty to use generic space.")
         public Integer panMin = null;
 
+        @DisplayInfo(label="Invert Pan")
+        public boolean invertPan = false;
+
         @DisplayInfo(label = "Tilt Max (deg)", desc="Leave empty to use generic space.")
         public Integer tiltMax = null;
 
         @DisplayInfo(label = "Tilt Min (deg)", desc="Leave empty to use generic space.")
         public Integer tiltMin = null;
+
+        @DisplayInfo(label="Invert Tilt")
+        public boolean invertTilt = false;
 
         // TODO This would probably actually require a min and max unlike pan and tilt
         @DisplayInfo(label = "Zoom Max (mm)", desc = "Leave empty to use generic space.")
