@@ -123,11 +123,22 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
                 .label("Input Video Frame")
                 .description("")
                 .definition(SWEHelper.getPropertyUri("VideoFrame"))
+                .addField("time", inputTimeStamp = swe.createTime()
+                        .asSamplingTimeIsoUTC()
+                        .build())
+                .addField("width", inputWidth = swe.createCount()
+                        .id("width")
+                        .label("Input Frame Width")
+                        .build())
+                .addField("height", inputHeight = swe.createCount()
+                        .id("height")
+                        .label("Input Frame Height")
+                        .build())
                 .addField("sampleTime", inputTimeStamp = swe.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
                         .description("Time of data collection").build())
-                .addField("img", imgIn = swe.newRgbImage(swe.createCount().id("width").build(), swe.createCount().id("height").build(), DataType.BYTE))
+                .addField("img", imgIn = swe.newRgbImage(inputWidth, inputHeight, DataType.BYTE))
                 .build());
 
         // TODO Add width/height parameters for scaling
@@ -328,7 +339,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             DataComponent temp;
             temp = inputFps;
             int fps = 0;
-            if (temp != null && temp.getData() != null) {
+            if (temp != null && temp.hasData()) {
                 fps = temp.getData().getIntValue();
             }
             if (fps > 0) {
@@ -344,7 +355,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
             temp = inputBitrate;
             int bitrate = 0;
-            if (temp != null && temp.getData() != null) {
+            if (temp != null && temp.hasData()) {
                 bitrate = temp.getData().getIntValue();
             }
             if (bitrate > 0) {
@@ -353,7 +364,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             }
             int width = 0;
             temp = inputWidth;
-            if (temp != null && temp.getData() != null && temp.getData().getIntValue() > 0) {
+            if (temp != null && temp.hasData() && temp.getData().getIntValue() > 0) {
                 width = temp.getData().getIntValue();
             } else {
                 width = imgIn.getComponent("row").getComponentCount();
@@ -364,7 +375,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             }
             temp = inputHeight;
             int height = 0;
-            if (temp != null && temp.getData() != null && temp.getData().getIntValue() > 0) {
+            if (temp != null && temp.hasData() && temp.getData().getIntValue() > 0) {
                 height = temp.getData().getIntValue();
             } else {
                 height = imgIn.getComponentCount();
