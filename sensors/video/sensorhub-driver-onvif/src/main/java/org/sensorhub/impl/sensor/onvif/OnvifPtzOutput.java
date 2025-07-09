@@ -166,7 +166,7 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
                             if (ptzVec != null) {
                                 try {
                                     if (hasPan) {
-                                        dataStruct.getComponent("pan").getData().setDoubleValue(ptzVec.getPanTilt().getX());
+                                        dataStruct.getComponent("pan").getData().setDoubleValue(parent.genericToDeg(ptzVec.getPanTilt().getX(), 0));
                                     }
                                 } catch (Exception e) {
                                     hasPan = false;
@@ -174,7 +174,7 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
                                 }
                                 try {
                                     if (hasTilt) {
-                                        dataStruct.getComponent("tilt").getData().setDoubleValue(ptzVec.getPanTilt().getY());
+                                        dataStruct.getComponent("tilt").getData().setDoubleValue(parent.genericToDeg(ptzVec.getPanTilt().getY(), 1));
                                     }
                                 } catch (Exception e) {
                                     hasTilt = false;
@@ -182,7 +182,7 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
                                 }
                                 try {
                                     if (hasZoom) {
-                                        dataStruct.getComponent("zoomFactor").getData().setDoubleValue(ptzVec.getZoom().getX());
+                                        dataStruct.getComponent("zoomFactor").getData().setDoubleValue(parent.genericToDeg(ptzVec.getZoom().getX(), 2));
                                     }
                                 } catch (Exception e) {
                                     hasZoom = false;

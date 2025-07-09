@@ -66,6 +66,82 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
     String visualConnectionString;
     String streamTransport = "tcp";
 
+    float panMax = 2f;
+    float panMin = -1f;
+    float tiltMax = 2f;
+    float tiltMin = -1f;
+    float zoomMax = 2f;
+    float zoomMin = -1f;
+
+    // Type: 0 = pan, 1 = tilt, 2 zoom
+    public float degtoGeneric(float in, int type) {
+        float min;
+        float max;
+        float largest;
+        float out;
+        switch (type) {
+            case 0: // Type 0 Panning
+                if (config.ptzRanges.panMax == null || config.ptzRanges.panMin == null)
+                    return in;
+                max = panMax;
+                min = panMin;
+                break;
+            case 1: // Type 1 Tilting
+                if (config.ptzRanges.tiltMax == null || config.ptzRanges.tiltMin == null)
+                    return in;
+                max = tiltMax;
+                min = tiltMin;
+                break;
+            case 2: // Type 2 Zooming
+                if (config.ptzRanges.zoomMax == null || config.ptzRanges.zoomMin == null)
+                    return in;
+                max = zoomMax;
+                min = zoomMin;
+                break;
+            default:
+                return in;
+        }
+        float range = (max - min);
+        //out = ((in + 1) / 2) * range - min;
+        out = ((in - min) / range * 2) - 1;
+        return out;
+        //return ((in - min) / range * 2f) - 1;
+    }
+
+    public float genericToDeg(float in, int type) {
+        float min;
+        float max;
+        float largest;
+        float out;
+        switch (type) {
+            case 0: // Type 0 Panning
+                if (config.ptzRanges.panMax == null || config.ptzRanges.panMin == null)
+                    return in;
+                max = panMax;
+                min = panMin;
+                break;
+            case 1: // Type 1 Tilting
+                if (config.ptzRanges.tiltMax == null || config.ptzRanges.tiltMin == null)
+                    return in;
+                max = tiltMax;
+                min = tiltMin;
+                break;
+            case 2: // Type 2 Zooming
+                if (config.ptzRanges.zoomMax == null || config.ptzRanges.zoomMin == null)
+                    return in;
+                max = zoomMax;
+                min = zoomMin;
+                break;
+            default:
+                return in;
+        }
+        float range = (max - min);
+        out = ((in + 1) / 2) * range + min;
+
+        return out;
+        //return ((in + 1) / 2f * range) + min;
+    }
+
     OnvifCameraConfig config;
 
     public OnvifCameraDriver() throws SensorHubException {
@@ -80,6 +156,28 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
     public void setConfiguration(OnvifCameraConfig config) {
         super.setConfiguration(config);
         this.config = config;
+
+        if (config.ptzRanges.panMax != null && config.ptzRanges.panMin != null) {
+            panMax = config.ptzRanges.panMax;
+            panMin = config.ptzRanges.panMin;
+        } else {
+            panMax = 2f;
+            panMin = -1f;
+        }
+        if (config.ptzRanges.tiltMax != null && config.ptzRanges.tiltMin != null) {
+            tiltMax = config.ptzRanges.tiltMax;
+            tiltMin = config.ptzRanges.tiltMin;
+        } else {
+            tiltMax = 2f;
+            tiltMin = -1f;
+        }
+        if (config.ptzRanges.zoomMax != null && config.ptzRanges.zoomMin != null) {
+            zoomMax = config.ptzRanges.zoomMax;
+            zoomMin = config.ptzRanges.zoomMin;
+        } else {
+            zoomMax = 2f;
+            zoomMin = -1f;
+        }
 
         TreeSet<URL> temp = (TreeSet<URL>) OnvifDiscovery.discoverOnvifURLs();
         config.networkConfig.autoRemoteHost.clear();

@@ -41,6 +41,10 @@ public class OnvifCameraConfig extends SensorConfig {
     @DisplayInfo(label="ONVIF AV Streaming Options", desc="Configure video/audio streaming")
     public StreamingOptions streamingConfig = new StreamingOptions();
 
+    @Required
+    @DisplayInfo(label="ONVIF PTZ Range Options", desc="Configure hardware pan/tilt/zoom ranges.")
+    public PTZRanges ptzRanges = new PTZRanges();
+
     public class OnvifConfig extends TCPConfig implements ICommConfig{
         public OnvifConfig() {
             this.remotePort = 80;
@@ -64,5 +68,26 @@ public class OnvifCameraConfig extends SensorConfig {
 
         @DisplayInfo(label="Preferred Codec", desc="Select video codec for streaming.")
         public VideoEncoding codec = VideoEncoding.JPEG;
+    }
+
+    public class PTZRanges {
+        @DisplayInfo(label = "Pan Max (deg)", desc="Leave empty to use generic space.")
+        public Integer panMax = null;
+
+        @DisplayInfo(label = "Pan Min (deg)", desc="Leave empty to use generic space.")
+        public Integer panMin = null;
+
+        @DisplayInfo(label = "Tilt Max (deg)", desc="Leave empty to use generic space.")
+        public Integer tiltMax = null;
+
+        @DisplayInfo(label = "Tilt Min (deg)", desc="Leave empty to use generic space.")
+        public Integer tiltMin = null;
+
+        // TODO This would probably actually require a min and max unlike pan and tilt
+        @DisplayInfo(label = "Zoom Max (mm)", desc = "Leave empty to use generic space.")
+        public Integer zoomMax = null;
+
+        @DisplayInfo(label = "Zoom Min (mm)", desc = "Leave empty to use generic space.")
+        public Integer zoomMin = null;
     }
 }
