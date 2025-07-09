@@ -431,31 +431,23 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             if (!dataStruct.hasData()) { return; }
 
             var curtime = System.currentTimeMillis();
+            dataStruct.renewDataBlock();
             dataStruct.getData().setDoubleValue(curtime / 1000d);
+            latestRecord = dataStruct.getData().clone();
             // TODO This boolean is being used a bit too much all over the place
+            /*
             if (onlyConnectImg) {
-                latestRecord = dataStruct.getComponent("img").getData().clone();
+                ((DataBlockMixed)latestRecord).setUnderlyingObject(((DataBlockCompressed)dataStruct.getComponent("img").getData()).getUnderlyingObject());
             } else {
                 latestRecord = dataStruct.getData().clone();
             }
+
+             */
             latestRecordTime = curtime;
-            eventHandler.publish(new DataEvent(curtime, this, latestRecord));
+            eventHandler.publish(new DataEvent(curtime, this, dataStruct.getData().clone()));
             dataStruct.renewDataBlock();
         }
 
-        // TODO Either use this somewhere or remove
-        private void updateIntervalHistogram() {
-            synchronized (histogramLock) {
-                if (latestRecord != null && latestRecordTime != Long.MIN_VALUE) {
-                    long interval = System.currentTimeMillis() - latestRecordTime;
-                    intervalHistogram.add(interval / 1000d);
-
-                    if (intervalHistogram.size() > MAX_NUM_TIMING_SAMPLES) {
-                        intervalHistogram.remove(0);
-                    }
-                }
-            }
-        }
     }
 
 
