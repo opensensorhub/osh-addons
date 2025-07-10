@@ -7,6 +7,19 @@ https://lasertech.com/wp-content/uploads/TruPulse-360i-User-Manual-2024.pdf
 ### Communication Docs
 https://lasertech.com/themencode-pdf-viewer/?file=https://lasertech.com/wp-content/uploads/TruPulse-i-Series-Communication-Protocols-and-Commands.pdf#zoom=auto&pagemode=none
 
+# Configure the Trupulse LRF
+The Trupulse LRF has the functionality to connnect to classic BT and BLE. You may need to switch the devices bt mode in order to connect it to the LRF driver through OSH. Here are the steps to do that:
+1. Long press Menu button and the Bluetooth option will be displayed.
+2. Press the Navigation button to display the Bluetooth options (bt OFF, bt On, bt bLE)
+3. Short press Select button to accept the Bluetooth option and return to the Measurement Mode.
+• Short Press the Menu button to save option and navigate to the Pulse options.
+• Short Press the FIRE button to exit and not save the option.
+
+>**BT Options:**
+  • OFF: Turns the Bluetooth communications off.
+  • bt bLE: Turns the Bluetooth Low Energy (BLE) on. (Android & iOS devices)
+  • bt On: Turns the Bluetooth Classic communications on (Windows & Android devices).
+
 # Connection Steps:
 - Pair the LRF to the Android Device
 - On the Android device, open the Bluetooth settings
