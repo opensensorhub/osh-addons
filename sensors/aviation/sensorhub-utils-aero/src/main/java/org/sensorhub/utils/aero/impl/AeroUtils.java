@@ -18,7 +18,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -36,6 +38,7 @@ import org.vast.ogc.om.SamplingSurface;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEConstants;
 import org.vast.util.Asserts;
+import org.vast.util.TimeExtent;
 import net.opengis.sensorml.v20.AbstractProcess;
 
 
@@ -63,8 +66,47 @@ public class AeroUtils
     public static final Pattern FLIGHTID_REGEX = Pattern.compile("[A-Z0-9]{4,7}_[A-Z]{4}_[0-9]{4}[0-9]{2}[0-9]{2}");
     
     
+    // map of IATA to ICAO airport codes
+    static Map<String, String> iataToIcaoMap;
+    
     // map of ICAO airport codes to time zone identifiers
     static Map<String, String> icaoTzData;
+    
+    
+    /**
+     * @return A map of ICAO airport codes to time zone identifiers.
+     */
+    public static synchronized Map<String, String> getAirportCodes()
+    {
+        if (iataToIcaoMap == null)
+        {
+            iataToIcaoMap = new HashMap<>();
+            
+            // iata-icao.csv downloaded https://github.com/ip2location/ip2location-iata-icao
+            var is = AeroUtils.class.getResourceAsStream("iata-icao.csv");
+            try (var reader = new BufferedReader(new InputStreamReader(is)))
+            {
+                String line;
+                reader.readLine(); // skip header
+                while ((line = reader.readLine()) != null)
+                {
+                    line = line.trim();
+                    if (!line.isEmpty()) {
+                        var tokens = line.split(",");
+                        var iata = tokens[2].replaceAll("\"", "");
+                        var icao = tokens[3].replaceAll("\"", "");
+                        iataToIcaoMap.put(iata, icao);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new IllegalStateException("Error reading airport time zone data", e);
+            }
+        }
+        
+        return iataToIcaoMap;
+    }
     
     
     /**
@@ -169,6 +211,12 @@ public class AeroUtils
                     foi.setName("Flight " + flightInfo.getFlightNumber() +
                                 " to " + flightInfo.getDestinationAirport() + 
                                 " (" + flightInfo.getFlightDate() + ")");
+
+                    var begin = flightInfo.getFlightDate()
+                        .atStartOfDay().toInstant(ZoneOffset.UTC)
+                        .minus(1, ChronoUnit.DAYS);
+                    var end = begin.plus(3, ChronoUnit.DAYS);
+                    foi.setValidTime(TimeExtent.period(begin, end));
                     
                     // register it
                     hub.getSystemDriverRegistry().register(AERO_FOI_REGISTRY_UID, foi).get();
