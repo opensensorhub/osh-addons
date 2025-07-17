@@ -125,6 +125,12 @@ public interface FlightPlanRecord extends IDataAccessor, IFlightPlan
     @SweMapping(path="flightNumber")
     void setFlightNumber(String val);
     
+    @Override
+    default String getCallSign()
+    {
+        return getFlightNumber();
+    }
+    
     @SweMapping(path="flightDate")
     String getFlightDateString();
 
