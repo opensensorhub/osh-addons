@@ -37,15 +37,15 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
     IModule<?> sensorModule;
     protected IProcessExec executable;
     protected IStreamingDataInterface inputVideoOutport; // Output from the source sensor/process (input to this process)
-    AbstractSWEIdentifiable inputVideoInport, outputVideoOutport; // Input to executable process. Output from executable process.
+    protected AbstractSWEIdentifiable inputVideoInport, outputVideoOutport; // Input to executable process. Output from executable process.
     DataQueue dataQueue, outQueue;
     protected VideoDataInterface videoOutput; // Data output interface for this process module.
-    SMLHelper smlHelper;
+    protected SMLHelper smlHelper;
     RasterHelper rasterHelper;
     boolean started = false;
     Thread execFuture;
     Count width, height;
-    boolean onlyConnectImg = false;
+    protected boolean onlyConnectImg = false, isVariable;
     protected String uuid;
 
     public FFmpegProcess() {
@@ -86,7 +86,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
     @Override
     public void doInit() throws SensorException, SensorHubException {
 
-        boolean isVariable;
+        //boolean isVariable;
         // Get input module from registry
         if (hasParentHub()) {
             sensorModule = getParentHub().getModuleRegistry().getModuleById(config.videoUID);
@@ -128,7 +128,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             throw new SensorException("No video stream input found for process " + executable.getInstanceName() + ".");
         }
 
-        setArraySize(inputVideoInport, isVariable);
+        setArraySize(inputVideoInport, isVariable, width, height);
 
         var opt2 = executable.getOutputList().stream().filter(output -> isVideoData((DataRecord)output)).findFirst();
         if (opt2.isPresent()) {
@@ -137,7 +137,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             throw new SensorException("No video stream output found for process " + executable.getInstanceName() + ".");
         }
 
-        setArraySize(outputVideoOutport, isVariable);
+        setArraySize(outputVideoOutport, isVariable, width, height);
 
         // TODO: Video output never seems to have data. Figure out why this is.
         dataQueue = new DataQueue();
@@ -204,7 +204,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         super.doInit();
     }
 
-    private void setArraySize(AbstractSWEIdentifiable videoComponent, boolean isVariable) {
+    protected void setArraySize(AbstractSWEIdentifiable videoComponent, boolean isVariable, Count width, Count height) {
         var img = ((DataArray) SMLHelper.getIOComponent(videoComponent).getComponent("img"));
         if (isVariable && !img.isVariableSize()) {
             // Convert to variable size
@@ -321,11 +321,13 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         private static final int MAX_NUM_TIMING_SAMPLES = 10;
         BinaryEncoding dataEnc;
         BinaryBlock compressedBlock;
+        boolean isVariable;
+        DataArray img;
 
         protected VideoDataInterface(String name, Count width, Count height, boolean isVariable, FFmpegProcess parent) {
             super(name, parent);
             swe = new RasterHelper();
-            DataArray img;
+
             // This is just the default structure. Overwritten during the init.
             this.dataStruct = swe.createRecord()
                     .name(name)
@@ -343,16 +345,18 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
                 img.updateSize(height.getValue());
                 ((DataArray) img.getComponent("row")).updateSize(width.getValue());
             } else {
-                img.setElementCount(height);
-                ((DataArray) img.getComponent("row")).setElementCount(width);
+                img.setElementCount((Count) height.clone());
+                ((DataArray) img.getComponent("row")).setElementCount((Count) width.clone());
             }
 
+            this.isVariable = isVariable;
             setStructCompression(null);
 
             dataStruct.renewDataBlock();
             latestRecord = dataStruct.createDataBlock();
         }
 
+        // TODO Move this code to the transcoder
         public void setStructCompression(String codec) {
             dataEnc = swe.newBinaryEncoding(ByteOrder.BIG_ENDIAN, ByteEncoding.RAW);
 
@@ -406,9 +410,9 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         }
 
 
-        public void setSize(Count width, Count height) {
-            ((DataArray)SMLHelper.getIOComponent(dataStruct).getComponent("img")).getArraySizeComponent().setValue(height.getValue());
-            ((DataArray)SMLHelper.getIOComponent(dataStruct).getComponent("img").getComponent("row")).getArraySizeComponent().setValue(width.getValue());
+        public void setSize(int width, int height) {
+            img.updateSize(height);
+            ((DataArray) img.getComponent("row")).updateSize(width);
             dataStruct.renewDataBlock();
             latestRecord = dataStruct.getData();
         }
@@ -481,7 +485,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
                             AbstractDataBlock imgData = null;
                             if (output.getLatestRecord().getUnderlyingObject() instanceof AbstractDataBlock[] blockArray) {
                                 for  (AbstractDataBlock dataBlock : blockArray) {
-                                    if (dataBlock instanceof DataBlockMixed ||  dataBlock instanceof DataBlockCompressed) {
+                                    if (dataBlock instanceof DataBlockMixed ||  dataBlock instanceof DataBlockCompressed || dataBlock instanceof DataBlockByte) {
                                         imgData = dataBlock;
                                         break;
                                     }

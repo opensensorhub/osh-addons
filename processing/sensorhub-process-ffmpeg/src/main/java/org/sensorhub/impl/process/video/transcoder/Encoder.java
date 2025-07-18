@@ -45,14 +45,14 @@ public class Encoder extends Coder<AVFrame, AVPacket> {
         inPacket = inPackets.poll();
         //pts++;
         //inPacket.pts(pts);
-        /*
+
         logger.debug("add frame in encoder:");
         logger.debug("  format: {}", inPacket.format());
         logger.debug("  width: {}", inPacket.width());
         logger.debug("  height: {}", inPacket.height());
         logger.debug("  data[0]: {}", inPacket.data(0));
         logger.debug("Sent frame to encoder");
-         */
+
         avcodec_send_frame(codec_ctx, av_frame_clone(inPacket));
         //av_frame_free(inPacket);
 

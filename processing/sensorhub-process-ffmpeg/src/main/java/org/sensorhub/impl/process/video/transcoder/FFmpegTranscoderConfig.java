@@ -18,6 +18,12 @@ public class FFmpegTranscoderConfig extends FFmpegProcessConfig {
     @DisplayInfo(label="Output Codec")
     public FFMpegTranscoder.CodecEnum outCodec = FFMpegTranscoder.CodecEnum.H264;
 
+    @DisplayInfo(label="Output Width")
+    public Integer outputWidth = null;
+
+    @DisplayInfo(label="Output Height")
+    public Integer outputHeight = null;
+
     public FFmpegTranscoderConfig() {
         super();
         execProcess = FFMpegTranscoder.class;
