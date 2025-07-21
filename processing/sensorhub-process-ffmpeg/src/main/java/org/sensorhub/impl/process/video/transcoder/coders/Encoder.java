@@ -1,4 +1,4 @@
-package org.sensorhub.impl.process.video.transcoder;
+package org.sensorhub.impl.process.video.transcoder.coders;
 
 import org.bytedeco.ffmpeg.avcodec.AVCodec;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
@@ -14,7 +14,7 @@ import static org.bytedeco.ffmpeg.global.avutil.*;
 public class Encoder extends Coder<AVFrame, AVPacket> {
     long pts = 0;
 
-    public Encoder(int codecId, HashMap<String, String> options) {
+    public Encoder(int codecId, HashMap<String, Integer> options) {
         super(codecId, AVFrame.class, AVPacket.class, options);
     }
 
@@ -24,7 +24,7 @@ public class Encoder extends Coder<AVFrame, AVPacket> {
     }
 
     @Override
-    protected void initCodec() {
+    protected void initContext() {
         pts = 0;
         AVCodec codec = avcodec_find_encoder(codecId);
         codec_ctx = avcodec_alloc_context3(codec);
@@ -45,13 +45,6 @@ public class Encoder extends Coder<AVFrame, AVPacket> {
         inPacket = inPackets.poll();
         //pts++;
         //inPacket.pts(pts);
-
-        logger.debug("add frame in encoder:");
-        logger.debug("  format: {}", inPacket.format());
-        logger.debug("  width: {}", inPacket.width());
-        logger.debug("  height: {}", inPacket.height());
-        logger.debug("  data[0]: {}", inPacket.data(0));
-        logger.debug("Sent frame to encoder");
 
         avcodec_send_frame(codec_ctx, av_frame_clone(inPacket));
         //av_frame_free(inPacket);

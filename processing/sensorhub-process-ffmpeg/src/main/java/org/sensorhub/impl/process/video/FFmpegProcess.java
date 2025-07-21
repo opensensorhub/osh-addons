@@ -356,7 +356,6 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             latestRecord = dataStruct.createDataBlock();
         }
 
-        // TODO Move this code to the transcoder
         public void setStructCompression(String codec) {
             dataEnc = swe.newBinaryEncoding(ByteOrder.BIG_ENDIAN, ByteEncoding.RAW);
 

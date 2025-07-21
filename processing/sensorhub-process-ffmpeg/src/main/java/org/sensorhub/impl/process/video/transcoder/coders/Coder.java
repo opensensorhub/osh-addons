@@ -1,4 +1,4 @@
-package org.sensorhub.impl.process.video.transcoder;
+package org.sensorhub.impl.process.video.transcoder.coders;
 
 import static org.bytedeco.ffmpeg.global.avutil.*;
 
@@ -16,15 +16,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // TODO Need to handle case where queues fill faster than packets can be processed. Should check queue size and free space when necessary to avoid crash.
-public abstract class Coder<I, O> implements Runnable {
+public abstract class Coder<I, O> extends Thread {
 
     protected static final Logger logger = LoggerFactory.getLogger(Coder.class);
 
     int codecId;
     private static final int MAX_QUEUE_SIZE = 500;
     protected AVCodecContext codec_ctx;
-    protected volatile Queue<I> inPackets; // ONLY allow the main loop to poll
-    protected volatile Queue<O> outPackets; // ONLY allow the main loop to add
+    protected Queue<I> inPackets; // ONLY allow the main loop to poll
+    protected final Queue<O> outPackets; // ONLY allow the main loop to add
     protected I inPacket;
     protected O outPacket;
     //volatile boolean isProcessing = false; // Set to true at the start of the loop, false at the end
@@ -32,11 +32,11 @@ public abstract class Coder<I, O> implements Runnable {
     final Object waitingObj = new Object();
     Class<I> inputClass;
     Class<O> outputClass;
-    HashMap<String, String> options;
+    HashMap<String, Integer> options;
 
     public AtomicBoolean doRun = new AtomicBoolean(true);
 
-    public Coder(int codecId, Class<I> inputClass, Class<O> outputClass, HashMap<String, String> options) {
+    public Coder(int codecId, Class<I> inputClass, Class<O> outputClass, HashMap<String, Integer> options) {
         super();
 
         assert inputClass == AVPacket.class || inputClass == AVFrame.class;
@@ -56,7 +56,18 @@ public abstract class Coder<I, O> implements Runnable {
         inPackets.add(packet);
     }
 
+    public Queue<O> getOutQueue() {
+        return outPackets;
+    }
+
+    public void setInQueue(Queue <?> inPackets) {
+        this.inPackets = (Queue<I>) inPackets;
+    }
+
     // Blocks while a frame is being processed
+    // DO NOT CALL THIS IF USING SET IN PACKETS
+    // Old method, connect coders using getOutQueue and setInQueue
+    /*
     public Queue<O> getPackets() throws InterruptedException {
 
         synchronized (waitingObj) {
@@ -80,17 +91,21 @@ public abstract class Coder<I, O> implements Runnable {
         outPackets = new ArrayDeque<>();
         return packets;
     }
+     */
 
     // Safety net queue purging.
     // Sometimes, queues can grow very large (like when a thread hangs up or is paused in the debugger).
     // Can recover, so we don't want memory issues from too many items in the queues.
     private void queuePurge() {
+        /*
         synchronized (inPackets) {
             if (inPackets.size() > MAX_QUEUE_SIZE) { logger.warn("Input queue is larger than max ({} > {}). Purging queue.", inPackets.size(), MAX_QUEUE_SIZE); }
             while (inPackets.size() > MAX_QUEUE_SIZE) {
                 deallocateInputPacket(inPackets.poll());
             }
         }
+
+         */
 
         synchronized (outPackets) {
             if (outPackets.size() > MAX_QUEUE_SIZE) { logger.warn("Output queue is larger than max ({} > {}). Purging queue.", outPackets.size(), MAX_QUEUE_SIZE); }
@@ -107,11 +122,7 @@ public abstract class Coder<I, O> implements Runnable {
     protected abstract void deallocateOutQueue();
 
     // To be implemented by subclasses, encoder/decoder
-    protected abstract void initCodec();
-
-    public void stop() {
-        doRun.set(false);
-    }
+    protected abstract void initContext();
 
     // Take data from input queue and send to encoder/decoder
     protected abstract void sendInPacket();
@@ -128,37 +139,20 @@ public abstract class Coder<I, O> implements Runnable {
     // Set options in codec context. Context must be allocated prior to calling.
     protected void initOptions(AVCodecContext codec_ctx) {
 
-        if (options.containsKey("fps")) {
-            codec_ctx.time_base(av_make_q(1, Integer.parseInt(options.get("fps"))));
-        } else {
-            codec_ctx.time_base(av_make_q(1, 30));
-        }
+        codec_ctx.time_base(av_make_q(1, options.getOrDefault("fps", 30)));
 
         if (options.containsKey("bit_rate")) {
-            codec_ctx.bit_rate(Integer.parseInt(options.get("bit_rate")) * 1000);
+            codec_ctx.bit_rate(options.get("bit_rate") * 1000);
         } else {
             //codec_ctx.bit_rate(150*1000);
         }
 
-        if (options.containsKey("width")) {
-            codec_ctx.width(Integer.parseInt(options.get("width")));
-        } else {
-            codec_ctx.width(1920);
-        }
+        codec_ctx.width(options.getOrDefault("width", 1920));
 
-        if (options.containsKey("height")) {
-            codec_ctx.height(Integer.parseInt(options.get("height")));
-        } else {
-            codec_ctx.height(1080);
-        }
+        codec_ctx.height(options.getOrDefault("height", 1080));
 
         if (options.containsKey("pix_fmt")) {
-            if (options.get("pix_fmt").equals("yuv420p")) {
-                codec_ctx.pix_fmt(AV_PIX_FMT_YUV420P);
-            } else if (options.get("pix_fmt").equals("rgb24")) {
-                codec_ctx.pix_fmt(AV_PIX_FMT_RGB24);
-            }
-            // TODO Add more uncompressed formats (or find a better way of doing this)
+            codec_ctx.pix_fmt(options.get("pix_fmt"));
         } else {
             if (codecId == AV_CODEC_ID_MJPEG) {
                 codec_ctx.pix_fmt(AV_PIX_FMT_YUVJ420P);
@@ -174,13 +168,11 @@ public abstract class Coder<I, O> implements Runnable {
 
     @Override
     public void run() {
-        initCodec();
+        initContext();
         inPacket = (I)(new Object());
         outPacket = (O)(new Object());
 
         allocatePackets();
-        this.inPackets = new ArrayDeque<>();
-        this.outPackets = new ArrayDeque<>();
 
         // init FFMPEG logging
         av_log_set_level(logger.isDebugEnabled() ? AV_LOG_INFO : AV_LOG_FATAL);
@@ -191,11 +183,11 @@ public abstract class Coder<I, O> implements Runnable {
         doRun.set(true);
 
         while (doRun.get() && !Thread.currentThread().isInterrupted()) {
-            while (inPackets.isEmpty()) {
+            while (inPackets == null || inPackets.isEmpty()) {
                 if (!doRun.get() || Thread.currentThread().isInterrupted()) { break; }
                 Thread.onSpinWait();
             }
-            while (!inPackets.isEmpty()) {
+            while (inPackets != null && !inPackets.isEmpty()) {
                 if (!doRun.get() || Thread.currentThread().isInterrupted()) { break; }
 
                 queuePurge();
@@ -214,10 +206,6 @@ public abstract class Coder<I, O> implements Runnable {
                 //isProcessing = false;
                 // Wake a thread waiting for packets.
 
-                synchronized (waitingObj) {
-                    //logger.debug("Notifying waiting thread");
-                    waitingObj.notify();
-                }
             }
         }
 
@@ -227,7 +215,9 @@ public abstract class Coder<I, O> implements Runnable {
         }
 
         deallocatePackets();
-        avcodec_free_context(codec_ctx);
+        if (codec_ctx != null) {
+            avcodec_free_context(codec_ctx);
+        }
         codec_ctx = null;
     }
 }

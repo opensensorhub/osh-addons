@@ -1,4 +1,4 @@
-package org.sensorhub.impl.process.video.transcoder;
+package org.sensorhub.impl.process.video.transcoder.coders;
 
 import org.bytedeco.ffmpeg.avcodec.AVCodec;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
@@ -11,12 +11,12 @@ import static org.bytedeco.ffmpeg.global.avcodec.*;
 import static org.bytedeco.ffmpeg.global.avutil.*;
 
 public class Decoder extends Coder<AVPacket, AVFrame> {
-    public Decoder(int codecId, HashMap<String, String> options) {
+    public Decoder(int codecId, HashMap<String, Integer> options) {
         super(codecId, AVPacket.class, AVFrame.class, options);
     }
 
     @Override
-    protected void initCodec() {
+    protected void initContext() {
         AVCodec codec = avcodec_find_decoder(codecId);
         codec_ctx = avcodec_alloc_context3(codec);
 
