@@ -52,8 +52,8 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         super();
         smlHelper = new SMLHelper();
         process = new SimpleProcessImpl();
-        uuid = UUID.randomUUID().toString();
-        process.setUniqueIdentifier(uuid);
+        //uuid = UUID.randomUUID().toString();
+        //process.setUniqueIdentifier(uuid);
         processDescription = process;
 
     }
@@ -69,7 +69,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         height = null;
         onlyConnectImg = false;
 
-        uuid = UUID.randomUUID().toString(); // Creating new uuid before each init to avoid DB registration issues.
+        uuid = config.processId;
         process.setUniqueIdentifier(uuid);
 
         // Create an executable process
