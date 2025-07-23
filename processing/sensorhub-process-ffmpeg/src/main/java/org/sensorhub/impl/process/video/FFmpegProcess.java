@@ -33,6 +33,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
 public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessConfig> {
+    final String ID_PREFIX = "urn:osh:process:ffmpeg:" + this.getClass().getSimpleName().toLowerCase() + ":";
     SimpleProcessImpl process;
     IModule<?> sensorModule;
     protected IProcessExec executable;
@@ -70,7 +71,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
         onlyConnectImg = false;
 
         uuid = config.processId;
-        process.setUniqueIdentifier(uuid);
+        process.setUniqueIdentifier(ID_PREFIX + uuid);
 
         // Create an executable process
         try {
