@@ -23,6 +23,11 @@ public class RgbFormatter extends AVByteFormatter<AVFrame> {
         return AV_PIX_FMT_RGB24;
     }
 
+    /**
+     * Converts an array of bytes from uncompressed video into an {@link AVFrame}.
+     * @param inputData Uncompressed video data.
+     * @return An {@link AVFrame} with default settings and underlying data equal to {@code inputData}.
+     */
     @Override
     public AVFrame convertInput(byte[] inputData) {
         AVFrame newFrame = generateFrame();
@@ -47,6 +52,11 @@ public class RgbFormatter extends AVByteFormatter<AVFrame> {
         frame.data(0).put(inputData.clone(), 0, inputData.length);
     }
 
+    /**
+     * Returns the uncompressed video data from an {@link AVFrame}.
+     * @param outFrame The uncompressed {@link AVFrame}.
+     * @return Byte array of uncompressed data stored in {@code outFrame}.
+     */
     @Override
     public byte[] convertOutput(AVFrame outFrame) {
         byte[] outData = new byte[size];

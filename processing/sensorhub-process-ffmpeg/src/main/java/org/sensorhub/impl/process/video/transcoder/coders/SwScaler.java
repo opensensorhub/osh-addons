@@ -94,16 +94,26 @@ public class SwScaler extends Coder<AVFrame, AVFrame> {
 
     @Override
     protected void deallocatePackets() {
-        sws_freeContext(swsContext);
-        av_frame_unref(inPacket);
-        av_frame_unref(outPacket);
-        for (AVFrame packet : outPackets) {
-            av_frame_unref(packet);
+        if (swsContext != null) {
+            sws_freeContext(swsContext);
         }
-        for (AVFrame frame : inPackets) {
-            av_frame_unref(frame);
+        if (inPacket != null) {
+            av_frame_free(inPacket);
         }
-        outPackets.clear();
-        inPackets.clear();
+        if (outPacket != null) {
+            av_frame_free(outPacket);
+        }
+        if (outPackets != null) {
+            for (AVFrame frame : outPackets) {
+                av_frame_free(frame);
+            }
+            outPackets.clear();
+        }
+        if (inPackets != null) {
+            for (AVFrame frame : inPackets) {
+                av_frame_free(frame);
+            }
+            inPackets.clear();
+        }
     }
 }

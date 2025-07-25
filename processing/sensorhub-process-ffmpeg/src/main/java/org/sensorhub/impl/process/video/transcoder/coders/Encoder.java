@@ -89,15 +89,23 @@ public class Encoder extends Coder<AVFrame, AVPacket> {
 
     @Override
     protected void deallocatePackets() {
-        av_frame_free(inPacket);
-        av_packet_free(outPacket);
-        for (AVPacket packet : outPackets) {
-            av_packet_free(packet);
+        if (inPacket != null) {
+            av_frame_free(inPacket);
         }
-        for (AVFrame frame : inPackets) {
-            av_frame_free(frame);
+        if (outPacket != null) {
+            av_packet_free(outPacket);
         }
-        outPackets.clear();
-        inPackets.clear();
+        if (outPackets != null) {
+            for (AVPacket packet : outPackets) {
+                av_packet_free(packet);
+            }
+            outPackets.clear();
+        }
+        if (inPackets != null) {
+            for (AVFrame frame : inPackets) {
+                av_frame_free(frame);
+            }
+            inPackets.clear();
+        }
     }
 }

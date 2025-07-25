@@ -51,15 +51,19 @@ public abstract class Coder<I, O> extends Thread {
         this.options = options;
     }
 
-    // Add packet to queue
-    public void addPacket(final I packet) {
-        inPackets.add(packet);
-    }
-
+    /**
+     * Gets reference to output queue. Typically used as the input queue for another {@link Coder}.
+     * @return Output queue containing either {@link AVPacket}s or {@link AVFrame}s.
+     */
     public Queue<O> getOutQueue() {
         return outPackets;
     }
 
+    /**
+     * Sets input queue.
+     * @param inPackets Typically the output queue of another {@link Coder}, containing either
+     *                  {@link AVPacket}s or {@link AVFrame}s.
+     */
     public void setInQueue(Queue <?> inPackets) {
         this.inPackets = (Queue<I>) inPackets;
     }
@@ -136,7 +140,10 @@ public abstract class Coder<I, O> extends Thread {
     // Deallocate packets/frames
     protected abstract void deallocatePackets();
 
-    // Set options in codec context. Context must be allocated prior to calling.
+    /**
+     * Set certain options in the codec context.
+     * @param codec_ctx Codec context. Context must be allocated first.
+     */
     protected void initOptions(AVCodecContext codec_ctx) {
 
         codec_ctx.time_base(av_make_q(1, options.getOrDefault("fps", 30)));

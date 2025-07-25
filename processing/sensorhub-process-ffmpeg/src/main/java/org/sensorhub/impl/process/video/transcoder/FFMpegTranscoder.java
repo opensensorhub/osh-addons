@@ -159,6 +159,10 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
     }
 
+    /**
+     * Initializes all encoder/decoder/swscaler objects. These objects are added to the {@link FFMpegTranscoder#videoProcs}
+     * queue in the order they should process the incoming data. At most, the flow will be Decoder -> SWScale -> Encoder.
+     */
     private void initCoders() {
         try {
             stopProcessThreads();
@@ -197,6 +201,10 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         }
     }
 
+    /**
+     * Invoked during the first call to {@link FFMpegTranscoder#execute()} (when {@link FFMpegTranscoder#isRunning} is false).
+     * Start all {@link Coder} thread objects stored in {@link FFMpegTranscoder#videoProcs}.
+     */
     private void startProcessThreads() {
         doRun.set(true);
         if (videoProcs == null || videoProcs.isEmpty() || videoProcs.get(0).getState() != Thread.State.NEW) {
@@ -211,6 +219,10 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         isRunning.set(true);
     }
 
+    /**
+     * Invoked on process stop and init.
+     * Stop all {@link Coder} thread objects stored in {@link FFMpegTranscoder#videoProcs}.
+     */
     private void stopProcessThreads() throws InterruptedException {
         doRun.set(false); //TODO These atomic booleans may be entirely unnecessary, remove
         if (videoProcs != null) {
@@ -267,6 +279,10 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         super.stop();
     }
 
+    /**
+     * Add codecs for input/output video to the corresponding data structure encodings.
+     * Helps identify codec used during serialization.
+     */
     private void setImgEncoding() {
         var dataEncIn = swe.newBinaryEncoding(ByteOrder.BIG_ENDIAN, ByteEncoding.RAW);
 
@@ -339,6 +355,9 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         super.init();
     }
 
+    /**
+     * Creates maps of options for the encoder/decoder, including framerate, pixel format, bitrate, and image size.
+     */
     private void initCodecOptions() {
         decOptions = new HashMap<>();
         encOptions = new HashMap<>();
@@ -401,7 +420,15 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         }
     }
 
-    // Using Integer so that width and height are nullable
+    /**
+     * Creates a data formatter for the corresponding codec and image size. Used for converting between raw byte arrays
+     * and FFmpeg's {@link AVFrame} and {@link AVPacket} structs.
+     * @param codec Video codec or uncompressed format.
+     * @param width Video frame width.
+     * @param height Video frame height.
+     * @return Formatter object.
+     * @throws ProcessException Thrown when width and height are not provided for an uncompressed format.
+     */
     private AVByteFormatter getFormatter(CodecEnum codec, @Nullable Integer width, @Nullable Integer height) throws ProcessException {
         try {
             return switch (codec) {
@@ -415,10 +442,19 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         return null;
     }
 
+    /**
+     * @param codec Video codec or uncompressed format.
+     * @return Is the codec {@link CodecEnum#RGB} or {@link CodecEnum#YUV}?
+     */
     private boolean isUncompressed(CodecEnum codec) {
         return codec == CodecEnum.RGB || codec == CodecEnum.YUV;
     }
 
+    /**
+     * Accesses count value, checking for exceptions and missing data.
+     * @param count {@link Count} object to access.
+     * @return Value of {@code count} or 0 if not accessible.
+     */
     private int safeGetCountVal(Count count) {
         int val = 0;
         if (count != null && count.hasData()) {
@@ -429,12 +465,20 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         return val;
     }
 
+    /**
+     * Convert an FFmpeg return code to a string and log to the console.
+     * @param retCode Integer returned from an FFmpeg library function.
+     */
     private void logFFmpeg(int retCode) {
         BytePointer buf = new BytePointer(AV_ERROR_MAX_STRING_SIZE);
         av_strerror(retCode, buf, buf.capacity());
         logger.warn("FFmpeg returned error code {}: {}", retCode, buf.getString());
     }
 
+    /**
+     * Set the underlying data in the output record and invoke {@link ExecutableProcessImpl#publishData()}.
+     * @param frameData Output video packet/frame data.
+     */
     private void publishFrameData(byte[] frameData) {
 
         ((DataBlockCompressed) imgOut.getData()).setUnderlyingObject(frameData.clone());
@@ -474,7 +518,11 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
     }
 
-    // Used with a Thread
+    /**
+     * Runs inside a separate thread. Receives any {@link AVPacket}s or {@link AVFrame}s from the last {@link Coder}
+     * in the {@link FFMpegTranscoder#videoProcs} queue, converts the struct to bytes, and publishes the data.
+     * @see FFMpegTranscoder#publishFrameData(byte[])
+     */
     private void outputProcess() {
         while (doRun.get() && !Thread.currentThread().isInterrupted()) {
             while (outputPackets == null || outputPackets.isEmpty()) {
@@ -500,6 +548,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             super.publishData();
     }
 
+    /*
     private void disposeCoder(Thread coderThread, Coder coder) {
         if (coderThread != null && coderThread.isAlive() && coder != null) {
             coder.doRun.set(false);
@@ -512,6 +561,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             coder = null;
         }
     }
+     */
 
     @Override
     public void dispose()
