@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.vast.data.SWEFactory;
 
 import de.onvif.soap.OnvifDevice;
+import org.vast.swe.SWEHelper;
 
 
 /**
@@ -56,6 +57,13 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
     VideoCamHelper videoHelper;
     OnvifDevice camera = null;
     Profile profile = null;
+    boolean hasStatus = true;
+    boolean hasPan = true;
+    boolean hasTilt = true;
+    boolean hasZoom = true;
+    SWEHelper helper = new  SWEHelper();
+    DataComponent dataStruct;
+    PTZStatus ptzStatus = null;
 
     // Set default timezone to GMT; check TZ in init below
     TimeZone tz = TimeZone.getTimeZone("UTC");
@@ -74,22 +82,26 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
         double minZoom = 1.0;
         double maxZoom = 9999;
 
-        if (driver.ptzProfile != null) {
-            PTZConfiguration devicePtzConfig = driver.ptzProfile.getPTZConfiguration();
-            if (devicePtzConfig != null) {
-                PanTiltLimits panTiltLimits = devicePtzConfig.getPanTiltLimits();
-                if (panTiltLimits != null) {
-                    minPan = panTiltLimits.getRange().getXRange().getMin();
-                    maxPan = panTiltLimits.getRange().getXRange().getMax();
-                    minTilt = panTiltLimits.getRange().getYRange().getMin();
-                    maxTilt = panTiltLimits.getRange().getYRange().getMax();
-                }
-                ZoomLimits zoomLimits = devicePtzConfig.getZoomLimits();
-                if (zoomLimits != null) {
-                    minZoom = zoomLimits.getRange().getXRange().getMin();
-                    maxZoom = zoomLimits.getRange().getXRange().getMax();
+        try {
+            if (driver.ptzProfile != null) {
+                PTZConfiguration devicePtzConfig = driver.ptzProfile.getPTZConfiguration();
+                if (devicePtzConfig != null) {
+                    PanTiltLimits panTiltLimits = devicePtzConfig.getPanTiltLimits();
+                    if (panTiltLimits != null) {
+                        minPan = panTiltLimits.getRange().getXRange().getMin();
+                        maxPan = panTiltLimits.getRange().getXRange().getMax();
+                        minTilt = panTiltLimits.getRange().getYRange().getMin();
+                        maxTilt = panTiltLimits.getRange().getYRange().getMax();
+                    }
+                    ZoomLimits zoomLimits = devicePtzConfig.getZoomLimits();
+                    if (zoomLimits != null) {
+                        minZoom = zoomLimits.getRange().getXRange().getMin();
+                        maxZoom = zoomLimits.getRange().getXRange().getMax();
+                    }
                 }
             }
+        } catch (Exception e) {
+            log.warn("Could not determine PTZ limits.", e);
         }
         // Build SWE Common Data structure
         settingsDataStruct = videoHelper.newPtzOutput(getName(), minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom);
@@ -124,10 +136,15 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
         // start the timer thread
         try
         {
-            final DataComponent dataStruct = settingsDataStruct.copy();
-            dataStruct.assignNewDataBlock();
-            PTZStatus ptzStatus = camera.getPtz().getStatus(profile.getToken());
 
+            dataStruct = settingsDataStruct.copy();
+            dataStruct.assignNewDataBlock();
+            try {
+                ptzStatus = camera.getPtz().getStatus(profile.getToken());
+            } catch (Exception e) {
+                hasStatus = false;
+                getLogger().warn("Could not get ptz status.", e);
+            }
             TimerTask timerTask = new TimerTask()
             {
                 @Override
@@ -141,14 +158,36 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
                         // set sampling time
                         double time = System.currentTimeMillis() / 1000.;
                         dataStruct.getComponent("time").getData().setDoubleValue(time);
+                        ptzStatus = camera.getPtz().getStatus(profile.getToken());
 
                         if (ptzStatus != null) {
                             PTZVector ptzVec = ptzStatus.getPosition();
 
                             if (ptzVec != null) {
-                                dataStruct.getComponent("pan").getData().setDoubleValue(ptzVec.getPanTilt().getX());
-                                dataStruct.getComponent("tilt").getData().setDoubleValue(ptzVec.getPanTilt().getY());
-                                dataStruct.getComponent("zoomFactor").getData().setDoubleValue(ptzVec.getZoom().getX());
+                                try {
+                                    if (hasPan) {
+                                        dataStruct.getComponent("pan").getData().setDoubleValue(parent.genericToDeg(ptzVec.getPanTilt().getX(), 0));
+                                    }
+                                } catch (Exception e) {
+                                    hasPan = false;
+                                    log.warn("Could not get pan, ignoring.", e);
+                                }
+                                try {
+                                    if (hasTilt) {
+                                        dataStruct.getComponent("tilt").getData().setDoubleValue(parent.genericToDeg(ptzVec.getPanTilt().getY(), 1));
+                                    }
+                                } catch (Exception e) {
+                                    hasTilt = false;
+                                    log.warn("Could not get tilt, ignoring.", e);
+                                }
+                                try {
+                                    if (hasZoom) {
+                                        dataStruct.getComponent("zoomFactor").getData().setDoubleValue(parent.genericToDeg(ptzVec.getZoom().getX(), 2));
+                                    }
+                                } catch (Exception e) {
+                                    hasZoom = false;
+                                    log.warn("Could not get zoom, ignoring.", e);
+                                }
                             }
                         }
 
@@ -164,7 +203,9 @@ public class OnvifPtzOutput extends AbstractSensorOutput<OnvifCameraDriver>
                 }
             };
 
-            timer.scheduleAtFixedRate(timerTask, 0, (long)(getAverageSamplingPeriod()*1000));
+            if (hasStatus) {
+                timer.scheduleAtFixedRate(timerTask, 0, (long) (getAverageSamplingPeriod() * 1000));
+            }
         }
         catch (Exception e)
         {
