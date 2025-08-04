@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
@@ -31,15 +30,17 @@ import java.util.concurrent.TimeUnit;
  * This class is responsible for providing sensor information, managing output registration,
  * and performing initialization and shutdown for the driver and its outputs.
  */
-public class KrakenSDRSensor extends AbstractSensorModule<KrakenSDRConfig> implements Runnable {
+public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> implements Runnable {
     static final String UID_PREFIX = "osh:krakenSDR:";
     static final String XML_PREFIX = "krakenSDR";
 
-    private static final Logger logger = LoggerFactory.getLogger(KrakenSDRSensor.class);
+    private static final Logger logger = LoggerFactory.getLogger(KrakenSdrSensor.class);
 
     /// GLOBAL VARIABLES FOR SENSOR OPERATION
-    KrakenSDROutput krakenSDROutput;
-    String DOA_URL;
+    KrakenSdrSettingsOutput krakenSdrSettingsOutput;
+    KrakenSdrDOAOutput krakenSdrDOAOutput;
+    KrakenSdrControl krakenSDRControl;
+    String OUTPUT_URL;
     private volatile boolean keepRunning = false;
 
     // Cosmetic debugging Variables Used to make font bold
@@ -55,12 +56,22 @@ public class KrakenSDRSensor extends AbstractSensorModule<KrakenSDRConfig> imple
         generateUniqueID(UID_PREFIX, config.serialNumber);
         generateXmlID(XML_PREFIX, config.serialNumber);
 
-        DOA_URL = "http://" + config.krakenIPaddress + ":" + config.krakenPort + "/DOA_value.html";
+        OUTPUT_URL  = "http://" + config.krakenIPaddress + ":" + config.krakenPort;
 
-        // INITIALIZE OUTPUT INSTANCE
-        krakenSDROutput = new KrakenSDROutput(this);
-        addOutput(krakenSDROutput, false);
-        krakenSDROutput.doInit();
+        // INITIALIZE OUTPUT INSTANCES
+        krakenSdrSettingsOutput = new KrakenSdrSettingsOutput(this);
+        addOutput(krakenSdrSettingsOutput, false);
+        krakenSdrSettingsOutput.doInit();
+
+        krakenSdrDOAOutput = new KrakenSdrDOAOutput(this);
+        addOutput(krakenSdrDOAOutput, false);
+        krakenSdrDOAOutput.doInit();
+
+        // INITIALIZE CONTROL INSTANCE
+        krakenSDRControl = new KrakenSdrControl(this);
+        addControlInput(krakenSDRControl);
+        krakenSDRControl.doInit();
+
 
     }
 
@@ -93,7 +104,9 @@ public class KrakenSDRSensor extends AbstractSensorModule<KrakenSDRConfig> imple
         while (keepRunning) {
             // Send a GET request to the DoA URL
             try {
-                URL url = new URL(DOA_URL);
+                krakenSdrSettingsOutput.SetData();
+
+                URL url = new URL(OUTPUT_URL + "/DOA_value.html");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
 
@@ -103,16 +116,16 @@ public class KrakenSDRSensor extends AbstractSensorModule<KrakenSDRConfig> imple
                 String DoAcsv;
                 while ((DoAcsv = in.readLine()) != null) {
                     // Send to Output for setting to OSH
-                    krakenSDROutput.SetData(DoAcsv);
+                    krakenSdrDOAOutput.SetData(DoAcsv);
                 }
                 // Sleep per the sample rate provided by admin panel
                 Thread.sleep(TimeUnit.SECONDS.toMillis(config.sampelRate));
 
             } catch (MalformedURLException e) {
-                logger.error("The information provided could not create a properly formed URL: {}", DOA_URL);
+                logger.error("The information provided could not create a properly formed URL: {}", OUTPUT_URL + "/DOA_value.html");
                 throw new RuntimeException(e);
             } catch (IOException e) {
-                logger.error("Failed to reach host ({}), currently, only http is provided.", DOA_URL);
+                logger.error("Failed to reach host ({}), currently, only http is provided.", OUTPUT_URL + "/DOA_value.html");
                 throw new RuntimeException(e);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);

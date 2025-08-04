@@ -27,7 +27,7 @@ import org.sensorhub.api.sensor.SensorConfig;
  * public Type configOption = "default value";
  * }</pre>
  */
-public class KrakenSDRConfig extends SensorConfig {
+public class KrakenSdrConfig extends SensorConfig {
 
     /**
      * The unique identifier for the configured sensor (or sensor platform).
@@ -47,7 +47,6 @@ public class KrakenSDRConfig extends SensorConfig {
     @DisplayInfo.Required
     @DisplayInfo(label="Sample Rate (seconds)", desc="Provide the USB Port for your Sensor (Usually 8081")
     public int sampelRate = 2;
-
 
 
 }
