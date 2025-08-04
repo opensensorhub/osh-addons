@@ -7,10 +7,10 @@ dependencies {
   implementation project(':sensorhub-driver-ffmpeg')
   implementation project(':sensorhub-driver-videocam')
 
-  embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-api:3.1.11'
-  embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-service:3.1.11'
-  embeddedImpl 'org.apache.cxf:cxf-rt-transports-http-jetty:3.1.11'
-  embeddedImpl 'org.apache.cxf:cxf-rt-bindings-soap:4.0.0'
+  implementation 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-api:3.1.11'
+  implementation 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-service:3.1.11'
+  implementation 'org.apache.cxf:cxf-rt-transports-http-jetty:3.1.11'
+  implementation 'org.apache.cxf:cxf-rt-bindings-soap:4.0.0'
   implementation 'jakarta.xml.soap:jakarta.xml.soap-api:2.0.1'
   implementation 'com.sun.activation:jakarta.activation:2.0.1'
   implementation 'jakarta.xml.ws:jakarta.xml.ws-api:3.0.1'
@@ -23,7 +23,7 @@ dependencies {
   implementation 'org.apache.cxf.services.wsn:cxf-services-wsn-core:4.0.0'
   implementation 'org.apache.cxf:cxf-rt-frontend-jaxws:4.0.0'
 
-  embeddedImpl('net.sf.jipcam:jipcam:0.9.1') {
+  implementation('net.sf.jipcam:jipcam:0.9.1') {
     exclude group: 'javax.servlet', module: 'servlet-api'
     exclude group: 'commons-cli', module: 'commons-cli'
     exclude group: 'commons-httpclient', module: 'commons-httpclient'

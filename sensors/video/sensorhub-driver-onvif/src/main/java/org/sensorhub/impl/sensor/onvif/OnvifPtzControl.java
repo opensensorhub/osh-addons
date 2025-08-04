@@ -66,6 +66,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 	Profile ptzProfile;
 	PTZConfiguration devicePtzConfig;
 	OnvifDevice camera;
+	//OnvifCameraDriver parentDriver;
 
 	// Stores presets as TOKEN, NAME pairs
     Map<String, String> presetsMap;
@@ -170,23 +171,28 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 		ptzProfile = parentSensor.ptzProfile;
 		devicePtzConfig = parentSensor.ptzProfile.getPTZConfiguration();
 
-		if (parentSensor.ptzProfile != null) {
-			if (devicePtzConfig != null) {
-				PanTiltLimits panTiltLimits = devicePtzConfig.getPanTiltLimits();
-				if (panTiltLimits != null) {
-					minPan = panTiltLimits.getRange().getXRange().getMin();
-					maxPan = panTiltLimits.getRange().getXRange().getMax();
-					minTilt = panTiltLimits.getRange().getYRange().getMin();
-					maxTilt = panTiltLimits.getRange().getYRange().getMax();
+		try {
+			if (parentSensor.ptzProfile != null) {
+				if (devicePtzConfig != null) {
+					PanTiltLimits panTiltLimits = devicePtzConfig.getPanTiltLimits();
+					if (panTiltLimits != null) {
+						minPan = panTiltLimits.getRange().getXRange().getMin();
+						maxPan = panTiltLimits.getRange().getXRange().getMax();
+						minTilt = panTiltLimits.getRange().getYRange().getMin();
+						maxTilt = panTiltLimits.getRange().getYRange().getMax();
+					}
+					ZoomLimits zoomLimits = devicePtzConfig.getZoomLimits();
+					if (zoomLimits != null) {
+						minZoom = zoomLimits.getRange().getXRange().getMin();
+						maxZoom = zoomLimits.getRange().getXRange().getMax();
+					}
+					if (devicePtzConfig.getDefaultPTZSpeed() != null)
+						//speed = devicePtzConfig.getDefaultPTZSpeed();
+						speed = null;
 				}
-				ZoomLimits zoomLimits = devicePtzConfig.getZoomLimits();
-				if (zoomLimits != null) {
-					minZoom = zoomLimits.getRange().getXRange().getMin();
-					maxZoom = zoomLimits.getRange().getXRange().getMax();
-				}
-				if (devicePtzConfig.getDefaultPTZSpeed() != null)
-					speed = devicePtzConfig.getDefaultPTZSpeed();
 			}
+		} catch (Exception e) {
+			log.warn("Could not determine pan PTZ limits.", e);
 		}
 
 		// Update the ptz presets before finishing init,
@@ -244,9 +250,9 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 			ptzPos.setName("ptzCont");
 			//ptzPos.setDefinition(getPropertyUri("PtzPosition"));
 			ptzPos.setLabel("Continuous PTZ Movement Vector");
-			float panSpeed = (speed.getPanTilt() == null) ? 0 : speed.getPanTilt().getX();
-			float tiltSpeed = (speed.getPanTilt() == null) ? 0 : speed.getPanTilt().getY();
-			float zoomSpeed = (speed.getZoom() == null) ? 0 : speed.getZoom().getX();
+			float panSpeed = (speed == null || speed.getPanTilt() == null) ? 1 : speed.getPanTilt().getX();
+			float tiltSpeed = (speed == null || speed.getPanTilt() == null) ? 1 : speed.getPanTilt().getY();
+			float zoomSpeed = (speed == null || speed.getZoom() == null) ? 1 : speed.getZoom().getX();
 
 			// Making these from scratch to avoid allowed ranges. Speed values differ significantly from camera to camera.
 			//var panComp = videoHelper.getPanComponent(-panSpeed, panSpeed);
@@ -287,16 +293,20 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 
         try
         {
-
 			PTZConfiguration config = ptzProfile.getPTZConfiguration();
-			PTZStatus status = ptz.getStatus(ptzProfile.getToken());
-			PTZVector position = status.getPosition();
+			PTZVector position = null;
+			try {
+				PTZStatus status = ptz.getStatus(ptzProfile.getToken());
+				position = status.getPosition();
+			} catch (Exception e) {
+				position = new PTZVector();
+			}
 
 			// Note: Some tasking is not supported for certain cameras
 			// ABSOLUTE PAN
         	if (itemID.equals(VideoCamHelper.TASKING_PAN))
         	{
-        		float pan = data.getFloatValue();
+        		float pan = parent.degtoGeneric(data.getFloatValue(), 0);
 				Vector2D targetPanTilt = new Vector2D();
 
 				targetPanTilt.setSpace(config.getDefaultAbsolutePantTiltPositionSpace());
@@ -310,7 +320,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 			// ABSOLUTE TILT
         	else if (itemID.equals(VideoCamHelper.TASKING_TILT))
         	{
-        		float tilt = data.getFloatValue();
+        		float tilt = parent.degtoGeneric(data.getFloatValue(), 1);
 				Vector2D targetPanTilt = new Vector2D();
 
 				targetPanTilt.setSpace(config.getDefaultAbsolutePantTiltPositionSpace());
@@ -323,7 +333,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 			// ABSOLUTE ZOOM
         	else if (itemID.equals(VideoCamHelper.TASKING_ZOOM))
         	{
-        		float zoom = data.getFloatValue();
+        		float zoom = parent.degtoGeneric(data.getFloatValue(), 2);
 				Vector1D zoomVec = new Vector1D();
 
 				zoomVec.setSpace(config.getDefaultAbsoluteZoomPositionSpace());
@@ -335,7 +345,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 			// RELATIVE PAN
         	else if (itemID.equals(VideoCamHelper.TASKING_RPAN))
         	{
-        		float rpan = data.getFloatValue();
+        		float rpan = data.getFloatValue() / (parent.panMax - parent.panMin) * 2;
 				Vector2D targetPanTilt = new Vector2D();
 
 				targetPanTilt.setX(rpan);
@@ -348,7 +358,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 			// RELATIVE TILT
         	else if (itemID.equals(VideoCamHelper.TASKING_RTILT))
         	{
-        		float rtilt = data.getFloatValue();
+        		float rtilt = data.getFloatValue() / (parent.tiltMax - parent.tiltMin) * 2;
 				Vector2D targetPanTilt = new Vector2D();
 
 				targetPanTilt.setX(0.0f);
@@ -361,7 +371,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 			// RELATIVE ZOOM
         	else if (itemID.equals(VideoCamHelper.TASKING_RZOOM))
         	{
-				float rzoom = data.getFloatValue();
+				float rzoom = parent.degtoGeneric(data.getFloatValue(),2);
 				Vector1D zoomVec = new Vector1D();
 
 				zoomVec.setX(rzoom);
@@ -408,9 +418,15 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 			// ABSOLUTE PTZ
         	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PTZ_POS))
         	{
-				float pan = component.getComponent("pan").getData().getFloatValue();
-				float tilt = component.getComponent("tilt").getData().getFloatValue();
-				float zoom = component.getComponent("zoom").getData().getFloatValue();
+
+				float pan = 0;
+				try { pan = parent.degtoGeneric(component.getComponent("pan").getData().getFloatValue(), 0); } catch (Exception ignored) {}
+
+				float tilt = 0;
+				try { tilt = parent.degtoGeneric(component.getComponent("tilt").getData().getFloatValue(), 1); } catch (Exception ignored) {}
+
+				float zoom = 0;
+				try { zoom = parent.degtoGeneric(component.getComponent("zoom").getData().getFloatValue(), 2); } catch (Exception ignored) {}
 
 				Vector2D targetPanTilt = new Vector2D();
 				targetPanTilt.setX(pan);
@@ -432,14 +448,26 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 				Vector2D panTiltSpeed = new Vector2D();
 				panTiltSpeed.setX(0.0f);
 				panTiltSpeed.setY(0.0f);
-				panTiltSpeed.setX(data.getFloatValue(0));
-				panTiltSpeed.setY(data.getFloatValue(1));
+				try {
+					panTiltSpeed.setX(data.getFloatValue(0) / (parent.panMax - parent.panMin));
+				} catch (Exception e) {
+					panTiltSpeed.setX(0.0f);
+				}
+				try {
+					panTiltSpeed.setY(data.getFloatValue(1) / (parent.tiltMax - parent.tiltMin));
+				} catch (Exception e) {
+					panTiltSpeed.setY(0.0f);
+				}
 				panTiltSpeed.setSpace(config.getDefaultContinuousPanTiltVelocitySpace());
 				speedVec.setPanTilt(panTiltSpeed);
 
 				Vector1D zoomSpeed = new Vector1D();
 				zoomSpeed.setX(0.0f);
-				zoomSpeed.setX(data.getFloatValue(2));
+				try {
+					zoomSpeed.setX(parent.degtoGeneric(data.getFloatValue(2), 2));
+				} catch (Exception e) {
+					zoomSpeed.setX(0.0f);
+				}
 				zoomSpeed.setSpace(config.getDefaultContinuousZoomVelocitySpace());
 				speedVec.setZoom(zoomSpeed);
 				// Note: Duration does not seem to work (at least on camera used for testing).
