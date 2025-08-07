@@ -20,6 +20,10 @@ import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -146,7 +150,7 @@ public class KrakenSdrDOAOutput extends AbstractSensorOutput<KrakenSdrSensor> {
         return accumulator / (double) MAX_NUM_TIMING_SAMPLES;
     }
 
-    public void SetData(String DoA_csv) {
+    public void SetData() {
                DataBlock dataBlock;
         try {
             if (latestRecord == null) {
@@ -163,35 +167,46 @@ public class KrakenSdrDOAOutput extends AbstractSensorOutput<KrakenSdrSensor> {
             }
             ++setCount;
 
-            String[] DOA_Array = DoA_csv.split(",");
+            URL url = new URL(parentSensor.DoA_URL);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
 
-            // Convert Unix Epoch time provided by GPS to OffsetDateTime
-            Instant krakenTimeInstant = Instant.ofEpochMilli(Long.parseLong(DOA_Array[0]));
-            OffsetDateTime odt = krakenTimeInstant.atOffset(ZoneOffset.UTC);
+            // READ DoA CSV provided by KrakenSDR Software
+            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
-            dataBlock.setDateTime(0,odt);                                   // time
-            dataBlock.setDoubleValue(1, Double.parseDouble(DOA_Array[1]));  // Line of Bearing (DoA)
-            dataBlock.setDoubleValue(2, Double.parseDouble(DOA_Array[2]));  // confidence
-            dataBlock.setDoubleValue(3, Double.parseDouble(DOA_Array[3]));  // rssi
-            dataBlock.setDoubleValue(4, Double.parseDouble(DOA_Array[4]));  // frequency
-            dataBlock.setStringValue(5, DOA_Array[5]);                      // antenna arrangement
-            dataBlock.setDoubleValue(6, Double.parseDouble(DOA_Array[6]));  // time-delta / latency
-            dataBlock.setStringValue(7, DOA_Array[7]);                      // uuid
-            dataBlock.setDoubleValue(8, Double.parseDouble(DOA_Array[8]));      // location lat
-//            dataBlock.setDoubleValue(8, 34.52013);                    // location lat
-            dataBlock.setDoubleValue(9, Double.parseDouble(DOA_Array[9]));      // location lon
-//            dataBlock.setDoubleValue(9, -86.16523);                   // location lon
-            if (DOA_Array[12].equals("Compass")) {
-                dataBlock.setStringValue(10, DOA_Array[11]);                // compass heading
-            } else {
-                dataBlock.setStringValue(10, DOA_Array[10]);                // gps heading
+            String DoA_csv;
+            String[] DOA_Array;
+
+            while ((DoA_csv = in.readLine()) != null) {
+
+                DOA_Array = DoA_csv.split(",");
+
+                // Convert Unix Epoch time provided by GPS to OffsetDateTime
+                Instant krakenTimeInstant = Instant.ofEpochMilli(Long.parseLong(DOA_Array[0]));
+                OffsetDateTime odt = krakenTimeInstant.atOffset(ZoneOffset.UTC);
+
+                dataBlock.setDateTime(0, odt);                                  // time
+                dataBlock.setDoubleValue(1, Double.parseDouble(DOA_Array[1]));  // Line of Bearing (DoA)
+                dataBlock.setDoubleValue(2, Double.parseDouble(DOA_Array[2]));  // confidence
+                dataBlock.setDoubleValue(3, Double.parseDouble(DOA_Array[3]));  // rssi
+                dataBlock.setDoubleValue(4, Double.parseDouble(DOA_Array[4]));  // frequency
+                dataBlock.setStringValue(5, DOA_Array[5]);                      // antenna arrangement
+                dataBlock.setDoubleValue(6, Double.parseDouble(DOA_Array[6]));  // time-delta / latency
+                dataBlock.setStringValue(7, DOA_Array[7]);                      // uuid
+                dataBlock.setDoubleValue(8, Double.parseDouble(DOA_Array[8]));  // location lat
+                dataBlock.setDoubleValue(9, Double.parseDouble(DOA_Array[9]));  // location lon
+                if (DOA_Array[12].equals("Compass")) {
+                    dataBlock.setStringValue(10, DOA_Array[11]);                // compass heading
+                } else {
+                    dataBlock.setStringValue(10, DOA_Array[10]);                // gps heading
+                }
+                dataBlock.setStringValue(11, DOA_Array[12]);                    // hading used
+
+                latestRecord = dataBlock;
+                latestRecordTime = System.currentTimeMillis();
+
+                eventHandler.publish(new DataEvent(latestRecordTime, KrakenSdrDOAOutput.this, dataBlock));
             }
-            dataBlock.setStringValue(11, DOA_Array[12]);                    // hading used
-
-            latestRecord = dataBlock;
-            latestRecordTime = System.currentTimeMillis();
-
-            eventHandler.publish(new DataEvent(latestRecordTime, KrakenSdrDOAOutput.this, dataBlock));
 
         } catch (Exception e) {
             System.err.println("Error reading from krakenSDR: " + e.getMessage());

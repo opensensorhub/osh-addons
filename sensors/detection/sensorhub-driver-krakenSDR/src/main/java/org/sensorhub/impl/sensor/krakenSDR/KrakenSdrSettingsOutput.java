@@ -14,8 +14,10 @@ package org.sensorhub.impl.sensor.krakenSDR;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.opengis.swe.v20.*;
+import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.sensor.SensorSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.swe.SWEBuilders;
@@ -54,6 +56,7 @@ public class KrakenSdrSettingsOutput extends AbstractSensorOutput<KrakenSdrSenso
 
     private DataRecord dataStruct;
     private DataEncoding dataEncoding;
+    KrakenUTILITY util = parentSensor.util;
 
     /**
      * Creates a new output for the sensor driver.
@@ -68,7 +71,6 @@ public class KrakenSdrSettingsOutput extends AbstractSensorOutput<KrakenSdrSenso
      * Initializes the data structure for the output, defining the fields, their ordering, and data types.
      */
     public void doInit() {
-        logger.info("Initializing krakenSDR-Output");
         // Get an instance of SWE Factory suitable to build components
         SWEHelper sweFactory = new SWEHelper();
         GeoPosHelper geoFac = new GeoPosHelper();
@@ -88,21 +90,57 @@ public class KrakenSdrSettingsOutput extends AbstractSensorOutput<KrakenSdrSenso
                         .label("Remote Control Enabled")
                         .description("If 'false', the control for this node will not work. Adjust settings of KrakenSDR DSP application")
                         .definition(SWEHelper.getPropertyUri("en_remote_control")))
-                .addField("center_freq", sweFactory.createQuantity()
-                        .uomCode("MHz")
-                        .label("Center Frequency")
-                        .description("The transmission frequency of the event in MegaHertz")
-                        .definition(SWEHelper.getPropertyUri("frequency")))
-                .addField("uniform_gain", sweFactory.createQuantity()
-                        .uomCode("dB")
-                        .label("Receiver Gain")
-                        .description("Current reciever gain settings in dB for the KrakenSDR")
-                        .definition(SWEHelper.getPropertyUri("uniform_gain")))
-                .addField("ant_spacing_meters", sweFactory.createQuantity()
-                        .label("Antenna Array Radius")
-                        .description("Current spacing of the Antenna Array")
-                        .definition(SWEHelper.getPropertyUri("ant_spacing_meters")))
-                ;
+                .addField("receiver_config", sweFactory.createRecord()
+                        .name("receiver_config")
+                        .label("RF Receiver Configuration")
+                        .description("Data Record for the RF Receiver Configuration")
+                        .definition(SWEHelper.getPropertyUri("receiver_config"))
+                        .addField("center_freq", sweFactory.createQuantity()
+                                .uomCode("MHz")
+                                .label("Center Frequency")
+                                .description("The transmission frequency of the event in MegaHertz")
+                                .definition(SWEHelper.getPropertyUri("frequency")))
+                        .addField("uniform_gain", sweFactory.createQuantity()
+                                .uomCode("dB")
+                                .label("Receiver Gain")
+                                .description("Current reciever gain settings in dB for the KrakenSDR")
+                                .definition(SWEHelper.getPropertyUri("uniform_gain")))
+                )
+                .addField("DoA_config", sweFactory.createRecord()
+                        .name("DoA_config")
+                        .label("DoA Configuration")
+                        .description("Data Record for the DoA Configuration Settings")
+                        .definition(SWEHelper.getPropertyUri("DoA_config"))
+                        .addField("ant_arrangement", sweFactory.createText()
+                                        .label("Antenna Arrangement")
+                                        .description("The Arrangement must be UCA or ULA")
+                                        .definition(SWEHelper.getPropertyUri("ant_arrangement")))
+                        .addField("ant_spacing_meter", sweFactory.createQuantity()
+                                .uom("m")
+                                .label("Antenna Array Radius")
+                                .description("Current spacing of the Antenna Array")
+                                .definition(SWEHelper.getPropertyUri("ant_spacing_meters")))
+                        .addField("doa_method", sweFactory.createText()
+                                .label("DoA Algorithm")
+                                .description("Algorithm used for DoA calculation")
+                                .definition(SWEHelper.getPropertyUri("doa_method")))
+                )
+                .addField("station_config", sweFactory.createRecord()
+                        .name("station_config")
+                        .label("Station Configuration")
+                        .description("Data Record for the Station Configuration")
+                        .definition(SWEHelper.getPropertyUri("station_config"))
+                        .addField("station_id", sweFactory.createText()
+                                .label("Station ID")
+                                .description("ID provided for the physical KrakenSDR")
+                                .definition(SWEHelper.getPropertyUri("station_id")))
+                        .addField("location_source", sweFactory.createText()
+                                .label("Location Source")
+                                .description("Current Location Source for the Kraken Station")
+                                .definition(SWEHelper.getPropertyUri("location_source")))
+                        .addField("location", geoFac.newLocationVectorLatLon(SWEHelper.getPropertyUri("location")))
+                );
+
 
         dataStruct = recordBuilder.build();
 
@@ -148,13 +186,19 @@ public class KrakenSdrSettingsOutput extends AbstractSensorOutput<KrakenSdrSenso
             ++setCount;
 
             // RETRIEVE CURRENT JSON SETTINGS AS A JSON OBJECT
-            JsonObject currentSettings = retrieveJSONObj(parentSensor.OUTPUT_URL + "/settings.json");
+            JsonObject currentSettings = util.retrieveJSONFromAddr(parent.settings_URL);
 
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);                                  // time
             dataBlock.setBooleanValue(1, currentSettings.get("en_remote_control").getAsBoolean());
             dataBlock.setDoubleValue(2, currentSettings.get("center_freq").getAsDouble());
             dataBlock.setDoubleValue(3, currentSettings.get("uniform_gain").getAsDouble());
-            dataBlock.setDoubleValue(4, currentSettings.get("ant_spacing_meters").getAsDouble());
+            dataBlock.setStringValue(4, currentSettings.get("ant_arrangement").getAsString());
+            dataBlock.setDoubleValue(5, currentSettings.get("ant_spacing_meters").getAsDouble());
+            dataBlock.setStringValue(6, currentSettings.get("doa_method").getAsString());
+            dataBlock.setStringValue(7, currentSettings.get("station_id").getAsString());
+            dataBlock.setStringValue(8, currentSettings.get("location_source").getAsString());
+            dataBlock.setStringValue(9, currentSettings.get("latitude").getAsString());
+            dataBlock.setStringValue(10, currentSettings.get("longitude").getAsString());
 
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
@@ -165,41 +209,6 @@ public class KrakenSdrSettingsOutput extends AbstractSensorOutput<KrakenSdrSenso
             System.err.println("Error reading from krakenSDR: " + e.getMessage());
             e.printStackTrace();
         }
-    }
-
-    public JsonObject retrieveJSONObj(String httpURL ){
-        try {
-            URL url = new URL(httpURL);
-
-            System.out.println(url);
-
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-
-            // Read the JSON response into a String
-            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            StringBuilder jsonString = new StringBuilder();
-            String line;
-
-            while ((line = in.readLine()) != null) {
-                jsonString.append(line);
-            }
-
-            in.close();
-            conn.disconnect();
-
-            // Parse JSON string into a JSON object
-            return JsonParser.parseString(jsonString.toString()).getAsJsonObject();
-
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        } catch (ProtocolException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-
     }
 
 }

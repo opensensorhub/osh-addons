@@ -11,17 +11,13 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.krakenSDR;
 
+import com.google.gson.JsonObject;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -37,15 +33,20 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
     private static final Logger logger = LoggerFactory.getLogger(KrakenSdrSensor.class);
 
     /// GLOBAL VARIABLES FOR SENSOR OPERATION
+    KrakenUTILITY util = new KrakenUTILITY();
     KrakenSdrSettingsOutput krakenSdrSettingsOutput;
     KrakenSdrDOAOutput krakenSdrDOAOutput;
-    KrakenSdrControl krakenSDRControl;
-    String OUTPUT_URL;
-    private volatile boolean keepRunning = false;
 
-    // Cosmetic debugging Variables Used to make font bold
-    String BoldOn = "\033[1m";  // ANSI code to turn on bold
-    String BoldOff = "\033[0m"; // ANSI code to turn on bold
+    KrakenSdrRecieverControls krakenSdrRecieverControls;
+    KrakenSdrAntennaControls krakenSdrAntennaControls;
+
+    String OUTPUT_URL;
+    String settings_URL;
+    HttpURLConnection settings_conn;
+    String DoA_URL;
+
+
+    private volatile boolean keepRunning = false;
 
     ///  INITIALIZE
     @Override
@@ -57,23 +58,42 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
         generateXmlID(XML_PREFIX, config.serialNumber);
 
         OUTPUT_URL  = "http://" + config.krakenIPaddress + ":" + config.krakenPort;
+        settings_URL = OUTPUT_URL + "/settings.json";
+        DoA_URL = OUTPUT_URL + "/DOA_value.html";
 
-        // INITIALIZE OUTPUT INSTANCES
+        /// INITIALIZE CONTROLS
+        // Test Connection
+        // Get Connection to Kraken Settings:
+        try {
+            settings_conn = util.createKrakenConnection(settings_URL);
+            JsonObject initialSettings = util.retrieveJSONFromAddr(settings_URL);
+
+            krakenSdrRecieverControls = new KrakenSdrRecieverControls(this);
+            addControlInput(krakenSdrRecieverControls);
+            krakenSdrRecieverControls.doInit(initialSettings);
+
+            krakenSdrAntennaControls = new KrakenSdrAntennaControls(this);
+            addControlInput(krakenSdrAntennaControls);
+            krakenSdrAntennaControls.doInit(initialSettings);
+
+        } catch (SensorHubException e) {
+            throw new RuntimeException("Failed to connect to: " + settings_URL);
+        }
+
+
+        /// INITIALIZE OUTPUTS
+        // CURRENT SETTINGS OUTPUT
         krakenSdrSettingsOutput = new KrakenSdrSettingsOutput(this);
         addOutput(krakenSdrSettingsOutput, false);
         krakenSdrSettingsOutput.doInit();
 
+        // DOA INFO SETTINGS
         krakenSdrDOAOutput = new KrakenSdrDOAOutput(this);
         addOutput(krakenSdrDOAOutput, false);
         krakenSdrDOAOutput.doInit();
 
-        // INITIALIZE CONTROL INSTANCE
-        krakenSDRControl = new KrakenSdrControl(this);
-        addControlInput(krakenSDRControl);
-        krakenSDRControl.doInit();
-
-
     }
+
 
     @Override
     public void doStart() throws SensorHubException {
@@ -99,39 +119,24 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
         return true;
     }
 
+
     @Override
     public void run() {
         while (keepRunning) {
             // Send a GET request to the DoA URL
             try {
-                krakenSdrSettingsOutput.SetData();
 
-                URL url = new URL(OUTPUT_URL + "/DOA_value.html");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
+                // SET ALL OUTPUTS AT DESIRED TIME INERVAL FROM ADMIN PANEL
+                krakenSdrSettingsOutput.SetData();      //settings.json data
+                krakenSdrDOAOutput.SetData();           //DoA data
 
-                // READ DoA CSV provided by KrakenSDR Software
-                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-
-                String DoAcsv;
-                while ((DoAcsv = in.readLine()) != null) {
-                    // Send to Output for setting to OSH
-                    krakenSdrDOAOutput.SetData(DoAcsv);
-                }
                 // Sleep per the sample rate provided by admin panel
                 Thread.sleep(TimeUnit.SECONDS.toMillis(config.sampelRate));
 
-            } catch (MalformedURLException e) {
-                logger.error("The information provided could not create a properly formed URL: {}", OUTPUT_URL + "/DOA_value.html");
-                throw new RuntimeException(e);
-            } catch (IOException e) {
-                logger.error("Failed to reach host ({}), currently, only http is provided.", OUTPUT_URL + "/DOA_value.html");
-                throw new RuntimeException(e);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
+
             }
-
-
         }
 
     }
