@@ -139,7 +139,7 @@ public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
             try {
                 processBuffer(dataBufferRecord);
             } catch (Exception e) {
-                logger.error("Error while decoding.", e);
+                logger.error("Error while publishing data.", e);
             }
         });
     }
