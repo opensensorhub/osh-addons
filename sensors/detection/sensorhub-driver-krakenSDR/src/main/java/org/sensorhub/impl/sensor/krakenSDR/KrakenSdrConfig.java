@@ -34,7 +34,7 @@ public class KrakenSdrConfig extends SensorConfig {
      */
     @DisplayInfo.Required
     @DisplayInfo(desc = "Serial number or unique identifier")
-    public String serialNumber;
+    public String serialNumber = "test";
 
     @DisplayInfo.Required
     @DisplayInfo(label="Kraken IP Address", desc="Provide the shared IP Address assigned to the KrakenSD")

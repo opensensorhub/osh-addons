@@ -12,11 +12,17 @@ import java.net.URL;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.SensorHub;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
+import org.sensorhub.impl.sensor.krakenSDR.KrakenSdrSensor;
+
+
 
 public class KrakenUTILITY {
+    private  KrakenSdrSensor parentSensor;
+
+    public KrakenUTILITY(KrakenSdrSensor parentSensor) {
+        this.parentSensor = parentSensor;
+
+    }
 
     public HttpURLConnection createKrakenConnection(String httpURL) throws SensorHubException {
         try{
@@ -60,8 +66,10 @@ public class KrakenUTILITY {
             return JsonParser.parseString(jsonString.toString()).getAsJsonObject();
 
         } catch (ProtocolException | MalformedURLException e) {
+            parentSensor.doStop();
             throw new SensorHubException("Invalid URL format: " + httpAddress, e);
         } catch (IOException e) {
+            parentSensor.doStop();
             throw new SensorHubException("Failed to connect to: " + httpAddress, e);
         }
     }

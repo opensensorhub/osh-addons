@@ -33,12 +33,10 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
     private static final Logger logger = LoggerFactory.getLogger(KrakenSdrSensor.class);
 
     /// GLOBAL VARIABLES FOR SENSOR OPERATION
-    KrakenUTILITY util = new KrakenUTILITY();
-    KrakenSdrSettingsOutput krakenSdrSettingsOutput;
-    KrakenSdrDOAOutput krakenSdrDOAOutput;
-
-    KrakenSdrRecieverControls krakenSdrRecieverControls;
-    KrakenSdrAntennaControls krakenSdrAntennaControls;
+    KrakenUTILITY util;
+    KrakenSdrOutputSettings krakenSdrOutputSettings;
+    KrakenSdrOutputDOA krakenSdrOutputDOA;
+    KrakenSdrControlMaster krakenSdrControlMaster;
 
     String OUTPUT_URL;
     String settings_URL;
@@ -61,6 +59,9 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
         settings_URL = OUTPUT_URL + "/settings.json";
         DoA_URL = OUTPUT_URL + "/DOA_value.html";
 
+        /// INITIALIZE UTILITY
+        util = new KrakenUTILITY(this);
+
         /// INITIALIZE CONTROLS
         // Test Connection
         // Get Connection to Kraken Settings:
@@ -68,29 +69,24 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
             settings_conn = util.createKrakenConnection(settings_URL);
             JsonObject initialSettings = util.retrieveJSONFromAddr(settings_URL);
 
-            krakenSdrRecieverControls = new KrakenSdrRecieverControls(this);
-            addControlInput(krakenSdrRecieverControls);
-            krakenSdrRecieverControls.doInit(initialSettings);
-
-            krakenSdrAntennaControls = new KrakenSdrAntennaControls(this);
-            addControlInput(krakenSdrAntennaControls);
-            krakenSdrAntennaControls.doInit(initialSettings);
+            krakenSdrControlMaster = new KrakenSdrControlMaster(this);
+            addControlInput(krakenSdrControlMaster);
+            krakenSdrControlMaster.doInit(initialSettings);
 
         } catch (SensorHubException e) {
             throw new RuntimeException("Failed to connect to: " + settings_URL);
         }
 
-
         /// INITIALIZE OUTPUTS
         // CURRENT SETTINGS OUTPUT
-        krakenSdrSettingsOutput = new KrakenSdrSettingsOutput(this);
-        addOutput(krakenSdrSettingsOutput, false);
-        krakenSdrSettingsOutput.doInit();
+        krakenSdrOutputSettings = new KrakenSdrOutputSettings(this);
+        addOutput(krakenSdrOutputSettings, false);
+        krakenSdrOutputSettings.doInit();
 
         // DOA INFO SETTINGS
-        krakenSdrDOAOutput = new KrakenSdrDOAOutput(this);
-        addOutput(krakenSdrDOAOutput, false);
-        krakenSdrDOAOutput.doInit();
+        krakenSdrOutputDOA = new KrakenSdrOutputDOA(this);
+        addOutput(krakenSdrOutputDOA, false);
+        krakenSdrOutputDOA.doInit();
 
     }
 
@@ -127,8 +123,8 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
             try {
 
                 // SET ALL OUTPUTS AT DESIRED TIME INERVAL FROM ADMIN PANEL
-                krakenSdrSettingsOutput.SetData();      //settings.json data
-                krakenSdrDOAOutput.SetData();           //DoA data
+                krakenSdrOutputSettings.SetData();      //settings.json data
+                krakenSdrOutputDOA.SetData();           //DoA data
 
                 // Sleep per the sample rate provided by admin panel
                 Thread.sleep(TimeUnit.SECONDS.toMillis(config.sampelRate));

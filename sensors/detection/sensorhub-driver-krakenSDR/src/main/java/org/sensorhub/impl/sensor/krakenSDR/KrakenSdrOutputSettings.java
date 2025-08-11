@@ -12,34 +12,20 @@
 package org.sensorhub.impl.sensor.krakenSDR;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import net.opengis.swe.v20.*;
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.sensorhub.impl.sensor.SensorSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-
 
 /**
  * Output specification and provider for {@link KrakenSdrSensor}.
  */
-public class KrakenSdrSettingsOutput extends AbstractSensorOutput<KrakenSdrSensor> {
+public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSensor> {
     static final String SENSOR_OUTPUT_NAME = "kraken_settings";
     static final String SENSOR_OUTPUT_LABEL = "Current Applicable Settings";
     static final String SENSOR_OUTPUT_DESCRIPTION = "This is the output for the krakenSDR's current settings";
@@ -52,7 +38,7 @@ public class KrakenSdrSettingsOutput extends AbstractSensorOutput<KrakenSdrSenso
     private final Object histogramLock = new Object();
     private long lastSetTimeMillis = System.currentTimeMillis();
 
-    private static final Logger logger = LoggerFactory.getLogger(KrakenSdrSettingsOutput.class);
+    private static final Logger logger = LoggerFactory.getLogger(KrakenSdrOutputSettings.class);
 
     private DataRecord dataStruct;
     private DataEncoding dataEncoding;
@@ -63,7 +49,7 @@ public class KrakenSdrSettingsOutput extends AbstractSensorOutput<KrakenSdrSenso
      *
      * @param parentSensor Sensor driver providing this output.
      */
-    public KrakenSdrSettingsOutput(KrakenSdrSensor parentSensor) {
+    public KrakenSdrOutputSettings(KrakenSdrSensor parentSensor) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
     }
 
@@ -195,7 +181,7 @@ public class KrakenSdrSettingsOutput extends AbstractSensorOutput<KrakenSdrSenso
             dataBlock.setStringValue(4, currentSettings.get("ant_arrangement").getAsString());
             dataBlock.setDoubleValue(5, currentSettings.get("ant_spacing_meters").getAsDouble());
             dataBlock.setStringValue(6, currentSettings.get("doa_method").getAsString());
-            dataBlock.setStringValue(7, currentSettings.get("station_id").getAsString());
+            dataBlock.setStringValue(7, (currentSettings.get("station_id") != null) ? currentSettings.get("station_id").getAsString() : "NO Name");
             dataBlock.setStringValue(8, currentSettings.get("location_source").getAsString());
             dataBlock.setStringValue(9, currentSettings.get("latitude").getAsString());
             dataBlock.setStringValue(10, currentSettings.get("longitude").getAsString());
@@ -203,7 +189,7 @@ public class KrakenSdrSettingsOutput extends AbstractSensorOutput<KrakenSdrSenso
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
 
-            eventHandler.publish(new DataEvent(latestRecordTime, KrakenSdrSettingsOutput.this, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, KrakenSdrOutputSettings.this, dataBlock));
 
         } catch (Exception e) {
             System.err.println("Error reading from krakenSDR: " + e.getMessage());
