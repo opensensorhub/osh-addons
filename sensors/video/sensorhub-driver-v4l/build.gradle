@@ -11,7 +11,7 @@ rootProject.allprojects {
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  implementation project(':sensorhub-driver-videocam')
+  api project(':sensorhub-driver-videocam')
   embeddedImpl 'edu.jcu:v4l4j:0.9.1'
   testImplementation project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
 }
