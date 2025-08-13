@@ -4,8 +4,8 @@ version = '1.1.2'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  api project(':sensorhub-driver-ffmpeg')
-  api project(':sensorhub-driver-videocam')
+  implementation project(':sensorhub-driver-ffmpeg')
+  implementation project(':sensorhub-driver-videocam')
 
   embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-api:3.1.11'
   embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-service:3.1.11'
