@@ -2,11 +2,11 @@
 
 ## Overview
 
-This module provides a process module that will can decode and encode video.
+This module provides a process module that can decode and/or encode video.
 
 ## Configuration
 
-When added to an OpenSensorHub node, the process has the following configuration properties:
+When added to an OpenSensorHub node, the process has the following configuration options:
 
 - **General:**
     - **Module ID:** *Not editable.*
