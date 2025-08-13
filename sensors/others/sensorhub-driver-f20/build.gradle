@@ -4,7 +4,7 @@ version = '1.0.0'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+    embeddedImpl 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
     testImplementation('junit:junit:4.13.1')
 }
 
