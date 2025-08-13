@@ -2,6 +2,7 @@ package org.sensorhub.mpegts;
 
 import org.bytedeco.ffmpeg.avcodec.AVCodec;
 import org.bytedeco.ffmpeg.avcodec.AVCodecContext;
+import org.bytedeco.ffmpeg.avcodec.AVCodecParameters;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avformat.AVFormatContext;
 import org.bytedeco.ffmpeg.global.avcodec;
@@ -19,11 +20,6 @@ public class StreamContext {
      * ID of invalid sub streams within the media stream.
      */
     private static final int INVALID_STREAM_ID = -1;
-
-    /**
-     * Codec context associated with the stream.
-     */
-    private AVCodecContext codecContext;
 
     /**
      * ID of the sub stream within the media stream.
@@ -137,19 +133,6 @@ public class StreamContext {
     }
 
     /**
-     * Closes the codec context and cleans up its associated resources.
-     * This method must be called when the codec context is no longer needed to clean up resources.
-     */
-    public void closeCodecContext() {
-        if (codecContext == null) return;
-
-        avcodec.avcodec_close(codecContext);
-        avcodec.avcodec_free_context(codecContext);
-
-        codecContext = null;
-    }
-
-    /**
      * Opens the codec context, and sets it up according to the {@link StreamContext#streamId}.
      * This method must be called before any packets are decoded.
      *
@@ -158,13 +141,10 @@ public class StreamContext {
     public void openCodecContext(AVFormatContext avFormatContext) throws IllegalStateException {
         if (!hasStream()) return;
 
-        codecContext = avcodec.avcodec_alloc_context3(null);
-
-        // Store the codec parameters in the codec context
-        avcodec.avcodec_parameters_to_context(codecContext, avFormatContext.streams(getStreamId()).codecpar());
+        AVCodecParameters params = avFormatContext.streams(getStreamId()).codecpar();
 
         // Get the associated codec from the ID stored in the context
-        AVCodec codec = avcodec.avcodec_find_decoder(codecContext.codec_id());
+        AVCodec codec = avcodec.avcodec_find_decoder(params.codec_id());
 
         if (codec == null) {
             throw new IllegalStateException("Unsupported codec");
@@ -174,15 +154,9 @@ public class StreamContext {
         setCodecName(codec.name().getString());
         setCodecId(codec.id());
 
-        // Attempt to open the codec
-        int returnCode = avcodec.avcodec_open2(codecContext, codec, (PointerPointer<?>) null);
-        if (returnCode < 0) {
-            throw new IllegalStateException("Cannot open codec");
-        }
-
         if (isInjectingExtradata && codecId == avcodec.AV_CODEC_ID_H264) {
-            BytePointer extra = avFormatContext.streams(getStreamId()).codecpar().extradata();
-            int extraLen = avFormatContext.streams(getStreamId()).codecpar().extradata_size();
+            BytePointer extra = params.extradata();
+            int extraLen = params.extradata_size();
             extraData = getAnnexBExtradata(extra, extraLen);
         } else {
             extraData = null;

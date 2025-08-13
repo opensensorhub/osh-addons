@@ -14,6 +14,7 @@ package org.sensorhub.impl.sensor.ffmpeg.outputs;
 import net.opengis.swe.v20.*;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.ISensorModule;
+import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.mpegts.DataBufferListener;
 import org.sensorhub.mpegts.DataBufferRecord;
@@ -83,10 +84,12 @@ public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
         } else if (codecName.equalsIgnoreCase("h264")) {
             this.codecName = CODEC_H264;
         } else {
-            logger.warn("Codec {} not H264/MJPEG. Use a transcoder to convert the video.", codecName);
             this.codecName = codecName;
-            //throw new IllegalArgumentException("Unsupported codec: " + codecName);
+            logger.warn("Codec {} is neither H264 nor MJPEG. Compression set using FFmpeg name.", codecName);
+            ((AbstractModule<?>) parentSensor).reportStatus("Video codec = " + codecName.toUpperCase() + ". Use the transcoder process module" +
+                    " with H264 or MJPEG output for compatibility with OSH visualization and serialization.");
         }
+
         logger.debug("Video output created.");
     }
 
@@ -140,7 +143,7 @@ public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
             try {
                 processBuffer(dataBufferRecord);
             } catch (Exception e) {
-                logger.error("Error while decoding.", e);
+                logger.error("Error while publishing data.", e);
             }
         });
     }
