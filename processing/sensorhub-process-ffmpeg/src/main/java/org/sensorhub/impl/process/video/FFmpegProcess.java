@@ -32,6 +32,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
+/**
+ * Process module taking video input and providing video output.
+ * Extend this class for any process module with video input/output.
+ */
 public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessConfig> {
     final String ID_PREFIX = "urn:osh:process:ffmpeg:" + this.getClass().getSimpleName().toLowerCase() + ":";
     SimpleProcessImpl process;

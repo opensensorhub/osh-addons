@@ -15,7 +15,6 @@ import org.bytedeco.ffmpeg.avutil.AVFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO Need to handle case where queues fill faster than packets can be processed. Should check queue size and free space when necessary to avoid crash.
 public abstract class Coder<I, O> extends Thread {
 
     protected static final Logger logger = LoggerFactory.getLogger(Coder.class);
@@ -68,48 +67,10 @@ public abstract class Coder<I, O> extends Thread {
         this.inPackets = (Queue<I>) inPackets;
     }
 
-    // Blocks while a frame is being processed
-    // DO NOT CALL THIS IF USING SET IN PACKETS
-    // Old method, connect coders using getOutQueue and setInQueue
-    /*
-    public Queue<O> getPackets() throws InterruptedException {
-
-        synchronized (waitingObj) {
-            if (doRun.get()) {
-                //logger.debug("Waiting");
-                waitingObj.wait();
-                //logger.debug("Done");
-            }
-        }
-
-        if (outPackets.isEmpty()) {
-            //logger.debug("No output packets");
-            return new ArrayDeque<O>();
-        }
-
-        //logger.debug("Grabbing output packets");
-        //isGettingPackets = true;
-        //Queue<O> packets = new ArrayDeque<O>(outPackets);
-        //deallocateOutQueue();
-        Queue<O> packets = outPackets;
-        outPackets = new ArrayDeque<>();
-        return packets;
-    }
-     */
-
     // Safety net queue purging.
     // Sometimes, queues can grow very large (like when a thread hangs up or is paused in the debugger).
     // Can recover, so we don't want memory issues from too many items in the queues.
     private void queuePurge() {
-        /*
-        synchronized (inPackets) {
-            if (inPackets.size() > MAX_QUEUE_SIZE) { logger.warn("Input queue is larger than max ({} > {}). Purging queue.", inPackets.size(), MAX_QUEUE_SIZE); }
-            while (inPackets.size() > MAX_QUEUE_SIZE) {
-                deallocateInputPacket(inPackets.poll());
-            }
-        }
-
-         */
 
         synchronized (outPackets) {
             if (outPackets.size() > MAX_QUEUE_SIZE) { logger.warn("Output queue is larger than max ({} > {}). Purging queue.", outPackets.size(), MAX_QUEUE_SIZE); }

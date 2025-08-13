@@ -6,6 +6,11 @@ import org.sensorhub.api.processing.ProcessConfig;
 import org.vast.process.ExecutableProcessImpl;
 import org.vast.process.IProcessExec;
 
+/**
+ * Extend this config for any process module that extends <code>FFmpegProcess</code>.
+ * <br/>
+ * Subclasses must assign <code>execProcess</code> to the process module's corresponding executable process.
+ */
 public abstract class FFmpegProcessConfig extends ProcessConfig {
 
     @DisplayInfo.Required

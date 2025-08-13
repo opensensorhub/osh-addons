@@ -21,12 +21,10 @@ import org.sensorhub.impl.processing.AbstractProcessProvider;
 
 public class FFmpegTranscoderDescriptor extends AbstractProcessProvider
 {
-    
     public FFmpegTranscoderDescriptor()
     {
         addImpl(FFMpegTranscoder.INFO);
     }
-
 
     @Override
     public String getModuleName()
@@ -41,18 +39,15 @@ public class FFmpegTranscoderDescriptor extends AbstractProcessProvider
         return "Collection of FFmpeg Video Processors";
     }
 
-    // TODO Set these two after creating module and module config
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
         return FFmpegTranscoderProcess.class;
     }
 
-
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
         return FFmpegTranscoderConfig.class;
     }
-
 }

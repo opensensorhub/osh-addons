@@ -49,16 +49,13 @@ import static org.bytedeco.ffmpeg.global.swscale.*;
 
 /**
  * <p>
- * Implementation of video decoder based on FFMPEG
+ * Implementation of video transcoder based on FFMPEG
  * </p>
  *
- * @author Alex Robin
- * @date Jun 1, 2021
+ * @author Kyle Fitzpatrick
+ * @since Aug 2025
  */
-// TODO: Needs serious restructuring, since two codecs cannot be opened at once. Need to be able to switch (deallocate and reallocate) contexts. Should be handled by writing some new methods. (Or maybe classes would be better?)
-// TODO: Completely overhaul the structure. Simplify the execute method by breaking up each step into a separate method.
-// TODO: Take the init code and separate into methods appropriately. These can then be reused when reallocating contexts when switching between encoding and decoding.
-// TODO: This was originally FFMpegDecoder, but renamed to FFmpegTranscoder and given transcoding functionality. Need to change tests to include the new out codec parameter.
+
 public class FFMpegTranscoder extends ExecutableProcessImpl
 {
     private static final Logger logger = LoggerFactory.getLogger(FFMpegTranscoder.class);
@@ -547,21 +544,6 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         if (publish)
             super.publishData();
     }
-
-    /*
-    private void disposeCoder(Thread coderThread, Coder coder) {
-        if (coderThread != null && coderThread.isAlive() && coder != null) {
-            coder.doRun.set(false);
-            try {
-                coderThread.join();
-            } catch (InterruptedException e) {
-                logger.error("Error waiting for encoder thread to finish", e);
-            }
-            coderThread = null;
-            coder = null;
-        }
-    }
-     */
 
     @Override
     public void dispose()

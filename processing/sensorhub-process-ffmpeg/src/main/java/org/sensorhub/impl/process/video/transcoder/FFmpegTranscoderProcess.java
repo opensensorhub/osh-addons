@@ -12,7 +12,6 @@ public class FFmpegTranscoderProcess extends FFmpegProcess {
 
     Count outWidth, outHeight;
 
-
     public FFmpegTranscoderProcess() {
         super();
     }

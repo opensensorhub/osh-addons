@@ -56,12 +56,6 @@ public class SwScaler extends Coder<AVFrame, AVFrame> {
 
     @Override
     protected void receiveOutPacket() {
-        /*
-        synchronized (outPackets) {
-
-        }
-
-         */
         // We already have outPacket at this point (one method needed for scaling rather than two)
         // Just use this to add the output to the out queue and make the buffers writable
         outPackets.add(av_frame_clone(outPacket));
