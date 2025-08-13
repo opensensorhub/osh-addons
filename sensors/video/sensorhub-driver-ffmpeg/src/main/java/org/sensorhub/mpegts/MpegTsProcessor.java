@@ -442,8 +442,6 @@ public class MpegTsProcessor extends Thread {
         logger.debug("closeStream");
 
         if (streamOpened) {
-            videoStreamContext.closeCodecContext();
-            audioStreamContext.closeCodecContext();
 
             if (avFormatContext != null) {
                 avformat.avformat_close_input(avFormatContext);
