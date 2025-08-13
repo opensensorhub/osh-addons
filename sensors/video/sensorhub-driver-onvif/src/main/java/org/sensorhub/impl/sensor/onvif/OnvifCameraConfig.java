@@ -20,14 +20,8 @@ import org.sensorhub.api.comm.ICommConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.sensor.SensorConfig;
-import de.onvif.discovery.OnvifDiscovery;
 import org.sensorhub.impl.comm.TCPConfig;
-import org.sensorhub.impl.sensor.rtpcam.RTPCameraConfig;
-
-import java.net.URL;
 import java.util.*;
-
-import org.sensorhub.impl.sensor.ffmpeg.config.*;
 
 /**
  * <p>
@@ -46,6 +40,10 @@ public class OnvifCameraConfig extends SensorConfig {
     @Required
     @DisplayInfo(label="ONVIF AV Streaming Options", desc="Configure video/audio streaming")
     public StreamingOptions streamingConfig = new StreamingOptions();
+
+    @Required
+    @DisplayInfo(label="ONVIF PTZ Range Options", desc="Configure hardware pan/tilt/zoom ranges.")
+    public PTZRanges ptzRanges = new PTZRanges();
 
     public class OnvifConfig extends TCPConfig implements ICommConfig{
         public OnvifConfig() {
@@ -70,5 +68,32 @@ public class OnvifCameraConfig extends SensorConfig {
 
         @DisplayInfo(label="Preferred Codec", desc="Select video codec for streaming.")
         public VideoEncoding codec = VideoEncoding.JPEG;
+    }
+
+    public class PTZRanges {
+        @DisplayInfo(label = "Pan Max (deg)", desc="Leave empty to use generic space.")
+        public Integer panMax = null;
+
+        @DisplayInfo(label = "Pan Min (deg)", desc="Leave empty to use generic space.")
+        public Integer panMin = null;
+
+        @DisplayInfo(label="Invert Pan")
+        public boolean invertPan = false;
+
+        @DisplayInfo(label = "Tilt Max (deg)", desc="Leave empty to use generic space.")
+        public Integer tiltMax = null;
+
+        @DisplayInfo(label = "Tilt Min (deg)", desc="Leave empty to use generic space.")
+        public Integer tiltMin = null;
+
+        @DisplayInfo(label="Invert Tilt")
+        public boolean invertTilt = false;
+
+        // TODO This would probably actually require a min and max unlike pan and tilt
+        @DisplayInfo(label = "Zoom Max (mm)", desc = "Leave empty to use generic space.")
+        public Integer zoomMax = null;
+
+        @DisplayInfo(label = "Zoom Min (mm)", desc = "Leave empty to use generic space.")
+        public Integer zoomMin = null;
     }
 }

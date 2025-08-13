@@ -22,15 +22,7 @@ import java.util.TreeSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-//import javax.xml.soap.SOAPException;
 import de.onvif.discovery.OnvifDiscovery;
-import jakarta.xml.ws.http.HTTPException;
-import net.opengis.gml.v32.TimePosition;
-import net.opengis.gml.v32.impl.TimeInstantImpl;
-import net.opengis.swe.v20.Text;
-//import org.bytedeco.ffmpeg.avutil.AVDictionary;
-//import org.bytedeco.ffmpeg.global.avutil;
-import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.onvif.ver10.schema.*;
 import org.sensorhub.api.common.SensorHubException;
@@ -74,6 +66,82 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
     String visualConnectionString;
     String streamTransport = "tcp";
 
+    float panMax = 2f;
+    float panMin = -1f;
+    float tiltMax = 2f;
+    float tiltMin = -1f;
+    float zoomMax = 2f;
+    float zoomMin = -1f;
+
+    // Type: 0 = pan, 1 = tilt, 2 zoom
+    public float degtoGeneric(float in, int type) {
+        float min;
+        float max;
+        float largest;
+        float out;
+        switch (type) {
+            case 0: // Type 0 Panning
+                if (config.ptzRanges.panMax == null || config.ptzRanges.panMin == null)
+                    return in;
+                max = panMax;
+                min = panMin;
+                break;
+            case 1: // Type 1 Tilting
+                if (config.ptzRanges.tiltMax == null || config.ptzRanges.tiltMin == null)
+                    return in;
+                max = tiltMax;
+                min = tiltMin;
+                break;
+            case 2: // Type 2 Zooming
+                if (config.ptzRanges.zoomMax == null || config.ptzRanges.zoomMin == null)
+                    return in;
+                max = zoomMax;
+                min = zoomMin;
+                break;
+            default:
+                return in;
+        }
+        float range = (max - min);
+        //out = ((in + 1) / 2) * range - min;
+        out = (((in - min) / range * 2) - 1);
+        return out;
+        //return ((in - min) / range * 2f) - 1;
+    }
+
+    public float genericToDeg(float in, int type) {
+        float min;
+        float max;
+        float largest;
+        float out;
+        switch (type) {
+            case 0: // Type 0 Panning
+                if (config.ptzRanges.panMax == null || config.ptzRanges.panMin == null)
+                    return in;
+                max = panMax;
+                min = panMin;
+                break;
+            case 1: // Type 1 Tilting
+                if (config.ptzRanges.tiltMax == null || config.ptzRanges.tiltMin == null)
+                    return in;
+                max = tiltMax;
+                min = tiltMin;
+                break;
+            case 2: // Type 2 Zooming
+                if (config.ptzRanges.zoomMax == null || config.ptzRanges.zoomMin == null)
+                    return in;
+                max = zoomMax;
+                min = zoomMin;
+                break;
+            default:
+                return in;
+        }
+        float range = (max - min);
+        out = (((in + 1) / 2) * range + min);
+
+        return out;
+        //return ((in + 1) / 2f * range) + min;
+    }
+
     OnvifCameraConfig config;
 
     public OnvifCameraDriver() throws SensorHubException {
@@ -88,6 +156,38 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
     public void setConfiguration(OnvifCameraConfig config) {
         super.setConfiguration(config);
         this.config = config;
+
+        if (config.ptzRanges.panMax != null && config.ptzRanges.panMin != null) {
+            panMax = config.ptzRanges.panMax;
+            panMin = config.ptzRanges.panMin;
+        } else {
+            panMax = 2f;
+            panMin = -1f;
+        }
+        if (config.ptzRanges.tiltMax != null && config.ptzRanges.tiltMin != null) {
+            tiltMax = config.ptzRanges.tiltMax;
+            tiltMin = config.ptzRanges.tiltMin;
+        } else {
+            tiltMax = 2f;
+            tiltMin = -1f;
+        }
+        if (config.ptzRanges.zoomMax != null && config.ptzRanges.zoomMin != null) {
+            zoomMax = config.ptzRanges.zoomMax;
+            zoomMin = config.ptzRanges.zoomMin;
+        } else {
+            zoomMax = 2f;
+            zoomMin = -1f;
+        }
+        if (config.ptzRanges.invertPan) {
+            float temp = panMax;
+            panMax = panMin;
+            panMin = temp;
+        }
+        if (config.ptzRanges.invertTilt) {
+            float temp = tiltMax;
+            tiltMax = tiltMin;
+            tiltMin = temp;
+        }
 
         TreeSet<URL> temp = (TreeSet<URL>) OnvifDiscovery.discoverOnvifURLs();
         config.networkConfig.autoRemoteHost.clear();
@@ -237,7 +337,12 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
 
         // generate identifiers.
         streamURI = URI.create(config.streamingConfig.streamEndpoint);
-        String streamId = streamingProfile.getName() + ":" + streamingProfile.getVideoEncoderConfiguration().getEncoding();
+        String streamId;
+        try {
+            streamId = (streamingProfile.getName()) + ":" + streamingProfile.getVideoEncoderConfiguration().getEncoding();
+        } catch (NullPointerException e) {
+            streamId = "noVideo";
+        }
 
         generateUniqueID("urn:onvif:cam:", serialNumber + (streamId != null ? (":" + streamId) : ""));
         generateXmlID("ONVIF_CAM_", serialNumber + (streamId != null ? (":" + streamId) : ""));
@@ -271,22 +376,17 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
             videoOutput = null;
             audioOutput = null;
 
+            if (user == null || user.isBlank())
+                user = "";
+            if (password == null || password.isBlank())
+                password = "";
 
-            // Add credentials if provided
-            if ((user != null || password != null) && (!user.isBlank() || !password.isBlank())) {
-                // In the case that only user or password has a value, make sure the other is set to an empty string.
-                if (user == null || user.isBlank())
-                    user = "";
-                else if (password == null || password.isBlank())
-                    password = "";
-
-                //visualConnectionString = "rtsp://" + user + ":" + password + "@" + streamURI.getHost() + ":"
-                //        + streamURI.getPort() + streamURI.getPath();
+            // Add credentials if provided and not already included in uri
+            if ((!user.isBlank() || !password.isBlank()) && !streamURI.getAuthority().contains("@")) {
                 visualConnectionString = new StringBuilder(streamURI.toString())
                         .insert(streamURI.toString().indexOf("://") + 3, user + ":" + password + "@").toString();
             } else {
                 visualConnectionString = streamURI.toString();
-
             }
             log.trace("Stream endpoint: {}", visualConnectionString);
             setupStream();
