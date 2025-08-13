@@ -9,13 +9,13 @@ import org.vast.swe.SWEHelper;
 
 import java.net.HttpURLConnection;
 
-public class KrakenSdrControlMaster extends AbstractSensorControl<KrakenSdrSensor> {
+public class KrakenSdrControlMasterChoice extends AbstractSensorControl<KrakenSdrSensor> {
     private DataChoice commandDataStruct;
     KrakenUTILITY util = parentSensor.util;
     HttpURLConnection conn;
 
     // CONSTRUCTOR
-    public KrakenSdrControlMaster(KrakenSdrSensor krakenSDRSensor) {
+    public KrakenSdrControlMasterChoice(KrakenSdrSensor krakenSDRSensor) {
         super("KrakenSDR Master Control", krakenSDRSensor);
     }
 

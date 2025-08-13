@@ -77,18 +77,40 @@ sudo gpsd /dev/ttyACM0 -F /var/run/gpsd.socket
 5. Feel free to test by typing ```gpsmon``` in your terminal
 
 ### Additional Help for Remote Control
-According the `gui_run.sh` shell script in the krakensdr_doa directory, the web-server is
+According to the `gui_run.sh` shell script located in the *krakensdr_doa* directory, the web-server is
 created either using php (if remote control in not enabled) or miniserve (if remote control is enabled). 
 
 To update this, navigate to `krakensdr_doa/_share/settings.json` and update the `en_remote_control` value to *true*
 
-Sometimes, miniserve must be set manaully. If you are not getting data from 8081, then do the following command:
+Sometimes, miniserve must be set manaully. If you are not getting data from 8081, try manually setting up miniserve using the following command in the :
 ```commandline
 miniserve -i 0.0.0.0 -p 8081 -P -u --on-duplicate-files overwrite -- _share
 ```
 
-this allows the remote server to be updatable.
+this allows the remote server to be updatable. If you continue to run into errors with the above command, make sure any process
+using port 8081 has been terminated:
+```java
+// Check if 8081 is being used:
+sudo lsof -i :8081
 
+// Terminate existing process:
+sudo kill -9 $(sudo lsof -t -i :8081)
+```
+
+### More Troubleshooting
+If you find that the OSH node is still not updating the KrakenSDR's settings, check the permissions of the `_share` directory 
+and make sure you have write access:
+```java
+//Check Permissions:
+ls -ld /home/user/krakensdr/krakensdr_doa/_share
+
+// Make sure the ownership is correct and change if needed:
+sudo chown -R user:user /home/user/krakensdr/krakensdr_doa/_share
+
+// Update permissions:
+chmod -R u+rw /home/user/krakensdr/krakensdr_doa/_share
+
+```
 
 
 ## Helpful Resources

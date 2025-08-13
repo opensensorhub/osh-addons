@@ -36,7 +36,10 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
     KrakenUTILITY util;
     KrakenSdrOutputSettings krakenSdrOutputSettings;
     KrakenSdrOutputDOA krakenSdrOutputDOA;
-    KrakenSdrControlMaster krakenSdrControlMaster;
+//    KrakenSdrControlMasterChoice krakenSdrControlMasterChoice;
+    KrakenSdrControlReceiver krakenSdrControlReceiver;
+    KrakenSdrControlDoA krakenSdrControlDoA;
+    KrakenSdrControlStation krakenSdrControlStation;
 
     String OUTPUT_URL;
     String settings_URL;
@@ -69,9 +72,21 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
             settings_conn = util.createKrakenConnection(settings_URL);
             JsonObject initialSettings = util.retrieveJSONFromAddr(settings_URL);
 
-            krakenSdrControlMaster = new KrakenSdrControlMaster(this);
-            addControlInput(krakenSdrControlMaster);
-            krakenSdrControlMaster.doInit(initialSettings);
+//            krakenSdrControlMasterChoice = new KrakenSdrControlMasterChoice(this);
+//            addControlInput(krakenSdrControlMasterChoice);
+//            krakenSdrControlMasterChoice.doInit(initialSettings);
+
+            krakenSdrControlReceiver = new KrakenSdrControlReceiver(this);
+            addControlInput(krakenSdrControlReceiver);
+            krakenSdrControlReceiver.doInit(initialSettings);
+
+            krakenSdrControlDoA = new KrakenSdrControlDoA(this);
+            addControlInput(krakenSdrControlDoA);
+            krakenSdrControlDoA.doInit(initialSettings);
+
+            krakenSdrControlStation = new KrakenSdrControlStation(this);
+            addControlInput(krakenSdrControlStation);
+            krakenSdrControlStation.doInit(initialSettings);
 
         } catch (SensorHubException e) {
             throw new RuntimeException("Failed to connect to: " + settings_URL);
