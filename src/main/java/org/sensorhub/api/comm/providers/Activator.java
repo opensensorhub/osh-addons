@@ -7,7 +7,7 @@
  *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
  *  for the specific language governing rights and limitations under the License.
  *
- *  Copyright (C) 2023 Botts Innovative Research, Inc. All Rights Reserved.
+ *  Copyright (C) 2025 Botts Innovative Research, Inc. All Rights Reserved.
  */
 package org.sensorhub.api.comm.providers;
 

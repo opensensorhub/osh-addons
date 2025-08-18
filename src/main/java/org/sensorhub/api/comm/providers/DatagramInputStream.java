@@ -1,32 +1,61 @@
+/*
+ *  The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ *  If a copy of the MPL was not distributed with this file, You can obtain one
+ *  at http://mozilla.org/MPL/2.0/.
+ *
+ *  Software distributed under the License is distributed on an "AS IS" basis,
+ *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing rights and limitations under the License.
+ *
+ *  Copyright (C) 2025 Botts Innovative Research, Inc. All Rights Reserved.
+ */
 package org.sensorhub.api.comm.providers;
 
-import java.io.ByteArrayInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.nio.ByteBuffer;
+import java.net.SocketException;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-class DatagramInputStream extends ByteArrayInputStream implements Runnable {
+/**
+ * <p>
+ * Input stream implementation wrapping a UDP Socket. This implementation is distinct in that it does not rely on a
+ * socket channel implementation for acquiring the input stream.
+ * </p>
+ *
+ * @author Nick Garay
+ * @since Aug 18, 2025
+ */
+class DatagramInputStream extends InputStream implements Runnable {
+
+    private final Logger logger = LoggerFactory.getLogger(DatagramInputStream.class);
+
+    private static final byte EOS = -1;
+
+    private final Object lock = new Object();
 
     private final DatagramSocket socket;
 
     private final AtomicBoolean doWork = new AtomicBoolean(true);
 
-    private final ByteBuffer buffer;
+    private final Queue<byte[]> buffers = new ConcurrentLinkedQueue<>();
 
-    private ByteBuffer currentBuffer;
+    private byte[] currentBuffer;
 
-    private final Queue<ByteBuffer> buffers = new ConcurrentLinkedQueue<>();
+    private int bufferIndex = 0;
 
-    public DatagramInputStream(final DatagramSocket socket, final ByteBuffer buffer) {
+    int maxBufferSize;
 
-        super(buffer.array());
+    public DatagramInputStream(final DatagramSocket socket, int bufferSize) throws SocketException {
 
-        this.buffer = buffer;
+        maxBufferSize = bufferSize;
 
         this.socket = socket;
     }
@@ -34,86 +63,91 @@ class DatagramInputStream extends ByteArrayInputStream implements Runnable {
     @Override
     public void close() throws IOException {
 
-        super.close();
-
         doWork.set(false);
+
+        buffers.clear();
     }
 
     @Override
-    public synchronized int read() {
+    public int read() {
 
-        int value = -1;
+        byte value = EOS;
 
-        if (!buffers.isEmpty() && currentBuffer == null) {
+        logger.debug("Reading next value");
 
-            currentBuffer = buffers.remove();
+        synchronized (lock) {
 
-            while (currentBuffer == null) {
+            while (buffers.isEmpty() && doWork.get()) {
 
-                currentBuffer = buffers.remove();
+                try {
+
+                    logger.debug("No buffer available, waiting...");
+
+                    lock.wait();
+
+                } catch (InterruptedException e) {
+
+                    Thread.currentThread().interrupt();
+
+                    logger.error("Read interrupted", e);
+                }
             }
 
-        } else {
+            if (!buffers.isEmpty() && currentBuffer == null) {
 
-            value = currentBuffer.get() & 0xFF;
+                currentBuffer = buffers.remove();
+
+                logger.debug("Buffer acquired");
+            }
+        }
+
+        if (currentBuffer != null && bufferIndex < currentBuffer.length) {
+
+            value = currentBuffer[bufferIndex++]; // You probably want to track position here
+
+            logger.debug("Value read {}", value);
+
+            if (bufferIndex >= currentBuffer.length) {
+
+                currentBuffer = null;
+
+                bufferIndex = 0;
+            }
         }
 
         return value;
     }
 
-//        @Override
-//        public int read(byte[] b) throws IOException {
-//            return super.read(b);
-//        }
-//
-//        @Override
-//        public synchronized int read(byte[] b, int off, int len) {
-//            return super.read(b, off, len);
-//        }
-//
-//        @Override
-//        public int readNBytes(byte[] b, int off, int len) {
-//            return super.readNBytes(b, off, len);
-//        }
-//
-//        @Override
-//        public byte[] readNBytes(int len) throws IOException {
-//            return super.readNBytes(len);
-//        }
-//
-//        @Override
-//        public synchronized byte[] readAllBytes() {
-//            return super.readAllBytes();
-//        }
-
     @Override
     public void run() {
 
+        byte[] packetBuffer = new byte[maxBufferSize];
+
         while (doWork.get()) {
 
-            DatagramPacket receivePacket = new DatagramPacket(buffer.array(), buffer.capacity());
+            Arrays.fill(packetBuffer, (byte) 0);
+
+            DatagramPacket receivePacket = new DatagramPacket(packetBuffer, maxBufferSize);
 
             try {
 
+                logger.debug("Waiting for receive packet");
+
                 socket.receive(receivePacket);
 
-                buffers.add(ByteBuffer.wrap(safeClone(receivePacket.getData())));
+                synchronized (lock) {
+
+                    buffers.add(Arrays.copyOfRange(receivePacket.getData(), 0, receivePacket.getLength()));
+
+                    lock.notifyAll();
+                }
+
+                logger.debug("Packet received");
 
             } catch (IOException e) {
 
-                throw new RuntimeException(e);
+                logger.error(e.getMessage(), e);
             }
-
-            reset();
-
-            buffer.clear();
-
-            Arrays.fill(buffer.array(), (byte) -1);
         }
-    }
-
-    private static byte[] safeClone(byte[] input) {
-
-        return input == null ? null : input.clone();
     }
 }
