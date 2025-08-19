@@ -71,7 +71,7 @@ class DatagramInputStream extends InputStream implements Runnable {
     @Override
     public int read() {
 
-        byte value = EOS;
+        int value = EOS;
 
         synchronized (lock) {
 
@@ -79,22 +79,18 @@ class DatagramInputStream extends InputStream implements Runnable {
 
                 try {
 
-                    logger.debug("No buffer available, waiting...");
+                    if (buffers.isEmpty()) {
 
-                    lock.wait();
+                        lock.wait();
+                    }
+
+                    currentBuffer = buffers.poll();
 
                 } catch (InterruptedException e) {
 
                     Thread.currentThread().interrupt();
 
                     logger.error("Read interrupted", e);
-                }
-
-                if (!buffers.isEmpty()) {
-
-                    currentBuffer = buffers.remove();
-
-                    logger.debug("Buffer acquired");
                 }
             }
         }
