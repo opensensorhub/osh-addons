@@ -73,8 +73,6 @@ class DatagramInputStream extends InputStream implements Runnable {
 
         byte value = EOS;
 
-        logger.debug("Reading next value");
-
         synchronized (lock) {
 
             while (currentBuffer == null && doWork.get()) {
@@ -103,9 +101,7 @@ class DatagramInputStream extends InputStream implements Runnable {
 
         if (currentBuffer != null && bufferIndex < currentBuffer.length) {
 
-            value = currentBuffer[bufferIndex++]; // You probably want to track position here
-
-            logger.debug("Value read {}", value);
+            value = currentBuffer[bufferIndex++];
 
             if (bufferIndex >= currentBuffer.length) {
 
