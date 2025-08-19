@@ -77,7 +77,7 @@ class DatagramInputStream extends InputStream implements Runnable {
 
         synchronized (lock) {
 
-            while (buffers.isEmpty() && doWork.get()) {
+            while (currentBuffer == null && doWork.get()) {
 
                 try {
 
@@ -91,13 +91,13 @@ class DatagramInputStream extends InputStream implements Runnable {
 
                     logger.error("Read interrupted", e);
                 }
-            }
 
-            if (!buffers.isEmpty() && currentBuffer == null) {
+                if (!buffers.isEmpty()) {
 
-                currentBuffer = buffers.remove();
+                    currentBuffer = buffers.remove();
 
-                logger.debug("Buffer acquired");
+                    logger.debug("Buffer acquired");
+                }
             }
         }
 
