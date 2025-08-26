@@ -523,6 +523,9 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     private void outputProcess() {
         while (doRun.get() && !Thread.currentThread().isInterrupted()) {
             while (outputPackets == null || outputPackets.isEmpty()) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
                 Thread.onSpinWait();
             }
             if (outputPackets != null && !outputPackets.isEmpty()) {
