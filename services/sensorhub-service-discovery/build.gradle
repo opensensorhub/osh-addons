@@ -1,0 +1,31 @@
+description = 'Discovery Service'
+ext.details = 'Service providing discovery based on defineable rulesets'
+
+version= '1.1.0'
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-service-consys'
+  embeddedImpl 'com.j2html:j2html:1.5.0'
+  embeddedImpl 'com.google.code.gson:gson:2.9.0'
+}
+
+// add info to OSGI manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+    attributes('Bundle-Activator': 'com.botts.impl.service.discovery.Activator')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'nickgaray'
+      name 'Nicolas Garay'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'http://www.botts-inc.com'
+    }
+  } 
+}

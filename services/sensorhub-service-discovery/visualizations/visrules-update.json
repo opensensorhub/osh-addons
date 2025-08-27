@@ -1,0 +1,144 @@
+[
+  {
+    "name": "Chart",
+    "outputPaths": [
+      {
+        "fieldName": "x",
+        "acceptedPaths": ["*"]
+      }
+    ],
+    "types": [
+      "quantity",
+      "count"
+    ],
+    "excludedTypes": ["data_array"],
+    "procedures": [],
+    "tags": []
+  },
+  {
+    "name": "Ellipse",
+    "outputPaths": [],
+    "procedures": [],
+    "tags": []
+  },
+  {
+    "name": "LineOfBearing",
+    "outputPaths": [],
+    "procedures": [],
+    "tags": []
+  },
+  {
+    "name": "MapMarker",
+    "includedKeywords": [
+      "location",
+      "position",
+      "orientation",
+      "heading"
+    ],
+    "outputPaths": [
+      {
+        "fieldName": "location",
+        "acceptedPaths": [
+          "location"
+        ]
+      },
+      {
+        "fieldName": "x",
+        "acceptedPaths": [
+          "lon",
+          "x",
+          "longitude"
+        ]
+      },
+      {
+        "fieldName": "y",
+        "acceptedPaths": [
+          "lat",
+          "y",
+          "latitude"
+        ]
+      },
+      {
+        "fieldName": "z",
+        "acceptedPaths": [
+          "alt",
+          "z",
+          "altitude"
+        ]
+      },
+      {
+        "fieldName": "heading",
+        "acceptedPaths": [
+          "heading"
+        ]
+      }
+    ],
+    "procedures": [
+      "property/OGC/0/SensorLocation",
+      "http://sensorml.com/ont/swe/property/location",
+      "http://www.opengis.net/def/property/OGC/0/SensorLocation",
+      "http://www.opengis.net/def/property/OGC/0/PlatformLocation",
+      "http://www.opengis.net/def/property/OGC/0/SensorOrientation",
+      "http://sensorml.com/ont/swe/property/TargetLocation",
+      "http://sensorml.com/ont/swe/property/LocationVector"
+    ],
+    "types": [
+      "Vector",
+      "Quantity"
+    ],
+    "tags": []
+  },
+  {
+    "name": "ROI",
+    "outputPaths": [],
+    "procedures": [],
+    "tags": []
+  },
+  {
+    "name": "Spectrogram",
+    "outputPaths": [],
+    "procedures": [],
+    "tags": []
+  },
+  {
+    "name": "TAKHeartbeat",
+    "outputPaths": [],
+    "procedures": [],
+    "tags": []
+  },
+  {
+    "name": "TAKPointMarker",
+    "outputPaths": [],
+    "procedures": [],
+    "tags": []
+  },
+  {
+    "name": "Target",
+    "outputPaths": [],
+    "procedures": [],
+    "tags": []
+  },
+  {
+    "name": "Track",
+    "outputPaths": [],
+    "procedures": [],
+    "tags": []
+  },
+  {
+    "name": "UnifiedTrack",
+    "outputPaths": [],
+    "procedures": [],
+    "tags": []
+  },
+  {
+    "name": "Video",
+    "outputPaths": [],
+    "procedures": [
+      "http://sensorml.com/ont/swe/property/VideoFrame",
+      "http://sensorml.com/ont/swe/property/GrayscaleFrame"
+    ],
+    "types": ["data_record"],
+    "excludedTypes": ["data_array"],
+    "tags": []
+  }
+]

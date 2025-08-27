@@ -1,0 +1,139 @@
+# -----------------------------------------------------------------------------------------------------------------------------
+#
+# COMMON RULES
+#
+# -----------------------------------------------------------------------------------------------------------------------------
+
+# This rule describes getting sensor locations without orientation
+location http://sensorml.com/ont/swe/property/OGC/0/SensorLocation OR http://sensorml.com/ont/swe/property/location OR http://www.opengis.net/def/property/OGC/0/SensorLocation OR http://www.opengis.net/def/property/OGC/0/PlatformLocation AND http://sensorml.com/ont/swe/property/GeodeticLatitude AND http://sensorml.com/ont/swe/property/Longitude NOT http://sensorml.com/ont/swe/property/cot-version NOT http://sensorml.com/ont/swe/property/legacy-geosurvey NOT http://sensorml.com/ont/swe/property/legacy-survey NOT http://sensorml.com/ont/swe/property/frequency
+
+# This rule describes getting sensor position with orientation
+position http://www.opengis.net/def/property/OGC/0/PlatformLocation AND http://www.opengis.net/def/property/OGC/0/PlatformOrientation
+
+# This rule describes getting sensor orientations (e.g. UAS Orientation as a sensor platform)
+orientation http://www.opengis.net/def/property/OGC/0/PlatformOrientation AND http://sensorml.com/ont/swe/property/TrueHeading AND http://sensorml.com/ont/swe/property/PitchAngle AND http://sensorml.com/ont/swe/property/RollAngle
+
+# This rule describes getting sensor orientation
+sensor_orientation http://www.opengis.net/def/property/OGC/0/SensorOrientation
+
+# This rule describes getting video streams
+video http://sensorml.com/ont/swe/property/VideoFrame OR http://sensorml.com/ont/swe/property/GrayscaleFrame
+
+# This rule describes getting a region of interest as a tuple of coordinates
+region_of_interest http://sensorml.com/ont/misb0601/property/FrameCenterLocation AND http://sensorml.com/ont/misb0601/property/FrameUpperRightCornerLocation AND http://sensorml.com/ont/misb0601/property/FrameLowerRightCornerLocation AND http://sensorml.com/ont/misb0601/property/FrameLowerLeftCornerLocation AND http://sensorml.com/ont/misb0601/property/FrameUpperLeftCornerLocation
+
+# This rule describes getting a region described as an ellipse (ellipsoid)
+ellipse http://sensorml.com/ont/swe/property/location OR http://sensorml.com/ont/swe/property/cep-location AND http://sensorml.com/ont/swe/property/GeodeticLatitude AND http://sensorml.com/ont/swe/property/Longitude AND http://sensorml.com/ont/swe/property/frequency OR http://sensorml.com/ont/swe/property/id OR http://sensorml.com/ont/swe/property/mac-address AND http://sensorml.com/ont/swe/property/ellipse-axis-0 OR http://sensorml.com/ont/swe/property/ellipse-major AND http://sensorml.com/ont/swe/property/ellipse-axis-1 OR http://sensorml.com/ont/swe/property/ellipse-minor AND http://sensorml.com/ont/swe/property/ellipse-angle
+
+# This rule describes getting a line of bearing, a directional vector
+line_of_bearing http://sensorml.com/ont/swe/property/location AND http://sensorml.com/ont/swe/property/aoaOutput AND http://sensorml.com/ont/swe/property/frequency AND http://sensorml.com/ont/swe/property/lob OR http://sensorml.com/ont/swe/property/az
+
+# This rule describes getting a vector describing position of an entity or target reported by a sensor or platform
+# NOTE: DO WE NEED ANOTHER DEFINITION ADDED HERE, 'OR' with something else
+target_location http://sensorml.com/ont/swe/property/TargetLocation OR http://sensorml.com/ont/swe/property/LocationVector OR http://sensorml.com/ont/swe/property/location AND http://sensorml.com/ont/swe/property/frequency OR http://sensorml.com/ont/swe/property/id OR http://sensorml.com/ont/swe/property/mac-address OR http://sensorml.com/ont/swe/property/center-freq OR http://sensorml.com/ont/swe/property/mac-oui NOT http://sensorml.com/ont/swe/property/legacy-geosurvey NOT http://sensorml.com/ont/swe/property/cot-version
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# AVIATION RULES
+# This rule describes getting aviation location and tracks from sources such as FlightAware and PiAware
+
+aviation http://sensorml.com/ont/swe/property/Location AND http://sensorml.com/ont/swe/property/aero/HexID
+
+track http://sensorml.com/ont/swe/property/Track
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# BEAST KIT RULES
+#
+# Use COMMON location, ellipse, line_of_bearing
+#
+# -----------------------------------------------------------------------------------------------------------------------------
+
+# Use COMMON location, ellipse, line_of_bearing
+
+# This rule describes getting a vector describing the heading of an entity
+heading http://sensorml.com/ont/swe/property/heading
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# JFFT RULES
+#
+# -----------------------------------------------------------------------------------------------------------------------------
+
+# This rule describes getting data for JFFT tracks containing an altitude component
+# Tracks with Altitude
+tracks http://sensorml.com/ont/swe/property/LocationVector AND http://sensorml.com/ont/swe/property/HeightAboveGround AND http://sensorml.com/ont/swe/property/AzimuthAngle AND http://sensorml.com/ont/swe/property/MilStd2525BSymbolCode
+
+# This rule describes getting data for JFFT tracks containing an elevation component or no reference to altitude or height above ellipsoid
+# Unified Tracks (Tracks with Elevation and Track with No Height)
+unified_tracks http://sensorml.com/ont/swe/property/LocationVector AND http://sensorml.com/ont/swe/property/AzimuthAngle
+
+# Note: Turned Off MILSYM as it is currently not provided by JFFT tracks, and having it on blocks Shout Nanos from appearing in
+# the results
+# AND http://sensorml.com/ont/swe/property/MilStd2525BSymbolCode
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# LP-UGS RULES
+#
+# GPS
+# Use COMMON location
+#
+# -----------------------------------------------------------------------------------------------------------------------------
+
+# This rule describes getting image data
+image http://sensorml.com/ont/swe/property/image
+
+# Use COMMON location
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# PUMA UAS  RULES
+#
+# Use COMMON location, region_of_interest, orientation, video
+#
+# -----------------------------------------------------------------------------------------------------------------------------
+
+# Use COMMON location, region_of_interest, orientation, video
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# SAGE TRACKS RULES
+#
+# Use COMMON unified_tracks
+#
+# -----------------------------------------------------------------------------------------------------------------------------
+
+# Use COMMON unified_tracks
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# MARAUDER RULES
+#
+# -----------------------------------------------------------------------------------------------------------------------------
+
+# NOTE: DEFINITIONS NEED TO BE ADDED TO FIELDS IN MARAUDER OUTPUTS AND REVISIT RULES
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# SHOUT NANO RULES
+#
+# Use COMMON unified_tracks
+#
+# -----------------------------------------------------------------------------------------------------------------------------
+
+# Use COMMON unified_tracks
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# SILENT ECHO RULES
+#
+# Use COMMON ellipse, line_of_bearing
+#
+# -----------------------------------------------------------------------------------------------------------------------------
+
+# Use COMMON ellipse, line_of_bearing
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# TAK RULES
+#
+# Use COMMON location
+#
+# -----------------------------------------------------------------------------------------------------------------------------
+
+tak_point_marker http://sensorml.com/ont/swe/property/location AND http://sensorml.com/ont/swe/property/cot-type-description AND http://sensorml.com/ont/swe/property/GeodeticLatitude AND http://sensorml.com/ont/swe/property/Longitude AND http://sensorml.com/ont/swe/property/id AND http://sensorml.com/ont/swe/property/icon-reference NOT http://sensorml.com/ont/swe/property/tak-chat NOT http://sensorml.com/ont/swe/property/tak-shape-ellipse NOT http://sensorml.com/ont/swe/property/tak-image NOT http://sensorml.com/ont/swe/property/tak-shape-polyline-event NOT http://sensorml.com/ont/swe/property/tak-event NOT http://sensorml.com/ont/swe/property/tak-alarm NOT http://sensorml.com/ont/swe/property/tak-heartbeat
+
+tak_heartbeat http://sensorml.com/ont/swe/property/location AND http://sensorml.com/ont/swe/property/tak-callsign AND http://sensorml.com/ont/swe/property/GeodeticLatitude AND http://sensorml.com/ont/swe/property/Longitude AND http://sensorml.com/ont/swe/property/id AND http://sensorml.com/ont/swe/property/icon-reference NOT http://sensorml.com/ont/swe/property/tak-chat NOT http://sensorml.com/ont/swe/property/tak-shape-ellipse NOT http://sensorml.com/ont/swe/property/tak-image NOT http://sensorml.com/ont/swe/property/tak-shape-polyline-event NOT http://sensorml.com/ont/swe/property/tak-event NOT http://sensorml.com/ont/swe/property/tak-alarm NOT http://sensorml.com/ont/swe/property/tak-pointmarker
+
+tak_alarm http://sensorml.com/ont/swe/property/tak-alarm AND http://sensorml.com/ont/swe/property/id AND http://sensorml.com/ont/swe/property/cot-type

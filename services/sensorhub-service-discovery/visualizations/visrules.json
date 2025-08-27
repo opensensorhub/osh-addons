@@ -1,0 +1,140 @@
+[
+  {
+    "name": "Chart",
+    "includedRules": [],
+    "excludedRules": [
+      "image",
+      "video"
+    ],
+    "outputPaths": [],
+    "tags": []
+  },
+  {
+    "name": "Ellipse",
+    "includedRules": [],
+    "excludedRules": [],
+    "outputPaths": [],
+    "tags": []
+  },
+  {
+    "name": "LineOfBearing",
+    "includedRules": [
+      "line_of_bearing"
+    ],
+    "excludedRules": [],
+    "outputPaths": [],
+    "tags": []
+  },
+  {
+    "name": "MapMarker",
+    "includedRules": [
+      "location",
+      "position",
+      "target_location",
+      "orientation"
+    ],
+    "excludedRules": [],
+    "outputPaths": [
+      {
+        "fieldName": "location",
+        "acceptedPaths": [
+          "location",
+          "exceedance-location"
+        ]
+      },
+      {
+        "fieldName": "x",
+        "acceptedPaths": [
+          "lon",
+          "x",
+          "longitude"
+        ]
+      },
+      {
+        "fieldName": "y",
+        "acceptedPaths": [
+          "lat",
+          "y",
+          "latitude"
+        ]
+      },
+      {
+        "fieldName": "z",
+        "acceptedPaths": [
+          "alt",
+          "z",
+          "altitude"
+        ]
+      },
+      {
+        "fieldName": "heading",
+        "acceptedPaths": [
+          "heading"
+        ]
+      }
+    ],
+    "tags": []
+  },
+  {
+    "name": "ROI",
+    "includedRules": [],
+    "excludedRules": [],
+    "outputPaths": [],
+    "tags": []
+  },
+  {
+    "name": "Spectrogram",
+    "includedRules": [
+      "spectrogram"
+    ],
+    "excludedRules": [],
+    "outputPaths": [],
+    "tags": []
+  },
+  {
+    "name": "TAKHeartbeat",
+    "includedRules": [
+      "tak_heartbeat"
+    ],
+    "excludedRules": [],
+    "outputPaths": [],
+    "tags": []
+  },
+  {
+    "name": "TAKPointMarker",
+    "includedRules": [
+      "tak_pointmarker"
+    ],
+    "excludedRules": [],
+    "outputPaths": [],
+    "tags": []
+  },
+  {
+    "name": "Target",
+    "includedRules": [],
+    "excludedRules": [],
+    "outputPaths": [],
+    "tags": []
+  },
+  {
+    "name": "Track",
+    "includedRules": [],
+    "excludedRules": [],
+    "outputPaths": [],
+    "tags": []
+  },
+  {
+    "name": "UnifiedTrack",
+    "includedRules": [],
+    "excludedRules": [],
+    "outputPaths": [],
+    "tags": []
+  },
+  {
+    "name": "Video",
+    "includedRules": [],
+    "excludedRules": [],
+    "outputPaths": [],
+    "tags": []
+  }
+]
