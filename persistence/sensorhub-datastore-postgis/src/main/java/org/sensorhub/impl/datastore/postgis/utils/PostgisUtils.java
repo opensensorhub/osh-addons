@@ -1,0 +1,162 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
+
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ Copyright (C) 2023 Georobotix. All Rights Reserved.
+
+ ******************************* END LICENSE BLOCK ***************************/
+
+package org.sensorhub.impl.datastore.postgis.utils;
+
+import com.google.common.collect.Range;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import net.opengis.gml.v32.AbstractGeometry;
+import net.opengis.gml.v32.LinearRing;
+import net.opengis.gml.v32.impl.PolygonJTS;
+import org.vast.ogc.gml.JTSUtils;
+
+import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Properties;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+public class PostgisUtils {
+    public static Timestamp MIN_TIMESTAMP;
+    public  static Instant MIN_INSTANT;
+    public  static Instant MAX_INSTANT;
+
+    public static final Range<Instant> ALL_TIMES_RANGE = Range.closed(Instant.MIN, Instant.MAX);
+
+    static {
+        try {
+            MIN_INSTANT = new SimpleDateFormat("yyyy G").parse("4700 BC").toInstant();
+            MAX_INSTANT = Instant.parse("3000-01-01T00:00:00Z");
+            MIN_TIMESTAMP = Timestamp.from(MIN_INSTANT);
+
+            Class.forName("org.postgresql.Driver");
+        } catch (ParseException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static volatile HikariDataSource hikariDataSourceInstance = null;
+    static final Lock reentrantLock = new ReentrantLock();
+
+    // is thread-safe
+    public static HikariDataSource getHikariDataSourceInstance(String url, String dbName, String login, String password) {
+        if(hikariDataSourceInstance == null) {
+            reentrantLock.lock();
+            try {
+                if(hikariDataSourceInstance == null) {
+                        HikariConfig config = new HikariConfig();
+                        config.setJdbcUrl("jdbc:postgresql://" + url + "/" + dbName+"");
+                        config.setUsername(login);
+                        config.setPassword(password);
+                        config.setKeepaliveTime(30000*5);
+//                        config.setMaximumPoolSize(200_000);
+                        config.addDataSourceProperty("cachePrepStmts", "true");
+                        config.addDataSourceProperty("prepStmtCacheSize", "250");
+                        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+                        config.setAutoCommit(true);
+                        hikariDataSourceInstance = new HikariDataSource(config);
+                }
+            } finally {
+                reentrantLock.unlock();
+            }
+        }
+        return hikariDataSourceInstance;
+    }
+    public static Connection getConnection(String url, String dbName, String login, String password) {
+        try {
+            String urlPostgres = "jdbc:postgresql://" + url + "/" + dbName;
+            Properties props = new Properties();
+            props.setProperty("user", login);
+            props.setProperty("password", password);
+            props.setProperty("reWriteBatchedInserts", "true");
+            props.setProperty("tcpKeepAlive","true");
+            Connection connection =  DriverManager.getConnection(urlPostgres, props);
+            connection.setAutoCommit(false);
+            return connection;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public static boolean checkTable(Connection connection, String tableName) throws SQLException {
+        DatabaseMetaData databaseMetaData = connection.getMetaData();
+        try (ResultSet resultSet = databaseMetaData.getTables(null, null, tableName, new String[]{"TABLE"})) {
+            return resultSet.next();
+        }
+    }
+
+    public static void executeQueries(Connection connection, String[] queries) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            for (String query : queries) {
+                statement.execute(query);
+            }
+        }
+    }
+
+    public static org.locationtech.jts.geom.Geometry toJTSGeometry(AbstractGeometry abstractGeometry) {
+        // check polygon closed rings
+        if(abstractGeometry.getClass() == PolygonJTS.class) {
+            PolygonJTS poly = (PolygonJTS) abstractGeometry;
+            if(poly.getInteriorList() != null) {
+                for (LinearRing interiorRings : poly.getInteriorList()) {
+                    int length = interiorRings.getPosList().length;
+                    System.out.println(Arrays.asList(interiorRings.getPosList()));
+//                if(interiorRings.getPosList()[0] != interiorRings.getPosList()[length - 1] ||
+//                        interiorRings.getPosList()[0] != interiorRings.getPosList()[length - 1]
+//                )
+                }
+            }
+            if(poly.getExterior() != null) {
+                int length = poly.getExterior().getPosList().length;
+                double[] pos = poly.getExterior().getPosList();
+                // 0 == length - 1
+                if(pos[0] != pos[length - 2] || pos[1] != pos[length - 1]) {
+                    double[] newPosList = new double[length+2];
+                    System.arraycopy(pos,0,newPosList,0, length);
+                    newPosList[newPosList.length-2] = pos[0];
+                    newPosList[newPosList.length-1] = pos[1];
+
+                    poly.getExterior().setPosList(newPosList);
+                }
+            }
+        }
+        return JTSUtils.getAsJTSGeometry(abstractGeometry);
+    }
+
+    public static Instant readInstantFromString(String time) {
+        if(time == null || time.isEmpty()) {
+            throw new RuntimeException("Cannot Parse time "+time);
+        }
+        if(time.equalsIgnoreCase("-infinity")){
+            return Instant.MIN;
+        } else if(time.equalsIgnoreCase("infinity")) {
+            return Instant.MAX;
+        } else {
+            return Instant.parse(time);
+        }
+    }
+
+    public static String writeInstantToString(Instant instant) {
+        if(instant.getEpochSecond() < MIN_INSTANT.getEpochSecond()) {
+            return "-infinity";
+        } else if(instant.getEpochSecond() > MAX_INSTANT.getEpochSecond()) {
+            return "infinity";
+        } else {
+            return instant.toString();
+        }
+    }
+}
