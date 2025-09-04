@@ -12,6 +12,7 @@
 package org.sensorhub.impl.sensor.ffmpeg;
 
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.AudioOutput;
@@ -50,6 +51,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
     @Override
     protected void doInit() throws SensorHubException {
         super.doInit();
+        clearStatus();
         logger.info("Initializing FFMPEG sensor for {}", getUniqueIdentifier());
 
         generateUniqueID("urn:osh:sensor:ffmpeg:", config.serialNumber);

@@ -82,6 +82,11 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
                 .label("Elevation Angle")
                 .description("Inclination/Elevation of line-of-sight from the horizontal plane")
                 .uomCode("deg"))
+            .addField("height", swe.createQuantity()
+                    .definition(SWEHelper.getQudtUri("Height"))
+                    .label("Height of Target")
+                    .description("Height of the target")
+                    .uomCode("m"))
             .build();
      
         // also generate encoding definition as text block
@@ -93,98 +98,112 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     private void pollAndSendMeasurement()
     {
         double hd = Double.NaN;
+        double ht = Double.NaN;
         double incl = Double.NaN;
         double az = Double.NaN;
         double sd = Double.NaN;
-        
+
         try
         {
             long msgTime = 0;
-            boolean gotHvMsg = false;
-            while (!gotHvMsg)
+            boolean gotMsg = false;
+            while (!gotMsg)
             {
                 String line = msgReader.readLine();
                 msgTime = System.currentTimeMillis();
                 String val, unit;
-                
+
                 // parse the data string
                 TruPulseSensor.log.debug("Message received: {}", line);
                 String[] tokens = line.split(",");
-                
+
                 val = tokens[0];
                 if (!val.equals(MSG_PREFIX))
                 {
                     TruPulseSensor.log.warn("Message initial token does NOT equal expected string {}", MSG_PREFIX);
                     continue;
                 }
-        
+
                 // check for desired message type HV
                 val = tokens[1];
-                if (!val.equals(MSG_TYPE_HV))
+                if (val.equals(MSG_TYPE_HV) || val.equals(MSG_TYPE_ML))
                 {
-                    TruPulseSensor.log.warn("Unsupported message type {}", val);
-                    continue;
+
+                    // get horizontal distance measure and check units (convert if not meters)
+                    val = tokens[2];
+                    unit = tokens[3];
+                    if (val.length() > 0 && unit.length() > 0)
+                    {
+                        hd = Double.parseDouble(val);
+                        hd = convert(hd, unit);
+                    }
+
+                    // get azimuth angle measure (units should be degrees)
+                    val = tokens[4];
+                    unit = tokens[5];
+                    if (val.length() > 0 && unit.length() > 0)
+                        az = Double.parseDouble(val);
+
+                    // get inclination angle measure (units should be degrees)
+                    val = tokens[6];
+                    unit = tokens[7];
+                    if (val.length() > 0 && unit.length() > 0)
+                        incl = Double.parseDouble(val);
+
+                    // get slope distance measure and check units (should be meters)
+                    val = tokens[8];
+                    unit = tokens[9];
+                    if (val.length() > 0 && unit.length() > 0)
+                    {
+                        sd = Double.parseDouble(val);
+                        sd = convert(sd, unit);
+                    }
+                    gotMsg = true;
                 }
-                
-                // get horizontal distance measure and check units (convert if not meters)
-                val = tokens[2];
-                unit = tokens[3];
-                if (val.length() > 0 && unit.length() > 0)
-                {
-                    hd = Double.parseDouble(val);
-                    hd = convert(hd, unit);
+
+                if(val.equals(MSG_TYPE_HT)){
+
+                    // Height
+                    val = tokens[2]; //HT value
+                    unit = tokens[3]; //HT units Feet or Meters
+
+                    if(val.length() > 0 && unit.length() > 0){
+                        ht = Double.parseDouble(val);
+                        ht = convert(ht, unit);
+                    }
+                    gotMsg = true;
+
                 }
-                
-                // get azimuth angle measure (units should be degrees)
-                val = tokens[4];
-                unit = tokens[5];
-                if (val.length() > 0 && unit.length() > 0)
-                    az = Double.parseDouble(val);
-        
-                // get inclination angle measure (units should be degrees)
-                val = tokens[6];
-                unit = tokens[7];
-                if (val.length() > 0 && unit.length() > 0)
-                    incl = Double.parseDouble(val);
-        
-                // get slope distance measure and check units (should be meters)
-                val = tokens[8];
-                unit = tokens[9];
-                if (val.length() > 0 && unit.length() > 0)
-                {
-                    sd = Double.parseDouble(val);
-                    sd = convert(sd, unit);
-                }
-                
-                gotHvMsg = true;
             }
-            
+
             // create and populate datablock
             DataBlock dataBlock;
             if (latestRecord == null)
                 dataBlock = lrfData.createDataBlock();
             else
                 dataBlock = latestRecord.renew();
-            
+
             dataBlock.setDoubleValue(0, msgTime / 1000.);
             dataBlock.setDoubleValue(1, hd);
             dataBlock.setDoubleValue(2, sd);
             dataBlock.setDoubleValue(3, az);
             dataBlock.setDoubleValue(4, incl);
-            
+            dataBlock.setDoubleValue(5, ht);
+
             // update latest record and send event
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
-            eventHandler.publish(new DataEvent(latestRecordTime, TruPulseOutput.this, dataBlock)); 
+            eventHandler.publish(new DataEvent(latestRecordTime, TruPulseOutput.this, dataBlock));
         }
         catch(IOException e)
         {
-           if (sendData)
+            if (sendData)
                 TruPulseSensor.log.error("Unable to parse TruPulse message", e);
-        }     
+        }
     }
-    
-    
+
+
+
     protected double convert(double val, String unit)
     {
         // feet to meters
