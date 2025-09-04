@@ -9,9 +9,9 @@
 
  Copyright (C) 2020-2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.BNO085.outputs;
+package org.sensorhub.impl.sensor.notecardGPS.outputs;
 
-import org.sensorhub.impl.sensor.BNO085.Bno085Sensor;
+import org.sensorhub.impl.sensor.notecardGPS.notecardGPSSensor;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -21,16 +21,22 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.swe.SWEBuilders;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.helper.GeoPosHelper;
+
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 
 /**
- * Output specification and provider for {@link Bno085Sensor}.
+ * Output specification and provider for {@link notecardGPSSensor}.
  */
-public class GravityOutput extends AbstractSensorOutput<Bno085Sensor> {
-    static final String SENSOR_OUTPUT_NAME = "Gravity";
-    static final String SENSOR_OUTPUT_LABEL = "Gravity";
-    static final String SENSOR_OUTPUT_DESCRIPTION = "This is the output for the Gravity Data in m/s^2";
+public class notecardGPSOutput extends AbstractSensorOutput<notecardGPSSensor> {
+    static final String SENSOR_OUTPUT_NAME = "NotecardGPS";
+    static final String SENSOR_OUTPUT_LABEL = "GPS";
+    static final String SENSOR_OUTPUT_DESCRIPTION = "This is the output for the GPS module on the Blues Notecard";
 
     // myNote:
     // Added Variables because there were in other templates
@@ -40,8 +46,7 @@ public class GravityOutput extends AbstractSensorOutput<Bno085Sensor> {
     private final Object histogramLock = new Object();
     private long lastSetTimeMillis = System.currentTimeMillis();
 
-    private static final Logger logger = LoggerFactory.getLogger(GravityOutput.class);
-
+    private static final Logger logger = LoggerFactory.getLogger(notecardGPSOutput.class);
 
     private DataRecord dataStruct;
     private DataEncoding dataEncoding;
@@ -51,7 +56,7 @@ public class GravityOutput extends AbstractSensorOutput<Bno085Sensor> {
      *
      * @param parentSensor Sensor driver providing this output.
      */
-    public GravityOutput(Bno085Sensor parentSensor) {
+    public notecardGPSOutput(notecardGPSSensor parentSensor) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
     }
 
@@ -59,35 +64,37 @@ public class GravityOutput extends AbstractSensorOutput<Bno085Sensor> {
      * Initializes the data structure for the output, defining the fields, their ordering, and data types.
      */
     public void doInit() {
-        logger.info("Initializing Gravity Output");
+        logger.info("Initializing Notecard GPS Output");
         // Get an instance of SWE Factory suitable to build components
         SWEHelper sweFactory = new SWEHelper();
+        GeoPosHelper geoFactory = new GeoPosHelper();
+
 
         // Create the data record description
         SWEBuilders.DataRecordBuilder recordBuilder = sweFactory.createRecord()
                 .name(SENSOR_OUTPUT_NAME)
                 .label(SENSOR_OUTPUT_LABEL)
                 .description(SENSOR_OUTPUT_DESCRIPTION)
-                .addField("timestamp", sweFactory.createTime()
+                .addField("oshTimestamp", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
-                        .label("Time Stamp")
-                        .description("Time of data collection")
-                        .definition(SWEHelper.getPropertyUri("timestamp")))
-                .addField("gravity_X", sweFactory.createQuantity()
-                        .uom("m/s^2")
-                        .label("X")
-                        .description("X-axis gravity")
-                        .definition(SWEHelper.getPropertyUri("gravityX")))
-                .addField("gravity_Y", sweFactory.createQuantity()
-                        .uom("m/s^2")
-                        .label("Y")
-                        .description("Y-axis gravity")
-                        .definition(SWEHelper.getPropertyUri("gravityY")))
-                .addField("gravity_Z", sweFactory.createQuantity()
-                        .uom("m/s^2")
-                        .label("Z")
-                        .description("Z-axis gravity")
-                        .definition(SWEHelper.getPropertyUri("gravityZ")));
+                        .label("OSH Time Stamp")
+                        .description("Timestamp of when OSH collected data")
+                        .definition(SWEHelper.getPropertyUri("oshTimestamp")))
+                .addField("status", sweFactory.createText()
+                        .label("Status")
+                        .description("Information of GPS Status")
+                        .definition(SWEHelper.getPropertyUri("status")))
+                .addField("mode", sweFactory.createText()
+                        .label("Mode")
+                        .description("Periodic or Continuous")
+                        .definition(SWEHelper.getPropertyUri("mode")))
+                .addField("collectionTime", sweFactory.createTime()
+                        .asSamplingTimeIsoUTC()
+                        .label("GPS Collection Time")
+                        .description("Timestamp of when GPS data was actually taken")
+                        .definition(SWEHelper.getPropertyUri("collectionTime")))
+                .addField("Location", geoFactory.createLocationVectorLatLon());
+
         dataStruct = recordBuilder.build();
 
         dataEncoding = sweFactory.newTextEncoding(",", "\n");
@@ -114,8 +121,8 @@ public class GravityOutput extends AbstractSensorOutput<Bno085Sensor> {
         return accumulator / (double) MAX_NUM_TIMING_SAMPLES;
     }
 
-    public void SetData(float x, float y, float z) {
-        DataBlock dataBlock;
+    public void SetData(String status, String mode, long gpsTime, float lat, float lon) {
+               DataBlock dataBlock;
         try {
             if (latestRecord == null) {
                 dataBlock = dataStruct.createDataBlock();
@@ -131,18 +138,29 @@ public class GravityOutput extends AbstractSensorOutput<Bno085Sensor> {
             }
             ++setCount;
 
+            // Convert Unix Epoch time provided by GPS to OffsetDateTime
+            Instant gpsTimeInstant = Instant.ofEpochSecond(gpsTime);
+            OffsetDateTime odt = gpsTimeInstant.atOffset(ZoneOffset.UTC);
+
+            // Add helpful message to status
+            status = (status.equals("GPS inactive {gps-inactive}")) ? status + "{If this is first time starting, may take several minutes for GPS to initialize}" : status;
+
+
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
-            dataBlock.setDoubleValue(1, x);
-            dataBlock.setDoubleValue(2, y);
-            dataBlock.setDoubleValue(3, z);
+            dataBlock.setStringValue(1, status);
+            dataBlock.setStringValue(2, mode);
+            dataBlock.setDateTime(3, odt);
+            dataBlock.setFloatValue(4, lat);
+            dataBlock.setFloatValue(5, lon);
+
 
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
 
-            eventHandler.publish(new DataEvent(latestRecordTime, GravityOutput.this, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, notecardGPSOutput.this, dataBlock));
 
         } catch (Exception e) {
-            System.err.println("Error reading from BNO085: " + e.getMessage());
+            System.err.println("Error reading from GPS: " + e.getMessage());
             e.printStackTrace();
         }
     }

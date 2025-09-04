@@ -72,11 +72,20 @@ public class GyroCalibratedOutput extends AbstractSensorOutput<Bno085Sensor> {
                         .label("Time Stamp")
                         .description("Time of data collection"))
                 .addField("gyroscope_calibrated_X", sweFactory.createQuantity()
-                        .uom("rad/s").label("X").description("X-axis gyro"))
+                        .uom("rad/s")
+                        .label("X")
+                        .description("X-axis gyro")
+                        .definition(SWEHelper.getPropertyUri("gyroscope_calibrated_x")))
                 .addField("gyroscope_calibrated_Y", sweFactory.createQuantity()
-                        .uom("rad/s").label("Y").description("Y-axis gyro"))
+                        .uom("rad/s")
+                        .label("Y")
+                        .description("Y-axis gyro")
+                        .definition(SWEHelper.getPropertyUri("gyroscope_calibrated_y")))
                 .addField("gyroscope_calibrated_Z", sweFactory.createQuantity()
-                        .uom("rad/s").label("Z").description("Z-axis gyro"));
+                        .uom("rad/s")
+                        .label("Z")
+                        .description("Z-axis gyro")
+                        .definition(SWEHelper.getPropertyUri("gyroscope_calibrated_z")));
 
         dataStruct = recordBuilder.build();
 

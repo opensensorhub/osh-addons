@@ -72,13 +72,15 @@ public class RotationOutput extends AbstractSensorOutput<Bno085Sensor> {
                 .addField("timestamp", sweFactory.createTime()
                     .asSamplingTimeIsoUTC()
                     .label("Time Stamp")
-                    .description("Time of data collection"))
+                    .description("Time of data collection")
+                    .definition(SWEHelper.getPropertyUri("timestamp")))
                 .addField("Rotation Vector", geoFactor.createQuatOrientation()
                     .description("rotation quaternion"))
                 .addField("qa", sweFactory.createQuantity()
                     .label("Heading Accuracy")
                     .uom("rad")
-                    .description("the accuracy of heading from a rotation vector"));
+                    .description("the accuracy of heading from a rotation vector")
+                    .definition(SWEHelper.getPropertyUri("accuracy")));
 
 
         dataStruct = recordBuilder.build();
