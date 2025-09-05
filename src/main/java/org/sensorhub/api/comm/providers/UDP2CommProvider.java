@@ -117,9 +117,7 @@ public class UDP2CommProvider extends AbstractModule<UDP2CommProviderConfig> imp
                 os.close();
             }
 
-            if (socket != null && socket.isConnected()) {
-
-                socket.disconnect();
+            if (socket != null) {
 
                 socket.close();
 

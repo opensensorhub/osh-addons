@@ -138,7 +138,10 @@ class DatagramInputStream extends InputStream implements Runnable {
 
             } catch (IOException e) {
 
-                logger.error(e.getMessage(), e);
+                if (!socket.isClosed()) {
+
+                    logger.error(e.getMessage(), e);
+                }
             }
         }
     }
