@@ -116,8 +116,9 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
                         .description("Name of the KrakenSDR station inputted in the Station Information box in the Web GUI")
                         .definition(SWEHelper.getPropertyUri("id"))
                 )
-                .addField("location", geoFac.newLocationVectorLatLon(SWEHelper.getPropertyUri("location"))
-
+                .addField("location", geoFac.createLocationVectorLatLon().label(SWEHelper.getPropertyUri("location"))
+                        .label("Location")
+                        .description("Lat and Long of the Kraken's Position")
                 )
                 .addField("heading", sweFactory.createQuantity()
                         .label("Heading")
@@ -129,7 +130,6 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
                         .description("Main Heading Sensor Used (\"GPS\"/\"Compass\")")
                         .definition(SWEHelper.getPropertyUri("heading")))
                 ;
-        dataStruct.getField("location").setLabel("Location");
         dataStruct = recordBuilder.build();
 
 
