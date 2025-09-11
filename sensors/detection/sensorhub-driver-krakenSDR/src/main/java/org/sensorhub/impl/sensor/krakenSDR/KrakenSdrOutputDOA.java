@@ -21,8 +21,11 @@ import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -79,7 +82,7 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
                         .label("KrakenSDR Collection Time")
                         .description("Timestamp of when KrakenSDR reading was generated")
                         .definition(SWEHelper.getPropertyUri("time")))
-                .addField("raw-lob", sweFactory.createQuantity()
+                .addField("raw_lob", sweFactory.createQuantity()
                         .uomCode("deg")
                         .label("Raw LOB")
                         .description("The LOB to the emitter in absolute (true north) value")
@@ -95,7 +98,7 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
                         .definition(SWEHelper.getPropertyUri("rssi")))
                 .addField("frequency", sweFactory.createQuantity()
                         .uomCode("Hz")
-                        .label("frequency")
+                        .label("Frequency")
                         .dataType(DataType.LONG)
                         .description("The transmission frequency of the event in Hertz")
                         .definition(SWEHelper.getPropertyUri("frequency")))
@@ -105,16 +108,20 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
                         .definition(SWEHelper.getPropertyUri("antenna_arrangement")))
                 .addField("time-delta", sweFactory.createQuantity()
                         .uomCode("ms")
-                        .label("latency")
+                        .label("Latency")
                         .description("Latency in ms : (Time from signal arrival at antenna, to result. NOT including network latency.)")
                         .definition(SWEHelper.getPropertyUri("latency")))
                 .addField("uuid", sweFactory.createText()
                         .label("UUID")
                         .description("Name of the KrakenSDR station inputted in the Station Information box in the Web GUI")
-                        .definition(SWEHelper.getPropertyUri("id")))
-                .addField("location", geoFac.newLocationVectorLatLon(SWEHelper.getPropertyUri("location")))
+                        .definition(SWEHelper.getPropertyUri("id"))
+                )
+                .addField("location", geoFac.createLocationVectorLatLon().label(SWEHelper.getPropertyUri("location"))
+                        .label("Location")
+                        .description("Lat and Long of the Kraken's Position")
+                )
                 .addField("heading", sweFactory.createQuantity()
-                        .label("heading")
+                        .label("Heading")
                         .uomCode("deg")
                         .description("heading")
                         .definition(SWEHelper.getPropertyUri("heading")))
@@ -123,8 +130,8 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
                         .description("Main Heading Sensor Used (\"GPS\"/\"Compass\")")
                         .definition(SWEHelper.getPropertyUri("heading")))
                 ;
-
         dataStruct = recordBuilder.build();
+
 
         dataEncoding = sweFactory.newTextEncoding(",", "\n");
     }
@@ -151,7 +158,7 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
     }
 
     public void SetData() {
-               DataBlock dataBlock;
+        DataBlock dataBlock;
         try {
             if (latestRecord == null) {
                 dataBlock = dataStruct.createDataBlock();
@@ -177,9 +184,14 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
             String DoA_csv;
             String[] DOA_Array;
 
-            while ((DoA_csv = in.readLine()) != null) {
-
+            DoA_csv = in.readLine();
+            DoA_csv = DoA_csv.trim();
+            if (!DoA_csv.isEmpty()) {
+                // Create an array from the html csv data. If it's not the right amount of fields, go to next iteration.
                 DOA_Array = DoA_csv.split(",");
+                if (DOA_Array.length < 13) {
+                    return;
+                }
 
                 // Convert Unix Epoch time provided by GPS to OffsetDateTime
                 Instant krakenTimeInstant = Instant.ofEpochMilli(Long.parseLong(DOA_Array[0]));
@@ -207,10 +219,8 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
 
                 eventHandler.publish(new DataEvent(latestRecordTime, KrakenSdrOutputDOA.this, dataBlock));
             }
-
-        } catch (Exception e) {
-            System.err.println("Error reading from krakenSDR: " + e.getMessage());
-            e.printStackTrace();
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
     }
 

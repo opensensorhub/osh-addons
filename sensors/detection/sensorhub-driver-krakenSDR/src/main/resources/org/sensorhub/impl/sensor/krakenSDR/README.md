@@ -55,7 +55,8 @@ To set this up properly, i found the following [YouTube Tutorial](https://www.yo
 to type these commands in your Raspberry Pi's terminal:
 1. Install GPSD
 ```commandline
-sudo apt-get install gpsd gpsd-clients python-gps
+sudo apt-get install gpsd gpsd-clients
+pip3 install gpsd-py3
 ```
 2. Stop current GPSD service, rebind to the correct serial, and then restart it.
 
