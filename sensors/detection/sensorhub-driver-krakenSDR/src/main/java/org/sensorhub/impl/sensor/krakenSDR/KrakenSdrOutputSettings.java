@@ -155,7 +155,7 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
     }
 
     public void SetData() {
-               DataBlock dataBlock;
+        DataBlock dataBlock;
         try {
             if (latestRecord == null) {
                 dataBlock = dataStruct.createDataBlock();
@@ -173,6 +173,10 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
 
             // RETRIEVE CURRENT JSON SETTINGS AS A JSON OBJECT
             JsonObject currentSettings = util.retrieveJSONFromAddr(parent.settings_URL);
+
+            if(currentSettings == null || currentSettings.entrySet().isEmpty()){
+                return;
+            }
 
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);                                  // time
             dataBlock.setBooleanValue(1, currentSettings.get("en_remote_control").getAsBoolean());

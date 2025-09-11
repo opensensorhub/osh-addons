@@ -34,11 +34,11 @@ public class KrakenSdrConfig extends SensorConfig {
      */
     @DisplayInfo.Required
     @DisplayInfo(desc = "Serial number or unique identifier")
-    public String serialNumber = "test";
+    public String serialNumber = "kraken_rt";
 
     @DisplayInfo.Required
     @DisplayInfo(label="Kraken IP Address", desc="Provide the shared IP Address assigned to the KrakenSD")
-    public String krakenIPaddress = "192.168.50.186";
+    public String krakenIPaddress = "localhost";
 
     @DisplayInfo.Required
     @DisplayInfo(label="Kraken Data-out Port", desc="Provide the USB Port for your Sensor (Usually 8081)")

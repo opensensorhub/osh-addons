@@ -89,7 +89,10 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
             krakenSdrControlStation.doInit(initialSettings);
 
         } catch (SensorHubException e) {
-            throw new RuntimeException("Failed to connect to: " + settings_URL);
+//            System.err.println("Failed to connect to: " + settings_URL + "\nConfirm that Kraken DOA Software Configuration is displaying this output");
+            logger.error("Failed to connect to: " + settings_URL + "\nConfirm that Kraken DOA Software Configuration is displaying this output");
+            throw new SensorHubException("Failed to connect to: (" + settings_URL + "). Confirm Kraken DOA Software Configuration is displaying to this this output");
+//            throw new RuntimeException("Failed to connect to: " + settings_URL);
         }
 
         /// INITIALIZE OUTPUTS
