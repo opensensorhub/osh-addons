@@ -154,7 +154,7 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig>
                     
                     try
                     {
-                        stop();
+                        doStop();
                         
                         if (config.connectionType == Mode.PUBSUB ||
                            (config.connectionType == Mode.PUBSUB_THEN_FIREHOSE && numAttempts <= 3) ||
