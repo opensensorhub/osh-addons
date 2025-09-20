@@ -32,6 +32,7 @@ public class TestPostgisConnection {
     public void init() {
         try {
             connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/gis", "postgres", "postgres");
+            createTable();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -41,6 +42,7 @@ public class TestPostgisConnection {
     public void close() {
         if(connection != null) {
             try {
+                removeTable();
                 connection.close();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -48,16 +50,23 @@ public class TestPostgisConnection {
         }
     }
 
+    private void createTable() throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE IF NOT EXISTS datastreams (id VARCHAR(255), data JSONB, PRIMARY KEY (id));");
+        }
+    }
+
+    private void removeTable() throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("DROP TABLE datastreams;");
+        }
+    }
+
     @Test
-    public void insertAndSelect() {
-           /* // test insert JSONB
+    public void insertAndSelect() throws SQLException {
+           // test insert JSONB
             try(Statement stmt = connection.createStatement()) {
                 stmt.executeUpdate("INSERT INTO datastreams (id,data) VALUES ('"+ UUID.randomUUID().toString() +"','{\"a\": 1}')");
-            }
-
-            // test insert JSONB 2
-            try(Statement stmt = connection.createStatement()) {
-                stmt.executeUpdate("INSERT INTO datastreams (id,data) VALUES ('"+UUID.randomUUID().toString()+"','"+json+"')");
             }
 
             // test insert JSONB 3
@@ -78,14 +87,17 @@ public class TestPostgisConnection {
                     throw new RuntimeException(e);
                 }
             }
-*/
+
         // query JSONB data
             try(Statement stmt = connection.createStatement()) {
                 try (ResultSet rs = stmt.executeQuery("SELECT * FROM datastreams WHERE data->'systemID'->'internalID'->>'id' = '1'")) {
                     assertTrue(rs.next());
+                    int count = 0;
                     while (rs.next()) {
                         System.out.println(rs.getString(1));
+                        count++;
                     }
+                    System.out.println(count);
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);

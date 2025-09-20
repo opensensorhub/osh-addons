@@ -47,7 +47,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public abstract class   SerializerUtils {
+public abstract class SerializerUtils {
 
     static final GsonBuilder builder = new GsonBuilder()
             .setLenient()

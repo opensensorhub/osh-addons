@@ -15,6 +15,10 @@
 package org.sensorhub.impl.datastore.postgis;
 
 import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.OrderWith;
+import org.junit.runner.manipulation.Alphanumeric;
 import org.sensorhub.impl.datastore.AbstractTestCommandStreamStore;
 import org.sensorhub.impl.datastore.postgis.command.PostgisCommandStatusStore;
 import org.sensorhub.impl.datastore.postgis.command.PostgisCommandStoreImpl;
@@ -26,6 +30,7 @@ import java.sql.Statement;
 
 import static org.junit.Assert.assertEquals;
 
+@OrderWith(Alphanumeric.class)
 public class TestPostgisCommandStreamStore extends AbstractTestCommandStreamStore<PostgisCommandStreamStoreImpl> {
     protected static String COMMAND_STREAM_DATASTORE_NAME = "test_command";
     private static String DB_NAME = "gis";
@@ -40,10 +45,22 @@ public class TestPostgisCommandStreamStore extends AbstractTestCommandStreamStor
         return (PostgisCommandStreamStoreImpl) postgisCommandStore.getCommandStreams();
     }
 
-
-    protected void forceReadBackFromStorage() {
-
+    @Before
+    public void setup() throws Exception {
+        Thread.sleep(1000);
     }
+
+    @Test
+    public void test1AddAndSelectCurrentVersion() throws Exception {
+        super.testAddAndSelectCurrentVersion();
+    }
+
+    @Override
+    public void testAddAndSelectCurrentVersion() {
+        // Call this first so expected result not deleted by other test
+    }
+
+    protected void forceReadBackFromStorage() {}
 
 
     @After

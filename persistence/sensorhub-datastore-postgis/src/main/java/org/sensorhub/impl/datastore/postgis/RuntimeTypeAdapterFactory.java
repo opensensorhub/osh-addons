@@ -25,6 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
@@ -32,7 +34,6 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
 
     private final Class<?> baseType;
     private final String typeFieldName;
-
 
     public RuntimeTypeAdapterFactory(Class<?> baseType, String typeFieldName) {
         if (typeFieldName == null || baseType == null)

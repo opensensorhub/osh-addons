@@ -33,8 +33,9 @@ public class ObsFilterQuery extends FilterQuery {
     public FilterQueryGenerator build(ObsFilter filter) {
         this.handleDataStreamFilter(filter.getDataStreamFilter());
         this.handlePhenomenonTimeFilter(filter.getPhenomenonTime());
-        this.handleResulTimeFilter(filter.getResultTime());
+        this.handleResultTimeFilter(filter.getResultTime());
         this.handleFoiFilter(filter.getFoiFilter());
+        this.handleInternalIDs(filter.getInternalIDs());
         return this.filterQueryGenerator;
     }
 
@@ -64,7 +65,7 @@ public class ObsFilterQuery extends FilterQuery {
         }
     }
 
-    protected void handleResulTimeFilter(TemporalFilter temporalFilter) {
+    protected void handleResultTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct(this.tableName + ".datastreamid");

@@ -104,6 +104,9 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     @Override
     public FeatureKey add(BigId parentID, V feature) throws DataStoreException {
+        DataStoreUtils.checkFeatureObject(feature);
+        checkParentFeatureExists(parentID);
+
         long id = idProvider.newInternalID(feature);
         Instant validInstant;
         if (feature.getValidTime() != null && feature.getValidTime().begin().getEpochSecond() > MIN_INSTANT.getEpochSecond()) {

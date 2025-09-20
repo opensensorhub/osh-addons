@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -47,6 +48,11 @@ public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImp
     private final String password = "postgres";
 
     protected PostgisObsStoreImpl postgisObsStore;
+
+    @Before
+    public void setup() throws Exception {
+        Thread.sleep(2000);
+    }
 
     @Test
     public void testGetDatastoreName() throws Exception
@@ -107,8 +113,8 @@ public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImp
                 .build();
         checkSelectedEntries(resultStream, expectedResults, filter);
 
-        // invalid IDs
-        var ids = BigId.fromLongs(DATABASE_NUM, 5, 12, 53, 76);
+        // invalid IDs. these need to be above max number of obs in db because of auto-incrementing PK
+        var ids = BigId.fromLongs(DATABASE_NUM, 500, 1200, 5300, 7600);
         filter = new ObsFilter.Builder()
                 .withInternalIDs(ids)
                 .build();

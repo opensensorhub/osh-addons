@@ -16,19 +16,20 @@ package org.sensorhub.impl.datastore.postgis;
 
 import net.opengis.swe.v20.DataComponent;
 import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.OrderWith;
+import org.junit.runner.manipulation.Alphanumeric;
 import org.sensorhub.impl.datastore.AbstractTestDataStreamStore;
 import org.sensorhub.impl.datastore.postgis.obs.PostgisDataStreamStoreImpl;
 import org.sensorhub.impl.datastore.postgis.obs.PostgisObsStoreImpl;
 import org.vast.swe.SWEUtils;
 
 import java.io.ByteArrayOutputStream;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
 
+@OrderWith(Alphanumeric.class)
 public class TestPostgisDataStreamStore extends AbstractTestDataStreamStore<PostgisDataStreamStoreImpl> {
     protected static String OBS_DATASTORE_NAME = "test_obs";
 
@@ -43,19 +44,34 @@ public class TestPostgisDataStreamStore extends AbstractTestDataStreamStore<Post
     //    @Override
     protected PostgisDataStreamStoreImpl initStore() throws Exception {
         postgisObsStore =  new PostgisObsStoreImpl(url, DB_NAME, login, password, OBS_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL);
+        postgisObsStore.clear();
+        postgisObsStore.getDataStreams().clear();
+        postgisObsStore.getDataStreams().commit();
         return (PostgisDataStreamStoreImpl) postgisObsStore.getDataStreams();
     }
 
-
-    protected void forceReadBackFromStorage() {
-
+    @Before
+    public void setup() throws Exception {
+        Thread.sleep(1000);
     }
+
+    @Test
+    public void test1AddAndSelectCurrentVersion() throws Exception {
+        super.testAddAndSelectCurrentVersion();
+    }
+
+    @Override
+    public void testAddAndSelectCurrentVersion() {
+        // Call this first so expected result not deleted by other test
+    }
+
+    protected void forceReadBackFromStorage() {}
 
 
     @After
     public void cleanup() throws Exception {
-        postgisObsStore.drop();
         ((PostgisDataStreamStoreImpl)postgisObsStore.getDataStreams()).drop();
+        postgisObsStore.drop();
     }
 
     @Override

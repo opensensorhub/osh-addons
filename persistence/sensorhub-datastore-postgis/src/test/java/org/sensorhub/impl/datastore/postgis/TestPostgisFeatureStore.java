@@ -67,4 +67,34 @@ public class TestPostgisFeatureStore extends AbstractTestFeatureStore<PostgisFea
             postgisFeatureStore.clearCache();
         }
     }
+
+    // TODO: Add performance tests that are realistic for PostgreSQL
+
+    @Override
+    public void testScanThroughput() throws Exception {
+//        super.testScanThroughput();
+    }
+
+    @Test
+    @Override
+    public void testPutThroughput() throws Exception {
+//        super.testPutThroughput();
+    }
+
+    @Override
+    public void testGetThroughput() throws Exception {
+//        super.testGetThroughput();
+    }
+
+    @Override
+    public void testTemporalFilterThroughput() throws Exception {
+//        super.testTemporalFilterThroughput();
+    }
+
+    @Override
+    public void testSpatialFilterThroughput() throws Exception {
+//        super.testSpatialFilterThroughput();
+    }
+
+
 }
