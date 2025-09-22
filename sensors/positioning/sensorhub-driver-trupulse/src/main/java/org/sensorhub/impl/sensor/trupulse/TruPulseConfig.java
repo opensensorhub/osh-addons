@@ -31,6 +31,8 @@ public class TruPulseConfig extends SensorConfig
     @DisplayInfo(desc="Communication settings to connect to range finder data stream")
     public CommProviderConfig<?> commSettings;
 
+    @DisplayInfo(label="Connection Options")
+    public RobustConnectionConfig connection = new RobustConnectionConfig();
     
     public TruPulseConfig()
     {

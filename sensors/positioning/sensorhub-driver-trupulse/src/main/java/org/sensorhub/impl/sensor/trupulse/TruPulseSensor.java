@@ -78,22 +78,34 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
     protected void doStart() throws SensorHubException
     {
         // init comm provider
-        if (commProvider == null)
-        {
-            try
-            {
-                if (config.commSettings == null)
-                    throw new SensorHubException("No communication settings specified");
-                
-                // start comm provider
-                var moduleReg = getParentHub().getModuleRegistry();
-                commProvider = (ICommProvider<?>)moduleReg.loadSubModule(config.commSettings, true);
-                commProvider.start();
-            }
-            catch (Exception e)
-            {
+        if(commProvider == null){
+            try{
+
+                if(config.commSettings == null) throw new SensorHubException("No communication settings specified");
+
+                connection = new RobustConnection(this, config.connection, "TruPulse Laser Range Finder") {
+                    @Override
+                    public boolean tryConnect() throws IOException {
+
+                        try {
+                            // start comm provider
+                            var moduleReg = getParentHub().getModuleRegistry();
+                            commProvider = (ICommProvider<?>)moduleReg.loadSubModule(config.commSettings, true);
+                            commProvider.start();
+
+                            return true;
+
+                        } catch (SensorHubException e){
+                            reportError("Cannot connect to TruPulse Laser Range Finder", e,  true);
+                            return false;
+                        }
+                    }
+                };
+
+                connection.waitForConnection();
+            }catch (SensorHubException e){
                 commProvider = null;
-                throw e;
+                e.printStackTrace();
             }
         }
         
@@ -126,6 +138,8 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
     @Override
     public boolean isConnected()
     {
-        return (commProvider != null);
+        if(connection == null) return false;
+
+        return connection.isConnected();
     }
 }

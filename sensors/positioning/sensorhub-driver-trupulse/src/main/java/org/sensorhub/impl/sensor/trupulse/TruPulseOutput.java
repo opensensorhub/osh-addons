@@ -33,8 +33,8 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     private static String OUTPUT_NAME = "rangeData";
     private static String MSG_PREFIX = "$PLTIT";
     private static String MSG_TYPE_HV = "HV";
-    //private static String MSG_TYPE_HT = "HT";
-    //private static String MSG_TYPE_ML = "ML";
+    private static String MSG_TYPE_HT = "HT";
+    private static String MSG_TYPE_ML = "ML";
     private static double FEET_TO_METERS = 0.304800610;
     private static double YARDS_TO_METERS = 0.9144;
     
