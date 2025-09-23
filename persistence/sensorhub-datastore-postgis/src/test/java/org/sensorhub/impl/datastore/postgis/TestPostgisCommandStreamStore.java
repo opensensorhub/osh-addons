@@ -47,7 +47,7 @@ public class TestPostgisCommandStreamStore extends AbstractTestCommandStreamStor
 
     @Before
     public void setup() throws Exception {
-        Thread.sleep(1000);
+        Thread.sleep(2000);
     }
 
     @Test

@@ -52,7 +52,7 @@ public class TestPostgisDataStreamStore extends AbstractTestDataStreamStore<Post
 
     @Before
     public void setup() throws Exception {
-        Thread.sleep(1000);
+        Thread.sleep(2000);
     }
 
     @Test
