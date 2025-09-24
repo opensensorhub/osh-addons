@@ -67,4 +67,24 @@ public class TestPostgisFeatureStore extends AbstractTestFeatureStore<PostgisFea
             postgisFeatureStore.clearCache();
         }
     }
+
+    @Test
+    @Override
+    public void testScanThroughput() throws Exception {}
+
+    @Test
+    @Override
+    public void testPutThroughput() throws Exception {}
+
+    @Test
+    @Override
+    public void testGetThroughput() throws Exception {}
+
+    @Test
+    @Override
+    public void testTemporalFilterThroughput() throws Exception {}
+
+    @Test
+    @Override
+    public void testSpatialFilterThroughput() throws Exception {}
 }

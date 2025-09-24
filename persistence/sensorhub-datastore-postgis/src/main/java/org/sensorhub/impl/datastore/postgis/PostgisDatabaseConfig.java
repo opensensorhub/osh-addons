@@ -14,7 +14,10 @@
 
 package org.sensorhub.impl.datastore.postgis;
 
+import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.database.DatabaseConfig;
+
+import javax.validation.constraints.Min;
 
 
 /**
@@ -27,6 +30,25 @@ import org.sensorhub.api.database.DatabaseConfig;
  */
 public abstract class PostgisDatabaseConfig extends DatabaseConfig
 {
+    @DisplayInfo(desc="URL database")
+    public String url;
+
+    @DisplayInfo(label="Dababase name", desc="Dabatase name")
+    public String dbName;
+
+    @DisplayInfo(desc="Login")
+    public String login;
+
+    @DisplayInfo(desc="Password")
+    public String password;
+
+    @DisplayInfo(label = "ID Generator", desc = "Method used to generate new resource IDs")
+    public IdProviderType idProviderType = IdProviderType.SEQUENTIAL;
+
+    @Min(value = 0)
+    @DisplayInfo(desc = "Max delay between auto-commit execution, in seconds. 0 to disable time-based auto-commit")
+    public int autoCommitPeriod = 10;
+
     public PostgisDatabaseConfig()
     {
         this.moduleClass = PostgisObsSystemDatabase.class.getCanonicalName();

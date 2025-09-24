@@ -16,7 +16,6 @@ package org.sensorhub.impl.datastore.postgis.feature;
 
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.Deployment;
 import org.sensorhub.api.datastore.deployment.DeploymentFilter;
 import org.sensorhub.api.datastore.deployment.IDeploymentStore;
@@ -26,7 +25,6 @@ import org.sensorhub.api.system.IDeploymentWithDesc;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderDeploymentStore;
 import org.sensorhub.impl.service.consys.sensorml.DeploymentAdapter;
-import org.sensorhub.impl.system.wrapper.SmlFeatureWrapper;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -40,11 +38,11 @@ public class PostgisDeploymentStoreImpl extends
         PostgisBaseFeatureStoreImpl<IDeploymentWithDesc, IDeploymentStore.DeploymentField, DeploymentFilter, QueryBuilderDeploymentStore> implements IDeploymentStore {
 
     public PostgisDeploymentStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderDeploymentStore());
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderDeploymentStore(), false);
     }
 
     public PostgisDeploymentStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderDeploymentStore(dataStoreName));
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderDeploymentStore(dataStoreName), false);
     }
 
     @Override

@@ -14,10 +14,6 @@
 
 package org.sensorhub.impl.datastore.postgis;
 
-import org.sensorhub.api.config.DisplayInfo;
-
-import javax.validation.constraints.Min;
-
 
 /**
  * <p>
@@ -25,14 +21,11 @@ import javax.validation.constraints.Min;
  * </p>
  *
  * @author Mathieu Dhainaut
- * @date Jul 25, 2023
+ * @date Sept 13, 2025
  */
-public class PostgisObsSystemDatabaseConfig extends PostgisDatabaseConfig
-{
-
-
-    public PostgisObsSystemDatabaseConfig()
+public class PostgisFeatureDatabaseConfig extends PostgisDatabaseConfig {
+    public PostgisFeatureDatabaseConfig()
     {
-        this.moduleClass = PostgisObsSystemDatabase.class.getCanonicalName();
+        this.moduleClass = PostgisFeatureDatabase.class.getCanonicalName();
     }
 }
