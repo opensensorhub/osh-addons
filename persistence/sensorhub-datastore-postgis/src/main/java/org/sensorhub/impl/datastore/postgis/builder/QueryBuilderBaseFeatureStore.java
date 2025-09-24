@@ -51,7 +51,7 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
 //        return "INSERT INTO "+this.getStoreTableName()+" (id, parentId,"+GEOMETRY+", "+VALID_TIME+", data) " +
 //                "SELECT ?,?,?,?,? WHERE (EXISTS(SELECT 1 from "+this.getStoreTableName()+" where id = ?)) ";
         return "INSERT INTO "+this.getStoreTableName()+" (id, parentId,"+GEOMETRY+", "+VALID_TIME+", data) " +
-                "VALUES(?,?,?,?,?)";
+                "SELECT ?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM "+this.getStoreTableName()+" WHERE (data->>'uniqueId')::text = ?)";
     }
 
     public String selectByPrimaryKeyQuery() {
