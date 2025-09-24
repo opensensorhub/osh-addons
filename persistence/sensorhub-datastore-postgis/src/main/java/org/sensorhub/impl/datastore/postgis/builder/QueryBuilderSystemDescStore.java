@@ -21,6 +21,8 @@ import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesFeatureQ
 import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesSystemQuery;
 
 import java.util.Set;
+
+import static org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField.GEOMETRY;
 import static org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField.VALID_TIME;
 
 public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<ISystemWithDesc, ISystemDescStore.SystemField, SystemFilter> {
@@ -46,23 +48,12 @@ public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<IS
         }
 
     @Override
-        public String selectLastVersionByUidQuery(String uid, String timestamp) {
-            return "SELECT DISTINCT ON (id) id,validTime " +
-                    "FROM " + this.getStoreTableName() + " WHERE (data->>'uniqueId') = '" + uid + "' AND " +
-                    "tstzrange((data->'validTime'->>0)::timestamptz, (data->'validTime'->>1)::timestamptz)" +
-                    " && '[" + timestamp + "," + timestamp + "]' " +
-                    "order by id, ((data->'validTime'->>0)::timestamptz) DESC";
-        }
-
-    @Override
-        public String selectLastVersionByIdQuery(long id, String timestamp) {
-            return "SELECT DISTINCT ON (id) id,validTime "+
-                    "FROM "+this.getStoreTableName()+" WHERE id = "+id+" AND " +
-                    "tstzrange((data->'validTime'->>0)::timestamptz, (data->'validTime'->>1)::timestamptz)" +
-                    " && '["+timestamp+","+timestamp+"]' "+
-                    "order by id, ((data->'validTime'->>0)::timestamptz) DESC";
-        }
-
+    public String selectLastVersionByUidQuery(String uid, String timestamp) {
+        return "SELECT DISTINCT ON (id) id,validTime " +
+                "FROM " + this.getStoreTableName() + " WHERE (data->>'uniqueId') = '" + uid + "' AND " +
+                this.getStoreTableName()+".validTime @> ? " +
+                "order by id, lower(validTime) DESC";
+    }
 
     @Override
         public String createUidUniqueIndexQuery() {
@@ -72,12 +63,12 @@ public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<IS
 
     @Override
         public String createValidTimeBeginIndexQuery() {
-            return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " (((data->>'validTime'->>0)::text))";
+            return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " (validTime)";
         }
 
     @Override
         public String createValidTimeEndIndexQuery() {
-            return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_1_idx ON "+this.getStoreTableName()+ " (((data->>'validTime'->>1)::text))";
+            return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_1_idx ON "+this.getStoreTableName()+ " (validTime)";
         }
     @Override
         public String createTrigramDescriptionFullTextIndexQuery() {
@@ -88,7 +79,15 @@ public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<IS
             return "CREATE INDEX "+this.getStoreTableName()+"_feature_uid_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data->>'uniqueId') gin_trgm_ops)";
         }
 
+    public String addOrUpdateByIdQuery() {
+        return this.insertFeatureByIdQuery()+" ON CONFLICT ((data->>'uniqueId'), "+VALID_TIME +") DO "+
+                "UPDATE SET "+GEOMETRY+" = ?, " +VALID_TIME+" = ?, data = ?  ";
+    }
 
+    @Override
+    public String countFeatureQuery() {
+        return "SELECT COUNT(DISTINCT data->>'uid') AS recordsCount FROM " + this.getStoreTableName();
+    }
 
     @Override
     public String createSelectEntriesQuery(SystemFilter filter, Set<ISystemDescStore.SystemField> fields) {

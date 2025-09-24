@@ -23,9 +23,7 @@ import org.sensorhub.api.datastore.procedure.ProcedureFilter;
 import org.sensorhub.api.procedure.IProcedureWithDesc;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderProcedureStore;
-import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.sensorhub.impl.system.wrapper.SmlFeatureWrapper;
-import org.vast.sensorML.SMLJsonBindings;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -40,11 +38,11 @@ public class PostgisProcedureStoreImpl extends
 
 
     public PostgisProcedureStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderProcedureStore());
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderProcedureStore(), false);
     }
 
     public PostgisProcedureStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderProcedureStore(dataStoreName));
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderProcedureStore(dataStoreName), false);
     }
 
     @Override

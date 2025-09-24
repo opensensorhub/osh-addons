@@ -22,6 +22,7 @@ import org.sensorhub.api.datastore.SpatialFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FeatureFilter;
 import org.sensorhub.api.datastore.feature.FeatureFilterBase;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.vast.ogc.gml.IFeature;
 
 import java.time.Instant;
@@ -46,17 +47,9 @@ public class BaseFeatureFilterQuery<V extends IFeature,F extends FeatureFilterBa
 
     protected void handleValidTimeFilter(TemporalFilter temporalFilter) {
         if(temporalFilter != null) {
-            String minTimestamp = temporalFilter.getMin().toString();
-            if(temporalFilter.getMin() == Instant.MIN) {
-                minTimestamp = "-infinity";
-            }
-            String maxTimestamp = temporalFilter.getMax().toString();
-            if(temporalFilter.getMax() == Instant.MAX) {
-                maxTimestamp = "infinity";
-            }
-            String sb = "tstzrange((" + this.tableName + ".data->'properties'->'validTime'->>0)::timestamptz," +
-                    " (" + tableName + ".data->'properties'->'validTime'->>1)::timestamptz)" +
-                    " && '[" + minTimestamp + "," + maxTimestamp + "]'";
+            var timeRange = PostgisUtils.getRangeFromTemporal(temporalFilter);
+            String sb = this.tableName + ".validTime " +
+                    PostgisUtils.getOperator(temporalFilter) + " '[" + timeRange[0] + "," + timeRange[1] + "]'";
             filterQueryGenerator.addCondition(sb);
         }
     }

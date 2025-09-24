@@ -22,7 +22,6 @@ import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderFoiStore;
-import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
 import org.vast.ogc.gml.IFeature;
 
@@ -36,11 +35,11 @@ public class PostgisFoiStoreImpl extends
         PostgisBaseFeatureStoreImpl<IFeature, IFoiStore.FoiField, FoiFilter, QueryBuilderFoiStore> implements IFoiStore {
 
     public PostgisFoiStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFoiStore());
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFoiStore(), true);
     }
 
     public PostgisFoiStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFoiStore(dataStoreName));
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFoiStore(dataStoreName), true);
     }
 
     @Override

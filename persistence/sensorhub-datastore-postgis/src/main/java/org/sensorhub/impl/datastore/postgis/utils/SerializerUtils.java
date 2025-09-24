@@ -38,11 +38,15 @@ import org.vast.swe.BinaryDataWriter;
 import org.vast.swe.SWEJsonBindings;
 import org.vast.swe.fast.JsonDataParserGson;
 import org.vast.swe.fast.JsonDataWriterGson;
+import org.vast.util.DateTimeFormat;
 import org.vast.util.TimeExtent;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

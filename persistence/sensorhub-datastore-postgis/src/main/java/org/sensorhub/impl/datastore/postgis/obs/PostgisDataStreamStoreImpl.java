@@ -350,6 +350,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
         DataStreamKey key = (DataStreamKey) o;
         IDataStreamInfo data = this.get(key);
 
+        logger.debug("Remove Feature with key={}", key.toString());
         // remove corresponding Obs
         ObsFilter filter = new ObsFilter.Builder()
                 .withDataStreams(key.getInternalID())

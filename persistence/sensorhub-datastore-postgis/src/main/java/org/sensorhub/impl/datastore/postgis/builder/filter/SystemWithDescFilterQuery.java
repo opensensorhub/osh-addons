@@ -14,10 +14,10 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.filter;
 
-import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.system.SystemFilter;
 import org.sensorhub.api.system.ISystemWithDesc;
 
+import java.time.Instant;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 

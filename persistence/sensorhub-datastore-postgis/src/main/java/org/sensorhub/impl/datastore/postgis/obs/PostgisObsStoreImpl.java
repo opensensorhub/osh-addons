@@ -181,7 +181,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         // check that datastream exists
         DataStreamKey dataStreamKey = new DataStreamKey(obs.getDataStreamID());
         if (!dataStreamStore.containsKey(dataStreamKey))
-            throw new IllegalStateException("Unknown datastream" + obs.getDataStreamID());
+            throw new IllegalStateException("Unknown datastream with ID: " + obs.getDataStreamID().getIdAsLong());
 
         // check that FOI exists
 //        if (obs.hasFoi() && foiStore != null && !foiStore.contains(obs.getFoiID()))

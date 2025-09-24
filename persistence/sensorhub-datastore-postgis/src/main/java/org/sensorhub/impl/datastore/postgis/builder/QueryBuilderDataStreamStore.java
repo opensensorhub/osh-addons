@@ -18,11 +18,10 @@ import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesDataStreamQuery;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 
 import java.time.Instant;
 import java.util.Set;
-
-import static org.sensorhub.impl.datastore.postgis.builder.filter.FilterQuery.checkAndGetValidInstant;
 
 public class QueryBuilderDataStreamStore extends QueryBuilder {
     public final static String DATASTREAM_TABLE_NAME = "datastreams";
@@ -92,7 +91,7 @@ public class QueryBuilderDataStreamStore extends QueryBuilder {
 
     public String getAllDataStreams(Instant min, Instant max) {
         return "SELECT id FROM "+this.getStoreTableName()+" WHERE tstzrange((data->'validTime'->>'begin')::timestamptz," +
-                "(data->'validTime'->>'end')::timestamptz) && '["+checkAndGetValidInstant(min)+","+checkAndGetValidInstant(max)+"]'::tstzrange";
+                "(data->'validTime'->>'end')::timestamptz) && '["+ PostgisUtils.checkAndGetValidInstant(min)+","+PostgisUtils.checkAndGetValidInstant(max)+"]'::tstzrange";
     }
 
     public String createSelectEntriesQuery(DataStreamFilter filter, Set<IDataStreamStore.DataStreamInfoField> fields) {

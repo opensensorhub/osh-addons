@@ -19,7 +19,6 @@ import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.IFeatureStore;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
-import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderFeatureStore;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
 import org.vast.ogc.gml.IFeature;
@@ -34,11 +33,11 @@ public class PostgisFeatureStoreImpl extends
         PostgisBaseFeatureStoreImpl<IFeature, IFeatureStoreBase.FeatureField, FeatureFilter, QueryBuilderFeatureStore> implements IFeatureStore {
 
     public PostgisFeatureStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFeatureStore());
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFeatureStore(), true);
     }
 
     public PostgisFeatureStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFeatureStore(dataStoreName));
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFeatureStore(dataStoreName), true);
     }
 
     protected IFeature readFeature(String data) throws IOException {
