@@ -152,6 +152,7 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     private void fillAddOrUpdateStatement(FeatureKey featureKey, BigId parentID, V value,PreparedStatement preparedStatement) throws SQLException, IOException {
         preparedStatement.setLong(1, featureKey.getInternalID().getIdAsLong());
+        preparedStatement.setString(6, value.getUniqueIdentifier());
         // statements for INSERT - parentId
        /* if (parentID != null && parentID != BigId.NONE) {
             preparedStatement.setLong(2, parentID.getIdAsLong());
@@ -196,22 +197,22 @@ public abstract class PostgisBaseFeatureStoreImpl
             Geometry geometry = PostgisUtils.toJTSGeometry(value.getGeometry());
             byte[] geom = threadLocalWriter.get().write(geometry);
             preparedStatement.setBytes(3, geom); // insert
-            preparedStatement.setBytes(6, geom); // update
+            preparedStatement.setBytes(7, geom); // update
         } else {
             preparedStatement.setNull(3, Types.LONGVARBINARY);
-            preparedStatement.setNull(6, Types.LONGVARBINARY);
+            preparedStatement.setNull(7, Types.LONGVARBINARY);
         }
 
         PGobject pgValidTimeRange = this.createPGobjectValidTimeRange(featureKey, value);
         preparedStatement.setObject(4, pgValidTimeRange);
-        preparedStatement.setObject(7, pgValidTimeRange);
+        preparedStatement.setObject(8, pgValidTimeRange);
 
         PGobject jsonObject = new PGobject();
         jsonObject.setType("json");
         jsonObject.setValue(this.writeFeature(value));
 
         preparedStatement.setObject(5, jsonObject);
-        preparedStatement.setObject(8, jsonObject);
+        preparedStatement.setObject(9, jsonObject);
     }
 
     public Stream<Entry<FeatureKey, V>> selectEntries(F filter, Set<VF> fields) {
