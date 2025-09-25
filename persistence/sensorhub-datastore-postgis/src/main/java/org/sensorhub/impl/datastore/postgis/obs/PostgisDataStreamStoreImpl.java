@@ -49,6 +49,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.sensorhub.impl.datastore.postgis.utils.SerializerUtils.*;
+
 public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStreamStore> implements IDataStreamStore {
     private volatile Cache<Long, IDataStreamInfo> cache = CacheBuilder.newBuilder()
             .maximumSize(150)

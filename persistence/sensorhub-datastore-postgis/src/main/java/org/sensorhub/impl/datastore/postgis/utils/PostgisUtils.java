@@ -163,7 +163,7 @@ public class PostgisUtils {
         return JTSUtils.getAsJTSGeometry(abstractGeometry);
     }
 
-    public static Instant readInstantFromString(String time) {
+    public static Instant readInstantFromString(String time, boolean truncated) {
         if(time == null || time.isEmpty()) {
             throw new RuntimeException("Cannot Parse time "+time);
         }
@@ -172,17 +172,25 @@ public class PostgisUtils {
         } else if(time.equalsIgnoreCase("infinity")) {
             return Instant.MAX;
         } else {
-            return Instant.parse(time).truncatedTo(ChronoUnit.SECONDS);
+            if(truncated) {
+                return Instant.parse(time).truncatedTo(ChronoUnit.SECONDS);
+            } else {
+                return Instant.parse(time);
+            }
         }
     }
 
-    public static String writeInstantToString(Instant instant) {
+    public static String writeInstantToString(Instant instant, boolean truncated) {
         if(instant.getEpochSecond() < MIN_INSTANT.getEpochSecond()) {
             return "-infinity";
         } else if(instant.getEpochSecond() > MAX_INSTANT.getEpochSecond()) {
             return "infinity";
         } else {
-            return instant.truncatedTo(ChronoUnit.SECONDS).toString();
+            if(truncated) {
+                return instant.truncatedTo(ChronoUnit.SECONDS).toString();
+            } else {
+                return instant.toString();
+            }
         }
     }
 
