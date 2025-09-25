@@ -77,7 +77,7 @@ public class DataStreamFilterQuery extends FilterQuery {
                         ".data->'validTime'->>'begin')::timestamptz,(" +
                         tableName +
                         ".data->'validTime'->>'end')::timestamptz)" +
-                        " && " +
+                        " "+PostgisUtils.getOperator(temporalFilter)+" " +
                         "'[" + min + "," + max + "]'::tstzrange";
                 filterQueryGenerator.addCondition(sb);
             }

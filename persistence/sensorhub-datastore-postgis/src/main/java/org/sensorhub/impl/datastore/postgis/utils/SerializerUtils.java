@@ -51,6 +51,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static org.sensorhub.impl.datastore.postgis.utils.PostgisUtils.MAX_INSTANT;
+import static org.sensorhub.impl.datastore.postgis.utils.PostgisUtils.MIN_INSTANT;
+
 public abstract class   SerializerUtils {
 
     static final GsonBuilder builder = new GsonBuilder()
@@ -334,7 +337,7 @@ public abstract class   SerializerUtils {
                 } else if ("executionTime".equals(prop)) {
                     commandStatusBuilder = commandStatusBuilder.withExecutionTime(readTimeExtent(jsonReader));
                 } else if ("reportTime".equals(prop)) {
-                    commandStatusBuilder = commandStatusBuilder.withReportTime(PostgisUtils.readInstantFromString(jsonReader.nextString()));
+                    commandStatusBuilder = commandStatusBuilder.withReportTime(PostgisUtils.readInstantFromString(jsonReader.nextString(), false));
                 } else if ("commandResult".equals(prop)) {
                     commandStatusBuilder = commandStatusBuilder.withResult(readICommandResult(jsonReader));
                 } else {
@@ -375,7 +378,7 @@ public abstract class   SerializerUtils {
                     }
 
                     if(commandStatus.getReportTime() != null) {
-                        jsonWriter.name("reportTime").value(PostgisUtils.writeInstantToString(commandStatus.getReportTime()));
+                        jsonWriter.name("reportTime").value(PostgisUtils.writeInstantToString(commandStatus.getReportTime(), false));
                     }
 
                     if(commandStatus.getResult() != null) {
@@ -496,14 +499,14 @@ public abstract class   SerializerUtils {
                     jsonWriter.setIndent("  ");
 
                     if(timeExtent.beginsNow()) {
-                        jsonWriter.name("begin").value("now");
-                        jsonWriter.name("end").value(PostgisUtils.writeInstantToString(timeExtent.end()));
+                        jsonWriter.name("begin").value("-infinity");
+                        jsonWriter.name("end").value(PostgisUtils.writeInstantToString(timeExtent.end(), false));
                     } else if(timeExtent.endsNow()) {
-                        jsonWriter.name("begin").value(PostgisUtils.writeInstantToString(timeExtent.begin()));
-                        jsonWriter.name("end").value("now");
+                        jsonWriter.name("begin").value(PostgisUtils.writeInstantToString(timeExtent.begin(), false));
+                        jsonWriter.name("end").value("infinity");
                     } else  {
-                        jsonWriter.name("begin").value(PostgisUtils.writeInstantToString(timeExtent.begin()));
-                        jsonWriter.name("end").value(PostgisUtils.writeInstantToString(timeExtent.end()));
+                        jsonWriter.name("begin").value(PostgisUtils.writeInstantToString(timeExtent.begin(), false));
+                        jsonWriter.name("end").value(PostgisUtils.writeInstantToString(timeExtent.end(), false));
                     }
 
                     jsonWriter.endObject();
@@ -518,20 +521,28 @@ public abstract class   SerializerUtils {
         jsonWriter.name(nodeName);
         jsonWriter.beginObject();
         if(timeExtent.beginsNow()) {
-            jsonWriter.name("begin").value("now");
-            jsonWriter.name("end").value(PostgisUtils.writeInstantToString(timeExtent.end()));
+            jsonWriter.name("begin").value("-infinity");
+            jsonWriter.name("end").value(getValidPGInstant(timeExtent.end()).toString());
         } else if(timeExtent.endsNow()) {
-            jsonWriter.name("begin").value(PostgisUtils.writeInstantToString(timeExtent.begin()));
-            jsonWriter.name("end").value("now");
+            jsonWriter.name("begin").value(getValidPGInstant(timeExtent.begin()).toString());
+            jsonWriter.name("end").value("infinity");
         } else  {
-            jsonWriter.name("begin").value(PostgisUtils.writeInstantToString(timeExtent.begin()));
-            jsonWriter.name("end").value(PostgisUtils.writeInstantToString(timeExtent.end()));
+            jsonWriter.name("begin").value(getValidPGInstant(timeExtent.begin()).toString());
+            jsonWriter.name("end").value(getValidPGInstant(timeExtent.end()).toString());
         }
 
         jsonWriter.endObject();
 
     }
 
+    private static String getTimeExtent(JsonReader jsonReader) throws IOException {
+        var timeExtentAsStr = jsonReader.nextString();
+        if(timeExtentAsStr.equalsIgnoreCase("infinity") ||
+                timeExtentAsStr.equalsIgnoreCase("-infinity")) {
+            return "now";
+        }
+        return timeExtentAsStr;
+    }
     public static TimeExtent readTimeExtent(JsonReader jsonReader) throws IOException {
         String begin = null;
         String end = null;
@@ -540,30 +551,56 @@ public abstract class   SerializerUtils {
         while (jsonReader.hasNext()) {
             switch (jsonReader.nextName()) {
                 case "begin": {
-                    begin = jsonReader.nextString();
+                    begin = getTimeExtent(jsonReader);
                     break;
                 }
 
                 case "end":
-                    end = jsonReader.nextString();
+                    end = getTimeExtent(jsonReader);
                     break;
             }
         }
         jsonReader.endObject();
 
         // check special values
-        Instant beginInstant = null;
-        Instant endInstant = null;
-
         // beginsNow
         if(begin.equalsIgnoreCase("now")) {
-            endInstant = PostgisUtils.readInstantFromString(end);
-            return TimeExtent.beginNow(endInstant);
+            // begins Now
+            return TimeExtent.beginNow(getValidPGInstant(Instant.parse(end)));
         } else if(end.equalsIgnoreCase("now")) {
-            beginInstant = PostgisUtils.readInstantFromString(begin);
-            return TimeExtent.endNow(beginInstant);
+            return TimeExtent.endNow(getValidPGInstant(Instant.parse(begin)));
         } else {
-            return TimeExtent.period(PostgisUtils.readInstantFromString(begin), PostgisUtils.readInstantFromString(end));
+            // if begin > now(), use beginAt()
+            Instant beginInstant = Instant.parse(begin);
+            if(beginInstant.isAfter(Instant.now())) {
+                return TimeExtent.beginAt(beginInstant);
+            } else {
+                Instant startInstant = Instant.parse(begin);
+                Instant endInstant = Instant.parse(end);
+
+                // Postgis has a limit, need to truncate the MAX value
+                if(startInstant.equals(MAX_INSTANT)) {
+                    startInstant = Instant.MAX;
+                } else if(startInstant.equals(MIN_INSTANT)) {
+                    startInstant = Instant.MIN;
+                }
+
+                if(endInstant.equals(MAX_INSTANT)) {
+                    endInstant = Instant.MAX;
+                } else if(endInstant.equals(MIN_INSTANT)) {
+                    endInstant = Instant.MIN;
+                }
+
+                return TimeExtent.period(startInstant, endInstant);
+            }
+        }
+    }
+
+    public static Instant getValidPGInstant(Instant a) {
+        if(a.getEpochSecond() > 0) {
+            return a.isBefore(MAX_INSTANT) ? a : MAX_INSTANT;
+        } else {
+            return a.isAfter(MIN_INSTANT) ? a : MIN_INSTANT;
         }
     }
 }
