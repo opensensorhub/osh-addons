@@ -102,7 +102,6 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
         return "SELECT COUNT(DISTINCT data->'properties'->>'uid') AS recordsCount FROM " + this.getStoreTableName();
     }
 
-
     public String removeByPrimaryKeyQuery() {
         return "DELETE FROM "+this.getStoreTableName()+" WHERE id = ? AND "+this.getStoreTableName()+".validTime @> ?";
     }
@@ -111,12 +110,8 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
         return "CREATE UNIQUE INDEX "+this.getStoreTableName()+"_feature_uid_idx ON "+this.getStoreTableName()+" " +
                 "((data->'properties'->>'uid'), "+VALID_TIME+")";
     }
-    public String createValidTimeBeginIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " (validTime)";
-    }
-
-    public String createValidTimeEndIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_1_idx ON "+this.getStoreTableName()+ " (validTime)";
+    public String createValidTimeIndexQuery() {
+        return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " using GIST (validTime)";
     }
 
     public String createTrigramExtensionQuery() {
