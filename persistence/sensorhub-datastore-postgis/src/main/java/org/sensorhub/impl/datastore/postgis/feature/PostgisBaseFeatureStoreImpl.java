@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.vast.ogc.gml.IFeature;
 import org.vast.sensorML.SMLJsonBindings;
 import org.vast.util.Bbox;
+import org.vast.util.TimeExtent;
 
 import java.io.IOException;
 import java.sql.*;
@@ -84,6 +85,7 @@ public abstract class PostgisBaseFeatureStoreImpl
         this.init(url, dbName, login, password, new String[]{
                 queryBuilder.createTableQuery(),
                 queryBuilder.createUidUniqueIndexQuery(),
+                queryBuilder.createValidTimeIndexQuery(),
                 queryBuilder.createTrigramExtensionQuery(),
                 queryBuilder.createTrigramDescriptionFullTextIndexQuery(),
                 queryBuilder.createTrigramUidFullTextIndexQuery()
@@ -154,40 +156,6 @@ public abstract class PostgisBaseFeatureStoreImpl
         preparedStatement.setLong(1, featureKey.getInternalID().getIdAsLong());
         preparedStatement.setString(6, value.getUniqueIdentifier());
         // statements for INSERT - parentId
-       /* if (parentID != null && parentID != BigId.NONE) {
-            preparedStatement.setLong(2, parentID.getIdAsLong());
-            preparedStatement.setLong(6, parentID.getIdAsLong());
-            preparedStatement.setLong(7, parentID.getIdAsLong());
-        } else {
-            preparedStatement.setLong(2, 0);
-            preparedStatement.setLong(6, 0);
-            preparedStatement.setLong(7, 0);
-        }
-
-        if (value.getGeometry() != null) {
-            Geometry geometry = PostgisUtils.toJTSGeometry(value.getGeometry());
-            byte[] geom = threadLocalWriter.get().write(geometry);
-            preparedStatement.setBytes(3, geom); // insert
-            preparedStatement.setBytes(8, geom); // update
-        } else {
-            preparedStatement.setNull(3, Types.LONGVARBINARY);
-            preparedStatement.setNull(8, Types.LONGVARBINARY);
-        }
-        if (featureKey.getValidStartTime() != null && featureKey.getValidStartTime().getEpochSecond() > MIN_INSTANT.getEpochSecond()) {
-            preparedStatement.setString(4, featureKey.getValidStartTime().toString());
-            preparedStatement.setString(9, featureKey.getValidStartTime().toString());
-        } else {
-            preparedStatement.setString(4, "-infinity");
-            preparedStatement.setString(9, "-infinity");
-        }
-
-        PGobject jsonObject = new PGobject();
-        jsonObject.setType("json");
-        jsonObject.setValue(this.writeFeature(value));
-
-        preparedStatement.setObject(5, jsonObject);
-        preparedStatement.setObject(10, jsonObject);
-        */
         if (parentID != null && parentID != BigId.NONE) {
             preparedStatement.setLong(2, parentID.getIdAsLong());
         } else {
@@ -247,14 +215,24 @@ public abstract class PostgisBaseFeatureStoreImpl
     protected PGobject createPGobjectValidTimeRange(FeatureKey featureKey, V value) throws SQLException {
         PGobject range = new PGobject();
         range.setType("tsrange");  // type PostgreSQL
-        String rangeValue;
-        if (featureKey.getValidStartTime() != null && featureKey.getValidStartTime().getEpochSecond() > MIN_INSTANT.getEpochSecond()) {
-            rangeValue ="["+PostgisUtils.checkAndGetValidInstant(value.getValidTime().begin())+","+
-                    PostgisUtils.checkAndGetValidInstant(value.getValidTime().end())+"]";
-        } else {
-            rangeValue ="[-infinity,infinity]";
+        String startRangeValue;
+        String endRangeValue;
+
+        TimeExtent timeExtent = value.getValidTime();
+        if(timeExtent == null) {
+            startRangeValue = "-infinity";
+            endRangeValue = "infinity";
+        } else if(timeExtent.beginsNow()) {
+            startRangeValue = "-infinity";
+            endRangeValue = PostgisUtils.writeInstantToString(timeExtent.end().truncatedTo(ChronoUnit.SECONDS), false);
+        } else if(timeExtent.endsNow()) {
+            endRangeValue = "infinity";
+            startRangeValue = PostgisUtils.writeInstantToString(timeExtent.begin().truncatedTo(ChronoUnit.SECONDS), false);
+        } else  {
+            startRangeValue = PostgisUtils.writeInstantToString(timeExtent.begin().truncatedTo(ChronoUnit.SECONDS), false);
+            endRangeValue = PostgisUtils.writeInstantToString(timeExtent.end().truncatedTo(ChronoUnit.SECONDS), false);
         }
-        range.setValue(rangeValue);
+        range.setValue("["+startRangeValue+","+endRangeValue+"]");
         return range;
     }
 
@@ -263,8 +241,8 @@ public abstract class PostgisBaseFeatureStoreImpl
         range.setType("tsrange");  // type PostgreSQL
         String rangeValue;
         if (key.getValidStartTime() != null && key.getValidStartTime().getEpochSecond() > MIN_INSTANT.getEpochSecond()) {
-            rangeValue ="["+PostgisUtils.checkAndGetValidInstant(key.getValidStartTime())+","+
-                    PostgisUtils.checkAndGetValidInstant(key.getValidStartTime())+"]";
+            String pgValidTime = PostgisUtils.writeInstantToString(key.getValidStartTime().truncatedTo(ChronoUnit.SECONDS), false);
+            rangeValue ="["+pgValidTime+","+pgValidTime+"]";
         } else {
             rangeValue ="[-infinity,infinity]";
         }

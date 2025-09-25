@@ -415,6 +415,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         }
         BigId key = (BigId) o;
         IObsData data = this.get(o);
+        logger.debug("Remove Obs with key={}", key);
         try (Connection connection = hikariDataSource.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.removeByIdQuery())) {
                 preparedStatement.setLong(1, key.getIdAsLong());

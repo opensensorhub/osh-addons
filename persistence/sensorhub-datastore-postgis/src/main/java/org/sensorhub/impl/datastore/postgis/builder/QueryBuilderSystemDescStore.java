@@ -62,15 +62,6 @@ public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<IS
         }
 
     @Override
-        public String createValidTimeBeginIndexQuery() {
-            return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " (validTime)";
-        }
-
-    @Override
-        public String createValidTimeEndIndexQuery() {
-            return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_1_idx ON "+this.getStoreTableName()+ " (validTime)";
-        }
-    @Override
         public String createTrigramDescriptionFullTextIndexQuery() {
             return "CREATE INDEX "+this.getStoreTableName()+"_feature_desc_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data->>'description') gin_trgm_ops)";
         }

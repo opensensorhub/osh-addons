@@ -164,4 +164,6 @@ public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImp
         forceReadBackFromStorage();
         checkMapKeySet(obsStore.keySet());
     }
+
+
 }
