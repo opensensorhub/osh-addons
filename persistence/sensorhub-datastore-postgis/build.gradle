@@ -10,7 +10,7 @@ dependencies {
   embeddedImpl('net.postgis:postgis-jdbc:2021.1.0'){
     exclude group: "org.slf4j", module: "slf4j-api"
   }
-  embeddedImpl('com.zaxxer:HikariCP:5.0.1'){
+  embeddedImpl('com.zaxxer:HikariCP:7.0.2'){
     exclude group: "org.slf4j", module: "slf4j-api"
   }
   embeddedImpl('com.github.ben-manes.caffeine:caffeine:3.1.7') {

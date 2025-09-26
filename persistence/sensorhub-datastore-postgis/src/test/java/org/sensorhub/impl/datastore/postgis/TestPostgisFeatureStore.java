@@ -38,7 +38,7 @@ public class TestPostgisFeatureStore extends AbstractTestFeatureStore<PostgisFea
     protected static String FEATURE_DATASTORE_NAME = "test_features";
 
     protected PostgisFeatureStoreImpl initStore() throws Exception {
-        postgisFeatureStore =  new PostgisFeatureStoreImpl(url, DB_NAME, login, password, FEATURE_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL);
+        postgisFeatureStore =  new PostgisFeatureStoreImpl(url, DB_NAME, login, password, FEATURE_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL, true);
         return postgisFeatureStore;
     }
 

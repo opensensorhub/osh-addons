@@ -50,12 +50,14 @@ public class PostgisSystemDescStoreImpl extends
     protected IProcedureStore procedureStore;
     protected IDeploymentStore deploymentStore;
 
-    public PostgisSystemDescStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderSystemDescStore(), false);
+    public PostgisSystemDescStoreImpl(String url, String dbName, String login, String password,
+                                      int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderSystemDescStore(), useBatch);
     }
 
-    public PostgisSystemDescStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType){
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderSystemDescStore(dataStoreName), false);
+    public PostgisSystemDescStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
+                                      int idScope, IdProviderType dsIdProviderType, boolean useBatch){
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderSystemDescStore(dataStoreName), useBatch);
     }
 
     @Override

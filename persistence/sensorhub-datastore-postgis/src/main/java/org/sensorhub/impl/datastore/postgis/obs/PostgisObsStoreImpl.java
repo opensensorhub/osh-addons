@@ -9,7 +9,6 @@
  for the specific language governing rights and limitations under the License.
 
  Copyright (C) 2023 Georobotix. All Rights Reserved.
-
  ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.datastore.postgis.obs;
@@ -21,14 +20,14 @@ import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.data.ObsData;
+import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.obs.*;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
-import org.sensorhub.api.feature.FeatureId;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.PostgisStore;
+import org.sensorhub.impl.datastore.postgis.ThreadSafeBatchExecutor;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
-import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderObsStore;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
 import org.slf4j.Logger;
@@ -36,34 +35,32 @@ import org.slf4j.LoggerFactory;
 import org.vast.data.DataBlockByte;
 import org.vast.util.TimeExtent;
 
-import java.io.IOException;
 import java.sql.*;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.*;
 
 public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> implements IObsStore {
     private static final Logger logger = LoggerFactory.getLogger(PostgisObsStoreImpl.class);
+    public static final int BATCH_SIZE = 100;
 
     private PostgisDataStreamStoreImpl dataStreamStore;
 
-    public PostgisObsStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
-        super(idScope, dsIdProviderType, new QueryBuilderObsStore());
+    public PostgisObsStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(idScope, dsIdProviderType, new QueryBuilderObsStore(), useBatch);
         this.init(url, dbName, login, password, new String[]{
                         queryBuilder.createTableQuery()
                 }
         );
-        this.dataStreamStore = new PostgisDataStreamStoreImpl(this, hikariDataSource);
+        this.dataStreamStore = new PostgisDataStreamStoreImpl(this, hikariDataSource, false);
         queryBuilder.linkTo(dataStreamStore);
     }
 
-    public PostgisObsStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType) {
-        super(idScope, dsIdProviderType, new QueryBuilderObsStore(dataStoreName));
+    public PostgisObsStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
+                               int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(idScope, dsIdProviderType, new QueryBuilderObsStore(dataStoreName), useBatch);
         this.init(url, dbName, login, password, new String[]{
                         queryBuilder.createTableQuery(),
 //                        queryBuilder.createDataIndexQuery(),
@@ -72,13 +69,22 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                         queryBuilder.createResultTimeIndexQuery()
                 }
         );
-        this.dataStreamStore = new PostgisDataStreamStoreImpl(this, hikariDataSource);
+        this.dataStreamStore = new PostgisDataStreamStoreImpl(this, hikariDataSource, false);
         queryBuilder.linkTo(dataStreamStore);
     }
 
     @Override
+    protected void init(String url, String dbName, String login, String password, String[] initScripts) {
+        super.init(url, dbName, login, password, initScripts);
+        if (useBatch) {
+            this.setBatchSize(BATCH_SIZE);
+            this.threadSafeBatchExecutor = new ThreadSafeBatchExecutor(
+                    url, dbName, login, password, queryBuilder.insertObsQuery());
+        }
+    }
+
+    @Override
     public Stream<Entry<BigId, IObsData>> selectEntries(ObsFilter filter, Set<ObsField> fields) {
-        System.out.println(filter);
         Set<ObsField> hashSet;
 
         if (fields != null) {
@@ -89,7 +95,6 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         }
 
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, hashSet);
-
         logger.debug(queryStr);
         List<Entry<BigId, IObsData>> results = new ArrayList<>();
         try (Connection connection = hikariDataSource.getConnection()) {
@@ -107,14 +112,6 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             throw new RuntimeException(e);
         }
         return results.stream();
-//        IteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
-//                new IteratorResultSet<>(
-//                        queryStr,
-//                        hikariDataSource,
-//                        filter.getLimit(),
-//                        (resultSet) -> resultSetToEntry(resultSet, hashSet),
-//                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
-//        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
     }
 
     private Entry<BigId, IObsData> resultSetToEntry(ResultSet resultSet, Set<ObsField> fields) {
@@ -168,7 +165,8 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
     }
 
     @Override
-    public void commit() {
+    public void commit() throws DataStoreException {
+        super.commit();
     }
 
     @Override
@@ -176,53 +174,52 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         return this.dataStreamStore;
     }
 
+    private void fillAddStatement(DataStreamKey dataStreamKey, IObsData obs, PreparedStatement preparedStatement) throws SQLException {
+        // insert DataStreamId
+        preparedStatement.setLong(1, dataStreamKey.getInternalID().getIdAsLong());
+        // insert foiId if any
+        if (obs.hasFoi()) {
+            preparedStatement.setLong(2, obs.getFoiID().getIdAsLong());
+        } else {
+            preparedStatement.setNull(2, Types.BIGINT);
+        }
+
+        // insert timestamp
+        if (obs.getPhenomenonTime() != null) {
+            preparedStatement.setTimestamp(3, Timestamp.from(obs.getPhenomenonTime()));
+        } else {
+            preparedStatement.setNull(3, Types.TIMESTAMP_WITH_TIMEZONE);
+        }
+
+        if (obs.getResultTime() != null) {
+            preparedStatement.setTimestamp(4, Timestamp.from(obs.getResultTime()));
+        } else {
+            preparedStatement.setNull(4, Types.TIMESTAMP_WITH_TIMEZONE);
+        }
+        // insert DataBlock
+        PGobject jsonObject = new PGobject();
+        jsonObject.setType("json");
+        IDataStreamInfo dataStreamInfo = dataStreamStore.get(new DataStreamKey(obs.getDataStreamID()));
+        jsonObject.setValue(SerializerUtils.writeDataBlockToJson(dataStreamInfo.getRecordStructure(),
+                dataStreamInfo.getRecordEncoding(), obs.getResult()));
+        preparedStatement.setObject(5, jsonObject);
+    }
+
     @Override
     public BigId add(IObsData obs) {
-        // check that datastream exists
         DataStreamKey dataStreamKey = new DataStreamKey(obs.getDataStreamID());
         if (!dataStreamStore.containsKey(dataStreamKey))
             throw new IllegalStateException("Unknown datastream with ID: " + obs.getDataStreamID().getIdAsLong());
 
         // check that FOI exists
-//        if (obs.hasFoi() && foiStore != null && !foiStore.contains(obs.getFoiID()))
-//            throw new IllegalStateException("Unknown FOI: " + obs.getFoiID());
-        // for temporal index
-        try (Connection connection1 = hikariDataSource.getConnection()) {
-            try (PreparedStatement preparedStatement = connection1.prepareStatement(queryBuilder.insertObsQuery(), Statement.RETURN_GENERATED_KEYS)) {
-
-                // insert DataStreamId
-                preparedStatement.setLong(1, dataStreamKey.getInternalID().getIdAsLong());
-
-                // insert foiId if any
-                if (obs.hasFoi()) {
-                    preparedStatement.setLong(2, obs.getFoiID().getIdAsLong());
-                } else {
-                    preparedStatement.setNull(2, Types.BIGINT);
-                }
-
-                // insert timestamp
-                if (obs.getPhenomenonTime() != null) {
-                    preparedStatement.setTimestamp(3, Timestamp.from(obs.getPhenomenonTime()));
-                } else {
-                    preparedStatement.setNull(3, Types.TIMESTAMP_WITH_TIMEZONE);
-                }
-
-                if (obs.getResultTime() != null) {
-                    preparedStatement.setTimestamp(4, Timestamp.from(obs.getResultTime()));
-                } else {
-                    preparedStatement.setNull(4, Types.TIMESTAMP_WITH_TIMEZONE);
-                }
-                // insert DataBlock
-                PGobject jsonObject = new PGobject();
-                jsonObject.setType("json");
-                IDataStreamInfo dataStreamInfo = dataStreamStore.get(new DataStreamKey(obs.getDataStreamID()));
-                jsonObject.setValue(SerializerUtils.writeDataBlockToJson(dataStreamInfo.getRecordStructure(),
-                        dataStreamInfo.getRecordEncoding(), obs.getResult()));
-
-                preparedStatement.setObject(5, jsonObject);
-
-                int rows = preparedStatement.executeUpdate();
-                if (rows > 0) {
+        //      if (obs.hasFoi() && foiStore != null && !foiStore.contains(obs.getFoiID()))
+        //         throw new IllegalStateException("Unknown FOI: " + obs.getFoiID());
+        if (useBatch) {
+            try {
+                Connection connection = threadSafeBatchExecutor.getConnection();
+                try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.insertObsQuery(), Statement.RETURN_GENERATED_KEYS)) {
+                    this.fillAddStatement(dataStreamKey, obs, preparedStatement);
+                    int rows = preparedStatement.executeUpdate();
                     try (ResultSet rs = preparedStatement.getGeneratedKeys()) {
                         long generatedKey = 0;
                         if (rs.next()) {
@@ -230,14 +227,36 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                         }
                         return BigId.fromLong(idScope, generatedKey);
                     }
-                } else {
-                    throw new RuntimeException("Cannot insert obs ");
+                } catch (Exception e) {
+                    throw new RuntimeException("Cannot insert obs", e);
+                } finally {
+                    threadSafeBatchExecutor.offer(connection);
+                    if (currentBatchSize.getAndIncrement() >= this.getBatchSize()) {
+                        this.commit();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException("Cannot insert obs ");
+            }
+        } else {
+            try (Connection connection1 = hikariDataSource.getConnection()) {
+                try (PreparedStatement preparedStatement = connection1.prepareStatement(queryBuilder.insertObsQuery(), Statement.RETURN_GENERATED_KEYS)) {
+                    this.fillAddStatement(dataStreamKey, obs, preparedStatement);
+                    int rows = preparedStatement.executeUpdate();
+                    try (ResultSet rs = preparedStatement.getGeneratedKeys()) {
+                        long generatedKey = 0;
+                        if (rs.next()) {
+                            generatedKey = rs.getLong(1);
+                        }
+                        return BigId.fromLong(idScope, generatedKey);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException("Cannot insert obs", e);
                 }
             } catch (Exception e) {
                 throw new RuntimeException("Cannot insert obs", e);
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Cannot insert obs", e);
         }
     }
 

@@ -56,8 +56,8 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
 
     protected ISystemDescStore systemStore;
 
-    public PostgisCommandStreamStoreImpl(PostgisCommandStoreImpl cmdStore, HikariDataSource connection) {
-        super(cmdStore.idScope, cmdStore.idProviderType, new QueryBuilderCommandStreamStore(cmdStore.getDatastoreName() + "_commandstreams"));
+    public PostgisCommandStreamStoreImpl(PostgisCommandStoreImpl cmdStore, HikariDataSource connection, boolean useBatch) {
+        super(cmdStore.idScope, cmdStore.idProviderType, new QueryBuilderCommandStreamStore(cmdStore.getDatastoreName() + "_commandstreams"), useBatch);
         this.init(cmdStore, connection);
     }
 
