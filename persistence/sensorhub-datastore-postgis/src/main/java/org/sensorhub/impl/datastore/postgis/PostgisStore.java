@@ -15,6 +15,7 @@
 package org.sensorhub.impl.datastore.postgis;
 
 import com.zaxxer.hikari.HikariDataSource;
+import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.IdProvider;
 import org.sensorhub.api.datastore.command.ICommandStatusStore;
 import org.sensorhub.api.datastore.command.ICommandStore;
@@ -35,40 +36,47 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.*;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class PostgisStore<T extends QueryBuilder> {
     private static final Logger logger = LoggerFactory.getLogger(PostgisStore.class);
 
     protected HikariDataSource hikariDataSource;
-
     protected T queryBuilder;
-
     public int idScope;
-
     public IdProviderType idProviderType;
-
-    protected Connection batchConnection;
-    protected PreparedStatement batchPreparedStatement;
-
     protected  IdProvider idProvider;
-
     protected AtomicLong lastId = new AtomicLong(0);
+    protected ThreadSafeBatchExecutor threadSafeBatchExecutor;
+    private TimerTask timerTask;
 
-    protected PostgisStore(int idScope, IdProviderType dsIdProviderType, T queryBuilder) {
+    protected int maxBatchSize = 100;
+    protected AtomicInteger currentBatchSize = new AtomicInteger(0);
+    protected boolean useBatch;
+    private long autoCommitPeriod = 3600*1000L;
+
+    protected PostgisStore(int idScope, IdProviderType dsIdProviderType, T queryBuilder, boolean useBatch) {
         this.idProviderType = dsIdProviderType;
         this.idScope = idScope;
         this.queryBuilder = queryBuilder;
+        this.useBatch = useBatch;
+    }
+
+    protected  void setBatchSize(int size) {
+        this.maxBatchSize = size;
+    }
+
+    protected int getBatchSize() {
+        return maxBatchSize;
     }
 
     protected void init(String url, String dbName, String login, String password, String[] initScripts) {
-        this.hikariDataSource = PostgisUtils.getHikariDataSourceInstance(url, dbName, login, password);
-        batchConnection = PostgisUtils.getConnection(url, dbName, login, password);
-        try {
-            batchConnection.setAutoCommit(true);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        this.hikariDataSource = PostgisUtils.getHikariDataSourceInstance(url, dbName, login, password, true);
+
         try (Connection connection = hikariDataSource.getConnection()) {
             if (!PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
                 // create table
@@ -86,6 +94,22 @@ public abstract class PostgisStore<T extends QueryBuilder> {
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+
+        if(this.useBatch) {
+            Timer t = new Timer();
+            timerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    try {
+                        commit();
+                    } catch (DataStoreException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            };
+
+            t.scheduleAtFixedRate(timerTask, 0,autoCommitPeriod * 1000L);
         }
     }
 
@@ -160,6 +184,38 @@ public abstract class PostgisStore<T extends QueryBuilder> {
         return 0;
     }
 
+    public void close() {
+        try {
+            commit();
+
+            if(timerTask != null) {
+                timerTask.cancel();
+            }
+
+            if (threadSafeBatchExecutor != null) {
+                threadSafeBatchExecutor.close();
+            }
+            if(hikariDataSource != null) {
+                hikariDataSource.close();
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void commit() throws DataStoreException {
+        try {
+            synchronized (currentBatchSize) {
+                if (currentBatchSize.get() > 0) {
+                    threadSafeBatchExecutor.commit();
+                    currentBatchSize.getAndSet(0);
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
     protected void linkTo(ISystemDescStore systemStore) { queryBuilder.linkTo(systemStore); }
     protected void linkTo(IObsStore obsStore) { queryBuilder.linkTo(obsStore); }
     protected void linkTo(IFeatureStore featureStore) { queryBuilder.linkTo(featureStore); }
@@ -174,4 +230,8 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     protected void linkTo(ICommandStore commandStore) { queryBuilder.linkTo(commandStore); }
     protected void linkTo(IFoiStore foiStore) { queryBuilder.linkTo(foiStore); }
     protected void linkTo(ICommandStatusStore commandStatusStore) { queryBuilder.linkTo(commandStatusStore); }
+
+    public void setAutoCommitPeriod(long autoCommitPeriod) {
+        this.autoCommitPeriod = autoCommitPeriod;
+    }
 }

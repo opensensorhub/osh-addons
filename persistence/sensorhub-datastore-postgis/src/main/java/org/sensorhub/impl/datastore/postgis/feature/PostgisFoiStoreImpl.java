@@ -34,12 +34,14 @@ import java.util.stream.Collectors;
 public class PostgisFoiStoreImpl extends
         PostgisBaseFeatureStoreImpl<IFeature, IFoiStore.FoiField, FoiFilter, QueryBuilderFoiStore> implements IFoiStore {
 
-    public PostgisFoiStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFoiStore(), true);
+    public PostgisFoiStoreImpl(String url, String dbName, String login, String password,
+                               int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFoiStore(), useBatch);
     }
 
-    public PostgisFoiStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFoiStore(dataStoreName), true);
+    public PostgisFoiStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
+                               int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFoiStore(dataStoreName), useBatch);
     }
 
     @Override

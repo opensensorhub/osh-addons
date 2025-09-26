@@ -47,14 +47,15 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
     protected PostgisCommandStreamStoreImpl commandStreamStore;
     protected PostgisCommandStatusStore commandStatusStore;
 
-    public PostgisCommandStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
-        super(idScope, dsIdProviderType, new QueryBuilderCommandStore());
+    public PostgisCommandStoreImpl(String url, String dbName, String login, String password,
+                                   int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(idScope, dsIdProviderType, new QueryBuilderCommandStore(), useBatch);
         this.init(url, dbName, login, password, new String[]{
                         queryBuilder.createTableQuery()
                 }
         );
-        this.commandStreamStore = new PostgisCommandStreamStoreImpl(this, hikariDataSource);
-        this.commandStatusStore = new PostgisCommandStatusStore(this, hikariDataSource);
+        this.commandStreamStore = new PostgisCommandStreamStoreImpl(this, hikariDataSource,useBatch);
+        this.commandStatusStore = new PostgisCommandStatusStore(this, hikariDataSource,useBatch);
         this.commandStatusStore.linkTo(commandStreamStore);
         this.commandStatusStore.linkTo(this);
 
@@ -62,8 +63,9 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
         linkTo(commandStatusStore);
     }
 
-    public PostgisCommandStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType) {
-        super(idScope, dsIdProviderType, new QueryBuilderCommandStore(dataStoreName));
+    public PostgisCommandStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
+                                   int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(idScope, dsIdProviderType, new QueryBuilderCommandStore(dataStoreName), useBatch);
         this.init(url, dbName, login, password, new String[]{
                 queryBuilder.createTableQuery(),
                 queryBuilder.createDataIndexQuery(),
@@ -73,8 +75,8 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
                 queryBuilder.createFoidIdIndexQuery()
                 }
         );
-        this.commandStreamStore = new PostgisCommandStreamStoreImpl(this, hikariDataSource);
-        this.commandStatusStore = new PostgisCommandStatusStore(this, hikariDataSource);
+        this.commandStreamStore = new PostgisCommandStreamStoreImpl(this, hikariDataSource,useBatch);
+        this.commandStatusStore = new PostgisCommandStatusStore(this, hikariDataSource, useBatch);
 
         this.commandStatusStore.linkTo(commandStreamStore);
         this.commandStatusStore.linkTo(this) ;

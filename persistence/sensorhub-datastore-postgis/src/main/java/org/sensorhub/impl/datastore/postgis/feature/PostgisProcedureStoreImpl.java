@@ -37,12 +37,14 @@ public class PostgisProcedureStoreImpl extends
         PostgisBaseFeatureStoreImpl<IProcedureWithDesc, IProcedureStore.ProcedureField, ProcedureFilter, QueryBuilderProcedureStore> implements IProcedureStore {
 
 
-    public PostgisProcedureStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderProcedureStore(), false);
+    public PostgisProcedureStoreImpl(String url, String dbName, String login, String password,
+                                     int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderProcedureStore(), useBatch);
     }
 
-    public PostgisProcedureStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderProcedureStore(dataStoreName), false);
+    public PostgisProcedureStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
+                                     int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderProcedureStore(dataStoreName), useBatch);
     }
 
     @Override

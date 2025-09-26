@@ -28,8 +28,8 @@ public class PostgisFeatureDatabase extends AbstractModule<PostgisFeatureDatabas
             IdProviderType idProviderType = config.idProviderType;
 
             var idScope = getDatabaseNum() != null ? getDatabaseNum() : 0;
-            featureStore = new PostgisFeatureStoreImpl(url, dbName, login, password, FEATURE_STORE_NAME, idScope, idProviderType);
-
+            featureStore = new PostgisFeatureStoreImpl(url, dbName, login, password, FEATURE_STORE_NAME, idScope, idProviderType,true);
+            featureStore.setAutoCommitPeriod(config.autoCommitPeriod * 1000L);
         } catch (Exception e) {
             throw new DataStoreException("Error while starting Postgis connector", e);
         }

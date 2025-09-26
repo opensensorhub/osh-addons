@@ -62,8 +62,8 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
     protected PostgisObsStoreImpl obsStore;
     protected ISystemDescStore systemStore;
 
-    public PostgisDataStreamStoreImpl(PostgisObsStoreImpl obsStore, HikariDataSource connection) {
-        super(obsStore.idScope, obsStore.idProviderType, new QueryBuilderDataStreamStore(obsStore.getDatastoreName() + "_datastreams"));
+    public PostgisDataStreamStoreImpl(PostgisObsStoreImpl obsStore, HikariDataSource connection, boolean useBatch) {
+        super(obsStore.idScope, obsStore.idProviderType, new QueryBuilderDataStreamStore(obsStore.getDatastoreName() + "_datastreams"), false);
         this.init(obsStore, connection);
     }
 
@@ -175,7 +175,11 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
 
     @Override
     public void commit() {
-        obsStore.commit();
+        try {
+            obsStore.commit();
+        } catch (DataStoreException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void intersectsAndUpdate(IDataStreamInfo dsInfo) throws DataStoreException {

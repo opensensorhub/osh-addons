@@ -32,12 +32,14 @@ import java.util.stream.Collectors;
 public class PostgisFeatureStoreImpl extends
         PostgisBaseFeatureStoreImpl<IFeature, IFeatureStoreBase.FeatureField, FeatureFilter, QueryBuilderFeatureStore> implements IFeatureStore {
 
-    public PostgisFeatureStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFeatureStore(), true);
+    public PostgisFeatureStoreImpl(String url, String dbName, String login, String password,
+                                   int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFeatureStore(), useBatch);
     }
 
-    public PostgisFeatureStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFeatureStore(dataStoreName), true);
+    public PostgisFeatureStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
+                                   int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFeatureStore(dataStoreName), useBatch);
     }
 
     protected IFeature readFeature(String data) throws IOException {

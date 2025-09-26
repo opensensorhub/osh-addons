@@ -37,12 +37,14 @@ import java.util.stream.Collectors;
 public class PostgisDeploymentStoreImpl extends
         PostgisBaseFeatureStoreImpl<IDeploymentWithDesc, IDeploymentStore.DeploymentField, DeploymentFilter, QueryBuilderDeploymentStore> implements IDeploymentStore {
 
-    public PostgisDeploymentStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderDeploymentStore(), false);
+    public PostgisDeploymentStoreImpl(String url, String dbName, String login, String password,
+                                      int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderDeploymentStore(), useBatch);
     }
 
-    public PostgisDeploymentStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderDeploymentStore(dataStoreName), false);
+    public PostgisDeploymentStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
+                                      int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderDeploymentStore(dataStoreName), useBatch);
     }
 
     @Override

@@ -36,7 +36,7 @@ public class TestPostgisCommandStreamStore extends AbstractTestCommandStreamStor
     protected PostgisCommandStoreImpl postgisCommandStore;
     //    @Override
     protected PostgisCommandStreamStoreImpl initStore() throws Exception {
-        postgisCommandStore = new PostgisCommandStoreImpl(url, DB_NAME, login, password, COMMAND_STREAM_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL);
+        postgisCommandStore = new PostgisCommandStoreImpl(url, DB_NAME, login, password, COMMAND_STREAM_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL, false);
         return (PostgisCommandStreamStoreImpl) postgisCommandStore.getCommandStreams();
     }
 

@@ -80,22 +80,12 @@ public class PostgisUtils {
     static final Lock reentrantLock = new ReentrantLock();
 
     // is thread-safe
-    public static HikariDataSource getHikariDataSourceInstance(String url, String dbName, String login, String password) {
+    public static HikariDataSource getHikariDataSourceInstance(String url, String dbName, String login, String password, boolean autoCommit) {
         if(hikariDataSourceInstance == null) {
             reentrantLock.lock();
             try {
                 if(hikariDataSourceInstance == null) {
-                        HikariConfig config = new HikariConfig();
-                        config.setJdbcUrl("jdbc:postgresql://" + url + "/" + dbName+"");
-                        config.setUsername(login);
-                        config.setPassword(password);
-                        config.setKeepaliveTime(30000*5);
-//                        config.setMaximumPoolSize(200_000);
-                        config.addDataSourceProperty("cachePrepStmts", "true");
-                        config.addDataSourceProperty("prepStmtCacheSize", "250");
-                        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-                        config.setAutoCommit(true);
-                        hikariDataSourceInstance = new HikariDataSource(config);
+                    hikariDataSourceInstance = createHikariDataSource(url, dbName, login,password,autoCommit);
                 }
             } finally {
                 reentrantLock.unlock();
@@ -103,13 +93,27 @@ public class PostgisUtils {
         }
         return hikariDataSourceInstance;
     }
+    public static HikariDataSource createHikariDataSource(String url, String dbName, String login, String password, boolean autoCommit) {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl("jdbc:postgresql://" + url + "/" + dbName+"");
+        config.setUsername(login);
+        config.setPassword(password);
+        config.setKeepaliveTime(30000*5);
+//                        config.setMaximumPoolSize(200_000);
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        config.setAutoCommit(autoCommit);
+        return new HikariDataSource(config);
+    }
+
     public static Connection getConnection(String url, String dbName, String login, String password) {
         try {
             String urlPostgres = "jdbc:postgresql://" + url + "/" + dbName;
             Properties props = new Properties();
             props.setProperty("user", login);
             props.setProperty("password", password);
-            props.setProperty("reWriteBatchedInserts", "true");
+//            props.setProperty("reWriteBatchedInserts", "false");
             props.setProperty("tcpKeepAlive","true");
             Connection connection =  DriverManager.getConnection(urlPostgres, props);
             connection.setAutoCommit(false);

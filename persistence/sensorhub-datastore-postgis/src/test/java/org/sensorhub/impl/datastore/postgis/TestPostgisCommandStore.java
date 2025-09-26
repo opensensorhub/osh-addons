@@ -42,7 +42,7 @@ public class TestPostgisCommandStore extends AbstractTestCommandStore<PostgisCom
     protected  PostgisCommandStoreImpl postgisCommandStore;
     //    @Override
     protected PostgisCommandStoreImpl initStore() throws Exception {
-        postgisCommandStore = new PostgisCommandStoreImpl(url, DB_NAME, login, password, COMMAND_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL);
+        postgisCommandStore = new PostgisCommandStoreImpl(url, DB_NAME, login, password, COMMAND_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL, false);
         return postgisCommandStore;
     }
 

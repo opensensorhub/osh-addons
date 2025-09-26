@@ -28,6 +28,7 @@ import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
 import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.PostgisStore;
+import org.sensorhub.impl.datastore.postgis.ThreadSafeBatchExecutor;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderBaseFeatureStore;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderFeatureStore;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
@@ -58,16 +59,9 @@ public abstract class PostgisBaseFeatureStoreImpl
         implements IFeatureStoreBase<V, VF, F> {
 
     private static final Logger logger = LoggerFactory.getLogger(PostgisBaseFeatureStoreImpl.class);
-
     protected final Lock lock = new ReentrantLock();
-
     public ThreadLocal<WKBWriter> threadLocalWriter = ThreadLocal.withInitial(WKBWriter::new);
-
-    public ThreadLocal<PreparedStatement> batchPreparedStatement;
-
-    protected static final int MAX_BATCH_SIZE = 10000;
-
-    protected int currentBatchSize = 0;
+    public static final int BATCH_SIZE = 100;
 
     protected volatile Cache<FeatureKey, V> cache = CacheBuilder.newBuilder()
             .maximumSize(150_000)
@@ -76,12 +70,10 @@ public abstract class PostgisBaseFeatureStoreImpl
             .build();
 
     protected SMLJsonBindings smlJsonBindings = new SMLJsonBindings(false);
-    protected boolean useBatch;
 
     protected PostgisBaseFeatureStoreImpl(String url, String dbName, String login, String password, int idScope,
                                           IdProviderType dsIdProviderType, T queryBuilder, boolean useBatch){
-        super(idScope,dsIdProviderType,queryBuilder);
-        this.useBatch = useBatch;
+        super(idScope,dsIdProviderType,queryBuilder,false);
         this.init(url, dbName, login, password, new String[]{
                 queryBuilder.createTableQuery(),
                 queryBuilder.createUidUniqueIndexQuery(),
@@ -95,17 +87,10 @@ public abstract class PostgisBaseFeatureStoreImpl
     @Override
     protected void init(String url, String dbName, String login, String password, String[] initScripts) {
         super.init(url, dbName, login, password, initScripts);
-        if(useBatch) {
-            batchPreparedStatement = ThreadLocal.withInitial(() -> {
-                try {
-                    PreparedStatement pstmt = batchConnection.prepareStatement(queryBuilder.addOrUpdateByIdQuery());
-                    org.postgresql.PGStatement pgstmt = pstmt.unwrap(org.postgresql.PGStatement.class);
-                    pgstmt.setPrepareThreshold(1);
-                    return pstmt;
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+        if (useBatch) {
+            this.setBatchSize(BATCH_SIZE);
+            this.threadSafeBatchExecutor = new ThreadSafeBatchExecutor(
+                    url, dbName, login, password, queryBuilder.addOrUpdateByIdQuery());
         }
     }
 
@@ -128,14 +113,20 @@ public abstract class PostgisBaseFeatureStoreImpl
         DataStoreUtils.checkFeatureObject(value);
         if(useBatch) {
             try {
-                PreparedStatement preparedStatement = batchPreparedStatement.get();
-                fillAddOrUpdateStatement(featureKey, parentID, value, preparedStatement);
-                preparedStatement.addBatch();
-                cache.invalidate(featureKey);
-                if (currentBatchSize++ >= MAX_BATCH_SIZE) {
-                    this.commit();
+                Connection connection = threadSafeBatchExecutor.getConnection();
+                try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.addOrUpdateByIdQuery())) {
+                    fillAddOrUpdateStatement(featureKey, parentID, value, preparedStatement);
+                    int rows = preparedStatement.executeUpdate();
+                    cache.invalidate(featureKey);
+                } catch (Exception e) {
+                    throw new DataStoreException("Cannot insert feature " + value.getName());
+                } finally {
+                    threadSafeBatchExecutor.offer(connection);
+                    if (currentBatchSize.getAndIncrement() >= this.getBatchSize()) {
+                        this.commit();
+                    }
                 }
-            } catch (SQLException | IOException e) {
+            } catch (Exception e) {
                 throw new DataStoreException("Cannot insert feature " + value.getName());
             }
         } else {
@@ -186,7 +177,6 @@ public abstract class PostgisBaseFeatureStoreImpl
     public Stream<Entry<FeatureKey, V>> selectEntries(F filter, Set<VF> fields) {
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
         logger.debug(queryStr);
-        System.out.println(queryStr);
         List<Entry<FeatureKey, V>> results = new ArrayList<>();
         try (Connection connection = this.hikariDataSource.getConnection()) {
             try (Statement statement = connection.createStatement()) {
@@ -514,47 +504,5 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     public void clearCache() {
         cache.invalidateAll();
-    }
-
-    public void close() {
-        try {
-            if (batchPreparedStatement != null) {
-                batchPreparedStatement.get().close();
-            }
-            if(batchConnection != null && !batchConnection.isClosed()) {
-                batchConnection.close();
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-    @Override
-    public void commit() throws DataStoreException {
-        if (useBatch) {
-            try {
-                synchronized (batchPreparedStatement) {
-                    if (currentBatchSize > 0) {
-                        if (batchPreparedStatement != null) {
-                            int[] rows = batchPreparedStatement.get().executeBatch();
-//                        for(int i=0; i < rows.length; i++) {
-//                            if(rows[i] == 0) {
-//                                logger.error("Cannot commit");
-//                                throw new DataStoreException("Cannot execute batch");
-//                            }
-//                        }
-                        }
-                        currentBatchSize = 0;
-                    }
-                }
-            } catch (Exception ex) {
-                //
-                try {
-                    batchConnection.rollback();
-                } finally {
-                    logger.error("Cannot commit", ex);
-                    throw new DataStoreException("Cannot execute batch");
-                }
-            }
-        }
     }
 }
