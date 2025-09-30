@@ -49,7 +49,6 @@ class DatagramOutputStream extends ByteArrayOutputStream {
     @Override
     public synchronized void write(final byte[] data) throws IOException {
 
-        // Add 1 for appended EOM
         numBytesWritten = data.length;
 
         super.write(data);

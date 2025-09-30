@@ -123,8 +123,6 @@ class DatagramInputStream extends InputStream implements Runnable {
 
             try {
 
-                logger.debug("Waiting for receive packet");
-
                 socket.receive(receivePacket);
 
                 synchronized (lock) {
@@ -133,8 +131,6 @@ class DatagramInputStream extends InputStream implements Runnable {
 
                     lock.notifyAll();
                 }
-
-                logger.debug("Packet received");
 
             } catch (IOException e) {
 
