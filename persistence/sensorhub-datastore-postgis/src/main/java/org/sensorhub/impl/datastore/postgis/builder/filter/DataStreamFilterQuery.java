@@ -44,6 +44,7 @@ public class DataStreamFilterQuery extends FilterQuery {
         this.handleSystemFilter(filter.getSystemFilter());
         this.handleObsFilter(filter.getObservationFilter());
         this.handleObservedPropertiesFilter(filter.getObservedProperties());
+
         return this.filterQueryGenerator;
     }
 
