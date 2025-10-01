@@ -24,7 +24,7 @@ test {
 osgi {
     manifest {
         attributes ('Bundle-Vendor': 'Botts Inc')
-        attributes ('Bundle-Activator': 'com.sample.impl.sensor.notecardGPS.Activator')
+        attributes ('Bundle-Activator': 'org.sensorhub.impl.sensor.notecardGPS.Activator')
     }
 }
 
