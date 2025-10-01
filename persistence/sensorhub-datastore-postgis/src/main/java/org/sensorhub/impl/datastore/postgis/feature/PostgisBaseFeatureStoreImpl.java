@@ -72,8 +72,8 @@ public abstract class PostgisBaseFeatureStoreImpl
     protected SMLJsonBindings smlJsonBindings = new SMLJsonBindings(false);
 
     protected PostgisBaseFeatureStoreImpl(String url, String dbName, String login, String password, int idScope,
-                                          IdProviderType dsIdProviderType, T queryBuilder, boolean useBatch){
-        super(idScope,dsIdProviderType,queryBuilder,false);
+                                          IdProviderType dsIdProviderType, T queryBuilder, boolean useBatch) {
+        super(idScope, dsIdProviderType, queryBuilder, useBatch);
         this.init(url, dbName, login, password, new String[]{
                 queryBuilder.createTableQuery(),
                 queryBuilder.createUidUniqueIndexQuery(),
@@ -111,7 +111,7 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     public FeatureKey addOrUpdate(FeatureKey featureKey, BigId parentID, V value) throws DataStoreException {
         DataStoreUtils.checkFeatureObject(value);
-        if(useBatch) {
+        if (useBatch) {
             try {
                 Connection connection = threadSafeBatchExecutor.getConnection();
                 try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.addOrUpdateByIdQuery())) {
@@ -143,7 +143,7 @@ public abstract class PostgisBaseFeatureStoreImpl
         return featureKey;
     }
 
-    private void fillAddOrUpdateStatement(FeatureKey featureKey, BigId parentID, V value,PreparedStatement preparedStatement) throws SQLException, IOException {
+    private void fillAddOrUpdateStatement(FeatureKey featureKey, BigId parentID, V value, PreparedStatement preparedStatement) throws SQLException, IOException {
         preparedStatement.setLong(1, featureKey.getInternalID().getIdAsLong());
         preparedStatement.setString(6, value.getUniqueIdentifier());
         // statements for INSERT - parentId
@@ -200,6 +200,7 @@ public abstract class PostgisBaseFeatureStoreImpl
     }
 
     protected abstract V readFeature(String data) throws IOException;
+
     protected abstract String writeFeature(V feature) throws IOException;
 
     protected PGobject createPGobjectValidTimeRange(FeatureKey featureKey, V value) throws SQLException {
@@ -209,20 +210,20 @@ public abstract class PostgisBaseFeatureStoreImpl
         String endRangeValue;
 
         TimeExtent timeExtent = value.getValidTime();
-        if(timeExtent == null) {
+        if (timeExtent == null) {
             startRangeValue = "-infinity";
             endRangeValue = "infinity";
-        } else if(timeExtent.beginsNow()) {
+        } else if (timeExtent.beginsNow()) {
             startRangeValue = "-infinity";
             endRangeValue = PostgisUtils.writeInstantToString(timeExtent.end().truncatedTo(ChronoUnit.SECONDS), false);
-        } else if(timeExtent.endsNow()) {
+        } else if (timeExtent.endsNow()) {
             endRangeValue = "infinity";
             startRangeValue = PostgisUtils.writeInstantToString(timeExtent.begin().truncatedTo(ChronoUnit.SECONDS), false);
-        } else  {
+        } else {
             startRangeValue = PostgisUtils.writeInstantToString(timeExtent.begin().truncatedTo(ChronoUnit.SECONDS), false);
             endRangeValue = PostgisUtils.writeInstantToString(timeExtent.end().truncatedTo(ChronoUnit.SECONDS), false);
         }
-        range.setValue("["+startRangeValue+","+endRangeValue+"]");
+        range.setValue("[" + startRangeValue + "," + endRangeValue + "]");
         return range;
     }
 
@@ -232,9 +233,9 @@ public abstract class PostgisBaseFeatureStoreImpl
         String rangeValue;
         if (key.getValidStartTime() != null && key.getValidStartTime().getEpochSecond() > MIN_INSTANT.getEpochSecond()) {
             String pgValidTime = PostgisUtils.writeInstantToString(key.getValidStartTime().truncatedTo(ChronoUnit.SECONDS), false);
-            rangeValue ="["+pgValidTime+","+pgValidTime+"]";
+            rangeValue = "[" + pgValidTime + "," + pgValidTime + "]";
         } else {
-            rangeValue ="[-infinity,infinity]";
+            rangeValue = "[-infinity,infinity]";
         }
 
         range.setValue(rangeValue);

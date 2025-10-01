@@ -14,6 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis.feature;
 
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.feature.IFeatureStore;
@@ -57,6 +58,14 @@ public class PostgisFoiStoreImpl extends
     public Set<Entry<FeatureKey, IFeature>> entrySet() {
         FoiFilter filter = new FoiFilter.Builder().build();
         return this.selectEntries(filter, new HashSet<>()).collect(Collectors.toSet());
+    }
+
+    //DEBUG
+    @Override
+    public FeatureKey getCurrentVersionKey(BigId internalID)
+    {
+        var e = getCurrentVersionEntry(internalID);
+        return e != null ? e.getKey() : null;
     }
 
     @Override

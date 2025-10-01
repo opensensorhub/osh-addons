@@ -84,7 +84,12 @@ public class ObsFilterQuery extends FilterQuery {
         if (foiFilter != null) {
             if (this.foiTableName != null) {
                 // create JOIN
-                // TODO
+                Asserts.checkNotNull(foiFilter, "foiTableName should not be null");
+
+                this.filterQueryGenerator.addInnerJoin(
+                        this.foiTableName + " ON " + this.tableName + ".foiid = " + this.foiTableName + ".id");
+                FoiFilterQuery foiFilterQuery = new FoiFilterQuery(this.foiTableName, filterQueryGenerator);
+                this.filterQueryGenerator = foiFilterQuery.build(foiFilter);
             } else {
                 // otherwise
                 if (foiFilter.getInternalIDs() != null || foiFilter.getUniqueIDs() != null) {

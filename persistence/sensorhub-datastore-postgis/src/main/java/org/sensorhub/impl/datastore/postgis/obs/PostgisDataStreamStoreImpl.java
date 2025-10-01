@@ -157,7 +157,6 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
                     while (resultSet.next()) {
                         long id = resultSet.getLong("id");
                         String data = resultSet.getString("data");
-                        logger.debug(data);
                         IDataStreamInfo dataStreamInfo = SerializerUtils.readIDataStreamInfoFromJson(data);
                         IDataStreamInfo wrapper = new DataStreamInfoWithTimeRanges(id, dataStreamInfo);
                         results.add(Map.entry(new DataStreamKey(obsStore.idScope, id), wrapper));
