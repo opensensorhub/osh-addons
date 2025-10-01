@@ -17,9 +17,12 @@ package org.sensorhub.impl.sensor.trupulse;
 
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.impl.module.RobustConnection;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 
 /**
@@ -40,7 +43,7 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
     
     ICommProvider<?> commProvider;
     TruPulseOutput rangeOutput;
-    
+    RobustConnection connection;
     
     public TruPulseSensor()
     {        
@@ -81,7 +84,7 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
         if(commProvider == null){
             try{
 
-                if(config.commSettings == null) throw new SensorHubException("No communication settings specified");
+                if(config.commSettings == null) log.error("No communication settings specified");
 
                 connection = new RobustConnection(this, config.connection, "TruPulse Laser Range Finder") {
                     @Override
@@ -105,7 +108,7 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
                 connection.waitForConnection();
             }catch (SensorHubException e){
                 commProvider = null;
-                e.printStackTrace();
+                throw new SensorHubException("Cannot connect to TruPulse Laser Range Finder", e);
             }
         }
         
@@ -125,15 +128,21 @@ public class TruPulseSensor extends AbstractSensorModule<TruPulseConfig>
             commProvider.stop();
             commProvider = null;
         }
+
+        if(connection != null) {
+            connection.cancel();
+            connection = null;
+        }
+
     }
-    
+
 
     @Override
     public void cleanup() throws SensorHubException
     {
-       
+
     }
-    
+
     
     @Override
     public boolean isConnected()

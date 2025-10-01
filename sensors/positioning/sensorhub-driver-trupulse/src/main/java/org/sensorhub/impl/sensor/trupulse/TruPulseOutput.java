@@ -94,7 +94,6 @@ public class TruPulseOutput extends AbstractSensorOutput<TruPulseSensor>
     }
     
 
-    /* TODO: only using HV message; add support for HT and ML */
     private void pollAndSendMeasurement()
     {
         double hd = Double.NaN;

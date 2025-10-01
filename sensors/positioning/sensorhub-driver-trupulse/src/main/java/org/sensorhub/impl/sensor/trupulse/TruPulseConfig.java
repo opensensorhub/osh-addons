@@ -19,6 +19,7 @@ import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.impl.module.RobustConnectionConfig;
 
 
 public class TruPulseConfig extends SensorConfig
