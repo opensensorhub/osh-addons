@@ -185,8 +185,8 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
             String[] DOA_Array;
 
             DoA_csv = in.readLine();
-            DoA_csv = DoA_csv.trim();
             if (!DoA_csv.isEmpty()) {
+                DoA_csv = DoA_csv.trim();
                 // Create an array from the html csv data. If it's not the right amount of fields, go to next iteration.
                 DOA_Array = DoA_csv.split(",");
                 if (DOA_Array.length < 13) {
@@ -219,8 +219,8 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
 
                 eventHandler.publish(new DataEvent(latestRecordTime, KrakenSdrOutputDOA.this, dataBlock));
             }
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
 
