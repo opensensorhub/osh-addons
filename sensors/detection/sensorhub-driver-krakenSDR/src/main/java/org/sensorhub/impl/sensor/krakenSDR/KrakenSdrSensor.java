@@ -58,6 +58,8 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
         generateUniqueID(UID_PREFIX, config.serialNumber);
         generateXmlID(XML_PREFIX, config.serialNumber);
 
+
+        /// THE KRAKEN GUI APPLICATION SERVES IT'S _SHARE DIRECTORY TO A SPECIFIC PORT. DEFINE STRUCTURE IN CONFIG TO USE IN APP
         OUTPUT_URL  = "http://" + config.krakenIPaddress + ":" + config.krakenPort;
         settings_URL = OUTPUT_URL + "/settings.json";
         DoA_URL = OUTPUT_URL + "/DOA_value.html";
@@ -66,15 +68,9 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
         util = new KrakenUTILITY(this);
 
         /// INITIALIZE CONTROLS
-        // Test Connection
-        // Get Connection to Kraken Settings:
         try {
             settings_conn = util.createKrakenConnection(settings_URL);
             JsonObject initialSettings = util.retrieveJSONFromAddr(settings_URL);
-
-//            krakenSdrControlMasterChoice = new KrakenSdrControlMasterChoice(this);
-//            addControlInput(krakenSdrControlMasterChoice);
-//            krakenSdrControlMasterChoice.doInit(initialSettings);
 
             krakenSdrControlReceiver = new KrakenSdrControlReceiver(this);
             addControlInput(krakenSdrControlReceiver);
@@ -147,9 +143,8 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
                 // Sleep per the sample rate provided by admin panel
                 Thread.sleep(TimeUnit.SECONDS.toMillis(config.sampelRate));
 
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
 
