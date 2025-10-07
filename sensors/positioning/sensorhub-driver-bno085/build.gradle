@@ -1,6 +1,6 @@
 description = 'BNO085'
 ext.details = "BNO085 Sensor over i2c Connection"
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
@@ -25,7 +25,7 @@ test {
 osgi {
     manifest {
         attributes ('Bundle-Vendor': 'Botts Inc')
-        attributes ('Bundle-Activator': 'com.sample.impl.sensor.BNO085.Activator')
+        attributes ('Bundle-Activator': 'org.sensorhub.impl.sensor.BNO085.Activator')
     }
 }
 
