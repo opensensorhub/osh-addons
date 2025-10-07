@@ -99,6 +99,9 @@ public class PostgisUtils {
         config.setUsername(login);
         config.setPassword(password);
         config.setKeepaliveTime(30000*5);
+        config.setConnectionTimeout(30000);
+        config.setMaxLifetime(1800000);
+        config.setValidationTimeout(5000);
 //                        config.setMaximumPoolSize(200_000);
         config.addDataSourceProperty("cachePrepStmts", "true");
         config.addDataSourceProperty("prepStmtCacheSize", "250");
