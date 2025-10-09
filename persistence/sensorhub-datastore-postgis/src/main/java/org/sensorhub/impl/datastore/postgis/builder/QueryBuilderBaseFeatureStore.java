@@ -39,10 +39,8 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
                 " (id BIGSERIAL," +
                 " parentId bigint,"+
                 GEOMETRY +" GEOMETRY, "+
-                VALID_TIME +" VARCHAR,"+
-                "data JSONB," +
-                "PRIMARY KEY(id, "+VALID_TIME+")"+
-                ")";
+                VALID_TIME +" tsrange,"+
+                "data JSONB)";
     }
 
     public String insertFeatureQuery() {
@@ -50,12 +48,14 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
     }
 
     public String insertFeatureByIdQuery() {
+//        return "INSERT INTO "+this.getStoreTableName()+" (id, parentId,"+GEOMETRY+", "+VALID_TIME+", data) " +
+//                "SELECT ?,?,?,?,? WHERE (EXISTS(SELECT 1 from "+this.getStoreTableName()+" where id = ?)) ";
         return "INSERT INTO "+this.getStoreTableName()+" (id, parentId,"+GEOMETRY+", "+VALID_TIME+", data) " +
-                "SELECT ?,?,?,?,? WHERE (EXISTS(SELECT 1 from "+this.getStoreTableName()+" where id = ?) OR ? = 0)";
+                "SELECT ?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM "+this.getStoreTableName()+" WHERE (data->>'uniqueId')::text = ?)";
     }
 
     public String selectByPrimaryKeyQuery() {
-        return "SELECT data FROM "+this.getStoreTableName()+" WHERE id = ? AND validTime = ?";
+        return "SELECT data FROM " + this.getStoreTableName() + " WHERE id = ? AND lower(" + this.getStoreTableName() + ".validTime) = ?::timestamp";
     }
 
     public String existsByIdQuery() {
@@ -72,7 +72,7 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
     }
 
     public String addOrUpdateByIdQuery() {
-        return this.insertFeatureByIdQuery()+" ON CONFLICT (id, validTime) DO "+
+        return this.insertFeatureByIdQuery()+" ON CONFLICT ((data->'properties'->>'uid'), "+VALID_TIME +") DO "+
                 "UPDATE SET "+GEOMETRY+" = ?, " +VALID_TIME+" = ?, data = ?  ";
     }
 
@@ -87,38 +87,31 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
     public String selectLastVersionByUidQuery(String uid, String timestamp) {
         return "SELECT DISTINCT ON (id) id,validTime " +
                 "FROM " + this.getStoreTableName() + " WHERE (data->'properties'->>'uid') = '" + uid + "' AND " +
-                "tstzrange((data->'properties'->'validTime'->>0)::timestamptz, (data->'properties'->'validTime'->>1)::timestamptz)" +
-                " && '[" + timestamp + "," + timestamp + "]' " +
-                "order by id, ((data->'properties'->'validTime'->>0)::timestamptz) DESC";
+                this.getStoreTableName()+".validTime @> '" + timestamp + "'::timestamp "+
+                "order by id, lower(validTime) DESC";
     }
 
     public String selectLastVersionByIdQuery(long id, String timestamp) {
         return "SELECT DISTINCT ON (id) id,validTime "+
                 "FROM "+this.getStoreTableName()+" WHERE id = "+id+" AND " +
-                "tstzrange((data->'properties'->'validTime'->>0)::timestamptz, (data->'properties'->'validTime'->>1)::timestamptz)" +
-                " && '["+timestamp+","+timestamp+"]' "+
-                "order by id, ((data->'properties'->'validTime'->>0)::timestamptz) DESC";
+                this.getStoreTableName()+".validTime @> '" + timestamp + "'::timestamp "+
+                "order by id, lower(validTime) DESC";
     }
 
     public String countFeatureQuery() {
         return "SELECT COUNT(DISTINCT data->'properties'->>'uid') AS recordsCount FROM " + this.getStoreTableName();
     }
 
-
     public String removeByPrimaryKeyQuery() {
-        return "DELETE FROM "+this.getStoreTableName()+" WHERE id = ? AND validTime = ?";
+        return "DELETE FROM "+this.getStoreTableName()+" WHERE id = ? AND "+this.getStoreTableName()+".validTime @> ?";
     }
 
     public String createUidUniqueIndexQuery() {
         return "CREATE UNIQUE INDEX "+this.getStoreTableName()+"_feature_uid_idx ON "+this.getStoreTableName()+" " +
                 "((data->'properties'->>'uid'), "+VALID_TIME+")";
     }
-    public String createValidTimeBeginIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " (((data->'properties'->'validTime'->>0)::text))";
-    }
-
-    public String createValidTimeEndIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_1_idx ON "+this.getStoreTableName()+ " (((data->'properties'->'validTime'->>1)::text))";
+    public String createValidTimeIndexQuery() {
+        return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " using GIST (validTime)";
     }
 
     public String createTrigramExtensionQuery() {

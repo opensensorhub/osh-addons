@@ -49,6 +49,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.sensorhub.impl.datastore.postgis.utils.SerializerUtils.*;
+
 public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStreamStore> implements IDataStreamStore {
     private volatile Cache<Long, IDataStreamInfo> cache = CacheBuilder.newBuilder()
             .maximumSize(150)
@@ -60,8 +62,8 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
     protected PostgisObsStoreImpl obsStore;
     protected ISystemDescStore systemStore;
 
-    public PostgisDataStreamStoreImpl(PostgisObsStoreImpl obsStore, HikariDataSource connection) {
-        super(obsStore.idScope, obsStore.idProviderType, new QueryBuilderDataStreamStore(obsStore.getDatastoreName() + "_datastreams"));
+    public PostgisDataStreamStoreImpl(PostgisObsStoreImpl obsStore, HikariDataSource connection, boolean useBatch) {
+        super(obsStore.idScope, obsStore.idProviderType, new QueryBuilderDataStreamStore(obsStore.getDatastoreName() + "_datastreams"), false);
         this.init(obsStore, connection);
     }
 
@@ -155,7 +157,6 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
                     while (resultSet.next()) {
                         long id = resultSet.getLong("id");
                         String data = resultSet.getString("data");
-                        logger.debug(data);
                         IDataStreamInfo dataStreamInfo = SerializerUtils.readIDataStreamInfoFromJson(data);
                         IDataStreamInfo wrapper = new DataStreamInfoWithTimeRanges(id, dataStreamInfo);
                         results.add(Map.entry(new DataStreamKey(obsStore.idScope, id), wrapper));
@@ -173,7 +174,11 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
 
     @Override
     public void commit() {
-        obsStore.commit();
+        try {
+            obsStore.commit();
+        } catch (DataStoreException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void intersectsAndUpdate(IDataStreamInfo dsInfo) throws DataStoreException {
@@ -350,6 +355,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
         DataStreamKey key = (DataStreamKey) o;
         IDataStreamInfo data = this.get(key);
 
+        logger.debug("Remove Feature with key={}", key.toString());
         // remove corresponding Obs
         ObsFilter filter = new ObsFilter.Builder()
                 .withDataStreams(key.getInternalID())

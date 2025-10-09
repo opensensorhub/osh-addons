@@ -69,14 +69,4 @@ public abstract class FilterQuery {
         this.foiTableName = foiTableName;
     }
 
-    // POSTGRES LIMIT
-    public static String checkAndGetValidInstant(Instant instant) {
-        if(instant.getEpochSecond() < PostgisUtils.MIN_INSTANT.getEpochSecond()) {
-            return "-infinity";
-        } else if(instant.getEpochSecond() > PostgisUtils.MAX_INSTANT.getEpochSecond()) {
-            return "infinity";
-        } else {
-            return instant.toString();
-        }
-    }
 }

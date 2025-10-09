@@ -53,6 +53,9 @@ public class SelectEntriesObsQuery extends SelectEntriesQuery {
                 if(dataStreamStore != null) {
                     obsFilterQuery.setDataStreamTableName(dataStreamStore.getDatastoreName());
                 }
+                if(foiStore != null) {
+                    obsFilterQuery.setFoiTableName(foiStore.getDatastoreName());
+                }
                 filterQueryGenerator = obsFilterQuery.build(filter);
             }
             return self();

@@ -47,8 +47,8 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
     final int idScope;
     PostgisCommandStoreImpl commandStore;
 
-    public PostgisCommandStatusStore(PostgisCommandStoreImpl commandStore, HikariDataSource hikariDataSource) {
-        super(commandStore.idScope, commandStore.idProviderType, new QueryBuilderCommandStatusStore());
+    public PostgisCommandStatusStore(PostgisCommandStoreImpl commandStore, HikariDataSource hikariDataSource, boolean useBatch) {
+        super(commandStore.idScope, commandStore.idProviderType, new QueryBuilderCommandStatusStore(),useBatch);
         this.idScope = commandStore.idScope;
         this.commandStore = commandStore;
         this.init(commandStore, hikariDataSource);

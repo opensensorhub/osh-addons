@@ -19,6 +19,7 @@ import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.command.CommandFilter;
 import org.sensorhub.api.datastore.command.CommandStreamFilter;
 import org.sensorhub.api.datastore.system.SystemFilter;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.vast.util.Asserts;
 
 import java.util.SortedSet;
@@ -59,8 +60,8 @@ public class CommandStreamFilterQuery extends FilterQuery {
                 filterQueryGenerator.addOrderBy("("+tableName+".data->'system@id'->'internalID'->'id')::bigint");
                 filterQueryGenerator.addOrderBy("("+tableName+".data->'validTime'->>'end')::timestamptz DESC ");
             } else {
-                String min = checkAndGetValidInstant(temporalFilter.getMin());
-                String max = checkAndGetValidInstant(temporalFilter.getMax());
+                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
                 String sb = "tstzrange((" +
                         tableName +

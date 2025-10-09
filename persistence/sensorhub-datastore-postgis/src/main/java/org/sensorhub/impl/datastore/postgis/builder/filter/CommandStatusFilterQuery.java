@@ -18,6 +18,7 @@ import org.sensorhub.api.command.ICommandStatus;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.command.CommandFilter;
 import org.sensorhub.api.datastore.command.CommandStatusFilter;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.vast.util.Asserts;
 
 import java.util.Set;
@@ -47,8 +48,8 @@ public class CommandStatusFilterQuery extends FilterQuery {
                 filterQueryGenerator.addOrderBy(this.tableName+".data->'command@id'");
                 filterQueryGenerator.addOrderBy(this.tableName+".data->'reportTime' DESC ");
             } else {
-                String min = checkAndGetValidInstant(temporalFilter.getMin());
-                String max = checkAndGetValidInstant(temporalFilter.getMax());
+                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
                 String sb = "tstzrange((" +
                         tableName +
@@ -71,8 +72,8 @@ public class CommandStatusFilterQuery extends FilterQuery {
                 filterQueryGenerator.addOrderBy(this.tableName+".data->'command@id'");
                 filterQueryGenerator.addOrderBy(this.tableName+".data->'executionTime' DESC ");
             } else {
-                String min = checkAndGetValidInstant(temporalFilter.getMin());
-                String max = checkAndGetValidInstant(temporalFilter.getMax());
+                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
                 String sb = "tstzrange((" +
                         tableName +

@@ -14,6 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis.feature;
 
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.feature.IFeatureStore;
@@ -22,7 +23,6 @@ import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderFoiStore;
-import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
 import org.vast.ogc.gml.IFeature;
 
@@ -35,12 +35,14 @@ import java.util.stream.Collectors;
 public class PostgisFoiStoreImpl extends
         PostgisBaseFeatureStoreImpl<IFeature, IFoiStore.FoiField, FoiFilter, QueryBuilderFoiStore> implements IFoiStore {
 
-    public PostgisFoiStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFoiStore());
+    public PostgisFoiStoreImpl(String url, String dbName, String login, String password,
+                               int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFoiStore(), useBatch);
     }
 
-    public PostgisFoiStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFoiStore(dataStoreName));
+    public PostgisFoiStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
+                               int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderFoiStore(dataStoreName), useBatch);
     }
 
     @Override
@@ -56,6 +58,14 @@ public class PostgisFoiStoreImpl extends
     public Set<Entry<FeatureKey, IFeature>> entrySet() {
         FoiFilter filter = new FoiFilter.Builder().build();
         return this.selectEntries(filter, new HashSet<>()).collect(Collectors.toSet());
+    }
+
+    //DEBUG
+    @Override
+    public FeatureKey getCurrentVersionKey(BigId internalID)
+    {
+        var e = getCurrentVersionEntry(internalID);
+        return e != null ? e.getKey() : null;
     }
 
     @Override

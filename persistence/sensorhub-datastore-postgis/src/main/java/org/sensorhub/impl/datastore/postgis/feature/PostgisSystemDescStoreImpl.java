@@ -16,6 +16,7 @@ package org.sensorhub.impl.datastore.postgis.feature;
 
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import net.opengis.gml.v32.Point;
 import net.opengis.sensorml.v20.AbstractProcess;
 import org.sensorhub.api.datastore.deployment.IDeploymentStore;
 import org.sensorhub.api.datastore.feature.FeatureKey;
@@ -26,11 +27,17 @@ import org.sensorhub.api.datastore.system.SystemFilter;
 import org.sensorhub.api.system.ISystemWithDesc;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderSystemDescStore;
+import org.sensorhub.impl.service.consys.sensorml.SMLConverter;
+import org.sensorhub.impl.system.wrapper.ProcessWrapper;
 import org.sensorhub.impl.system.wrapper.SmlFeatureWrapper;
+import org.vast.ogc.xlink.IXlinkReference;
+import org.vast.sensorML.SMLBuilders;
 
+import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -43,12 +50,14 @@ public class PostgisSystemDescStoreImpl extends
     protected IProcedureStore procedureStore;
     protected IDeploymentStore deploymentStore;
 
-    public PostgisSystemDescStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderSystemDescStore());
+    public PostgisSystemDescStoreImpl(String url, String dbName, String login, String password,
+                                      int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderSystemDescStore(), useBatch);
     }
 
-    public PostgisSystemDescStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType){
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderSystemDescStore(dataStoreName));
+    public PostgisSystemDescStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
+                                      int idScope, IdProviderType dsIdProviderType, boolean useBatch){
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderSystemDescStore(dataStoreName), useBatch);
     }
 
     @Override
@@ -61,10 +70,26 @@ public class PostgisSystemDescStoreImpl extends
 
     @Override
     protected String writeFeature(ISystemWithDesc feature) throws IOException {
-        StringWriter stringWriter = new StringWriter();
-        JsonWriter jsonWriter = new JsonWriter(stringWriter);
-        smlJsonBindings.writeDescribedObject(jsonWriter, feature.getFullDescription());
-        return stringWriter.getBuffer().toString();
+        try {
+            var sml = feature.getFullDescription();
+            if (sml == null) {
+                sml = new SMLConverter().genericFeatureToSystem(feature);
+            }
+            sml = ProcessWrapper.getWrapper(sml).withId(feature.getId());
+            StringWriter stringWriter = new StringWriter();
+            JsonWriter jsonWriter = new JsonWriter(stringWriter);
+            smlJsonBindings.writeDescribedObject(jsonWriter, sml);
+            jsonWriter.flush();
+            return stringWriter.getBuffer().toString();
+        } catch (IllegalStateException e) {
+            if (e.getCause() instanceof IOException) {
+                throw (IOException) e.getCause();
+            } else {
+                throw e;
+            }
+        } catch (Exception e) {
+            throw new IOException("Error writing SensorML JSON", e);
+        }
     }
 
     @Override

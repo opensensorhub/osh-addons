@@ -19,6 +19,7 @@ import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.ObsFilter;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.vast.util.Asserts;
 
 import java.util.stream.Collectors;
@@ -71,8 +72,8 @@ public class ObsFilterQuery extends FilterQuery {
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
-                String min = checkAndGetValidInstant(temporalFilter.getMin());
-                String max = checkAndGetValidInstant(temporalFilter.getMax());
+                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
                 filterQueryGenerator.addCondition(
                         "tstzrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
             }
@@ -83,7 +84,12 @@ public class ObsFilterQuery extends FilterQuery {
         if (foiFilter != null) {
             if (this.foiTableName != null) {
                 // create JOIN
-                // TODO
+                Asserts.checkNotNull(foiFilter, "foiTableName should not be null");
+
+                this.filterQueryGenerator.addInnerJoin(
+                        this.foiTableName + " ON " + this.tableName + ".foiid = " + this.foiTableName + ".id");
+                FoiFilterQuery foiFilterQuery = new FoiFilterQuery(this.foiTableName, filterQueryGenerator);
+                this.filterQueryGenerator = foiFilterQuery.build(foiFilter);
             } else {
                 // otherwise
                 if (foiFilter.getInternalIDs() != null || foiFilter.getUniqueIDs() != null) {
