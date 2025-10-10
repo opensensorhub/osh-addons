@@ -310,7 +310,7 @@ public abstract class   SerializerUtils {
     }
 
     // CommandStatus
-    public static ICommandStatus readICommandStatusFromJson(String json) throws IOException {
+    public static ICommandStatus readICommandStatusFromJson(String json, ICommandStreamInfo csInfo) throws IOException {
         StringReader stringReader = new StringReader(json);
         JsonReader jsonReader = new JsonReader(stringReader);
 
@@ -339,7 +339,7 @@ public abstract class   SerializerUtils {
                 } else if ("reportTime".equals(prop)) {
                     commandStatusBuilder = commandStatusBuilder.withReportTime(PostgisUtils.readInstantFromString(jsonReader.nextString(), false));
                 } else if ("commandResult".equals(prop)) {
-                    commandStatusBuilder = commandStatusBuilder.withResult(readICommandResult(jsonReader));
+                    commandStatusBuilder = commandStatusBuilder.withResult(readICommandResult(jsonReader, csInfo));
                 } else {
                     jsonReader.skipValue();
                 }
@@ -352,7 +352,15 @@ public abstract class   SerializerUtils {
         return commandStatusBuilder.build();
     }
 
+    public static ICommandStatus readICommandStatusFromJson(String json) throws IOException {
+        return readICommandStatusFromJson(json, null);
+    }
+
     public static String writeICommandStatusToJson(ICommandStatus commandStatus) throws IOException{
+        return writeICommandStatusToJson(commandStatus, null);
+    }
+
+    public static String writeICommandStatusToJson(ICommandStatus commandStatus, ICommandStreamInfo commandStreamInfo) throws IOException {
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             try (var osw = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
                 try (JsonWriter jsonWriter = new JsonWriter(osw)) {
@@ -382,7 +390,7 @@ public abstract class   SerializerUtils {
                     }
 
                     if(commandStatus.getResult() != null) {
-                        writeICommandResult(jsonWriter, "commandResult",commandStatus.getResult());
+                        writeICommandResult(jsonWriter, "commandResult",commandStatus.getResult(), commandStreamInfo);
                     }
 
                     jsonWriter.endObject();
@@ -396,41 +404,103 @@ public abstract class   SerializerUtils {
     }
 
     protected static void writeICommandResult(JsonWriter jsonWriter, String nodeName, ICommandResult commandResult) throws IOException {
-        jsonWriter.beginObject();
-        jsonWriter.name(nodeName);
-        writeBigId(jsonWriter, "datastream@id",commandResult.getDataStreamID());
+        writeICommandResult(jsonWriter, nodeName, commandResult, null);
+    }
 
-        jsonWriter.name("observationRefs");
-        jsonWriter.beginArray();
-        for(BigId obsId: commandResult.getObservationRefs()) {
-            writeBigId(jsonWriter, null, obsId);
+    protected static void writeICommandResult(JsonWriter jsonWriter, String nodeName, ICommandResult commandResult, ICommandStreamInfo commandStreamInfo) throws IOException {
+        jsonWriter.name(nodeName);
+        jsonWriter.beginObject();
+
+        if (commandResult.getDataStreamIDs() != null) {
+            jsonWriter.name("datastreamRefs");
+            jsonWriter.beginArray();
+            for (var dsId: commandResult.getDataStreamIDs()) {
+                jsonWriter.beginObject();
+                writeBigId(jsonWriter, "datastream@id", dsId);
+                jsonWriter.endObject();
+            }
+            jsonWriter.endArray();
         }
-        jsonWriter.endArray();
+
+        if (commandResult.getObservationIDs() != null) {
+            jsonWriter.name("observationRefs");
+            jsonWriter.beginArray();
+            for (var obsId: commandResult.getObservationIDs()) {
+                jsonWriter.beginObject();
+                writeBigId(jsonWriter, "observation@id", obsId);
+                jsonWriter.endObject();
+            }
+            jsonWriter.endArray();
+        }
+
+        if (commandResult.getInlineRecords() != null && commandStreamInfo != null) {
+            jsonWriter.name("inlineRecords");
+            jsonWriter.beginArray();
+            for (var inlineRecord: commandResult.getInlineRecords()) {
+                jsonWriter.jsonValue(writeDataBlockToJson(commandStreamInfo.getResultStructure(), commandStreamInfo.getResultEncoding(), inlineRecord));
+
+            }
+            jsonWriter.endArray();
+        }
+
         jsonWriter.endObject();
     }
 
-    protected static ICommandResult readICommandResult(JsonReader jsonReader) throws IOException {
-        BigId dataStreamId = null;
-        List<BigId> obsRef = null;
+    protected static ICommandResult readICommandResult(JsonReader jsonReader, ICommandStreamInfo csInfo) throws IOException {
+        List<BigId> dataStreamIds = null;
+        List<BigId> obsIds = null;
+        List<DataBlock> inlineRecords = null;
 
         jsonReader.beginObject();
         while (jsonReader.hasNext()) {
             switch (jsonReader.nextName()) {
-                case "datastream@id":
-                    dataStreamId  = readBigId(jsonReader);
-                    break;
-                case "observationRefs":
-                    obsRef = new ArrayList<>();
+                case "datastreamRefs":
+                    dataStreamIds = new ArrayList<>();
                     jsonReader.beginArray();
-                    while (jsonReader.hasNext()) {
-                        obsRef.add(readBigId(jsonReader));
+                    while(jsonReader.hasNext()) {
+                        jsonReader.beginObject();
+                        jsonReader.nextName();
+                        dataStreamIds.add(readBigId(jsonReader));
+                        jsonReader.endObject();
                     }
                     jsonReader.endArray();
                     break;
+                case "observationRefs":
+                    obsIds = new ArrayList<>();
+                    jsonReader.beginArray();
+                    while (jsonReader.hasNext()) {
+                        jsonReader.beginObject();
+                        jsonReader.nextName();
+                        obsIds.add(readBigId(jsonReader));
+                        jsonReader.endObject();
+                    }
+                    jsonReader.endArray();
+                    break;
+                case "inlineRecords":
+                    if (csInfo == null) {
+                        jsonReader.skipValue();
+                        break;
+                    }
+                    JsonDataParserGson parser = new JsonDataParserGson(jsonReader);
+                    inlineRecords = new ArrayList<>();
+                    jsonReader.beginArray();
+                    while (jsonReader.hasNext()) {
+                        parser.setDataComponents(csInfo.getResultStructure());
+                        inlineRecords.add(parser.parseNextBlock());
+                    }
+                    jsonReader.endArray();
             }
         }
         jsonReader.endObject();
-        return CommandResult.withObsInDatastream(dataStreamId, obsRef);
+
+        if (dataStreamIds != null && !dataStreamIds.isEmpty()) {
+            return CommandResult.withDatastreams(dataStreamIds);
+        } else if (obsIds != null && !obsIds.isEmpty()) {
+            return CommandResult.withObservations(obsIds);
+        } else if (inlineRecords != null && !inlineRecords.isEmpty()) {
+            return CommandResult.withData(inlineRecords);
+        }
+        return null;
     }
     //
     protected static void writeBigId(JsonWriter jsonWriter, String nodeName, BigId bigId) throws IOException {
