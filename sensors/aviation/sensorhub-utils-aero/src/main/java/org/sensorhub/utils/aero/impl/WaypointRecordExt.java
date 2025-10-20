@@ -17,6 +17,8 @@ package org.sensorhub.utils.aero.impl;
 import java.time.Instant;
 import org.sensorhub.utils.aero.AeroHelper;
 import org.sensorhub.utils.aero.IWaypointWithState;
+import org.vast.data.DataBlockProxy;
+import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataRecord;
 
 
@@ -31,6 +33,8 @@ import net.opengis.swe.v20.DataRecord;
  */
 public interface WaypointRecordExt extends WaypointRecord, IWaypointWithState
 {
+    public static final DataRecord SCHEMA = getSchema("");
+    
     
     public static DataRecord getSchema(String name)
     {
@@ -54,6 +58,21 @@ public interface WaypointRecordExt extends WaypointRecord, IWaypointWithState
                 .description("Estimated fuel on board at waypoint"))
             .build();
     }
+    
+    
+    public static WaypointRecordExt create()
+    {
+        return create(SCHEMA.createDataBlock());
+    }
+    
+    
+    public static WaypointRecordExt create(DataBlock dblk)
+    {
+        var proxy = DataBlockProxy.generate(SCHEMA, WaypointRecordExt.class);
+        proxy.wrap(dblk);
+        return proxy;
+    }
+    
     
     @Override
     @SweMapping(path="time")

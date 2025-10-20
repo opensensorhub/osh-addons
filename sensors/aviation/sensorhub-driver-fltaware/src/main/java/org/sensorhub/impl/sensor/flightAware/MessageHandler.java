@@ -81,6 +81,12 @@ public class MessageHandler implements IMessageHandler
                 log.trace("time lag: {}", latestMessageTimeLag);
             }
             
+            if (log.isDebugEnabled() && msgCount % 100 == 0)
+            {
+                log.debug("message count: {}, flight plan queue size: {}, flight pos queue size: {}",
+                    msgCount, flightPlanExecQueue.size(), flightPosExecQueue.size());
+            }
+            
             if (!liveStarted && latestMessageTimeLag < 10)
             {
                 liveStarted = true;

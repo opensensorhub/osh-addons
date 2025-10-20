@@ -15,9 +15,13 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.onvif;
 
+import org.onvif.ver10.schema.VideoEncoding;
+import org.sensorhub.api.comm.ICommConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.impl.comm.TCPConfig;
+import java.util.*;
 
 /**
  * <p>
@@ -25,33 +29,71 @@ import org.sensorhub.api.sensor.SensorConfig;
  * protocol. This particular class stores configuration parameters.
  * </p>
  * 
- * @author Joshua Wolfe <developer.wolfe@gmail.com>
+ * @author Kyle Fitzpatrick, Joshua Wolfe <developer.wolfe@gmail.com>
  * @since May 22, 2017
  */
 public class OnvifCameraConfig extends SensorConfig {
-	
-	@Required
-    @DisplayInfo(label="Host IP Address", desc="IP Address of the camera")
-    public String hostIp = null;
+    @Required
+    @DisplayInfo(label="ONVIF Connection Options", desc="Configure ONVIF remote address and port")
+    public OnvifConfig networkConfig = new OnvifConfig();
 
-	@DisplayInfo(label="Port", desc="Port number of the camera")
-	public Integer port = 80;
-	
-    @DisplayInfo(label="User Login", desc="User that will be logged into for issueing PTZ commands")
-    public String user = null;
+    @Required
+    @DisplayInfo(label="ONVIF AV Streaming Options", desc="Configure video/audio streaming")
+    public StreamingOptions streamingConfig = new StreamingOptions();
 
-    @DisplayInfo(label="Password", desc="Password used to login to user")
-    public String password = null;
-	
-	@DisplayInfo(label="Path", desc="ONVIF route of the camera")
-	public String path = "/onvif/device_service";
-	
-	@DisplayInfo(label="Timeout(ms)", desc="Timeout of connection to the camera")
-	public Integer timeout = 5000;
-	
-    @DisplayInfo(label="Enable H264", desc="Enable H264 encoded video output (accessible through RTSP)")
-    public boolean enableH264 = false;
-    
-    @DisplayInfo(label="Enable MPEG4", desc="Enable MPEG4 encoded video output (accessible through HTTP)")
-    public boolean enableMPEG4 = false;
+    @Required
+    @DisplayInfo(label="ONVIF PTZ Range Options", desc="Configure hardware pan/tilt/zoom ranges.")
+    public PTZRanges ptzRanges = new PTZRanges();
+
+    public class OnvifConfig extends TCPConfig implements ICommConfig{
+        public OnvifConfig() {
+            this.remotePort = 80;
+            this.user = "";
+            this.password = "";
+        }
+
+        @DisplayInfo(label= "Discovered ONVIF Device Endpoints")
+        public TreeSet<String> autoRemoteHost = new TreeSet<>();
+
+        @DisplayInfo(label = "ONVIF Path", desc="Path for ONVIF device services.")
+        public String onvifPath = "/onvif/device_service";
+    }
+
+    public class StreamingOptions {
+        @DisplayInfo(label = "Manual Stream Endpoint", desc="Endpoint for AV streaming. Leave empty to automatically detect via ONVIF.")
+        public String streamEndpoint = null;
+
+        @DisplayInfo(label = "Discovered Stream Endpoints")
+        public TreeSet<String> autoStreamEndpoint = new TreeSet<>();
+
+        @DisplayInfo(label="Preferred Codec", desc="Select video codec for streaming.")
+        public VideoEncoding codec = VideoEncoding.JPEG;
+    }
+
+    public class PTZRanges {
+        @DisplayInfo(label = "Pan Max (deg)", desc="Leave empty to use generic space.")
+        public Integer panMax = null;
+
+        @DisplayInfo(label = "Pan Min (deg)", desc="Leave empty to use generic space.")
+        public Integer panMin = null;
+
+        @DisplayInfo(label="Invert Pan")
+        public boolean invertPan = false;
+
+        @DisplayInfo(label = "Tilt Max (deg)", desc="Leave empty to use generic space.")
+        public Integer tiltMax = null;
+
+        @DisplayInfo(label = "Tilt Min (deg)", desc="Leave empty to use generic space.")
+        public Integer tiltMin = null;
+
+        @DisplayInfo(label="Invert Tilt")
+        public boolean invertTilt = false;
+
+        // TODO This would probably actually require a min and max unlike pan and tilt
+        @DisplayInfo(label = "Zoom Max (mm)", desc = "Leave empty to use generic space.")
+        public Integer zoomMax = null;
+
+        @DisplayInfo(label = "Zoom Min (mm)", desc = "Leave empty to use generic space.")
+        public Integer zoomMin = null;
+    }
 }

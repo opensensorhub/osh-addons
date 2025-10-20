@@ -16,6 +16,24 @@ package org.sensorhub.utils.aero;
 
 public interface IWaypoint
 {
+    public enum WaypointType
+    {
+        AIRPORT,
+        NAVAID,
+        WAYPOINT
+    }
+    
+    public static final String REDISPATCH_TAG = "REDISPATCH";
+    public static final String ETOPS_ENTRY_TAG = "ETOPS_ENTRY";
+    public static final String ETOPS_EXIT_TAG = "ETOPS_EXIT";
+    public static final String ALTERNATE_TAG = "ALTERNATE";
+    
+    /**
+     * First waypoint after a route change (usually PPOS)
+     */
+    public static final String ROUTE_CHANGE_TAG = "ROUTE_CHANGE";
+
+    
     /**
      * @return Waypoint code (3 to 5 letters ICAO code) 
      */
@@ -40,4 +58,9 @@ public interface IWaypoint
      * @return Barometric altitude at waypoint (ft)
      */
     double getBaroAltitude();
+    
+    /**
+     * @return Waypoint info (null if none provided)
+     */
+    String getInfo();
 }

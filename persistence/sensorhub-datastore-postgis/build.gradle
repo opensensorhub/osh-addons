@@ -1,0 +1,42 @@
+description = 'OSH Datastore (PostGis)'
+ext.details = 'Storage module backed by a PostGis database'
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-service-consys'
+  embeddedImpl('org.postgresql:postgresql:42.7.7') {
+    exclude group: "org.slf4j", module: "slf4j-api"
+  }
+  embeddedImpl('net.postgis:postgis-jdbc:2021.1.0'){
+    exclude group: "org.slf4j", module: "slf4j-api"
+  }
+  embeddedImpl('com.zaxxer:HikariCP:5.0.1'){
+    exclude group: "org.slf4j", module: "slf4j-api"
+  }
+  embeddedImpl('com.github.ben-manes.caffeine:caffeine:3.1.7') {
+    exclude group: 'checker-qual', module: 'org.checkerframework'
+  }
+  testImplementation(testFixtures('org.sensorhub:sensorhub-core:' + oshCoreVersion))
+}
+
+// add info to OSGi manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'GeoRobotix Inc.')
+    attributes 'Bundle-Activator': 'org.sensorhub.impl.datastore.postgis.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'mdhsl'
+      name 'Mathieu Dhainaut'
+      organization 'GeoRobotix Inc.'
+      organizationUrl 'https://georobotix.com'
+    }
+  }
+}
+
+

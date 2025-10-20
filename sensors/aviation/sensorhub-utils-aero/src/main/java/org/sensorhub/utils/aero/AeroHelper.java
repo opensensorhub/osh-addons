@@ -75,8 +75,9 @@ public class AeroHelper extends GeoPosHelper
     public static final String DEF_WIND_DIR = SWEHelper.getCfUri("wind_to_direction");
 
     public static final String DEF_CODED_ROUTE = AERO_DEF_URI_PREFIX + "CodedRoute";
-    public static final String DEF_WAYPOINT_TYPE = AERO_DEF_URI_PREFIX + "WaypointType";
     public static final String DEF_WAYPOINT_CODE = AERO_DEF_URI_PREFIX + "WaypointCode";
+    public static final String DEF_WAYPOINT_TYPE = AERO_DEF_URI_PREFIX + "WaypointType";
+    public static final String DEF_WAYPOINT_INFO = AERO_DEF_URI_PREFIX + "WaypointInfo";
     
     public static final String DEF_MSG_TEXT = AERO_DEF_URI_PREFIX + "RawMessage";
     public static final String DEF_MSG_SRC = AERO_DEF_URI_PREFIX + "MessageSource";

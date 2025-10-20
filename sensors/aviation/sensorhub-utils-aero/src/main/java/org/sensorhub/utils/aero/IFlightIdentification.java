@@ -28,6 +28,12 @@ import java.time.LocalDate;
 public interface IFlightIdentification
 {
     /**
+     * @return Full flight identifier
+     */
+    String getFlightID();
+    
+    
+    /**
      * @return ICAO flight number (3 letters airline code + 1-4 numbers, e.g. DAL123)
      */
     String getFlightNumber();

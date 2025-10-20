@@ -16,8 +16,10 @@ package org.sensorhub.utils.aero.impl;
 
 import org.sensorhub.utils.aero.AeroHelper;
 import org.sensorhub.utils.aero.IWaypoint;
+import org.vast.data.DataBlockProxy;
 import org.vast.data.IDataAccessor;
 import org.vast.swe.SWEBuilders.DataRecordBuilder;
+import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataRecord;
 
 
@@ -33,14 +35,15 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
 {
     public static final String DEF_WAYPOINT_REC = AeroHelper.AERO_RECORD_URI_PREFIX + "Waypoint";
     
+    public static final DataRecord SCHEMA = getSchema("");
+    
     
     public static DataRecord getSchema(String name)
     {
         return getRecordBuilder(name).build();
     }
     
-    
-    public static DataRecordBuilder getRecordBuilder(String name)
+    static DataRecordBuilder getRecordBuilder(String name)
     {
         AeroHelper fac = new AeroHelper();
         
@@ -49,13 +52,30 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
             .definition(DEF_WAYPOINT_REC) 
             .label("Waypoint")
             .addField("code", fac.createWaypointCode())
-            /*.addField("type", fac.createCategory()
+            .addField("type", fac.createCategory()
                 .definition(AeroHelper.DEF_WAYPOINT_TYPE)
-                .label("Waypoint Type")
-                .description("Type of navigation point (airport, waypoint, VOR, VORTAC, DME, etc."))*/
+                .label("Waypoint Type"))
             .addField("lat", fac.createLatitude())
             .addField("lon", fac.createLongitude())
-            .addField("alt", fac.createBaroAlt());
+            .addField("alt", fac.createBaroAlt())
+            .addField("info", fac.createText()
+                .definition(AeroHelper.DEF_WAYPOINT_INFO)
+                .label("Waypoint Info")
+                .description("Comma separated list of info tags for the waypoint (e.g. ETOPS, REDISPATCH, etc.)"));
+    }
+    
+    
+    public static WaypointRecord create()
+    {
+        return create(SCHEMA.createDataBlock());
+    }
+    
+    
+    public static WaypointRecord create(DataBlock dblk)
+    {
+        var proxy = DataBlockProxy.generate(SCHEMA, WaypointRecord.class);
+        proxy.wrap(dblk);
+        return proxy;
     }
     
     
@@ -66,16 +86,12 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
     @SweMapping(path="code")
     void setCode(String val);
     
-    /*@Override
+    @Override
     @SweMapping(path="type")
     String getType();
 
     @SweMapping(path="type")
-    void setType(String val);*/
-    default String getType()
-    {
-        return null;
-    }
+    void setType(String val);
     
     @Override
     @SweMapping(path="lat")
@@ -97,5 +113,12 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
 
     @SweMapping(path="alt")
     void setBaroAltitude(double val);
+    
+    @Override
+    @SweMapping(path="info")
+    String getInfo();
+
+    @SweMapping(path="info")
+    void setInfo(String val);
     
 }

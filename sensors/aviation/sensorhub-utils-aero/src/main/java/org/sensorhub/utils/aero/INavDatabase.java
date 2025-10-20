@@ -60,6 +60,9 @@ public interface INavDatabase
     
     
     public IDecodedRoute decodeRoute(String codedRouteString);
+
+
+    public IDecodedRoute decodeRoute(String codedRouteString, double refLat, double refLon);
     
     
     

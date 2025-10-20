@@ -17,7 +17,9 @@ package org.sensorhub.utils.aero.impl;
 import java.time.Instant;
 import org.sensorhub.utils.aero.AeroHelper;
 import org.sensorhub.utils.aero.IAircraftState;
+import org.vast.data.DataBlockProxy;
 import org.vast.data.IDataAccessor;
+import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataRecord;
 
 
@@ -32,6 +34,8 @@ import net.opengis.swe.v20.DataRecord;
 public interface AircraftStateRecord extends IDataAccessor, IAircraftState
 {
     public static final String DEF_AIRCRAFT_STATE_RECORD = AeroHelper.AERO_RECORD_URI_PREFIX + "AircraftState";
+    
+    public static final DataRecord SCHEMA = getSchema("");    
     
     
     public static DataRecord getSchema(String name)
@@ -60,6 +64,20 @@ public interface AircraftStateRecord extends IDataAccessor, IAircraftState
             .addField("zfw", fac.createZeroFuelWeight())
             .addField("fob", fac.createFuelOnBoard())
             .build();
+    }
+    
+    
+    public static AircraftStateRecord create()
+    {
+        return create(SCHEMA.createDataBlock());
+    }
+    
+    
+    public static AircraftStateRecord create(DataBlock dblk)
+    {
+        var proxy = DataBlockProxy.generate(SCHEMA, AircraftStateRecord.class);
+        proxy.wrap(dblk);
+        return proxy;
     }
     
     

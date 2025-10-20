@@ -331,6 +331,10 @@ public class MpegTsProcessor extends Thread {
         audioStreamContext.setDataBufferListener(audioDataBufferListener);
     }
 
+    public void setInjectVideoExtradata(boolean injectVideoExtradata) {
+        videoStreamContext.setInjectingExtradata(injectVideoExtradata);
+    }
+
     /**
      * Registers a data buffer listener to call if clients are interested in demuxed data buffers
      *
@@ -438,8 +442,6 @@ public class MpegTsProcessor extends Thread {
         logger.debug("closeStream");
 
         if (streamOpened) {
-            videoStreamContext.closeCodecContext();
-            audioStreamContext.closeCodecContext();
 
             if (avFormatContext != null) {
                 avformat.avformat_close_input(avFormatContext);

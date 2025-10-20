@@ -14,6 +14,7 @@ package org.sensorhub.impl.sensor.ffmpeg.outputs;
 import net.opengis.swe.v20.*;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.ISensorModule;
+import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.mpegts.DataBufferListener;
 import org.sensorhub.mpegts.DataBufferRecord;
@@ -33,21 +34,21 @@ import java.util.concurrent.Executor;
  * Output for video data from the FFMPEG sensor.
  */
 public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutput<T> implements DataBufferListener {
+    private static final String CODEC_MJPEG = "JPEG";
+    private static final String CODEC_H264 = "H264";
+    private static final Logger logger = LoggerFactory.getLogger(VideoOutput.class.getSimpleName());
+    private static final int MAX_NUM_TIMING_SAMPLES = 10;
+
     private final String outputLabel;
     private final String outputDescription;
-
-    private static final Logger logger = LoggerFactory.getLogger(VideoOutput.class.getSimpleName());
-
     private final int videoFrameWidth;
     private final int videoFrameHeight;
     private final String codecName;
+    private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
+    private final Object histogramLock = new Object();
 
     private DataComponent dataStruct;
     private DataEncoding dataEncoding;
-
-    private static final int MAX_NUM_TIMING_SAMPLES = 10;
-    private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
-    private final Object histogramLock = new Object();
     private Executor executor;
 
     /**
@@ -74,9 +75,20 @@ public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
 
         this.videoFrameWidth = videoFrameDimensions[0];
         this.videoFrameHeight = videoFrameDimensions[1];
-        this.codecName = codecName;
         this.outputLabel = outputLabel;
         this.outputDescription = outputDescription;
+
+        // Translate the codec name to the compression format needed by OSH
+        if (codecName.equalsIgnoreCase("mjpeg") || codecName.equalsIgnoreCase("jpeg")) {
+            this.codecName = CODEC_MJPEG;
+        } else if (codecName.equalsIgnoreCase("h264")) {
+            this.codecName = CODEC_H264;
+        } else {
+            this.codecName = codecName;
+            logger.warn("Codec {} is neither H264 nor MJPEG. Compression set using FFmpeg name.", codecName);
+            ((AbstractModule<?>) parentSensor).reportStatus("Video codec = " + codecName.toUpperCase() + ". Use the transcoder process module" +
+                    " with H264 or MJPEG output for compatibility with OSH visualization and serialization.");
+        }
 
         logger.debug("Video output created.");
     }
@@ -131,7 +143,7 @@ public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
             try {
                 processBuffer(dataBufferRecord);
             } catch (Exception e) {
-                logger.error("Error while decoding.", e);
+                logger.error("Error while publishing data.", e);
             }
         });
     }

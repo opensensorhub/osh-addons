@@ -38,7 +38,7 @@ public class OnvifCameraDescriptor extends JarModuleProvider implements IModuleP
 	@Override
 	public String getModuleVersion() 
 	{
-		return "0.0.1";
+		return "1.1.2";
 	}
 
 	@Override
