@@ -125,7 +125,7 @@ public class MeshtasticMqttHandler implements IMqttServer.IMqttHandler {
 //                            System.out.println("\t\t[Lat]: " + lat);
 //                            System.out.println("\t\t[Lon]: " + lon);
 //                            System.out.println("\t\t[Alt]: " + alt);
-                            output.setData(channelId, gatewayId, packet_ID, packet_to, packet_from, packet_time, lat, lon, alt);
+                            output.setData(topic, channelId, gatewayId, packet_ID, packet_to, packet_from, packet_time, lat, lon, alt);
 
                             break;
                         case 4: // 4 = NODEINFO_APP_VALUE

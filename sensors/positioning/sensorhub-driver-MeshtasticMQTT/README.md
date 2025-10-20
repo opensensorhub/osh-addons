@@ -21,17 +21,25 @@ osh-addons/services/sensorhub-comm-mqtt
 
 
 
-- update OshAuthorizers to 
+- Update OshAuthorizers.java to accept all topics and subscriptions:
 ```java
-@Override
-    public void authorizePublish(PublishAuthorizerInput authInput, PublishAuthorizerOutput authOutput)
-    {
-        //publishHandler.authorizePublish(authInput, authOutput);
-        String topic = authInput.getPublishPacket().getTopic();
+    @Override
+public void authorizeSubscribe(SubscriptionAuthorizerInput authInput, SubscriptionAuthorizerOutput authOutput)
+{
+    // subscribeHandler.authorizeSubscribe(authInput, authOutput);
+    authOutput.authorizeSuccessfully();
+}
 
-        if("/will".equals(topic)){
-            authOutput.authorizeSuccessfully();
-            return;
-        }
-    }
+    @Override
+public void authorizePublish(PublishAuthorizerInput authInput, PublishAuthorizerOutput authOutput)
+{
+    //publishHandler.authorizePublish(authInput, authOutput);
+    String topic = authInput.getPublishPacket().getTopic();
+
+    // ALLOW ALL TOPICS:
+    authOutput.authorizeSuccessfully();
+
+}
 ```
+
+

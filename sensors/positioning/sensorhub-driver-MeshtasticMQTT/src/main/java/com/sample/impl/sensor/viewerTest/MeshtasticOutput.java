@@ -70,6 +70,10 @@ public class MeshtasticOutput extends AbstractSensorOutput<MeshtasticSensor> {
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
                         .description("Time of data collection"))
+                .addField("mqtt_topic", sweFactory.createText()
+                        .label("MQTT Topic")
+                        .description("the topic sent my meshtastic")
+                        .definition(SWEHelper.getPropertyUri("mqtt_topic")))
                 .addField("channel_id", sweFactory.createText()
                         .label("Channel ID")
                         .description("The channel id provided by the meshtastic node")
@@ -124,7 +128,7 @@ public class MeshtasticOutput extends AbstractSensorOutput<MeshtasticSensor> {
     /**
      * Sets the data for the output and publishes it.
      */
-    public void setData(String channelId, String gatewayId, String packet_ID, String packet_to, String packet_from, Instant packet_time, double lat, double lon, double alt) {
+    public void setData(String topic, String channelId, String gatewayId, String packet_ID, String packet_to, String packet_from, Instant packet_time, double lat, double lon, double alt) {
 
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? dataRecord.createDataBlock() : latestRecord.renew();
@@ -139,14 +143,15 @@ public class MeshtasticOutput extends AbstractSensorOutput<MeshtasticSensor> {
 
             // Populate the data block
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
-            dataBlock.setStringValue(1, channelId);
-            dataBlock.setStringValue(2, gatewayId);
-            dataBlock.setStringValue(3, packet_ID);
-            dataBlock.setStringValue(4, packet_from);
-            dataBlock.setTimeStamp(5, packet_time);
-            dataBlock.setDoubleValue(6, lat);
-            dataBlock.setDoubleValue(7, lon);
-            dataBlock.setDoubleValue(8, alt);
+            dataBlock.setStringValue(1, topic);
+            dataBlock.setStringValue(2, channelId);
+            dataBlock.setStringValue(3, gatewayId);
+            dataBlock.setStringValue(4, packet_ID);
+            dataBlock.setStringValue(5, packet_from);
+            dataBlock.setTimeStamp(6, packet_time);
+            dataBlock.setDoubleValue(7, lat);
+            dataBlock.setDoubleValue(8, lon);
+            dataBlock.setDoubleValue(9, alt);
 
 
             // Publish the data block
