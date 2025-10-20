@@ -104,8 +104,11 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver> implements IMu
             dataBlock.setDoubleValue(3, rec.lon);
             
             newGlobalRecords.put(rec.id, dataBlock);
-            if("USA".equals(rec.region) || "CAN".equals("rec.region"))
-                newDomesticRecords.put(rec.id, dataBlock);
+            if("USA".equals(rec.region) || "CAN".equals(rec.region) || "PAC".equals(rec.region) || "LAM".equals(rec.region)) {
+                if (rec.subtype == NavDbEntry.Subtype.NAVAID_DME || rec.subtype == NavDbEntry.Subtype.NAVAID_VOR) {
+                    newDomesticRecords.put(rec.id, dataBlock);
+                }
+            }
             //long time = System.currentTimeMillis();
             //eventHandler.publishEvent(new SensorDataEvent(time, uid, NavaidOutput.this, dataBlock));
         }

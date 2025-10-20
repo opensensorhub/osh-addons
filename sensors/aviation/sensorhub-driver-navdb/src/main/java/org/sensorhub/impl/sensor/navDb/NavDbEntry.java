@@ -57,13 +57,13 @@ public class NavDbEntry implements Comparable<NavDbEntry>
         
         if (comp == 0)
             comp = region.compareTo(o.region);
-        
-        if (comp == 0)
-            comp = airport.compareTo(o.airport);
 
         if (comp == 0)
             comp = icao_code.compareTo(o.icao_code);
-        
+
+        if (comp == 0)
+            comp = airport.compareTo(o.airport);
+
         return comp;
     }
 }
