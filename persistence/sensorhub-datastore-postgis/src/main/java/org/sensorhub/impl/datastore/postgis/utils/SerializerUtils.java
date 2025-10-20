@@ -397,20 +397,22 @@ public abstract class   SerializerUtils {
 
     protected static void writeICommandResult(JsonWriter jsonWriter, String nodeName, ICommandResult commandResult) throws IOException {
         jsonWriter.beginObject();
-        jsonWriter.name(nodeName);
-        writeBigId(jsonWriter, "datastream@id",commandResult.getDataStreamID());
-
-        jsonWriter.name("observationRefs");
-        jsonWriter.beginArray();
-        for(BigId obsId: commandResult.getObservationRefs()) {
-            writeBigId(jsonWriter, null, obsId);
-        }
-        jsonWriter.endArray();
+         //TODO
+//        jsonWriter.name(nodeName);
+//        writeBigId(jsonWriter, "datastream@ids",commandResult.getDataStreamIDs());
+//
+//        jsonWriter.name("observationRefs");
+//        jsonWriter.beginArray();
+//        for(BigId obsId: commandResult.getObservationRefs()) {
+//            writeBigId(jsonWriter, null, obsId);
+//        }
+//        jsonWriter.endArray();
         jsonWriter.endObject();
     }
 
     protected static ICommandResult readICommandResult(JsonReader jsonReader) throws IOException {
-        BigId dataStreamId = null;
+        //TODO: new command Interface
+       /* BigId dataStreamId = null;
         List<BigId> obsRef = null;
 
         jsonReader.beginObject();
@@ -431,6 +433,8 @@ public abstract class   SerializerUtils {
         }
         jsonReader.endObject();
         return CommandResult.withObsInDatastream(dataStreamId, obsRef);
+        */
+        return null;
     }
     //
     protected static void writeBigId(JsonWriter jsonWriter, String nodeName, BigId bigId) throws IOException {
