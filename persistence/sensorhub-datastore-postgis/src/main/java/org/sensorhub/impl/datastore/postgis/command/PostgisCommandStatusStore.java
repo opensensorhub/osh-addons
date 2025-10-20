@@ -17,12 +17,10 @@ package org.sensorhub.impl.datastore.postgis.command;
 import com.zaxxer.hikari.HikariDataSource;
 import org.postgresql.util.PGobject;
 import org.sensorhub.api.command.ICommandStatus;
+import org.sensorhub.api.command.ICommandStreamInfo;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.DataStoreException;
-import org.sensorhub.api.datastore.command.CommandStatusFilter;
-import org.sensorhub.api.datastore.command.ICommandStatusStore;
-import org.sensorhub.api.datastore.command.ICommandStore;
-import org.sensorhub.api.datastore.command.ICommandStreamStore;
+import org.sensorhub.api.datastore.command.*;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.postgis.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
@@ -39,6 +37,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static org.sensorhub.api.datastore.command.ICommandStatusStore.CommandStatusField.COMMAND_ID;
 
 
 public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandStatusStore> implements ICommandStatusStore {
@@ -93,7 +93,23 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
     private Entry<BigId, ICommandStatus> resultSetToEntry(ResultSet resultSet, Set<ICommandStatusStore.CommandStatusField> fields) {
         try {
             BigId id = BigId.fromLong(idScope, resultSet.getLong("id"));
-            ICommandStatus cmdStatus = SerializerUtils.readICommandStatusFromJson(resultSet.getString("data"));
+            boolean noFields = fields != null && !fields.isEmpty();
+            BigId commandStreamId = null;
+            if (!noFields || fields.contains(COMMAND_ID)) {
+                long commandIdAsLong = resultSet.getLong(String.valueOf(COMMAND_ID));
+                if (!resultSet.wasNull()) {
+                    var commandId = BigId.fromLong(idScope, commandIdAsLong);
+                    commandStreamId = commandStore.get(commandId).getCommandStreamID();
+                }
+            }
+
+            ICommandStatus cmdStatus = null;
+            if (commandStreamId != null) {
+                ICommandStreamInfo commandStreamInfo = commandStore.getCommandStreams().get(new CommandStreamKey(commandStreamId));
+                cmdStatus = SerializerUtils.readICommandStatusFromJson(resultSet.getString("data"), commandStreamInfo);
+            } else {
+                cmdStatus = SerializerUtils.readICommandStatusFromJson(resultSet.getString("data"));
+            }
             return Map.entry(id, cmdStatus);
         } catch (Exception ex) {
             throw new RuntimeException("Cannot parse resultSet to CommandStatus",ex);
@@ -105,13 +121,28 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
 
     }
 
+    protected ICommandStreamInfo getContext(ICommandStatus status) {
+        var cmdId = status.getCommandID();
+        var cmdStreamId = commandStore.get(cmdId).getCommandStreamID();
+        var cmdStreamKey = new CommandStreamKey(cmdStreamId);
+        return commandStore.getCommandStreams().get(cmdStreamKey);
+    }
+
     @Override
     public BigId add(ICommandStatus rec) {
         try (Connection connection1 = hikariDataSource.getConnection()) {
             try (PreparedStatement preparedStatement = connection1.prepareStatement(queryBuilder.insertCommandQuery(), Statement.RETURN_GENERATED_KEYS)) {
-
                 // insert Object
-                String objectAsJson = SerializerUtils.writeICommandStatusToJson(rec);
+                String objectAsJson;
+                // Use context to serialize inline records
+                if (rec.getResult() != null &&
+                        rec.getResult().getInlineRecords() != null &&
+                        !rec.getResult().getInlineRecords().isEmpty()) {
+                    var context = getContext(rec);
+                    objectAsJson = SerializerUtils.writeICommandStatusToJson(rec, context);
+                } else {
+                    objectAsJson = SerializerUtils.writeICommandStatusToJson(rec);
+                }
 
                 PGobject jsonObject = new PGobject();
                 jsonObject.setType("json");
