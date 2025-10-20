@@ -37,14 +37,18 @@ import java.time.Instant;
  * @since May 9, 2023
  */
 public class MeshtasticMqttHandler implements IMqttServer.IMqttHandler {
-    MeshtasticOutput output;
+    // DEFINE OUTPUTS
+    MeshtasticOutputTextMessage output_text;
+    MeshtasticOutputPosition output_position;
 
-    public MeshtasticMqttHandler(MeshtasticOutput output){
-        this.output = output;
+    public MeshtasticMqttHandler(
+            MeshtasticOutputTextMessage output_text,
+            MeshtasticOutputPosition output_position
+    ){
+        this.output_text = output_text;
+        this.output_position = output_position;
     }
 
-
-    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     @Override
     public void onSubscribe(String userID, String topic, IMqttServer server)
@@ -63,44 +67,40 @@ public class MeshtasticMqttHandler implements IMqttServer.IMqttHandler {
     @Override
     public void onPublish(String userID, String topic, ByteBuffer payload, ByteBuffer correlData)
     {
-            byte[] bytes = new byte[payload.remaining()];
+
+        // READ THE RAW BYTES FROM MESHTASTIC MQTT SERVER
+        byte[] bytes = new byte[payload.remaining()];
             payload.get(bytes);
 
-
         try {
+            // DECODE THE MESHTASTIC SERVICE ENVELOPE PROTOBUFS
             MQTTProtos.ServiceEnvelope mqttProto = MQTTProtos.ServiceEnvelope.parseFrom(bytes);
             String channelId = mqttProto.getChannelId();
             String gatewayId = mqttProto.getGatewayId();
 
+            // RETRIEVE PACKET IF AVAILABLE
             if(mqttProto.hasPacket()){
-                // Retrieve Packet
                 MeshPacket packet = mqttProto.getPacket();
 
-                // Convert ID, From, and To from int to string:
+                // GET ALL PACKET INFO AND CONVERT TO APPROPRIATE DATA TYPE:
                 String packet_to = convert_32int_to_string(packet.getTo());
                 String packet_from = convert_32int_to_string(packet.getFrom());
                 String packet_ID = convert_32int_to_string(packet.getId());
                 Instant packet_time = convert_32int_to_Instant(packet.getRxTime());
 
+                int packet_RxRssi = packet.getRxRssi();
+                int packet_HopLimit = packet.getHopLimit();
+                String packet_RelayNode = convert_32int_to_string(packet.getRelayNode());
+                int packet_hopStart = packet.getHopStart();
+
+                // DETERMINE PACKET MESSAGE TYPE BASED ON PORTNUM PROVIDED
                 if (packet.hasDecoded()){
                     Data data = packet.getDecoded();
                     int portVal = data.getPortnumValue();
                     switch (portVal){
                         case 1: // 1 = TEXT MESSAGE
                             String msg = data.getPayload().toStringUtf8();
-
-//                            System.out.println("\\e[1m--------------TEXT MESSAGE--------------------\\e[0m");
-//                            System.out.println("MQTT INFO:");
-//                            System.out.println("\t[Channel ID]: " +  mqttProto.getChannelId());
-//                            System.out.println("\t[Gateway ID]: " +  mqttProto.getGatewayId());
-//                            System.out.println("PACKET INFO:");
-//                            System.out.println("\t[Packet ID]: " + packet_ID);
-//                            System.out.println("\t[To]: " + packet_to);
-//                            System.out.println("\t[From]: " + packet_from);
-//                            System.out.println("\t[Rx Time]: " + packet_time);
-//                            System.out.println("PAYLOAD INFO:");
-//                            System.out.println("\t[TYPE]: " + data.getPortnum());
-//                            System.out.println("\t[Message]: " + msg);
+                            output_text.setData(packet_from, msg);
                             break;
                         case 3: // 3 = POSITION
                             System.out.println("This is position");
@@ -109,23 +109,7 @@ public class MeshtasticMqttHandler implements IMqttServer.IMqttHandler {
                             double lon = pos.getLongitudeI()/ 1e7;
                             double alt = pos.getAltitude();
 
-//                            System.out.println("\\e[1m--------------POSITION--------------------\\e[0m");
-//                            System.out.println("MQTT INFO:");
-//                            System.out.println("\t[Channel ID]: " +  mqttProto.getChannelId());
-//                            System.out.println("\t[Gateway ID]: " +  mqttProto.getGatewayId());
-//                            System.out.println("PACKET INFO:");
-//                            System.out.println("\t[Packet ID]: " + packet_ID);
-//                            System.out.println("\t[To]: " + packet_to);
-//                            System.out.println("\t[From]: " + packet_from);
-//                            System.out.println("\t[Rx Time]: " + packet_time);
-//                            System.out.println("PAYLOAD INFO:");
-//                            System.out.println("\t[TYPE]: " + data.getPortnum());
-//                            System.out.println("\t[POSITION INFO]: ");
-//                            System.out.println("\t\t[Lat]: " + lat);
-//                            System.out.println("\t\t[Lon]: " + lon);
-//                            System.out.println("\t\t[Alt]: " + alt);
-                            output.setData(topic, channelId, gatewayId, packet_ID, packet_to, packet_from, packet_time, lat, lon, alt);
-
+                            output_position.setData(channelId, gatewayId, packet_ID, packet_to, packet_from, packet_time, lat, lon, alt);
                             break;
                         case 4: // 4 = NODEINFO_APP_VALUE
                             MeshProtos.User node_info = MeshProtos.User.parseFrom(data.getPayload());
@@ -160,7 +144,7 @@ public class MeshtasticMqttHandler implements IMqttServer.IMqttHandler {
                 }
             }
         } catch (InvalidProtocolBufferException e) {
-            throw new RuntimeException(e);
+            System.err.println("ERROR parsing ServiceEnvelope: " + e.getMessage());
         }
 
     }
