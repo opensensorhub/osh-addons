@@ -9,7 +9,7 @@
 
  Copyright (C) 2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package com.sample.impl.sensor.viewerTest;
+package com.sample.impl.sensor.MeshtasticMQTT;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;

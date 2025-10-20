@@ -9,7 +9,7 @@
 
  Copyright (C) 2020-2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package com.sample.impl.sensor.viewerTest;
+package com.sample.impl.sensor.MeshtasticMQTT;
 
 import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.common.SensorHubException;
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class MeshtasticSensor extends AbstractSensorModule<Config> {
     static final String UID_PREFIX = "urn:osh:Meshtastic_Node:";
-    static final String XML_PREFIX = "viewerTest";
+    static final String XML_PREFIX = "MeshtasticMQTT";
 
     private static final Logger logger = LoggerFactory.getLogger(MeshtasticSensor.class);
 

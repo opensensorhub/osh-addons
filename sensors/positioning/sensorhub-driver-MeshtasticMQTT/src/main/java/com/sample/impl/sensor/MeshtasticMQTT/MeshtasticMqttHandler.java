@@ -12,7 +12,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 
 ******************************* END LICENSE BLOCK ***************************/
 
-package com.sample.impl.sensor.viewerTest;
+package com.sample.impl.sensor.MeshtasticMQTT;
 
 
 import com.geeksville.mesh.*;
@@ -26,7 +26,6 @@ import com.google.gson.GsonBuilder;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.time.ZoneOffset;
 
 /**
  * <p>

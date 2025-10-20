@@ -9,7 +9,7 @@
 
  Copyright (C) 2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package com.sample.impl.sensor.viewerTest;
+package com.sample.impl.sensor.MeshtasticMQTT;
 
 import org.junit.After;
 import org.junit.Before;

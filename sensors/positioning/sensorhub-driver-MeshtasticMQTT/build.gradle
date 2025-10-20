@@ -60,7 +60,7 @@ test {
 osgi {
     manifest {
         attributes ('Bundle-Vendor': 'Botts Inc')
-        attributes ('Bundle-Activator': 'com.sample.impl.sensor.viewerTest.Activator')
+        attributes ('Bundle-Activator': 'com.sample.impl.sensor.MeshtasticMQTT.Activator')
     }
 }
 
