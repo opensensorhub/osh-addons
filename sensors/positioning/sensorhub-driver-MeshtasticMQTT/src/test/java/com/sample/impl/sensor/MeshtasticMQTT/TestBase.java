@@ -19,7 +19,7 @@ import org.junit.Before;
  */
 public class TestBase {
     MeshtasticSensor meshtasticSensor;
-    MeshtasticOutput meshtasticOutput;
+    MeshtasticOutputPacketInfo meshtasticOutputPacketInfo;
 
     @Before
     public void init() throws Exception {

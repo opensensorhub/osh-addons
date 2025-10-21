@@ -22,13 +22,13 @@ import static org.junit.Assert.*;
 public class OutputTest extends TestBase {
     @Test
     public void getRecordDescription() {
-        assertTrue(meshtasticOutput.getRecordDescription() instanceof DataRecord);
+        assertTrue(meshtasticOutputPacketInfo.getRecordDescription() instanceof DataRecord);
 
         // Verify that the output's record description has the expected properties.
-        var recordDescription = (DataRecord) meshtasticOutput.getRecordDescription();
-        assertEquals(MeshtasticOutput.SENSOR_OUTPUT_NAME, recordDescription.getName());
-        assertEquals(MeshtasticOutput.SENSOR_OUTPUT_LABEL, recordDescription.getLabel());
-        assertEquals(MeshtasticOutput.SENSOR_OUTPUT_DESCRIPTION, recordDescription.getDescription());
+        var recordDescription = (DataRecord) meshtasticOutputPacketInfo.getRecordDescription();
+        assertEquals(MeshtasticOutputPacketInfo.SENSOR_OUTPUT_NAME, recordDescription.getName());
+        assertEquals(MeshtasticOutputPacketInfo.SENSOR_OUTPUT_LABEL, recordDescription.getLabel());
+        assertEquals(MeshtasticOutputPacketInfo.SENSOR_OUTPUT_DESCRIPTION, recordDescription.getDescription());
 
         // Verify that the record description contains the expected fields.
         assertNotNull(recordDescription.getField("sampleTime"));
@@ -41,7 +41,7 @@ public class OutputTest extends TestBase {
 
     @Test
     public void getRecommendedEncoding() {
-        assertTrue(meshtasticOutput.getRecommendedEncoding() instanceof TextEncoding);
+        assertTrue(meshtasticOutputPacketInfo.getRecommendedEncoding() instanceof TextEncoding);
     }
 
     @Test
@@ -54,8 +54,8 @@ public class OutputTest extends TestBase {
 
 
         // Get the latest record and pair it with the record description for data access.
-        DataBlock latestRecord = meshtasticOutput.getLatestRecord();
-        DataComponent recordDescription = meshtasticOutput.getRecordDescription().copy();
+        DataBlock latestRecord = meshtasticOutputPacketInfo.getLatestRecord();
+        DataComponent recordDescription = meshtasticOutputPacketInfo.getRecordDescription().copy();
         recordDescription.setData(latestRecord);
 
         // Verify that the latest record contains the expected data.

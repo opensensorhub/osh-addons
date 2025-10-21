@@ -26,10 +26,10 @@ import java.util.ArrayList;
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
-public class MeshtasticOutput extends AbstractSensorOutput<MeshtasticSensor> {
-    static final String SENSOR_OUTPUT_NAME = "SensorOutput";
-    static final String SENSOR_OUTPUT_LABEL = "Sensor Output";
-    static final String SENSOR_OUTPUT_DESCRIPTION = "Sensor output data";
+public class MeshtasticOutputPacketInfo extends AbstractSensorOutput<MeshtasticSensor> {
+    static final String SENSOR_OUTPUT_NAME = "MeshtasticPacket";
+    static final String SENSOR_OUTPUT_LABEL = "Meshtastic Packet Info";
+    static final String SENSOR_OUTPUT_DESCRIPTION = "Packet info from Meshtastic";
 
     private static final int MAX_NUM_TIMING_SAMPLES = 10;
 
@@ -45,7 +45,7 @@ public class MeshtasticOutput extends AbstractSensorOutput<MeshtasticSensor> {
      *
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
-    MeshtasticOutput(MeshtasticSensor parentMeshtasticSensor) {
+    MeshtasticOutputPacketInfo(MeshtasticSensor parentMeshtasticSensor) {
         super(SENSOR_OUTPUT_NAME, parentMeshtasticSensor);
     }
 
@@ -57,6 +57,7 @@ public class MeshtasticOutput extends AbstractSensorOutput<MeshtasticSensor> {
         GeoPosHelper geoFac = new GeoPosHelper();
         SWEHelper sweFactory = new SWEHelper();
         // Create the data record description
+
         dataRecord = geoFac.createRecord()
                 .name(SENSOR_OUTPUT_NAME)
                 .label(SENSOR_OUTPUT_LABEL)
@@ -65,35 +66,47 @@ public class MeshtasticOutput extends AbstractSensorOutput<MeshtasticSensor> {
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
                         .description("Time of data collection"))
-                .addField("mqtt_topic", sweFactory.createText()
-                        .label("MQTT Topic")
-                        .description("the topic sent my meshtastic")
-                        .definition(SWEHelper.getPropertyUri("mqtt_topic")))
-                .addField("channel_id", sweFactory.createText()
-                        .label("Channel ID")
-                        .description("The channel id provided by the meshtastic node")
-                        .definition(SWEHelper.getPropertyUri("channel_id")))
-                .addField("gateway_id", sweFactory.createText()
-                        .label("Gateway ID")
-                        .description("The gateway id provided by the meshtastic node")
-                        .definition(SWEHelper.getPropertyUri("gateway_id")))
                 .addField("packet_id", sweFactory.createText()
-                        .label("Packet ID")
-                        .description("the packet id provided by the individual packet sent from the meshtastic node")
+                        .label("ID")
+                        .description("the id of a meshtastic packet")
                         .definition(SWEHelper.getPropertyUri("packet_id")))
+                .addField("packet_to", sweFactory.createText()
+                        .label("To")
+                        .description("node meshtastic packet is being sent to")
+                        .definition(SWEHelper.getPropertyUri("packet_to")))
                 .addField("packet_from", sweFactory.createText()
                         .label("From")
-                        .description("the packet id of the which node the packet sent the message")
+                        .description("node meshtastic packet is being sent from")
                         .definition(SWEHelper.getPropertyUri("packet_from")))
                 .addField("packet_time", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Packet Rx Time")
-                        .description("the tje time the packet was sent from the meshtastic node")
+                        .description("the time the packet was sent from the meshtastic node")
                         .definition(SWEHelper.getPropertyUri("packet_time")))
-                .addField("location", geoFac.createLocationVectorLLA().label(SWEHelper.getPropertyUri("location"))
-                        .label("Location")
-                )
-
+                .addField("packet_hasData", sweFactory.createBoolean()
+                        .label("Does Packet have data")
+                        .description("Does the packet provided actually contain data")
+                        .definition(SWEHelper.getPropertyUri("packet_hasData")))
+                .addField("packet_type", sweFactory.createText()
+                        .label("Type")
+                        .description("What is the PortNum of the packet")
+                        .definition(SWEHelper.getPropertyUri("packet_type")))
+                .addField("packet_RxRssi", sweFactory.createQuantity()
+                        .label("Rx RSSI")
+                        .description("Received Signal Strength Indicator")
+                        .definition(SWEHelper.getPropertyUri("packet_RxRssi")))
+                .addField("packet_HopLimit", sweFactory.createQuantity()
+                        .label("Hop Limit")
+                        .description("Hop limit of a meshtastic packet")
+                        .definition(SWEHelper.getPropertyUri("packet_HopLimit")))
+                .addField("packet_hopStart", sweFactory.createQuantity()
+                        .label("Hop Start")
+                        .description("Hop Start of a meshtastic packet")
+                        .definition(SWEHelper.getPropertyUri("packet_hopStart")))
+                .addField("packet_RelayNode", sweFactory.createText()
+                        .label("Relay Node")
+                        .description("What is the RelayNode of the packet")
+                        .definition(SWEHelper.getPropertyUri("packet_RelayNode")))
                 .build();
 
         dataEncoding = geoFac.newTextEncoding(",", "\n");
@@ -123,7 +136,7 @@ public class MeshtasticOutput extends AbstractSensorOutput<MeshtasticSensor> {
     /**
      * Sets the data for the output and publishes it.
      */
-    public void setData(String topic, String channelId, String gatewayId, String packet_ID, String packet_to, String packet_from, Instant packet_time, double lat, double lon, double alt) {
+    public void setData(String packet_id, String packet_to, String packet_from, Instant packet_time, boolean packet_hasData, String packet_type, int packet_RxRssi, int packet_HopLimit, int packet_hopStart, String packet_RelayNode) {
 
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? dataRecord.createDataBlock() : latestRecord.renew();
@@ -138,21 +151,21 @@ public class MeshtasticOutput extends AbstractSensorOutput<MeshtasticSensor> {
 
             // Populate the data block
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
-            dataBlock.setStringValue(1, topic);
-            dataBlock.setStringValue(2, channelId);
-            dataBlock.setStringValue(3, gatewayId);
-            dataBlock.setStringValue(4, packet_ID);
-            dataBlock.setStringValue(5, packet_from);
-            dataBlock.setTimeStamp(6, packet_time);
-            dataBlock.setDoubleValue(7, lat);
-            dataBlock.setDoubleValue(8, lon);
-            dataBlock.setDoubleValue(9, alt);
-
+            dataBlock.setStringValue(1, packet_id);
+            dataBlock.setStringValue(2, packet_to);
+            dataBlock.setStringValue(3, packet_from);
+            dataBlock.setTimeStamp(4, packet_time);
+            dataBlock.setBooleanValue(5, packet_hasData);
+            dataBlock.setStringValue(6, packet_type);
+            dataBlock.setDoubleValue(7, packet_RxRssi);
+            dataBlock.setDoubleValue(8, packet_HopLimit);
+            dataBlock.setDoubleValue(9, packet_hopStart);
+            dataBlock.setStringValue(10, packet_RelayNode);
 
             // Publish the data block
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
-            eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutput.this, foiUID, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputPacketInfo.this, foiUID, dataBlock));
         }
 
     }

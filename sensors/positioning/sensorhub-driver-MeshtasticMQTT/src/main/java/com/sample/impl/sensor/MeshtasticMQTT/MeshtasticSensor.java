@@ -37,6 +37,7 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     MeshtasticMqttHandler mqttConnector;
 
     // DEFINE OUTPUTS
+    MeshtasticOutputPacketInfo packet_output;
     MeshtasticOutputTextMessage text_output;
     MeshtasticOutputPosition pos_output;
     MeshtasticOutputNodeInfo node_output;
@@ -52,6 +53,10 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         generateXmlID(XML_PREFIX, config.serialNumber);
 
         // CREATE AND INITIALIZE OUTPUTS
+        packet_output = new MeshtasticOutputPacketInfo(this);
+        addOutput(packet_output, false);
+        packet_output.doInit();
+
         text_output = new MeshtasticOutputTextMessage(this);
         addOutput(text_output, false);
         text_output.doInit();
@@ -78,6 +83,7 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
                     {
                         // Pass the Meshtastic Outputs to the Handler to set appropriate data
                         mqttConnector = new MeshtasticMqttHandler(
+                                packet_output,
                                 text_output,
                                 pos_output,
                                 node_output

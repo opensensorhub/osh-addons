@@ -65,6 +65,11 @@ public class MeshtasticOutputTextMessage extends AbstractSensorOutput<Meshtastic
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
                         .description("Time of data collection"))
+                .addField("packet_id", sweFactory.createText()
+                        .label("Packet ID")
+                        .description("the id of a packet sent from a meshtastic node")
+                        .definition(SWEHelper.getPropertyUri("packet_id"))
+                )
                 .addField("text_message", sweFactory.createText()
                         .label("Message")
                         .description("Message from a Meshtastic Device")
@@ -99,7 +104,7 @@ public class MeshtasticOutputTextMessage extends AbstractSensorOutput<Meshtastic
     /**
      * Sets the data for the output and publishes it.
      */
-    public void setData(String packet_from, String message) {
+    public void setData(String packet_id, String packet_from, String message) {
 
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? dataRecord.createDataBlock() : latestRecord.renew();
@@ -111,7 +116,8 @@ public class MeshtasticOutputTextMessage extends AbstractSensorOutput<Meshtastic
 
             // Populate the data block
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
-            dataBlock.setStringValue(1, message);
+            dataBlock.setStringValue(1, packet_id);
+            dataBlock.setStringValue(2, message);
 
             // Publish the data block
             latestRecord = dataBlock;

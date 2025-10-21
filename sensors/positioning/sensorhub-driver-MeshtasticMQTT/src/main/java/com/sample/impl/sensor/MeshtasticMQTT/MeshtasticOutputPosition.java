@@ -65,6 +65,11 @@ public class MeshtasticOutputPosition extends AbstractSensorOutput<MeshtasticSen
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
                         .description("Time of data collection"))
+                .addField("packet_id", sweFactory.createText()
+                        .label("Packet ID")
+                        .description("the id of a packet sent from a meshtastic node")
+                        .definition(SWEHelper.getPropertyUri("packet_id"))
+                )
                 .addField("location", geoFac.createLocationVectorLLA().label(SWEHelper.getPropertyUri("location"))
                         .label("Location")
                 )
@@ -98,7 +103,7 @@ public class MeshtasticOutputPosition extends AbstractSensorOutput<MeshtasticSen
     /**
      * Sets the data for the output and publishes it.
      */
-    public void setData(String packet_from, double lat, double lon, double alt) {
+    public void setData(String packet_id, String packet_from, double lat, double lon, double alt) {
 
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? dataRecord.createDataBlock() : latestRecord.renew();
@@ -111,9 +116,10 @@ public class MeshtasticOutputPosition extends AbstractSensorOutput<MeshtasticSen
 
             // Populate the data block
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
-            dataBlock.setDoubleValue(1, lat);
-            dataBlock.setDoubleValue(2, lon);
-            dataBlock.setDoubleValue(3, alt);
+            dataBlock.setStringValue(1, packet_id);
+            dataBlock.setDoubleValue(2, lat);
+            dataBlock.setDoubleValue(3, lon);
+            dataBlock.setDoubleValue(4, alt);
 
             // Publish the data block
             latestRecord = dataBlock;

@@ -65,6 +65,11 @@ public class MeshtasticOutputNodeInfo extends AbstractSensorOutput<MeshtasticSen
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
                         .description("Time of data collection"))
+                .addField("packet_id", sweFactory.createText()
+                        .label("Packet ID")
+                        .description("the id of a packet sent from a meshtastic node")
+                        .definition(SWEHelper.getPropertyUri("packet_id"))
+                )
                 .addField("node_id", sweFactory.createText()
                         .label("ID")
                         .description("the id of a meshtastic node")
@@ -124,7 +129,7 @@ public class MeshtasticOutputNodeInfo extends AbstractSensorOutput<MeshtasticSen
     /**
      * Sets the data for the output and publishes it.
      */
-    public void setData(String packet_from, String id, String shortName, String longName, String pk, String HwModel, String role) {
+    public void setData(String packet_id, String packet_from, String id, String shortName, String longName, String pk, String HwModel, String role) {
 
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? dataRecord.createDataBlock() : latestRecord.renew();
@@ -139,12 +144,13 @@ public class MeshtasticOutputNodeInfo extends AbstractSensorOutput<MeshtasticSen
 
             // Populate the data block
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
-            dataBlock.setStringValue(1, id);
-            dataBlock.setStringValue(2, shortName);
-            dataBlock.setStringValue(3, longName);
-            dataBlock.setStringValue(4, pk);
-            dataBlock.setStringValue(5, HwModel);
-            dataBlock.setStringValue(6, role);
+            dataBlock.setStringValue(1, packet_id);
+            dataBlock.setStringValue(2, id);
+            dataBlock.setStringValue(3, shortName);
+            dataBlock.setStringValue(4, longName);
+            dataBlock.setStringValue(5, pk);
+            dataBlock.setStringValue(6, HwModel);
+            dataBlock.setStringValue(7, role);
 
             // Publish the data block
             latestRecord = dataBlock;
