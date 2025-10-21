@@ -26,10 +26,10 @@ import java.util.ArrayList;
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
-public class MeshtasticOutputPosition extends AbstractSensorOutput<MeshtasticSensor> {
-    static final String SENSOR_OUTPUT_NAME = "Meshtastic_Position";
-    static final String SENSOR_OUTPUT_LABEL = "Meshtastic Position";
-    static final String SENSOR_OUTPUT_DESCRIPTION = "Output data for a Meshtastic Device's position";
+public class MeshtasticOutputNodeInfo extends AbstractSensorOutput<MeshtasticSensor> {
+    static final String SENSOR_OUTPUT_NAME = "NodeInfo";
+    static final String SENSOR_OUTPUT_LABEL = "Meshtastic Node Info";
+    static final String SENSOR_OUTPUT_DESCRIPTION = "Output data for the Node Info";
 
     private static final int MAX_NUM_TIMING_SAMPLES = 10;
 
@@ -45,7 +45,7 @@ public class MeshtasticOutputPosition extends AbstractSensorOutput<MeshtasticSen
      *
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
-    MeshtasticOutputPosition(MeshtasticSensor parentMeshtasticSensor) {
+    MeshtasticOutputNodeInfo(MeshtasticSensor parentMeshtasticSensor) {
         super(SENSOR_OUTPUT_NAME, parentMeshtasticSensor);
     }
 
@@ -65,10 +65,36 @@ public class MeshtasticOutputPosition extends AbstractSensorOutput<MeshtasticSen
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
                         .description("Time of data collection"))
-                .addField("location", geoFac.createLocationVectorLLA().label(SWEHelper.getPropertyUri("location"))
-                        .label("Location")
+                .addField("node_id", sweFactory.createText()
+                        .label("ID")
+                        .description("the id of a meshtastic node")
+                        .definition(SWEHelper.getPropertyUri("node_id"))
                 )
-
+                .addField("node_shortName", sweFactory.createText()
+                        .label("Short Name")
+                        .description("the short name of a meshtastic node")
+                        .definition(SWEHelper.getPropertyUri("node_shortName"))
+                )
+                .addField("node_longName", sweFactory.createText()
+                        .label("Long Name")
+                        .description("the long name of a meshtastic node")
+                        .definition(SWEHelper.getPropertyUri("node_longName"))
+                )
+                .addField("node_pk", sweFactory.createText()
+                        .label("Public Key")
+                        .description("the public key of a meshtastic node")
+                        .definition(SWEHelper.getPropertyUri("node_pk"))
+                )
+                .addField("node_HwModel", sweFactory.createText()
+                        .label("Hardware Model")
+                        .description("the Hardware Model of a meshtastic node")
+                        .definition(SWEHelper.getPropertyUri("node_HwModel"))
+                )
+                .addField("node_role", sweFactory.createText()
+                        .label("Role")
+                        .description("the Role of a meshtastic node")
+                        .definition(SWEHelper.getPropertyUri("node_role"))
+                )
                 .build();
 
         dataEncoding = geoFac.newTextEncoding(",", "\n");
@@ -98,7 +124,7 @@ public class MeshtasticOutputPosition extends AbstractSensorOutput<MeshtasticSen
     /**
      * Sets the data for the output and publishes it.
      */
-    public void setData(String packet_from, double lat, double lon, double alt) {
+    public void setData(String packet_from, String id, String shortName, String longName, String pk, String HwModel, String role) {
 
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? dataRecord.createDataBlock() : latestRecord.renew();
@@ -109,16 +135,21 @@ public class MeshtasticOutputPosition extends AbstractSensorOutput<MeshtasticSen
             // CREATE FOI UID
             String foiUID = parentSensor.addFoi(packet_from);
 
+
+
             // Populate the data block
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
-            dataBlock.setDoubleValue(1, lat);
-            dataBlock.setDoubleValue(2, lon);
-            dataBlock.setDoubleValue(3, alt);
+            dataBlock.setStringValue(1, id);
+            dataBlock.setStringValue(2, shortName);
+            dataBlock.setStringValue(3, longName);
+            dataBlock.setStringValue(4, pk);
+            dataBlock.setStringValue(5, HwModel);
+            dataBlock.setStringValue(6, role);
 
             // Publish the data block
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
-            eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputPosition.this, foiUID, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputNodeInfo.this, foiUID, dataBlock));
         }
 
     }

@@ -40,13 +40,16 @@ public class MeshtasticMqttHandler implements IMqttServer.IMqttHandler {
     // DEFINE OUTPUTS
     MeshtasticOutputTextMessage output_text;
     MeshtasticOutputPosition output_position;
+    MeshtasticOutputNodeInfo output_nodeInfo;
 
     public MeshtasticMqttHandler(
             MeshtasticOutputTextMessage output_text,
-            MeshtasticOutputPosition output_position
+            MeshtasticOutputPosition output_position,
+            MeshtasticOutputNodeInfo output_nodeInfo
     ){
         this.output_text = output_text;
         this.output_position = output_position;
+        this.output_nodeInfo = output_nodeInfo;
     }
 
 
@@ -100,22 +103,43 @@ public class MeshtasticMqttHandler implements IMqttServer.IMqttHandler {
                     switch (portVal){
                         case 1: // 1 = TEXT MESSAGE
                             String msg = data.getPayload().toStringUtf8();
+
+                            // Update Text Output
                             output_text.setData(packet_from, msg);
                             break;
                         case 3: // 3 = POSITION
-                            System.out.println("This is position");
-                            MeshProtos.Position pos = MeshProtos.Position.parseFrom(data.getPayload());
-                            double lat = pos.getLatitudeI()/ 1e7;
-                            double lon = pos.getLongitudeI()/ 1e7;
-                            double alt = pos.getAltitude();
+                            try{
+                                MeshProtos.Position pos = MeshProtos.Position.parseFrom(data.getPayload());
+                                double lat = pos.getLatitudeI()/ 1e7;
+                                double lon = pos.getLongitudeI()/ 1e7;
+                                double alt = pos.getAltitude();
 
-                            output_position.setData(channelId, gatewayId, packet_ID, packet_to, packet_from, packet_time, lat, lon, alt);
+                                // Update Position Output
+                                output_position.setData(packet_from, lat, lon, alt);
+
+                            }catch (InvalidProtocolBufferException e) {
+                                System.err.println("ERROR parsing Position: " + e.getMessage());
+                            }
                             break;
                         case 4: // 4 = NODEINFO_APP_VALUE
-                            MeshProtos.User node_info = MeshProtos.User.parseFrom(data.getPayload());
-                            System.out.println("\\e[1m--------------Node Info--------------------\\e[0m");
-                            System.out.println("\t[TYPE]: " + data.getPortnum());
-                            System.out.println("\t[NOde INFO]: " + node_info);
+                            try{
+                                MeshProtos.User node_info = MeshProtos.User.parseFrom(data.getPayload());
+
+                                String node_id = node_info.getId();
+                                String node_hwModel =  node_info.getHwModel().toString();
+                                String node_LongName = node_info.getLongName();
+                                String node_PK = node_info.getPublicKey().toStringUtf8();
+                                String node_shortName = node_info.getShortName();
+                                String node_role = (node_info.getRole() == ConfigProtos.Config.DeviceConfig.Role.UNRECOGNIZED) ? "Unknown Role" : node_info.getRole().name();
+//                                boolean isUnmessageable =  node_info.getIsUnmessagable();
+//                                boolean can_be_messaged = node_info.hasIsUnmessagable();
+
+                                output_nodeInfo.setData(packet_from, node_id, node_shortName, node_LongName, node_PK, node_hwModel, node_role);
+
+                            }catch (InvalidProtocolBufferException e) {
+                                System.err.println("ERROR parsing Node Info: " + e.getMessage());
+                            }
+                            break;
                         case 5: // 5 = ROUTING (THIS IS USED TO DETERMINE IF ERRORS WERE DISCOVERED IN MESSAGING
 //                            MeshProtos.Routing route = MeshProtos.Routing.parseFrom(data.getPayload());
 //                            if(route.hasErrorReason()){
@@ -123,22 +147,17 @@ public class MeshtasticMqttHandler implements IMqttServer.IMqttHandler {
 //                            }
                             break;
                         case 67: // 67 = TELEMETRY
-                            TelemetryProtos.Telemetry telemetry = TelemetryProtos.Telemetry.parseFrom(data.getPayload());
-                            System.out.println("\\e[1m--------------TELEMETRY--------------------\\e[0m");
-                            System.out.println("MQTT INFO:");
-                            System.out.println("\t[Channel ID]: " +  mqttProto.getChannelId());
-                            System.out.println("\t[Gateway ID]: " +  mqttProto.getGatewayId());
-                            System.out.println("PACKET INFO:");
-                            System.out.println("\t[Packet ID]: " + packet_ID);
-                            System.out.println("\t[To]: " + packet_to);
-                            System.out.println("\t[From]: " + packet_from);
-                            System.out.println("\t[Rx Time]: " + packet_time);
-                            System.out.println("PAYLOAD INFO:");
-                            System.out.println("\t[TYPE]: " + data.getPortnum());
-                            System.out.println("\t[telemetry data]: " + telemetry);
+
+                            try{
+                                TelemetryProtos.Telemetry telemetry = TelemetryProtos.Telemetry.parseFrom(data.getPayload());
+                                System.out.println("[TELEMETRY DATA WAS PROVIDED");
+                            } catch (InvalidProtocolBufferException e) {
+                                System.err.println("ERROR parsing telemetry data: " + e.getMessage());
+                            }
+
                             break;
                         default:
-                            System.out.println("unknonwn portnum: " + portVal);
+                            System.out.println("\n[UNKNOWN PORTNUM]: " + portVal + "\n");
                             break;
                     }
                 }
