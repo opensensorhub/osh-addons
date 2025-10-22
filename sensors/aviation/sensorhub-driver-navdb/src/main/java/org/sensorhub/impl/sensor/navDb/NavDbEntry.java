@@ -30,8 +30,15 @@ public class NavDbEntry implements Comparable<NavDbEntry>
         AIRPORT, NAVAID, WAYPOINT, AIRWAY, SID, STAR, UNKNOWN
     };
 
+    public enum Subtype
+    {
+        NAVAID_NDB, NAVAID_VOR, NAVAID_DME, NAVAID_TACAN, NAVAID_ILS, NAVAID_MLS, UNDEFINED
+    }
+
     public String region; // 3 chars region id
+    public String icao_code; // 2
     public Type type;
+    public Subtype subtype = Subtype.UNDEFINED;
     public String id; // ID is the same as airport ICAO for airports
     public String airport = ""; // ICAO code of associated airport
     
@@ -50,10 +57,13 @@ public class NavDbEntry implements Comparable<NavDbEntry>
         
         if (comp == 0)
             comp = region.compareTo(o.region);
-        
+
+        if (comp == 0)
+            comp = icao_code.compareTo(o.icao_code);
+
         if (comp == 0)
             comp = airport.compareTo(o.airport);
-        
+
         return comp;
     }
 }

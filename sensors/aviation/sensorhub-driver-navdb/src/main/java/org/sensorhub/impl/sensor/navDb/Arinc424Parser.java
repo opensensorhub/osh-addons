@@ -76,6 +76,7 @@ public class Arinc424Parser
     {
         String region = l.substring(1, 4).trim();
         String id = l.substring(6, 10).trim();
+        String icao_code = l.substring(10,12).trim();
         String lats = l.substring(32, 41);
         String lons = l.substring(41, 51);
         String name = l.substring(93, 123).trim();
@@ -97,6 +98,7 @@ public class Arinc424Parser
         airport.name = name;
         airport.region = region;
         airport.airport = airport.id;
+        airport.icao_code = icao_code;
         return airport;
     }
 
@@ -105,6 +107,7 @@ public class Arinc424Parser
     {
         String region = l.substring(1, 4).trim();
         String icao = l.substring(6, 10).trim();
+        String icao_code = l.substring(10, 12).trim();
         String id = l.substring(13, 18).trim();
         String lats = l.substring(32, 41);
         String lons = l.substring(41, 51);
@@ -127,14 +130,19 @@ public class Arinc424Parser
         waypoint.name = name;
         waypoint.region = region;
         waypoint.airport = icao;
+        waypoint.icao_code = icao_code;
         return waypoint;
     }
 
 
     private static NavDbPointEntry parseNavaid(String l)
     {
+        char subsectionCode = l.charAt(5);
         String region = l.substring(1, 4).trim();
+        String icao_code = l.substring(10, 12).trim();
         String id = l.substring(13, 17).trim();
+        char type_1 = l.charAt(27);
+        char type_2 = l.charAt(28);
         String name = l.substring(93, 123).trim();
         String lats, lons;
         
@@ -167,6 +175,27 @@ public class Arinc424Parser
         NavDbPointEntry navaid = new NavDbPointEntry(Type.NAVAID, id, lat, lon);
         navaid.name = name;
         navaid.region = region;
+        navaid.icao_code = icao_code;
+
+        // Identify NAVAID Subtype
+        if (subsectionCode == 'B')
+            navaid.subtype = NavDbEntry.Subtype.NAVAID_NDB;
+        else if (subsectionCode == ' ')
+        {
+            if (type_1 == 'V')
+                navaid.subtype = NavDbEntry.Subtype.NAVAID_VOR;
+            else if (type_1 == ' ')
+            {
+                if (type_2 == 'D')
+                    navaid.subtype = NavDbEntry.Subtype.NAVAID_DME;
+                else if (type_2 == 'T')
+                    navaid.subtype = NavDbEntry.Subtype.NAVAID_TACAN;
+                else if (type_2 == 'I')
+                    navaid.subtype = NavDbEntry.Subtype.NAVAID_ILS;
+                else if (type_2 == 'N' || type_2 == 'P' )
+                    navaid.subtype = NavDbEntry.Subtype.NAVAID_MLS;
+            }
+        }
         return navaid;
     }
 
@@ -176,6 +205,7 @@ public class Arinc424Parser
         String region = l.substring(1, 4).trim();
         String id = l.substring(13, 18).trim();
         String fixId = l.substring(29, 34).trim();
+        String icao_code = l.substring(34, 36).trim();
         String fixType = l.substring(36, 38).trim();
         boolean boundaryCrossing = l.charAt(43) != ' ';
         
@@ -183,6 +213,7 @@ public class Arinc424Parser
         {
             airway = new NavDbRouteEntry(Type.AIRWAY, id);
             airway.region = region;
+            airway.icao_code = icao_code;
         }
         
         airway.addFix(parseRecordType(fixType), fixId, boundaryCrossing);
@@ -207,6 +238,7 @@ public class Arinc424Parser
     {
         String region = l.substring(1, 4).trim();
         String icao = l.substring(6, 10).trim();
+        String icao_code = l.substring(10, 12).trim();
         String id = l.substring(13, 19).trim();
         char transType = l.charAt(19);
         String transId = l.substring(20, 25).trim();
@@ -244,6 +276,7 @@ public class Arinc424Parser
             prevEntry.transitionId = transId;
             prevEntry.routeTypeCode = transType;
             prevEntry.routeType = routeType;
+            prevEntry.icao_code = icao_code;
         }
         
         // add fix to route entry
