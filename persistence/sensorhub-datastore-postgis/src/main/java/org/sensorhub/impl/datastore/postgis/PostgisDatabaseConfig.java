@@ -49,6 +49,9 @@ public abstract class PostgisDatabaseConfig extends DatabaseConfig
     @DisplayInfo(desc = "Max delay between auto-commit execution, in seconds. 0 to disable time-based auto-commit")
     public int autoCommitPeriod = 10;
 
+    @DisplayInfo(desc="Use Batch")
+    public boolean useBatch = false;
+
     public PostgisDatabaseConfig()
     {
         this.moduleClass = PostgisObsSystemDatabase.class.getCanonicalName();

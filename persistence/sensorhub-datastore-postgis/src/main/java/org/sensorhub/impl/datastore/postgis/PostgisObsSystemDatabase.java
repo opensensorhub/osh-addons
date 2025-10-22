@@ -81,9 +81,9 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
 
             systemDescStore =  new PostgisSystemDescStoreImpl(url, dbName, login, password, SYSTEM_TABLE_NAME, idScope, idProviderType, false);
             deploymentStore = new PostgisDeploymentStoreImpl(url, dbName, login, password, DEPLOY_TABLE_NAME, idScope, idProviderType, false);
-            foiStore = new PostgisFoiStoreImpl(url, dbName, login, password, FOI_TABLE_NAME, idScope, idProviderType, true);
+            foiStore = new PostgisFoiStoreImpl(url, dbName, login, password, FOI_TABLE_NAME, idScope, idProviderType, config.useBatch);
             procedureStore = new PostgisProcedureStoreImpl(url, dbName, login, password, PROC_TABLE_NAME, idScope, idProviderType, false);
-            obsStore = new PostgisObsStoreImpl(url, dbName, login, password, OBS_TABLE_NAME, idScope, idProviderType, true);
+            obsStore = new PostgisObsStoreImpl(url, dbName, login, password, OBS_TABLE_NAME, idScope, idProviderType, config.useBatch);
             commandStore = new PostgisCommandStoreImpl(url, dbName, login, password, CMD_TABLE_NAME, idScope, idProviderType, false);
 
             systemDescStore.linkTo(obsStore.getDataStreams());
