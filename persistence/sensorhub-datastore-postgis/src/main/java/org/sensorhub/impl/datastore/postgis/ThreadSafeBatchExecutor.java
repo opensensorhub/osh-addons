@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ThreadSafeBatchExecutor {
 
-    private final LinkedBlockingQueue<Connection> queue = new LinkedBlockingQueue<>(6);
+    private final LinkedBlockingQueue<Connection> queue = new LinkedBlockingQueue<>(3);
 
     public ThreadSafeBatchExecutor(String url, String dbName, String login, String password, String sql) {
         initThreadResources(url,dbName,login,password,sql);
@@ -57,5 +57,6 @@ public class ThreadSafeBatchExecutor {
                 }
             });
         }
+        queue.clear();
     }
 }
