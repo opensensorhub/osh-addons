@@ -46,6 +46,7 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     private static final Logger logger = LoggerFactory.getLogger(PostgisStore.class);
 
     protected HikariDataSource hikariDataSource;
+    protected  Connection streamConnection;
     protected T queryBuilder;
     public int idScope;
     public IdProviderType idProviderType;
@@ -76,6 +77,7 @@ public abstract class PostgisStore<T extends QueryBuilder> {
 
     protected void init(String url, String dbName, String login, String password, String[] initScripts) {
         this.hikariDataSource = PostgisUtils.getHikariDataSourceInstance(url, dbName, login, password, true);
+        this.streamConnection = PostgisUtils.getConnection(url,dbName,login,password);
 
         try (Connection connection = hikariDataSource.getConnection()) {
             if (!PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
@@ -97,22 +99,29 @@ public abstract class PostgisStore<T extends QueryBuilder> {
         }
 
         if(this.useBatch) {
-            Timer t = new Timer();
-            timerTask = new TimerTask() {
-                @Override
-                public void run() {
-                    try {
-                        commit();
-                    } catch (DataStoreException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            };
-
-            t.scheduleAtFixedRate(timerTask, 0,autoCommitPeriod * 1000L);
+            this.initAutoCommitTask();
         }
     }
 
+    protected void initAutoCommitTask() {
+        if(timerTask != null) {
+            timerTask.cancel();
+        }
+
+        Timer t = new Timer();
+        timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    commit();
+                } catch (DataStoreException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+
+        t.scheduleAtFixedRate(timerTask, 0,autoCommitPeriod * 1000L);
+    }
     public void backup(OutputStream is) throws IOException {
         try(Connection connection = this.hikariDataSource.getConnection()) {
             if (PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
@@ -151,10 +160,11 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     }
 
     public void drop() {
-        try(Connection connection = this.hikariDataSource.getConnection()) {
-            try (Statement statement = connection.createStatement()) {
-                statement.execute(queryBuilder.dropQuery());
-            }
+        // Cannot USE hikariCP for dropping table, use the streamConnection to execute the drop
+        // TODO: we should reuse hikariCP connection to make this request
+        try (Statement statement = this.streamConnection.createStatement()) {
+            statement.executeUpdate(queryBuilder.dropQuery());
+            this.streamConnection.commit();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -195,8 +205,8 @@ public abstract class PostgisStore<T extends QueryBuilder> {
             if (threadSafeBatchExecutor != null) {
                 threadSafeBatchExecutor.close();
             }
-            if(hikariDataSource != null) {
-                hikariDataSource.close();
+            if(this.streamConnection != null) {
+                this.streamConnection.close();
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -233,5 +243,8 @@ public abstract class PostgisStore<T extends QueryBuilder> {
 
     public void setAutoCommitPeriod(long autoCommitPeriod) {
         this.autoCommitPeriod = autoCommitPeriod;
+        if(this.useBatch) {
+            this.initAutoCommitTask();
+        }
     }
 }

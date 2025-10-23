@@ -31,6 +31,7 @@ import org.sensorhub.impl.datastore.postgis.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.ThreadSafeBatchExecutor;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderBaseFeatureStore;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderFeatureStore;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisStreamer;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField.VALID_TIME;
 import static org.sensorhub.impl.datastore.postgis.utils.PostgisUtils.MIN_INSTANT;
@@ -62,9 +64,10 @@ public abstract class PostgisBaseFeatureStoreImpl
     protected final Lock lock = new ReentrantLock();
     public ThreadLocal<WKBWriter> threadLocalWriter = ThreadLocal.withInitial(WKBWriter::new);
     public static final int BATCH_SIZE = 100;
+    public static final int STREAM_FETCH_SIZE = 1000;
 
     protected volatile Cache<FeatureKey, V> cache = CacheBuilder.newBuilder()
-            .maximumSize(150_000)
+            .maximumSize(50_000)
             .softValues()
             .expireAfterAccess(5, TimeUnit.MINUTES)
             .build();
@@ -176,28 +179,30 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     public Stream<Entry<FeatureKey, V>> selectEntries(F filter, Set<VF> fields) {
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
-        logger.debug(queryStr);
-        List<Entry<FeatureKey, V>> results = new ArrayList<>();
-        try (Connection connection = this.hikariDataSource.getConnection()) {
-            try (Statement statement = connection.createStatement()) {
-                try (ResultSet resultSet = statement.executeQuery(queryStr)) {
-                    while (resultSet.next()) {
-                        long id = resultSet.getLong("id");
-                        String data = resultSet.getString("data");
-                        V feature = this.readFeature(data);
-
-                        PGobject pgRange = (PGobject) resultSet.getObject(String.valueOf(VALID_TIME));
-                        Instant[] validTimeInstant = PostgisUtils.getInstantFromPGObject(pgRange);
-                        FeatureKey featureKey = new FeatureKey(BigId.fromLong(idScope, id), validTimeInstant[0]);
-                        results.add(Map.entry(featureKey, feature));
-                    }
-                }
-            }
-        } catch (SQLException | IOException e) {
-            throw new RuntimeException(e);
+        if(logger.isDebugEnabled()) {
+            logger.debug(queryStr);
         }
-        return results.stream();
+        try {
+            Statement statement = this.streamConnection.createStatement();
+            return PostgisStreamer.streamFromStatement(statement, queryStr, STREAM_FETCH_SIZE, rs -> {
+                V feature = null;
+                try {
+                    long id = rs.getLong("id");
+                    String data = rs.getString("data");
+                    feature = this.readFeature(data);
+                    PGobject pgRange = (PGobject) rs.getObject(String.valueOf(VALID_TIME));
+                    Instant[] validTimeInstant = PostgisUtils.getInstantFromPGObject(pgRange);
+                    FeatureKey featureKey = new FeatureKey(BigId.fromLong(idScope, id), validTimeInstant[0]);
+                    return Map.entry(featureKey, feature);
+                } catch (IOException | SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (Exception ex) {
+            throw new RuntimeException();
+        }
     }
+
 
     protected abstract V readFeature(String data) throws IOException;
 

@@ -77,6 +77,8 @@ public class PostgisUtils {
     }
 
     static volatile HikariDataSource hikariDataSourceInstance = null;
+    static volatile HikariDataSource hikariStreamDataSourceInstance = null;
+
     static final Lock reentrantLock = new ReentrantLock();
 
     // is thread-safe
@@ -93,15 +95,27 @@ public class PostgisUtils {
         }
         return hikariDataSourceInstance;
     }
+
+    public static HikariDataSource getHikariStreamDataSourceInstance(String url, String dbName, String login, String password, boolean autoCommit) {
+        if(hikariStreamDataSourceInstance == null) {
+            reentrantLock.lock();
+            try {
+                if(hikariStreamDataSourceInstance == null) {
+                    hikariStreamDataSourceInstance = createHikariDataSource(url, dbName, login,password,autoCommit);
+                }
+            } finally {
+                reentrantLock.unlock();
+            }
+        }
+        return hikariStreamDataSourceInstance;
+    }
+
     public static HikariDataSource createHikariDataSource(String url, String dbName, String login, String password, boolean autoCommit) {
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl("jdbc:postgresql://" + url + "/" + dbName+"");
         config.setUsername(login);
         config.setPassword(password);
-        config.setKeepaliveTime(30000*5);
-        config.setConnectionTimeout(30000);
-        config.setMaxLifetime(1800000);
-        config.setValidationTimeout(5000);
+        config.setMaximumPoolSize(50);
 //                        config.setMaximumPoolSize(200_000);
         config.addDataSourceProperty("cachePrepStmts", "true");
         config.addDataSourceProperty("prepStmtCacheSize", "250");

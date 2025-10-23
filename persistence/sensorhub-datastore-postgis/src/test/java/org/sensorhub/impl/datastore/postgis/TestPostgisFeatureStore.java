@@ -33,7 +33,6 @@ public class TestPostgisFeatureStore extends AbstractTestFeatureStore<PostgisFea
     private final String login = "postgres";
     private final String password = "postgres";
     private static final boolean USE_BATCH = true;
-
     protected PostgisFeatureStoreImpl initStore() throws Exception {
         return new PostgisFeatureStoreImpl(url, DB_NAME, login, password, FEATURE_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL, USE_BATCH);
     }
@@ -60,6 +59,7 @@ public class TestPostgisFeatureStore extends AbstractTestFeatureStore<PostgisFea
             ex.printStackTrace();
         } finally {
             featureStore.clearCache();
+            featureStore.close();
         }
     }
 
