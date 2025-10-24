@@ -40,21 +40,21 @@ import java.util.Base64;
  */
 public class MeshtasticMqttHandler implements IMqttServer.IMqttHandler {
     // DEFINE OUTPUTS
-    MeshtasticOutputPacketInfo output_packet;
     MeshtasticOutputTextMessage output_text;
     MeshtasticOutputPosition output_position;
     MeshtasticOutputNodeInfo output_nodeInfo;
+    MeshtasticOutputGeneric output_generic;
 
     public MeshtasticMqttHandler(
-            MeshtasticOutputPacketInfo output_packet,
             MeshtasticOutputTextMessage output_text,
             MeshtasticOutputPosition output_position,
-            MeshtasticOutputNodeInfo output_nodeInfo
+            MeshtasticOutputNodeInfo output_nodeInfo,
+            MeshtasticOutputGeneric output_generic
     ){
-        this.output_packet = output_packet;
         this.output_text = output_text;
         this.output_position = output_position;
         this.output_nodeInfo = output_nodeInfo;
+        this.output_generic = output_generic;
     }
 
 
@@ -90,26 +90,7 @@ public class MeshtasticMqttHandler implements IMqttServer.IMqttHandler {
             if(mqttProto.hasPacket()){
                 MeshPacket packet = mqttProto.getPacket();
 
-                // GET ALL PACKET INFO AND CONVERT TO APPROPRIATE DATA TYPE:
-                String packet_to = convert_32int_to_string(packet.getTo());
-                String packet_from = convert_32int_to_string(packet.getFrom());
-                String packet_id = convert_32int_to_string(packet.getId());
-                Instant packet_time = convert_32int_to_Instant(packet.getRxTime());
-
-                int packet_RxRssi = packet.getRxRssi();
-                int packet_HopLimit = packet.getHopLimit();
-                String packet_RelayNode = convert_32int_to_string(packet.getRelayNode());
-                int packet_hopStart = packet.getHopStart();
-                boolean packet_hasData = packet.hasDecoded();
-                String packet_type = "None";
-                if(packet_hasData){
-                    packet_type = packet.getDecoded().getPortnum().name();
-                }
-
-                output_packet.setData(packet_id, packet_to, packet_from, packet_time, packet_hasData, packet_type, packet_RxRssi, packet_HopLimit, packet_hopStart, packet_RelayNode);
-
-
-                // DETERMINE PACKET MESSAGE TYPE BASED ON PORTNUM PROVIDED
+                // DETERMINE PACKET MESSAGE TYPE BASED ON PROVIDED PORTNUM
                 if (packet.hasDecoded()){
                     Data data = packet.getDecoded();
                     int portVal = data.getPortnumValue();
@@ -118,17 +99,14 @@ public class MeshtasticMqttHandler implements IMqttServer.IMqttHandler {
                             String msg = data.getPayload().toStringUtf8();
 
                             // Update Text Output
-                            output_text.setData(packet_id, packet_from, msg);
+                            output_text.setData(packet, msg);
                             break;
                         case 3: // 3 = POSITION
                             try{
                                 MeshProtos.Position pos = MeshProtos.Position.parseFrom(data.getPayload());
-                                double lat = pos.getLatitudeI()/ 1e7;
-                                double lon = pos.getLongitudeI()/ 1e7;
-                                double alt = pos.getAltitude();
 
                                 // Update Position Output
-                                output_position.setData(packet_id, packet_from, lat, lon, alt);
+                                output_position.setData(packet, pos);
 
                             }catch (InvalidProtocolBufferException e) {
                                 System.err.println("ERROR parsing Position: " + e.getMessage());
@@ -137,40 +115,14 @@ public class MeshtasticMqttHandler implements IMqttServer.IMqttHandler {
                         case 4: // 4 = NODEINFO_APP_VALUE
                             try{
                                 MeshProtos.User node_info = MeshProtos.User.parseFrom(data.getPayload());
-
-                                String node_id = node_info.getId();
-                                String node_hwModel =  node_info.getHwModel().toString();
-                                String node_LongName = node_info.getLongName();
-                                String node_PK = Base64.getEncoder().encodeToString(node_info.getPublicKey().toByteArray());
-                                String node_shortName = node_info.getShortName();
-                                String node_role = (node_info.getRole() == ConfigProtos.Config.DeviceConfig.Role.UNRECOGNIZED) ? "Unknown Role" : node_info.getRole().name();
-//                                boolean isUnmessageable =  node_info.getIsUnmessagable();
-//                                boolean can_be_messaged = node_info.hasIsUnmessagable();
-
-                                output_nodeInfo.setData(packet_id, packet_from, node_id, node_shortName, node_LongName, node_PK, node_hwModel, node_role);
+                                output_nodeInfo.setData(packet, node_info);
 
                             }catch (InvalidProtocolBufferException e) {
                                 System.err.println("ERROR parsing Node Info: " + e.getMessage());
                             }
                             break;
-                        case 5: // 5 = ROUTING (THIS IS USED TO DETERMINE IF ERRORS WERE DISCOVERED IN MESSAGING
-//                            MeshProtos.Routing route = MeshProtos.Routing.parseFrom(data.getPayload());
-//                            if(route.hasErrorReason()){
-//                                System.out.println("[ROUTING ERROR]: " + route);
-//                            }
-                            break;
-                        case 67: // 67 = TELEMETRY
-
-                            try{
-                                TelemetryProtos.Telemetry telemetry = TelemetryProtos.Telemetry.parseFrom(data.getPayload());
-                                System.out.println("[TELEMETRY DATA WAS PROVIDED");
-                            } catch (InvalidProtocolBufferException e) {
-                                System.err.println("ERROR parsing telemetry data: " + e.getMessage());
-                            }
-
-                            break;
                         default:
-                            System.out.println("\n[UNKNOWN PORTNUM]: " + portVal + "\n");
+                            output_generic.setData(packet);
                             break;
                     }
                 }
@@ -179,14 +131,5 @@ public class MeshtasticMqttHandler implements IMqttServer.IMqttHandler {
             System.err.println("ERROR parsing ServiceEnvelope: " + e.getMessage());
         }
 
-    }
-
-    private String convert_32int_to_string(int data){
-        long unsigned_num = Integer.toUnsignedLong(data);
-        return String.format("!%08x", unsigned_num);
-    }
-    private Instant convert_32int_to_Instant(int data){
-        long unsigned_num = Integer.toUnsignedLong(data);
-        return Instant.ofEpochSecond(unsigned_num);
     }
 }

@@ -37,10 +37,10 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     MeshtasticMqttHandler mqttConnector;
 
     // DEFINE OUTPUTS
-    MeshtasticOutputPacketInfo packet_output;
     MeshtasticOutputTextMessage text_output;
     MeshtasticOutputPosition pos_output;
     MeshtasticOutputNodeInfo node_output;
+    MeshtasticOutputGeneric generic_output;
 
     Thread processingThread;
 
@@ -53,10 +53,6 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         generateXmlID(XML_PREFIX, config.serialNumber);
 
         // CREATE AND INITIALIZE OUTPUTS
-        packet_output = new MeshtasticOutputPacketInfo(this);
-        addOutput(packet_output, false);
-        packet_output.doInit();
-
         text_output = new MeshtasticOutputTextMessage(this);
         addOutput(text_output, false);
         text_output.doInit();
@@ -69,6 +65,10 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         addOutput(node_output, false);
         node_output.doInit();
 
+        generic_output = new MeshtasticOutputGeneric(this);
+        addOutput(generic_output, false);
+        generic_output.doInit();
+
     }
 
     @Override
@@ -76,17 +76,16 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         super.doStart();
 
         // Register Meshtastic MQTT handler to begin handling messages from MQTT
-
         getParentHub().getModuleRegistry().waitForModuleType(IMqttServer.class, ModuleEvent.ModuleState.STARTED)
                 .thenAccept(mqtt -> {
                     if (mqtt != null)
                     {
                         // Pass the Meshtastic Outputs to the Handler to set appropriate data
                         mqttConnector = new MeshtasticMqttHandler(
-                                packet_output,
                                 text_output,
                                 pos_output,
-                                node_output
+                                node_output,
+                                generic_output
                         );
                         mqtt.registerHandler("", mqttConnector);
                         getLogger().info("MESHTASTIC MQTT handler registered");

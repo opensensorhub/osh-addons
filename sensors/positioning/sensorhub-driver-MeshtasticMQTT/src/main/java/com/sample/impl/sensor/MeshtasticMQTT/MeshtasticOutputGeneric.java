@@ -13,24 +13,19 @@ package com.sample.impl.sensor.MeshtasticMQTT;
 
 import com.geeksville.mesh.MeshProtos;
 import net.opengis.swe.v20.DataBlock;
-import net.opengis.swe.v20.DataComponent;
-import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
-import java.time.Instant;
 import java.util.ArrayList;
 
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
-public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo {
-    private static final String OUTPUT_NAME = "MeshtasticPosition";
-    private static  final String OUTPUT_LABEL = "Meshtastic Position Packet";
-    private static  final String OUTPUT_DESCRIPTION = "Output data for a Meshtastic Device's position";
+public class MeshtasticOutputGeneric extends MeshtasticOutputPacketInfo {
+    private static final String OUTPUT_NAME = "MeshtasticGeneric";
+    private static  final String OUTPUT_LABEL = "Meshtastic Generic Packet";
+    private static  final String OUTPUT_DESCRIPTION = "This output data is from a packet currently not registered in the MeshtasticMQTT handler";
     private static final int MAX_NUM_TIMING_SAMPLES = 10;
 
     private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
@@ -42,7 +37,7 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo {
      *
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
-    MeshtasticOutputPosition(MeshtasticSensor parentMeshtasticSensor) {
+    MeshtasticOutputGeneric(MeshtasticSensor parentMeshtasticSensor) {
         super(parentMeshtasticSensor, OUTPUT_NAME);
     }
 
@@ -52,12 +47,19 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo {
     void doInit() {
         // INITIALIZE THE PACKET PARENT CLASS
         super.doInit(OUTPUT_NAME, OUTPUT_LABEL, OUTPUT_DESCRIPTION);
-
         // Get an instance of SWE Factory suitable to build components
         GeoPosHelper geoFac = new GeoPosHelper();
 
-        packetRecord.addField("location", geoFac.createLocationVectorLLA()
-                .label("Location")
+        packetRecord.addField("packet_hasDecoded", geoFac.createBoolean()
+                .label("hasDecoded")
+                .description("Does the packet have data associated with it")
+                .definition(SWEHelper.getPropertyUri("packet_hasDecoded"))
+                .build()
+        );
+        packetRecord.addField("packet_hasEncrypted", geoFac.createBoolean()
+                .label("hasEncrypted")
+                .description("Does the packet have encrypted data associated with it")
+                .definition(SWEHelper.getPropertyUri("packet_hasEncrypted"))
                 .build()
         );
 
@@ -79,25 +81,22 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo {
      * Sets the data for the output and publishes it.
      */
 //    public void setData(String packet_id, String packet_from, double lat, double lon, double alt) {
-    public void setData(MeshProtos.MeshPacket packet_data, MeshProtos.Position pos_data) {
+    public void setData(MeshProtos.MeshPacket packet_data) {
         synchronized (processingLock) {
             // Set PacketInfo in Parent Class
             setPacketData(packet_data);
 
-            // Extract Position Values
-            double lat = pos_data.getLatitudeI()/ 1e7;
-            double lon = pos_data.getLongitudeI()/ 1e7;
-            double alt = pos_data.getAltitude();
-
             DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
 
-            // POPULATE PACKET FIELDS
+            // Populate Parent Class Packet Data
             populatePacketDataStructure(dataBlock);
 
-            // POPULATE POSITION FIELDS
-            dataBlock.setDoubleValue(packet_record_size + 1, lat);
-            dataBlock.setDoubleValue(packet_record_size + 2, lon);
-            dataBlock.setDoubleValue(packet_record_size + 3, alt);
+            boolean hasDecoded = packet_data.hasDecoded();
+            boolean hasEncrypted = packet_data.hasEncrypted();
+
+            // Populate position fields
+            dataBlock.setBooleanValue(packet_record_size + 1, packet_data.hasDecoded());
+            dataBlock.setBooleanValue(packet_record_size + 2, packet_data.hasEncrypted());
 
             updateIntervalHistogram();
 
@@ -106,7 +105,7 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo {
             // Publish the data block
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
-            eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputPosition.this, foiUID, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputGeneric.this, foiUID, dataBlock));
         }
     }
 

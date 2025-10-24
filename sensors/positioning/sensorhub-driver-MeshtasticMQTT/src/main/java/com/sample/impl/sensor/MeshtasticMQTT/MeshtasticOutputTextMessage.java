@@ -11,6 +11,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package com.sample.impl.sensor.MeshtasticMQTT;
 
+import com.geeksville.mesh.MeshProtos;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -26,10 +27,10 @@ import java.util.ArrayList;
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
-public class MeshtasticOutputTextMessage extends AbstractSensorOutput<MeshtasticSensor> {
-    static final String SENSOR_OUTPUT_NAME = "MeshtasticText";
-    static final String SENSOR_OUTPUT_LABEL = "Meshtastic Text Message";
-    static final String SENSOR_OUTPUT_DESCRIPTION = "Text provided by a Meshtastic Device";
+public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo{
+    static String OUTPUT_NAME = "MeshtasticText";
+    static String OUTPUT_LABEL = "Meshtastic Text Message";
+    static String OUTPUT_DESCRIPTION = "Text provided by a Meshtastic Device";
 
     private static final int MAX_NUM_TIMING_SAMPLES = 10;
 
@@ -37,57 +38,33 @@ public class MeshtasticOutputTextMessage extends AbstractSensorOutput<Meshtastic
     private final Object histogramLock = new Object();
     private final Object processingLock = new Object();
 
-    private DataRecord dataRecord;
-    private DataEncoding dataEncoding;
-
     /**
      * Creates a new output for the sensor driver.
      *
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
     MeshtasticOutputTextMessage(MeshtasticSensor parentMeshtasticSensor) {
-        super(SENSOR_OUTPUT_NAME, parentMeshtasticSensor);
+        super(parentMeshtasticSensor, OUTPUT_NAME);
     }
 
     /**
      * Initializes the data structure for the output, defining the fields, their ordering, and data types.
      */
     void doInit() {
+        // INITIALIZE THE PACKET PARENT CLASS
+        super.doInit(OUTPUT_NAME, OUTPUT_LABEL, OUTPUT_DESCRIPTION);
         // Get an instance of SWE Factory suitable to build components
         GeoPosHelper geoFac = new GeoPosHelper();
         SWEHelper sweFactory = new SWEHelper();
         // Create the data record description
-        dataRecord = geoFac.createRecord()
-                .name(SENSOR_OUTPUT_NAME)
-                .label(SENSOR_OUTPUT_LABEL)
-                .description(SENSOR_OUTPUT_DESCRIPTION)
-                .addField("sampleTime", geoFac.createTime()
-                        .asSamplingTimeIsoUTC()
-                        .label("Sample Time")
-                        .description("Time of data collection"))
-                .addField("packet_id", sweFactory.createText()
-                        .label("Packet ID")
-                        .description("the id of a packet sent from a meshtastic node")
-                        .definition(SWEHelper.getPropertyUri("packet_id"))
-                )
-                .addField("text_message", sweFactory.createText()
+        packetRecord.addField("text_message", sweFactory.createText()
                         .label("Message")
                         .description("Message from a Meshtastic Device")
                         .definition(SWEHelper.getPropertyUri("text_message"))
-                )
-                .build();
+                        .build()
+        );
 
         dataEncoding = geoFac.newTextEncoding(",", "\n");
-    }
-
-    @Override
-    public DataComponent getRecordDescription() {
-        return dataRecord;
-    }
-
-    @Override
-    public DataEncoding getRecommendedEncoding() {
-        return dataEncoding;
     }
 
     @Override
@@ -104,20 +81,23 @@ public class MeshtasticOutputTextMessage extends AbstractSensorOutput<Meshtastic
     /**
      * Sets the data for the output and publishes it.
      */
-    public void setData(String packet_id, String packet_from, String message) {
-
+    public void setData(MeshProtos.MeshPacket packet_data, String message_data) {
         synchronized (processingLock) {
-            DataBlock dataBlock = latestRecord == null ? dataRecord.createDataBlock() : latestRecord.renew();
+            // Set PacketInfo in Parent Class
+            setPacketData(packet_data);
+
+            DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
+
+            // Populate Parent Class Packet Data
+            populatePacketDataStructure(dataBlock);
+
+            // Populate Message Data
+            dataBlock.setStringValue(packet_record_size + 1, message_data);
 
             updateIntervalHistogram();
 
             // CREATE FOI UID
             String foiUID = parentSensor.addFoi(packet_from);
-
-            // Populate the data block
-            dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
-            dataBlock.setStringValue(1, packet_id);
-            dataBlock.setStringValue(2, message);
 
             // Publish the data block
             latestRecord = dataBlock;
