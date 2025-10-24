@@ -6,19 +6,21 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class ThreadSafeBatchExecutor {
 
     private final LinkedBlockingQueue<Connection> queue = new LinkedBlockingQueue<>(3);
 
-    public ThreadSafeBatchExecutor(String url, String dbName, String login, String password, String sql) {
-        initThreadResources(url,dbName,login,password,sql);
+    public ThreadSafeBatchExecutor(Supplier<Connection> connectionSupplier) {
+        initThreadResources(connectionSupplier);
     }
 
-    private void initThreadResources(String url, String dbName, String login, String password, String sql) {
+    private void initThreadResources(Supplier<Connection> connectionSupplier) {
         try {
             for(int i=0;i < queue.remainingCapacity();i++) {
-                queue.offer(PostgisUtils.getConnection(url,dbName,login,password));
+                queue.offer(connectionSupplier.get());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -26,7 +28,7 @@ public class ThreadSafeBatchExecutor {
     }
 
     public Connection getConnection() throws SQLException, InterruptedException {
-        return queue.poll(10, TimeUnit.MINUTES);
+        return queue.poll(1, TimeUnit.SECONDS);
     }
 
     public void offer(Connection connection) {

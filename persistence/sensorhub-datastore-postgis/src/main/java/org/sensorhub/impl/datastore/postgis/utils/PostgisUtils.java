@@ -76,69 +76,6 @@ public class PostgisUtils {
         }
     }
 
-    static volatile HikariDataSource hikariDataSourceInstance = null;
-    static volatile HikariDataSource hikariStreamDataSourceInstance = null;
-
-    static final Lock reentrantLock = new ReentrantLock();
-
-    // is thread-safe
-    public static HikariDataSource getHikariDataSourceInstance(String url, String dbName, String login, String password, boolean autoCommit) {
-        if(hikariDataSourceInstance == null) {
-            reentrantLock.lock();
-            try {
-                if(hikariDataSourceInstance == null) {
-                    hikariDataSourceInstance = createHikariDataSource(url, dbName, login,password,autoCommit);
-                }
-            } finally {
-                reentrantLock.unlock();
-            }
-        }
-        return hikariDataSourceInstance;
-    }
-
-    public static HikariDataSource getHikariStreamDataSourceInstance(String url, String dbName, String login, String password, boolean autoCommit) {
-        if(hikariStreamDataSourceInstance == null) {
-            reentrantLock.lock();
-            try {
-                if(hikariStreamDataSourceInstance == null) {
-                    hikariStreamDataSourceInstance = createHikariDataSource(url, dbName, login,password,autoCommit);
-                }
-            } finally {
-                reentrantLock.unlock();
-            }
-        }
-        return hikariStreamDataSourceInstance;
-    }
-
-    public static HikariDataSource createHikariDataSource(String url, String dbName, String login, String password, boolean autoCommit) {
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl("jdbc:postgresql://" + url + "/" + dbName+"");
-        config.setUsername(login);
-        config.setPassword(password);
-        config.setMaximumPoolSize(50);
-//                        config.setMaximumPoolSize(200_000);
-        config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        config.setAutoCommit(autoCommit);
-        return new HikariDataSource(config);
-    }
-
-    public static Connection getConnection(String url, String dbName, String login, String password) {
-        try {
-            String urlPostgres = "jdbc:postgresql://" + url + "/" + dbName;
-            Properties props = new Properties();
-            props.setProperty("user", login);
-            props.setProperty("password", password);
-//            props.setProperty("reWriteBatchedInserts", "false");
-            props.setProperty("tcpKeepAlive","true");
-            Connection connection =  DriverManager.getConnection(urlPostgres, props);
-            connection.setAutoCommit(false);
-            return connection;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
     public static boolean checkTable(Connection connection, String tableName) throws SQLException {
         DatabaseMetaData databaseMetaData = connection.getMetaData();
         try (ResultSet resultSet = databaseMetaData.getTables(null, null, tableName, new String[]{"TABLE"})) {

@@ -132,6 +132,7 @@ public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImp
     }
 
 
+    @Override
     @Test
     public void testGetWrongKey() throws Exception
     {

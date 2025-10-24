@@ -18,6 +18,7 @@ import net.opengis.swe.v20.DataBlock;
 import org.postgresql.util.PGobject;
 import org.sensorhub.api.command.CommandData;
 import org.sensorhub.api.command.ICommandData;
+import org.sensorhub.api.command.ICommandStatus;
 import org.sensorhub.api.command.ICommandStreamInfo;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.DataStoreException;
@@ -27,6 +28,7 @@ import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderCommandStore;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisStreamer;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,50 +52,42 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
     public PostgisCommandStoreImpl(String url, String dbName, String login, String password,
                                    int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
         super(idScope, dsIdProviderType, new QueryBuilderCommandStore(), useBatch);
-        this.init(url, dbName, login, password, new String[]{
-                        queryBuilder.createTableQuery()
-                }
-        );
-        this.commandStreamStore = new PostgisCommandStreamStoreImpl(this, hikariDataSource,useBatch);
-        this.commandStatusStore = new PostgisCommandStatusStore(this, hikariDataSource,useBatch);
-        this.commandStatusStore.linkTo(commandStreamStore);
-        this.commandStatusStore.linkTo(this);
-
-        linkTo(commandStreamStore);
-        linkTo(commandStatusStore);
+        this.init(url, dbName, login, password);
     }
 
     public PostgisCommandStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
                                    int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
         super(idScope, dsIdProviderType, new QueryBuilderCommandStore(dataStoreName), useBatch);
-        this.init(url, dbName, login, password, new String[]{
+        this.init(url, dbName, login, password);
+    }
+
+    protected void init(String url, String dbName, String login, String password) {
+        super.init(url,dbName,login,password,new String[]{
                 queryBuilder.createTableQuery(),
                 queryBuilder.createDataIndexQuery(),
                 queryBuilder.createCommandStreamIndexQuery(),
                 queryBuilder.createIssueTimeIndexQuery(),
                 queryBuilder.createSenderIdIndexQuery(),
                 queryBuilder.createFoidIdIndexQuery()
-                }
-        );
-        this.commandStreamStore = new PostgisCommandStreamStoreImpl(this, hikariDataSource,useBatch);
-        this.commandStatusStore = new PostgisCommandStatusStore(this, hikariDataSource, useBatch);
-
+        });
+        this.commandStreamStore = new PostgisCommandStreamStoreImpl(this, url, dbName,login,password,idScope,idProviderType,useBatch);
+        this.commandStatusStore = new PostgisCommandStatusStore(this, url, dbName,login,password,idScope,idProviderType, useBatch);
         this.commandStatusStore.linkTo(commandStreamStore);
-        this.commandStatusStore.linkTo(this) ;
+        this.commandStatusStore.linkTo(this);
 
         linkTo(commandStreamStore);
         linkTo(commandStatusStore);
     }
-
     @Override
     public Stream<Entry<BigId, ICommandData>> selectEntries(CommandFilter filter, Set<CommandField> fields) {
-        System.out.println(filter);
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
-        logger.debug(queryStr);
+        if(logger.isDebugEnabled()) {
+            logger.debug(queryStr);
+        }
         IteratorResultSet<Entry<BigId, ICommandData>> iteratorResultSet =
                 new IteratorResultSet<>(
                         queryStr,
-                        hikariDataSource,
+                        connectionManager,
                         filter.getLimit(),
                         (resultSet) -> resultSetToEntry(resultSet, fields),
                         (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
@@ -169,7 +163,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
         if (!commandStreamStore.containsKey(commandStreamKey))
             throw new IllegalStateException("Unknown commandStream" + cmd.getCommandStreamID());
 
-        try (Connection connection1 = hikariDataSource.getConnection()) {
+        try (Connection connection1 = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection1.prepareStatement(queryBuilder.insertCommandQuery(), Statement.RETURN_GENERATED_KEYS)) {
 
                 // insert DataStreamId
@@ -201,7 +195,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
                 jsonObject.setType("json");
                 ICommandStreamInfo commandStreamInfo = commandStreamStore.get(new CommandStreamKey(cmd.getCommandStreamID()));
                 jsonObject.setValue(SerializerUtils.writeDataBlockToJson(commandStreamInfo.getRecordStructure(),
-                                                                commandStreamInfo.getRecordEncoding(), cmd.getParams()));
+                        commandStreamInfo.getRecordEncoding(), cmd.getParams()));
 
                 preparedStatement.setObject(5, jsonObject);
 
@@ -241,7 +235,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
             throw new UnsupportedOperationException("Get operation is not supported with argument != BigId key, got=" + o.getClass());
         }
         BigId key = (BigId) o;
-        try (Connection connection = hikariDataSource.getConnection()) {
+        try (Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.selectByIdQuery())) {
                 preparedStatement.setLong(1, key.getIdAsLong());
                 ResultSet resultSet = preparedStatement.executeQuery();
@@ -285,7 +279,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
         if (oldCommand == null)
             throw new UnsupportedOperationException("put can only be used to update existing entries");
 
-        try (Connection connection = hikariDataSource.getConnection()) {
+        try (Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateByIdQuery())) {
                 preparedStatement.setLong(1, value.getCommandStreamID().getIdAsLong());
                 preparedStatement.setString(2, value.getSenderID());
@@ -307,7 +301,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
                 jsonObject.setType("json");
                 ICommandStreamInfo commandStreamInfo = commandStreamStore.get(new CommandStreamKey(value.getCommandStreamID()));
                 jsonObject.setValue(SerializerUtils.writeDataBlockToJson(commandStreamInfo.getRecordStructure(),
-                                                            commandStreamInfo.getRecordEncoding(), value.getParams()));
+                        commandStreamInfo.getRecordEncoding(), value.getParams()));
 
                 preparedStatement.setObject(5, jsonObject);
                 preparedStatement.setLong(6, key.getIdAsLong());
@@ -331,7 +325,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
         }
         BigId key = (BigId) o;
         ICommandData data = this.get(o);
-        try (Connection connection = hikariDataSource.getConnection()) {
+        try (Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.removeByIdQuery())) {
                 preparedStatement.setLong(1, key.getIdAsLong());
                 preparedStatement.executeUpdate();

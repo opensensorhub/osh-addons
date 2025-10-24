@@ -29,6 +29,7 @@ import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.ThreadSafeBatchExecutor;
+import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderBaseFeatureStore;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderFeatureStore;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisStreamer;
@@ -64,7 +65,6 @@ public abstract class PostgisBaseFeatureStoreImpl
     protected final Lock lock = new ReentrantLock();
     public ThreadLocal<WKBWriter> threadLocalWriter = ThreadLocal.withInitial(WKBWriter::new);
     public static final int BATCH_SIZE = 100;
-    public static final int STREAM_FETCH_SIZE = 1000;
 
     protected volatile Cache<FeatureKey, V> cache = CacheBuilder.newBuilder()
             .maximumSize(50_000)
@@ -78,22 +78,22 @@ public abstract class PostgisBaseFeatureStoreImpl
                                           IdProviderType dsIdProviderType, T queryBuilder, boolean useBatch) {
         super(idScope, dsIdProviderType, queryBuilder, useBatch);
         this.init(url, dbName, login, password, new String[]{
-                queryBuilder.createTableQuery(),
-                queryBuilder.createUidUniqueIndexQuery(),
-                queryBuilder.createValidTimeIndexQuery(),
-                queryBuilder.createTrigramExtensionQuery(),
-                queryBuilder.createTrigramDescriptionFullTextIndexQuery(),
-                queryBuilder.createTrigramUidFullTextIndexQuery()
-        });
+                        queryBuilder.createTableQuery(),
+                        queryBuilder.createUidUniqueIndexQuery(),
+                        queryBuilder.createValidTimeIndexQuery(),
+                        queryBuilder.createTrigramExtensionQuery(),
+                        queryBuilder.createTrigramDescriptionFullTextIndexQuery(),
+                        queryBuilder.createTrigramUidFullTextIndexQuery()
+                }
+        );
     }
 
     @Override
     protected void init(String url, String dbName, String login, String password, String[] initScripts) {
         super.init(url, dbName, login, password, initScripts);
-        if (useBatch) {
+        if(useBatch) {
             this.setBatchSize(BATCH_SIZE);
-            this.threadSafeBatchExecutor = new ThreadSafeBatchExecutor(
-                    url, dbName, login, password, queryBuilder.addOrUpdateByIdQuery());
+            this.connectionManager.enableBatch();
         }
     }
 
@@ -116,7 +116,7 @@ public abstract class PostgisBaseFeatureStoreImpl
         DataStoreUtils.checkFeatureObject(value);
         if (useBatch) {
             try {
-                Connection connection = threadSafeBatchExecutor.getConnection();
+                Connection connection = this.connectionManager.getBatchConnection();
                 try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.addOrUpdateByIdQuery())) {
                     fillAddOrUpdateStatement(featureKey, parentID, value, preparedStatement);
                     int rows = preparedStatement.executeUpdate();
@@ -124,7 +124,7 @@ public abstract class PostgisBaseFeatureStoreImpl
                 } catch (Exception e) {
                     throw new DataStoreException("Cannot insert feature " + value.getName());
                 } finally {
-                    threadSafeBatchExecutor.offer(connection);
+                    this.connectionManager.offerBatchConnection(connection);
                     if (currentBatchSize.getAndIncrement() >= this.getBatchSize()) {
                         this.commit();
                     }
@@ -133,7 +133,7 @@ public abstract class PostgisBaseFeatureStoreImpl
                 throw new DataStoreException("Cannot insert feature " + value.getName());
             }
         } else {
-            try (Connection connection = hikariDataSource.getConnection()) {
+            try (Connection connection = this.connectionManager.getConnection()) {
                 try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.addOrUpdateByIdQuery())) {
                     fillAddOrUpdateStatement(featureKey, parentID, value, preparedStatement);
                     int rows = preparedStatement.executeUpdate();
@@ -182,28 +182,30 @@ public abstract class PostgisBaseFeatureStoreImpl
         if(logger.isDebugEnabled()) {
             logger.debug(queryStr);
         }
-        try {
-            Statement statement = this.streamConnection.createStatement();
-            return PostgisStreamer.streamFromStatement(statement, queryStr, STREAM_FETCH_SIZE, rs -> {
-                V feature = null;
-                try {
-                    long id = rs.getLong("id");
-                    String data = rs.getString("data");
-                    feature = this.readFeature(data);
-                    PGobject pgRange = (PGobject) rs.getObject(String.valueOf(VALID_TIME));
-                    Instant[] validTimeInstant = PostgisUtils.getInstantFromPGObject(pgRange);
-                    FeatureKey featureKey = new FeatureKey(BigId.fromLong(idScope, id), validTimeInstant[0]);
-                    return Map.entry(featureKey, feature);
-                } catch (IOException | SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        } catch (Exception ex) {
-            throw new RuntimeException();
-        }
+        IteratorResultSet<Entry<FeatureKey, V>> iteratorResultSet =
+                new IteratorResultSet<>(
+                        queryStr,
+                        connectionManager,
+                        STREAM_FETCH_SIZE,
+                        (resultSet) -> resultSetToEntry(resultSet, fields),
+                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
     }
 
+    private Entry<FeatureKey, V> resultSetToEntry(ResultSet resultSet, Set<VF> fields) {
+        try {
+            long id = resultSet.getLong("id");
+            String data = resultSet.getString("data");
+            V feature = this.readFeature(data);
 
+            PGobject pgRange = (PGobject) resultSet.getObject(String.valueOf(VALID_TIME));
+            Instant[] validTimeInstant = PostgisUtils.getInstantFromPGObject(pgRange);
+            FeatureKey featureKey = new FeatureKey(BigId.fromLong(idScope, id), validTimeInstant[0]);
+            return Map.entry(featureKey, feature);
+        } catch (Exception ex) {
+            throw new RuntimeException("Cannot parse resultSet to Feature", ex);
+        }
+    }
     protected abstract V readFeature(String data) throws IOException;
 
     protected abstract String writeFeature(V feature) throws IOException;
@@ -259,7 +261,7 @@ public abstract class PostgisBaseFeatureStoreImpl
             try {
                 // double lock checking + volatile
                 if (feature == null) {
-                    try (Connection connection = hikariDataSource.getConnection()) {
+                    try (Connection connection = connectionManager.getConnection()) {
                         try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.selectByPrimaryKeyQuery())) {
                             preparedStatement.setLong(1, key.getInternalID().getIdAsLong());
                             preparedStatement.setString(2, PostgisUtils.getPgTimestampFromInstant(key.getValidStartTime().truncatedTo(ChronoUnit.SECONDS)));
@@ -284,7 +286,7 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     @Override
     public FeatureKey getCurrentVersionKey(BigId internalID) {
-        try (Connection connection = hikariDataSource.getConnection()) {
+        try (Connection connection = connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 String query = queryBuilder.selectLastVersionByIdQuery(internalID.getIdAsLong(), Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
                 try (ResultSet resultSet = statement.executeQuery(query)) {
@@ -303,7 +305,7 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     @Override
     public FeatureKey getCurrentVersionKey(String uid) {
-        try (Connection connection = hikariDataSource.getConnection()) {
+        try (Connection connection = connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 String query = queryBuilder.selectLastVersionByUidQuery(uid, Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
                 try (ResultSet resultSet = statement.executeQuery(query)) {
@@ -347,7 +349,7 @@ public abstract class PostgisBaseFeatureStoreImpl
     @SuppressWarnings("unlikely-arg-type")
     public boolean contains(BigId internalID) {
         DataStoreUtils.checkInternalID(internalID);
-        try (Connection connection = hikariDataSource.getConnection()) {
+        try (Connection connection = connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.existsByIdQuery())) {
                 preparedStatement.setLong(1, internalID.getIdAsLong());
                 ResultSet resultSet = preparedStatement.executeQuery();
@@ -364,7 +366,7 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     @Override
     public boolean contains(String uid) {
-        try (Connection connection = hikariDataSource.getConnection()) {
+        try (Connection connection = connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.existsByUidQuery())) {
                 preparedStatement.setString(1, uid);
                 ResultSet resultSet = preparedStatement.executeQuery();
@@ -385,7 +387,7 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     @Override
     public Bbox getFeaturesBbox() {
-        try (Connection connection = hikariDataSource.getConnection()) {
+        try (Connection connection = connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 try (ResultSet resultSet = statement.executeQuery(queryBuilder.selectExtentQuery())) {
                     if (resultSet.next()) {
@@ -404,7 +406,7 @@ public abstract class PostgisBaseFeatureStoreImpl
 
 
     protected boolean existsUid(String uid) {
-        try (Connection connection = hikariDataSource.getConnection()) {
+        try (Connection connection = connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.selectUidQuery())) {
                 preparedStatement.setString(1, uid);
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -420,7 +422,7 @@ public abstract class PostgisBaseFeatureStoreImpl
     }
 
     protected boolean existsId(long id) {
-        try (Connection connection = hikariDataSource.getConnection()) {
+        try (Connection connection = connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.existsByIdQuery())) {
                 preparedStatement.setLong(1, id);
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -458,7 +460,7 @@ public abstract class PostgisBaseFeatureStoreImpl
         V data = this.get(key);
 
         logger.debug("Remove Feature with key={}", key.toString());
-        try (Connection connection = this.hikariDataSource.getConnection()) {
+        try (Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.removeByPrimaryKeyQuery())) {
                 preparedStatement.setLong(1, key.getInternalID().getIdAsLong());
 
@@ -481,7 +483,7 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     @Override
     public long getNumFeatures() {
-        try (Connection connection = this.hikariDataSource.getConnection()) {
+        try (Connection connection = this.connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 try (ResultSet resultSet = statement.executeQuery(queryBuilder.countFeatureQuery())) {
                     if (resultSet.next()) {

@@ -48,7 +48,9 @@ public class SelectEntriesQuery {
         }
 
         public T withLimit(long limit) {
-            filterQueryGenerator.setLimit(limit);
+            if(limit != Long.MAX_VALUE) {
+                filterQueryGenerator.setLimit(limit);
+            }
             return self();
         }
 

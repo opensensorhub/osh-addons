@@ -26,6 +26,7 @@ import org.sensorhub.api.datastore.command.CommandStreamFilter;
 import org.sensorhub.api.datastore.command.CommandStreamKey;
 import org.sensorhub.api.datastore.command.ICommandStreamStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
+import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderCommandStreamStore;
@@ -53,33 +54,25 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
     private final Lock lock = new ReentrantLock();
 
     private PostgisCommandStoreImpl cmdStore;
-
     protected ISystemDescStore systemStore;
 
-    public PostgisCommandStreamStoreImpl(PostgisCommandStoreImpl cmdStore, HikariDataSource connection, boolean useBatch) {
-        super(cmdStore.idScope, cmdStore.idProviderType, new QueryBuilderCommandStreamStore(cmdStore.getDatastoreName() + "_commandstreams"), useBatch);
-        this.init(cmdStore, connection);
+    public PostgisCommandStreamStoreImpl(PostgisCommandStoreImpl cmdStore, String url, String dbName, String login, String password,
+                                         int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(idScope, dsIdProviderType, new QueryBuilderCommandStreamStore(cmdStore.getDatastoreName() + "_commandstreams"), useBatch);
+        this.init(cmdStore,url, dbName,login,password);
     }
 
-    protected void init(PostgisCommandStoreImpl cmdStore, HikariDataSource hikariDataSource) {
+    protected void init(PostgisCommandStoreImpl cmdStore, String url, String dbName, String login, String password) {
         this.cmdStore = Asserts.checkNotNull(cmdStore, PostgisCommandStoreImpl.class);
-        this.hikariDataSource = Asserts.checkNotNull(hikariDataSource, HikariDataSource.class);
-        try(Connection connection = this.hikariDataSource.getConnection()) {
-            if (!PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
-                // create table
-                PostgisUtils.executeQueries(connection, new String[]{
-                        queryBuilder.createTableQuery(),
-                        queryBuilder.createIndexQuery(),
-                        queryBuilder.createUniqueIndexQuery(),
-                        queryBuilder.createValidTimeBeginIndexQuery(),
-                        queryBuilder.createValidTimeEndIndexQuery(),
-                        queryBuilder.createTrigramExtensionQuery(),
-                        queryBuilder.createTrigramDescriptionFullTextIndexQuery(),
-                });
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        super.init(url,dbName,login,password, new String[]{
+                queryBuilder.createTableQuery(),
+                queryBuilder.createIndexQuery(),
+                queryBuilder.createUniqueIndexQuery(),
+                queryBuilder.createValidTimeBeginIndexQuery(),
+                queryBuilder.createValidTimeEndIndexQuery(),
+                queryBuilder.createTrigramExtensionQuery(),
+                queryBuilder.createTrigramDescriptionFullTextIndexQuery()
+        });
     }
 
     @Override
@@ -88,7 +81,7 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
         // if CMD already exists, compute the time intersection
         this.intersectsAndUpdate(csInfo);
 
-        try (Connection connection = hikariDataSource.getConnection()) {
+        try (Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(
                     queryBuilder.insertCommandQuery(), Statement.RETURN_GENERATED_KEYS)) {
                 PGobject jsonObject = new PGobject();
@@ -165,7 +158,7 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
     }
 
     protected void updateTime(CommandStreamKey cmdStreamKey, TimeExtent timeExtent) {
-        try(Connection connection = this.hikariDataSource.getConnection()) {
+        try(Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateValidTimeByIdQuery())) {
                 PGobject jsonObject = new PGobject();
                 jsonObject.setType("json");
@@ -198,7 +191,7 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
             try {
                 // double lock checking + volatile
                 if (commandStreamInfo == null) {
-                    try (Connection connection = hikariDataSource.getConnection()) {
+                    try (Connection connection = this.connectionManager.getConnection()) {
                         try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.selectByIdQuery())) {
                             preparedStatement.setLong(1, key.getInternalID().getIdAsLong());
                             try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -226,7 +219,7 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
         logger.debug(queryStr);
         List<Entry<CommandStreamKey, ICommandStreamInfo>> results = new ArrayList<>();
-        try(Connection connection = this.hikariDataSource.getConnection()) {
+        try(Connection connection = this.connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 try (ResultSet resultSet = statement.executeQuery(queryStr)) {
                     while (resultSet.next()) {
@@ -245,7 +238,7 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
 
     @Override
     public ICommandStreamInfo put(CommandStreamKey key, ICommandStreamInfo csInfo) {
-        try(Connection connection = this.hikariDataSource.getConnection()) {
+        try(Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateByIdQuery())) {
                 String json = SerializerUtils.writeICommandStreamInfoToJson(csInfo);
                 PGobject jsonObject = new PGobject();
@@ -282,7 +275,7 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
                 .build();
         this.cmdStore.removeEntries(filter);
 
-        try(Connection connection = this.hikariDataSource.getConnection()) {
+        try(Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.removeByIdQuery())) {
                 preparedStatement.setLong(1, key.getInternalID().getIdAsLong());
                 int rows = preparedStatement.executeUpdate();
@@ -315,6 +308,7 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
 
     @Override
     public void commit() throws DataStoreException {
+        super.commit();
         cmdStore.commit();
     }
 

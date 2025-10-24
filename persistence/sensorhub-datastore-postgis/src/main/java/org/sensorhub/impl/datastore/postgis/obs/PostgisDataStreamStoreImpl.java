@@ -16,10 +16,8 @@ package org.sensorhub.impl.datastore.postgis.obs;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.zaxxer.hikari.HikariDataSource;
 import org.postgresql.util.PGobject;
 import org.sensorhub.api.common.BigId;
-import org.sensorhub.api.data.DataStreamInfo;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.TemporalFilter;
@@ -28,10 +26,9 @@ import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
-import org.sensorhub.impl.datastore.mem.InMemoryDataStreamStore;
 import org.sensorhub.impl.datastore.obs.DataStreamInfoWrapper;
+import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.PostgisStore;
-import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderDataStreamStore;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
 import org.slf4j.Logger;
@@ -49,8 +46,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.sensorhub.impl.datastore.postgis.utils.SerializerUtils.*;
-
 public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStreamStore> implements IDataStreamStore {
     private volatile Cache<Long, IDataStreamInfo> cache = CacheBuilder.newBuilder()
             .maximumSize(150)
@@ -62,30 +57,23 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
     protected PostgisObsStoreImpl obsStore;
     protected ISystemDescStore systemStore;
 
-    public PostgisDataStreamStoreImpl(PostgisObsStoreImpl obsStore, HikariDataSource connection, boolean useBatch) {
-        super(obsStore.idScope, obsStore.idProviderType, new QueryBuilderDataStreamStore(obsStore.getDatastoreName() + "_datastreams"), false);
-        this.init(obsStore, connection);
+    public PostgisDataStreamStoreImpl(PostgisObsStoreImpl obsStore, String url, String dbName, String login, String password,
+                                      int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
+        super(idScope, dsIdProviderType, new QueryBuilderDataStreamStore(obsStore.getDatastoreName() + "_datastreams"), false);
+        this.init(obsStore, url,dbName,login,password);
     }
 
-    protected void init(PostgisObsStoreImpl obsStore, HikariDataSource hikariDataSource) {
+    protected void init(PostgisObsStoreImpl obsStore, String url, String dbName, String login, String password) {
         this.obsStore = Asserts.checkNotNull(obsStore, PostgisObsStoreImpl.class);
-        this.hikariDataSource = Asserts.checkNotNull(hikariDataSource, HikariDataSource.class);
-        try (Connection connection = this.hikariDataSource.getConnection()) {
-            if (!PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
-                // create table
-                PostgisUtils.executeQueries(connection, new String[]{
-                        queryBuilder.createTableQuery(),
-                        queryBuilder.createIndexQuery(),
-                        queryBuilder.createUniqueIndexQuery(),
-                        queryBuilder.createValidTimeBeginIndexQuery(),
-                        queryBuilder.createValidTimeEndIndexQuery(),
-                        queryBuilder.createTrigramExtensionQuery(),
-                        queryBuilder.createTrigramDescriptionFullTextIndexQuery(),
-                });
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        super.init(url, dbName, login, password, new String[]{
+                queryBuilder.createTableQuery(),
+                queryBuilder.createIndexQuery(),
+                queryBuilder.createUniqueIndexQuery(),
+                queryBuilder.createValidTimeBeginIndexQuery(),
+                queryBuilder.createValidTimeEndIndexQuery(),
+                queryBuilder.createTrigramExtensionQuery(),
+                queryBuilder.createTrigramDescriptionFullTextIndexQuery()
+        });
     }
 
     protected class DataStreamInfoWithTimeRanges extends DataStreamInfoWrapper
@@ -151,7 +139,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
         // build request
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
         List<Entry<DataStreamKey, IDataStreamInfo>> results = new ArrayList<>();
-        try (Connection connection = this.hikariDataSource.getConnection()) {
+        try (Connection connection = this.connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 try (ResultSet resultSet = statement.executeQuery(queryStr)) {
                     while (resultSet.next()) {
@@ -231,7 +219,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
     }
 
     protected void updateTime(DataStreamKey dataStreamKey, TimeExtent timeExtent) {
-        try (Connection connection = this.hikariDataSource.getConnection()) {
+        try (Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateValidTimeByIdQuery())) {
                 PGobject jsonObject = new PGobject();
                 jsonObject.setType("json");
@@ -261,7 +249,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
         // 2 cases, if exists, update time with intersection and insert the new one
         // otherwise only create it
 
-        try (Connection connection = hikariDataSource.getConnection()) {
+        try (Connection connection = connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(
                     queryBuilder.insertInfoQuery(), Statement.RETURN_GENERATED_KEYS)) {
                 PGobject jsonObject = new PGobject();
@@ -299,7 +287,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
             try {
                 // double lock checking + volatile
                 if (dataStreamInfo == null) {
-                    try (Connection connection = hikariDataSource.getConnection()) {
+                    try (Connection connection = connectionManager.getConnection()) {
                         try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.selectByIdQuery())) {
                             preparedStatement.setLong(1, key.getInternalID().getIdAsLong());
                             try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -324,7 +312,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
 
     @Override
     public IDataStreamInfo put(DataStreamKey dataStreamKey, IDataStreamInfo iDataStreamInfo) {
-        try (Connection connection = this.hikariDataSource.getConnection()) {
+        try (Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateByIdQuery())) {
                 String json = SerializerUtils.writeIDataStreamInfoToJson(iDataStreamInfo);
                 PGobject jsonObject = new PGobject();
@@ -362,7 +350,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
                 .build();
         this.obsStore.removeEntries(filter);
 
-        try (Connection connection = this.hikariDataSource.getConnection()) {
+        try (Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.removeByIdQuery())) {
                 preparedStatement.setLong(1, key.getInternalID().getIdAsLong());
                 int rows = preparedStatement.executeUpdate();
@@ -421,7 +409,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
 
     public Set<Long> getDataStreamsIdsByTimeRange(Instant min, Instant max) {
         Set<Long> results = new LinkedHashSet<>();
-        try (Connection connection = this.hikariDataSource.getConnection()) {
+        try (Connection connection = this.connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 String queryStr = queryBuilder.getAllDataStreams(min, max);
                 logger.debug(queryStr);

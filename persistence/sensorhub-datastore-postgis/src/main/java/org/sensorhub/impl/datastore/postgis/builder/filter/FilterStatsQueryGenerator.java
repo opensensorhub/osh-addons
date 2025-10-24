@@ -42,7 +42,7 @@ public class FilterStatsQueryGenerator extends FilterQueryGenerator {
             sb.append(" ORDER BY ");
             sb.append(this.orderBy.stream().collect(Collectors.joining(", ")));
         }
-        if (this.limit >= 0) {
+        if (this.limit >= 0 && this.limit != Long.MAX_VALUE) {
             sb.append(" LIMIT ").append(this.limit);
         }
 
