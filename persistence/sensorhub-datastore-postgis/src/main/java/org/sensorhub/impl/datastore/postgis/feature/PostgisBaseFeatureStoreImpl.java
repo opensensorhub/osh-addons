@@ -32,6 +32,8 @@ import org.sensorhub.impl.datastore.postgis.ThreadSafeBatchExecutor;
 import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderBaseFeatureStore;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderFeatureStore;
+import org.sensorhub.impl.datastore.postgis.obs.PostgisDataStreamStoreImpl;
+import org.sensorhub.impl.datastore.postgis.obs.PostgisObsStoreImpl;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisStreamer;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.slf4j.Logger;
@@ -65,6 +67,7 @@ public abstract class PostgisBaseFeatureStoreImpl
     protected final Lock lock = new ReentrantLock();
     public ThreadLocal<WKBWriter> threadLocalWriter = ThreadLocal.withInitial(WKBWriter::new);
     public static final int BATCH_SIZE = 100;
+    private PostgisObsStoreImpl obsStore;
 
     protected volatile Cache<FeatureKey, V> cache = CacheBuilder.newBuilder()
             .maximumSize(50_000)
@@ -91,6 +94,10 @@ public abstract class PostgisBaseFeatureStoreImpl
     @Override
     protected void init(String url, String dbName, String login, String password, String[] initScripts) {
         super.init(url, dbName, login, password, initScripts);
+        this.obsStore = new PostgisObsStoreImpl(url, dbName, login, password, idScope, idProviderType, false);
+        queryBuilder.linkTo(obsStore);
+        queryBuilder.linkTo(this.obsStore.getDataStreams());
+
         if(useBatch) {
             this.setBatchSize(BATCH_SIZE);
             this.connectionManager.enableBatch();

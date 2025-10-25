@@ -79,7 +79,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
     @Override
     protected void init(String url, String dbName, String login, String password, String[] initScripts) {
         super.init(url, dbName, login, password, initScripts);
-        this.dataStreamStore = new PostgisDataStreamStoreImpl(this, url,dbName,login,password, idScope,idProviderType,false);
+        this.dataStreamStore = new PostgisDataStreamStoreImpl(this, url, dbName, login, password, idScope, idProviderType, false);
         queryBuilder.linkTo(dataStreamStore);
 
         if(useBatch) {

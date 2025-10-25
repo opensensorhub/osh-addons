@@ -16,8 +16,11 @@ package org.sensorhub.impl.datastore.postgis.builder.filter;
 
 import org.sensorhub.api.datastore.feature.FeatureFilter;
 import org.sensorhub.api.datastore.feature.FoiFilter;
+import org.sensorhub.api.datastore.obs.DataStreamFilter;
+import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.datastore.system.SystemFilter;
 import org.vast.ogc.gml.IFeature;
+import org.vast.util.Asserts;
 
 import java.util.stream.Collectors;
 
@@ -32,8 +35,24 @@ public class FoiFilterQuery extends BaseFeatureFilterQuery<IFeature, FoiFilter> 
 //        filter.getObservationFilter()
 //        filter.getSampledFeatureFilter()
 //        filter.getParentFilter()
+        this.handleObsFilter(filter.getObservationFilter());
         this.handleParentFilter(filter.getParentFilter());
         return this.filterQueryGenerator;
+    }
+
+    protected void handleObsFilter(ObsFilter obsFilter) {
+        if (obsFilter != null) {
+            // create join
+            Asserts.checkNotNull(obsTableName, "obsTableName should not be null");
+
+            this.filterQueryGenerator.addInnerJoin(
+                    this.obsTableName + " ON " + this.tableName + ".id = " + this.obsTableName + ".foiid");
+            ObsFilterQuery obsFilterQuery = new ObsFilterQuery(this.obsTableName, filterQueryGenerator);
+            obsFilterQuery.setSysDescTableName(this.sysDescTableName);
+            obsFilterQuery.setDataStreamTableName(this.dataStreamTableName);
+            obsFilterQuery.setObsTableName(this.obsTableName);
+            this.filterQueryGenerator = obsFilterQuery.build(obsFilter);
+        }
     }
 
     protected void handleParentFilter(SystemFilter parentFilter) {

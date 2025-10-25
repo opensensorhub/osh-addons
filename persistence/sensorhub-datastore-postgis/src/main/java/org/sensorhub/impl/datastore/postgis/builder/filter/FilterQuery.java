@@ -28,6 +28,7 @@ public abstract class FilterQuery {
     protected String sysDescTableName;
     protected String dataStreamTableName;
     protected String foiTableName;
+    protected String obsTableName;
 
     protected String tableName;
 
@@ -67,6 +68,10 @@ public abstract class FilterQuery {
 
     public void setFoiTableName(String foiTableName) {
         this.foiTableName = foiTableName;
+    }
+
+    public void setObsTableName(String obsTableName) {
+        this.obsTableName = obsTableName;
     }
 
 }

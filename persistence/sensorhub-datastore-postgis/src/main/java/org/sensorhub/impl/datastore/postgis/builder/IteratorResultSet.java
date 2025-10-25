@@ -16,6 +16,9 @@ package org.sensorhub.impl.datastore.postgis.builder;
 
 import com.zaxxer.hikari.HikariDataSource;
 import org.sensorhub.impl.datastore.postgis.ConnectionManager;
+import org.sensorhub.impl.datastore.postgis.obs.PostgisObsStoreImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -26,6 +29,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
 public class IteratorResultSet<T> implements Iterator<T> {
+    private static final Logger logger = LoggerFactory.getLogger(IteratorResultSet.class);
 
     private long limit = Long.MAX_VALUE;
 
@@ -92,6 +96,9 @@ public class IteratorResultSet<T> implements Iterator<T> {
         try (Connection connection = connectionManager.getConnection()) {
             try(Statement statement = connection.createStatement()) {
                 String nextQuery = getQuery();
+                if(logger.isDebugEnabled()) {
+                    logger.debug(nextQuery);
+                }
                 try (ResultSet resultSet = statement.executeQuery(nextQuery)){
                     while (resultSet.next()) {
                         countRes++;

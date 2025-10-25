@@ -27,7 +27,6 @@ public class SelectEntriesObsQuery extends SelectEntriesQuery {
     protected static abstract class Init<T extends Init<T>> extends SelectEntriesQuery.Init<T> {
         private IFoiStore foiStore;
         private ISystemDescStore systemDescStore;
-
         private  IDataStreamStore dataStreamStore;
 
         public T linkTo(IFoiStore foiStore) {
