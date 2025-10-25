@@ -9,15 +9,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class ThreadSafeBatchExecutor {
+public class ThreadSafeBatchExecutor<T> {
 
-    private final LinkedBlockingQueue<Connection> queue = new LinkedBlockingQueue<>(3);
+    private final LinkedBlockingQueue<BatchJob> queue = new LinkedBlockingQueue<>(3);
 
-    public ThreadSafeBatchExecutor(Supplier<Connection> connectionSupplier) {
+    public ThreadSafeBatchExecutor(Supplier<BatchJob> connectionSupplier) {
         initThreadResources(connectionSupplier);
     }
 
-    private void initThreadResources(Supplier<Connection> connectionSupplier) {
+    private void initThreadResources(Supplier<BatchJob> connectionSupplier) {
         try {
             for(int i=0;i < queue.remainingCapacity();i++) {
                 queue.offer(connectionSupplier.get());
@@ -27,19 +27,21 @@ public class ThreadSafeBatchExecutor {
         }
     }
 
-    public Connection getConnection() throws SQLException, InterruptedException {
+    public BatchJob getConnection() throws SQLException, InterruptedException {
         return queue.poll(1, TimeUnit.SECONDS);
     }
 
-    public void offer(Connection connection) {
-        queue.offer(connection);
+    public void offer(BatchJob batchJob) {
+        queue.offer(batchJob);
     }
 
     public void commit() {
         synchronized (queue) {
-            queue.forEach(connection -> {
+            queue.forEach(batchJob -> {
                 try {
-                    connection.commit();
+                    batchJob.getPreparedStatement().executeBatch();
+                    batchJob.getPreparedStatement().clearBatch();
+                    batchJob.getConnection().commit();
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
@@ -48,12 +50,18 @@ public class ThreadSafeBatchExecutor {
     }
     public void close() {
         synchronized (queue) {
-            queue.forEach(connection -> {
+            queue.forEach(batchJob -> {
                 try {
-                    if(!connection.isClosed()) {
-                        connection.commit();
+                    if(!batchJob.getPreparedStatement().isClosed()) {
+                        batchJob.getPreparedStatement().executeBatch();
+                        batchJob.getPreparedStatement().clearBatch();
+                        batchJob.getPreparedStatement().close();
                     }
-                    connection.close();
+
+                    if(!batchJob.getConnection().isClosed()) {
+                        batchJob.getConnection().commit();
+                        batchJob.getConnection().close();
+                    }
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }

@@ -215,7 +215,7 @@ public abstract class PostgisStore<T extends QueryBuilder> {
         if(this.useBatch) {
             try {
                 synchronized (currentBatchSize) {
-                    if (currentBatchSize.get() > 0) {
+                    if (currentBatchSize.get() >= getBatchSize()) {
                         this.connectionManager.commit();
                         currentBatchSize.getAndSet(0);
                     }

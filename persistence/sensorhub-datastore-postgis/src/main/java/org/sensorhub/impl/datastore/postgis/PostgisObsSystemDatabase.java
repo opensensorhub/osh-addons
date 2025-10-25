@@ -59,7 +59,6 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
     PostgisProcedureStoreImpl procedureStore;
     PostgisFoiStoreImpl foiStore;
     PostgisSystemDescStoreImpl systemDescStore;
-
     PostgisDeploymentStoreImpl deploymentStore;
 
     @Override
@@ -90,6 +89,7 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
             systemDescStore.linkTo(procedureStore);
             foiStore.linkTo(systemDescStore);
             foiStore.linkTo(obsStore);
+            foiStore.linkTo(obsStore.getDataStreams());
             obsStore.linkTo(foiStore);
             obsStore.getDataStreams().linkTo(systemDescStore);
             commandStore.getCommandStreams().linkTo(systemDescStore);

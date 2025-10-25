@@ -26,6 +26,7 @@ import org.sensorhub.api.datastore.feature.FeatureFilterBase;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
 import org.sensorhub.impl.datastore.DataStoreUtils;
+import org.sensorhub.impl.datastore.postgis.BatchJob;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.ThreadSafeBatchExecutor;
@@ -66,7 +67,7 @@ public abstract class PostgisBaseFeatureStoreImpl
     private static final Logger logger = LoggerFactory.getLogger(PostgisBaseFeatureStoreImpl.class);
     protected final Lock lock = new ReentrantLock();
     public ThreadLocal<WKBWriter> threadLocalWriter = ThreadLocal.withInitial(WKBWriter::new);
-    public static final int BATCH_SIZE = 100;
+    public static final int BATCH_SIZE = 2000;
     private PostgisObsStoreImpl obsStore;
 
     protected volatile Cache<FeatureKey, V> cache = CacheBuilder.newBuilder()
@@ -94,13 +95,10 @@ public abstract class PostgisBaseFeatureStoreImpl
     @Override
     protected void init(String url, String dbName, String login, String password, String[] initScripts) {
         super.init(url, dbName, login, password, initScripts);
-        this.obsStore = new PostgisObsStoreImpl(url, dbName, login, password, idScope, idProviderType, false);
-        queryBuilder.linkTo(obsStore);
-        queryBuilder.linkTo(this.obsStore.getDataStreams());
 
         if(useBatch) {
             this.setBatchSize(BATCH_SIZE);
-            this.connectionManager.enableBatch();
+            this.connectionManager.enableBatch(queryBuilder.addOrUpdateByIdQuery());
         }
     }
 
@@ -123,15 +121,16 @@ public abstract class PostgisBaseFeatureStoreImpl
         DataStoreUtils.checkFeatureObject(value);
         if (useBatch) {
             try {
-                Connection connection = this.connectionManager.getBatchConnection();
-                try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.addOrUpdateByIdQuery())) {
+                BatchJob batchJob = this.connectionManager.getBatchJob();
+                 try {
+                     PreparedStatement preparedStatement = batchJob.getPreparedStatement();
                     fillAddOrUpdateStatement(featureKey, parentID, value, preparedStatement);
-                    int rows = preparedStatement.executeUpdate();
+                     preparedStatement.addBatch();
                     cache.invalidate(featureKey);
                 } catch (Exception e) {
                     throw new DataStoreException("Cannot insert feature " + value.getName());
                 } finally {
-                    this.connectionManager.offerBatchConnection(connection);
+                    this.connectionManager.offerBatchJob(batchJob);
                     if (currentBatchSize.getAndIncrement() >= this.getBatchSize()) {
                         this.commit();
                     }

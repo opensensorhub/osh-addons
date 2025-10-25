@@ -25,6 +25,7 @@ import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.obs.*;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
+import org.sensorhub.impl.datastore.postgis.BatchJob;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.ThreadSafeBatchExecutor;
@@ -50,10 +51,12 @@ import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.*;
 
 public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> implements IObsStore {
     private static final Logger logger = LoggerFactory.getLogger(PostgisObsStoreImpl.class);
-    public static final int BATCH_SIZE = 100;
+    public static final int BATCH_SIZE = 2000;
     public static final int STREAM_FETCH_SIZE = 1000;
 
     private PostgisDataStreamStoreImpl dataStreamStore;
+    private ISystemDescStore systemDescStore;
+    private IFoiStore foiStore;
 
     public PostgisObsStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
         super(idScope, dsIdProviderType, new QueryBuilderObsStore(), useBatch);
@@ -84,7 +87,8 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 
         if(useBatch) {
             this.setBatchSize(BATCH_SIZE);
-            this.connectionManager.enableBatch();
+            // batch insertion only
+            this.connectionManager.enableBatch(queryBuilder.insertObsQuery());
         }
 
     }
@@ -210,13 +214,32 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         DataStreamKey dataStreamKey = new DataStreamKey(obs.getDataStreamID());
         if (!dataStreamStore.containsKey(dataStreamKey))
             throw new IllegalStateException("Unknown datastream with ID: " + obs.getDataStreamID().getIdAsLong());
-
         // check that FOI exists
-        //      if (obs.hasFoi() && foiStore != null && !foiStore.contains(obs.getFoiID()))
-        //         throw new IllegalStateException("Unknown FOI: " + obs.getFoiID());
+//        if (obs.hasFoi() && foiStore != null && foiStore.contains(obs.getFoiID()))
+//            throw new IllegalStateException("Unknown FOI: " + obs.getFoiID());
         if (useBatch) {
-            try {
-                Connection connection = this.connectionManager.getBatchConnection();
+            Connection connection = this.connectionManager.getBatchConnection();
+            try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.insertObsQuery(), Statement.RETURN_GENERATED_KEYS)) {
+                this.fillAddStatement(dataStreamKey, obs, preparedStatement);
+                int rows = preparedStatement.executeUpdate();
+                try (ResultSet rs = preparedStatement.getGeneratedKeys()) {
+                    long generatedKey = 0;
+                    if (rs.next()) {
+                        generatedKey = rs.getLong(1);
+                    }
+                    return BigId.fromLong(idScope, generatedKey);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Cannot insert obs", e);
+            } finally {
+                try {
+                    this.commit();
+                } catch (DataStoreException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            /*try {
+                BatchJob batchJob = this.connectionManager.getBatchJob();
                 try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.insertObsQuery(), Statement.RETURN_GENERATED_KEYS)) {
                     this.fillAddStatement(dataStreamKey, obs, preparedStatement);
                     int rows = preparedStatement.executeUpdate();
@@ -228,7 +251,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                         return BigId.fromLong(idScope, generatedKey);
                     }
                 } catch (Exception e) {
-                    throw new RuntimeException("Cannot insert obs", e);
+                    throw new IllegalStateException("Cannot insert obs", e);
                 } finally {
                     this.connectionManager.offerBatchConnection(connection);
                     if (currentBatchSize.getAndIncrement() >= this.getBatchSize()) {
@@ -237,8 +260,8 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                throw new RuntimeException("Cannot insert obs ");
-            }
+                throw new IllegalStateException("Cannot insert obs ");
+            }*/
         } else {
             try (Connection connection1 = this.connectionManager.getConnection()) {
                 try (PreparedStatement preparedStatement = connection1.prepareStatement(queryBuilder.insertObsQuery(), Statement.RETURN_GENERATED_KEYS)) {
@@ -252,10 +275,10 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                         return BigId.fromLong(idScope, generatedKey);
                     }
                 } catch (Exception e) {
-                    throw new RuntimeException("Cannot insert obs", e);
+                    throw new IllegalStateException("Cannot insert obs", e);
                 }
             } catch (Exception e) {
-                throw new RuntimeException("Cannot insert obs", e);
+                throw new IllegalStateException("Cannot insert obs", e);
             }
         }
     }
@@ -332,10 +355,12 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 
     @Override
     public void linkTo(IFoiStore foiStore) {
+        this.foiStore = foiStore;
         super.linkTo(foiStore);
     }
 
     public void linkTo(ISystemDescStore systemDescStore) {
+        this.systemDescStore = systemDescStore;
         super.linkTo(systemDescStore);
     }
 
