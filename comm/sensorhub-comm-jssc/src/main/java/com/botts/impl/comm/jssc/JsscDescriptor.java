@@ -23,14 +23,12 @@ import org.sensorhub.impl.module.JarModuleProvider;
 public class JsscDescriptor extends JarModuleProvider {
 
     @Override
-    public Class<? extends IModule<?>> getModuleClass()
-    {
+    public Class<? extends IModule<?>> getModuleClass() {
         return JsscSerialCommProvider.class;
     }
 
     @Override
-    public Class<? extends ModuleConfig> getModuleConfigClass()
-    {
+    public Class<? extends ModuleConfig> getModuleConfigClass() {
         return JsscSerialCommProviderConfig.class;
     }
 

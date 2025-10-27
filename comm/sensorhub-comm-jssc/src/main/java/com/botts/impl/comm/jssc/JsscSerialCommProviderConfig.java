@@ -25,4 +25,5 @@ public class JsscSerialCommProviderConfig extends CommProviderConfig<UARTConfig>
         this.moduleClass = JsscSerialCommProvider.class.getCanonicalName();
         this.protocol = new UARTConfig();
     }
+
 }

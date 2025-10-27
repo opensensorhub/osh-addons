@@ -21,12 +21,10 @@ import org.junit.Test;
 import org.sensorhub.api.module.ModuleEvent;
 
 
-public class TestJsscSerialCommProvider
-{
+public class TestJsscSerialCommProvider {
 
     @Test
-    public void testEchoAscii() throws Exception
-    {
+    public void testEchoAscii() throws Exception {
         JsscSerialCommProviderConfig config = new JsscSerialCommProviderConfig();
         config.protocol.baudRate = 38400;
         config.protocol.portName = "/dev/tty.usbmodem2101";
@@ -40,8 +38,7 @@ public class TestJsscSerialCommProvider
         OutputStream os = serialComm.getOutputStream();
         InputStream is = serialComm.getInputStream();
         
-        for (int i = 0; i < 10; i++)
-        {
+        for (int i = 0; i < 10; i++) {
             String msg = "hello\n";
             os.write(msg.getBytes());
             os.flush();
@@ -56,11 +53,9 @@ public class TestJsscSerialCommProvider
         
         serialComm.stop();
     }
-    
-    
+
     @Test
-    public void testEchoBinary() throws Exception
-    {
+    public void testEchoBinary() throws Exception {
         JsscSerialCommProviderConfig config = new JsscSerialCommProviderConfig();
         config.protocol.baudRate = 38400;
         config.protocol.portName = "/dev/tty.usbmodem2101";
@@ -73,8 +68,7 @@ public class TestJsscSerialCommProvider
         OutputStream os = serialComm.getOutputStream();
         InputStream is = serialComm.getInputStream();
         
-        for (int i = 0; i < 10; i++)
-        {
+        for (int i = 0; i < 10; i++) {
             byte[] cmd = new byte[] {(byte)0xAA, 0x01, 0x20, 0x08};
             
             os.write(cmd);
@@ -90,6 +84,4 @@ public class TestJsscSerialCommProvider
         serialComm.stop();
     }
 
-    
-    
 }
