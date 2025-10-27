@@ -232,8 +232,9 @@ public class NavDatabase
             if (i == 1 && previousWaypt != null)
             {
                 String lookupCode;
-                if (code.length() == 7)
-                    lookupCode = code.substring(0,4) + code.substring(5,7);
+                int len = code.length();
+                if (len >= 7)
+                    lookupCode = code.substring(0,4) + code.substring(len - 2, len);
                 else
                     lookupCode = code;
                 Collection<NavDbRouteEntry> possibleSids = sids.get(lookupCode);
@@ -248,8 +249,9 @@ public class NavDatabase
             if (i == inputRouteSize-2)
             {
                 String lookupCode;
-                if (code.length() == 7)
-                    lookupCode = code.substring(0,4) + code.substring(5,7);
+                int len = code.length();
+                if (len >= 7)
+                    lookupCode = code.substring(0,4) + code.substring(len - 2, len);
                 else
                     lookupCode = code;
                 Collection<NavDbRouteEntry> possibleStars = stars.get(lookupCode);
