@@ -1,0 +1,32 @@
+description = 'JSSC Serial Comm Provider'
+ext.details = 'Serial communication provider based on Java Simple Serial Connector library'
+
+def thisProjectDir = projectDir
+rootProject.allprojects {
+  repositories {
+    mavenCentral()
+  }
+}
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation("io.github.java-native:jssc:2.10.2")
+}
+
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'com.botts.impl.comm.jssc.Activator')
+  }
+}
+
+ext.pom >>= {
+    developers {
+        developer {
+            id 'earocorn'
+            name 'Alex Almanza'
+            organization 'Botts Innovative Research, Inc.'
+            organizationUrl 'https://www.botts-inc.com'
+        }
+    }
+}
