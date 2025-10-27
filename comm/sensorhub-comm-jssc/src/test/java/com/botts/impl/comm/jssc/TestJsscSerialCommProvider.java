@@ -28,8 +28,8 @@ public class TestJsscSerialCommProvider
     public void testEchoAscii() throws Exception
     {
         JsscSerialCommProviderConfig config = new JsscSerialCommProviderConfig();
-        config.protocol.baudRate = 115200;
-        config.protocol.portName = "/dev/ttyUSB0";
+        config.protocol.baudRate = 38400;
+        config.protocol.portName = "/dev/tty.usbmodem2101";
         config.protocol.receiveThreshold = 0;        
         
         JsscSerialCommProvider serialComm = new JsscSerialCommProvider();
@@ -62,8 +62,8 @@ public class TestJsscSerialCommProvider
     public void testEchoBinary() throws Exception
     {
         JsscSerialCommProviderConfig config = new JsscSerialCommProviderConfig();
-        config.protocol.baudRate = 115200;
-        config.protocol.portName = "/dev/ttyUSB0";
+        config.protocol.baudRate = 38400;
+        config.protocol.portName = "/dev/tty.usbmodem2101";
         config.protocol.receiveThreshold = 0;        
         
         JsscSerialCommProvider serialComm = new JsscSerialCommProvider();

@@ -1,16 +1,17 @@
 /***************************** BEGIN LICENSE BLOCK ***************************
 
-The contents of this file are subject to the Mozilla Public License, v. 2.0.
-If a copy of the MPL was not distributed with this file, You can obtain one
-at http://mozilla.org/MPL/2.0/.
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
 
-Software distributed under the License is distributed on an "AS IS" basis,
-WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-for the specific language governing rights and limitations under the License.
- 
-Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
- 
-******************************* END LICENSE BLOCK ***************************/
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
+ Developer are Copyright (C) 2025 the Initial Developer. All Rights Reserved.
+
+ ******************************* END LICENSE BLOCK ***************************/
 
 package com.botts.impl.comm.jssc;
 
@@ -20,8 +21,6 @@ import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.comm.UARTConfig;
 import org.sensorhub.impl.module.AbstractModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,35 +28,25 @@ import java.io.OutputStream;
 
 /**
  * <p>
- * Communication provider for serial ports
+ * Communication provider for serial ports using JSSC
  * </p>
  *
- * @author Alex Robin
- * @since July 2, 2015
+ * @author Alex Almanza
+ * @since October 20, 2025
  */
-public class JsscSerialCommProvider extends AbstractModule<JsscSerialCommProviderConfig> implements ICommProvider<JsscSerialCommProviderConfig>
-{
-    static final Logger log = LoggerFactory.getLogger(JsscSerialCommProvider.class);
-    
+public class JsscSerialCommProvider extends AbstractModule<JsscSerialCommProviderConfig> implements ICommProvider<JsscSerialCommProviderConfig> {
+
     SerialPort serialPort;
     InputStream is;
     OutputStream os;
-    
-    
-    public JsscSerialCommProvider()
-    {
-    }
-    
-    
+
     @Override
-    protected void doStart() throws SensorHubException
-    {
+    protected void doStart() throws SensorHubException {
         UARTConfig config = this.config.protocol;
 
         serialPort = new SerialPort(config.portName);
 
-        try
-        {
+        try {
             if (!serialPort.openPort())
                 throw new SensorHubException("Failed to open serial port " + config.portName);
 
@@ -95,22 +84,19 @@ public class JsscSerialCommProvider extends AbstractModule<JsscSerialCommProvide
     
     
     @Override
-    public InputStream getInputStream()
-    {
+    public InputStream getInputStream() {
         return is;
     }
 
 
     @Override
-    public OutputStream getOutputStream()
-    {
+    public OutputStream getOutputStream() {
         return os;
     }    
 
 
     @Override
-    protected void doStop() throws SensorHubException
-    {
+    protected void doStop() throws SensorHubException {
         if (serialPort != null) {
             try {
                 if (serialPort.isOpened()) {
@@ -127,9 +113,4 @@ public class JsscSerialCommProvider extends AbstractModule<JsscSerialCommProvide
         os = null;
     }
 
-
-    @Override
-    public void cleanup() throws SensorHubException
-    {        
-    }
 }
