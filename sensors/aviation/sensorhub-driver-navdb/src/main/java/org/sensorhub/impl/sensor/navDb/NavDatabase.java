@@ -227,11 +227,17 @@ public class NavDatabase
                     continue;
                 }
             }
-            
+
             // if second code in list, try to decode SID
             if (i == 1 && previousWaypt != null)
             {
-                Collection<NavDbRouteEntry> possibleSids = sids.get(code);
+                String lookupCode;
+                int len = code.length();
+                if (len >= 7)
+                    lookupCode = code.substring(0,4) + code.substring(len - 2, len);
+                else
+                    lookupCode = code;
+                Collection<NavDbRouteEntry> possibleSids = sids.get(lookupCode);
                 if (possibleSids != null && !possibleSids.isEmpty())
                 {
                     previousWaypt = decodeSID(possibleSids, previousWaypt, nextCode, decodeOutput);
@@ -242,7 +248,13 @@ public class NavDatabase
             // if one before last, try to decode STAR
             if (i == inputRouteSize-2)
             {
-                Collection<NavDbRouteEntry> possibleStars = stars.get(code);
+                String lookupCode;
+                int len = code.length();
+                if (len >= 7)
+                    lookupCode = code.substring(0,4) + code.substring(len - 2, len);
+                else
+                    lookupCode = code;
+                Collection<NavDbRouteEntry> possibleStars = stars.get(lookupCode);
                 if (possibleStars != null && !possibleStars.isEmpty())
                 {
                     previousWaypt = decodeSTAR(possibleStars, previousWaypt, nextCode, decodeOutput);
