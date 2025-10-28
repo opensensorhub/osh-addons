@@ -85,11 +85,10 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         this.dataStreamStore = new PostgisDataStreamStoreImpl(this, url, dbName, login, password, idScope, idProviderType, false);
         queryBuilder.linkTo(dataStreamStore);
 
+        // batch insertion only
         if(useBatch) {
-            // batch insertion only
-            this.connectionManager.enableBatch(BATCH_SIZE, queryBuilder.insertObsQuery());
+            this.connectionManager.enableBatch(BATCH_SIZE, queryBuilder.removeByIdQuery());
         }
-
     }
 
     @Override
@@ -212,24 +211,9 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 //        if (obs.hasFoi() && foiStore != null && foiStore.contains(obs.getFoiID()))
 //            throw new IllegalStateException("Unknown FOI: " + obs.getFoiID());
         if (useBatch) {
-            Connection connection = this.connectionManager.getBatchConnection();
-            try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.insertObsQuery(), Statement.RETURN_GENERATED_KEYS)) {
-                this.fillAddStatement(dataStreamKey, obs, preparedStatement);
-                int rows = preparedStatement.executeUpdate();
-                try (ResultSet rs = preparedStatement.getGeneratedKeys()) {
-                    long generatedKey = 0;
-                    if (rs.next()) {
-                        generatedKey = rs.getLong(1);
-                    }
-                    return BigId.fromLong(idScope, generatedKey);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Cannot insert obs", e);
-            } finally {
-                this.connectionManager.tryCommit();
-            }
-            /*try {
-                BatchJob batchJob = this.connectionManager.getBatchJob();
+            try {
+                batchLock.lock();
+                Connection connection = this.connectionManager.getBatchConnection();
                 try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.insertObsQuery(), Statement.RETURN_GENERATED_KEYS)) {
                     this.fillAddStatement(dataStreamKey, obs, preparedStatement);
                     int rows = preparedStatement.executeUpdate();
@@ -241,17 +225,13 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                         return BigId.fromLong(idScope, generatedKey);
                     }
                 } catch (Exception e) {
-                    throw new IllegalStateException("Cannot insert obs", e);
+                    throw new RuntimeException("Cannot insert obs", e);
                 } finally {
-                    this.connectionManager.offerBatchConnection(connection);
-                    if (currentBatchSize.getAndIncrement() >= this.getBatchSize()) {
-                        this.commit();
-                    }
+                    this.connectionManager.tryCommit();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new IllegalStateException("Cannot insert obs ");
-            }*/
+            } finally {
+                batchLock.unlock();
+            }
         } else {
             try (Connection connection1 = this.connectionManager.getConnection()) {
                 try (PreparedStatement preparedStatement = connection1.prepareStatement(queryBuilder.insertObsQuery(), Statement.RETURN_GENERATED_KEYS)) {
@@ -450,13 +430,29 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         BigId key = (BigId) o;
         IObsData data = this.get(o);
         logger.debug("Remove Obs with key={}", key);
-        try (Connection connection = this.connectionManager.getConnection()) {
-            try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.removeByIdQuery())) {
+        if (useBatch) {
+            BatchJob batchJob = this.connectionManager.getBatchJob();
+            try {
+                PreparedStatement preparedStatement = batchJob.getPreparedStatement();
                 preparedStatement.setLong(1, key.getIdAsLong());
-                preparedStatement.executeUpdate();
+                preparedStatement.addBatch();
+            } catch (Exception e) {
+                throw new IllegalStateException("Cannot remove obs " + data.toString());
+            } finally {
+                this.connectionManager.offerBatchJob(batchJob);
+                this.connectionManager.tryCommit();
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        } else {
+            try (Connection connection = this.connectionManager.getConnection()) {
+                try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.removeByIdQuery())) {
+                    preparedStatement.setLong(1, key.getIdAsLong());
+                    preparedStatement.executeUpdate();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
         return data;
     }

@@ -79,7 +79,7 @@ public class FilterQueryGenerator {
 
             // to get count and use it with LIMIT and OFFSET
             if (this.selectFields != null && !this.selectFields.isEmpty()) {
-                sb.append(selectFields.stream().collect(Collectors.joining(",")));
+                sb.append(selectFields.stream().map(fieldName -> this.tableName+"."+fieldName).collect(Collectors.joining(",")));
             } else {
                 sb.append(" ").append(this.tableName).append(".* ");
             }

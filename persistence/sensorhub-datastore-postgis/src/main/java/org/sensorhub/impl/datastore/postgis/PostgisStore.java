@@ -39,6 +39,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public abstract class PostgisStore<T extends QueryBuilder> {
     private static final Logger logger = LoggerFactory.getLogger(PostgisStore.class);
@@ -54,6 +56,7 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     protected boolean useBatch;
     private long autoCommitPeriod = 3600*1000L;
     public static final int STREAM_FETCH_SIZE = 1000;
+    protected ReentrantLock batchLock = new ReentrantLock();
 
     protected PostgisStore(int idScope, IdProviderType dsIdProviderType, T queryBuilder, boolean useBatch) {
         this.idProviderType = dsIdProviderType;

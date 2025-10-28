@@ -130,7 +130,7 @@ public abstract class PostgisBaseFeatureStoreImpl
                     throw new DataStoreException("Cannot insert feature " + value.getName());
                 } finally {
                     this.connectionManager.offerBatchJob(batchJob);
-                    this.connectionManager.commit();
+                    this.connectionManager.tryCommit();
                 }
             } catch (Exception e) {
                 throw new DataStoreException("Cannot insert feature " + value.getName());
