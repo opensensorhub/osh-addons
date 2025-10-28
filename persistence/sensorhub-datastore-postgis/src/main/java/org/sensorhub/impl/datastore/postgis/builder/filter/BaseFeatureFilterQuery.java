@@ -18,6 +18,7 @@ import com.google.common.io.BaseEncoding;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKBWriter;
 import org.sensorhub.api.datastore.FullTextFilter;
+import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.api.datastore.SpatialFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FeatureFilter;
@@ -51,9 +52,14 @@ public class BaseFeatureFilterQuery<V extends IFeature,F extends FeatureFilterBa
 
     protected void handleValidTimeFilter(TemporalFilter temporalFilter) {
         if(temporalFilter != null) {
+            this.handleValidTimeFilter(temporalFilter, PostgisUtils.getOperator(temporalFilter));
+        }
+    }
+
+    protected void handleValidTimeFilter(TemporalFilter temporalFilter, String rangeOpStr) {
+        if(temporalFilter != null) {
             var timeRange = PostgisUtils.getRangeFromTemporal(temporalFilter);
-            String sb = this.tableName + ".validTime " +
-                    PostgisUtils.getOperator(temporalFilter) + " '[" + timeRange[0] + "," + timeRange[1] + "]'";
+            String sb =" '[" + timeRange[0] + "," + timeRange[1] + "]' "+rangeOpStr+" "+this.tableName + ".validTime ";
             addCondition(sb);
         }
     }

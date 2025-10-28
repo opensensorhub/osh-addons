@@ -15,6 +15,7 @@
 package org.sensorhub.impl.datastore.postgis.builder.filter;
 
 import org.sensorhub.api.common.BigId;
+import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
@@ -98,7 +99,7 @@ public class ObsFilterQuery extends FilterQuery {
                 this.filterQueryGenerator = foiFilterQuery.build(foiFilter);
 
                 // Workaround, had validTime filter to Foi because it is owned by ObsFilter instead of FoiFilter
-                foiFilterQuery.handleValidTimeFilter(obsFilter.getPhenomenonTime());
+                foiFilterQuery.handleValidTimeFilter(obsFilter.getPhenomenonTime(), "<@");
 
             } else {
                 // otherwise
