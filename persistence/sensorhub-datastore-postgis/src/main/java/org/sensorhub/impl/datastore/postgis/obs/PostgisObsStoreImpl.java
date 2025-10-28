@@ -52,7 +52,7 @@ import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.*;
 public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> implements IObsStore {
     private static final Logger logger = LoggerFactory.getLogger(PostgisObsStoreImpl.class);
     public static final int BATCH_SIZE = 2000;
-    public static final int STREAM_FETCH_SIZE = 1000;
+    public static final int STREAM_FETCH_SIZE = 10_000;
 
     private PostgisDataStreamStoreImpl dataStreamStore;
     private ISystemDescStore systemDescStore;
@@ -86,9 +86,8 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         queryBuilder.linkTo(dataStreamStore);
 
         if(useBatch) {
-            this.setBatchSize(BATCH_SIZE);
             // batch insertion only
-            this.connectionManager.enableBatch(queryBuilder.insertObsQuery());
+            this.connectionManager.enableBatch(BATCH_SIZE, queryBuilder.insertObsQuery());
         }
 
     }
@@ -169,11 +168,6 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
     }
 
     @Override
-    public void commit() throws DataStoreException {
-        super.commit();
-    }
-
-    @Override
     public IDataStreamStore getDataStreams() {
         return this.dataStreamStore;
     }
@@ -232,11 +226,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             } catch (Exception e) {
                 throw new RuntimeException("Cannot insert obs", e);
             } finally {
-                try {
-                    this.commit();
-                } catch (DataStoreException e) {
-                    throw new RuntimeException(e);
-                }
+                this.connectionManager.tryCommit();
             }
             /*try {
                 BatchJob batchJob = this.connectionManager.getBatchJob();

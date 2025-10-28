@@ -32,6 +32,10 @@ public class DataStreamFilterQuery extends FilterQuery {
         super(tableName, filterQueryGenerator);
     }
 
+    protected DataStreamFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        super(tableName, filterQueryGenerator, innerJoin);
+    }
+
     public FilterQueryGenerator build(DataStreamFilter filter) {
         if(this.dsId != null) {
             this.handleId(this.dsId);
@@ -54,7 +58,7 @@ public class DataStreamFilterQuery extends FilterQuery {
 
     protected void handleOutputNames(SortedSet<String> names) {
         if (names != null && !names.isEmpty()) {
-            filterQueryGenerator.addCondition("("+tableName+".data->>'outputName') in (" +
+            addCondition("("+tableName+".data->>'outputName') in (" +
                     names.stream().map(name -> "'" + name + "'").collect(Collectors.joining(",")) +
                     ")");
         }
@@ -62,7 +66,7 @@ public class DataStreamFilterQuery extends FilterQuery {
 
     protected void handleValidTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
-            filterQueryGenerator.addCondition(tableName+".data->'validTime'->'begin' IS NOT NULL");
+            addCondition(tableName+".data->'validTime'->'begin' IS NOT NULL");
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct("("+tableName+".data->>'name')");
                 filterQueryGenerator.addDistinct("("+tableName+".data->'system@id'->'internalID'->'id')::bigint");
@@ -80,17 +84,16 @@ public class DataStreamFilterQuery extends FilterQuery {
                         ".data->'validTime'->>'end')::timestamptz)" +
                         " "+PostgisUtils.getOperator(temporalFilter)+" " +
                         "'[" + min + "," + max + "]'::tstzrange";
-                filterQueryGenerator.addCondition(sb);
+                addCondition(sb);
             }
         }
     }
 
     protected void handleFullTextFilter(FullTextFilter fullTextFilter) {
         if (fullTextFilter != null) {
-            String sb = "(" + tableName + ".data->'recordSchema'->>'description') ~* '(" +
+            addCondition( "(" + tableName + ".data->'recordSchema'->>'description') ~* '(" +
                     fullTextFilter.getKeywords().stream().collect(Collectors.joining("|")) +
-                    ")'";
-            filterQueryGenerator.addCondition(sb);
+                    ")'");
         }
     }
 
@@ -138,7 +141,7 @@ public class DataStreamFilterQuery extends FilterQuery {
                         }
                     }
                     sb.append(")");
-                    filterQueryGenerator.addCondition(sb.toString());
+                    addCondition(sb.toString());
                 }
 
                 // handle internal IDS
@@ -146,7 +149,7 @@ public class DataStreamFilterQuery extends FilterQuery {
                     String sb = "(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint in (" +
                             systemFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                             ")";
-                    filterQueryGenerator.addCondition(sb);
+                    addCondition(sb);
                 }
             }
             if (systemFilter.getParentFilter() != null || systemFilter.getProcedureFilter() != null
@@ -178,7 +181,7 @@ public class DataStreamFilterQuery extends FilterQuery {
                 first = false;
             }
             sb.append(")')");
-            filterQueryGenerator.addCondition(sb.toString());
+            addCondition(sb.toString());
         }
     }
 

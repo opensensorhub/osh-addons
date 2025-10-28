@@ -33,6 +33,13 @@ public abstract class FilterQuery {
     protected String tableName;
 
     protected FilterQueryGenerator filterQueryGenerator;
+    protected FilterQueryGenerator.InnerJoin innerJoin;
+
+    protected FilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        this(tableName, filterQueryGenerator);
+        this.innerJoin = innerJoin;
+    }
+
     protected FilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
         this.tableName = tableName;
         this.filterQueryGenerator = filterQueryGenerator;
@@ -40,9 +47,17 @@ public abstract class FilterQuery {
 
     protected void handleInternalIDs(SortedSet<BigId> ids) {
         if (ids != null && !ids.isEmpty()) {
-            filterQueryGenerator.addCondition(this.tableName+".id in (" +
+            addCondition(this.tableName+".id in (" +
                     ids.stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                     ")");
+        }
+    }
+
+    protected void addCondition(String condition) {
+        if(innerJoin != null) {
+            innerJoin.addCondition(condition);
+        } else {
+            filterQueryGenerator.addCondition(condition);
         }
     }
 

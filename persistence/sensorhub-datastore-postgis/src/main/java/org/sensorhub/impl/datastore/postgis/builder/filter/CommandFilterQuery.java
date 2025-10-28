@@ -26,7 +26,11 @@ import java.util.stream.Collectors;
 import static org.sensorhub.api.datastore.command.ICommandStore.CommandField.ISSUE_TIME;
 public class CommandFilterQuery extends FilterQuery {
 
-    public CommandFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
+    protected CommandFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        super(tableName, filterQueryGenerator, innerJoin);
+    }
+
+    protected CommandFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
         super(tableName, filterQueryGenerator);
     }
 
@@ -41,7 +45,7 @@ public class CommandFilterQuery extends FilterQuery {
 
     protected void handleSenderIDs(SortedSet<String> ids) {
         if (ids != null && !ids.isEmpty()) {
-            filterQueryGenerator.addCondition(this.tableName + ".sendId in (" +
+            addCondition(this.tableName + ".sendId in (" +
                     ids.stream().collect(Collectors.joining(",")) +
                     ")");
         }
@@ -54,7 +58,7 @@ public class CommandFilterQuery extends FilterQuery {
                 filterQueryGenerator.addOrderBy(this.tableName + ".commandstreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".issuetime DESC ");
             } else {
-                filterQueryGenerator.addCondition(this.tableName + "." + ISSUE_TIME + "::timestamptz BETWEEN " +
+                addCondition(this.tableName + "." + ISSUE_TIME + "::timestamptz BETWEEN " +
                         "'" + temporalFilter.getMin().toString() + "' AND '" + temporalFilter.getMax().toString() + "'");
             }
         }
@@ -65,9 +69,10 @@ public class CommandFilterQuery extends FilterQuery {
             // create join
             Asserts.checkNotNull(this.commandStreamTableName, "commandStreamTableName should not be null");
 
-            this.filterQueryGenerator.addInnerJoin(
-                    this.commandStreamTableName + " ON " + this.tableName + ".commandstreamid = " + this.commandStreamTableName + ".id");
-            CommandStreamFilterQuery commandStreamFilterQuery = new CommandStreamFilterQuery(this.commandStreamTableName, filterQueryGenerator);
+            FilterQueryGenerator.InnerJoin innerJoin1 =
+                    new FilterQueryGenerator.InnerJoin( this.commandStreamTableName + " ON " + this.tableName + ".commandstreamid = " + this.commandStreamTableName + ".id");
+            this.filterQueryGenerator.addInnerJoin(innerJoin1);
+            CommandStreamFilterQuery commandStreamFilterQuery = new CommandStreamFilterQuery(this.commandStreamTableName, filterQueryGenerator, innerJoin1);
             commandStreamFilterQuery.setCommandTableName(this.tableName);
             commandStreamFilterQuery.setSysDescTableName(this.sysDescTableName);
             this.filterQueryGenerator = commandStreamFilterQuery.build(commandStreamFilter);
@@ -79,9 +84,9 @@ public class CommandFilterQuery extends FilterQuery {
             // create join
             Asserts.checkNotNull(this.commandStatusTableName, "commandStatusTableName should not be null");
 
-            this.filterQueryGenerator.addInnerJoin(
-                    this.commandStatusTableName+" ON ("+this.tableName+".id) = ("+this.commandStatusTableName+".data->'command@id'->'id')::bigint");
-            CommandStatusFilterQuery commandStatusFilterQuery = new CommandStatusFilterQuery(this.commandStatusTableName, filterQueryGenerator);
+            FilterQueryGenerator.InnerJoin innerJoin1 = new FilterQueryGenerator.InnerJoin(this.commandStatusTableName+" ON ("+this.tableName+".id) = ("+this.commandStatusTableName+".data->'command@id'->'id')::bigint");
+            this.filterQueryGenerator.addInnerJoin(innerJoin1);
+            CommandStatusFilterQuery commandStatusFilterQuery = new CommandStatusFilterQuery(this.commandStatusTableName, filterQueryGenerator, innerJoin1);
             commandStatusFilterQuery.setCommandStatusTableName(this.tableName);
             commandStatusFilterQuery.setSysDescTableName(this.sysDescTableName);
             this.filterQueryGenerator = commandStatusFilterQuery.build(commandStatusFilter);

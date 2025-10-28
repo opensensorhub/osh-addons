@@ -22,8 +22,13 @@ import java.util.SortedSet;
 import java.util.stream.Collectors;
 
 public class SystemWithDescFilterQuery extends BaseFeatureFilterQuery<ISystemWithDesc, SystemFilter> {
+
     protected SystemWithDescFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
         super(tableName, filterQueryGenerator);
+    }
+
+    protected SystemWithDescFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        super(tableName, filterQueryGenerator, innerJoin);
     }
 
     @Override
@@ -38,14 +43,17 @@ public class SystemWithDescFilterQuery extends BaseFeatureFilterQuery<ISystemWit
     protected void handleParentFilter(SystemFilter parentFilter) {
         if (parentFilter != null) {
             if (parentFilter.getInternalIDs() != null && !parentFilter.getInternalIDs().isEmpty()) {
-                filterQueryGenerator.addCondition(tableName+".parentId in (" +
+                addCondition(tableName+".parentId in (" +
                         parentFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                         ")");
             }
             if(parentFilter.getUniqueIDs() != null) {
-                filterQueryGenerator.addInnerJoin(this.tableName+ " t2 ON " + this.tableName + ".parentId" + " = t2.id");
+                FilterQueryGenerator.InnerJoin innerJoin1 = new FilterQueryGenerator.InnerJoin(
+                        this.tableName+ " t2 ON " + this.tableName + ".parentId" + " = t2.id"
+                );
+                filterQueryGenerator.addInnerJoin(innerJoin1);
                 for(String uid: parentFilter.getUniqueIDs()) {
-                    filterQueryGenerator.addCondition("t2.data->'properties'->>'uid' = '"+uid+"'");
+                    innerJoin1.addCondition("t2.data->'properties'->>'uid' = '"+uid+"'");
                 }
             }
         }
@@ -68,7 +76,7 @@ public class SystemWithDescFilterQuery extends BaseFeatureFilterQuery<ISystemWit
                 }
             }
             sb.append(")");
-            filterQueryGenerator.addCondition(sb.toString());
+            addCondition(sb.toString());
         }
     }
 }

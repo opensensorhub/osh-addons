@@ -31,6 +31,10 @@ public class ObsFilterQuery extends FilterQuery {
         super(tableName, filterQueryGenerator);
     }
 
+    protected ObsFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        super(tableName, filterQueryGenerator, innerJoin);
+    }
+
     public FilterQueryGenerator build(ObsFilter filter) {
         this.handleDataStreamFilter(filter.getDataStreamFilter());
         this.handlePhenomenonTimeFilter(filter.getPhenomenonTime());
@@ -44,9 +48,9 @@ public class ObsFilterQuery extends FilterQuery {
             // create join
             Asserts.checkNotNull(dataStreamTableName, "dataStreamTableName should not be null");
 
-            this.filterQueryGenerator.addInnerJoin(
-                    this.dataStreamTableName + " ON " + this.tableName + ".datastreamid = " + this.dataStreamTableName + ".id");
-            DataStreamFilterQuery dataStreamFilterQuery = new DataStreamFilterQuery(this.dataStreamTableName, filterQueryGenerator);
+            FilterQueryGenerator.InnerJoin innerJoin1 = new FilterQueryGenerator.InnerJoin(this.dataStreamTableName + " ON " + this.tableName + ".datastreamid = " + this.dataStreamTableName + ".id");
+            this.filterQueryGenerator.addInnerJoin(innerJoin1);
+            DataStreamFilterQuery dataStreamFilterQuery = new DataStreamFilterQuery(this.dataStreamTableName, filterQueryGenerator, innerJoin1);
             dataStreamFilterQuery.setSysDescTableName(this.sysDescTableName);
             this.filterQueryGenerator = dataStreamFilterQuery.build(dataStreamFilter);
         }
@@ -59,7 +63,7 @@ public class ObsFilterQuery extends FilterQuery {
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
-                filterQueryGenerator.addCondition(
+                addCondition(
                         "tstzrange('"+temporalFilter.getMin()+"','"+temporalFilter.getMax()+"', '[]') @> "+this.tableName+".phenomenonTime");
             }
         }
@@ -74,7 +78,7 @@ public class ObsFilterQuery extends FilterQuery {
             } else {
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
-                filterQueryGenerator.addCondition(
+                addCondition(
                         "tstzrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
             }
         }
@@ -86,9 +90,11 @@ public class ObsFilterQuery extends FilterQuery {
                 // create JOIN
                 Asserts.checkNotNull(foiFilter, "foiTableName should not be null");
 
-                this.filterQueryGenerator.addInnerJoin(
-                        this.foiTableName + " ON " + this.tableName + ".foiid = " + this.foiTableName + ".id");
-                FoiFilterQuery foiFilterQuery = new FoiFilterQuery(this.foiTableName, filterQueryGenerator);
+                FilterQueryGenerator.InnerJoin innerJoin1 = new FilterQueryGenerator.InnerJoin(
+                        this.foiTableName + " ON " + this.tableName + ".foiid = " + this.foiTableName + ".id"
+                );
+                this.filterQueryGenerator.addInnerJoin(innerJoin1);
+                FoiFilterQuery foiFilterQuery = new FoiFilterQuery(this.foiTableName, filterQueryGenerator,innerJoin1);
                 this.filterQueryGenerator = foiFilterQuery.build(foiFilter);
             } else {
                 // otherwise
@@ -96,9 +102,9 @@ public class ObsFilterQuery extends FilterQuery {
                     // handle Internal IDs
                     if(foiFilter.getInternalIDs() != null) {
                         if (foiFilter.getInternalIDs().contains(BigId.NONE)) {
-                            filterQueryGenerator.addCondition(this.tableName + "." + FOI_ID + " IS NULL");
+                            addCondition(this.tableName + "." + FOI_ID + " IS NULL");
                         } else {
-                            filterQueryGenerator.addCondition(this.tableName + "." + FOI_ID + " in (" +
+                            addCondition(this.tableName + "." + FOI_ID + " in (" +
                                     foiFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                                     ")");
                         }

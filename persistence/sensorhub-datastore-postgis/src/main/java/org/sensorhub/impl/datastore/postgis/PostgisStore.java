@@ -51,8 +51,6 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     protected AtomicLong lastId = new AtomicLong(0);
     private TimerTask timerTask;
 
-    protected int maxBatchSize = 100;
-    protected AtomicInteger currentBatchSize = new AtomicInteger(0);
     protected boolean useBatch;
     private long autoCommitPeriod = 3600*1000L;
     public static final int STREAM_FETCH_SIZE = 1000;
@@ -62,14 +60,6 @@ public abstract class PostgisStore<T extends QueryBuilder> {
         this.idScope = idScope;
         this.queryBuilder = queryBuilder;
         this.useBatch = useBatch;
-    }
-
-    protected  void setBatchSize(int size) {
-        this.maxBatchSize = size;
-    }
-
-    protected int getBatchSize() {
-        return maxBatchSize;
     }
 
     protected void init(String url, String dbName, String login, String password, String[] initScripts) {
@@ -212,18 +202,7 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     }
 
     public void commit() throws DataStoreException {
-        if(this.useBatch) {
-            try {
-                synchronized (currentBatchSize) {
-                    if (currentBatchSize.get() >= getBatchSize()) {
-                        this.connectionManager.commit();
-                        currentBatchSize.getAndSet(0);
-                    }
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        }
+        this.connectionManager.commit();
     }
 
     protected void linkTo(ISystemDescStore systemStore) { queryBuilder.linkTo(systemStore); }

@@ -27,8 +27,12 @@ import java.util.stream.Collectors;
 
 public class CommandStreamFilterQuery extends FilterQuery {
 
-    public CommandStreamFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
+    protected CommandStreamFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
         super(tableName, filterQueryGenerator);
+    }
+
+    protected CommandStreamFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        super(tableName, filterQueryGenerator, innerJoin);
     }
 
     public FilterQueryGenerator build(CommandStreamFilter filter) {
@@ -44,7 +48,7 @@ public class CommandStreamFilterQuery extends FilterQuery {
 
     protected  void handleControlInputNames(SortedSet<String> names) {
         if (names != null && !names.isEmpty()) {
-            filterQueryGenerator.addCondition("("+this.tableName+".data->>'name') in (" +
+            addCondition("("+this.tableName+".data->>'name') in (" +
                     names.stream().map(name -> "'" + name + "'").collect(Collectors.joining(",")) +
                     ")");
         }
@@ -52,7 +56,7 @@ public class CommandStreamFilterQuery extends FilterQuery {
 
     protected void handleValidTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
-            filterQueryGenerator.addCondition(tableName+".data->'validTime'->'begin' IS NOT NULL");
+            addCondition(tableName+".data->'validTime'->'begin' IS NOT NULL");
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct("("+tableName+".data->>'name')");
                 filterQueryGenerator.addDistinct("("+tableName+".data->'system@id'->'internalID'->'id')::bigint");
@@ -70,7 +74,7 @@ public class CommandStreamFilterQuery extends FilterQuery {
                         ".data->'validTime'->>'end')::timestamptz)" +
                         " && " +
                         "'[" + min + "," + max + "]'::tstzrange";
-                filterQueryGenerator.addCondition(sb);
+                addCondition(sb);
             }
         }
     }
@@ -80,7 +84,7 @@ public class CommandStreamFilterQuery extends FilterQuery {
             String sb = "(" + this.tableName + ".data->'recordSchema'->>'description') ~* '(" +
                     fullTextFilter.getKeywords().stream().collect(Collectors.joining("|")) +
                     ")'";
-            filterQueryGenerator.addCondition(sb);
+            addCondition(sb);
         }
     }
 
@@ -89,9 +93,11 @@ public class CommandStreamFilterQuery extends FilterQuery {
             // create join
             Asserts.checkNotNull(this.commandTableName, "commandTableName should not be null");
 
-            this.filterQueryGenerator.addInnerJoin(
-                    this.commandTableName+" ON "+this.tableName+".id = "+this.commandTableName+".commandstreamid");
-            CommandFilterQuery commandFilterQuery = new CommandFilterQuery(this.commandTableName, filterQueryGenerator);
+            FilterQueryGenerator.InnerJoin innerJoin1 = new FilterQueryGenerator.InnerJoin(
+                    this.commandTableName+" ON "+this.tableName+".id = "+this.commandTableName+".commandstreamid"
+            );
+            this.filterQueryGenerator.addInnerJoin(innerJoin1);
+            CommandFilterQuery commandFilterQuery = new CommandFilterQuery(this.commandTableName, filterQueryGenerator,innerJoin1);
             commandFilterQuery.setCommandStreamTableName(this.tableName);
             this.filterQueryGenerator = commandFilterQuery.build(commandFilter);
         }
@@ -111,7 +117,7 @@ public class CommandStreamFilterQuery extends FilterQuery {
                         String sb = "(" + tableName + ".data->'system@id'->>'uniqueID') in ('" +
                                 String.join("','", systemFilter.getUniqueIDs()) +
                                 "')";
-                        filterQueryGenerator.addCondition(sb);
+                        addCondition(sb);
                     }
 
                     // handle internal IDS
@@ -119,7 +125,7 @@ public class CommandStreamFilterQuery extends FilterQuery {
                         String sb = "(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint in (" +
                                 systemFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                                 ")";
-                        filterQueryGenerator.addCondition(sb);
+                        addCondition(sb);
                     }
                 }
                 if (systemFilter.getParentFilter() != null || systemFilter.getProcedureFilter() != null
@@ -145,7 +151,7 @@ public class CommandStreamFilterQuery extends FilterQuery {
                 first = false;
             }
             sb.append(")')");
-            filterQueryGenerator.addCondition(sb.toString());
+            addCondition(sb.toString());
         }
     }
 }

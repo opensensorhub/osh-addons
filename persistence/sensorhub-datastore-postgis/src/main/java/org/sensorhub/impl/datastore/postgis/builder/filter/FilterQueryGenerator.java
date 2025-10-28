@@ -16,23 +16,49 @@ package org.sensorhub.impl.datastore.postgis.builder.filter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class FilterQueryGenerator {
+    public static class InnerJoin {
+        private String innerJoinMapping;
+        private List<String> innerJoinConditions;
+
+        public InnerJoin(String innerJoinMapping) {
+            this.innerJoinMapping = innerJoinMapping;
+        }
+
+        public void addCondition(String condition) {
+            if(innerJoinConditions == null) {
+                innerJoinConditions = new ArrayList<>();
+            }
+            innerJoinConditions.add(condition);
+        }
+
+        boolean hasConditions() {
+            return innerJoinConditions != null;
+        }
+
+        public String getInnerJoinMapping() {
+            return innerJoinMapping;
+        }
+
+        public List<String> getInnerJoinConditions() {
+            return innerJoinConditions;
+        }
+    }
+
     protected List<String> addConditions;
-
     protected List<String> orConditions;
-
     protected List<String> orderBy;
-
     protected List<String> groupBy;
-
     protected List<String> distinct;
     protected long limit = -1;
 
     protected  String tableName;
     protected List<String> selectFields;
-    protected List<String> innerJoin;
+    protected List<InnerJoin> innerJoin;
 
     public void tableName(String tableName) {
         this.tableName = tableName;
@@ -55,15 +81,20 @@ public class FilterQueryGenerator {
             if (this.selectFields != null && !this.selectFields.isEmpty()) {
                 sb.append(selectFields.stream().collect(Collectors.joining(",")));
             } else {
-                sb.append(" * ");
+                sb.append(" ").append(this.tableName).append(".* ");
             }
 
             sb.append(" FROM ").append(this.tableName);
         }
 
         if (this.innerJoin != null && !this.innerJoin.isEmpty()) {
-            sb.append(" INNER JOIN ");
-            sb.append(this.innerJoin.stream().collect(Collectors.joining(" INNER JOIN ")));
+            // add Inner join and its corresponding conditions
+            innerJoin.forEach( innerJoinObj -> {
+                sb.append(" INNER JOIN ");
+                sb.append(
+                        innerJoinObj.getInnerJoinMapping())
+                        .append(innerJoinObj.hasConditions() ? innerJoinObj.getInnerJoinConditions().stream().map(value -> " AND "+value).collect(Collectors.joining(" ")): " ");
+            });
         }
         // check WHERE clause
         if (this.addConditions != null && !this.addConditions.isEmpty()) {
@@ -98,8 +129,14 @@ public class FilterQueryGenerator {
         sb.append(" FROM ").append(this.tableName);
 
         if (this.innerJoin != null && !this.innerJoin.isEmpty()) {
-            sb.append(" INNER JOIN ");
-            sb.append(this.innerJoin.stream().collect(Collectors.joining(" INNER JOIN ")));
+            // add Inner join and its corresponding conditions
+            innerJoin.forEach( innerJoinObj -> {
+                sb.append(" INNER JOIN ");
+                sb.append(
+                        innerJoinObj.getInnerJoinMapping())
+                        .append(" ")
+                        .append(innerJoinObj.hasConditions() ? innerJoinObj.getInnerJoinConditions().stream().map(value -> " AND "+value).collect(Collectors.joining(" ")): " ");
+            });
         }
         // check WHERE clause
         if (this.addConditions != null && !this.addConditions.isEmpty()) {
@@ -179,7 +216,7 @@ public class FilterQueryGenerator {
         this.orConditions.add(condition);
     }
 
-    protected void addInnerJoin(String innerJoin) {
+    protected void addInnerJoin(InnerJoin innerJoin) {
         this.checkInnerJoin();
         this.innerJoin.add(innerJoin);
     }

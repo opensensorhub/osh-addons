@@ -24,8 +24,13 @@ public class FilterStatsQueryGenerator extends FilterQueryGenerator {
         sb.append(" FROM ").append(this.tableName);
 
         if (this.innerJoin != null && !this.innerJoin.isEmpty()) {
-            sb.append(" INNER JOIN ");
-            sb.append(this.innerJoin.stream().collect(Collectors.joining(" INNER JOIN ")));
+            innerJoin.forEach( innerJoinObj -> {
+                sb.append(" INNER JOIN ");
+                sb.append(
+                        innerJoinObj.getInnerJoinMapping())
+                        .append(" ")
+                        .append(innerJoinObj.hasConditions() ? innerJoinObj.getInnerJoinConditions().stream().map(value -> " AND "+value).collect(Collectors.joining(" ")): " ");
+            });
         }
         // check WHERE clause
         if (this.addConditions != null && !this.addConditions.isEmpty()) {

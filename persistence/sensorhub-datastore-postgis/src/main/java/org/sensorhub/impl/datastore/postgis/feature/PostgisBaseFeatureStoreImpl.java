@@ -97,8 +97,7 @@ public abstract class PostgisBaseFeatureStoreImpl
         super.init(url, dbName, login, password, initScripts);
 
         if(useBatch) {
-            this.setBatchSize(BATCH_SIZE);
-            this.connectionManager.enableBatch(queryBuilder.addOrUpdateByIdQuery());
+            this.connectionManager.enableBatch(BATCH_SIZE, queryBuilder.addOrUpdateByIdQuery());
         }
     }
 
@@ -131,9 +130,7 @@ public abstract class PostgisBaseFeatureStoreImpl
                     throw new DataStoreException("Cannot insert feature " + value.getName());
                 } finally {
                     this.connectionManager.offerBatchJob(batchJob);
-                    if (currentBatchSize.getAndIncrement() >= this.getBatchSize()) {
-                        this.commit();
-                    }
+                    this.connectionManager.commit();
                 }
             } catch (Exception e) {
                 throw new DataStoreException("Cannot insert feature " + value.getName());
@@ -475,7 +472,6 @@ public abstract class PostgisBaseFeatureStoreImpl
                 int rows = preparedStatement.executeUpdate();
                 if (rows > 0) {
                     cache.invalidate(key);
-                    return data;
                 } else {
                     throw new RuntimeException("Cannot remove IFeature " + data.getName());
                 }
@@ -485,6 +481,7 @@ public abstract class PostgisBaseFeatureStoreImpl
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        return data;
     }
 
     @Override

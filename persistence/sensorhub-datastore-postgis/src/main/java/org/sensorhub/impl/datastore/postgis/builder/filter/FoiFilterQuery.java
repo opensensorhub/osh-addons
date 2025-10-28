@@ -25,8 +25,13 @@ import org.vast.util.Asserts;
 import java.util.stream.Collectors;
 
 public class FoiFilterQuery extends BaseFeatureFilterQuery<IFeature, FoiFilter> {
+
     protected FoiFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
         super(tableName, filterQueryGenerator);
+    }
+
+    protected FoiFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        super(tableName, filterQueryGenerator, innerJoin);
     }
 
     @Override
@@ -45,9 +50,11 @@ public class FoiFilterQuery extends BaseFeatureFilterQuery<IFeature, FoiFilter> 
             // create join
             Asserts.checkNotNull(obsTableName, "obsTableName should not be null");
 
-            this.filterQueryGenerator.addInnerJoin(
-                    this.obsTableName + " ON " + this.tableName + ".id = " + this.obsTableName + ".foiid");
-            ObsFilterQuery obsFilterQuery = new ObsFilterQuery(this.obsTableName, filterQueryGenerator);
+            FilterQueryGenerator.InnerJoin innerJoin1 = new FilterQueryGenerator.InnerJoin(
+                    this.obsTableName + " ON " + this.tableName + ".id = " + this.obsTableName + ".foiid"
+            );
+            this.filterQueryGenerator.addInnerJoin(innerJoin1);
+            ObsFilterQuery obsFilterQuery = new ObsFilterQuery(this.obsTableName, filterQueryGenerator,innerJoin1);
             obsFilterQuery.setSysDescTableName(this.sysDescTableName);
             obsFilterQuery.setDataStreamTableName(this.dataStreamTableName);
             obsFilterQuery.setObsTableName(this.obsTableName);
@@ -58,14 +65,17 @@ public class FoiFilterQuery extends BaseFeatureFilterQuery<IFeature, FoiFilter> 
     protected void handleParentFilter(SystemFilter parentFilter) {
         if (parentFilter != null) {
             if (parentFilter.getInternalIDs() != null && !parentFilter.getInternalIDs().isEmpty()) {
-                filterQueryGenerator.addCondition(tableName+".parentId in (" +
+                addCondition(tableName+".parentId in (" +
                         parentFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                         ")");
             }
             if(parentFilter.getUniqueIDs() != null) {
-                filterQueryGenerator.addInnerJoin(this.tableName+ " t2 ON " + this.tableName + ".parentId" + " = t2.id");
+                FilterQueryGenerator.InnerJoin innerJoin1 = new FilterQueryGenerator.InnerJoin(
+                        this.tableName+ " t2 ON " + this.tableName + ".parentId" + " = t2.id"
+                );
+                filterQueryGenerator.addInnerJoin(innerJoin1);
                 for(String uid: parentFilter.getUniqueIDs()) {
-                    filterQueryGenerator.addCondition("t2.data->'properties'->>'uid' = '"+uid+"'");
+                    innerJoin1.addCondition("t2.data->'properties'->>'uid' = '"+uid+"'");
                 }
             }
         }

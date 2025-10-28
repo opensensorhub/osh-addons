@@ -36,6 +36,10 @@ public class BaseFeatureFilterQuery<V extends IFeature,F extends FeatureFilterBa
         super(tableName, filterQueryGenerator);
     }
 
+    protected BaseFeatureFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        super(tableName, filterQueryGenerator, innerJoin);
+    }
+
     public FilterQueryGenerator build(F filter) {
         this.handleInternalIDs(filter.getInternalIDs());
         this.handleValidTimeFilter(filter.getValidTime());
@@ -50,21 +54,22 @@ public class BaseFeatureFilterQuery<V extends IFeature,F extends FeatureFilterBa
             var timeRange = PostgisUtils.getRangeFromTemporal(temporalFilter);
             String sb = this.tableName + ".validTime " +
                     PostgisUtils.getOperator(temporalFilter) + " '[" + timeRange[0] + "," + timeRange[1] + "]'";
-            filterQueryGenerator.addCondition(sb);
+            addCondition(sb);
         }
     }
 
     protected void handleParentFilter(FeatureFilter parentFilter) {
         if (parentFilter != null) {
             if (parentFilter.getInternalIDs() != null && !parentFilter.getInternalIDs().isEmpty()) {
-                filterQueryGenerator.addCondition(tableName+".parentId in (" +
+                addCondition(tableName+".parentId in (" +
                         parentFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                         ")");
             }
             if(parentFilter.getUniqueIDs() != null) {
-                filterQueryGenerator.addInnerJoin(this.tableName+ " t2 ON " + this.tableName + ".parentId" + " = t2.id");
+                FilterQueryGenerator.InnerJoin innerJoin = new FilterQueryGenerator.InnerJoin(this.tableName+ " t2 ON " + this.tableName + ".parentId" + " = t2.id");
+                filterQueryGenerator.addInnerJoin(innerJoin);
                 for(String uid: parentFilter.getUniqueIDs()) {
-                    filterQueryGenerator.addCondition("t2.data->'properties'->>'uid' = '"+uid+"'");
+                    innerJoin.addCondition("t2.data->'properties'->>'uid' = '"+uid+"'");
                 }
             }
         }
@@ -78,7 +83,7 @@ public class BaseFeatureFilterQuery<V extends IFeature,F extends FeatureFilterBa
                 String sb = "(" + tableName + ".data->'properties'->>'description') ~* '(" +
                         fullTextFilter.getKeywords().stream().collect(Collectors.joining("|")) +
                         ")'";
-                filterQueryGenerator.addCondition(sb);
+                addCondition(sb);
             }
         }
     }
@@ -90,7 +95,7 @@ public class BaseFeatureFilterQuery<V extends IFeature,F extends FeatureFilterBa
 
             byte[] geomAsBinary = threadLocalWriter.get().write(geometry);
             sb.append("ST_Intersects(").append(tableName).append(".geometry,'").append(encodeHexString(geomAsBinary)).append("')");
-            filterQueryGenerator.addCondition(sb.toString());
+            addCondition(sb.toString());
         }
     }
 
@@ -111,7 +116,7 @@ public class BaseFeatureFilterQuery<V extends IFeature,F extends FeatureFilterBa
                 }
             }
             sb.append(")");
-            filterQueryGenerator.addCondition(sb.toString());
+            addCondition(sb.toString());
         }
     }
 

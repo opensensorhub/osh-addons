@@ -26,7 +26,11 @@ import java.util.stream.Collectors;
 
 public class CommandStatusFilterQuery extends FilterQuery {
 
-    public CommandStatusFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
+    protected CommandStatusFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        super(tableName, filterQueryGenerator, innerJoin);
+    }
+
+    protected CommandStatusFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
         super(tableName, filterQueryGenerator);
     }
 
@@ -41,7 +45,7 @@ public class CommandStatusFilterQuery extends FilterQuery {
 
     protected void handleReportTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
-            filterQueryGenerator.addCondition(this.tableName+".data->'reportTime' IS NOT NULL");
+            addCondition(this.tableName+".data->'reportTime' IS NOT NULL");
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct(this.tableName+".data->'command@id'");
                 filterQueryGenerator.addDistinct(this.tableName+".data->'reportTime'");
@@ -58,14 +62,14 @@ public class CommandStatusFilterQuery extends FilterQuery {
                         ".data->'reportTime'->>'end')::timestamptz, '[]')" +
                         " && " +
                         "'[" + min + "," + max + "]'::tstzrange";
-                filterQueryGenerator.addCondition(sb);
+                addCondition(sb);
             }
         }
     }
 
     protected void handleExecutionTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
-            filterQueryGenerator.addCondition(this.tableName+".data->'executionTime' IS NOT NULL");
+            addCondition(this.tableName+".data->'executionTime' IS NOT NULL");
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct(this.tableName+".data->'command@id'");
                 filterQueryGenerator.addDistinct(this.tableName+".data->'executionTime'");
@@ -82,14 +86,14 @@ public class CommandStatusFilterQuery extends FilterQuery {
                         ".data->'executionTime'->>'end')::timestamptz, '[]')" +
                         " && " +
                         "'[" + min + "," + max + "]'::tstzrange";
-                filterQueryGenerator.addCondition(sb);
+                addCondition(sb);
             }
         }
     }
 
     protected void handleStatusCodes(Set<ICommandStatus.CommandStatusCode> statusCodes) {
         if(statusCodes != null && !statusCodes.isEmpty()) {
-            filterQueryGenerator.addCondition("("+this.tableName+".data->>'statusCode') in (" +
+            addCondition("("+this.tableName+".data->>'statusCode') in (" +
                     statusCodes.stream().map(name -> "'"+name.name()+"'").collect(Collectors.joining(",")) +
                     ")");
         }
@@ -108,9 +112,11 @@ public class CommandStatusFilterQuery extends FilterQuery {
         if(commandFilter != null) {
             // create join
             Asserts.checkNotNull(this.commandTableName, "Command table name should not be null");
-            this.filterQueryGenerator.addInnerJoin(
-                    this.commandTableName+" ON ("+this.tableName+".data->'command@id'->'id')::bigint = "+this.commandTableName+".id");
-            CommandFilterQuery commandFilterQuery = new CommandFilterQuery(this.commandTableName, filterQueryGenerator);
+            FilterQueryGenerator.InnerJoin innerJoin1 = new FilterQueryGenerator.InnerJoin(
+                    this.commandTableName+" ON ("+this.tableName+".data->'command@id'->'id')::bigint = "+this.commandTableName+".id"
+            );
+            this.filterQueryGenerator.addInnerJoin(innerJoin1);
+            CommandFilterQuery commandFilterQuery = new CommandFilterQuery(this.commandTableName, filterQueryGenerator,innerJoin1);
             commandFilterQuery.setCommandStatusTableName(this.tableName);
             commandFilterQuery.setCommandStreamTableName(this.commandStreamTableName);
             this.filterQueryGenerator = commandFilterQuery.build(commandFilter);

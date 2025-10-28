@@ -8,6 +8,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConnectionManager {
 
@@ -18,6 +19,8 @@ public class ConnectionManager {
     private static HikariDataSource hikariDataSourceInstance = null;
     private ThreadSafeBatchExecutor threadSafeBatchExecutor;
     private  Connection batchConnection;
+    private int batchSize = 100;
+    protected AtomicInteger currentBatchSize = new AtomicInteger(0);
 
     /**
      * Use separate ThreadSafeBatchExecutor to execute batch queries
@@ -33,7 +36,8 @@ public class ConnectionManager {
         this.password = password;
     }
 
-    public void enableBatch(final String query) {
+    public void enableBatch(int batchSize, final String query) {
+        this.batchSize = batchSize;
         this.threadSafeBatchExecutor = new ThreadSafeBatchExecutor(() -> {
             try {
                 Connection connection = getConnection(false);
@@ -135,16 +139,32 @@ public class ConnectionManager {
         }
     }
 
+    public void tryCommit() {
+        if (currentBatchSize.get() >= getBatchSize()) {
+            this.commit();
+            currentBatchSize.getAndSet(0);
+        }
+    }
     public void commit() {
-        if(threadSafeBatchExecutor != null) {
-            threadSafeBatchExecutor.commit();
-        }
         try {
-            if (batchConnection != null && !batchConnection.isClosed()) {
-                batchConnection.commit();
+            if(threadSafeBatchExecutor != null) {
+                threadSafeBatchExecutor.commit();
             }
-        }catch (Exception ex) {
-            throw new IllegalStateException("Cannot commit Batch connection");
+            try {
+                if (batchConnection != null && !batchConnection.isClosed()) {
+                    batchConnection.commit();
+                }
+            }catch (Exception ex) {
+                throw new IllegalStateException("Cannot commit Batch connection");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
+
+
+    }
+
+    public int getBatchSize() {
+        return batchSize;
     }
 }
