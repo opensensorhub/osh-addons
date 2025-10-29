@@ -102,18 +102,60 @@ public abstract class PostgisBaseFeatureStoreImpl
     }
 
     @Override
-    public FeatureKey add(BigId parentID, V feature) throws DataStoreException {
-        long id = idProvider.newInternalID(feature);
-        Instant validInstant;
-        if (feature.getValidTime() != null && feature.getValidTime().begin().getEpochSecond() > MIN_INSTANT.getEpochSecond()) {
-            validInstant = feature.getValidTime().begin();
+    public PostgisFeatureKey add(BigId parentID, V feature) throws DataStoreException {
+        DataStoreUtils.checkFeatureObject(feature);
+        var existingKey = getCurrentVersionKey(feature.getUniqueIdentifier());
+        if (existingKey != null && parentID != null && existingKey.getParentID() != parentID.getIdAsLong())
+            throw new DataStoreException("Feature is already associated to another parent");
+
+        var newKey = generateKey(parentID.getIdAsLong(), existingKey, feature);
+        addOrUpdate(newKey, parentID, feature);
+        return newKey;
+//        FeatureKey fk = new FeatureKey(BigId.fromLong(idScope, id), validInstant.truncatedTo(ChronoUnit.SECONDS));
+//        FeatureKey k = addOrUpdate(fk, parentID, feature);
+//        commit();
+//        return k;
+    /*    DataStoreUtils.checkFeatureObject(feature);
+        checkParentFeatureExists(parentID);
+
+//        var newKey = generateKey(parentID.getIdAsLong(), null, feature);
+//        getParent()
+//        var exists = checkParentFeatureExists(feature.getUniqueIdentifier());
+//        var existingKey = getParent(feature.getUniqueIdentifier());
+//        if (existingKey != null && parentID != null && existingKey.ge != parentID.getIdAsLong())
+//            throw new DataStoreException("Feature is already associated to another parent");
+
+        var existingKey = getCurrentVersionKey(feature.getUniqueIdentifier());
+        if (existingKey != null && parentID != null && existingKey.getParentID() != parentID.getIdAsLong())
+            throw new DataStoreException("Feature is already associated to another parent");
+
+        var newKey = generateKey(parentID.getIdAsLong(), existingKey, feature);
+        addOrUpdate(newKey, parentID, feature);*/
+       // return newKey;
+    }
+
+    protected PostgisFeatureKey generateKey(long parentID, PostgisFeatureKey existingKey, V f) {
+        // use existing IDs if feature is already known
+        // otherwise generate new one
+        BigId internalID;
+        if (existingKey != null) {
+            internalID = existingKey.getInternalID();
+            parentID = existingKey.getParentID();
         } else {
-            validInstant = Instant.MIN;
+            internalID = BigId.fromLong(idScope, idProvider.newInternalID(f));
         }
-        FeatureKey fk = new FeatureKey(BigId.fromLong(idScope, id), validInstant.truncatedTo(ChronoUnit.SECONDS));
-        FeatureKey k = addOrUpdate(fk, parentID, feature);
-        commit();
-        return k;
+
+        // get valid start time from feature object
+        // or use default value if no valid time is set
+        Instant validStartTime;
+        if (f.getValidTime() != null && f.getValidTime().begin().getEpochSecond() > MIN_INSTANT.getEpochSecond()) {
+            validStartTime = f.getValidTime().begin();
+        } else {
+            validStartTime = Instant.MIN;
+        }
+
+        // generate full key
+        return new PostgisFeatureKey(parentID, internalID, validStartTime);
     }
 
     public FeatureKey addOrUpdate(FeatureKey featureKey, BigId parentID, V value) throws DataStoreException {
@@ -123,7 +165,7 @@ public abstract class PostgisBaseFeatureStoreImpl
                 BatchJob batchJob = this.connectionManager.getBatchJob();
                  try {
                      PreparedStatement preparedStatement = batchJob.getPreparedStatement();
-                    fillAddOrUpdateStatement(featureKey, parentID, value, preparedStatement);
+                     fillAddOrUpdateStatement(featureKey, parentID, value, preparedStatement);
                      preparedStatement.addBatch();
                     cache.invalidate(featureKey);
                 } catch (Exception e) {
@@ -198,12 +240,13 @@ public abstract class PostgisBaseFeatureStoreImpl
     private Entry<FeatureKey, V> resultSetToEntry(ResultSet resultSet, Set<VF> fields) {
         try {
             long id = resultSet.getLong("id");
+            long parentId = resultSet.getLong("parentid");
             String data = resultSet.getString("data");
             V feature = this.readFeature(data);
 
             PGobject pgRange = (PGobject) resultSet.getObject(String.valueOf(VALID_TIME));
             Instant[] validTimeInstant = PostgisUtils.getInstantFromPGObject(pgRange);
-            FeatureKey featureKey = new FeatureKey(BigId.fromLong(idScope, id), validTimeInstant[0]);
+            PostgisFeatureKey featureKey = new PostgisFeatureKey(parentId,BigId.fromLong(idScope, id), validTimeInstant[0]);
             return Map.entry(featureKey, feature);
         } catch (Exception ex) {
             throw new RuntimeException("Cannot parse resultSet to Feature", ex);
@@ -288,7 +331,7 @@ public abstract class PostgisBaseFeatureStoreImpl
     }
 
     @Override
-    public FeatureKey getCurrentVersionKey(BigId internalID) {
+    public PostgisFeatureKey getCurrentVersionKey(BigId internalID) {
         try (Connection connection = connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 String query = queryBuilder.selectLastVersionByIdQuery(internalID.getIdAsLong(), Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
@@ -296,7 +339,8 @@ public abstract class PostgisBaseFeatureStoreImpl
                     if (resultSet.next()) {
                         long id = resultSet.getLong("id");
                         PGobject pgRange = (PGobject) resultSet.getObject("validTime");
-                        return new FeatureKey(BigId.fromLong(idScope, id), PostgisUtils.getInstantFromPGObject(pgRange)[0]);
+                        long parentid = resultSet.getLong("parentid");
+                        return new PostgisFeatureKey(parentid,BigId.fromLong(idScope, id), PostgisUtils.getInstantFromPGObject(pgRange)[0]);
                     }
                 }
             }
@@ -307,16 +351,16 @@ public abstract class PostgisBaseFeatureStoreImpl
     }
 
     @Override
-    public FeatureKey getCurrentVersionKey(String uid) {
+    public PostgisFeatureKey getCurrentVersionKey(String uid) {
         try (Connection connection = connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 String query = queryBuilder.selectLastVersionByUidQuery(uid, Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
                 try (ResultSet resultSet = statement.executeQuery(query)) {
                     if (resultSet.next()) {
                         long id = resultSet.getLong("id");
-
                         PGobject pgRange = (PGobject) resultSet.getObject("validTime");
-                        return new FeatureKey(BigId.fromLong(idScope, id), PostgisUtils.getInstantFromPGObject(pgRange)[1]);
+                        long parentId = resultSet.getLong("parentid");
+                        return new PostgisFeatureKey(parentId,BigId.fromLong(idScope, id), PostgisUtils.getInstantFromPGObject(pgRange)[1]);
                     }
                 }
             }
@@ -466,14 +510,13 @@ public abstract class PostgisBaseFeatureStoreImpl
         try (Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.removeByPrimaryKeyQuery())) {
                 preparedStatement.setLong(1, key.getInternalID().getIdAsLong());
-
                 PGobject pgValidTimeRange = this.createPGobjectValidTimeRange(key);
                 preparedStatement.setObject(2, pgValidTimeRange);
                 int rows = preparedStatement.executeUpdate();
                 if (rows > 0) {
                     cache.invalidate(key);
                 } else {
-                    throw new RuntimeException("Cannot remove IFeature " + data.getName());
+                    return null;
                 }
             } catch (Exception ex) {
                 throw ex;

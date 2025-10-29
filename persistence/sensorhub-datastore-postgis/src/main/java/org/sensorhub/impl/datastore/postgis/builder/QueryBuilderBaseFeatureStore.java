@@ -85,14 +85,14 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
     }
 
     public String selectLastVersionByUidQuery(String uid, String timestamp) {
-        return "SELECT DISTINCT ON (id) id,validTime " +
+        return "SELECT DISTINCT ON (id) id,validTime,parentid " +
                 "FROM " + this.getStoreTableName() + " WHERE (data->'properties'->>'uid') = '" + uid + "' AND " +
                 this.getStoreTableName()+".validTime @> '" + timestamp + "'::timestamp "+
                 "order by id, lower(validTime) DESC";
     }
 
     public String selectLastVersionByIdQuery(long id, String timestamp) {
-        return "SELECT DISTINCT ON (id) id,validTime "+
+        return "SELECT DISTINCT ON (id) id,validTime,parentid "+
                 "FROM "+this.getStoreTableName()+" WHERE id = "+id+" AND " +
                 this.getStoreTableName()+".validTime @> '" + timestamp + "'::timestamp "+
                 "order by id, lower(validTime) DESC";

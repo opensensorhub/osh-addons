@@ -62,10 +62,10 @@ public class PostgisFoiStoreImpl extends
 
     //DEBUG
     @Override
-    public FeatureKey getCurrentVersionKey(BigId internalID)
+    public PostgisFeatureKey getCurrentVersionKey(BigId internalID)
     {
         var e = getCurrentVersionEntry(internalID);
-        return e != null ? e.getKey() : null;
+        return e != null ? (PostgisFeatureKey)e.getKey() : null;
     }
 
     @Override
