@@ -111,7 +111,7 @@ public abstract class PostgisStore<T extends QueryBuilder> {
             }
         };
 
-        t.scheduleAtFixedRate(timerTask, 0,autoCommitPeriod * 1000L);
+        t.scheduleAtFixedRate(timerTask, 0,autoCommitPeriod);
     }
     public void backup(OutputStream is) throws IOException {
         try(Connection connection = this.connectionManager.getConnection()) {

@@ -67,7 +67,7 @@ public abstract class PostgisBaseFeatureStoreImpl
     private static final Logger logger = LoggerFactory.getLogger(PostgisBaseFeatureStoreImpl.class);
     protected final Lock lock = new ReentrantLock();
     public ThreadLocal<WKBWriter> threadLocalWriter = ThreadLocal.withInitial(WKBWriter::new);
-    public static final int BATCH_SIZE = 2000;
+    public static final int BATCH_SIZE = 500;
     private PostgisObsStoreImpl obsStore;
 
     protected volatile Cache<FeatureKey, V> cache = CacheBuilder.newBuilder()
@@ -103,35 +103,14 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     @Override
     public PostgisFeatureKey add(BigId parentID, V feature) throws DataStoreException {
-        DataStoreUtils.checkFeatureObject(feature);
         var existingKey = getCurrentVersionKey(feature.getUniqueIdentifier());
         if (existingKey != null && parentID != null && existingKey.getParentID() != parentID.getIdAsLong())
             throw new DataStoreException("Feature is already associated to another parent");
+
 
         var newKey = generateKey(parentID.getIdAsLong(), existingKey, feature);
         addOrUpdate(newKey, parentID, feature);
         return newKey;
-//        FeatureKey fk = new FeatureKey(BigId.fromLong(idScope, id), validInstant.truncatedTo(ChronoUnit.SECONDS));
-//        FeatureKey k = addOrUpdate(fk, parentID, feature);
-//        commit();
-//        return k;
-    /*    DataStoreUtils.checkFeatureObject(feature);
-        checkParentFeatureExists(parentID);
-
-//        var newKey = generateKey(parentID.getIdAsLong(), null, feature);
-//        getParent()
-//        var exists = checkParentFeatureExists(feature.getUniqueIdentifier());
-//        var existingKey = getParent(feature.getUniqueIdentifier());
-//        if (existingKey != null && parentID != null && existingKey.ge != parentID.getIdAsLong())
-//            throw new DataStoreException("Feature is already associated to another parent");
-
-        var existingKey = getCurrentVersionKey(feature.getUniqueIdentifier());
-        if (existingKey != null && parentID != null && existingKey.getParentID() != parentID.getIdAsLong())
-            throw new DataStoreException("Feature is already associated to another parent");
-
-        var newKey = generateKey(parentID.getIdAsLong(), existingKey, feature);
-        addOrUpdate(newKey, parentID, feature);*/
-       // return newKey;
     }
 
     protected PostgisFeatureKey generateKey(long parentID, PostgisFeatureKey existingKey, V f) {
@@ -159,7 +138,6 @@ public abstract class PostgisBaseFeatureStoreImpl
     }
 
     public FeatureKey addOrUpdate(FeatureKey featureKey, BigId parentID, V value) throws DataStoreException {
-        DataStoreUtils.checkFeatureObject(value);
         if (useBatch) {
             try {
                 BatchJob batchJob = this.connectionManager.getBatchJob();
@@ -167,7 +145,7 @@ public abstract class PostgisBaseFeatureStoreImpl
                      PreparedStatement preparedStatement = batchJob.getPreparedStatement();
                      fillAddOrUpdateStatement(featureKey, parentID, value, preparedStatement);
                      preparedStatement.addBatch();
-                    cache.invalidate(featureKey);
+                     cache.put(featureKey, value);
                 } catch (Exception e) {
                     throw new DataStoreException("Cannot insert feature " + value.getName());
                 } finally {
@@ -193,33 +171,35 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     private void fillAddOrUpdateStatement(FeatureKey featureKey, BigId parentID, V value, PreparedStatement preparedStatement) throws SQLException, IOException {
         preparedStatement.setLong(1, featureKey.getInternalID().getIdAsLong());
-        preparedStatement.setString(6, value.getUniqueIdentifier());
         // statements for INSERT - parentId
-        if (parentID != null && parentID != BigId.NONE) {
-            preparedStatement.setLong(2, parentID.getIdAsLong());
-        } else {
-            preparedStatement.setLong(2, 0);
+        var parentId = 0L;
+        if(featureKey instanceof PostgisFeatureKey) {
+            parentId = ((PostgisFeatureKey) featureKey).getParentID();
+        } else if (parentID != null && parentID != BigId.NONE) {
+            parentId = parentID.getIdAsLong();
         }
+
+        preparedStatement.setLong(2, parentId);
         if (value.getGeometry() != null) {
             Geometry geometry = PostgisUtils.toJTSGeometry(value.getGeometry());
             byte[] geom = threadLocalWriter.get().write(geometry);
             preparedStatement.setBytes(3, geom); // insert
-            preparedStatement.setBytes(7, geom); // update
+            preparedStatement.setBytes(6, geom); // update
         } else {
             preparedStatement.setNull(3, Types.LONGVARBINARY);
-            preparedStatement.setNull(7, Types.LONGVARBINARY);
+            preparedStatement.setNull(6, Types.LONGVARBINARY);
         }
 
         PGobject pgValidTimeRange = this.createPGobjectValidTimeRange(featureKey, value);
         preparedStatement.setObject(4, pgValidTimeRange);
-        preparedStatement.setObject(8, pgValidTimeRange);
+        preparedStatement.setObject(7, pgValidTimeRange);
 
         PGobject jsonObject = new PGobject();
         jsonObject.setType("json");
         jsonObject.setValue(this.writeFeature(value));
 
         preparedStatement.setObject(5, jsonObject);
-        preparedStatement.setObject(9, jsonObject);
+        preparedStatement.setObject(8, jsonObject);
     }
 
     public Stream<Entry<FeatureKey, V>> selectEntries(F filter, Set<VF> fields) {
@@ -491,7 +471,15 @@ public abstract class PostgisBaseFeatureStoreImpl
      */
     public V put(FeatureKey featureKey, V value) {
         try {
-            this.addOrUpdate(featureKey, null, value);
+            var fk = featureKey;
+            // TODO: need to implements other subclass of feature
+            if(featureKey instanceof PostgisFeatureKey) {
+                var parentId = ((PostgisFeatureKey)featureKey).getParentID();
+                this.addOrUpdate(featureKey, BigId.fromLong(idScope,parentId), value);
+            } else {
+                this.addOrUpdate(featureKey, null, value);
+            }
+
             return value;
         } catch (DataStoreException e) {
             throw new RuntimeException(e);
