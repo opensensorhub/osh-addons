@@ -51,8 +51,8 @@ import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.*;
 
 public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> implements IObsStore {
     private static final Logger logger = LoggerFactory.getLogger(PostgisObsStoreImpl.class);
-    public static final int BATCH_SIZE = 2000;
-    public static final int STREAM_FETCH_SIZE = 10_000;
+    public static final int BATCH_SIZE = 20_000;
+    public static final int STREAM_FETCH_SIZE = 20_000;
 
     private PostgisDataStreamStoreImpl dataStreamStore;
     private ISystemDescStore systemDescStore;
