@@ -64,7 +64,13 @@ public class QueryBuilderObsStore extends QueryBuilder {
     }
 
     public String insertObsQuery() {
-        return "INSERT INTO "+this.getStoreTableName()+" ("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (?,?,?,?,?)";
+        return "INSERT INTO "+this.getStoreTableName()+" " +
+                "("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (?,?,?,?,?) " +
+                "ON CONFLICT (dataStreamID, foiID, phenomenonTime, resultTime) DO UPDATE SET id = "+this.getStoreTableName()+".id";
+    }
+
+    public String createUniqueConstraint() {
+        return "CREATE UNIQUE INDEX  "+this.getStoreTableName()+"_unique_constraint on "+this.getStoreTableName()+" (dataStreamID, foiID, phenomenonTime, resultTime)";
     }
 
     public String updateByIdQuery() {
