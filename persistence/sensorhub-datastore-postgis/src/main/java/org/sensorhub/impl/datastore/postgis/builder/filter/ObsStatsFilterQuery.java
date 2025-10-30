@@ -14,14 +14,11 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.filter;
 
-import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.vast.util.Asserts;
-
-import java.util.stream.Collectors;
 
 import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.FOI_ID;
 
@@ -62,7 +59,7 @@ public class ObsStatsFilterQuery extends FilterQuery {
         this.handleDataStreamFilter(filter.getDataStreamFilter());
         this.handleFoiFilter(filter.getFoiFilter());
         this.handlePhenomenonTimeFilter(filter.getPhenomenonTime());
-        this.handleResulTimeFilter(filter.getResultTime());
+        this.handleResultTimeFilter(filter.getResultTime());
 
         return this.filterQueryGenerator;
     }
@@ -112,7 +109,7 @@ public class ObsStatsFilterQuery extends FilterQuery {
         }
     }
 
-    protected void handleResulTimeFilter(TemporalFilter temporalFilter) {
+    protected void handleResultTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct(this.tableName + ".datastreamid");

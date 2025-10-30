@@ -20,6 +20,8 @@ import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesCommandS
 
 import java.util.Set;
 
+import static org.sensorhub.api.datastore.command.ICommandStatusStore.CommandStatusField.COMMAND_ID;
+
 public class QueryBuilderCommandStatusStore extends QueryBuilder {
     public final static String COMMAND_TABLE_NAME = "commandstatus";
     public QueryBuilderCommandStatusStore() {
@@ -35,12 +37,13 @@ public class QueryBuilderCommandStatusStore extends QueryBuilder {
         return "CREATE TABLE "+this.getStoreTableName()+
                 " (" +
                 "id BIGSERIAL PRIMARY KEY,"+
+                COMMAND_ID + " bigint, "+
                 "data jsonb"+
                 ")";
     }
 
     public String insertCommandQuery() {
-        return "INSERT INTO "+this.getStoreTableName()+" (data) VALUES (?)";
+        return "INSERT INTO "+this.getStoreTableName()+" (commandid, data) VALUES (?, ?)";
     }
 
     public String updateByIdQuery() {
