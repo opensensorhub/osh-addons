@@ -56,6 +56,11 @@ public class TestPostgisFeatureStore extends AbstractTestFeatureStore<PostgisFea
     }
 
     protected void forceReadBackFromStorage() {
+        try {
+            featureStore.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         featureStore.clearCache();
     }
 

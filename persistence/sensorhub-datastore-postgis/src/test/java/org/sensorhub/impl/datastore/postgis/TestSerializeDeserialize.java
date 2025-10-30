@@ -20,6 +20,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.Point;
+import net.opengis.gml.v32.TimeUnit;
 import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataBlock;
@@ -82,6 +83,7 @@ public class TestSerializeDeserialize {
             .disableHtmlEscaping()
             .serializeSpecialFloatingPointValues()
             .registerTypeAdapter(BigId.class, new BigIdTypeAdapter())
+            .registerTypeAdapter(Instant.class, new DataStoreFiltersTypeAdapterFactory.InstantTypeAdapter())
             .setFieldNamingStrategy(new DataStoreFiltersTypeAdapterFactory.FieldNamingStrategy())
             .registerTypeAdapterFactory(new RuntimeTypeAdapterFactory<>(Object.class, "objClass"))
             .setExclusionStrategies(new DataStreamExclusionStrategy());
@@ -478,30 +480,6 @@ public class TestSerializeDeserialize {
     }
 
     @Test
-    public void testSerializeTimeExtentUsingGson() {
-        Gson gson = new GsonBuilder().create();
-        TimeExtent timeExtent = TimeExtent.period(Instant.MIN, Instant.MAX);
-
-        String json = gson.toJson(timeExtent, TimeExtent.class);
-        System.out.println(json);
-
-        timeExtent = TimeExtent.currentTime();
-
-        json = gson.toJson(timeExtent, TimeExtent.class);
-        System.out.println(json);
-
-        timeExtent = TimeExtent.beginAt(Instant.now());
-
-        json = gson.toJson(timeExtent, TimeExtent.class);
-        System.out.println(json);
-
-        timeExtent = TimeExtent.endAt(Instant.now().plus(100, ChronoUnit.DAYS));
-
-        json = gson.toJson(timeExtent, TimeExtent.class);
-        System.out.println(json);
-    }
-
-    @Test
     public void testSerializeTimeExtentJsonWriterReader() throws IOException {
         TimeExtent timeExtent;
 
@@ -573,11 +551,11 @@ public class TestSerializeDeserialize {
                 "\"label\": \"Sampling Time\", \"definition\": \"http://www.opengis.net/def/property/OGC/0/SamplingTime\", " +
                 "\"referenceFrame\": \"http://www.opengis.net/def/trs/BIPM/0/UTC\"}, {\"uom\": {\"code\": \"mbar\"}," +
                 " \"name\": \"pressure\", \"type\": \"Quantity\", \"label\": \"Barometric Pressure\", \"definition\": " +
-                "\"http://sensorml.com/ont/swe/property/BarometricPressure\"}, {\"uom\": {\"code\": \"degC\"}, \"name\": " +
+                "\"http://sensorml.com/ont/swe/property/BarometricPressure\"}, {\"uom\": {\"code\": \"C\"}, \"name\": " +
                 "\"temperature\", \"type\": \"Quantity\", \"label\": \"Air Temperature\", \"definition\":" +
                 " \"http://sensorml.com/ont/swe/property/Temperature\"}, {\"uom\": {\"code\": \"%\"}, \"name\":" +
                 " \"relHumidity\", \"type\": \"Quantity\", \"label\": \" Relative Humidity\", \"definition\": " +
-                "\"http://sensorml.com/ont/swe/property/RelativeHumidity\"}, {\"uom\": {\"code\": \"tips\"}, " +
+                "\"http://sensorml.com/ont/swe/property/RelativeHumidity\"}, {\"uom\": {\"code\": \"%\"}, " +
                 "\"name\": \"rainAccum\", \"type\": \"Quantity\", \"label\": \"Rain Accumulation\", \"definition\": " +
                 "\"http://sensorml.com/ont/swe/property/RainAccumulation\"}, {\"uom\": {\"code\": \"m/s\"}, \"name\":" +
                 " \"windSpeed\", \"type\": \"Quantity\", \"label\": \"Wind Speed\", \"definition\": " +
