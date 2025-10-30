@@ -111,7 +111,7 @@ public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImp
         checkSelectedEntries(resultStream, expectedResults, filter);
 
         // invalid IDs
-        var ids = BigId.fromLongs(DATABASE_NUM, 5, 12, 53, 76);
+        var ids = BigId.fromLongs(DATABASE_NUM, 500, 120, 530, 760);
         filter = new ObsFilter.Builder()
                 .withInternalIDs(ids)
                 .build();

@@ -54,7 +54,7 @@ import java.util.List;
 import static org.sensorhub.impl.datastore.postgis.utils.PostgisUtils.MAX_INSTANT;
 import static org.sensorhub.impl.datastore.postgis.utils.PostgisUtils.MIN_INSTANT;
 
-public abstract class   SerializerUtils {
+public abstract class SerializerUtils {
 
     static final GsonBuilder builder = new GsonBuilder()
             .setLenient()

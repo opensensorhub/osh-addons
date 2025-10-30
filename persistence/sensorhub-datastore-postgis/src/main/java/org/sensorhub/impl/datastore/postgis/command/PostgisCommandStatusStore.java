@@ -65,7 +65,16 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
 
     @Override
     public Stream<Entry<BigId, ICommandStatus>> selectEntries(CommandStatusFilter filter, Set<CommandStatusField> fields) {
-        String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
+        Set<CommandStatusField> hashSet;
+
+        if (fields != null) {
+            hashSet = new HashSet<>(fields);
+            hashSet.add(COMMAND_ID);
+        } else {
+            hashSet = null;
+        }
+
+        String queryStr = queryBuilder.createSelectEntriesQuery(filter, hashSet);
         if(logger.isDebugEnabled()) {
             logger.debug(queryStr);
         }
@@ -84,8 +93,8 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
             BigId id = BigId.fromLong(idScope, resultSet.getLong("id"));
             boolean noFields = fields != null && !fields.isEmpty();
             BigId commandStreamId = null;
-            if (!noFields || fields.contains("commandstreamid")) {
-                long commandIdAsLong = resultSet.getLong("commandstreamid");
+            if (!noFields || fields.contains(COMMAND_ID)) {
+                long commandIdAsLong = resultSet.getLong(String.valueOf(COMMAND_ID));
                 if (!resultSet.wasNull()) {
                     var commandId = BigId.fromLong(idScope, commandIdAsLong);
                     commandStreamId = commandStore.get(commandId).getCommandStreamID();
@@ -133,11 +142,13 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
                     objectAsJson = SerializerUtils.writeICommandStatusToJson(rec);
                 }
 
+                preparedStatement.setLong(1, rec.getCommandID().getIdAsLong());
+
                 PGobject jsonObject = new PGobject();
                 jsonObject.setType("json");
                 jsonObject.setValue(objectAsJson);
 
-                preparedStatement.setObject(1, jsonObject);
+                preparedStatement.setObject(2, jsonObject);
 
                 int rows = preparedStatement.executeUpdate();
                 if (rows > 0) {
