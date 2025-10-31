@@ -78,6 +78,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
         linkTo(commandStreamStore);
         linkTo(commandStatusStore);
     }
+
     @Override
     public Stream<Entry<BigId, ICommandData>> selectEntries(CommandFilter filter, Set<CommandField> fields) {
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);

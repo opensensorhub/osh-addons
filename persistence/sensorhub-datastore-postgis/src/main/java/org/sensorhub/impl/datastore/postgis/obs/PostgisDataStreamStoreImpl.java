@@ -26,6 +26,7 @@ import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
+import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.obs.DataStreamInfoWrapper;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.PostgisStore;
@@ -74,6 +75,21 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
                 queryBuilder.createTrigramExtensionQuery(),
                 queryBuilder.createTrigramDescriptionFullTextIndexQuery()
         });
+    }
+
+    @Override
+    protected void initIdProvider() {
+        // create ID provider
+        switch (idProviderType)
+        {
+            case UID_HASH:
+                idProvider = DataStoreUtils.getDataStreamHashIdProvider(741532149);
+                break;
+
+            default:
+            case SEQUENTIAL:
+                super.initIdProvider();
+        }
     }
 
     protected class DataStreamInfoWithTimeRanges extends DataStreamInfoWrapper
