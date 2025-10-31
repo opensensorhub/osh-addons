@@ -22,6 +22,7 @@ import org.locationtech.jts.io.WKBWriter;
 import org.postgresql.util.PGobject;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.DataStoreException;
+import org.sensorhub.api.datastore.IdProvider;
 import org.sensorhub.api.datastore.feature.FeatureFilterBase;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
@@ -98,6 +99,21 @@ public abstract class PostgisBaseFeatureStoreImpl
 
         if(useBatch) {
             this.connectionManager.enableBatch(BATCH_SIZE, queryBuilder.addOrUpdateByIdQuery());
+        }
+    }
+
+    @Override
+    protected void initIdProvider() {
+        // create ID provider
+        switch (idProviderType)
+        {
+            case UID_HASH:
+                idProvider = DataStoreUtils.getFeatureHashIdProvider(212158449);
+                break;
+
+            default:
+            case SEQUENTIAL:
+                super.initIdProvider();
         }
     }
 

@@ -108,7 +108,7 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
     }
 
     public String removeByPrimaryKeyQuery() {
-        return "DELETE FROM "+this.getStoreTableName()+" WHERE id = ? AND "+this.getStoreTableName()+".validTime @> ?";
+        return "DELETE FROM "+this.getStoreTableName()+" WHERE id = ? AND "+this.getStoreTableName()+".validTime <@ ?";
     }
 
     public String createUidUniqueIndexQuery() {

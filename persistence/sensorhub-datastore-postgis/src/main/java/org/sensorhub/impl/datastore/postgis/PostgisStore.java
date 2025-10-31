@@ -26,6 +26,7 @@ import org.sensorhub.api.datastore.obs.IDataStreamStore;
 import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.procedure.IProcedureStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
+import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilder;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.slf4j.Logger;
@@ -71,27 +72,35 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     }
 
     private void initStore(String[] initScripts) {
+
         try (Connection connection = this.connectionManager.getConnection()) {
             if (!PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
                 // create table
                 PostgisUtils.executeQueries(connection, initScripts);
             }
             logger.info("Initialized store '{}'", queryBuilder.getStoreTableName());
-            try(Statement statement = connection.createStatement()) {
-                try(ResultSet resultSet = statement.executeQuery(queryBuilder.selectLastIdQuery())) {
-                    if (resultSet.next()) {
-                        lastId = new AtomicLong(resultSet.getLong("id"));
-                    }
-                    idProvider = (obj) -> lastId.incrementAndGet();
-                }
-            }
-
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
+        this.initIdProvider();
         if(this.useBatch) {
             this.initAutoCommitTask();
+        }
+    }
+    protected void initIdProvider() {
+        try (Connection connection = this.connectionManager.getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                try (ResultSet resultSet = statement.executeQuery(queryBuilder.selectLastIdQuery())) {
+                    if (resultSet.next()) {
+                        lastId = new AtomicLong(resultSet.getLong("id"));
+                    }
+                    // Default SEQUENTIAL
+                    idProvider = (obj) -> lastId.incrementAndGet();
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
     protected void initAutoCommitTask() {

@@ -26,6 +26,7 @@ import org.sensorhub.api.datastore.command.CommandStreamFilter;
 import org.sensorhub.api.datastore.command.CommandStreamKey;
 import org.sensorhub.api.datastore.command.ICommandStreamStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
+import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
@@ -73,6 +74,21 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
                 queryBuilder.createTrigramExtensionQuery(),
                 queryBuilder.createTrigramDescriptionFullTextIndexQuery()
         });
+    }
+
+    @Override
+    protected void initIdProvider() {
+        // create ID provider
+        switch (idProviderType)
+        {
+            case UID_HASH:
+                idProvider = DataStoreUtils.getCommandStreamHashIdProvider(784122258);
+                break;
+
+            default:
+            case SEQUENTIAL:
+                super.initIdProvider();
+        }
     }
 
     @Override
