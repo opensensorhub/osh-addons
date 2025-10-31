@@ -19,6 +19,7 @@ import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.datastore.system.SystemFilter;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.vast.util.Asserts;
 
 import java.util.SortedSet;
@@ -29,6 +30,10 @@ public class DataStreamFilterQuery extends FilterQuery {
 
     public DataStreamFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
         super(tableName, filterQueryGenerator);
+    }
+
+    protected DataStreamFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        super(tableName, filterQueryGenerator, innerJoin);
     }
 
     public FilterQueryGenerator build(DataStreamFilter filter) {
@@ -43,6 +48,7 @@ public class DataStreamFilterQuery extends FilterQuery {
         this.handleSystemFilter(filter.getSystemFilter());
         this.handleObsFilter(filter.getObservationFilter());
         this.handleObservedPropertiesFilter(filter.getObservedProperties());
+
         return this.filterQueryGenerator;
     }
 
@@ -52,7 +58,7 @@ public class DataStreamFilterQuery extends FilterQuery {
 
     protected void handleOutputNames(SortedSet<String> names) {
         if (names != null && !names.isEmpty()) {
-            filterQueryGenerator.addCondition("("+tableName+".data->>'outputName') in (" +
+            addCondition("("+tableName+".data->>'outputName') in (" +
                     names.stream().map(name -> "'" + name + "'").collect(Collectors.joining(",")) +
                     ")");
         }
@@ -60,7 +66,7 @@ public class DataStreamFilterQuery extends FilterQuery {
 
     protected void handleValidTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
-            filterQueryGenerator.addCondition(tableName+".data->'validTime'->'begin' IS NOT NULL");
+            addCondition(tableName+".data->'validTime'->'begin' IS NOT NULL");
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct("("+tableName+".data->>'name')");
                 filterQueryGenerator.addDistinct("("+tableName+".data->'system@id'->'internalID'->'id')::bigint");
@@ -68,27 +74,26 @@ public class DataStreamFilterQuery extends FilterQuery {
                 filterQueryGenerator.addOrderBy("("+tableName+".data->'system@id'->'internalID'->'id')::bigint");
                 filterQueryGenerator.addOrderBy("("+tableName+".data->'validTime'->>'end')::timestamptz DESC ");
             } else {
-                String min = checkAndGetValidInstant(temporalFilter.getMin());
-                String max = checkAndGetValidInstant(temporalFilter.getMax());
+                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
                 String sb = "tstzrange((" +
                         tableName +
                         ".data->'validTime'->>'begin')::timestamptz,(" +
                         tableName +
                         ".data->'validTime'->>'end')::timestamptz)" +
-                        " && " +
+                        " "+PostgisUtils.getOperator(temporalFilter)+" " +
                         "'[" + min + "," + max + "]'::tstzrange";
-                filterQueryGenerator.addCondition(sb);
+                addCondition(sb);
             }
         }
     }
 
     protected void handleFullTextFilter(FullTextFilter fullTextFilter) {
         if (fullTextFilter != null) {
-            String sb = "(" + tableName + ".data->'recordSchema'->>'description') ~* '(" +
+            addCondition( "(" + tableName + ".data->'recordSchema'->>'description') ~* '(" +
                     fullTextFilter.getKeywords().stream().collect(Collectors.joining("|")) +
-                    ")'";
-            filterQueryGenerator.addCondition(sb);
+                    ")'");
         }
     }
 
@@ -136,7 +141,7 @@ public class DataStreamFilterQuery extends FilterQuery {
                         }
                     }
                     sb.append(")");
-                    filterQueryGenerator.addCondition(sb.toString());
+                    addCondition(sb.toString());
                 }
 
                 // handle internal IDS
@@ -144,7 +149,7 @@ public class DataStreamFilterQuery extends FilterQuery {
                     String sb = "(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint in (" +
                             systemFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                             ")";
-                    filterQueryGenerator.addCondition(sb);
+                    addCondition(sb);
                 }
             }
             if (systemFilter.getParentFilter() != null || systemFilter.getProcedureFilter() != null
@@ -176,7 +181,7 @@ public class DataStreamFilterQuery extends FilterQuery {
                 first = false;
             }
             sb.append(")')");
-            filterQueryGenerator.addCondition(sb.toString());
+            addCondition(sb.toString());
         }
     }
 

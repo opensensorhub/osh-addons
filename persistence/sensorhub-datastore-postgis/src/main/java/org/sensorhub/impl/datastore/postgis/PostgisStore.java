@@ -14,7 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis;
 
-import com.zaxxer.hikari.HikariDataSource;
+import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.IdProvider;
 import org.sensorhub.api.datastore.command.ICommandStatusStore;
 import org.sensorhub.api.datastore.command.ICommandStore;
@@ -35,41 +35,43 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.*;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public abstract class PostgisStore<T extends QueryBuilder> {
     private static final Logger logger = LoggerFactory.getLogger(PostgisStore.class);
 
-    protected HikariDataSource hikariDataSource;
-
+    protected ConnectionManager connectionManager;
     protected T queryBuilder;
-
     public int idScope;
-
     public IdProviderType idProviderType;
-
-    protected Connection batchConnection;
-    protected PreparedStatement batchPreparedStatement;
-
     protected  IdProvider idProvider;
-
     protected AtomicLong lastId = new AtomicLong(0);
+    private TimerTask timerTask;
 
-    protected PostgisStore(int idScope, IdProviderType dsIdProviderType, T queryBuilder) {
+    protected boolean useBatch;
+    private long autoCommitPeriod = 3600*1000L;
+    public static final int STREAM_FETCH_SIZE = 1000;
+    protected ReentrantLock batchLock = new ReentrantLock();
+
+    protected PostgisStore(int idScope, IdProviderType dsIdProviderType, T queryBuilder, boolean useBatch) {
         this.idProviderType = dsIdProviderType;
         this.idScope = idScope;
         this.queryBuilder = queryBuilder;
+        this.useBatch = useBatch;
     }
 
     protected void init(String url, String dbName, String login, String password, String[] initScripts) {
-        this.hikariDataSource = PostgisUtils.getHikariDataSourceInstance(url, dbName, login, password);
-        batchConnection = PostgisUtils.getConnection(url, dbName, login, password);
-        try {
-            batchConnection.setAutoCommit(true);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        try (Connection connection = hikariDataSource.getConnection()) {
+        this.connectionManager = new ConnectionManager(url, dbName, login, password);
+        this.initStore(initScripts);
+    }
+
+    private void initStore(String[] initScripts) {
+        try (Connection connection = this.connectionManager.getConnection()) {
             if (!PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
                 // create table
                 PostgisUtils.executeQueries(connection, initScripts);
@@ -87,10 +89,32 @@ public abstract class PostgisStore<T extends QueryBuilder> {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-    }
 
+        if(this.useBatch) {
+            this.initAutoCommitTask();
+        }
+    }
+    protected void initAutoCommitTask() {
+        if(timerTask != null) {
+            timerTask.cancel();
+        }
+
+        Timer t = new Timer();
+        timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    commit();
+                } catch (DataStoreException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+
+        t.scheduleAtFixedRate(timerTask, 0,autoCommitPeriod);
+    }
     public void backup(OutputStream is) throws IOException {
-        try(Connection connection = this.hikariDataSource.getConnection()) {
+        try(Connection connection = this.connectionManager.getConnection()) {
             if (PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
                 // cloning table to _backup
                 PostgisUtils.executeQueries(connection, new String[]{
@@ -103,7 +127,7 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     }
 
     public void restore(InputStream os) throws IOException {
-        try(Connection connection = this.hikariDataSource.getConnection()) {
+        try(Connection connection = this.connectionManager.getConnection()) {
             if (PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName() + "_backup")) {
                 // restoring table
                 PostgisUtils.executeQueries(connection, new String[]{
@@ -117,7 +141,7 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     }
 
     public void clear() {
-        try(Connection connection = this.hikariDataSource.getConnection()) {
+        try(Connection connection = this.connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 statement.execute(queryBuilder.clearQuery());
             }
@@ -127,14 +151,22 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     }
 
     public void drop() {
-        try(Connection connection = this.hikariDataSource.getConnection()) {
+        try {
+            // be sure to commit everything before dropping the table to avoid LOCK
+            commit();
+        } catch (DataStoreException e) {
+            throw new RuntimeException(e);
+        }
+        try(Connection connection = this.connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 statement.execute(queryBuilder.dropQuery());
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
+
 
     public String getDatastoreName() {
         return this.queryBuilder.getStoreTableName();
@@ -146,7 +178,7 @@ public abstract class PostgisStore<T extends QueryBuilder> {
 
 
     public long getNumRecords() {
-        try(Connection connection = this.hikariDataSource.getConnection()) {
+        try(Connection connection = this.connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 try (ResultSet resultSet = statement.executeQuery(queryBuilder.countQuery())) {
                     if (resultSet.next()) {
@@ -158,6 +190,22 @@ public abstract class PostgisStore<T extends QueryBuilder> {
             throw new RuntimeException(e);
         }
         return 0;
+    }
+
+    public void close() {
+        try {
+            commit();
+
+            if(timerTask != null) {
+                timerTask.cancel();
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void commit() throws DataStoreException {
+        this.connectionManager.commit();
     }
 
     protected void linkTo(ISystemDescStore systemStore) { queryBuilder.linkTo(systemStore); }
@@ -174,4 +222,11 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     protected void linkTo(ICommandStore commandStore) { queryBuilder.linkTo(commandStore); }
     protected void linkTo(IFoiStore foiStore) { queryBuilder.linkTo(foiStore); }
     protected void linkTo(ICommandStatusStore commandStatusStore) { queryBuilder.linkTo(commandStatusStore); }
+
+    public void setAutoCommitPeriod(long autoCommitPeriod) {
+        this.autoCommitPeriod = autoCommitPeriod;
+        if(this.useBatch) {
+            this.initAutoCommitTask();
+        }
+    }
 }

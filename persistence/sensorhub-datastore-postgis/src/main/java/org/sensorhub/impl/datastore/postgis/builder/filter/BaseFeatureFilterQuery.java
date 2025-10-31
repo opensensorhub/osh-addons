@@ -18,10 +18,12 @@ import com.google.common.io.BaseEncoding;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKBWriter;
 import org.sensorhub.api.datastore.FullTextFilter;
+import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.api.datastore.SpatialFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FeatureFilter;
 import org.sensorhub.api.datastore.feature.FeatureFilterBase;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.vast.ogc.gml.IFeature;
 
 import java.time.Instant;
@@ -35,6 +37,10 @@ public class BaseFeatureFilterQuery<V extends IFeature,F extends FeatureFilterBa
         super(tableName, filterQueryGenerator);
     }
 
+    protected BaseFeatureFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        super(tableName, filterQueryGenerator, innerJoin);
+    }
+
     public FilterQueryGenerator build(F filter) {
         this.handleInternalIDs(filter.getInternalIDs());
         this.handleValidTimeFilter(filter.getValidTime());
@@ -46,32 +52,30 @@ public class BaseFeatureFilterQuery<V extends IFeature,F extends FeatureFilterBa
 
     protected void handleValidTimeFilter(TemporalFilter temporalFilter) {
         if(temporalFilter != null) {
-            String minTimestamp = temporalFilter.getMin().toString();
-            if(temporalFilter.getMin() == Instant.MIN) {
-                minTimestamp = "-infinity";
-            }
-            String maxTimestamp = temporalFilter.getMax().toString();
-            if(temporalFilter.getMax() == Instant.MAX) {
-                maxTimestamp = "infinity";
-            }
-            String sb = "tstzrange((" + this.tableName + ".data->'properties'->'validTime'->>0)::timestamptz," +
-                    " (" + tableName + ".data->'properties'->'validTime'->>1)::timestamptz)" +
-                    " && '[" + minTimestamp + "," + maxTimestamp + "]'";
-            filterQueryGenerator.addCondition(sb);
+            this.handleValidTimeFilter(temporalFilter, PostgisUtils.getOperator(temporalFilter));
+        }
+    }
+
+    protected void handleValidTimeFilter(TemporalFilter temporalFilter, String rangeOpStr) {
+        if(temporalFilter != null) {
+            var timeRange = PostgisUtils.getRangeFromTemporal(temporalFilter);
+            String sb =" '[" + timeRange[0] + "," + timeRange[1] + "]' "+rangeOpStr+" "+this.tableName + ".validTime ";
+            addCondition(sb);
         }
     }
 
     protected void handleParentFilter(FeatureFilter parentFilter) {
         if (parentFilter != null) {
             if (parentFilter.getInternalIDs() != null && !parentFilter.getInternalIDs().isEmpty()) {
-                filterQueryGenerator.addCondition(tableName+".parentId in (" +
+                addCondition(tableName+".parentId in (" +
                         parentFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                         ")");
             }
             if(parentFilter.getUniqueIDs() != null) {
-                filterQueryGenerator.addInnerJoin(this.tableName+ " t2 ON " + this.tableName + ".parentId" + " = t2.id");
+                FilterQueryGenerator.InnerJoin innerJoin = new FilterQueryGenerator.InnerJoin(this.tableName+ " t2 ON " + this.tableName + ".parentId" + " = t2.id");
+                filterQueryGenerator.addInnerJoin(innerJoin);
                 for(String uid: parentFilter.getUniqueIDs()) {
-                    filterQueryGenerator.addCondition("t2.data->'properties'->>'uid' = '"+uid+"'");
+                    innerJoin.addCondition("t2.data->'properties'->>'uid' = '"+uid+"'");
                 }
             }
         }
@@ -85,7 +89,7 @@ public class BaseFeatureFilterQuery<V extends IFeature,F extends FeatureFilterBa
                 String sb = "(" + tableName + ".data->'properties'->>'description') ~* '(" +
                         fullTextFilter.getKeywords().stream().collect(Collectors.joining("|")) +
                         ")'";
-                filterQueryGenerator.addCondition(sb);
+                addCondition(sb);
             }
         }
     }
@@ -97,7 +101,7 @@ public class BaseFeatureFilterQuery<V extends IFeature,F extends FeatureFilterBa
 
             byte[] geomAsBinary = threadLocalWriter.get().write(geometry);
             sb.append("ST_Intersects(").append(tableName).append(".geometry,'").append(encodeHexString(geomAsBinary)).append("')");
-            filterQueryGenerator.addCondition(sb.toString());
+            addCondition(sb.toString());
         }
     }
 
@@ -118,7 +122,7 @@ public class BaseFeatureFilterQuery<V extends IFeature,F extends FeatureFilterBa
                 }
             }
             sb.append(")");
-            filterQueryGenerator.addCondition(sb.toString());
+            addCondition(sb.toString());
         }
     }
 

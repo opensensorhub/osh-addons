@@ -23,8 +23,13 @@ import org.vast.ogc.gml.IFeature;
 import java.util.stream.Collectors;
 
 public class DeploymentFilterQuery extends BaseFeatureFilterQuery<IDeploymentWithDesc, DeploymentFilter> {
-    protected DeploymentFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
+
+    public DeploymentFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
         super(tableName, filterQueryGenerator);
+    }
+
+    protected DeploymentFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        super(tableName, filterQueryGenerator, innerJoin);
     }
 
     public FilterQueryGenerator build(DeploymentFilter filter) {
@@ -36,14 +41,17 @@ public class DeploymentFilterQuery extends BaseFeatureFilterQuery<IDeploymentWit
     protected void handleSystemFilter(SystemFilter parentFilter) {
         if (parentFilter != null) {
             if (parentFilter.getInternalIDs() != null && !parentFilter.getInternalIDs().isEmpty()) {
-                filterQueryGenerator.addCondition(tableName+".parentId in (" +
+                addCondition(tableName+".parentId in (" +
                         parentFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                         ")");
             }
             if(parentFilter.getUniqueIDs() != null) {
-                filterQueryGenerator.addInnerJoin(this.tableName+ " t2 ON " + this.tableName + ".parentId" + " = t2.id");
+                FilterQueryGenerator.InnerJoin innerJoin1 = new FilterQueryGenerator.InnerJoin(
+                        this.tableName+ " t2 ON " + this.tableName + ".parentId" + " = t2.id"
+                );
+                filterQueryGenerator.addInnerJoin(innerJoin1);
                 for(String uid: parentFilter.getUniqueIDs()) {
-                    filterQueryGenerator.addCondition("t2.data->'properties'->>'uid' = '"+uid+"'");
+                    innerJoin1.addCondition("t2.data->'properties'->>'uid' = '"+uid+"'");
                 }
             }
         }

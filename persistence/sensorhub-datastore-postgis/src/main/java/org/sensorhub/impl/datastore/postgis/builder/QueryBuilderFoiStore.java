@@ -44,6 +44,9 @@ public class QueryBuilderFoiStore extends QueryBuilderBaseFeatureStore<IFeature,
     public String createSelectEntriesQuery(FoiFilter filter, Set<IFoiStore.FoiField> fields) {
         SelectEntriesFoiQuery selectEntriesFoiQuery = new SelectEntriesFoiQuery.Builder()
                 .tableName(this.getStoreTableName())
+                .linkTo(this.systemStore)
+                .linkTo(this.dataStreamStore)
+                .linkTo(this.obsStore)
                 .withFields(fields)
                 .withFoiFilter(filter)
                 .build();

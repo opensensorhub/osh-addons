@@ -59,10 +59,7 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
     PostgisProcedureStoreImpl procedureStore;
     PostgisFoiStoreImpl foiStore;
     PostgisSystemDescStoreImpl systemDescStore;
-
     PostgisDeploymentStoreImpl deploymentStore;
-
-    TimerTask timerTask;
 
     @Override
     protected void beforeInit() throws SensorHubException {
@@ -81,31 +78,24 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
 
             var idScope = getDatabaseNum() != null ? getDatabaseNum() : 0;
 
-            systemDescStore =  new PostgisSystemDescStoreImpl(url, dbName, login, password, SYSTEM_TABLE_NAME, idScope, idProviderType);
-            deploymentStore = new PostgisDeploymentStoreImpl(url, dbName, login, password, DEPLOY_TABLE_NAME, idScope, idProviderType);
-            foiStore = new PostgisFoiStoreImpl(url, dbName, login, password, FOI_TABLE_NAME, idScope, idProviderType);
-            procedureStore = new PostgisProcedureStoreImpl(url, dbName, login, password, PROC_TABLE_NAME, idScope, idProviderType);
-            obsStore = new PostgisObsStoreImpl(url, dbName, login, password, OBS_TABLE_NAME, idScope, idProviderType);
-            commandStore = new PostgisCommandStoreImpl(url, dbName, login, password, CMD_TABLE_NAME, idScope, idProviderType);
+            systemDescStore =  new PostgisSystemDescStoreImpl(url, dbName, login, password, SYSTEM_TABLE_NAME, idScope, idProviderType, false);
+            deploymentStore = new PostgisDeploymentStoreImpl(url, dbName, login, password, DEPLOY_TABLE_NAME, idScope, idProviderType, false);
+            foiStore = new PostgisFoiStoreImpl(url, dbName, login, password, FOI_TABLE_NAME, idScope, idProviderType, config.useBatch);
+            procedureStore = new PostgisProcedureStoreImpl(url, dbName, login, password, PROC_TABLE_NAME, idScope, idProviderType, false);
+            obsStore = new PostgisObsStoreImpl(url, dbName, login, password, OBS_TABLE_NAME, idScope, idProviderType, config.useBatch);
+            commandStore = new PostgisCommandStoreImpl(url, dbName, login, password, CMD_TABLE_NAME, idScope, idProviderType, false);
 
             systemDescStore.linkTo(obsStore.getDataStreams());
             systemDescStore.linkTo(procedureStore);
             foiStore.linkTo(systemDescStore);
             foiStore.linkTo(obsStore);
+            foiStore.linkTo(obsStore.getDataStreams());
             obsStore.linkTo(foiStore);
             obsStore.getDataStreams().linkTo(systemDescStore);
             commandStore.getCommandStreams().linkTo(systemDescStore);
 
-            Timer t = new Timer();
-            timerTask = new TimerTask() {
-                @Override
-                public void run() {
-                    obsStore.commit();
-                }
-            };
-
-//            t.scheduleAtFixedRate(timerTask, 0,config.autoCommitPeriod * 1000L);
-
+            obsStore.setAutoCommitPeriod(config.autoCommitPeriod * 1000L);
+            foiStore.setAutoCommitPeriod(config.autoCommitPeriod * 1000L);
         } catch (Exception e) {
             throw new DataStoreException("Error while starting Postgis connector", e);
         }
@@ -121,8 +111,8 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
 
     @Override
     protected void beforeStop() {
-        obsStore.commit();
-        timerTask.cancel();
+        obsStore.close();
+
         if (hasParentHub() && config.databaseNum != null)
             getParentHub().getDatabaseRegistry().unregister(this);
     }

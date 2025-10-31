@@ -63,6 +63,9 @@ public abstract class QueryBuilder {
         return "DELETE FROM " + this.getStoreTableName() + " WHERE id = ?";
     }
 
+    public String removeAllQuery() {
+        return "DELETE FROM "+this.getStoreTableName();
+    }
     public String dropQuery() {
         return "DROP TABLE IF EXISTS " + this.getStoreTableName();
     }

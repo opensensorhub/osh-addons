@@ -28,10 +28,18 @@ public abstract class FilterQuery {
     protected String sysDescTableName;
     protected String dataStreamTableName;
     protected String foiTableName;
+    protected String obsTableName;
 
     protected String tableName;
 
     protected FilterQueryGenerator filterQueryGenerator;
+    protected FilterQueryGenerator.InnerJoin innerJoin;
+
+    protected FilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        this(tableName, filterQueryGenerator);
+        this.innerJoin = innerJoin;
+    }
+
     protected FilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
         this.tableName = tableName;
         this.filterQueryGenerator = filterQueryGenerator;
@@ -39,9 +47,17 @@ public abstract class FilterQuery {
 
     protected void handleInternalIDs(SortedSet<BigId> ids) {
         if (ids != null && !ids.isEmpty()) {
-            filterQueryGenerator.addCondition(this.tableName+".id in (" +
+            addCondition(this.tableName+".id in (" +
                     ids.stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                     ")");
+        }
+    }
+
+    protected void addCondition(String condition) {
+        if(innerJoin != null) {
+            innerJoin.addCondition(condition);
+        } else {
+            filterQueryGenerator.addCondition(condition);
         }
     }
 
@@ -69,14 +85,8 @@ public abstract class FilterQuery {
         this.foiTableName = foiTableName;
     }
 
-    // POSTGRES LIMIT
-    public static String checkAndGetValidInstant(Instant instant) {
-        if(instant.getEpochSecond() < PostgisUtils.MIN_INSTANT.getEpochSecond()) {
-            return "-infinity";
-        } else if(instant.getEpochSecond() > PostgisUtils.MAX_INSTANT.getEpochSecond()) {
-            return "infinity";
-        } else {
-            return instant.toString();
-        }
+    public void setObsTableName(String obsTableName) {
+        this.obsTableName = obsTableName;
     }
+
 }

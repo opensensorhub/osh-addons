@@ -14,14 +14,11 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.filter;
 
-import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.vast.util.Asserts;
-
-import java.util.stream.Collectors;
 
 import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.FOI_ID;
 
@@ -29,9 +26,14 @@ public class ObsStatsFilterQuery extends FilterQuery {
     Long dataStreamId;
     Long foiId;
 
+    protected ObsStatsFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
+        super(tableName, filterQueryGenerator, innerJoin);
+    }
+
     protected ObsStatsFilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
         super(tableName, filterQueryGenerator);
     }
+
 
     public void setDataStreamId(long dataStreamId) {
         this.dataStreamId = dataStreamId;
@@ -57,7 +59,7 @@ public class ObsStatsFilterQuery extends FilterQuery {
         this.handleDataStreamFilter(filter.getDataStreamFilter());
         this.handleFoiFilter(filter.getFoiFilter());
         this.handlePhenomenonTimeFilter(filter.getPhenomenonTime());
-        this.handleResulTimeFilter(filter.getResultTime());
+        this.handleResultTimeFilter(filter.getResultTime());
 
         return this.filterQueryGenerator;
     }
@@ -67,9 +69,11 @@ public class ObsStatsFilterQuery extends FilterQuery {
             // create join
             Asserts.checkNotNull(dataStreamTableName, "dataStreamTableName should not be null");
 
-            this.filterQueryGenerator.addInnerJoin(
-                    this.dataStreamTableName + " ON " + this.tableName + ".datastreamid = " + this.dataStreamTableName + ".id");
-            DataStreamFilterQuery dataStreamFilterQuery = new DataStreamFilterQuery(this.dataStreamTableName, filterQueryGenerator);
+            FilterQueryGenerator.InnerJoin innerJoin1 = new FilterQueryGenerator.InnerJoin(
+                    this.dataStreamTableName + " ON " + this.tableName + ".datastreamid = " + this.dataStreamTableName + ".id"
+            );
+            this.filterQueryGenerator.addInnerJoin(innerJoin1);
+            DataStreamFilterQuery dataStreamFilterQuery = new DataStreamFilterQuery(this.dataStreamTableName, filterQueryGenerator,innerJoin1);
             dataStreamFilterQuery.setSysDescTableName(this.sysDescTableName);
             this.filterQueryGenerator = dataStreamFilterQuery.build(dataStreamFilter);
         }
@@ -80,9 +84,11 @@ public class ObsStatsFilterQuery extends FilterQuery {
             // create join
             Asserts.checkNotNull(dataStreamTableName, "dataStreamTableName should not be null");
 
-            this.filterQueryGenerator.addInnerJoin(
-                    this.dataStreamTableName + " ON " + this.tableName + ".datastreamid = " + this.dataStreamTableName + ".id");
-            DataStreamFilterQuery dataStreamFilterQuery = new DataStreamFilterQuery(this.dataStreamTableName, filterQueryGenerator);
+            FilterQueryGenerator.InnerJoin innerJoin1 = new FilterQueryGenerator.InnerJoin(
+                    this.dataStreamTableName + " ON " + this.tableName + ".datastreamid = " + this.dataStreamTableName + ".id"
+            );
+            this.filterQueryGenerator.addInnerJoin(innerJoin1);
+            DataStreamFilterQuery dataStreamFilterQuery = new DataStreamFilterQuery(this.dataStreamTableName, filterQueryGenerator,innerJoin1);
             dataStreamFilterQuery.setSysDescTableName(this.sysDescTableName);
             dataStreamFilterQuery.setDataStreamId(this.dataStreamId);
 
@@ -97,20 +103,20 @@ public class ObsStatsFilterQuery extends FilterQuery {
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
-                filterQueryGenerator.addCondition(
+                addCondition(
                         "tstzrange('" + temporalFilter.getMin() + "','" + temporalFilter.getMax() + "', '[]') @> " + this.tableName + ".phenomenonTime");
             }
         }
     }
 
-    protected void handleResulTimeFilter(TemporalFilter temporalFilter) {
+    protected void handleResultTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
-                filterQueryGenerator.addCondition(
+                addCondition(
                         "tstzrange('" + temporalFilter.getMin() + "','" + temporalFilter.getMax() + "', '[]') @> " + this.tableName + ".resultTime");
             }
         }
@@ -123,7 +129,7 @@ public class ObsStatsFilterQuery extends FilterQuery {
                 // TODO
             } else {
                 // otherwise
-                filterQueryGenerator.addCondition(this.tableName + "." + FOI_ID + " = " + foiId);
+                addCondition(this.tableName + "." + FOI_ID + " = " + foiId);
             }
             if (foiFilter.getParentFilter() != null || foiFilter.getObservationFilter() != null ||
                     foiFilter.getLocationFilter() != null || foiFilter.getSampledFeatureFilter() != null ||
