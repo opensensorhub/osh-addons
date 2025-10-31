@@ -22,7 +22,6 @@ import org.locationtech.jts.io.WKBWriter;
 import org.postgresql.util.PGobject;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.DataStoreException;
-import org.sensorhub.api.datastore.IdProvider;
 import org.sensorhub.api.datastore.feature.FeatureFilterBase;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
@@ -99,21 +98,6 @@ public abstract class PostgisBaseFeatureStoreImpl
 
         if(useBatch) {
             this.connectionManager.enableBatch(BATCH_SIZE, queryBuilder.addOrUpdateByIdQuery());
-        }
-    }
-
-    @Override
-    protected void initIdProvider() {
-        // create ID provider
-        switch (idProviderType)
-        {
-            case UID_HASH:
-                idProvider = DataStoreUtils.getFeatureHashIdProvider(212158449);
-                break;
-
-            default:
-            case SEQUENTIAL:
-                super.initIdProvider();
         }
     }
 
@@ -522,8 +506,12 @@ public abstract class PostgisBaseFeatureStoreImpl
         try (Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.removeByPrimaryKeyQuery())) {
                 preparedStatement.setLong(1, key.getInternalID().getIdAsLong());
-                PGobject pgValidTimeRange = this.createPGobjectValidTimeRange(key);
-                preparedStatement.setObject(2, pgValidTimeRange);
+//                PGobject pgValidTimeRange = this.createPGobjectValidTimeRange(key);
+//                preparedStatement.setObject(2, pgValidTimeRange);
+                preparedStatement.setString(2, PostgisUtils.getPgTimestampFromInstant(
+                        key.getValidStartTime().truncatedTo(ChronoUnit.SECONDS)
+                ));
+
                 int rows = preparedStatement.executeUpdate();
                 if (rows > 0) {
                     cache.invalidate(key);
@@ -570,5 +558,10 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     public void clearCache() {
         cache.invalidateAll();
+    }
+
+    @Override
+    protected void initUidHashIdProvider() {
+        idProvider = DataStoreUtils.getFeatureHashIdProvider(212158449);
     }
 }

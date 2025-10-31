@@ -42,7 +42,7 @@ public class TestPostgisDataStreamStore extends AbstractTestDataStreamStore<Post
     protected PostgisObsStoreImpl postgisObsStore;
     //    @Override
     protected PostgisDataStreamStoreImpl initStore() throws Exception {
-        postgisObsStore =  new PostgisObsStoreImpl(url, DB_NAME, login, password, OBS_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL, false);
+        postgisObsStore =  new PostgisObsStoreImpl(url, DB_NAME, login, password, OBS_DATASTORE_NAME, DATABASE_NUM, IdProviderType.UID_HASH, false);
         return (PostgisDataStreamStoreImpl) postgisObsStore.getDataStreams();
     }
 

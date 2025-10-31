@@ -24,6 +24,7 @@ import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.command.*;
 import org.sensorhub.api.datastore.feature.IFoiStore;
+import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
@@ -78,7 +79,6 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
         linkTo(commandStreamStore);
         linkTo(commandStatusStore);
     }
-
     @Override
     public Stream<Entry<BigId, ICommandData>> selectEntries(CommandFilter filter, Set<CommandField> fields) {
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);

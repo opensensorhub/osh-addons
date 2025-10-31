@@ -77,21 +77,6 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
         });
     }
 
-    @Override
-    protected void initIdProvider() {
-        // create ID provider
-        switch (idProviderType)
-        {
-            case UID_HASH:
-                idProvider = DataStoreUtils.getDataStreamHashIdProvider(741532149);
-                break;
-
-            default:
-            case SEQUENTIAL:
-                super.initIdProvider();
-        }
-    }
-
     protected class DataStreamInfoWithTimeRanges extends DataStreamInfoWrapper
     {
         Long dsID;
@@ -441,4 +426,10 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
         }
         return results;
     }
+
+    @Override
+    protected void initUidHashIdProvider() {
+        idProvider = DataStoreUtils.getDataStreamHashIdProvider(741532149);
+    }
+
 }

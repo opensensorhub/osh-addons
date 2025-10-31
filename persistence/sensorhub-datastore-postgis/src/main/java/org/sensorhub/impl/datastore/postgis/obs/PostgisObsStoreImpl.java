@@ -113,7 +113,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                 new IteratorResultSet<>(
                         queryStr,
                         connectionManager,
-                        filter.getLimit(),
+                        STREAM_FETCH_SIZE,
                         (resultSet) -> resultSetToEntry(resultSet, fields),
                         (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);

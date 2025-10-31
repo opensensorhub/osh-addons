@@ -72,33 +72,54 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     }
 
     private void initStore(String[] initScripts) {
-
         try (Connection connection = this.connectionManager.getConnection()) {
             if (!PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
                 // create table
                 PostgisUtils.executeQueries(connection, initScripts);
             }
             logger.info("Initialized store '{}'", queryBuilder.getStoreTableName());
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
-        this.initIdProvider();
         if(this.useBatch) {
             this.initAutoCommitTask();
         }
+        try {
+            this.initIdProvider();
+        } catch (DataStoreException e) {
+            throw new RuntimeException(e);
+        }
     }
-    protected void initIdProvider() {
+
+    protected void initIdProvider() throws DataStoreException {
+        // create ID provider
+        switch (idProviderType) {
+            case UID_HASH:
+                this.initUidHashIdProvider();
+                break;
+
+            default:
+            case SEQUENTIAL:
+                this.initSequentialIdProvider();
+        }
+    }
+    protected void initUidHashIdProvider() throws DataStoreException {
+        // since some store contains others, we can by default use sequentialIdProvider if this method is not overriden
+        this.initSequentialIdProvider();
+    }
+
+    protected void initSequentialIdProvider() {
         try (Connection connection = this.connectionManager.getConnection()) {
-            try (Statement statement = connection.createStatement()) {
-                try (ResultSet resultSet = statement.executeQuery(queryBuilder.selectLastIdQuery())) {
+            try(Statement statement = connection.createStatement()) {
+                try(ResultSet resultSet = statement.executeQuery(queryBuilder.selectLastIdQuery())) {
                     if (resultSet.next()) {
                         lastId = new AtomicLong(resultSet.getLong("id"));
                     }
-                    // Default SEQUENTIAL
-                    idProvider = (obj) -> lastId.incrementAndGet();
                 }
             }
+            idProvider = (obj) -> lastId.incrementAndGet();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

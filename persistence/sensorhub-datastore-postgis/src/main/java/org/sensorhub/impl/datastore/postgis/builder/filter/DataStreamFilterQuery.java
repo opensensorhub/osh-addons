@@ -135,7 +135,7 @@ public class DataStreamFilterQuery extends FilterQuery {
                     for(String uid: uniqueIds) {
                         // ILIKE use % OPERATOR
                         currentId = uid.replaceAll("\\*","%");
-                        sb.append("(").append(tableName).append(".data->'system@id'->>'uniqueID') = '").append(currentId).append("'");
+                        sb.append("(").append(tableName).append(".data->'system@id'->>'uniqueID') ILIKE '%").append(currentId).append("'");
                         if(++i < uniqueIds.size()) {
                             sb.append(" OR ");
                         }

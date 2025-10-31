@@ -77,21 +77,6 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
     }
 
     @Override
-    protected void initIdProvider() {
-        // create ID provider
-        switch (idProviderType)
-        {
-            case UID_HASH:
-                idProvider = DataStoreUtils.getCommandStreamHashIdProvider(784122258);
-                break;
-
-            default:
-            case SEQUENTIAL:
-                super.initIdProvider();
-        }
-    }
-
-    @Override
     public synchronized CommandStreamKey add(ICommandStreamInfo csInfo) throws DataStoreException {
         // RULE --
         // if CMD already exists, compute the time intersection
@@ -358,4 +343,8 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
         return this.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 
+    @Override
+    protected void initUidHashIdProvider() {
+        idProvider = DataStoreUtils.getCommandStreamHashIdProvider(784122258);
+    }
 }

@@ -97,6 +97,10 @@ public class ObsFilterQuery extends FilterQuery {
                 this.filterQueryGenerator.addInnerJoin(innerJoin1);
                 FoiFilterQuery foiFilterQuery = new FoiFilterQuery(this.foiTableName, filterQueryGenerator,innerJoin1);
                 this.filterQueryGenerator = foiFilterQuery.build(foiFilter);
+
+                // Workaround, had validTime filter to Foi because it is owned by ObsFilter instead of FoiFilter
+                foiFilterQuery.handleValidTimeFilter(obsFilter.getPhenomenonTime(), "<@");
+
             } else {
                 // otherwise
                 if (foiFilter.getInternalIDs() != null || foiFilter.getUniqueIDs() != null) {

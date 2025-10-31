@@ -127,10 +127,6 @@ public class QueryBuilderObsStore extends QueryBuilder {
         return "SELECT COUNT(*) FROM "+this.getStoreTableName()+" "+sb;
     }
 
-    public String removeByIdQueryAndPhenomenonTime() {
-        return "DELETE FROM " + this.getStoreTableName() + " WHERE id = and phenomenonTime <@ ? ";
-    }
-
     public String createSelectEntriesQuery(ObsFilter filter, Set<IObsStore.ObsField> fields) {
         SelectEntriesObsQuery selectEntriesObsQuery = new SelectEntriesObsQuery.Builder()
                 .tableName(this.getStoreTableName())
