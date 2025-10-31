@@ -382,6 +382,8 @@ public abstract class PostgisBaseFeatureStoreImpl
     @SuppressWarnings("unlikely-arg-type")
     public boolean contains(BigId internalID) {
         DataStoreUtils.checkInternalID(internalID);
+        if (cache.getIfPresent(internalID) != null)
+            return true;
         try (Connection connection = connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.existsByIdQuery())) {
                 preparedStatement.setLong(1, internalID.getIdAsLong());

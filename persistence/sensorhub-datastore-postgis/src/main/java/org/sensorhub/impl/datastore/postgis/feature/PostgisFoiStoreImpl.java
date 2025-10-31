@@ -15,16 +15,19 @@
 package org.sensorhub.impl.datastore.postgis.feature;
 
 import org.sensorhub.api.common.BigId;
+import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.feature.IFeatureStore;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
+import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderFoiStore;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
 import org.vast.ogc.gml.IFeature;
+import org.vast.util.Asserts;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -34,6 +37,8 @@ import java.util.stream.Collectors;
 
 public class PostgisFoiStoreImpl extends
         PostgisBaseFeatureStoreImpl<IFeature, IFoiStore.FoiField, FoiFilter, QueryBuilderFoiStore> implements IFoiStore {
+
+    ISystemDescStore systemStore;
 
     public PostgisFoiStoreImpl(String url, String dbName, String login, String password,
                                int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
@@ -69,8 +74,16 @@ public class PostgisFoiStoreImpl extends
     }
 
     @Override
-    public void linkTo(ISystemDescStore procStore) {
-        super.linkTo(procStore);
+    protected void checkParentFeatureExists(BigId parentID) throws DataStoreException {
+        if (systemStore != null)
+            DataStoreUtils.checkParentFeatureExists(parentID, systemStore, this);
+        else
+            DataStoreUtils.checkParentFeatureExists(parentID, this);
+    }
+
+    @Override
+    public void linkTo(ISystemDescStore systemStore) {
+        this.systemStore = Asserts.checkNotNull(systemStore, ISystemDescStore.class);
     }
 
     @Override
