@@ -46,7 +46,7 @@ import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.*;
 
 public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> implements IObsStore {
     private static final Logger logger = LoggerFactory.getLogger(PostgisObsStoreImpl.class);
-    public static final int BATCH_SIZE = 20_000;
+    public static final int BATCH_SIZE = 2000;
     public static final int STREAM_FETCH_SIZE = 20_000;
 
     private PostgisDataStreamStoreImpl dataStreamStore;
@@ -429,6 +429,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 
         logger.debug("Remove Obs with key={}", key);
         if (useBatch) {
+            batchLock.lock();
             BatchJob batchJob = this.connectionManager.getBatchJob();
             try {
                 PreparedStatement preparedStatement = batchJob.getPreparedStatement();
@@ -439,6 +440,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             } finally {
                 this.connectionManager.offerBatchJob(batchJob);
                 this.connectionManager.tryCommit();
+                batchLock.unlock();
             }
         } else {
             try (Connection connection = this.connectionManager.getConnection()) {
@@ -543,14 +545,18 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         if(logger.isDebugEnabled()) {
             logger.debug(queryStr);
         }
+        batchLock.lock();
         try (Connection connection = this.connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 return statement.executeUpdate(queryStr);
             } catch (Exception ex) {
+                connection.rollback();
                 throw ex;
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            batchLock.unlock();
         }
     }
 }

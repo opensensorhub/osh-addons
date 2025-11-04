@@ -154,12 +154,15 @@ public abstract class PostgisBaseFeatureStoreImpl
                     throw new DataStoreException("Cannot insert feature " + value.getName());
                 } finally {
                     this.connectionManager.offerBatchJob(batchJob);
+                     batchLock.lock();
                     this.connectionManager.tryCommit();
+                     batchLock.unlock();
                 }
             } catch (Exception e) {
                 throw new DataStoreException("Cannot insert feature " + value.getName());
             }
         } else {
+            batchLock.lock();
             try (Connection connection = this.connectionManager.getConnection()) {
                 try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.addOrUpdateByIdQuery())) {
                     fillAddOrUpdateStatement(featureKey, parentID, value, preparedStatement);
@@ -168,6 +171,8 @@ public abstract class PostgisBaseFeatureStoreImpl
             } catch (SQLException | IOException e) {
                 e.printStackTrace();
                 throw new DataStoreException("Cannot insert feature " + value.getName());
+            }  finally {
+                batchLock.unlock();
             }
         }
         return featureKey;
@@ -571,6 +576,7 @@ public abstract class PostgisBaseFeatureStoreImpl
         if(logger.isDebugEnabled()) {
             logger.debug(queryStr);
         }
+        batchLock.lock();
         try (Connection connection = this.connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 int rows = statement.executeUpdate(queryStr);
@@ -579,11 +585,11 @@ public abstract class PostgisBaseFeatureStoreImpl
                     cache.invalidateAll();
                 }
                 return rows;
-            } catch (Exception ex) {
-                throw ex;
             }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        } finally {
+            batchLock.unlock();
+        }
     }
 }
