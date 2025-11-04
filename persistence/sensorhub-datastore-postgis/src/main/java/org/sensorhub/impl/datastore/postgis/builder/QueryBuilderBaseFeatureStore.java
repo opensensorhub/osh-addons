@@ -14,6 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis.builder;
 
+import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FeatureFilterBase;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
@@ -86,22 +87,20 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
         return "SELECT count(*) as uidCount FROM "+this.getStoreTableName()+" where data->'properties'->>'uid' = ? LIMIT 1";
     }
 
-//    public String selectLastVersionByUidQuery(String uid, String timestamp) {
-//        return "SELECT DISTINCT ON (id) id,validTime,parentid " +
-//                "FROM " + this.getStoreTableName() + " WHERE (data->'properties'->>'uid') = '" + uid + "' AND " +
-//                this.getStoreTableName()+".validTime @> '" + timestamp + "'::timestamp "+
-//                "order by id, lower(validTime) DESC";
-//    }
-
     public String selectLastVersionByUidQuery(String uid, String timestamp) {
         return "SELECT DISTINCT ON (id) id,validTime,parentid " +
-                "FROM " + this.getStoreTableName() + " WHERE (data->'properties'->>'uid') = '" + uid +"' order by id, lower(validTime) DESC";
+                "FROM " + this.getStoreTableName() + " WHERE (data->'properties'->>'uid') = '" + uid +"'" +
+                "AND validTime " +
+                PostgisUtils.getOperator(RangeFilter.RangeOp.CONTAINS) +
+                " CURRENT_TIMESTAMP::timestamp order by id, lower(validTime) DESC";
     }
 
     public String selectLastVersionByIdQuery(long id, String timestamp) {
         return "SELECT id,validTime,parentid "+
                 "FROM "+this.getStoreTableName()+" WHERE id = "+id+" AND " +
-                this.getStoreTableName()+".validTime @> '" + timestamp + "'::timestamp "+
+                this.getStoreTableName()+".validTime " +
+                PostgisUtils.getOperator(RangeFilter.RangeOp.CONTAINS) +
+                " '" + timestamp + "'::timestamp "+
                 "order by lower(validTime) ASC";
     }
 
