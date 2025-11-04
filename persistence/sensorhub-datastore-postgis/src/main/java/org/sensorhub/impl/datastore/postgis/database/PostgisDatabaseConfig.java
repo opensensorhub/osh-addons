@@ -31,16 +31,17 @@ import javax.validation.constraints.Min;
  */
 public abstract class PostgisDatabaseConfig extends DatabaseConfig
 {
-    @DisplayInfo(desc="URL database")
+    @DisplayInfo(label = "Database URL")
     public String url;
 
-    @DisplayInfo(label="Dababase name", desc="Dabatase name")
+    @DisplayInfo(label="Database Name")
     public String dbName;
 
-    @DisplayInfo(desc="Login")
+    @DisplayInfo(desc="Username")
     public String login;
 
     @DisplayInfo(desc="Password")
+    @DisplayInfo.FieldType(DisplayInfo.FieldType.Type.PASSWORD)
     public String password;
 
     @DisplayInfo(label = "ID Generator", desc = "Method used to generate new resource IDs")
