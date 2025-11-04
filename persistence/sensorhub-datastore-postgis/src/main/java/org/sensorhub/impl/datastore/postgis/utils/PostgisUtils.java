@@ -148,7 +148,7 @@ public class PostgisUtils {
     public static String getOperator(TemporalFilter temporalFilter) {
         String operator = "&&";
         if(temporalFilter.getOperator() == RangeFilter.RangeOp.CONTAINS) {
-            operator = "<@";
+            operator = "@>";
         } else if (temporalFilter.getOperator() == RangeFilter.RangeOp.EQUALS) {
             operator = "=";
         } else if (temporalFilter.getOperator() == RangeFilter.RangeOp.INTERSECTS) {
