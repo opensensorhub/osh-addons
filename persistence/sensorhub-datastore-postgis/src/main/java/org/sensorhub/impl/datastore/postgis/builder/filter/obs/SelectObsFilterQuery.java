@@ -35,6 +35,16 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
         super(tableName, filterQueryGenerator);
     }
 
+    public SelectFilterQueryGenerator build(ObsFilter filter) {
+        this.filterQueryGenerator = super.build(filter);
+        this.handleSorted();
+        return this.filterQueryGenerator;
+    }
+
+    protected void handleSorted() {
+        this.filterQueryGenerator.addOrderBy("phenomenonTime ASC");
+    }
+
     protected void handleDataStreamFilter(DataStreamFilter dataStreamFilter) {
         if (dataStreamFilter != null) {
             // create join
@@ -86,10 +96,6 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 foiFilterQuery.setFoiTableName(this.foiTableName);
 
                 this.filterQueryGenerator = foiFilterQuery.build(foiFilter);
-
-                // Workaround, had validTime filter to Foi because it is owned by ObsFilter instead of FoiFilter
-                foiFilterQuery.handleValidTimeFilter(obsFilter.getPhenomenonTime(), "<@");
-
             } else {
                 // otherwise
                 if (foiFilter.getInternalIDs() != null || foiFilter.getUniqueIDs() != null) {
