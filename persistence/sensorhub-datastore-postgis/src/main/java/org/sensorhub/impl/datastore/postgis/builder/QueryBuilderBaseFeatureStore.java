@@ -14,8 +14,10 @@
 
 package org.sensorhub.impl.datastore.postgis.builder;
 
+import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FeatureFilterBase;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.vast.ogc.gml.IFeature;
 
 import java.util.Set;
@@ -108,7 +110,11 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
     }
 
     public String removeByPrimaryKeyQuery() {
-        return "DELETE FROM "+this.getStoreTableName()+" WHERE id = ? AND NOT "+this.getStoreTableName()+".validTime @> ?::timestamp";
+        return "DELETE FROM "+this.getStoreTableName()+" WHERE id = ? AND  lower("+this.getStoreTableName()+".validTime)::timestamp =  ?::timestamp";
+    }
+
+    public String removeByTimeRangeQuery(TemporalFilter temporalFilter) {
+        return "DELETE FROM "+this.getStoreTableName()+" WHERE validTime "+ PostgisUtils.getOperator(temporalFilter) +" ?";
     }
 
     public String createUidUniqueIndexQuery() {
@@ -132,4 +138,7 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
     }
 
     public abstract String createSelectEntriesQuery(F filter, Set<VF> fields);
+
+    public abstract String createRemoveEntriesQuery(F filter);
+
 }

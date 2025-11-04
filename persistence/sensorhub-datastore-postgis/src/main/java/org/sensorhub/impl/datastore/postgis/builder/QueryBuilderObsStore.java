@@ -14,9 +14,12 @@
 
 package org.sensorhub.impl.datastore.postgis.builder;
 
-import org.sensorhub.api.datastore.obs.*;
-import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesObsQuery;
-import org.sensorhub.impl.datastore.postgis.builder.filter.StatsObsQuery;
+import org.sensorhub.api.datastore.obs.IObsStore;
+import org.sensorhub.api.datastore.obs.ObsFilter;
+import org.sensorhub.api.datastore.obs.ObsStatsQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.obs.RemoveEntriesObsQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.obs.SelectEntriesObsQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.stats.StatsObsQuery;
 
 import java.time.Instant;
 import java.util.List;
@@ -175,5 +178,16 @@ public class QueryBuilderObsStore extends QueryBuilder {
                 .withLimit(obsStatsQuery.getLimit())
                 .build();
         return statsObsQuery.toQuery();
+    }
+
+    public String createRemoveEntriesQuery(ObsFilter filter) {
+        RemoveEntriesObsQuery removeEntriesObsQuery = new RemoveEntriesObsQuery.Builder()
+                .tableName(this.getStoreTableName())
+                .linkTo(this.systemStore)
+                .linkTo(this.dataStreamStore)
+                .linkTo(this.foiStore)
+                .withObsFilter(filter)
+                .build();
+        return removeEntriesObsQuery.toQuery();
     }
 }

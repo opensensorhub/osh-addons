@@ -15,13 +15,12 @@
 package org.sensorhub.impl.datastore.postgis.builder.filter;
 
 import org.sensorhub.api.common.BigId;
-import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
+import org.sensorhub.impl.datastore.postgis.builder.generator.FilterQueryGenerator;
 
-import java.time.Instant;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 
-public abstract class FilterQuery {
+public abstract class FilterQuery<F extends FilterQueryGenerator> {
     protected String commandStreamTableName;
     protected String commandStatusTableName;
     protected String commandTableName;
@@ -32,15 +31,9 @@ public abstract class FilterQuery {
 
     protected String tableName;
 
-    protected FilterQueryGenerator filterQueryGenerator;
-    protected FilterQueryGenerator.InnerJoin innerJoin;
+    protected F filterQueryGenerator;
 
-    protected FilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator, FilterQueryGenerator.InnerJoin innerJoin) {
-        this(tableName, filterQueryGenerator);
-        this.innerJoin = innerJoin;
-    }
-
-    protected FilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
+    protected FilterQuery(String tableName, F filterQueryGenerator) {
         this.tableName = tableName;
         this.filterQueryGenerator = filterQueryGenerator;
     }
@@ -54,11 +47,7 @@ public abstract class FilterQuery {
     }
 
     protected void addCondition(String condition) {
-        if(innerJoin != null) {
-            innerJoin.addCondition(condition);
-        } else {
-            filterQueryGenerator.addCondition(condition);
-        }
+        filterQueryGenerator.addCondition(condition);
     }
 
     public void setCommandStreamTableName(String commandStreamTableName) {

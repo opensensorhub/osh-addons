@@ -15,17 +15,13 @@
 package org.sensorhub.impl.datastore.postgis.utils;
 
 import com.google.common.collect.Range;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 import net.opengis.gml.v32.AbstractGeometry;
 import net.opengis.gml.v32.LinearRing;
 import net.opengis.gml.v32.impl.PolygonJTS;
 import org.postgresql.util.PGobject;
 import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
-import org.sensorhub.impl.datastore.postgis.builder.filter.FilterQuery;
 import org.vast.ogc.gml.JTSUtils;
-import org.vast.util.TimeExtent;
 
 import java.sql.*;
 import java.text.ParseException;
@@ -36,9 +32,6 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Properties;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class PostgisUtils {
     private static final DateTimeFormatter FLEXIBLE_FORMATTER =
@@ -216,5 +209,31 @@ public class PostgisUtils {
         } else {
             return instant.truncatedTo(ChronoUnit.SECONDS).toString();
         }
+    }
+
+    public static PGobject createPGobjectValidTimeRange(TemporalFilter temporalFilter) throws SQLException {
+        PGobject range = new PGobject();
+        range.setType("tsrange");  // type PostgreSQL
+        StringBuffer rangeValue = new StringBuffer("[");
+
+        Instant min = temporalFilter.getRange().lowerEndpoint();
+        Instant max = temporalFilter.getRange().upperEndpoint();
+
+        if (min.getEpochSecond() < MIN_INSTANT.getEpochSecond()) {
+            rangeValue.append("-infinity");
+        } else {
+            rangeValue.append(PostgisUtils.writeInstantToString(min.truncatedTo(ChronoUnit.SECONDS), false));
+        }
+
+        rangeValue.append(",");
+
+        if (max.getEpochSecond() > MAX_INSTANT.getEpochSecond()) {
+            rangeValue.append("infinity");
+        } else {
+            rangeValue.append(PostgisUtils.writeInstantToString(max.truncatedTo(ChronoUnit.SECONDS), false));
+        }
+        rangeValue.append("]");
+        range.setValue(rangeValue.toString());
+        return range;
     }
 }

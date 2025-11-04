@@ -17,8 +17,8 @@ package org.sensorhub.impl.datastore.postgis.builder;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.api.datastore.system.SystemFilter;
 import org.sensorhub.api.system.ISystemWithDesc;
-import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesFeatureQuery;
-import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesSystemQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.feature.RemoveEntriesSystemQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.feature.SelectEntriesSystemQuery;
 
 import java.util.Set;
 
@@ -88,5 +88,14 @@ public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<IS
                 .withSystemFilter(filter)
                 .build();
         return selectEntriesSystemQuery.toQuery();
+    }
+
+    @Override
+    public String createRemoveEntriesQuery(SystemFilter filter) {
+        RemoveEntriesSystemQuery removeEntriesSystemQuery = new RemoveEntriesSystemQuery.Builder()
+                .tableName(this.getStoreTableName())
+                .withSystemFilter(filter)
+                .build();
+        return removeEntriesSystemQuery.toQuery();
     }
 }

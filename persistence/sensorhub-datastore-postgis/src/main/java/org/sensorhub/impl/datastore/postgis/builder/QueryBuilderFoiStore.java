@@ -15,16 +15,9 @@
 package org.sensorhub.impl.datastore.postgis.builder;
 
 import org.sensorhub.api.datastore.feature.FoiFilter;
-import org.sensorhub.api.datastore.feature.IFeatureStore;
 import org.sensorhub.api.datastore.feature.IFoiStore;
-import org.sensorhub.api.datastore.obs.IObsStore;
-import org.sensorhub.api.datastore.procedure.IProcedureStore;
-import org.sensorhub.api.datastore.procedure.ProcedureFilter;
-import org.sensorhub.api.datastore.system.ISystemDescStore;
-import org.sensorhub.api.datastore.system.SystemFilter;
-import org.sensorhub.api.system.ISystemWithDesc;
-import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesFoiQuery;
-import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesProcedureQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.feature.RemoveEntriesFoiQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.feature.SelectEntriesFoiQuery;
 import org.vast.ogc.gml.IFeature;
 
 import java.util.Set;
@@ -51,5 +44,17 @@ public class QueryBuilderFoiStore extends QueryBuilderBaseFeatureStore<IFeature,
                 .withFoiFilter(filter)
                 .build();
         return selectEntriesFoiQuery.toQuery();
+    }
+
+    @Override
+    public String createRemoveEntriesQuery(FoiFilter filter) {
+        RemoveEntriesFoiQuery removeEntriesFoiQuery = new RemoveEntriesFoiQuery.Builder()
+                .tableName(this.getStoreTableName())
+                .linkTo(this.systemStore)
+                .linkTo(this.dataStreamStore)
+                .linkTo(this.obsStore)
+                .withFoiFilter(filter)
+                .build();
+        return removeEntriesFoiQuery.toQuery();
     }
 }

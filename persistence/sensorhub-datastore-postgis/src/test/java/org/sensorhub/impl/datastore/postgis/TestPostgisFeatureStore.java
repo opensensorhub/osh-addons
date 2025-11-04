@@ -17,15 +17,11 @@ package org.sensorhub.impl.datastore.postgis;
 import org.junit.After;
 import org.junit.Test;
 import org.sensorhub.api.common.BigId;
-import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.impl.datastore.AbstractTestFeatureStore;
-import org.sensorhub.impl.datastore.postgis.feature.PostgisFeatureStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.feature.PostgisFeatureStoreImpl;
 import org.vast.ogc.gml.GenericTemporalFeatureImpl;
 
 import javax.xml.namespace.QName;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;

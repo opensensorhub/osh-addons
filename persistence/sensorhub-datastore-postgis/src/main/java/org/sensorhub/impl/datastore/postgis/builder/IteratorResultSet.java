@@ -14,9 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis.builder;
 
-import com.zaxxer.hikari.HikariDataSource;
 import org.sensorhub.impl.datastore.postgis.ConnectionManager;
-import org.sensorhub.impl.datastore.postgis.obs.PostgisObsStoreImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

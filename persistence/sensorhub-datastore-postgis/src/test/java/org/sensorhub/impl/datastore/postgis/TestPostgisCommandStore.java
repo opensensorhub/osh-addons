@@ -17,13 +17,10 @@ package org.sensorhub.impl.datastore.postgis;
 import org.junit.After;
 import org.junit.Test;
 import org.sensorhub.impl.datastore.AbstractTestCommandStore;
-import org.sensorhub.impl.datastore.postgis.command.PostgisCommandStatusStore;
-import org.sensorhub.impl.datastore.postgis.command.PostgisCommandStoreImpl;
-import org.sensorhub.impl.datastore.postgis.command.PostgisCommandStreamStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.command.PostgisCommandStatusStore;
+import org.sensorhub.impl.datastore.postgis.store.command.PostgisCommandStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.command.PostgisCommandStreamStoreImpl;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 

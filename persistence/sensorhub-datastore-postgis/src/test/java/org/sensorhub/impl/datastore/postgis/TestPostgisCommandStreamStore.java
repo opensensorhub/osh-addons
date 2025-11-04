@@ -16,13 +16,9 @@ package org.sensorhub.impl.datastore.postgis;
 
 import org.junit.After;
 import org.sensorhub.impl.datastore.AbstractTestCommandStreamStore;
-import org.sensorhub.impl.datastore.postgis.command.PostgisCommandStatusStore;
-import org.sensorhub.impl.datastore.postgis.command.PostgisCommandStoreImpl;
-import org.sensorhub.impl.datastore.postgis.command.PostgisCommandStreamStoreImpl;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
+import org.sensorhub.impl.datastore.postgis.store.command.PostgisCommandStatusStore;
+import org.sensorhub.impl.datastore.postgis.store.command.PostgisCommandStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.command.PostgisCommandStreamStoreImpl;
 
 import static org.junit.Assert.assertEquals;
 

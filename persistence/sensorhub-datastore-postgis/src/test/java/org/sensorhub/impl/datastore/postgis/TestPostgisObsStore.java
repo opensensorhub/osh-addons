@@ -25,12 +25,9 @@ import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.impl.datastore.AbstractTestObsStore;
-import org.sensorhub.impl.datastore.postgis.obs.PostgisDataStreamStoreImpl;
-import org.sensorhub.impl.datastore.postgis.obs.PostgisObsStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.obs.PostgisDataStreamStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.obs.PostgisObsStoreImpl;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
