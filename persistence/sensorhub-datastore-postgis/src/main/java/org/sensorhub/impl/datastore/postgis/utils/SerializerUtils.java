@@ -236,16 +236,22 @@ public abstract class SerializerUtils {
             if (jsonReader.peek() == JsonToken.BEGIN_OBJECT)
                 jsonReader.beginObject();
 
-            DataComponent resultStruct = null;
             String name = SWECommonUtils.NO_NAME;
             while (jsonReader.hasNext()) {
                 var prop = jsonReader.nextName();
 
                 if ("recordSchema".equals(prop)) {
-                    resultStruct = sweJsonBindings.get().readDataComponent(jsonReader);
+                    DataComponent recordStruct = sweJsonBindings.get().readDataComponent(jsonReader);
+                    commandStreamInfoBuilder = commandStreamInfoBuilder.withRecordDescription(recordStruct);
                 } else if ("recordEncoding".equals(prop)) {
                     DataEncoding dataEncoding = sweJsonBindings.get().readEncoding(jsonReader);
                     commandStreamInfoBuilder = commandStreamInfoBuilder.withRecordEncoding(dataEncoding);
+                } else if ("resultSchema".equals(prop)) {
+                    DataComponent resultStruct = sweJsonBindings.get().readDataComponent(jsonReader);
+                    commandStreamInfoBuilder = commandStreamInfoBuilder.withResultDescription(resultStruct);
+                } else if ("resultEncoding".equals(prop)) {
+                    DataEncoding dataEncoding = sweJsonBindings.get().readEncoding(jsonReader);
+                    commandStreamInfoBuilder = commandStreamInfoBuilder.withResultEncoding(dataEncoding);
                 } else if ("system@id".equals(prop)) {
                     commandStreamInfoBuilder = commandStreamInfoBuilder.withSystem(readSystemID(jsonReader));
                 } else if ("name".equals(prop)) {
@@ -260,10 +266,6 @@ public abstract class SerializerUtils {
                 }
             }
             jsonReader.endObject();
-            if (resultStruct != null) {
-                resultStruct.setName(name);
-                commandStreamInfoBuilder = commandStreamInfoBuilder.withRecordDescription(resultStruct);
-            }
         } catch (IOException | IllegalStateException e) {
             throw new IOException(e.getMessage());
         }
@@ -281,6 +283,7 @@ public abstract class SerializerUtils {
                     jsonWriter.setIndent("  ");
                     // start writing
                     jsonWriter.name("name").value(commandStreamInfo.getName());
+                    jsonWriter.name("controlInputName").value(commandStreamInfo.getControlInputName());
 
                     if (commandStreamInfo.getSystemID() != null) {
                         SerializerUtils.writeSystemID(jsonWriter, "system@id", commandStreamInfo.getSystemID());
@@ -292,13 +295,23 @@ public abstract class SerializerUtils {
                         jsonWriter.name("description").value(commandStreamInfo.getDescription());
                     }
 
+                    if (commandStreamInfo.getResultEncoding() != null) {
+                        jsonWriter.name("resultEncoding");
+                        sweJsonBindings.get().writeAbstractEncoding(jsonWriter, commandStreamInfo.getResultEncoding());
+                    }
+
+                    if (commandStreamInfo.getResultStructure() != null) {
+                        jsonWriter.name("resultSchema");
+                        sweJsonBindings.get().writeDataComponent(jsonWriter, commandStreamInfo.getResultStructure(), false, commandStreamInfo.getResultStructure().getName());
+                    }
+
                     if (commandStreamInfo.getRecordEncoding() != null) {
                         jsonWriter.name("recordEncoding");
                         sweJsonBindings.get().writeAbstractEncoding(jsonWriter, commandStreamInfo.getRecordEncoding());
                     }
 
                     jsonWriter.name("recordSchema");
-                    sweJsonBindings.get().writeDataComponent(jsonWriter, commandStreamInfo.getRecordStructure(), false);
+                    sweJsonBindings.get().writeDataComponent(jsonWriter, commandStreamInfo.getRecordStructure(), false, commandStreamInfo.getRecordStructure().getName());
                     jsonWriter.endObject();
                     jsonWriter.flush();
                     return os.toString();
@@ -438,7 +451,6 @@ public abstract class SerializerUtils {
             jsonWriter.beginArray();
             for (var inlineRecord: commandResult.getInlineRecords()) {
                 jsonWriter.jsonValue(writeDataBlockToJson(commandStreamInfo.getResultStructure(), commandStreamInfo.getResultEncoding(), inlineRecord));
-
             }
             jsonWriter.endArray();
         }
