@@ -68,6 +68,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                         queryBuilder.createDataStreamIndexQuery(),
                         queryBuilder.createPhenomenonTimeIndexQuery(),
                         queryBuilder.createResultTimeIndexQuery(),
+                        queryBuilder.createFoiIndexQuery(),
                         queryBuilder.createUniqueConstraint()
                 }
         );
