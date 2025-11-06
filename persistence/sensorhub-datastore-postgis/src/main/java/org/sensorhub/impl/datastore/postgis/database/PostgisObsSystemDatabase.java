@@ -85,11 +85,7 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
             deploymentStore = new PostgisDeploymentStoreImpl(url, dbName, login, password, DEPLOY_TABLE_NAME, idScope, idProviderType, false);
             foiStore = new PostgisFoiStoreImpl(url, dbName, login, password, FOI_TABLE_NAME, idScope, idProviderType, config.useBatch);
             procedureStore = new PostgisProcedureStoreImpl(url, dbName, login, password, PROC_TABLE_NAME, idScope, idProviderType, false);
-            if(config.useBatch) {
-                obsStore = new PostgisBatchObsStoreImpl(url, dbName, login, password, OBS_TABLE_NAME, idScope, idProviderType);
-            } else {
-                obsStore = new PostgisObsStoreImpl(url, dbName, login, password, OBS_TABLE_NAME, idScope, idProviderType);
-            }
+            obsStore = this.getObsStore(url, dbName, login, password, OBS_TABLE_NAME, idScope, idProviderType);
             commandStore = new PostgisCommandStoreImpl(url, dbName, login, password, CMD_TABLE_NAME, idScope, idProviderType, false);
 
             systemDescStore.linkTo(obsStore.getDataStreams());
@@ -204,5 +200,12 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
     public boolean isReadOnly() {
         checkStarted();
         return false;
+    }
+
+    protected PostgisObsStoreImpl getObsStore(String url, String dbName,String login,String password, String tableName,int idScope, IdProviderType idProviderType) {
+        if(obsStore == null) {
+            obsStore = new PostgisObsStoreImpl(url, dbName, login, password, tableName, idScope, idProviderType);
+        }
+        return obsStore;
     }
 }
