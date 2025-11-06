@@ -123,7 +123,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             }
             if (!noFields || fields.contains(FOI_ID)) {
                 long foiId = resultSet.getLong(String.valueOf(FOI_ID));
-                if (!resultSet.wasNull()) {
+                if (!resultSet.wasNull() && foiId > 0) {
                     obsDataBuilder = obsDataBuilder.withFoi(BigId.fromLong(idScope, foiId));
                 }
             }
@@ -220,7 +220,6 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             throw new IllegalStateException("Cannot insert obs", e);
         }
     }
-
 
     static class TimeParams {
         Range<Instant> phenomenonTimeRange;
