@@ -35,11 +35,10 @@ import java.util.stream.Stream;
 
 public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImpl> {
     protected static String OBS_DATASTORE_NAME = "test_obs";
-    private static String DB_NAME = "gis";
-    private final String url = "localhost:5432";
-    private final String login = "postgres";
-    private final String password = "postgres";
-    private static final boolean USE_BATCH = true;
+    protected static String DB_NAME = "gis";
+    protected final String url = "localhost:5432";
+    protected final String login = "postgres";
+    protected final String password = "postgres";
 
     protected PostgisObsStoreImpl postgisObsStore;
 
@@ -51,7 +50,7 @@ public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImp
     }
 
     protected PostgisObsStoreImpl initStore() throws Exception {
-        this.postgisObsStore = new PostgisObsStoreImpl(url, DB_NAME, login, password, OBS_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL, USE_BATCH);
+        this.postgisObsStore = new PostgisObsStoreImpl(url, DB_NAME, login, password, OBS_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL);
         return this.postgisObsStore;
     }
 

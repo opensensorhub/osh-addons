@@ -12,23 +12,15 @@
 
  ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.datastore.postgis.database;
+package org.sensorhub.impl.datastore.postgis;
 
+import org.sensorhub.impl.datastore.postgis.store.obs.PostgisBatchObsStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.obs.PostgisObsStoreImpl;
 
-import org.sensorhub.api.config.DisplayInfo;
+public class TestPostgisBatchObsStore extends TestPostgisObsStore {
 
-/**
- * <p>
- * Config class for {@link PostgisObsSystemDatabase} module
- * </p>
- *
- * @author Mathieu Dhainaut
- * @date Jul 25, 2023
- */
-public class PostgisObsSystemDatabaseConfig extends PostgisDatabaseConfig
-{
-    public PostgisObsSystemDatabaseConfig()
-    {
-        this.moduleClass = PostgisObsSystemDatabase.class.getCanonicalName();
+    protected PostgisObsStoreImpl initStore() throws Exception {
+        this.postgisObsStore = new PostgisBatchObsStoreImpl(url, DB_NAME, login, password, OBS_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL);
+        return this.postgisObsStore;
     }
 }

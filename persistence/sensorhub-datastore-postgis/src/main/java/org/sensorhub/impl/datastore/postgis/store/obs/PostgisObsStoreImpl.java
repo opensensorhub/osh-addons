@@ -20,16 +20,14 @@ import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.data.ObsData;
-import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.obs.*;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
-import org.sensorhub.impl.datastore.postgis.BatchJob;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
-import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
-import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderObsStore;
+import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,8 +35,10 @@ import org.vast.data.DataBlockByte;
 import org.vast.util.TimeExtent;
 
 import java.sql.*;
-import java.time.Instant;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -46,25 +46,22 @@ import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.*;
 
 public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> implements IObsStore {
     private static final Logger logger = LoggerFactory.getLogger(PostgisObsStoreImpl.class);
-    public static final int BATCH_SIZE = 2000;
     public static final int STREAM_FETCH_SIZE = 20_000;
+    public static final String DEFAULT_TABLE_NAME = QueryBuilderObsStore.OBS_STORE_TABLE_NAME;
 
-    private PostgisDataStreamStoreImpl dataStreamStore;
-    private ISystemDescStore systemDescStore;
-    private IFoiStore foiStore;
+    protected PostgisDataStreamStoreImpl dataStreamStore;
+    protected ISystemDescStore systemDescStore;
+    protected IFoiStore foiStore;
 
-    public PostgisObsStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
-        super(idScope, dsIdProviderType, new QueryBuilderObsStore(), useBatch);
-        this.init(url, dbName, login, password, new String[]{
-                        queryBuilder.createTableQuery(),
-                        queryBuilder.createUniqueConstraint()
-                }
-        );
+    public PostgisObsStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
+        this(url,dbName,login,password,DEFAULT_TABLE_NAME,idScope,dsIdProviderType);
     }
 
     public PostgisObsStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
-                               int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
-        super(idScope, dsIdProviderType, new QueryBuilderObsStore(dataStoreName), useBatch);
+                               int idScope, IdProviderType dsIdProviderType) {
+        super(idScope, dsIdProviderType,
+                new QueryBuilderObsStore(dataStoreName),
+                false);
         this.init(url, dbName, login, password, new String[]{
                         queryBuilder.createTableQuery(),
 //                        queryBuilder.createDataIndexQuery(),
@@ -81,11 +78,6 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         super.init(url, dbName, login, password, initScripts);
         this.dataStreamStore = new PostgisDataStreamStoreImpl(this, url, dbName, login, password, idScope, idProviderType, false);
         queryBuilder.linkTo(dataStreamStore);
-
-        // batch insertion only
-        if(useBatch) {
-            this.connectionManager.enableBatch(BATCH_SIZE, queryBuilder.removeByIdQuery());
-        }
     }
 
     @Override
@@ -168,7 +160,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         return this.dataStreamStore;
     }
 
-    private void fillAddStatement(DataStreamKey dataStreamKey, IObsData obs, PreparedStatement preparedStatement) throws SQLException {
+    protected void fillAddStatement(DataStreamKey dataStreamKey, IObsData obs, PreparedStatement preparedStatement) throws SQLException {
         // insert DataStreamId
         preparedStatement.setLong(1, dataStreamKey.getInternalID().getIdAsLong());
         // insert foiId if any
@@ -207,48 +199,27 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         // check that FOI exists
 //        if (obs.hasFoi() && foiStore != null && foiStore.contains(obs.getFoiID()))
 //            throw new IllegalStateException("Unknown FOI: " + obs.getFoiID());
-        if (useBatch) {
-            try {
-                batchLock.lock();
-                Connection connection = this.connectionManager.getBatchConnection();
-                try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.insertObsQuery(), Statement.RETURN_GENERATED_KEYS)) {
-                    this.fillAddStatement(dataStreamKey, obs, preparedStatement);
-                    int rows = preparedStatement.executeUpdate();
-                    try (ResultSet rs = preparedStatement.getGeneratedKeys()) {
-                        long generatedKey = 0;
-                        if (rs.next()) {
-                            generatedKey = rs.getLong(1);
-                        }
-                        return BigId.fromLong(idScope, generatedKey);
+        Instant dataTime = obs.getPhenomenonTime();
+        // check existing partition
+        try (Connection connection1 = this.connectionManager.getConnection()) {
+            try (PreparedStatement preparedStatement = connection1.prepareStatement(queryBuilder.insertObsQuery(), Statement.RETURN_GENERATED_KEYS)) {
+                this.fillAddStatement(dataStreamKey, obs, preparedStatement);
+                int rows = preparedStatement.executeUpdate();
+                try (ResultSet rs = preparedStatement.getGeneratedKeys()) {
+                    long generatedKey = 0;
+                    if (rs.next()) {
+                        generatedKey = rs.getLong(1);
                     }
-                } catch (Exception e) {
-                    throw new RuntimeException("Cannot insert obs", e);
-                } finally {
-                    this.connectionManager.tryCommit();
-                }
-            } finally {
-                batchLock.unlock();
-            }
-        } else {
-            try (Connection connection1 = this.connectionManager.getConnection()) {
-                try (PreparedStatement preparedStatement = connection1.prepareStatement(queryBuilder.insertObsQuery(), Statement.RETURN_GENERATED_KEYS)) {
-                    this.fillAddStatement(dataStreamKey, obs, preparedStatement);
-                    int rows = preparedStatement.executeUpdate();
-                    try (ResultSet rs = preparedStatement.getGeneratedKeys()) {
-                        long generatedKey = 0;
-                        if (rs.next()) {
-                            generatedKey = rs.getLong(1);
-                        }
-                        return BigId.fromLong(idScope, generatedKey);
-                    }
-                } catch (Exception e) {
-                    throw new IllegalStateException("Cannot insert obs", e);
+                    return BigId.fromLong(idScope, generatedKey);
                 }
             } catch (Exception e) {
                 throw new IllegalStateException("Cannot insert obs", e);
             }
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot insert obs", e);
         }
     }
+
 
     static class TimeParams {
         Range<Instant> phenomenonTimeRange;
@@ -428,31 +399,15 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         IObsData data = this.get(o);
 
         logger.debug("Remove Obs with key={}", key);
-        if (useBatch) {
-            batchLock.lock();
-            BatchJob batchJob = this.connectionManager.getBatchJob();
-            try {
-                PreparedStatement preparedStatement = batchJob.getPreparedStatement();
+        try (Connection connection = this.connectionManager.getConnection()) {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.removeByIdQuery())) {
                 preparedStatement.setLong(1, key.getIdAsLong());
-                preparedStatement.addBatch();
-            } catch (Exception e) {
-                throw new IllegalStateException("Cannot remove obs " + data.toString());
-            } finally {
-                this.connectionManager.offerBatchJob(batchJob);
-                this.connectionManager.tryCommit();
-                batchLock.unlock();
-            }
-        } else {
-            try (Connection connection = this.connectionManager.getConnection()) {
-                try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.removeByIdQuery())) {
-                    preparedStatement.setLong(1, key.getIdAsLong());
-                    preparedStatement.executeUpdate();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
+                preparedStatement.executeUpdate();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
         return data;
     }
@@ -545,7 +500,6 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         if(logger.isDebugEnabled()) {
             logger.debug(queryStr);
         }
-        batchLock.lock();
         try (Connection connection = this.connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 return statement.executeUpdate(queryStr);
@@ -555,8 +509,6 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
-        } finally {
-            batchLock.unlock();
         }
     }
 }

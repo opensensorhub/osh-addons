@@ -238,4 +238,5 @@ public class PostgisUtils {
         range.setValue(rangeValue.toString());
         return range;
     }
+
 }

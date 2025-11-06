@@ -28,6 +28,7 @@ import org.sensorhub.api.datastore.property.IPropertyStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.store.command.PostgisCommandStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.obs.PostgisBatchObsStoreImpl;
 import org.sensorhub.impl.datastore.postgis.store.obs.PostgisObsStoreImpl;
 import org.sensorhub.impl.datastore.postgis.store.feature.PostgisDeploymentStoreImpl;
 import org.sensorhub.impl.datastore.postgis.store.feature.PostgisFoiStoreImpl;
@@ -84,7 +85,11 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
             deploymentStore = new PostgisDeploymentStoreImpl(url, dbName, login, password, DEPLOY_TABLE_NAME, idScope, idProviderType, false);
             foiStore = new PostgisFoiStoreImpl(url, dbName, login, password, FOI_TABLE_NAME, idScope, idProviderType, config.useBatch);
             procedureStore = new PostgisProcedureStoreImpl(url, dbName, login, password, PROC_TABLE_NAME, idScope, idProviderType, false);
-            obsStore = new PostgisObsStoreImpl(url, dbName, login, password, OBS_TABLE_NAME, idScope, idProviderType, config.useBatch);
+            if(config.useBatch) {
+                obsStore = new PostgisBatchObsStoreImpl(url, dbName, login, password, OBS_TABLE_NAME, idScope, idProviderType);
+            } else {
+                obsStore = new PostgisObsStoreImpl(url, dbName, login, password, OBS_TABLE_NAME, idScope, idProviderType);
+            }
             commandStore = new PostgisCommandStoreImpl(url, dbName, login, password, CMD_TABLE_NAME, idScope, idProviderType, false);
 
             systemDescStore.linkTo(obsStore.getDataStreams());
