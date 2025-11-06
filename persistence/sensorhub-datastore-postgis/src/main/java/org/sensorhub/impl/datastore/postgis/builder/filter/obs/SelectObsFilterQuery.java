@@ -42,7 +42,7 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
     }
 
     protected void handleSorted() {
-        this.filterQueryGenerator.addOrderBy("phenomenonTime ASC");
+        this.filterQueryGenerator.addOrderBy(this.tableName+".phenomenonTime ASC");
     }
 
     protected void handleDataStreamFilter(DataStreamFilter dataStreamFilter) {
