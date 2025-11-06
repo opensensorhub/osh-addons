@@ -124,6 +124,10 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
         return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " using GIST (validTime)";
     }
 
+    public String createIdIndexQuery() {
+        return "CREATE INDEX "+this.getStoreTableName()+"_feature_id_idx ON "+this.getStoreTableName()+" (id)";
+    }
+
     public String createTrigramExtensionQuery() {
         return "CREATE EXTENSION IF NOT EXISTS pg_trgm";
     }
