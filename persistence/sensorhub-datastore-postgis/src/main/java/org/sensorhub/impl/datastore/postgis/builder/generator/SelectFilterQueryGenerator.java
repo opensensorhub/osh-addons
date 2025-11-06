@@ -101,10 +101,6 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
             sb.append(" GROUP BY ");
             sb.append(this.groupBy.stream().collect(Collectors.joining(", ")));
         }
-        if (this.orderBy != null && !this.orderBy.isEmpty()) {
-            sb.append(" ORDER BY ");
-            sb.append(this.orderBy.stream().collect(Collectors.joining(", ")));
-        }
         if (this.limit >= 0) {
             sb.append(" LIMIT ").append(this.limit);
         }
