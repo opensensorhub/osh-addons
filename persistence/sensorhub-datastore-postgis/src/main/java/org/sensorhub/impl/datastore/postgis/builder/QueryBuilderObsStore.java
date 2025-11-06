@@ -66,6 +66,10 @@ public class QueryBuilderObsStore extends QueryBuilder {
         return "CREATE INDEX "+this.getStoreTableName()+"_result_time_idx on "+this.getStoreTableName()+" ("+ RESULT_TIME +")";
     }
 
+    public String createFoiIndexQuery() {
+        return "CREATE INDEX "+this.getStoreTableName()+"_foi_idx on "+this.getStoreTableName()+" ("+ FOI_ID +")";
+    }
+
     public String insertObsQuery() {
         return "INSERT INTO "+this.getStoreTableName()+" " +
                 "("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (?,?,?,?,?) " +
