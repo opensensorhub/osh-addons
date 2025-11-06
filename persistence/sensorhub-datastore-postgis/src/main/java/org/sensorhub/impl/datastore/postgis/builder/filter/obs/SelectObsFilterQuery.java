@@ -19,6 +19,7 @@ import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.ObsFilter;
+import org.sensorhub.impl.datastore.postgis.builder.filter.datastream.DataStreamFilterQuery;
 import org.sensorhub.impl.datastore.postgis.builder.filter.datastream.SelectDataStreamFilterQuery;
 import org.sensorhub.impl.datastore.postgis.builder.filter.feature.SelectFoiFilterQuery;
 import org.sensorhub.impl.datastore.postgis.builder.generator.FilterQueryGenerator;
@@ -26,8 +27,10 @@ import org.sensorhub.impl.datastore.postgis.builder.generator.SelectFilterQueryG
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.vast.util.Asserts;
 
+import java.util.SortedSet;
 import java.util.stream.Collectors;
 
+import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.DATASTREAM_ID;
 import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.FOI_ID;
 
 public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGenerator> {
@@ -41,19 +44,36 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
         return this.filterQueryGenerator;
     }
 
+    protected void handleDataStreamInternalIDs(SortedSet<BigId> ids) {
+        if (ids != null && !ids.isEmpty()) {
+            addCondition(this.tableName+".datastreamid in (" +
+                    ids.stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
+                    ")");
+        }
+    }
+
     protected void handleSorted() {
         this.filterQueryGenerator.addOrderBy(this.tableName+".phenomenonTime ASC");
     }
 
     protected void handleDataStreamFilter(DataStreamFilter dataStreamFilter) {
         if (dataStreamFilter != null) {
-            // create join
-            Asserts.checkNotNull(dataStreamTableName, "dataStreamTableName should not be null");
+            // To avoid JOIN if we have only datastreamid to check
+            if(DataStreamFilterQuery.hasOnlyInternalIds(dataStreamFilter)) {
+                this.filterQueryGenerator.addCondition(this.tableName + "." + DATASTREAM_ID + " IN ("+
+                        dataStreamFilter.getInternalIDs()
+                                .stream()
+                                .map(bigId -> String.valueOf(bigId.getIdAsLong()))
+                                .collect(Collectors.joining(","))+")");
+            } else {
+                // create join
+                Asserts.checkNotNull(dataStreamTableName, "dataStreamTableName should not be null");
 
-            this.filterQueryGenerator.addInnerJoin(this.dataStreamTableName + " ON " + this.tableName + ".datastreamid = " + this.dataStreamTableName + ".id");
-            SelectDataStreamFilterQuery dataStreamFilterQuery = new SelectDataStreamFilterQuery(this.dataStreamTableName, filterQueryGenerator);
-            dataStreamFilterQuery.setSysDescTableName(this.sysDescTableName);
-            this.filterQueryGenerator = dataStreamFilterQuery.build(dataStreamFilter);
+                this.filterQueryGenerator.addInnerJoin(this.dataStreamTableName + " ON " + this.tableName + ".datastreamid = " + this.dataStreamTableName + ".id");
+                SelectDataStreamFilterQuery dataStreamFilterQuery = new SelectDataStreamFilterQuery(this.dataStreamTableName, filterQueryGenerator);
+                dataStreamFilterQuery.setSysDescTableName(this.sysDescTableName);
+                this.filterQueryGenerator = dataStreamFilterQuery.build(dataStreamFilter);
+            }
         }
     }
 

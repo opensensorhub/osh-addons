@@ -162,4 +162,15 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
     public void setDataStreamId(long dsId) {
         this.dsId = dsId;
     }
+
+    public static boolean hasOnlyInternalIds(DataStreamFilter dataStreamFilter) {
+        return (dataStreamFilter.getObservationFilter() == null &&
+                dataStreamFilter.getSystemFilter() == null &&
+                dataStreamFilter.getFullTextFilter() == null &&
+                dataStreamFilter.getValidTimeFilter() == null &&
+                dataStreamFilter.getOutputNames() == null &&
+                dataStreamFilter.getObservedProperties() == null &&
+                (dataStreamFilter.getInternalIDs() != null && !dataStreamFilter.getInternalIDs().isEmpty()));
+
+    }
 }
