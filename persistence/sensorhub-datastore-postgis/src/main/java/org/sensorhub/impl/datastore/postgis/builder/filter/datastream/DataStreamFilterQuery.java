@@ -108,8 +108,14 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
                     sb.append("(");
                     for(String uid: uniqueIds) {
                         // ILIKE use % OPERATOR
-                        currentId = uid.replaceAll("\\*","%");
-                        sb.append("(").append(tableName).append(".data->'system@id'->>'uniqueID') ILIKE '%").append(currentId).append("'");
+                        String operator = "=";
+                        currentId = uid;
+                        if(uid.contains("*")) {
+                            operator = "ILIKE";
+                            currentId = uid.replaceAll("\\*","%");
+                        }
+
+                        sb.append("(").append(tableName).append(".data->'system@id'->>'uniqueID') "+operator+" '").append(currentId).append("'");
                         if(++i < uniqueIds.size()) {
                             sb.append(" OR ");
                         }

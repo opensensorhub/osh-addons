@@ -96,9 +96,14 @@ public abstract class BaseFeatureFilterQuery<V extends IFeature,F extends Featur
             int i = 0;
             sb.append("(");
             for(String uid: uniqueIds) {
-                // ILIKE use % OPERATOR
-                currentId = uid.replaceAll("\\*","%");
-                sb.append("(").append(tableName).append(".data->'properties'->>'uid') ILIKE '").append(currentId).append("'");
+                String operator = "=";
+                currentId = uid;
+                if(uid.contains("*")) {
+                    operator = "ILIKE";
+                    currentId = uid.replaceAll("\\*","%");
+                }
+
+                sb.append("(").append(tableName).append(".data->'properties'->>'uid') "+operator+" '").append(currentId).append("'");
                 if(++i < uniqueIds.size()) {
                     sb.append(" OR ");
                 }
