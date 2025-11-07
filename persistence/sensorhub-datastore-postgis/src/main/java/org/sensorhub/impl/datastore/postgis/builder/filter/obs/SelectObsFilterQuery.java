@@ -44,14 +44,6 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
         return this.filterQueryGenerator;
     }
 
-    protected void handleDataStreamInternalIDs(SortedSet<BigId> ids) {
-        if (ids != null && !ids.isEmpty()) {
-            addCondition(this.tableName+".datastreamid in (" +
-                    ids.stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
-                    ")");
-        }
-    }
-
     protected void handleSorted() {
         this.filterQueryGenerator.addOrderBy(this.tableName+".phenomenonTime ASC");
     }
@@ -60,7 +52,12 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
         if (dataStreamFilter != null) {
             // To avoid JOIN if we have only datastreamid to check
             if(DataStreamFilterQuery.hasOnlyInternalIds(dataStreamFilter)) {
-                this.filterQueryGenerator.addCondition(this.tableName + "." + DATASTREAM_ID + " IN ("+
+                String operator = "IN";
+                if(dataStreamFilter.getInternalIDs().size() == 1) {
+                    operator = "=";
+                }
+
+                this.filterQueryGenerator.addCondition(this.tableName + "." + DATASTREAM_ID + " "+operator+" ("+
                         dataStreamFilter.getInternalIDs()
                                 .stream()
                                 .map(bigId -> String.valueOf(bigId.getIdAsLong()))
@@ -124,7 +121,11 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                         if (foiFilter.getInternalIDs().contains(BigId.NONE)) {
                             addCondition(this.tableName + "." + FOI_ID + " IS NULL");
                         } else {
-                            addCondition(this.tableName + "." + FOI_ID + " in (" +
+                            String operator = "IN";
+                            if(foiFilter.getInternalIDs().size() == 1) {
+                                operator = "=";
+                            }
+                            addCondition(this.tableName + "." + FOI_ID + " "+operator+" (" +
                                     foiFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                                     ")");
                         }

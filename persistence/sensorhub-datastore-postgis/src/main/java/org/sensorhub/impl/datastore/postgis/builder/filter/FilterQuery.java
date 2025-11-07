@@ -40,7 +40,11 @@ public abstract class FilterQuery<F extends FilterQueryGenerator> {
 
     protected void handleInternalIDs(SortedSet<BigId> ids) {
         if (ids != null && !ids.isEmpty()) {
-            addCondition(this.tableName+".id in (" +
+            String operator = "IN";
+            if(ids.size() == 1) {
+                operator = "=";
+            }
+            addCondition(this.tableName+".id "+operator+" (" +
                     ids.stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                     ")");
         }
