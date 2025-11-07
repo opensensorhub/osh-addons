@@ -82,9 +82,6 @@ public abstract class PostgisStore<T extends QueryBuilder> {
             throw new RuntimeException(e);
         }
 
-        if(this.useBatch) {
-            this.initAutoCommitTask();
-        }
         try {
             this.initIdProvider();
         } catch (DataStoreException e) {
@@ -123,25 +120,7 @@ public abstract class PostgisStore<T extends QueryBuilder> {
             throw new RuntimeException(e);
         }
     }
-    protected void initAutoCommitTask() {
-        if(timerTask != null) {
-            timerTask.cancel();
-        }
 
-        Timer t = new Timer();
-        timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    commit();
-                } catch (DataStoreException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        };
-
-        t.scheduleAtFixedRate(timerTask, 0,autoCommitPeriod);
-    }
     public void backup(OutputStream is) throws IOException {
         try(Connection connection = this.connectionManager.getConnection()) {
             if (PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
@@ -251,11 +230,4 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     protected void linkTo(ICommandStore commandStore) { queryBuilder.linkTo(commandStore); }
     protected void linkTo(IFoiStore foiStore) { queryBuilder.linkTo(foiStore); }
     protected void linkTo(ICommandStatusStore commandStatusStore) { queryBuilder.linkTo(commandStatusStore); }
-
-    public void setAutoCommitPeriod(long autoCommitPeriod) {
-        this.autoCommitPeriod = autoCommitPeriod;
-        if(this.useBatch) {
-            this.initAutoCommitTask();
-        }
-    }
 }
