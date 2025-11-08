@@ -35,23 +35,19 @@ public class SelectCommandStatusFilterQuery extends BaseCommandStatusFilterQuery
 
     protected void handleReportTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
-            addCondition(this.tableName+".data->'reportTime' IS NOT NULL");
+            addCondition(this.tableName+".reportTime IS NOT NULL");
             if (temporalFilter.isLatestTime()) {
-                filterQueryGenerator.addDistinct(this.tableName+".data->'command@id'");
-                filterQueryGenerator.addDistinct(this.tableName+".data->'reportTime'");
-                filterQueryGenerator.addOrderBy(this.tableName+".data->'command@id'");
-                filterQueryGenerator.addOrderBy(this.tableName+".data->'reportTime' DESC ");
+                filterQueryGenerator.addDistinct(this.tableName+".commandID");
+                filterQueryGenerator.addDistinct(this.tableName+".reportTime");
+                filterQueryGenerator.addOrderBy(this.tableName+".commandID");
+                filterQueryGenerator.addOrderBy(this.tableName+".reportTime DESC ");
             } else {
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
-                String sb = "tstzrange((" +
-                        tableName +
-                        ".data->'reportTime'->>'begin')::timestamptz,(" +
-                        tableName +
-                        ".data->'reportTime'->>'end')::timestamptz, '[]')" +
-                        " && " +
-                        "'[" + min + "," + max + "]'::tstzrange";
+                String sb = tableName + ".reportTime BETWEEN '"
+                        + min + "'::timestamptz AND '"
+                        + max + "'::timestamptz";
                 addCondition(sb);
             }
         }
@@ -59,42 +55,36 @@ public class SelectCommandStatusFilterQuery extends BaseCommandStatusFilterQuery
 
     protected void handleExecutionTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
-            addCondition(this.tableName+".data->'executionTime' IS NOT NULL");
+            addCondition(this.tableName+".executionTime IS NOT NULL");
             if (temporalFilter.isLatestTime()) {
-                filterQueryGenerator.addDistinct(this.tableName+".data->'command@id'");
-                filterQueryGenerator.addDistinct(this.tableName+".data->'executionTime'");
-                filterQueryGenerator.addOrderBy(this.tableName+".data->'command@id'");
-                filterQueryGenerator.addOrderBy(this.tableName+".data->'executionTime' DESC ");
+                filterQueryGenerator.addDistinct(this.tableName+".commandID");
+                filterQueryGenerator.addDistinct(this.tableName+".executionTime");
+                filterQueryGenerator.addOrderBy(this.tableName+".commandID");
+                filterQueryGenerator.addOrderBy(this.tableName+".executionTime DESC ");
             } else {
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
-                String sb = "tstzrange((" +
-                        tableName +
-                        ".data->'executionTime'->>'begin')::timestamptz,(" +
-                        tableName +
-                        ".data->'executionTime'->>'end')::timestamptz, '[]')" +
-                        " && " +
-                        "'[" + min + "," + max + "]'::tstzrange";
+                String sb = tableName + ".executionTime "
+                        + PostgisUtils.getOperator(temporalFilter.getOperator())
+                        + " tsrange('" + min + "','" + max + "', '[]')";
                 addCondition(sb);
             }
         }
     }
 
     protected void handleLatest() {
-        filterQueryGenerator.addDistinct(this.tableName+".data->'command@id'->>'id'");
-        filterQueryGenerator.addDistinct(this.tableName+".data->'command@id'->>'scope'");
-        filterQueryGenerator.addDistinct(this.tableName+".data->'reportTime'");
-        filterQueryGenerator.addOrderBy(this.tableName+".data->'command@id'->>'id'");
-        filterQueryGenerator.addOrderBy(this.tableName+".data->'command@id'->>'scope'");
-        filterQueryGenerator.addOrderBy(this.tableName+".data->'reportTime' DESC ");
+        filterQueryGenerator.addDistinct(this.tableName+".commandID");
+        filterQueryGenerator.addDistinct(this.tableName+".reportTime");
+        filterQueryGenerator.addOrderBy(this.tableName+".commandID");
+        filterQueryGenerator.addOrderBy(this.tableName+".reportTime DESC ");
     }
 
     protected void handleCommandFilter(CommandFilter commandFilter) {
         if(commandFilter != null) {
             // create join
             Asserts.checkNotNull(this.commandTableName, "Command table name should not be null");
-            this.filterQueryGenerator.addInnerJoin(this.commandTableName+" ON ("+this.tableName+".data->'command@id'->'id')::bigint = "+this.commandTableName+".id");
+            this.filterQueryGenerator.addInnerJoin(this.commandTableName+" ON ("+this.tableName+".commandID)::bigint = "+this.commandTableName+".id");
             SelectCommandFilterQuery commandFilterQuery = new SelectCommandFilterQuery(this.commandTableName, filterQueryGenerator);
             commandFilterQuery.setCommandStatusTableName(this.tableName);
             commandFilterQuery.setCommandStreamTableName(this.commandStreamTableName);

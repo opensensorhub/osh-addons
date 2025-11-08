@@ -322,106 +322,11 @@ public abstract class SerializerUtils {
         }
     }
 
-    // CommandStatus
-    public static ICommandStatus readICommandStatusFromJson(String json, ICommandStreamInfo csInfo) throws IOException {
-        StringReader stringReader = new StringReader(json);
-        JsonReader jsonReader = new JsonReader(stringReader);
-
-        CommandStatus.CommandStatusBuilder<CommandStatus.Builder, CommandStatus> commandStatusBuilder =
-                new CommandStatus.Builder();
-
-        try {
-            // read BEGIN_OBJECT only if not already read by caller
-            // this happens when reading embedded schema and auto-detecting obs format
-            if (jsonReader.peek() == JsonToken.BEGIN_OBJECT)
-                jsonReader.beginObject();
-
-            while (jsonReader.hasNext()) {
-                var prop = jsonReader.nextName();
-
-                if ("message".equals(prop)) {
-                    commandStatusBuilder = commandStatusBuilder.withMessage(jsonReader.nextString());
-                } else if ("command@id".equals(prop)) {
-                    commandStatusBuilder = commandStatusBuilder.withCommand(readBigId(jsonReader));
-                } else if ("statusCode".equals(prop)) {
-                    commandStatusBuilder = commandStatusBuilder.withStatusCode(ICommandStatus.CommandStatusCode.valueOf(jsonReader.nextString()));
-                } else if ("progress".equals(prop)) {
-                    commandStatusBuilder = commandStatusBuilder.withProgress(jsonReader.nextInt());
-                } else if ("executionTime".equals(prop)) {
-                    commandStatusBuilder = commandStatusBuilder.withExecutionTime(readTimeExtent(jsonReader));
-                } else if ("reportTime".equals(prop)) {
-                    commandStatusBuilder = commandStatusBuilder.withReportTime(PostgisUtils.readInstantFromString(jsonReader.nextString(), false));
-                } else if ("commandResult".equals(prop)) {
-                    commandStatusBuilder = commandStatusBuilder.withResult(readICommandResult(jsonReader, csInfo));
-                } else {
-                    jsonReader.skipValue();
-                }
-            }
-            jsonReader.endObject();
-        } catch (IOException | IllegalStateException e) {
-            throw new IOException(e.getMessage());
-        }
-
-        return commandStatusBuilder.build();
+    protected static void writeICommandResult(JsonWriter jsonWriter, ICommandResult commandResult) throws IOException {
+        writeICommandResult(jsonWriter, commandResult, null);
     }
 
-    public static ICommandStatus readICommandStatusFromJson(String json) throws IOException {
-        return readICommandStatusFromJson(json, null);
-    }
-
-    public static String writeICommandStatusToJson(ICommandStatus commandStatus) throws IOException{
-        return writeICommandStatusToJson(commandStatus, null);
-    }
-
-    public static String writeICommandStatusToJson(ICommandStatus commandStatus, ICommandStreamInfo commandStreamInfo) throws IOException {
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            try (var osw = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
-                try (JsonWriter jsonWriter = new JsonWriter(osw)) {
-                    jsonWriter.beginObject();
-                    jsonWriter.setLenient(true);
-                    jsonWriter.setSerializeNulls(false);
-                    jsonWriter.setIndent("  ");
-                    // start writing
-                    if(!Strings.isNullOrEmpty(commandStatus.getMessage())) {
-                        jsonWriter.name("message").value(commandStatus.getMessage());
-                    }
-                    if(commandStatus.getCommandID() != null) {
-                        writeBigId(jsonWriter, "command@id", commandStatus.getCommandID());
-                    }
-                    if(commandStatus.getStatusCode() != null) {
-                        jsonWriter.name("statusCode").value(commandStatus.getStatusCode().name());
-                    }
-
-                    jsonWriter.name("progress").value(commandStatus.getProgress());
-
-                    if(commandStatus.getExecutionTime() != null) {
-                        writeTimeExtent(jsonWriter, "executionTime", commandStatus.getExecutionTime());
-                    }
-
-                    if(commandStatus.getReportTime() != null) {
-                        jsonWriter.name("reportTime").value(PostgisUtils.writeInstantToString(commandStatus.getReportTime(), false));
-                    }
-
-                    if(commandStatus.getResult() != null) {
-                        writeICommandResult(jsonWriter, "commandResult",commandStatus.getResult(), commandStreamInfo);
-                    }
-
-                    jsonWriter.endObject();
-                    jsonWriter.flush();
-                    return os.toString();
-                }
-            }
-        } catch (Exception e) {
-            throw new IOException("Error writing ICommandStatus structure", e);
-        }
-    }
-
-    protected static void writeICommandResult(JsonWriter jsonWriter, String nodeName, ICommandResult commandResult) throws IOException {
-        writeICommandResult(jsonWriter, nodeName, commandResult, null);
-    }
-
-    protected static void writeICommandResult(JsonWriter jsonWriter, String nodeName, ICommandResult commandResult, ICommandStreamInfo commandStreamInfo) throws IOException {
-        jsonWriter.name(nodeName);
+    protected static void writeICommandResult(JsonWriter jsonWriter, ICommandResult commandResult, ICommandStreamInfo commandStreamInfo) throws IOException {
         jsonWriter.beginObject();
 
         if (commandResult.getDataStreamIDs() != null) {
@@ -456,6 +361,24 @@ public abstract class SerializerUtils {
         }
 
         jsonWriter.endObject();
+    }
+
+    public static String writeICommandResultJson(ICommandResult commandResult, ICommandStreamInfo csInfo) throws IOException {
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            try (var osw = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
+                try (JsonWriter jsonWriter = new JsonWriter(osw)) {
+                    writeICommandResult(jsonWriter, commandResult, csInfo);
+                    jsonWriter.flush();
+                    return os.toString();
+                }
+            }
+        } catch (Exception e) {
+            throw new IOException("Error writing ICommandResult", e);
+        }
+    }
+
+    public static String writeICommandResultJson(ICommandResult commandResult) throws IOException {
+        return writeICommandResultJson(commandResult, null);
     }
 
     protected static ICommandResult readICommandResult(JsonReader jsonReader, ICommandStreamInfo csInfo) throws IOException {
@@ -514,7 +437,17 @@ public abstract class SerializerUtils {
         }
         return null;
     }
-    //
+
+    public static ICommandResult readICommandResultJson(String json,  ICommandStreamInfo csInfo) throws IOException {
+        StringReader stringReader = new StringReader(json);
+        JsonReader jsonReader = new JsonReader(stringReader);
+        return readICommandResult(jsonReader, csInfo);
+    }
+
+    public static ICommandResult readICommandResultJson(String json) throws IOException {
+        return readICommandResultJson(json, null);
+    }
+
     protected static void writeBigId(JsonWriter jsonWriter, String nodeName, BigId bigId) throws IOException {
         if(nodeName != null) {
             jsonWriter.name(nodeName);
