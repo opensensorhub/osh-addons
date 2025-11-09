@@ -3,10 +3,7 @@ package org.sensorhub.impl.datastore.postgis;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -34,6 +31,7 @@ public class ConnectionManager {
         this.dbName = dbName;
         this.login = login;
         this.password = password;
+        DriverManager.setLoginTimeout(1000 * 60 * 5); // 5 minutes;
     }
 
     public void enableBatch(int batchSize, final String query) {
@@ -56,6 +54,7 @@ public class ConnectionManager {
         config.setUsername(login);
         config.setPassword(password);
         config.setMaximumPoolSize(5);
+        config.setConnectionTimeout(1000 * 60 * 5); // 5 minutes
 
 //                        config.setMaximumPoolSize(200_000);
         config.addDataSourceProperty("cachePrepStmts", "true");
