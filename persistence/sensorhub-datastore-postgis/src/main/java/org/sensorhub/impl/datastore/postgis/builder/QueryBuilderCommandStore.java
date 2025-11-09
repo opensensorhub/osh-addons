@@ -15,12 +15,8 @@
 package org.sensorhub.impl.datastore.postgis.builder;
 
 import org.sensorhub.api.datastore.command.CommandFilter;
-import org.sensorhub.api.datastore.command.ICommandStatusStore;
 import org.sensorhub.api.datastore.command.ICommandStore;
-import org.sensorhub.api.datastore.command.ICommandStreamStore;
-import org.sensorhub.api.datastore.feature.IFoiStore;
-import org.sensorhub.api.datastore.system.ISystemDescStore;
-import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesCommandQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.command.SelectEntriesCommandQuery;
 
 import java.util.Set;
 

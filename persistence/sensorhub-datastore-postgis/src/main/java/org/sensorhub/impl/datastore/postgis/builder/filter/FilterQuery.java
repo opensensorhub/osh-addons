@@ -15,34 +15,43 @@
 package org.sensorhub.impl.datastore.postgis.builder.filter;
 
 import org.sensorhub.api.common.BigId;
-import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
+import org.sensorhub.impl.datastore.postgis.builder.generator.FilterQueryGenerator;
 
-import java.time.Instant;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 
-public abstract class FilterQuery {
+public abstract class FilterQuery<F extends FilterQueryGenerator> {
     protected String commandStreamTableName;
     protected String commandStatusTableName;
     protected String commandTableName;
     protected String sysDescTableName;
     protected String dataStreamTableName;
     protected String foiTableName;
+    protected String obsTableName;
 
     protected String tableName;
 
-    protected FilterQueryGenerator filterQueryGenerator;
-    protected FilterQuery(String tableName, FilterQueryGenerator filterQueryGenerator) {
+    protected F filterQueryGenerator;
+
+    protected FilterQuery(String tableName, F filterQueryGenerator) {
         this.tableName = tableName;
         this.filterQueryGenerator = filterQueryGenerator;
     }
 
     protected void handleInternalIDs(SortedSet<BigId> ids) {
         if (ids != null && !ids.isEmpty()) {
-            filterQueryGenerator.addCondition(this.tableName+".id in (" +
+            String operator = "IN";
+            if(ids.size() == 1) {
+                operator = "=";
+            }
+            addCondition(this.tableName+".id "+operator+" (" +
                     ids.stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
                     ")");
         }
+    }
+
+    protected void addCondition(String condition) {
+        filterQueryGenerator.addCondition(condition);
     }
 
     public void setCommandStreamTableName(String commandStreamTableName) {
@@ -69,14 +78,8 @@ public abstract class FilterQuery {
         this.foiTableName = foiTableName;
     }
 
-    // POSTGRES LIMIT
-    public static String checkAndGetValidInstant(Instant instant) {
-        if(instant.getEpochSecond() < PostgisUtils.MIN_INSTANT.getEpochSecond()) {
-            return "-infinity";
-        } else if(instant.getEpochSecond() > PostgisUtils.MAX_INSTANT.getEpochSecond()) {
-            return "infinity";
-        } else {
-            return instant.toString();
-        }
+    public void setObsTableName(String obsTableName) {
+        this.obsTableName = obsTableName;
     }
+
 }

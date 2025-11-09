@@ -20,21 +20,24 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.Point;
+import net.opengis.gml.v32.TimeUnit;
 import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataType;
 import org.junit.Before;
 import org.junit.Test;
-import org.sensorhub.api.command.CommandStreamInfo;
-import org.sensorhub.api.command.ICommandStreamInfo;
+import org.sensorhub.api.command.*;
 import org.sensorhub.api.common.BigId;
+import org.sensorhub.api.common.BigIdLong;
 import org.sensorhub.api.data.DataStreamInfo;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.ObsData;
 import org.sensorhub.api.feature.FeatureId;
 import org.sensorhub.api.system.ISystemWithDesc;
 import org.sensorhub.impl.datastore.DataStoreFiltersTypeAdapterFactory;
+import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.postgis.utils.BigIdTypeAdapter;
 import org.sensorhub.impl.datastore.postgis.utils.DataStreamExclusionStrategy;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
@@ -49,6 +52,7 @@ import org.vast.ogc.gml.GeoJsonBindings;
 import org.vast.ogc.gml.IFeature;
 import org.vast.sensorML.SMLHelper;
 import org.vast.sensorML.SMLJsonBindings;
+import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 
 import static org.junit.Assert.*;
@@ -63,6 +67,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
+import java.util.Collection;
+import java.util.List;
 
 public class TestSerializeDeserialize {
 
@@ -77,6 +83,7 @@ public class TestSerializeDeserialize {
             .disableHtmlEscaping()
             .serializeSpecialFloatingPointValues()
             .registerTypeAdapter(BigId.class, new BigIdTypeAdapter())
+            .registerTypeAdapter(Instant.class, new DataStoreFiltersTypeAdapterFactory.InstantTypeAdapter())
             .setFieldNamingStrategy(new DataStoreFiltersTypeAdapterFactory.FieldNamingStrategy())
             .registerTypeAdapterFactory(new RuntimeTypeAdapterFactory<>(Object.class, "objClass"))
             .setExclusionStrategies(new DataStreamExclusionStrategy());
@@ -473,30 +480,6 @@ public class TestSerializeDeserialize {
     }
 
     @Test
-    public void testSerializeTimeExtentUsingGson() {
-        Gson gson = new GsonBuilder().create();
-        TimeExtent timeExtent = TimeExtent.period(Instant.MIN, Instant.MAX);
-
-        String json = gson.toJson(timeExtent, TimeExtent.class);
-        System.out.println(json);
-
-        timeExtent = TimeExtent.currentTime();
-
-        json = gson.toJson(timeExtent, TimeExtent.class);
-        System.out.println(json);
-
-        timeExtent = TimeExtent.beginAt(Instant.now());
-
-        json = gson.toJson(timeExtent, TimeExtent.class);
-        System.out.println(json);
-
-        timeExtent = TimeExtent.endAt(Instant.now().plus(100, ChronoUnit.DAYS));
-
-        json = gson.toJson(timeExtent, TimeExtent.class);
-        System.out.println(json);
-    }
-
-    @Test
     public void testSerializeTimeExtentJsonWriterReader() throws IOException {
         TimeExtent timeExtent;
 
@@ -568,11 +551,11 @@ public class TestSerializeDeserialize {
                 "\"label\": \"Sampling Time\", \"definition\": \"http://www.opengis.net/def/property/OGC/0/SamplingTime\", " +
                 "\"referenceFrame\": \"http://www.opengis.net/def/trs/BIPM/0/UTC\"}, {\"uom\": {\"code\": \"mbar\"}," +
                 " \"name\": \"pressure\", \"type\": \"Quantity\", \"label\": \"Barometric Pressure\", \"definition\": " +
-                "\"http://sensorml.com/ont/swe/property/BarometricPressure\"}, {\"uom\": {\"code\": \"degC\"}, \"name\": " +
+                "\"http://sensorml.com/ont/swe/property/BarometricPressure\"}, {\"uom\": {\"code\": \"C\"}, \"name\": " +
                 "\"temperature\", \"type\": \"Quantity\", \"label\": \"Air Temperature\", \"definition\":" +
                 " \"http://sensorml.com/ont/swe/property/Temperature\"}, {\"uom\": {\"code\": \"%\"}, \"name\":" +
                 " \"relHumidity\", \"type\": \"Quantity\", \"label\": \" Relative Humidity\", \"definition\": " +
-                "\"http://sensorml.com/ont/swe/property/RelativeHumidity\"}, {\"uom\": {\"code\": \"tips\"}, " +
+                "\"http://sensorml.com/ont/swe/property/RelativeHumidity\"}, {\"uom\": {\"code\": \"%\"}, " +
                 "\"name\": \"rainAccum\", \"type\": \"Quantity\", \"label\": \"Rain Accumulation\", \"definition\": " +
                 "\"http://sensorml.com/ont/swe/property/RainAccumulation\"}, {\"uom\": {\"code\": \"m/s\"}, \"name\":" +
                 " \"windSpeed\", \"type\": \"Quantity\", \"label\": \"Wind Speed\", \"definition\": " +
@@ -585,4 +568,98 @@ public class TestSerializeDeserialize {
 
         IDataStreamInfo dataStreamInfo = SerializerUtils.readIDataStreamInfoFromJson(data);
     }
+
+    private Collection<BigId> createExpectedBigIds() {
+        return List.of(
+                new BigIdLong(2, 4),
+                new BigIdLong(1, 5),
+                new BigIdLong(3, 10),
+                new BigIdLong(5, 100)
+                );
+    }
+
+    @Test
+    public void testSerializeCommandResultWithDataStreamIds() throws IOException {
+        var expectedIds = createExpectedBigIds();
+        var cmdRes = CommandResult.withDatastreams(expectedIds);
+        var cmdStatus = new CommandStatus.Builder()
+                .withCommand(new BigIdLong(1, 1))
+                .withResult(cmdRes)
+                .build();
+        var json = SerializerUtils.writeICommandStatusToJson(cmdStatus);
+        var fromJson = SerializerUtils.readICommandStatusFromJson(json);
+        assertTrue(fromJson.getResult().getDataStreamIDs().containsAll(expectedIds));
+    }
+
+    @Test
+    public void testSerializeCommandResultWithObservationIds() throws IOException {
+        var expectedIds = createExpectedBigIds();
+        var cmdRes = CommandResult.withObservations(expectedIds);
+        var cmdStatus = new CommandStatus.Builder()
+                .withCommand(new BigIdLong(1, 2))
+                .withResult(cmdRes)
+                .build();
+        var json = SerializerUtils.writeICommandStatusToJson(cmdStatus);
+        var fromJson = SerializerUtils.readICommandStatusFromJson(json);
+        assertTrue(fromJson.getResult().getObservationIDs().containsAll(expectedIds));
+
+        var one = expectedIds.stream().toList().get(0);
+        cmdRes = CommandResult.withObservation(one);
+        cmdStatus = new CommandStatus.Builder()
+                .withCommand(new BigIdLong(1, 3))
+                .withResult(cmdRes)
+                .build();
+        json = SerializerUtils.writeICommandStatusToJson(cmdStatus);
+        fromJson = SerializerUtils.readICommandStatusFromJson(json);
+        assertTrue(fromJson.getResult().getObservationIDs().size() == 1 && fromJson.getResult().getObservationIDs().contains(one));
+    }
+
+    private DataComponent createTestStructure() {
+        SWEHelper fac = new SWEHelper();
+        return fac.createRecord()
+                .name("testIO")
+                .addField("test1", fac.createText())
+                .addField("test2", fac.createCount())
+                .build();
+    }
+
+    @Test
+    public void testSerializeCommandResultWithInlineRecords() throws IOException {
+        var struct = createTestStructure();
+        var cmdStream = new CommandStreamInfo.Builder()
+                .withName("test")
+                .withRecordDescription(struct.copy())
+                .withRecordEncoding(new TextEncodingImpl())
+                .withResultDescription(struct.copy())
+                .withResultEncoding(new TextEncodingImpl())
+                .withSystem(new FeatureId(new BigIdLong(1, 5), "urn:osh:test:1"))
+                .build();
+
+        var data = struct.createDataBlock();
+        var d1 = "I am a string";
+        int d2 = 555;
+        data.setStringValue(0, d1);
+        data.setIntValue(1, d2);
+
+        var cmdRes = CommandResult.withData(data);
+        var cmdStatus = new CommandStatus.Builder()
+                .withCommand(new BigIdLong(1, 5))
+                .withResult(cmdRes)
+                .build();
+        var json = SerializerUtils.writeICommandStatusToJson(cmdStatus, cmdStream);
+        var fromJson = SerializerUtils.readICommandStatusFromJson(json, cmdStream);
+        var resRecords = fromJson.getResult().getInlineRecords().stream().toList();
+        assertFalse(resRecords.isEmpty());
+        assertEquals(d1, resRecords.get(0).getStringValue(0));
+        assertEquals(d2, resRecords.get(0).getIntValue(1));
+    }
+
+    @Test
+    public void testSerializeCommandStatus() throws IOException {
+        var cmdStatus = CommandStatus.accepted(new BigIdLong(1, 12));
+        var json = SerializerUtils.writeICommandStatusToJson(cmdStatus);
+        var fromJson = SerializerUtils.readICommandStatusFromJson(json);
+        assertEquals(ICommandStatus.CommandStatusCode.ACCEPTED, fromJson.getStatusCode());
+    }
+
 }

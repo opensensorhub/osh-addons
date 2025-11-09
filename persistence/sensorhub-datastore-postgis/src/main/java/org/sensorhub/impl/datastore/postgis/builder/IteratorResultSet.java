@@ -14,7 +14,9 @@
 
 package org.sensorhub.impl.datastore.postgis.builder;
 
-import com.zaxxer.hikari.HikariDataSource;
+import org.sensorhub.impl.datastore.postgis.ConnectionManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -25,16 +27,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
 public class IteratorResultSet<T> implements Iterator<T> {
+    private static final Logger logger = LoggerFactory.getLogger(IteratorResultSet.class);
 
     private long limit = Long.MAX_VALUE;
-
-    private static final int FETCH_LIMIT = 50;
 
     private long offset = 0;
 
     private String query;
 
-    private HikariDataSource hikariDataSource;
+    private ConnectionManager connectionManager;
 
     private final Function<ResultSet, T> parsingFn;
 
@@ -43,9 +44,10 @@ public class IteratorResultSet<T> implements Iterator<T> {
     private boolean ended = false;
 
     private final Function<T, Boolean> predicateValidator;
+    private final boolean useInternalLimit;
 
     public IteratorResultSet(String query,
-                             HikariDataSource hikariDataSource,
+                             ConnectionManager connectionManager,
                              long limit,
                              Function<ResultSet, T> parsingFn,
                              Function<T, Boolean> predicateValidator
@@ -53,12 +55,16 @@ public class IteratorResultSet<T> implements Iterator<T> {
         this.query = query;
         this.limit = limit;
         this.parsingFn = parsingFn;
-        this.hikariDataSource = hikariDataSource;
+        this.connectionManager = connectionManager;
         this.predicateValidator = predicateValidator;
+        this.useInternalLimit = !query.contains("LIMIT");
     }
 
     @Override
     public boolean hasNext() {
+        if(!records.isEmpty()) {
+            return true;
+        }
         if (ended) {
             return false;
         }
@@ -69,7 +75,13 @@ public class IteratorResultSet<T> implements Iterator<T> {
     }
 
     private String getQuery() {
-        return query + " LIMIT " + FETCH_LIMIT + " OFFSET " + offset;
+        if(useInternalLimit) {
+            return query + " LIMIT " + limit + " OFFSET " + offset;
+        } else {
+            // limit set by the filter itself
+            return query + " OFFSET " + offset;
+        }
+
     }
 
     @Override
@@ -79,10 +91,12 @@ public class IteratorResultSet<T> implements Iterator<T> {
 
     private void makeRequest() {
         long countRes = 0;
-        try (Connection connection = hikariDataSource.getConnection()) {
+        try (Connection connection = connectionManager.getConnection()) {
             try(Statement statement = connection.createStatement()) {
                 String nextQuery = getQuery();
-                System.out.println("Query: "+nextQuery);
+                if(logger.isDebugEnabled()) {
+                    logger.debug(nextQuery);
+                }
                 try (ResultSet resultSet = statement.executeQuery(nextQuery)){
                     while (resultSet.next()) {
                         countRes++;
@@ -91,10 +105,10 @@ public class IteratorResultSet<T> implements Iterator<T> {
                             records.add(res);
                         }
                     }
-                    offset += FETCH_LIMIT;
+                    offset += limit;
                 }
             }
-            if(countRes == 0 || offset > limit) {
+            if(countRes == 0 || countRes < limit) {
                 ended = true;
             }
         } catch (SQLException e) {
