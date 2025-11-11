@@ -1,0 +1,3 @@
+[submodule "sensors/others/sensorhub-driver-Meshtastic/src/main/protobufs"]
+	path = sensors/others/sensorhub-driver-Meshtastic/src/main/protobufs
+	url = https://github.com/meshtastic/protobufs.git
