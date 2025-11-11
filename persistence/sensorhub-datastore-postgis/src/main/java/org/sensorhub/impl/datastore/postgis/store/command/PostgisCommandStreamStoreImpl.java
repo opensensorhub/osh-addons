@@ -313,7 +313,8 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
 
     @Override
     public void linkTo(ISystemDescStore systemStore) {
-        super.linkTo(this.systemStore);
+        this.systemStore = systemStore;
+        super.linkTo(systemStore);
     }
 
     @Override

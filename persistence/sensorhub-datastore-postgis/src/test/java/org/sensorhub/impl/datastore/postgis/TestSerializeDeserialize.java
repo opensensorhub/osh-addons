@@ -586,9 +586,9 @@ public class TestSerializeDeserialize {
                 .withCommand(new BigIdLong(1, 1))
                 .withResult(cmdRes)
                 .build();
-        var json = SerializerUtils.writeICommandStatusToJson(cmdStatus);
-        var fromJson = SerializerUtils.readICommandStatusFromJson(json);
-        assertTrue(fromJson.getResult().getDataStreamIDs().containsAll(expectedIds));
+        var json = SerializerUtils.writeICommandResultJson(cmdStatus.getResult());
+        var fromJson = SerializerUtils.readICommandResultJson(json);
+        assertTrue(fromJson.getDataStreamIDs().containsAll(expectedIds));
     }
 
     @Test
@@ -599,9 +599,9 @@ public class TestSerializeDeserialize {
                 .withCommand(new BigIdLong(1, 2))
                 .withResult(cmdRes)
                 .build();
-        var json = SerializerUtils.writeICommandStatusToJson(cmdStatus);
-        var fromJson = SerializerUtils.readICommandStatusFromJson(json);
-        assertTrue(fromJson.getResult().getObservationIDs().containsAll(expectedIds));
+        var json = SerializerUtils.writeICommandResultJson(cmdStatus.getResult());
+        var fromJson = SerializerUtils.readICommandResultJson(json);
+        assertTrue(fromJson.getObservationIDs().containsAll(expectedIds));
 
         var one = expectedIds.stream().toList().get(0);
         cmdRes = CommandResult.withObservation(one);
@@ -609,9 +609,9 @@ public class TestSerializeDeserialize {
                 .withCommand(new BigIdLong(1, 3))
                 .withResult(cmdRes)
                 .build();
-        json = SerializerUtils.writeICommandStatusToJson(cmdStatus);
-        fromJson = SerializerUtils.readICommandStatusFromJson(json);
-        assertTrue(fromJson.getResult().getObservationIDs().size() == 1 && fromJson.getResult().getObservationIDs().contains(one));
+        json = SerializerUtils.writeICommandResultJson(cmdStatus.getResult());
+        fromJson = SerializerUtils.readICommandResultJson(json);
+        assertTrue(fromJson.getObservationIDs().size() == 1 && fromJson.getObservationIDs().contains(one));
     }
 
     private DataComponent createTestStructure() {
@@ -646,20 +646,12 @@ public class TestSerializeDeserialize {
                 .withCommand(new BigIdLong(1, 5))
                 .withResult(cmdRes)
                 .build();
-        var json = SerializerUtils.writeICommandStatusToJson(cmdStatus, cmdStream);
-        var fromJson = SerializerUtils.readICommandStatusFromJson(json, cmdStream);
-        var resRecords = fromJson.getResult().getInlineRecords().stream().toList();
+        var json = SerializerUtils.writeICommandResultJson(cmdStatus.getResult(), cmdStream);
+        var fromJson = SerializerUtils.readICommandResultJson(json, cmdStream);
+        var resRecords = fromJson.getInlineRecords().stream().toList();
         assertFalse(resRecords.isEmpty());
         assertEquals(d1, resRecords.get(0).getStringValue(0));
         assertEquals(d2, resRecords.get(0).getIntValue(1));
-    }
-
-    @Test
-    public void testSerializeCommandStatus() throws IOException {
-        var cmdStatus = CommandStatus.accepted(new BigIdLong(1, 12));
-        var json = SerializerUtils.writeICommandStatusToJson(cmdStatus);
-        var fromJson = SerializerUtils.readICommandStatusFromJson(json);
-        assertEquals(ICommandStatus.CommandStatusCode.ACCEPTED, fromJson.getStatusCode());
     }
 
 }

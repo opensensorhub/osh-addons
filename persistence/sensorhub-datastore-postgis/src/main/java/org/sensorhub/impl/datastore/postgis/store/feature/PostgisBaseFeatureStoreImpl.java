@@ -106,14 +106,14 @@ public abstract class PostgisBaseFeatureStoreImpl
         checkParentFeatureExists(parentID);
 
         var existingKey = getCurrentVersionKey(feature.getUniqueIdentifier());
-        if (existingKey != null) {
-            if (parentID != null && existingKey.getParentID() != parentID.getIdAsLong())
-                throw new DataStoreException("Feature is already associated to another parent");
-
-            throw new DataStoreException(DataStoreUtils.ERROR_EXISTING_FEATURE_VERSION);
-        }
+        if (existingKey != null && (parentID != null && existingKey.getParentID() != parentID.getIdAsLong()))
+            throw new DataStoreException("Feature is already associated to another parent");
 
         var newKey = generateKey(parentID.getIdAsLong(), existingKey, feature);
+
+        if (existingKey != null && existingKey.getValidStartTime().equals(newKey.getValidStartTime()))
+            throw new DataStoreException(DataStoreUtils.ERROR_EXISTING_FEATURE_VERSION);
+
         addOrUpdate(newKey, parentID, feature);
         return newKey;
     }

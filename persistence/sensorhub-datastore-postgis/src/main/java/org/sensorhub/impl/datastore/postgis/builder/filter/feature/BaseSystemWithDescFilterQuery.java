@@ -34,7 +34,14 @@ public abstract class BaseSystemWithDescFilterQuery<F extends FilterQueryGenerat
 //        filter.getDataStreamFilter()
 //        filter.getProcedureFilter()
         this.handleParentFilter(filter.getParentFilter());
+        if (filter.includeMembers()) {
+            this.handleIncludeMembers();
+        }
         return this.filterQueryGenerator;
+    }
+
+    protected void handleIncludeMembers() {
+        // TODO: Implement
     }
 
     @Override
