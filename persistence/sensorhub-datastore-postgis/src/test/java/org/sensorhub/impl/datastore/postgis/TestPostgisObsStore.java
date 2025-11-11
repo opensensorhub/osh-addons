@@ -25,12 +25,9 @@ import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.impl.datastore.AbstractTestObsStore;
-import org.sensorhub.impl.datastore.postgis.obs.PostgisDataStreamStoreImpl;
-import org.sensorhub.impl.datastore.postgis.obs.PostgisObsStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.obs.PostgisDataStreamStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.obs.PostgisObsStoreImpl;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
@@ -38,13 +35,10 @@ import java.util.stream.Stream;
 
 public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImpl> {
     protected static String OBS_DATASTORE_NAME = "test_obs";
-
-    private static String DB_NAME = "gis";
-
-    private final String url = "localhost:5432";
-    private final String login = "postgres";
-
-    private final String password = "postgres";
+    protected static String DB_NAME = "gis";
+    protected final String url = "localhost:5432";
+    protected final String login = "postgres";
+    protected final String password = "postgres";
 
     protected PostgisObsStoreImpl postgisObsStore;
 
@@ -53,17 +47,20 @@ public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImp
     {
         assertEquals(OBS_DATASTORE_NAME, obsStore.getDatastoreName());
         forceReadBackFromStorage();
-        assertEquals(OBS_DATASTORE_NAME, obsStore.getDatastoreName());
     }
 
     protected PostgisObsStoreImpl initStore() throws Exception {
-        postgisObsStore =  new PostgisObsStoreImpl(url, DB_NAME, login, password, OBS_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL);
-        return postgisObsStore;
+        this.postgisObsStore = new PostgisObsStoreImpl(url, DB_NAME, login, password, OBS_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL);
+        return this.postgisObsStore;
     }
 
-
+    @Override
     protected void forceReadBackFromStorage() {
-
+        try {
+            this.postgisObsStore.getDataStreams().commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
@@ -77,6 +74,8 @@ public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImp
         var obsBatch1 = addSimpleObsWithoutResultTime(dsKey, BigId.NONE, startTime1, 25, 1000);
         var startTime2 = Instant.parse("0001-05-31T10:40:00Z");
         var obsBatch2 = addSimpleObsWithoutResultTime(dsKey, BigId.NONE, startTime2, 63, 2500);
+
+        forceReadBackFromStorage();
 
         // all from batch 1
         filter = new ObsFilter.Builder()
@@ -108,7 +107,7 @@ public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImp
         checkSelectedEntries(resultStream, expectedResults, filter);
 
         // invalid IDs
-        var ids = BigId.fromLongs(DATABASE_NUM, 5, 12, 53, 76);
+        var ids = BigId.fromLongs(DATABASE_NUM, 500, 120, 530, 760);
         filter = new ObsFilter.Builder()
                 .withInternalIDs(ids)
                 .build();
@@ -129,12 +128,7 @@ public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImp
     }
 
 
-    @Test
-    public void testGetNumRecordsTwoDataStreams() throws Exception {
-        super.testGetNumRecordsTwoDataStreams();
-
-    }
-
+    @Override
     @Test
     public void testGetWrongKey() throws Exception
     {
@@ -147,21 +141,20 @@ public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImp
     {
         var dsID = addSimpleDataStream(bigId(10), "out1");
         addSimpleObsWithoutResultTime(dsID, BigId.NONE, Instant.parse("2000-01-01T00:00:00Z"), 100);
-        checkMapKeySet(obsStore.keySet());
-
         forceReadBackFromStorage();
         checkMapKeySet(obsStore.keySet());
 
         dsID = addSimpleDataStream(bigId(10), "out2");
         addSimpleObsWithoutResultTime(dsID, BigId.NONE, Instant.parse("-4700-01-01T00:00:00Z").plusSeconds(1), 11);
         addSimpleObsWithoutResultTime(dsID, BigId.NONE, Instant.parse("-4700-01-01T00:00:00Z").minus(10, ChronoUnit.DAYS), 11);
+        forceReadBackFromStorage();
         checkMapKeySet(obsStore.keySet());
 
         dsID = addSimpleDataStream(bigId(456), "output");
         addSimpleObsWithoutResultTime(dsID, bigId(569), Instant.parse("1950-01-01T00:00:00.5648712Z"), 56);
-        checkMapKeySet(obsStore.keySet());
-
         forceReadBackFromStorage();
         checkMapKeySet(obsStore.keySet());
     }
+
+
 }

@@ -5,16 +5,17 @@ targetCompatibility = 1.11
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
-  implementation 'org.sensorhub:sensorhub-service-consys:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-service-sweapi:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-datastore-h2:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-datastore-postgis:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-webui-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-service-admin:' + oshCoreVersion
   implementation project(':sensorhub-comm-ip-zeroconf')
-  implementation project(':sensorhub-comm-rxtx') 
+  implementation project(':sensorhub-comm-rxtx')
   implementation project(':sensorhub-service-video')
   //implementation project(':sensorhub-service-remoteadmin')
   implementation project(':sensorhub-service-mqtt-hivemq')
   implementation project(':sensorhub-service-sensorthings')
-  implementation project(':sensorhub-service-consys-mqtt')
   implementation project(':sensorhub-security-oauth')
   //implementation project(':sensorhub-security-keycloak')
   //implementation project(':sensorhub-storage-h2')
@@ -22,21 +23,22 @@ dependencies {
   //implementation project(':sensorhub-storage-perst')
   implementation project(':sensorhub-driver-fakegps')
   implementation project(':sensorhub-driver-fakeweather')
+  implementation project(':sensorhub-driver-simweatherstation')
 //  implementation project(':sensorhub-driver-isa')
-  implementation project(':sensorhub-driver-misb-uas')
+//  implementation project(':sensorhub-driver-misb-uas')
   //implementation project(':sensorhub-driver-ahrs')
   //implementation project(':sensorhub-driver-angelsensor')
-  implementation project(':sensorhub-driver-avl-911')
-  implementation project(':sensorhub-driver-fltaware')
+//  implementation project(':sensorhub-driver-avl-911')
+//  implementation project(':sensorhub-driver-fltaware')
   //implementation project(':sensorhub-driver-axis')
   //implementation project(':sensorhub-driver-bno055')
-  implementation project(':sensorhub-driver-dahua')
+//  implementation project(':sensorhub-driver-dahua')
   //implementation project(':sensorhub-driver-fakecam')
   //implementation project(':sensorhub-driver-gamma')
   //implementation project(':sensorhub-driver-gps-nmea')
   //implementation project(':sensorhub-driver-intellisense')
   //implementation project(':sensorhub-driver-mavlink')
-  implementation project(':sensorhub-driver-metar')
+//  implementation project(':sensorhub-driver-metar')
   //implementation project(':sensorhub-driver-mti')
   implementation project(':sensorhub-driver-nexrad')
   //implementation project(':sensorhub-driver-plume')
@@ -55,8 +57,7 @@ dependencies {
   implementation project(':sensorhub-process-ffmpeg')
   implementation project(':sensorhub-process-opencv')
   implementation project(':sensorhub-process-geoloc')
-  
-  implementation("com.hivemq:hivemq-mqtt-client:1.2.2")
+
 }
 
 osgi.enabled = false
