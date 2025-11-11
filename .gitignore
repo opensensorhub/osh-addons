@@ -11,6 +11,6 @@
 **/*.iml
 **/generated-sources/
 **/resources/**/README.md
-services/sensorhub-service-mqtt-hivemq/
+
 
 
