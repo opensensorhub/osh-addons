@@ -122,11 +122,19 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     @Override
     public void doStop() throws SensorHubException {
         super.doStop();
+
+        //Stop processing the loop
+        isProcessing.set(false);
+
+        // Shutdown executor
+        executor.shutdown();
+
+        // Stop comm
         if(commProvider != null){
             commProvider.stop();
         }
 
-        isProcessing.set(false);
+
     }
 
     @Override
