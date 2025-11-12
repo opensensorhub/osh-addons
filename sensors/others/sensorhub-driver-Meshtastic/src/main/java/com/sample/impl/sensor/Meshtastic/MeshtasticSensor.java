@@ -53,6 +53,9 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     MeshtasticOutputNodeInfo nodeInfoOutput;
     MeshtasticOutputGeneric genericOutput;
 
+    // DEFINE CONTROL
+    MeshtasticControlTextMessage meshtasticControlTextMessage;
+
 
     @Override
     public void doInit() throws SensorHubException {
@@ -86,7 +89,8 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         meshtasticHandler = new MeshtasticHandler(this);
 
         // INITIALIZE CONTROL
-        addControlInput(new MeshtasticControlTextMessage(this));
+        meshtasticControlTextMessage = new MeshtasticControlTextMessage(this);
+        addControlInput(meshtasticControlTextMessage);
 
     }
 

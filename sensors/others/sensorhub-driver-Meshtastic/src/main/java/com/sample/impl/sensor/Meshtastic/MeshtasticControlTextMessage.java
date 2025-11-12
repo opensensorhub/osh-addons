@@ -23,6 +23,10 @@ public class MeshtasticControlTextMessage extends AbstractSensorControl<Meshtast
         SWEHelper fac = new SWEHelper();
 
         commandDescription = fac.createRecord()
+                .name("textMessageControl")
+                .label("Text Message")
+                .description("Control for sending Text Messages over Meshtastic")
+                .definition(SWEHelper.getPropertyUri("textMessageControl"))
                 .addField("message", fac.createText())
                 .addField("channel", fac.createQuantity()
                         .label("Channel")
