@@ -38,16 +38,23 @@ import org.vast.swe.BinaryDataWriter;
 import org.vast.swe.SWEJsonBindings;
 import org.vast.swe.fast.JsonDataParserGson;
 import org.vast.swe.fast.JsonDataWriterGson;
+import org.vast.util.DateTimeFormat;
 import org.vast.util.TimeExtent;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public abstract class   SerializerUtils {
+import static org.sensorhub.impl.datastore.postgis.utils.PostgisUtils.MAX_INSTANT;
+import static org.sensorhub.impl.datastore.postgis.utils.PostgisUtils.MIN_INSTANT;
+
+public abstract class SerializerUtils {
 
     static final GsonBuilder builder = new GsonBuilder()
             .setLenient()
@@ -303,7 +310,7 @@ public abstract class   SerializerUtils {
     }
 
     // CommandStatus
-    public static ICommandStatus readICommandStatusFromJson(String json) throws IOException {
+    public static ICommandStatus readICommandStatusFromJson(String json, ICommandStreamInfo csInfo) throws IOException {
         StringReader stringReader = new StringReader(json);
         JsonReader jsonReader = new JsonReader(stringReader);
 
@@ -330,9 +337,9 @@ public abstract class   SerializerUtils {
                 } else if ("executionTime".equals(prop)) {
                     commandStatusBuilder = commandStatusBuilder.withExecutionTime(readTimeExtent(jsonReader));
                 } else if ("reportTime".equals(prop)) {
-                    commandStatusBuilder = commandStatusBuilder.withReportTime(PostgisUtils.readInstantFromString(jsonReader.nextString()));
+                    commandStatusBuilder = commandStatusBuilder.withReportTime(PostgisUtils.readInstantFromString(jsonReader.nextString(), false));
                 } else if ("commandResult".equals(prop)) {
-                    commandStatusBuilder = commandStatusBuilder.withResult(readICommandResult(jsonReader));
+                    commandStatusBuilder = commandStatusBuilder.withResult(readICommandResult(jsonReader, csInfo));
                 } else {
                     jsonReader.skipValue();
                 }
@@ -345,7 +352,15 @@ public abstract class   SerializerUtils {
         return commandStatusBuilder.build();
     }
 
+    public static ICommandStatus readICommandStatusFromJson(String json) throws IOException {
+        return readICommandStatusFromJson(json, null);
+    }
+
     public static String writeICommandStatusToJson(ICommandStatus commandStatus) throws IOException{
+        return writeICommandStatusToJson(commandStatus, null);
+    }
+
+    public static String writeICommandStatusToJson(ICommandStatus commandStatus, ICommandStreamInfo commandStreamInfo) throws IOException {
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             try (var osw = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
                 try (JsonWriter jsonWriter = new JsonWriter(osw)) {
@@ -371,11 +386,11 @@ public abstract class   SerializerUtils {
                     }
 
                     if(commandStatus.getReportTime() != null) {
-                        jsonWriter.name("reportTime").value(PostgisUtils.writeInstantToString(commandStatus.getReportTime()));
+                        jsonWriter.name("reportTime").value(PostgisUtils.writeInstantToString(commandStatus.getReportTime(), false));
                     }
 
                     if(commandStatus.getResult() != null) {
-                        writeICommandResult(jsonWriter, "commandResult",commandStatus.getResult());
+                        writeICommandResult(jsonWriter, "commandResult",commandStatus.getResult(), commandStreamInfo);
                     }
 
                     jsonWriter.endObject();
@@ -389,41 +404,103 @@ public abstract class   SerializerUtils {
     }
 
     protected static void writeICommandResult(JsonWriter jsonWriter, String nodeName, ICommandResult commandResult) throws IOException {
-        jsonWriter.beginObject();
-        jsonWriter.name(nodeName);
-        writeBigId(jsonWriter, "datastream@id",commandResult.getDataStreamID());
+        writeICommandResult(jsonWriter, nodeName, commandResult, null);
+    }
 
-        jsonWriter.name("observationRefs");
-        jsonWriter.beginArray();
-        for(BigId obsId: commandResult.getObservationRefs()) {
-            writeBigId(jsonWriter, null, obsId);
+    protected static void writeICommandResult(JsonWriter jsonWriter, String nodeName, ICommandResult commandResult, ICommandStreamInfo commandStreamInfo) throws IOException {
+        jsonWriter.name(nodeName);
+        jsonWriter.beginObject();
+
+        if (commandResult.getDataStreamIDs() != null) {
+            jsonWriter.name("datastreamRefs");
+            jsonWriter.beginArray();
+            for (var dsId: commandResult.getDataStreamIDs()) {
+                jsonWriter.beginObject();
+                writeBigId(jsonWriter, "datastream@id", dsId);
+                jsonWriter.endObject();
+            }
+            jsonWriter.endArray();
         }
-        jsonWriter.endArray();
+
+        if (commandResult.getObservationIDs() != null) {
+            jsonWriter.name("observationRefs");
+            jsonWriter.beginArray();
+            for (var obsId: commandResult.getObservationIDs()) {
+                jsonWriter.beginObject();
+                writeBigId(jsonWriter, "observation@id", obsId);
+                jsonWriter.endObject();
+            }
+            jsonWriter.endArray();
+        }
+
+        if (commandResult.getInlineRecords() != null && commandStreamInfo != null) {
+            jsonWriter.name("inlineRecords");
+            jsonWriter.beginArray();
+            for (var inlineRecord: commandResult.getInlineRecords()) {
+                jsonWriter.jsonValue(writeDataBlockToJson(commandStreamInfo.getResultStructure(), commandStreamInfo.getResultEncoding(), inlineRecord));
+
+            }
+            jsonWriter.endArray();
+        }
+
         jsonWriter.endObject();
     }
 
-    protected static ICommandResult readICommandResult(JsonReader jsonReader) throws IOException {
-        BigId dataStreamId = null;
-        List<BigId> obsRef = null;
+    protected static ICommandResult readICommandResult(JsonReader jsonReader, ICommandStreamInfo csInfo) throws IOException {
+        List<BigId> dataStreamIds = null;
+        List<BigId> obsIds = null;
+        List<DataBlock> inlineRecords = null;
 
         jsonReader.beginObject();
         while (jsonReader.hasNext()) {
             switch (jsonReader.nextName()) {
-                case "datastream@id":
-                    dataStreamId  = readBigId(jsonReader);
-                    break;
-                case "observationRefs":
-                    obsRef = new ArrayList<>();
+                case "datastreamRefs":
+                    dataStreamIds = new ArrayList<>();
                     jsonReader.beginArray();
-                    while (jsonReader.hasNext()) {
-                        obsRef.add(readBigId(jsonReader));
+                    while(jsonReader.hasNext()) {
+                        jsonReader.beginObject();
+                        jsonReader.nextName();
+                        dataStreamIds.add(readBigId(jsonReader));
+                        jsonReader.endObject();
                     }
                     jsonReader.endArray();
                     break;
+                case "observationRefs":
+                    obsIds = new ArrayList<>();
+                    jsonReader.beginArray();
+                    while (jsonReader.hasNext()) {
+                        jsonReader.beginObject();
+                        jsonReader.nextName();
+                        obsIds.add(readBigId(jsonReader));
+                        jsonReader.endObject();
+                    }
+                    jsonReader.endArray();
+                    break;
+                case "inlineRecords":
+                    if (csInfo == null) {
+                        jsonReader.skipValue();
+                        break;
+                    }
+                    JsonDataParserGson parser = new JsonDataParserGson(jsonReader);
+                    inlineRecords = new ArrayList<>();
+                    jsonReader.beginArray();
+                    while (jsonReader.hasNext()) {
+                        parser.setDataComponents(csInfo.getResultStructure());
+                        inlineRecords.add(parser.parseNextBlock());
+                    }
+                    jsonReader.endArray();
             }
         }
         jsonReader.endObject();
-        return CommandResult.withObsInDatastream(dataStreamId, obsRef);
+
+        if (dataStreamIds != null && !dataStreamIds.isEmpty()) {
+            return CommandResult.withDatastreams(dataStreamIds);
+        } else if (obsIds != null && !obsIds.isEmpty()) {
+            return CommandResult.withObservations(obsIds);
+        } else if (inlineRecords != null && !inlineRecords.isEmpty()) {
+            return CommandResult.withData(inlineRecords);
+        }
+        return null;
     }
     //
     protected static void writeBigId(JsonWriter jsonWriter, String nodeName, BigId bigId) throws IOException {
@@ -492,14 +569,14 @@ public abstract class   SerializerUtils {
                     jsonWriter.setIndent("  ");
 
                     if(timeExtent.beginsNow()) {
-                        jsonWriter.name("begin").value("now");
-                        jsonWriter.name("end").value(PostgisUtils.writeInstantToString(timeExtent.end()));
+                        jsonWriter.name("begin").value("-infinity");
+                        jsonWriter.name("end").value(PostgisUtils.writeInstantToString(timeExtent.end(), false));
                     } else if(timeExtent.endsNow()) {
-                        jsonWriter.name("begin").value(PostgisUtils.writeInstantToString(timeExtent.begin()));
-                        jsonWriter.name("end").value("now");
+                        jsonWriter.name("begin").value(PostgisUtils.writeInstantToString(timeExtent.begin(), false));
+                        jsonWriter.name("end").value("infinity");
                     } else  {
-                        jsonWriter.name("begin").value(PostgisUtils.writeInstantToString(timeExtent.begin()));
-                        jsonWriter.name("end").value(PostgisUtils.writeInstantToString(timeExtent.end()));
+                        jsonWriter.name("begin").value(PostgisUtils.writeInstantToString(timeExtent.begin(), false));
+                        jsonWriter.name("end").value(PostgisUtils.writeInstantToString(timeExtent.end(), false));
                     }
 
                     jsonWriter.endObject();
@@ -514,20 +591,28 @@ public abstract class   SerializerUtils {
         jsonWriter.name(nodeName);
         jsonWriter.beginObject();
         if(timeExtent.beginsNow()) {
-            jsonWriter.name("begin").value("now");
-            jsonWriter.name("end").value(PostgisUtils.writeInstantToString(timeExtent.end()));
+            jsonWriter.name("begin").value("-infinity");
+            jsonWriter.name("end").value(getValidPGInstant(timeExtent.end()).toString());
         } else if(timeExtent.endsNow()) {
-            jsonWriter.name("begin").value(PostgisUtils.writeInstantToString(timeExtent.begin()));
-            jsonWriter.name("end").value("now");
+            jsonWriter.name("begin").value(getValidPGInstant(timeExtent.begin()).toString());
+            jsonWriter.name("end").value("infinity");
         } else  {
-            jsonWriter.name("begin").value(PostgisUtils.writeInstantToString(timeExtent.begin()));
-            jsonWriter.name("end").value(PostgisUtils.writeInstantToString(timeExtent.end()));
+            jsonWriter.name("begin").value(getValidPGInstant(timeExtent.begin()).toString());
+            jsonWriter.name("end").value(getValidPGInstant(timeExtent.end()).toString());
         }
 
         jsonWriter.endObject();
 
     }
 
+    private static String getTimeExtent(JsonReader jsonReader) throws IOException {
+        var timeExtentAsStr = jsonReader.nextString();
+        if(timeExtentAsStr.equalsIgnoreCase("infinity") ||
+                timeExtentAsStr.equalsIgnoreCase("-infinity")) {
+            return "now";
+        }
+        return timeExtentAsStr;
+    }
     public static TimeExtent readTimeExtent(JsonReader jsonReader) throws IOException {
         String begin = null;
         String end = null;
@@ -536,30 +621,56 @@ public abstract class   SerializerUtils {
         while (jsonReader.hasNext()) {
             switch (jsonReader.nextName()) {
                 case "begin": {
-                    begin = jsonReader.nextString();
+                    begin = getTimeExtent(jsonReader);
                     break;
                 }
 
                 case "end":
-                    end = jsonReader.nextString();
+                    end = getTimeExtent(jsonReader);
                     break;
             }
         }
         jsonReader.endObject();
 
         // check special values
-        Instant beginInstant = null;
-        Instant endInstant = null;
-
         // beginsNow
         if(begin.equalsIgnoreCase("now")) {
-            endInstant = PostgisUtils.readInstantFromString(end);
-            return TimeExtent.beginNow(endInstant);
+            // begins Now
+            return TimeExtent.beginNow(getValidPGInstant(Instant.parse(end)));
         } else if(end.equalsIgnoreCase("now")) {
-            beginInstant = PostgisUtils.readInstantFromString(begin);
-            return TimeExtent.endNow(beginInstant);
+            return TimeExtent.endNow(getValidPGInstant(Instant.parse(begin)));
         } else {
-            return TimeExtent.period(PostgisUtils.readInstantFromString(begin), PostgisUtils.readInstantFromString(end));
+            // if begin > now(), use beginAt()
+            Instant beginInstant = Instant.parse(begin);
+            if(beginInstant.isAfter(Instant.now())) {
+                return TimeExtent.beginAt(beginInstant);
+            } else {
+                Instant startInstant = Instant.parse(begin);
+                Instant endInstant = Instant.parse(end);
+
+                // Postgis has a limit, need to truncate the MAX value
+                if(startInstant.equals(MAX_INSTANT)) {
+                    startInstant = Instant.MAX;
+                } else if(startInstant.equals(MIN_INSTANT)) {
+                    startInstant = Instant.MIN;
+                }
+
+                if(endInstant.equals(MAX_INSTANT)) {
+                    endInstant = Instant.MAX;
+                } else if(endInstant.equals(MIN_INSTANT)) {
+                    endInstant = Instant.MIN;
+                }
+
+                return TimeExtent.period(startInstant, endInstant);
+            }
+        }
+    }
+
+    public static Instant getValidPGInstant(Instant a) {
+        if(a.getEpochSecond() > 0) {
+            return a.isBefore(MAX_INSTANT) ? a : MAX_INSTANT;
+        } else {
+            return a.isAfter(MIN_INSTANT) ? a : MIN_INSTANT;
         }
     }
 }

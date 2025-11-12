@@ -14,9 +14,12 @@
 
 package org.sensorhub.impl.datastore.postgis.builder;
 
-import org.sensorhub.api.datastore.obs.*;
-import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesObsQuery;
-import org.sensorhub.impl.datastore.postgis.builder.filter.StatsObsQuery;
+import org.sensorhub.api.datastore.obs.IObsStore;
+import org.sensorhub.api.datastore.obs.ObsFilter;
+import org.sensorhub.api.datastore.obs.ObsStatsQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.obs.RemoveEntriesObsQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.obs.SelectEntriesObsQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.stats.StatsObsQuery;
 
 import java.time.Instant;
 import java.util.List;
@@ -63,8 +66,18 @@ public class QueryBuilderObsStore extends QueryBuilder {
         return "CREATE INDEX "+this.getStoreTableName()+"_result_time_idx on "+this.getStoreTableName()+" ("+ RESULT_TIME +")";
     }
 
+    public String createFoiIndexQuery() {
+        return "CREATE INDEX "+this.getStoreTableName()+"_foi_idx on "+this.getStoreTableName()+" ("+ FOI_ID +")";
+    }
+
     public String insertObsQuery() {
-        return "INSERT INTO "+this.getStoreTableName()+" ("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (?,?,?,?,?)";
+        return "INSERT INTO "+this.getStoreTableName()+" " +
+                "("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (?,?,?,?,?) " +
+                "ON CONFLICT (dataStreamID, foiID, phenomenonTime, resultTime) DO UPDATE SET id = "+this.getStoreTableName()+".id RETURNING id";
+    }
+
+    public String createUniqueConstraint() {
+        return "CREATE UNIQUE INDEX  "+this.getStoreTableName()+"_unique_constraint on "+this.getStoreTableName()+" (dataStreamID, foiID, phenomenonTime, resultTime)";
     }
 
     public String updateByIdQuery() {
@@ -169,5 +182,16 @@ public class QueryBuilderObsStore extends QueryBuilder {
                 .withLimit(obsStatsQuery.getLimit())
                 .build();
         return statsObsQuery.toQuery();
+    }
+
+    public String createRemoveEntriesQuery(ObsFilter filter) {
+        RemoveEntriesObsQuery removeEntriesObsQuery = new RemoveEntriesObsQuery.Builder()
+                .tableName(this.getStoreTableName())
+                .linkTo(this.systemStore)
+                .linkTo(this.dataStreamStore)
+                .linkTo(this.foiStore)
+                .withObsFilter(filter)
+                .build();
+        return removeEntriesObsQuery.toQuery();
     }
 }
