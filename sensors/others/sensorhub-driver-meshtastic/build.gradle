@@ -3,7 +3,7 @@ plugins {
     id "com.google.protobuf" version "0.9.4"
 }
 
-description = 'meshtastic Driver'
+description = 'Meshtastic Driver'
 ext.details = "Driver that utilizes a meshtastic Radio pre-configured with meshtastic Node Software to communicate with other meshtastic Radio"
 version = '1.0.0'
 
