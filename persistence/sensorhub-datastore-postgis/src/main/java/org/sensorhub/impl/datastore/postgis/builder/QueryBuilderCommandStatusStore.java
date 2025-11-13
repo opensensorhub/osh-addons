@@ -20,10 +20,15 @@ import org.sensorhub.impl.datastore.postgis.builder.query.command.SelectEntriesC
 
 import java.util.Set;
 
-import static org.sensorhub.api.datastore.command.ICommandStatusStore.CommandStatusField.COMMAND_ID;
+import static org.sensorhub.api.datastore.command.ICommandStatusStore.CommandStatusField.*;
 
 public class QueryBuilderCommandStatusStore extends QueryBuilder {
     public final static String COMMAND_TABLE_NAME = "commandstatus";
+
+    protected static final String PROGRESS = "progress";
+    protected static final String MESSAGE = "message";
+    protected static final String RESULT = "result";
+
     public QueryBuilderCommandStatusStore() {
         super(COMMAND_TABLE_NAME);
     }
@@ -37,17 +42,32 @@ public class QueryBuilderCommandStatusStore extends QueryBuilder {
         return "CREATE TABLE "+this.getStoreTableName()+
                 " (" +
                 "id BIGSERIAL PRIMARY KEY,"+
-                COMMAND_ID + " bigint, "+
-                "data jsonb"+
+                COMMAND_ID+" BIGINT, "+
+                PROGRESS+" INT, "+
+                REPORT_TIME+" TIMESTAMPTZ, "+
+                STATUS_CODE+" VARCHAR, "+
+                EXEC_TIME+" tsrange, "+
+                MESSAGE+" VARCHAR, "+
+                RESULT+" json"+
                 ")";
     }
 
     public String insertCommandQuery() {
-        return "INSERT INTO "+this.getStoreTableName()+" (commandid, data) VALUES (?, ?)";
+        return "INSERT INTO "+this.getStoreTableName()+" " +
+                "(commandid, progress, reportTime, statusCode, executionTime, message, result) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?)";
     }
 
     public String updateByIdQuery() {
-        return "UPDATE "+this.getStoreTableName()+" SET data = ?, WHERE id = ?";
+        return "UPDATE "+this.getStoreTableName()+" SET "+
+                COMMAND_ID+" = ?, " +
+                PROGRESS+" = ?, " +
+                REPORT_TIME+" = ?, " +
+                STATUS_CODE+" = ?, " +
+                EXEC_TIME+" = ?, " +
+                MESSAGE+" = ?, " +
+                RESULT+" = ?, " +
+                "WHERE id = ?";
     }
 
     public String createSelectEntriesQuery(CommandStatusFilter filter, Set<ICommandStatusStore.CommandStatusField> fields) {

@@ -18,7 +18,6 @@ import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.command.CommandFilter;
 import org.sensorhub.impl.datastore.postgis.builder.generator.RemoveFilterQueryGenerator;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
-import org.vast.util.Asserts;
 
 public class RemoveCommandStatusFilterQuery extends BaseCommandStatusFilterQuery<RemoveFilterQueryGenerator> {
 
@@ -28,20 +27,16 @@ public class RemoveCommandStatusFilterQuery extends BaseCommandStatusFilterQuery
 
     protected void handleReportTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
-            addCondition(this.tableName+".data->'reportTime' IS NOT NULL");
+            addCondition(this.tableName+".reportTime IS NOT NULL");
             if (temporalFilter.isLatestTime()) {
                 throw new UnsupportedOperationException("ReportTimeFilter is not supported for latest into REMOVE clause");
             } else {
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
-                String sb = "tstzrange((" +
-                        tableName +
-                        ".data->'reportTime'->>'begin')::timestamptz,(" +
-                        tableName +
-                        ".data->'reportTime'->>'end')::timestamptz, '[]')" +
-                        " && " +
-                        "'[" + min + "," + max + "]'::tstzrange";
+                String sb = tableName + ".reportTime BETWEEN '"
+                        + min + "'::timestamptz AND '"
+                        + max + "'::timestamptz";
                 addCondition(sb);
             }
         }
@@ -49,20 +44,16 @@ public class RemoveCommandStatusFilterQuery extends BaseCommandStatusFilterQuery
 
     protected void handleExecutionTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
-            addCondition(this.tableName+".data->'executionTime' IS NOT NULL");
+            addCondition(this.tableName+".executionTime IS NOT NULL");
             if (temporalFilter.isLatestTime()) {
                 throw new UnsupportedOperationException("ExecutionTimeFilter is not supported for latest into REMOVE clause");
             } else {
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
-                String sb = "tstzrange((" +
-                        tableName +
-                        ".data->'executionTime'->>'begin')::timestamptz,(" +
-                        tableName +
-                        ".data->'executionTime'->>'end')::timestamptz, '[]')" +
-                        " && " +
-                        "'[" + min + "," + max + "]'::tstzrange";
+                String sb = tableName + ".executionTime "
+                        + PostgisUtils.getOperator(temporalFilter.getOperator())
+                        + " tsrange('" + min + "','" + max + "', '[]')";
                 addCondition(sb);
             }
         }
@@ -72,7 +63,7 @@ public class RemoveCommandStatusFilterQuery extends BaseCommandStatusFilterQuery
         if(commandFilter != null) {
             // create join
             this.filterQueryGenerator.addUsing(this.commandTableName);
-            this.filterQueryGenerator.addCondition("("+this.tableName+".data->'command@id'->'id')::bigint = "+this.commandTableName+".id");
+            this.filterQueryGenerator.addCondition("("+this.tableName+".commandID)::bigint = "+this.commandTableName+".id");
 
             RemoveCommandFilterQuery commandFilterQuery = new RemoveCommandFilterQuery(this.commandTableName, filterQueryGenerator);
             commandFilterQuery.setCommandStatusTableName(this.tableName);

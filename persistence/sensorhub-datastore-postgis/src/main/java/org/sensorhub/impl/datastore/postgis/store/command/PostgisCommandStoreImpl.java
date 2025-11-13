@@ -62,7 +62,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
     protected void init(String url, String dbName, String login, String password) {
         super.init(url,dbName,login,password,new String[]{
                 queryBuilder.createTableQuery(),
-                queryBuilder.createDataIndexQuery(),
+//                queryBuilder.createDataIndexQuery(),
                 queryBuilder.createCommandStreamIndexQuery(),
                 queryBuilder.createIssueTimeIndexQuery(),
                 queryBuilder.createSenderIdIndexQuery(),
