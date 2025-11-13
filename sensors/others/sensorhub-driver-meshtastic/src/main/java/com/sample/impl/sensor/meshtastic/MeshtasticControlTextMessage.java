@@ -64,7 +64,7 @@ public class MeshtasticControlTextMessage extends AbstractSensorControl<Meshtast
                 )
                 .setChannel(channel)
                 .setTo(destinationID) // Primary Channel
-                .setWantAck(false)
+                .setWantAck(!destination.equals("broadcast")) // Acknowledge direct messages to display history
                 .build();
 
         return MeshProtos.ToRadio.newBuilder()
