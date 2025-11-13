@@ -35,6 +35,8 @@ public class SelectDataStreamFilterQuery extends DataStreamFilterQuery<SelectFil
                 filterQueryGenerator.addOrderBy("(" + tableName + ".data->'validTime'->>'end')::timestamptz DESC ");
             }
             else if (temporalFilter.isCurrentTime()) {
+                filterQueryGenerator.addDistinct("(" + tableName + ".data->>'name')");
+                filterQueryGenerator.addDistinct("(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint");
                 String sb = "(" +
                         tableName + ".data->'validTime' IS NULL " +
                         "OR (" +
