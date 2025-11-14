@@ -56,40 +56,40 @@ public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo {
         GeoPosHelper geoFac = new GeoPosHelper();
         SWEHelper sweFactory = new SWEHelper();
         // Create the data record description
-        packetRecord.addField("node_id", sweFactory.createText()
-                        .label("ID")
+        packetRecord.addField("nodeId", sweFactory.createText()
+                        .label("Node ID")
                         .description("the id of a meshtastic node")
-                        .definition(SWEHelper.getPropertyUri("node_id"))
+                        .definition(SWEHelper.getPropertyUri("NodeId"))
                         .build()
         );
-        packetRecord.addField("node_shortName", sweFactory.createText()
-                .label("Long Name")
-                .description("the long name of a meshtastic node")
-                .definition(SWEHelper.getPropertyUri("node_longName"))
+        packetRecord.addField("nodeShortName", sweFactory.createText()
+                .label("Short Name")
+                .description("the short name of a meshtastic node")
+                .definition(SWEHelper.getPropertyUri("NodeShortName"))
                 .build()
         );
-        packetRecord.addField("node_longName", sweFactory.createText()
-                        .label("Short Name")
-                        .description("the short name of a meshtastic node")
-                        .definition(SWEHelper.getPropertyUri("node_shortName"))
+        packetRecord.addField("nodeLongName", sweFactory.createText()
+                        .label("Long Name")
+                        .description("the long name of a meshtastic node")
+                        .definition(SWEHelper.getPropertyUri("NodeLongName"))
                         .build()
         );
-        packetRecord.addField("node_pk", sweFactory.createText()
+        packetRecord.addField("nodePublicKey", sweFactory.createText()
                         .label("Public Key")
                         .description("the public key of a meshtastic node")
-                        .definition(SWEHelper.getPropertyUri("node_pk"))
+                        .definition(SWEHelper.getPropertyUri("NodePublicKey"))
                         .build()
                 );
-        packetRecord.addField("node_HwModel", sweFactory.createText()
+        packetRecord.addField("nodeHwModel", sweFactory.createText()
                         .label("Hardware Model")
                         .description("the Hardware Model of a meshtastic node")
-                        .definition(SWEHelper.getPropertyUri("node_HwModel"))
+                        .definition(SWEHelper.getPropertyUri("NodeHwModel"))
                         .build()
                 );
-        packetRecord.addField("node_role", sweFactory.createText()
+        packetRecord.addField("nodeRole", sweFactory.createText()
                         .label("Role")
                         .description("the Role of a meshtastic node")
-                        .definition(SWEHelper.getPropertyUri("node_role"))
+                        .definition(SWEHelper.getPropertyUri("NodeRole"))
                         .build()
         );
 
@@ -110,19 +110,19 @@ public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo {
     /**
      * Sets the data for the output and publishes it.
      */
-    public void setData(MeshProtos.MeshPacket packet_data, MeshProtos.User node_info_data) {
+    public void setData(MeshProtos.MeshPacket packetData, MeshProtos.User nodeInfoData) {
         synchronized (processingLock) {
             //SET PACKET INFO IN PARENT CLASS
-            setPacketData(packet_data);
+            setPacketData(packetData);
 
-            String node_id = node_info_data.getId();
-            String node_shortName = node_info_data.getShortName();
-            String node_LongName = node_info_data.getLongName();
-            String node_PK = Base64.getEncoder().encodeToString(node_info_data.getPublicKey().toByteArray());
-            String node_hwModel =  node_info_data.getHwModel().toString();
-            String node_role = (node_info_data.getRole() == ConfigProtos.Config.DeviceConfig.Role.UNRECOGNIZED) ? "Unknown Role" : node_info_data.getRole().name();
+            String nodeID = nodeInfoData.getId();
+            String nodeShortName = nodeInfoData.getShortName();
+            String nodeLongName = nodeInfoData.getLongName();
+            String nodePrimaryKey = Base64.getEncoder().encodeToString(nodeInfoData.getPublicKey().toByteArray());
+            String nodeHwModel =  nodeInfoData.getHwModel().toString();
+            String nodeRole = (nodeInfoData.getRole() == ConfigProtos.Config.DeviceConfig.Role.UNRECOGNIZED) ? "Unknown Role" : nodeInfoData.getRole().name();
 //            boolean isUnmessageable =  node_info.getIsUnmessagable();
-//            boolean can_be_messaged = node_info.hasIsUnmessagable();
+//            boolean canBeMessaged = node_info.hasIsUnmessagable();
 
             DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
 
@@ -130,17 +130,17 @@ public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo {
             populatePacketDataStructure(dataBlock);
 
             // Populate the Node Info Data
-            dataBlock.setStringValue(packet_record_size + 1, node_id);
-            dataBlock.setStringValue(packet_record_size + 2, node_shortName);
-            dataBlock.setStringValue(packet_record_size + 3, node_LongName);
-            dataBlock.setStringValue(packet_record_size + 4, node_PK);
-            dataBlock.setStringValue(packet_record_size + 5, node_hwModel);
-            dataBlock.setStringValue(packet_record_size + 6, node_role);
+            dataBlock.setStringValue(packetRecordSize + 1, nodeID);
+            dataBlock.setStringValue(packetRecordSize + 2, nodeShortName);
+            dataBlock.setStringValue(packetRecordSize + 3, nodeLongName);
+            dataBlock.setStringValue(packetRecordSize + 4, nodePrimaryKey);
+            dataBlock.setStringValue(packetRecordSize + 5, nodeHwModel);
+            dataBlock.setStringValue(packetRecordSize + 6, nodeRole);
 
             updateIntervalHistogram();
 
             // CREATE FOI UID
-            String foiUID = parentSensor.addFoi(packet_from);
+            String foiUID = parentSensor.addFoi(packetFrom);
 
             // Publish the data block
             latestRecord = dataBlock;

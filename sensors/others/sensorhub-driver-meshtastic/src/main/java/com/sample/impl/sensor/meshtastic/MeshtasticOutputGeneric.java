@@ -50,16 +50,16 @@ public class MeshtasticOutputGeneric extends MeshtasticOutputPacketInfo {
         // Get an instance of SWE Factory suitable to build components
         GeoPosHelper geoFac = new GeoPosHelper();
 
-        packetRecord.addField("packet_hasDecoded", geoFac.createBoolean()
+        packetRecord.addField("hasDecoded", geoFac.createBoolean()
                 .label("hasDecoded")
                 .description("Does the packet have data associated with it")
-                .definition(SWEHelper.getPropertyUri("packet_hasDecoded"))
+                .definition(SWEHelper.getPropertyUri("HasDecoded"))
                 .build()
         );
-        packetRecord.addField("packet_hasEncrypted", geoFac.createBoolean()
+        packetRecord.addField("hasEncrypted", geoFac.createBoolean()
                 .label("hasEncrypted")
                 .description("Does the packet have encrypted data associated with it")
-                .definition(SWEHelper.getPropertyUri("packet_hasEncrypted"))
+                .definition(SWEHelper.getPropertyUri("HasEncrypted"))
                 .build()
         );
 
@@ -95,13 +95,13 @@ public class MeshtasticOutputGeneric extends MeshtasticOutputPacketInfo {
             boolean hasEncrypted = packet_data.hasEncrypted();
 
             // Populate position fields
-            dataBlock.setBooleanValue(packet_record_size + 1, packet_data.hasDecoded());
-            dataBlock.setBooleanValue(packet_record_size + 2, packet_data.hasEncrypted());
+            dataBlock.setBooleanValue(packetRecordSize + 1, packet_data.hasDecoded());
+            dataBlock.setBooleanValue(packetRecordSize + 2, packet_data.hasEncrypted());
 
             updateIntervalHistogram();
 
             // CREATE FOI UID
-            String foiUID = parentSensor.addFoi(packet_from);
+            String foiUID = parentSensor.addFoi(packetFrom);
             // Publish the data block
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();

@@ -52,10 +52,10 @@ public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo{
         GeoPosHelper geoFac = new GeoPosHelper();
         SWEHelper sweFactory = new SWEHelper();
         // Create the data record description
-        packetRecord.addField("text_message", sweFactory.createText()
+        packetRecord.addField("textMessage", sweFactory.createText()
                         .label("Message")
                         .description("Message from a meshtastic Device")
-                        .definition(SWEHelper.getPropertyUri("text_message"))
+                        .definition(SWEHelper.getPropertyUri("TextMessage"))
                         .build()
         );
 
@@ -76,10 +76,10 @@ public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo{
     /**
      * Sets the data for the output and publishes it.
      */
-    public void setData(MeshProtos.MeshPacket packet_data, String message_data) {
+    public void setData(MeshProtos.MeshPacket packetData, String messageData) {
         synchronized (processingLock) {
             // Set PacketInfo in Parent Class
-            setPacketData(packet_data);
+            setPacketData(packetData);
 
             DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
 
@@ -87,12 +87,12 @@ public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo{
             populatePacketDataStructure(dataBlock);
 
             // Populate Message Data
-            dataBlock.setStringValue(packet_record_size + 1, message_data);
+            dataBlock.setStringValue(packetRecordSize + 1, messageData);
 
             updateIntervalHistogram();
 
             // CREATE FOI UID
-            String foiUID = parentSensor.addFoi(packet_from);
+            String foiUID = parentSensor.addFoi(packetFrom);
 
             // Publish the data block
             latestRecord = dataBlock;

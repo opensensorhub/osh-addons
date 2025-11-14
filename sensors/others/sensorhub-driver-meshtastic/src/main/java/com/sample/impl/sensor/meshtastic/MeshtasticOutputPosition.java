@@ -73,15 +73,15 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo {
      * Sets the data for the output and publishes it.
      */
 //    public void setData(String packet_id, String packet_from, double lat, double lon, double alt) {
-    public void setData(MeshProtos.MeshPacket packet_data, MeshProtos.Position pos_data) {
+    public void setData(MeshProtos.MeshPacket packetData, MeshProtos.Position posData) {
         synchronized (processingLock) {
             // Set PacketInfo in Parent Class
-            setPacketData(packet_data);
+            setPacketData(packetData);
 
             // Extract Position Values
-            double lat = pos_data.getLatitudeI()/ 1e7;
-            double lon = pos_data.getLongitudeI()/ 1e7;
-            double alt = pos_data.getAltitude();
+            double lat = posData.getLatitudeI()/ 1e7;
+            double lon = posData.getLongitudeI()/ 1e7;
+            double alt = posData.getAltitude();
 
             DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
 
@@ -89,14 +89,14 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo {
             populatePacketDataStructure(dataBlock);
 
             // POPULATE POSITION FIELDS
-            dataBlock.setDoubleValue(packet_record_size + 1, lat);
-            dataBlock.setDoubleValue(packet_record_size + 2, lon);
-            dataBlock.setDoubleValue(packet_record_size + 3, alt);
+            dataBlock.setDoubleValue(packetRecordSize + 1, lat);
+            dataBlock.setDoubleValue(packetRecordSize + 2, lon);
+            dataBlock.setDoubleValue(packetRecordSize + 3, alt);
 
             updateIntervalHistogram();
 
             // CREATE FOI UID
-            String foiUID = parentSensor.addFoi(packet_from);
+            String foiUID = parentSensor.addFoi(packetFrom);
             // Publish the data block
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();

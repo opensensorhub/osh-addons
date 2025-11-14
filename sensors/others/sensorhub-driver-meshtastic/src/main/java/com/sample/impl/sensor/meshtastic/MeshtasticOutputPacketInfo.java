@@ -35,20 +35,20 @@ public class MeshtasticOutputPacketInfo extends AbstractSensorOutput<MeshtasticS
     public DataRecord packetRecord;
     public DataEncoding dataEncoding;
 
-    public int packet_record_size;
+    public int packetRecordSize;
 
     // Packet Variables
-    String packet_id;
-    String packet_to;
-    String packet_from;
-    Instant packet_time;
-    boolean packet_hasData;
-    String packet_portnum = "None";
-    int packet_portnum_value = 0;
-    int packet_RxRssi;
-    int packet_HopLimit;
-    int packet_hopStart;
-    String packet_RelayNode;
+    String packetId;
+    String packetTo;
+    String packetFrom;
+    Instant packetTime;
+    boolean packetHasData;
+    String packetPortnum = "None";
+    int packetPortNumValue = 0;
+    int packetRxRssi;
+    int packetHopLimit;
+    int packethopStart;
+    String packetRelayNode;
 
     /**
      * Creates a new output for the sensor driver.
@@ -75,55 +75,57 @@ public class MeshtasticOutputPacketInfo extends AbstractSensorOutput<MeshtasticS
                 .addField("sampleTime", geoFac.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
-                        .description("Time of data collection"))
-                .addField("packet_id", sweFactory.createText()
+                        .description("Time of data collection")
+                        .definition("SampleTime")
+                )
+                .addField("packetID", sweFactory.createText()
                         .label("ID")
                         .description("the id of a meshtastic packet")
-                        .definition(SWEHelper.getPropertyUri("packet_id")))
-                .addField("packet_to", sweFactory.createText()
+                        .definition(SWEHelper.getPropertyUri("PacketID")))
+                .addField("packetTo", sweFactory.createText()
                         .label("To")
                         .description("node meshtastic packet is being sent to")
-                        .definition(SWEHelper.getPropertyUri("packet_to")))
-                .addField("packet_from", sweFactory.createText()
+                        .definition(SWEHelper.getPropertyUri("PacketTo")))
+                .addField("packetFrom", sweFactory.createText()
                         .label("From")
                         .description("node meshtastic packet is being sent from")
-                        .definition(SWEHelper.getPropertyUri("packet_from")))
-                .addField("packet_time", sweFactory.createTime()
+                        .definition(SWEHelper.getPropertyUri("PacketFrom")))
+                .addField("packetTime", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Packet Rx Time")
                         .description("the time the packet was sent from the meshtastic node")
-                        .definition(SWEHelper.getPropertyUri("packet_time")))
-                .addField("packet_hasData", sweFactory.createBoolean()
+                        .definition(SWEHelper.getPropertyUri("PacketTime")))
+                .addField("packetHasData", sweFactory.createBoolean()
                         .label("Does Packet have data")
                         .description("Does the packet provided actually contain data")
-                        .definition(SWEHelper.getPropertyUri("packet_hasData")))
+                        .definition(SWEHelper.getPropertyUri("PacketHasData")))
                 .addField("portnum", sweFactory.createText()
                         .label("Portnum")
                         .description("What is the PortNum of the packet")
-                        .definition(SWEHelper.getPropertyUri("portnum")))
-                .addField("portnum_val", sweFactory.createQuantity()
+                        .definition(SWEHelper.getPropertyUri("Portnum")))
+                .addField("portnumVal", sweFactory.createQuantity()
                         .label("Portnum Value")
                         .description("The value of the portnum provided")
-                        .definition(SWEHelper.getPropertyUri("portnum_val")))
-                .addField("packet_RxRssi", sweFactory.createQuantity()
+                        .definition(SWEHelper.getPropertyUri("PortnumVal")))
+                .addField("packetRxRssi", sweFactory.createQuantity()
                         .label("Rx RSSI")
                         .description("Received Signal Strength Indicator")
-                        .definition(SWEHelper.getPropertyUri("packet_RxRssi")))
-                .addField("packet_HopLimit", sweFactory.createQuantity()
+                        .definition(SWEHelper.getPropertyUri("PacketRxRssi")))
+                .addField("packetHopLimit", sweFactory.createQuantity()
                         .label("Hop Limit")
                         .description("Hop limit of a meshtastic packet")
-                        .definition(SWEHelper.getPropertyUri("packet_HopLimit")))
-                .addField("packet_hopStart", sweFactory.createQuantity()
+                        .definition(SWEHelper.getPropertyUri("PacketHopLimit")))
+                .addField("packetHopStart", sweFactory.createQuantity()
                         .label("Hop Start")
                         .description("Hop Start of a meshtastic packet")
-                        .definition(SWEHelper.getPropertyUri("packet_hopStart")))
-                .addField("packet_RelayNode", sweFactory.createText()
+                        .definition(SWEHelper.getPropertyUri("PacketHopStart")))
+                .addField("packetRelayNode", sweFactory.createText()
                         .label("Relay Node")
                         .description("What is the RelayNode of the packet")
-                        .definition(SWEHelper.getPropertyUri("packet_RelayNode")))
+                        .definition(SWEHelper.getPropertyUri("PacketRelayNode")))
                 .build();
 
-        packet_record_size = packetRecord.getNumFields()-1;
+        packetRecordSize = packetRecord.getNumFields()-1;
 
         dataEncoding = geoFac.newTextEncoding(",", "\n");
     }
@@ -150,44 +152,44 @@ public class MeshtasticOutputPacketInfo extends AbstractSensorOutput<MeshtasticS
         }
     }
 
-    public void setPacketData(MeshProtos.MeshPacket packet_data){
-        packet_id = convert_32int_to_string(packet_data.getId());
-        packet_to = convert_32int_to_string(packet_data.getTo());
-        packet_from = convert_32int_to_string(packet_data.getFrom());
-        packet_time = convert_32int_to_Instant(packet_data.getRxTime());
-        packet_hasData = packet_data.hasDecoded();
-        if(packet_hasData){
-            packet_portnum = packet_data.getDecoded().getPortnum().name();
-            packet_portnum_value = packet_data.getDecoded().getPortnumValue();
+    public void setPacketData(MeshProtos.MeshPacket packetData){
+        packetId = convert32IntToString(packetData.getId());
+        packetTo = convert32IntToString(packetData.getTo());
+        packetFrom = convert32IntToString(packetData.getFrom());
+        packetTime = convert32IntToInstant(packetData.getRxTime());
+        packetHasData = packetData.hasDecoded();
+        if(packetHasData){
+            packetPortnum = packetData.getDecoded().getPortnum().name();
+            packetPortNumValue = packetData.getDecoded().getPortnumValue();
         }
-        packet_RxRssi = packet_data.getRxRssi();
-        packet_HopLimit = packet_data.getHopLimit();
-        packet_hopStart = packet_data.getHopStart();
-        packet_RelayNode = convert_32int_to_string(packet_data.getRelayNode());
+        packetRxRssi = packetData.getRxRssi();
+        packetHopLimit = packetData.getHopLimit();
+        packethopStart = packetData.getHopStart();
+        packetRelayNode = convert32IntToString(packetData.getRelayNode());
     }
 
     public void populatePacketDataStructure(DataBlock dataBlock){
         // Populate Parent Class Packet Data
         dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
-        dataBlock.setStringValue(1, packet_id);
-        dataBlock.setStringValue(2, packet_to);
-        dataBlock.setStringValue(3, packet_from);
-        dataBlock.setTimeStamp(4, packet_time);
-        dataBlock.setBooleanValue(5, packet_hasData);
-        dataBlock.setStringValue(6, packet_portnum);
-        dataBlock.setIntValue(7, packet_portnum_value);
-        dataBlock.setDoubleValue(8, packet_RxRssi);
-        dataBlock.setDoubleValue(9, packet_HopLimit);
-        dataBlock.setDoubleValue(10, packet_hopStart);
-        dataBlock.setStringValue(11, packet_RelayNode);
+        dataBlock.setStringValue(1, packetId);
+        dataBlock.setStringValue(2, packetTo);
+        dataBlock.setStringValue(3, packetFrom);
+        dataBlock.setTimeStamp(4, packetTime);
+        dataBlock.setBooleanValue(5, packetHasData);
+        dataBlock.setStringValue(6, packetPortnum);
+        dataBlock.setIntValue(7, packetPortNumValue);
+        dataBlock.setDoubleValue(8, packetRxRssi);
+        dataBlock.setDoubleValue(9, packetHopLimit);
+        dataBlock.setDoubleValue(10, packethopStart);
+        dataBlock.setStringValue(11, packetRelayNode);
     }
 
 
-    public String convert_32int_to_string(int data){
+    public String convert32IntToString(int data){
         long unsigned_num = Integer.toUnsignedLong(data);
         return String.format("!%08x", unsigned_num);
     }
-    public Instant convert_32int_to_Instant(int data){
+    public Instant convert32IntToInstant(int data){
         long unsigned_num = Integer.toUnsignedLong(data);
         return Instant.ofEpochSecond(unsigned_num);
     }
