@@ -147,17 +147,17 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     }
 
     // THIS METHOD IS UTILIZED IN ALL THE OUTPUTS. IT CREATES A FOI USING PARENT SENSOR METHOD
-    String addFoi( String mesh_node_id) {
-        String foiUID = UID_PREFIX + mesh_node_id;
+    String addFoi( String meshNodeId) {
+        String foiUID = UID_PREFIX + meshNodeId;
 
         if (!foiMap.containsKey(foiUID))
         {
             // Generate small SensorML for FOI (in this case the system is the FOI)
             MovingFeature foi = new MovingFeature();
-            foi.setId(mesh_node_id);
+            foi.setId(meshNodeId);
             foi.setUniqueIdentifier(foiUID);
-            foi.setName(mesh_node_id);
-            foi.setDescription("meshtastic Node " + mesh_node_id);
+            foi.setName(meshNodeId);
+            foi.setDescription("meshtastic Node " + meshNodeId);
 
             // REGISTER FOI
             addFoi(foi);
