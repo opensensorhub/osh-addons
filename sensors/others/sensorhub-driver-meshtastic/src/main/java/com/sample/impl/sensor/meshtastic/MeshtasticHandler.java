@@ -48,9 +48,7 @@ public class MeshtasticHandler {
                     break;
                 case 73: // 73 = MAP REPORT
                     try{
-                        System.out.println("[RETRIEVED A MAP REPORT]");
                         MQTTProtos.MapReport map_report = MQTTProtos.MapReport.parseFrom(data.getPayload());
-                        System.out.println(map_report);
 //                                output_nodeInfo.setData(packet, node_info);
 
                     }catch (InvalidProtocolBufferException e) {
