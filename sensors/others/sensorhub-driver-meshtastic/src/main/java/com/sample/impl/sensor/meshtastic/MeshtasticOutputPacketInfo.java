@@ -72,6 +72,7 @@ public class MeshtasticOutputPacketInfo extends AbstractSensorOutput<MeshtasticS
                 .name(packetName)
                 .label(packetLabel)
                 .description(packetDescrition)
+                .definition(packetName)
                 .addField("sampleTime", geoFac.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
