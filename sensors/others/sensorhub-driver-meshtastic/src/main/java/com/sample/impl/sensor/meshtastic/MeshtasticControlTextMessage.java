@@ -35,7 +35,8 @@ public class MeshtasticControlTextMessage extends AbstractSensorControl<Meshtast
                 )
                 .addField("destination", fac.createText()
                         .label("Destination")
-                        .description("Input of the Destination Node Number or 'broadcast' ")
+                        .description("Type the Node Number of the Meshtastic Node if you want to send a direct message to that Node. Type 'broadcast' if you want to broadcast your message to all nodes present")
+                        .definition(SWEHelper.getPropertyUri("destination"))
                 )
                 .build();
     }
