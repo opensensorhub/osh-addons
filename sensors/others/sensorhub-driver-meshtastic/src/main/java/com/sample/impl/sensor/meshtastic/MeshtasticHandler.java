@@ -34,7 +34,7 @@ public class MeshtasticHandler {
                         sensorDriver.posOutput.setData(packet, pos);
 
                     }catch (InvalidProtocolBufferException e) {
-                        System.err.println("ERROR parsing Position: " + e.getMessage());
+                        sensorDriver.getLogger().error("ERROR parsing Position: {}", e.getMessage());
                     }
                     break;
                 case 4: // 4 = NODEINFO_APP_VALUE
@@ -43,7 +43,7 @@ public class MeshtasticHandler {
                         sensorDriver.nodeInfoOutput.setData(packet, node_info);
 
                     }catch (InvalidProtocolBufferException e) {
-                        System.err.println("ERROR parsing Node Info: " + e.getMessage());
+                        sensorDriver.getLogger().error("ERROR parsing Node Info: {}", e.getMessage());
                     }
                     break;
                 case 73: // 73 = MAP REPORT
@@ -52,7 +52,7 @@ public class MeshtasticHandler {
 //                                output_nodeInfo.setData(packet, node_info);
 
                     }catch (InvalidProtocolBufferException e) {
-                        System.err.println("ERROR parsing MAP REPORT: " + e.getMessage());
+                        sensorDriver.getLogger().error("ERROR parsing MAP REPORT: {}", e.getMessage());
                     }
                     break;
                 default:

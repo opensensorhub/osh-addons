@@ -163,6 +163,7 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
             addFoi(foi);
 
             getLogger().debug("New meshtastic Node added as FOI: {}", foiUID);
+
         }
 
         return foiUID;
