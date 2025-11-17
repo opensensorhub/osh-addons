@@ -1,4 +1,4 @@
-package com.sample.impl.sensor.meshtastic;
+package com.sensorhub.impl.sensor.meshtastic;
 
 import com.geeksville.mesh.MQTTProtos;
 import com.geeksville.mesh.MeshProtos;
