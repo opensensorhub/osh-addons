@@ -131,7 +131,7 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         isProcessing.set(false);
 
         // Shutdown executor
-        executor.shutdown();
+        executor.shutdownNow();
 
         // Stop comm
         if(commProvider != null){
