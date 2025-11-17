@@ -59,11 +59,11 @@ public class QueryBuilderObsStore extends QueryBuilder {
     }
 
     public String createPhenomenonTimeIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_phenomenon_time_idx on "+this.getStoreTableName()+" ("+ PHENOMENON_TIME +")";
+        return "CREATE INDEX "+this.getStoreTableName()+"datastream_id_phenomenon_time_idx on "+this.getStoreTableName()+" ("+ DATASTREAM_ID + ", " + PHENOMENON_TIME +")";
     }
 
     public String createResultTimeIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_result_time_idx on "+this.getStoreTableName()+" ("+ RESULT_TIME +")";
+        return "CREATE INDEX "+this.getStoreTableName()+"datastream_id_result_time_idx on "+this.getStoreTableName()+" ("+ DATASTREAM_ID + ", " + RESULT_TIME +")";
     }
 
     public String createFoiIndexQuery() {
