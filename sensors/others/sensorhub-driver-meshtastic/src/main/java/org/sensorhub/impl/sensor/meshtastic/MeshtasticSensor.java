@@ -132,12 +132,13 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         //Stop processing the loop
         isProcessing.set(false);
 
-        // Shutdown executor
-        executor.shutdownNow();
-
         // Stop comm
         if(commProvider != null){
-            commProvider.stop();
+            try {
+                commProvider.getInputStream().close();
+            } catch (IOException e) {
+                getLogger().warn("Failed to close input stream", e);
+            }
         }
 
 
@@ -174,9 +175,14 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
 
     // PROCESSING THREAD
     private void startProcessing() {
+        // CHECK TO SEE IF ALREADY PROCESSING
+        if (isProcessing.get()){
+            return;
+        }
+
         executor.execute(() -> {
-            try {
-                InputStream in = commProvider.getInputStream();
+            // try-with-resources to auto-close
+            try (InputStream in = commProvider.getInputStream()){
                 isProcessing.set(true);
                 while (isProcessing.get()) {
                     int b;
@@ -237,6 +243,11 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
                 }
 
             } catch (IOException e) {
+                if (isProcessing.get()) {
+                    getLogger().error("Error reading from comm provider", e);
+                }
+            } finally {
+                isProcessing.set(false);
             }
         });
     }
