@@ -21,6 +21,7 @@ import org.vast.ogc.om.MovingFeature;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -65,8 +66,9 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         generateUniqueID(UID_PREFIX, config.serialNumber);
         generateXmlID(XML_PREFIX, config.serialNumber);
 
-        if (config.commSettings != null)
+        if (config.commSettings != null) {
             commProvider = (ICommProvider<?>) getParentHub().getModuleRegistry().loadSubModule(config.commSettings, true);
+        }
 
         // CREATE AND INITIALIZE OUTPUTS
         textOutput = new MeshtasticOutputTextMessage(this);
@@ -112,12 +114,9 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
                     // TODO: Verify response ID in future if needed
                     .setWantConfigId(0)
                     .build();
-            try {
-                sendMessage(handshake);
-            } catch (IOException e) {
-                getLogger().error("Failed to send handshake message", e);
-                throw new SensorHubException("Handshake failed, cannot start sensor", e);
-            }
+
+            sendMessage(handshake);
+
             // BEGIN PROCESSING DATA
             startProcessing();
         } else {
@@ -146,7 +145,7 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
 
     @Override
     public boolean isConnected() {
-        return isProcessing.get();
+        return commProvider != null && commProvider.isInitialized();
     }
 
     // THIS METHOD IS UTILIZED IN ALL THE OUTPUTS. IT CREATES A FOI USING PARENT SENSOR METHOD
@@ -252,7 +251,7 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         });
     }
 
-    public void sendMessage(MeshProtos.ToRadio message) throws IOException {
+    public boolean sendMessage(MeshProtos.ToRadio message) {
         byte[] bytes = message.toByteArray();
 
         int len = bytes.length;
@@ -262,10 +261,18 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         header[2] = (byte) ((len >> 8) & 0xFF);
         header[3] = (byte) (len & 0xFF);
 
-        var os = commProvider.getOutputStream();
-        os.write(header);
-        os.write(bytes);
-        os.flush();
+        try {
+            OutputStream os = commProvider.getOutputStream();
+            os.write(header);
+            os.write(bytes);
+            os.flush();
+            // if it sends
+            return true;
+        } catch (IOException e) {
+            getLogger().error("Failed to send handshake message", e);
+            return false;
+        }
+
     }
 
 }

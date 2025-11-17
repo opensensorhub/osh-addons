@@ -1,13 +1,17 @@
-package com.sensorhub.impl.sensor.meshtastic;
+package org.sensorhub.impl.sensor.meshtastic;
 
 import com.botts.impl.comm.jssc.JsscSerialCommProviderConfig;
 import com.geeksville.mesh.MeshProtos;
+import com.geeksville.mesh.Portnums;
+import com.google.protobuf.ByteString;
 import org.junit.Before;
 import org.junit.Test;
-import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 
 
+import javax.validation.constraints.AssertTrue;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
@@ -24,55 +28,85 @@ public class MeshtasticSensorTest {
      * and initializes the sensor with this configuration.
      */
     @Before
-    public void init() throws SensorHubException {
+    public void setup() throws SensorHubException {
         config = new Config();
         config.id = UUID.randomUUID().toString();
 
+        // Configure serial comm provider
         JsscSerialCommProviderConfig serialConfig = new JsscSerialCommProviderConfig();
         serialConfig.protocol.portName = "/dev/tty.usbserial-0001";
         serialConfig.protocol.baudRate = 115200;
 
         config.commSettings = serialConfig;
 
+        // Initialize Sensor
         sensor = new MeshtasticSensor();
         sensor.init(config);
-
-    }
-    // TEST 1: CHECK INITIALIZATION CREATES ALL OUTPUTS AND HANDLER SUCCESSFULLY
-    @Test
-    public void testInitCreatesOutputAndHandler() throws SensorHubException {
         sensor.doInit();
 
-        //Verify that each output object was created:
-        assertNotNull("Text output should be initialized", sensor.textOutput);
-        assertNotNull("Position output should be initialized", sensor.posOutput);
-        assertNotNull("Node info output should be initialized", sensor.nodeInfoOutput);
-        assertNotNull("Generic output should be initialized", sensor.genericOutput);
-
-        // Verify handler and control message objects exist
-        assertNotNull("Handler should be initialized", sensor.meshtasticHandler);
-        assertNotNull("Control text message should be initialized", sensor.meshtasticControlTextMessage);
-
+    }
+    // TEST 1: Test if driver can Connect
+    @Test
+    public void testDriverCanConnect() throws SensorHubException {
+        boolean connected = sensor.isConnected();
+        assertTrue("Driver is Connected", connected);
     }
 
     // -----------------------------------------
-    // Test 2: addFoi() registers a new node only once
+    // Test 2: See if messages send successfully
     // -----------------------------------------
     @Test
-    public void testAddFoiCreatesFoiOnlyOnce() throws SensorHubException {
-        sensor.doInit();
+    public void testDriverCanSendMessage() {
+        // CREATE A MESHTASTIC PROTO PACKET TO BE SENT AS TEXT MESSAGE
+        String text = "Meshtastic Test to Primary Channel";
+        int destinationID = 0xFFFFFFFF; // Broadcast to open channel
 
-        // Add FOI for a node ID
-        String uid1 = sensor.addFoi("NODE123");
+        MeshProtos.MeshPacket packet = MeshProtos.MeshPacket.newBuilder()
+                .setDecoded(MeshProtos.Data.newBuilder()
+                        .setPortnum(Portnums.PortNum.internalGetValueMap().findValueByNumber(Portnums.PortNum.TEXT_MESSAGE_APP_VALUE))
+                        .setPayload(ByteString.copyFrom(text, StandardCharsets.UTF_8))
+                        .build()
+                )
+                .setChannel(0)
+                .setTo(destinationID) // Primary Channel
+                .setWantAck(false) // Acknowledge direct messages to display history
+                .build();
 
-        // Add the same FOI again
-        String uid2 = sensor.addFoi("NODE123");
+        // Create ToRadio
+        MeshProtos.ToRadio message = MeshProtos.ToRadio.newBuilder()
+                .setPacket(packet)
+                .build();
 
-        // The returned UID should be the same
-        assertEquals("UIDs should be equal for same node", uid1, uid2);
+        // Test
+        boolean result = sensor.sendMessage(message);
+        assertTrue("Message should be sent succesfully", result);
+    }
 
-        // Verify the UID format
-        assertEquals("UID should match expected format", "urn:osh:Meshtastic_Node:NODE123", uid1);
+    // -----------------------------------------
+    // Test 3: See if messages are received correctly through the handler
+    // -----------------------------------------
+    @Test
+    public void testDriverCanReceive() {
+        String text = "Is a text message received";
+
+        MeshProtos.MeshPacket testPacket = MeshProtos.MeshPacket.newBuilder()
+                .setDecoded(MeshProtos.Data.newBuilder()
+                        .setPortnum(Portnums.PortNum.internalGetValueMap().findValueByNumber(Portnums.PortNum.TEXT_MESSAGE_APP_VALUE))
+                        .setPayload(ByteString.copyFrom(text, StandardCharsets.UTF_8))
+                        .build()
+                )
+                .setWantAck(false) // Acknowledge direct messages to display history
+                .build();
+
+        // This test should run through the handler and provide MeshtasticOutputTextMessage
+        sensor.meshtasticHandler.handlePacket(testPacket);
+
+        // TEST OUTPUT
+        assertEquals(
+                "Handler should route text payload to MeshtasticOutputTextMessage",
+                text,
+                sensor.textOutput.getLastText()
+        );
 
     }
 

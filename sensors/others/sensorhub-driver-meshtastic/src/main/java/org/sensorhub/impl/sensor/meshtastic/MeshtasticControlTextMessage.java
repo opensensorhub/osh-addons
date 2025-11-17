@@ -79,16 +79,10 @@ public class MeshtasticControlTextMessage extends AbstractSensorControl<Meshtast
     }
 
     @Override
-    protected boolean execCommand(DataBlock cmdData) throws CommandException {
+    protected boolean execCommand(DataBlock cmdData) {
         var msg = createMeshtasticMessage(cmdData);
 
-        try {
-            parentSensor.sendMessage(msg);
-            return true;
-        } catch (IOException e) {
-            getLogger().error("Failed to send message", e);
-            return false;
-        }
+        return parentSensor.sendMessage(msg);
     }
 
     @Override

@@ -34,6 +34,9 @@ public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo impl
     private final Object histogramLock = new Object();
     private final Object processingLock = new Object();
 
+    // TEST VARIABLE
+    private String lastText;
+
     /**
      * Creates a new output for the sensor driver.
      *
@@ -91,6 +94,8 @@ public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo impl
             //Extract Message Payload
             String messageData = payload.toStringUtf8();
 
+            this.lastText = messageData; // THIS IS ONLY USED FOR TESTING; NOTHING TO DO IN THIS CLASS
+
             // Populate Message Data
             dataBlock.setStringValue(packetRecordSize + 1, messageData);
 
@@ -122,5 +127,10 @@ public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo impl
                 }
             }
         }
+    }
+
+    // THIS METHOD IS FOR TEST ONLY
+    public String getLastText() {
+        return lastText;
     }
 }
