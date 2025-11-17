@@ -12,6 +12,7 @@
 package org.sensorhub.impl.sensor.meshtastic;
 
 import com.geeksville.mesh.MeshProtos;
+import com.google.protobuf.ByteString;
 import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.vast.swe.SWEHelper;
@@ -22,7 +23,7 @@ import java.util.ArrayList;
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
-public class MeshtasticOutputGeneric extends MeshtasticOutputPacketInfo {
+public class MeshtasticOutputGeneric extends MeshtasticOutputPacketInfo implements MeshtasticOutputInterface{
     private static final String OUTPUT_NAME = "MeshtasticGeneric";
     private static  final String OUTPUT_LABEL = "meshtastic Generic Packet";
     private static  final String OUTPUT_DESCRIPTION = "This output data is from a packet currently not registered in the meshtastic handler";
@@ -80,8 +81,8 @@ public class MeshtasticOutputGeneric extends MeshtasticOutputPacketInfo {
     /**
      * Sets the data for the output and publishes it.
      */
-//    public void setData(String packet_id, String packet_from, double lat, double lon, double alt) {
-    public void setData(MeshProtos.MeshPacket packetData) {
+    @Override
+    public void setData(MeshProtos.MeshPacket packetData, ByteString payload) {
         synchronized (processingLock) {
             // Set PacketInfo in Parent Class
             setPacketData(packetData);

@@ -13,6 +13,8 @@ package org.sensorhub.impl.sensor.meshtastic;
 
 import com.geeksville.mesh.ConfigProtos;
 import com.geeksville.mesh.MeshProtos;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.vast.swe.SWEHelper;
@@ -24,7 +26,7 @@ import java.util.Base64;
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
-public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo {
+public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo implements MeshtasticOutputInterface{
     static final String OUTPUT_NAME = "NodeInfo";
     static final String OUTPUT_LABEL = "meshtastic Node Information Packet";
     static final String OUTPUT_DESCRIPTION = "Output data for the Node Info";
@@ -110,42 +112,53 @@ public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo {
     /**
      * Sets the data for the output and publishes it.
      */
-    public void setData(MeshProtos.MeshPacket packetData, MeshProtos.User nodeInfoData) {
+    @Override
+    public void setData(MeshProtos.MeshPacket packetData, ByteString payload) {
         synchronized (processingLock) {
             //SET PACKET INFO IN PARENT CLASS
             setPacketData(packetData);
 
-            String nodeID = nodeInfoData.getId();
-            String nodeShortName = nodeInfoData.getShortName();
-            String nodeLongName = nodeInfoData.getLongName();
-            String nodePrimaryKey = Base64.getEncoder().encodeToString(nodeInfoData.getPublicKey().toByteArray());
-            String nodeHwModel =  nodeInfoData.getHwModel().toString();
-            String nodeRole = (nodeInfoData.getRole() == ConfigProtos.Config.DeviceConfig.Role.UNRECOGNIZED) ? "Unknown Role" : nodeInfoData.getRole().name();
-//            boolean isUnmessageable =  node_info.getIsUnmessagable();
-//            boolean canBeMessaged = node_info.hasIsUnmessagable();
+            try {
+                // EXTRACT NODE INFO FROM PAYLOAD
+                MeshProtos.User nodeInfoData = MeshProtos.User.parseFrom(payload);
 
-            DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
+                String nodeID = nodeInfoData.getId();
+                String nodeShortName = nodeInfoData.getShortName();
+                String nodeLongName = nodeInfoData.getLongName();
+                String nodePrimaryKey = Base64.getEncoder().encodeToString(nodeInfoData.getPublicKey().toByteArray());
+                String nodeHwModel =  nodeInfoData.getHwModel().toString();
+                String nodeRole = (nodeInfoData.getRole() == ConfigProtos.Config.DeviceConfig.Role.UNRECOGNIZED) ? "Unknown Role" : nodeInfoData.getRole().name();
+//                boolean isUnmessageable =  node_info.getIsUnmessagable();
+//                boolean canBeMessaged = node_info.hasIsUnmessagable();
 
-            // Populate Parent Class Packet Data
-            populatePacketDataStructure(dataBlock);
+                DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
 
-            // Populate the Node Info Data
-            dataBlock.setStringValue(packetRecordSize + 1, nodeID);
-            dataBlock.setStringValue(packetRecordSize + 2, nodeShortName);
-            dataBlock.setStringValue(packetRecordSize + 3, nodeLongName);
-            dataBlock.setStringValue(packetRecordSize + 4, nodePrimaryKey);
-            dataBlock.setStringValue(packetRecordSize + 5, nodeHwModel);
-            dataBlock.setStringValue(packetRecordSize + 6, nodeRole);
+                // Populate Parent Class Packet Data
+                populatePacketDataStructure(dataBlock);
 
-            updateIntervalHistogram();
+                // Populate the Node Info Data
+                dataBlock.setStringValue(packetRecordSize + 1, nodeID);
+                dataBlock.setStringValue(packetRecordSize + 2, nodeShortName);
+                dataBlock.setStringValue(packetRecordSize + 3, nodeLongName);
+                dataBlock.setStringValue(packetRecordSize + 4, nodePrimaryKey);
+                dataBlock.setStringValue(packetRecordSize + 5, nodeHwModel);
+                dataBlock.setStringValue(packetRecordSize + 6, nodeRole);
 
-            // CREATE FOI UID
-            String foiUID = parentSensor.addFoi(packetFrom);
+                updateIntervalHistogram();
 
-            // Publish the data block
-            latestRecord = dataBlock;
-            latestRecordTime = System.currentTimeMillis();
-            eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputNodeInfo.this, foiUID, dataBlock));
+                // CREATE FOI UID
+                String foiUID = parentSensor.addFoi(packetFrom);
+
+                // Publish the data block
+                latestRecord = dataBlock;
+                latestRecordTime = System.currentTimeMillis();
+                eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputNodeInfo.this, foiUID, dataBlock));
+
+
+            } catch (InvalidProtocolBufferException e) {
+                parentSensor.getLogger().error("Failed to parse Node User Info payload: {}", e.getMessage());
+            }
+
         }
 
     }

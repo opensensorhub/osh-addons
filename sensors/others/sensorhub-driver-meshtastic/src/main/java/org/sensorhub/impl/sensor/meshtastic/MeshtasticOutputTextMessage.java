@@ -12,6 +12,7 @@
 package org.sensorhub.impl.sensor.meshtastic;
 
 import com.geeksville.mesh.MeshProtos;
+import com.google.protobuf.ByteString;
 import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.vast.swe.SWEHelper;
@@ -22,7 +23,7 @@ import java.util.ArrayList;
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
-public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo{
+public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo implements MeshtasticOutputInterface{
     static String OUTPUT_NAME = "MeshtasticText";
     static String OUTPUT_LABEL = "meshtastic Text Message";
     static String OUTPUT_DESCRIPTION = "Text provided by a meshtastic Device";
@@ -76,7 +77,8 @@ public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo{
     /**
      * Sets the data for the output and publishes it.
      */
-    public void setData(MeshProtos.MeshPacket packetData, String messageData) {
+    @Override
+    public void setData(MeshProtos.MeshPacket packetData, ByteString payload) {
         synchronized (processingLock) {
             // Set PacketInfo in Parent Class
             setPacketData(packetData);
@@ -85,6 +87,9 @@ public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo{
 
             // Populate Parent Class Packet Data
             populatePacketDataStructure(dataBlock);
+
+            //Extract Message Payload
+            String messageData = payload.toStringUtf8();
 
             // Populate Message Data
             dataBlock.setStringValue(packetRecordSize + 1, messageData);

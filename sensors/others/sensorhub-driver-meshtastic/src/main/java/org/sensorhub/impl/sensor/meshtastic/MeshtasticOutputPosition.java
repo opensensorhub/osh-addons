@@ -12,6 +12,8 @@
 package org.sensorhub.impl.sensor.meshtastic;
 
 import com.geeksville.mesh.MeshProtos;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.vast.swe.helper.GeoPosHelper;
@@ -21,7 +23,7 @@ import java.util.ArrayList;
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
-public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo {
+public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo implements MeshtasticOutputInterface{
     private static final String OUTPUT_NAME = "MeshtasticPosition";
     private static  final String OUTPUT_LABEL = "meshtastic Position Packet";
     private static  final String OUTPUT_DESCRIPTION = "Output data for a meshtastic Device's position";
@@ -73,34 +75,45 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo {
      * Sets the data for the output and publishes it.
      */
 //    public void setData(String packet_id, String packet_from, double lat, double lon, double alt) {
-    public void setData(MeshProtos.MeshPacket packetData, MeshProtos.Position posData) {
+    @Override
+    public void setData(MeshProtos.MeshPacket packetData, ByteString payload) {
         synchronized (processingLock) {
             // Set PacketInfo in Parent Class
             setPacketData(packetData);
 
-            // Extract Position Values
-            double lat = posData.getLatitudeI()/ 1e7;
-            double lon = posData.getLongitudeI()/ 1e7;
-            double alt = posData.getAltitude();
+            try {
+                // Parse ByteString to Position Protobuf
+                MeshProtos.Position posData = MeshProtos.Position.parseFrom(payload);
 
-            DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
+                // Extract Position Values
+                double lat = posData.getLatitudeI()/ 1e7;
+                double lon = posData.getLongitudeI()/ 1e7;
+                double alt = posData.getAltitude();
 
-            // POPULATE PACKET FIELDS
-            populatePacketDataStructure(dataBlock);
+                DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
 
-            // POPULATE POSITION FIELDS
-            dataBlock.setDoubleValue(packetRecordSize + 1, lat);
-            dataBlock.setDoubleValue(packetRecordSize + 2, lon);
-            dataBlock.setDoubleValue(packetRecordSize + 3, alt);
+                // POPULATE PACKET FIELDS
+                populatePacketDataStructure(dataBlock);
 
-            updateIntervalHistogram();
+                // POPULATE POSITION FIELDS
+                dataBlock.setDoubleValue(packetRecordSize + 1, lat);
+                dataBlock.setDoubleValue(packetRecordSize + 2, lon);
+                dataBlock.setDoubleValue(packetRecordSize + 3, alt);
 
-            // CREATE FOI UID
-            String foiUID = parentSensor.addFoi(packetFrom);
-            // Publish the data block
-            latestRecord = dataBlock;
-            latestRecordTime = System.currentTimeMillis();
-            eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputPosition.this, foiUID, dataBlock));
+                updateIntervalHistogram();
+
+                // CREATE FOI UID
+                String foiUID = parentSensor.addFoi(packetFrom);
+                // Publish the data block
+                latestRecord = dataBlock;
+                latestRecordTime = System.currentTimeMillis();
+                eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputPosition.this, foiUID, dataBlock));
+
+
+            } catch (InvalidProtocolBufferException e) {
+                parentSensor.getLogger().error("Failed to parse Position payload: {}", e.getMessage());
+            }
+
         }
     }
 

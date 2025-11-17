@@ -4,61 +4,42 @@ import com.geeksville.mesh.MQTTProtos;
 import com.geeksville.mesh.MeshProtos;
 import com.google.protobuf.InvalidProtocolBufferException;
 
-public class MeshtasticHandler {
-    byte[] payload;
+import java.util.HashMap;
+import java.util.Map;
 
-    MeshtasticSensor sensorDriver;
+public class MeshtasticHandler {
+    private final MeshtasticSensor sensorDriver;
+
+    //Map port numbers to output instances:
+    private final Map<Integer, MeshtasticOutputInterface> outputs = new HashMap<>();
 
     public MeshtasticHandler(MeshtasticSensor sensorDriver){
         this.sensorDriver = sensorDriver;
+
+        // REGISTER OUTPUTS (Meshtastic Portnum value, Output Class associated with portnum)
+        outputs.put(1,sensorDriver.textOutput);     // TEXT
+        outputs.put(3, sensorDriver.posOutput);     // POSITION
+        outputs.put(4,sensorDriver.nodeInfoOutput); // NODE INFO (USER)
+        // Add future outputs here
     }
 
 
     public void handlePacket(MeshProtos.MeshPacket packet){
+
         // DETERMINE PACKET MESSAGE TYPE BASED ON PROVIDED PORTNUM VALUE
         if (packet.hasDecoded()){
             MeshProtos.Data data = packet.getDecoded();
             int portVal = data.getPortnumValue();
-            switch (portVal){
-                case 1: // 1 = TEXT MESSAGE
-                    String msg = data.getPayload().toStringUtf8();
 
-                    // Update Text Output
-                    sensorDriver.textOutput.setData(packet, msg);
-                    break;
-                case 3: // 3 = POSITION
-                    try{
-                        MeshProtos.Position pos = MeshProtos.Position.parseFrom(data.getPayload());
+            // LOOK UP THE OUTPUT FOR THIS PORT
+            MeshtasticOutputInterface output = outputs.get(portVal);
 
-                        // Update Position Output
-                        sensorDriver.posOutput.setData(packet, pos);
-
-                    }catch (InvalidProtocolBufferException e) {
-                        sensorDriver.getLogger().error("ERROR parsing Position: {}", e.getMessage());
-                    }
-                    break;
-                case 4: // 4 = NODEINFO_APP_VALUE
-                    try{
-                        MeshProtos.User node_info = MeshProtos.User.parseFrom(data.getPayload());
-                        sensorDriver.nodeInfoOutput.setData(packet, node_info);
-
-                    }catch (InvalidProtocolBufferException e) {
-                        sensorDriver.getLogger().error("ERROR parsing Node Info: {}", e.getMessage());
-                    }
-                    break;
-                case 73: // 73 = MAP REPORT
-                    try{
-                        MQTTProtos.MapReport map_report = MQTTProtos.MapReport.parseFrom(data.getPayload());
-//                                output_nodeInfo.setData(packet, node_info);
-
-                    }catch (InvalidProtocolBufferException e) {
-                        sensorDriver.getLogger().error("ERROR parsing MAP REPORT: {}", e.getMessage());
-                    }
-                    break;
-                default:
-                    sensorDriver.genericOutput.setData(packet);
-                    break;
+            if(output != null){
+                output.setData(packet, data.getPayload());
+            } else {
+                sensorDriver.genericOutput.setData(packet, null);
             }
+
         }
     }
 
