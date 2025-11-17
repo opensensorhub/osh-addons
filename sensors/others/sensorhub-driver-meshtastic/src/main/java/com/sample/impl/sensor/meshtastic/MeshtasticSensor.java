@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * and performing initialization and shutdown for the driver and its outputs.
  */
 public class MeshtasticSensor extends AbstractSensorModule<Config> {
-    static final String UID_PREFIX = "urn:osh:Meshtastic_Node:";
+    static final String UID_PREFIX = "urn:osh:sensor:meshtastic:";
     static final String XML_PREFIX = "meshtastic";
 
     private static final Logger logger = LoggerFactory.getLogger(MeshtasticSensor.class);

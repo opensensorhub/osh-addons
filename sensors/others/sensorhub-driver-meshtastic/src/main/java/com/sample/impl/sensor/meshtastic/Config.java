@@ -34,7 +34,7 @@ public class Config extends SensorConfig {
      */
     @DisplayInfo.Required
     @DisplayInfo(desc = "Serial number or unique identifier")
-    public String serialNumber = "meshtastic";
+    public String serialNumber = "001";
 
     @DisplayInfo(desc = "Comm settings used to interface over serial, UDP, TCP, etc.")
     public CommProviderConfig<?> commSettings;
