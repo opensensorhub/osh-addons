@@ -66,37 +66,34 @@ public class MeshtasticOutputGeneric extends MeshtasticOutputPacketInfo {
         dataEncoding = geoFac.newTextEncoding(",", "\n");
     }
 
-    @Override
-    public double getAverageSamplingPeriod() {
-        synchronized (histogramLock) {
-            double sum = 0;
-            for (double sample : intervalHistogram)
-                sum += sample;
-
-            return sum / intervalHistogram.size();
-        }
-    }
+//    @Override
+//    public double getAverageSamplingPeriod() {
+//        synchronized (histogramLock) {
+//            double sum = 0;
+//            for (double sample : intervalHistogram)
+//                sum += sample;
+//
+//            return sum / intervalHistogram.size();
+//        }
+//    }
 
     /**
      * Sets the data for the output and publishes it.
      */
 //    public void setData(String packet_id, String packet_from, double lat, double lon, double alt) {
-    public void setData(MeshProtos.MeshPacket packet_data) {
+    public void setData(MeshProtos.MeshPacket packetData) {
         synchronized (processingLock) {
             // Set PacketInfo in Parent Class
-            setPacketData(packet_data);
+            setPacketData(packetData);
 
             DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
 
             // Populate Parent Class Packet Data
             populatePacketDataStructure(dataBlock);
 
-            boolean hasDecoded = packet_data.hasDecoded();
-            boolean hasEncrypted = packet_data.hasEncrypted();
-
             // Populate position fields
-            dataBlock.setBooleanValue(packetRecordSize + 1, packet_data.hasDecoded());
-            dataBlock.setBooleanValue(packetRecordSize + 2, packet_data.hasEncrypted());
+            dataBlock.setBooleanValue(packetRecordSize + 1, packetData.hasDecoded());
+            dataBlock.setBooleanValue(packetRecordSize + 2, packetData.hasEncrypted());
 
             updateIntervalHistogram();
 
