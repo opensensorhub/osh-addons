@@ -9,7 +9,7 @@
 
  Copyright (C) 2020-2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package com.sensorhub.impl.sensor.meshtastic;
+package org.sensorhub.impl.sensor.meshtastic;
 
 import com.geeksville.mesh.MeshProtos;
 import net.opengis.swe.v20.DataBlock;
@@ -22,11 +22,10 @@ import java.util.ArrayList;
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
-public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo{
-    static String OUTPUT_NAME = "MeshtasticText";
-    static String OUTPUT_LABEL = "meshtastic Text Message";
-    static String OUTPUT_DESCRIPTION = "Text provided by a meshtastic Device";
-
+public class MeshtasticOutputGeneric extends MeshtasticOutputPacketInfo {
+    private static final String OUTPUT_NAME = "MeshtasticGeneric";
+    private static  final String OUTPUT_LABEL = "meshtastic Generic Packet";
+    private static  final String OUTPUT_DESCRIPTION = "This output data is from a packet currently not registered in the meshtastic handler";
     private static final int MAX_NUM_TIMING_SAMPLES = 10;
 
     private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
@@ -38,7 +37,7 @@ public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo{
      *
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
-    MeshtasticOutputTextMessage(MeshtasticSensor parentMeshtasticSensor) {
+    MeshtasticOutputGeneric(MeshtasticSensor parentMeshtasticSensor) {
         super(parentMeshtasticSensor, OUTPUT_NAME);
     }
 
@@ -50,13 +49,18 @@ public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo{
         super.doInit(OUTPUT_NAME, OUTPUT_LABEL, OUTPUT_DESCRIPTION);
         // Get an instance of SWE Factory suitable to build components
         GeoPosHelper geoFac = new GeoPosHelper();
-        SWEHelper sweFactory = new SWEHelper();
-        // Create the data record description
-        packetRecord.addField("textMessage", sweFactory.createText()
-                        .label("Message")
-                        .description("Message from a meshtastic Device")
-                        .definition(SWEHelper.getPropertyUri("TextMessage"))
-                        .build()
+
+        packetRecord.addField("hasDecoded", geoFac.createBoolean()
+                .label("hasDecoded")
+                .description("Does the packet have data associated with it")
+                .definition(SWEHelper.getPropertyUri("HasDecoded"))
+                .build()
+        );
+        packetRecord.addField("hasEncrypted", geoFac.createBoolean()
+                .label("hasEncrypted")
+                .description("Does the packet have encrypted data associated with it")
+                .definition(SWEHelper.getPropertyUri("HasEncrypted"))
+                .build()
         );
 
         dataEncoding = geoFac.newTextEncoding(",", "\n");
@@ -76,30 +80,33 @@ public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo{
     /**
      * Sets the data for the output and publishes it.
      */
-    public void setData(MeshProtos.MeshPacket packetData, String messageData) {
+//    public void setData(String packet_id, String packet_from, double lat, double lon, double alt) {
+    public void setData(MeshProtos.MeshPacket packet_data) {
         synchronized (processingLock) {
             // Set PacketInfo in Parent Class
-            setPacketData(packetData);
+            setPacketData(packet_data);
 
             DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
 
             // Populate Parent Class Packet Data
             populatePacketDataStructure(dataBlock);
 
-            // Populate Message Data
-            dataBlock.setStringValue(packetRecordSize + 1, messageData);
+            boolean hasDecoded = packet_data.hasDecoded();
+            boolean hasEncrypted = packet_data.hasEncrypted();
+
+            // Populate position fields
+            dataBlock.setBooleanValue(packetRecordSize + 1, packet_data.hasDecoded());
+            dataBlock.setBooleanValue(packetRecordSize + 2, packet_data.hasEncrypted());
 
             updateIntervalHistogram();
 
             // CREATE FOI UID
             String foiUID = parentSensor.addFoi(packetFrom);
-
             // Publish the data block
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
-            eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputTextMessage.this, foiUID, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputGeneric.this, foiUID, dataBlock));
         }
-
     }
 
     /**

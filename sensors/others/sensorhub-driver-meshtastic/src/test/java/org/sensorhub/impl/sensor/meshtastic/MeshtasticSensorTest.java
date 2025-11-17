@@ -1,4 +1,4 @@
-package com.sample.impl.sensor.meshtastic;
+package com.sensorhub.impl.sensor.meshtastic;
 
 import com.botts.impl.comm.jssc.JsscSerialCommProviderConfig;
 import com.geeksville.mesh.MeshProtos;

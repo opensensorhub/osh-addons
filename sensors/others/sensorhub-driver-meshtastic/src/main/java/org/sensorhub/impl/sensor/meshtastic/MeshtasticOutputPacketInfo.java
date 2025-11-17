@@ -9,7 +9,7 @@
 
  Copyright (C) 2020-2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package com.sensorhub.impl.sensor.meshtastic;
+package org.sensorhub.impl.sensor.meshtastic;
 
 import com.geeksville.mesh.MeshProtos;
 import net.opengis.swe.v20.DataBlock;

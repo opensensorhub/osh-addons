@@ -9,11 +9,12 @@
 
  Copyright (C) 2020-2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package com.sensorhub.impl.sensor.meshtastic;
+package org.sensorhub.impl.sensor.meshtastic;
 
 import com.geeksville.mesh.MeshProtos;
 import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.ArrayList;
@@ -21,10 +22,11 @@ import java.util.ArrayList;
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
-public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo {
-    private static final String OUTPUT_NAME = "MeshtasticPosition";
-    private static  final String OUTPUT_LABEL = "meshtastic Position Packet";
-    private static  final String OUTPUT_DESCRIPTION = "Output data for a meshtastic Device's position";
+public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo{
+    static String OUTPUT_NAME = "MeshtasticText";
+    static String OUTPUT_LABEL = "meshtastic Text Message";
+    static String OUTPUT_DESCRIPTION = "Text provided by a meshtastic Device";
+
     private static final int MAX_NUM_TIMING_SAMPLES = 10;
 
     private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
@@ -36,7 +38,7 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo {
      *
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
-    MeshtasticOutputPosition(MeshtasticSensor parentMeshtasticSensor) {
+    MeshtasticOutputTextMessage(MeshtasticSensor parentMeshtasticSensor) {
         super(parentMeshtasticSensor, OUTPUT_NAME);
     }
 
@@ -46,13 +48,15 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo {
     void doInit() {
         // INITIALIZE THE PACKET PARENT CLASS
         super.doInit(OUTPUT_NAME, OUTPUT_LABEL, OUTPUT_DESCRIPTION);
-
         // Get an instance of SWE Factory suitable to build components
         GeoPosHelper geoFac = new GeoPosHelper();
-
-        packetRecord.addField("location", geoFac.createLocationVectorLLA()
-                .label("Location")
-                .build()
+        SWEHelper sweFactory = new SWEHelper();
+        // Create the data record description
+        packetRecord.addField("textMessage", sweFactory.createText()
+                        .label("Message")
+                        .description("Message from a meshtastic Device")
+                        .definition(SWEHelper.getPropertyUri("TextMessage"))
+                        .build()
         );
 
         dataEncoding = geoFac.newTextEncoding(",", "\n");
@@ -72,36 +76,30 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo {
     /**
      * Sets the data for the output and publishes it.
      */
-//    public void setData(String packet_id, String packet_from, double lat, double lon, double alt) {
-    public void setData(MeshProtos.MeshPacket packetData, MeshProtos.Position posData) {
+    public void setData(MeshProtos.MeshPacket packetData, String messageData) {
         synchronized (processingLock) {
             // Set PacketInfo in Parent Class
             setPacketData(packetData);
 
-            // Extract Position Values
-            double lat = posData.getLatitudeI()/ 1e7;
-            double lon = posData.getLongitudeI()/ 1e7;
-            double alt = posData.getAltitude();
-
             DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
 
-            // POPULATE PACKET FIELDS
+            // Populate Parent Class Packet Data
             populatePacketDataStructure(dataBlock);
 
-            // POPULATE POSITION FIELDS
-            dataBlock.setDoubleValue(packetRecordSize + 1, lat);
-            dataBlock.setDoubleValue(packetRecordSize + 2, lon);
-            dataBlock.setDoubleValue(packetRecordSize + 3, alt);
+            // Populate Message Data
+            dataBlock.setStringValue(packetRecordSize + 1, messageData);
 
             updateIntervalHistogram();
 
             // CREATE FOI UID
             String foiUID = parentSensor.addFoi(packetFrom);
+
             // Publish the data block
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
-            eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputPosition.this, foiUID, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputTextMessage.this, foiUID, dataBlock));
         }
+
     }
 
     /**
