@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 
 public class MeshtasticControlTextMessage extends AbstractSensorControl<MeshtasticSensor> {
 
-    protected static final String NAME = "textMessage";
+    protected static final String NAME = "textMessageControl";
     protected final DataComponent commandDescription;
 
     public MeshtasticControlTextMessage(MeshtasticSensor parentSensor){
@@ -23,7 +23,7 @@ public class MeshtasticControlTextMessage extends AbstractSensorControl<Meshtast
         SWEHelper fac = new SWEHelper();
 
         commandDescription = fac.createRecord()
-                .name("textMessageControl")
+                .name(NAME)
                 .label("Text Message")
                 .description("Control for sending Text Messages over meshtastic")
                 .definition(SWEHelper.getPropertyUri("TextMessageControl"))
