@@ -107,9 +107,6 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
                 throw new RuntimeException(e);
             }
 
-            // BEGIN PROCESSING DATA
-            startProcessing();
-
             // send "handshake" to start receiving protobufs
             MeshProtos.ToRadio handshake = MeshProtos.ToRadio.newBuilder()
                     // TODO: Verify response ID in future if needed
@@ -119,7 +116,12 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
                 sendMessage(handshake);
             } catch (IOException e) {
                 getLogger().error("Failed to send handshake message", e);
+                throw new SensorHubException("Handshake failed, cannot start sensor", e);
             }
+            // BEGIN PROCESSING DATA
+            startProcessing();
+        } else {
+            throw new SensorHubException("No communication provider configured");
         }
     }
 
