@@ -12,6 +12,7 @@ dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
     implementation "com.google.protobuf:protobuf-java:3.25.1"
     testImplementation "junit:junit:4.13.1"
+    testImplementation project(':sensorhub-comm-jssc')
 }
 
 protobuf {
@@ -67,7 +68,7 @@ osgi {
 ext.pom >>= {
     developers {
         developer {
-            id 'meshtastic'
+            id 'BillBrown341'
             name 'Bill Brown'
             organization 'Botts Inc'
             organizationUrl ''
