@@ -38,13 +38,13 @@ public class SelectDataStreamFilterQuery extends DataStreamFilterQuery<SelectFil
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
-                String sb = "tstzrange((" +
+                String sb = "tsrange((" +
                         tableName +
-                        ".data->'validTime'->>'begin')::timestamptz,(" +
+                        ".data->'validTime'->>'begin')::timestamp,(" +
                         tableName +
-                        ".data->'validTime'->>'end')::timestamptz)" +
+                        ".data->'validTime'->>'end')::timestamp)" +
                         " "+PostgisUtils.getOperator(temporalFilter)+" " +
-                        "'[" + min + "," + max + "]'::tstzrange";
+                        "'[" + min + "," + max + "]'::tsrange";
                 addCondition(sb);
             }
         }

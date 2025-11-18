@@ -117,7 +117,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
                 }
             }
             // required
-            Timestamp issueTimestamp = resultSet.getTimestamp(String.valueOf(ISSUE_TIME));
+            Timestamp issueTimestamp = resultSet.getTimestamp(String.valueOf(ISSUE_TIME), UTC_LOCAL);
             if (!resultSet.wasNull()) {
                 commandDataBuilder = commandDataBuilder.withIssueTime(issueTimestamp.toInstant());
             }
@@ -183,7 +183,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
 
                 // insert issueTime as timestamp
                 if (cmd.getIssueTime() != null) {
-                    preparedStatement.setTimestamp(4, Timestamp.from(cmd.getIssueTime()));
+                    preparedStatement.setTimestamp(4, Timestamp.from(cmd.getIssueTime()),UTC_LOCAL);
                 } else {
                     preparedStatement.setNull(4, Types.TIMESTAMP_WITH_TIMEZONE);
                 }
@@ -253,7 +253,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
                         cmdDataBuilder = cmdDataBuilder.withSender(senderId);
                     }
 
-                    Timestamp issueTimestamp = resultSet.getTimestamp(String.valueOf(ISSUE_TIME));
+                    Timestamp issueTimestamp = resultSet.getTimestamp(String.valueOf(ISSUE_TIME), UTC_LOCAL);
                     if (!resultSet.wasNull()) {
                         cmdDataBuilder = cmdDataBuilder.withIssueTime(issueTimestamp.toInstant());
                     }
@@ -289,7 +289,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
                 }
 
                 if (value.getIssueTime() != null) {
-                    preparedStatement.setTimestamp(4, Timestamp.from(value.getIssueTime()));
+                    preparedStatement.setTimestamp(4, Timestamp.from(value.getIssueTime()), UTC_LOCAL);
                 } else {
                     preparedStatement.setNull(4, Types.TIMESTAMP_WITH_TIMEZONE);
                 }

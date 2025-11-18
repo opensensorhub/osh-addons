@@ -44,8 +44,8 @@ public class QueryBuilderObsStore extends QueryBuilder {
                 "id BIGSERIAL PRIMARY KEY,"+
                 DATASTREAM_ID +" bigint, "+
                 FOI_ID+" bigint,"+
-                PHENOMENON_TIME+" TIMESTAMPTZ,"+
-                RESULT_TIME+" TIMESTAMPTZ,"+
+                PHENOMENON_TIME+" TIMESTAMP,"+
+                RESULT_TIME+" TIMESTAMP,"+
                 RESULT+" JSON" + // VERSUS JSONB but the parser does not keep order
                 ")";
     }
@@ -127,8 +127,8 @@ public class QueryBuilderObsStore extends QueryBuilder {
             if(max == Instant.MAX) {
                 maxTimestamp = "infinity";
             }
-            String sb = "tstzrange((" + this.getStoreTableName() + "."+PHENOMENON_TIME+")::timestamptz," +
-                    " (" + this.getStoreTableName()  + "."+PHENOMENON_TIME+")::timestamptz)" +
+            String sb = "tsrange((" + this.getStoreTableName() + "."+PHENOMENON_TIME+")::timestamp," +
+                    " (" + this.getStoreTableName()  + "."+PHENOMENON_TIME+")::timestamp)" +
                     " && '[" + minTimestamp + "," + maxTimestamp + "]'";
 
         return "SELECT COUNT(*) FROM "+this.getStoreTableName()+" "+sb;

@@ -82,7 +82,7 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
                 addCondition(
-                        "tstzrange('"+temporalFilter.getMin()+"','"+temporalFilter.getMax()+"', '[]') @> "+this.tableName+".phenomenonTime");
+                        "tsrange('"+temporalFilter.getMin()+"','"+temporalFilter.getMax()+"', '[]') @> "+this.tableName+".phenomenonTime");
             }
         }
     }
@@ -97,7 +97,7 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
                 addCondition(
-                        "tstzrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
+                        "tsrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
             }
         }
     }

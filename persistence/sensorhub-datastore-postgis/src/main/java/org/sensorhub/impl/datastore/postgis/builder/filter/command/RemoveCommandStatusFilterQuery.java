@@ -35,13 +35,13 @@ public class RemoveCommandStatusFilterQuery extends BaseCommandStatusFilterQuery
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
-                String sb = "tstzrange((" +
+                String sb = "tsrange((" +
                         tableName +
-                        ".data->'reportTime'->>'begin')::timestamptz,(" +
+                        ".data->'reportTime'->>'begin')::timestamp,(" +
                         tableName +
-                        ".data->'reportTime'->>'end')::timestamptz, '[]')" +
+                        ".data->'reportTime'->>'end')::timestamp, '[]')" +
                         " && " +
-                        "'[" + min + "," + max + "]'::tstzrange";
+                        "'[" + min + "," + max + "]'::tsrange";
                 addCondition(sb);
             }
         }
@@ -56,13 +56,13 @@ public class RemoveCommandStatusFilterQuery extends BaseCommandStatusFilterQuery
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
-                String sb = "tstzrange((" +
+                String sb = "tsrange((" +
                         tableName +
-                        ".data->'executionTime'->>'begin')::timestamptz,(" +
+                        ".data->'executionTime'->>'begin')::timestamp,(" +
                         tableName +
-                        ".data->'executionTime'->>'end')::timestamptz, '[]')" +
+                        ".data->'executionTime'->>'end')::timestamp, '[]')" +
                         " && " +
-                        "'[" + min + "," + max + "]'::tstzrange";
+                        "'[" + min + "," + max + "]'::tsrange";
                 addCondition(sb);
             }
         }
