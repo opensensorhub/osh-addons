@@ -48,6 +48,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
     private static final Logger logger = LoggerFactory.getLogger(PostgisObsStoreImpl.class);
     public static final int STREAM_FETCH_SIZE = 20_000;
     public static final String DEFAULT_TABLE_NAME = QueryBuilderObsStore.OBS_STORE_TABLE_NAME;
+    protected static final Calendar UTC_LOCAL = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 
     protected PostgisDataStreamStoreImpl dataStreamStore;
     protected ISystemDescStore systemDescStore;
@@ -59,8 +60,13 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 
     public PostgisObsStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
                                int idScope, IdProviderType dsIdProviderType) {
+        this(url, dbName,login,password,dataStoreName,idScope,dsIdProviderType,new QueryBuilderObsStore(dataStoreName));
+    }
+
+    public PostgisObsStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
+                               int idScope, IdProviderType dsIdProviderType,QueryBuilderObsStore queryBuilderObsStore) {
         super(idScope, dsIdProviderType,
-                new QueryBuilderObsStore(dataStoreName),
+                queryBuilderObsStore,
                 false);
         this.init(url, dbName, login, password, new String[]{
                         queryBuilder.createTableQuery(),
@@ -179,7 +185,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         }
 
         if (obs.getResultTime() != null) {
-            preparedStatement.setTimestamp(4, Timestamp.from(obs.getResultTime()));
+            preparedStatement.setTimestamp(4, Timestamp.from(obs.getResultTime()),UTC_LOCAL);
         } else {
             preparedStatement.setNull(4, Types.TIMESTAMP_WITH_TIMEZONE);
         }
