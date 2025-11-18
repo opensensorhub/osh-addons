@@ -33,7 +33,7 @@ public class SelectDataStreamFilterQuery extends DataStreamFilterQuery<SelectFil
                 filterQueryGenerator.addDistinct("("+tableName+".data->'system@id'->'internalID'->'id')::bigint");
                 filterQueryGenerator.addOrderBy(tableName+".data->>'name'");
                 filterQueryGenerator.addOrderBy("("+tableName+".data->'system@id'->'internalID'->'id')::bigint");
-                filterQueryGenerator.addOrderBy("("+tableName+".data->'validTime'->>'end')::timestamptz DESC ");
+                filterQueryGenerator.addOrderBy("("+tableName+".data->'validTime'->>'end')::timestamp DESC ");
             } else {
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
