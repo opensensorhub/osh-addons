@@ -149,18 +149,13 @@ public class ConnectionManager {
             if(threadSafeBatchExecutor != null) {
                 threadSafeBatchExecutor.commit();
             }
-            try {
-                if (batchConnection != null && !batchConnection.isClosed()) {
-                    batchConnection.commit();
-                }
-            }catch (Exception ex) {
-                throw new IllegalStateException("Cannot commit Batch connection");
+            if (batchConnection != null && !batchConnection.isClosed()) {
+                batchConnection.commit();
             }
         } catch (Exception ex) {
             ex.printStackTrace();
+            throw new IllegalStateException("Cannot commit Batch connection");
         }
-
-
     }
 
     public int getBatchSize() {
