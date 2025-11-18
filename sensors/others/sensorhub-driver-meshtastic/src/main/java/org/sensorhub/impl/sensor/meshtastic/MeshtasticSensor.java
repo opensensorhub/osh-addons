@@ -189,10 +189,10 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
                     do {
                         b = in.read();
                         if (b == -1) return;
-                        if (b != START1) {
-//                            optional: treat as debug ASCII
+//                        if (b != START1) {
+////                            optional: treat as debug ASCII
 //                            System.out.print((char) b);
-                        }
+//                        }
                     } while (b != START1);
 
                     // If START1(0x94) is found, expect START2
