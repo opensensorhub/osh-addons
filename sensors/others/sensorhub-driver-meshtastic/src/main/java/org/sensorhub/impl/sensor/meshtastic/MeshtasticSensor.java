@@ -11,7 +11,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.meshtastic;
 
-import com.geeksville.mesh.MeshProtos;
+import org.meshtastic.proto.MeshProtos;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;

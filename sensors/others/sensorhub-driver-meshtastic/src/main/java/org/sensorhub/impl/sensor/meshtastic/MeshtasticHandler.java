@@ -1,6 +1,5 @@
 package org.sensorhub.impl.sensor.meshtastic;
-
-import com.geeksville.mesh.MeshProtos;
+import org.meshtastic.proto.MeshProtos;
 
 import java.util.HashMap;
 import java.util.Map;

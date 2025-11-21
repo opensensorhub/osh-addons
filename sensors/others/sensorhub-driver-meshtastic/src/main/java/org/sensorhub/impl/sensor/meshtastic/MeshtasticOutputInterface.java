@@ -1,6 +1,6 @@
 package org.sensorhub.impl.sensor.meshtastic;
 
-import com.geeksville.mesh.MeshProtos;
+import org.meshtastic.proto.MeshProtos;
 import com.google.protobuf.ByteString;
 
 public interface MeshtasticOutputInterface {

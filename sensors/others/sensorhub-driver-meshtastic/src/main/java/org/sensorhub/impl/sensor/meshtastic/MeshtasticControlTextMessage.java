@@ -1,7 +1,7 @@
 package org.sensorhub.impl.sensor.meshtastic;
 
-import com.geeksville.mesh.MeshProtos;
-import com.geeksville.mesh.Portnums;
+import org.meshtastic.proto.MeshProtos;
+import org.meshtastic.proto.Portnums;
 import com.google.protobuf.ByteString;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;

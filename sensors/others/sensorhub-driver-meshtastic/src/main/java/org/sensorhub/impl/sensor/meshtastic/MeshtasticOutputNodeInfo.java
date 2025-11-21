@@ -11,8 +11,8 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.meshtastic;
 
-import com.geeksville.mesh.ConfigProtos;
-import com.geeksville.mesh.MeshProtos;
+import org.meshtastic.proto.ConfigProtos;
+import org.meshtastic.proto.MeshProtos;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import net.opengis.swe.v20.DataBlock;

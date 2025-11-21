@@ -17,33 +17,42 @@ dependencies {
 
 protobuf {
     protoc {
-        // Use protoc matching the runtime protobuf-java version
         artifact = "com.google.protobuf:protoc:3.25.1"
     }
-    // Where to place generated sources
-    generatedFilesBaseDir = "$projectDir/src/generated"
 
-    // Configure generation tasks
+    // NEW LOCATION FOR GENERATED SOURCES
+    generatedFilesBaseDir = "$projectDir/src/main/generated-sources"
+
     generateProtoTasks {
         all().each { task ->
-            // enable java builtin (default) — leave plugin-free so we get plain java classes
             task.builtins {
                 java {}
             }
-            // ensure the proto source dir is considered an input (not strictly required, but explicit)
             task.inputs.dir("${projectDir}/src/main/protobufs")
+        }
+    }
+}
+
+// --- CLEAN GENERATED SOURCES BEFORE GENERATION ---
+tasks.named('generateProto') {
+    doFirst {
+        def dir = file("$projectDir/src/main/generated-sources")
+        if (dir.exists()) {
+            println "Cleaning old generated sources at $dir"
+            dir.deleteDir()
         }
     }
 }
 
 
 
-// Make sure Gradle sees our non-standard proto source directory
+
+// Allow Gradle/IntelliJ to see generated Java Code form Proto
 sourceSets {
     main {
-        // add the generated java to the java source set so IDEs/compilation pick them up
+        // point Gradle to correct generated code location
         java {
-            srcDirs += "$projectDir/src/generated/main/java"
+            srcDir "$projectDir/src/main/generated-sources/main/java"
         }
         // tell the Java sourceSet where our proto files are; the plugin will read these
         proto {

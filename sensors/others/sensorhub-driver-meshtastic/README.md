@@ -1,36 +1,3 @@
-# Meshtastic Driver over Serial Communication
-## Dependencies
-To work properly, this driver requries a comm module. The driver was tested on a mac using the [sensorhub-comm-jssc](https://github.com/opensensorhub/osh-addons/tree/master/comm/sensorhub-comm-jssc):
-
-
-## Meshtastic Node Configuration
-Prior to using the OSH Meshtastic Driver with a Meshtastic Radio, the radio must be configured with the [Meshtastic Firmware](https://flasher.meshtastic.org/). 
-Follow Meshtastic [Getting Started Documentation](https://meshtastic.org/docs/getting-started/) to properly set up a Meshtastic Radio. 
-
-Once the radio has been flashed with Meshtastic Firmware, [connect to the device](https://meshtastic.org/docs/getting-started/initial-config/) to setup it's initial configuration.
-
-To use this Driver over Serial, you must configure the following Meshtastic Settings:
-- Settings/Serial
-    - Make sure ```Enabled``` is **ON**
-    - Make sure ```Mode``` is set to ***Protobufs***
-
-
-Once this has been configured, you will need to exit the application and plug your radio directly into the computer running your OSH Node. 
-
-# OSH Node Configuration
-Once your node has been launched. Make sure a ***Communication Provider*** has been selected. (This has been tested
-using the JSSC Serial Comm Provider) and all necessary information has been selected. 
-
-Select ```Apply Changes``` and then ```Start``` the driver. As Meshtastic Protobuf messages are received from your meshtastic radio, 
-these messages will appear in the Output of the drier. 
-
-# Text Message Control
-Additionally, a Text Message Control has been added to this driver. If you want to send a direct message, type the node number of
-the node you want to send a message to. If you want to broadcast a message, type 'broadcast' or 'Broadcast' and selct send command.
-
-
-
-
 # Meshtastic Driver (Serial)
 This driver enables an OSH Node to communicate with a Meshtastic radio over a serial connection using Protobuf messages.
 
@@ -75,5 +42,23 @@ This driver includes support for sending text messages through the Meshtastic ne
 - To broadcast a message: enter broadcast (case-insensitive).
 
 Then type your message and select ```Send Command```.
+
+# Developer Notes
+
+The Meshtastic Java classes (MeshProtos) are automatically generated from the Meshtastic protobuf definitions at build time using 
+the [Meshtastic protobufs repo](https://github.com/meshtastic/protobufs).
+
+When you first clone this repository, the generated classes do not exist in the source tree. To compile and access them in your code, run:
+
+```./gradlew build -x test -x osgi```
+
+
+This will:
+
+1. Generate Java classes from the protobuf definitions in src/main/generated-sources.
+
+2. Compile them into the project’s classpath so your IDE can recognize imports like org.meshtastic.proto.MeshProtos.
+
+These generated sources are not committed to Git, so you always need to build the project before using or editing code that depends on them.
 
 

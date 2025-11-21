@@ -11,7 +11,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.meshtastic;
 
-import com.geeksville.mesh.MeshProtos;
+import org.meshtastic.proto.MeshProtos;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
