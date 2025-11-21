@@ -13,6 +13,7 @@ forbidden unless prior written permission is obtained from Delta Air Lines, Inc.
 
 package org.sensorhub.utils.aero.impl;
 
+import java.util.ArrayList;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
 import org.sensorhub.algo.geoloc.Ellipsoid;
@@ -66,9 +67,10 @@ public class NavUtils
      * @param lon Longitude of initial position, in degrees
      * @param bearing Bearing of travel direction, in degrees
      * @param distance Travel distance along the great circle, in kilometers
+     * @param crs84 if true, return coordinate with x=lon, y=lat, otherwise the reverse
      * @return The end location as lat/lon coordinates, in degrees
      */
-    public static Coordinate getEndpoint(double lat, double lon, double bearing, double distance)
+    public static Coordinate getEndpoint(double lat, double lon, double bearing, double distance, boolean crs84)
     {
         double bearingR = Math.toRadians(bearing);
         double latR = Math.toRadians(lat);
@@ -83,7 +85,28 @@ public class NavUtils
         //lon2 = lon1 + math.atan2(math.sin(brng)*math.sin(d/R)*math.cos(lat1), math.cos(d/R)-math.sin(lat1)*math.sin(lat2))
         double lonEndR = lonR + Math.atan2(Math.sin(bearingR) * Math.sin(distanceNorm) * Math.cos(latR), Math.cos(distanceNorm) - Math.sin(latR) * Math.sin(latEndR));
 
-        return new Coordinate(Math.toDegrees(latEndR), Math.toDegrees(lonEndR));
+        if (crs84)
+            return new Coordinate(Math.toDegrees(lonEndR), Math.toDegrees(latEndR));
+        else
+            return new Coordinate(Math.toDegrees(latEndR), Math.toDegrees(lonEndR));
+    }
+    
+    /**
+     * @see {@link #getEndpoint(double, double, double, double, boolean)}
+     * @return The end location as lat/lon coordinates, in degrees (x=lat, y=lon)
+     */
+    public static Coordinate getEndpoint(double lat, double lon, double bearing, double distance)
+    {
+        return getEndpoint(lat, lon, bearing, distance, false);
+    }
+    
+    /**
+     * @see {@link #getEndpoint(double, double, double, double, boolean)}
+     * @return The end location as lon/lat coordinates, in degrees (x=lon, y=lat)
+     */
+    public static Coordinate getEndpointLonLat(double lat, double lon, double bearing, double distance)
+    {
+        return getEndpoint(lat, lon, bearing, distance, true);
     }
 
 
@@ -222,6 +245,40 @@ public class NavUtils
             log.trace("Point is not on segment");
             return false;
         }       
+    }
+    
+    
+    /**
+     * Iterate through successive positions on the polyline (polyline vertices are always included)
+     * @param polyline polyline to walk through
+     * @param maxStep max distance between two successive points in nautical miles
+     * @return the point iterator (lat/lon coordinates in degrees, with x=lon, y=lat)
+     */
+    public static Iterable<Coordinate> walkPolyline(LineString polyline, double maxStep)
+    {
+        var pointList = new ArrayList<Coordinate>();
+        
+        Coordinate p1 = polyline.getCoordinateN(0);
+        pointList.add(p1);
+        
+        for (int i = 1; i < polyline.getNumPoints(); i++)
+        {
+            var p0 = p1;
+            p1 = polyline.getCoordinateN(i);
+            
+            var segmentBearing = getBearing(p0.y, p0.x, p1.y, p1.x);
+            var segmentDist = greatCircleDistance(p0.y, p0.x, p1.y, p1.x);
+            var dist = maxStep;
+            while (dist < segmentDist) {
+                var p = getEndpointLonLat(p0.y, p0.x, segmentBearing, dist);
+                pointList.add(p);
+                dist += maxStep;
+            }
+            
+            pointList.add(p1);
+        }
+        
+        return pointList;
     }
 
 }
