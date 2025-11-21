@@ -5,11 +5,8 @@ import com.geeksville.mesh.Portnums;
 import com.google.protobuf.ByteString;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
-import org.sensorhub.api.command.CommandException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.swe.SWEHelper;
-
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 public class MeshtasticControlTextMessage extends AbstractSensorControl<MeshtasticSensor> {

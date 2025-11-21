@@ -1,8 +1,6 @@
 package org.sensorhub.impl.sensor.meshtastic;
 
-import com.geeksville.mesh.MQTTProtos;
 import com.geeksville.mesh.MeshProtos;
-import com.google.protobuf.InvalidProtocolBufferException;
 
 import java.util.HashMap;
 import java.util.Map;

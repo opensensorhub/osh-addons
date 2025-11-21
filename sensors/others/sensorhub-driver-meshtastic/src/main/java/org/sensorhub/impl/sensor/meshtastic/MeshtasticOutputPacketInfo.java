@@ -16,22 +16,18 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.sensor.VarRateSensorOutput;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
-
 import java.time.Instant;
-import java.util.ArrayList;
+
 
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
-public class MeshtasticOutputPacketInfo extends AbstractSensorOutput<MeshtasticSensor> {
-    private static final int MAX_NUM_TIMING_SAMPLES = 10;
+public class MeshtasticOutputPacketInfo extends VarRateSensorOutput<MeshtasticSensor> {
+    private static final double INITIAL_SAMPLING_PERIOD = 1.0;
 
-    private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
-    private final Object histogramLock = new Object();
-    private final Object processingLock = new Object();
     public DataRecord packetRecord;
     public DataEncoding dataEncoding;
 
@@ -55,8 +51,8 @@ public class MeshtasticOutputPacketInfo extends AbstractSensorOutput<MeshtasticS
      *
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
-    MeshtasticOutputPacketInfo(MeshtasticSensor parentMeshtasticSensor, String packetName) {
-        super(packetName, parentMeshtasticSensor);
+    MeshtasticOutputPacketInfo(MeshtasticSensor parentMeshtasticSensor) {
+        super(parentMeshtasticSensor, INITIAL_SAMPLING_PERIOD);
     }
 
     /**
@@ -142,16 +138,7 @@ public class MeshtasticOutputPacketInfo extends AbstractSensorOutput<MeshtasticS
         return dataEncoding;
     }
 
-    @Override
-    public double getAverageSamplingPeriod() {
-        synchronized (histogramLock) {
-            double sum = 0;
-            for (double sample : intervalHistogram)
-                sum += sample;
 
-            return sum / intervalHistogram.size();
-        }
-    }
 
     public void setPacketData(MeshProtos.MeshPacket packetData){
         packetId = convert32IntToString(packetData.getId());

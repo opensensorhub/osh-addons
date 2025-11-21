@@ -18,8 +18,6 @@ import org.sensorhub.api.data.DataEvent;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
-import java.util.ArrayList;
-
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
@@ -27,10 +25,7 @@ public class MeshtasticOutputGeneric extends MeshtasticOutputPacketInfo implemen
     private static final String OUTPUT_NAME = "MeshtasticGeneric";
     private static  final String OUTPUT_LABEL = "meshtastic Generic Packet";
     private static  final String OUTPUT_DESCRIPTION = "This output data is from a packet currently not registered in the meshtastic handler";
-    private static final int MAX_NUM_TIMING_SAMPLES = 10;
 
-    private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
-    private final Object histogramLock = new Object();
     private final Object processingLock = new Object();
 
     /**
@@ -39,7 +34,7 @@ public class MeshtasticOutputGeneric extends MeshtasticOutputPacketInfo implemen
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
     MeshtasticOutputGeneric(MeshtasticSensor parentMeshtasticSensor) {
-        super(parentMeshtasticSensor, OUTPUT_NAME);
+        super(parentMeshtasticSensor);
     }
 
     /**
@@ -67,17 +62,6 @@ public class MeshtasticOutputGeneric extends MeshtasticOutputPacketInfo implemen
         dataEncoding = geoFac.newTextEncoding(",", "\n");
     }
 
-//    @Override
-//    public double getAverageSamplingPeriod() {
-//        synchronized (histogramLock) {
-//            double sum = 0;
-//            for (double sample : intervalHistogram)
-//                sum += sample;
-//
-//            return sum / intervalHistogram.size();
-//        }
-//    }
-
     /**
      * Sets the data for the output and publishes it.
      */
@@ -96,31 +80,14 @@ public class MeshtasticOutputGeneric extends MeshtasticOutputPacketInfo implemen
             dataBlock.setBooleanValue(packetRecordSize + 1, packetData.hasDecoded());
             dataBlock.setBooleanValue(packetRecordSize + 2, packetData.hasEncrypted());
 
-            updateIntervalHistogram();
-
             // CREATE FOI UID
             String foiUID = parentSensor.addFoi(packetFrom);
             // Publish the data block
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
+            updateSamplingPeriod(latestRecordTime);
             eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputGeneric.this, foiUID, dataBlock));
         }
     }
 
-    /**
-     * Updates the interval histogram with the time between the latest record and the current time
-     * for calculating the average sampling period.
-     */
-    private void updateIntervalHistogram() {
-        synchronized (histogramLock) {
-            if (latestRecord != null && latestRecordTime != Long.MIN_VALUE) {
-                long interval = System.currentTimeMillis() - latestRecordTime;
-                intervalHistogram.add(interval / 1000d);
-
-                if (intervalHistogram.size() > MAX_NUM_TIMING_SAMPLES) {
-                    intervalHistogram.remove(0);
-                }
-            }
-        }
-    }
 }

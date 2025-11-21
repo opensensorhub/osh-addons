@@ -18,8 +18,6 @@ import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.vast.swe.helper.GeoPosHelper;
 
-import java.util.ArrayList;
-
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
@@ -27,10 +25,7 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo impleme
     private static final String OUTPUT_NAME = "MeshtasticPosition";
     private static  final String OUTPUT_LABEL = "meshtastic Position Packet";
     private static  final String OUTPUT_DESCRIPTION = "Output data for a meshtastic Device's position";
-    private static final int MAX_NUM_TIMING_SAMPLES = 10;
 
-    private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
-    private final Object histogramLock = new Object();
     private final Object processingLock = new Object();
 
     /**
@@ -39,7 +34,7 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo impleme
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
     MeshtasticOutputPosition(MeshtasticSensor parentMeshtasticSensor) {
-        super(parentMeshtasticSensor, OUTPUT_NAME);
+        super(parentMeshtasticSensor);
     }
 
     /**
@@ -58,17 +53,6 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo impleme
         );
 
         dataEncoding = geoFac.newTextEncoding(",", "\n");
-    }
-
-    @Override
-    public double getAverageSamplingPeriod() {
-        synchronized (histogramLock) {
-            double sum = 0;
-            for (double sample : intervalHistogram)
-                sum += sample;
-
-            return sum / intervalHistogram.size();
-        }
     }
 
     /**
@@ -100,13 +84,12 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo impleme
                 dataBlock.setDoubleValue(packetRecordSize + 2, lon);
                 dataBlock.setDoubleValue(packetRecordSize + 3, alt);
 
-                updateIntervalHistogram();
-
                 // CREATE FOI UID
                 String foiUID = parentSensor.addFoi(packetFrom);
                 // Publish the data block
                 latestRecord = dataBlock;
                 latestRecordTime = System.currentTimeMillis();
+                updateSamplingPeriod(latestRecordTime);
                 eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputPosition.this, foiUID, dataBlock));
 
 
@@ -117,20 +100,4 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo impleme
         }
     }
 
-    /**
-     * Updates the interval histogram with the time between the latest record and the current time
-     * for calculating the average sampling period.
-     */
-    private void updateIntervalHistogram() {
-        synchronized (histogramLock) {
-            if (latestRecord != null && latestRecordTime != Long.MIN_VALUE) {
-                long interval = System.currentTimeMillis() - latestRecordTime;
-                intervalHistogram.add(interval / 1000d);
-
-                if (intervalHistogram.size() > MAX_NUM_TIMING_SAMPLES) {
-                    intervalHistogram.remove(0);
-                }
-            }
-        }
-    }
 }

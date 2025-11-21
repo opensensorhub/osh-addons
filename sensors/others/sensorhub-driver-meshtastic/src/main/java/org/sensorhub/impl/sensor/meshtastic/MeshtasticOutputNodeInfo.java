@@ -31,10 +31,6 @@ public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo impleme
     static final String OUTPUT_LABEL = "meshtastic Node Information Packet";
     static final String OUTPUT_DESCRIPTION = "Output data for the Node Info";
 
-    private static final int MAX_NUM_TIMING_SAMPLES = 10;
-
-    private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
-    private final Object histogramLock = new Object();
     private final Object processingLock = new Object();
 
 
@@ -44,7 +40,7 @@ public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo impleme
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
     MeshtasticOutputNodeInfo(MeshtasticSensor parentMeshtasticSensor) {
-        super(parentMeshtasticSensor, OUTPUT_NAME);
+        super(parentMeshtasticSensor);
     }
 
     /**
@@ -98,17 +94,6 @@ public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo impleme
         dataEncoding = geoFac.newTextEncoding(",", "\n");
     }
 
-    @Override
-    public double getAverageSamplingPeriod() {
-        synchronized (histogramLock) {
-            double sum = 0;
-            for (double sample : intervalHistogram)
-                sum += sample;
-
-            return sum / intervalHistogram.size();
-        }
-    }
-
     /**
      * Sets the data for the output and publishes it.
      */
@@ -144,14 +129,13 @@ public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo impleme
                 dataBlock.setStringValue(packetRecordSize + 5, nodeHwModel);
                 dataBlock.setStringValue(packetRecordSize + 6, nodeRole);
 
-                updateIntervalHistogram();
-
                 // CREATE FOI UID
                 String foiUID = parentSensor.addFoi(packetFrom);
 
                 // Publish the data block
                 latestRecord = dataBlock;
                 latestRecordTime = System.currentTimeMillis();
+                updateSamplingPeriod(latestRecordTime);
                 eventHandler.publish(new DataEvent(latestRecordTime, MeshtasticOutputNodeInfo.this, foiUID, dataBlock));
 
 
@@ -163,20 +147,4 @@ public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo impleme
 
     }
 
-    /**
-     * Updates the interval histogram with the time between the latest record and the current time
-     * for calculating the average sampling period.
-     */
-    private void updateIntervalHistogram() {
-        synchronized (histogramLock) {
-            if (latestRecord != null && latestRecordTime != Long.MIN_VALUE) {
-                long interval = System.currentTimeMillis() - latestRecordTime;
-                intervalHistogram.add(interval / 1000d);
-
-                if (intervalHistogram.size() > MAX_NUM_TIMING_SAMPLES) {
-                    intervalHistogram.remove(0);
-                }
-            }
-        }
-    }
 }
