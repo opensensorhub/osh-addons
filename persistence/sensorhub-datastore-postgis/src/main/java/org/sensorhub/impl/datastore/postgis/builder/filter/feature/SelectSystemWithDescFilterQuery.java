@@ -14,9 +14,11 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.filter.feature;
 
+import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FeatureFilter;
 import org.sensorhub.api.datastore.system.SystemFilter;
 import org.sensorhub.impl.datastore.postgis.builder.generator.SelectFilterQueryGenerator;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 
 import java.util.stream.Collectors;
 
@@ -24,6 +26,43 @@ public class SelectSystemWithDescFilterQuery extends BaseSystemWithDescFilterQue
 
     public SelectSystemWithDescFilterQuery(String tableName, SelectFilterQueryGenerator filterQueryGenerator) {
         super(tableName, filterQueryGenerator);
+    }
+
+    @Override
+    protected void handleValidTimeFilter(TemporalFilter temporalFilter) {
+        if (temporalFilter == null)
+            return;
+
+        if (temporalFilter.isLatestTime()) {
+            filterQueryGenerator.addDistinct("(" + this.tableName + ".id)");
+            filterQueryGenerator.addDistinct("(" + this.tableName + ".data->>'uniqueId')");
+
+            filterQueryGenerator.addOrderBy("(" + this.tableName + ".id)");
+            filterQueryGenerator.addOrderBy("(" + this.tableName + ".data->>'uniqueId')");
+            filterQueryGenerator.addOrderBy(this.tableName + ".validTime DESC");
+        } else if (temporalFilter.isCurrentTime()) {
+            String sb =
+                    "(" + this.tableName + ".validTime IS NULL " +
+                            " OR (" +
+                            " lower(" + this.tableName + ".validTime) <= now() AND " +
+                            " (upper(" + this.tableName + ".validTime) IS NULL " +
+                            "      OR upper(" + this.tableName + ".validTime) >= now()" +
+                            " )" +
+                            ")" +
+                            ")";
+            addCondition(sb);
+        } else {
+            String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+            String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
+
+            String sb =
+                    "(" + this.tableName + ".validTime IS NULL " +
+                            " OR " + this.tableName + ".validTime " +
+                            PostgisUtils.getOperator(temporalFilter) + " " +
+                            "'[" + min + "," + max + "]'::tsrange" +
+                            ")";
+            addCondition(sb);
+        }
     }
 
     @Override

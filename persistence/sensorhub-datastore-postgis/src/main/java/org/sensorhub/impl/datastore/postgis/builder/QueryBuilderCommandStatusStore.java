@@ -44,7 +44,7 @@ public class QueryBuilderCommandStatusStore extends QueryBuilder {
                 "id BIGSERIAL PRIMARY KEY,"+
                 COMMAND_ID+" BIGINT, "+
                 PROGRESS+" INT, "+
-                REPORT_TIME+" TIMESTAMPTZ, "+
+                REPORT_TIME+" TIMESTAMP, "+
                 STATUS_CODE+" VARCHAR, "+
                 EXEC_TIME+" tsrange, "+
                 MESSAGE+" VARCHAR, "+

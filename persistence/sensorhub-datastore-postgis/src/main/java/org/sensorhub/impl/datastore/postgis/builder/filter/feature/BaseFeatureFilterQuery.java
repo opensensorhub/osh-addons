@@ -54,11 +54,12 @@ public abstract class BaseFeatureFilterQuery<V extends IFeature,F extends Featur
     }
 
     public void handleValidTimeFilter(TemporalFilter temporalFilter, String rangeOpStr) {
-        if(temporalFilter != null) {
-            var timeRange = PostgisUtils.getRangeFromTemporal(temporalFilter);
-            String sb =" '[" + timeRange[0] + "," + timeRange[1] + "]' "+rangeOpStr+" "+this.tableName + ".validTime ";
-            addCondition(sb);
-        }
+        if(temporalFilter != null)
+            return;
+
+        var timeRange = PostgisUtils.getRangeFromTemporal(temporalFilter);
+        String sb = " '[" + timeRange[0] + "," + timeRange[1] + "]' " + rangeOpStr + " " + this.tableName + ".validTime ";
+        addCondition(sb);
     }
 
     protected abstract void handleParentFilter(FeatureFilter parentFilter);
