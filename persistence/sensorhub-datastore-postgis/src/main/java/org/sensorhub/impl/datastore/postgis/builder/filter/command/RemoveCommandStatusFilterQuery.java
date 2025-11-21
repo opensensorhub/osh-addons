@@ -35,8 +35,8 @@ public class RemoveCommandStatusFilterQuery extends BaseCommandStatusFilterQuery
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
                 String sb = tableName + ".reportTime BETWEEN '"
-                        + min + "'::timestamptz AND '"
-                        + max + "'::timestamptz";
+                        + min + "'::timestamp AND '"
+                        + max + "'::timestamp";
                 addCondition(sb);
             }
         }

@@ -32,7 +32,7 @@ public class SelectDataStreamFilterQuery extends DataStreamFilterQuery<SelectFil
                 filterQueryGenerator.addDistinct("(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint");
                 filterQueryGenerator.addOrderBy(tableName + ".data->>'name'");
                 filterQueryGenerator.addOrderBy("(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint");
-                filterQueryGenerator.addOrderBy("(" + tableName + ".data->'validTime'->>'end')::timestamptz DESC ");
+                filterQueryGenerator.addOrderBy("(" + tableName + ".data->'validTime'->>'end')::timestamp DESC ");
             }
             else if (temporalFilter.isCurrentTime()) {
                 filterQueryGenerator.addDistinct("(" + tableName + ".data->>'name')");
@@ -41,9 +41,9 @@ public class SelectDataStreamFilterQuery extends DataStreamFilterQuery<SelectFil
                         tableName + ".data->'validTime' IS NULL " +
                         "OR (" +
                         tableName + ".data->'validTime'->'begin' IS NOT NULL " +
-                        "AND (" + tableName + ".data->'validTime'->>'begin')::timestamptz <= now() " +
+                        "AND (" + tableName + ".data->'validTime'->>'begin')::timestamp <= now() " +
                         "AND ((" + tableName + ".data->'validTime'->>'end') IS NULL " +
-                        "OR (" + tableName + ".data->'validTime'->>'end')::timestamptz >= now())" +
+                        "OR (" + tableName + ".data->'validTime'->>'end')::timestamp >= now())" +
                         ")" +
                         ")";
                 addCondition(sb);
@@ -54,11 +54,11 @@ public class SelectDataStreamFilterQuery extends DataStreamFilterQuery<SelectFil
 
                 String sb = "(" +
                         tableName + ".data->'validTime' IS NULL " +
-                        "OR tstzrange((" +
-                        tableName + ".data->'validTime'->>'begin')::timestamptz, (" +
-                        tableName + ".data->'validTime'->>'end')::timestamptz) " +
+                        "OR tsrange((" +
+                        tableName + ".data->'validTime'->>'begin')::timestamp, (" +
+                        tableName + ".data->'validTime'->>'end')::timestamp) " +
                         PostgisUtils.getOperator(temporalFilter) + " " +
-                        "'[" + min + "," + max + "]'::tstzrange" +
+                        "'[" + min + "," + max + "]'::tsrange" +
                         ")";
                 addCondition(sb);
             }

@@ -35,7 +35,7 @@ public class SelectCommandFilterQuery extends BaseCommandFilterQuery<SelectFilte
                 filterQueryGenerator.addOrderBy(this.tableName + ".commandstreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".issuetime DESC ");
             } else {
-                addCondition(this.tableName + "." + ISSUE_TIME + "::timestamptz BETWEEN " +
+                addCondition(this.tableName + "." + ISSUE_TIME + "::timestamp BETWEEN " +
                         "'" + temporalFilter.getMin().toString() + "' AND '" + temporalFilter.getMax().toString() + "'");
             }
         }

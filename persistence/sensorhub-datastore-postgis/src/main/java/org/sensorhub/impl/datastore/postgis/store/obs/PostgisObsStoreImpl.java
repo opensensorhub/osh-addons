@@ -59,8 +59,13 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 
     public PostgisObsStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
                                int idScope, IdProviderType dsIdProviderType) {
+        this(url, dbName,login,password,dataStoreName,idScope,dsIdProviderType,new QueryBuilderObsStore(dataStoreName));
+    }
+
+    public PostgisObsStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
+                               int idScope, IdProviderType dsIdProviderType,QueryBuilderObsStore queryBuilderObsStore) {
         super(idScope, dsIdProviderType,
-                new QueryBuilderObsStore(dataStoreName),
+                queryBuilderObsStore,
                 false);
         this.init(url, dbName, login, password, new String[]{
                         queryBuilder.createTableQuery(),
@@ -128,13 +133,13 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                 }
             }
             // required
-            Timestamp phenomenonTimestamp = resultSet.getTimestamp(String.valueOf(PHENOMENON_TIME));
+            Timestamp phenomenonTimestamp = resultSet.getTimestamp(String.valueOf(PHENOMENON_TIME), UTC_LOCAL);
             if (!resultSet.wasNull()) {
                 obsDataBuilder = obsDataBuilder.withPhenomenonTime(phenomenonTimestamp.toInstant());
             }
 
             if (!noFields || fields.contains(RESULT_TIME)) {
-                Timestamp resultTimestamp = resultSet.getTimestamp(String.valueOf(RESULT_TIME));
+                Timestamp resultTimestamp = resultSet.getTimestamp(String.valueOf(RESULT_TIME), UTC_LOCAL);
                 if (!resultSet.wasNull()) {
                     obsDataBuilder = obsDataBuilder.withResultTime(resultTimestamp.toInstant());
                 }
@@ -173,13 +178,13 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 
         // insert timestamp
         if (obs.getPhenomenonTime() != null) {
-            preparedStatement.setTimestamp(3, Timestamp.from(obs.getPhenomenonTime()));
+            preparedStatement.setTimestamp(3, Timestamp.from(obs.getPhenomenonTime()),UTC_LOCAL);
         } else {
             preparedStatement.setNull(3, Types.TIMESTAMP_WITH_TIMEZONE);
         }
 
         if (obs.getResultTime() != null) {
-            preparedStatement.setTimestamp(4, Timestamp.from(obs.getResultTime()));
+            preparedStatement.setTimestamp(4, Timestamp.from(obs.getResultTime()),UTC_LOCAL);
         } else {
             preparedStatement.setNull(4, Types.TIMESTAMP_WITH_TIMEZONE);
         }
@@ -324,11 +329,11 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                         obsDataBuilder = obsDataBuilder.withFoi(BigId.fromLong(idScope, foiId));
                     }
 
-                    Timestamp phenomenonTimestamp = resultSet.getTimestamp(String.valueOf(PHENOMENON_TIME));
+                    Timestamp phenomenonTimestamp = resultSet.getTimestamp(String.valueOf(PHENOMENON_TIME), UTC_LOCAL);
                     if (!resultSet.wasNull()) {
                         obsDataBuilder = obsDataBuilder.withPhenomenonTime(phenomenonTimestamp.toInstant());
                     }
-                    Timestamp resultTimestamp = resultSet.getTimestamp(String.valueOf(RESULT_TIME));
+                    Timestamp resultTimestamp = resultSet.getTimestamp(String.valueOf(RESULT_TIME), UTC_LOCAL);
                     if (!resultSet.wasNull()) {
                         obsDataBuilder = obsDataBuilder.withResultTime(resultTimestamp.toInstant());
                     }
@@ -358,13 +363,13 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                 preparedStatement.setLong(2, iObsData.getFoiID().getIdAsLong());
 
                 if (iObsData.getPhenomenonTime() != null) {
-                    preparedStatement.setTimestamp(3, Timestamp.from(iObsData.getPhenomenonTime()));
+                    preparedStatement.setTimestamp(3, Timestamp.from(iObsData.getPhenomenonTime()), UTC_LOCAL);
                 } else {
                     preparedStatement.setNull(3, Types.TIMESTAMP_WITH_TIMEZONE);
                 }
 
                 if (iObsData.getResultTime() != null) {
-                    preparedStatement.setTimestamp(4, Timestamp.from(iObsData.getResultTime()));
+                    preparedStatement.setTimestamp(4, Timestamp.from(iObsData.getResultTime()),UTC_LOCAL);
                 } else {
                     preparedStatement.setNull(4, Types.TIMESTAMP_WITH_TIMEZONE);
                 }

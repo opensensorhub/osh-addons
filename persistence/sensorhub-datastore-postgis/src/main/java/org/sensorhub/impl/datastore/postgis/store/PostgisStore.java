@@ -37,6 +37,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.*;
+import java.util.Calendar;
+import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicLong;
@@ -44,6 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class PostgisStore<T extends QueryBuilder> {
     private static final Logger logger = LoggerFactory.getLogger(PostgisStore.class);
+    protected static final Calendar UTC_LOCAL = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 
     protected ConnectionManager connectionManager;
     protected T queryBuilder;

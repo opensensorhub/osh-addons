@@ -39,13 +39,13 @@ public class QueryBuilderObsStore extends QueryBuilder {
     }
 
     public String createTableQuery() {
-        return "CREATE TABLE "+this.getStoreTableName()+
+        return "CREATE TABLE IF NOT EXISTS "+this.getStoreTableName()+
                 " (" +
                 "id BIGSERIAL PRIMARY KEY,"+
                 DATASTREAM_ID +" bigint, "+
                 FOI_ID+" bigint,"+
-                PHENOMENON_TIME+" TIMESTAMPTZ,"+
-                RESULT_TIME+" TIMESTAMPTZ,"+
+                PHENOMENON_TIME+" TIMESTAMP,"+
+                RESULT_TIME+" TIMESTAMP,"+
                 RESULT+" JSON" + // VERSUS JSONB but the parser does not keep order
                 ")";
     }
@@ -55,19 +55,19 @@ public class QueryBuilderObsStore extends QueryBuilder {
     }
 
     public String createDataStreamIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_datastream_idx on "+this.getStoreTableName()+" ("+DATASTREAM_ID+")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_datastream_idx on "+this.getStoreTableName()+" ("+DATASTREAM_ID+")";
     }
 
     public String createPhenomenonTimeIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_datastream_id_phenomenon_time_idx on "+this.getStoreTableName()+" ("+ DATASTREAM_ID + ", " + PHENOMENON_TIME +")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_datastream_id_phenomenon_time_idx on "+this.getStoreTableName()+" ("+ DATASTREAM_ID + ", " + PHENOMENON_TIME +")";
     }
 
     public String createResultTimeIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_datastream_id_result_time_idx on "+this.getStoreTableName()+" ("+ DATASTREAM_ID + ", " + RESULT_TIME +")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_datastream_id_result_time_idx on "+this.getStoreTableName()+" ("+ DATASTREAM_ID + ", " + RESULT_TIME +")";
     }
 
     public String createFoiIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_foi_idx on "+this.getStoreTableName()+" ("+ FOI_ID +")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_foi_idx on "+this.getStoreTableName()+" ("+ FOI_ID +")";
     }
 
     public String insertObsQuery() {
@@ -77,7 +77,7 @@ public class QueryBuilderObsStore extends QueryBuilder {
     }
 
     public String createUniqueConstraint() {
-        return "CREATE UNIQUE INDEX  "+this.getStoreTableName()+"_unique_constraint on "+this.getStoreTableName()+" (dataStreamID, foiID, phenomenonTime, resultTime)";
+        return "CREATE UNIQUE INDEX  IF NOT EXISTS "+this.getStoreTableName()+"_unique_constraint on "+this.getStoreTableName()+" (dataStreamID, foiID, phenomenonTime, resultTime)";
     }
 
     public String updateByIdQuery() {
@@ -127,8 +127,8 @@ public class QueryBuilderObsStore extends QueryBuilder {
             if(max == Instant.MAX) {
                 maxTimestamp = "infinity";
             }
-            String sb = "tstzrange((" + this.getStoreTableName() + "."+PHENOMENON_TIME+")::timestamptz," +
-                    " (" + this.getStoreTableName()  + "."+PHENOMENON_TIME+")::timestamptz)" +
+            String sb = "tsrange((" + this.getStoreTableName() + "."+PHENOMENON_TIME+")::timestamp," +
+                    " (" + this.getStoreTableName()  + "."+PHENOMENON_TIME+")::timestamp)" +
                     " && '[" + minTimestamp + "," + maxTimestamp + "]'";
 
         return "SELECT COUNT(*) FROM "+this.getStoreTableName()+" "+sb;

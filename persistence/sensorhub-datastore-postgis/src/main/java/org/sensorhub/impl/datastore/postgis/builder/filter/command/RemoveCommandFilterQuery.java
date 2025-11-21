@@ -33,7 +33,7 @@ public class RemoveCommandFilterQuery extends BaseCommandFilterQuery<RemoveFilte
             if (temporalFilter.isLatestTime()) {
                throw new UnsupportedOperationException("IssueTimeTemporalFilter not supported into REMOVE");
             } else {
-                addCondition(this.tableName + "." + ISSUE_TIME + "::timestamptz BETWEEN " +
+                addCondition(this.tableName + "." + ISSUE_TIME + "::timestamp BETWEEN " +
                         "'" + temporalFilter.getMin().toString() + "' AND '" + temporalFilter.getMax().toString() + "'");
             }
         }

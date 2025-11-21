@@ -89,8 +89,8 @@ public class QueryBuilderDataStreamStore extends QueryBuilder {
     }
 
     public String getAllDataStreams(Instant min, Instant max) {
-        return "SELECT id FROM "+this.getStoreTableName()+" WHERE tstzrange((data->'validTime'->>'begin')::timestamptz," +
-                "(data->'validTime'->>'end')::timestamptz) <@ '["+ PostgisUtils.checkAndGetValidInstant(min)+","+PostgisUtils.checkAndGetValidInstant(max)+"]'::tstzrange";
+        return "SELECT id FROM "+this.getStoreTableName()+" WHERE tsrange((data->'validTime'->>'begin')::timestamp," +
+                "(data->'validTime'->>'end')::timestamp) <@ '["+ PostgisUtils.checkAndGetValidInstant(min)+","+PostgisUtils.checkAndGetValidInstant(max)+"]'::tsrange";
     }
 
     public String createSelectEntriesQuery(DataStreamFilter filter, Set<IDataStreamStore.DataStreamInfoField> fields) {
