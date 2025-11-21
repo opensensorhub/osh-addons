@@ -236,7 +236,7 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
     }
 
     @Override
-    public ICommandStreamInfo put(CommandStreamKey key, ICommandStreamInfo csInfo) {
+    public synchronized ICommandStreamInfo put(CommandStreamKey key, ICommandStreamInfo csInfo) {
         try(Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateByIdQuery())) {
                 String json = SerializerUtils.writeICommandStreamInfoToJson(csInfo);

@@ -198,7 +198,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
     }
 
     @Override
-    public BigId add(IObsData obs) {
+    public synchronized BigId add(IObsData obs) {
         DataStreamKey dataStreamKey = new DataStreamKey(obs.getDataStreamID());
         if (!dataStreamStore.containsKey(dataStreamKey))
             throw new IllegalStateException("Unknown datastream with ID: " + obs.getDataStreamID().getIdAsLong());
@@ -352,7 +352,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
     }
 
     @Override
-    public IObsData put(BigId key, IObsData iObsData) {
+    public synchronized IObsData put(BigId key, IObsData iObsData) {
         IObsData oldObs = this.get(key);
         if (oldObs == null)
             throw new UnsupportedOperationException("put can only be used to update existing entries");
@@ -397,7 +397,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
     }
 
     @Override
-    public IObsData remove(Object o) {
+    public synchronized IObsData remove(Object o) {
         if (!(o instanceof BigId)) {
             throw new UnsupportedOperationException("Remove operation is not supported with argument != BigId key, got=" + o.getClass());
         }
@@ -448,6 +448,41 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         return null;
     }
 
+    public Map<Long, TimeExtent> getDataStreamPhenomenonTimeRanges(List<Long> dataStreamIds) {
+        Map<Long, TimeExtent> result = new HashMap<>();
+
+        if (dataStreamIds == null || dataStreamIds.isEmpty())
+            return result;
+
+        String sql = queryBuilder.getPhenomenonTimeRangeByDataStreamIdsQuery();
+
+        try (Connection conn = connectionManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
+            ps.setArray(1, sqlArray);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long id = rs.getLong("datastreamID");
+                    Timestamp min = rs.getTimestamp("min");
+                    Timestamp max = rs.getTimestamp("max");
+
+                    if (min != null && max != null) {
+                        result.put(id,
+                                TimeExtent.period(min.toInstant(), max.toInstant())
+                        );
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return result;
+    }
+
+
     TimeExtent getDataStreamResultTimeRange(long dataStreamID) {
         Instant[] timeRange = new Instant[]{Instant.MAX, Instant.MIN};
         try (Connection connection = this.connectionManager.getConnection()) {
@@ -478,6 +513,40 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             throw new RuntimeException(e);
         }
         return null;
+    }
+
+    public Map<Long, TimeExtent> getDataStreamResultTimeRanges(List<Long> dataStreamIds) {
+        Map<Long, TimeExtent> result = new HashMap<>();
+
+        if (dataStreamIds == null || dataStreamIds.isEmpty())
+            return result;
+
+        String sql = queryBuilder.getResultTimeRangeByDataStreamIdsQuery();
+
+        try (Connection conn = connectionManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
+            ps.setArray(1, sqlArray);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long id = rs.getLong("datastreamID");
+                    Timestamp min = rs.getTimestamp("min");
+                    Timestamp max = rs.getTimestamp("max");
+
+                    if (min != null && max != null) {
+                        result.put(id,
+                                TimeExtent.period(min.toInstant(), max.toInstant())
+                        );
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return result;
     }
 
     @Override

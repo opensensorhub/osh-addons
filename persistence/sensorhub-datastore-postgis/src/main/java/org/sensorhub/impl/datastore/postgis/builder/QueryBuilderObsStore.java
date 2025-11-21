@@ -93,6 +93,15 @@ public class QueryBuilderObsStore extends QueryBuilder {
         return "SELECT Min("+PHENOMENON_TIME+"),Max("+PHENOMENON_TIME+") FROM "+this.getStoreTableName()+" WHERE "+DATASTREAM_ID+" = "+dataStreamID;
     }
 
+    public String getPhenomenonTimeRangeByDataStreamIdsQuery() {
+        return "SELECT " + DATASTREAM_ID + ", " +
+                "       MIN(" + PHENOMENON_TIME + ") AS min, " +
+                "       MAX(" + PHENOMENON_TIME + ") AS max " +
+                "FROM " + getStoreTableName() +
+                " WHERE " + DATASTREAM_ID + " = ANY (?) " +
+                "GROUP BY " + DATASTREAM_ID;
+    }
+
     public String getBinCountByPhenomenontime(long seconds, List<Long> dsIds, List<Long> foiIds) {
         StringBuilder idsQuery = new StringBuilder();
         for(int i=0;i < dsIds.size();i++) {
@@ -116,6 +125,15 @@ public class QueryBuilderObsStore extends QueryBuilder {
 
     public String getResultTimeRangeByDataStreamIdQuery(long dataStreamID) {
         return "SELECT Min("+RESULT_TIME+"),Max("+RESULT_TIME+") FROM "+this.getStoreTableName()+" WHERE "+DATASTREAM_ID+" = "+dataStreamID;
+    }
+
+    public String getResultTimeRangeByDataStreamIdsQuery() {
+        return "SELECT " + DATASTREAM_ID + ", " +
+                "       MIN(" + RESULT_TIME + ") AS min, " +
+                "       MAX(" + RESULT_TIME + ") AS max " +
+                "FROM " + getStoreTableName() +
+                " WHERE " + DATASTREAM_ID + " = ANY (?) " +
+                "GROUP BY " + DATASTREAM_ID;
     }
 
     public String countByPhenomenonTimeRangeQuery(Instant min, Instant max) {

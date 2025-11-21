@@ -101,7 +101,7 @@ public abstract class PostgisBaseFeatureStoreImpl
     }
 
     @Override
-    public PostgisFeatureKey add(BigId parentID, V feature) throws DataStoreException {
+    public synchronized PostgisFeatureKey add(BigId parentID, V feature) throws DataStoreException {
         DataStoreUtils.checkFeatureObject(feature);
         checkParentFeatureExists(parentID);
 
@@ -481,7 +481,7 @@ public abstract class PostgisBaseFeatureStoreImpl
      * Rules:
      * - if uid already exists, check version (associated time + id), if new, add feature with existing id but different validTime
      */
-    public V put(FeatureKey featureKey, V value) {
+    public synchronized V put(FeatureKey featureKey, V value) {
         try {
             var fk = featureKey;
             // TODO: need to implements other subclass of feature
@@ -499,7 +499,7 @@ public abstract class PostgisBaseFeatureStoreImpl
     }
 
     @Override
-    public V remove(Object o) {
+    public synchronized V remove(Object o) {
         if (!(o instanceof FeatureKey)) {
             throw new UnsupportedOperationException("Remove operation is not supported with argument != FeatureKey key, got=" + o.getClass());
         }

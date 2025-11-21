@@ -156,7 +156,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
     }
 
     @Override
-    public BigId add(ICommandData cmd) {
+    public synchronized BigId add(ICommandData cmd) {
         CommandStreamKey commandStreamKey = new CommandStreamKey(cmd.getCommandStreamID());
         if (!commandStreamStore.containsKey(commandStreamKey))
             throw new IllegalStateException("Unknown commandStream" + cmd.getCommandStreamID());
@@ -272,7 +272,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
     }
 
     @Override
-    public ICommandData put(BigId key, ICommandData value) {
+    public synchronized ICommandData put(BigId key, ICommandData value) {
         ICommandData oldCommand = this.get(key);
         if (oldCommand == null)
             throw new UnsupportedOperationException("put can only be used to update existing entries");
@@ -317,7 +317,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
     }
 
     @Override
-    public ICommandData remove(Object o) {
+    public synchronized ICommandData remove(Object o) {
         if (!(o instanceof BigId)) {
             throw new UnsupportedOperationException("Remove operation is not supported with argument != BigId key, got=" + o.getClass());
         }
