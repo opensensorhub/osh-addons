@@ -40,7 +40,7 @@ public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo impleme
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
     MeshtasticOutputNodeInfo(MeshtasticSensor parentMeshtasticSensor) {
-        super(parentMeshtasticSensor);
+        super(OUTPUT_NAME, parentMeshtasticSensor);
     }
 
     /**

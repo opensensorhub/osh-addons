@@ -34,7 +34,7 @@ public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo impl
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
     MeshtasticOutputTextMessage(MeshtasticSensor parentMeshtasticSensor) {
-        super(parentMeshtasticSensor);
+        super(OUTPUT_NAME, parentMeshtasticSensor);
     }
 
     /**

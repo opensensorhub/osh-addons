@@ -34,7 +34,7 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo impleme
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
     MeshtasticOutputPosition(MeshtasticSensor parentMeshtasticSensor) {
-        super(parentMeshtasticSensor);
+        super(OUTPUT_NAME, parentMeshtasticSensor);
     }
 
     /**

@@ -34,7 +34,7 @@ public class MeshtasticOutputGeneric extends MeshtasticOutputPacketInfo implemen
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
     MeshtasticOutputGeneric(MeshtasticSensor parentMeshtasticSensor) {
-        super(parentMeshtasticSensor);
+        super(OUTPUT_NAME, parentMeshtasticSensor);
     }
 
     /**

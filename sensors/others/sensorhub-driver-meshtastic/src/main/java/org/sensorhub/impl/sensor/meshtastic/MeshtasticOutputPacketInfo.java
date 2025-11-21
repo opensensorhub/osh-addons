@@ -51,8 +51,8 @@ public class MeshtasticOutputPacketInfo extends VarRateSensorOutput<MeshtasticSe
      *
      * @param parentMeshtasticSensor Sensor driver providing this output.
      */
-    MeshtasticOutputPacketInfo(MeshtasticSensor parentMeshtasticSensor) {
-        super(parentMeshtasticSensor, INITIAL_SAMPLING_PERIOD);
+    MeshtasticOutputPacketInfo(String packetName, MeshtasticSensor parentMeshtasticSensor) {
+        super(packetName, parentMeshtasticSensor, INITIAL_SAMPLING_PERIOD);
     }
 
     /**
