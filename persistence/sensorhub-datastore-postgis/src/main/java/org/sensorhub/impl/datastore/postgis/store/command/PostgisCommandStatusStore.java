@@ -90,9 +90,11 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
                 new IteratorResultSet<>(
                         queryStr,
                         connectionManager,
+                        1000,
                         filter.getLimit(),
                         (resultSet) -> resultSetToEntry(resultSet, fields),
-                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
+                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())),
+                        filter.getValuePredicate() != null);
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
     }
 
