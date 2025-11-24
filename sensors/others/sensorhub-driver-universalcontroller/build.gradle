@@ -4,8 +4,8 @@ version = '1.0.0'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-    implementation 'net.java.jinput:jinput:2.0.10'
-    implementation fileTree(dir: 'lib', include: ['*.jar'])
+    embeddedImpl 'net.java.jinput:jinput:2.0.10'
+    embeddedImpl fileTree(dir: 'lib', include: ['*.jar'])
     testImplementation('junit:junit:4.13.1')
 }
 

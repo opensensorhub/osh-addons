@@ -10,7 +10,7 @@ version = '1.0.0'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-    implementation "com.google.protobuf:protobuf-java:3.25.1"
+    embeddedImpl "com.google.protobuf:protobuf-java:3.25.1"
     testImplementation "junit:junit:4.13.1"
     testImplementation project(':sensorhub-comm-jssc')
 }
