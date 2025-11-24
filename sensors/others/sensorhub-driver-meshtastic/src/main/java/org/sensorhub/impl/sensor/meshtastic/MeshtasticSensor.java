@@ -106,7 +106,8 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                Thread.currentThread().interrupt();
+                throw new SensorHubException("Thread interrupted while starting comm provider", e);
             }
 
             // send "handshake" to start receiving protobufs
