@@ -1,0 +1,68 @@
+plugins {
+    id "java"
+    id "com.google.protobuf" version "0.9.4"
+}
+
+description = 'Meshtastic Driver'
+ext.details = "Driver that utilizes a meshtastic Radio pre-configured with meshtastic Node Software to communicate with other meshtastic Radio"
+version = '1.0.0'
+
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation "com.google.protobuf:protobuf-java:3.25.1"
+    testImplementation "junit:junit:4.13.1"
+    testImplementation project(':sensorhub-comm-jssc')
+}
+
+// PROTOBUF PLUGIN CONFIGURATION
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.1"
+    }
+    // CONFIGURE THE PLUGIN TO GENERATE JAVA FILES
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {}
+            }
+        }
+    }
+}
+
+// Allow Gradle/IntelliJ to see generated Java Code form Proto
+sourceSets {
+    main {
+        // TELL JAVA PLUGIN TO TO COMPILE GENERATED JAVA FILES FORM PROTOC
+        java { srcDir "$buildDir/generated/source/proto/main/java" }
+        // TELL PROTOBUF PLUGIN TO LOOK IN THIS DIRECTORY FOR .PROTO FILES
+        proto { srcDirs = ['src/main/protobufs'] }
+    }
+}
+
+// BEFORE COMPILING JAVA, MAKE SURE THE BUILD IN generateProto TASK IS CALLED
+compileJava.dependsOn("generateProto")
+
+test {
+    useJUnit()
+}
+
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes ('Bundle-Vendor': 'Botts Inc')
+        attributes ('Bundle-Activator': 'com.sensorhub.impl.sensor.meshtastic.Activator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'BillBrown341'
+            name 'Bill Brown'
+            organization 'Botts Inc'
+            organizationUrl ''
+        }
+    }
+}
