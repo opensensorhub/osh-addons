@@ -15,51 +15,33 @@ dependencies {
     testImplementation project(':sensorhub-comm-jssc')
 }
 
+// PROTOBUF PLUGIN CONFIGURATION
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:3.25.1"
     }
-
-    // NEW LOCATION FOR GENERATED SOURCES
-    generatedFilesBaseDir = "$projectDir/src/main/generated-sources"
-
+    // CONFIGURE THE PLUGIN TO GENERATE JAVA FILES
     generateProtoTasks {
         all().each { task ->
             task.builtins {
                 java {}
             }
-            task.inputs.dir("${projectDir}/src/main/protobufs")
         }
     }
 }
-
-// --- CLEAN GENERATED SOURCES BEFORE GENERATION ---
-tasks.named('generateProto') {
-    doFirst {
-        def dir = file("$projectDir/src/main/generated-sources")
-        if (dir.exists()) {
-            println "Cleaning old generated sources at $dir"
-            dir.deleteDir()
-        }
-    }
-}
-
-
-
 
 // Allow Gradle/IntelliJ to see generated Java Code form Proto
 sourceSets {
     main {
-        // point Gradle to correct generated code location
-        java {
-            srcDir "$projectDir/src/main/generated-sources/main/java"
-        }
-        // tell the Java sourceSet where our proto files are; the plugin will read these
-        proto {
-            srcDirs = ['src/main/protobufs']
-        }
+        // TELL JAVA PLUGIN TO TO COMPILE GENERATED JAVA FILES FORM PROTOC
+        java { srcDir "$buildDir/generated/source/proto/main/java" }
+        // TELL PROTOBUF PLUGIN TO LOOK IN THIS DIRECTORY FOR .PROTO FILES
+        proto { srcDirs = ['src/main/protobufs'] }
     }
 }
+
+// BEFORE COMPILING JAVA, MAKE SURE THE BUILD IN generateProto TASK IS CALLED
+compileJava.dependsOn("generateProto")
 
 test {
     useJUnit()

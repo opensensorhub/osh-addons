@@ -55,7 +55,7 @@ When you first clone this repository, the generated classes do not exist in the 
 
 This will:
 
-1. Generate Java classes from the protobuf definitions in src/main/generated-sources.
+1. Generate Java classes from the protobuf definitions into ```sensorhub-driver-meshtastic/build/generated```.
 
 2. Compile them into the project’s classpath so your IDE can recognize imports like org.meshtastic.proto.MeshProtos.
 
