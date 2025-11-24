@@ -51,7 +51,7 @@ test {
 osgi {
     manifest {
         attributes ('Bundle-Vendor': 'Botts Inc')
-        attributes ('Bundle-Activator': 'com.sensorhub.impl.sensor.meshtastic.Activator')
+        attributes ('Bundle-Activator': 'org.sensorhub.impl.sensor.meshtastic.Activator')
     }
 }
 
