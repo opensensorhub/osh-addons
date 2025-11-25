@@ -1,4 +1,4 @@
-package com.sample.impl.sensor.universalcontroller.helpers;
+package org.sensorhub.impl.sensor.universalcontroller.helpers;
 
 public enum UniversalControllerComponent {
     A_BUTTON("A"),

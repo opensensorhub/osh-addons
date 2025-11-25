@@ -1,4 +1,4 @@
-package com.sample.impl.sensor.universalcontroller;
+package org.sensorhub.impl.sensor.universalcontroller;
 
 import org.sensorhub.utils.OshBundleActivator;
 

@@ -1,4 +1,4 @@
-package com.sample.impl.sensor.universalcontroller.helpers;
+package org.sensorhub.impl.sensor.universalcontroller.helpers;
 
 import net.opengis.swe.v20.*;
 import org.vast.data.*;

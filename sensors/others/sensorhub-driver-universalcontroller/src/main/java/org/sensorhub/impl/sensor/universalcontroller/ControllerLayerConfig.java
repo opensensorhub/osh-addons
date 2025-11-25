@@ -11,9 +11,9 @@
  Copyright (C) 2020-2021 Botts Innovative Research, Inc. All Rights Reserved.
 
 ******************************* END LICENSE BLOCK ***************************/
-package com.sample.impl.sensor.universalcontroller;
+package org.sensorhub.impl.sensor.universalcontroller;
 
-import com.sample.impl.sensor.universalcontroller.helpers.ControllerMappingPreset;
+import org.sensorhub.impl.sensor.universalcontroller.helpers.ControllerMappingPreset;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
