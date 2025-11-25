@@ -566,7 +566,6 @@ public abstract class PostgisBaseFeatureStoreImpl
         if(logger.isDebugEnabled()) {
             logger.debug(queryStr);
         }
-        batchLock.lock();
         try (Connection connection = this.connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 int rows = statement.executeUpdate(queryStr);
@@ -578,8 +577,6 @@ public abstract class PostgisBaseFeatureStoreImpl
             }
         } catch (SQLException e) {
             throw new IllegalStateException(e);
-        } finally {
-            batchLock.unlock();
         }
     }
 }

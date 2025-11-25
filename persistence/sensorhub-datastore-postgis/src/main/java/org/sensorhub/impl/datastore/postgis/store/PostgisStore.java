@@ -58,7 +58,6 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     protected boolean useBatch;
     private long autoCommitPeriod = 3600*1000L;
     public static final int STREAM_FETCH_SIZE = 1000;
-    protected ReentrantLock batchLock = new ReentrantLock();
 
     protected PostgisStore(int idScope, IdProviderType dsIdProviderType, T queryBuilder, boolean useBatch) {
         this.idProviderType = dsIdProviderType;
