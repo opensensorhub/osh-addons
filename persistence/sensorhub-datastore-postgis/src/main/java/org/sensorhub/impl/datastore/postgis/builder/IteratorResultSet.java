@@ -59,7 +59,7 @@ public class IteratorResultSet<T> implements Iterator<T> {
                              boolean hasValuePredicate
     ) {
         this.query = !hasValuePredicate ? query : removeSqlLimit(query);
-        this.internalLimit = internalLimit;
+        this.internalLimit = hasValuePredicate ? 5000 : internalLimit;
         this.filterLimit = filterLimit;
         this.parsingFn = parsingFn;
         this.connectionManager = connectionManager;

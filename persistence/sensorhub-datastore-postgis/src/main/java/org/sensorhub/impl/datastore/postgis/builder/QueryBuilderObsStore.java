@@ -46,12 +46,11 @@ public class QueryBuilderObsStore extends QueryBuilder {
                 FOI_ID+" bigint,"+
                 PHENOMENON_TIME+" TIMESTAMP,"+
                 RESULT_TIME+" TIMESTAMP,"+
-                RESULT+" JSON" + // VERSUS JSONB but the parser does not keep order
+                RESULT+" JSONB" + // VERSUS JSONB but the parser does not keep order
                 ")";
     }
     public String createDataIndexQuery() {
         return "CREATE INDEX "+this.getStoreTableName()+"_data_idx on "+this.getStoreTableName()+" USING GIN("+RESULT+")";
-//        return "CREATE INDEX "+this.getStoreTableName()+"_data_idx on "+this.getStoreTableName()+" ("+RESULT+")";
     }
 
     public String createDataStreamIndexQuery() {

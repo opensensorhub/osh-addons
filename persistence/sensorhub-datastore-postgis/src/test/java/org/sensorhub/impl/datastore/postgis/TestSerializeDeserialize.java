@@ -14,8 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import net.opengis.gml.v32.AbstractFeature;
@@ -652,6 +651,67 @@ public class TestSerializeDeserialize {
         assertFalse(resRecords.isEmpty());
         assertEquals(d1, resRecords.get(0).getStringValue(0));
         assertEquals(d2, resRecords.get(0).getIntValue(1));
+    }
+
+    private DataComponent createNestedTestStructure() {
+        SWEHelper fac = new SWEHelper();
+        return fac.createRecord()
+                .name("testIO")
+                .addField("test1", fac.createText())
+                .addField("test2", fac.createCount())
+                .addField("location", fac.createRecord()
+                        .addField("lat", fac.createQuantity())
+                        .addField("lon", fac.createQuantity())
+                )
+                .addField("tags", fac.createArray()
+                        .withElement("tagElement", fac.createText().build()))
+                .build();
+    }
+
+    @Test
+    public void testReorderJson() {
+        DataComponent schema = createNestedTestStructure();
+
+        // Unordered JSON input
+        String inputJson = """
+        {
+            "tags": ["b", "a"],
+            "location": {
+                "lon": -86.75,
+                "lat": 34.73
+            },
+            "test2": 42,
+            "test1": "hello"
+        }
+        """;
+        JsonObject inputObj = JsonParser.parseString(inputJson).getAsJsonObject();
+
+        String orderedJsonStr = SerializerUtils.reorderJsonBySchema(schema, inputObj);
+
+        JsonObject orderedObj = JsonParser.parseString(orderedJsonStr).getAsJsonObject();
+
+        // Build expected JSON following schema order
+        JsonObject expected = new JsonObject();
+        expected.addProperty("test1", "hello");
+        expected.addProperty("test2", 42);
+
+        JsonObject loc = new JsonObject();
+        loc.addProperty("lat", 34.73);
+        loc.addProperty("lon", -86.75);
+        expected.add("location", loc);
+
+        JsonArray tags = new JsonArray();
+        tags.add("b");
+        tags.add("a");
+        expected.add("tags", tags);
+
+        assertEquals(
+                JsonParser.parseString(expected.toString()),
+                JsonParser.parseString(orderedJsonStr)
+        );
+
+        System.out.println(inputJson);
+        System.out.println(orderedJsonStr);
     }
 
 }

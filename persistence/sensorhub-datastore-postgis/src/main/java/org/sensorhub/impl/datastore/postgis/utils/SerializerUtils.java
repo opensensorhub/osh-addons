@@ -15,8 +15,7 @@
 package org.sensorhub.impl.datastore.postgis.utils;
 
 import com.google.common.base.Strings;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
@@ -96,12 +95,70 @@ public abstract class SerializerUtils {
         }
     }
 
+    public static String reorderJsonBySchema(DataComponent schema, JsonObject input) {
+        JsonElement ordered = reorderBySchema(schema, input);
+        return ordered.toString();
+    }
+
+    public static JsonElement reorderBySchema(DataComponent schema, JsonElement inputElement) {
+        if (inputElement == null || inputElement.isJsonNull())
+            return JsonNull.INSTANCE;
+
+        if (schema instanceof DataRecord) {
+            JsonObject inputObj = inputElement.getAsJsonObject();
+            JsonObject orderedObj = new JsonObject();
+
+            DataRecord record = (DataRecord) schema;
+
+            for (int i = 0; i < record.getComponentCount(); i++) {
+                DataComponent childSchema = record.getComponent(i);
+                String name = childSchema.getName();
+
+                if (inputObj.has(name)) {
+                    JsonElement childInput = inputObj.get(name);
+                    JsonElement orderedChild = reorderBySchema(childSchema, childInput);
+                    orderedObj.add(name, orderedChild);
+                }
+            }
+
+            return orderedObj;
+        }
+
+        if (schema instanceof DataArray) {
+            DataArray dataArray = (DataArray) schema;
+            DataComponent elementSchema = dataArray.getElementType();
+
+            JsonArray inputArray = inputElement.getAsJsonArray();
+            JsonArray orderedArray = new JsonArray();
+
+            for (JsonElement arrayItem : inputArray) {
+                JsonElement orderedItem = reorderBySchema(elementSchema, arrayItem);
+                orderedArray.add(orderedItem);
+            }
+
+            return orderedArray;
+        }
+
+        return inputElement.deepCopy();
+    }
+
     public static DataBlock readDataBlockFromJson(DataComponent dataComponent, String json) {
         JsonDataParserGson jsonDataParserGson = new JsonDataParserGson();
-        // set datastream schema
         jsonDataParserGson.setDataComponents(dataComponent);
 
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(json.getBytes())) {
+        // Parse raw JSON into a JsonObject
+        JsonElement element = JsonParser.parseString(json);
+        if (!element.isJsonObject()) {
+            throw new IllegalArgumentException("Expected top-level JSON object for SWE parsing.");
+        }
+        JsonObject inputObj = element.getAsJsonObject();
+
+        // Reorder JSON so fields follow the DataComponent schema order
+        JsonElement orderedElement = reorderBySchema(dataComponent, inputObj);
+        String orderedJson = orderedElement.toString();
+
+        // Parse the ordered JSON block
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(orderedJson.getBytes())) {
             jsonDataParserGson.setInput(bis);
             return jsonDataParserGson.parseNextBlock();
         } catch (IOException e) {
