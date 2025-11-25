@@ -45,7 +45,7 @@ public class PostgisUtils {
             new DateTimeFormatterBuilder()
                     .appendPattern("yyyy-MM-dd HH:mm:ss")
                     .optionalStart()
-                    .appendFraction(ChronoField.NANO_OF_SECOND, 9, 9, true)
+                    .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
                     .optionalEnd()
                     .optionalStart()
                     .appendInstant()
@@ -306,13 +306,6 @@ public class PostgisUtils {
         return result;
     }
 
-    private static final DateTimeFormatter baseFmt = new DateTimeFormatterBuilder()
-            .appendPattern("yyyy-MM-dd HH:mm:ss")
-            .optionalStart()
-            .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
-            .optionalEnd()
-            .toFormatter(Locale.US);
-
     public static Instant pgDateToInstant(String pgDate) {
         pgDate = pgDate.trim();
         boolean bc = pgDate.endsWith("BC") || pgDate.endsWith(" BC");
@@ -323,7 +316,7 @@ public class PostgisUtils {
             pgDate = pgDate.substring(0, idx).trim();
         }
 
-        LocalDateTime ldt = LocalDateTime.parse(pgDate, baseFmt);
+        LocalDateTime ldt = LocalDateTime.parse(pgDate, FLEXIBLE_FORMATTER);
         if (!bc) {
             return ldt.toInstant(ZoneOffset.UTC);
         }
