@@ -17,17 +17,16 @@ package org.sensorhub.impl.datastore.postgis.store.feature;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import net.postgis.jdbc.PGbox2d;
+import org.apache.commons.text.StringSubstitutor;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKBWriter;
 import org.postgresql.util.PGobject;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.DataStoreException;
-import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FeatureFilterBase;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
 import org.sensorhub.impl.datastore.DataStoreUtils;
-import org.sensorhub.impl.datastore.postgis.BatchJob;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderFeatureStore;
 import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
@@ -96,7 +95,7 @@ public abstract class PostgisBaseFeatureStoreImpl
         super.init(url, dbName, login, password, initScripts);
 
         if(useBatch) {
-            this.connectionManager.enableBatch(BATCH_SIZE, queryBuilder.addOrUpdateByIdQuery());
+            this.connectionManager.enableBatch(BATCH_SIZE);
         }
     }
 
@@ -145,42 +144,31 @@ public abstract class PostgisBaseFeatureStoreImpl
     public FeatureKey addOrUpdate(FeatureKey featureKey, BigId parentID, V value) throws DataStoreException {
         if (useBatch) {
             try {
-                BatchJob batchJob = this.connectionManager.getBatchJob();
-                 try {
-                     PreparedStatement preparedStatement = batchJob.getPreparedStatement();
-                     fillAddOrUpdateStatement(featureKey, parentID, value, preparedStatement);
-                     preparedStatement.addBatch();
-                     cache.put(featureKey, value);
-                } catch (Exception e) {
-                    throw new DataStoreException("Cannot insert feature " + value.getName());
-                } finally {
-                    this.connectionManager.offerBatchJob(batchJob);
-                     batchLock.lock();
-                    this.connectionManager.tryCommit();
-                     batchLock.unlock();
-                }
+                String sqlQuery = fillAddOrUpdateStatement(featureKey, parentID, value);
+                this.connectionManager.addBatch(sqlQuery);
+                this.connectionManager.tryCommit();
+                cache.put(featureKey, value);
             } catch (Exception e) {
                 throw new DataStoreException("Cannot insert feature " + value.getName());
             }
         } else {
-            batchLock.lock();
             try (Connection connection = this.connectionManager.getConnection()) {
-                try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.addOrUpdateByIdQuery())) {
-                    fillAddOrUpdateStatement(featureKey, parentID, value, preparedStatement);
-                    int rows = preparedStatement.executeUpdate();
+                try (Statement statement = connection.createStatement()) {
+                    String sqlQuery = fillAddOrUpdateStatement(featureKey, parentID, value);
+                    statement.executeUpdate(sqlQuery);
                 }
             } catch (SQLException | IOException e) {
                 e.printStackTrace();
                 throw new DataStoreException("Cannot insert feature " + value.getName());
-            }  finally {
-                batchLock.unlock();
             }
         }
         return featureKey;
     }
 
-    private void fillAddOrUpdateStatement(FeatureKey featureKey, BigId parentID, V value, PreparedStatement preparedStatement) throws SQLException, IOException {
-        preparedStatement.setLong(1, featureKey.getInternalID().getIdAsLong());
+    private String fillAddOrUpdateStatement(FeatureKey featureKey, BigId parentID, V value) throws SQLException, IOException {
+        Map<String, Object> values = new HashMap<>();
+
+        values.put("1","'"+featureKey.getInternalID().getIdAsLong()+"'::int8");
         // statements for INSERT - parentId
         var parentId = 0L;
         if(featureKey instanceof PostgisFeatureKey) {
@@ -189,27 +177,28 @@ public abstract class PostgisBaseFeatureStoreImpl
             parentId = parentID.getIdAsLong();
         }
 
-        preparedStatement.setLong(2, parentId);
+        values.put("2", "'"+parentId+"'::int8");
         if (value.getGeometry() != null) {
             Geometry geometry = PostgisUtils.toJTSGeometry(value.getGeometry());
             byte[] geom = threadLocalWriter.get().write(geometry);
-            preparedStatement.setBytes(3, geom); // insert
-            preparedStatement.setBytes(6, geom); // update
+            String byteaGeom = PostgisUtils.convertBytesToBytea(geom);
+            values.put("3", "'"+byteaGeom+"'::bytea"); // insert
+            values.put("6", "'"+byteaGeom+"'::bytea"); // update
         } else {
-            preparedStatement.setNull(3, Types.LONGVARBINARY);
-            preparedStatement.setNull(6, Types.LONGVARBINARY);
+            values.put("3", "NULL");
+            values.put("6", "NULL");
         }
 
         PGobject pgValidTimeRange = this.createPGobjectValidTimeRange(featureKey, value);
-        preparedStatement.setObject(4, pgValidTimeRange);
-        preparedStatement.setObject(7, pgValidTimeRange);
+        values.put("4", "'"+pgValidTimeRange.getValue()+"'");
+        values.put("7", "'"+pgValidTimeRange.getValue()+"'");
 
-        PGobject jsonObject = new PGobject();
-        jsonObject.setType("json");
-        jsonObject.setValue(this.writeFeature(value));
+        String feature = this.writeFeature(value);
+        values.put("5", "'"+feature+"'");
+        values.put("8", "'"+feature+"'");
+        StringSubstitutor sub = new StringSubstitutor(values);
 
-        preparedStatement.setObject(5, jsonObject);
-        preparedStatement.setObject(8, jsonObject);
+        return sub.replace(queryBuilder.addOrUpdateByIdQuery());
     }
 
     public Stream<Entry<FeatureKey, V>> selectEntries(F filter, Set<VF> fields) {

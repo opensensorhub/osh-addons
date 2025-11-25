@@ -15,10 +15,15 @@
 package org.sensorhub.impl.datastore.postgis.utils;
 
 import com.google.common.collect.Range;
+import com.google.common.hash.Hashing;
 import net.opengis.gml.v32.AbstractGeometry;
 import net.opengis.gml.v32.LinearRing;
+import net.opengis.gml.v32.TimeUnit;
 import net.opengis.gml.v32.impl.PolygonJTS;
 import org.postgresql.util.PGobject;
+import org.sensorhub.api.data.IDataStreamInfo;
+import org.sensorhub.api.data.IObsData;
+import org.sensorhub.api.datastore.IdProvider;
 import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.vast.ogc.gml.JTSUtils;
@@ -32,6 +37,8 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Locale;
+import java.util.UUID;
 
 public class PostgisUtils {
     private static final DateTimeFormatter FLEXIBLE_FORMATTER =
@@ -239,4 +246,91 @@ public class PostgisUtils {
         return range;
     }
 
+    public static String convertBytesToBytea(byte[] bytes) {
+        StringBuilder sb = new StringBuilder("\\x");
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    public static IdProvider<IObsData> getObsHashIdProvider(int seed) {
+        var hashFunc = Hashing.murmur3_128(seed);
+
+        return obsData -> {
+            // compute hash
+            var hash = hashFunc.newHasher()
+                    .putLong(obsData.getDataStreamID().getIdAsLong())
+                    .putLong(obsData.getFoiID().getIdAsLong())
+                    .putUnencodedChars(obsData.getPhenomenonTime().toString())
+                    .putUnencodedChars(obsData.getResultTime().toString())
+                    .putLong(System.nanoTime()) // add clock time
+                    .hash();
+
+
+            // We keep only 42-bits so it can fit on a 8-bytes DES encrypted block,
+            // along with the ID scope and using variable length encoding.
+            return hash.asLong() & 0x3FFFFFFFFFFL;
+        };
+    }
+
+    public static String getPgDate(Instant instant) {
+        ZonedDateTime zdt = instant.atZone(ZoneOffset.UTC);
+        int year = zdt.getYear();
+        boolean isBC = false;
+
+        if (year <= 0) {
+            isBC = true;
+            year = 1 - year; // 0 -> 1 BC, -1 -> 2 BC, etc.
+        }
+
+        int month = zdt.getMonthValue();
+        int day = zdt.getDayOfMonth();
+        int hour = zdt.getHour();
+        int minute = zdt.getMinute();
+        int second = zdt.getSecond();
+        int nano = zdt.getNano();
+
+        String fraction = "";
+        if (nano != 0) {
+            fraction = "." + Integer.toString(nano).replaceAll("0+$", "");
+        }
+
+        String result = String.format("%04d-%02d-%02d %02d:%02d:%02d%s+00",
+                year, month, day, hour, minute, second, fraction);
+
+        if (isBC) {
+            result += " BC";
+        }
+
+        return result;
+    }
+
+    private static final DateTimeFormatter baseFmt = new DateTimeFormatterBuilder()
+            .appendPattern("yyyy-MM-dd HH:mm:ss")
+            .optionalStart()
+            .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
+            .optionalEnd()
+            .toFormatter(Locale.US);
+
+    public static Instant pgDateToInstant(String pgDate) {
+        pgDate = pgDate.trim();
+        boolean bc = pgDate.endsWith("BC") || pgDate.endsWith(" BC");
+
+        // Remove BC if present
+        if (bc) {
+            int idx = pgDate.indexOf('B');
+            pgDate = pgDate.substring(0, idx).trim();
+        }
+
+        LocalDateTime ldt = LocalDateTime.parse(pgDate, baseFmt);
+        if (!bc) {
+            return ldt.toInstant(ZoneOffset.UTC);
+        }
+
+        int y = ldt.getYear();
+        int correctedYear = -(y - 1);
+        ldt = ldt.withYear(correctedYear);
+        return ldt.toInstant(ZoneOffset.UTC);
+    }
 }
