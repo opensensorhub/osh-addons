@@ -31,6 +31,7 @@ public class ConnectionManager {
         this.login = login;
         this.password = password;
         DriverManager.setLoginTimeout(1000 * 60 * 5); // 5 minutes;
+        hikariDataSourceInstance = createHikariDataSource();
     }
 
     public void enableBatch(int batchSize) {
@@ -56,16 +57,9 @@ public class ConnectionManager {
         return new HikariDataSource(config);
     }
 
-    private HikariDataSource getHikariDataSourceInstance() {
-        if(hikariDataSourceInstance == null) {
-            hikariDataSourceInstance = createHikariDataSource();
-        }
-        return hikariDataSourceInstance;
-    }
-
     public Connection getConnection()  {
         try {
-            return this.getHikariDataSourceInstance().getConnection();
+            return hikariDataSourceInstance.getConnection();
         } catch (Exception ex) {
             ex.printStackTrace();
             throw new RuntimeException(ex);
