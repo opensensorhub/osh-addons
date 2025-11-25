@@ -212,7 +212,6 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         // check that FOI exists
 //        if (obs.hasFoi() && foiStore != null && foiStore.contains(obs.getFoiID()))
 //            throw new IllegalStateException("Unknown FOI: " + obs.getFoiID());
-        Instant dataTime = obs.getPhenomenonTime();
         BigId id  = BigId.fromLong(idScope, idProvider.newInternalID(obs));
         // check existing partition
         try (Connection connection1 = this.connectionManager.getConnection()) {
