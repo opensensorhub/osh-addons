@@ -41,7 +41,7 @@ public class QueryBuilderObsStore extends QueryBuilder {
     public String createTableQuery() {
         return "CREATE TABLE IF NOT EXISTS "+this.getStoreTableName()+
                 " (" +
-                "id bigint,"+
+                "id bigint PRIMARY KEY,"+
                 DATASTREAM_ID +" bigint, "+
                 FOI_ID+" bigint,"+
                 PHENOMENON_TIME+" TIMESTAMP,"+
@@ -72,11 +72,12 @@ public class QueryBuilderObsStore extends QueryBuilder {
 
     public String insertObsQuery() {
         return "INSERT INTO "+this.getStoreTableName()+" " +
-                "(id,"+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (${1},${2},${3},${4},${5},${6}) ";
+                "(id,"+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (${1},${2},${3},${4},${5},${6}) "+
+                "ON CONFLICT ("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+") DO NOTHING";
     }
 
     public String createUniqueConstraint() {
-        return "CREATE UNIQUE INDEX  IF NOT EXISTS "+this.getStoreTableName()+"_unique_constraint on "+this.getStoreTableName()+" (id)";
+        return "CREATE UNIQUE INDEX  IF NOT EXISTS "+this.getStoreTableName()+"_unique_constraint on "+this.getStoreTableName()+" (dataStreamID, foiID, phenomenonTime, resultTime)";
     }
 
     public String updateByIdQuery() {

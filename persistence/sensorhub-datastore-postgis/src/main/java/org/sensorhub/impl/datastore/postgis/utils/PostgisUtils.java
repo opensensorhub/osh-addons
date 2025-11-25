@@ -264,7 +264,6 @@ public class PostgisUtils {
                     .putLong(obsData.getFoiID().getIdAsLong())
                     .putUnencodedChars(obsData.getPhenomenonTime().toString())
                     .putUnencodedChars(obsData.getResultTime().toString())
-                    .putLong(System.nanoTime()) // add clock time
                     .hash();
 
 
