@@ -42,7 +42,7 @@ public class PostgisBatchObsStoreImpl extends PostgisObsStoreImpl {
     }
 
     @Override
-    public synchronized BigId add(IObsData obs) {
+    public BigId add(IObsData obs) {
         DataStreamKey dataStreamKey = new DataStreamKey(obs.getDataStreamID());
         if (!dataStreamStore.containsKey(dataStreamKey))
             throw new IllegalStateException("Unknown datastream with ID: " + obs.getDataStreamID().getIdAsLong());
@@ -73,7 +73,7 @@ public class PostgisBatchObsStoreImpl extends PostgisObsStoreImpl {
     }
 
     @Override
-    public synchronized IObsData remove(Object o) {
+    public IObsData remove(Object o) {
         if (!(o instanceof BigId)) {
             throw new UnsupportedOperationException("Remove operation is not supported with argument != BigId key, got=" + o.getClass());
         }

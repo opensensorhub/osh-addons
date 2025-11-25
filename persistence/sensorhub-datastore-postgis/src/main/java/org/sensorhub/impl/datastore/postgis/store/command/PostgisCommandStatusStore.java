@@ -195,7 +195,7 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
     }
 
     @Override
-    public synchronized BigId add(ICommandStatus rec) {
+    public BigId add(ICommandStatus rec) {
         try (Connection connection1 = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection1.prepareStatement(queryBuilder.insertCommandQuery(), Statement.RETURN_GENERATED_KEYS)) {
                 // command ID
@@ -350,7 +350,7 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
     }
 
     @Override
-    public synchronized ICommandStatus put(BigId key, ICommandStatus rec) {
+    public ICommandStatus put(BigId key, ICommandStatus rec) {
         ICommandStatus oldCommand = this.get(key);
         if (oldCommand == null)
             throw new UnsupportedOperationException("put can only be used to update existing entries");
@@ -419,7 +419,7 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
     }
 
     @Override
-    public synchronized ICommandStatus remove(Object o) {
+    public ICommandStatus remove(Object o) {
         if (!(o instanceof BigId)) {
             throw new UnsupportedOperationException("Remove operation is not supported with argument != BigId key, got=" + o.getClass());
         }

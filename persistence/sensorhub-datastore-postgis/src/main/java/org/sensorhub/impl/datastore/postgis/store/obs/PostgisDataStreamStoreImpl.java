@@ -274,7 +274,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
     }
 
     @Override
-    public synchronized DataStreamKey add(IDataStreamInfo dsInfo) throws DataStoreException {
+    public DataStreamKey add(IDataStreamInfo dsInfo) throws DataStoreException {
         // RULE --
         // if DS already exists, compute the time intersection
         this.intersectsAndUpdate(dsInfo);
@@ -345,7 +345,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
     }
 
     @Override
-    public synchronized IDataStreamInfo put(DataStreamKey dataStreamKey, IDataStreamInfo iDataStreamInfo) {
+    public IDataStreamInfo put(DataStreamKey dataStreamKey, IDataStreamInfo iDataStreamInfo) {
         try (Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateByIdQuery())) {
                 String json = SerializerUtils.writeIDataStreamInfoToJson(iDataStreamInfo);
@@ -370,7 +370,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
     }
 
     @Override
-    public synchronized IDataStreamInfo remove(Object o) {
+    public IDataStreamInfo remove(Object o) {
         if (!(o instanceof DataStreamKey)) {
             throw new UnsupportedOperationException("Remove operation is not supported with argument != DataStreamKey key, got=" + o.getClass());
         }

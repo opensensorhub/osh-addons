@@ -75,7 +75,7 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
     }
 
     @Override
-    public synchronized CommandStreamKey add(ICommandStreamInfo csInfo) throws DataStoreException {
+    public CommandStreamKey add(ICommandStreamInfo csInfo) throws DataStoreException {
         // RULE --
         // if CMD already exists, compute the time intersection
         this.intersectsAndUpdate(csInfo);
@@ -236,7 +236,7 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
     }
 
     @Override
-    public synchronized ICommandStreamInfo put(CommandStreamKey key, ICommandStreamInfo csInfo) {
+    public ICommandStreamInfo put(CommandStreamKey key, ICommandStreamInfo csInfo) {
         try(Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateByIdQuery())) {
                 String json = SerializerUtils.writeICommandStreamInfoToJson(csInfo);
@@ -261,7 +261,7 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
     }
 
     @Override
-    public synchronized ICommandStreamInfo remove(Object o) {
+    public ICommandStreamInfo remove(Object o) {
         if (!(o instanceof CommandStreamKey)) {
             throw new UnsupportedOperationException("Remove operation is not supported with argument != CommandStreamKey key, got=" + o.getClass());
         }
@@ -290,7 +290,7 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
     }
 
     @Override
-    public synchronized void clear() {
+    public void clear() {
         try {
             super.clear();
             this.clearCache();
