@@ -25,6 +25,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
+import static org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField.GEOMETRY;
+import static org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField.VALID_TIME;
 import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.*;
 
 public class QueryBuilderObsStore extends QueryBuilder {
@@ -73,7 +75,9 @@ public class QueryBuilderObsStore extends QueryBuilder {
     public String insertObsQuery() {
         return "INSERT INTO "+this.getStoreTableName()+" " +
                 "(id,"+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (${1},${2},${3},${4},${5},${6}) "+
-                "ON CONFLICT ("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+") DO NOTHING";
+                "ON CONFLICT ("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+") DO "+
+                "UPDATE SET "+DATASTREAM_ID+" = (${7}), " +FOI_ID+" = (${8}), "+PHENOMENON_TIME+" = (${9})," +
+                " "+RESULT_TIME+" = (${10}), "+RESULT+" = (${11})";
     }
 
     public String createUniqueConstraint() {
@@ -91,6 +95,15 @@ public class QueryBuilderObsStore extends QueryBuilder {
 
     public String getPhenomenonTimeRangeByDataStreamIdQuery(long dataStreamID) {
         return "SELECT Min("+PHENOMENON_TIME+"),Max("+PHENOMENON_TIME+") FROM "+this.getStoreTableName()+" WHERE "+DATASTREAM_ID+" = "+dataStreamID;
+    }
+
+    public String getPhenomenonTimeRangeByDataStreamIdsQuery() {
+        return "SELECT " + DATASTREAM_ID + ", " +
+                "       MIN(" + PHENOMENON_TIME + ") AS min, " +
+                "       MAX(" + PHENOMENON_TIME + ") AS max " +
+                "FROM " + getStoreTableName() +
+                " WHERE " + DATASTREAM_ID + " = ANY (?) " +
+                "GROUP BY " + DATASTREAM_ID;
     }
 
     public String getBinCountByPhenomenontime(long seconds, List<Long> dsIds, List<Long> foiIds) {
@@ -116,6 +129,15 @@ public class QueryBuilderObsStore extends QueryBuilder {
 
     public String getResultTimeRangeByDataStreamIdQuery(long dataStreamID) {
         return "SELECT Min("+RESULT_TIME+"),Max("+RESULT_TIME+") FROM "+this.getStoreTableName()+" WHERE "+DATASTREAM_ID+" = "+dataStreamID;
+    }
+
+    public String getResultTimeRangeByDataStreamIdsQuery() {
+        return "SELECT " + DATASTREAM_ID + ", " +
+                "       MIN(" + RESULT_TIME + ") AS min, " +
+                "       MAX(" + RESULT_TIME + ") AS max " +
+                "FROM " + getStoreTableName() +
+                " WHERE " + DATASTREAM_ID + " = ANY (?) " +
+                "GROUP BY " + DATASTREAM_ID;
     }
 
     public String countByPhenomenonTimeRangeQuery(Instant min, Instant max) {

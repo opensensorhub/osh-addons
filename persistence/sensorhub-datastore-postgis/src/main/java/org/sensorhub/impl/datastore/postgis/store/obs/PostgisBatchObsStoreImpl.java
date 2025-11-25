@@ -42,7 +42,7 @@ public class PostgisBatchObsStoreImpl extends PostgisObsStoreImpl {
 
         BigId id  = BigId.fromLong(idScope, idProvider.newInternalID(obs));
         try {
-            String sqlQuery = fillAddStatement(id, dataStreamKey,obs);
+            String sqlQuery = fillAddStatement(id, dataStreamKey.getInternalID().getIdAsLong(),obs);
             this.connectionManager.addBatch(sqlQuery);
             this.connectionManager.tryCommit();
         } catch (Exception e) {

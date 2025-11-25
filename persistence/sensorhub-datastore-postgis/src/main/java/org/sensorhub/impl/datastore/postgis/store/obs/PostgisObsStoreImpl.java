@@ -132,7 +132,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             }
             if (!noFields || fields.contains(FOI_ID)) {
                 long foiId = resultSet.getLong(String.valueOf(FOI_ID));
-                if (!resultSet.wasNull()) {
+                if (!resultSet.wasNull() && foiId > 0) {
                     obsDataBuilder = obsDataBuilder.withFoi(BigId.fromLong(idScope, foiId));
                 }
             }
@@ -170,35 +170,48 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         return this.dataStreamStore;
     }
 
-    protected String fillAddStatement(BigId id,DataStreamKey dataStreamKey, IObsData obs) throws SQLException {
+    protected String fillAddStatement(BigId id,long dataStreamKey, IObsData obs) throws SQLException {
         Map<String, Object> values = new HashMap<>();
         values.put("1","'"+id.getIdAsLong()+"'::int8");
-        values.put("2","'"+dataStreamKey.getInternalID().getIdAsLong()+"'::int8");
+
+        // datastreamid
+        values.put("2","'"+dataStreamKey+"'::int8");
+        values.put("7","'"+dataStreamKey+"'::int8");
+
         // insert foiId if any
         if (obs.hasFoi()) {
             values.put("3", "'"+obs.getFoiID().getIdAsLong()+"'::int8");
+            values.put("8", "'"+obs.getFoiID().getIdAsLong()+"'::int8");
         } else {
             values.put("3", "NULL");
+            values.put("8", "NULL");
         }
 
         // insert timestamp
         if (obs.getPhenomenonTime() != null) {
             String d = PostgisUtils.getPgDate(obs.getPhenomenonTime());
             values.put("4", "'"+d+"'");
+            values.put("9", "'"+d+"'");
         } else {
             values.put("4", "NULL");
+            values.put("9", "NULL");
         }
 
         if (obs.getResultTime() != null) {
             String d = PostgisUtils.getPgDate(obs.getResultTime());
             values.put("5", "'"+d+"'");
+            values.put("10", "'"+d+"'");
         } else {
             values.put("5", "NULL");
+            values.put("10", "NULL");
         }
         // insert DataBlock
         IDataStreamInfo dataStreamInfo = dataStreamStore.get(new DataStreamKey(obs.getDataStreamID()));
-        values.put("6", "'"+SerializerUtils.writeDataBlockToJson(dataStreamInfo.getRecordStructure(),
-                dataStreamInfo.getRecordEncoding(), obs.getResult())+"'");
+        String serializedBlock = SerializerUtils.writeDataBlockToJson(dataStreamInfo.getRecordStructure(),
+                dataStreamInfo.getRecordEncoding(), obs.getResult());
+
+        values.put("6", "'"+serializedBlock+"'");
+        values.put("11", "'"+serializedBlock+"'");
 
         StringSubstitutor sub = new StringSubstitutor(values);
         return sub.replace(queryBuilder.insertObsQuery());
@@ -216,7 +229,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         // check existing partition
         try (Connection connection1 = this.connectionManager.getConnection()) {
             try (Statement statement = connection1.createStatement()) {
-                String sqlQuery = this.fillAddStatement(id,dataStreamKey, obs);
+                String sqlQuery = this.fillAddStatement(id,dataStreamKey.getInternalID().getIdAsLong(), obs);
                 int rows = statement.executeUpdate(sqlQuery);
             } catch (Exception e) {
                 throw new IllegalStateException("Cannot insert obs", e);
@@ -358,43 +371,17 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         if (oldObs == null)
             throw new UnsupportedOperationException("put can only be used to update existing entries");
 
-        try (Connection connection = this.connectionManager.getConnection()) {
-            try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateByIdQuery())) {
-                preparedStatement.setLong(1, iObsData.getDataStreamID().getIdAsLong());
-                preparedStatement.setLong(2, iObsData.getFoiID().getIdAsLong());
-
-                if (iObsData.getPhenomenonTime() != null) {
-                    preparedStatement.setTimestamp(3, Timestamp.from(iObsData.getPhenomenonTime()), UTC_LOCAL);
-                } else {
-                    preparedStatement.setNull(3, Types.TIMESTAMP_WITH_TIMEZONE);
-                }
-
-                if (iObsData.getResultTime() != null) {
-                    preparedStatement.setTimestamp(4, Timestamp.from(iObsData.getResultTime()),UTC_LOCAL);
-                } else {
-                    preparedStatement.setNull(4, Types.TIMESTAMP_WITH_TIMEZONE);
-                }
-
-                // insert DataBlock
-                PGobject jsonObject = new PGobject();
-                jsonObject.setType("json");
-                IDataStreamInfo dataStreamInfo = dataStreamStore.get(new DataStreamKey(iObsData.getDataStreamID()));
-                jsonObject.setValue(SerializerUtils.writeDataBlockToJson(dataStreamInfo.getRecordStructure(),
-                        dataStreamInfo.getRecordEncoding(), iObsData.getResult()));
-
-                preparedStatement.setObject(5, jsonObject);
-                preparedStatement.setLong(6, key.getIdAsLong());
-
-                int rows = preparedStatement.executeUpdate();
-                if (rows > 0) {
-                    return iObsData;
-                } else {
-                    throw new RuntimeException("Cannot insert obs ");
-                }
+        try (Connection connection1 = this.connectionManager.getConnection()) {
+            try (Statement statement = connection1.createStatement()) {
+                String sqlQuery = this.fillAddStatement(key,iObsData.getDataStreamID().getIdAsLong(), iObsData);
+                int rows = statement.executeUpdate(sqlQuery);
+            } catch (Exception e) {
+                throw new IllegalStateException("Cannot insert obs", e);
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot insert obs", e);
         }
+        return iObsData;
     }
 
     @Override
@@ -449,6 +436,41 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         return null;
     }
 
+    public Map<Long, TimeExtent> getDataStreamPhenomenonTimeRanges(List<Long> dataStreamIds) {
+        Map<Long, TimeExtent> result = new HashMap<>();
+
+        if (dataStreamIds == null || dataStreamIds.isEmpty())
+            return result;
+
+        String sql = queryBuilder.getPhenomenonTimeRangeByDataStreamIdsQuery();
+
+        try (Connection conn = connectionManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
+            ps.setArray(1, sqlArray);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long id = rs.getLong("datastreamID");
+                    Timestamp min = rs.getTimestamp("min");
+                    Timestamp max = rs.getTimestamp("max");
+
+                    if (min != null && max != null) {
+                        result.put(id,
+                                TimeExtent.period(min.toInstant(), max.toInstant())
+                        );
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return result;
+    }
+
+
     TimeExtent getDataStreamResultTimeRange(long dataStreamID) {
         Instant[] timeRange = new Instant[]{Instant.MAX, Instant.MIN};
         try (Connection connection = this.connectionManager.getConnection()) {
@@ -481,6 +503,40 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         return null;
     }
 
+    public Map<Long, TimeExtent> getDataStreamResultTimeRanges(List<Long> dataStreamIds) {
+        Map<Long, TimeExtent> result = new HashMap<>();
+
+        if (dataStreamIds == null || dataStreamIds.isEmpty())
+            return result;
+
+        String sql = queryBuilder.getResultTimeRangeByDataStreamIdsQuery();
+
+        try (Connection conn = connectionManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
+            ps.setArray(1, sqlArray);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long id = rs.getLong("datastreamID");
+                    Timestamp min = rs.getTimestamp("min");
+                    Timestamp max = rs.getTimestamp("max");
+
+                    if (min != null && max != null) {
+                        result.put(id,
+                                TimeExtent.period(min.toInstant(), max.toInstant())
+                        );
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return result;
+    }
+
     @Override
     public long countMatchingEntries(ObsFilter filter) {
         try (Connection connection = this.connectionManager.getConnection()) {
@@ -501,9 +557,8 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 
     @Override
     public long removeEntries(ObsFilter filter) {
-        logger.debug("Remove Feature with filter={}", filter.toString());
+        logger.debug("Remove Obs with filter={}", filter.toString());
         String queryStr = queryBuilder.createRemoveEntriesQuery(filter);
-        System.out.println(queryStr);
         if(logger.isDebugEnabled()) {
             logger.debug(queryStr);
         }
