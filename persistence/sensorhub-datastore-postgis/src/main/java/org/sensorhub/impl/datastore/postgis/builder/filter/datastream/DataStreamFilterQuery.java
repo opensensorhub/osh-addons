@@ -98,28 +98,46 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
             if (systemFilter.getInternalIDs() != null || systemFilter.getUniqueIDs() != null) {
                 // handle UNIQUE IDS
                 if (systemFilter.getUniqueIDs() != null && !systemFilter.getUniqueIDs().isEmpty()) {
-//                            "))";
                     SortedSet<String> uniqueIds = systemFilter.getUniqueIDs();
-                    StringBuilder sb = new StringBuilder();
-                    // Id can be regex
-                    // we have to use ILIKE behind trigram INDEX
-                    String currentId;
+
+                    // We need to join system table when includeMembers == true
+                    if (systemFilter.includeMembers()) {
+                        addJoin(sysDescTableName + " s ON (" + tableName +
+                                ".data->'system@id'->>'uniqueID') = s.data->>'uniqueId'");
+                    }
+
+                    StringBuilder sb = new StringBuilder("(");
                     int i = 0;
-                    sb.append("(");
-                    for(String uid: uniqueIds) {
-                        // ILIKE use % OPERATOR
+
+                    for (String uid : uniqueIds) {
                         String operator = "=";
-                        currentId = uid;
-                        if(uid.contains("*")) {
+                        String currentId = uid;
+
+                        // Support ILIKE via wildcard
+                        if (uid.contains("*")) {
                             operator = "ILIKE";
-                            currentId = uid.replaceAll("\\*","%");
+                            currentId = uid.replace("*", "%");
                         }
 
-                        sb.append("(").append(tableName).append(".data->'system@id'->>'uniqueID') "+operator+" '").append(currentId).append("'");
-                        if(++i < uniqueIds.size()) {
+                        sb.append("(")
+                                .append(tableName).append(".data->'system@id'->>'uniqueID' ")
+                                .append(operator).append(" '").append(currentId).append("'");
+
+                        if (systemFilter.includeMembers()) {
+                            sb.append(" OR s.parentid IN (SELECT id FROM ")
+                                    .append(sysDescTableName)
+                                    .append(" WHERE data->>'uniqueId' ")
+                                    .append(operator)
+                                    .append(" '").append(currentId).append("')");
+                        }
+
+                        sb.append(")");
+
+                        if (++i < uniqueIds.size()) {
                             sb.append(" OR ");
                         }
                     }
+
                     sb.append(")");
                     addCondition(sb.toString());
                 }
