@@ -44,7 +44,7 @@ public abstract class BaseCommandStatusFilterQuery<F extends FilterQueryGenerato
 
     protected void handleStatusCodes(Set<ICommandStatus.CommandStatusCode> statusCodes) {
         if(statusCodes != null && !statusCodes.isEmpty()) {
-            addCondition("("+this.tableName+".data->>'statusCode') in (" +
+            addCondition("("+this.tableName+".statusCode) in (" +
                     statusCodes.stream().map(name -> "'"+name.name()+"'").collect(Collectors.joining(",")) +
                     ")");
         }

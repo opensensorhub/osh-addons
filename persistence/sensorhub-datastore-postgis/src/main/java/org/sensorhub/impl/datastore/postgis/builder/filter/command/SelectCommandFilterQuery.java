@@ -35,7 +35,7 @@ public class SelectCommandFilterQuery extends BaseCommandFilterQuery<SelectFilte
                 filterQueryGenerator.addOrderBy(this.tableName + ".commandstreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".issuetime DESC ");
             } else {
-                addCondition(this.tableName + "." + ISSUE_TIME + "::timestamptz BETWEEN " +
+                addCondition(this.tableName + "." + ISSUE_TIME + "::timestamp BETWEEN " +
                         "'" + temporalFilter.getMin().toString() + "' AND '" + temporalFilter.getMax().toString() + "'");
             }
         }
@@ -60,7 +60,7 @@ public class SelectCommandFilterQuery extends BaseCommandFilterQuery<SelectFilte
             Asserts.checkNotNull(this.commandStatusTableName, "commandStatusTableName should not be null");
 
             this.filterQueryGenerator.addInnerJoin(
-                    this.commandStatusTableName+" ON ("+this.tableName+".id) = ("+this.commandStatusTableName+".data->'command@id'->'id')::bigint");
+                    this.commandStatusTableName+" ON ("+this.tableName+".id) = ("+this.commandStatusTableName+".commandID)::bigint");
             SelectCommandStatusFilterQuery commandStatusFilterQuery = new SelectCommandStatusFilterQuery(this.commandStatusTableName, filterQueryGenerator);
             commandStatusFilterQuery.setCommandStatusTableName(this.tableName);
             commandStatusFilterQuery.setSysDescTableName(this.sysDescTableName);

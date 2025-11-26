@@ -6,6 +6,7 @@ import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.impl.datastore.postgis.BatchJob;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
+import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderObsStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +28,11 @@ public class PostgisBatchObsStoreImpl extends PostgisObsStoreImpl {
         super(url, dbName, login, password, dataStoreName,idScope, dsIdProviderType);
     }
 
+
+    public PostgisBatchObsStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
+                                    int idScope, IdProviderType dsIdProviderType, QueryBuilderObsStore queryBuilderObsStore) {
+        super(url, dbName, login, password, dataStoreName,idScope, dsIdProviderType,queryBuilderObsStore);
+    }
 
 
     @Override

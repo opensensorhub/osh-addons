@@ -62,7 +62,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
     protected void init(String url, String dbName, String login, String password) {
         super.init(url,dbName,login,password,new String[]{
                 queryBuilder.createTableQuery(),
-                queryBuilder.createDataIndexQuery(),
+//                queryBuilder.createDataIndexQuery(),
                 queryBuilder.createCommandStreamIndexQuery(),
                 queryBuilder.createIssueTimeIndexQuery(),
                 queryBuilder.createSenderIdIndexQuery(),
@@ -86,9 +86,11 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
                 new IteratorResultSet<>(
                         queryStr,
                         connectionManager,
+                        1000,
                         filter.getLimit(),
                         (resultSet) -> resultSetToEntry(resultSet, fields),
-                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
+                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())),
+                        filter.getValuePredicate() != null);
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
     }
 
@@ -117,7 +119,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
                 }
             }
             // required
-            Timestamp issueTimestamp = resultSet.getTimestamp(String.valueOf(ISSUE_TIME));
+            Timestamp issueTimestamp = resultSet.getTimestamp(String.valueOf(ISSUE_TIME), UTC_LOCAL);
             if (!resultSet.wasNull()) {
                 commandDataBuilder = commandDataBuilder.withIssueTime(issueTimestamp.toInstant());
             }
@@ -183,7 +185,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
 
                 // insert issueTime as timestamp
                 if (cmd.getIssueTime() != null) {
-                    preparedStatement.setTimestamp(4, Timestamp.from(cmd.getIssueTime()));
+                    preparedStatement.setTimestamp(4, Timestamp.from(cmd.getIssueTime()),UTC_LOCAL);
                 } else {
                     preparedStatement.setNull(4, Types.TIMESTAMP_WITH_TIMEZONE);
                 }
@@ -253,7 +255,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
                         cmdDataBuilder = cmdDataBuilder.withSender(senderId);
                     }
 
-                    Timestamp issueTimestamp = resultSet.getTimestamp(String.valueOf(ISSUE_TIME));
+                    Timestamp issueTimestamp = resultSet.getTimestamp(String.valueOf(ISSUE_TIME), UTC_LOCAL);
                     if (!resultSet.wasNull()) {
                         cmdDataBuilder = cmdDataBuilder.withIssueTime(issueTimestamp.toInstant());
                     }
@@ -289,7 +291,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
                 }
 
                 if (value.getIssueTime() != null) {
-                    preparedStatement.setTimestamp(4, Timestamp.from(value.getIssueTime()));
+                    preparedStatement.setTimestamp(4, Timestamp.from(value.getIssueTime()), UTC_LOCAL);
                 } else {
                     preparedStatement.setNull(4, Types.TIMESTAMP_WITH_TIMEZONE);
                 }

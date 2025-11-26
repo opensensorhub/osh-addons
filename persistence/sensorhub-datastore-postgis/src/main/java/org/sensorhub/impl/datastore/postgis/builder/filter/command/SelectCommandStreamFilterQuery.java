@@ -46,7 +46,7 @@ public class SelectCommandStreamFilterQuery extends FilterQuery<SelectFilterQuer
 
     protected  void handleControlInputNames(SortedSet<String> names) {
         if (names != null && !names.isEmpty()) {
-            addCondition("("+this.tableName+".data->>'name') in (" +
+            addCondition("("+this.tableName+".data->>'controlInputName') in (" +
                     names.stream().map(name -> "'" + name + "'").collect(Collectors.joining(",")) +
                     ")");
         }
@@ -54,24 +54,39 @@ public class SelectCommandStreamFilterQuery extends FilterQuery<SelectFilterQuer
 
     protected void handleValidTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
-            addCondition(tableName+".data->'validTime'->'begin' IS NOT NULL");
             if (temporalFilter.isLatestTime()) {
-                filterQueryGenerator.addDistinct("("+tableName+".data->>'name')");
-                filterQueryGenerator.addDistinct("("+tableName+".data->'system@id'->'internalID'->'id')::bigint");
-                filterQueryGenerator.addOrderBy(tableName+".data->>'name'");
-                filterQueryGenerator.addOrderBy("("+tableName+".data->'system@id'->'internalID'->'id')::bigint");
-                filterQueryGenerator.addOrderBy("("+tableName+".data->'validTime'->>'end')::timestamptz DESC ");
-            } else {
+                filterQueryGenerator.addDistinct("(" + tableName + ".data->>'name')");
+                filterQueryGenerator.addDistinct("(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint");
+                filterQueryGenerator.addOrderBy(tableName + ".data->>'name'");
+                filterQueryGenerator.addOrderBy("(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint");
+                filterQueryGenerator.addOrderBy("(" + tableName + ".data->'validTime'->>'end')::timestamp DESC ");
+            }
+            else if (temporalFilter.isCurrentTime()) {
+                filterQueryGenerator.addDistinct("(" + tableName + ".data->>'name')");
+                filterQueryGenerator.addDistinct("(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint");
+                String sb = "(" +
+                        tableName + ".data->'validTime' IS NULL " +
+                        "OR (" +
+                        tableName + ".data->'validTime'->'begin' IS NOT NULL " +
+                        "AND (" + tableName + ".data->'validTime'->>'begin')::timestamp <= now() " +
+                        "AND ((" + tableName + ".data->'validTime'->>'end') IS NULL " +
+                        "OR (" + tableName + ".data->'validTime'->>'end')::timestamp >= now())" +
+                        ")" +
+                        ")";
+                addCondition(sb);
+            }
+            else {
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
-                String sb = "tstzrange((" +
-                        tableName +
-                        ".data->'validTime'->>'begin')::timestamptz,(" +
-                        tableName +
-                        ".data->'validTime'->>'end')::timestamptz)" +
-                        " && " +
-                        "'[" + min + "," + max + "]'::tstzrange";
+                String sb = "(" +
+                        tableName + ".data->'validTime' IS NULL " +
+                        "OR tsrange((" +
+                        tableName + ".data->'validTime'->>'begin')::timestamp, (" +
+                        tableName + ".data->'validTime'->>'end')::timestamp) " +
+                        PostgisUtils.getOperator(temporalFilter) + " " +
+                        "'[" + min + "," + max + "]'::tsrange" +
+                        ")";
                 addCondition(sb);
             }
         }
@@ -100,34 +115,45 @@ public class SelectCommandStreamFilterQuery extends FilterQuery<SelectFilterQuer
 
     protected void handleSystemFilter(SystemFilter systemFilter) {
         if(systemFilter != null) {
-            if(this.sysDescTableName != null) {
-                // create JOIN
-                // TODO
-                throw new UnsupportedOperationException();
-            } else {
                 // otherwise
-                if (systemFilter.getInternalIDs() != null || systemFilter.getUniqueIDs() != null) {
-                    // handle UNIQUE IDS
-                    if (systemFilter.getUniqueIDs() != null && !systemFilter.getUniqueIDs().isEmpty()) {
-                        String sb = "(" + tableName + ".data->'system@id'->>'uniqueID') in ('" +
-                                String.join("','", systemFilter.getUniqueIDs()) +
-                                "')";
-                        addCondition(sb);
+            if (systemFilter.getInternalIDs() != null || systemFilter.getUniqueIDs() != null) {
+                // handle UNIQUE IDS
+                if (systemFilter.getUniqueIDs() != null && !systemFilter.getUniqueIDs().isEmpty()) {
+                    String sb = "(" + tableName + ".data->'system@id'->>'uniqueID') in ('" +
+                            String.join("','", systemFilter.getUniqueIDs()) +
+                            "')";
+                    addCondition(sb);
+                }
+
+                // handle internal IDS
+                if (systemFilter.getInternalIDs() != null && !systemFilter.getInternalIDs().isEmpty()) {
+                    String joinedIds = systemFilter.getInternalIDs().stream()
+                            .map(bigId -> String.valueOf(bigId.getIdAsLong()))
+                            .collect(Collectors.joining(","));
+
+                    StringBuilder sb = new StringBuilder("(");
+
+                    if (systemFilter.includeMembers()) {
+                        // Use join
+                        addJoin(sysDescTableName + " s ON (" + tableName +
+                                ".data->'system@id'->'internalID'->>'id')::bigint = s.id");
+
+                        sb.append("s.id IN (").append(joinedIds).append(")")
+                                .append(" OR s.parentid IN (").append(joinedIds).append(")");
+                    } else {
+                        sb.append("(").append(tableName)
+                                .append(".data->'system@id'->'internalID'->>'id')::bigint IN (")
+                                .append(joinedIds).append(")");
                     }
 
-                    // handle internal IDS
-                    if (systemFilter.getInternalIDs() != null && !systemFilter.getInternalIDs().isEmpty()) {
-                        String sb = "(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint in (" +
-                                systemFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
-                                ")";
-                        addCondition(sb);
-                    }
+                    sb.append(")");
+                    addCondition(sb.toString());
                 }
-                if (systemFilter.getParentFilter() != null || systemFilter.getProcedureFilter() != null
-                        || systemFilter.getDataStreamFilter() != null || systemFilter.getFullTextFilter() != null
-                        || systemFilter.getLocationFilter() != null || systemFilter.getValidTime() != null) {
-                    throw new IllegalStateException("No linked system store");
-                }
+            }
+            if (systemFilter.getParentFilter() != null || systemFilter.getProcedureFilter() != null
+                    || systemFilter.getDataStreamFilter() != null || systemFilter.getFullTextFilter() != null
+                    || systemFilter.getLocationFilter() != null || systemFilter.getValidTime() != null) {
+                throw new IllegalStateException("No linked system store");
             }
         }
     }

@@ -42,7 +42,10 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
 
             sb.append(" FROM ").append(this.tableName);
         }
-
+        if (this.joins != null && !this.joins.isEmpty()) {
+            sb.append(" JOIN ");
+            sb.append(this.joins.stream().collect(Collectors.joining(" JOIN ")));
+        }
         if (this.innerJoin != null && !this.innerJoin.isEmpty()) {
             // add Inner join and its corresponding conditions
             sb.append(" INNER JOIN ");
@@ -80,6 +83,10 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
         sb.append("SELECT COUNT(*) ");
         sb.append(" FROM ").append(this.tableName);
 
+        if (this.joins != null && !this.joins.isEmpty()) {
+            sb.append(" JOIN ");
+            sb.append(this.joins.stream().collect(Collectors.joining(" JOIN ")));
+        }
         if (this.innerJoin != null && !this.innerJoin.isEmpty()) {
             // add Inner join and its corresponding conditions
             sb.append(" INNER JOIN ");
