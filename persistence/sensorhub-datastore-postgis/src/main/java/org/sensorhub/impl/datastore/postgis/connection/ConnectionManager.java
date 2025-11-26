@@ -2,12 +2,25 @@ package org.sensorhub.impl.datastore.postgis.connection;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class ConnectionManager {
+
+    private static final Logger log = LoggerFactory.getLogger(ConnectionManager.class);
+
+    public enum BatchStatus {
+        SUCCESS,        // code >= 0
+        SUCCESS_UNKNOWN, // code == -2
+        FAILED           // code == -3
+    }
 
     private String url;
     private String dbName;
@@ -94,7 +107,15 @@ public class ConnectionManager {
                     for(String sqlQuery: batchList) {
                         statement.addBatch(sqlQuery);
                     }
-                    statement.executeBatch();
+                    int rows[] = statement.executeBatch();
+                    Map<BatchStatus, Long> summary =
+                            Arrays.stream(rows)
+                                    .mapToObj(ConnectionManager::classify)
+                                    .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
+                    long success = summary.getOrDefault(BatchStatus.SUCCESS, 0L);
+                    long successUnknown = summary.getOrDefault(BatchStatus.SUCCESS_UNKNOWN, 0L);
+                    long failed = summary.getOrDefault(BatchStatus.FAILED, 0L);
+                    log.info("Batch execution: SUCCESS={}, SUCCESS_UNKNOWN={}, FAILED={}",success,successUnknown,failed);
                     batchList.clear();
                 }
             } catch (SQLException e) {
@@ -113,5 +134,11 @@ public class ConnectionManager {
 
     public int getBatchSize() {
         return batchSize;
+    }
+
+    protected static BatchStatus classify(int code) {
+        if (code >= 0) return BatchStatus.SUCCESS;
+        if (code == Statement.SUCCESS_NO_INFO) return BatchStatus.SUCCESS_UNKNOWN;
+        return BatchStatus.FAILED; // Statement.EXECUTE_FAILED (-3)
     }
 }
