@@ -81,6 +81,7 @@ public class ConnectionManager {
 
     public void addBatch(String sqlQuery) {
         batchList.add(sqlQuery);
+        currentBatchSize.getAndIncrement();
     }
 
     public void close() {
@@ -100,26 +101,28 @@ public class ConnectionManager {
         }
     }
     protected void commitBatch() {
-        // block list access
-        synchronized (batchList) {
-            try(Connection connection = this.getConnection()) {
-                try(Statement statement = connection.createStatement()) {
-                    for(String sqlQuery: batchList) {
-                        statement.addBatch(sqlQuery);
+        if(currentBatchSize.get() > 0 ) {
+            // block list access
+            synchronized (batchList) {
+                try (Connection connection = this.getConnection()) {
+                    try (Statement statement = connection.createStatement()) {
+                        for (String sqlQuery : batchList) {
+                            statement.addBatch(sqlQuery);
+                        }
+                        int rows[] = statement.executeBatch();
+                        Map<BatchStatus, Long> summary =
+                                Arrays.stream(rows)
+                                        .mapToObj(ConnectionManager::classify)
+                                        .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
+                        long success = summary.getOrDefault(BatchStatus.SUCCESS, 0L);
+                        long successUnknown = summary.getOrDefault(BatchStatus.SUCCESS_UNKNOWN, 0L);
+                        long failed = summary.getOrDefault(BatchStatus.FAILED, 0L);
+                        log.info("Batch execution: SUCCESS={}, SUCCESS_UNKNOWN={}, FAILED={}", success, successUnknown, failed);
+                        batchList.clear();
                     }
-                    int rows[] = statement.executeBatch();
-                    Map<BatchStatus, Long> summary =
-                            Arrays.stream(rows)
-                                    .mapToObj(ConnectionManager::classify)
-                                    .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
-                    long success = summary.getOrDefault(BatchStatus.SUCCESS, 0L);
-                    long successUnknown = summary.getOrDefault(BatchStatus.SUCCESS_UNKNOWN, 0L);
-                    long failed = summary.getOrDefault(BatchStatus.FAILED, 0L);
-                    log.info("Batch execution: SUCCESS={}, SUCCESS_UNKNOWN={}, FAILED={}",success,successUnknown,failed);
-                    batchList.clear();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
                 }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
             }
         }
     }
