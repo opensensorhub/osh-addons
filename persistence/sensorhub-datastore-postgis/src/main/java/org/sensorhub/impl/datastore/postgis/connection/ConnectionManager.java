@@ -58,9 +58,9 @@ public class ConnectionManager {
         config.setConnectionTimeout(1000 * 60 * 5); // 5 minutes
 
 //                        config.setMaximumPoolSize(200_000);
-//        config.addDataSourceProperty("cachePrepStmts", "true");
-//        config.addDataSourceProperty("prepStmtCacheSize", "250");
-//        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
         config.addDataSourceProperty("tcpKeepAlive","true");
         config.addDataSourceProperty("socketTimeout","60");
         config.addDataSourceProperty("networkTimeout","60");
