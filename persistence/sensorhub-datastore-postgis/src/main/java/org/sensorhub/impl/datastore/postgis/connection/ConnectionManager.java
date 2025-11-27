@@ -6,10 +6,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 public class ConnectionManager {
@@ -26,11 +25,11 @@ public class ConnectionManager {
     private String dbName;
     private String login;
     private String password;
-    private static HikariDataSource hikariDataSourceInstance = null;
+    private HikariDataSource hikariDataSourceInstance = null;
     private int batchSize = 100;
-    protected AtomicInteger currentBatchSize = new AtomicInteger(0);
-    protected final CopyOnWriteArrayList<String> batchList = new CopyOnWriteArrayList<>();
-
+    protected final ConcurrentLinkedDeque<String> batchList = new ConcurrentLinkedDeque<>();
+    protected final ReentrantLock transactionLock = new ReentrantLock();
+    protected volatile boolean isTransactionRunning = false;
     /**
      * Use separate ThreadSafeBatchExecutor to execute batch queries
      * @param url
@@ -60,14 +59,28 @@ public class ConnectionManager {
         config.setConnectionTimeout(1000 * 60 * 5); // 5 minutes
 
 //                        config.setMaximumPoolSize(200_000);
-        config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+//        config.addDataSourceProperty("cachePrepStmts", "true");
+//        config.addDataSourceProperty("prepStmtCacheSize", "250");
+//        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
         config.addDataSourceProperty("tcpKeepAlive","true");
         config.addDataSourceProperty("socketTimeout","60");
         config.addDataSourceProperty("networkTimeout","60");
         config.setAutoCommit(true);
         return new HikariDataSource(config);
+    }
+
+    private Connection getJavaConnection() {
+        try {
+            String urlPostgres = "jdbc:postgresql://" + url + "/" + dbName;
+            Properties props = new Properties();
+            props.setProperty("user", login);
+            props.setProperty("password", password);
+            Connection connection =  DriverManager.getConnection(urlPostgres, props);
+            connection.setAutoCommit(true);
+            return connection;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Connection getConnection()  {
@@ -81,7 +94,6 @@ public class ConnectionManager {
 
     public void addBatch(String sqlQuery) {
         batchList.add(sqlQuery);
-        currentBatchSize.getAndIncrement();
     }
 
     public void close() {
@@ -95,36 +107,46 @@ public class ConnectionManager {
     }
 
     public void tryCommit() {
-        if (currentBatchSize.get() >= getBatchSize()) {
+        if (batchList.size() >= getBatchSize()) {
             this.commit();
-            currentBatchSize.getAndSet(0);
         }
     }
     protected void commitBatch() {
-        if(currentBatchSize.get() > 0 ) {
-            // block list access
-            synchronized (batchList) {
-                try (Connection connection = this.getConnection()) {
-                    try (Statement statement = connection.createStatement()) {
-                        for (String sqlQuery : batchList) {
-                            statement.addBatch(sqlQuery);
-                        }
-                        int rows[] = statement.executeBatch();
-                        Map<BatchStatus, Long> summary =
-                                Arrays.stream(rows)
-                                        .mapToObj(ConnectionManager::classify)
-                                        .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
-                        long success = summary.getOrDefault(BatchStatus.SUCCESS, 0L);
-                        long successUnknown = summary.getOrDefault(BatchStatus.SUCCESS_UNKNOWN, 0L);
-                        long failed = summary.getOrDefault(BatchStatus.FAILED, 0L);
-                        log.info("Batch execution: SUCCESS={}, SUCCESS_UNKNOWN={}, FAILED={}", success, successUnknown, failed);
-                        batchList.clear();
-                    }
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+        if(batchList.isEmpty()) {
+            return;
         }
+        List<String> queries;
+        synchronized (batchList) {
+            queries = new ArrayList<>(batchList);
+            batchList.clear();
+        }
+
+        int rows[] = null;
+        // block list access
+        transactionLock.lock();
+        try (Connection connection = this.getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                for (String sqlQuery : queries) {
+                    statement.addBatch(sqlQuery);
+                }
+                rows = statement.executeBatch();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            transactionLock.unlock();
+        }
+        if (rows != null) {
+            Map<BatchStatus, Long> summary =
+                    Arrays.stream(rows)
+                            .mapToObj(ConnectionManager::classify)
+                            .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
+            long success = summary.getOrDefault(BatchStatus.SUCCESS, 0L);
+            long successUnknown = summary.getOrDefault(BatchStatus.SUCCESS_UNKNOWN, 0L);
+            long failed = summary.getOrDefault(BatchStatus.FAILED, 0L);
+            log.info("Batch execution: SUCCESS={}, SUCCESS_UNKNOWN={}, FAILED={}", success, successUnknown, failed);
+        }
+
     }
     public void commit() {
         try {
