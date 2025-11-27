@@ -53,7 +53,8 @@ public class ConnectionManager {
         config.setJdbcUrl("jdbc:postgresql://" + url + "/" + dbName);
         config.setUsername(login);
         config.setPassword(password);
-        config.setMaximumPoolSize(5);
+        // TODO: Set using postgis config
+        config.setMaximumPoolSize(50);
         config.setConnectionTimeout(1000 * 60 * 5); // 5 minutes
 
 //                        config.setMaximumPoolSize(200_000);

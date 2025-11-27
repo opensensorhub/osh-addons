@@ -61,7 +61,7 @@ public class SelectObsStatsFilterQuery extends BaseObsStatsFilterQuery<SelectFil
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
                 addCondition(
-                        "tstzrange('" + temporalFilter.getMin() + "','" + temporalFilter.getMax() + "', '[]') @> " + this.tableName + ".phenomenonTime");
+                        "tsrange('" + temporalFilter.getMin() + "','" + temporalFilter.getMax() + "', '[]') @> " + this.tableName + ".phenomenonTime");
             }
         }
     }
@@ -74,7 +74,7 @@ public class SelectObsStatsFilterQuery extends BaseObsStatsFilterQuery<SelectFil
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
                 addCondition(
-                        "tstzrange('" + temporalFilter.getMin() + "','" + temporalFilter.getMax() + "', '[]') @> " + this.tableName + ".resultTime");
+                        "tsrange('" + temporalFilter.getMin() + "','" + temporalFilter.getMax() + "', '[]') @> " + this.tableName + ".resultTime");
             }
         }
     }

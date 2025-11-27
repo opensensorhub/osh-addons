@@ -26,7 +26,7 @@ import org.sensorhub.api.datastore.procedure.IProcedureStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 
 public abstract class QueryBuilder {
-    private final String tableName;
+    protected final String tableName;
 
     protected IDataStreamStore dataStreamStore;
     protected IProcedureStore procedureStore;

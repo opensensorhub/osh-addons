@@ -45,13 +45,16 @@ public class SwScaler extends Coder<AVFrame, AVFrame> {
 
     @Override
     protected void sendInPacket() {
-        inPacket = inPackets.poll();
-        //pts++;
-        //inPacket.pts(pts);
-        sws_scale_frame(swsContext, outPacket, inPacket);
-        //avcodec_send_frame(codec_ctx, av_frame_clone(inPacket));
-        //av_frame_free(inPacket);
-
+        synchronized (inPackets) {
+            inPacket = inPackets.poll();
+            if (inPacket == null || outPacket == null)
+                return;
+            //pts++;
+            //inPacket.pts(pts);
+            sws_scale_frame(swsContext, outPacket, inPacket);
+            //avcodec_send_frame(codec_ctx, av_frame_clone(inPacket));
+            //av_frame_free(inPacket);
+        }
     }
 
     @Override

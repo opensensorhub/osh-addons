@@ -54,7 +54,7 @@ public class RemoveObsFilterQuery extends BaseObsFilterQuery<RemoveFilterQueryGe
                 throw new UnsupportedOperationException("PhenomenonTimeFilter does not support Latest for REMOVE operation");
             } else {
                 addCondition(
-                        "tstzrange('"+temporalFilter.getMin()+"','"+temporalFilter.getMax()+"', '[]') @> "+this.tableName+".phenomenonTime");
+                        "tsrange('"+temporalFilter.getMin()+"','"+temporalFilter.getMax()+"', '[]') @> "+this.tableName+".phenomenonTime");
             }
         }
     }
@@ -67,7 +67,7 @@ public class RemoveObsFilterQuery extends BaseObsFilterQuery<RemoveFilterQueryGe
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
                 addCondition(
-                        "tstzrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
+                        "tsrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
             }
         }
     }

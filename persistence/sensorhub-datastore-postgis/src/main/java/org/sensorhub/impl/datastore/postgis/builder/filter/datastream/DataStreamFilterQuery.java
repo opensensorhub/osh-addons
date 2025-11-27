@@ -126,10 +126,27 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
 
                 // handle internal IDS
                 if (systemFilter.getInternalIDs() != null && !systemFilter.getInternalIDs().isEmpty()) {
-                    String sb = "(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint in (" +
-                            systemFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
-                            ")";
-                    addCondition(sb);
+                    String joinedIds = systemFilter.getInternalIDs().stream()
+                            .map(bigId -> String.valueOf(bigId.getIdAsLong()))
+                            .collect(Collectors.joining(","));
+
+                    StringBuilder sb = new StringBuilder("(");
+
+                    if (systemFilter.includeMembers()) {
+                        // Use join
+                        addJoin(sysDescTableName + " s ON (" + tableName +
+                                ".data->'system@id'->'internalID'->>'id')::bigint = s.id");
+
+                        sb.append("s.id IN (").append(joinedIds).append(")")
+                                .append(" OR s.parentid IN (").append(joinedIds).append(")");
+                    } else {
+                        sb.append("(").append(tableName)
+                                .append(".data->'system@id'->'internalID'->>'id')::bigint IN (")
+                                .append(joinedIds).append(")");
+                    }
+
+                    sb.append(")");
+                    addCondition(sb.toString());
                 }
             }
             if (systemFilter.getParentFilter() != null || systemFilter.getProcedureFilter() != null

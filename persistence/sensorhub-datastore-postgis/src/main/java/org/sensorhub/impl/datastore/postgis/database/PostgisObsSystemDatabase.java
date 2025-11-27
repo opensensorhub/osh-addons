@@ -53,21 +53,21 @@ import java.util.concurrent.Callable;
  */
 public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDatabaseConfig> implements IObsSystemDatabase, IProcedureDatabase, IObsSystemDatabaseModule<PostgisObsSystemDatabaseConfig> {
 
-    final static String SYSTEM_TABLE_NAME = "sys";
-    final static String FOI_TABLE_NAME = "foi";
-    final static String OBS_TABLE_NAME = "obs";
-    final static String CMD_TABLE_NAME = "cmd";
-    final static String PROC_TABLE_NAME = "proc";
-    final static String DEPLOY_TABLE_NAME = "deploy";
+    protected final static String SYSTEM_TABLE_NAME = "sys";
+    protected final static String FOI_TABLE_NAME = "foi";
+    protected final static String OBS_TABLE_NAME = "obs";
+    protected final static String CMD_TABLE_NAME = "cmd";
+    protected final static String PROC_TABLE_NAME = "proc";
+    protected final static String DEPLOY_TABLE_NAME = "deploy";
 
-    PostgisCommandStoreImpl commandStore;
-    PostgisObsStoreImpl obsStore;
-    PostgisProcedureStoreImpl procedureStore;
-    PostgisFoiStoreImpl foiStore;
-    PostgisSystemDescStoreImpl systemDescStore;
-    PostgisDeploymentStoreImpl deploymentStore;
+    protected PostgisCommandStoreImpl commandStore;
+    protected PostgisObsStoreImpl obsStore;
+    protected PostgisProcedureStoreImpl procedureStore;
+    protected PostgisFoiStoreImpl foiStore;
+    protected PostgisSystemDescStoreImpl systemDescStore;
+    protected PostgisDeploymentStoreImpl deploymentStore;
 
-    private TimerTask timerTask;
+    protected TimerTask timerTask;
 
     @Override
     protected void beforeInit() throws SensorHubException {
@@ -85,12 +85,12 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
 
             var idScope = getDatabaseNum() != null ? getDatabaseNum() : 0;
 
-            systemDescStore =  new PostgisSystemDescStoreImpl(url, dbName, login, password, SYSTEM_TABLE_NAME, idScope, idProviderType, false);
-            deploymentStore = new PostgisDeploymentStoreImpl(url, dbName, login, password, DEPLOY_TABLE_NAME, idScope, idProviderType, false);
-            foiStore = new PostgisFoiStoreImpl(url, dbName, login, password, FOI_TABLE_NAME, idScope, idProviderType, config.useBatch);
-            procedureStore = new PostgisProcedureStoreImpl(url, dbName, login, password, PROC_TABLE_NAME, idScope, idProviderType, false);
-            obsStore = this.getObsStore(url, dbName, login, password, OBS_TABLE_NAME, idScope, idProviderType);
-            commandStore = new PostgisCommandStoreImpl(url, dbName, login, password, CMD_TABLE_NAME, idScope, idProviderType, false);
+            systemDescStore =  this.createSystemStore(url, dbName, login, password, SYSTEM_TABLE_NAME, idScope, idProviderType, false);
+            deploymentStore = this.createDeploymentStore(url, dbName, login, password, DEPLOY_TABLE_NAME, idScope, idProviderType, false);
+            foiStore = this.createFoiStore(url, dbName, login, password, FOI_TABLE_NAME, idScope, idProviderType, config.useBatch);
+            procedureStore = this.createProcedureStore(url, dbName, login, password, PROC_TABLE_NAME, idScope, idProviderType, false);
+            obsStore = this.createObsStore(url, dbName, login, password, OBS_TABLE_NAME, idScope, idProviderType, config.useBatch);
+            commandStore = this.createCommandStore(url, dbName, login, password, CMD_TABLE_NAME, idScope, idProviderType, false);
 
             systemDescStore.linkTo(obsStore.getDataStreams());
             systemDescStore.linkTo(procedureStore);
@@ -133,7 +133,36 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
 
     @Override
     protected void beforeStop() {
-        obsStore.close();
+        // Try to close every store separately
+        try {
+            obsStore.close();
+        } catch (Exception ex) {
+            getLogger().warn("Cannot close obsStore");
+        }
+
+        try {
+            foiStore.close();
+        } catch (Exception ex) {
+            getLogger().warn("Cannot close foi");
+        }
+
+        try {
+            deploymentStore.close();
+        } catch (Exception ex) {
+            getLogger().warn("Cannot close deploymentStore");
+        }
+
+        try {
+            procedureStore.close();
+        } catch (Exception ex) {
+            getLogger().warn("Cannot close procedureStore");
+        }
+
+        try {
+            systemDescStore.close();
+        } catch (Exception ex) {
+            getLogger().warn("Cannot close systemDescStore");
+        }
 
         if (hasParentHub() && config.databaseNum != null)
             getParentHub().getDatabaseRegistry().unregister(this);
@@ -143,6 +172,9 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
         }
     }
 
+    protected void closeStore() {
+
+    }
 
     @Override
     protected void doStop() throws SensorHubException {
@@ -225,10 +257,37 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
         return false;
     }
 
-    protected PostgisObsStoreImpl getObsStore(String url, String dbName,String login,String password, String tableName,int idScope, IdProviderType idProviderType) {
-        if(obsStore == null) {
-            obsStore = new PostgisObsStoreImpl(url, dbName, login, password, tableName, idScope, idProviderType);
+    protected PostgisObsStoreImpl createObsStore(String url, String dbName,String login,String password, String tableName,
+                                                 int idScope, IdProviderType idProviderType, boolean useBatch) {
+        if(useBatch) {
+            return new PostgisBatchObsStoreImpl(url, dbName, login, password, tableName, idScope, idProviderType);
+        } else {
+            return new PostgisObsStoreImpl(url, dbName, login, password, tableName, idScope, idProviderType);
         }
-        return obsStore;
+    }
+
+    protected PostgisSystemDescStoreImpl createSystemStore(String url, String dbName,String login,String password, String tableName,
+                                                 int idScope, IdProviderType idProviderType, boolean useBatch) {
+        return new PostgisSystemDescStoreImpl(url, dbName, login, password, tableName, idScope, idProviderType, useBatch);
+    }
+
+    protected PostgisDeploymentStoreImpl createDeploymentStore(String url, String dbName,String login,String password, String tableName,
+                                                     int idScope, IdProviderType idProviderType, boolean useBatch) {
+        return new PostgisDeploymentStoreImpl(url, dbName, login, password, tableName, idScope, idProviderType, useBatch);
+    }
+
+    protected PostgisProcedureStoreImpl createProcedureStore(String url, String dbName,String login,String password, String tableName,
+                                                   int idScope, IdProviderType idProviderType, boolean useBatch) {
+        return new PostgisProcedureStoreImpl(url, dbName, login, password, tableName, idScope, idProviderType, useBatch);
+    }
+
+    protected PostgisFoiStoreImpl createFoiStore(String url, String dbName,String login,String password, String tableName,
+                                       int idScope, IdProviderType idProviderType, boolean useBatch) {
+        return new PostgisFoiStoreImpl(url, dbName, login, password, tableName, idScope, idProviderType, useBatch);
+    }
+
+    protected PostgisCommandStoreImpl createCommandStore(String url, String dbName,String login,String password, String tableName,
+                                       int idScope, IdProviderType idProviderType, boolean useBatch) {
+        return new PostgisCommandStoreImpl(url, dbName, login, password, tableName, idScope, idProviderType, useBatch);
     }
 }

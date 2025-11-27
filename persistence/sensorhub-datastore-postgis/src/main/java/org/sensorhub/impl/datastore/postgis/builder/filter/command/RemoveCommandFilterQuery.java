@@ -33,7 +33,7 @@ public class RemoveCommandFilterQuery extends BaseCommandFilterQuery<RemoveFilte
             if (temporalFilter.isLatestTime()) {
                throw new UnsupportedOperationException("IssueTimeTemporalFilter not supported into REMOVE");
             } else {
-                addCondition(this.tableName + "." + ISSUE_TIME + "::timestamptz BETWEEN " +
+                addCondition(this.tableName + "." + ISSUE_TIME + "::timestamp BETWEEN " +
                         "'" + temporalFilter.getMin().toString() + "' AND '" + temporalFilter.getMax().toString() + "'");
             }
         }
@@ -60,7 +60,7 @@ public class RemoveCommandFilterQuery extends BaseCommandFilterQuery<RemoveFilte
             Asserts.checkNotNull(this.commandStatusTableName, "commandStatusTableName should not be null");
 
             this.filterQueryGenerator.addUsing(this.commandStatusTableName);
-            this.filterQueryGenerator.addCondition("("+this.tableName+".id) = ("+this.commandStatusTableName+".data->'command@id'->'id')::bigint");
+            this.filterQueryGenerator.addCondition("("+this.tableName+".id) = ("+this.commandStatusTableName+".commandID)::bigint");
 
             RemoveCommandStatusFilterQuery commandStatusFilterQuery = new RemoveCommandStatusFilterQuery(this.commandStatusTableName, filterQueryGenerator);
             commandStatusFilterQuery.setCommandStatusTableName(this.tableName);

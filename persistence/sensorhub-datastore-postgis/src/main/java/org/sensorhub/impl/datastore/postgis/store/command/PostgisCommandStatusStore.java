@@ -15,28 +15,36 @@
 package org.sensorhub.impl.datastore.postgis.store.command;
 
 import org.postgresql.util.PGobject;
-import org.sensorhub.api.command.ICommandStatus;
-import org.sensorhub.api.command.ICommandStreamInfo;
+import org.sensorhub.api.command.*;
 import org.sensorhub.api.common.BigId;
+import org.sensorhub.api.common.BigIdLong;
 import org.sensorhub.api.datastore.DataStoreException;
+import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.command.*;
+import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderCommandStatusStore;
+import org.sensorhub.impl.datastore.postgis.store.feature.PostgisFeatureKey;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vast.util.TimeExtent;
 
 import java.io.IOException;
 import java.sql.*;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static org.sensorhub.api.datastore.command.ICommandStatusStore.CommandStatusField.COMMAND_ID;
+import static org.sensorhub.api.datastore.command.ICommandStatusStore.CommandStatusField.*;
+import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.FOI_ID;
 
 
 public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandStatusStore> implements ICommandStatusStore {
@@ -82,14 +90,18 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
                 new IteratorResultSet<>(
                         queryStr,
                         connectionManager,
+                        1000,
                         filter.getLimit(),
                         (resultSet) -> resultSetToEntry(resultSet, fields),
-                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
+                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())),
+                        filter.getValuePredicate() != null);
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
     }
 
     private Entry<BigId, ICommandStatus> resultSetToEntry(ResultSet resultSet, Set<ICommandStatusStore.CommandStatusField> fields) {
         try {
+            var cmdStatusBuilder = new CommandStatus.Builder();
+
             BigId id = BigId.fromLong(idScope, resultSet.getLong("id"));
             boolean noFields = fields != null && !fields.isEmpty();
             BigId commandStreamId = null;
@@ -97,27 +109,60 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
                 long commandIdAsLong = resultSet.getLong(String.valueOf(COMMAND_ID));
                 if (!resultSet.wasNull()) {
                     var commandId = BigId.fromLong(idScope, commandIdAsLong);
+                    cmdStatusBuilder.withCommand(commandId);
                     commandStreamId = commandStore.get(commandId).getCommandStreamID();
                 }
             }
 
-            ICommandStatus cmdStatus = null;
-            if (commandStreamId != null) {
-                ICommandStreamInfo commandStreamInfo = commandStore.getCommandStreams().get(new CommandStreamKey(commandStreamId));
-                cmdStatus = SerializerUtils.readICommandStatusFromJson(resultSet.getString("data"), commandStreamInfo);
-            } else {
-                cmdStatus = SerializerUtils.readICommandStatusFromJson(resultSet.getString("data"));
+            int progress = resultSet.getInt("progress");
+            if (progress >= -1) {
+                cmdStatusBuilder.withProgress(progress);
             }
-            return Map.entry(id, cmdStatus);
+
+            // required
+            Timestamp reportTime = resultSet.getTimestamp(String.valueOf(REPORT_TIME));
+            if (!resultSet.wasNull()) {
+                cmdStatusBuilder.withReportTime(reportTime.toInstant());
+            }
+
+            String statusCode = resultSet.getString(String.valueOf(STATUS_CODE));
+            if (!resultSet.wasNull()) {
+                cmdStatusBuilder.withStatusCode(ICommandStatus.CommandStatusCode.valueOf(statusCode));
+            }
+
+            if (!noFields || fields.contains(EXEC_TIME)) {
+                PGobject pgRange = (PGobject) resultSet.getObject(String.valueOf(EXEC_TIME));
+                if (!resultSet.wasNull()) {
+                    Instant[] execTime = getInstantArray(pgRange);
+                    cmdStatusBuilder.withExecutionTime(TimeExtent.period(execTime[0], execTime[1]));
+                }
+            }
+
+            String message = resultSet.getString("message");
+            if (!resultSet.wasNull() && message != null && !message.isEmpty()) {
+                cmdStatusBuilder.withMessage(message);
+            }
+
+            String resultJson = resultSet.getString("result");
+            if (!resultSet.wasNull() && resultJson != null && !resultJson.isBlank()) {
+                ICommandResult cmdResult;
+                if (commandStreamId != null) {
+                    ICommandStreamInfo commandStreamInfo = commandStore.getCommandStreams().get(new CommandStreamKey(commandStreamId));
+                    cmdResult = SerializerUtils.readICommandResultJson(resultJson, commandStreamInfo);
+                } else {
+                    cmdResult = SerializerUtils.readICommandResultJson(resultJson);
+                }
+                cmdStatusBuilder.withResult(cmdResult);
+            }
+
+            return Map.entry(id, cmdStatusBuilder.build());
         } catch (Exception ex) {
             throw new RuntimeException("Cannot parse resultSet to CommandStatus",ex);
         }
     }
 
     @Override
-    public void commit() throws DataStoreException {
-
-    }
+    public void commit() throws DataStoreException {}
 
     protected ICommandStreamInfo getContext(ICommandStatus status) {
         var cmdId = status.getCommandID();
@@ -126,29 +171,81 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
         return commandStore.getCommandStreams().get(cmdStreamKey);
     }
 
+    protected PGobject createPGObjectExecTime(TimeExtent timeExtent) throws SQLException {
+        PGobject range = new PGobject();
+        range.setType("tsrange");  // type PostgreSQL
+        String startRangeValue;
+        String endRangeValue;
+
+        if (timeExtent == null) {
+            startRangeValue = "-infinity";
+            endRangeValue = "infinity";
+        } else if (timeExtent.beginsNow()) {
+            startRangeValue = "-infinity";
+            endRangeValue = PostgisUtils.writeInstantToString(timeExtent.end(), false);
+        } else if (timeExtent.endsNow()) {
+            endRangeValue = "infinity";
+            startRangeValue = PostgisUtils.writeInstantToString(timeExtent.begin(), false);
+        } else {
+            startRangeValue = PostgisUtils.writeInstantToString(timeExtent.begin(), false);
+            endRangeValue = PostgisUtils.writeInstantToString(timeExtent.end(), false);
+        }
+        range.setValue("[\"" + startRangeValue + "\",\"" + endRangeValue + "\"]");
+        return range;
+    }
+
     @Override
     public BigId add(ICommandStatus rec) {
         try (Connection connection1 = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection1.prepareStatement(queryBuilder.insertCommandQuery(), Statement.RETURN_GENERATED_KEYS)) {
-                // insert Object
-                String objectAsJson;
-                // Use context to serialize inline records
-                if (rec.getResult() != null &&
-                        rec.getResult().getInlineRecords() != null &&
-                        !rec.getResult().getInlineRecords().isEmpty()) {
-                    var context = getContext(rec);
-                    objectAsJson = SerializerUtils.writeICommandStatusToJson(rec, context);
-                } else {
-                    objectAsJson = SerializerUtils.writeICommandStatusToJson(rec);
-                }
-
+                // command ID
                 preparedStatement.setLong(1, rec.getCommandID().getIdAsLong());
 
-                PGobject jsonObject = new PGobject();
-                jsonObject.setType("json");
-                jsonObject.setValue(objectAsJson);
+                // progress
+                preparedStatement.setInt(2, rec.getProgress());
 
-                preparedStatement.setObject(2, jsonObject);
+                // report time
+                preparedStatement.setTimestamp(3, Timestamp.from(rec.getReportTime()));
+
+                // status code
+                preparedStatement.setString(4, String.valueOf(rec.getStatusCode()));
+
+                // exec time
+                if (rec.getExecutionTime() != null) {
+                    preparedStatement.setObject(5, createPGObjectExecTime(rec.getExecutionTime()));
+                } else {
+                    preparedStatement.setNull(5, Types.OTHER);
+                }
+
+                // message
+                if (rec.getMessage() != null) {
+                    preparedStatement.setString(6,  rec.getMessage());
+                } else {
+                    preparedStatement.setNull(6, Types.VARCHAR);
+                }
+
+                // command result
+
+                if (rec.getResult() != null) {
+
+                    String objectAsJson;
+                    // Use context to serialize inline records
+                    ICommandResult result = rec.getResult();
+                    if (result.getInlineRecords() != null && !result.getInlineRecords().isEmpty()) {
+                        ICommandStreamInfo csInfo = getContext(rec);
+                        objectAsJson = SerializerUtils.writeICommandResultJson(result, csInfo);
+                    } else {
+                        objectAsJson = SerializerUtils.writeICommandResultJson(result);
+                    }
+
+                    PGobject jsonObject = new PGobject();
+                    jsonObject.setType("json");
+                    jsonObject.setValue(objectAsJson);
+
+                    preparedStatement.setObject(7, jsonObject);
+                } else {
+                    preparedStatement.setNull(7, Types.OTHER);
+                }
 
                 int rows = preparedStatement.executeUpdate();
                 if (rows > 0) {
@@ -170,6 +267,21 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
         }
     }
 
+    public static Instant[] getInstantArray(PGobject pgRange) {
+        String rangeStr = pgRange.getValue();
+        String inner = rangeStr.substring(1, rangeStr.length() - 1);
+        String[] parts = inner.split(",", 2);
+        String startStr = parts[0].trim().replaceAll("\"","").replace(" ", "T");
+        String endStr = parts[0].trim().replaceAll("\"","").replace(" ", "T");
+
+        if (!startStr.endsWith("Z") &&  !endStr.endsWith("Z")) {
+            startStr = startStr + "Z";
+            endStr = endStr + "Z";
+        }
+
+        return new Instant[]{Instant.parse(startStr), Instant.parse(endStr)};
+    }
+
     @Override
     public ICommandStatus get(Object o) {
         if (!(o instanceof BigId)) {
@@ -181,7 +293,52 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
                 preparedStatement.setLong(1, key.getIdAsLong());
                 ResultSet resultSet = preparedStatement.executeQuery();
                 if (resultSet.next()) {
-                    return SerializerUtils.readICommandStatusFromJson(resultSet.getString("data"));
+                    CommandStatus.CommandStatusBuilder<?, ?> cmdStatusBuilder = new CommandStatus.Builder();
+
+                    // command ID
+                    long cmdId = resultSet.getLong(String.valueOf(COMMAND_ID));
+                    cmdStatusBuilder.withCommand(new BigIdLong(commandStore.idScope, cmdId));
+
+                    // progress
+                    int progress = resultSet.getInt("progress");
+                    cmdStatusBuilder.withProgress(!resultSet.wasNull() ? progress : -1);
+
+                    // required
+                    Timestamp reportTime = resultSet.getTimestamp(String.valueOf(REPORT_TIME));
+                    if (!resultSet.wasNull()) {
+                        cmdStatusBuilder.withReportTime(reportTime.toInstant());
+                    }
+
+                    String statusCode = resultSet.getString(String.valueOf(STATUS_CODE));
+                    if (!resultSet.wasNull()) {
+                        cmdStatusBuilder.withStatusCode(ICommandStatus.CommandStatusCode.valueOf(statusCode));
+                    }
+
+                    PGobject pgRange = (PGobject) resultSet.getObject(String.valueOf(EXEC_TIME));
+                    if (!resultSet.wasNull()) {
+                        Instant[] execTime = getInstantArray(pgRange);
+                        cmdStatusBuilder.withExecutionTime(TimeExtent.period(execTime[0], execTime[1]));
+                    }
+
+                    String message = resultSet.getString("message");
+                    if (!resultSet.wasNull() && message != null && !message.isEmpty()) {
+                        cmdStatusBuilder.withMessage(message);
+                    }
+
+                    String resultJson = resultSet.getString("result");
+                    if (!resultSet.wasNull() && resultJson != null && !resultJson.isBlank()) {
+                        ICommandResult cmdResult;
+                        var cmd = commandStore.get(new BigIdLong(commandStore.idScope, cmdId));
+                        if (cmd != null && cmd.getCommandStreamID() != null) {
+                            ICommandStreamInfo commandStreamInfo = commandStore.getCommandStreams().get(new CommandStreamKey(cmd.getCommandStreamID()));
+                            cmdResult = SerializerUtils.readICommandResultJson(resultJson, commandStreamInfo);
+                        } else {
+                            cmdResult = SerializerUtils.readICommandResultJson(resultJson);
+                        }
+                        cmdStatusBuilder.withResult(cmdResult);
+                    }
+
+                    return cmdStatusBuilder.build();
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -193,26 +350,65 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
     }
 
     @Override
-    public ICommandStatus put(BigId key, ICommandStatus value) {
+    public ICommandStatus put(BigId key, ICommandStatus rec) {
         ICommandStatus oldCommand = this.get(key);
         if (oldCommand == null)
             throw new UnsupportedOperationException("put can only be used to update existing entries");
 
         try (Connection connection = this.connectionManager.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateByIdQuery())) {
-                preparedStatement.setLong(2, key.getIdAsLong());
+                // command ID
+                preparedStatement.setLong(1, rec.getCommandID().getIdAsLong());
 
-                String objectAsJson = SerializerUtils.writeICommandStatusToJson(value);
+                // progress
+                preparedStatement.setInt(2, rec.getProgress());
 
-                PGobject jsonObject = new PGobject();
-                jsonObject.setType("json");
-                jsonObject.setValue(objectAsJson);
+                // report time
+                preparedStatement.setTimestamp(3, Timestamp.from(rec.getReportTime()));
 
-                preparedStatement.setObject(1, jsonObject);
+                // status code
+                preparedStatement.setString(4, String.valueOf(rec.getStatusCode()));
+
+                // exec time
+                if (rec.getExecutionTime() != null) {
+                    preparedStatement.setObject(5, createPGObjectExecTime(rec.getExecutionTime()));
+                } else {
+                    preparedStatement.setNull(5, Types.OTHER);
+                }
+
+                // message
+                if (rec.getMessage() != null) {
+                    preparedStatement.setString(6,  rec.getMessage());
+                } else {
+                    preparedStatement.setNull(6, Types.VARCHAR);
+                }
+
+                // command result
+
+                if (rec.getResult() != null) {
+
+                    String objectAsJson;
+                    // Use context to serialize inline records
+                    ICommandResult result = rec.getResult();
+                    if (result.getInlineRecords() != null && !result.getInlineRecords().isEmpty()) {
+                        ICommandStreamInfo csInfo = getContext(rec);
+                        objectAsJson = SerializerUtils.writeICommandResultJson(result, csInfo);
+                    } else {
+                        objectAsJson = SerializerUtils.writeICommandResultJson(result);
+                    }
+
+                    PGobject jsonObject = new PGobject();
+                    jsonObject.setType("json");
+                    jsonObject.setValue(objectAsJson);
+
+                    preparedStatement.setObject(7, jsonObject);
+                } else {
+                    preparedStatement.setNull(7, Types.OTHER);
+                }
 
                 int rows = preparedStatement.executeUpdate();
                 if (rows > 0) {
-                    return value;
+                    return rec;
                 } else {
                     throw new RuntimeException("Cannot update command ");
                 }
