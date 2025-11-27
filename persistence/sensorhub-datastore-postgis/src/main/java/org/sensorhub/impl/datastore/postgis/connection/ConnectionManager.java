@@ -68,20 +68,6 @@ public class ConnectionManager {
         return new HikariDataSource(config);
     }
 
-    private Connection getJavaConnection() {
-        try {
-            String urlPostgres = "jdbc:postgresql://" + url + "/" + dbName;
-            Properties props = new Properties();
-            props.setProperty("user", login);
-            props.setProperty("password", password);
-            Connection connection =  DriverManager.getConnection(urlPostgres, props);
-            connection.setAutoCommit(true);
-            return connection;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public Connection getConnection()  {
         try {
             return hikariDataSourceInstance.getConnection();
