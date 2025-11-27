@@ -42,13 +42,16 @@ public class Encoder extends Coder<AVFrame, AVPacket> {
 
     @Override
     protected void sendInPacket() {
-        inPacket = inPackets.poll();
-        //pts++;
-        //inPacket.pts(pts);
+        synchronized (inPackets) {
+            inPacket = inPackets.poll();
+            if (inPacket == null)
+                return;
+            //pts++;
+            //inPacket.pts(pts);
 
-        avcodec_send_frame(codec_ctx, av_frame_clone(inPacket));
-        //av_frame_free(inPacket);
-
+            avcodec_send_frame(codec_ctx, av_frame_clone(inPacket));
+            //av_frame_free(inPacket);
+        }
     }
 
     @Override
