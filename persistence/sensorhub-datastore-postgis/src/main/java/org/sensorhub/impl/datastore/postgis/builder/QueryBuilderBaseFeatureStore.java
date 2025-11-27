@@ -51,10 +51,8 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
     }
 
     public String insertFeatureByIdQuery() {
-//        return "INSERT INTO "+this.getStoreTableName()+" (id, parentId,"+GEOMETRY+", "+VALID_TIME+", data) " +
-//                "SELECT ?,?,?,?,? WHERE (EXISTS(SELECT 1 from "+this.getStoreTableName()+" where id = ?)) ";
         return "INSERT INTO "+this.getStoreTableName()+" (id, parentId,"+GEOMETRY+", "+VALID_TIME+", data) " +
-                "SELECT ?,?,?,?,?";
+                "SELECT (${1}),(${2}),(${3}),(${4}),(${5})";
     }
 
     public String selectByPrimaryKeyQuery() {
@@ -76,7 +74,7 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
 
     public String addOrUpdateByIdQuery() {
         return this.insertFeatureByIdQuery()+" ON CONFLICT ((data->'properties'->>'uid'), "+VALID_TIME +") DO "+
-                "UPDATE SET "+GEOMETRY+" = ?, " +VALID_TIME+" = ?, data = ?  ";
+                "UPDATE SET "+GEOMETRY+" = (${6}), " +VALID_TIME+" = (${7}), data = (${8})  ";
     }
 
     public String selectExtentQuery() {

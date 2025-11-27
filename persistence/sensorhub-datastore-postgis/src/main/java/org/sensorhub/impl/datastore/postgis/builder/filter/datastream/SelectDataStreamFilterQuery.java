@@ -33,18 +33,18 @@ public class SelectDataStreamFilterQuery extends DataStreamFilterQuery<SelectFil
                 filterQueryGenerator.addDistinct("("+tableName+".data->'system@id'->'internalID'->'id')::bigint");
                 filterQueryGenerator.addOrderBy(tableName+".data->>'name'");
                 filterQueryGenerator.addOrderBy("("+tableName+".data->'system@id'->'internalID'->'id')::bigint");
-                filterQueryGenerator.addOrderBy("("+tableName+".data->'validTime'->>'end')::timestamptz DESC ");
+                filterQueryGenerator.addOrderBy("("+tableName+".data->'validTime'->>'end')::timestamp DESC ");
             } else {
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
-                String sb = "tstzrange((" +
+                String sb = "tsrange((" +
                         tableName +
-                        ".data->'validTime'->>'begin')::timestamptz,(" +
+                        ".data->'validTime'->>'begin')::timestamp,(" +
                         tableName +
-                        ".data->'validTime'->>'end')::timestamptz)" +
+                        ".data->'validTime'->>'end')::timestamp)" +
                         " "+PostgisUtils.getOperator(temporalFilter)+" " +
-                        "'[" + min + "," + max + "]'::tstzrange";
+                        "'[" + min + "," + max + "]'::tsrange";
                 addCondition(sb);
             }
         }

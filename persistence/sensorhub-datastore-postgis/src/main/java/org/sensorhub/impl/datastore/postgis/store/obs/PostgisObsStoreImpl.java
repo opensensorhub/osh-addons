@@ -15,6 +15,7 @@ package org.sensorhub.impl.datastore.postgis.store.obs;
 
 import com.google.common.collect.Range;
 import net.opengis.swe.v20.DataBlock;
+import org.apache.commons.text.StringSubstitutor;
 import org.postgresql.util.PGobject;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
@@ -35,8 +36,11 @@ import org.vast.data.DataBlockByte;
 import org.vast.util.TimeExtent;
 
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Stream;
@@ -59,8 +63,13 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 
     public PostgisObsStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
                                int idScope, IdProviderType dsIdProviderType) {
+        this(url, dbName,login,password,dataStoreName,idScope,dsIdProviderType,new QueryBuilderObsStore(dataStoreName));
+    }
+
+    public PostgisObsStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
+                               int idScope, IdProviderType dsIdProviderType,QueryBuilderObsStore queryBuilderObsStore) {
         super(idScope, dsIdProviderType,
-                new QueryBuilderObsStore(dataStoreName),
+                queryBuilderObsStore,
                 false);
         this.init(url, dbName, login, password, new String[]{
                         queryBuilder.createTableQuery(),
@@ -123,20 +132,20 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             }
             if (!noFields || fields.contains(FOI_ID)) {
                 long foiId = resultSet.getLong(String.valueOf(FOI_ID));
-                if (!resultSet.wasNull()) {
+                if (!resultSet.wasNull() && foiId > 0) {
                     obsDataBuilder = obsDataBuilder.withFoi(BigId.fromLong(idScope, foiId));
                 }
             }
             // required
-            Timestamp phenomenonTimestamp = resultSet.getTimestamp(String.valueOf(PHENOMENON_TIME));
+            var val = resultSet.getString(String.valueOf(PHENOMENON_TIME));
             if (!resultSet.wasNull()) {
-                obsDataBuilder = obsDataBuilder.withPhenomenonTime(phenomenonTimestamp.toInstant());
+                obsDataBuilder = obsDataBuilder.withPhenomenonTime(PostgisUtils.pgDateToInstant(val));
             }
 
             if (!noFields || fields.contains(RESULT_TIME)) {
-                Timestamp resultTimestamp = resultSet.getTimestamp(String.valueOf(RESULT_TIME));
+                val = resultSet.getString(String.valueOf(RESULT_TIME));
                 if (!resultSet.wasNull()) {
-                    obsDataBuilder = obsDataBuilder.withResultTime(resultTimestamp.toInstant());
+                    obsDataBuilder = obsDataBuilder.withResultTime(PostgisUtils.pgDateToInstant(val));
                 }
             }
 
@@ -161,35 +170,51 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         return this.dataStreamStore;
     }
 
-    protected void fillAddStatement(DataStreamKey dataStreamKey, IObsData obs, PreparedStatement preparedStatement) throws SQLException {
-        // insert DataStreamId
-        preparedStatement.setLong(1, dataStreamKey.getInternalID().getIdAsLong());
+    protected String fillAddStatement(BigId id,long dataStreamKey, IObsData obs) throws SQLException {
+        Map<String, Object> values = new HashMap<>();
+        values.put("1","'"+id.getIdAsLong()+"'::int8");
+
+        // datastreamid
+        values.put("2","'"+dataStreamKey+"'::int8");
+        values.put("7","'"+dataStreamKey+"'::int8");
+
         // insert foiId if any
         if (obs.hasFoi()) {
-            preparedStatement.setLong(2, obs.getFoiID().getIdAsLong());
+            values.put("3", "'"+obs.getFoiID().getIdAsLong()+"'::int8");
+            values.put("8", "'"+obs.getFoiID().getIdAsLong()+"'::int8");
         } else {
-            preparedStatement.setNull(2, Types.BIGINT);
+            values.put("3", "NULL");
+            values.put("8", "NULL");
         }
 
         // insert timestamp
         if (obs.getPhenomenonTime() != null) {
-            preparedStatement.setTimestamp(3, Timestamp.from(obs.getPhenomenonTime()));
+            String d = PostgisUtils.getPgDate(obs.getPhenomenonTime());
+            values.put("4", "'"+d+"'");
+            values.put("9", "'"+d+"'");
         } else {
-            preparedStatement.setNull(3, Types.TIMESTAMP_WITH_TIMEZONE);
+            values.put("4", "NULL");
+            values.put("9", "NULL");
         }
 
         if (obs.getResultTime() != null) {
-            preparedStatement.setTimestamp(4, Timestamp.from(obs.getResultTime()));
+            String d = PostgisUtils.getPgDate(obs.getResultTime());
+            values.put("5", "'"+d+"'");
+            values.put("10", "'"+d+"'");
         } else {
-            preparedStatement.setNull(4, Types.TIMESTAMP_WITH_TIMEZONE);
+            values.put("5", "NULL");
+            values.put("10", "NULL");
         }
         // insert DataBlock
-        PGobject jsonObject = new PGobject();
-        jsonObject.setType("json");
         IDataStreamInfo dataStreamInfo = dataStreamStore.get(new DataStreamKey(obs.getDataStreamID()));
-        jsonObject.setValue(SerializerUtils.writeDataBlockToJson(dataStreamInfo.getRecordStructure(),
-                dataStreamInfo.getRecordEncoding(), obs.getResult()));
-        preparedStatement.setObject(5, jsonObject);
+        String serializedBlock = SerializerUtils.writeDataBlockToJson(dataStreamInfo.getRecordStructure(),
+                dataStreamInfo.getRecordEncoding(), obs.getResult());
+
+        values.put("6", "'"+serializedBlock+"'");
+        values.put("11", "'"+serializedBlock+"'");
+
+        StringSubstitutor sub = new StringSubstitutor(values);
+        return sub.replace(queryBuilder.insertObsQuery());
     }
 
     @Override
@@ -200,25 +225,19 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         // check that FOI exists
 //        if (obs.hasFoi() && foiStore != null && foiStore.contains(obs.getFoiID()))
 //            throw new IllegalStateException("Unknown FOI: " + obs.getFoiID());
-        Instant dataTime = obs.getPhenomenonTime();
+        BigId id  = BigId.fromLong(idScope, idProvider.newInternalID(obs));
         // check existing partition
         try (Connection connection1 = this.connectionManager.getConnection()) {
-            try (PreparedStatement preparedStatement = connection1.prepareStatement(queryBuilder.insertObsQuery(), Statement.RETURN_GENERATED_KEYS)) {
-                this.fillAddStatement(dataStreamKey, obs, preparedStatement);
-                int rows = preparedStatement.executeUpdate();
-                try (ResultSet rs = preparedStatement.getGeneratedKeys()) {
-                    long generatedKey = 0;
-                    if (rs.next()) {
-                        generatedKey = rs.getLong(1);
-                    }
-                    return BigId.fromLong(idScope, generatedKey);
-                }
+            try (Statement statement = connection1.createStatement()) {
+                String sqlQuery = this.fillAddStatement(id,dataStreamKey.getInternalID().getIdAsLong(), obs);
+                int rows = statement.executeUpdate(sqlQuery);
             } catch (Exception e) {
                 throw new IllegalStateException("Cannot insert obs", e);
             }
         } catch (Exception e) {
             throw new IllegalStateException("Cannot insert obs", e);
         }
+        return id;
     }
 
 
@@ -324,11 +343,11 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                         obsDataBuilder = obsDataBuilder.withFoi(BigId.fromLong(idScope, foiId));
                     }
 
-                    Timestamp phenomenonTimestamp = resultSet.getTimestamp(String.valueOf(PHENOMENON_TIME));
+                    Timestamp phenomenonTimestamp = resultSet.getTimestamp(String.valueOf(PHENOMENON_TIME), UTC_LOCAL);
                     if (!resultSet.wasNull()) {
                         obsDataBuilder = obsDataBuilder.withPhenomenonTime(phenomenonTimestamp.toInstant());
                     }
-                    Timestamp resultTimestamp = resultSet.getTimestamp(String.valueOf(RESULT_TIME));
+                    Timestamp resultTimestamp = resultSet.getTimestamp(String.valueOf(RESULT_TIME), UTC_LOCAL);
                     if (!resultSet.wasNull()) {
                         obsDataBuilder = obsDataBuilder.withResultTime(resultTimestamp.toInstant());
                     }
@@ -352,43 +371,17 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         if (oldObs == null)
             throw new UnsupportedOperationException("put can only be used to update existing entries");
 
-        try (Connection connection = this.connectionManager.getConnection()) {
-            try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateByIdQuery())) {
-                preparedStatement.setLong(1, iObsData.getDataStreamID().getIdAsLong());
-                preparedStatement.setLong(2, iObsData.getFoiID().getIdAsLong());
-
-                if (iObsData.getPhenomenonTime() != null) {
-                    preparedStatement.setTimestamp(3, Timestamp.from(iObsData.getPhenomenonTime()));
-                } else {
-                    preparedStatement.setNull(3, Types.TIMESTAMP_WITH_TIMEZONE);
-                }
-
-                if (iObsData.getResultTime() != null) {
-                    preparedStatement.setTimestamp(4, Timestamp.from(iObsData.getResultTime()));
-                } else {
-                    preparedStatement.setNull(4, Types.TIMESTAMP_WITH_TIMEZONE);
-                }
-
-                // insert DataBlock
-                PGobject jsonObject = new PGobject();
-                jsonObject.setType("json");
-                IDataStreamInfo dataStreamInfo = dataStreamStore.get(new DataStreamKey(iObsData.getDataStreamID()));
-                jsonObject.setValue(SerializerUtils.writeDataBlockToJson(dataStreamInfo.getRecordStructure(),
-                        dataStreamInfo.getRecordEncoding(), iObsData.getResult()));
-
-                preparedStatement.setObject(5, jsonObject);
-                preparedStatement.setLong(6, key.getIdAsLong());
-
-                int rows = preparedStatement.executeUpdate();
-                if (rows > 0) {
-                    return iObsData;
-                } else {
-                    throw new RuntimeException("Cannot insert obs ");
-                }
+        try (Connection connection1 = this.connectionManager.getConnection()) {
+            try (Statement statement = connection1.createStatement()) {
+                String sqlQuery = this.fillAddStatement(key,iObsData.getDataStreamID().getIdAsLong(), iObsData);
+                int rows = statement.executeUpdate(sqlQuery);
+            } catch (Exception e) {
+                throw new IllegalStateException("Cannot insert obs", e);
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot insert obs", e);
         }
+        return iObsData;
     }
 
     @Override
@@ -443,6 +436,41 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         return null;
     }
 
+    public Map<Long, TimeExtent> getDataStreamPhenomenonTimeRanges(List<Long> dataStreamIds) {
+        Map<Long, TimeExtent> result = new HashMap<>();
+
+        if (dataStreamIds == null || dataStreamIds.isEmpty())
+            return result;
+
+        String sql = queryBuilder.getPhenomenonTimeRangeByDataStreamIdsQuery();
+
+        try (Connection conn = connectionManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
+            ps.setArray(1, sqlArray);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long id = rs.getLong("datastreamID");
+                    Timestamp min = rs.getTimestamp("min");
+                    Timestamp max = rs.getTimestamp("max");
+
+                    if (min != null && max != null) {
+                        result.put(id,
+                                TimeExtent.period(min.toInstant(), max.toInstant())
+                        );
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return result;
+    }
+
+
     TimeExtent getDataStreamResultTimeRange(long dataStreamID) {
         Instant[] timeRange = new Instant[]{Instant.MAX, Instant.MIN};
         try (Connection connection = this.connectionManager.getConnection()) {
@@ -475,6 +503,40 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         return null;
     }
 
+    public Map<Long, TimeExtent> getDataStreamResultTimeRanges(List<Long> dataStreamIds) {
+        Map<Long, TimeExtent> result = new HashMap<>();
+
+        if (dataStreamIds == null || dataStreamIds.isEmpty())
+            return result;
+
+        String sql = queryBuilder.getResultTimeRangeByDataStreamIdsQuery();
+
+        try (Connection conn = connectionManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
+            ps.setArray(1, sqlArray);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long id = rs.getLong("datastreamID");
+                    Timestamp min = rs.getTimestamp("min");
+                    Timestamp max = rs.getTimestamp("max");
+
+                    if (min != null && max != null) {
+                        result.put(id,
+                                TimeExtent.period(min.toInstant(), max.toInstant())
+                        );
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return result;
+    }
+
     @Override
     public long countMatchingEntries(ObsFilter filter) {
         try (Connection connection = this.connectionManager.getConnection()) {
@@ -495,9 +557,8 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 
     @Override
     public long removeEntries(ObsFilter filter) {
-        logger.debug("Remove Feature with filter={}", filter.toString());
+        logger.debug("Remove Obs with filter={}", filter.toString());
         String queryStr = queryBuilder.createRemoveEntriesQuery(filter);
-        System.out.println(queryStr);
         if(logger.isDebugEnabled()) {
             logger.debug(queryStr);
         }
@@ -511,5 +572,10 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    protected void initUidHashIdProvider() {
+        idProvider = PostgisUtils.getObsHashIdProvider(212158449);
     }
 }

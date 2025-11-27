@@ -26,7 +26,7 @@ import org.sensorhub.api.datastore.obs.IDataStreamStore;
 import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.procedure.IProcedureStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
-import org.sensorhub.impl.datastore.postgis.ConnectionManager;
+import org.sensorhub.impl.datastore.postgis.connection.ConnectionManager;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilder;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
@@ -37,13 +37,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.*;
-import java.util.Timer;
+import java.util.Calendar;
+import java.util.TimeZone;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class PostgisStore<T extends QueryBuilder> {
     private static final Logger logger = LoggerFactory.getLogger(PostgisStore.class);
+    protected static final Calendar UTC_LOCAL = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 
     protected ConnectionManager connectionManager;
     protected T queryBuilder;
@@ -56,7 +58,6 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     protected boolean useBatch;
     private long autoCommitPeriod = 3600*1000L;
     public static final int STREAM_FETCH_SIZE = 1000;
-    protected ReentrantLock batchLock = new ReentrantLock();
 
     protected PostgisStore(int idScope, IdProviderType dsIdProviderType, T queryBuilder, boolean useBatch) {
         this.idProviderType = dsIdProviderType;
