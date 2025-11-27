@@ -30,12 +30,16 @@ public class Decoder extends Coder<AVPacket, AVFrame> {
     // Get compressed packet, send to decoder
     @Override
     protected void sendInPacket() {
-        inPacket = inPackets.poll();
-        //logger.debug("decode send:");
-        //logger.debug("  data[0]: {}", inPacket.data());
-        //logger.debug("Sent frame to encoder");
-        avcodec_send_packet(codec_ctx, av_packet_clone(inPacket));
-        //av_packet_free(inPacket);
+        synchronized (inPackets) {
+            inPacket = inPackets.poll();
+            if (inPacket == null)
+                return;
+            //logger.debug("decode send:");
+            //logger.debug("  data[0]: {}", inPacket.data());
+            //logger.debug("Sent frame to encoder");
+            avcodec_send_packet(codec_ctx, inPacket);
+//        av_packet_free(inPacket);
+        }
     }
 
     // Receive uncompressed frame from decoder
