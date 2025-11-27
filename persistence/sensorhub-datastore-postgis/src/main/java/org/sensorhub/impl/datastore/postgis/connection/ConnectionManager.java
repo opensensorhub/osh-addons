@@ -29,7 +29,6 @@ public class ConnectionManager {
     private int batchSize = 100;
     protected final ConcurrentLinkedDeque<String> batchList = new ConcurrentLinkedDeque<>();
     protected final ReentrantLock transactionLock = new ReentrantLock();
-    protected volatile boolean isTransactionRunning = false;
     /**
      * Use separate ThreadSafeBatchExecutor to execute batch queries
      * @param url
