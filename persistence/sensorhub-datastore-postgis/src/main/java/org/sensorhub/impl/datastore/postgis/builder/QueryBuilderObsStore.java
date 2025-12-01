@@ -25,6 +25,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
+import static org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField.GEOMETRY;
+import static org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField.VALID_TIME;
 import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.*;
 
 public class QueryBuilderObsStore extends QueryBuilder {
@@ -41,7 +43,7 @@ public class QueryBuilderObsStore extends QueryBuilder {
     public String createTableQuery() {
         return "CREATE TABLE IF NOT EXISTS "+this.getStoreTableName()+
                 " (" +
-                "id BIGSERIAL PRIMARY KEY,"+
+                "id bigint PRIMARY KEY,"+
                 DATASTREAM_ID +" bigint, "+
                 FOI_ID+" bigint,"+
                 PHENOMENON_TIME+" TIMESTAMP,"+
@@ -71,8 +73,10 @@ public class QueryBuilderObsStore extends QueryBuilder {
 
     public String insertObsQuery() {
         return "INSERT INTO "+this.getStoreTableName()+" " +
-                "("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (?,?,?,?,?) " +
-                "ON CONFLICT (dataStreamID, foiID, phenomenonTime, resultTime) DO UPDATE SET id = "+this.getStoreTableName()+".id RETURNING id";
+                "(id,"+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (${1},${2},${3},${4},${5},${6}) "+
+                "ON CONFLICT ("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+") DO "+
+                "UPDATE SET "+DATASTREAM_ID+" = (${7}), " +FOI_ID+" = (${8}), "+PHENOMENON_TIME+" = (${9})," +
+                " "+RESULT_TIME+" = (${10}), "+RESULT+" = (${11})";
     }
 
     public String createUniqueConstraint() {

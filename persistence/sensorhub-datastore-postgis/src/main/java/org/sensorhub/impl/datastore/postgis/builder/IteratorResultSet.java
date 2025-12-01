@@ -14,7 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis.builder;
 
-import org.sensorhub.impl.datastore.postgis.ConnectionManager;
+import org.sensorhub.impl.datastore.postgis.connection.ConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
