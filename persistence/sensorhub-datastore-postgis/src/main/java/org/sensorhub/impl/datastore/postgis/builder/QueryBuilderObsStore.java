@@ -59,12 +59,20 @@ public class QueryBuilderObsStore extends QueryBuilder {
         return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_datastream_idx on "+this.getStoreTableName()+" ("+DATASTREAM_ID+")";
     }
 
-    public String createPhenomenonTimeIndexQuery() {
+    public String createPhenomenonTimeDataStreamIdIndexQuery() {
         return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_datastream_id_phenomenon_time_idx on "+this.getStoreTableName()+" ("+ DATASTREAM_ID + ", " + PHENOMENON_TIME +")";
     }
 
-    public String createResultTimeIndexQuery() {
+    public String createPhenomenonTimeIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_phenomenon_time_idx on "+this.getStoreTableName()+" ("+ PHENOMENON_TIME +")";
+    }
+
+    public String createResultTimeDataStreamIdIndexQuery() {
         return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_datastream_id_result_time_idx on "+this.getStoreTableName()+" ("+ DATASTREAM_ID + ", " + RESULT_TIME +")";
+    }
+
+    public String createResultTimeIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_result_time_idx on "+this.getStoreTableName()+" ("+ RESULT_TIME +")";
     }
 
     public String createFoiIndexQuery() {
