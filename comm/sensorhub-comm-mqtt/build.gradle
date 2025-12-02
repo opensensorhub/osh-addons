@@ -1,6 +1,45 @@
-description = 'MQTT Service API'
-ext.details = 'Common API for MQTT service implementations'
+description = 'MQTT API & Comm Provider'
+ext.details = 'Common API for MQTT service implementations and comm provider to publish/subscribe on MQTT topics'
+version = '1.0.1'
 
 dependencies {
-  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion  
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    embeddedImpl 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+
+    testImplementation('junit:junit:4.13.1')
+
+}
+
+test {
+    useJUnit()
+}
+
+osgi {
+    manifest {
+        attributes ('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+        attributes ('Bundle-Activator': 'com.botts.impl.comm.mqtt.Activator')
+    }
+}
+
+ext.pom >>= {
+    developers {
+        developer {
+            id 'alexrobin'
+            name 'Alex Robin'
+            organization 'Sensia Software LLC'
+            organizationUrl 'http://www.sensiasoftware.com'
+        }
+        developer {
+            id 'earocorn'
+            name 'Alex Almanza'
+            organization 'Botts Innovative Research, Inc'
+            organizationUrl 'https://www.botts-inc.com'
+        }
+        developer {
+            id 'kalynstricklin'
+            name 'Kalyn Stricklin'
+            organization 'Botts Innovative Research, Inc'
+            organizationUrl 'https://www.botts-inc.com'
+        }
+    }
 }
