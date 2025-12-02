@@ -8,7 +8,10 @@ import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 public class ConnectionManager {
@@ -29,7 +32,6 @@ public class ConnectionManager {
     private int batchSize = 100;
     protected final ConcurrentLinkedDeque<String> batchList = new ConcurrentLinkedDeque<>();
     protected final ReentrantLock transactionLock = new ReentrantLock();
-    protected final ArrayList<String> queriesToRetry = new ArrayList<>();
     /**
      * Use separate ThreadSafeBatchExecutor to execute batch queries
      * @param url
@@ -101,49 +103,25 @@ public class ConnectionManager {
         if(batchList.isEmpty()) {
             return;
         }
-        List<String> queries;
-        synchronized (batchList) {
-            queries = new ArrayList<>(batchList);
-            batchList.clear();
-        }
-
         int rows[] = null;
         // block list access
         transactionLock.lock();
-
-        if(!queriesToRetry.isEmpty()) {
-            // degraded mode, try to execute old queries which failed
-            try (Connection connection = this.getConnection()) {
-                try (Statement statement = connection.createStatement()) {
-                    if(!queriesToRetry.isEmpty()) {
-                        for (String sqlQuery : queriesToRetry) {
-                            statement.addBatch(sqlQuery);
-                        }
-                        rows = statement.executeBatch();
-                        // all ok, we can clear this batch
-                        queriesToRetry.clear();
-                    }
-                }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-            this.displayRowStats(rows);
-        }
-
         try (Connection connection = this.getConnection()) {
             try (Statement statement = connection.createStatement()) {
-                if(!queriesToRetry.isEmpty()) {
-                    for (String sqlQuery : queriesToRetry) {
-                        statement.addBatch(sqlQuery);
+                int read = 0;
+                for (String sqlQuery : batchList) {
+                    statement.addBatch(sqlQuery);
+                    read++;
+                    if(read >= batchSize) {
+                        break;
                     }
                 }
-                for (String sqlQuery : queries) {
-                    statement.addBatch(sqlQuery);
-                }
                 rows = statement.executeBatch();
+                for(int i=0;i< read;i++) {
+                    batchList.removeFirst();
+                }
             }
         } catch (SQLException e) {
-            queriesToRetry.addAll(queries);
             throw new RuntimeException(e);
         } finally {
             transactionLock.unlock();
