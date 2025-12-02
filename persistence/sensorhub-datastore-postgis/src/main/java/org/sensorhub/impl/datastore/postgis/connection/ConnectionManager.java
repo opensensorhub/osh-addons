@@ -57,6 +57,10 @@ public class ConnectionManager {
         config.setMaximumPoolSize(50);
         config.setConnectionTimeout(1000 * 60 * 5); // 5 minutes
 
+        config.setMaxLifetime(20 * 60 * 1000);      // 20 minutes
+        config.setKeepaliveTime(5 * 60 * 1000);     // 5 minutes
+        config.setIdleTimeout(10 * 60 * 1000);
+
 //                        config.setMaximumPoolSize(200_000);
         config.addDataSourceProperty("cachePrepStmts", "true");
         config.addDataSourceProperty("prepStmtCacheSize", "250");
