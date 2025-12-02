@@ -66,6 +66,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
 
     protected void init(PostgisObsStoreImpl obsStore, String url, String dbName, String login, String password) {
         this.obsStore = Asserts.checkNotNull(obsStore, PostgisObsStoreImpl.class);
+        queryBuilder.linkTo(obsStore);
         super.init(url, dbName, login, password, new String[]{
                 queryBuilder.createTableQuery(),
                 queryBuilder.createIndexQuery(),
@@ -74,7 +75,9 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
                 queryBuilder.createValidTimeEndIndexQuery(),
                 queryBuilder.createTrigramExtensionQuery(),
                 queryBuilder.createTrigramDescriptionFullTextIndexQuery(),
-                queryBuilder.createSchemaFieldsIndexQuery()
+                queryBuilder.createSchemaFieldsIndexQuery(),
+                queryBuilder.createMinMaxTimeTriggerQuery(),
+                queryBuilder.createIdIndex()
         });
     }
 
@@ -153,7 +156,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
         // build request
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
 
-        Map<Long, IDataStreamInfo> dataStreamMap = new HashMap<>();
+        Map<DataStreamKey, IDataStreamInfo> results = new HashMap<>();
 
         try (Connection connection = this.connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
@@ -162,7 +165,24 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
                         long id = resultSet.getLong("id");
                         String data = resultSet.getString("data");
                         IDataStreamInfo dataStreamInfo = SerializerUtils.readIDataStreamInfoFromJson(data);
-                        dataStreamMap.put(id, dataStreamInfo);
+                        DataStreamInfoWithTimeRanges wrapper = new DataStreamInfoWithTimeRanges(id, dataStreamInfo);
+
+                        Timestamp minPhenomenonTime = resultSet.getTimestamp("min_phenomenon_time");
+                        Timestamp maxPhenomenonTime = resultSet.getTimestamp("max_phenomenon_time");
+                        Timestamp minResultTime = resultSet.getTimestamp("min_result_time");
+                        Timestamp maxResultTime = resultSet.getTimestamp("max_result_time");
+
+                        wrapper.setPhenomenonTimeRange(TimeExtent.period(
+                                minPhenomenonTime != null ? minPhenomenonTime.toInstant() : Instant.MIN,
+                                maxPhenomenonTime != null ? maxPhenomenonTime.toInstant() : Instant.MAX
+                        ));
+
+                        wrapper.setResultTimeRange(TimeExtent.period(
+                                minResultTime != null ? minResultTime.toInstant() : Instant.MIN,
+                                maxResultTime != null ? maxResultTime.toInstant() : Instant.MAX
+                        ));
+
+                        results.put(new DataStreamKey(idScope, id), wrapper);
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -172,26 +192,8 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
             throw new RuntimeException(e);
         }
 
-        // Fetch phenomenon and result time ranges so that we don't fetch them when accessing IDataStreamInfo
-        List<Long> dsIds = new ArrayList<>(dataStreamMap.keySet());
-        Map<Long, TimeExtent> phenomenonTimeRanges = obsStore.getDataStreamPhenomenonTimeRanges(dsIds);
-        Map<Long, TimeExtent> resultTimeRanges = obsStore.getDataStreamResultTimeRanges(dsIds);
-
-        List<Entry<DataStreamKey, IDataStreamInfo>> results = new ArrayList<>();
-
-        for (Map.Entry<Long, IDataStreamInfo> entry : dataStreamMap.entrySet()) {
-            long id = entry.getKey();
-            IDataStreamInfo dsInfo = entry.getValue();
-
-            DataStreamInfoWithTimeRanges wrapper =  new DataStreamInfoWithTimeRanges(id, dsInfo);
-            wrapper.setPhenomenonTimeRange(phenomenonTimeRanges.get(id));
-            wrapper.setResultTimeRange(resultTimeRanges.get(id));
-
-            results.add(Map.entry(new DataStreamKey(obsStore.idScope, id), wrapper));
-        }
-
-        logger.debug("{}, {}",queryStr, results.size());
-        return results.stream();
+        logger.debug("{}, {}", queryStr, results.size());
+        return results.entrySet().stream();
     }
 
     @Override

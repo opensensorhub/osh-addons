@@ -455,6 +455,8 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 
             Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
             ps.setArray(1, sqlArray);
+            if (logger.isDebugEnabled())
+                logger.debug("Getting datastream phenomenon time ranges \n{}", ps);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -522,6 +524,9 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 
             Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
             ps.setArray(1, sqlArray);
+
+            if (logger.isDebugEnabled())
+                logger.debug("Getting datastream phenomenon time ranges \n{}", ps);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

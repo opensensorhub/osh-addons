@@ -34,7 +34,13 @@ public class QueryBuilderDataStreamStore extends QueryBuilder {
     }
 
     public String createTableQuery() {
-        return "CREATE TABLE " + this.getStoreTableName() + " (id BIGSERIAL PRIMARY KEY,data JSONB)";
+        return "CREATE TABLE " + this.getStoreTableName() + " " +
+                "(id BIGSERIAL PRIMARY KEY," +
+                "min_phenomenon_time TIMESTAMP," +
+                "max_phenomenon_time TIMESTAMP," +
+                "min_result_time TIMESTAMP," +
+                "max_result_time TIMESTAMP," +
+                "data JSONB)";
     }
 
     public String createIndexQuery() {
@@ -97,6 +103,31 @@ public class QueryBuilderDataStreamStore extends QueryBuilder {
                 "(data->'validTime'->>'end')::timestamp) <@ '["+ PostgisUtils.checkAndGetValidInstant(min)+","+PostgisUtils.checkAndGetValidInstant(max)+"]'::tsrange";
     }
 
+    public String createMinMaxTimeTriggerQuery() {
+        return "CREATE OR REPLACE FUNCTION update_datastream_time_ranges()\n" +
+                "RETURNS TRIGGER AS $$\n" +
+                "BEGIN\n" +
+                "    UPDATE " + this.getStoreTableName() + " \n" +
+                "    SET \n" +
+                "        min_phenomenon_time = LEAST(COALESCE(min_phenomenon_time, NEW.phenomenonTime), NEW.phenomenonTime),\n" +
+                "        max_phenomenon_time = GREATEST(COALESCE(max_phenomenon_time, NEW.phenomenonTime), NEW.phenomenonTime),\n" +
+                "        min_result_time = LEAST(COALESCE(min_result_time, NEW.resultTime), NEW.resultTime),\n" +
+                "        max_result_time = GREATEST(COALESCE(max_result_time, NEW.resultTime), NEW.resultTime)\n" +
+                "    WHERE id = NEW.dataStreamID;\n" +
+                "    RETURN NEW;\n" +
+                "END;\n" +
+                "$$ LANGUAGE plpgsql;\n" +
+                "\n" +
+                "CREATE TRIGGER obs_update_datastream_ranges\n" +
+                "AFTER INSERT ON " + obsStore.getDatastoreName() + "\n" +
+                "FOR EACH ROW\n" +
+                "EXECUTE FUNCTION update_datastream_time_ranges()";
+    }
+
+    public String createIdIndex() {
+        return "CREATE INDEX obs_datastreams_id_idx ON " + this.getStoreTableName() + "(id)";
+    }
+
     public String createSelectEntriesQuery(DataStreamFilter filter, Set<IDataStreamStore.DataStreamInfoField> fields) {
         SelectEntriesDataStreamQuery selectEntriesDataStreamQuery = new SelectEntriesDataStreamQuery.Builder()
                 .tableName(this.getStoreTableName())
@@ -106,4 +137,5 @@ public class QueryBuilderDataStreamStore extends QueryBuilder {
                 .build();
         return selectEntriesDataStreamQuery.toQuery();
     }
+
 }
