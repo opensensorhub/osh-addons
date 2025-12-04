@@ -99,6 +99,7 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
 //            foiStore.linkTo(obsStore.getDataStreams());
             obsStore.linkTo(foiStore);
             obsStore.getDataStreams().linkTo(systemDescStore);
+            obsStore.linkTo(systemDescStore);
             commandStore.getCommandStreams().linkTo(systemDescStore);
 
             if(config.useBatch) {

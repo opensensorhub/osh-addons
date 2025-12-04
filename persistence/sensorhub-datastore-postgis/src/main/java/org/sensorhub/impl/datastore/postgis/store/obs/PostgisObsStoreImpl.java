@@ -324,6 +324,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         super.linkTo(foiStore);
     }
 
+    @Override
     public void linkTo(ISystemDescStore systemDescStore) {
         this.systemDescStore = systemDescStore;
         super.linkTo(systemDescStore);
