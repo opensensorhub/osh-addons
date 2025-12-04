@@ -14,34 +14,47 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.filter.obs;
 
+import org.geotools.api.filter.Filter;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.ObsFilter;
+import org.sensorhub.impl.datastore.postgis.builder.filter.CQLFilterHandler;
 import org.sensorhub.impl.datastore.postgis.builder.filter.datastream.DataStreamFilterQuery;
 import org.sensorhub.impl.datastore.postgis.builder.filter.datastream.SelectDataStreamFilterQuery;
 import org.sensorhub.impl.datastore.postgis.builder.filter.feature.SelectFoiFilterQuery;
-import org.sensorhub.impl.datastore.postgis.builder.generator.FilterQueryGenerator;
 import org.sensorhub.impl.datastore.postgis.builder.generator.SelectFilterQueryGenerator;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.vast.util.Asserts;
 
-import java.util.SortedSet;
 import java.util.stream.Collectors;
 
 import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.DATASTREAM_ID;
 import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.FOI_ID;
 
 public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGenerator> {
+
+    CQLFilterHandler cqlHandler;
+
     public SelectObsFilterQuery(String tableName, SelectFilterQueryGenerator filterQueryGenerator) {
         super(tableName, filterQueryGenerator);
+        cqlHandler = new CQLFilterHandler();
     }
 
     public SelectFilterQueryGenerator build(ObsFilter filter) {
         this.filterQueryGenerator = super.build(filter);
-//        this.handleSorted();
+//        this.handleSorted(); // We handle sorting in ObsIteratorResultSet
         return this.filterQueryGenerator;
+    }
+
+    @Override
+    protected void handleCQLFilter(Filter filter) {
+        var whereClause = cqlHandler.buildWhereClause(filter);
+        if (whereClause == null || whereClause.isBlank())
+            return;
+
+        filterQueryGenerator.addCondition(whereClause);
     }
 
     protected void handleSorted() {
@@ -139,4 +152,5 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
             }
         }
     }
+
 }

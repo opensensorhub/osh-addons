@@ -108,6 +108,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         if(logger.isDebugEnabled()) {
             logger.debug(queryStr);
         }
+
         ObsIteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
                 new ObsIteratorResultSet<>(
                         queryStr,

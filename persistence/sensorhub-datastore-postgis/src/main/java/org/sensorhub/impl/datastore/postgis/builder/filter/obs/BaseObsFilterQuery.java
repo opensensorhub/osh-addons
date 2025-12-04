@@ -14,6 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.filter.obs;
 
+import org.geotools.api.filter.Filter;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
@@ -32,8 +33,11 @@ public abstract class BaseObsFilterQuery<F extends FilterQueryGenerator> extends
         this.handleResultTimeFilter(filter.getResultTime());
         this.handleFoiFilter(filter.getFoiFilter(), filter);
         this.handleInternalIDs(filter.getInternalIDs());
+        this.handleCQLFilter(filter.getCQLFilter());
         return this.filterQueryGenerator;
     }
+
+    protected abstract void handleCQLFilter(Filter filter);
 
     protected abstract void handleDataStreamFilter(DataStreamFilter dataStreamFilter);
 

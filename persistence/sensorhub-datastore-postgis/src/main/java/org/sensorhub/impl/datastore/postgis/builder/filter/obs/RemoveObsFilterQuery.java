@@ -14,6 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.filter.obs;
 
+import org.geotools.api.filter.Filter;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FoiFilter;
@@ -32,6 +33,11 @@ import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.FOI_ID;
 public class RemoveObsFilterQuery extends BaseObsFilterQuery<RemoveFilterQueryGenerator> {
     public RemoveObsFilterQuery(String tableName, RemoveFilterQueryGenerator filterQueryGenerator) {
         super(tableName, filterQueryGenerator);
+    }
+
+    @Override
+    protected void handleCQLFilter(Filter filter) {
+        // TODO
     }
 
     protected void handleDataStreamFilter(DataStreamFilter dataStreamFilter) {
