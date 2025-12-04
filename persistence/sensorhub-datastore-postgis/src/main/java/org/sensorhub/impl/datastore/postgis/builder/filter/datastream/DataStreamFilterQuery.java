@@ -183,43 +183,21 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
     }
 
     protected void handleObservedPropertiesFilter(SortedSet<String> properties) {
-        if (properties == null || properties.isEmpty()) {
-            return;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("(");
-
-        boolean first = true;
-        for (String property : properties) {
-            if (!first) {
-                sb.append(" OR ");
+        if(properties != null) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("jsonb_path_exists(").append(tableName).append(".data, '$.** ? (");
+            boolean first=true;
+            for(String property : properties) {
+                if(!first) {
+                    // prepend operator
+                    sb.append(" || ");
+                }
+                sb.append("@ == \"").append(property).append("\"");
+                first = false;
             }
-
-            String escapedProperty = escapeJsonString(property);
-
-            // Check recordSchema.definition directly
-            sb.append(tableName).append(".data->'recordSchema'->>'definition' = '").append(escapedProperty).append("'");
-
-            // Check recordSchema.fields[*].definition using containment
-            sb.append(" OR ");
-            sb.append(tableName).append(".data->'recordSchema'->'fields' @> '[{\"definition\": \"").append(escapedProperty).append("\"}]'");
-
-            first = false;
+            sb.append(")')");
+            addCondition(sb.toString());
         }
-
-        sb.append(")");
-        addCondition(sb.toString());
-    }
-
-    private String escapeJsonString(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("'", "''");
     }
 
     public void setDataStreamId(long dsId) {
