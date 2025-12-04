@@ -34,7 +34,6 @@ public class CQLFilterHandler {
         return whereClause.toString();
     }
 
-
     private void processFilter(Filter filter) {
         if (filter instanceof And) {
             handleAnd((And) filter);
@@ -93,16 +92,15 @@ public class CQLFilterHandler {
         String propertyName = getPropertyName(filter.getExpression1());
         Object value = getLiteralValue(filter.getExpression2());
 
-        if (value instanceof Boolean) {
-            whereClause.append("(result->>'").append(propertyName).append("')::boolean = ")
-                    .append(value);
-        } else if (value instanceof Number) {
-            whereClause.append("(result->>'").append(propertyName).append("')::numeric = ")
-                    .append(value);
-        } else if (value == null) {
-            whereClause.append("result->>'").append(propertyName).append("' IS NULL");
+        if (value == null) {
+            // NULL checks can't use containment
+            whereClause.append(buildJsonPathExtract(propertyName)).append(" IS NULL");
+        } else if (value instanceof Boolean || value instanceof Number || value instanceof String) {
+            // Use containment operator for GIN index optimization
+            whereClause.append("result @> ").append(buildNestedJsonObject(propertyName, value));
         } else {
-            whereClause.append("result->>'").append(propertyName).append("' = ")
+            // Fallback for other types
+            whereClause.append(buildJsonPathExtract(propertyName)).append(" = ")
                     .append(escapeSqlString(value.toString()));
         }
     }
@@ -111,16 +109,13 @@ public class CQLFilterHandler {
         String propertyName = getPropertyName(filter.getExpression1());
         Object value = getLiteralValue(filter.getExpression2());
 
-        if (value instanceof Boolean) {
-            whereClause.append("(result->>'").append(propertyName).append("')::boolean != ")
-                    .append(value);
-        } else if (value instanceof Number) {
-            whereClause.append("(result->>'").append(propertyName).append("')::numeric != ")
-                    .append(value);
-        } else if (value == null) {
-            whereClause.append("result->>'").append(propertyName).append("' IS NOT NULL");
+        if (value == null) {
+            whereClause.append(buildJsonPathExtract(propertyName)).append(" IS NOT NULL");
+        } else if (value instanceof Boolean || value instanceof Number || value instanceof String) {
+            // NOT containment for inequality
+            whereClause.append("NOT (result @> ").append(buildNestedJsonObject(propertyName, value)).append(")");
         } else {
-            whereClause.append("result->>'").append(propertyName).append("' != ")
+            whereClause.append(buildJsonPathExtract(propertyName)).append(" != ")
                     .append(escapeSqlString(value.toString()));
         }
     }
@@ -129,7 +124,8 @@ public class CQLFilterHandler {
         String propertyName = getPropertyName(filter.getExpression1());
         Object value = getLiteralValue(filter.getExpression2());
 
-        whereClause.append("(result->>'").append(propertyName).append("')::numeric > ")
+        // Range queries can't use containment, use jsonb_path_query or extraction
+        whereClause.append("(").append(buildJsonPathExtract(propertyName)).append(")::numeric > ")
                 .append(value);
     }
 
@@ -137,7 +133,7 @@ public class CQLFilterHandler {
         String propertyName = getPropertyName(filter.getExpression1());
         Object value = getLiteralValue(filter.getExpression2());
 
-        whereClause.append("(result->>'").append(propertyName).append("')::numeric >= ")
+        whereClause.append("(").append(buildJsonPathExtract(propertyName)).append(")::numeric >= ")
                 .append(value);
     }
 
@@ -145,7 +141,7 @@ public class CQLFilterHandler {
         String propertyName = getPropertyName(filter.getExpression1());
         Object value = getLiteralValue(filter.getExpression2());
 
-        whereClause.append("(result->>'").append(propertyName).append("')::numeric < ")
+        whereClause.append("(").append(buildJsonPathExtract(propertyName)).append(")::numeric < ")
                 .append(value);
     }
 
@@ -153,7 +149,7 @@ public class CQLFilterHandler {
         String propertyName = getPropertyName(filter.getExpression1());
         Object value = getLiteralValue(filter.getExpression2());
 
-        whereClause.append("(result->>'").append(propertyName).append("')::numeric <= ")
+        whereClause.append("(").append(buildJsonPathExtract(propertyName)).append(")::numeric <= ")
                 .append(value);
     }
 
@@ -161,17 +157,112 @@ public class CQLFilterHandler {
         String propertyName = ((PropertyName) filter.getExpression()).getPropertyName();
         String pattern = filter.getLiteral();
 
-        // Convert CQL LIKE pattern to SQL LIKE pattern
-        // CQL uses * for wildcard, SQL uses %
-        pattern = pattern.replace("\\", "\\\\")  // Escape backslashes first
-                .replace("'", "''")      // Escape single quotes
-                .replace("%", "\\%")     // Escape existing %
-                .replace("_", "\\_")     // Escape existing _
-                .replace("*", "%")       // CQL wildcard to SQL
-                .replace("?", "_");      // CQL single char to SQL
+        // LIKE queries can't use containment, must use extraction
+        pattern = pattern.replace("\\", "\\\\")
+                .replace("'", "''")
+                .replace("%", "\\%")
+                .replace("_", "\\_")
+                .replace("*", "%")
+                .replace("?", "_");
 
-        whereClause.append("result->>'").append(propertyName).append("' LIKE '")
+        whereClause.append(buildJsonPathExtract(propertyName)).append(" LIKE '")
                 .append(pattern).append("'");
+    }
+
+    /**
+     * Builds a nested JSON object string for containment queries.
+     * Handles dot-notation paths like "foo.bar.baz" -> {"foo": {"bar": {"baz": value}}}
+     *
+     * @param propertyPath Dot-separated property path
+     * @param value        The value to match
+     * @return SQL string for containment check
+     */
+    private String buildNestedJsonObject(String propertyPath, Object value) {
+        String[] parts = propertyPath.split("\\.");
+        StringBuilder json = new StringBuilder();
+
+        // Build opening braces and keys
+        for (int i = 0; i < parts.length; i++) {
+            json.append("{\"").append(escapeJsonKey(parts[i])).append("\": ");
+        }
+
+        // Add the value
+        json.append(formatJsonValue(value));
+
+        // Close all braces
+        for (int i = 0; i < parts.length; i++) {
+            json.append("}");
+        }
+
+        return "'" + json.toString() + "'::jsonb";
+    }
+
+    /**
+     * Builds a JSONB path extraction expression for nested properties.
+     * Handles dot-notation paths like "foo.bar.baz" -> result->'foo'->'bar'->>'baz'
+     *
+     * @param propertyPath Dot-separated property path
+     * @return SQL extraction expression
+     */
+    private String buildJsonPathExtract(String propertyPath) {
+        String[] parts = propertyPath.split("\\.");
+
+        if (parts.length == 1) {
+            return "result->>'" + escapeJsonKey(parts[0]) + "'";
+        }
+
+        StringBuilder extraction = new StringBuilder("result");
+
+        // Use -> for all but the last key
+        for (int i = 0; i < parts.length - 1; i++) {
+            extraction.append("->'").append(escapeJsonKey(parts[i])).append("'");
+        }
+
+        // Use ->> for the last key to get text
+        extraction.append("->>'").append(escapeJsonKey(parts[parts.length - 1])).append("'");
+
+        return extraction.toString();
+    }
+
+    /**
+     * Formats a value for JSON representation.
+     */
+    private String formatJsonValue(Object value) {
+        if (value == null) {
+            return "null";
+        } else if (value instanceof Boolean) {
+            return value.toString();
+        } else if (value instanceof Number) {
+            return value.toString();
+        } else {
+            // String value - escape for JSON
+            return "\"" + escapeJsonString(value.toString()) + "\"";
+        }
+    }
+
+    /**
+     * Escapes a string for use in JSON.
+     */
+    private String escapeJsonString(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
+    }
+
+    /**
+     * Escapes a key for use in JSON/SQL.
+     */
+    private String escapeJsonKey(String key) {
+        return key
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("'", "''");
     }
 
     private String getPropertyName(org.geotools.api.filter.expression.Expression expr) {
