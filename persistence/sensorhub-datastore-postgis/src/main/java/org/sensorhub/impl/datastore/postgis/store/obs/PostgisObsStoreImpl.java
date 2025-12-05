@@ -381,14 +381,14 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                 }
 
                 if (obs.getPhenomenonTime() != null) {
-                    String d = PostgisUtils.getPgDate(obs.getPhenomenonTime());
+                    String d = PostgisUtils.getPgTimestampFromInstant(obs.getPhenomenonTime());
                     preparedStatement.setTimestamp(3, Timestamp.valueOf(d));
                 } else {
                     preparedStatement.setNull(3, Types.TIMESTAMP);
                 }
 
                 if (obs.getResultTime() != null) {
-                    String d = PostgisUtils.getPgDate(obs.getResultTime());
+                    String d = PostgisUtils.getPgTimestampFromInstant(obs.getResultTime());
                     preparedStatement.setTimestamp(4, Timestamp.valueOf(d));
                 } else {
                     preparedStatement.setNull(4, Types.TIMESTAMP);
