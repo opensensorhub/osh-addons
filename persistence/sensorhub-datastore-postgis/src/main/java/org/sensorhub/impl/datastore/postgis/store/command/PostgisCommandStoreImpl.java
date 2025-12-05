@@ -62,7 +62,7 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
     protected void init(String url, String dbName, String login, String password) {
         super.init(url,dbName,login,password,new String[]{
                 queryBuilder.createTableQuery(),
-                queryBuilder.createDataIndexQuery(),
+//                queryBuilder.createDataIndexQuery(),
                 queryBuilder.createCommandStreamIndexQuery(),
                 queryBuilder.createIssueTimeIndexQuery(),
                 queryBuilder.createSenderIdIndexQuery(),
@@ -86,9 +86,11 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
                 new IteratorResultSet<>(
                         queryStr,
                         connectionManager,
+                        1000,
                         filter.getLimit(),
                         (resultSet) -> resultSetToEntry(resultSet, fields),
-                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
+                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())),
+                        filter.getValuePredicate() != null);
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
     }
 
