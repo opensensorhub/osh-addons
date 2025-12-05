@@ -16,6 +16,7 @@ package org.sensorhub.impl.datastore.postgis.store.obs;
 import com.google.common.collect.Range;
 import net.opengis.swe.v20.DataBlock;
 import org.apache.commons.text.StringSubstitutor;
+import org.postgresql.util.PGobject;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
@@ -361,23 +362,61 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         }
     }
 
+
+
     @Override
-    public IObsData put(BigId key, IObsData iObsData) {
+    public IObsData put(BigId key, IObsData obs) {
         IObsData oldObs = this.get(key);
         if (oldObs == null)
-            throw new UnsupportedOperationException("put can only be used to update existing entries");
+            throw new UnsupportedOperationException("Put can only be used to update existing entries");
 
-        try (Connection connection1 = this.connectionManager.getConnection()) {
-            try (Statement statement = connection1.createStatement()) {
-                String sqlQuery = this.fillAddStatement(key,iObsData.getDataStreamID().getIdAsLong(), iObsData);
-                int rows = statement.executeUpdate(sqlQuery);
+        try (Connection connection = this.connectionManager.getConnection()) {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateByIdQuery())) {
+                preparedStatement.setLong(1, obs.getDataStreamID().getIdAsLong());
+
+                if (obs.hasFoi()) {
+                    preparedStatement.setLong(2, obs.getFoiID().getIdAsLong());
+                } else {
+                    preparedStatement.setNull(2, Types.BIGINT);
+                }
+
+                if (obs.getPhenomenonTime() != null) {
+                    String d = PostgisUtils.getPgDate(obs.getPhenomenonTime());
+                    preparedStatement.setTimestamp(3, Timestamp.valueOf(d));
+                } else {
+                    preparedStatement.setNull(3, Types.TIMESTAMP);
+                }
+
+                if (obs.getResultTime() != null) {
+                    String d = PostgisUtils.getPgDate(obs.getResultTime());
+                    preparedStatement.setTimestamp(4, Timestamp.valueOf(d));
+                } else {
+                    preparedStatement.setNull(4, Types.TIMESTAMP);
+                }
+                // insert DataBlock
+                IDataStreamInfo dataStreamInfo = dataStreamStore.get(new DataStreamKey(obs.getDataStreamID()));
+                String serializedBlock = SerializerUtils.writeDataBlockToJson(dataStreamInfo.getRecordStructure(),
+                        dataStreamInfo.getRecordEncoding(), obs.getResult());
+
+                PGobject jsonObject = new PGobject();
+                jsonObject.setType("json");
+                jsonObject.setValue(serializedBlock);
+
+                preparedStatement.setObject(5, jsonObject);
+
+                preparedStatement.setLong(6, key.getIdAsLong());
+
+                int rows = preparedStatement.executeUpdate();
+                if (rows == 0) {
+                    throw new IllegalStateException("Update affected 0 rows for key: " + key.getIdAsLong());
+                }
             } catch (Exception e) {
-                throw new IllegalStateException("Cannot insert obs", e);
+                throw new IllegalStateException("Cannot update obs", e);
             }
         } catch (Exception e) {
-            throw new IllegalStateException("Cannot insert obs", e);
+            throw new IllegalStateException("Cannot update obs", e);
         }
-        return iObsData;
+        return obs;
     }
 
     @Override
