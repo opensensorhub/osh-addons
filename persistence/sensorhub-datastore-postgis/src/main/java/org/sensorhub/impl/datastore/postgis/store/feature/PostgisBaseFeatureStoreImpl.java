@@ -211,10 +211,8 @@ public abstract class PostgisBaseFeatureStoreImpl
                         queryStr,
                         connectionManager,
                         STREAM_FETCH_SIZE,
-                        filter.getLimit(),
                         (resultSet) -> resultSetToEntry(resultSet, fields),
-                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())),
-                        filter.getValuePredicate() != null);
+                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
     }
 

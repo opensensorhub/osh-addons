@@ -23,6 +23,7 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
     protected List<String> groupBy;
     protected List<String> distinct;
     protected List<String> innerJoin;
+    protected List<String> prioritizedInnerJoins;
 
     public String toQuery() {
         StringBuilder sb = new StringBuilder();
@@ -41,6 +42,10 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
             }
 
             sb.append(" FROM ").append(this.tableName);
+        }
+        if (this.prioritizedInnerJoins != null && !this.prioritizedInnerJoins.isEmpty()) {
+            sb.append(" INNER JOIN ");
+            sb.append(this.prioritizedInnerJoins.stream().collect(Collectors.joining(" INNER JOIN ")));
         }
         if (this.joins != null && !this.joins.isEmpty()) {
             sb.append(" JOIN ");
@@ -80,9 +85,13 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
 
     public String toCountQuery() {
         StringBuilder sb = new StringBuilder();
-        sb.append("SELECT COUNT(*) ");
+        sb.append("SELECT COUNT(*)");
         sb.append(" FROM ").append(this.tableName);
 
+        if (this.prioritizedInnerJoins != null && !this.prioritizedInnerJoins.isEmpty()) {
+            sb.append(" INNER JOIN ");
+            sb.append(this.prioritizedInnerJoins.stream().collect(Collectors.joining(" INNER JOIN ")));
+        }
         if (this.joins != null && !this.joins.isEmpty()) {
             sb.append(" JOIN ");
             sb.append(this.joins.stream().collect(Collectors.joining(" JOIN ")));
@@ -92,7 +101,6 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
             sb.append(" INNER JOIN ");
             sb.append(this.innerJoin.stream().collect(Collectors.joining(" INNER JOIN ")));
         }
-
         // check WHERE clause
         if (this.addConditions != null && !this.addConditions.isEmpty()) {
             sb.append(" WHERE ");
@@ -152,6 +160,13 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
     public void addInnerJoin(String innerJoin) {
         this.checkInnerJoin();
         this.innerJoin.add(innerJoin);
+    }
+
+    public void addPrioritizedInnerJoin(String innerJoin) {
+        if (this.prioritizedInnerJoins == null) {
+            this.prioritizedInnerJoins = new ArrayList<>();
+        }
+        this.prioritizedInnerJoins.add(innerJoin);
     }
 
     protected void checkInnerJoin() {

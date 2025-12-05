@@ -95,52 +95,45 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
      */
     protected void handleSystemFilter(SystemFilter systemFilter) {
         if (systemFilter != null) {
-            if (systemFilter.getInternalIDs() != null || systemFilter.getUniqueIDs() != null) {
-                // handle UNIQUE IDS
-                if (systemFilter.getUniqueIDs() != null && !systemFilter.getUniqueIDs().isEmpty()) {
-                    SortedSet<String> uniqueIds = systemFilter.getUniqueIDs();
+            if (systemFilter.getUniqueIDs() != null && !systemFilter.getUniqueIDs().isEmpty()) {
+                SortedSet<String> uniqueIds = systemFilter.getUniqueIDs();
 
-                    // We need to join system table when includeMembers == true
-                    if (systemFilter.includeMembers()) {
-                        addJoin(sysDescTableName + " s ON (" + tableName +
-                                ".data->'system@id'->>'uniqueID') = s.data->>'uniqueId'");
+                StringBuilder sb = new StringBuilder("(");
+                int i = 0;
+
+                for (String uid : uniqueIds) {
+                    String operator = "=";
+                    String currentId = escapeSqlString(uid);
+
+                    if (uid.contains("*")) {
+                        operator = "ILIKE";
+                        currentId = escapeSqlString(uid.replace("*", "%"));
                     }
 
-                    StringBuilder sb = new StringBuilder("(");
-                    int i = 0;
+                    if (i > 0) {
+                        sb.append(" OR ");
+                    }
 
-                    for (String uid : uniqueIds) {
-                        String operator = "=";
-                        String currentId = uid;
+                    // Direct match on datastream's system
+                    sb.append("(").append(tableName).append(".data->'system@id'->>'uniqueID' ")
+                            .append(operator).append(" '").append(currentId).append("'");
 
-                        // Support ILIKE via wildcard
-                        if (uid.contains("*")) {
-                            operator = "ILIKE";
-                            currentId = uid.replace("*", "%");
-                        }
-
-                        sb.append("(")
-                                .append(tableName).append(".data->'system@id'->>'uniqueID' ")
-                                .append(operator).append(" '").append(currentId).append("'");
-
-                        if (systemFilter.includeMembers()) {
-                            sb.append(" OR s.parentid IN (SELECT id FROM ")
-                                    .append(sysDescTableName)
-                                    .append(" WHERE data->>'uniqueId' ")
-                                    .append(operator)
-                                    .append(" '").append(currentId).append("')");
-                        }
-
-                        sb.append(")");
-
-                        if (++i < uniqueIds.size()) {
-                            sb.append(" OR ");
-                        }
+                    if (systemFilter.includeMembers()) {
+                        sb.append(" OR EXISTS (SELECT 1 FROM ")
+                                .append(sysDescTableName).append(" s WHERE s.data->>'uniqueId' = ")
+                                .append(tableName).append(".data->'system@id'->>'uniqueID'")
+                                .append(" AND s.parentid IN (SELECT id FROM ")
+                                .append(sysDescTableName).append(" WHERE data->>'uniqueId' ")
+                                .append(operator).append(" '").append(currentId).append("'))");
                     }
 
                     sb.append(")");
-                    addCondition(sb.toString());
+                    i++;
                 }
+
+                sb.append(")");
+                addCondition(sb.toString());
+            }
 
                 // handle internal IDS
                 if (systemFilter.getInternalIDs() != null && !systemFilter.getInternalIDs().isEmpty()) {
@@ -166,7 +159,7 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
                     sb.append(")");
                     addCondition(sb.toString());
                 }
-            }
+
             if (systemFilter.getParentFilter() != null || systemFilter.getProcedureFilter() != null
                     || systemFilter.getDataStreamFilter() != null || systemFilter.getFullTextFilter() != null
                     || systemFilter.getLocationFilter() != null || systemFilter.getValidTime() != null) {
@@ -176,6 +169,13 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
         }
     }
 
+    private String escapeSqlString(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("'", "''");
+    }
+
     protected void handleObsFilter(ObsFilter obsFilter) {
         if (obsFilter != null) {
             throw new UnsupportedOperationException();
@@ -183,21 +183,35 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
     }
 
     protected void handleObservedPropertiesFilter(SortedSet<String> properties) {
-        if(properties != null) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("jsonb_path_exists(").append(tableName).append(".data, '$.** ? (");
-            boolean first=true;
-            for(String property : properties) {
-                if(!first) {
-                    // prepend operator
-                    sb.append(" || ");
-                }
-                sb.append("@ == \"").append(property).append("\"");
-                first = false;
-            }
-            sb.append(")')");
-            addCondition(sb.toString());
+        if (properties == null || properties.isEmpty()) {
+            return;
         }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("jsonb_path_exists(")
+                .append(tableName)
+                .append(".data->'recordSchema', '$.** ? (");
+
+        boolean first = true;
+        for (String property : properties) {
+            if (!first) {
+                sb.append(" || ");
+            }
+            sb.append("@.definition == \"").append(escapeJsonString(property)).append("\"");
+            first = false;
+        }
+
+        sb.append(")')");
+        addCondition(sb.toString());
+    }
+
+    private String escapeJsonString(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"");
     }
 
     public void setDataStreamId(long dsId) {

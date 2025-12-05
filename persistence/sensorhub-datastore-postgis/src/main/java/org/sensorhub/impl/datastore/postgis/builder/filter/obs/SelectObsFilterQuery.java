@@ -79,7 +79,7 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 // create join
                 Asserts.checkNotNull(dataStreamTableName, "dataStreamTableName should not be null");
 
-                this.filterQueryGenerator.addInnerJoin(this.dataStreamTableName + " ON " + this.tableName + ".datastreamid = " + this.dataStreamTableName + ".id");
+                this.filterQueryGenerator.addPrioritizedInnerJoin(this.dataStreamTableName + " ON " + this.tableName + ".datastreamid = " + this.dataStreamTableName + ".id");
                 SelectDataStreamFilterQuery dataStreamFilterQuery = new SelectDataStreamFilterQuery(this.dataStreamTableName, filterQueryGenerator);
                 dataStreamFilterQuery.setSysDescTableName(this.sysDescTableName);
                 this.filterQueryGenerator = dataStreamFilterQuery.build(dataStreamFilter);
@@ -92,10 +92,11 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
-                filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
+                filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC");
             } else {
-                addCondition(
-                        "tsrange('"+temporalFilter.getMin()+"','"+temporalFilter.getMax()+"', '[]') @> "+this.tableName+".phenomenonTime");
+                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
+                addTimeRangeCondition(this.tableName + ".phenomenonTime", min, max);
             }
         }
     }
@@ -105,14 +106,50 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
-                filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
+                filterQueryGenerator.addOrderBy(this.tableName + ".resultTime DESC");
             } else {
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
-                addCondition(
-                        "tsrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
+                addTimeRangeCondition(this.tableName + ".resultTime", min, max);
             }
         }
+    }
+
+    /**
+     * Adds optimized time range conditions using >= and <= operators
+     * instead of tsrange containment for better B-tree index utilization.
+     */
+    private void addTimeRangeCondition(String columnName, String min, String max) {
+        boolean hasMin = isValidBound(min);
+        boolean hasMax = isValidBound(max);
+
+        if (hasMin && hasMax) {
+            // Both bounds: use >= AND <=
+            addCondition(columnName + " >= '" + escapeSqlString(min) + "'");
+            addCondition(columnName + " <= '" + escapeSqlString(max) + "'");
+        } else if (hasMin) {
+            // Only lower bound
+            addCondition(columnName + " >= '" + escapeSqlString(min) + "'");
+        } else if (hasMax) {
+            // Only upper bound
+            addCondition(columnName + " <= '" + escapeSqlString(max) + "'");
+        }
+        // If neither bound is valid, no condition is added (matches all times)
+    }
+
+    private boolean isValidBound(String bound) {
+        if (bound == null || bound.isEmpty()) {
+            return false;
+        }
+        String lower = bound.toLowerCase().trim();
+        return !lower.equals("-infinity") && !lower.equals("infinity");
+    }
+
+    private String escapeSqlString(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("'", "''");
     }
 
     protected void handleFoiFilter(FoiFilter foiFilter, ObsFilter obsFilter) {

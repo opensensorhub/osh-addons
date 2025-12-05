@@ -16,7 +16,6 @@ package org.sensorhub.impl.datastore.postgis.store.obs;
 import com.google.common.collect.Range;
 import net.opengis.swe.v20.DataBlock;
 import org.apache.commons.text.StringSubstitutor;
-import org.postgresql.util.PGobject;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
@@ -25,7 +24,6 @@ import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.obs.*;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
-import org.sensorhub.impl.datastore.postgis.ObsIteratorResultSet;
 import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderObsStore;
 import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
@@ -37,13 +35,8 @@ import org.vast.data.DataBlockByte;
 import org.vast.util.TimeExtent;
 
 import java.sql.*;
-import java.text.SimpleDateFormat;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.temporal.ChronoField;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -105,20 +98,15 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         }
 
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, hashSet);
-        if(logger.isDebugEnabled()) {
-            logger.debug(queryStr);
-        }
+        logger.debug(queryStr);
 
-        ObsIteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
-                new ObsIteratorResultSet<>(
+        IteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
+                new IteratorResultSet<>(
                         queryStr,
-                        queryBuilder.getStoreTableName(),
                         connectionManager,
                         STREAM_FETCH_SIZE,
-                        filter.getLimit(),
                         (resultSet) -> resultSetToEntry(resultSet, fields),
-                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())),
-                        filter);
+                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
     }
 
@@ -457,8 +445,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 
             Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
             ps.setArray(1, sqlArray);
-            if (logger.isDebugEnabled())
-                logger.debug("Getting datastream phenomenon time ranges \n{}", ps);
+            logger.debug("Getting datastream phenomenon time ranges \n{}", ps);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -527,8 +514,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
             ps.setArray(1, sqlArray);
 
-            if (logger.isDebugEnabled())
-                logger.debug("Getting datastream phenomenon time ranges \n{}", ps);
+            logger.debug("Getting datastream phenomenon time ranges \n{}", ps);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -572,9 +558,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
     public long removeEntries(ObsFilter filter) {
         logger.debug("Remove Obs with filter={}", filter.toString());
         String queryStr = queryBuilder.createRemoveEntriesQuery(filter);
-        if(logger.isDebugEnabled()) {
-            logger.debug(queryStr);
-        }
+        logger.debug(queryStr);
         try (Connection connection = this.connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 return statement.executeUpdate(queryStr);
