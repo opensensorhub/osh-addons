@@ -8,7 +8,10 @@ import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 public class ConnectionManager {
@@ -100,27 +103,32 @@ public class ConnectionManager {
         if(batchList.isEmpty()) {
             return;
         }
-        List<String> queries;
-        synchronized (batchList) {
-            queries = new ArrayList<>(batchList);
-            batchList.clear();
-        }
-
         int rows[] = null;
         // block list access
         transactionLock.lock();
         try (Connection connection = this.getConnection()) {
             try (Statement statement = connection.createStatement()) {
-                for (String sqlQuery : queries) {
+                int read = 0;
+                for (String sqlQuery : batchList) {
                     statement.addBatch(sqlQuery);
+                    read++;
+                    if(read >= batchSize) {
+                        break;
+                    }
                 }
                 rows = statement.executeBatch();
+                for(int i=0;i< read;i++) {
+                    batchList.removeFirst();
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         } finally {
             transactionLock.unlock();
         }
+        this.displayRowStats(rows);
+    }
+    protected void displayRowStats(int [] rows) {
         if (rows != null) {
             Map<BatchStatus, Long> summary =
                     Arrays.stream(rows)
@@ -131,7 +139,6 @@ public class ConnectionManager {
             long failed = summary.getOrDefault(BatchStatus.FAILED, 0L);
             log.info("Batch execution: SUCCESS={}, SUCCESS_UNKNOWN={}, FAILED={}", success, successUnknown, failed);
         }
-
     }
     public void commit() {
         try {
