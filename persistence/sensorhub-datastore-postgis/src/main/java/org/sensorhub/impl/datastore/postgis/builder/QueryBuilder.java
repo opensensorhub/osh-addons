@@ -56,7 +56,7 @@ public abstract class QueryBuilder {
     }
 
     public String selectLastIdQuery() {
-        return "SELECT id FROM " + this.getStoreTableName() + " order by id DESC";
+        return "SELECT id FROM " + this.getStoreTableName() + " order by id DESC LIMIT 1";
     }
 
     public String removeByIdQuery() {
