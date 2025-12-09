@@ -66,7 +66,7 @@ public class ConnectionManager {
         config.addDataSourceProperty("prepStmtCacheSize", "250");
         config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
         config.addDataSourceProperty("tcpKeepAlive","true");
-        config.addDataSourceProperty("socketTimeout","60");
+        config.addDataSourceProperty("socketTimeout","300");
         config.addDataSourceProperty("networkTimeout","60");
         config.setAutoCommit(true);
         return new HikariDataSource(config);
