@@ -44,7 +44,7 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
 
     public SelectFilterQueryGenerator build(ObsFilter filter) {
         this.filterQueryGenerator = super.build(filter);
-//        this.handleSorted(); // We handle sorting in ObsIteratorResultSet
+        this.handleSorted(filter.getPhenomenonTime() != null && filter.getPhenomenonTime().descendingOrder());
         return this.filterQueryGenerator;
     }
 
@@ -57,8 +57,11 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
         filterQueryGenerator.addCondition(whereClause);
     }
 
-    protected void handleSorted() {
-        this.filterQueryGenerator.addOrderBy(this.tableName+".phenomenonTime ASC");
+    protected void handleSorted(boolean descending) {
+        StringBuilder sb = new StringBuilder(this.tableName)
+                .append(".phenomenonTime ")
+                .append(descending ? "DESC" : "ASC");
+        this.filterQueryGenerator.addOrderBy(sb.toString());
     }
 
     protected void handleDataStreamFilter(DataStreamFilter dataStreamFilter) {
