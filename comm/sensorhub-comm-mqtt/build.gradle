@@ -1,6 +1,6 @@
 description = 'MQTT API & Comm Provider'
 ext.details = 'Common API for MQTT service implementations and comm provider to publish/subscribe on MQTT topics'
-version = '1.0.1'
+version = '1.0.2'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
