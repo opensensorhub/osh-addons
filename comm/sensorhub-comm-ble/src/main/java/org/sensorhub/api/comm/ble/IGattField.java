@@ -44,7 +44,7 @@ public interface IGattField
     public static final int PROPERTY_INDICATE = 32;
     public static final int PROPERTY_SIGNED_WRITE = 64;
     public static final int PROPERTY_EXTENDED_PROPS = 128;
-
+    public static final byte[] ENABLE_NOTIFICATION_VALUE = new byte[0];
 
     /**
      * @return the UUID identifying the type of this field
