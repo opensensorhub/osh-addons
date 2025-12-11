@@ -95,8 +95,6 @@ public class Kestrel extends AbstractSensorModule<KestrelConfig> {
         }
     }
 
-    Queue<IGattDescriptor> descriptorWriteQueue = new LinkedBlockingQueue<>();
-
     private GattCallback gattCallback = new GattCallback() {
         @Override
         public void onConnected(IGattClient gatt, int status) {
@@ -175,12 +173,7 @@ public class Kestrel extends AbstractSensorModule<KestrelConfig> {
 
             IGattDescriptor cccd = ch.getDescriptors().get(CLIENT_CONFIG);
             if (cccd != null) {
-                cccd.setValue(ByteBuffer.wrap(IGattDescriptor.ENABLE_NOTIFICATION_VALUE));
-                descriptorWriteQueue.add(cccd);
-
-                if (descriptorWriteQueue.size() == 1) {
-                    gatt.writeDescriptor(cccd);
-                }
+                gatt.writeDescriptor(cccd);
             }
         }
     };
