@@ -10,7 +10,6 @@
 
  The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
  Developer are Copyright (C) 2025 the Initial Developer. All Rights Reserved.
-
  ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.sensor.kestrel;
@@ -27,12 +26,10 @@ import org.vast.swe.SWEHelper;
 
 
 /**
- *
  * @author Kalyn Stricklin
  * @since Dec 1, 2025
  */
-public class EnvironmentalOutput extends AbstractSensorOutput<Kestrel>
-{
+public class EnvironmentalOutput extends AbstractSensorOutput<Kestrel> {
     DataComponent dataStruct;
     DataEncoding dataEncoding;
     private static final String SENSOR_OUTPUT_NAME = "environmental";
@@ -42,7 +39,8 @@ public class EnvironmentalOutput extends AbstractSensorOutput<Kestrel>
     protected EnvironmentalOutput(Kestrel parent) {
         super(SENSOR_OUTPUT_NAME, parent);
     }
-    public void doInit(){
+
+    public void doInit() {
         SWEHelper fac = new SWEHelper();
         dataStruct = fac.createRecord()
                 .name(SENSOR_OUTPUT_NAME)
@@ -172,14 +170,14 @@ public class EnvironmentalOutput extends AbstractSensorOutput<Kestrel>
     public double getAverageSamplingPeriod() {
         return 0;
     }
+
     @Override
-    public DataComponent getRecordDescription()
-    {
+    public DataComponent getRecordDescription() {
         return dataStruct;
     }
+
     @Override
-    public DataEncoding getRecommendedEncoding()
-    {
+    public DataEncoding getRecommendedEncoding() {
         return dataEncoding;
     }
 

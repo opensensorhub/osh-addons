@@ -10,7 +10,6 @@
 
  The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
  Developer are Copyright (C) 2025 the Initial Developer. All Rights Reserved.
-
  ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.sensor.kestrel;
@@ -20,21 +19,21 @@ import org.sensorhub.api.sensor.SensorConfig;
 
 
 /**
- *
  * @author Kalyn Stricklin
  * @since Dec 1, 2025
  */
-public class KestrelConfig extends SensorConfig
-{
-    public KestrelConfig() { this.moduleClass = Kestrel.class.getCanonicalName(); }
+public class KestrelConfig extends SensorConfig {
+    public KestrelConfig() {
+        this.moduleClass = Kestrel.class.getCanonicalName();
+    }
 
-    @DisplayInfo(label="Serial Number", desc="Kestrel Weather Meter Serial Number")
+    @DisplayInfo(label = "Serial Number", desc = "Kestrel Weather Meter Serial Number")
     public String serialNumber;
 
-    @DisplayInfo(label="Device Address", desc="Kestrel Weather Meter Device Address")
+    @DisplayInfo(label = "Device Address", desc = "Kestrel Weather Meter Device Address")
     public String deviceAddress;
 
-    @DisplayInfo(label="Bluetooth Network", desc="Local ID of Bluetooth LE network to use")
+    @DisplayInfo(label = "Bluetooth Network", desc = "Local ID of Bluetooth LE network to use")
     public String networkID;
 
 }

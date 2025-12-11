@@ -10,7 +10,6 @@
 
  The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
  Developer are Copyright (C) 2025 the Initial Developer. All Rights Reserved.
-
  ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.sensor.kestrel;
@@ -22,7 +21,6 @@ import org.sensorhub.utils.OshBundleActivator;
 /*
  * Needed to expose java services as OSGi services
  */
-public class Activator extends OshBundleActivator implements BundleActivator
-{
+public class Activator extends OshBundleActivator implements BundleActivator {
 
 }

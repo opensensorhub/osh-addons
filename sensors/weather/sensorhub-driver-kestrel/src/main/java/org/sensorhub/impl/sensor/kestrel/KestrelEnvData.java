@@ -10,7 +10,6 @@
 
  The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
  Developer are Copyright (C) 2025 the Initial Developer. All Rights Reserved.
-
  ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.sensor.kestrel;
@@ -66,6 +65,7 @@ public class KestrelEnvData {
     public void markDerived4Received() {
         hasDerived4 = true;
     }
+
     public boolean isComplete() {
         return hasDerived1 && hasDerived2 && hasSensorMeasurements;
     }

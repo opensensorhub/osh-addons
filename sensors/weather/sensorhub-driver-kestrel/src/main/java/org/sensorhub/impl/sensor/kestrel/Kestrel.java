@@ -10,7 +10,6 @@
 
  The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
  Developer are Copyright (C) 2025 the Initial Developer. All Rights Reserved.
-
  ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.sensor.kestrel;
@@ -28,15 +27,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
-import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.LinkedBlockingQueue;
 
 
 /**
- *
  * @author Kalyn Stricklin
  * @since Dec 1, 2025
  */
@@ -95,7 +89,7 @@ public class Kestrel extends AbstractSensorModule<KestrelConfig> {
         }
     }
 
-    private GattCallback gattCallback = new GattCallback() {
+    private final GattCallback gattCallback = new GattCallback() {
         @Override
         public void onConnected(IGattClient gatt, int status) {
             if (status == IGattClient.GATT_SUCCESS) {
@@ -108,11 +102,11 @@ public class Kestrel extends AbstractSensorModule<KestrelConfig> {
         }
 
         @Override
-        public void onServicesDiscovered(final IGattClient gatt, int status){
+        public void onServicesDiscovered(final IGattClient gatt, int status) {
             gatt.getServices().forEach(service -> {
                 logger.info("Kestrel --" + "Service Type: " + service.getType());
                 for (IGattCharacteristic characteristic : service.getCharacteristics()) {
-                    logger.info("Characteristics: " + characteristic.getType() + " props=" + characteristic.getProperties() + " perms=" +characteristic.getPermissions());
+                    logger.info("Characteristics: " + characteristic.getType() + " props=" + characteristic.getProperties() + " perms=" + characteristic.getPermissions());
                 }
             });
 
@@ -151,20 +145,17 @@ public class Kestrel extends AbstractSensorModule<KestrelConfig> {
 
 
         @Override
-        public void onDisconnected(IGattClient gatt, int status)
-        {
+        public void onDisconnected(IGattClient gatt, int status) {
             notifyConnectionStatus(false, "Kestrel Weather Sensor (" + config.deviceAddress + ")");
         }
 
         @Override
-        public void onCharacteristicChanged(IGattClient gatt, IGattField characteristic)
-        {
+        public void onCharacteristicChanged(IGattClient gatt, IGattField characteristic) {
             byte[] val = characteristic.getValue().array();
             handleCharacteristicBytes(characteristic.getType(), val);
         }
 
-        public void onCharacteristicRead(IGattClient gatt, IGattField characteristic, int status)
-        {
+        public void onCharacteristicRead(IGattClient gatt, IGattField characteristic, int status) {
             logger.debug("Characteristic Read: {}", new String(characteristic.getValue().array()));
         }
 
@@ -181,17 +172,17 @@ public class Kestrel extends AbstractSensorModule<KestrelConfig> {
     private void handleCharacteristicBytes(UUID uuid, byte[] raw) {
         if (uuid.equals(SENSOR_MEASUREMENTS_CHAR)) {
             double windSpeedRaw = (raw[0] & 0xFF) | ((raw[1] & 0xFF) << 8);
-            env.windSpeed = (windSpeedRaw == (short)0xFFFF) ? 0.0 : windSpeedRaw / 1000.0;
+            env.windSpeed = (windSpeedRaw == (short) 0xFFFF) ? 0.0 : windSpeedRaw / 1000.0;
 
             double dryBulbTempRaw = (((raw[2] & 0xFF) | ((raw[3] & 0xFF) << 8)));
             if (dryBulbTempRaw >= 0x8000)
                 dryBulbTempRaw -= 0x10000;
-            env.dryBulbTemp = (dryBulbTempRaw == (short)0x8001) ? 0.0 : dryBulbTempRaw / 100.0;
+            env.dryBulbTemp = (dryBulbTempRaw == (short) 0x8001) ? 0.0 : dryBulbTempRaw / 100.0;
 
             double globeTempRaw = (raw[4] & 0xFF) | ((raw[5] & 0xFF) << 8);
             if (globeTempRaw >= 0x8000)
                 globeTempRaw -= 0x10000;
-            env.globeTemp = (globeTempRaw == (short)0x8001) ? 0.0 : globeTempRaw / 100.0;
+            env.globeTemp = (globeTempRaw == (short) 0x8001) ? 0.0 : globeTempRaw / 100.0;
 
             env.relativeHumidity = ((raw[6] & 0xFF) | ((raw[7] & 0xFF) << 8)) / 100.0;
             env.stationPress = ((raw[8] & 0xFF) | ((raw[9] & 0xFF) << 8)) / 10.0;
@@ -199,48 +190,48 @@ public class Kestrel extends AbstractSensorModule<KestrelConfig> {
             env.airSpeed = ((raw[12] & 0xFF) | ((raw[13] & 0xFF) << 8)) / 1000.0;
             env.markSensorMeasurementsReceived();
         } else if (uuid.equals(DERIVED_MEASUREMENTS_1_CHAR)) {
-            double trueDirectionRaw =  (raw[0] & 0xFF) | ((raw[1] & 0xFF) << 8);
-            env.trueDirection = (trueDirectionRaw == (short)0xFFFF) ? 0.0 : trueDirectionRaw;
+            double trueDirectionRaw = (raw[0] & 0xFF) | ((raw[1] & 0xFF) << 8);
+            env.trueDirection = (trueDirectionRaw == (short) 0xFFFF) ? 0.0 : trueDirectionRaw;
 
             double airDensityRaw = (raw[2] & 0xFF) | ((raw[3] & 0xFF) << 8);
-            env.airDensity = (airDensityRaw == (short)0xFFFF) ? 0.0 : airDensityRaw / 1000.0;
+            env.airDensity = (airDensityRaw == (short) 0xFFFF) ? 0.0 : airDensityRaw / 1000.0;
 
             int altitudeRaw = (raw[4] & 0xFF) | ((raw[5] & 0xFF) << 8) | ((raw[6] & 0xFF) << 16);
             altitudeRaw = (altitudeRaw << 8) >> 8;
             env.altitude = (altitudeRaw == 0x800001) ? 0.0 : altitudeRaw / 10.0;
 
             double pressureRaw = (raw[7] & 0xFF) | ((raw[8] & 0xFF) << 8);
-            env.pressure = (pressureRaw == (short)0xFFFF) ? 0.0 : pressureRaw / 10.0;
+            env.pressure = (pressureRaw == (short) 0xFFFF) ? 0.0 : pressureRaw / 10.0;
 
             double crosswindRaw = (raw[9] & 0xFF) | ((raw[10] & 0xFF) << 8);
-            env.crosswind = (crosswindRaw == (short)0xFFFF) ? 0.0 : crosswindRaw / 1000.0;
+            env.crosswind = (crosswindRaw == (short) 0xFFFF) ? 0.0 : crosswindRaw / 1000.0;
 
             int headwindRaw = (raw[11] & 0xFF) | ((raw[12] & 0xFF) << 8) | ((raw[13] & 0xFF) << 16);
             headwindRaw = (headwindRaw << 8) >> 8;
-            env.headwind = (headwindRaw == 0x800001) ? 0.0 :  headwindRaw / 1000.0;
+            env.headwind = (headwindRaw == 0x800001) ? 0.0 : headwindRaw / 1000.0;
 
             int densityAltitudeRaw = (((raw[14] & 0xFF) | ((raw[15] & 0xFF) << 8)) | ((raw[16] & 0xFF) << 16));
             densityAltitudeRaw = (densityAltitudeRaw << 8) >> 8;
-            env.densityAlt = (densityAltitudeRaw == 0x80001) ? 0.0 :  densityAltitudeRaw / 10.0;
+            env.densityAlt = (densityAltitudeRaw == 0x80001) ? 0.0 : densityAltitudeRaw / 10.0;
 
             double relAirDensityRaw = (raw[17] & 0xFF) | ((raw[18] & 0xFF) << 8);
-            env.relativeAirDensity = (relAirDensityRaw == (short)0xFFFF) ? 0.0 : relAirDensityRaw / 10.0;
+            env.relativeAirDensity = (relAirDensityRaw == (short) 0xFFFF) ? 0.0 : relAirDensityRaw / 10.0;
 
             env.markDerived1Received();
         } else if (uuid.equals(DERIVED_MEASUREMENTS_2_CHAR)) {
 
             double dewPointRaw = (raw[0] & 0xFF) | ((raw[1] & 0xFF) << 8);
-            env.dewPoint = (dewPointRaw == (short)0x8001) ? 0.0 : dewPointRaw / 100.0;
+            env.dewPoint = (dewPointRaw == (short) 0x8001) ? 0.0 : dewPointRaw / 100.0;
 
             int heatIndexRaw = (((raw[2] & 0xFF) | ((raw[3] & 0xFF) << 8)) | ((raw[4] & 0xFF) << 16));
             heatIndexRaw = (heatIndexRaw << 8) >> 8;
             env.heatIndex = (heatIndexRaw == 0x80001) ? 0.0 : heatIndexRaw / 100.0;
 
             double wetBulb = (raw[16] & 0xFF) | ((raw[17] & 0xFF) << 8);
-            env.wetBulb = (wetBulb == (short)0x8001) ? 0.0 : wetBulb / 100.0;
+            env.wetBulb = (wetBulb == (short) 0x8001) ? 0.0 : wetBulb / 100.0;
 
             double windChillRaw = (raw[18] & 0xFF) | ((raw[19] & 0xFF) << 8);
-            env.chill = (windChillRaw == (short)0x8001) ? 0.0 : windChillRaw / 100.0;
+            env.chill = (windChillRaw == (short) 0x8001) ? 0.0 : windChillRaw / 100.0;
 
             env.markDerived2Received();
         }
