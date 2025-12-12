@@ -12,8 +12,10 @@ Copyright (C) 2020 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.mfapi;
+package com.botts.impl.service.mcp;
 
+import com.botts.impl.service.mcp.MCPService;
+import com.botts.impl.service.mcp.MCPServiceConfig;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
@@ -35,28 +37,28 @@ public class MCPServiceDescriptor extends JarModuleProvider implements IModulePr
     @Override
     public String getModuleName()
     {
-        return "Moving Feature API Service";
+        return "MCP Service";
     }
 
 
     @Override
     public String getModuleDescription()
     {
-        return "Data access service compliant with the OGC Moving Feature API standard";
+        return "Model Context Protocol service";
     }
 
 
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return MFApiService.class;
+        return MCPService.class;
     }
 
 
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return MFApiServiceConfig.class;
+        return MCPServiceConfig.class;
     }
 
 }

@@ -71,7 +71,7 @@ public class MCPServiceConfig extends OGCServiceConfig
 
     public MCPServiceConfig()
     {
-        this.moduleClass = MFApiService.class.getCanonicalName();
-        this.endPoint = "/mfapi";
+        this.moduleClass = MCPServiceConfig.class.getCanonicalName();
+        this.endPoint = "/mcp";
     }
 }

@@ -1,11 +1,16 @@
 package com.botts.impl.service.mcp.tools;
 
+import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.spec.McpSchema;
+import reactor.core.publisher.Mono;
 
-public abstract class AbstractMCPTool implements MCPTool{
+import java.util.Map;
+import java.util.function.BiFunction;
 
-    private McpSchema.Tool getTool() {
+public abstract class AbstractMCPTool {
+
+    public McpSchema.Tool getTool() {
         return McpSchema.Tool.builder()
                 .name(getName())
                 .title(getTitle())
@@ -17,11 +22,23 @@ public abstract class AbstractMCPTool implements MCPTool{
                 .build();
     }
 
-    public McpServerFeatures.AsyncToolSpecification getSpecification() {
-        return McpServerFeatures.AsyncToolSpecification.builder()
-                .tool(getTool())
-                .callHandler(getCallHandler())
-                .build();
-    }
+
+    // Tool description
+
+    public abstract String getName();
+
+    public abstract String getTitle();
+
+    public abstract String getDescription();
+
+    public abstract McpSchema.JsonSchema getInputSchema();
+
+    public abstract Map<String, Object> getOutputSchema();
+
+    public abstract McpSchema.ToolAnnotations getToolAnnotations();
+
+    public abstract Map<String, Object> getMetaData();
+
+    public abstract BiFunction<McpAsyncServerExchange, Map<String, Object>, Mono<McpSchema.CallToolResult>> getCallHandler();
 
 }
