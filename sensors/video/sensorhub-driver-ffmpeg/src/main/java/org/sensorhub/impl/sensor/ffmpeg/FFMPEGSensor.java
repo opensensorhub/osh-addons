@@ -203,12 +203,12 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
             String fileRegex = "^(?:[a-zA-Z]:)?[\\\\/].*";
 
             // For files, the FPS and loop settings are used to control playback.
-            if (config.connection.connectionString.matches(fileRegex)) {
+            if (config.connection.connectionString != null && config.connection.connectionString.matches(fileRegex)) {
                 logger.info("Opening file stream with FPS: {} and loop: {}", config.connection.fps, config.connection.loop);
-                mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString, config.connection.fps, config.connection.loop);
+                mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString, config.connection.commandLineArgs, config.connection.fps, config.connection.loop);
             } else {
                 logger.info("Opening network stream");
-                mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString);
+                mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString, config.connection.commandLineArgs);
             }
             mpegTsProcessor.setInjectVideoExtradata(config.connection.injectExtradata);
         }

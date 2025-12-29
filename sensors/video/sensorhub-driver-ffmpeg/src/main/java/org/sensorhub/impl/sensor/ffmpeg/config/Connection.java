@@ -25,6 +25,9 @@ public class Connection {
     @DisplayInfo(label = "Connection String", desc = "Connection string that the driver will pass to FFmpeg to connect to the stream. See https://www.ffmpeg.org/ffmpeg-protocols.html#Protocols for details of allowed values. May also be a file path.")
     public String connectionString;
 
+    @DisplayInfo(label = "Command Line Arguments", desc = "Optional command line arguments")
+    public String commandLineArgs = "-timeout 3000000";
+
     /**
      * FPS of the video playback, used only when reading from a file.
      */
