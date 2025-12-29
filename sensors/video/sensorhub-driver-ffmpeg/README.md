@@ -35,14 +35,19 @@ When added to an OpenSensorHub node, the driver has the following configuration 
       This may also be a file path, e.g. `c:/path/to/file.mkv`,
       in which case the file will be read from the local file system.
     - **Command Line Arguments:**
-      A string that contains FFmpeg command line arguments.
-      [Full list of FFmpeg command line arguments](https://gist.github.com/tayvano/6e2d456a9897f55025e25035478a3a50).
+      A string that contains FFmpeg command line flags. Each flag should be separated by a "-" preceding the name
+        of the flag.
+      - [Full list of FFmpeg command line flags](https://gist.github.com/tayvano/6e2d456a9897f55025e25035478a3a50).
       - Common flags include:
-        - -timeout [time in ms until timeout]
+        - -timeout [time until timeout]
+          - Ex: "timeout 3000000"
         - -rtsp_transport [transport protocol]
           - udp, tcp, udp_multicast, http
+          - Ex: "-rtsp_transport tcp" forces rtsp over tcp.
         - -f [format]
           - Force the input format for the video/stream.
+          - Ex: "-f dshow" allows for the usage of video input over Windows DirectShow.
+            - When using DirectShow, the Connection String will be of the format "video=[DirectShow device name]".
           - Run "ffmpeg -formats" in the command line for a complete list of formats.
     - **FPS:**
       When **Connection String** is a file,
