@@ -34,6 +34,16 @@ When added to an OpenSensorHub node, the driver has the following configuration 
       <br>
       This may also be a file path, e.g. `c:/path/to/file.mkv`,
       in which case the file will be read from the local file system.
+    - **Command Line Arguments:**
+      A string that contains FFmpeg command line arguments.
+      [Full list of FFmpeg command line arguments](https://gist.github.com/tayvano/6e2d456a9897f55025e25035478a3a50).
+      - Common flags include:
+        - -timeout [time in ms until timeout]
+        - -rtsp_transport [transport protocol]
+          - udp, tcp, udp_multicast, http
+        - -f [format]
+          - Force the input format for the video/stream.
+          - Run "ffmpeg -formats" in the command line for a complete list of formats.
     - **FPS:**
       When **Connection String** is a file,
       this indicates how fast the data is streamed.
