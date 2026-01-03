@@ -3,7 +3,6 @@ rootProject.name = 'osh-addons'
 // include all folders with build.gradle as subprojects
 def excludedProjects = [
   'sensorhub-storage-ndbc',
-  'sensorhub-driver-meshtastic', // TODO update driver to use newest version of osh-core
   'sensorhub-driver-nexrad', // TODO update driver to use newest version of osh-core
   'sensorhub-driver-usgswater', // TODO update driver to use newest version of osh-core
   'sensorhub-service-mfapi', // TODO update service to use newest version of osh-core
