@@ -15,18 +15,20 @@ ext.oshCoreVersion = '2.0-beta2'
 version = oshCoreVersion
 description = 'OSH Add-ons'
 
-repositories {
-    mavenLocal()
-    maven {
-        url = uri("https://maven.pkg.github.com/opensensorhub/osh-core")
-    }
-}
-
 subprojects {
     apply plugin: 'java-library'
     apply plugin: 'java-test-fixtures'
     apply plugin: 'eclipse'
     apply plugin: 'maven-publish'
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven {
+            url = uri("https://maven.pkg.github.com/opensensorhub/osh-core")
+        }
+    }
+
     version = oshCoreVersion
     ext.pom = {} // pom data that subprojects can append to
     // inject all repositories from included builds if any
