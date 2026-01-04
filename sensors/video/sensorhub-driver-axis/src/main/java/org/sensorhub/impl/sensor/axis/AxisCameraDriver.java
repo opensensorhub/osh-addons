@@ -95,7 +95,7 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
 
         // compute full host URL
         hostUrl = "http://" + config.http.remoteHost + ":" + config.http.remotePort + VAPIX_API_BASE_URL;
-    };
+    }
 
 
     @Override
@@ -195,8 +195,8 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
         connection.waitForConnection();
 
         // generate identifiers
-        generateUniqueID("urn:axis:cam:", serialNumber);
-        generateXmlID("AXIS_CAM_", serialNumber);
+        generateUniqueID("urn:axis:cam:", config.uidExtension.isBlank() ? serialNumber : serialNumber.trim() + ":" + config.uidExtension);
+        generateXmlID("AXIS_CAM_", config.uidExtension.isBlank() ? serialNumber : serialNumber.trim() + "_" + config.uidExtension);
 
         // create I/O objects
         String videoOutName = "video";
