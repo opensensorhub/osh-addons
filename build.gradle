@@ -287,13 +287,12 @@ subprojects {
                                     distribution 'repo'
                                 }
                             }
-                            def repoName = projectDir.parentFile.name
                             scm {
-                                url 'https://github.com/opensensorhub/' + repoName + '/tree/master/' + p.name
-                                connection 'scm:git:git://github.com/opensensorhub/' + repoName + '.git'
+                                url 'https://github.com/opensensorhub/osh-addons'
+                                connection 'scm:git:git://github.com/opensensorhub/osh-addons.git'
                             }
                             issueManagement {
-                                url 'https://github.com/opensensorhub/' + repoName + '/issues'
+                                url 'https://github.com/opensensorhub/osh-addons/issues'
                                 system 'GitHub Issues'
                             }
                         } >> p.pom)
