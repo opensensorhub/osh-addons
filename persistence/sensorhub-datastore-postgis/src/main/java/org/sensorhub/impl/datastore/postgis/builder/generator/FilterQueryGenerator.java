@@ -10,6 +10,7 @@ public abstract class FilterQueryGenerator {
 
     protected  String tableName;
     protected List<String> selectFields;
+    protected List<String> joins;
 
     public void tableName(String tableName) {
         this.tableName = tableName;
@@ -37,9 +38,20 @@ public abstract class FilterQueryGenerator {
         }
     }
 
+    protected void checkJoins() {
+        if (this.joins == null) {
+            this.joins = new ArrayList<>();
+        }
+    }
+
     public void addCondition(String condition) {
         this.checkAddConditions();
         this.addConditions.add(condition);
+    }
+
+    public void addJoin(String join) {
+        this.checkJoins();
+        this.joins.add(join);
     }
 
     public void orCondition(String condition) {

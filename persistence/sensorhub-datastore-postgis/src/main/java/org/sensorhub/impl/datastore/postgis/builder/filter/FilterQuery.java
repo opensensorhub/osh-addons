@@ -50,6 +50,10 @@ public abstract class FilterQuery<F extends FilterQueryGenerator> {
         }
     }
 
+    protected void addJoin(String join) {
+        filterQueryGenerator.addJoin(join);
+    }
+
     protected void addCondition(String condition) {
         filterQueryGenerator.addCondition(condition);
     }

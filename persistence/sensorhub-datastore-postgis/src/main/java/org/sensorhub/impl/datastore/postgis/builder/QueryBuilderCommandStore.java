@@ -45,13 +45,13 @@ public class QueryBuilderCommandStore extends QueryBuilder {
                 ISSUE_TIME+" TIMESTAMP,"+
                 STATUS+" VARCHAR,"+
                 ERROR_MSG+" VARCHAR,"+
-                PARAMETERS+" JSONB" +
+                PARAMETERS+" JSON" +
                 ")";
     }
 
-    public String createDataIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_data_idx on "+this.getStoreTableName()+" USING GIN("+PARAMETERS+")";
-    }
+//    public String createDataIndexQuery() {
+//        return "CREATE INDEX "+this.getStoreTableName()+"_data_idx on "+this.getStoreTableName()+" ("+PARAMETERS+")";
+//    }
 
     public String createCommandStreamIndexQuery() {
         return "CREATE INDEX "+this.getStoreTableName()+"_commandstream_idx on "+this.getStoreTableName()+" ("+COMMANDSTREAM_ID+")";

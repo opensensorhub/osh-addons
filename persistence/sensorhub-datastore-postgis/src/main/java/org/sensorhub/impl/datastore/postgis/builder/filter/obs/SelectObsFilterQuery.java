@@ -40,7 +40,7 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
 
     public SelectFilterQueryGenerator build(ObsFilter filter) {
         this.filterQueryGenerator = super.build(filter);
-        this.handleSorted();
+//        this.handleSorted();
         return this.filterQueryGenerator;
     }
 

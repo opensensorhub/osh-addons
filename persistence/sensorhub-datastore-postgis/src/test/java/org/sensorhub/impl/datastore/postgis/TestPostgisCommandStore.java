@@ -16,16 +16,27 @@ package org.sensorhub.impl.datastore.postgis;
 
 import org.junit.After;
 import org.junit.Test;
+import org.sensorhub.api.command.*;
+import org.sensorhub.api.common.BigId;
+import org.sensorhub.api.datastore.DataStoreException;
+import org.sensorhub.api.datastore.command.CommandStatusFilter;
+import org.sensorhub.api.feature.FeatureId;
 import org.sensorhub.impl.datastore.AbstractTestCommandStore;
 import org.sensorhub.impl.datastore.postgis.store.command.PostgisCommandStatusStore;
 import org.sensorhub.impl.datastore.postgis.store.command.PostgisCommandStoreImpl;
 import org.sensorhub.impl.datastore.postgis.store.command.PostgisCommandStreamStoreImpl;
+import org.vast.data.DataRecordImpl;
+import org.vast.data.TextEncodingImpl;
+import org.vast.swe.SWEHelper;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 public class TestPostgisCommandStore extends AbstractTestCommandStore<PostgisCommandStoreImpl> {
     protected static String COMMAND_DATASTORE_NAME = "test_command";
@@ -89,6 +100,92 @@ public class TestPostgisCommandStore extends AbstractTestCommandStore<PostgisCom
         checkMapKeySet(cmdStore.keySet());
     }
 
+    private void checkCommandStatusEqual(ICommandStatus o1, ICommandStatus o2) {
+        assertEquals(o1.getCommandID(), o2.getCommandID());
+        assertEquals(o1.getExecutionTime(), o2.getExecutionTime());
+        assertEquals(o1.getMessage(), o2.getMessage());
+        assertEquals(o1.getProgress(), o2.getProgress());
+        assertTrue(o1.getReportTime().getNano() - o2.getReportTime().getNano() < 1000);
+        assertEquals(o1.getStatusCode(), o2.getStatusCode());
+    }
+
+    @Override
+    protected void checkSelectedEntries(Stream<Map.Entry<BigId, ICommandStatus>> resultStream, Map<BigId, ICommandStatus> expectedResults, CommandStatusFilter filter)
+    {
+        System.out.println("Select status with " + filter);
+
+        var resultMap = resultStream
+                .peek(e -> System.out.println(e.getKey() + ": " + e.getValue()))
+                //.peek(e -> System.out.println(Arrays.toString((double[])e.getValue().getResult().getUnderlyingObject())))
+                .collect(Collectors.toMap(e->e.getKey(), e->e.getValue()));
+        System.out.println(resultMap.size() + " entries selected");
+
+        resultMap.forEach((k, v) -> {
+            assertTrue("Result set contains extra key "+k, expectedResults.containsKey(k));
+            checkCommandStatusEqual(expectedResults.get(k), v);
+            assertEquals("Invalid scope", DATABASE_NUM, k.getScope());
+        });
+
+        assertEquals(expectedResults.size(), resultMap.size());
+        expectedResults.forEach((k, v) -> {
+            assertTrue("Result set is missing key "+k, resultMap.containsKey(k));
+        });
+    }
+
+    @Test
+    public void testAddAndGetCommandStatus() throws DataStoreException {
+        SWEHelper fac = new SWEHelper();
+        var paramDesc = fac.createRecord()
+                .name("testParams")
+                .addField("field1", fac.createText())
+                .build();
+
+        var resDesc = fac.createRecord()
+                .name("testResult")
+                .addField("resField2", fac.createText())
+                .addField("resField3", fac.createText())
+                .addField("resField4", fac.createText())
+                .addField("resField5", fac.createText())
+                .addField("resField9", fac.createText())
+                .addField("resField10", fac.createText())
+                .addField("resField6", fac.createText())
+                .addField("resField1", fac.createText())
+                .addField("resField7", fac.createText())
+                .addField("resField8", fac.createText())
+                .build();
+
+
+        var csWithRes = new CommandStreamInfo.Builder()
+                .withName("testCs1")
+                .withRecordDescription(paramDesc)
+                .withRecordEncoding(new TextEncodingImpl())
+                .withResultDescription(resDesc)
+                .withSystem(new FeatureId(bigId(2), "urn:system:test1"))
+                .build();
+        var csId = cmdStore.getCommandStreams().add(csWithRes);
+
+        var cmd = new CommandData.Builder()
+                .withCommandStream(csId.getInternalID())
+                .withId(bigId(1))
+                .withParams(paramDesc.createDataBlock())
+                .build();
+
+        var cmdId = cmdStore.add(cmd);
+        var cmdRes = CommandResult.withData(resDesc.createDataBlock());
+        var cmdStatus = new CommandStatus.Builder()
+                .withCommand(cmdId)
+                .withResult(cmdRes)
+                .withStatusCode(ICommandStatus.CommandStatusCode.ACCEPTED)
+                .build();
+
+        var cmdStatusId = cmdStore.getStatusReports().add(cmdStatus);
+
+        var status = cmdStore.getStatusReports().get(cmdStatusId);
+        var statusRecs = status.getResult().getInlineRecords();
+        assertNotNull(statusRecs);
+        assertFalse(statusRecs.isEmpty());
+    }
+
     @Test
     public void testGetWrongKey() throws Exception
     {
@@ -98,6 +195,6 @@ public class TestPostgisCommandStore extends AbstractTestCommandStore<PostgisCom
 
     @Test
     public void testSelectCommandsByDataStreamIDAndPredicates() throws Exception {
-        super.testSelectCommandsByDataStreamIDAndPredicates();;
+        super.testSelectCommandsByDataStreamIDAndPredicates();
     }
 }
