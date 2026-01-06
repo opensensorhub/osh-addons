@@ -192,7 +192,7 @@ public class MpegTsProcessor extends Thread {
         var options = new AVDictionary(null);
         avdevice_register_all();
         String cmdFormat;
-        cmdFormat = poulateOptions(options, optionsString);
+        cmdFormat = populateOptions(options, optionsString);
         if (cmdFormat != null && !cmdFormat.isBlank()) {
             inputFormat = av_find_input_format(cmdFormat);
         }
@@ -229,7 +229,7 @@ public class MpegTsProcessor extends Thread {
         return streamOpened;
     }
 
-    private String poulateOptions(AVDictionary options, String optionsString) {
+    private String populateOptions(AVDictionary options, String optionsString) {
         if (optionsString.isBlank()) {
             return null;
         }
