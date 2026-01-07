@@ -159,8 +159,13 @@ public class GattClientImpl implements IGattClient
             callback.onConnected(this, IGattClient.GATT_FAILURE);
         }
     }
-    
-    
+
+    // TODO placeholder, need to properly implement
+    @Override
+    public boolean requestMtu(int mtu) {
+        return false;
+    }
+
     @Override
     public void disconnect()
     {
