@@ -29,7 +29,7 @@ subprojects {
   apply plugin: 'maven-publish'
   
   repositories {
-    mavenLocal()
+    //mavenLocal()
     mavenCentral()
     maven {
       url = uri("https://maven.pkg.github.com/opensensorhub/osh-core")
@@ -311,7 +311,7 @@ subprojects {
         }
       }
       repositories {
-        mavenLocal()
+        //mavenLocal()
         maven {
           name = "GitHubPackages"
           url = "https://maven.pkg.github.com/opensensorhub/osh-addons"
