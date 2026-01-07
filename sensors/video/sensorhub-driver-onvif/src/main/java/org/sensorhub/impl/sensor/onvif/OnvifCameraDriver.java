@@ -1,21 +1,22 @@
 /***************************** BEGIN LICENSE BLOCK ***************************
 
-The contents of this file are subject to the Mozilla Public License, v. 2.0.
-If a copy of the MPL was not distributed with this file, You can obtain one
-at http://mozilla.org/MPL/2.0/.
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
 
-Software distributed under the License is distributed on an "AS IS" basis,
-WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-for the specific language governing rights and limitations under the License.
- 
-The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
-Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
- 
-******************************* END LICENSE BLOCK ***************************/
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
+ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
+
+ ******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.sensor.onvif;
 
 
+import java.lang.Object;
 import java.net.*;
 import java.util.List;
 import java.util.TreeSet;
@@ -23,6 +24,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import de.onvif.discovery.OnvifDiscovery;
+import jakarta.xml.ws.BindingProvider;
+import org.onvif.ver10.media.wsdl.Media;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.onvif.ver10.schema.*;
 import org.sensorhub.api.common.SensorHubException;
@@ -39,7 +42,7 @@ import de.onvif.soap.OnvifDevice;
  * Implementation of sensor interface for generic Cameras using IP
  * protocol
  * </p>
- * 
+ *
  * @author Kyle Fitzpatrick
  * @since April 1, 2025
  */
@@ -265,8 +268,27 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
             }
         }
 
+        rewriteServiceEndpoint(camera.getMedia());
+        rewriteServiceEndpoint(camera.getPtz());
+        rewriteServiceEndpoint(camera.getImaging());
+        rewriteServiceEndpoint(camera.getDevice());
+        Media mediaService = camera.getMedia();
+        if (mediaService != null) {
+            BindingProvider bp = (BindingProvider) mediaService;
+            String currentUrl = (String) bp.getRequestContext()
+                    .get(BindingProvider.ENDPOINT_ADDRESS_PROPERTY);
+
+            // Replace internal IP with the configured remote host
+            if (currentUrl != null) {
+                String fixedUrl = rewriteToPublicHost(currentUrl,
+                        config.networkConfig.remoteHost, resolvePort);
+                bp.getRequestContext()
+                        .put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY, fixedUrl);
+            }
+        }
+
         // ONVIF profiles
-        List<Profile> profiles = camera.getMedia().getProfiles();
+        List<Profile> profiles = mediaService.getProfiles();
         if (profiles == null || profiles.isEmpty()) {
             throw new SensorHubException("Camera does not have any profiles to use");
         }
@@ -285,7 +307,15 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
 
             // Select a profile that supports video
             if (p.getVideoEncoderConfiguration() != null) {
-                config.streamingConfig.autoStreamEndpoint.add(camera.getStreamUri(p.getToken()));
+
+                String publicStreamEndpoint;
+                try {
+                    publicStreamEndpoint = getPublicStreamEndpoint(p);
+                } catch (URISyntaxException e) {
+                    logger.warn("Could not get public stream endpoint for profile {}", p.getName());
+                    continue;
+                }
+                config.streamingConfig.autoStreamEndpoint.add(publicStreamEndpoint);
 
                 // Search for profile with preferred codec if endpoint is not specified
                 if (streamingProfile == null && (config.streamingConfig.streamEndpoint == null || config.streamingConfig.streamEndpoint.isBlank())) {
@@ -295,12 +325,12 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
                     if (codec == p.getVideoEncoderConfiguration().getEncoding()){
                         streamingProfile = p;
                         //streamingProfile.getVideoEncoderConfiguration().setEncoding(codec);
-                        config.streamingConfig.streamEndpoint = camera.getStreamUri(streamingProfile.getToken());
+                        config.streamingConfig.streamEndpoint = publicStreamEndpoint;
                         log.debug("Successfully switched to {}: {}", codec, streamingProfile.getVideoEncoderConfiguration().getEncoding().toString());
                     }
 
-                // If a streaming endpoint is specified and matches the current profile stream URI, select it and set codec
-                } else if (streamingProfile == null && config.streamingConfig.streamEndpoint != null && config.streamingConfig.streamEndpoint.equals(camera.getStreamUri(p.getToken()))) {
+                    // If a streaming endpoint is specified and matches the current profile stream URI, select it and set codec
+                } else if (streamingProfile == null && config.streamingConfig.streamEndpoint != null && config.streamingConfig.streamEndpoint.equals(publicStreamEndpoint)) {
                     streamingProfile = p;
                     //streamingProfile.getVideoEncoderConfiguration().setEncoding(codec);
                 }
@@ -310,7 +340,11 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
         // If endpoint or preferred codec not found, fall back to other discovered video profile
         if (streamingProfile == null && tempMedia != null) {
             streamingProfile = tempMedia;
-            config.streamingConfig.streamEndpoint = camera.getStreamUri(streamingProfile.getToken());
+            try {
+                config.streamingConfig.streamEndpoint = getPublicStreamEndpoint(streamingProfile);
+            } catch (URISyntaxException e) {
+                logger.warn("Could not get public stream endpoint for profile {}", streamingProfile.getName());
+            }
         }
 
         if (ptzProfile == null) {
@@ -393,6 +427,45 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
         }
     }
 
+    private String getPublicStreamEndpoint(Profile p) throws URISyntaxException {
+        String localStreamEndpoint = camera.getStreamUri(p.getToken());
+        String port = "" + (new URI(localStreamEndpoint)).getPort();
+        return rewriteToPublicHost(localStreamEndpoint, config.networkConfig.remoteHost, port);
+    }
+
+    private void rewriteServiceEndpoint(Object servicePort) {
+        if (servicePort == null) return;
+
+        try {
+            BindingProvider bp = (BindingProvider) servicePort;
+            String currentUrl = (String) bp.getRequestContext()
+                    .get(BindingProvider.ENDPOINT_ADDRESS_PROPERTY);
+
+            if (currentUrl != null) {
+                String resolvePort = (config.networkConfig.remotePort == 0) ? "" : ":" + config.networkConfig.remotePort;
+                String fixedUrl = rewriteToPublicHost(currentUrl,
+                        config.networkConfig.remoteHost, resolvePort);
+                bp.getRequestContext()
+                        .put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY, fixedUrl);
+                log.debug("Rewrote service endpoint: {} -> {}", currentUrl, fixedUrl);
+            }
+        } catch (ClassCastException e) {
+            log.warn("Could not rewrite endpoint for service: {}", servicePort.getClass().getName());
+        }
+    }
+
+    private String rewriteToPublicHost(String endpoint, String publicHost, String port) {
+        try {
+            URI uri = new URI(endpoint);
+            String newHost = publicHost.replace("http://", "").replace("https://", "");
+            int newPort = port.isEmpty() ? uri.getPort() : Integer.parseInt(port.replace(":", ""));
+            return new URI(uri.getScheme(), null, newHost, newPort,
+                    uri.getPath(), uri.getQuery(), null).toString();
+        } catch (Exception e) {
+            return endpoint;
+        }
+    }
+
     /**
      * Start the driver using camera connection established in the init method.
      * @throws SensorHubException
@@ -459,50 +532,50 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
      * @throws SensorHubException
      */
     protected void openStreamVisual() throws SensorHubException{
-    if (mpegTsProcessor == null) {
-        mpegTsProcessor = new MpegTsProcessor(visualConnectionString);
-        // Remove the following line if causing an error. Part of a separate ffmpeg mod.
-        //mpegTsProcessor.setAvOption("transport", streamTransport);
+        if (mpegTsProcessor == null) {
+            mpegTsProcessor = new MpegTsProcessor(visualConnectionString);
+            // Remove the following line if causing an error. Part of a separate ffmpeg mod.
+            //mpegTsProcessor.setAvOption("transport", streamTransport);
 
-        // Initialize the MPEG transport stream processor from the source named in the configuration.
-        if (mpegTsProcessor.openStream()) {
-            // If there is a video content in the stream
-            if (mpegTsProcessor.hasVideoStream()) {
-                // In case we were waiting until we got video data to make the video frame output,
-                // we go ahead and do that now.
-                if (videoOutput == null) {
-                    videoOutput = new VideoOutput<>(this, mpegTsProcessor.getVideoStreamFrameDimensions(), mpegTsProcessor.getVideoCodecName(), "visual", "Visual Camera", "Visual stream using ffmpeg library");
-                    if (executor != null) {
-                        videoOutput.setExecutor(executor);
+            // Initialize the MPEG transport stream processor from the source named in the configuration.
+            if (mpegTsProcessor.openStream()) {
+                // If there is a video content in the stream
+                if (mpegTsProcessor.hasVideoStream()) {
+                    // In case we were waiting until we got video data to make the video frame output,
+                    // we go ahead and do that now.
+                    if (videoOutput == null) {
+                        videoOutput = new VideoOutput<>(this, mpegTsProcessor.getVideoStreamFrameDimensions(), mpegTsProcessor.getVideoCodecName(), "visual", "Visual Camera", "Visual stream using ffmpeg library");
+                        if (executor != null) {
+                            videoOutput.setExecutor(executor);
+                        }
+                        videoOutput.doInit();
+                        addOutput(videoOutput, false);
+
                     }
-                    videoOutput.doInit();
-                    addOutput(videoOutput, false);
-
+                    // Set video stream packet listener to video output
+                    mpegTsProcessor.setVideoDataBufferListener(videoOutput);
                 }
-                // Set video stream packet listener to video output
-                mpegTsProcessor.setVideoDataBufferListener(videoOutput);
-            }
 
-            // If there is an audio content in the stream
-            if (mpegTsProcessor.hasAudioStream()) {
-                // In case we were waiting until we got audio data to make the audio output,
-                // we go ahead and do that now.
-                if (audioOutput == null) {
-                    audioOutput = new AudioOutput<>(this, mpegTsProcessor.getAudioSampleRate(), mpegTsProcessor.getAudioCodecName());
-                    if (executor != null) {
-                        audioOutput.setExecutor(executor);
+                // If there is an audio content in the stream
+                if (mpegTsProcessor.hasAudioStream()) {
+                    // In case we were waiting until we got audio data to make the audio output,
+                    // we go ahead and do that now.
+                    if (audioOutput == null) {
+                        audioOutput = new AudioOutput<>(this, mpegTsProcessor.getAudioSampleRate(), mpegTsProcessor.getAudioCodecName());
+                        if (executor != null) {
+                            audioOutput.setExecutor(executor);
+                        }
+                        audioOutput.doInit();
+                        addOutput(audioOutput, false);
                     }
-                    audioOutput.doInit();
-                    addOutput(audioOutput, false);
+                    // Set audio stream packet listener to audio output
+                    mpegTsProcessor.setAudioDataBufferListener(audioOutput);
                 }
-                // Set audio stream packet listener to audio output
-                mpegTsProcessor.setAudioDataBufferListener(audioOutput);
+            } else {
+                throw new SensorHubException("Unable to open stream from data source");
             }
-        } else {
-            throw new SensorHubException("Unable to open stream from data source");
         }
     }
-}
 
     protected void startStream() throws SensorHubException {
         try {

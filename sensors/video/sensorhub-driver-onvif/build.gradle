@@ -9,10 +9,13 @@ dependencies {
 
   embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-api:4.1.3'
   embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-service:4.1.3'
-  embeddedImpl 'org.apache.cxf:cxf-rt-transports-http-jetty:4.1.3'
+  embeddedImpl ('org.apache.cxf:cxf-rt-transports-http-jetty:4.1.3') {
+    exclude group: 'org.eclipse.jetty'
+  }
   embeddedImpl 'org.apache.cxf:cxf-rt-bindings-soap:4.1.3'
   embeddedImpl 'jakarta.xml.soap:jakarta.xml.soap-api:2.0.1'
   embeddedImpl 'com.sun.activation:jakarta.activation:2.0.1'
+  embeddedImpl 'com.sun.xml.messaging.saaj:saaj-impl:3.0.4'
   embeddedImpl 'jakarta.xml.ws:jakarta.xml.ws-api:3.0.1'
   embeddedImpl 'org.apache.cxf.xjc-utils:cxf-xjc-runtime:4.0.0'
   embeddedImpl 'jakarta.activation:jakarta.activation-api:2.1.3'
@@ -20,8 +23,9 @@ dependencies {
   embeddedImpl 'jakarta.jws:jakarta.jws-api:3.0.0'
   embeddedImpl 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
   embeddedImpl 'javax.xml.bind:jaxb-api:2.3.1'
-  embeddedImpl 'org.apache.cxf.services.wsn:cxf-services-wsn-core:4.1.3'
-  embeddedImpl 'org.apache.cxf:cxf-rt-frontend-jaxws:4.1.3'
+  embeddedImpl 'commons-codec:commons-codec:1.17.0'
+  //embeddedImpl 'org.apache.cxf.services.wsn:cxf-services-wsn-core:4.1.3'
+  //embeddedImpl 'org.apache.cxf:cxf-rt-frontend-jaxws:4.1.3'
 
   embeddedImpl('net.sf.jipcam:jipcam:0.9.1') {
     exclude group: 'log4j', module: 'log4j'
