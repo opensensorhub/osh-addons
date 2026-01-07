@@ -6,6 +6,9 @@ def excludedProjects = [
   'sensorhub-driver-nexrad', // TODO update driver to use newest version of osh-core
   'sensorhub-driver-usgswater', // TODO update driver to use newest version of osh-core
   'sensorhub-service-mfapi', // TODO update service to use newest version of osh-core
+  'sensorhub-comm-ble-dbus', // TODO update service to use newest version of osh-core
+  'sensorhub-driver-angelsensor', // TODO update service to use newest version of osh-core
+  'sensorhub-driver-isa', // TODO update service to use newest version of osh-core
   'sensorhub-test'
 ]
 FileTree subprojects = fileTree(rootDir).exclude('dist').include('**/build.gradle')
