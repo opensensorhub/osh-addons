@@ -59,8 +59,8 @@ public class SimOrientationSensor extends AbstractSensorModule<SimOrientationCon
         locationUpdateTask = executorService.scheduleAtFixedRate(() ->
                         locationOutput.updateLocation(
                                 System.currentTimeMillis()/1000d,
-                                config.location.lat,
                                 config.location.lon,
+                                config.location.lat,
                                 config.location.alt,
                                 true)
         , 0, 1, TimeUnit.SECONDS);
