@@ -3,7 +3,7 @@ ext.details = 'Storage module backed by a PostGis database'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  implementation 'org.sensorhub:sensorhub-service-consys'
+  implementation 'org.sensorhub:sensorhub-service-consys:'+ oshCoreVersion
   embeddedImpl('org.postgresql:postgresql:42.7.7') {
     exclude group: "org.slf4j", module: "slf4j-api"
   }

@@ -5,6 +5,7 @@ version = '0.1-SNAPSHOT'
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-driver-videocam')
+  implementation 'org.vast.opengis:sensorml-core:' + oshCoreVersion
 }
 
 // add info to OSGi manifest
