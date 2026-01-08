@@ -27,7 +27,9 @@ subprojects {
   apply plugin: 'java-test-fixtures'
   apply plugin: 'eclipse'
   apply plugin: 'maven-publish'
-  
+  dependencies {
+    testImplementation "junit:junit:4.13.1"
+  }
   repositories {
     //mavenLocal()
     mavenCentral()
