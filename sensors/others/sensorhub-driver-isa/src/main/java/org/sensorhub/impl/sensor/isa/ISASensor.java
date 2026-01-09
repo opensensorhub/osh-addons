@@ -17,7 +17,7 @@ package org.sensorhub.impl.sensor.isa;
 import java.time.Instant;
 import org.sensorhub.impl.sensor.AbstractSensorDriver;
 import org.vast.ogc.gml.IFeature;
-import org.vast.ogc.om.SamplingSphere;
+import org.vast.sensorML.sampling.SamplingSphere;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEConstants;
 import com.google.common.collect.ImmutableMap;
@@ -108,7 +108,8 @@ public abstract class ISASensor extends AbstractSensorDriver
     
     protected ISASensor setFixedLocation(Instant time, double lat, double lon, double alt)
     {
-        setSamplingPointFoi(lat, lon, alt);
+        clearFois();
+        addSamplingPointFoi(lat, lon, alt);
         addLocationOutput(Double.NaN);
         return this;
     }
@@ -136,7 +137,8 @@ public abstract class ISASensor extends AbstractSensorDriver
         point.setPos(new double[] {lat, lon, alt});
         sf.setShape(point);
         sf.setRadius(radius);
-        foiMap = ImmutableMap.of(sf.getUniqueIdentifier(), sf);
+        clearFois();
+        addFoi(sf);
     }
     
     
@@ -166,15 +168,15 @@ public abstract class ISASensor extends AbstractSensorDriver
     
     public IFeature getFeatureOfInterest()
     {
-        return !foiMap.isEmpty() ? foiMap.values().iterator().next() : null;
+        return !getCurrentFeaturesOfInterest().isEmpty() ? getCurrentFeaturesOfInterest().values().iterator().next() : null;
     }
     
     
     public void sendLocation(long time)
     {
-        if (!foiMap.isEmpty())
+        if (!getCurrentFeaturesOfInterest().isEmpty())
         {
-            var foi = foiMap.values().iterator().next();
+            var foi = getCurrentFeaturesOfInterest().values().iterator().next();
             var point = ((Point)foi.getGeometry()).getPos();
             locationOutput.updateLocation(time/1000., point[1], point[0], point[2], false);
         }
