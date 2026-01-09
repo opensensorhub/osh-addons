@@ -129,6 +129,8 @@ public class MpegTsProcessor extends Thread {
      */
     protected ScheduledExecutorService restartExecutor;
 
+    private final Object avFormatContextLock = new Object();
+
     /**
      * Constructor
      *
@@ -474,25 +476,27 @@ public class MpegTsProcessor extends Thread {
     private void processPacket() {
         if (!streamOpened) return;
 
-        AVPacket avPacket = new AVPacket();
+        synchronized (avFormatContextLock) {
+            AVPacket avPacket = new AVPacket();
 
-        int ret = av_read_frame(avFormatContext, avPacket);
+            int ret = av_read_frame(avFormatContext, avPacket);
 
-        if (ret < 0) {
-            if (loop) {
-                avformat.av_seek_frame(avFormatContext, 0, 0, avformat.AVSEEK_FLAG_ANY);
+            if (ret < 0) {
+                if (loop) {
+                    avformat.av_seek_frame(avFormatContext, 0, 0, avformat.AVSEEK_FLAG_ANY);
+                } else {
+                    closeStream();
+                }
             } else {
-                closeStream();
+                videoStreamContext.processPacket(avPacket);
+                audioStreamContext.processPacket(avPacket);
+                dataStreamContext.processPacket(avPacket);
             }
-        } else {
-            videoStreamContext.processPacket(avPacket);
-            audioStreamContext.processPacket(avPacket);
-            dataStreamContext.processPacket(avPacket);
-        }
 
-        // Fully deallocate packet
-        avcodec.av_packet_unref(avPacket);
-        avPacket.deallocate();
+            // Fully deallocate packet
+            avcodec.av_packet_unref(avPacket);
+            avPacket.deallocate();
+        }
     }
 
     /**
@@ -503,8 +507,10 @@ public class MpegTsProcessor extends Thread {
 
         if (streamOpened) {
 
-            if (avFormatContext != null) {
-                avformat.avformat_close_input(avFormatContext);
+            synchronized (avFormatContextLock) {
+                if (avFormatContext != null) {
+                    avformat.avformat_close_input(avFormatContext);
+                }
             }
 
             streamOpened = false;
