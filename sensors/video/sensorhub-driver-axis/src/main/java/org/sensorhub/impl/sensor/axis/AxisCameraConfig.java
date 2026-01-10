@@ -38,7 +38,10 @@ import org.sensorhub.impl.sensor.videocam.ptz.PtzConfig;
  * @since October 30, 2014
  */
 public class AxisCameraConfig extends SensorConfig {
-	
+
+    @DisplayInfo(label="UID Extension", desc="ID to be attached to tail of this system's UID. Driver must be reinitialized to be configured after start")
+    public String uidExtension = "";
+
     @DisplayInfo(label="HTTP", desc="HTTP configuration")
     public HTTPConfig http = new HTTPConfig();
     
