@@ -76,6 +76,41 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
     float zoomMax = 2f;
     float zoomMin = -1f;
 
+    public void absolutePanTilt(float panDegrees, float tiltDegrees) {
+        float pan = degtoGeneric(panDegrees, 0);
+        float tilt = degtoGeneric(tiltDegrees, 1);
+
+        Vector2D targetPanTilt = new Vector2D();
+
+        targetPanTilt.setSpace(ptzProfile.getPTZConfiguration().getDefaultAbsolutePantTiltPositionSpace());
+        targetPanTilt.setX(pan);
+        targetPanTilt.setY(tilt);
+        var position = getCurrentPtzPosition();
+        position.setPanTilt(targetPanTilt);
+
+        camera.getPtz().absoluteMove(ptzProfile.getToken(), position, ptzControlInterface.speed);
+    }
+
+    public void absolutePan(float panDegrees) {
+        absolutePanTilt(panDegrees, getCurrentPtzPosition().getPanTilt().getY());
+    }
+
+    public void absoluteTilt(float tiltDegrees) {
+        absolutePanTilt(getCurrentPtzPosition().getPanTilt().getX(), tiltDegrees);
+    }
+
+    private PTZVector getCurrentPtzPosition() {
+        PTZVector position;
+        try {
+            PTZStatus status = camera.getPtz().getStatus(ptzProfile.getToken());
+            position = status.getPosition();
+        } catch (Exception e) {
+            position = new PTZVector();
+        }
+
+        return position;
+    }
+
     // Type: 0 = pan, 1 = tilt, 2 zoom
     public float degtoGeneric(float in, int type) {
         float min;

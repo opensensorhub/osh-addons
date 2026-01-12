@@ -19,6 +19,7 @@ import org.onvif.ver10.schema.VideoEncoding;
 import org.sensorhub.api.comm.ICommConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
+import org.sensorhub.api.sensor.PositionConfig;
 import org.sensorhub.api.sensor.SensorConfig;
 import org.sensorhub.impl.comm.TCPConfig;
 import java.util.*;
@@ -33,6 +34,17 @@ import java.util.*;
  * @since May 22, 2017
  */
 public class OnvifCameraConfig extends SensorConfig {
+
+    @DisplayInfo(desc = "Geographic position configuration")
+    public PositionConfig positionConfig;
+
+    @Override
+    public PositionConfig.LLALocation getLocation() {
+        if (positionConfig == null || positionConfig.location == null)
+            return null;
+        return positionConfig.location;
+    }
+
     @Required
     @DisplayInfo(label="ONVIF Connection Options", desc="Configure ONVIF remote address and port")
     public OnvifConfig networkConfig = new OnvifConfig();
