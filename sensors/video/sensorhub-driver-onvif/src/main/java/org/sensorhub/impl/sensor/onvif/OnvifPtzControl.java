@@ -328,11 +328,8 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 			// RELATIVE PAN
         	else if (itemID.equals(VideoCamHelper.TASKING_RPAN))
         	{
-				float rpan = data.getFloatValue() / (parent.panMax - parent.panMin) * 2;
-				if (devicePtzConfig.getDefaultRelativePanTiltTranslationSpace() == null && devicePtzConfig.getDefaultAbsolutePantTiltPositionSpace() != null) {
-					float pan = parent.ptzPosOutput.getLatestRecord().getFloatValue(1) + rpan;
-					parent.absolutePan(pan);
-				} else {
+				float rpan = data.getFloatValue();
+				try {
 					Vector2D targetPanTilt = new Vector2D();
 
 					targetPanTilt.setX(rpan);
@@ -341,16 +338,18 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 					position.setPanTilt(targetPanTilt);
 
 					camera.getPtz().relativeMove(ptzProfile.getToken(), position, speed);
+				} catch (Exception e) {
+					if (devicePtzConfig.getDefaultAbsolutePantTiltPositionSpace() != null) {
+						float pan = parent.ptzPosOutput.getLatestRecord().getFloatValue(1) + rpan;
+						parent.absolutePan(pan);
+					}
 				}
         	}
 			// RELATIVE TILT
         	else if (itemID.equals(VideoCamHelper.TASKING_RTILT))
         	{
-        		float rtilt = data.getFloatValue() / (parent.tiltMax - parent.tiltMin) * 2;
-				if (devicePtzConfig.getDefaultRelativePanTiltTranslationSpace() == null && devicePtzConfig.getDefaultAbsolutePantTiltPositionSpace() != null) {
-					float tilt = parent.ptzPosOutput.getLatestRecord().getFloatValue(2) + rtilt;
-					parent.absoluteTilt(tilt);
-				} else {
+				float rtilt = data.getFloatValue();
+				try {
 					Vector2D targetPanTilt = new Vector2D();
 
 					targetPanTilt.setX(0.0f);
@@ -359,6 +358,11 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 					position.setPanTilt(targetPanTilt);
 
 					camera.getPtz().relativeMove(ptzProfile.getToken(), position, speed);
+				} catch (Exception e) {
+					if (devicePtzConfig.getDefaultAbsolutePantTiltPositionSpace() != null) {
+						float tilt = parent.ptzPosOutput.getLatestRecord().getFloatValue(2) + rtilt;
+						parent.absoluteTilt(tilt);
+					}
 				}
         	}
 			// RELATIVE ZOOM
