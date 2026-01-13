@@ -60,7 +60,7 @@ public class RemoveCommandFilterQuery extends BaseCommandFilterQuery<RemoveFilte
             Asserts.checkNotNull(this.commandStatusTableName, "commandStatusTableName should not be null");
 
             this.filterQueryGenerator.addUsing(this.commandStatusTableName);
-            this.filterQueryGenerator.addCondition("("+this.tableName+".id) = ("+this.commandStatusTableName+".data->'command@id'->'id')::bigint");
+            this.filterQueryGenerator.addCondition("("+this.tableName+".id) = ("+this.commandStatusTableName+".commandID)::bigint");
 
             RemoveCommandStatusFilterQuery commandStatusFilterQuery = new RemoveCommandStatusFilterQuery(this.commandStatusTableName, filterQueryGenerator);
             commandStatusFilterQuery.setCommandStatusTableName(this.tableName);

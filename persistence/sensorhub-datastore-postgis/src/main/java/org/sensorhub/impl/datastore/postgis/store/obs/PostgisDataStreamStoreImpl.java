@@ -73,7 +73,8 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
                 queryBuilder.createValidTimeBeginIndexQuery(),
                 queryBuilder.createValidTimeEndIndexQuery(),
                 queryBuilder.createTrigramExtensionQuery(),
-                queryBuilder.createTrigramDescriptionFullTextIndexQuery()
+                queryBuilder.createTrigramDescriptionFullTextIndexQuery(),
+                queryBuilder.createSchemaFieldsIndexQuery()
         });
     }
 

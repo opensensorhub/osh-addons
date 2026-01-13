@@ -27,24 +27,39 @@ public class SelectDataStreamFilterQuery extends DataStreamFilterQuery<SelectFil
 
     protected void handleValidTimeFilter(TemporalFilter temporalFilter) {
         if (temporalFilter != null) {
-            addCondition(tableName+".data->'validTime'->'begin' IS NOT NULL");
             if (temporalFilter.isLatestTime()) {
-                filterQueryGenerator.addDistinct("("+tableName+".data->>'name')");
-                filterQueryGenerator.addDistinct("("+tableName+".data->'system@id'->'internalID'->'id')::bigint");
-                filterQueryGenerator.addOrderBy(tableName+".data->>'name'");
-                filterQueryGenerator.addOrderBy("("+tableName+".data->'system@id'->'internalID'->'id')::bigint");
-                filterQueryGenerator.addOrderBy("("+tableName+".data->'validTime'->>'end')::timestamp DESC ");
-            } else {
+                filterQueryGenerator.addDistinct("(" + tableName + ".data->>'name')");
+                filterQueryGenerator.addDistinct("(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint");
+                filterQueryGenerator.addOrderBy(tableName + ".data->>'name'");
+                filterQueryGenerator.addOrderBy("(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint");
+                filterQueryGenerator.addOrderBy("(" + tableName + ".data->'validTime'->>'end')::timestamp DESC ");
+            }
+            else if (temporalFilter.isCurrentTime()) {
+                filterQueryGenerator.addDistinct("(" + tableName + ".data->>'name')");
+                filterQueryGenerator.addDistinct("(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint");
+                String sb = "(" +
+                        tableName + ".data->'validTime' IS NULL " +
+                        "OR (" +
+                        tableName + ".data->'validTime'->'begin' IS NOT NULL " +
+                        "AND (" + tableName + ".data->'validTime'->>'begin')::timestamp <= now() " +
+                        "AND ((" + tableName + ".data->'validTime'->>'end') IS NULL " +
+                        "OR (" + tableName + ".data->'validTime'->>'end')::timestamp >= now())" +
+                        ")" +
+                        ")";
+                addCondition(sb);
+            }
+            else {
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
-                String sb = "tsrange((" +
-                        tableName +
-                        ".data->'validTime'->>'begin')::timestamp,(" +
-                        tableName +
-                        ".data->'validTime'->>'end')::timestamp)" +
-                        " "+PostgisUtils.getOperator(temporalFilter)+" " +
-                        "'[" + min + "," + max + "]'::tsrange";
+                String sb = "(" +
+                        tableName + ".data->'validTime' IS NULL " +
+                        "OR tsrange((" +
+                        tableName + ".data->'validTime'->>'begin')::timestamp, (" +
+                        tableName + ".data->'validTime'->>'end')::timestamp) " +
+                        PostgisUtils.getOperator(temporalFilter) + " " +
+                        "'[" + min + "," + max + "]'::tsrange" +
+                        ")";
                 addCondition(sb);
             }
         }

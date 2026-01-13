@@ -49,8 +49,8 @@ public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<IS
 
     @Override
     public String selectLastVersionByUidQuery(String uid, String timestamp) {
-        return "SELECT DISTINCT ON (id) id,validTime " +
-                "FROM " + this.getStoreTableName() + " WHERE (data->>'uid') = '" + uid + "' AND " +
+        return "SELECT DISTINCT ON (id) id,parentid,validTime " +
+                "FROM " + this.getStoreTableName() + " WHERE (data->>'uniqueId') = '" + uid + "' AND " +
                 this.getStoreTableName()+".validTime @> '" + timestamp + "'::timestamp "+
                 "order by id, lower(validTime) DESC";
     }
@@ -77,7 +77,7 @@ public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<IS
 
     @Override
     public String countFeatureQuery() {
-        return "SELECT COUNT(DISTINCT data->>'uid') AS recordsCount FROM " + this.getStoreTableName();
+        return "SELECT COUNT(DISTINCT data->>'uniqueId') AS recordsCount FROM " + this.getStoreTableName();
     }
 
     @Override

@@ -21,7 +21,7 @@ import org.sensorhub.impl.datastore.postgis.builder.query.command.SelectEntriesC
 import java.util.Set;
 
 public class QueryBuilderCommandStreamStore extends QueryBuilder {
-    public final static String COMMAND_STREAM_TABLE_NAME = "commandstream";
+    public final static String COMMAND_STREAM_TABLE_NAME = "commandstreams";
 
     public QueryBuilderCommandStreamStore() {
         this(COMMAND_STREAM_TABLE_NAME);

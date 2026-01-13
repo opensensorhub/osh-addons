@@ -76,6 +76,10 @@ public class QueryBuilderDataStreamStore extends QueryBuilder {
                 "GIN (to_tsvector('english', data->'recordSchema'->'description'))";
     }
 
+    public String createSchemaFieldsIndexQuery() {
+        return "CREATE INDEX " + this.getStoreTableName() + "_fields_gin_idx ON " + this.getStoreTableName() + " USING GIN ((data->'recordSchema'->'fields'))";
+    }
+
     public String updateByIdQuery() {
         return "UPDATE " + this.getStoreTableName() + " SET data = ? WHERE id = ?";
     }

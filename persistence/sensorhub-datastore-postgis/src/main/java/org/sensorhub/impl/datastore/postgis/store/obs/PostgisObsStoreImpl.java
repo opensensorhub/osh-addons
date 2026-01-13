@@ -25,6 +25,7 @@ import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.datastore.obs.*;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
+import org.sensorhub.impl.datastore.postgis.ObsIteratorResultSet;
 import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderObsStore;
 import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
@@ -73,10 +74,12 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                 false);
         this.init(url, dbName, login, password, new String[]{
                         queryBuilder.createTableQuery(),
-//                        queryBuilder.createDataIndexQuery(),
+                        queryBuilder.createDataIndexQuery(),
                         queryBuilder.createDataStreamIndexQuery(),
                         queryBuilder.createPhenomenonTimeIndexQuery(),
+                        queryBuilder.createPhenomenonTimeDataStreamIdIndexQuery(),
                         queryBuilder.createResultTimeIndexQuery(),
+                        queryBuilder.createResultTimeDataStreamIdIndexQuery(),
                         queryBuilder.createFoiIndexQuery(),
                         queryBuilder.createUniqueConstraint()
                 }
@@ -105,13 +108,16 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         if(logger.isDebugEnabled()) {
             logger.debug(queryStr);
         }
-        IteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
-                new IteratorResultSet<>(
+        ObsIteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
+                new ObsIteratorResultSet<>(
                         queryStr,
+                        queryBuilder.getStoreTableName(),
                         connectionManager,
                         STREAM_FETCH_SIZE,
+                        filter.getLimit(),
                         (resultSet) -> resultSetToEntry(resultSet, fields),
-                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
+                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())),
+                        filter);
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
     }
 
