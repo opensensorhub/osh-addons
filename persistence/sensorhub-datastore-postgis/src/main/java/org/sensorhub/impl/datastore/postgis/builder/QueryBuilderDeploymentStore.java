@@ -39,6 +39,7 @@ public class QueryBuilderDeploymentStore extends QueryBuilderBaseFeatureStore<ID
                 .tableName(this.getStoreTableName())
                 .withFields(fields)
                 .withDeploymentFilter(filter)
+                .withLimit(filter.getLimit())
                 .build();
         return selectEntriesDeploymentQuery.toQuery();
     }

@@ -18,9 +18,11 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.postgresql.util.PGobject;
 import org.sensorhub.api.common.BigId;
+import org.sensorhub.api.data.DataStreamInfo;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.TemporalFilter;
+import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
@@ -238,7 +240,9 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
                 } else {
                     resultIntersection = TimeExtent.period(dbValidTime.begin(), newValidTime.begin());
                 }
-                this.updateTime(entry.getKey(), resultIntersection);
+                var newDsInfo = DataStreamInfo.Builder.from(dsInfo)
+                        .withValidTime(resultIntersection).build();
+                this.updateData(entry.getKey(), newDsInfo, resultIntersection);
             } else if (newValidTime.endsNow() || dbValidTime.endsNow()) {
                 // close dbValidTime at the start of newValidTime
                 if (newValidTime.begin().isBefore(dbValidTime.begin())) {
@@ -246,17 +250,19 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
                 }
                 // otherwise, close the dbValidTime at the start of the new time
                 resultIntersection = TimeExtent.period(dbValidTime.begin(), newValidTime.begin());
-                this.updateTime(entry.getKey(), resultIntersection);
+                var newDsInfo = DataStreamInfo.Builder.from(dsInfo)
+                        .withValidTime(resultIntersection).build();
+                this.updateData(entry.getKey(), newDsInfo, resultIntersection);
             }
         }
     }
 
-    protected void updateTime(DataStreamKey dataStreamKey, TimeExtent timeExtent) {
+    protected void updateData(DataStreamKey dataStreamKey,IDataStreamInfo dsInfo, TimeExtent timeExtent) {
         try (Connection connection = this.connectionManager.getConnection()) {
-            try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateValidTimeByIdQuery())) {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateDataByIdQuery())) {
                 PGobject jsonObject = new PGobject();
                 jsonObject.setType("json");
-                jsonObject.setValue(SerializerUtils.writeTimeExtent(timeExtent));
+                jsonObject.setValue(SerializerUtils.writeIDataStreamInfoToJson(dsInfo));
 
                 preparedStatement.setObject(1, jsonObject);
                 preparedStatement.setLong(2, dataStreamKey.getInternalID().getIdAsLong());
@@ -465,4 +471,11 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
         idProvider = DataStoreUtils.getDataStreamHashIdProvider(741532149);
     }
 
+    @Override
+    public long countMatchingEntries(DataStreamFilter filter) {
+        var dataStreamFilter = DataStreamFilter.Builder.from(filter)
+                .withLimit(1)
+                .build();
+        return selectEntries(dataStreamFilter).count();
+    }
 }

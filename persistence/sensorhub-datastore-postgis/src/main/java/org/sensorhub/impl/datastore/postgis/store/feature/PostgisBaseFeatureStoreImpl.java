@@ -203,9 +203,9 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     public Stream<Entry<FeatureKey, V>> selectEntries(F filter, Set<VF> fields) {
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
-        if(logger.isDebugEnabled()) {
-            logger.debug(queryStr);
-        }
+//        if(logger.isDebugEnabled()) {
+//            logger.debug(queryStr);
+//        }
         IteratorResultSet<Entry<FeatureKey, V>> iteratorResultSet =
                 new IteratorResultSet<>(
                         queryStr,
@@ -216,7 +216,7 @@ public abstract class PostgisBaseFeatureStoreImpl
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
     }
 
-    private Entry<FeatureKey, V> resultSetToEntry(ResultSet resultSet, Set<VF> fields) {
+    Entry<FeatureKey, V> resultSetToEntry(ResultSet resultSet, Set<VF> fields) {
         try {
             long id = resultSet.getLong("id");
             long parentId = resultSet.getLong("parentid");

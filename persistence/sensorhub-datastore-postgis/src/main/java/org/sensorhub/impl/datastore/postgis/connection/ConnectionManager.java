@@ -44,7 +44,7 @@ public class ConnectionManager {
         this.dbName = dbName;
         this.login = login;
         this.password = password;
-        DriverManager.setLoginTimeout(1000 * 60 * 5); // 5 minutes;
+//        DriverManager.setLoginTimeout(1000 * 60 * 5); // 5 minutes;
         hikariDataSourceInstance = createHikariDataSource();
     }
 
@@ -58,15 +58,15 @@ public class ConnectionManager {
         config.setUsername(login);
         config.setPassword(password);
         config.setMaximumPoolSize(10);
-        config.setConnectionTimeout(1000 * 60 * 5); // 5 minutes
+//        config.setConnectionTimeout(1000 * 60 * 5); // 5 minutes
 
 //                        config.setMaximumPoolSize(200_000);
         config.addDataSourceProperty("cachePrepStmts", "true");
         config.addDataSourceProperty("prepStmtCacheSize", "250");
         config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        config.addDataSourceProperty("tcpKeepAlive","true");
-        config.addDataSourceProperty("socketTimeout","60");
-        config.addDataSourceProperty("networkTimeout","60");
+//        config.addDataSourceProperty("tcpKeepAlive","true");
+//        config.addDataSourceProperty("socketTimeout","60");
+//        config.addDataSourceProperty("networkTimeout","60");
         config.setAutoCommit(true);
         return new HikariDataSource(config);
     }

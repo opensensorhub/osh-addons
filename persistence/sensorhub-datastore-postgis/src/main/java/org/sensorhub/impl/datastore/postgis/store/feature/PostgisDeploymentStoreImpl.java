@@ -21,6 +21,7 @@ import org.sensorhub.api.datastore.deployment.DeploymentFilter;
 import org.sensorhub.api.datastore.deployment.IDeploymentStore;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
+import org.sensorhub.api.datastore.system.SystemFilter;
 import org.sensorhub.api.system.IDeploymentWithDesc;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderDeploymentStore;
@@ -71,5 +72,13 @@ public class PostgisDeploymentStoreImpl extends
     @Override
     public void linkTo(ISystemDescStore systemStore) {
         super.linkTo(systemStore);
+    }
+
+    @Override
+    public long countMatchingEntries(DeploymentFilter filter) {
+        var deploymentFilter = DeploymentFilter.Builder.from(filter)
+                .withLimit(1)
+                .build();
+        return selectEntries(deploymentFilter).count();
     }
 }

@@ -77,6 +77,7 @@ public class QueryBuilderCommandStreamStore extends QueryBuilder {
                 .linkTo(this.systemStore)
                 .withFields(fields)
                 .withCommandStreamFilter(filter)
+                .withLimit(filter.getLimit())
                 .build();
         return selectEntriesCommandStreamQuery.toQuery();
     }

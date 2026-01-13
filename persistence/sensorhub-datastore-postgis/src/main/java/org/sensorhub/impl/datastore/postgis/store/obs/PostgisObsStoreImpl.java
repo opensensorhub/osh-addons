@@ -26,6 +26,7 @@ import org.sensorhub.api.datastore.obs.*;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
+import org.sensorhub.impl.datastore.postgis.builder.ObsIteratorResultSet;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderObsStore;
 import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
@@ -53,7 +54,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
     public static final int STREAM_FETCH_SIZE = 20_000;
     public static final String DEFAULT_TABLE_NAME = QueryBuilderObsStore.OBS_STORE_TABLE_NAME;
 
-    protected PostgisDataStreamStoreImpl dataStreamStore;
+    protected IDataStreamStore dataStreamStore;
     protected ISystemDescStore systemDescStore;
     protected IFoiStore foiStore;
 
@@ -86,6 +87,11 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
     @Override
     protected void init(String url, String dbName, String login, String password, String[] initScripts) {
         super.init(url, dbName, login, password, initScripts);
+        this.createDataStreamStore(this, url, dbName, login, password, idScope, idProviderType, false);
+    }
+
+    protected void createDataStreamStore(PostgisObsStoreImpl obsStore, String url, String dbName, String login, String password,
+                                         int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
         this.dataStreamStore = new PostgisDataStreamStoreImpl(this, url, dbName, login, password, idScope, idProviderType, false);
         queryBuilder.linkTo(dataStreamStore);
     }
@@ -102,16 +108,16 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         }
 
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, hashSet);
-        if(logger.isDebugEnabled()) {
-            logger.debug(queryStr);
-        }
-        IteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
-                new IteratorResultSet<>(
+        ObsIteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
+                new ObsIteratorResultSet<>(
                         queryStr,
+                        queryBuilder.getStoreTableName(),
                         connectionManager,
                         STREAM_FETCH_SIZE,
+                        filter.getLimit(),
                         (resultSet) -> resultSetToEntry(resultSet, fields),
-                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
+                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())),
+                        filter);
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
     }
 
@@ -267,7 +273,10 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         var filter = query.getObsFilter();
         var timeParams = new TimeParams(filter);
 
-        Set<Long> dsIds = dataStreamStore.getDataStreamsIdsByTimeRange(timeParams.phenomenonTimeRange.lowerEndpoint(),
+        if(!(dataStreamStore instanceof PostgisDataStreamStoreImpl)) {
+            throw new RuntimeException("Statistics are only supported by PostgisDataStreamStoreImpl, current="+dataStreamStore.getClass());
+        }
+        Set<Long> dsIds = ((PostgisDataStreamStoreImpl)dataStreamStore).getDataStreamsIdsByTimeRange(timeParams.phenomenonTimeRange.lowerEndpoint(),
                 timeParams.phenomenonTimeRange.upperEndpoint());
         return dsIds.stream().map((dsId) -> {
             try (Connection connection = this.connectionManager.getConnection()) {
@@ -578,4 +587,5 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
     protected void initUidHashIdProvider() {
         idProvider = PostgisUtils.getObsHashIdProvider(212158449);
     }
+
 }

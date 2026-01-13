@@ -19,8 +19,10 @@ import com.google.gson.stream.JsonWriter;
 import net.opengis.sensorml.v20.AbstractProcess;
 import org.sensorhub.api.datastore.deployment.IDeploymentStore;
 import org.sensorhub.api.datastore.feature.FeatureKey;
+import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
 import org.sensorhub.api.datastore.procedure.IProcedureStore;
+import org.sensorhub.api.datastore.procedure.ProcedureFilter;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.api.datastore.system.SystemFilter;
 import org.sensorhub.api.system.ISystemWithDesc;
@@ -91,6 +93,14 @@ public class PostgisSystemDescStoreImpl extends
     public Set<Entry<FeatureKey, ISystemWithDesc>> entrySet() {
         SystemFilter filter = new SystemFilter.Builder().build();
         return this.selectEntries(filter, new HashSet<>()).collect(Collectors.toSet());
+    }
+
+    @Override
+    public long countMatchingEntries(SystemFilter filter) {
+        var systemFilter = SystemFilter.Builder.from(filter)
+                .withLimit(1)
+                .build();
+        return selectEntries(systemFilter).count();
     }
 
     @Override
