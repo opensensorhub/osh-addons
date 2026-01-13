@@ -230,7 +230,9 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 			commandData.getItem(VideoCamHelper.TASKING_PTZ_POS).removeComponent(VideoCamHelper.TASKING_ZOOM);
 			log.debug("Removed absolute z");
 		}
-		if (devicePtzConfig.getDefaultRelativePanTiltTranslationSpace() == null && devicePtzConfig.getDefaultAbsolutePantTiltPositionSpace() == null) {
+		if (devicePtzConfig.getDefaultRelativePanTiltTranslationSpace() == null
+				// If absolute PTZ available, we can use simple logic to simulate relative PTZ
+				&& devicePtzConfig.getDefaultAbsolutePantTiltPositionSpace() == null) {
 			// Remove relative PT
 			commandData.removeComponent(VideoCamHelper.TASKING_RPAN);
 			commandData.removeComponent(VideoCamHelper.TASKING_RTILT);
