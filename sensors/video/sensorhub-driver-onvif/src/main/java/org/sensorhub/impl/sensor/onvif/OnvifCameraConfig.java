@@ -36,12 +36,10 @@ import java.util.*;
 public class OnvifCameraConfig extends SensorConfig {
 
     @DisplayInfo(desc = "Geographic position configuration")
-    public PositionConfig positionConfig;
+    public PositionConfig positionConfig = new PositionConfig();
 
     @Override
     public PositionConfig.LLALocation getLocation() {
-        if (positionConfig == null || positionConfig.location == null)
-            return null;
         return positionConfig.location;
     }
 

@@ -249,7 +249,8 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
 
     // This method override may not be necessary
     @Override
-    protected void afterInit() {
+    protected void afterInit() throws SensorHubException {
+        super.afterInit();
         updateSensorDescription();
     }
 
