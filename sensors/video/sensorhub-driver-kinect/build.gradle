@@ -10,11 +10,8 @@ dependencies {
 }
 
 def thisProjectDir = projectDir
-rootProject.allprojects {
-  repositories {
-    mavenCentral()
-    maven { url "file:///$thisProjectDir/libs" }
-  }
+repositories {
+  maven { url "file:///$thisProjectDir/libs" }
 }
 
 // add info to OSGi manifest

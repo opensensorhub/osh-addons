@@ -4,10 +4,8 @@ version = '0.1.0'
 
 
 def thisProjectDir = projectDir
-rootProject.allprojects {
-  repositories {
-    maven { url "file:///$thisProjectDir/libs" }
-  }
+repositories {
+  maven { url "file:///$thisProjectDir/libs" }
 }
 
 dependencies {
