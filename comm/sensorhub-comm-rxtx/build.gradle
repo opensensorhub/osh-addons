@@ -2,10 +2,8 @@ description = 'RXTX Serial Comm Provider'
 ext.details = 'Serial communication provider based on RXTX library'
 
 def thisProjectDir = projectDir
-rootProject.allprojects {
-  repositories {
-    maven { url "file:///$thisProjectDir/libs" }
-  }
+repositories {
+  maven { url "file:///$thisProjectDir/libs" }
 }
 
 dependencies {

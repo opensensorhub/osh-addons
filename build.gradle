@@ -34,6 +34,12 @@ subprojects {
     //mavenLocal()
     mavenCentral()
     maven {
+      url "https://raw.github.com/eurotech/kura_addons/mvn-repo"
+    }
+    maven {
+      url "https://artifacts.unidata.ucar.edu/repository/unidata-all/"
+    }
+    maven {
       name = 'osh-core'
       url = uri("https://maven.pkg.github.com/opensensorhub/osh-core")
       credentials {

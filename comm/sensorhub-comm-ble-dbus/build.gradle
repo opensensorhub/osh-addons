@@ -2,10 +2,8 @@ description = 'Bluetooth LE Comm Network (D-Bus)'
 ext.details = 'Bluetooth Smart (Low Energy) network adapter based on D-Bus (Linux only)'
 
 def thisProjectDir = projectDir
-rootProject.allprojects {
-  repositories {
-    maven { url "file:///$thisProjectDir/libs" }
-  }
+repositories {
+  maven { url "file:///$thisProjectDir/libs" }
 }
 
 dependencies {
