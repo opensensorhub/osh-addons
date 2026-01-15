@@ -14,12 +14,15 @@
 
 package org.sensorhub.impl.datastore.postgis;
 
+import net.opengis.gml.v32.AbstractFeature;
 import org.junit.After;
 import org.junit.Test;
 import org.sensorhub.api.common.BigId;
+import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.impl.datastore.AbstractTestFeatureStore;
 import org.sensorhub.impl.datastore.postgis.store.feature.PostgisFeatureStoreImpl;
 import org.vast.ogc.gml.GenericTemporalFeatureImpl;
+import org.vast.ogc.gml.IFeature;
 
 import javax.xml.namespace.QName;
 import java.time.Instant;

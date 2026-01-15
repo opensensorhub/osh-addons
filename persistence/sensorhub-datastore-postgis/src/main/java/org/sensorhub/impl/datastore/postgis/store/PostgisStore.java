@@ -122,6 +122,9 @@ public abstract class PostgisStore<T extends QueryBuilder> {
         }
     }
 
+    public IdProvider getIdProvider() {
+        return idProvider;
+    }
     public void backup(OutputStream is) throws IOException {
         try(Connection connection = this.connectionManager.getConnection()) {
             if (PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {

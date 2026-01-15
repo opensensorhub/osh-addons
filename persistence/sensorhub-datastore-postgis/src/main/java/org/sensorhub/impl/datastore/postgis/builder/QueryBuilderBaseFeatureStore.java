@@ -39,7 +39,8 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
         // NOTE: do not use JSONB because we need to keep order to the properties for geoGSON
         // see: https://www.postgresql.org/docs/current/datatype-json.html
         return "CREATE TABLE " + this.getStoreTableName() +
-                " (id BIGSERIAL," +
+                " (pkId BIGSERIAL PRIMARY KEY," +
+                "id bigint," +
                 " parentId bigint,"+
                 GEOMETRY +" GEOMETRY, "+
                 VALID_TIME +" tsrange,"+
@@ -55,7 +56,7 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
                 "SELECT (${1}),(${2}),(${3}),(${4}),(${5})";
     }
 
-    public String selectByPrimaryKeyQuery() {
+    public String selectByIdQuery() {
         return "SELECT data FROM " + this.getStoreTableName() + " WHERE id = ? AND lower(" + this.getStoreTableName() + ".validTime) = ?::timestamp";
     }
 
@@ -90,7 +91,7 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
                 "FROM " + this.getStoreTableName() + " WHERE (data->'properties'->>'uid') = '" + uid +"'" +
                 "AND validTime " +
                 PostgisUtils.getOperator(RangeFilter.RangeOp.CONTAINS) +
-                " CURRENT_TIMESTAMP::timestamp order by id, lower(validTime) DESC";
+                " CURRENT_TIMESTAMP::timestamp order by id, lower(validTime) DESC ";
     }
 
     public String selectLastVersionByIdQuery(long id, String timestamp) {

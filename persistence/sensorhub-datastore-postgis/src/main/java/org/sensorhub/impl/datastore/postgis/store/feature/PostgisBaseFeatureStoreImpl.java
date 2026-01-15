@@ -64,7 +64,7 @@ public abstract class PostgisBaseFeatureStoreImpl
     private static final Logger logger = LoggerFactory.getLogger(PostgisBaseFeatureStoreImpl.class);
     protected final Lock lock = new ReentrantLock();
     public ThreadLocal<WKBWriter> threadLocalWriter = ThreadLocal.withInitial(WKBWriter::new);
-    public static final int BATCH_SIZE = 500;
+    public static final int BATCH_SIZE = 1000;
     private PostgisObsStoreImpl obsStore;
 
     protected volatile Cache<FeatureKey, V> cache = CacheBuilder.newBuilder()
@@ -81,7 +81,7 @@ public abstract class PostgisBaseFeatureStoreImpl
         this.init(url, dbName, login, password, new String[]{
                         queryBuilder.createTableQuery(),
                         queryBuilder.createUidUniqueIndexQuery(),
-//                        queryBuilder.createValidTimeIndexQuery(),
+                        queryBuilder.createValidTimeIndexQuery(),
                         queryBuilder.createIdIndexQuery(),
                         queryBuilder.createTrigramExtensionQuery(),
                         queryBuilder.createTrigramDescriptionFullTextIndexQuery(),
@@ -109,7 +109,10 @@ public abstract class PostgisBaseFeatureStoreImpl
             if (parentID != null && existingKey.getParentID() != parentID.getIdAsLong())
                 throw new DataStoreException("Feature is already associated to another parent");
 
-            throw new DataStoreException(DataStoreUtils.ERROR_EXISTING_FEATURE_VERSION);
+            if((feature.getValidTime() == null) ||
+            (feature.getValidTime() != null && existingKey.getValidStartTime().equals(feature.getValidTime().begin()))) {
+                throw new DataStoreException(DataStoreUtils.ERROR_EXISTING_FEATURE_VERSION);
+            }
         }
 
         var newKey = generateKey(parentID.getIdAsLong(), existingKey, feature);
@@ -287,7 +290,7 @@ public abstract class PostgisBaseFeatureStoreImpl
                 // double lock checking + volatile
                 if (feature == null) {
                     try (Connection connection = connectionManager.getConnection()) {
-                        try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.selectByPrimaryKeyQuery())) {
+                        try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.selectByIdQuery())) {
                             preparedStatement.setLong(1, key.getInternalID().getIdAsLong());
                             preparedStatement.setString(2, PostgisUtils.getPgTimestampFromInstant(key.getValidStartTime().truncatedTo(ChronoUnit.SECONDS)));
                             try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -339,7 +342,7 @@ public abstract class PostgisBaseFeatureStoreImpl
                         long id = resultSet.getLong("id");
                         PGobject pgRange = (PGobject) resultSet.getObject("validTime");
                         long parentId = resultSet.getLong("parentid");
-                        return new PostgisFeatureKey(parentId,BigId.fromLong(idScope, id), PostgisUtils.getInstantFromPGObject(pgRange)[1]);
+                        return new PostgisFeatureKey(parentId,BigId.fromLong(idScope, id), PostgisUtils.getInstantFromPGObject(pgRange)[0]);
                     }
                 }
             }
@@ -483,6 +486,7 @@ public abstract class PostgisBaseFeatureStoreImpl
 
             return value;
         } catch (DataStoreException e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
