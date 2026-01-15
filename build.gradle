@@ -319,28 +319,20 @@ subprojects {
         }
       }
     }
-    
-    // publish to repo
-    task publishBundle(type: Exec) {
-      def bundleFile = osgi.outputs.files.singleFile
-      //commandLine 'curl', '-s', '-X', 'POST', '-H', """artifactUrl: file://${bundleFile}""", 'http://localhost:8181/cave/repository/api/repositories/osh-addons/artifact'
-      commandLine 'kubectl', 'cp', "${bundleFile}", 'osh-addons-69497bf779-4q65x:/opt/osh-node/data/addons'
-    }
-  }
-  
-  /*// publish to maven repo
-  publishing {
-    repositories {
-      maven {
-        name = 'GitHubPackages'
-        url = 'https://maven.pkg.github.com/opensensorhub/osh-addons'
-        credentials {
-          username = ''
-          password = ''
-        }
+    p.tasks.named("publishMavenJavaPublicationToGitHubPackagesRepository") {
+      onlyIf {
+        //
+        MavenArtifactRepository repo = repository as MavenArtifactRepository;
+        MavenPublication pub = publication as MavenPublication;
+        
+        HttpURLConnection connection = new URL("$repo.url/${pub.groupId.replace('.', '/')}/$pub.artifactId/$pub.version/$pub.artifactId-${pub.version}.jar").openConnection();
+        connection.setRequestMethod("GET");
+        connection.setRequestProperty("Authorization", "Basic ${new String(Base64.getEncoder().encode("$repo.credentials.username:$repo.credentials.password".bytes))}");
+        connection.connect();
+        return connection.responseCode == 404;
       }
     }
-  }*/
+  }
 }
 
 // create one configuration for each distribution
