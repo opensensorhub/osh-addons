@@ -58,6 +58,7 @@ public class QueryBuilderCommandStatusStore extends QueryBuilder {
                 .linkTo(this.commandStore)
                 .withStatusFilter(filter)
                 .withFields(fields)
+                .withLimit(filter.getLimit())
                 .build();
         return selectEntriesCommandStatusQuery.toQuery();
     }

@@ -26,8 +26,10 @@ import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.datastore.IdProvider;
 import org.sensorhub.api.datastore.RangeFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
+import org.vast.ogc.gml.IFeature;
 import org.vast.ogc.gml.JTSUtils;
 
+import java.nio.charset.Charset;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

@@ -99,6 +99,7 @@ public class QueryBuilderCommandStore extends QueryBuilder {
                 .linkTo(this.commandStatusStore)
                 .withCommandFilter(filter)
                 .withFields(fields)
+                .withLimit(filter.getLimit())
                 .build();
         return selectEntriesCommandQueryBuilder.toQuery();
     }

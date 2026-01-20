@@ -84,6 +84,13 @@ public class QueryBuilderDataStreamStore extends QueryBuilder {
         return "UPDATE " + this.getStoreTableName() + " SET data = jsonb_set(data, '{validTime}'::text[], to_jsonb(?), true) WHERE id = ?";
     }
 
+    public String updateDataByIdQuery() {
+        return "UPDATE " + this.getStoreTableName() + " SET data = ? WHERE id = ?";
+    }
+
+    public String removeUniqueConstraint() {
+        return "DROP INDEX IF EXISTS "+this.getStoreTableName() + "_data_output_idx";
+    }
     public String insertInfoQuery() {
         return "INSERT INTO " + this.getStoreTableName() + " (data) SELECT (?) ";
     }
@@ -99,6 +106,7 @@ public class QueryBuilderDataStreamStore extends QueryBuilder {
                 .linkTo(this.systemStore)
                 .withFields(fields)
                 .withDataStreamFilter(filter)
+                .withLimit(filter.getLimit())
                 .build();
         return selectEntriesDataStreamQuery.toQuery();
     }

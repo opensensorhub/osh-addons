@@ -22,6 +22,9 @@ import org.vast.ogc.gml.IFeature;
 
 import java.util.Set;
 
+import static org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField.GEOMETRY;
+import static org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField.VALID_TIME;
+
 public class QueryBuilderFeatureStore extends QueryBuilderBaseFeatureStore<IFeature, IFeatureStoreBase.FeatureField, FeatureFilter> {
     public final static String FEATURE_TABLE_NAME = "feature";
 
@@ -39,6 +42,7 @@ public class QueryBuilderFeatureStore extends QueryBuilderBaseFeatureStore<IFeat
                 .tableName(this.getStoreTableName())
                 .withFields(fields)
                 .withFeatureFilter(filter)
+                .withLimit(filter.getLimit())
                 .build();
         return selectEntriesFeatureQuery.toQuery();
     }

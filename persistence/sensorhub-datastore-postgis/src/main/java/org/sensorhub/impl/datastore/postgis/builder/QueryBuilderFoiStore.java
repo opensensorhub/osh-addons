@@ -42,6 +42,7 @@ public class QueryBuilderFoiStore extends QueryBuilderBaseFeatureStore<IFeature,
                 .linkTo(this.obsStore)
                 .withFields(fields)
                 .withFoiFilter(filter)
+                .withLimit(filter.getLimit())
                 .build();
         return selectEntriesFoiQuery.toQuery();
     }

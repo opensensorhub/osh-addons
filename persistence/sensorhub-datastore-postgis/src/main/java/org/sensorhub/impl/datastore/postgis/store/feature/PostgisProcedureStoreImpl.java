@@ -68,4 +68,11 @@ public class PostgisProcedureStoreImpl extends
         return this.selectEntries(procedureFilter, new HashSet<>()).collect(Collectors.toSet());
     }
 
+    @Override
+    public long countMatchingEntries(ProcedureFilter filter) {
+        var procedureFilter = ProcedureFilter.Builder.from(filter)
+                .withLimit(1)
+                .build();
+        return selectEntries(procedureFilter).count();
+    }
 }

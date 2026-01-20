@@ -18,12 +18,16 @@ import org.sensorhub.api.datastore.feature.FeatureFilter;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.IFeatureStore;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
+import org.sensorhub.api.datastore.system.SystemFilter;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderFeatureStore;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
 import org.vast.ogc.gml.IFeature;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -53,5 +57,13 @@ public class PostgisFeatureStoreImpl extends
     public Set<Entry<FeatureKey, IFeature>> entrySet() {
         FeatureFilter featureFilter = new FeatureFilter.Builder().build();
         return this.selectEntries(featureFilter, new HashSet<>()).collect(Collectors.toSet());
+    }
+
+    @Override
+    public long countMatchingEntries(FeatureFilter filter) {
+        var featureFilter = FeatureFilter.Builder.from(filter)
+                .withLimit(1)
+                .build();
+        return selectEntries(featureFilter).count();
     }
 }

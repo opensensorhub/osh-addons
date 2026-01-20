@@ -39,6 +39,7 @@ public class QueryBuilderProcedureStore extends QueryBuilderBaseFeatureStore<IPr
                 .tableName(this.getStoreTableName())
                 .withFields(fields)
                 .withProcedureFilter(filter)
+                .withLimit(filter.getLimit())
                 .build();
         return selectEntriesProcedureQuery.toQuery();
     }

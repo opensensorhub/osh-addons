@@ -86,6 +86,7 @@ public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<IS
                 .tableName(this.getStoreTableName())
                 .withFields(fields)
                 .withSystemFilter(filter)
+                .withLimit(filter.getLimit())
                 .build();
         return selectEntriesSystemQuery.toQuery();
     }
