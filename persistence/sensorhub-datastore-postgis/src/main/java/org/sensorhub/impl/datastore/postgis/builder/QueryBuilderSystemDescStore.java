@@ -57,17 +57,17 @@ public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<IS
 
     @Override
         public String createUidUniqueIndexQuery() {
-            return "CREATE UNIQUE INDEX "+this.getStoreTableName()+"_feature_uid_idx ON "+this.getStoreTableName()+" " +
+            return "CREATE UNIQUE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_uid_idx ON "+this.getStoreTableName()+" " +
                     "((data->>'uniqueId'), "+VALID_TIME+")";
         }
 
     @Override
         public String createTrigramDescriptionFullTextIndexQuery() {
-            return "CREATE INDEX "+this.getStoreTableName()+"_feature_desc_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data->>'description') gin_trgm_ops)";
+            return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_desc_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data->>'description') gin_trgm_ops)";
         }
     @Override
         public String createTrigramUidFullTextIndexQuery() {
-            return "CREATE INDEX "+this.getStoreTableName()+"_feature_uid_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data->>'uniqueId') gin_trgm_ops)";
+            return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_uid_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data->>'uniqueId') gin_trgm_ops)";
         }
 
     public String addOrUpdateByIdQuery() {

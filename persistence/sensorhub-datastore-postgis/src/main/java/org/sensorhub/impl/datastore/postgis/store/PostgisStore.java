@@ -73,10 +73,10 @@ public abstract class PostgisStore<T extends QueryBuilder> {
 
     private void initStore(String[] initScripts) {
         try (Connection connection = this.connectionManager.getConnection()) {
-            if (!PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
+//            if (!PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
                 // create table
                 PostgisUtils.executeQueries(connection, initScripts);
-            }
+//            }
             logger.info("Initialized store '{}'", queryBuilder.getStoreTableName());
 
         } catch (SQLException e) {
