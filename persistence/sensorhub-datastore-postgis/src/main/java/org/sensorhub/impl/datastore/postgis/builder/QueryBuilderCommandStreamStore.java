@@ -32,24 +32,24 @@ public class QueryBuilderCommandStreamStore extends QueryBuilder {
     }
 
     public String createTableQuery() {
-        return "CREATE TABLE " + this.getStoreTableName() + " (id BIGSERIAL PRIMARY KEY,data JSONB)";
+        return "CREATE TABLE IF NOT EXISTS " + this.getStoreTableName() + " (id BIGSERIAL PRIMARY KEY,data JSONB)";
     }
 
     public String createIndexQuery() {
-        return "CREATE INDEX " + this.getStoreTableName() + "_data_idx on " + this.getStoreTableName() + " USING GIN(data)";
+        return "CREATE INDEX IF NOT EXISTS " + this.getStoreTableName() + "_data_idx on " + this.getStoreTableName() + " USING GIN(data)";
     }
 
     public String createUniqueIndexQuery() {
-        return "CREATE UNIQUE INDEX " + this.getStoreTableName() + "_data_output_idx ON " + this.getStoreTableName()
+        return "CREATE UNIQUE INDEX IF NOT EXISTS " + this.getStoreTableName() + "_data_output_idx ON " + this.getStoreTableName()
                 + " USING BTREE((data->>'name'), (data->'system@id'), (data->'validTime'->'begin'))";
     }
 
     public String createValidTimeBeginIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_date_range_begin_idx ON "+this.getStoreTableName()+ " USING GIN((data->'validTime'->'begin'))";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_date_range_begin_idx ON "+this.getStoreTableName()+ " USING GIN((data->'validTime'->'begin'))";
     }
 
     public String createValidTimeEndIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_date_range_end_idx ON "+this.getStoreTableName()+ " USING GIN((data->'validTime'->'end'))";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_date_range_end_idx ON "+this.getStoreTableName()+ " USING GIN((data->'validTime'->'end'))";
     }
 
     public String insertCommandQuery() {
@@ -68,7 +68,7 @@ public class QueryBuilderCommandStreamStore extends QueryBuilder {
     }
 
     public String createTrigramDescriptionFullTextIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_desc_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data->'recordSchema'->>'description') gin_trgm_ops)";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_desc_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data->'recordSchema'->>'description') gin_trgm_ops)";
     }
 
     public String createSelectEntriesQuery(CommandStreamFilter filter, Set<ICommandStreamStore.CommandStreamInfoField> fields) {

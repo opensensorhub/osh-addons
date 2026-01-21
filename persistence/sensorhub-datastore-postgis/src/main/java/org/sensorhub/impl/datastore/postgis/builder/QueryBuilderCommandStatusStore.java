@@ -34,7 +34,7 @@ public class QueryBuilderCommandStatusStore extends QueryBuilder {
 
     @Override
     public String createTableQuery() {
-        return "CREATE TABLE "+this.getStoreTableName()+
+        return "CREATE TABLE IF NOT EXISTS "+this.getStoreTableName()+
                 " (" +
                 "id BIGSERIAL PRIMARY KEY,"+
                 COMMAND_ID + " bigint, "+

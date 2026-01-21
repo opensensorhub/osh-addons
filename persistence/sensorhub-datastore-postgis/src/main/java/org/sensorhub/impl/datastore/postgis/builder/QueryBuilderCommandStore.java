@@ -36,7 +36,7 @@ public class QueryBuilderCommandStore extends QueryBuilder {
 
 
     public String createTableQuery() {
-        return "CREATE TABLE "+this.getStoreTableName()+
+        return "CREATE TABLE IF NOT EXISTS "+this.getStoreTableName()+
                 " (" +
                 "id BIGSERIAL PRIMARY KEY,"+
                 COMMANDSTREAM_ID +" BIGINT, "+
@@ -50,23 +50,23 @@ public class QueryBuilderCommandStore extends QueryBuilder {
     }
 
     public String createDataIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_data_idx on "+this.getStoreTableName()+" USING GIN("+PARAMETERS+")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_data_idx on "+this.getStoreTableName()+" USING GIN("+PARAMETERS+")";
     }
 
     public String createCommandStreamIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_commandstream_idx on "+this.getStoreTableName()+" ("+COMMANDSTREAM_ID+")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_commandstream_idx on "+this.getStoreTableName()+" ("+COMMANDSTREAM_ID+")";
     }
 
     public String createSenderIdIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_senderid_idx on "+this.getStoreTableName()+" ("+SENDER_ID+")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_senderid_idx on "+this.getStoreTableName()+" ("+SENDER_ID+")";
     }
 
     public String createFoidIdIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_foidid_idx on "+this.getStoreTableName()+" ("+FOI_ID+")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_foidid_idx on "+this.getStoreTableName()+" ("+FOI_ID+")";
     }
 
     public String createIssueTimeIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_issue_time_idx on "+this.getStoreTableName()+" ("+ ISSUE_TIME +")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_issue_time_idx on "+this.getStoreTableName()+" ("+ ISSUE_TIME +")";
     }
 
     public String insertCommandQuery() {

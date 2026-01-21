@@ -52,7 +52,7 @@ public class QueryBuilderObsStore extends QueryBuilder {
                 ")";
     }
     public String createDataIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_data_idx on "+this.getStoreTableName()+" USING GIN("+RESULT+")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_data_idx on "+this.getStoreTableName()+" USING GIN("+RESULT+")";
 //        return "CREATE INDEX "+this.getStoreTableName()+"_data_idx on "+this.getStoreTableName()+" ("+RESULT+")";
     }
 
