@@ -9,6 +9,13 @@ dependencies {
     testImplementation('junit:junit:4.13.1')
 }
 
+def thisProjectDir = projectDir
+rootProject.allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
 // exclude tests requiring connection to the sensor
 // these have to be run manually
 //      If tests are to be excluded list them here as follows

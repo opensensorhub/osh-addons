@@ -5,14 +5,6 @@ plugins {
   id "biz.aQute.bnd" version "6.1.0" apply false
 }
 
-if (System.getenv("GITHUB_ACTOR") == null) {
-  throw new Exception("Environment variable GITHUB_ACTOR not set. Please set to your github username.")
-}
-
-if (System.getenv("GITHUB_TOKEN") == null) {
-  throw new Exception("Environment variable GITHUB_TOKEN not set. Please generate and set to your personal access token: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens")
-}
-
 allprojects {
   group = 'org.sensorhub'
 }
@@ -33,18 +25,14 @@ subprojects {
   repositories {
     //mavenLocal()
     mavenCentral()
-    maven {
-      url "https://raw.github.com/eurotech/kura_addons/mvn-repo"
-    }
-    maven {
-      url "https://artifacts.unidata.ucar.edu/repository/unidata-all/"
-    }
-    maven {
-      name = 'osh-core'
-      url = uri("https://maven.pkg.github.com/opensensorhub/osh-core")
-      credentials {
-        username = System.getenv("GITHUB_ACTOR")
-        password = System.getenv("GITHUB_TOKEN")
+    if(System.getenv("GITHUB_ACTOR") && System.getenv("GITHUB_TOKEN")) {
+      maven {
+        name = 'osh-core'
+        url = uri("https://maven.pkg.github.com/opensensorhub/osh-core")
+        credentials {
+          username = System.getenv("GITHUB_ACTOR")
+          password = System.getenv("GITHUB_TOKEN")
+        }
       }
     }
   }
@@ -331,28 +319,20 @@ subprojects {
         }
       }
     }
-    
-    // publish to repo
-    task publishBundle(type: Exec) {
-      def bundleFile = osgi.outputs.files.singleFile
-      //commandLine 'curl', '-s', '-X', 'POST', '-H', """artifactUrl: file://${bundleFile}""", 'http://localhost:8181/cave/repository/api/repositories/osh-addons/artifact'
-      commandLine 'kubectl', 'cp', "${bundleFile}", 'osh-addons-69497bf779-4q65x:/opt/osh-node/data/addons'
-    }
-  }
-  
-  /*// publish to maven repo
-  publishing {
-    repositories {
-      maven {
-        name = 'GitHubPackages'
-        url = 'https://maven.pkg.github.com/opensensorhub/osh-addons'
-        credentials {
-          username = ''
-          password = ''
-        }
+    p.tasks.named("publishMavenJavaPublicationToGitHubPackagesRepository") {
+      onlyIf {
+        //
+        MavenArtifactRepository repo = repository as MavenArtifactRepository;
+        MavenPublication pub = publication as MavenPublication;
+        
+        HttpURLConnection connection = new URL("$repo.url/${pub.groupId.replace('.', '/')}/$pub.artifactId/$pub.version/$pub.artifactId-${pub.version}.jar").openConnection();
+        connection.setRequestMethod("GET");
+        connection.setRequestProperty("Authorization", "Basic ${new String(Base64.getEncoder().encode("$repo.credentials.username:$repo.credentials.password".bytes))}");
+        connection.connect();
+        return connection.responseCode == 404;
       }
     }
-  }*/
+  }
 }
 
 // create one configuration for each distribution

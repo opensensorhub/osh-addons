@@ -3,8 +3,10 @@ ext.details = 'Driver for Video4Linux compatible cameras (only supported on Linu
 version = '1.1.0'
 
 def thisProjectDir = projectDir
-repositories {
-  maven { url "file:///$thisProjectDir/libs" }
+rootProject.allprojects {
+  repositories {
+    maven { url "file:///$thisProjectDir/libs" }
+  }
 }
 
 dependencies {
