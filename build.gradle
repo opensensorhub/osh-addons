@@ -23,7 +23,7 @@ subprojects {
     testImplementation "junit:junit:4.13.1"
   }
   repositories {
-    mavenLocal()
+    //mavenLocal()
     mavenCentral()
     if(System.getenv("GITHUB_ACTOR") && System.getenv("GITHUB_TOKEN")) {
       maven {
