@@ -1,7 +1,7 @@
 package org.sensorhub.impl.sensor.isa;
 
 import org.sensorhub.api.data.DataEvent;
-import org.vast.ogc.om.SamplingSphere;
+import org.vast.sensorML.sampling.SamplingSphere;
 import org.vast.swe.SWEConstants;
 import org.locationtech.jts.geom.Point;
 import net.opengis.swe.v20.DataType;

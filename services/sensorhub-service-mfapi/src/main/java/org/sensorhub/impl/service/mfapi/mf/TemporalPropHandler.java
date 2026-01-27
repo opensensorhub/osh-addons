@@ -80,7 +80,7 @@ public class TemporalPropHandler extends BaseResourceHandler<BigId, IObsData, Ob
     @Override
     protected BigId getKey(RequestContext ctx, String id) throws InvalidRequestException
     {
-        return decodeID(ctx, id);
+        return decodeID(id);
     }
     
     
