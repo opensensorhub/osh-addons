@@ -104,14 +104,12 @@ public abstract class SerializerUtils {
         if (inputElement == null || inputElement.isJsonNull())
             return JsonNull.INSTANCE;
 
-        if (schema instanceof DataRecord) {
+        if (schema instanceof DataRecord || schema instanceof Vector) {
             JsonObject inputObj = inputElement.getAsJsonObject();
             JsonObject orderedObj = new JsonObject();
 
-            DataRecord record = (DataRecord) schema;
-
-            for (int i = 0; i < record.getComponentCount(); i++) {
-                DataComponent childSchema = record.getComponent(i);
+            for (int i = 0; i < schema.getComponentCount(); i++) {
+                DataComponent childSchema = schema.getComponent(i);
                 String name = childSchema.getName();
 
                 if (inputObj.has(name)) {
