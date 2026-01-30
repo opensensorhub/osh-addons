@@ -54,7 +54,7 @@ public class ConnectionManager {
         config.setJdbcUrl("jdbc:postgresql://" + url + "/" + dbName);
         config.setUsername(login);
         config.setPassword(password);
-        config.setMaximumPoolSize(50);
+        config.setMaximumPoolSize(20);
         config.setConnectionTimeout(1000 * 60 * 5); // 5 minutes
 
         config.setMaxLifetime(20 * 60 * 1000);      // 20 minutes
