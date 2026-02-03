@@ -1,4 +1,4 @@
-package com.sample.impl.sensor.universalcontroller.helpers;
+package com.botts.impl.sensor.universalcontroller.helpers;
 
 public enum ControllerCyclingAction {
 

@@ -1,4 +1,4 @@
-package com.sample.impl.sensor.universalcontroller;
+package com.botts.impl.sensor.universalcontroller;
 
 
 import net.opengis.swe.v20.DataBlock;

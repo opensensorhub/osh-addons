@@ -11,9 +11,9 @@
  Copyright (C) 2020-2021 Botts Innovative Research, Inc. All Rights Reserved.
 
 ******************************* END LICENSE BLOCK ***************************/
-package com.sample.impl.sensor.universalcontroller;
+package com.botts.impl.sensor.universalcontroller;
 
-import com.alexalmanza.models.ControllerType;
+import com.botts.controller.models.ControllerType;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 

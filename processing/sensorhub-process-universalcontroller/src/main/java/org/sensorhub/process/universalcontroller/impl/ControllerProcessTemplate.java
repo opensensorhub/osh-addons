@@ -1,10 +1,9 @@
 package org.sensorhub.process.universalcontroller.impl;
 
-import com.sample.impl.sensor.universalcontroller.helpers.UniversalControllerComponent;
+import com.botts.impl.sensor.universalcontroller.helpers.UniversalControllerComponent;
 import org.sensorhub.api.processing.OSHProcessInfo;
 import org.sensorhub.process.universalcontroller.helpers.AbstractControllerTaskingProcess;
 import org.vast.process.ProcessException;
-import org.vast.process.ProcessInfo;
 
 public class ControllerProcessTemplate extends AbstractControllerTaskingProcess {
 

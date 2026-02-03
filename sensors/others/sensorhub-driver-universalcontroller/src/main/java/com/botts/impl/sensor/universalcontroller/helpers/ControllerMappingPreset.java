@@ -1,6 +1,4 @@
-package com.sample.impl.sensor.universalcontroller.helpers;
-
-import com.alexalmanza.controller.wii.identifiers.WiiIdentifier;
+package com.botts.impl.sensor.universalcontroller.helpers;
 
 import java.util.ArrayList;
 

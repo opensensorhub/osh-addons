@@ -11,7 +11,7 @@
  Copyright (C) 2020-2021 Botts Innovative Research, Inc. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
-package com.sample.impl.sensor.universalcontroller;
+package com.botts.impl.sensor.universalcontroller;
 
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;

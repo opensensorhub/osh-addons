@@ -4,8 +4,8 @@ version = '1.0.0'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-    implementation 'net.java.jinput:jinput:2.0.10'
-    implementation fileTree(dir: 'lib', include: ['*.jar'])
+    embeddedImpl 'net.java.jinput:jinput:2.0.10'
+    embeddedImpl fileTree(dir: 'lib', include: ['*.jar'])
     testImplementation('junit:junit:4.13.1')
 }
 
@@ -27,8 +27,8 @@ test {
 // add info to OSGi manifest
 osgi {
     manifest {
-        attributes ('Bundle-Vendor': 'Botts Inc')
-        attributes ('Bundle-Activator': 'com.sample.impl.sensor.universalcontroller.Activator')
+        attributes ('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+        attributes ('Bundle-Activator': 'com.botts.impl.sensor.universalcontroller.Activator')
     }
 }
 
@@ -36,9 +36,9 @@ osgi {
 ext.pom >>= {
     developers {
         developer {
-            id 'alexalmanza'
+            id 'earocorn'
             name 'Alex Almanza'
-            organization 'Botts Innovative Research'
+            organization 'Botts Innovative Research, Inc.'
             organizationUrl 'https://botts-inc.com'
         }
     }

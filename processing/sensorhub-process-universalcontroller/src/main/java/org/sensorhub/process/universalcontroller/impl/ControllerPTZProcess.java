@@ -1,6 +1,6 @@
 package org.sensorhub.process.universalcontroller.impl;
 
-import com.sample.impl.sensor.universalcontroller.helpers.UniversalControllerComponent;
+import com.botts.impl.sensor.universalcontroller.helpers.UniversalControllerComponent;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.Quantity;
 import org.sensorhub.process.universalcontroller.helpers.AbstractControllerTaskingProcess;

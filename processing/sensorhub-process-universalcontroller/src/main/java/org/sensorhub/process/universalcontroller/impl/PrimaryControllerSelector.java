@@ -1,6 +1,6 @@
 package org.sensorhub.process.universalcontroller.impl;
 
-import com.sample.impl.sensor.universalcontroller.helpers.UniversalControllerProcessHelper;
+import com.botts.impl.sensor.universalcontroller.helpers.UniversalControllerProcessHelper;
 import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.processing.OSHProcessInfo;
 import org.vast.data.DataBlockList;

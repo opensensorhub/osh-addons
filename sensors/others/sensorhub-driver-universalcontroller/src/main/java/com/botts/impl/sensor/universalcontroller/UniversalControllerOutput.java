@@ -11,16 +11,14 @@
  Copyright (C) 2020-2021 Botts Innovative Research, Inc. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
-package com.sample.impl.sensor.universalcontroller;
+package com.botts.impl.sensor.universalcontroller;
 
-import com.alexalmanza.controller.wii.identifiers.WiiIdentifier;
-import com.alexalmanza.interfaces.IController;
-import com.alexalmanza.models.ControllerComponent;
-import com.alexalmanza.models.ControllerData;
-import com.alexalmanza.models.ControllerType;
-import com.sample.impl.sensor.universalcontroller.helpers.ControllerCyclingAction;
-import com.sample.impl.sensor.universalcontroller.helpers.ControllerMappingPreset;
-import com.sample.impl.sensor.universalcontroller.helpers.UniversalControllerComponent;
+import com.botts.controller.interfaces.IController;
+import com.botts.controller.models.ControllerComponent;
+import com.botts.controller.models.ControllerType;
+import com.botts.impl.sensor.universalcontroller.helpers.ControllerCyclingAction;
+import com.botts.impl.sensor.universalcontroller.helpers.ControllerMappingPreset;
+import com.botts.impl.sensor.universalcontroller.helpers.UniversalControllerComponent;
 import net.opengis.swe.v20.*;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.SensorException;
@@ -28,12 +26,9 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.data.*;
-import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 
 import java.lang.Boolean;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Output specification and provider for {@link UniversalControllerSensor}.

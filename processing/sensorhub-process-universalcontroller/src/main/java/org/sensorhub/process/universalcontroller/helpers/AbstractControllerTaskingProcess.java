@@ -1,6 +1,6 @@
 package org.sensorhub.process.universalcontroller.helpers;
 
-import com.sample.impl.sensor.universalcontroller.helpers.UniversalControllerProcessHelper;
+import com.botts.impl.sensor.universalcontroller.helpers.UniversalControllerProcessHelper;
 import org.vast.process.ExecutableProcessImpl;
 import org.vast.process.ProcessException;
 import org.vast.process.ProcessInfo;

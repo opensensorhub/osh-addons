@@ -11,14 +11,12 @@
  Copyright (C) 2020-2021 Botts Innovative Research, Inc. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
-package com.sample.impl.sensor.universalcontroller;
+package com.botts.impl.sensor.universalcontroller;
 
-import com.alexalmanza.controller.wii.WiiMote;
-import com.alexalmanza.controller.wii.WiiMoteConnection;
-import com.alexalmanza.interfaces.IController;
-import com.alexalmanza.interfaces.IControllerConnection;
-import com.alexalmanza.models.ControllerType;
-import com.alexalmanza.util.FindControllers;
+import com.botts.controller.wii.WiiMoteConnection;
+import com.botts.controller.interfaces.IController;
+import com.botts.controller.models.ControllerType;
+import com.botts.controller.util.FindControllers;
 import net.java.games.input.Event;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
