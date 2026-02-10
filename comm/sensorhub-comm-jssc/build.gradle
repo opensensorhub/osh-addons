@@ -10,7 +10,7 @@ rootProject.allprojects {
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  implementation("io.github.java-native:jssc:2.10.2")
+  embeddedImpl("io.github.java-native:jssc:2.10.2")
 }
 
 osgi {
