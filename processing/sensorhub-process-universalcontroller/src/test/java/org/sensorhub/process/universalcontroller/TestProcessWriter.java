@@ -1,18 +1,9 @@
 package org.sensorhub.process.universalcontroller;
 
-import net.opengis.gml.v32.impl.ReferenceImpl;
-import net.opengis.sensorml.v20.AbstractProcess;
-import net.opengis.sensorml.v20.SimpleProcess;
-import net.opengis.sensorml.v20.impl.SettingsImpl;
-import net.opengis.swe.v20.AbstractSWEIdentifiable;
-import net.opengis.swe.v20.DataComponent;
 import org.junit.Test;
-import org.sensorhub.process.universalcontroller.helpers.ProcessHelper;
-import org.sensorhub.process.universalcontroller.impl.ControllerPTZProcess;
-import org.sensorhub.process.universalcontroller.impl.PrimaryControllerSelector;
-import org.vast.sensorML.*;
-
-import java.util.UUID;
+import org.sensorhub.impl.process.universalcontroller.helpers.ProcessHelper;
+import org.sensorhub.impl.process.universalcontroller.ControllerPTZProcess;
+import org.sensorhub.impl.process.universalcontroller.PrimaryControllerSelector;
 
 import static org.junit.Assert.assertEquals;
 
