@@ -488,7 +488,12 @@ public class BleDbusCommNetwork extends AbstractModule<BluetoothNetworkConfig> i
                 }
                 
                 // create and connect GATT client
-                GattClientImpl client = new GattClientImpl(dbus, objManager, objPath, callback);
+                GattClientImpl client = new GattClientImpl(dbus, objManager, objPath, callback) {
+                    @Override
+                    public boolean requestMtu(int mtu) {
+                        return false;
+                    }
+                };
                 log.info("Connecting to BT device " + address + "...");
                 client.connect();
             }        
