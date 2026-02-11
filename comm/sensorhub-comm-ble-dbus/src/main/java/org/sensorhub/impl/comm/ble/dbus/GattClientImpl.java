@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * @author Alex Robin
  * @since Feb 28, 2016
  */
-public abstract class GattClientImpl implements IGattClient
+public class GattClientImpl implements IGattClient
 {
     static final Logger log = LoggerFactory.getLogger(GattClientImpl.class);
     private static final String IFACE = Device1.class.getCanonicalName();
@@ -159,8 +159,13 @@ public abstract class GattClientImpl implements IGattClient
             callback.onConnected(this, IGattClient.GATT_FAILURE);
         }
     }
-    
-    
+
+    @Override
+    public boolean requestMtu(int mtu) {
+        return false;
+    }
+
+
     @Override
     public void disconnect()
     {
