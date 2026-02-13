@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.krakenSDR;
+package org.sensorhub.impl.sensor.krakensdr;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,7 +12,7 @@ import java.net.URL;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.sensor.krakenSDR.KrakenSdrSensor;
+import org.sensorhub.impl.sensor.krakensdr.KrakenSdrSensor;
 
 
 

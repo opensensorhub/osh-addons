@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.krakenSDR;
+package org.sensorhub.impl.sensor.krakensdr;
 
 import com.google.gson.JsonObject;
 import net.opengis.swe.v20.*;

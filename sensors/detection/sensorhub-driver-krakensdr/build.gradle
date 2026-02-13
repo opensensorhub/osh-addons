@@ -23,7 +23,7 @@ test {
 osgi {
     manifest {
         attributes ('Bundle-Vendor': 'Botts Inc')
-        attributes ('Bundle-Activator': 'org.sensorhub.impl.sensor.krakenSDR.Activator')
+        attributes ('Bundle-Activator': 'org.sensorhub.impl.sensor.krakensdr.Activator')
     }
 }
 
@@ -31,7 +31,7 @@ osgi {
 ext.pom >>= {
     developers {
         developer {
-            id 'krakenSDR'
+            id 'krakensdr'
             name 'Bill Brown'
             organization 'Botts-inc'
             organizationUrl 'https://botts-inc.com/'

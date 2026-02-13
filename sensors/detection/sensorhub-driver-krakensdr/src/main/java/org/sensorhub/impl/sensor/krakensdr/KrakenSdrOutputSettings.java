@@ -9,7 +9,7 @@
 
  Copyright (C) 2020-2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.krakenSDR;
+package org.sensorhub.impl.sensor.krakensdr;
 
 import com.google.gson.JsonObject;
 import net.opengis.swe.v20.*;
