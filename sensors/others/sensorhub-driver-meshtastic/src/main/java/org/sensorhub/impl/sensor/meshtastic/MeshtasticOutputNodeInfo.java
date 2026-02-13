@@ -20,7 +20,6 @@ import org.sensorhub.api.data.DataEvent;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
-import java.util.ArrayList;
 import java.util.Base64;
 
 /**
