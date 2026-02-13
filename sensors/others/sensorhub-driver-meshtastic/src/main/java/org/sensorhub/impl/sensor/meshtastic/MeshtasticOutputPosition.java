@@ -58,7 +58,6 @@ public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo impleme
     /**
      * Sets the data for the output and publishes it.
      */
-//    public void setData(String packet_id, String packet_from, double lat, double lon, double alt) {
     @Override
     public void setData(MeshProtos.MeshPacket packetData, ByteString payload) {
         synchronized (processingLock) {
