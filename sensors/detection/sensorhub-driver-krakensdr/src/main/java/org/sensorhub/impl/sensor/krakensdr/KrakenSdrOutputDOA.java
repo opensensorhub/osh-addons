@@ -124,11 +124,11 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
                         .label("Heading")
                         .uomCode("deg")
                         .description("heading")
-                        .definition(SWEHelper.getPropertyUri("heading")))
+                        .definition(SWEHelper.getPropertyUri("Heading")))
                 .addField("used_heading", sweFactory.createText()
                         .label("Main Heading Sensor Used")
                         .description("Main Heading Sensor Used (\"GPS\"/\"Compass\")")
-                        .definition(SWEHelper.getPropertyUri("heading")))
+                        .definition(SWEHelper.getPropertyUri("Heading")))
                 ;
         dataStruct = recordBuilder.build();
 
@@ -174,45 +174,45 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
             }
             ++setCount;
 
-            URL url = new URL(parentSensor.DoA_URL);
+            URL url = new URL(parentSensor.DOA_URL);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
 
             // READ DoA CSV provided by KrakenSDR Software
             BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
-            String DoA_csv;
-            String[] DOA_Array;
+            String doaCsv;
+            String[] doaArray;
 
-            DoA_csv = in.readLine();
-            if (!DoA_csv.isEmpty()) {
-                DoA_csv = DoA_csv.trim();
+            doaCsv = in.readLine();
+            if (!doaCsv.isEmpty()) {
+                doaCsv = doaCsv.trim();
                 // Create an array from the html csv data. If it's not the right amount of fields, go to next iteration.
-                DOA_Array = DoA_csv.split(",");
-                if (DOA_Array.length < 13) {
+                doaArray = doaCsv.split(",");
+                if (doaArray.length < 13) {
                     return;
                 }
 
                 // Convert Unix Epoch time provided by GPS to OffsetDateTime
-                Instant krakenTimeInstant = Instant.ofEpochMilli(Long.parseLong(DOA_Array[0]));
+                Instant krakenTimeInstant = Instant.ofEpochMilli(Long.parseLong(doaArray[0]));
                 OffsetDateTime odt = krakenTimeInstant.atOffset(ZoneOffset.UTC);
 
                 dataBlock.setDateTime(0, odt);                                  // time
-                dataBlock.setDoubleValue(1, Double.parseDouble(DOA_Array[1]));  // Line of Bearing (DoA)
-                dataBlock.setDoubleValue(2, Double.parseDouble(DOA_Array[2]));  // confidence
-                dataBlock.setDoubleValue(3, Double.parseDouble(DOA_Array[3]));  // rssi
-                dataBlock.setDoubleValue(4, Double.parseDouble(DOA_Array[4]));  // frequency
-                dataBlock.setStringValue(5, DOA_Array[5]);                      // antenna arrangement
-                dataBlock.setDoubleValue(6, Double.parseDouble(DOA_Array[6]));  // time-delta / latency
-                dataBlock.setStringValue(7, DOA_Array[7]);                      // uuid
-                dataBlock.setDoubleValue(8, Double.parseDouble(DOA_Array[8]));  // location lat
-                dataBlock.setDoubleValue(9, Double.parseDouble(DOA_Array[9]));  // location lon
-                if (DOA_Array[12].equals("Compass")) {
-                    dataBlock.setStringValue(10, DOA_Array[11]);                // compass heading
+                dataBlock.setDoubleValue(1, Double.parseDouble(doaArray[1]));  // Line of Bearing (DoA)
+                dataBlock.setDoubleValue(2, Double.parseDouble(doaArray[2]));  // confidence
+                dataBlock.setDoubleValue(3, Double.parseDouble(doaArray[3]));  // rssi
+                dataBlock.setDoubleValue(4, Double.parseDouble(doaArray[4]));  // frequency
+                dataBlock.setStringValue(5, doaArray[5]);                      // antenna arrangement
+                dataBlock.setDoubleValue(6, Double.parseDouble(doaArray[6]));  // time-delta / latency
+                dataBlock.setStringValue(7, doaArray[7]);                      // uuid
+                dataBlock.setDoubleValue(8, Double.parseDouble(doaArray[8]));  // location lat
+                dataBlock.setDoubleValue(9, Double.parseDouble(doaArray[9]));  // location lon
+                if (doaArray[12].equals("Compass")) {
+                    dataBlock.setStringValue(10, doaArray[11]);                // compass heading
                 } else {
-                    dataBlock.setStringValue(10, DOA_Array[10]);                // gps heading
+                    dataBlock.setStringValue(10, doaArray[10]);                // gps heading
                 }
-                dataBlock.setStringValue(11, DOA_Array[12]);                    // hading used
+                dataBlock.setStringValue(11, doaArray[12]);                    // hading used
 
                 latestRecord = dataBlock;
                 latestRecordTime = System.currentTimeMillis();

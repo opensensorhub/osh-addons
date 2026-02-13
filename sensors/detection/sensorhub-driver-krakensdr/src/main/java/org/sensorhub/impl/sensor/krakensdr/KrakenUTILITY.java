@@ -74,7 +74,7 @@ public class KrakenUTILITY {
         }
     }
 
-    public void replaceOldSettings(String OUTPUT_URL,JsonObject json){
+    public void replaceOldSettings(String OUTPUT_URL, JsonObject json){
         try {
             // Start curl command to upload file content from stdin
             ProcessBuilder pb = new ProcessBuilder(
@@ -93,13 +93,16 @@ public class KrakenUTILITY {
 
             int exitCode = process.waitFor();
             if (exitCode == 0) {
-                System.out.println("✅ settings.json uploaded via curl.");
+                parentSensor.getLogger().info("✅ settings.json uploaded via curl.");
             } else {
-                System.out.println("❌ curl upload failed. Exit code: " + exitCode);
-            }
+                parentSensor.getLogger().info("❌ curl upload failed. Exit code: {}", exitCode);
 
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Error uploading settings.json via curl", e);
+            }
+        } catch (InterruptedException e){
+            Thread.currentThread().interrupt(); // Restore interrupt flag
+            parentSensor.getLogger().debug("Curl upload interrupted", e);
+        } catch (IOException e){
+            parentSensor.getLogger().debug("Error uploading settings.json via curl", e);
         }
     }
 

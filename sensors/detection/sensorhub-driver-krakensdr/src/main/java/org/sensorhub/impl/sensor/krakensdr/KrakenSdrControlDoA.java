@@ -28,18 +28,17 @@ public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> 
                 .label("DoA Configuration")
                 .description("Data Record for the DoA Configuration Settings")
                 .definition(SWEHelper.getPropertyUri("DoA_control"))
-                .addField("ant_arrangement", fac.createCategory()
+                .addField("antennaArrangement", fac.createCategory()
                         .label("Antenna Arrangement")
                         .description("The Arrangement must be UCA or ULA")
-                        .definition(SWEHelper.getPropertyUri("ant_arrangement"))
+                        .definition(SWEHelper.getPropertyUri("AntennaArrangement"))
                         .addAllowedValues("UCA", "ULA")
-                        .value(initialSettings.get("ant_arrangement").getAsString()))
-                .addField("ant_spacing_meters", fac.createQuantity()
+                )
+                .addField("antennaSpacingMeters", fac.createQuantity()
                         .uom("m")
                         .label("Antenna Array Radius")
                         .description("Current spacing of the Antenna Array")
-                        .definition(SWEHelper.getPropertyUri("ant_spacing_meters"))
-                        .value(initialSettings.get("ant_spacing_meters").getAsDouble())
+                        .definition(SWEHelper.getPropertyUri("AntennaSpacingMeters"))
                 ).build();
     }
 
@@ -56,29 +55,27 @@ public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> 
         JsonObject currentSettings = null;
         JsonObject oldSettings = null;
         try {
-            currentSettings = util.retrieveJSONFromAddr(parentSensor.settings_URL);
+            currentSettings = util.retrieveJSONFromAddr(parentSensor.SETTINGS_URL);
             oldSettings = currentSettings.deepCopy();
         } catch (SensorHubException e) {
-            throw new RuntimeException(e);
+            getLogger().debug("Failed to retrieve current json settings from kraken: ", e);
         }
 
         // UPDATE CURRENT JSON SETTINGS WITH UPDATED CONTROL SETTINGS
         // UPDATE ANTENNA ARRANGEMNENT IF UPDATED IN ADMIN PANEL
-        Category osh_ant_arrangement = (Category) commandData.getField("ant_arrangement");
-        String osh_ant_arrangement_value = osh_ant_arrangement.getValue();
+        Category oshAntArrangement = (Category) commandData.getField("ant_arrangement");
+        String oshAntArrangementValue = oshAntArrangement.getValue();
 
-        if(osh_ant_arrangement_value != null){
-            currentSettings.addProperty("ant_arrangement", osh_ant_arrangement_value);
+        if(oshAntArrangementValue != null){
+            currentSettings.addProperty("ant_arrangement", oshAntArrangementValue);
         }
 
         // UPDATE ANTENNA SPACING IF UPDATED IN ADMIN PANEL
-        Quantity osh_ant_spacing = (Quantity) commandData.getField("ant_spacing_meters");
-        double osh_ant_spacing_value = osh_ant_spacing.getValue();
-        if(osh_ant_spacing_value != 0.0){
-            currentSettings.addProperty("ant_spacing_meters", osh_ant_spacing_value);
+        Quantity oshAntennaSpacing = (Quantity) commandData.getField("ant_spacing_meters");
+        double oshAntennaSpacingValue = oshAntennaSpacing.getValue();
+        if(oshAntennaSpacingValue != 0.0){
+            currentSettings.addProperty("ant_spacing_meters", oshAntennaSpacingValue);
         }
-
-        System.out.println("Settings Equal: " + (!currentSettings.equals(oldSettings)));
 
         // REPLACE SETTINGS ON KRAKENSDR BASED ON CONTROL UPDATED ABOVE
         if(!currentSettings.equals(oldSettings)){
