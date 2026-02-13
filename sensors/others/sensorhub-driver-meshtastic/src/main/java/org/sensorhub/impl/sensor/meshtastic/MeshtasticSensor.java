@@ -15,8 +15,6 @@ import org.meshtastic.proto.MeshProtos;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vast.ogc.om.MovingFeature;
 
 import java.io.IOException;
@@ -36,7 +34,6 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     static final String UID_PREFIX = "urn:osh:sensor:meshtastic:";
     static final String XML_PREFIX = "meshtastic";
 
-    private static final Logger logger = LoggerFactory.getLogger(MeshtasticSensor.class);
     private ICommProvider<?> commProvider;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     AtomicBoolean isProcessing = new AtomicBoolean(false);
@@ -185,61 +182,7 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
             try (InputStream in = commProvider.getInputStream()){
                 isProcessing.set(true);
                 while (isProcessing.get()) {
-                    int b;
-                    // find START1 in Input Stream, indicating that a Protobuf messages is being sent
-                    do {
-                        b = in.read();
-                        if (b == -1) return;
-//                        if (b != START1) {
-////                            optional: treat as debug ASCII
-//                            System.out.print((char) b);
-//                        }
-                    } while (b != START1);
-
-                    // If START1(0x94) is found, expect START2
-                    b = in.read();
-                    // invalid header
-                    if (b != START2) {
-                        getLogger().warn("Invalid header");
-                        continue;
-                    }
-
-                    // GET LENGTH OF PROTOBUF MESSAGE
-                    int lenMSB = in.read();
-                    int lenLSB = in.read();
-                    if (lenMSB == -1 || lenLSB == -1) break;
-
-                    int length = ((lenMSB & 0xFF) << 8) | (lenLSB & 0xFF);
-                    if (length <= 0 || length > 512) {
-                        getLogger().info("Invalid length, resyncing...");
-                        continue;
-                    }
-
-                    // PROTOBUF DATA
-                    byte[] payload = new byte[length];
-                    int read = 0;
-                    while (read < length) {
-                        int r = in.read(payload, read, length - read);
-                        if (r == -1) break;
-                        read += r;
-                    }
-
-                    if (read < length) {
-                        getLogger().info("Truncated packet, resyncing...");
-                        continue;
-                    }
-
-                    // parse protobuf
-                    try {
-                        MeshProtos.FromRadio msg = MeshProtos.FromRadio.parseFrom(payload);
-                        if(msg.hasPacket()){
-                            MeshProtos.MeshPacket packet = msg.getPacket();
-                            meshtasticHandler.handlePacket(packet);
-                        }
-//                        getLogger().info("New message: " + msg);
-                    } catch (Exception e) {
-                        getLogger().error("Invalid protobuf: " + e.getMessage());
-                    }
+                    processNextPacket(in);
                 }
 
             } catch (IOException e) {
@@ -251,6 +194,86 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
             }
         });
     }
+
+
+    private void processNextPacket(InputStream in) throws IOException {
+        // CHECK TO SEE IF PACKET SHOULD PROCESS
+        if (!findStartOfPacket(in)){
+            return;
+        }
+
+        // GET LENGTHH OF PACKET AND CHECK THAT IT MATCHES STYLE
+        int length = readPacketLength(in);
+        if (length <= 0 || length > 512) {
+            getLogger().info("Invalid length, resyncing...");
+            return;
+        }
+
+        // READ PROTOBUF PAYLOAD DATA
+        byte[] payload = readPayload(in, length);
+        if(payload.length == 0){
+            getLogger().info("Truncated packet, resyncing...");
+            return;
+        }
+
+        // PARSE PROTOBUF PAYLOAD USING MESHTASTIC PROTOS
+        parseProtobuf(payload);
+    }
+
+    private boolean findStartOfPacket(InputStream in) throws IOException {
+        int b;
+        // find START1 in Input Stream, indicating that a Protobuf messages is being sent
+        do {
+            b = in.read();
+            if (b == -1) return false;
+        } while (b != START1);
+
+        // If START1(0x94) is found, expect START2
+        b = in.read();
+        // invalid header
+        if (b != START2) {
+            getLogger().warn("Invalid header");
+            return false;
+        }
+
+        return true;
+    }
+
+    // GET LENGTH OF PROTOBUF MESSAGE
+    private int readPacketLength(InputStream in) throws IOException {
+        int lenMSB = in.read();
+        int lenLSB = in.read();
+        if (lenMSB == -1 || lenLSB == -1) return -1;
+        return ((lenMSB & 0xFF) <<8 | (lenLSB & 0xFF));
+    }
+
+    // READ A PAYLOAD FROM INPUT STREAM
+    private byte[] readPayload(InputStream in, int length) throws IOException {
+        byte[] payload = new byte[length];
+        int read = 0;
+        while(read < length ){
+            int r = in.read(payload,read,length-read);
+            if (r == -1) {
+                return new byte[0];
+            }
+            read += r;
+        }
+        return payload;
+    }
+
+    // PARSE MESHTASTIC RADIO MESSAGE
+    private void parseProtobuf(byte[] payload){
+        try {
+            MeshProtos.FromRadio msg = MeshProtos.FromRadio.parseFrom(payload);
+            if(msg.hasPacket()){
+                MeshProtos.MeshPacket packet = msg.getPacket();
+                meshtasticHandler.handlePacket(packet);
+            }
+        } catch (Exception e) {
+            getLogger().error("Invalid protobuf: {} ", e.getMessage());
+        }
+    }
+
 
     public boolean sendMessage(MeshProtos.ToRadio message) {
         byte[] bytes = message.toByteArray();
