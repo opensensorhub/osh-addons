@@ -22,9 +22,9 @@ import org.vast.swe.helper.GeoPosHelper;
  * Output specification and provider for {@link MeshtasticSensor}.
  */
 public class MeshtasticOutputTextMessage extends MeshtasticOutputPacketInfo implements MeshtasticOutputInterface{
-    static String OUTPUT_NAME = "MeshtasticText";
-    static String OUTPUT_LABEL = "meshtastic Text Message";
-    static String OUTPUT_DESCRIPTION = "Text provided by a meshtastic Device";
+    private static final String OUTPUT_NAME = "MeshtasticText";
+    private static final String OUTPUT_LABEL = "meshtastic Text Message";
+    private static final String OUTPUT_DESCRIPTION = "Text provided by a meshtastic Device";
 
     private final Object processingLock = new Object();
 

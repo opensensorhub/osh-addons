@@ -23,8 +23,8 @@ import org.vast.swe.helper.GeoPosHelper;
  */
 public class MeshtasticOutputPosition extends MeshtasticOutputPacketInfo implements MeshtasticOutputInterface{
     private static final String OUTPUT_NAME = "MeshtasticPosition";
-    private static  final String OUTPUT_LABEL = "meshtastic Position Packet";
-    private static  final String OUTPUT_DESCRIPTION = "Output data for a meshtastic Device's position";
+    private static final String OUTPUT_LABEL = "meshtastic Position Packet";
+    private static final String OUTPUT_DESCRIPTION = "Output data for a meshtastic Device's position";
 
     private final Object processingLock = new Object();
 
