@@ -112,8 +112,6 @@ public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo impleme
                 String nodePrimaryKey = Base64.getEncoder().encodeToString(nodeInfoData.getPublicKey().toByteArray());
                 String nodeHwModel =  nodeInfoData.getHwModel().toString();
                 String nodeRole = (nodeInfoData.getRole() == ConfigProtos.Config.DeviceConfig.Role.UNRECOGNIZED) ? "Unknown Role" : nodeInfoData.getRole().name();
-//                boolean isUnmessageable =  node_info.getIsUnmessagable();
-//                boolean canBeMessaged = node_info.hasIsUnmessagable();
 
                 DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
 
