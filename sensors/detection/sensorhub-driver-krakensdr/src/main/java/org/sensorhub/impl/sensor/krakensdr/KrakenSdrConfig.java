@@ -15,7 +15,7 @@ import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
 /**
- * Configuration settings for the {@link krakenSDRSensor} driver exposed via the OpenSensorHub Admin panel.
+ * Configuration settings for the {@link KrakenSdrSensor} driver exposed via the OpenSensorHub Admin panel.
  * <p>
  * Public fields are exposed in the Admin panel for configuration by the user.
  * These fields can be annotated with the DisplayInfo annotation to provide additional information to the user
