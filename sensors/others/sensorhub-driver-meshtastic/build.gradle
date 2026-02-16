@@ -5,7 +5,7 @@ plugins {
 
 description = 'Meshtastic Driver'
 ext.details = "Driver that utilizes a meshtastic Radio pre-configured with meshtastic Node Software to communicate with other meshtastic Radio"
-version = '1.0.0'
+version = '1.0.1'
 
 
 dependencies {
