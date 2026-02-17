@@ -5,12 +5,12 @@ plugins {
 
 description = 'Meshtastic Driver'
 ext.details = "Driver that utilizes a meshtastic Radio pre-configured with meshtastic Node Software to communicate with other meshtastic Radio"
-version = '1.0.0'
+version = '1.0.1'
 
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-    embeddedImpl "com.google.protobuf:protobuf-java:3.25.1"
+    embeddedImpl "com.google.protobuf:protobuf-java:4.28.2"
     testImplementation "junit:junit:4.13.1"
     testImplementation project(':sensorhub-comm-jssc')
 }
@@ -18,7 +18,7 @@ dependencies {
 // PROTOBUF PLUGIN CONFIGURATION
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.25.1"
+        artifact = "com.google.protobuf:protoc:4.28.2"
     }
     // CONFIGURE THE PLUGIN TO GENERATE JAVA FILES
     generateProtoTasks {
