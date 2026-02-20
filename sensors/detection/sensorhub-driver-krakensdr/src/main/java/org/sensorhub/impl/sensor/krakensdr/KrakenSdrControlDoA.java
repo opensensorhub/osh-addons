@@ -54,11 +54,13 @@ public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> 
         // RETRIEVE CURRENT JSON SETTINGS AS A JSON OBJECT
         JsonObject currentSettings = null;
         JsonObject oldSettings = null;
+
         try {
             currentSettings = util.getSettings();
             oldSettings = currentSettings.deepCopy();
         } catch (SensorHubException e) {
             getLogger().debug("Failed to retrieve current json settings from kraken: ", e);
+            throw new CommandException("Unable to retrieve Kraken settings.json", e);
         }
 
         // UPDATE CURRENT JSON SETTINGS WITH UPDATED CONTROL SETTINGS
@@ -79,7 +81,6 @@ public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> 
 
         // REPLACE SETTINGS ON KRAKENSDR BASED ON CONTROL UPDATED ABOVE
         if(!currentSettings.equals(oldSettings)){
-//            util.replaceOldSettings(parentSensor.OUTPUT_URL , currentSettings);
             try {
                 util.uploadSettings(currentSettings);
             }catch (SensorHubException e){

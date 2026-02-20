@@ -6,10 +6,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.sensorhub.api.common.SensorHubException;
@@ -139,39 +135,6 @@ public class KrakenUTILITY {
 
     private String getTag(Element root, String tag) {
         return root.getElementsByTagName(tag).item(0).getTextContent();
-    }
-
-
-    public void replaceOldSettings(String OUTPUT_URL, JsonObject json){
-        try {
-            // Start curl command to upload file content from stdin
-            ProcessBuilder pb = new ProcessBuilder(
-                    "curl",
-                    "-F", "path=@-;filename=settings.json", // read from stdin, send with filename
-                    OUTPUT_URL + "/upload?path=/"
-            );
-
-            Process process = pb.start();
-
-            // Send the JSON data to curl via stdin
-            try (OutputStream os = process.getOutputStream()) {
-                os.write(json.toString().getBytes());
-                os.flush();
-            }
-
-            int exitCode = process.waitFor();
-            if (exitCode == 0) {
-                sensor.getLogger().info("✅ settings.json uploaded via curl.");
-            } else {
-                sensor.getLogger().info("❌ curl upload failed. Exit code: {}", exitCode);
-
-            }
-        } catch (InterruptedException e){
-            Thread.currentThread().interrupt(); // Restore interrupt flag
-            sensor.getLogger().debug("Curl upload interrupted", e);
-        } catch (IOException e){
-            sensor.getLogger().debug("Error uploading settings.json via curl", e);
-        }
     }
 
     public void uploadSettings(JsonObject json) throws SensorHubException {

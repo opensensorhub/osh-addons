@@ -11,13 +11,8 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.krakensdr;
 
-import com.google.gson.JsonObject;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.*;
 import java.util.concurrent.TimeUnit;
 
 /**
