@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.krakenSDR;
+package org.sensorhub.impl.sensor.krakensdr;
 
 import com.google.gson.JsonObject;
 import net.opengis.swe.v20.*;
@@ -20,7 +20,7 @@ public class KrakenSdrControlReceiver extends AbstractSensorControl<KrakenSdrSen
     }
 
     // INITIALIZE CONTROL
-    public void doInit(JsonObject initialSettings){
+    public void doInit(){
         SWEHelper fac = new SWEHelper();
         // The Master Control Data Structure is a Choice of individual controls for the KrakenSDR
         commandDataStruct = fac.createRecord()
@@ -29,26 +29,23 @@ public class KrakenSdrControlReceiver extends AbstractSensorControl<KrakenSdrSen
                 .label("RF Receiver Configuration")
                 .description("Data Record for the RF Receiver Configuration")
                 .definition(SWEHelper.getPropertyUri("receiver_control"))
-                .addField("center_freq", fac.createQuantity()
+                .addField("centerFreq", fac.createQuantity()
                         .uomCode("MHz")
                         .label("Center Frequency")
                         .description("The transmission frequency of the event in MegaHertz")
                         .definition(SWEHelper.getPropertyUri("frequency"))
-                        .value(initialSettings.get("center_freq").getAsDouble())
                 )
-                .addField("uniform_gain", fac.createCategory()
+                .addField("uniformGain", fac.createCategory()
                         .label("Receiver Gain (dB)")
                         .description("Input the Receiver Gain in dB")
-                        .definition(SWEHelper.getPropertyUri("uniform_gain"))
+                        .definition(SWEHelper.getPropertyUri("UniformGain"))
                         .addAllowedValues("0", "0.9", "1.4", "2.7", "3.7", "7.7", "8.7", "12.5", "14.4", "15.7", "16.6", "19.7", "20.7", "22.9", "25.4", "28.0", "29.7", "32.8", "33.8", "36.4", "37.2", "38.6", "40.2", "42.1", "43.4", "43.9", "44.5", "48.0", "49.6")
-                        .value(initialSettings.get("uniform_gain").getAsString())
                 )
                 .build();
     }
 
     @Override
-    protected boolean execCommand(DataBlock cmdData) throws CommandException
-    {
+    protected boolean execCommand(DataBlock cmdData) throws CommandException{
 
         // RETRIEVE INPUTS FROM ADMIN PANEL CONTROL
         DataRecord commandData = commandDataStruct.copy();
@@ -58,32 +55,39 @@ public class KrakenSdrControlReceiver extends AbstractSensorControl<KrakenSdrSen
         JsonObject currentSettings = null;
         JsonObject oldSettings = null;
         try {
-            currentSettings = util.retrieveJSONFromAddr(parentSensor.settings_URL);
+            currentSettings = util.getSettings();
             oldSettings = currentSettings.deepCopy();
         } catch (SensorHubException e) {
-            throw new RuntimeException(e);
+            getLogger().debug("Failed to retrieve current json settings from kraken: ", e);
+            throw new CommandException("Unable to retrieve Kraken settings.json", e);
         }
 
         // UPDATE CURRENT JSON SETTINGS WITH UPDATED CONTROL SETTINGS BASED ON WHICH IS SELECTED
         // UPDATE FREQUENCY IF UPDATED IN ADMIN PANEL
-        Quantity osh_freq = (Quantity) commandData.getField("center_freq");
-        double osh_freq_value = osh_freq.getValue();
-        if(osh_freq_value != 0.0){
-            currentSettings.addProperty("center_freq", osh_freq_value);
+        Quantity oshFrequency = (Quantity) commandData.getField("centerFreq");
+        double oshFrequencyValue = oshFrequency.getValue();
+        if(oshFrequencyValue != 0.0){
+            currentSettings.addProperty("center_freq", oshFrequencyValue);
         }
 
         // UPDATE GAIN IF UPDATED IN ADMIN PANEL
-        Category osh_gain = (Category) commandData.getField("uniform_gain");
-        String osh_gain_value = osh_gain.getValue();;
-        if(osh_gain_value != null){
-            currentSettings.addProperty("uniform_gain", Double.parseDouble(osh_gain_value));
+        Category oshGain = (Category) commandData.getField("uniformGain");
+        String oshGainValue = oshGain.getValue();
+        if(oshGainValue != null){
+            currentSettings.addProperty("uniform_gain", Double.parseDouble(oshGainValue));
         }
 
 
 
         // REPLACE SETTINGS ON KRAKENSDR BASED ON CONTROL UPDATED ABOVE
         if(!currentSettings.equals(oldSettings)){
-            util.replaceOldSettings(parentSensor.OUTPUT_URL , currentSettings);
+            try {
+                util.uploadSettings(currentSettings);
+            }catch (SensorHubException e){
+                getLogger().error("Kraken settings upload failed", e);
+                throw new CommandException("Kraken settings upload failed", e);
+            }
+
         }
 
         return true;

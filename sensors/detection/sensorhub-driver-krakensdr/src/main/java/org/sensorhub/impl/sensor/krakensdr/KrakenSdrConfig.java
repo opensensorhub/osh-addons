@@ -9,13 +9,13 @@
 
  Copyright (C) 2020-2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.krakenSDR;
+package org.sensorhub.impl.sensor.krakensdr;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
 /**
- * Configuration settings for the {@link OkrakenSDRSensor} driver exposed via the OpenSensorHub Admin panel.
+ * Configuration settings for the {@link KrakenSdrSensor} driver exposed via the OpenSensorHub Admin panel.
  * <p>
  * Public fields are exposed in the Admin panel for configuration by the user.
  * These fields can be annotated with the DisplayInfo annotation to provide additional information to the user
@@ -46,7 +46,7 @@ public class KrakenSdrConfig extends SensorConfig {
 
     @DisplayInfo.Required
     @DisplayInfo(label="Sample Rate (seconds)", desc="Provide the USB Port for your Sensor (Usually 8081")
-    public int sampelRate = 2;
+    public int sampleRate = 2;
 
 
 }

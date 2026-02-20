@@ -9,14 +9,12 @@
 
  Copyright (C) 2020-2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.krakenSDR;
+package org.sensorhub.impl.sensor.krakensdr;
 
 import com.google.gson.JsonObject;
 import net.opengis.swe.v20.*;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
@@ -37,9 +35,6 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
     private final long[] timingHistogram = new long[MAX_NUM_TIMING_SAMPLES];
     private final Object histogramLock = new Object();
     private long lastSetTimeMillis = System.currentTimeMillis();
-
-    private static final Logger logger = LoggerFactory.getLogger(KrakenSdrOutputSettings.class);
-
     private DataRecord dataStruct;
     private DataEncoding dataEncoding;
     KrakenUTILITY util = parentSensor.util;
@@ -72,58 +67,55 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
                         .label("OSH Collection Time")
                         .description("Timestamp of when OSH took a reading of the current settings")
                         .definition(SWEHelper.getPropertyUri("time")))
-                .addField("en_remote_control", sweFactory.createBoolean()
+                .addField("enRemoteControl", sweFactory.createBoolean()
                         .label("Remote Control Enabled")
                         .description("If 'false', the control for this node will not work. Adjust settings of KrakenSDR DSP application")
-                        .definition(SWEHelper.getPropertyUri("en_remote_control")))
-                .addField("receiver_config", sweFactory.createRecord()
-                        .name("receiver_config")
+                        .definition(SWEHelper.getPropertyUri("EnRemoteControl")))
+                .addField("receiverConfig", sweFactory.createRecord()
                         .label("RF Receiver Configuration")
                         .description("Data Record for the RF Receiver Configuration")
-                        .definition(SWEHelper.getPropertyUri("receiver_config"))
-                        .addField("center_freq", sweFactory.createQuantity()
+                        .definition(SWEHelper.getPropertyUri("ReceiverConfig"))
+                        .addField("centerFreq", sweFactory.createQuantity()
                                 .uomCode("MHz")
                                 .label("Center Frequency")
                                 .description("The transmission frequency of the event in MegaHertz")
                                 .definition(SWEHelper.getPropertyUri("frequency")))
-                        .addField("uniform_gain", sweFactory.createQuantity()
+                        .addField("uniformGain", sweFactory.createQuantity()
                                 .uomCode("dB")
                                 .label("Receiver Gain")
                                 .description("Current reciever gain settings in dB for the KrakenSDR")
-                                .definition(SWEHelper.getPropertyUri("uniform_gain")))
+                                .definition(SWEHelper.getPropertyUri("UniformGain")))
                 )
-                .addField("DoA_config", sweFactory.createRecord()
-                        .name("DoA_config")
+                .addField("doaConfig", sweFactory.createRecord()
                         .label("DoA Configuration")
                         .description("Data Record for the DoA Configuration Settings")
-                        .definition(SWEHelper.getPropertyUri("DoA_config"))
-                        .addField("ant_arrangement", sweFactory.createText()
+                        .definition(SWEHelper.getPropertyUri("DoaConfig"))
+                        .addField("antennaArrangement", sweFactory.createText()
                                         .label("Antenna Arrangement")
                                         .description("The Arrangement must be UCA or ULA")
-                                        .definition(SWEHelper.getPropertyUri("ant_arrangement")))
-                        .addField("ant_spacing_meter", sweFactory.createQuantity()
+                                        .definition(SWEHelper.getPropertyUri("AntennaArrangement")))
+                        .addField("antennaSpacingMeter", sweFactory.createQuantity()
                                 .uom("m")
                                 .label("Antenna Array Radius")
                                 .description("Current spacing of the Antenna Array")
-                                .definition(SWEHelper.getPropertyUri("ant_spacing_meters")))
-                        .addField("doa_method", sweFactory.createText()
+                                .definition(SWEHelper.getPropertyUri("AntennaSpacingMeter")))
+                        .addField("doaMethod", sweFactory.createText()
                                 .label("DoA Algorithm")
                                 .description("Algorithm used for DoA calculation")
-                                .definition(SWEHelper.getPropertyUri("doa_method")))
+                                .definition(SWEHelper.getPropertyUri("DoaMethod")))
                 )
-                .addField("station_config", sweFactory.createRecord()
-                        .name("station_config")
+                .addField("stationConfig", sweFactory.createRecord()
                         .label("Station Configuration")
                         .description("Data Record for the Station Configuration")
-                        .definition(SWEHelper.getPropertyUri("station_config"))
-                        .addField("station_id", sweFactory.createText()
+                        .definition(SWEHelper.getPropertyUri("StationConfig"))
+                        .addField("stationId", sweFactory.createText()
                                 .label("Station ID")
                                 .description("ID provided for the physical KrakenSDR")
-                                .definition(SWEHelper.getPropertyUri("station_id")))
-                        .addField("location_source", sweFactory.createText()
+                                .definition(SWEHelper.getPropertyUri("StationId")))
+                        .addField("locationSource", sweFactory.createText()
                                 .label("Location Source")
                                 .description("Current Location Source for the Kraken Station")
-                                .definition(SWEHelper.getPropertyUri("location_source")))
+                                .definition(SWEHelper.getPropertyUri("locationSource")))
                         .addField("location", geoFac.newLocationVectorLatLon(SWEHelper.getPropertyUri("location")))
                 );
 
@@ -154,7 +146,7 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
         return accumulator / (double) MAX_NUM_TIMING_SAMPLES;
     }
 
-    public void SetData() {
+    public void setData() {
         DataBlock dataBlock;
         try {
             if (latestRecord == null) {
@@ -172,7 +164,7 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
             ++setCount;
 
             // RETRIEVE CURRENT JSON SETTINGS AS A JSON OBJECT
-            JsonObject currentSettings = util.retrieveJSONFromAddr(parent.settings_URL);
+            JsonObject currentSettings = util.getSettings();
 
             if(currentSettings == null || currentSettings.entrySet().isEmpty()){
                 return;
@@ -196,8 +188,7 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
             eventHandler.publish(new DataEvent(latestRecordTime, KrakenSdrOutputSettings.this, dataBlock));
 
         } catch (Exception e) {
-            System.err.println("Error reading from krakenSDR: " + e.getMessage());
-            e.printStackTrace();
+            getLogger().debug("Error reading from Kraken Device: {}", e.getMessage());
         }
     }
 

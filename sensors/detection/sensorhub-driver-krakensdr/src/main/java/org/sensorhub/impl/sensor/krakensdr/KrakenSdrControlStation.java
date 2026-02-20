@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.krakenSDR;
+package org.sensorhub.impl.sensor.krakensdr;
 
 import com.google.gson.JsonObject;
 import net.opengis.swe.v20.*;
@@ -20,7 +20,7 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
     }
 
     // INITIALIZE CONTROL
-    public void doInit(JsonObject initialSettings){
+    public void doInit(){
         SWEHelper fac = new SWEHelper();
         // The Master Control Data Structure is a Choice of individual controls for the KrakenSDR
         commandDataStruct = fac.createRecord()
@@ -28,27 +28,26 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
                 .label("Station Configuration")
                 .description("Data Record for the Station Configuration")
                 .definition(SWEHelper.getPropertyUri("station_control"))
-                .addField("station_id", fac.createText()
+                .addField("stationId", fac.createText()
                         .label("Station ID")
                         .description("ID provided for the physical KrakenSDR")
-                        .definition(SWEHelper.getPropertyUri("station_id"))
-                        .value((initialSettings.get("station_id") != null) ? initialSettings.get("station_id").getAsString() : "NoName" ))
-                .addField("location_source", fac.createCategory()
+                        .definition(SWEHelper.getPropertyUri("StationId"))
+                )
+                .addField("locationSource", fac.createCategory()
                         .label("Location Source")
                         .description("Current Location Source for the Kraken Station")
-                        .definition(SWEHelper.getPropertyUri("location_source"))
+                        .definition(SWEHelper.getPropertyUri("LocationSource"))
                         .addAllowedValues("GPS", "Static")
-                        .value(initialSettings.get("location_source").getAsString()))
+                )
                 .addField("latitude", fac.createText()
                         .label("Latitude")
                         .description("Latitude when station is Static")
                         .definition(SWEHelper.getPropertyUri("latitude"))
-                        .value(initialSettings.get("latitude").getAsString()))
+                )
                 .addField("longitude", fac.createText()
                         .label("Longitude")
                         .description("Longitude when station is Static")
                         .definition(SWEHelper.getPropertyUri("longitude"))
-                        .value(initialSettings.get("longitude").getAsString())
                 )
                 .build();
 
@@ -67,43 +66,47 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
         JsonObject currentSettings = null;
         JsonObject oldSettings = null;
         try {
-            currentSettings = util.retrieveJSONFromAddr(parentSensor.settings_URL);
+            currentSettings = util.getSettings();
             oldSettings = currentSettings.deepCopy();
         } catch (SensorHubException e) {
-            throw new RuntimeException(e);
+            getLogger().debug("Failed to retrieve current json settings from kraken: ", e);
+            throw new CommandException("Unable to retrieve Kraken settings.json", e);
         }
 
         // UPDATE CURRENT JSON SETTINGS WITH UPDATED CONTROL SETTINGS
         // UPDATE Name of KrakenSDR IF UPDATED IN ADMIN PANEL
-        Text osh_station_id = (Text) commandData.getField("station_id");
-        String osh_station_id_value = osh_station_id.getValue();
-        if(osh_station_id_value != null){
-            currentSettings.addProperty("station_id", osh_station_id_value);
+        Text oshStationId = (Text) commandData.getField("stationId");
+        String oshStationIdValue = oshStationId.getValue();
+        if(oshStationIdValue != null){
+            currentSettings.addProperty("station_id", oshStationIdValue);
         }
 
         // UPDATE LOCATION SETTINGS IF GPS MODE OR STATIC MODE IS SELECTED
-        Category osh_location_source = (Category) commandData.getField("location_source");
-        String osh_location_source_value = osh_location_source.getValue();
-        if(osh_location_source_value != null && osh_location_source_value.equals("GPS")){
+        Category oshLocationSource = (Category) commandData.getField("locationSource");
+        String oshLocationSourceValue = oshLocationSource.getValue();
+        if(oshLocationSourceValue != null && oshLocationSourceValue.equals("GPS")){
             currentSettings.addProperty("location_source", "gpsd");
-        } else if (osh_location_source_value != null && osh_location_source_value.equals("Static")) {
+        } else if (oshLocationSourceValue != null && oshLocationSourceValue.equals("Static")) {
             // IF STATIC, ALSO ADD LATITUDE AND LONGITUDE
             currentSettings.addProperty("location_source", "Static");
 
-            Text osh_latitude = (Text) commandData.getField("latitude");
-            String osh_latitude_value = osh_latitude.getValue();
-            System.out.println(osh_latitude_value);
-            currentSettings.addProperty("latitude", Double.parseDouble(osh_latitude_value));
+            Text oshLatitude = (Text) commandData.getField("latitude");
+            String oshLatitudeValue = oshLatitude.getValue();
+            currentSettings.addProperty("latitude", Double.parseDouble(oshLatitudeValue));
 
-            Text osh_longitude = (Text) commandData.getField("longitude");
-            String osh_longitude_value = osh_longitude.getValue();
-            System.out.println(osh_longitude_value);
-            currentSettings.addProperty("longitude",Double.parseDouble(osh_longitude_value));
+            Text oshLongitude = (Text) commandData.getField("longitude");
+            String oshLongitudeValue = oshLongitude.getValue();
+            currentSettings.addProperty("longitude",Double.parseDouble(oshLongitudeValue));
         }
 
         // REPLACE SETTINGS ON KRAKENSDR BASED ON CONTROL UPDATED ABOVE
         if(!currentSettings.equals(oldSettings)){
-            util.replaceOldSettings(parentSensor.OUTPUT_URL , currentSettings);
+            try {
+                util.uploadSettings(currentSettings);
+            }catch (SensorHubException e){
+                getLogger().error("Kraken settings upload failed", e);
+                throw new CommandException("Kraken settings upload failed", e);
+            }
         }
 
         return true;

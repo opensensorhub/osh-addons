@@ -29,7 +29,7 @@ To begin these steps, logon to your Raspberry Pi and begin:
    ```
 2. Make sure java 17 is installed on raspberry pi
    ```
-    sudo apt install openjdk-17-jdk
+    sudo apt install openjdk-21-jdk
    ```
 3. Install prerequisites to turn RTL2832U chip of the Kraken Device into SDR
     ```
