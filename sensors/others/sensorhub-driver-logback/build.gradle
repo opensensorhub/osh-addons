@@ -1,0 +1,31 @@
+description = 'Logback Capture'
+ext.details = 'Logback appender implementation forwarding logs to a system output'
+version = '1.0.0'
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  embeddedImpl 'ch.qos.logback:logback-classic:1.5.13'
+
+  testImplementation 'junit:junit:4.13.2'
+}
+
+// add info to OSGi manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'GeoRobotix Innovative Research, LLC.')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.logback.Activator')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'earocorn'
+      name 'Alex Almanza'
+      organization 'GeoRobotix Innovative Research, LLC.'
+      organizationUrl 'https://www.georobotix.com'
+    }
+  }
+}
+
