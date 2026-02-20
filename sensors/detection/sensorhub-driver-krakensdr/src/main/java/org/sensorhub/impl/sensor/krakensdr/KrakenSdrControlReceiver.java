@@ -20,7 +20,7 @@ public class KrakenSdrControlReceiver extends AbstractSensorControl<KrakenSdrSen
     }
 
     // INITIALIZE CONTROL
-    public void doInit(JsonObject initialSettings){
+    public void doInit(){
         SWEHelper fac = new SWEHelper();
         // The Master Control Data Structure is a Choice of individual controls for the KrakenSDR
         commandDataStruct = fac.createRecord()

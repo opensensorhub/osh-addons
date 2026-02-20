@@ -67,19 +67,18 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
         // INITIALIZE CONTROLS
         try {
             SETTINGS_CONN = util.createKrakenConnection(SETTINGS_URL);
-            JsonObject initialSettings = util.retrieveJSONFromAddr(SETTINGS_URL);
 
             krakenSdrControlReceiver = new KrakenSdrControlReceiver(this);
             addControlInput(krakenSdrControlReceiver);
-            krakenSdrControlReceiver.doInit(initialSettings);
+            krakenSdrControlReceiver.doInit();
 
             krakenSdrControlDoA = new KrakenSdrControlDoA(this);
             addControlInput(krakenSdrControlDoA);
-            krakenSdrControlDoA.doInit(initialSettings);
+            krakenSdrControlDoA.doInit();
 
             krakenSdrControlStation = new KrakenSdrControlStation(this);
             addControlInput(krakenSdrControlStation);
-            krakenSdrControlStation.doInit(initialSettings);
+            krakenSdrControlStation.doInit();
 
         } catch (SensorHubException e) {
             getLogger().debug(

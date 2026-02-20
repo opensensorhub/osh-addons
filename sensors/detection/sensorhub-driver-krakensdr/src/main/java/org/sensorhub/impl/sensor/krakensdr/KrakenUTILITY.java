@@ -12,16 +12,12 @@ import java.net.URL;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.sensor.krakensdr.KrakenSdrSensor;
-
-
 
 public class KrakenUTILITY {
     private  KrakenSdrSensor parentSensor;
 
     public KrakenUTILITY(KrakenSdrSensor parentSensor) {
         this.parentSensor = parentSensor;
-
     }
 
     public HttpURLConnection createKrakenConnection(String httpURL) throws SensorHubException {
