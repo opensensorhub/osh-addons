@@ -66,7 +66,7 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
         JsonObject currentSettings = null;
         JsonObject oldSettings = null;
         try {
-            currentSettings = util.retrieveJSONFromAddr(parentSensor.SETTINGS_URL);
+            currentSettings = util.getSettings();
             oldSettings = currentSettings.deepCopy();
         } catch (SensorHubException e) {
             getLogger().debug("Failed to retrieve current json settings from kraken: ", e);
@@ -74,7 +74,7 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
 
         // UPDATE CURRENT JSON SETTINGS WITH UPDATED CONTROL SETTINGS
         // UPDATE Name of KrakenSDR IF UPDATED IN ADMIN PANEL
-        Text oshStationId = (Text) commandData.getField("station_id");
+        Text oshStationId = (Text) commandData.getField("stationId");
         String oshStationIdValue = oshStationId.getValue();
         if(oshStationIdValue != null){
             currentSettings.addProperty("station_id", oshStationIdValue);
@@ -100,7 +100,13 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
 
         // REPLACE SETTINGS ON KRAKENSDR BASED ON CONTROL UPDATED ABOVE
         if(!currentSettings.equals(oldSettings)){
-            util.replaceOldSettings(parentSensor.OUTPUT_URL , currentSettings);
+//            util.replaceOldSettings(parentSensor.OUTPUT_URL , currentSettings);
+            try {
+                util.uploadSettings(currentSettings);
+            }catch (SensorHubException e){
+                getLogger().error("Kraken settings upload failed", e);
+                throw new CommandException("Kraken settings upload failed", e);
+            }
         }
 
         return true;

@@ -46,7 +46,7 @@ public class KrakenSdrConfig extends SensorConfig {
 
     @DisplayInfo.Required
     @DisplayInfo(label="Sample Rate (seconds)", desc="Provide the USB Port for your Sensor (Usually 8081")
-    public int sampelRate = 2;
+    public int sampleRate = 2;
 
 
 }

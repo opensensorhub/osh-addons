@@ -148,7 +148,7 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
         return accumulator / (double) MAX_NUM_TIMING_SAMPLES;
     }
 
-    public void SetData() {
+    public void setData() {
         DataBlock dataBlock;
         try {
             if (latestRecord == null) {
@@ -166,7 +166,7 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
             ++setCount;
 
             // RETRIEVE CURRENT JSON SETTINGS AS A JSON OBJECT
-            JsonObject currentSettings = util.retrieveJSONFromAddr(parent.SETTINGS_URL);
+            JsonObject currentSettings = util.getSettings();
 
             if(currentSettings == null || currentSettings.entrySet().isEmpty()){
                 return;

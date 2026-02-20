@@ -45,8 +45,7 @@ public class KrakenSdrControlReceiver extends AbstractSensorControl<KrakenSdrSen
     }
 
     @Override
-    protected boolean execCommand(DataBlock cmdData) throws CommandException
-    {
+    protected boolean execCommand(DataBlock cmdData) throws CommandException{
 
         // RETRIEVE INPUTS FROM ADMIN PANEL CONTROL
         DataRecord commandData = commandDataStruct.copy();
@@ -56,7 +55,7 @@ public class KrakenSdrControlReceiver extends AbstractSensorControl<KrakenSdrSen
         JsonObject currentSettings = null;
         JsonObject oldSettings = null;
         try {
-            currentSettings = util.retrieveJSONFromAddr(parentSensor.SETTINGS_URL);
+            currentSettings = util.getSettings();
             oldSettings = currentSettings.deepCopy();
         } catch (SensorHubException e) {
             getLogger().debug("Failed to retrieve current json settings from kraken: ", e);
@@ -64,14 +63,14 @@ public class KrakenSdrControlReceiver extends AbstractSensorControl<KrakenSdrSen
 
         // UPDATE CURRENT JSON SETTINGS WITH UPDATED CONTROL SETTINGS BASED ON WHICH IS SELECTED
         // UPDATE FREQUENCY IF UPDATED IN ADMIN PANEL
-        Quantity oshFrequency = (Quantity) commandData.getField("center_freq");
+        Quantity oshFrequency = (Quantity) commandData.getField("centerFreq");
         double oshFrequencyValue = oshFrequency.getValue();
         if(oshFrequencyValue != 0.0){
             currentSettings.addProperty("center_freq", oshFrequencyValue);
         }
 
         // UPDATE GAIN IF UPDATED IN ADMIN PANEL
-        Category oshGain = (Category) commandData.getField("uniform_gain");
+        Category oshGain = (Category) commandData.getField("uniformGain");
         String oshGainValue = oshGain.getValue();
         if(oshGainValue != null){
             currentSettings.addProperty("uniform_gain", Double.parseDouble(oshGainValue));
@@ -81,7 +80,14 @@ public class KrakenSdrControlReceiver extends AbstractSensorControl<KrakenSdrSen
 
         // REPLACE SETTINGS ON KRAKENSDR BASED ON CONTROL UPDATED ABOVE
         if(!currentSettings.equals(oldSettings)){
-            util.replaceOldSettings(parentSensor.OUTPUT_URL , currentSettings);
+//            util.replaceOldSettings(parentSensor.OUTPUT_URL , currentSettings);
+            try {
+                util.uploadSettings(currentSettings);
+            }catch (SensorHubException e){
+                getLogger().error("Kraken settings upload failed", e);
+                throw new CommandException("Kraken settings upload failed", e);
+            }
+
         }
 
         return true;

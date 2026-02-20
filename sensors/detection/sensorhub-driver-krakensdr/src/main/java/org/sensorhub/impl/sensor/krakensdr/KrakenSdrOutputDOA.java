@@ -11,6 +11,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.krakensdr;
 
+import com.google.gson.JsonObject;
 import net.opengis.swe.v20.*;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
@@ -102,10 +103,6 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
                         .dataType(DataType.LONG)
                         .description("The transmission frequency of the event in Hertz")
                         .definition(SWEHelper.getPropertyUri("frequency")))
-                .addField("antenna_arrangement", sweFactory.createText()
-                        .label("Antenna Arrangement")
-                        .description("Antenna Array Arrangement : (\"UCA\"/\"ULA\"/\"Custom\")")
-                        .definition(SWEHelper.getPropertyUri("antenna_arrangement")))
                 .addField("time-delta", sweFactory.createQuantity()
                         .uomCode("ms")
                         .label("Latency")
@@ -124,10 +121,6 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
                         .label("Heading")
                         .uomCode("deg")
                         .description("heading")
-                        .definition(SWEHelper.getPropertyUri("Heading")))
-                .addField("used_heading", sweFactory.createText()
-                        .label("Main Heading Sensor Used")
-                        .description("Main Heading Sensor Used (\"GPS\"/\"Compass\")")
                         .definition(SWEHelper.getPropertyUri("Heading")))
                 ;
         dataStruct = recordBuilder.build();
@@ -157,7 +150,7 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
         return accumulator / (double) MAX_NUM_TIMING_SAMPLES;
     }
 
-    public void SetData() {
+    public void setData() {
         DataBlock dataBlock;
         try {
             if (latestRecord == null) {
@@ -174,53 +167,30 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
             }
             ++setCount;
 
-            URL url = new URL(parentSensor.DOA_URL);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
 
-            // READ DoA CSV provided by KrakenSDR Software
-            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            JsonObject doaJson = parentSensor.util.getDoA();
+            // Convert Unix Epoch time provided by GPS to OffsetDateTime
+            Instant krakenTimeInstant = Instant.ofEpochMilli(doaJson.get("time").getAsLong());
+            OffsetDateTime odt = krakenTimeInstant.atOffset(ZoneOffset.UTC);
 
-            String doaCsv;
-            String[] doaArray;
+            dataBlock.setDateTime(0, odt);
+            dataBlock.setDoubleValue(1, doaJson.get("doa").getAsDouble());
+            dataBlock.setDoubleValue(2, doaJson.get("confidence").getAsDouble());
+            dataBlock.setDoubleValue(3, doaJson.get("rssi").getAsDouble());
+            dataBlock.setDoubleValue(4, doaJson.get("frequency").getAsDouble());
+            dataBlock.setDoubleValue(5, doaJson.get("latency").getAsDouble());
+            dataBlock.setStringValue(6, doaJson.get("stationId").getAsString());
+            dataBlock.setDoubleValue(7, doaJson.get("latitude").getAsDouble());
+            dataBlock.setDoubleValue(8, doaJson.get("longitude").getAsDouble());
+            dataBlock.setDoubleValue(9, doaJson.get("heading").getAsDouble());
 
-            doaCsv = in.readLine();
-            if (!doaCsv.isEmpty()) {
-                doaCsv = doaCsv.trim();
-                // Create an array from the html csv data. If it's not the right amount of fields, go to next iteration.
-                doaArray = doaCsv.split(",");
-                if (doaArray.length < 13) {
-                    return;
-                }
+            latestRecord = dataBlock;
+            latestRecordTime = System.currentTimeMillis();
 
-                // Convert Unix Epoch time provided by GPS to OffsetDateTime
-                Instant krakenTimeInstant = Instant.ofEpochMilli(Long.parseLong(doaArray[0]));
-                OffsetDateTime odt = krakenTimeInstant.atOffset(ZoneOffset.UTC);
+            eventHandler.publish(new DataEvent(latestRecordTime, KrakenSdrOutputDOA.this, dataBlock));
 
-                dataBlock.setDateTime(0, odt);                                  // time
-                dataBlock.setDoubleValue(1, Double.parseDouble(doaArray[1]));  // Line of Bearing (DoA)
-                dataBlock.setDoubleValue(2, Double.parseDouble(doaArray[2]));  // confidence
-                dataBlock.setDoubleValue(3, Double.parseDouble(doaArray[3]));  // rssi
-                dataBlock.setDoubleValue(4, Double.parseDouble(doaArray[4]));  // frequency
-                dataBlock.setStringValue(5, doaArray[5]);                      // antenna arrangement
-                dataBlock.setDoubleValue(6, Double.parseDouble(doaArray[6]));  // time-delta / latency
-                dataBlock.setStringValue(7, doaArray[7]);                      // uuid
-                dataBlock.setDoubleValue(8, Double.parseDouble(doaArray[8]));  // location lat
-                dataBlock.setDoubleValue(9, Double.parseDouble(doaArray[9]));  // location lon
-                if (doaArray[12].equals("Compass")) {
-                    dataBlock.setStringValue(10, doaArray[11]);                // compass heading
-                } else {
-                    dataBlock.setStringValue(10, doaArray[10]);                // gps heading
-                }
-                dataBlock.setStringValue(11, doaArray[12]);                    // hading used
-
-                latestRecord = dataBlock;
-                latestRecordTime = System.currentTimeMillis();
-
-                eventHandler.publish(new DataEvent(latestRecordTime, KrakenSdrOutputDOA.this, dataBlock));
-            }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            parentSensor.getLogger().error("Failed to set DoA data", ex);
         }
     }
 

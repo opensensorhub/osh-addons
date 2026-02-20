@@ -40,8 +40,8 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
 
     String OUTPUT_URL;
     String SETTINGS_URL;
-    HttpURLConnection SETTINGS_CONN;
-    String DOA_URL;
+    String DOA_CSV_URL;
+    String DOA_XML_URL;
 
 
     private volatile boolean keepRunning = false;
@@ -55,37 +55,31 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
         generateUniqueID(UID_PREFIX, config.serialNumber);
         generateXmlID(XML_PREFIX, config.serialNumber);
 
-
         // THE KRAKEN GUI APPLICATION SERVES IT'S _SHARE DIRECTORY TO A SPECIFIC PORT. DEFINE STRUCTURE IN CONFIG TO USE IN APP
         OUTPUT_URL  = "http://" + config.krakenIPaddress + ":" + config.krakenPort;
         SETTINGS_URL = OUTPUT_URL + "/settings.json";
-        DOA_URL = OUTPUT_URL + "/DOA_value.html";
+        DOA_CSV_URL = OUTPUT_URL + "/DOA_value.html";
+        DOA_XML_URL = OUTPUT_URL + "/doa.xml";
 
         // INITIALIZE UTILITY
         util = new KrakenUTILITY(this);
 
+        // VALIDATE KRAKEN CONNECTIVITY
+        util.getSettings();
+
         // INITIALIZE CONTROLS
-        try {
-            SETTINGS_CONN = util.createKrakenConnection(SETTINGS_URL);
+        krakenSdrControlReceiver = new KrakenSdrControlReceiver(this);
+        addControlInput(krakenSdrControlReceiver);
+        krakenSdrControlReceiver.doInit();
 
-            krakenSdrControlReceiver = new KrakenSdrControlReceiver(this);
-            addControlInput(krakenSdrControlReceiver);
-            krakenSdrControlReceiver.doInit();
+        krakenSdrControlDoA = new KrakenSdrControlDoA(this);
+        addControlInput(krakenSdrControlDoA);
+        krakenSdrControlDoA.doInit();
 
-            krakenSdrControlDoA = new KrakenSdrControlDoA(this);
-            addControlInput(krakenSdrControlDoA);
-            krakenSdrControlDoA.doInit();
+        krakenSdrControlStation = new KrakenSdrControlStation(this);
+        addControlInput(krakenSdrControlStation);
+        krakenSdrControlStation.doInit();
 
-            krakenSdrControlStation = new KrakenSdrControlStation(this);
-            addControlInput(krakenSdrControlStation);
-            krakenSdrControlStation.doInit();
-
-        } catch (SensorHubException e) {
-            getLogger().debug(
-                    "Failed to connect to: {}\nConfirm that Kraken DOA Software Configuration is displaying this output",
-                    SETTINGS_URL
-            );
-        }
 
         // INITIALIZE OUTPUTS
         // CURRENT SETTINGS OUTPUT
@@ -111,7 +105,6 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
         // CREATE THREAD THAT CONTINUALLY READS SENSOR REPORT
         Thread readkrakenSDR = new Thread(this, "krakenSDR Worker");
         readkrakenSDR.start();    // This starts the the run() method
-
     }
 
     @Override
@@ -131,11 +124,11 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
         while (keepRunning) {
             // Send a GET request to the DoA URL
             // SET ALL OUTPUTS AT DESIRED TIME INERVAL FROM ADMIN PANEL
-            krakenSdrOutputSettings.SetData();      //settings.json data
-            krakenSdrOutputDOA.SetData();           //DoA data
+            krakenSdrOutputSettings.setData();      //settings.json data
+            krakenSdrOutputDOA.setData();           //DoA data
             try {
                 // Sleep per the sample rate provided by admin panel
-                Thread.sleep(TimeUnit.SECONDS.toMillis(config.sampelRate));
+                Thread.sleep(TimeUnit.SECONDS.toMillis(config.sampleRate));
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt(); // Restore interrupt flag

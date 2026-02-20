@@ -55,7 +55,7 @@ public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> 
         JsonObject currentSettings = null;
         JsonObject oldSettings = null;
         try {
-            currentSettings = util.retrieveJSONFromAddr(parentSensor.SETTINGS_URL);
+            currentSettings = util.getSettings();
             oldSettings = currentSettings.deepCopy();
         } catch (SensorHubException e) {
             getLogger().debug("Failed to retrieve current json settings from kraken: ", e);
@@ -63,7 +63,7 @@ public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> 
 
         // UPDATE CURRENT JSON SETTINGS WITH UPDATED CONTROL SETTINGS
         // UPDATE ANTENNA ARRANGEMNENT IF UPDATED IN ADMIN PANEL
-        Category oshAntArrangement = (Category) commandData.getField("ant_arrangement");
+        Category oshAntArrangement = (Category) commandData.getField("antennaArrangement");
         String oshAntArrangementValue = oshAntArrangement.getValue();
 
         if(oshAntArrangementValue != null){
@@ -71,7 +71,7 @@ public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> 
         }
 
         // UPDATE ANTENNA SPACING IF UPDATED IN ADMIN PANEL
-        Quantity oshAntennaSpacing = (Quantity) commandData.getField("ant_spacing_meters");
+        Quantity oshAntennaSpacing = (Quantity) commandData.getField("antennaSpacingMeters");
         double oshAntennaSpacingValue = oshAntennaSpacing.getValue();
         if(oshAntennaSpacingValue != 0.0){
             currentSettings.addProperty("ant_spacing_meters", oshAntennaSpacingValue);
@@ -79,7 +79,13 @@ public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> 
 
         // REPLACE SETTINGS ON KRAKENSDR BASED ON CONTROL UPDATED ABOVE
         if(!currentSettings.equals(oldSettings)){
-            util.replaceOldSettings(parentSensor.OUTPUT_URL , currentSettings);
+//            util.replaceOldSettings(parentSensor.OUTPUT_URL , currentSettings);
+            try {
+                util.uploadSettings(currentSettings);
+            }catch (SensorHubException e){
+                getLogger().error("Kraken settings upload failed", e);
+                throw new CommandException("Kraken settings upload failed", e);
+            }
         }
 
         return true;
