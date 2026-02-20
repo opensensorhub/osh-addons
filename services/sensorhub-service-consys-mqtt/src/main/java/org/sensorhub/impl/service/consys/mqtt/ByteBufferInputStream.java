@@ -70,7 +70,7 @@ public class ByteBufferInputStream extends InputStream
     @Override
     public synchronized void reset() throws IOException
     {
-        if (mark > 0)
+        if (mark >= 0)
         {
             buf.position(mark);
             mark = -1;
