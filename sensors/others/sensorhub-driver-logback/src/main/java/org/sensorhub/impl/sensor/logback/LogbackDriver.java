@@ -28,6 +28,8 @@ import org.slf4j.LoggerFactory;
 import org.vast.util.Asserts;
 
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
 
@@ -36,7 +38,7 @@ public class LogbackDriver extends AbstractSensorModule<LogbackDriverConfig> {
     private static int appenderCounter = 0;
     private LogbackEventOutput output;
     private final Set<LoggerContext> attachedContexts = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    private final java.util.Map<LoggerContext, Appender<ILoggingEvent>> contextAppenders = new ConcurrentHashMap<>();
+    private final Map<LoggerContext, Appender<ILoggingEvent>> contextAppenders = new ConcurrentHashMap<>();
     private ScheduledExecutorService contextScanner;
 
     @Override
@@ -120,6 +122,8 @@ public class LogbackDriver extends AbstractSensorModule<LogbackDriverConfig> {
                 reportError("Unable to shutdown LoggerContext scanner : " + e.getMessage(), e);
             }
         }
+
+        clearContextAppenders();
     }
 
     private void clearContextAppenders() {
@@ -153,7 +157,7 @@ public class LogbackDriver extends AbstractSensorModule<LogbackDriverConfig> {
             Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
 
             // Remove any existing SensorHub appenders from this context
-            java.util.Iterator<Appender<ILoggingEvent>> iter = rootLogger.iteratorForAppenders();
+            Iterator<Appender<ILoggingEvent>> iter = rootLogger.iteratorForAppenders();
             while (iter.hasNext()) {
                 Appender<ILoggingEvent> existing = iter.next();
                 if (existing instanceof SensorHubAppender ||
@@ -198,7 +202,7 @@ public class LogbackDriver extends AbstractSensorModule<LogbackDriverConfig> {
 
                 // check module logger for logback context
                 org.slf4j.Logger moduleLogger = module.getLogger();
-                if (moduleLogger instanceof Logger) {
+                if (moduleLogger instanceof /* logback */ Logger) {
                     Logger logbackLogger = (Logger) moduleLogger;
                     LoggerContext context = logbackLogger.getLoggerContext();
 
