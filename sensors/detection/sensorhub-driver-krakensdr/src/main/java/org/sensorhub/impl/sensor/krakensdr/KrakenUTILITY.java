@@ -85,8 +85,17 @@ public class KrakenUTILITY {
     }
 
     private JsonObject parseDoaXml(String xmlString) throws Exception{
-        Document doc = DocumentBuilderFactory
-                .newInstance()
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+        // Security Hardening
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        factory.setXIncludeAware(false);
+        factory.setExpandEntityReferences(false);
+
+        Document doc = factory
                 .newDocumentBuilder()
                 .parse(new java.io.ByteArrayInputStream(xmlString.getBytes()));
 
