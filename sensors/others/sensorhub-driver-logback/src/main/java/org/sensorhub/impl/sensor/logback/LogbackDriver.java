@@ -52,31 +52,18 @@ public class LogbackDriver extends AbstractSensorModule<LogbackDriverConfig> {
         // Create log output
         output = new LogbackEventOutput(this);
         addOutput(output, false);
+    }
 
-        // Detach and stop all existing appenders
-        for (java.util.Map.Entry<LoggerContext, Appender<ILoggingEvent>> entry : contextAppenders.entrySet()) {
-            try {
-                LoggerContext context = entry.getKey();
-                Appender<ILoggingEvent> appender = entry.getValue();
-                Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
-
-                appender.stop();
-                rootLogger.detachAppender(appender.getName());
-            } catch (Exception e) {
-                System.err.println("LogbackDriver: Error removing old appender: " + e.getMessage());
-            }
-        }
-
-        contextAppenders.clear();
-        attachedContexts.clear();
-
-        Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        attachToContext(rootLogger.getLoggerContext());
-        scanForModuleContexts();
+    @Override
+    public synchronized void updateConfig(LogbackDriverConfig config) throws SensorHubException {
+        clearContextAppenders();
+        super.updateConfig(config);
     }
 
     @Override
     protected void doStart() {
+        clearContextAppenders();
+
         // Attach to default context first
         Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         attachToContext(rootLogger.getLoggerContext());
@@ -130,24 +117,25 @@ public class LogbackDriver extends AbstractSensorModule<LogbackDriverConfig> {
                 contextScanner.awaitTermination(1, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 contextScanner.shutdownNow();
+                reportError("Unable to shutdown LoggerContext scanner : " + e.getMessage(), e);
             }
         }
+    }
 
+    private void clearContextAppenders() {
         // Stop and detach all appenders from all contexts
-        for (java.util.Map.Entry<LoggerContext, Appender<ILoggingEvent>> entry : contextAppenders.entrySet()) {
+        for (var entry : contextAppenders.entrySet()) {
             try {
                 LoggerContext context = entry.getKey();
                 Appender<ILoggingEvent> appender = entry.getValue();
-
                 Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
 
                 // Stop appender
                 appender.stop();
 
                 // Detach from root logger
-                if (appender.getName() != null) {
+                if (appender.getName() != null)
                     rootLogger.detachAppender(appender.getName());
-                }
             } catch (Exception e) {
                 System.err.println("LogbackDriver: Error stopping appender: " + e.getMessage());
             }

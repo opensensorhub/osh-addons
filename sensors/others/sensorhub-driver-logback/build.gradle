@@ -24,7 +24,7 @@ ext.pom >>= {
       id 'earocorn'
       name 'Alex Almanza'
       organization 'GeoRobotix Innovative Research, LLC.'
-      organizationUrl 'https://www.georobotix.com'
+      organizationUrl 'https://georobotix.us'
     }
   }
 }

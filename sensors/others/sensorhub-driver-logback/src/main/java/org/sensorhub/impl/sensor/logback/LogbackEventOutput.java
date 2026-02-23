@@ -29,6 +29,7 @@ public class LogbackEventOutput extends VarRateSensorOutput<LogbackDriver> {
 
     public static final String NAME = "loggingEventOutput";
     public static final String LABEL = "Logging Event Output";
+    public static final String DEFINITION = LABEL.replace(" ", "");
     public static final String DESCRIPTION = "Logging event from logback appender";
 
     private final DataComponent recordDescription;
@@ -43,6 +44,7 @@ public class LogbackEventOutput extends VarRateSensorOutput<LogbackDriver> {
                 .name(NAME)
                 .label(LABEL)
                 .description(DESCRIPTION)
+                .definition(DEFINITION)
                 .addField("timestamp", fac.createTime()
                         .asSamplingTimeIsoUTC())
                 .addField("level", fac.createText()
