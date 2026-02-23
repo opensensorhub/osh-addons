@@ -29,7 +29,7 @@ public class LogbackEventOutput extends VarRateSensorOutput<LogbackDriver> {
 
     public static final String NAME = "loggingEventOutput";
     public static final String LABEL = "Logging Event Output";
-    public static final String DEFINITION = LABEL.replace(" ", "");
+    public static final String DEFINITION = SWEHelper.getPropertyUri(LABEL.replace(" ", ""));
     public static final String DESCRIPTION = "Logging event from logback appender";
 
     private final DataComponent recordDescription;
