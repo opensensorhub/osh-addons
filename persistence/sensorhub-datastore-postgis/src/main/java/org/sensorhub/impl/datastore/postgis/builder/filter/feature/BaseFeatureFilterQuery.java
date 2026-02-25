@@ -54,7 +54,7 @@ public abstract class BaseFeatureFilterQuery<V extends IFeature,F extends Featur
     }
 
     public void handleValidTimeFilter(TemporalFilter temporalFilter, String rangeOpStr) {
-        if(temporalFilter != null)
+        if(temporalFilter == null)
             return;
 
         var timeRange = PostgisUtils.getRangeFromTemporal(temporalFilter);
