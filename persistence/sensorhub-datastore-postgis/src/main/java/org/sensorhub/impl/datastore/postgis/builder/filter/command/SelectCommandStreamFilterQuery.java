@@ -64,13 +64,16 @@ public class SelectCommandStreamFilterQuery extends FilterQuery<SelectFilterQuer
             else if (temporalFilter.isCurrentTime()) {
                 filterQueryGenerator.addDistinct("(" + tableName + ".data->>'name')");
                 filterQueryGenerator.addDistinct("(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint");
+                filterQueryGenerator.addOrderBy(tableName + ".data->>'name'");
+                filterQueryGenerator.addOrderBy("(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint");
+                filterQueryGenerator.addOrderBy("(" + tableName + ".data->'validTime'->>'begin')::timestamptz DESC ");
                 String sb = "(" +
                         tableName + ".data->'validTime' IS NULL " +
                         "OR (" +
                         tableName + ".data->'validTime'->'begin' IS NOT NULL " +
-                        "AND (" + tableName + ".data->'validTime'->>'begin')::timestamp <= now() " +
+                        "AND (" + tableName + ".data->'validTime'->>'begin')::timestamptz <= now() " +
                         "AND ((" + tableName + ".data->'validTime'->>'end') IS NULL " +
-                        "OR (" + tableName + ".data->'validTime'->>'end')::timestamp >= now())" +
+                        "OR (" + tableName + ".data->'validTime'->>'end')::timestamptz >= now())" +
                         ")" +
                         ")";
                 addCondition(sb);
