@@ -53,12 +53,14 @@ public class WebSocketProxy implements WebSocketListener
 
     private final Queue<ByteBuffer> writeQueue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean writeInProgress = new AtomicBoolean(false);
-    
+
+    private final boolean isWindows;
     
     WebSocketProxy(InetSocketAddress mqttHost, Logger logger)
     {
         this.mqttHost = mqttHost;
         this.log = logger;
+        this.isWindows = System.getProperty("os.name").toLowerCase().contains("win");
     }
 
 
@@ -155,10 +157,17 @@ public class WebSocketProxy implements WebSocketListener
         if (mqttSocket == null || !mqttSocket.isOpen())
             return;
 
-        ByteBuffer buf = ByteBuffer.wrap(Arrays.copyOfRange(payload, offset, offset + len));
+        if (isWindows)
+        {
+            // Need to use a write queue since Windows' AsynchronousSocketChannel is inefficient
+            ByteBuffer buf = ByteBuffer.wrap(Arrays.copyOfRange(payload, offset, offset + len));
+            writeQueue.add(buf);
+            tryWrite();
+            return;
+        }
 
-        writeQueue.add(buf);
-        tryWrite();
+        // Default to writing directly to socket channel
+        mqttSocket.write(ByteBuffer.wrap(payload));
     }
 
     private void tryWrite() {
