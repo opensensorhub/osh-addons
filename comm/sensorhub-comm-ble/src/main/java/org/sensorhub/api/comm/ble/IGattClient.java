@@ -53,7 +53,9 @@ public interface IGattClient
      * @param mtu
      * @return
      */
-    boolean requestMtu(int mtu);
+    default boolean requestMtu(int mtu) {
+        return false;
+    }
     
     /**
      * Discovers services offered by a remote device as well as their
