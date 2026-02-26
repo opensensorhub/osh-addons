@@ -87,6 +87,14 @@ public class QueryBuilderObsStore extends QueryBuilder {
                 " "+RESULT_TIME+" = (${10}), "+RESULT+" = (${11})";
     }
 
+    public String insertObsPreparedQuery() {
+        return "INSERT INTO "+this.getStoreTableName()+" " +
+                "(id,"+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (?::int8,?::int8,?::int8,?::timestamp,?::timestamp,?::jsonb) "+
+                "ON CONFLICT ("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+") DO "+
+                "UPDATE SET "+DATASTREAM_ID+" = ?, " +FOI_ID+" = ?, "+PHENOMENON_TIME+" = ?::timestamp," +
+                " "+RESULT_TIME+" = ?::timestamp, "+RESULT+" = ?::jsonb";
+    }
+
     public String createUniqueConstraint() {
         return "CREATE UNIQUE INDEX  IF NOT EXISTS "+this.getStoreTableName()+"_unique_constraint on "+this.getStoreTableName()+" (dataStreamID, foiID, phenomenonTime, resultTime)";
     }

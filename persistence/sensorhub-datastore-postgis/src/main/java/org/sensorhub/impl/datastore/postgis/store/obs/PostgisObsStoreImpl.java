@@ -206,8 +206,10 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         String serializedBlock = SerializerUtils.writeDataBlockToJson(dataStreamInfo.getRecordStructure(),
                 dataStreamInfo.getRecordEncoding(), obs.getResult());
 
-        values.put("6", "'"+serializedBlock+"'");
-        values.put("11", "'"+serializedBlock+"'");
+        // Escape single quotes for safe SQL interpolation (used by batch path)
+        String escapedBlock = serializedBlock.replace("'", "''");
+        values.put("6", "'"+escapedBlock+"'");
+        values.put("11", "'"+escapedBlock+"'");
 
         StringSubstitutor sub = new StringSubstitutor(values);
         return sub.replace(queryBuilder.insertObsQuery());
@@ -218,15 +220,11 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         DataStreamKey dataStreamKey = new DataStreamKey(obs.getDataStreamID());
         if (!dataStreamStore.containsKey(dataStreamKey))
             throw new IllegalStateException("Unknown datastream with ID: " + obs.getDataStreamID().getIdAsLong());
-        // check that FOI exists
-//        if (obs.hasFoi() && foiStore != null && foiStore.contains(obs.getFoiID()))
-//            throw new IllegalStateException("Unknown FOI: " + obs.getFoiID());
         BigId id  = BigId.fromLong(idScope, idProvider.newInternalID(obs));
-        // check existing partition
         try (Connection connection1 = this.connectionManager.getConnection()) {
-            try (Statement statement = connection1.createStatement()) {
-                String sqlQuery = this.fillAddStatement(id,dataStreamKey.getInternalID().getIdAsLong(), obs);
-                int rows = statement.executeUpdate(sqlQuery);
+            try (PreparedStatement ps = connection1.prepareStatement(queryBuilder.insertObsPreparedQuery())) {
+                fillPreparedAddStatement(ps, id, dataStreamKey.getInternalID().getIdAsLong(), obs);
+                ps.executeUpdate();
             } catch (Exception e) {
                 throw new IllegalStateException("Cannot insert obs", e);
             }
@@ -234,6 +232,57 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             throw new IllegalStateException("Cannot insert obs", e);
         }
         return id;
+    }
+
+    protected void fillPreparedAddStatement(PreparedStatement ps, BigId id, long dataStreamKey, IObsData obs) throws SQLException {
+        IDataStreamInfo dataStreamInfo = dataStreamStore.get(new DataStreamKey(obs.getDataStreamID()));
+        String serializedBlock = SerializerUtils.writeDataBlockToJson(dataStreamInfo.getRecordStructure(),
+                dataStreamInfo.getRecordEncoding(), obs.getResult());
+
+        String phenomenonTimeStr = obs.getPhenomenonTime() != null
+                ? PostgisUtils.getPgDate(obs.getPhenomenonTime()) : null;
+        String resultTimeStr = obs.getResultTime() != null
+                ? PostgisUtils.getPgDate(obs.getResultTime()) : null;
+        Long foiId = obs.hasFoi() ? obs.getFoiID().getIdAsLong() : null;
+
+        // INSERT values (params 1-6)
+        ps.setLong(1, id.getIdAsLong());
+        ps.setLong(2, dataStreamKey);
+        if (foiId != null) {
+            ps.setLong(3, foiId);
+        } else {
+            ps.setNull(3, Types.BIGINT);
+        }
+        if (phenomenonTimeStr != null) {
+            ps.setString(4, phenomenonTimeStr);
+        } else {
+            ps.setNull(4, Types.TIMESTAMP);
+        }
+        if (resultTimeStr != null) {
+            ps.setString(5, resultTimeStr);
+        } else {
+            ps.setNull(5, Types.TIMESTAMP);
+        }
+        ps.setString(6, serializedBlock);
+
+        // ON CONFLICT UPDATE values (params 7-11)
+        ps.setLong(7, dataStreamKey);
+        if (foiId != null) {
+            ps.setLong(8, foiId);
+        } else {
+            ps.setNull(8, Types.BIGINT);
+        }
+        if (phenomenonTimeStr != null) {
+            ps.setString(9, phenomenonTimeStr);
+        } else {
+            ps.setNull(9, Types.TIMESTAMP);
+        }
+        if (resultTimeStr != null) {
+            ps.setString(10, resultTimeStr);
+        } else {
+            ps.setNull(10, Types.TIMESTAMP);
+        }
+        ps.setString(11, serializedBlock);
     }
 
 

@@ -28,6 +28,11 @@ import org.sensorhub.impl.datastore.AbstractTestObsStore;
 import org.sensorhub.impl.datastore.postgis.store.obs.PostgisDataStreamStoreImpl;
 import org.sensorhub.impl.datastore.postgis.store.obs.PostgisObsStoreImpl;
 
+import org.sensorhub.api.data.ObsData;
+import org.vast.data.DataBlockMixed;
+import org.vast.data.TextEncodingImpl;
+import org.vast.swe.SWEHelper;
+
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
@@ -138,6 +143,83 @@ public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImp
     {
         testGetNumRecordsOneDataStream();
         assertNull(obsStore.get(bigId(Integer.MAX_VALUE)));
+    }
+
+    @Test
+    public void testInsertObsWithSpecialTextCharacters() throws Exception
+    {
+        // Create a datastream with a Text component
+        SWEHelper fac = new SWEHelper();
+        var recordStruct = fac.createRecord()
+            .name("textOutput")
+            .addField("value", fac.createQuantity().build())
+            .addField("label", fac.createText().build())
+            .build();
+
+        var dsId = addDataStream(bigId(10), recordStruct);
+
+        // Test strings with various special/malicious characters
+        String[] testStrings = {
+            "normal text",
+            "text with \"double quotes\"",
+            "text with 'single quotes'",
+            "text with / forward slash",
+            "text with \\ backslash",
+            "text with ; semicolon",
+            "text with -- sql comment",
+            "'); DROP TABLE obs; --",
+            "' OR '1'='1",
+            "text with\ttab and\nnewline",
+            "<script>alert('xss')</script>",
+            "{\"json\": \"value\"}",
+            "unicode: \u00e9\u00e0\u00fc\u00f1 \u2603 \u2764",
+            "",
+            "   spaces   ",
+            "a'b\"c\\d/e;f--g",
+        };
+
+        Instant startTime = Instant.parse("2024-01-01T00:00:00Z");
+
+        for (int i = 0; i < testStrings.length; i++)
+        {
+            var dataBlock = recordStruct.createDataBlock();
+            dataBlock.setDoubleValue(0, i);
+            dataBlock.setStringValue(1, testStrings[i]);
+
+            ObsData obs = new ObsData.Builder()
+                .withDataStream(dsId)
+                .withFoi(BigId.NONE)
+                .withPhenomenonTime(startTime.plusSeconds(i * 60))
+                .withResult(dataBlock)
+                .build();
+
+            try {
+                BigId key = addObservation(obs);
+                assertNotNull("Observation with text '" + testStrings[i] + "' should have been inserted", key);
+            } catch (Exception e) {
+                fail("Failed to insert observation with text '" + testStrings[i] + "': " + e.getMessage());
+            }
+        }
+
+        forceReadBackFromStorage();
+
+        // Verify all observations can be retrieved
+        var filter = new ObsFilter.Builder()
+            .withDataStreams(dsId)
+            .build();
+        var resultStream = obsStore.selectEntries(filter);
+        var results = resultStream.collect(java.util.stream.Collectors.toList());
+        assertEquals("All observations with special characters should be retrievable",
+            testStrings.length, results.size());
+
+        for (var entry : results)
+        {
+            IObsData obs = entry.getValue();
+            int idx = (int) obs.getResult().getDoubleValue(0);
+            String retrievedText = obs.getResult().getStringValue(1);
+            assertEquals("Text value should be same for " + idx,
+                testStrings[idx], retrievedText);
+        }
     }
 
     @Test
