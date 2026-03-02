@@ -189,7 +189,6 @@ public class KrakenUTILITY {
             sensor.getLogger().info("✅ Kraken settings.json uploaded successfully");
 
         } catch (Exception e) {
-            sensor.getLogger().error("❌ Kraken settings upload failed. Most likely a permission error or miniserve is not set up on kraken device", e);
             throw new SensorHubException("Kraken settings upload failed. Most likely a permission error or miniserve is not set up on kraken device", e);
         } finally {
             if (conn != null) {

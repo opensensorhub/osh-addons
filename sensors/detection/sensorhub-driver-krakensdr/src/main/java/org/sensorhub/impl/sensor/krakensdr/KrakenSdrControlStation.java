@@ -69,8 +69,7 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
             currentSettings = util.getSettings();
             oldSettings = currentSettings.deepCopy();
         } catch (SensorHubException e) {
-            getLogger().debug("Failed to retrieve current json settings from kraken: ", e);
-            throw new CommandException("Unable to retrieve Kraken settings.json", e);
+            throw new CommandException("Failed to retrieve current json settings from kraken: ", e);
         }
 
         // UPDATE CURRENT JSON SETTINGS WITH UPDATED CONTROL SETTINGS
@@ -104,7 +103,6 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
             try {
                 util.uploadSettings(currentSettings);
             }catch (SensorHubException e){
-                getLogger().error("Kraken settings upload failed", e);
                 throw new CommandException("Kraken settings upload failed", e);
             }
         }
