@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * and performing initialization and shutdown for the driver and its outputs.
  */
 public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> implements Runnable {
-    static final String UID_PREFIX = "osh:krakenSDR:";
+    static final String UID_PREFIX = "urn:osh:sensor:krakensdr:";
     static final String XML_PREFIX = "krakenSDR";
 
     // GLOBAL VARIABLES FOR SENSOR OPERATION
