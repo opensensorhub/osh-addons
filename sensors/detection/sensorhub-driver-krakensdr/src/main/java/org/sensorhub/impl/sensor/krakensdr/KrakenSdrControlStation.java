@@ -16,7 +16,7 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
 
     // CONSTRUCTOR
     public KrakenSdrControlStation(KrakenSdrSensor krakenSDRSensor) {
-        super("Station Control", krakenSDRSensor);
+        super("stationControl", krakenSDRSensor);
     }
 
     // INITIALIZE CONTROL
@@ -24,10 +24,10 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
         SWEHelper fac = new SWEHelper();
         // The Master Control Data Structure is a Choice of individual controls for the KrakenSDR
         commandDataStruct = fac.createRecord()
-                .name("station_control")
+                .name("stationControl")
                 .label("Station Configuration")
                 .description("Data Record for the Station Configuration")
-                .definition(SWEHelper.getPropertyUri("station_control"))
+                .definition(SWEHelper.getPropertyUri("StationControl"))
                 .addField("stationId", fac.createText()
                         .label("Station ID")
                         .description("ID provided for the physical KrakenSDR")
@@ -42,12 +42,12 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
                 .addField("latitude", fac.createText()
                         .label("Latitude")
                         .description("Latitude when station is Static")
-                        .definition(SWEHelper.getPropertyUri("latitude"))
+                        .definition(SWEHelper.getPropertyUri("Latitude"))
                 )
                 .addField("longitude", fac.createText()
                         .label("Longitude")
                         .description("Longitude when station is Static")
-                        .definition(SWEHelper.getPropertyUri("longitude"))
+                        .definition(SWEHelper.getPropertyUri("Longitude"))
                 )
                 .build();
 

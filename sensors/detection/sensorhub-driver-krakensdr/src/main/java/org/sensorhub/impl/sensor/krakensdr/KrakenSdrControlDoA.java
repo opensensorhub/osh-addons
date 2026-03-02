@@ -16,7 +16,7 @@ public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> 
 
     // CONSTRUCTOR
     public KrakenSdrControlDoA(KrakenSdrSensor krakenSDRSensor) {
-        super("DoA Control", krakenSDRSensor);
+        super("doaControl", krakenSDRSensor);
     }
 
     // INITIALIZE CONTROL
@@ -24,10 +24,10 @@ public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> 
         SWEHelper fac = new SWEHelper();
         // The Master Control Data Structure is a Choice of individual controls for the KrakenSDR
         commandDataStruct = fac.createRecord()
-                .name("DoA_control")
+                .name("doaControl")
                 .label("DoA Configuration")
                 .description("Data Record for the DoA Configuration Settings")
-                .definition(SWEHelper.getPropertyUri("DoA_control"))
+                .definition(SWEHelper.getPropertyUri("DoaControl"))
                 .addField("antennaArrangement", fac.createCategory()
                         .label("Antenna Arrangement")
                         .description("The Arrangement must be UCA or ULA")

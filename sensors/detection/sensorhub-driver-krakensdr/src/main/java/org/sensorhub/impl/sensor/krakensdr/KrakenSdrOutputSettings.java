@@ -66,7 +66,7 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
                         .asSamplingTimeIsoUTC()
                         .label("OSH Collection Time")
                         .description("Timestamp of when OSH took a reading of the current settings")
-                        .definition(SWEHelper.getPropertyUri("time")))
+                        .definition(SWEHelper.getPropertyUri("Time")))
                 .addField("enRemoteControl", sweFactory.createBoolean()
                         .label("Remote Control Enabled")
                         .description("If 'false', the control for this node will not work. Adjust settings of KrakenSDR DSP application")
@@ -79,7 +79,7 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
                                 .uomCode("MHz")
                                 .label("Center Frequency")
                                 .description("The transmission frequency of the event in MegaHertz")
-                                .definition(SWEHelper.getPropertyUri("frequency")))
+                                .definition(SWEHelper.getPropertyUri("Frequency")))
                         .addField("uniformGain", sweFactory.createQuantity()
                                 .uomCode("dB")
                                 .label("Receiver Gain")
@@ -116,7 +116,7 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
                                 .label("Location Source")
                                 .description("Current Location Source for the Kraken Station")
                                 .definition(SWEHelper.getPropertyUri("locationSource")))
-                        .addField("location", geoFac.newLocationVectorLatLon(SWEHelper.getPropertyUri("location")))
+                        .addField("location", geoFac.createLocationVectorLatLon())
                 );
 
 

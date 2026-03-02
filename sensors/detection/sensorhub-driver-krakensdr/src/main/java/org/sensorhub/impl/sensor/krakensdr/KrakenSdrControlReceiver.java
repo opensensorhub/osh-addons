@@ -16,7 +16,7 @@ public class KrakenSdrControlReceiver extends AbstractSensorControl<KrakenSdrSen
 
     // CONSTRUCTOR
     public KrakenSdrControlReceiver(KrakenSdrSensor krakenSDRSensor) {
-        super("Receiver Control", krakenSDRSensor);
+        super("receiverControl", krakenSDRSensor);
     }
 
     // INITIALIZE CONTROL
@@ -25,15 +25,15 @@ public class KrakenSdrControlReceiver extends AbstractSensorControl<KrakenSdrSen
         // The Master Control Data Structure is a Choice of individual controls for the KrakenSDR
         commandDataStruct = fac.createRecord()
                 .updatable(true)
-                .name("receiver_control")
+                .name("receiverControl")
                 .label("RF Receiver Configuration")
                 .description("Data Record for the RF Receiver Configuration")
-                .definition(SWEHelper.getPropertyUri("receiver_control"))
+                .definition(SWEHelper.getPropertyUri("ReceiverControl"))
                 .addField("centerFreq", fac.createQuantity()
                         .uomCode("MHz")
                         .label("Center Frequency")
                         .description("The transmission frequency of the event in MegaHertz")
-                        .definition(SWEHelper.getPropertyUri("frequency"))
+                        .definition(SWEHelper.getPropertyUri("Frequency"))
                 )
                 .addField("uniformGain", fac.createCategory()
                         .label("Receiver Gain (dB)")
