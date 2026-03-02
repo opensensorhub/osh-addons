@@ -31,7 +31,7 @@ osgi {
 ext.pom >>= {
     developers {
         developer {
-            id 'krakensdr'
+            id 'BillBrown341'
             name 'Bill Brown'
             organization 'Botts-inc'
             organizationUrl 'https://botts-inc.com/'
