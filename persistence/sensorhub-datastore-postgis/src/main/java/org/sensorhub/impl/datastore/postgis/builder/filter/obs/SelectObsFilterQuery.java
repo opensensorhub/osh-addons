@@ -82,7 +82,11 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
                 addCondition(
-                        "tsrange('"+temporalFilter.getMin()+"','"+temporalFilter.getMax()+"', '[]') @> "+this.tableName+".phenomenonTime");
+                        this.tableName+".phenomenonTime >= '"+temporalFilter.getMin()+"'"
+                );
+                addCondition(
+                        this.tableName+".phenomenonTime <= '"+temporalFilter.getMax()+"'"
+                );
             }
         }
     }
