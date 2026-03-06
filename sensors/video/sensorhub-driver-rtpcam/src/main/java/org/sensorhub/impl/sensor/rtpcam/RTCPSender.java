@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Timer;
 import java.util.TimerTask;
 import org.slf4j.Logger;
@@ -69,15 +70,16 @@ public class RTCPSender extends TimerTask
             this.remoteIp = InetAddress.getByName(remoteRtcpHost);
             
             // bind UDP port for sending and receiving RTCP packets
-            rtcpSocket = new DatagramSocket(localRtcpPort);
-            rtcpSocket.setReuseAddress(true);        
-        
+            rtcpSocket = new DatagramSocket(null);
+            rtcpSocket.setReuseAddress(true); // this must be called before the socket is bound to a port
+            rtcpSocket.bind(new InetSocketAddress(localRtcpPort));
+
             timer = new Timer(RTCPSender.class.getSimpleName(), false);
             timer.scheduleAtFixedRate(this, 0, reportingPeriod);
         }
         catch (IOException e)
         {
-            log.error("Error while starting RTCP sender thread", e);
+            throw new RuntimeException("Failed to bind RTCP socket to port " + localRtcpPort, e);
         }
     }
     
@@ -87,9 +89,13 @@ public class RTCPSender extends TimerTask
         if (timer != null)
             timer.cancel();
 
-        synchronized (rtcpSocket)
+        if (rtcpSocket != null)
         {
-            rtcpSocket.close();
+            synchronized (rtcpSocket)
+            {
+                rtcpSocket.close();
+            }
+            rtcpSocket = null;
         }
     }
     
