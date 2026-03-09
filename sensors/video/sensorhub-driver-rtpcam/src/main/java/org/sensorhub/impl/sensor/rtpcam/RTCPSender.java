@@ -71,7 +71,7 @@ public class RTCPSender extends TimerTask
             
             // bind UDP port for sending and receiving RTCP packets
             rtcpSocket = new DatagramSocket(null);
-            rtcpSocket.setReuseAddress(true); // this must be called before the socket is bound to a port
+            rtcpSocket.setReuseAddress(false);
             rtcpSocket.bind(new InetSocketAddress(localRtcpPort));
 
             timer = new Timer(RTCPSender.class.getSimpleName(), false);
@@ -91,10 +91,7 @@ public class RTCPSender extends TimerTask
 
         if (rtcpSocket != null)
         {
-            synchronized (rtcpSocket)
-            {
-                rtcpSocket.close();
-            }
+            rtcpSocket.close();
             rtcpSocket = null;
         }
     }
@@ -131,12 +128,9 @@ public class RTCPSender extends TimerTask
         try
         {
             // send RTCP report packet
-            synchronized (rtcpSocket)
-            {
-                DatagramPacket dp = new DatagramPacket(packetBits, packetLength, remoteIp, localRtcpPort);
-                rtcpSocket.send(dp);
-                log.trace("Sent RTCP report at seq number {}", highSeqNb);
-            }
+            DatagramPacket dp = new DatagramPacket(packetBits, packetLength, remoteIp, localRtcpPort);
+            rtcpSocket.send(dp);
+            log.trace("Sent RTCP report at seq number {}", highSeqNb);
         }
         catch (IOException e)
         {
