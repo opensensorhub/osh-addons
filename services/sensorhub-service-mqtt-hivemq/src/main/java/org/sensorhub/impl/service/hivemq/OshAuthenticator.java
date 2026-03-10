@@ -54,6 +54,16 @@ public class OshAuthenticator implements SimpleAuthenticator
                     .map(buf -> StandardCharsets.UTF_8.decode(buf).array())
                     .orElse(new char[0]);
                 
+                if ("__proxy_token__".equals(userID)) {
+                    String tokenStr = new String(pwd);
+                    String proxiedUser = OshExtension.consumeProxyToken(tokenStr);
+                    if (proxiedUser != null) {
+                        authInput.getConnectionInformation().getConnectionAttributeStore().putAsString(MQTT_USER_PROP, proxiedUser);
+                        authOutput.authenticateSuccessfully();
+                        return;
+                    }
+                }
+
                 if (userID != null && securityMgr.isAccessControlEnabled())
                 {
                     // check user exists and password matches
