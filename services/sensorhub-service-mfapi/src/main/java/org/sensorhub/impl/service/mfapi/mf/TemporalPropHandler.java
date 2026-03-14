@@ -25,8 +25,8 @@ import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IObsStore;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.event.IEventBus;
+import org.sensorhub.impl.service.consys.HandlerContext;
 import org.sensorhub.impl.service.consys.InvalidRequestException;
-import org.sensorhub.impl.service.consys.ObsSystemDbWrapper;
 import org.sensorhub.impl.service.consys.ServiceErrors;
 import org.sensorhub.impl.service.consys.RestApiServlet.ResourcePermissions;
 import org.sensorhub.impl.service.consys.resource.BaseResourceHandler;
@@ -56,12 +56,12 @@ public class TemporalPropHandler extends BaseResourceHandler<BigId, IObsData, Ob
     }
     
     
-    public TemporalPropHandler(IEventBus eventBus, ObsSystemDbWrapper db, ResourcePermissions permissions)
+    public TemporalPropHandler(HandlerContext ctx, ResourcePermissions permissions)
     {
-        super(db.getReadDb().getObservationStore(), db.getObsIdEncoder(), db.getIdEncoders(), permissions);
+        super(ctx.getObservationStore(), ctx.getObsIdEncoder(), ctx, permissions);
         
-        this.eventBus = eventBus;
-        this.db = db.getReadDb();
+        this.eventBus = ctx.getEventBus();
+        this.db = ctx.getReadDb();
     }
     
     
@@ -80,7 +80,7 @@ public class TemporalPropHandler extends BaseResourceHandler<BigId, IObsData, Ob
     @Override
     protected BigId getKey(RequestContext ctx, String id) throws InvalidRequestException
     {
-        return decodeID(ctx, id);
+        return decodeID(id);
     }
     
     
