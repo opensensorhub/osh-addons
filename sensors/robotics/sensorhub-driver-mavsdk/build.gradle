@@ -1,0 +1,43 @@
+description = 'Unmanned System'
+ext.details = 'MAVLink adapter'
+
+version='2.0.0'
+
+dependencies{
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-webui-core:' + oshCoreVersion
+  embeddedImpl 'io.mavsdk:mavsdk:3.14.0'
+  embeddedImpl 'com.vaadin:vaadin-client:8.14.3'
+}
+
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Botts Innovative Research')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.driver.mavsdk.UnmannedActivator')
+  }
+}
+jar {
+    // Take the file from a folder in your project
+    from('dist') {
+        include 'mavsdk_server_linux-arm64-musl'
+        include 'mavsdk_server_macos_arm64'
+        include 'mavsdk_server_macos_x64'
+        include 'mavsdk_server_musl_x86_64'
+        include 'mavsdk_server_win_arm64.exe'
+        include 'mavsdk_server_win_x64.exe'
+        into 'natives'
+
+        // Critical for Linux/Mac: preserves execution permissions
+        filePermissions {
+            user {
+                read = true
+                execute = true
+                write = true
+            }
+            other {
+                read = true
+                execute = true
+            }
+        }
+    }
+}

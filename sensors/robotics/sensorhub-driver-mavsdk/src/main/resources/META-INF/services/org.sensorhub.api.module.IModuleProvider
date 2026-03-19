@@ -1,0 +1,2 @@
+org.sensorhub.impl.comm.mavsdk.MavLinkNetworkProvider
+org.sensorhub.impl.comm.mavsdk.UnmannedDescriptor
