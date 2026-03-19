@@ -21,9 +21,8 @@ import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.feature.IFoiStore;
-import org.sensorhub.api.event.IEventBus;
+import org.sensorhub.impl.service.consys.HandlerContext;
 import org.sensorhub.impl.service.consys.InvalidRequestException;
-import org.sensorhub.impl.service.consys.ObsSystemDbWrapper;
 import org.sensorhub.impl.service.consys.ResourceParseException;
 import org.sensorhub.impl.service.consys.RestApiServlet.ResourcePermissions;
 import org.sensorhub.impl.service.consys.ServiceErrors;
@@ -44,10 +43,10 @@ public class MFHandler extends AbstractFeatureHandler<IFeature, FoiFilter, FoiFi
     final IObsSystemDatabase db;
     
     
-    public MFHandler(IEventBus eventBus, ObsSystemDbWrapper db, ResourcePermissions permissions)
+    public MFHandler(HandlerContext ctx, ResourcePermissions permissions)
     {
-        super(db.getFoiStore(), db.getFoiIdEncoder(), db.getIdEncoders(), permissions);
-        this.db = db.getReadDb();
+        super(ctx.getFoiStore(), ctx.getFoiIdEncoder(), ctx, permissions);
+        this.db = ctx.getReadDb();
     }
 
 

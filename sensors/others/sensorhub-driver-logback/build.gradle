@@ -4,7 +4,6 @@ version = '1.0.0'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  embeddedImpl 'ch.qos.logback:logback-classic:1.5.13'
 
   testImplementation 'junit:junit:4.13.2'
 }

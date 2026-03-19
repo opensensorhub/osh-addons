@@ -122,18 +122,24 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
                     rtspConfig.localUdpPort,
                     timeout);
             
+            // init the RTP receiver first to bind the socket and get the actual port
+            rtpThread = new RTPH264Receiver(rtspConfig.remoteHost, 0, rtspConfig.localUdpPort, this);
+            rtpThread.init();
+
             // some cameras don't have a real RTSP server (i.e. 3DR Solo UAV)
             // in this case we just need to maintain a TCP connection so keep the RTSP client alive
             if (!rtspConfig.onlyConnectRtsp)
             {
                 rtspClient.sendOptions();
                 rtspClient.sendDescribe();
+
+                rtspClient.setRtpRcvPort(rtpThread.getLocalPort());
                 rtspClient.sendSetup();
+
+                rtpThread.setRemotePort(rtspClient.getRemoteRtpPort());
                 log.info("Connected to RTSP server");
             }
-            
-            // start RTP/H264 receiving thread
-            rtpThread = new RTPH264Receiver(rtspConfig.remoteHost, rtspClient.getRemoteRtpPort(), rtspConfig.localUdpPort, this);
+
             StreamInfo h264Stream = null;
             int streamIndex = 0;
             int i = 0;
@@ -168,13 +174,13 @@ public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends Abstrac
                 
                 // start RTCP sending thread
                 // some cameras need that to maintain the stream
-                rtcpThread = new RTCPSender(rtspConfig.remoteHost, rtspConfig.localUdpPort+1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
+                rtcpThread = new RTCPSender(rtspConfig.remoteHost, rtpThread.getLocalPort()+1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
                 rtcpThread.start();
             }
         }
         catch (IOException e)
         {
-            throw new SensorException("Cannot connect to RTP stream", e);            
+            throw new SensorException("Cannot connect to RTP stream: " + e.getMessage(), e);
         } 
     }
 

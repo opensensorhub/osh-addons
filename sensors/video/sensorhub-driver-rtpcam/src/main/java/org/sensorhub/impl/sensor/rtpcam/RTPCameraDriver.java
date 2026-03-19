@@ -69,7 +69,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     
     
     @Override
-    protected synchronized void doStart() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         // wait for valid connection to camera
         connection.waitForConnection();
@@ -80,7 +80,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     
     
     @Override
-    protected synchronized void doStop()
+    protected void doStop()
     {
         if (connection != null)
             connection.cancel();

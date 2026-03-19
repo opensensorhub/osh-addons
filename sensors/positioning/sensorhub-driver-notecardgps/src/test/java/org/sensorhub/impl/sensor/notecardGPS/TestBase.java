@@ -11,6 +11,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.notecardGPS;
 
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.notecardGPS.config.Config;
 import org.junit.After;
 import org.junit.Before;
@@ -20,7 +21,7 @@ import org.junit.Before;
  */
 public class TestBase {
     notecardGPSSensor sensor;
-//    BNO085Output output;
+    AbstractSensorOutput<?> output;
 
     @Before
     public void init() throws Exception {

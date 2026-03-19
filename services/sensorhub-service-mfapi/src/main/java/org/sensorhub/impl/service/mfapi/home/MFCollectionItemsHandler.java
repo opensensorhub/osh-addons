@@ -19,11 +19,10 @@ import java.util.List;
 import java.util.Map;
 import org.sensorhub.api.datastore.EmptyFilterIntersection;
 import org.sensorhub.api.datastore.feature.FoiFilter;
-import org.sensorhub.api.event.IEventBus;
 import org.sensorhub.impl.service.mfapi.MFApiServiceConfig.CollectionConfig;
 import org.sensorhub.impl.service.mfapi.mf.MFHandler;
+import org.sensorhub.impl.service.consys.HandlerContext;
 import org.sensorhub.impl.service.consys.InvalidRequestException;
-import org.sensorhub.impl.service.consys.ObsSystemDbWrapper;
 import org.sensorhub.impl.service.consys.RestApiServlet.ResourcePermissions;
 import org.sensorhub.impl.service.consys.ServiceErrors;
 import org.sensorhub.impl.service.consys.resource.RequestContext.ResourceRef;
@@ -36,9 +35,9 @@ public class MFCollectionItemsHandler extends MFHandler
     final Map<String, FoiFilter> collectionFilters = new HashMap<>();
     
     
-    public MFCollectionItemsHandler(IEventBus eventBus, ObsSystemDbWrapper db, ResourcePermissions permissions, List<CollectionConfig> collections)
+    public MFCollectionItemsHandler(HandlerContext ctx, ResourcePermissions permissions, List<CollectionConfig> collections)
     {
-        super(eventBus, db, permissions);
+        super(ctx, permissions);
         
         for (var col: collections)
             collectionFilters.put(col.name, col.includeFilter);

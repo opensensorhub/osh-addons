@@ -29,7 +29,7 @@ import org.sensorhub.impl.service.mfapi.home.MFCollectionItemsHandler;
 import org.sensorhub.impl.service.mfapi.mf.MFHandler;
 import org.sensorhub.impl.service.mfapi.mf.TemporalGeomHandler;
 import org.sensorhub.impl.service.mfapi.mf.TemporalPropHandler;
-import org.sensorhub.impl.service.consys.ObsSystemDbWrapper;
+import org.sensorhub.impl.service.consys.HandlerContext;
 import org.sensorhub.impl.service.consys.RestApiService;
 import org.sensorhub.impl.service.consys.home.ConformanceHandler;
 import org.sensorhub.utils.NamedThreadFactory;
@@ -92,8 +92,9 @@ public class MFApiService extends AbstractHttpServiceModule<MFApiServiceConfig> 
         // init timeout monitor
         //timeOutMonitor = new TimeOutMonitor();
         
-        var db = new ObsSystemDbWrapper(readDb, null, getParentHub().getIdEncoders());
+        var idEncoders = getParentHub().getIdEncoders();
         var eventBus = getParentHub().getEventBus();
+        var handlerCtx = new HandlerContext(readDb, null, eventBus, idEncoders, null);
         var security = (MFApiSecurity)this.securityHandler;
         
         // create resource handlers hierarchy
@@ -101,20 +102,20 @@ public class MFApiService extends AbstractHttpServiceModule<MFApiServiceConfig> 
         var rootHandler = new RootHandler(homePage, true);
         rootHandler.addSubResource(new ConformanceHandler(CONF_CLASSES));
         
-        var mfHandler = new MFHandler(eventBus, db, security.foi_permissions);
+        var mfHandler = new MFHandler(handlerCtx, security.foi_permissions);
         rootHandler.addSubResource(mfHandler);
         
-        var tgeomHandler = new TemporalGeomHandler(eventBus, db, security.foi_permissions);
+        var tgeomHandler = new TemporalGeomHandler(handlerCtx, security.foi_permissions);
         mfHandler.addSubResource(tgeomHandler);
         
-        var tpropHandler = new TemporalPropHandler(eventBus, db, security.foi_permissions);
+        var tpropHandler = new TemporalPropHandler(handlerCtx, security.foi_permissions);
         mfHandler.addSubResource(tpropHandler);
         
         // collections
-        var collectionHandler = new MFCollectionsHandler(eventBus, db, security.foi_permissions, config.collections);
+        var collectionHandler = new MFCollectionsHandler(handlerCtx, security.foi_permissions, config.collections);
         rootHandler.addSubResource(collectionHandler);
         
-        var colItemsHandler = new MFCollectionItemsHandler(eventBus, db, security.foi_permissions, config.collections);
+        var colItemsHandler = new MFCollectionItemsHandler(handlerCtx, security.foi_permissions, config.collections);
         colItemsHandler.addSubResource(tgeomHandler);
         colItemsHandler.addSubResource(tpropHandler);
         collectionHandler.addSubResource(colItemsHandler);

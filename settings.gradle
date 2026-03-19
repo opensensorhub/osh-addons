@@ -1,14 +1,21 @@
 rootProject.name = 'osh-addons'
 
+//gradle.ext.oshCoreDir = "$rootDir/../osh-core"
+if (gradle.hasProperty('oshCoreDir') && new File(gradle.oshCoreDir).exists()) {
+  // include osh-core build only if not part of larger build
+  // this is needed to avoid nested composite builds
+  // comment this to build against published artifacts
+  if (gradle.parent == null) {
+    println "Including local osh-core"
+    includeBuild gradle.oshCoreDir
+  }
+}
+  
 // include all folders with build.gradle as subprojects
 def excludedProjects = [
   'sensorhub-storage-ndbc',
   'sensorhub-driver-nexrad', // TODO update driver to use newest version of osh-core
   'sensorhub-driver-usgswater', // TODO update driver to use newest version of osh-core
-  'sensorhub-service-mfapi', // TODO update service to use newest version of osh-core
-  'sensorhub-comm-ble-dbus', // TODO update service to use newest version of osh-core
-  'sensorhub-driver-angelsensor', // TODO update service to use newest version of osh-core
-  'sensorhub-driver-isa', // TODO update service to use newest version of osh-core
   'sensorhub-test'
 ]
 FileTree subprojects = fileTree(rootDir).exclude('dist').include('**/build.gradle')

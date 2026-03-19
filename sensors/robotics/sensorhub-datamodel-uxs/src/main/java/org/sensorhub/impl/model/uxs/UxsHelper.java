@@ -37,8 +37,8 @@ public class UxsHelper extends GeoPosHelper
     public static final String DEF_PLATFORM_TYPE = getPropertyUri("PlatformType");
     public static final String DEF_DEPTH_BELOW_MSL = getPropertyUri("DepthBelowMSL");
     public static final String DEF_DEPTH_BELOW_SURFACE = getPropertyUri("DepthBelowSurface");
-    public static final String DEF_SPEED_OVER_GROUND = getPropertyUri("SpeedOverGround");
-    public static final String DEF_COURSE_OVER_GROUND = getPropertyUri("CourseOverGround");
+    public static final String DEF_SPEED_OVER_GROUND = getPropertyUri("GroundSpeed");
+    public static final String DEF_COURSE_OVER_GROUND = getPropertyUri("TrueTrack");
     
     public static final String CMD_URI_PREFIX = "urn:ogc:uxs:messages:";
     
@@ -78,9 +78,9 @@ public class UxsHelper extends GeoPosHelper
     {
         return createRecord()
             .label("UAV Estimated State")
-            .addField("location", createLocationVectorLLA()
-                .label("Platform Location"))
-            .addField("attitude", createEulerOrientationNED("deg")
+            .addField("position", createLocationVectorLLA()
+                .label("Platform Position"))
+            .addField("orientation", createEulerOrientationNED("deg")
                 .label("Platform Orientation"))
             .addField("velocity", createVelocityVectorNED("m/s")
                 .label("Ground Velocity"));
@@ -95,8 +95,8 @@ public class UxsHelper extends GeoPosHelper
     {
         return createRecord()
             .label("UGV Estimated State")
-            .addField("location", createLocationVectorLatLon()
-                .label("Platform Location"))
+            .addField("position", createLocationVectorLatLon()
+                .label("Platform Position"))
             .addField("heading", createHeadingAngle("deg"))
             .addField("speed", createSpeedOverGround("km/h"));
     }
@@ -110,11 +110,11 @@ public class UxsHelper extends GeoPosHelper
     {
         return createRecord()
             .label("USV Estimated State")
-            .addField("location", createLocationVectorLatLon()
-                .label("Platform Location"))
+            .addField("position", createLocationVectorLatLon()
+                .label("Platform Position"))
             .addField("heading", createHeadingAngle("deg"))
-            .addField("course", createCourseOverGround("deg"))
-            .addField("speed", createSpeedOverGround("[kn_i]"));
+            .addField("cog", createCourseOverGround("deg"))
+            .addField("sog", createSpeedOverGround("[kn_i]"));
     }
     
     
@@ -126,13 +126,13 @@ public class UxsHelper extends GeoPosHelper
     {
         return createRecord()
             .label("UUV Estimated State")
-            .addField("location", createLocationVectorLLA()
-                .label("Platform Location"))
-            .addField("depth", createDepthBelowSurface("m"))
-            .addField("attitude", createEulerOrientationNED("deg")
+            .addField("position", createLocationVectorLLA()
+                .label("Platform Position"))
+            .addField("orientation", createEulerOrientationNED("deg")
                 .label("Platform Orientation"))
             .addField("velocity", createVelocityVectorNED("m/s")
-                .label("Ground Velocity"));
+                .label("Ground Velocity"))
+            .addField("depth", createDepthBelowSurface("m"));
     }
     
     
@@ -347,5 +347,23 @@ public class UxsHelper extends GeoPosHelper
         
         return cmd;
     }
-
+    
+    
+    public DataRecordBuilder createMissionPlanCommand(String speedUnit, HeightType heightType)
+    {
+        String numCmdFieldId;
+        
+        var commandChoice = createChoice();
+           
+        return createRecord()
+            .definition(CMD_URI_PREFIX + "MissionCommand")
+            .label("Mission")
+            .description("An entire mission to be executed by the unmanned vehicle, including waypoints as well as payload commands")
+            .addField("missionName", createText())
+            .addField("numItems", createCount()
+                .id(numCmdFieldId = ""))
+            .addField("items", createArray()
+                .withVariableSize(numCmdFieldId)
+                .withElement("item", commandChoice));
+    }
 }
