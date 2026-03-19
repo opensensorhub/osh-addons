@@ -11,6 +11,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.BNO085;
 
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.BNO085.config.Bno085Config;
 import org.junit.After;
 import org.junit.Before;
@@ -20,7 +21,7 @@ import org.junit.Before;
  */
 public class TestBase {
     Bno085Sensor sensor;
-//    BNO085Output output;
+    AbstractSensorOutput<?> output;
 
     @Before
     public void init() throws Exception {

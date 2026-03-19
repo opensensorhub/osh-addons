@@ -104,7 +104,7 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements ISyste
             new SMLHelper().edit((PhysicalSystem)sensorDescription)
                 .name("ISA Sensor Network")
                 .description("Network of sensors connected via the Integrated Sensor Architecture (ISA) protocol")
-                .definition(SWEConstants.DEF_SENSOR_NETWORK)
+                .definition(SWEConstants.DEF_SYSTEM)
                 .build();
         }
     }

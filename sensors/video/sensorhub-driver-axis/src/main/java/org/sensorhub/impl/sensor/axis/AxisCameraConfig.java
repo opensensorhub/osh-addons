@@ -118,7 +118,7 @@ public class AxisCameraConfig extends SensorConfig {
         video.resolution = ResolutionEnum._4CIF;
         rtsp.remotePort = 554;
         rtsp.videoPath = AxisCameraDriver.DEFAULT_RTSP_VIDEO_PATH;        
-        rtsp.localUdpPort = 20100;
+        rtsp.localUdpPort = 0;
     }
     
     

@@ -1,6 +1,6 @@
 package uk.co.envsys.sensorhub.test.sensor.httpweather;
 import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.util.UUID;
 
@@ -66,7 +66,11 @@ public class TestHttpWeatherDriver extends HttpWeatherTestUtils implements IEven
 		for (IStreamingDataInterface di: driver.getObservationOutputs().values()) {
             DataComponent dataMsg = di.getRecordDescription();
             assertTrue(!config.exposeSunrise);
-            assertTrue(dataMsg.getComponent("sunrise") == null);
+            try {
+                dataMsg.getComponent("sunrise");
+                fail("Exception expected");
+            } catch (IllegalArgumentException e) {
+            };
         }
 	}
     
@@ -81,7 +85,7 @@ public class TestHttpWeatherDriver extends HttpWeatherTestUtils implements IEven
     		System.out.println();        
     		new SMLUtils(SWEUtils.V2_0).writeProcess(System.out, smlDesc, true);
     	}
-        assertTrue(smlDesc.getNumOutputs() == 1);
+        assertTrue(smlDesc.getNumOutputs() == 2);
         assertTrue("Description does not match expected", 
         		smlDesc.getDescription() == "Provides HTTP endpoint on which it can receive weather data");
     }
