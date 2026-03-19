@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -35,7 +36,7 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     static final String XML_PREFIX = "meshtastic";
 
     private ICommProvider<?> commProvider;
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private ExecutorService executor = Executors.newSingleThreadExecutor();
     AtomicBoolean isProcessing = new AtomicBoolean(false);
 
     // MESHTASTIC MESSAGE VARIABLES
@@ -116,6 +117,9 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
             sendMessage(handshake);
 
             // BEGIN PROCESSING DATA
+            if (executor == null || executor.isShutdown() || executor.isTerminated()) {
+                executor = Executors.newSingleThreadExecutor();
+            }
             startProcessing();
         } else {
             throw new SensorHubException("No communication provider configured");
@@ -126,19 +130,24 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     public void doStop() throws SensorHubException {
         super.doStop();
 
-        //Stop processing the loop
         isProcessing.set(false);
 
-        // Stop comm
-        if(commProvider != null){
-            try {
-                commProvider.getInputStream().close();
-            } catch (IOException e) {
-                getLogger().warn("Failed to close input stream", e);
-            }
+        // 1. Close comm first → this unblocks read()
+        if (commProvider != null) {
+            commProvider.stop();
         }
 
-
+        // 2. Then shutdown executor
+        if (executor != null) {
+            executor.shutdownNow();
+            try {
+                if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                    getLogger().warn("Executor did not terminate cleanly");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     @Override
@@ -178,21 +187,32 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         }
 
         executor.execute(() -> {
-            // try-with-resources to auto-close
-            try (InputStream in = commProvider.getInputStream()){
+            try (InputStream in = commProvider.getInputStream()) {
                 isProcessing.set(true);
-                while (isProcessing.get()) {
-                    processNextPacket(in);
-                }
-
+                processInputStream(in);
             } catch (IOException e) {
-                if (isProcessing.get()) {
-                    getLogger().error("Error reading from comm provider", e);
-                }
+                // This IOException is from getInputStream() or closing stream
+                getLogger().debug("Input stream failed or closed: {}", e.getMessage());
             } finally {
                 isProcessing.set(false);
             }
         });
+    }
+
+    private void processInputStream(InputStream in) {
+        while (isProcessing.get()) {
+            try {
+                processNextPacket(in);
+            } catch (Exception e) {
+                // Catch EBADF exception when comm provider is stopped and port is closed
+                if (!isProcessing.get() && e instanceof IllegalArgumentException && e.getMessage().contains("EBADF")) {
+                    getLogger().debug("Serial port closed during shutdown (EBADF).");
+                    break;
+                }
+                getLogger().error("Unexpected error in processing loop", e);
+            }
+        }
+
     }
 
 
