@@ -11,7 +11,6 @@
  ******************************* end license block ***************************/
 package org.sensorhub.impl.sensor.mavsdk;
 
-import io.mavsdk.action.Action;
 import io.mavsdk.core.Core;
 import io.mavsdk.mavlink_direct.MavlinkDirect;
 import org.sensorhub.api.common.SensorHubException;
@@ -22,10 +21,6 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import static java.lang.Math.abs;
 
 /**
  * Driver implementation for the sensor.
@@ -50,20 +45,9 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
     private UnmannedHealthGpsOutput healthGpsOutput;
     private UnmannedStatusEventOutput statusTextOutput;
     private UnmannedHomeOutput homeOutput;
-    private UnmannedVideoOutput videoOutput;
 
     Thread processingThread;
     volatile boolean doProcessing = true;
-
-    public static double destLatitude  = -35.355867;
-    public static double destLongitude = 149.169245;
-    public static float destAltitude = 30.0F;
-
-    public static double homeLatitude  = -35.362219;
-    public static double homeLongitude = 149.165082;
-    public static float homeAltitude = 30.0F;
-
-    public static double deltaSuccess =   0.000003;
 
     UnmannedControlTakeoff unmannedControlTakeoff;
     UnmannedControlLocation unmannedControlLocation;
@@ -131,12 +115,6 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
         addOutput(statusTextOutput, false);
         statusTextOutput.doInit();
 
-
-        int[] frameDimensions = new int[] { 1920, 1080 };
-        videoOutput = new UnmannedVideoOutput(this, frameDimensions, "H.264");
-        addOutput(videoOutput, false);
-        videoOutput.doInit();
-
         // add Lat/Lon/Alt control stream
 
         this.unmannedControlLocation = new UnmannedControlLocation(this);
@@ -192,7 +170,6 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
 
         receiveDrone();
 
-        //startProcessing();
     }
 
     @Override
@@ -286,119 +263,7 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
                     velocityOutput.subscribe(drone);
                     statusTextOutput.subscribe(drone);
 
-                    //setUpScenario(drone);
-                    //sendMission(drone);
                 });
-    }
-
-
-    private static void setUpScenario( io.mavsdk.System drone ) {
-
-        System.out.println("Setting up scenario...");
-
-        CountDownLatch latch = new CountDownLatch(1);
-        //downloadLog(drone);
-
-        //subscribeTelemetry(drone);
-        //printVideoStreamInfo(drone);
-
-        //printParams(drone);
-        //printHealth(drone);
-
-        //drone.getOffboard().
-
-        //printTransponderInfo(drone);
-
-        drone.getAction().arm()
-                .doOnComplete(() -> {
-
-                    System.out.println("Arming...");
-
-                    printDroneInfo(drone);
-
-                })
-                .doOnError(throwable -> {
-
-                    System.out.println("Failed to arm: " + ((Action.ActionException) throwable).getCode());
-
-                })
-                .andThen(drone.getAction().setTakeoffAltitude(homeAltitude))
-                .andThen(drone.getAction().takeoff()
-                        .doOnComplete(() -> {
-
-                            System.out.println("Taking off...");
-
-                        })
-                        .doOnError(throwable -> {
-
-                            System.out.println("Failed to take off: " + ((Action.ActionException) throwable).getCode());
-
-                        }))
-                .delay(5, TimeUnit.SECONDS)
-                .andThen(drone.getTelemetry().getPosition()
-                        .filter(pos -> pos.getRelativeAltitudeM() >= homeAltitude)
-                        .firstElement()
-                        .ignoreElement()
-                )
-                .delay(5, TimeUnit.SECONDS)
-                .andThen(drone.getAction().gotoLocation(destLatitude, destLongitude,
-                                destAltitude + drone.getTelemetry().getPosition().blockingFirst().getAbsoluteAltitudeM(),
-                                45.0F)
-                        .doOnComplete( () -> {
-
-                            System.out.println("Moving to target location");
-
-                        }))
-                .doOnError( throwable -> {
-
-                    System.out.println("Failed to go to target: " + ((Action.ActionException) throwable).getCode());
-
-                })
-                .andThen(drone.getTelemetry().getPosition()
-                        .filter(pos -> (abs(pos.getLatitudeDeg() - destLatitude) <= deltaSuccess && abs(pos.getLongitudeDeg() - destLongitude) <= deltaSuccess))
-                        .firstElement()
-                        .ignoreElement()
-                )
-                .delay( 8, TimeUnit.SECONDS )
-                .andThen(drone.getAction().gotoLocation(homeLatitude, homeLongitude,
-                        homeAltitude + drone.getTelemetry().getPosition().blockingFirst().getAbsoluteAltitudeM()
-                        , 0.0F))
-                .doOnComplete( () -> {
-
-                    System.out.println("Moving to landing location");
-
-                })
-                .doOnError( throwable -> {
-
-                    System.out.println("Failed to go to landing location: " + ((Action.ActionException) throwable).getCode());
-
-                })
-                .andThen(drone.getTelemetry().getPosition()
-                        .filter(pos -> (abs(pos.getLatitudeDeg() - homeLatitude) <= deltaSuccess && abs(pos.getLongitudeDeg() - homeLongitude) <= deltaSuccess))
-                        .firstElement()
-                        .ignoreElement()
-                )
-                .andThen(drone.getAction().land().doOnComplete(() -> {
-
-                            System.out.println("Landing...");
-
-                        })
-                        .doOnError(throwable -> {
-
-                            System.out.println("Failed to land: " + ((Action.ActionException) throwable).getCode());
-
-                        }))
-                .subscribe(latch::countDown, throwable -> {
-
-                    latch.countDown();
-
-                });
-
-        try {
-            latch.await();
-        } catch (InterruptedException ignored) {
-            // This is expected
-        }
     }
 
 
