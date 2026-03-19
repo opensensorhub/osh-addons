@@ -113,6 +113,12 @@ public class RTSPClient
         return connected;
     }
 
+
+    public void setRtpRcvPort(int rtpRcvPort)
+    {
+        this.rtpRcvPort = rtpRcvPort;
+    }
+
     
     public void sendOptions() throws IOException
     {

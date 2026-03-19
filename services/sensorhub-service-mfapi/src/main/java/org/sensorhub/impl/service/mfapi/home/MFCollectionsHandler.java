@@ -16,9 +16,8 @@ package org.sensorhub.impl.service.mfapi.home;
 
 import java.util.List;
 import java.util.Map;
-import org.sensorhub.api.event.IEventBus;
 import org.sensorhub.impl.service.mfapi.MFApiServiceConfig.CollectionConfig;
-import org.sensorhub.impl.service.consys.ObsSystemDbWrapper;
+import org.sensorhub.impl.service.consys.HandlerContext;
 import org.sensorhub.impl.service.consys.RestApiServlet.ResourcePermissions;
 import org.sensorhub.impl.service.consys.home.CollectionHandler;
 import org.sensorhub.impl.service.consys.resource.RequestContext;
@@ -30,7 +29,7 @@ import org.vast.swe.SWEConstants;
 public class MFCollectionsHandler extends CollectionHandler
 {
     
-    public MFCollectionsHandler(IEventBus eventBus, ObsSystemDbWrapper db, ResourcePermissions permissions, List<CollectionConfig> collections)
+    public MFCollectionsHandler(HandlerContext ctx, ResourcePermissions permissions, List<CollectionConfig> collections)
     {
         super();
         addCustomCollections(collections);
