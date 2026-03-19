@@ -11,7 +11,7 @@ import java.net.HttpURLConnection;
 
 public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSensor> {
     private DataRecord commandDataStruct;
-    KrakenUTILITY util = parentSensor.util;
+    KrakenUtility util = parentSensor.util;
     HttpURLConnection conn;
 
     // CONSTRUCTOR

@@ -14,7 +14,7 @@ import org.w3c.dom.Element;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
-public class KrakenUTILITY {
+public class KrakenUtility {
     private final String settingsUrl;
     private final String doaCsvUrl;
     private final String doaXmlUrl;
@@ -24,7 +24,7 @@ public class KrakenUTILITY {
     private static final int READ_TIMEOUT_MS = 2000;
 
 
-    public KrakenUTILITY(KrakenSdrSensor krakenSdrSensor) {
+    public KrakenUtility(KrakenSdrSensor krakenSdrSensor) {
         this.sensor = krakenSdrSensor;
         this.settingsUrl = krakenSdrSensor.SETTINGS_URL;
         this.doaCsvUrl = krakenSdrSensor.DOA_CSV_URL;

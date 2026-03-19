@@ -37,7 +37,7 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
     private long lastSetTimeMillis = System.currentTimeMillis();
     private DataRecord dataStruct;
     private DataEncoding dataEncoding;
-    KrakenUTILITY util = parentSensor.util;
+    KrakenUtility util = parentSensor.util;
 
     /**
      * Creates a new output for the sensor driver.

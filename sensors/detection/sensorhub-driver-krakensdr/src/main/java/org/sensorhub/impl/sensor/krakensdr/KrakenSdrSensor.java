@@ -26,7 +26,7 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
     static final String XML_PREFIX = "krakenSDR";
 
     // GLOBAL VARIABLES FOR SENSOR OPERATION
-    KrakenUTILITY util;
+    KrakenUtility util;
     KrakenSdrOutputSettings krakenSdrOutputSettings;
     KrakenSdrOutputDOA krakenSdrOutputDOA;
     KrakenSdrControlReceiver krakenSdrControlReceiver;
@@ -57,7 +57,7 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
         DOA_XML_URL = OUTPUT_URL + "/doa.xml";
 
         // INITIALIZE UTILITY
-        util = new KrakenUTILITY(this);
+        util = new KrakenUtility(this);
 
         // VALIDATE KRAKEN CONNECTIVITY
         util.getSettings();
