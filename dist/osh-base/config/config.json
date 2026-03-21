@@ -15,13 +15,6 @@
     "users": [
       {
         "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
-        "id": "admin",
-        "name": "Administrator",
-        "password": "admin",
-        "roles": ["admin"]
-      },
-      {
-        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
         "id": "anonymous",
         "name": "Anonymous User",
         "password": "",
