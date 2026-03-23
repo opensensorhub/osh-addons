@@ -17,13 +17,17 @@ package org.sensorhub.impl.datastore.postgis;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Range;
 import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IObsData;
+import org.sensorhub.api.datastore.TemporalFilter;
+import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.api.datastore.obs.ObsFilter;
+import org.sensorhub.api.datastore.system.SystemFilter;
 import org.sensorhub.impl.datastore.AbstractTestObsStore;
 import org.sensorhub.impl.datastore.postgis.store.obs.PostgisDataStreamStoreImpl;
 import org.sensorhub.impl.datastore.postgis.store.obs.PostgisObsStoreImpl;
@@ -158,5 +162,46 @@ public class TestPostgisObsStore extends AbstractTestObsStore<PostgisObsStoreImp
         addSimpleObsWithoutResultTime(dsID, bigId(569), Instant.parse("1950-01-01T00:00:00.5648712Z"), 56);
         forceReadBackFromStorage();
         checkMapKeySet(obsStore.keySet());
+    }
+
+    @Test
+    public void checkRangeFilter() throws Exception {
+        var dsID = addSimpleDataStream(bigId(10), "out1");
+        addSimpleObsWithoutResultTime(dsID, BigId.NONE, Instant.parse("2000-01-01T01:00:00Z"), 1);
+        forceReadBackFromStorage();
+
+        // [) time interval
+        assertEquals(0, postgisObsStore.select(new ObsFilter.Builder()
+                        .withPhenomenonTime(new TemporalFilter.Builder().withRange(Range.closedOpen(Instant.parse("2000-01-01T00:00:00Z"), Instant.parse("2000-01-01T01:00:00Z"))).build())
+                        .withDataStreams(new DataStreamFilter.Builder()
+                                .withOutputNames("out1")
+                                .build())
+                        .build())
+                .count());
+
+        assertEquals(1, postgisObsStore.select(new ObsFilter.Builder()
+                        .withPhenomenonTime(new TemporalFilter.Builder().withRange(Range.closedOpen(Instant.parse("2000-01-01T01:00:00Z"), Instant.parse("2000-01-01T02:00:00Z"))).build())
+                        .withDataStreams(new DataStreamFilter.Builder()
+                                .withOutputNames("out1")
+                                .build())
+                        .build())
+                .count());
+
+        // (] time interval
+        assertEquals(1, postgisObsStore.select(new ObsFilter.Builder()
+                        .withPhenomenonTime(new TemporalFilter.Builder().withRange(Range.openClosed(Instant.parse("2000-01-01T00:00:00Z"), Instant.parse("2000-01-01T01:00:00Z"))).build())
+                        .withDataStreams(new DataStreamFilter.Builder()
+                                .withOutputNames("out1")
+                                .build())
+                        .build())
+                .count());
+
+        assertEquals(0, postgisObsStore.select(new ObsFilter.Builder()
+                        .withPhenomenonTime(new TemporalFilter.Builder().withRange(Range.openClosed(Instant.parse("2000-01-01T01:00:00Z"), Instant.parse("2000-01-01T02:00:00Z"))).build())
+                        .withDataStreams(new DataStreamFilter.Builder()
+                                .withOutputNames("out1")
+                                .build())
+                        .build())
+                .count());
     }
 }
