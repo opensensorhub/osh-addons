@@ -1,0 +1,28 @@
+description = 'NDBC Buoy Data Archive'
+ext.details = 'Connector to retrieve historical observations from NDBC datasets'
+version = '0.1.0'
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  embeddedImpl 'org.jsoup:jsoup:1.11.2'
+}
+
+// add info to OSGi manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Botts Innovative Research Inc.')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.ndbc.Activator')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'labutler'
+      name 'Lee Butler'
+      organization 'Botts Innovative Research Inc.'
+      organizationUrl 'https://www.opensensorhub.org' 
+    }
+  }
+}
