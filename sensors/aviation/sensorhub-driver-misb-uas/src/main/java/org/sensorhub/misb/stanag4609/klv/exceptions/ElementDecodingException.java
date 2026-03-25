@@ -11,7 +11,7 @@
  Copyright (C) 2021 Botts Innovative Research, Inc. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.misb.stanag4609.klv;
+package org.sensorhub.misb.stanag4609.klv.exceptions;
 
 /**
  * Exception thrown when the length of an element does not match the expected length given by the corresponding encoding.

@@ -10,7 +10,7 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.uas.common.SimulationClock;
 import org.sensorhub.impl.sensor.uas.common.SyncTime;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
-import org.sensorhub.impl.sensor.uas.klv.SetDecoder;
+import org.sensorhub.misb.stanag4609.klv.codec.SetDecoder;
 import org.sensorhub.impl.sensor.uas.outputs.AirframeAttitude;
 import org.sensorhub.impl.sensor.uas.outputs.FullTelemetry;
 import org.sensorhub.impl.sensor.uas.outputs.GeoRefImageFrame;

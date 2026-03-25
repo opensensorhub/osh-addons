@@ -13,7 +13,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.misb.stanag4609.comm;
 
-import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
+import org.sensorhub.misb.stanag4609.klv.codec.misb0601.UasDataLinkSet;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.jcodec.codecs.h264.H264Decoder;
 import org.jcodec.codecs.h264.MappedH264ES;

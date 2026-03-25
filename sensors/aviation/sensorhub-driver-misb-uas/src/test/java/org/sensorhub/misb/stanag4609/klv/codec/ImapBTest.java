@@ -12,7 +12,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.misb.stanag4609.klv;
+package org.sensorhub.misb.stanag4609.klv.codec;
 
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;

@@ -9,17 +9,17 @@
  for the specific language governing rights and limitations under the License.
 
  Copyright (C) 2021 Botts Innovative Research, Inc. All Rights Reserved.
-
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.uas.klv;
+package org.sensorhub.misb.stanag4609.klv.codec.misb0102;
 
+import org.junit.Test;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagRegistry;
-import org.junit.Test;
 
+import java.io.IOException;
 import java.util.HashMap;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class SecurityLocalSetTest {
 
@@ -61,5 +61,48 @@ public class SecurityLocalSetTest {
         assertTrue(valuesMap.containsKey(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.SECURITY_LOCAL_SET, (byte) 0x16)));
 //        assertTrue(valuesMap.containsKey(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x17)));
 //        assertTrue(valuesMap.containsKey(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x18)));
+    }
+
+    @Test
+    public void testEncode() {
+
+        TagRegistry TAG_REGISTRY = TagRegistry.getInstance();
+
+        HashMap<Tag, Object> valuesMap = new SecurityLocalSet(data.length, data).decode();
+
+        try {
+            byte[] encodedKlv = new SecurityLocalSetEnc()
+                    .put((byte) 0x01, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.SECURITY_LOCAL_SET, (byte) 0x01)))
+                    .put((byte) 0x02, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.SECURITY_LOCAL_SET, (byte) 0x02)))
+                    .put((byte) 0x03, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.SECURITY_LOCAL_SET, (byte) 0x03)))
+//                    .put((byte) 0x04, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x04)));
+                    .put((byte) 0x05, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.SECURITY_LOCAL_SET, (byte) 0x05)))
+                    .put((byte) 0x06, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.SECURITY_LOCAL_SET, (byte) 0x06)))
+//                    .put((byte) 0x07, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x07)))
+//                    .put((byte) 0x08, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x08)))
+//                    .put((byte) 0x09, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x09)))
+//                    .put((byte) 0x0A, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x0A)))
+//                    .put((byte) 0x0B, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x0B)))
+//                    .put((byte) 0x0C, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x0C)))
+//                    .put((byte) 0x0D, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x0D)))
+//                    .put((byte) 0x0E, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x0E)))
+                    .put((byte) 0x13, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.SECURITY_LOCAL_SET, (byte) 0x13)))
+                    .put((byte) 0x14, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.SECURITY_LOCAL_SET, (byte) 0x14)))
+//                    .put((byte) 0x15, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x15)))
+                    .put((byte) 0x16, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.SECURITY_LOCAL_SET, (byte) 0x16)))
+//                    .put((byte) 0x17, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x17)))
+//                    .put((byte) 0x18, valuesMap.get(TAG_REGISTRY.getByTagSetAndId(SecurityLocalSet.UAS_LOCAL_SET_SECURITY, (byte) 0x18)))
+                    .encode(false);
+
+            HashMap<Tag, Object> postEncValuesMap = new SecurityLocalSet(encodedKlv.length, encodedKlv).decode();
+
+            postEncValuesMap.forEach((key, value) -> {
+                Object original = valuesMap.get(key);
+                assertEquals(value, original);
+            });
+
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
     }
 }

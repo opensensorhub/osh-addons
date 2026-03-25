@@ -16,7 +16,7 @@ package org.sensorhub.impl.sensor.uas.outputs;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.uas.UasSensorBase;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
-import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
+import org.sensorhub.misb.stanag4609.klv.codec.misb0601.UasDataLinkSet;
 import org.sensorhub.misb.stanag4609.tags.TagSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -11,10 +11,12 @@
  Copyright (C) 2021 Botts Innovative Research, Inc. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.uas.klv;
+package org.sensorhub.misb.stanag4609.klv.codec.misb0601;
 
 import org.sensorhub.misb.stanag4609.klv.AbstractDataSet;
 import org.sensorhub.misb.stanag4609.klv.Element;
+import org.sensorhub.misb.stanag4609.klv.codec.misb0903.VmtiLocalSet;
+import org.sensorhub.misb.stanag4609.klv.codec.misb0102.SecurityLocalSet;
 import org.sensorhub.misb.stanag4609.tags.Encoding;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagRegistry;
@@ -115,7 +117,7 @@ public class UasDataLinkSet extends AbstractDataSet {
         TagRegistry.getInstance().registerTag(new Tag(UAS_LOCAL_SET, "06 0E 2B 34 01 01 01 01 0E 01 01 03 07 00 00 00", 0x2D, Encoding.UINT16, "Target Error Estimate - CE90", "MISB ST0601.16", "Circular error 90 (CE90) is the estimated error distance in the horizontal direction", "m"));
         TagRegistry.getInstance().registerTag(new Tag(UAS_LOCAL_SET, "06 0E 2B 34 01 01 01 01 0E 01 01 03 08 00 00 00", 0x2E, Encoding.UINT16, "Target Error Estimate - LE90", "MISB ST0601.16", "Lateral error 90 (LE90) is the estimated error distance in the vertical (or lateral) direction", "m"));
         TagRegistry.getInstance().registerTag(new Tag(UAS_LOCAL_SET, "06 0E 2B 34 01 01 01 01 0E 01 01 03 01 00 00 00", 0x2F, Encoding.UINT8, "Generic Flag Data", "MISB ST0601.16", "Generic metadata flags"));
-        TagRegistry.getInstance().registerTag(new Tag(UAS_LOCAL_SET, "06 0E 2B 34 02 03 01 01 0E 01 03 03 02 00 00 00", 0x30, Encoding.SET, "Security Local Set", "MISB ST0601.16", "MISB ST 0102 local let Security Metadata items"));
+        TagRegistry.getInstance().registerTag(new Tag(UAS_LOCAL_SET, "06 0E 2B 34 02 03 01 01 0E 01 03 03 02 00 00 00", 0x30, Encoding.SET, "Security Local Set", "MISB ST0601.16", "MISB ST 0102 local set Security Metadata items"));
         TagRegistry.getInstance().registerTag(new Tag(UAS_LOCAL_SET, "06 0E 2B 34 01 01 01 01 0E 01 01 01 01 00 00 00", 0x31, Encoding.UINT16, "Differential Pressure", "MISB ST0601.16", "Differential pressure at aircraft location", "mbar"));
         TagRegistry.getInstance().registerTag(new Tag(UAS_LOCAL_SET, "06 0E 2B 34 01 01 01 01 0E 01 01 01 02 00 00 00", 0x32, Encoding.INT16, "Platform Angle of Attack", "MISB ST0601.16", "Platform attack angle", "deg"));
         TagRegistry.getInstance().registerTag(new Tag(UAS_LOCAL_SET, "06 0E 2B 34 01 01 01 01 0E 01 01 01 03 00 00 00", 0x33, Encoding.INT16, "Platform Vertical Speed", "MISB ST0601.16", "Vertical speed of the aircraft relative to zenith", "m/s"));
@@ -252,7 +254,7 @@ public class UasDataLinkSet extends AbstractDataSet {
 
         for (int idx = 0; idx < length - 2; ++idx) {
 
-            checksum += (payload[idx] & 0x00FF) << (8 * ((idx + 1) % 2));
+            checksum += (short) ((payload[idx] & 0x00FF) << (8 * ((idx + 1) % 2)));
         }
 
         return checksum;
@@ -348,6 +350,7 @@ public class UasDataLinkSet extends AbstractDataSet {
                 switch (tag.getLocalSetTag()) {
 
                     case 0x01: // "Checksum"
+                        valuesMap.put(tag, value);
                         break;
 
                     case 0x02: // "Precision Time Stamp", "Timestamp for all metadata in this Local Set; used to coordinate with Motion Imagery", "microseconds"
@@ -364,7 +367,7 @@ public class UasDataLinkSet extends AbstractDataSet {
                         valuesMap.put(tag, value);
                         break;
 
-                    case 0x30: // "Security Local Set", "MISB ST 0102 local let Security Metadata items"
+                    case 0x30: // "Security Local Set", "MISB ST 0102 local set Security Metadata items"
                         AbstractDataSet securitySet = new SecurityLocalSet(((byte[]) value).length, (byte[]) value);
                         valuesMap.putAll(securitySet.decode());
                         break;
@@ -441,7 +444,7 @@ public class UasDataLinkSet extends AbstractDataSet {
                         valuesMap.put(tag, convertToDouble((short) value, 100.0, 65534.0, 0.0));
                         break;
                         
-                    case 0x4A: // "Video Moving Target Indicator and Track Metadata", "MISB ST 0903.4 local let VMTI Metadata items"
+                    case 0x4A: // "Video Moving Target Indicator and Track Metadata", "MISB ST 0903.4 local set VMTI Metadata items"
                         AbstractDataSet vmtiSet = new VmtiLocalSet(((byte[]) value).length, (byte[]) value);
                         valuesMap.putAll(vmtiSet.decode());
                         break;

@@ -11,11 +11,11 @@
  Copyright (C) 2021 Botts Innovative Research, Inc. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.uas.klv;
+package org.sensorhub.misb.stanag4609.klv.codec.misb0903;
 
 import org.sensorhub.misb.stanag4609.klv.AbstractDataSet;
 import org.sensorhub.misb.stanag4609.klv.Element;
-import org.sensorhub.misb.stanag4609.klv.ImapB;
+import org.sensorhub.misb.stanag4609.klv.codec.ImapB;
 import org.sensorhub.misb.stanag4609.tags.Encoding;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagRegistry;
@@ -37,9 +37,8 @@ public class VmtiLocalSet extends AbstractDataSet {
     public static final TagSet VMTI_LOCAL_SET = new TagSet("06 0E 2B 34 02 0B 01 01 0E 01 03 03 06 00 00 00", "VMTI Local Set Dictionary", "Universal Label");
     
     private static final Logger logger = LoggerFactory.getLogger(VmtiLocalSet.class);
-    
-    private static final ImapB FOV_IMAPB_FUNC = new ImapB(0, 180, 2);
-    
+
+    public static final ImapB FOV_IMAPB_FUNC = new ImapB(0, 180, 2);
     
     private int numTargets;
     

@@ -142,9 +142,23 @@ public abstract class AbstractDataSet {
      * @param offset        An offset adjustment
      * @return a double value decoded from the integer value passed in the the formula given by the constraints
      */
-    protected double convertToDouble(int value, double localSetRange, double fieldMaxRange, double offset) {
+    public static double convertToDouble(int value, double localSetRange, double fieldMaxRange, double offset) {
 
         return (localSetRange / fieldMaxRange) * value + offset;
+    }
+
+    /**
+     * Converts a double value to an integer using the inverse of the original constraint formula.
+     *
+     * @param value         The double value to convert
+     * @param localSetRange The maximum value that can be represented as double
+     * @param fieldMaxRange The maximum value of the field
+     * @param offset        An offset adjustment
+     * @return an integer value encoded from the double input
+     */
+    public static int convertToInt(double value, double localSetRange, double fieldMaxRange, double offset) {
+
+        return (int) Math.round((value - offset) * fieldMaxRange / localSetRange);
     }
 
     /**
@@ -156,23 +170,51 @@ public abstract class AbstractDataSet {
      * @param offset        An offset adjustment
      * @return a double value decoded from the short integer value passed in the the formula given by the constraints
      */
-    protected double convertToDouble(short value, double localSetRange, double fieldMaxRange, double offset) {
+    public static double convertToDouble(short value, double localSetRange, double fieldMaxRange, double offset) {
 
         return (localSetRange / fieldMaxRange) * value + offset;
     }
-    
+
+    /**
+     * Converts a double value to a short integer using the inverse of the original constraint formula.
+     *
+     * @param value         The double value to convert
+     * @param localSetRange The maximum value that can be represented as double
+     * @param fieldMaxRange The maximum value of the field
+     * @param offset        An offset adjustment
+     * @return a short integer value encoded from the double input
+     */
+    public static int convertToShort(double value, double localSetRange, double fieldMaxRange, double offset) {
+
+        return (short) Math.round((value - offset) * fieldMaxRange / localSetRange);
+    }
+
     /**
      * Converts the value passed in as a long integer to a time in milliseconds since epoch ( Jan 1, 1970)
      *
      * @param value The raw value to convert
      * @return a computed value for milliseconds since Epoch time (Jan 1, 1970)
      */
-    protected long convertToTimeInMillis(long value) {
+    public static long convertToTimeInMillis(long value) {
 
         long epochSeconds = value / 1000000L;
         long nanoOffset = (value % 1000000L) * 1000L;
         Instant instant = Instant.ofEpochSecond(epochSeconds, nanoOffset);
         return instant.toEpochMilli();
+    }
+
+    /**
+     * Converts a time in milliseconds since epoch (Jan 1, 1970) to a raw long value
+     * representing microseconds plus nanosecond offset.
+     *
+     * @param millis The time in milliseconds since epoch
+     * @return a computed raw long value encoding seconds and nanos
+     */
+    public static long convertFromTimeInMillis(double millis) {
+        Instant instant = Instant.ofEpochMilli((long) millis);
+        long epochSeconds = instant.getEpochSecond();
+        long nanoOffset = instant.getNano();
+        return epochSeconds * 1_000_000L + nanoOffset / 1_000L;
     }
 
     /**

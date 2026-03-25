@@ -11,18 +11,18 @@
  Copyright (C) 2021 Botts Innovative Research, Inc. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.uas.klv;
+package org.sensorhub.misb.stanag4609.klv.codec.misb0601;
 
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagRegistry;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Unit test suite for {@link UasDataLinkSet}
@@ -151,5 +151,60 @@ public class UasDataLinkSetTest {
         assertTrue(valuesMap.containsKey(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte)0x05)));
         assertTrue(valuesMap.containsKey(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte)0x06)));
         assertTrue(valuesMap.containsKey(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte)0x07)));
+    }
+
+    @Test
+    public void testEncode() {
+
+        TagRegistry reg = TagRegistry.getInstance();
+
+        HashMap<Tag, Object> valuesMap = new UasDataLinkSet(data.length, data).decode();
+
+        try {
+            byte[] encodedKlv = new UasDataLinkSetEnc()
+//                    .put((byte) 0x02, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x02))) // TimeStamp
+                    .put((byte) 0x41, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x41))) // UAS Datalink LS Version Number
+                    .put((byte) 0x0A, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x0A))) // Platform Designation
+//                    .put((byte) 0x30, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x30))) // Security Local Set
+                    .put((byte) 0x04, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x04))) // Platform Tail Number
+                    .put((byte) 0x0D, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x0D))) // Sensor Latitude
+                    .put((byte) 0x0E, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x0E))) // Sensor Longitude
+                    .put((byte) 0x0F, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x0F))) // Sensor True Altitude
+                    .put((byte) 0x10, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x10))) // Sensor Horizontal Field of View
+                    .put((byte) 0x11, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x11))) // Sensor Vertical Field of View
+                    .put((byte) 0x17, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x17))) // Frame Center Latitude
+                    .put((byte) 0x18, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x18))) // Frame Center Longitude
+                    .put((byte) 0x19, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x19))) // Frame Center Elevation
+                    .put((byte) 0x1A, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x1A))) // Offset Corner Latitude Point 1
+                    .put((byte) 0x1B, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x1B))) // Offset Corner Longitude Point 1
+                    .put((byte) 0x1C, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x1C))) // Offset Corner Latitude Point 2
+                    .put((byte) 0x1D, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x1D))) // Offset Corner Longitude Point 2
+                    .put((byte) 0x1E, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x1E))) // Offset Corner Latitude Point 3
+                    .put((byte) 0x1F, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x1F))) // Offset Corner Longitude Point 3
+                    .put((byte) 0x20, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x20))) // Offset Corner Latitude Point 4
+                    .put((byte) 0x21, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x21))) // Offset Corner Longitude Point 4
+                    .put((byte) 0x0B, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x0B))) // Image Source Sensor
+                    .put((byte) 0x0C, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x0C))) // Image Coordinate System
+                    .put((byte) 0x15, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x15))) // Slant Range
+                    .put((byte) 0x12, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x12))) // Sensor Relative Azimuth Angle
+                    .put((byte) 0x13, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x13))) // Sensor Relative Elevation Angle
+                    .put((byte) 0x14, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x14))) // Sensor Relative Roll Angle
+                    .put((byte) 0x05, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x05))) // Platform Heading Angle
+                    .put((byte) 0x06, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x06))) // Platform Pitch Angle
+                    .put((byte) 0x07, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x07))) // Platform Roll Angle
+                    .put((byte) 0x38, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x38))) // Platform Ground Speed
+                    .put((byte) 0x01, valuesMap.get(reg.getByTagSetAndId(UasDataLinkSet.UAS_LOCAL_SET, (byte) 0x01))) // Checksum
+                    .encode(true);
+
+            HashMap<Tag, Object> postEncValuesMap = new UasDataLinkSet(encodedKlv.length, encodedKlv).decode();
+
+            postEncValuesMap.forEach((key, value) -> {
+                Object original = valuesMap.get(key);
+                assertEquals(value, original);
+            });
+
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
     }
 }

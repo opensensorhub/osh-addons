@@ -12,7 +12,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.misb.stanag4609.klv;
+package org.sensorhub.misb.stanag4609.klv.codec;
 
 import java.math.BigInteger;
 
@@ -57,5 +57,23 @@ public class ImapB {
         
         var y = new BigInteger(1, data).doubleValue(); // int value is always positive
         return sR * (y - zOff) + min;
+    }
+
+    public static byte[] doubleToImapB(ImapB func, double value) {
+        // Reverse of: sR * (y - zOff) + min
+        double y = (value - func.min) / func.sR + func.zOff;
+
+        long ui = Math.round(y);
+
+        // Determine byte length from ST1201 rules
+        int len = (int) Math.ceil((Math.log(func.max - func.min) / Math.log(2) + 1) / 8.0);
+        byte[] out = new byte[len];
+
+        for (int i = len - 1; i >= 0; i--) {
+            out[i] = (byte) (ui & 0xFF);
+            ui >>= 8;
+        }
+
+        return out;
     }
 }

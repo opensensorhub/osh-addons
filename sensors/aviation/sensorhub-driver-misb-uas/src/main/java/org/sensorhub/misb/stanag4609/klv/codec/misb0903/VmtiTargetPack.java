@@ -11,12 +11,12 @@
  Copyright (C) 2021 Botts Innovative Research, Inc. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.uas.klv;
+package org.sensorhub.misb.stanag4609.klv.codec.misb0903;
 
 import org.sensorhub.misb.stanag4609.klv.AbstractDataSet;
 import org.sensorhub.misb.stanag4609.klv.AbstractSeries;
 import org.sensorhub.misb.stanag4609.klv.Element;
-import org.sensorhub.misb.stanag4609.klv.ImapB;
+import org.sensorhub.misb.stanag4609.klv.codec.ImapB;
 import org.sensorhub.misb.stanag4609.tags.Encoding;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagRegistry;
@@ -37,13 +37,13 @@ import java.util.LinkedHashMap;
 public class VmtiTargetPack extends AbstractDataSet {
 
     public static final TagSet VTARGET_PACK_LOCAL_SET = new TagSet("-", "VTarget Pack Local Set Dictionary", "Local Label");
-    
+
+    public static final ImapB LOC_OFFSET_IMAPB_FUNC = new ImapB(-19.2, 19.2, 3);
+
+    public static final ImapB HAE_IMAPB_FUNC = new ImapB(-900, 19000, 2);
+
     private static final Logger logger = LoggerFactory.getLogger(VmtiTargetPack.class);
-    
-    private static final ImapB LOC_OFFSET_IMAPB_FUNC = new ImapB(-19.2, 19.2, 3);
-    private static final ImapB HAE_IMAPB_FUNC = new ImapB(-900, 19000, 2);
-    
-    
+
     public static class Series extends AbstractSeries {
 
         public Series(int length, byte[] payload, int numElts) {
@@ -54,7 +54,7 @@ public class VmtiTargetPack extends AbstractDataSet {
         protected HashMap<Tag, Object> decodeElement(byte[] payload) {
             var targetPackSet = new VmtiTargetPack(payload.length, payload);
             return targetPackSet.decode();
-        }        
+        }
     }
     
     

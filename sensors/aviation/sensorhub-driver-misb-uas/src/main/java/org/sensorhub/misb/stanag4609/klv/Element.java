@@ -13,6 +13,8 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.misb.stanag4609.klv;
 
+import org.sensorhub.misb.stanag4609.klv.exceptions.ElementDecodingException;
+import org.sensorhub.misb.stanag4609.klv.exceptions.ElementEncodingException;
 import org.sensorhub.misb.stanag4609.tags.JsonPrinter;
 import org.sensorhub.misb.stanag4609.tags.Encoding;
 import org.sensorhub.misb.stanag4609.tags.Tag;
@@ -24,8 +26,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -47,6 +51,9 @@ public class Element implements JsonPrinter {
     private static final int BYTE = 1;
 
     private final byte[] value;
+
+    private final Object elementValue;
+
     private final Tag tag;
 
     /**
@@ -60,6 +67,7 @@ public class Element implements JsonPrinter {
 
         this.tag = TAG_REGISTRY.getByTagSetAndId(tagSet, tagId);
         this.value = value;
+        this.elementValue = null;
     }
 
     /**
@@ -72,6 +80,34 @@ public class Element implements JsonPrinter {
 
         this.tag = tag;
         this.value = value;
+        this.elementValue = null;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param tagSet Identifies the family of tags the given tagId belongs to
+     * @param tagId  a numeric id for the associated tag within the given tagSet
+     * @param value  the data encoded by this element
+     */
+    public Element(TagSet tagSet, byte tagId, Object value) {
+
+        this.tag = TAG_REGISTRY.getByTagSetAndId(tagSet, tagId);
+        this.value = null;
+        this.elementValue = value;
+    }
+
+    /**
+     * Constructor
+     *
+     * @param tag   the associated tag
+     * @param value the data encoded by this element
+     */
+    public Element(Tag tag, Object value) {
+
+        this.tag = tag;
+        this.value = null;
+        this.elementValue = value;
     }
 
     /**
@@ -255,5 +291,100 @@ public class Element implements JsonPrinter {
         }
 
         return result;
+    }
+
+    public byte[] packData() throws ElementDecodingException {
+
+        byte[] encodedValue = null;
+
+        Encoding encoding = tag.getEncoding();
+
+        switch (encoding) {
+            case BYTE:
+            case INT8:
+            case ISO_IEC_13818_1_INT8:
+                encodedValue = new byte[]{((Number) elementValue).byteValue()};
+                break;
+            case INT:
+            case UINT:
+                long uintValue = ((Number) elementValue).longValue();
+                if (uintValue == 0) {
+
+                    encodedValue = new byte[]{0};
+
+                } else {
+
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+                    for (int shift = 56; shift >= 0; shift -= 8) {
+
+                        byte b = (byte) (uintValue >> shift);
+                        if (b != 0 || out.size() > 0) out.write(b);
+                    }
+
+                    encodedValue = out.toByteArray();
+                }
+                break;
+            case UINT8:
+                encodedValue = new byte[]{(byte) (((Number) elementValue).intValue() & 0xFF)};
+                break;
+            case UINT16:
+                int intValue = ((Number) elementValue).intValue();
+                encodedValue = new byte[]{(byte) (intValue >> 8), (byte) intValue};
+                break;
+            case INT16:
+            case ISO_IEC_13818_1_INT16:
+                    short shortValue = ((Number) elementValue).shortValue();
+                    encodedValue = new byte[]{(byte) (shortValue >> 8), (byte) shortValue};
+                break;
+            case UINT32:
+            case INT32:
+                    encodedValue = ByteBuffer.allocate(4).putInt(((Number) elementValue).intValue()).array();
+                break;
+            case UINT64:
+            case INT64:
+                    encodedValue = ByteBuffer.allocate(8).putLong(((Number) elementValue).longValue()).array();
+                break;
+            case UTF8:
+            case ISO_IEC_646_ASCII_TEXT:
+            case ISO_IEC_646_YYYY_MM_DD:
+            case ISO_IEC_646_YYYYMMDD:
+            case RFC_2781:
+                encodedValue = ((String) elementValue).getBytes(StandardCharsets.UTF_8);
+                break;
+            case SET:
+            case SERIES:
+            case SMPTE_336M:
+            case BINARY:
+                encodedValue = (byte[]) elementValue;
+                break;
+            case IMAPA:
+            case IMAPB:
+                encodedValue = (byte[]) elementValue;
+                break;
+            case DLP:
+            case VLP:
+            case FLP:
+            case SMPTE_330M:
+                logger.error("Unsupported encoding encountered for tag: {} encoding: {}", tag.getName(), encoding.toString());
+                break;
+            default:
+                logger.error("Unknown encoding encountered for tag: {} encoding: {}", tag.getName(), encoding.toString());
+                break;
+        }
+
+        if (null == encodedValue) {
+
+            StringBuilder message = new StringBuilder();
+            message.append("Value: ");
+            message.append(elementValue);
+            message.append(" for tag: ");
+            message.append(tag.getLocalSetTag());
+            logger.error(message.toString());
+
+            throw new ElementEncodingException(message.toString());
+        }
+
+        return encodedValue;
     }
 }

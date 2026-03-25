@@ -13,8 +13,8 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.misb.stanag4609.klv;
 
-import org.sensorhub.impl.sensor.uas.klv.SecurityLocalSet;
-import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
+import org.sensorhub.misb.stanag4609.klv.codec.misb0102.SecurityLocalSet;
+import org.sensorhub.misb.stanag4609.klv.codec.misb0601.UasDataLinkSet;
 import org.sensorhub.misb.stanag4609.tags.Encoding;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagRegistry;

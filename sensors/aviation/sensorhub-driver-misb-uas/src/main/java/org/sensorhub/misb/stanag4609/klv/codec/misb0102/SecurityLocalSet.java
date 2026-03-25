@@ -11,7 +11,7 @@
  Copyright (C) 2021 Botts Innovative Research, Inc. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.uas.klv;
+package org.sensorhub.misb.stanag4609.klv.codec.misb0102;
 
 import org.sensorhub.misb.stanag4609.klv.AbstractDataSet;
 import org.sensorhub.misb.stanag4609.klv.Element;
