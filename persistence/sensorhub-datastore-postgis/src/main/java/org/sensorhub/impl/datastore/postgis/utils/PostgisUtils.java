@@ -144,11 +144,7 @@ public class PostgisUtils {
         } else if(instant.getEpochSecond() > MAX_INSTANT.getEpochSecond()) {
             return "infinity";
         } else {
-            if(truncated) {
-                return instant.truncatedTo(ChronoUnit.SECONDS).toString();
-            } else {
-                return instant.toString();
-            }
+            return instant.toString();
         }
     }
 
@@ -189,12 +185,12 @@ public class PostgisUtils {
     }
     protected static Instant getInstantFromPGFormat(String pgDataValueStr) {
         if (pgDataValueStr.equals("-infinity")) {
-            return Instant.MIN.truncatedTo(ChronoUnit.SECONDS);
+            return Instant.MIN;
         } else if (pgDataValueStr.equals("infinity")) {
-            return Instant.MAX.truncatedTo(ChronoUnit.SECONDS);
+            return Instant.MAX;
         } else {
             LocalDateTime ldt = LocalDateTime.parse(pgDataValueStr, FLEXIBLE_FORMATTER);
-            return ldt.toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS);
+            return ldt.toInstant(ZoneOffset.UTC);
         }
     }
     public static String getPgTimestampFromInstant(Instant instant) {
@@ -216,7 +212,7 @@ public class PostgisUtils {
         } else if(instant.getEpochSecond() > PostgisUtils.MAX_INSTANT.getEpochSecond()) {
             return "infinity";
         } else {
-            return instant.truncatedTo(ChronoUnit.SECONDS).toString();
+            return instant.toString();
         }
     }
 
