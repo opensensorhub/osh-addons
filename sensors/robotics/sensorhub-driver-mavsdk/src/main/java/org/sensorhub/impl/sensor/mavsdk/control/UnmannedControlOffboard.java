@@ -14,7 +14,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 
 
-package org.sensorhub.impl.comm.mavsdk.control;
+package org.sensorhub.impl.sensor.mavsdk.control;
 
 import io.mavsdk.offboard.Offboard;
 import net.opengis.swe.v20.DataBlock;
@@ -22,7 +22,7 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataRecord;
 import net.opengis.swe.v20.DataType;
 import org.sensorhub.api.command.CommandException;
-import org.sensorhub.impl.comm.mavsdk.UnmannedSystem;
+import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;

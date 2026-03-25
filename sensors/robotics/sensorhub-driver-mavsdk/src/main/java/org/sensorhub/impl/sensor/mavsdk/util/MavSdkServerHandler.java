@@ -1,6 +1,6 @@
-package org.sensorhub.impl.comm.mavsdk.util;
+package org.sensorhub.impl.sensor.mavsdk.util;
 
-import org.sensorhub.impl.comm.mavsdk.UnmannedConfig;
+import org.sensorhub.impl.sensor.mavsdk.UnmannedConfig;
 
 import java.io.IOException;
 import java.io.InputStream;

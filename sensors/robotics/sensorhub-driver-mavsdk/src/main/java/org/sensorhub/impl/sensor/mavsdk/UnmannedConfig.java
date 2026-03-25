@@ -9,12 +9,12 @@
 
  Copyright (C) 2020-2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.comm.mavsdk;
+package org.sensorhub.impl.sensor.mavsdk;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
-import org.sensorhub.impl.comm.mavsdk.config.MissionConfig;
-import org.sensorhub.impl.comm.mavsdk.util.PlatformId;
+import org.sensorhub.impl.sensor.mavsdk.config.MissionConfig;
+import org.sensorhub.impl.sensor.mavsdk.util.PlatformId;
 
 import java.util.List;
 

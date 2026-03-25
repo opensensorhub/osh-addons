@@ -1,4 +1,4 @@
-package org.sensorhub.impl.comm.mavsdk.processing;
+package org.sensorhub.impl.sensor.mavsdk.processing;
 
 import org.sensorhub.impl.processing.AbstractProcessProvider;
 

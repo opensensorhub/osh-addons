@@ -12,7 +12,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.comm.mavsdk;
+package org.sensorhub.impl.sensor.mavsdk;
 
 import org.sensorhub.utils.OshBundleActivator;
 

@@ -13,7 +13,7 @@ Copyright (C) 2025 Botts Innovative Research. All Rights Reserved.
 
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.comm.mavsdk;
+package org.sensorhub.impl.sensor.mavsdk;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;

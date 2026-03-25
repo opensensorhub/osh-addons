@@ -1,4 +1,4 @@
-package org.sensorhub.impl.comm.mavsdk.config;
+package org.sensorhub.impl.sensor.mavsdk.config;
 
 import java.util.List;
 

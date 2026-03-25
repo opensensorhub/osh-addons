@@ -14,14 +14,14 @@
  ******************************* END LICENSE BLOCK ***************************/
 
 
-package org.sensorhub.impl.comm.mavsdk.control;
+package org.sensorhub.impl.sensor.mavsdk.control;
 
 import io.mavsdk.action.Action;
 import io.mavsdk.telemetry.Telemetry;
 import io.reactivex.Completable;
 import net.opengis.swe.v20.*;
 import org.sensorhub.api.command.CommandException;
-import org.sensorhub.impl.comm.mavsdk.UnmannedSystem;
+import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.swe.helper.GeoPosHelper;
 

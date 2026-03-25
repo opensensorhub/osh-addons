@@ -9,7 +9,7 @@
 
  Copyright (C) 2020-2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.comm.mavsdk;
+package org.sensorhub.impl.sensor.mavsdk;
 
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;

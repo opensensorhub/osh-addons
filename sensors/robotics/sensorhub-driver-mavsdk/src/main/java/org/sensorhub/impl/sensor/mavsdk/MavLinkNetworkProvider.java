@@ -12,7 +12,7 @@ Copyright (C) 2025 Botts Innovative Research. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.comm.mavsdk;
+package org.sensorhub.impl.sensor.mavsdk;
 
 import org.sensorhub.api.comm.ICommNetwork.NetworkType;
 import org.sensorhub.api.comm.INetworkProvider;

@@ -9,7 +9,7 @@
 
  Copyright (C) 2020-2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.comm.mavsdk.outputs;
+package org.sensorhub.impl.sensor.mavsdk.outputs;
 
 import io.mavsdk.telemetry.Telemetry;
 import net.opengis.swe.v20.DataBlock;
@@ -17,7 +17,7 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.impl.comm.mavsdk.UnmannedSystem;
+import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.vast.swe.helper.GeoPosHelper;
 

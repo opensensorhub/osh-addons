@@ -9,15 +9,15 @@
 
  copyright (c) 2020-2025 botts innovative research, inc. all rights reserved.
  ******************************* end license block ***************************/
-package org.sensorhub.impl.comm.mavsdk;
+package org.sensorhub.impl.sensor.mavsdk;
 
 import io.mavsdk.action.Action;
 import io.mavsdk.core.Core;
 import io.mavsdk.mavlink_direct.MavlinkDirect;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.comm.mavsdk.control.*;
-import org.sensorhub.impl.comm.mavsdk.outputs.*;
-import org.sensorhub.impl.comm.mavsdk.util.MavSdkServerHandler;
+import org.sensorhub.impl.sensor.mavsdk.control.*;
+import org.sensorhub.impl.sensor.mavsdk.outputs.*;
+import org.sensorhub.impl.sensor.mavsdk.util.*;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,7 @@ import static java.lang.Math.abs;
  * This class is responsible for providing sensor information, managing output registration,
  * and performing initialization and shutdown for the driver and its outputs.
  */
-public class UnmannedSystem extends AbstractSensorModule<UnmannedConfig> {
+public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sensor.mavsdk.UnmannedConfig> {
     static final String UID_PREFIX = "urn:osh:driver:mavsdk:";
     static final String XML_PREFIX = "MAVSDK_DRIVER_";
 
@@ -50,6 +50,7 @@ public class UnmannedSystem extends AbstractSensorModule<UnmannedConfig> {
     private UnmannedHealthGpsOutput healthGpsOutput;
     private UnmannedStatusEventOutput statusTextOutput;
     private UnmannedHomeOutput homeOutput;
+    private UnmannedVideoOutput videoOutput;
 
     Thread processingThread;
     volatile boolean doProcessing = true;
@@ -86,12 +87,10 @@ public class UnmannedSystem extends AbstractSensorModule<UnmannedConfig> {
         generateUniqueID(UID_PREFIX, config.serialNumber);
         generateXmlID(XML_PREFIX, config.serialNumber);
 
-        // Create and initialize locationoutput
         locationOutput = new UnmannedLocationOutput(this);
         addOutput(locationOutput, false);
         locationOutput.doInit();
 
-        // Create and initialize homeoutput
         homeOutput = new UnmannedHomeOutput(this);
         addOutput(homeOutput, false);
         homeOutput.doInit();
@@ -131,6 +130,12 @@ public class UnmannedSystem extends AbstractSensorModule<UnmannedConfig> {
         statusTextOutput = new UnmannedStatusEventOutput(this);
         addOutput(statusTextOutput, false);
         statusTextOutput.doInit();
+
+
+        int[] frameDimensions = new int[] { 1920, 1080 };
+        videoOutput = new UnmannedVideoOutput(this, frameDimensions, "H.264");
+        addOutput(videoOutput, false);
+        videoOutput.doInit();
 
         // add Lat/Lon/Alt control stream
 

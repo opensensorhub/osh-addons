@@ -1,4 +1,4 @@
-package org.sensorhub.impl.comm.mavsdk.processing;
+package org.sensorhub.impl.sensor.mavsdk.processing;
 
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataType;

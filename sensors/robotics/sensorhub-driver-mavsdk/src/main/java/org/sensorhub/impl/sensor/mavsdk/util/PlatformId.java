@@ -1,4 +1,4 @@
-package org.sensorhub.impl.comm.mavsdk.util;
+package org.sensorhub.impl.sensor.mavsdk.util;
 
 public final class PlatformId {
 

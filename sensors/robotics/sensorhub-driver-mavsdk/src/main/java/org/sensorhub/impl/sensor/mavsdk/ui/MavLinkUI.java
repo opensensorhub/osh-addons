@@ -1,11 +1,11 @@
-package org.sensorhub.impl.comm.mavsdk.ui;
+package org.sensorhub.impl.sensor.mavsdk.ui;
 
 import com.vaadin.ui.*;
 import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.command.CommandData;
 import org.sensorhub.api.command.IStreamingControlInterface;
 import org.sensorhub.api.sensor.ISensorModule;
-import org.sensorhub.impl.comm.mavsdk.control.UnmannedControlEnableLocation;
+import org.sensorhub.impl.sensor.mavsdk.control.UnmannedControlEnableLocation;
 import org.sensorhub.impl.system.CommandStreamTransactionHandler;
 import org.sensorhub.impl.system.SystemDatabaseTransactionHandler;
 import org.sensorhub.ui.AdminUI;
