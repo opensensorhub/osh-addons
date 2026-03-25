@@ -21,6 +21,19 @@ import java.io.IOException;
 
 import static org.sensorhub.misb.stanag4609.klv.AbstractDataSet.*;
 
+/**
+ * Encoder for the MISB ST 0601 UAS Datalink Local Set.
+ *
+ * <p>This class provides a fluent API for constructing a complete UAS Local Set
+ * by populating individual ST 0601 metadata fields. Internally it delegates to
+ * {@link SetEncoder}, which handles KLV BER lengths, tag/value encoding, and
+ * final Local Set assembly.</p>
+ *
+ * <p>The encoder supports both explicit typed setters for common fields and a
+ * generic {@link #put(byte, Object)} method for dynamic tag assignment. Scaling
+ * rules follow MISB ST 0601 specifications (e.g., angles mapped to UINT16,
+ * lat/lon mapped to INT32, offsets mapped to INT16).</p>
+ */
 public class UasDataLinkSetEnc {
 
     private static final Logger logger = LoggerFactory.getLogger(UasDataLinkSetEnc.class);
