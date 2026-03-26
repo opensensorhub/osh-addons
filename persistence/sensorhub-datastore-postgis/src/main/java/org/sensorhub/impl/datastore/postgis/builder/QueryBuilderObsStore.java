@@ -81,10 +81,10 @@ public class QueryBuilderObsStore extends QueryBuilder {
 
     public String insertObsQuery() {
         return "INSERT INTO "+this.getStoreTableName()+" " +
-                "(id,"+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (${1},${2},${3},${4},${5},${6}) "+
+                "(id,"+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (?,?,?,?,?,?) "+
                 "ON CONFLICT ("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+") DO "+
-                "UPDATE SET "+DATASTREAM_ID+" = (${7}), " +FOI_ID+" = (${8}), "+PHENOMENON_TIME+" = (${9})," +
-                " "+RESULT_TIME+" = (${10}), "+RESULT+" = (${11})";
+                "UPDATE SET "+DATASTREAM_ID+" = ?, " +FOI_ID+" = ?, "+PHENOMENON_TIME+" = ?," +
+                " "+RESULT_TIME+" = ?, "+RESULT+" = ?";
     }
 
     public String createUniqueConstraint() {

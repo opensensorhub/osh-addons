@@ -166,18 +166,18 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         return this.dataStreamStore;
     }
 
-    protected String fillAddStatement(BigId id,long dataStreamKey, IObsData obs) throws SQLException {
+    public String fillAddStatement(BigId id,long dataStreamKey, IObsData obs) throws SQLException {
         Map<String, Object> values = new HashMap<>();
-        values.put("1","'"+id.getIdAsLong()+"'::int8");
+        values.put("1", id.getIdAsLong());
 
         // datastreamid
-        values.put("2","'"+dataStreamKey+"'::int8");
-        values.put("7","'"+dataStreamKey+"'::int8");
+        values.put("2", dataStreamKey);
+        values.put("7", dataStreamKey);
 
         // insert foiId if any
         if (obs.hasFoi()) {
-            values.put("3", "'"+obs.getFoiID().getIdAsLong()+"'::int8");
-            values.put("8", "'"+obs.getFoiID().getIdAsLong()+"'::int8");
+            values.put("3", obs.getFoiID().getIdAsLong());
+            values.put("8", obs.getFoiID().getIdAsLong());
         } else {
             values.put("3", "NULL");
             values.put("8", "NULL");
@@ -209,8 +209,58 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         values.put("6", "'"+serializedBlock+"'");
         values.put("11", "'"+serializedBlock+"'");
 
+        // Map the ? placeholders in insertObsQuery to ${1}, ${2}, etc. for StringSubstitutor
+        String query = queryBuilder.insertObsQuery();
+        for (int i = 1; i <= 11; i++) {
+            query = query.replaceFirst("\\?", "\\${" + i + "}");
+        }
+
         StringSubstitutor sub = new StringSubstitutor(values);
-        return sub.replace(queryBuilder.insertObsQuery());
+        return sub.replace(query);
+    }
+
+    protected void fillPreparedAddStatement(PreparedStatement pstmt, BigId id, long dataStreamKey, IObsData obs) throws SQLException {
+        pstmt.setLong(1, id.getIdAsLong());
+        pstmt.setLong(2, dataStreamKey);
+        pstmt.setLong(7, dataStreamKey);
+
+        // insert foiId if any
+        if (obs.hasFoi()) {
+            pstmt.setLong(3, obs.getFoiID().getIdAsLong());
+            pstmt.setLong(8, obs.getFoiID().getIdAsLong());
+        } else {
+            pstmt.setNull(3, Types.BIGINT);
+            pstmt.setNull(8, Types.BIGINT);
+        }
+
+        // insert timestamp
+        if (obs.getPhenomenonTime() != null) {
+            pstmt.setTimestamp(4, Timestamp.from(obs.getPhenomenonTime()), UTC_LOCAL);
+            pstmt.setTimestamp(9, Timestamp.from(obs.getPhenomenonTime()), UTC_LOCAL);
+        } else {
+            pstmt.setNull(4, Types.TIMESTAMP);
+            pstmt.setNull(9, Types.TIMESTAMP);
+        }
+
+        if (obs.getResultTime() != null) {
+            pstmt.setTimestamp(5, Timestamp.from(obs.getResultTime()), UTC_LOCAL);
+            pstmt.setTimestamp(10, Timestamp.from(obs.getResultTime()), UTC_LOCAL);
+        } else {
+            pstmt.setNull(5, Types.TIMESTAMP);
+            pstmt.setNull(10, Types.TIMESTAMP);
+        }
+
+        // insert DataBlock
+        IDataStreamInfo dataStreamInfo = dataStreamStore.get(new DataStreamKey(obs.getDataStreamID()));
+        String serializedBlock = SerializerUtils.writeDataBlockToJson(dataStreamInfo.getRecordStructure(),
+                dataStreamInfo.getRecordEncoding(), obs.getResult());
+
+        PGobject jsonObject = new PGobject();
+        jsonObject.setType("jsonb");
+        jsonObject.setValue(serializedBlock);
+
+        pstmt.setObject(6, jsonObject);
+        pstmt.setObject(11, jsonObject);
     }
 
     @Override
@@ -218,18 +268,13 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         DataStreamKey dataStreamKey = new DataStreamKey(obs.getDataStreamID());
         if (!dataStreamStore.containsKey(dataStreamKey))
             throw new IllegalStateException("Unknown datastream with ID: " + obs.getDataStreamID().getIdAsLong());
-        // check that FOI exists
-//        if (obs.hasFoi() && foiStore != null && foiStore.contains(obs.getFoiID()))
-//            throw new IllegalStateException("Unknown FOI: " + obs.getFoiID());
-        BigId id  = BigId.fromLong(idScope, idProvider.newInternalID(obs));
-        // check existing partition
-        try (Connection connection1 = this.connectionManager.getConnection()) {
-            try (Statement statement = connection1.createStatement()) {
-                String sqlQuery = this.fillAddStatement(id,dataStreamKey.getInternalID().getIdAsLong(), obs);
-                int rows = statement.executeUpdate(sqlQuery);
-            } catch (Exception e) {
-                throw new IllegalStateException("Cannot insert obs", e);
-            }
+
+        BigId id = BigId.fromLong(idScope, idProvider.newInternalID(obs));
+
+        try (Connection connection = this.connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.insertObsQuery())) {
+            this.fillPreparedAddStatement(preparedStatement, id, dataStreamKey.getInternalID().getIdAsLong(), obs);
+            preparedStatement.executeUpdate();
         } catch (Exception e) {
             throw new IllegalStateException("Cannot insert obs", e);
         }
