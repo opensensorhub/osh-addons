@@ -57,9 +57,12 @@ public interface INavDatabase
     
     
     public Map<String, INavDbWaypoint> getWaypoints();
-    
-    
+
+
     public IDecodedRoute decodeRoute(String codedRouteString);
+
+
+    public IDecodedRoute decodeRoute(String codedRouteString, String originAirport);
 
 
     public IDecodedRoute decodeRoute(String codedRouteString, double refLat, double refLon);
