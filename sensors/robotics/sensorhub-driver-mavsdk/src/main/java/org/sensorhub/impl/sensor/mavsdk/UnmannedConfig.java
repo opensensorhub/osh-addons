@@ -13,6 +13,7 @@ package org.sensorhub.impl.sensor.mavsdk;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.impl.sensor.ffmpeg.config.Connection;
 import org.sensorhub.impl.sensor.mavsdk.config.MissionConfig;
 import org.sensorhub.impl.sensor.mavsdk.util.PlatformId;
 
@@ -63,6 +64,10 @@ public class UnmannedConfig extends SensorConfig {
     @DisplayInfo.Required
     @DisplayInfo(desc = "Serial number or unique identifier")
     public String serialNumber = "sensor001";
+
+
+    @DisplayInfo(label = "Video Connection", desc = "Configuration for video streaming")
+    public Connection ffmpegConnection = new Connection();
 
     public List<MissionConfig> missions;
 

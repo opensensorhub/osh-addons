@@ -6,8 +6,10 @@ version='2.0.0'
 dependencies{
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-webui-core:' + oshCoreVersion
+  implementation project(':sensorhub-driver-ffmpeg')
   embeddedImpl 'io.mavsdk:mavsdk:3.14.0'
   embeddedImpl 'com.vaadin:vaadin-client:8.14.3'
+  implementation project(':sensorhub-process-ffmpeg')
 }
 
 osgi {

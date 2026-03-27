@@ -14,6 +14,8 @@ package org.sensorhub.impl.sensor.mavsdk;
 import io.mavsdk.core.Core;
 import io.mavsdk.mavlink_direct.MavlinkDirect;
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.impl.sensor.ffmpeg.FFMPEGSensor;
+import org.sensorhub.impl.sensor.ffmpeg.config.Connection;
 import org.sensorhub.impl.sensor.mavsdk.control.*;
 import org.sensorhub.impl.sensor.mavsdk.outputs.*;
 import org.sensorhub.impl.sensor.mavsdk.util.*;
@@ -45,6 +47,7 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
     private UnmannedHealthGpsOutput healthGpsOutput;
     private UnmannedStatusEventOutput statusTextOutput;
     private UnmannedHomeOutput homeOutput;
+    private UnmannedVideoOutput videoOutput;
 
     Thread processingThread;
     volatile boolean doProcessing = true;
@@ -160,6 +163,10 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
         this.unmannedControlPauseMission = new UnmannedControlPauseMission(this);
         addControlInput(this.unmannedControlPauseMission);
         unmannedControlPauseMission.init();
+
+        videoOutput = new UnmannedVideoOutput(config.ffmpegConnection);
+        videoOutput.init();
+        addOutput(videoOutput.getVideoDataInterface(), false);
     }
 
     @Override
@@ -167,6 +174,8 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
         super.doStart();
 
         mavsdkServer.start(config);
+
+        videoOutput.start();
 
         receiveDrone();
 
