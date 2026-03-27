@@ -22,7 +22,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -34,6 +36,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MeshtasticSensor extends AbstractSensorModule<Config> {
     static final String UID_PREFIX = "urn:osh:sensor:meshtastic:";
     static final String XML_PREFIX = "meshtastic";
+
+    String localNodeId = null; // discovered from radio during startup via myInfo
+
 
     private ICommProvider<?> commProvider;
     private ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -60,13 +65,23 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     public void doInit() throws SensorHubException {
         super.doInit();
 
-        // Generate identifiers
-        generateUniqueID(UID_PREFIX, config.serialNumber);
-        generateXmlID(XML_PREFIX, config.serialNumber);
-
+        // Load comm provider and fetch the radio's node ID before generating UIDs
         if (config.commSettings != null) {
             commProvider = (ICommProvider<?>) getParentHub().getModuleRegistry().loadSubModule(config.commSettings, true);
+            localNodeId = fetchLocalNodeId();
         }
+
+        // Use manual serial number if provided, otherwise use the discovered radio node ID
+        String id;
+        if (config.serialNumber != null && !config.serialNumber.isBlank()) {
+            id = config.serialNumber;
+        } else if (localNodeId != null) {
+            id = localNodeId;
+        } else {
+            throw new SensorHubException("Could not determine radio node ID — check comm settings and ensure the radio is connected");
+        }
+        generateUniqueID(UID_PREFIX, id);
+        generateXmlID(XML_PREFIX, id);
 
         // CREATE AND INITIALIZE OUTPUTS
         textOutput = new MeshtasticOutputTextMessage(this);
@@ -285,6 +300,9 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     private void parseProtobuf(byte[] payload){
         try {
             MeshProtos.FromRadio msg = MeshProtos.FromRadio.parseFrom(payload);
+            if(msg.hasMyInfo()){
+                handleMyInfo(msg.getMyInfo());
+            }
             if(msg.hasPacket()){
                 MeshProtos.MeshPacket packet = msg.getPacket();
                 meshtasticHandler.handlePacket(packet);
@@ -293,6 +311,50 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
             getLogger().error("Invalid protobuf: {} ", e.getMessage());
         }
     }
+
+    private void handleMyInfo(MeshProtos.MyNodeInfo myInfo){
+        long nodeNum = Integer.toUnsignedLong(myInfo.getMyNodeNum());
+        localNodeId = String.format("!%08x", nodeNum);
+        getLogger().info("Connected to Meshtastic radio: node ID = {}", localNodeId);
+    }
+
+    private String fetchLocalNodeId() {
+        try {
+            commProvider.start();
+            Thread.sleep(100);
+            sendMessage(MeshProtos.ToRadio.newBuilder().setWantConfigId(0).build());
+
+            Future<String> future = Executors.newSingleThreadExecutor().submit(() -> {
+                try (InputStream in = commProvider.getInputStream()) {
+                    while (true) {
+                        if (!findStartOfPacket(in)) continue;
+                        int length = readPacketLength(in);
+                        if (length <= 0 || length > 512) continue;
+                        byte[] payload = readPayload(in, length);
+                        if (payload.length == 0) continue;
+                        MeshProtos.FromRadio msg = MeshProtos.FromRadio.parseFrom(payload);
+                        if (msg.hasMyInfo()) {
+                            long nodeNum = Integer.toUnsignedLong(msg.getMyInfo().getMyNodeNum());
+                            return String.format("!%08x", nodeNum);
+                        }
+                    }
+                }
+            });
+
+            String nodeId = future.get(5, TimeUnit.SECONDS);
+            commProvider.stop();
+            return nodeId;
+
+        } catch (TimeoutException e) {
+            getLogger().warn("Timed out waiting for radio node ID, falling back to serial number");
+        } catch (Exception e) {
+            getLogger().warn("Could not fetch radio node ID: {}", e.getMessage());
+        }
+
+        try { commProvider.stop(); } catch (Exception ignored) {}
+        return null;
+    }
+
 
 
     public boolean sendMessage(MeshProtos.ToRadio message) {
