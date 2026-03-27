@@ -100,6 +100,12 @@ public class WebSocketProxyServlet extends HttpServlet
         // check if we have an upgrade request for websockets
         if (wsFactory.isUpgradeRequest(req, resp))
         {
+            String remoteUser = req.getRemoteUser();
+            String proxyToken = req.getParameter("proxyToken");
+
+            if (remoteUser != null && proxyToken != null)
+                OshExtension.registerProxyToken(proxyToken, remoteUser);
+
             wsFactory.acceptWebSocket(new WebSocketCreator() {
                 @Override
                 public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)

@@ -11,6 +11,7 @@ dependencies {
     exclude group: 'com.google.guava', module: 'guava'
     exclude group: 'ch.qos.logback', module: 'logback-classic'
     exclude group: 'org.slf4j', module: 'slf4j-api'
+    exclude group: 'org.bouncycastle'
   }
 }
 
