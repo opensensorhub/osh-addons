@@ -37,7 +37,7 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     static final String UID_PREFIX = "urn:osh:sensor:meshtastic:";
     static final String XML_PREFIX = "meshtastic";
 
-    String localNodeId = null; // discovered from radio during startup via myInfo
+    String localMeshNodeId = null; // discovered from radio during startup via myInfo
 
 
     private ICommProvider<?> commProvider;
@@ -68,15 +68,15 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         // Load comm provider and fetch the radio's node ID before generating UIDs
         if (config.commSettings != null) {
             commProvider = (ICommProvider<?>) getParentHub().getModuleRegistry().loadSubModule(config.commSettings, true);
-            localNodeId = fetchLocalNodeId();
+            localMeshNodeId = fetchlocalMeshNodeId();
         }
 
         // Use manual serial number if provided, otherwise use the discovered radio node ID
         String id;
         if (config.serialNumber != null && !config.serialNumber.isBlank()) {
-            id = config.serialNumber;
-        } else if (localNodeId != null) {
-            id = localNodeId;
+            id = config.serialNumber; //Use the Serial Number if someone writes it in the admin panel
+        } else if (localMeshNodeId != null) {
+            id = localMeshNodeId; // If serial number is left black, driver will automatically fetch the meshtastic node id of the radio being used
         } else {
             throw new SensorHubException("Could not determine radio node ID — check comm settings and ensure the radio is connected");
         }
@@ -314,11 +314,11 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
 
     private void handleMyInfo(MeshProtos.MyNodeInfo myInfo){
         long nodeNum = Integer.toUnsignedLong(myInfo.getMyNodeNum());
-        localNodeId = String.format("!%08x", nodeNum);
-        getLogger().info("Connected to Meshtastic radio: node ID = {}", localNodeId);
+        localMeshNodeId = String.format("!%08x", nodeNum);
+        getLogger().info("Connected to Meshtastic radio: node ID = {}", localMeshNodeId);
     }
 
-    private String fetchLocalNodeId() {
+    private String fetchlocalMeshNodeId() {
         try {
             commProvider.start();
             Thread.sleep(100);
