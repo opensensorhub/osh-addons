@@ -68,7 +68,7 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         // Load comm provider and fetch the radio's node ID before generating UIDs
         if (config.commSettings != null) {
             commProvider = (ICommProvider<?>) getParentHub().getModuleRegistry().loadSubModule(config.commSettings, true);
-            localMeshNodeId = fetchlocalMeshNodeId();
+            localMeshNodeId = fetchLocalMeshNodeId();
         }
 
         // Use manual serial number if provided, otherwise use the discovered radio node ID
@@ -318,15 +318,16 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         getLogger().info("Connected to Meshtastic radio: node ID = {}", localMeshNodeId);
     }
 
-    private String fetchlocalMeshNodeId() {
+    private String fetchLocalMeshNodeId() {
+        ExecutorService fetchExecutor = Executors.newSingleThreadExecutor();
         try {
             commProvider.start();
             Thread.sleep(100);
             sendMessage(MeshProtos.ToRadio.newBuilder().setWantConfigId(0).build());
 
-            Future<String> future = Executors.newSingleThreadExecutor().submit(() -> {
+            Future<String> future = fetchExecutor.submit(() -> {
                 try (InputStream in = commProvider.getInputStream()) {
-                    while (true) {
+                    while (!Thread.currentThread().isInterrupted()) {
                         if (!findStartOfPacket(in)) continue;
                         int length = readPacketLength(in);
                         if (length <= 0 || length > 512) continue;
@@ -339,19 +340,20 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
                         }
                     }
                 }
+                return null;
             });
 
-            String nodeId = future.get(5, TimeUnit.SECONDS);
-            commProvider.stop();
-            return nodeId;
+            return future.get(5, TimeUnit.SECONDS);
 
         } catch (TimeoutException e) {
             getLogger().warn("Timed out waiting for radio node ID, falling back to serial number");
         } catch (Exception e) {
             getLogger().warn("Could not fetch radio node ID: {}", e.getMessage());
+        } finally {
+            fetchExecutor.shutdownNow();
+            try { commProvider.stop(); } catch (Exception ignored) {}
         }
-
-        try { commProvider.stop(); } catch (Exception ignored) {}
+        
         return null;
     }
 
