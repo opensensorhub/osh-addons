@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
+import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 
 public class FileHandler extends ResourceHandler {
 
@@ -80,6 +81,10 @@ public class FileHandler extends ResourceHandler {
 
     private void sendError(int code, String msg, HttpServletRequest req, HttpServletResponse resp) {
         try {
+            resp.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+            resp.setHeader("Pragma", "no-cache");
+            resp.setHeader("Expires", "0");
+
             var accept = req.getHeader("Accept");
 
             if (accept == null || accept.contains("json")) {
@@ -108,7 +113,8 @@ public class FileHandler extends ResourceHandler {
             if (req != null && resp != null)
             {
                 if (req.getRemoteUser() == null)
-                    req.authenticate(resp);
+//                    req.authenticate(resp); Use below to not get stuck on an SSR 401 page
+                    sendError(SC_UNAUTHORIZED, "Unauthorized", req, resp);
                 else
                     sendError(SC_FORBIDDEN, ACCESS_DENIED_ERROR_MSG, req, resp);
             }
