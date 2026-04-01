@@ -135,30 +135,35 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
     protected void beforeStop() {
         // Try to close every store separately
         try {
+            obsStore.commit();
             obsStore.close();
         } catch (Exception ex) {
             getLogger().warn("Cannot close obsStore");
         }
 
         try {
+            foiStore.commit();
             foiStore.close();
         } catch (Exception ex) {
             getLogger().warn("Cannot close foi");
         }
 
         try {
+            deploymentStore.commit();
             deploymentStore.close();
         } catch (Exception ex) {
             getLogger().warn("Cannot close deploymentStore");
         }
 
         try {
+            procedureStore.commit();
             procedureStore.close();
         } catch (Exception ex) {
             getLogger().warn("Cannot close procedureStore");
         }
 
         try {
+            systemDescStore.commit();
             systemDescStore.close();
         } catch (Exception ex) {
             getLogger().warn("Cannot close systemDescStore");
