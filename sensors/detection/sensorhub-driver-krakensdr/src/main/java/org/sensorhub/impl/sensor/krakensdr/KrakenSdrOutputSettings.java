@@ -188,7 +188,7 @@ public class KrakenSdrOutputSettings extends AbstractSensorOutput<KrakenSdrSenso
             eventHandler.publish(new DataEvent(latestRecordTime, KrakenSdrOutputSettings.this, dataBlock));
 
         } catch (Exception e) {
-            getLogger().debug("Error reading from Kraken Device: {}", e.getMessage());
+            getLogger().error("Error reading from Kraken Device: {}", e.getMessage());
         }
     }
 
