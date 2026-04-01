@@ -28,7 +28,7 @@ import java.time.ZoneOffset;
 /**
  * Output specification and provider for {@link KrakenSdrSensor}.
  */
-public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
+public class KrakenSdrOutputDoA extends AbstractSensorOutput<KrakenSdrSensor> {
     static final String SENSOR_OUTPUT_NAME = "kraken_doa";
     static final String SENSOR_OUTPUT_LABEL = "DoA";
     static final String SENSOR_OUTPUT_DESCRIPTION = "This is the DoA output for the krakenSDR";
@@ -41,7 +41,7 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
     private final Object histogramLock = new Object();
     private long lastSetTimeMillis = System.currentTimeMillis();
 
-    private static final Logger logger = LoggerFactory.getLogger(KrakenSdrOutputDOA.class);
+    private static final Logger logger = LoggerFactory.getLogger(KrakenSdrOutputDoA.class);
 
     private DataRecord dataStruct;
     private DataEncoding dataEncoding;
@@ -51,7 +51,7 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
      *
      * @param parentSensor Sensor driver providing this output.
      */
-    public KrakenSdrOutputDOA(KrakenSdrSensor parentSensor) {
+    public KrakenSdrOutputDoA(KrakenSdrSensor parentSensor) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
     }
 
@@ -179,7 +179,7 @@ public class KrakenSdrOutputDOA extends AbstractSensorOutput<KrakenSdrSensor> {
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
 
-            eventHandler.publish(new DataEvent(latestRecordTime, KrakenSdrOutputDOA.this, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, KrakenSdrOutputDoA.this, dataBlock));
 
         } catch (Exception ex) {
             parentSensor.getLogger().error("Failed to set DoA data", ex);

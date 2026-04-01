@@ -28,7 +28,7 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
     // GLOBAL VARIABLES FOR SENSOR OPERATION
     KrakenUtility util;
     KrakenSdrOutputSettings krakenSdrOutputSettings;
-    KrakenSdrOutputDOA krakenSdrOutputDOA;
+    KrakenSdrOutputDoA krakenSdrOutputDoA;
     KrakenSdrControlReceiver krakenSdrControlReceiver;
     KrakenSdrControlDoA krakenSdrControlDoA;
     KrakenSdrControlStation krakenSdrControlStation;
@@ -83,9 +83,9 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
         krakenSdrOutputSettings.doInit();
 
         // DOA INFO SETTINGS
-        krakenSdrOutputDOA = new KrakenSdrOutputDOA(this);
-        addOutput(krakenSdrOutputDOA, false);
-        krakenSdrOutputDOA.doInit();
+        krakenSdrOutputDoA = new KrakenSdrOutputDoA(this);
+        addOutput(krakenSdrOutputDoA, false);
+        krakenSdrOutputDoA.doInit();
 
     }
 
@@ -120,7 +120,7 @@ public class KrakenSdrSensor extends AbstractSensorModule<KrakenSdrConfig> imple
             // Send a GET request to the DoA URL
             // SET ALL OUTPUTS AT DESIRED TIME INERVAL FROM ADMIN PANEL
             krakenSdrOutputSettings.setData();      //settings.json data
-            krakenSdrOutputDOA.setData();           //DoA data
+            krakenSdrOutputDoA.setData();           //DoA data
             try {
                 // Sleep per the sample rate provided by admin panel
                 Thread.sleep(TimeUnit.SECONDS.toMillis(config.sampleRate));
