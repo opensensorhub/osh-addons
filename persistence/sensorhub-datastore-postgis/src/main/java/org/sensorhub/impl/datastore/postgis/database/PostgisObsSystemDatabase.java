@@ -131,39 +131,38 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
     }
 
 
+    protected void closeStore() {
+
+    }
+
     @Override
-    protected void beforeStop() {
+    protected void doStop() throws SensorHubException {
         // Try to close every store separately
         try {
-            obsStore.commit();
             obsStore.close();
         } catch (Exception ex) {
             getLogger().warn("Cannot close obsStore");
         }
 
         try {
-            foiStore.commit();
             foiStore.close();
         } catch (Exception ex) {
             getLogger().warn("Cannot close foi");
         }
 
         try {
-            deploymentStore.commit();
             deploymentStore.close();
         } catch (Exception ex) {
             getLogger().warn("Cannot close deploymentStore");
         }
 
         try {
-            procedureStore.commit();
             procedureStore.close();
         } catch (Exception ex) {
             getLogger().warn("Cannot close procedureStore");
         }
 
         try {
-            systemDescStore.commit();
             systemDescStore.close();
         } catch (Exception ex) {
             getLogger().warn("Cannot close systemDescStore");
@@ -175,14 +174,6 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
         if(timerTask != null) {
             timerTask.cancel();
         }
-    }
-
-    protected void closeStore() {
-
-    }
-
-    @Override
-    protected void doStop() throws SensorHubException {
     }
 
 
