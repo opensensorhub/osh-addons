@@ -12,7 +12,10 @@ import java.net.HttpURLConnection;
 public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSensor> {
     private DataRecord commandDataStruct;
     KrakenUtility util = parentSensor.util;
-    HttpURLConnection conn;
+    private static final String STATION_ID = "stationId";
+    private static final String LOCATION_SRC = "locationSource" ;
+    private static final String LAT = "latitude";
+    private static final String LON = "longitude";
 
     // CONSTRUCTOR
     public KrakenSdrControlStation(KrakenSdrSensor krakenSDRSensor) {
@@ -28,23 +31,23 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
                 .label("Station Configuration")
                 .description("Data Record for the Station Configuration")
                 .definition(SWEHelper.getPropertyUri("StationControl"))
-                .addField("stationId", fac.createText()
+                .addField(STATION_ID, fac.createText()
                         .label("Station ID")
                         .description("ID provided for the physical KrakenSDR")
                         .definition(SWEHelper.getPropertyUri("StationId"))
                 )
-                .addField("locationSource", fac.createCategory()
+                .addField(LOCATION_SRC, fac.createCategory()
                         .label("Location Source")
                         .description("Current Location Source for the Kraken Station")
                         .definition(SWEHelper.getPropertyUri("LocationSource"))
                         .addAllowedValues("GPS", "Static")
                 )
-                .addField("latitude", fac.createText()
+                .addField(LAT, fac.createText()
                         .label("Latitude")
                         .description("Latitude when station is Static")
                         .definition(SWEHelper.getPropertyUri("Latitude"))
                 )
-                .addField("longitude", fac.createText()
+                .addField(LON, fac.createText()
                         .label("Longitude")
                         .description("Longitude when station is Static")
                         .definition(SWEHelper.getPropertyUri("Longitude"))
@@ -74,14 +77,14 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
 
         // UPDATE CURRENT JSON SETTINGS WITH UPDATED CONTROL SETTINGS
         // UPDATE Name of KrakenSDR IF UPDATED IN ADMIN PANEL
-        Text oshStationId = (Text) commandData.getField("stationId");
+        Text oshStationId = (Text) commandData.getField(STATION_ID);
         String oshStationIdValue = oshStationId.getValue();
         if(oshStationIdValue != null){
             currentSettings.addProperty("station_id", oshStationIdValue);
         }
 
         // UPDATE LOCATION SETTINGS IF GPS MODE OR STATIC MODE IS SELECTED
-        Category oshLocationSource = (Category) commandData.getField("locationSource");
+        Category oshLocationSource = (Category) commandData.getField(LOCATION_SRC);
         String oshLocationSourceValue = oshLocationSource.getValue();
         if(oshLocationSourceValue != null && oshLocationSourceValue.equals("GPS")){
             currentSettings.addProperty("location_source", "gpsd");
@@ -89,13 +92,13 @@ public class KrakenSdrControlStation extends AbstractSensorControl<KrakenSdrSens
             // IF STATIC, ALSO ADD LATITUDE AND LONGITUDE
             currentSettings.addProperty("location_source", "Static");
 
-            Text oshLatitude = (Text) commandData.getField("latitude");
+            Text oshLatitude = (Text) commandData.getField(LAT);
             String oshLatitudeValue = oshLatitude.getValue();
-            currentSettings.addProperty("latitude", Double.parseDouble(oshLatitudeValue));
+            currentSettings.addProperty(LAT, Double.parseDouble(oshLatitudeValue));
 
-            Text oshLongitude = (Text) commandData.getField("longitude");
+            Text oshLongitude = (Text) commandData.getField(LON);
             String oshLongitudeValue = oshLongitude.getValue();
-            currentSettings.addProperty("longitude",Double.parseDouble(oshLongitudeValue));
+            currentSettings.addProperty(LON,Double.parseDouble(oshLongitudeValue));
         }
 
         // REPLACE SETTINGS ON KRAKENSDR BASED ON CONTROL UPDATED ABOVE

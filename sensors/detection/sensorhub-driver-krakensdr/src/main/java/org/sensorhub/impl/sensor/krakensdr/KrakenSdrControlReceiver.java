@@ -5,6 +5,7 @@ import net.opengis.swe.v20.*;
 import org.sensorhub.api.command.CommandException;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 
 import java.net.HttpURLConnection;
@@ -12,7 +13,9 @@ import java.net.HttpURLConnection;
 public class KrakenSdrControlReceiver extends AbstractSensorControl<KrakenSdrSensor> {
     private DataRecord commandDataStruct;
     KrakenUtility util = parentSensor.util;
-    HttpURLConnection conn;
+    private static final String CENTER_FREQ = "centerFreq";
+    private static final String GAIN = "uniformGain";
+
 
     // CONSTRUCTOR
     public KrakenSdrControlReceiver(KrakenSdrSensor krakenSDRSensor) {
@@ -29,13 +32,13 @@ public class KrakenSdrControlReceiver extends AbstractSensorControl<KrakenSdrSen
                 .label("RF Receiver Configuration")
                 .description("Data Record for the RF Receiver Configuration")
                 .definition(SWEHelper.getPropertyUri("ReceiverControl"))
-                .addField("centerFreq", fac.createQuantity()
+                .addField(CENTER_FREQ, fac.createQuantity()
                         .uomCode("MHz")
                         .label("Center Frequency")
                         .description("The transmission frequency of the event in MegaHertz")
-                        .definition(SWEHelper.getPropertyUri("Frequency"))
+                        .definition(SWEConstants.QUDT_URI_PREFIX+"Frequency")
                 )
-                .addField("uniformGain", fac.createCategory()
+                .addField(GAIN, fac.createCategory()
                         .label("Receiver Gain (dB)")
                         .description("Input the Receiver Gain in dB")
                         .definition(SWEHelper.getPropertyUri("UniformGain"))
@@ -63,14 +66,14 @@ public class KrakenSdrControlReceiver extends AbstractSensorControl<KrakenSdrSen
 
         // UPDATE CURRENT JSON SETTINGS WITH UPDATED CONTROL SETTINGS BASED ON WHICH IS SELECTED
         // UPDATE FREQUENCY IF UPDATED IN ADMIN PANEL
-        Quantity oshFrequency = (Quantity) commandData.getField("centerFreq");
+        Quantity oshFrequency = (Quantity) commandData.getField(CENTER_FREQ);
         double oshFrequencyValue = oshFrequency.getValue();
         if(oshFrequencyValue != 0.0){
             currentSettings.addProperty("center_freq", oshFrequencyValue);
         }
 
         // UPDATE GAIN IF UPDATED IN ADMIN PANEL
-        Category oshGain = (Category) commandData.getField("uniformGain");
+        Category oshGain = (Category) commandData.getField(GAIN);
         String oshGainValue = oshGain.getValue();
         if(oshGainValue != null){
             currentSettings.addProperty("uniform_gain", Double.parseDouble(oshGainValue));

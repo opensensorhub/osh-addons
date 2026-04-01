@@ -12,8 +12,9 @@ import java.net.HttpURLConnection;
 public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> {
     private DataRecord commandDataStruct;
     KrakenUtility util = parentSensor.util;
-    HttpURLConnection conn;
-
+    private static final String ANTENNA_SPACING_M = "antennaSpacingMeters";
+    private static final String ANTENNA_ARRANGEMENT = "antennaArrangement";
+    
     // CONSTRUCTOR
     public KrakenSdrControlDoA(KrakenSdrSensor krakenSDRSensor) {
         super("doaControl", krakenSDRSensor);
@@ -28,13 +29,13 @@ public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> 
                 .label("DoA Configuration")
                 .description("Data Record for the DoA Configuration Settings")
                 .definition(SWEHelper.getPropertyUri("DoaControl"))
-                .addField("antennaArrangement", fac.createCategory()
+                .addField(ANTENNA_ARRANGEMENT, fac.createCategory()
                         .label("Antenna Arrangement")
                         .description("The Arrangement must be UCA or ULA")
                         .definition(SWEHelper.getPropertyUri("AntennaArrangement"))
                         .addAllowedValues("UCA", "ULA")
                 )
-                .addField("antennaSpacingMeters", fac.createQuantity()
+                .addField(ANTENNA_SPACING_M, fac.createQuantity()
                         .uom("m")
                         .label("Antenna Array Radius")
                         .description("Current spacing of the Antenna Array")
@@ -64,7 +65,7 @@ public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> 
 
         // UPDATE CURRENT JSON SETTINGS WITH UPDATED CONTROL SETTINGS
         // UPDATE ANTENNA ARRANGEMNENT IF UPDATED IN ADMIN PANEL
-        Category oshAntArrangement = (Category) commandData.getField("antennaArrangement");
+        Category oshAntArrangement = (Category) commandData.getField(ANTENNA_ARRANGEMENT);
         String oshAntArrangementValue = oshAntArrangement.getValue();
 
         if(oshAntArrangementValue != null){
@@ -72,7 +73,7 @@ public class KrakenSdrControlDoA extends AbstractSensorControl<KrakenSdrSensor> 
         }
 
         // UPDATE ANTENNA SPACING IF UPDATED IN ADMIN PANEL
-        Quantity oshAntennaSpacing = (Quantity) commandData.getField("antennaSpacingMeters");
+        Quantity oshAntennaSpacing = (Quantity) commandData.getField(ANTENNA_SPACING_M);
         double oshAntennaSpacingValue = oshAntennaSpacing.getValue();
         if(oshAntennaSpacingValue != 0.0){
             currentSettings.addProperty("ant_spacing_meters", oshAntennaSpacingValue);
