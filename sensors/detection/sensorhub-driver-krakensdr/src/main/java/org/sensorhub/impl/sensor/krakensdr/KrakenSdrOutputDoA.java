@@ -18,6 +18,7 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.swe.SWEBuilders;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 import java.time.Instant;
@@ -74,27 +75,27 @@ public class KrakenSdrOutputDoA extends AbstractSensorOutput<KrakenSdrSensor> {
                         .asSamplingTimeIsoUTC()
                         .label("KrakenSDR Collection Time")
                         .description("Timestamp of when KrakenSDR reading was generated")
-                        .definition(SWEHelper.getPropertyUri("Time")))
+                        .definition(SWEConstants.DEF_SAMPLING_TIME))
                 .addField("raw_lob", sweFactory.createQuantity()
                         .uomCode("deg")
                         .label("Raw LOB")
                         .description("The LOB to the emitter in absolute (true north) value")
-                        .definition(SWEHelper.getPropertyUri("Lob")))
+                        .definition(GeoPosHelper.DEF_AZIMUTH_ANGLE))
                 .addField("confidence", sweFactory.createQuantity()
                         .label("Confidence")
                         .description("Confidence Value (0-99). The higher the better")
-                        .definition(SWEHelper.getPropertyUri("Confidence")))
+                        .definition(SWEHelper.getPropertyUri("ConfidenceValue")))
                 .addField("rssi", sweFactory.createQuantity()
                         .uomCode("dB")
                         .label("RSSI")
                         .description("Received Signal Strength Indicator value of the event")
-                        .definition(SWEHelper.getPropertyUri("Rssi")))
+                        .definition("http://qudt.org/vocab/quantitykind/SignalStrength"))
                 .addField("frequency", sweFactory.createQuantity()
                         .uomCode("Hz")
                         .label("Frequency")
                         .dataType(DataType.LONG)
                         .description("The transmission frequency of the event in Hertz")
-                        .definition(SWEHelper.getPropertyUri("Frequency")))
+                        .definition(SWEConstants.QUDT_URI_PREFIX+"Frequency"))
                 .addField("time-delta", sweFactory.createQuantity()
                         .uomCode("ms")
                         .label("Latency")
@@ -103,7 +104,7 @@ public class KrakenSdrOutputDoA extends AbstractSensorOutput<KrakenSdrSensor> {
                 .addField("uuid", sweFactory.createText()
                         .label("UUID")
                         .description("Name of the KrakenSDR station inputted in the Station Information box in the Web GUI")
-                        .definition(SWEHelper.getPropertyUri("Uuid"))
+                        .definition(SWEHelper.getPropertyUri("Identifier"))
                 )
                 .addField("location", geoFac.createLocationVectorLatLon().label(SWEHelper.getPropertyUri("location"))
                         .label("Location")
@@ -113,7 +114,8 @@ public class KrakenSdrOutputDoA extends AbstractSensorOutput<KrakenSdrSensor> {
                         .label("Heading")
                         .uomCode("deg")
                         .description("heading")
-                        .definition(SWEHelper.getPropertyUri("Heading")))
+                        .definition(GeoPosHelper.DEF_HEADING_MAGNETIC)
+                )
                 ;
         dataStruct = recordBuilder.build();
 
