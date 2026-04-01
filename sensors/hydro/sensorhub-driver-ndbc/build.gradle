@@ -1,6 +1,6 @@
 description = 'NDBC Buoy Data Archive'
 ext.details = 'Connector to retrieve historical observations from NDBC datasets'
-version = '0.1.0'
+version = '0.2.0'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
@@ -19,8 +19,8 @@ osgi {
 ext.pom >>= {
   developers {
     developer {
-      id 'labutler'
-      name 'Lee Butler'
+      id 'theRestOfMe'
+      name 'Tony Cook'
       organization 'Botts Innovative Research Inc.'
       organizationUrl 'https://www.opensensorhub.org' 
     }
