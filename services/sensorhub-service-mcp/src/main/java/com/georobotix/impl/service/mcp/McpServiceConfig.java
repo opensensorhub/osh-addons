@@ -12,7 +12,7 @@ Copyright (C) 2020 Sensia Software LLC. All Rights Reserved.
 
 ******************************* END LICENSE BLOCK ***************************/
 
-package com.botts.impl.service.mcp;
+package com.georobotix.impl.service.mcp;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +31,7 @@ import org.sensorhub.impl.service.ogc.OGCServiceConfig;
  * @author Alex Robin
  * @since Oct 12, 2020
  */
-public class MCPServiceConfig extends OGCServiceConfig
+public class McpServiceConfig extends OGCServiceConfig
 {
     public static class CollectionConfig
     {
@@ -53,6 +53,10 @@ public class MCPServiceConfig extends OGCServiceConfig
     public ObsSystemDatabaseViewConfig exposedResources = null;
 
 
+    @DisplayInfo(label="Write Database ID", desc="Module ID of the database to use for write operations (observations, commands). If null, writes are disabled.")
+    public String writeDatabaseId = null;
+
+
     @DisplayInfo(desc="Security related options")
     public SecurityConfig security = new SecurityConfig();
 
@@ -69,9 +73,9 @@ public class MCPServiceConfig extends OGCServiceConfig
     public List<CollectionConfig> collections= new ArrayList<>();
 
 
-    public MCPServiceConfig()
+    public McpServiceConfig()
     {
-        this.moduleClass = MCPServiceConfig.class.getCanonicalName();
+        this.moduleClass = McpServiceConfig.class.getCanonicalName();
         this.endPoint = "/mcp";
     }
 }

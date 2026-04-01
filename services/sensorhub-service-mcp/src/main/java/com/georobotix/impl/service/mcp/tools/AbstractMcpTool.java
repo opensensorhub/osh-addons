@@ -1,14 +1,13 @@
-package com.botts.impl.service.mcp.tools;
+package com.georobotix.impl.service.mcp.tools;
 
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
-import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.spec.McpSchema;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public abstract class AbstractMCPTool {
+public abstract class AbstractMcpTool {
 
     public McpSchema.Tool getTool() {
         return McpSchema.Tool.builder()
@@ -39,6 +38,6 @@ public abstract class AbstractMCPTool {
 
     public abstract Map<String, Object> getMetaData();
 
-    public abstract BiFunction<McpAsyncServerExchange, Map<String, Object>, Mono<McpSchema.CallToolResult>> getCallHandler();
+    public abstract BiFunction<McpAsyncServerExchange, McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> getCallHandler();
 
 }

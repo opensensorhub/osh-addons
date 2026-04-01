@@ -1,6 +1,7 @@
-package com.botts.impl.service.mcp.resources;
+package com.georobotix.impl.service.mcp.resources;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import reactor.core.publisher.Mono;
@@ -8,16 +9,20 @@ import reactor.core.publisher.Mono;
 /**
  * Abstract base class for MCP resources.
  */
-public abstract class AbstractMCPResource {
+public abstract class AbstractMcpResource {
 
-    protected final ObjectMapper objectMapper;
+    protected final Gson gson;
 
-    protected AbstractMCPResource() {
-        this.objectMapper = new ObjectMapper();
+    protected AbstractMcpResource() {
+        this.gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .disableHtmlEscaping()
+                .serializeNulls()
+                .create();
     }
 
-    protected AbstractMCPResource(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    protected AbstractMcpResource(Gson gson) {
+        this.gson = gson;
     }
 
     /**
@@ -49,12 +54,11 @@ public abstract class AbstractMCPResource {
      * Convert this resource to an MCP Resource schema object for registration.
      */
     public McpSchema.Resource toResourceSchema() {
-        return new McpSchema.Resource(
-                getUri(),
-                getName(),
-                getDescription(),
-                getMimeType(),
-                null  // annotations
-        );
+        return McpSchema.Resource.builder()
+                .uri(getUri())
+                .name(getName())
+                .description(getDescription())
+                .mimeType(getMimeType())
+                .build();
     }
 }

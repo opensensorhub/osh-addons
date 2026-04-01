@@ -1,4 +1,4 @@
-package com.botts.impl.service.mcp.tools;
+package com.georobotix.impl.service.mcp.tools;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -9,6 +9,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.impl.module.ModuleRegistry;
 import reactor.core.publisher.Mono;
 
@@ -17,7 +18,7 @@ import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class ModuleTool extends AbstractMCPTool {
+public class ModuleTool extends AbstractMcpTool {
 
     public static final String NAME = "module";
     public static final String TITLE = "Module Tool";
@@ -165,7 +166,7 @@ public class ModuleTool extends AbstractMCPTool {
                 true,   // destructiveHint - stop/unload are destructive
                 false,  // idempotentHint
                 false,  // openWorldHint
-                false   // localHint
+                false   // returnDirect
         );
     }
 
@@ -178,8 +179,9 @@ public class ModuleTool extends AbstractMCPTool {
     }
 
     @Override
-    public BiFunction<McpAsyncServerExchange, Map<String, Object>, Mono<McpSchema.CallToolResult>> getCallHandler() {
-        return (exchange, request) -> Mono.fromCallable(() -> {
+    public BiFunction<McpAsyncServerExchange, McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> getCallHandler() {
+        return (exchange, callRequest) -> Mono.fromCallable(() -> {
+            Map<String, Object> request = callRequest.arguments();
             String actionStr = (String) request.get("action");
             Action action = Action.valueOf(actionStr.toUpperCase());
 
@@ -345,6 +347,9 @@ public class ModuleTool extends AbstractMCPTool {
 
     private McpSchema.CallToolResult startModule(IModule<?> module, Map<String, Object> args) {
         try {
+            if (module.getCurrentState() == ModuleState.LOADED) {
+                registry.initModule(module.getLocalID());
+            }
             module.start();
             return resultBuilder()
                     .success(true)
@@ -371,8 +376,9 @@ public class ModuleTool extends AbstractMCPTool {
 
     private McpSchema.CallToolResult restartModule(IModule<?> module, Map<String, Object> args) {
         try {
-            module.stop();
-            module.start();
+            registry.stopModule(module.getLocalID());
+            registry.initModule(module.getLocalID());
+            registry.startModule(module.getLocalID());
             return resultBuilder()
                     .success(true)
                     .message(String.format("Module '%s' restarted successfully", module.getName()))
@@ -400,7 +406,10 @@ public class ModuleTool extends AbstractMCPTool {
 
     @SuppressWarnings("unchecked")
     private McpSchema.CallToolResult loadModule(Map<String, Object> args) {
-        Map<String, Object> configMap = (Map<String, Object>) args.get("config");
+        Object configObj = args.get("config");
+        Map<String, Object> configMap = configObj instanceof String configStr
+                ? gson.fromJson(configStr, Map.class)
+                : (Map<String, Object>) configObj;
 
         if (configMap == null || configMap.isEmpty()) {
             return errorResult("config is required for load action");
@@ -437,6 +446,11 @@ public class ModuleTool extends AbstractMCPTool {
 
             ModuleConfig config = (ModuleConfig) gson.fromJson(jsonElement, configClass);
 
+            // Set moduleClass from objClass if not already provided (registry needs this to instantiate the module)
+            if (config.moduleClass == null || config.moduleClass.isBlank()) {
+                config.moduleClass = objClass;
+            }
+
             // Generate ID if not provided
             if (config.id == null || config.id.isBlank()) {
                 config.id = UUID.randomUUID().toString();
@@ -464,7 +478,10 @@ public class ModuleTool extends AbstractMCPTool {
 
     @SuppressWarnings("unchecked")
     private McpSchema.CallToolResult configureModule(IModule<?> module, Map<String, Object> args) {
-        Map<String, Object> configMap = (Map<String, Object>) args.get("config");
+        Object configObj = args.get("config");
+        Map<String, Object> configMap = configObj instanceof String configStr
+                ? gson.fromJson(configStr, Map.class)
+                : (Map<String, Object>) configObj;
 
         if (configMap == null || configMap.isEmpty()) {
             return errorResult("config is required for configure action");
@@ -557,7 +574,11 @@ public class ModuleTool extends AbstractMCPTool {
         McpSchema.CallToolResult build() {
             String json = gson.toJson(result);
             boolean isError = !Boolean.TRUE.equals(result.get("success"));
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(json)), isError);
+            return McpSchema.CallToolResult.builder()
+                    .content(List.of(new McpSchema.TextContent(json)))
+                    .structuredContent(result)
+                    .isError(isError)
+                    .build();
         }
     }
 

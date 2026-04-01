@@ -1,7 +1,6 @@
-package com.botts.impl.service.mcp.resources;
+package com.georobotix.impl.service.mcp.resources;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.sensorhub.api.module.IModule;
@@ -25,7 +24,7 @@ import java.util.stream.Collectors;
  * - state: Current module state (LOADED, STARTED, STOPPED, etc.)
  * - autoStart: Whether the module is configured to auto-start
  */
-public class ModuleListResource extends AbstractMCPResource {
+public class ModuleListResource extends AbstractMcpResource {
 
     public static final String URI = "modules://list";
     public static final String NAME = "Module List";
@@ -38,8 +37,8 @@ public class ModuleListResource extends AbstractMCPResource {
         this.registry = registry;
     }
 
-    public ModuleListResource(ModuleRegistry registry, ObjectMapper objectMapper) {
-        super(objectMapper);
+    public ModuleListResource(ModuleRegistry registry, Gson gson) {
+        super(gson);
         this.registry = registry;
     }
 
@@ -76,7 +75,7 @@ public class ModuleListResource extends AbstractMCPResource {
                     modules
             );
 
-            String json = objectMapper.writeValueAsString(response);
+            String json = gson.toJson(response);
 
             return new McpSchema.ReadResourceResult(
                     List.of(new McpSchema.TextResourceContents(URI, getMimeType(), json))

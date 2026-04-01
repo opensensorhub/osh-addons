@@ -1,4 +1,4 @@
-package com.botts.impl.service.mcp;
+package com.georobotix.impl.service.mcp;
 
 import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;

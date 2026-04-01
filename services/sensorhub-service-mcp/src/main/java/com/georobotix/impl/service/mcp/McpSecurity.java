@@ -1,16 +1,11 @@
-package com.botts.impl.service.mcp;
+package com.georobotix.impl.service.mcp;
 
-import java.io.IOException;
-import org.sensorhub.api.security.IAuthorizer;
-import org.sensorhub.api.security.IPermission;
 import org.sensorhub.impl.module.ModuleSecurity;
-import org.sensorhub.impl.security.ItemPermission;
-import org.sensorhub.impl.security.ModulePermissions;
 
 
-public class MCPSecurity extends ModuleSecurity
+public class McpSecurity extends ModuleSecurity
 {
-    public MCPSecurity(MCPService service, boolean enable)
+    public McpSecurity(McpService service, boolean enable)
     {
         super(service, "mcp", enable);
 

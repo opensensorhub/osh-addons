@@ -3,14 +3,14 @@ ext.details = 'MCP server exposing OSH APIs'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-    implementation 'io.modelcontextprotocol.sdk:mcp:0.15.0'
+    implementation 'io.modelcontextprotocol.sdk:mcp:1.1.1'
 }
 
 // add info to OSGI manifest
 osgi {
   manifest {
-    attributes 'Bundle-Vendor': 'Botts Innovative Research, Inc.'
-    attributes 'Bundle-Activator': 'com.botts.impl.service.mcp.Activator'
+    attributes 'Bundle-Vendor': 'GeoRobotix Innovative Research, LLC.'
+    attributes 'Bundle-Activator': 'com.georobotix.impl.service.mcp.Activator'
   }
 }
 
@@ -20,8 +20,8 @@ ext.pom >>= {
     developer {
       id 'earocorn'
       name 'Alex Almanza'
-      organization 'Botts Innovative Research, Inc.'
-      organizationUrl 'https://www.botts-inc.com'
+      organization 'GeoRobotix Innovative Research, LLC.'
+      organizationUrl 'https://georobotix.us'
     }
   } 
 }

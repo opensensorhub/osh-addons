@@ -1,6 +1,6 @@
-package com.botts.impl.service.mcp.resources;
+package com.georobotix.impl.service.mcp.resources;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.sensorhub.api.module.IModule;
@@ -18,7 +18,7 @@ import java.util.*;
  * Returns detailed JSON information about a single module including
  * its full configuration.
  */
-public class ModuleDetailResource extends AbstractMCPResource {
+public class ModuleDetailResource extends AbstractMcpResource {
 
     public static final String URI_TEMPLATE = "modules://detail/{moduleId}";
     public static final String NAME = "Module Detail";
@@ -31,8 +31,8 @@ public class ModuleDetailResource extends AbstractMCPResource {
         this.registry = registry;
     }
 
-    public ModuleDetailResource(ModuleRegistry registry, ObjectMapper objectMapper) {
-        super(objectMapper);
+    public ModuleDetailResource(ModuleRegistry registry, Gson gson) {
+        super(gson);
         this.registry = registry;
     }
 
@@ -91,7 +91,7 @@ public class ModuleDetailResource extends AbstractMCPResource {
             }
 
             ModuleDetail detail = toDetail(module);
-            String json = objectMapper.writeValueAsString(detail);
+            String json = gson.toJson(detail);
             String resolvedUri = URI_TEMPLATE.replace("{moduleId}", moduleId);
 
             return new McpSchema.ReadResourceResult(
@@ -113,8 +113,8 @@ public class ModuleDetailResource extends AbstractMCPResource {
 
             // Serialize full config to capture all fields
             try {
-                String configJson = objectMapper.writeValueAsString(config);
-                Map<String, Object> fullConfig = objectMapper.readValue(configJson, Map.class);
+                @SuppressWarnings("unchecked")
+                Map<String, Object> fullConfig = gson.fromJson(gson.toJson(config), Map.class);
                 configMap.put("properties", fullConfig);
             } catch (Exception e) {
                 configMap.put("properties", Map.of("error", "Failed to serialize: " + e.getMessage()));

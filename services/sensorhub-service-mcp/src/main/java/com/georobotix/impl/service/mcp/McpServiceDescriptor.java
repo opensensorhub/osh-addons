@@ -12,10 +12,8 @@ Copyright (C) 2020 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package com.botts.impl.service.mcp;
+package com.georobotix.impl.service.mcp;
 
-import com.botts.impl.service.mcp.MCPService;
-import com.botts.impl.service.mcp.MCPServiceConfig;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
@@ -31,7 +29,7 @@ import org.sensorhub.impl.module.JarModuleProvider;
  * @author Alex Robin
  * @since Oct 12, 2020
  */
-public class MCPServiceDescriptor extends JarModuleProvider implements IModuleProvider
+public class McpServiceDescriptor extends JarModuleProvider implements IModuleProvider
 {
 
     @Override
@@ -51,14 +49,14 @@ public class MCPServiceDescriptor extends JarModuleProvider implements IModulePr
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return MCPService.class;
+        return McpService.class;
     }
 
 
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return MCPServiceConfig.class;
+        return McpServiceConfig.class;
     }
 
 }
