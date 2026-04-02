@@ -43,8 +43,7 @@ import static org.junit.Assert.*;
  */
 public class MpegTsProcessorTest {
 
-    //static final String TEST_MPEGTS_FILE = "/home/alex/Projects/OGC/Testbed17/Video_Data/S06.ts";
-    static final String TEST_MPEGTS_FILE = "src/test/resources/org/sensorhub/impl/sensor/uas/sample-stream.ts";
+    static final String TEST_MPEGTS_FILE = "src/test/resources/org/sensorhub/misb/stanag4609/sample-stream.ts";
     static final int SLEEP_DURATION_MS = 1000;
     
     @Test
