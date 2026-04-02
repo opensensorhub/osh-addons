@@ -13,7 +13,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.misb.stanag4609.klv.codec;
 
-import org.sensorhub.impl.sensor.uas.common.SyncTime;
+import org.sensorhub.misb.stanag4609.time.SyncTime;
 import org.sensorhub.misb.stanag4609.comm.DataBufferListener;
 import org.sensorhub.misb.stanag4609.comm.DataBufferRecord;
 import org.sensorhub.misb.stanag4609.klv.DecodedSetListener;

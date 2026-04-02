@@ -13,7 +13,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.misb.stanag4609.klv;
 
-import org.sensorhub.impl.sensor.uas.common.SyncTime;
+import org.sensorhub.misb.stanag4609.time.SyncTime;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 
 import java.util.HashMap;

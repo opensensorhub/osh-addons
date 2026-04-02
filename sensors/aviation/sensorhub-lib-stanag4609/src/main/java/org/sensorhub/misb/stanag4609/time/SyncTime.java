@@ -11,7 +11,7 @@
  Copyright (C) 2021 Botts Innovative Research, Inc. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.uas.common;
+package org.sensorhub.misb.stanag4609.time;
 
 /**
  * A class to contain synchronization timing information to synchronize Telemetry and Video outputs.

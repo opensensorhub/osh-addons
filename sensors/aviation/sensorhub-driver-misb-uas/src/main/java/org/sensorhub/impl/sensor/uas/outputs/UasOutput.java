@@ -18,7 +18,7 @@ import java.util.Map;
 
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.uas.UasSensorBase;
-import org.sensorhub.impl.sensor.uas.common.SyncTime;
+import org.sensorhub.misb.stanag4609.time.SyncTime;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.misb.stanag4609.klv.DecodedSetListener;
 import org.sensorhub.misb.stanag4609.klv.codec.misb0601.UasDataLinkSet;
