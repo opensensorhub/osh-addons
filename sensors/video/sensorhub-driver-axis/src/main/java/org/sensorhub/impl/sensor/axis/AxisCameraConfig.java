@@ -38,7 +38,10 @@ import org.sensorhub.impl.sensor.videocam.ptz.PtzConfig;
  * @since October 30, 2014
  */
 public class AxisCameraConfig extends SensorConfig {
-	
+
+    @DisplayInfo(label="UID Extension", desc="ID to be attached to tail of this system's UID. Driver must be reinitialized to be configured after start")
+    public String uidExtension = "";
+
     @DisplayInfo(label="HTTP", desc="HTTP configuration")
     public HTTPConfig http = new HTTPConfig();
     
@@ -115,7 +118,7 @@ public class AxisCameraConfig extends SensorConfig {
         video.resolution = ResolutionEnum._4CIF;
         rtsp.remotePort = 554;
         rtsp.videoPath = AxisCameraDriver.DEFAULT_RTSP_VIDEO_PATH;        
-        rtsp.localUdpPort = 20100;
+        rtsp.localUdpPort = 0;
     }
     
     

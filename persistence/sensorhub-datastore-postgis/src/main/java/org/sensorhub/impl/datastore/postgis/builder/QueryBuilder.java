@@ -26,7 +26,7 @@ import org.sensorhub.api.datastore.procedure.IProcedureStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 
 public abstract class QueryBuilder {
-    private final String tableName;
+    protected final String tableName;
 
     protected IDataStreamStore dataStreamStore;
     protected IProcedureStore procedureStore;
@@ -63,6 +63,9 @@ public abstract class QueryBuilder {
         return "DELETE FROM " + this.getStoreTableName() + " WHERE id = ?";
     }
 
+    public String removeAllQuery() {
+        return "DELETE FROM "+this.getStoreTableName();
+    }
     public String dropQuery() {
         return "DROP TABLE IF EXISTS " + this.getStoreTableName();
     }

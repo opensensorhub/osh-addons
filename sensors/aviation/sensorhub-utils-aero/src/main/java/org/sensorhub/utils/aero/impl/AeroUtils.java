@@ -128,7 +128,9 @@ public class AeroUtils
                     line = line.trim();
                     if (!line.isEmpty()) {
                         var tokens = line.split("\\t");
-                        icaoTzData.put(tokens[0], tokens[1]);
+                        if (tokens.length >= 2) {
+                            icaoTzData.put(tokens[0], tokens[1]);
+                        }
                     }
                 }
             }

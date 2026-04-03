@@ -120,6 +120,7 @@ public class FlightPlanOutput extends AbstractSensorOutput<FlightAwareDriver> im
         
         // create FOI if needed
         var flightId = AeroUtils.getFlightID(flightPlan);
+        flightPlan.setFlightID(flightId);
         String foiUid = AeroUtils.ensureFlightFoi(getParentProducer(), flightId);
         
         // skip if same as last record for a given foi

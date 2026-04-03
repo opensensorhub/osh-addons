@@ -14,6 +14,7 @@ package org.sensorhub.mpegts;
 import org.bytedeco.ffmpeg.avcodec.AVCodecParameters;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avformat.AVFormatContext;
+import org.bytedeco.ffmpeg.avformat.AVInputFormat;
 import org.bytedeco.ffmpeg.avutil.AVDictionary;
 import org.bytedeco.ffmpeg.avutil.AVRational;
 import org.bytedeco.ffmpeg.global.avcodec;
@@ -29,6 +30,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.bytedeco.ffmpeg.global.avdevice.avdevice_register_all;
+import static org.bytedeco.ffmpeg.global.avformat.av_find_input_format;
 import static org.bytedeco.ffmpeg.global.avformat.av_read_frame;
 
 /**
@@ -86,6 +89,10 @@ public class MpegTsProcessor extends Thread {
     private final StreamContext audioStreamContext = new StreamContext();
     private final StreamContext dataStreamContext = new StreamContext();
 
+    private String optionsString = "";
+
+    private String formatString;
+
     /**
      * Context used by underlying FFmpeg library to decode stream.
      */
@@ -122,6 +129,8 @@ public class MpegTsProcessor extends Thread {
      */
     protected ScheduledExecutorService restartExecutor;
 
+    private final Object avFormatContextLock = new Object();
+
     /**
      * Constructor
      *
@@ -129,6 +138,10 @@ public class MpegTsProcessor extends Thread {
      */
     public MpegTsProcessor(String source) {
         this(source, 0, false);
+    }
+
+    public MpegTsProcessor(String source, String optionsString) {
+        this(source, optionsString, 0, false);
     }
 
     /**
@@ -139,9 +152,24 @@ public class MpegTsProcessor extends Thread {
      * @param loop   If true, play the video file continuously in a loop.
      */
     public MpegTsProcessor(String source, int fps, boolean loop) {
+        this(source, "", fps, loop);
+    }
+
+    public MpegTsProcessor(String source, String optionsString, int fps, boolean loop) {
         super(WORKER_THREAD_NAME);
 
-        this.streamSource = source;
+        if (source != null) {
+            this.streamSource = source;
+        } else {
+            this.streamSource = "";
+        }
+
+        if (optionsString != null) {
+            this.optionsString = optionsString;
+        } else {
+            this.optionsString = "";
+        }
+
         this.fps = fps;
         this.loop = loop;
     }
@@ -160,11 +188,20 @@ public class MpegTsProcessor extends Thread {
         // Create a new AV Format Context for I/O
         avFormatContext = new AVFormatContext(null);
 
+        AVInputFormat inputFormat = null;
+
         // Set timeout
         var options = new AVDictionary(null);
-        avutil.av_dict_set(options, "timeout", "3000000", 0);
+        avdevice_register_all();
+        String cmdFormat;
+        cmdFormat = populateOptions(options, optionsString);
+        if (cmdFormat != null && !cmdFormat.isBlank()) {
+            inputFormat = av_find_input_format(cmdFormat);
+        }
 
-        int returnCode = avformat.avformat_open_input(avFormatContext, streamSource, null, options);
+        //avutil.av_dict_set(options, "timeout", "3000000", 0);
+
+        int returnCode = avformat.avformat_open_input(avFormatContext, streamSource, inputFormat, options);
         logger.debug("returnCode: {}", returnCode);
 
         // Attempt to open the stream, streamPath can be a file or URL
@@ -192,6 +229,31 @@ public class MpegTsProcessor extends Thread {
 
     public boolean isStreamOpened() {
         return streamOpened;
+    }
+
+    private String populateOptions(AVDictionary options, String optionsString) {
+        if (optionsString.isBlank()) {
+            return null;
+        }
+
+        String detectedFormat = null;
+
+        for (String option : optionsString.split("-")) {
+            if (option.isBlank()) {
+                continue;
+            }
+            String name = option.substring(0, option.indexOf(' ')).trim();
+            for (String value : option.substring(option.indexOf(' ') + 1).trim().split(" ")) {
+                if (name.equals("f")) {
+                    detectedFormat = value;
+                    break;
+                } else {
+                    avutil.av_dict_set(options, name, value, avutil.AV_DICT_APPEND);
+                }
+            }
+        }
+
+        return detectedFormat;
     }
 
     /**
@@ -414,25 +476,27 @@ public class MpegTsProcessor extends Thread {
     private void processPacket() {
         if (!streamOpened) return;
 
-        AVPacket avPacket = new AVPacket();
+        synchronized (avFormatContextLock) {
+            AVPacket avPacket = new AVPacket();
 
-        int ret = av_read_frame(avFormatContext, avPacket);
+            int ret = av_read_frame(avFormatContext, avPacket);
 
-        if (ret < 0) {
-            if (loop) {
-                avformat.av_seek_frame(avFormatContext, 0, 0, avformat.AVSEEK_FLAG_ANY);
+            if (ret < 0) {
+                if (loop) {
+                    avformat.av_seek_frame(avFormatContext, 0, 0, avformat.AVSEEK_FLAG_ANY);
+                } else {
+                    closeStream();
+                }
             } else {
-                closeStream();
+                videoStreamContext.processPacket(avPacket);
+                audioStreamContext.processPacket(avPacket);
+                dataStreamContext.processPacket(avPacket);
             }
-        } else {
-            videoStreamContext.processPacket(avPacket);
-            audioStreamContext.processPacket(avPacket);
-            dataStreamContext.processPacket(avPacket);
-        }
 
-        // Fully deallocate packet
-        avcodec.av_packet_unref(avPacket);
-        avPacket.deallocate();
+            // Fully deallocate packet
+            avcodec.av_packet_unref(avPacket);
+            avPacket.deallocate();
+        }
     }
 
     /**
@@ -443,8 +507,10 @@ public class MpegTsProcessor extends Thread {
 
         if (streamOpened) {
 
-            if (avFormatContext != null) {
-                avformat.avformat_close_input(avFormatContext);
+            synchronized (avFormatContextLock) {
+                if (avFormatContext != null) {
+                    avformat.avformat_close_input(avFormatContext);
+                }
             }
 
             streamOpened = false;

@@ -1,0 +1,60 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
+
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ Copyright (C) 2023 Georobotix. All Rights Reserved.
+
+ ******************************* END LICENSE BLOCK ***************************/
+
+package org.sensorhub.impl.datastore.postgis.builder.query.command;
+
+import org.sensorhub.api.datastore.command.CommandStreamFilter;
+import org.sensorhub.api.datastore.system.ISystemDescStore;
+import org.sensorhub.impl.datastore.postgis.builder.filter.command.SelectCommandStreamFilterQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.SelectEntriesQuery;
+
+public class SelectEntriesCommandStreamQuery extends SelectEntriesQuery {
+    private ISystemDescStore systemDescStore;
+
+    protected static abstract class Init<T extends SelectEntriesCommandStreamQuery.Init<T>> extends SelectEntriesQuery.Init<T> {
+        private ISystemDescStore systemDescStore;
+
+        public T linkTo(ISystemDescStore systemDescStore) {
+            this.systemDescStore = systemDescStore;
+            return self();
+        }
+
+        public T withCommandStreamFilter(CommandStreamFilter filter) {
+            if(filter != null) {
+                SelectCommandStreamFilterQuery commandStreamFilterQuery = new SelectCommandStreamFilterQuery(this.tableName, filterQueryGenerator);
+                if(systemDescStore != null) {
+                    commandStreamFilterQuery.setSysDescTableName(systemDescStore.getDatastoreName());
+                }
+                filterQueryGenerator = commandStreamFilterQuery.build(filter);
+            }
+            return self();
+        }
+
+        public SelectEntriesCommandStreamQuery build() {
+            return new SelectEntriesCommandStreamQuery(this);
+        }
+    }
+
+    public static class Builder extends SelectEntriesCommandStreamQuery.Init<SelectEntriesCommandStreamQuery.Builder> {
+        @Override
+        protected SelectEntriesCommandStreamQuery.Builder self() {
+            return this;
+        }
+    }
+
+    protected SelectEntriesCommandStreamQuery(SelectEntriesCommandStreamQuery.Init<?> init) {
+        super(init);
+        this.systemDescStore = init.systemDescStore;
+    }
+}

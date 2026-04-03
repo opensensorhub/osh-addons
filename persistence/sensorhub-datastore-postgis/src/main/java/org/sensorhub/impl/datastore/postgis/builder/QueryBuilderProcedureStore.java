@@ -17,7 +17,8 @@ package org.sensorhub.impl.datastore.postgis.builder;
 import org.sensorhub.api.datastore.procedure.IProcedureStore;
 import org.sensorhub.api.datastore.procedure.ProcedureFilter;
 import org.sensorhub.api.procedure.IProcedureWithDesc;
-import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesProcedureQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.procedure.RemoveEntriesProcedureQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.procedure.SelectEntriesProcedureQuery;
 
 import java.util.Set;
 
@@ -38,7 +39,17 @@ public class QueryBuilderProcedureStore extends QueryBuilderBaseFeatureStore<IPr
                 .tableName(this.getStoreTableName())
                 .withFields(fields)
                 .withProcedureFilter(filter)
+                .withLimit(filter.getLimit())
                 .build();
         return selectEntriesProcedureQuery.toQuery();
+    }
+
+    @Override
+    public String createRemoveEntriesQuery(ProcedureFilter filter) {
+        RemoveEntriesProcedureQuery removeEntriesProcedureQuery = new RemoveEntriesProcedureQuery.Builder()
+                .tableName(this.getStoreTableName())
+                .withProcedureFilter(filter)
+                .build();
+        return removeEntriesProcedureQuery.toQuery();
     }
 }

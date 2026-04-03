@@ -45,7 +45,6 @@ public interface IGattField
     public static final int PROPERTY_SIGNED_WRITE = 64;
     public static final int PROPERTY_EXTENDED_PROPS = 128;
 
-
     /**
      * @return the UUID identifying the type of this field
      */

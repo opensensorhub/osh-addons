@@ -16,11 +16,9 @@ package org.sensorhub.impl.datastore.postgis.builder;
 
 import org.sensorhub.api.datastore.deployment.DeploymentFilter;
 import org.sensorhub.api.datastore.deployment.IDeploymentStore;
-import org.sensorhub.api.datastore.feature.FoiFilter;
-import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.api.system.IDeploymentWithDesc;
-import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesDeploymentQuery;
-import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesFoiQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.deployment.RemoveEntriesDeploymentQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.deployment.SelectEntriesDeploymentQuery;
 
 import java.util.Set;
 
@@ -41,7 +39,17 @@ public class QueryBuilderDeploymentStore extends QueryBuilderBaseFeatureStore<ID
                 .tableName(this.getStoreTableName())
                 .withFields(fields)
                 .withDeploymentFilter(filter)
+                .withLimit(filter.getLimit())
                 .build();
         return selectEntriesDeploymentQuery.toQuery();
+    }
+
+    @Override
+    public String createRemoveEntriesQuery(DeploymentFilter filter) {
+        RemoveEntriesDeploymentQuery removeEntriesDeploymentQuery = new RemoveEntriesDeploymentQuery.Builder()
+                .tableName(this.getStoreTableName())
+                .withDeploymentFilter(filter)
+                .build();
+        return removeEntriesDeploymentQuery.toQuery();
     }
 }

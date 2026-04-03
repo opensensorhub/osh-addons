@@ -17,14 +17,11 @@ package org.sensorhub.impl.datastore.postgis;
 import net.opengis.swe.v20.DataComponent;
 import org.junit.After;
 import org.sensorhub.impl.datastore.AbstractTestDataStreamStore;
-import org.sensorhub.impl.datastore.postgis.obs.PostgisDataStreamStoreImpl;
-import org.sensorhub.impl.datastore.postgis.obs.PostgisObsStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.obs.PostgisDataStreamStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.obs.PostgisObsStoreImpl;
 import org.vast.swe.SWEUtils;
 
 import java.io.ByteArrayOutputStream;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
@@ -42,7 +39,7 @@ public class TestPostgisDataStreamStore extends AbstractTestDataStreamStore<Post
     protected PostgisObsStoreImpl postgisObsStore;
     //    @Override
     protected PostgisDataStreamStoreImpl initStore() throws Exception {
-        postgisObsStore =  new PostgisObsStoreImpl(url, DB_NAME, login, password, OBS_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL);
+        postgisObsStore =  new PostgisObsStoreImpl(url, DB_NAME, login, password, OBS_DATASTORE_NAME, DATABASE_NUM, IdProviderType.UID_HASH);
         return (PostgisDataStreamStoreImpl) postgisObsStore.getDataStreams();
     }
 

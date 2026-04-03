@@ -15,17 +15,18 @@
 package org.sensorhub.impl.datastore.postgis;
 
 import org.junit.After;
-import org.junit.Before;
 import org.sensorhub.impl.datastore.AbstractTestObsDatabase;
-import org.sensorhub.impl.datastore.postgis.command.PostgisCommandStatusStore;
-import org.sensorhub.impl.datastore.postgis.command.PostgisCommandStoreImpl;
-import org.sensorhub.impl.datastore.postgis.command.PostgisCommandStreamStoreImpl;
-import org.sensorhub.impl.datastore.postgis.feature.PostgisDeploymentStoreImpl;
-import org.sensorhub.impl.datastore.postgis.feature.PostgisFoiStoreImpl;
-import org.sensorhub.impl.datastore.postgis.feature.PostgisProcedureStoreImpl;
-import org.sensorhub.impl.datastore.postgis.feature.PostgisSystemDescStoreImpl;
-import org.sensorhub.impl.datastore.postgis.obs.PostgisDataStreamStoreImpl;
-import org.sensorhub.impl.datastore.postgis.obs.PostgisObsStoreImpl;
+import org.sensorhub.impl.datastore.postgis.database.PostgisObsSystemDatabase;
+import org.sensorhub.impl.datastore.postgis.database.PostgisObsSystemDatabaseConfig;
+import org.sensorhub.impl.datastore.postgis.store.command.PostgisCommandStatusStore;
+import org.sensorhub.impl.datastore.postgis.store.command.PostgisCommandStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.command.PostgisCommandStreamStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.feature.PostgisDeploymentStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.feature.PostgisFoiStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.feature.PostgisProcedureStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.feature.PostgisSystemDescStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.obs.PostgisDataStreamStoreImpl;
+import org.sensorhub.impl.datastore.postgis.store.obs.PostgisObsStoreImpl;
 
 public class TestPostgisObsSystemDatabase extends AbstractTestObsDatabase<PostgisObsSystemDatabase>  {
     private static String DB_NAME = "gis";

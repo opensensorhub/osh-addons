@@ -15,12 +15,8 @@
 package org.sensorhub.impl.datastore.postgis.builder;
 
 import org.sensorhub.api.datastore.command.CommandFilter;
-import org.sensorhub.api.datastore.command.ICommandStatusStore;
 import org.sensorhub.api.datastore.command.ICommandStore;
-import org.sensorhub.api.datastore.command.ICommandStreamStore;
-import org.sensorhub.api.datastore.feature.IFoiStore;
-import org.sensorhub.api.datastore.system.ISystemDescStore;
-import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesCommandQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.command.SelectEntriesCommandQuery;
 
 import java.util.Set;
 
@@ -40,13 +36,13 @@ public class QueryBuilderCommandStore extends QueryBuilder {
 
 
     public String createTableQuery() {
-        return "CREATE TABLE "+this.getStoreTableName()+
+        return "CREATE TABLE IF NOT EXISTS "+this.getStoreTableName()+
                 " (" +
                 "id BIGSERIAL PRIMARY KEY,"+
                 COMMANDSTREAM_ID +" BIGINT, "+
                 SENDER_ID+" VARCHAR,"+
                 FOI_ID+" bigint,"+
-                ISSUE_TIME+" TIMESTAMPTZ,"+
+                ISSUE_TIME+" TIMESTAMP,"+
                 STATUS+" VARCHAR,"+
                 ERROR_MSG+" VARCHAR,"+
                 PARAMETERS+" JSONB" +
@@ -54,23 +50,23 @@ public class QueryBuilderCommandStore extends QueryBuilder {
     }
 
     public String createDataIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_data_idx on "+this.getStoreTableName()+" USING GIN("+PARAMETERS+")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_data_idx on "+this.getStoreTableName()+" USING GIN("+PARAMETERS+")";
     }
 
     public String createCommandStreamIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_commandstream_idx on "+this.getStoreTableName()+" ("+COMMANDSTREAM_ID+")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_commandstream_idx on "+this.getStoreTableName()+" ("+COMMANDSTREAM_ID+")";
     }
 
     public String createSenderIdIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_senderid_idx on "+this.getStoreTableName()+" ("+SENDER_ID+")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_senderid_idx on "+this.getStoreTableName()+" ("+SENDER_ID+")";
     }
 
     public String createFoidIdIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_foidid_idx on "+this.getStoreTableName()+" ("+FOI_ID+")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_foidid_idx on "+this.getStoreTableName()+" ("+FOI_ID+")";
     }
 
     public String createIssueTimeIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_issue_time_idx on "+this.getStoreTableName()+" ("+ ISSUE_TIME +")";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_issue_time_idx on "+this.getStoreTableName()+" ("+ ISSUE_TIME +")";
     }
 
     public String insertCommandQuery() {
@@ -103,6 +99,7 @@ public class QueryBuilderCommandStore extends QueryBuilder {
                 .linkTo(this.commandStatusStore)
                 .withCommandFilter(filter)
                 .withFields(fields)
+                .withLimit(filter.getLimit())
                 .build();
         return selectEntriesCommandQueryBuilder.toQuery();
     }

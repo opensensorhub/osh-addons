@@ -14,10 +14,10 @@
 
 package org.sensorhub.impl.datastore.postgis.builder;
 
-import org.sensorhub.api.database.IFeatureDatabase;
 import org.sensorhub.api.datastore.feature.FeatureFilter;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
-import org.sensorhub.impl.datastore.postgis.builder.filter.SelectEntriesFeatureQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.feature.RemoveEntriesFeatureQuery;
+import org.sensorhub.impl.datastore.postgis.builder.query.feature.SelectEntriesFeatureQuery;
 import org.vast.ogc.gml.IFeature;
 
 import java.util.Set;
@@ -42,7 +42,17 @@ public class QueryBuilderFeatureStore extends QueryBuilderBaseFeatureStore<IFeat
                 .tableName(this.getStoreTableName())
                 .withFields(fields)
                 .withFeatureFilter(filter)
+                .withLimit(filter.getLimit())
                 .build();
         return selectEntriesFeatureQuery.toQuery();
+    }
+
+    @Override
+    public String createRemoveEntriesQuery(FeatureFilter filter) {
+        RemoveEntriesFeatureQuery removeEntriesFeatureQuery = new RemoveEntriesFeatureQuery.Builder()
+                .tableName(this.getStoreTableName())
+                .withFeatureFilter(filter)
+                .build();
+        return removeEntriesFeatureQuery.toQuery();
     }
 }
