@@ -23,6 +23,12 @@ subprojects {
     testImplementation "junit:junit:4.13.1"
   }
   
+  task printVersion {
+    doLast {
+      print project.version
+    }
+  }
+  
   sourceCompatibility = 17
   targetCompatibility = 17
   
