@@ -31,6 +31,7 @@ import org.sensorhub.api.comm.mqtt.ImplSpecificException;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.comm.mqtt.MqttException;
 import org.sensorhub.api.comm.mqtt.MqttOutputStream;
+import org.sensorhub.impl.service.consys.ConSysApiSecurity;
 import org.sensorhub.impl.service.consys.InvalidRequestException;
 import org.sensorhub.impl.service.consys.InvalidRequestException.ErrorCode;
 import org.sensorhub.impl.service.consys.ConSysApiServlet;
@@ -46,16 +47,32 @@ import org.vast.util.Asserts;
  * messages to/from the Connected Systems API servlet for processing. 
  * </p>
  *
+ * <p>
+ * Two distinct MQTT topic categories are handled per OGC CS API Part 3:
+ * </p>
+ * <ul>
+ *   <li><b>Resource Data Topics</b> (path ends with {@code :data}) — routed to the
+ *       ConSys HTTP servlet for streaming observations, commands, and resource
+ *       registration. Both subscribe and publish are allowed.</li>
+ *   <li><b>Resource Event Topics</b> (no {@code :data} suffix) — lifecycle
+ *       notifications published proactively by {@link ResourceEventPublisher} as
+ *       CloudEvents v1.0 JSON. {@code onSubscribe()} validates permissions only;
+ *       no per-subscriber stream is set up here.</li>
+ * </ul>
+ *
  * @author Alex Robin
  * @since May 9, 2023
  */
 public class ConSysApiMqttConnector implements IMqttHandler
 {
+    static final String DATA_SUFFIX = ":data";
+
     ConSysApiServlet servlet;
     String endpoint;
-    Map<String, MqttSubscriber> subscribers = new ConcurrentHashMap<>();
-    
-    
+    String nodeId; // may be null; when set, topics use "{nodeId}/{resourcePath}" with no endpoint prefix
+    String nodeIdPrefix; // pre-computed "{nodeId}/" or null
+
+
     class MqttSubscriber implements StreamHandler
     {
         IMqttServer server;
@@ -115,23 +132,47 @@ public class ConSysApiMqttConnector implements IMqttHandler
                 onClose.run();
         }
     }
-    
-    
-    public ConSysApiMqttConnector(ConSysApiServlet servlet, String endpoint)
+
+    Map<String, MqttSubscriber> subscribers = new ConcurrentHashMap<>();
+
+
+    public ConSysApiMqttConnector(ConSysApiServlet servlet, String endpoint, String nodeId)
     {
         this.servlet = servlet;
         this.endpoint = endpoint;
+        this.nodeId = nodeId;
+        this.nodeIdPrefix = (nodeId != null && !nodeId.isBlank()) ? nodeId + "/" : null;
     }
 
 
     @Override
-    public void onSubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException
+    public void onSubscribe(String userID, String topic, IMqttServer server) throws MqttException
     {
+        // Resource Event Topics (no :data suffix) are published proactively by
+        // ResourceEventPublisher — no per-subscriber stream to set up here.
+        // Just validate the topic and check permissions.
+        if (!isDataTopic(topic))
+        {
+            servlet.getLogger().info("User '{}' subscribing to resource event topic: {}", userID, topic);
+            try
+            {
+                checkResourceEventTopicPermission(userID, topic);
+                servlet.getLogger().debug("Subscription accepted for resource event topic: {}", topic);
+            }
+            catch (MqttException e)
+            {
+                servlet.getLogger().warn("Subscription rejected for user '{}' on topic '{}': {}", userID, topic, e.getMessage());
+                throw e;
+            }
+            return;
+        }
+
+        // Resource Data Topic: route through the ConSys HTTP servlet as before
+        servlet.getLogger().info("User '{}' subscribing to resource data topic: {}", userID, topic);
         try
         {
             // register new subscription if needed
             var sub = subscribers.compute(topic, (k, v) -> {
-                // create subscriber if needed
                 if (v == null)
                     v = new MqttSubscriber(server, topic);
                 return v;
@@ -146,13 +187,16 @@ public class ConSysApiMqttConnector implements IMqttHandler
             // start stream if all went well
             sub.numSubscribers.incrementAndGet();
             sub.maybeStart();
+            servlet.getLogger().debug("Subscription accepted for resource data topic: {}", topic);
         }
         catch (SecurityException | InvalidTopicException e)
         {
+            servlet.getLogger().warn("Subscription rejected for user '{}' on topic '{}': {}", userID, topic, e.getMessage());
             throw e;
         }
         catch (InvalidRequestException e)
         {
+            servlet.getLogger().warn("Subscription rejected for user '{}' on topic '{}': {}", userID, topic, e.getMessage());
             throw new InvalidTopicException(e.getMessage());
         }
         catch (Exception e)
@@ -169,6 +213,12 @@ public class ConSysApiMqttConnector implements IMqttHandler
     @Override
     public void onUnsubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException
     {
+        servlet.getLogger().info("User '{}' unsubscribing from topic: {}", userID, topic);
+
+        // Resource Event Topics have no stream to clean up
+        if (!isDataTopic(topic))
+            return;
+
         subscribers.computeIfPresent(topic, (k, sub) -> {
             var numSub = sub.numSubscribers.decrementAndGet();
             if (numSub <= 0)
@@ -187,6 +237,14 @@ public class ConSysApiMqttConnector implements IMqttHandler
     @Override
     public void onPublish(String userID, String topic, ByteBuffer payload, ByteBuffer correlData) throws MqttException
     {
+        // Per OGC CS API Part 3: only the server may publish to Resource Event Topics.
+        // Clients SHALL be prevented from publishing on these channels.
+        if (!isDataTopic(topic))
+        {
+            servlet.getLogger().warn("User '{}' attempted to publish to resource event topic '{}' — rejected", userID, topic);
+            throw new InvalidTopicException("Publishing to resource event topics is not permitted");
+        }
+
         try
         {
             var ctx = getResourceContext(topic, payload);
@@ -201,8 +259,6 @@ public class ConSysApiMqttConnector implements IMqttHandler
                     cmdID = correlData.getInt();
                 if (cmdID == 0)
                     throw new InvalidRequestException(ErrorCode.BAD_PAYLOAD, "Invalid correlation data");
-                //var idStr = StandardCharsets.UTF_8.decode(correlData).toString();
-                //var cmdID = Long.parseLong(idStr);
                 ctx.setCorrelationID(cmdID);
             }
             
@@ -226,8 +282,82 @@ public class ConSysApiMqttConnector implements IMqttHandler
             servlet.getSecurityHandler().clearCurrentUser();
         }
     }
-    
-    
+
+
+    /**
+     * @return true if this topic is a Resource Data Topic (ends with {@code :data})
+     */
+    private boolean isDataTopic(String topic)
+    {
+        return topic.endsWith(DATA_SUFFIX);
+    }
+
+
+    /**
+     * Validate permissions for a Resource Event Topic subscription without
+     * creating a stream. Checks are ordered most-specific first to avoid
+     * a broad "systems" check shadowing nested datastream/controlstream paths.
+     */
+    private void checkResourceEventTopicPermission(String userID, String topic)
+            throws MqttException
+    {
+        try
+        {
+            servlet.getSecurityHandler().setCurrentUser(userID);
+            var path = stripPrefixes(topic);
+            var security = (ConSysApiSecurity) servlet.getSecurityHandler();
+
+            // Check most-specific resource types first
+            if (path.contains("/observations"))
+                security.checkPermission(security.obs_permissions.stream);
+            else if (path.contains("/datastreams"))
+                security.checkPermission(security.datastream_permissions.stream);
+            else if (path.contains("/controlstreams"))
+                security.checkPermission(security.commandstream_permissions.stream);
+            else if (path.startsWith("systems"))
+                security.checkPermission(security.system_permissions.stream);
+            // Unknown resource type: permit — no events will be published to invalid topics
+        }
+        catch (SecurityException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new InvalidTopicException("Invalid resource event topic: " + topic);
+        }
+        finally
+        {
+            servlet.getSecurityHandler().clearCurrentUser();
+        }
+    }
+
+
+    /**
+     * Strip the nodeId prefix (if set) or the endpoint prefix from a topic,
+     * returning the resource path without a leading slash.
+     * Used for permission checking on event topics.
+     */
+    private String stripPrefixes(String topic)
+    {
+        if (nodeIdPrefix != null && topic.startsWith(nodeIdPrefix))
+        {
+            // nodeId present: resource path follows directly after "{nodeId}/"
+            return topic.substring(nodeIdPrefix.length());
+        }
+
+        // No nodeId: strip leading slash then endpoint prefix (e.g. "api/")
+        if (topic.startsWith("/"))
+            topic = topic.substring(1);
+        var ep = endpoint.startsWith("/") ? endpoint.substring(1) : endpoint;
+        if (topic.startsWith(ep))
+            topic = topic.substring(ep.length());
+        if (topic.startsWith("/"))
+            topic = topic.substring(1);
+        return topic;
+    }
+
+
     private RequestContext getResourceContext(String topic, MqttSubscriber streamHandler) throws InvalidTopicException
     {
         return new RequestContext(
@@ -250,11 +380,39 @@ public class ConSysApiMqttConnector implements IMqttHandler
     {
         try
         {
-            // remove the base URL part
-            topic = topic.replaceFirst(endpoint, "");
-            
+            // Strip nodeId prefix if set (e.g. "mynode/").
+            // When a nodeId is present, topics are "{nodeId}/{resourcePath}" — no endpoint prefix.
+            boolean nodeIdStripped = false;
+            if (nodeIdPrefix != null && topic.startsWith(nodeIdPrefix))
+            {
+                topic = topic.substring(nodeIdPrefix.length());
+                nodeIdStripped = true;
+            }
+
+            if (!nodeIdStripped)
+            {
+                // No nodeId: validate and strip the endpoint prefix (e.g. "/api")
+                if (!topic.startsWith(endpoint))
+                    throw new InvalidTopicException(
+                        "Topic '" + topic + "' does not match endpoint prefix '" + endpoint + "'");
+                topic = topic.substring(endpoint.length());
+            }
+            else if (!topic.startsWith("/"))
+            {
+                // After stripping nodeId the path has no leading slash — add it for URI parsing
+                topic = "/" + topic;
+            }
+
+            // Strip :data suffix — only from the end (it is guaranteed present for data topics)
+            if (topic.endsWith(DATA_SUFFIX))
+                topic = topic.substring(0, topic.length() - DATA_SUFFIX.length());
+
             // parse URI (this also URL decodes the query string)
             return new URI(topic);
+        }
+        catch (InvalidTopicException e)
+        {
+            throw e;
         }
         catch (URISyntaxException e)
         {
