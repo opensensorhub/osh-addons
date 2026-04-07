@@ -71,6 +71,7 @@ public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqt
                         var eventBus   = getParentHub().getEventBus();
                         var idEncoders = getParentHub().getIdEncoders();
                         var db         = getParentHub().getDatabaseRegistry().getFederatedDatabase();
+                        var csApiBaseUrl = service.getPublicEndpointUrl();
 
                         resourceEventPublisher = new ResourceEventPublisher(
                             mqttServer, config.nodeId, csApiBaseUrl,

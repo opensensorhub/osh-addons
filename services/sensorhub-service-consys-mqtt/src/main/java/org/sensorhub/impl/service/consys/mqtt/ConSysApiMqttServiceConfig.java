@@ -35,9 +35,4 @@ public class ConSysApiMqttServiceConfig extends ServiceConfig
              "Set to null or blank to use the HTTP endpoint path as prefix instead.")
     public String nodeId = "api";
 
-    @DisplayInfo(label="CS API Base URL",
-        desc="Public CS API root URL used as the CloudEvents 'source' field " +
-             "(e.g. 'https://example.org/sensorhub/api'). " +
-             "If null, derived automatically from the ConSysApiService public endpoint.")
-    public String csApiBaseUrl = null;
 }

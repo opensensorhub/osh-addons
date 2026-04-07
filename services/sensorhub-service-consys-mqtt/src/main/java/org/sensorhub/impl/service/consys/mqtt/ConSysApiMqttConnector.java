@@ -167,7 +167,7 @@ public class ConSysApiMqttConnector implements IMqttHandler
             return;
         }
 
-        // Resource Data Topic: route through the ConSys HTTP servlet as before
+        // Resource Data Topic: route through the ConSys HTTP servlet (functionally the same as pre-part 3)
         servlet.getLogger().info("User '{}' subscribing to resource data topic: {}", userID, topic);
         try
         {
@@ -184,7 +184,7 @@ public class ConSysApiMqttConnector implements IMqttHandler
             servlet.getSecurityHandler().setCurrentUser(userID);
             servlet.getRootHandler().doGet(ctx);
             
-            // start stream if all went well
+            // start stream
             sub.numSubscribers.incrementAndGet();
             sub.maybeStart();
             servlet.getLogger().debug("Subscription accepted for resource data topic: {}", topic);
