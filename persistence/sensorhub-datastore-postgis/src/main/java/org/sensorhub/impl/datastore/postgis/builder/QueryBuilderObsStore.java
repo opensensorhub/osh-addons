@@ -48,13 +48,7 @@ public class QueryBuilderObsStore extends QueryBuilder {
                 FOI_ID + " bigint," +
                 PHENOMENON_TIME + " TIMESTAMP," +
                 RESULT_TIME + " TIMESTAMP," +
-                RESULT + " JSONB," +
-                "CONSTRAINT unique_observation UNIQUE (" +
-                DATASTREAM_ID + ", " +
-                FOI_ID + ", " +
-                PHENOMENON_TIME + ", " +
-                RESULT_TIME +
-                ")" +
+                RESULT + " JSONB" +
                 ")";
     }
 
@@ -89,21 +83,17 @@ public class QueryBuilderObsStore extends QueryBuilder {
     public String insertObsQuery() {
         return "INSERT INTO "+this.getStoreTableName()+" " +
                 "(id,"+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (${1},${2},${3},${4},${5},${6}) "+
-                "ON CONFLICT ("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+") DO "+
-                "UPDATE SET "+DATASTREAM_ID+" = (${7}), " +FOI_ID+" = (${8}), "+PHENOMENON_TIME+" = (${9})," +
-                " "+RESULT_TIME+" = (${10}), "+RESULT+" = (${11})";
+                "ON CONFLICT ("+DATASTREAM_ID+", COALESCE("+FOI_ID+", -1::bigint), "+PHENOMENON_TIME+", "+RESULT_TIME+") DO NOTHING";
     }
 
     public String insertObsPreparedQuery() {
         return "INSERT INTO "+this.getStoreTableName()+" " +
                 "(id,"+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (?::int8,?::int8,?::int8,?::timestamp,?::timestamp,?::jsonb) "+
-                "ON CONFLICT ("+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+") DO "+
-                "UPDATE SET "+DATASTREAM_ID+" = ?, " +FOI_ID+" = ?, "+PHENOMENON_TIME+" = ?::timestamp," +
-                " "+RESULT_TIME+" = ?::timestamp, "+RESULT+" = ?::jsonb";
+                "ON CONFLICT ("+DATASTREAM_ID+", COALESCE("+FOI_ID+", -1::bigint), "+PHENOMENON_TIME+", "+RESULT_TIME+") DO NOTHING";
     }
 
     public String createUniqueConstraint() {
-        return "CREATE UNIQUE INDEX  IF NOT EXISTS "+this.getStoreTableName()+"_unique_constraint on "+this.getStoreTableName()+" (dataStreamID, foiID, phenomenonTime, resultTime)";
+        return "CREATE UNIQUE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_unique_constraint on "+this.getStoreTableName()+" (" + DATASTREAM_ID + ", COALESCE(" + FOI_ID + ", -1::bigint), " + PHENOMENON_TIME + ", " + RESULT_TIME + ")";
     }
 
     public String updateByIdQuery() {

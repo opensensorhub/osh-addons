@@ -14,9 +14,6 @@
 
 package org.sensorhub.impl.datastore.postgis;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Maps;
 import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -29,8 +26,6 @@ import org.sensorhub.impl.datastore.postgis.store.obs.PostgisDataStreamStoreImpl
 import org.sensorhub.impl.datastore.postgis.store.obs.PostgisObsStoreImpl;
 
 import org.sensorhub.api.data.ObsData;
-import org.vast.data.DataBlockMixed;
-import org.vast.data.TextEncodingImpl;
 import org.vast.swe.SWEHelper;
 
 import java.time.Instant;

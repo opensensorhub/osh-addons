@@ -264,25 +264,6 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             ps.setNull(5, Types.TIMESTAMP);
         }
         ps.setString(6, serializedBlock);
-
-        // ON CONFLICT UPDATE values (params 7-11)
-        ps.setLong(7, dataStreamKey);
-        if (foiId != null) {
-            ps.setLong(8, foiId);
-        } else {
-            ps.setNull(8, Types.BIGINT);
-        }
-        if (phenomenonTimeStr != null) {
-            ps.setString(9, phenomenonTimeStr);
-        } else {
-            ps.setNull(9, Types.TIMESTAMP);
-        }
-        if (resultTimeStr != null) {
-            ps.setString(10, resultTimeStr);
-        } else {
-            ps.setNull(10, Types.TIMESTAMP);
-        }
-        ps.setString(11, serializedBlock);
     }
 
 
