@@ -13,26 +13,25 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.uas.outputs;
 
-import java.util.concurrent.Executor;
-
+import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
+import net.opengis.swe.v20.DataEncoding;
+import net.opengis.swe.v20.DataStream;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.uas.UasSensorBase;
-import org.sensorhub.impl.sensor.uas.common.SyncTime;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.sensorhub.misb.stanag4609.comm.DataBufferListener;
 import org.sensorhub.misb.stanag4609.comm.DataBufferRecord;
+import org.sensorhub.misb.stanag4609.time.SyncTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.data.AbstractDataBlock;
 import org.vast.data.DataBlockMixed;
 import org.vast.util.Asserts;
 
-import net.opengis.swe.v20.DataBlock;
-import net.opengis.swe.v20.DataComponent;
-import net.opengis.swe.v20.DataEncoding;
-import net.opengis.swe.v20.DataStream;
+import java.util.concurrent.Executor;
 
 /**
  * Output specification and provider for MISB-TS STANAG 4609 ST0601.16 UAS Metadata
