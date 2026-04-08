@@ -41,16 +41,23 @@ public class QueryBuilderObsStore extends QueryBuilder {
     }
 
     public String createTableQuery() {
-        return "CREATE TABLE IF NOT EXISTS "+this.getStoreTableName()+
+        return "CREATE TABLE IF NOT EXISTS " + this.getStoreTableName() +
                 " (" +
-                "id bigint PRIMARY KEY,"+
-                DATASTREAM_ID +" bigint, "+
-                FOI_ID+" bigint,"+
-                PHENOMENON_TIME+" TIMESTAMP,"+
-                RESULT_TIME+" TIMESTAMP,"+
-                RESULT+" JSONB" + // VERSUS JSONB but the parser does not keep order
+                "id bigint PRIMARY KEY," +
+                DATASTREAM_ID + " bigint, " +
+                FOI_ID + " bigint," +
+                PHENOMENON_TIME + " TIMESTAMP," +
+                RESULT_TIME + " TIMESTAMP," +
+                RESULT + " JSONB," +
+                "CONSTRAINT unique_observation UNIQUE (" +
+                DATASTREAM_ID + ", " +
+                FOI_ID + ", " +
+                PHENOMENON_TIME + ", " +
+                RESULT_TIME +
+                ")" +
                 ")";
     }
+
     public String createDataIndexQuery() {
         return "CREATE INDEX "+this.getStoreTableName()+"_data_idx on "+this.getStoreTableName()+" USING GIN("+RESULT+")";
     }
@@ -100,12 +107,20 @@ public class QueryBuilderObsStore extends QueryBuilder {
     }
 
     public String updateByIdQuery() {
-        return "UPDATE "+this.getStoreTableName()+" SET "+DATASTREAM_ID+" = ?, " +
-                FOI_ID+" = ?, " +
-                PHENOMENON_TIME+" = ?, " +
-                RESULT_TIME+" = ?, " +
-                RESULT+" = ? " +
+        return "UPDATE " + this.getStoreTableName() + " SET " +
+                DATASTREAM_ID + " = ?, " +
+                FOI_ID + " = ?, " +
+                PHENOMENON_TIME + " = ?, " +
+                RESULT_TIME + " = ?, " +
+                RESULT + " = ? " +
                 "WHERE id = ?";
+    }
+
+    public String findByUniqueFieldsQuery() {
+        return "SELECT id FROM " + this.getStoreTableName() + " WHERE " +
+                FOI_ID + " = ? AND " +
+                PHENOMENON_TIME + " = ? AND " +
+                RESULT_TIME + " = ?";
     }
 
     public String getPhenomenonTimeRangeByDataStreamIdQuery(long dataStreamID) {

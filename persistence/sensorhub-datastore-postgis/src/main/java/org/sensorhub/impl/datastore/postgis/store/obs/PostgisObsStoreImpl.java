@@ -420,7 +420,42 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             throw new UnsupportedOperationException("Put can only be used to update existing entries");
 
         try (Connection connection = this.connectionManager.getConnection()) {
+
+            Long targetId = key.getIdAsLong();
+
+            try (PreparedStatement findStmt = connection.prepareStatement(queryBuilder.findByUniqueFieldsQuery())) {
+
+                if (obs.hasFoi()) {
+                    findStmt.setLong(1, obs.getFoiID().getIdAsLong());
+                } else {
+                    findStmt.setNull(1, Types.BIGINT);
+                }
+
+                if (obs.getPhenomenonTime() != null) {
+                    String d = PostgisUtils.getPgTimestampFromInstant(obs.getPhenomenonTime());
+                    findStmt.setTimestamp(2, Timestamp.valueOf(d));
+                } else {
+                    findStmt.setNull(2, Types.TIMESTAMP);
+                }
+
+                if (obs.getResultTime() != null) {
+                    String d = PostgisUtils.getPgTimestampFromInstant(obs.getResultTime());
+                    findStmt.setTimestamp(3, Timestamp.valueOf(d));
+                } else {
+                    findStmt.setNull(3, Types.TIMESTAMP);
+                }
+
+                try (ResultSet rs = findStmt.executeQuery()) {
+                    if (rs.next()) {
+                        long foundId = rs.getLong("id");
+                        // If conflict exists, use that row instead
+                        targetId = foundId;
+                    }
+                }
+            }
+
             try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.updateByIdQuery())) {
+
                 preparedStatement.setLong(1, obs.getDataStreamID().getIdAsLong());
 
                 if (obs.hasFoi()) {
@@ -442,10 +477,13 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                 } else {
                     preparedStatement.setNull(4, Types.TIMESTAMP);
                 }
-                // insert DataBlock
+
                 IDataStreamInfo dataStreamInfo = dataStreamStore.get(new DataStreamKey(obs.getDataStreamID()));
-                String serializedBlock = SerializerUtils.writeDataBlockToJson(dataStreamInfo.getRecordStructure(),
-                        dataStreamInfo.getRecordEncoding(), obs.getResult());
+                String serializedBlock = SerializerUtils.writeDataBlockToJson(
+                        dataStreamInfo.getRecordStructure(),
+                        dataStreamInfo.getRecordEncoding(),
+                        obs.getResult()
+                );
 
                 PGobject jsonObject = new PGobject();
                 jsonObject.setType("json");
@@ -453,18 +491,18 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 
                 preparedStatement.setObject(5, jsonObject);
 
-                preparedStatement.setLong(6, key.getIdAsLong());
+                preparedStatement.setLong(6, targetId);
 
                 int rows = preparedStatement.executeUpdate();
                 if (rows == 0) {
-                    throw new IllegalStateException("Update affected 0 rows for key: " + key.getIdAsLong());
+                    throw new IllegalStateException("Update affected 0 rows for key: " + targetId);
                 }
-            } catch (Exception e) {
-                throw new IllegalStateException("Cannot update obs", e);
             }
+
         } catch (Exception e) {
             throw new IllegalStateException("Cannot update obs", e);
         }
+
         return obs;
     }
 
