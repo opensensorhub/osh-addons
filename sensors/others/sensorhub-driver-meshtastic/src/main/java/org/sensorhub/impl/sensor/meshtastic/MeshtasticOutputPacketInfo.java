@@ -28,10 +28,9 @@ import java.time.Instant;
 public class MeshtasticOutputPacketInfo extends VarRateSensorOutput<MeshtasticSensor> {
     private static final double INITIAL_SAMPLING_PERIOD = 1.0;
 
-    public DataRecord packetRecord;
-    public DataEncoding dataEncoding;
-
-    public int packetRecordSize;
+    protected DataRecord packetRecord;
+    protected DataEncoding dataEncoding;
+    protected int packetRecordSize;
 
     // Packet Variables
     String packetId;
@@ -174,11 +173,11 @@ public class MeshtasticOutputPacketInfo extends VarRateSensorOutput<MeshtasticSe
 
 
     public String convert32IntToString(int data){
-        long unsigned_num = Integer.toUnsignedLong(data);
-        return String.format("!%08x", unsigned_num);
+        long unsignedNum = Integer.toUnsignedLong(data);
+        return String.format("!%08x", unsignedNum);
     }
     public Instant convert32IntToInstant(int data){
-        long unsigned_num = Integer.toUnsignedLong(data);
-        return Instant.ofEpochSecond(unsigned_num);
+        long unsignedNum = Integer.toUnsignedLong(data);
+        return Instant.ofEpochSecond(unsignedNum);
     }
 }
