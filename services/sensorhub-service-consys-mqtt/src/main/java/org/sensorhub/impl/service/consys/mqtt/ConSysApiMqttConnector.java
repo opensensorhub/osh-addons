@@ -169,6 +169,14 @@ public class ConSysApiMqttConnector implements IMqttHandler
 
         // Resource Data Topic: route through the ConSys HTTP servlet (functionally the same as pre-part 3)
         servlet.getLogger().info("User '{}' subscribing to resource data topic: {}", userID, topic);
+
+        // Wildcard data topic fan-out (e.g. systems/134/datastreams/+/observations:data)
+        // is not yet supported — each data topic maps to one concrete streaming endpoint.
+        if (ConSysTopicValidator.hasWildcard(topic))
+            throw new InvalidTopicException(
+                "Wildcard subscriptions on resource data topics are not yet supported; " +
+                "subscribe to an exact resource data topic or use resource event topics with wildcards");
+
         try
         {
             // register new subscription if needed
@@ -295,8 +303,13 @@ public class ConSysApiMqttConnector implements IMqttHandler
 
     /**
      * Validate permissions for a Resource Event Topic subscription without
-     * creating a stream. Checks are ordered most-specific first to avoid
-     * a broad "systems" check shadowing nested datastream/controlstream paths.
+     * creating a stream.
+     *
+     * <p>The topic is matched against all known CS API resource topic patterns
+     * via {@link ConSysTopicValidator}. Wildcards ({@code +}, {@code #}) are
+     * accepted only in resource ID positions — never in resource type segments
+     * (e.g. {@code systems}, {@code datastreams}). The matched resource type
+     * determines which permission is checked.</p>
      */
     private void checkResourceEventTopicPermission(String userID, String topic)
             throws MqttException
@@ -307,18 +320,20 @@ public class ConSysApiMqttConnector implements IMqttHandler
             var path = stripPrefixes(topic);
             var security = (ConSysApiSecurity) servlet.getSecurityHandler();
 
-            // Check most-specific resource types first
-            if (path.contains("/observations"))
-                security.checkPermission(security.obs_permissions.stream);
-            else if (path.contains("/datastreams"))
-                security.checkPermission(security.datastream_permissions.stream);
-            else if (path.contains("/controlstreams"))
-                security.checkPermission(security.commandstream_permissions.stream);
-            else if (path.startsWith("systems"))
-                security.checkPermission(security.system_permissions.stream);
-            // Unknown resource type: permit — no events will be published to invalid topics
+            var resourceType = ConSysTopicValidator.matchEventTopic(path);
+            if (resourceType.isEmpty())
+                throw new InvalidTopicException(
+                    "Topic does not match any known CS API resource event pattern: " + topic);
+
+            switch (resourceType.get())
+            {
+                case OBSERVATION                      -> security.checkPermission(security.obs_permissions.stream);
+                case DATASTREAM                       -> security.checkPermission(security.datastream_permissions.stream);
+                case CONTROLSTREAM, COMMAND           -> security.checkPermission(security.commandstream_permissions.stream);
+                default                               -> security.checkPermission(security.system_permissions.stream);
+            }
         }
-        catch (SecurityException e)
+        catch (SecurityException | InvalidTopicException e)
         {
             throw e;
         }
