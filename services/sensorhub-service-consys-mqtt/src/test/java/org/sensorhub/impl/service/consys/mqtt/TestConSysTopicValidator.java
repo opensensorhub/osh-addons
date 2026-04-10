@@ -23,17 +23,24 @@ import org.sensorhub.impl.service.consys.mqtt.ConSysTopicValidator.ResourceType;
 /**
  * Unit tests for {@link ConSysTopicValidator}.
  *
- * <p>Tests cover:
+ * <p>Each test method covers one category of topics. Within each method the
+ * cases are laid out as an aligned table — {@code path} on the left,
+ * expected {@link ResourceType} (or {@code null} = no match) on the right —
+ * so the full set of valid/invalid strings can be scanned at a glance.</p>
+ *
+ * <p>{@code #} wildcard semantics (per OGC CS API Part 3):
  * <ul>
- *   <li>Exact topics (no wildcards) for every resource type</li>
- *   <li>Single-level wildcard ({@code +}) at every valid ID position</li>
- *   <li>Multi-level wildcard ({@code #}) at valid ID positions</li>
- *   <li>Mixed — concrete resource IDs with wildcards in other slots</li>
- *   <li>Rejection of wildcards in keyword positions (e.g. {@code +/datastreams/+})</li>
- *   <li>Rejection of unknown or malformed paths</li>
- *   <li>{@link ConSysTopicValidator#hasWildcard(String)}</li>
+ *   <li>{@code #} is valid at any resource-ID slot — it replaces that ID and
+ *       everything below (e.g. {@code systems/+/subsystems/#}).</li>
+ *   <li>{@code #} is valid as a trailing wildcard after the full pattern is
+ *       consumed (e.g. {@code systems/abc123/#}).</li>
+ *   <li>{@code #} is invalid at a keyword/literal slot
+ *       (e.g. {@code systems/#/datastreams/+}).</li>
+ *   <li>{@code #} must always be the last segment.</li>
  * </ul>
- * </p>
+ * The ResourceType returned for a {@code #} subscription is determined by the
+ * shallowest pattern that matches up to the {@code #} position, which is also
+ * the type used for permission checking.</p>
  */
 public class TestConSysTopicValidator
 {
@@ -54,325 +61,162 @@ public class TestConSysTopicValidator
         assertFalse("Expected no match for path '" + path + "' but got " + result.orElse(null), result.isPresent());
     }
 
+    /** Runs a table of {path, ResourceType-or-null} pairs through the validator. */
+    private static void assertTable(Object[][] rows)
+    {
+        for (var row : rows)
+        {
+            var path = (String) row[0];
+            var expected = (ResourceType) row[1];
+            if (expected == null)
+                assertNoMatch(path);
+            else
+                assertMatches(expected, path);
+        }
+    }
+
 
     // =========================================================================
-    // Exact topics (no wildcards) — concrete IDs in every slot
-    // =========================================================================
-
-    @Test
-    public void testExact_system()
-    {
-        assertMatches(SYSTEM, "systems/abc123");
-    }
-
-    @Test
-    public void testExact_subsystem()
-    {
-        assertMatches(SYSTEM, "systems/abc123/subsystems/def456");
-    }
-
-    @Test
-    public void testExact_datastream()
-    {
-        assertMatches(DATASTREAM, "systems/abc123/datastreams/ds001");
-    }
-
-    @Test
-    public void testExact_controlstream()
-    {
-        assertMatches(CONTROLSTREAM, "systems/abc123/controlstreams/cs001");
-    }
-
-    @Test
-    public void testExact_observation()
-    {
-        assertMatches(OBSERVATION, "systems/abc123/datastreams/ds001/observations/obs001");
-    }
-
-    @Test
-    public void testExact_command()
-    {
-        assertMatches(COMMAND, "systems/abc123/controlstreams/cs001/commands/cmd001");
-    }
-
-    @Test
-    public void testExact_commandStatus()
-    {
-        assertMatches(COMMAND, "systems/abc123/controlstreams/cs001/commands/cmd001/status/st001");
-    }
-
-    @Test
-    public void testExact_commandResult()
-    {
-        assertMatches(COMMAND, "systems/abc123/controlstreams/cs001/commands/cmd001/result/res001");
-    }
-
-    @Test
-    public void testExact_systemDeployment()
-    {
-        assertMatches(SYSTEM, "systems/abc123/deployments/dep001");
-    }
-
-    @Test
-    public void testExact_deployment()
-    {
-        assertMatches(DEPLOYMENT, "deployments/dep001");
-    }
-
-    @Test
-    public void testExact_subdeployment()
-    {
-        assertMatches(DEPLOYMENT, "deployments/dep001/subdeployments/sub001");
-    }
-
-    @Test
-    public void testExact_procedure()
-    {
-        assertMatches(PROCEDURE, "procedures/proc001");
-    }
-
-    @Test
-    public void testExact_property()
-    {
-        assertMatches(PROPERTY, "properties/prop001");
-    }
-
-    // =========================================================================
-    // Single-level wildcard (+) at ID positions
+    // Exact topics — concrete IDs in every slot, no wildcards
     // =========================================================================
 
     @Test
-    public void testPlus_allSystems()
+    public void testExactTopics()
     {
-        // {nodeId}/systems/+ — "all top-level systems"
-        assertMatches(SYSTEM, "systems/+");
+        assertTable(new Object[][] {
+            // path                                                                          expected
+            { "systems/abc123",                                                              SYSTEM        },
+            { "systems/abc123/subsystems/def456",                                            SYSTEM        },
+            { "systems/abc123/deployments/dep001",                                           SYSTEM        },
+            { "systems/abc123/datastreams/ds001",                                            DATASTREAM    },
+            { "systems/abc123/controlstreams/cs001",                                         CONTROLSTREAM },
+            { "systems/abc123/datastreams/ds001/observations/obs001",                        OBSERVATION   },
+            { "systems/abc123/controlstreams/cs001/commands/cmd001",                         COMMAND       },
+            { "systems/abc123/controlstreams/cs001/commands/cmd001/status/st001",            COMMAND       },
+            { "systems/abc123/controlstreams/cs001/commands/cmd001/result/res001",           COMMAND       },
+            { "deployments/dep001",                                                          DEPLOYMENT    },
+            { "deployments/dep001/subdeployments/sub001",                                    DEPLOYMENT    },
+            { "procedures/proc001",                                                          PROCEDURE     },
+            { "properties/prop001",                                                          PROPERTY      },
+        });
     }
 
-    @Test
-    public void testPlus_allSubsystemsOfAllSystems()
-    {
-        assertMatches(SYSTEM, "systems/+/subsystems/+");
-    }
-
-    @Test
-    public void testPlus_allDatastreamsOfAllSystems()
-    {
-        assertMatches(DATASTREAM, "systems/+/datastreams/+");
-    }
-
-    @Test
-    public void testPlus_allDatastreamsOfOneSystem()
-    {
-        assertMatches(DATASTREAM, "systems/abc123/datastreams/+");
-    }
-
-    @Test
-    public void testPlus_allControlstreamsOfAllSystems()
-    {
-        assertMatches(CONTROLSTREAM, "systems/+/controlstreams/+");
-    }
-
-    @Test
-    public void testPlus_observationsFromOneDatastream()
-    {
-        assertMatches(OBSERVATION, "systems/abc123/datastreams/ds001/observations/+");
-    }
-
-    @Test
-    public void testPlus_observationsFromAllDatastreamsOfOneSystem()
-    {
-        // {nodeId}/systems/134/datastreams/+/observations/+ per spec
-        assertMatches(OBSERVATION, "systems/abc123/datastreams/+/observations/+");
-    }
-
-    @Test
-    public void testPlus_observationsFromAllDatastreamsOfAllSystems()
-    {
-        assertMatches(OBSERVATION, "systems/+/datastreams/+/observations/+");
-    }
-
-    @Test
-    public void testPlus_mixedConcreteIdAndWildcard()
-    {
-        // concrete system ID + wildcard datastream — valid per spec
-        assertMatches(DATASTREAM, "systems/03ie1mkrr9r0/datastreams/+");
-    }
-
-    @Test
-    public void testPlus_mixedConcreteAndWildcard_observations()
-    {
-        // the failing case from the issue report
-        assertMatches(OBSERVATION, "systems/03ie1mkrr9r0/datastreams/+/observations/+");
-    }
-
-    @Test
-    public void testPlus_allProcedures()
-    {
-        assertMatches(PROCEDURE, "procedures/+");
-    }
-
-    @Test
-    public void testPlus_allProperties()
-    {
-        assertMatches(PROPERTY, "properties/+");
-    }
-
-    @Test
-    public void testPlus_allDeployments()
-    {
-        assertMatches(DEPLOYMENT, "deployments/+");
-    }
 
     // =========================================================================
-    // Multi-level wildcard (#) at ID positions
+    // Single-level wildcard (+) — only valid in resource-ID slots
     // =========================================================================
 
     @Test
-    public void testHash_everythingUnderOneSystem()
+    public void testPlusWildcardTopics()
     {
-        // {nodeId}/systems/489/# — "everything under a system"
-        assertMatches(SYSTEM, "systems/abc123/#");
+        assertTable(new Object[][] {
+            // path                                                                          expected
+            // Valid: + in every ID slot
+            { "systems/+",                                                                   SYSTEM        },
+            { "systems/+/subsystems/+",                                                      SYSTEM        },
+            { "systems/+/datastreams/+",                                                     DATASTREAM    },
+            { "systems/+/controlstreams/+",                                                  CONTROLSTREAM },
+            { "systems/+/datastreams/+/observations/+",                                      OBSERVATION   },
+            { "systems/abc123/datastreams/+",                                                DATASTREAM    },  // concrete system + wildcard datastream
+            { "systems/abc123/datastreams/ds001/observations/+",                             OBSERVATION   },
+            { "systems/abc123/datastreams/+/observations/+",                                 OBSERVATION   },
+            { "systems/03ie1mkrr9r0/datastreams/+",                                          DATASTREAM    },  // alphanumeric system ID
+            { "systems/03ie1mkrr9r0/datastreams/+/observations/+",                           OBSERVATION   },
+            { "deployments/+",                                                               DEPLOYMENT    },
+            { "procedures/+",                                                                PROCEDURE     },
+            { "properties/+",                                                                PROPERTY      },
+
+            // Invalid: + in a keyword slot
+            { "+/abc123",                                                                    null          },
+            { "systems/abc123/+/ds001",                                                      null          },
+            { "systems/abc123/datastreams/ds001/+/obs001",                                   null          },
+        });
     }
 
-    @Test
-    public void testHash_everythingUnderAllSystems()
-    {
-        assertMatches(SYSTEM, "systems/+/#");
-    }
-
-    @Test
-    public void testHash_allSubsystemsAtAllLevels()
-    {
-        // {nodeId}/systems/+/subsystems/# per spec
-        assertMatches(SYSTEM, "systems/+/subsystems/#");
-    }
-
-    @Test
-    public void testHash_everythingUnderDatastreams()
-    {
-        // # at the datastream ID position — covers datastream + all obs beneath
-        assertMatches(DATASTREAM, "systems/abc123/datastreams/#");
-    }
-
-    @Test
-    public void testHash_everythingUnderAllDatastreams()
-    {
-        assertMatches(DATASTREAM, "systems/+/datastreams/#");
-    }
-
-    @Test
-    public void testHash_obsUnderOneDatastream()
-    {
-        assertMatches(OBSERVATION, "systems/abc123/datastreams/ds001/observations/#");
-    }
 
     // =========================================================================
-    // Invalid: wildcard in keyword (literal) position
+    // Multi-level wildcard (#)
+    //
+    // # is valid at any resource-ID slot (replacing that ID and everything below)
+    // and as a trailing wildcard after the pattern is fully consumed.
+    // # is invalid at a keyword/literal slot or when not the last segment.
+    //
+    // The ResourceType returned is that of the shallowest matching pattern
+    // (e.g. systems/abc123/datastreams/# → DATASTREAM, not OBSERVATION).
     // =========================================================================
 
     @Test
-    public void testInvalid_plusInKeywordPosition_systems()
+    public void testHashWildcardTopics()
     {
-        // + where "systems" keyword must be
-        assertNoMatch("+/abc123");
+        assertTable(new Object[][] {
+            // path                                                                          expected
+
+            // --- Valid: # at system-level ID slot (returns SYSTEM) ---
+            { "systems/#",                                                                   SYSTEM        },  // all system events (# replaces system ID)
+            { "systems/abc123/#",                                                            SYSTEM        },  // everything under one system (trailing #)
+            { "systems/+/#",                                                                 SYSTEM        },  // everything under all systems (trailing #)
+
+            // --- Valid: # at subsystem-level ID slot (returns SYSTEM) ---
+            { "systems/+/subsystems/#",                                                      SYSTEM        },  // all subsystems of all systems at all levels
+            { "systems/abc123/subsystems/#",                                                 SYSTEM        },  // all subsystems of one system
+            { "systems/+/subsystems/+/#",                                                    SYSTEM        },  // trailing # after subsystem pattern
+
+            // --- Valid: # at datastream-level ID slot (returns DATASTREAM) ---
+            { "systems/abc123/datastreams/#",                                                DATASTREAM    },  // all datastreams of one system
+            { "systems/+/datastreams/#",                                                     DATASTREAM    },  // all datastreams of all systems
+            { "systems/abc123/datastreams/ds001/#",                                          DATASTREAM    },  // everything under one datastream (trailing #)
+            { "systems/abc123/datastreams/+/#",                                              DATASTREAM    },  // trailing # with wildcard datastream ID
+            { "systems/+/datastreams/+/#",                                                   DATASTREAM    },  // trailing # with both IDs wildcarded
+
+            // --- Valid: # at observation-level ID slot (returns OBSERVATION) ---
+            { "systems/abc123/datastreams/ds001/observations/#",                             OBSERVATION   },  // all observations from one datastream
+
+            // --- Valid: top-level collection shortcuts ---
+            { "deployments/#",                                                               DEPLOYMENT    },
+            { "procedures/#",                                                                PROCEDURE     },
+
+            // --- Invalid: # at a keyword slot ---
+            { "#",                                                                           null          },  // bare # — "systems" keyword expected at pos 0
+            { "systems/#/datastreams/+",                                                     null          },  // # not last segment
+        });
     }
 
-    @Test
-    public void testInvalid_plusInKeywordPosition_datastreams()
-    {
-        // systems/{id}/+/{id} — wildcard where "datastreams" must be
-        assertNoMatch("systems/abc123/+/ds001");
-    }
-
-    @Test
-    public void testInvalid_plusInKeywordPosition_observations()
-    {
-        // systems/{id}/datastreams/{id}/+/{id} — wildcard where "observations" must be
-        assertNoMatch("systems/abc123/datastreams/ds001/+/obs001");
-    }
-
-    @Test
-    public void testInvalid_hashInKeywordPosition()
-    {
-        // # where "systems" must be
-        assertNoMatch("#");
-    }
-
-    @Test
-    public void testInvalid_hashNotAtEnd()
-    {
-        // # must be the final segment
-        assertNoMatch("systems/#/datastreams/+");
-    }
 
     // =========================================================================
-    // Invalid: unknown or malformed paths
+    // Invalid — malformed or unknown paths
     // =========================================================================
 
     @Test
-    public void testInvalid_empty()
+    public void testInvalidTopics()
     {
-        assertNoMatch("");
+        assertTable(new Object[][] {
+            // path                                                                          expected
+            { "",                                                                            null          },  // empty
+            { "systems",                                                                     null          },  // missing ID segment
+            { "sensors/abc123",                                                              null          },  // unknown top-level keyword
+            { "oshex/systems/abc123",                                                        null          },  // nodeId prefix not stripped
+            { "systems/abc123/datastreams/ds001/observations/obs001/extra",                  null          },  // too many segments
+        });
     }
 
-    @Test
-    public void testInvalid_unknownTopLevelKeyword()
-    {
-        assertNoMatch("sensors/abc123");
-    }
-
-    @Test
-    public void testInvalid_tooManySegments()
-    {
-        // No pattern has 7 segments like this
-        assertNoMatch("systems/abc123/datastreams/ds001/observations/obs001/extra");
-    }
-
-    @Test
-    public void testInvalid_missingIdSegment()
-    {
-        // "systems" alone — no ID segment after it
-        assertNoMatch("systems");
-    }
-
-    @Test
-    public void testInvalid_nodeIdNotStripped()
-    {
-        // matchEventTopic expects prefix already stripped — raw topic should not match
-        assertNoMatch("oshex/systems/abc123");
-    }
 
     // =========================================================================
     // hasWildcard
     // =========================================================================
 
     @Test
-    public void testHasWildcard_noWildcard()
+    public void testHasWildcard()
     {
-        assertFalse(ConSysTopicValidator.hasWildcard("systems/abc123/datastreams/ds001"));
-    }
-
-    @Test
-    public void testHasWildcard_singleLevel()
-    {
-        assertTrue(ConSysTopicValidator.hasWildcard("systems/+/datastreams/+"));
-    }
-
-    @Test
-    public void testHasWildcard_multiLevel()
-    {
-        assertTrue(ConSysTopicValidator.hasWildcard("systems/abc123/#"));
-    }
-
-    @Test
-    public void testHasWildcard_both()
-    {
-        assertTrue(ConSysTopicValidator.hasWildcard("systems/+/datastreams/#"));
-    }
-
-    @Test
-    public void testHasWildcard_empty()
-    {
-        assertFalse(ConSysTopicValidator.hasWildcard(""));
+        Object[][] cases = {
+            // topic                                            hasWildcard
+            { "systems/abc123/datastreams/ds001",              false },
+            { "",                                              false },
+            { "systems/+/datastreams/+",                       true  },
+            { "systems/abc123/#",                              true  },
+            { "systems/+/datastreams/#",                       true  },
+        };
+        for (var row : cases)
+            assertEquals("hasWildcard(\"" + row[0] + "\")", row[1],
+                ConSysTopicValidator.hasWildcard((String) row[0]));
     }
 }
