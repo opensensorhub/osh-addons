@@ -33,7 +33,7 @@ import org.sensorhub.utils.Async;
  */
 public interface INavDatabase
 {
-    
+
     public interface IDecodedRoute
     {
         public List<IWaypoint> getWaypoints();
@@ -48,8 +48,8 @@ public interface INavDatabase
     
     
     public boolean isReady();
-    
-    
+
+
     public Map<String, INavDbWaypoint> getAirports();
     
     
@@ -65,7 +65,7 @@ public interface INavDatabase
     public IDecodedRoute decodeRoute(String codedRouteString, String originAirport);
 
 
-    public IDecodedRoute decodeRoute(String codedRouteString, double refLat, double refLon);
+    public IDecodedRoute decodeRoute(String codedRouteString, String originAirport, double refLat, double refLon);
     
     
     
