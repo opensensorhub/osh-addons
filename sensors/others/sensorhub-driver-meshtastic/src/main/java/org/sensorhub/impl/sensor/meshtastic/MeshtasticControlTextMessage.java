@@ -36,7 +36,7 @@ public class MeshtasticControlTextMessage extends AbstractSensorControl<Meshtast
                 )
                 .addField("destination", fac.createText()
                         .label("Destination")
-                        .description("Type the Node Number of the Meshtastic Node if you want to send a direct message to that Node. Type 'broadcast' if you want to broadcast your message to all nodes present")
+                        .description("Node to send to. Use the node ID (e.g. !9ee6f858), the decimal node number (e.g. 2665936984), or 'broadcast' to send to all nodes")
                         .definition(SWEHelper.getPropertyUri("Destination"))
                 )
                 .build();
@@ -50,11 +50,12 @@ public class MeshtasticControlTextMessage extends AbstractSensorControl<Meshtast
         // CREATE A CHECK FOR DESTINATION. USERS ON ADMIN CAN BROADCAST CHANNELS BY TYPING "Broadcast" or
         // USERS CAN SEND TO DIRECT NODE USING NODE NUMBER
         int destinationID;
-        if(destination.equals("broadcast")){
+        if (destination.equals("broadcast")) {
             destinationID = 0xFFFFFFFF;
-        }else{
-            destinationID = (int) (Long.parseLong(destination) & 0xFFFFFFFFL );
-
+        } else if (destination.startsWith("!")) {
+            destinationID = (int) (Long.parseLong(destination.substring(1), 16) & 0xFFFFFFFFL);
+        } else {
+            destinationID = (int) (Long.parseLong(destination) & 0xFFFFFFFFL);
         }
 
         // CREATE A MESHTASTIC PROTO PACKET TO BE SENT AS TEXT MESSAGE
