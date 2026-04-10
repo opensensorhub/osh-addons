@@ -14,6 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.filter.obs;
 
+import com.google.common.collect.BoundType;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FoiFilter;
@@ -81,12 +82,12 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
+
+                String lowerBound = temporalFilter.getRange() != null && temporalFilter.getRange().lowerBoundType().equals(BoundType.OPEN) ? "(" : "[";
+                String upperBound = temporalFilter.getRange() != null && temporalFilter.getRange().upperBoundType().equals(BoundType.OPEN) ? ")" : "]";
+
                 addCondition(
-                        this.tableName+".phenomenonTime >= '"+temporalFilter.getMin()+"'"
-                );
-                addCondition(
-                        this.tableName+".phenomenonTime <= '"+temporalFilter.getMax()+"'"
-                );
+                        "tsrange('"+temporalFilter.getMin()+"','"+temporalFilter.getMax()+"', '" + lowerBound + upperBound + "') @> "+this.tableName+".phenomenonTime");
             }
         }
     }
@@ -100,8 +101,12 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
             } else {
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
+
+                String lowerBound = temporalFilter.getRange().lowerBoundType().equals(BoundType.CLOSED) ? "[" : "(";
+                String upperBound = temporalFilter.getRange().upperBoundType().equals(BoundType.CLOSED) ? "]" : ")";
+
                 addCondition(
-                        "tsrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
+                        "tsrange('"+min+"','"+max+"', '" + lowerBound + upperBound + "') @> "+this.tableName+".resultTime");
             }
         }
     }
