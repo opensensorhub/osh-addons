@@ -48,15 +48,14 @@ public class UnmannedConfig extends SensorConfig {
     // Define the Enum for your options
     public enum ConnectionType {
 
-        WIFI,
+        NETWORK,
         SERIAL,
-        SIM,
         EMPTY
     };
 
 // register with your driver
     @DisplayInfo(desc = "Type of Connection to the Drone")
-    public ConnectionType connectionType = ConnectionType.WIFI;
+    public ConnectionType connectionType = ConnectionType.NETWORK;
 
     /**
      * The unique identifier for the configured sensor (or sensor platform).

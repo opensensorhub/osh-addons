@@ -68,12 +68,12 @@ public class MavSdkServerHandler {
           Path exePath = extractExecutable(mavsdkServerString);
 
           /**
-           * Each configuration (WIFI, SIM, SERIAL, EMPTY) will kickstart
+           * Each configuration (NETWORK, SERIAL, EMPTY) will kickstart
            * the mavsdk_server binary with different parameter options. Some will use the UDP address/port
            * some will use the serial interface.
            */
           ProcessBuilder pb = switch( config.connectionType ) {
-              case WIFI, SIM -> new ProcessBuilder(
+              case NETWORK -> new ProcessBuilder(
                       exePath.toString(),   // program
                       "tcpin://" + config.SDKAddress + ":" + String.valueOf(config.SDKPort),
                       "udpin://" + config.UDPListenAddr + ":" + String.valueOf(config.UDPListenPort));

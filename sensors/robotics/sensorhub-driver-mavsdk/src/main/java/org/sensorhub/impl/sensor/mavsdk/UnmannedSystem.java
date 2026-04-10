@@ -165,8 +165,12 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
         unmannedControlPauseMission.init();
 
         videoOutput = new UnmannedVideoOutput(config.ffmpegConnection);
-        videoOutput.init();
-        addOutput(videoOutput.getVideoDataInterface(), false);
+        if (null != config.ffmpegConnection.connectionString &&
+                config.ffmpegConnection.connectionString.compareTo("") != 0 &&
+                !config.ffmpegConnection.connectionString.isEmpty()) {
+            videoOutput.init();
+            addOutput(videoOutput.getVideoDataInterface(), false);
+        }
     }
 
     @Override
@@ -175,7 +179,11 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
 
         mavsdkServer.start(config);
 
-        videoOutput.start();
+        if (null != config.ffmpegConnection.connectionString &&
+                config.ffmpegConnection.connectionString.compareTo("") != 0 &&
+                !config.ffmpegConnection.connectionString.isEmpty()) {
+            videoOutput.start();
+        }
 
         receiveDrone();
 
