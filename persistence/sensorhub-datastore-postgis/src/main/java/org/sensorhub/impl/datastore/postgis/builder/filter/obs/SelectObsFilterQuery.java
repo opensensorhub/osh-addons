@@ -82,8 +82,8 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
-                String lowerBoundEquals = temporalFilter.getRange().lowerBoundType().equals(BoundType.OPEN) ? "=":"";
-                String upperBoundEquals = temporalFilter.getRange().upperBoundType().equals(BoundType.OPEN) ? "=":"";
+                String lowerBoundEquals = temporalFilter.getRange().lowerBoundType().equals(BoundType.OPEN) ? "":"=";
+                String upperBoundEquals = temporalFilter.getRange().upperBoundType().equals(BoundType.OPEN) ? "":"=";
                 addCondition(
                         this.tableName+".phenomenonTime >"+lowerBoundEquals+" '"+temporalFilter.getMin()+"'"
                 );
@@ -106,8 +106,8 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
 //                addCondition(
 //                        "tsrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
 //            }
-                String lowerBoundEquals = temporalFilter.getRange().lowerBoundType().equals(BoundType.OPEN) ? "=":"";
-                String upperBoundEquals = temporalFilter.getRange().upperBoundType().equals(BoundType.OPEN) ? "=":"";
+                String lowerBoundEquals = temporalFilter.getRange().lowerBoundType().equals(BoundType.OPEN) ? "":"=";
+                String upperBoundEquals = temporalFilter.getRange().upperBoundType().equals(BoundType.OPEN) ? "":"=";
                 addCondition(
                         this.tableName + ".resultTime >"+lowerBoundEquals+" '" + temporalFilter.getMin() + "'"
                 );
