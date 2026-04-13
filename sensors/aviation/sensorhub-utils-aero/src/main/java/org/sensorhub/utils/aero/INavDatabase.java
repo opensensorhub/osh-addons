@@ -62,7 +62,10 @@ public interface INavDatabase
     public IDecodedRoute decodeRoute(String codedRouteString);
 
 
-    public IDecodedRoute decodeRoute(String codedRouteString, double refLat, double refLon);
+    public IDecodedRoute decodeRoute(String codedRouteString, String originAirport);
+
+
+    public IDecodedRoute decodeRoute(String codedRouteString, String originAirport, double refLat, double refLon);
     
     
     

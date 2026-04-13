@@ -87,7 +87,11 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 String upperBound = temporalFilter.getRange() != null && temporalFilter.getRange().upperBoundType().equals(BoundType.OPEN) ? ")" : "]";
 
                 addCondition(
-                        "tsrange('"+temporalFilter.getMin()+"','"+temporalFilter.getMax()+"', '" + lowerBound + upperBound + "') @> "+this.tableName+".phenomenonTime");
+                        this.tableName+".phenomenonTime >= '"+temporalFilter.getMin()+"'"
+                );
+                addCondition(
+                        this.tableName+".phenomenonTime <= '"+temporalFilter.getMax()+"'"
+                );
             }
         }
     }
@@ -106,7 +110,7 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 String upperBound = temporalFilter.getRange().upperBoundType().equals(BoundType.CLOSED) ? "]" : ")";
 
                 addCondition(
-                        "tsrange('"+min+"','"+max+"', '" + lowerBound + upperBound + "') @> "+this.tableName+".resultTime");
+                        "tsrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
             }
         }
     }

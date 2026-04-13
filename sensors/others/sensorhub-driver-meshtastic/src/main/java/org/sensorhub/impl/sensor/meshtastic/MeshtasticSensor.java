@@ -15,8 +15,6 @@ import org.meshtastic.proto.MeshProtos;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vast.ogc.om.MovingFeature;
 
 import java.io.IOException;
@@ -24,6 +22,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -36,9 +37,11 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     static final String UID_PREFIX = "urn:osh:sensor:meshtastic:";
     static final String XML_PREFIX = "meshtastic";
 
-    private static final Logger logger = LoggerFactory.getLogger(MeshtasticSensor.class);
+    String localMeshNodeId = null; // discovered from radio during startup via myInfo
+
+
     private ICommProvider<?> commProvider;
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private ExecutorService executor = Executors.newSingleThreadExecutor();
     AtomicBoolean isProcessing = new AtomicBoolean(false);
 
     // MESHTASTIC MESSAGE VARIABLES
@@ -62,13 +65,23 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     public void doInit() throws SensorHubException {
         super.doInit();
 
-        // Generate identifiers
-        generateUniqueID(UID_PREFIX, config.serialNumber);
-        generateXmlID(XML_PREFIX, config.serialNumber);
-
+        // Load comm provider and fetch the radio's node ID before generating UIDs
         if (config.commSettings != null) {
             commProvider = (ICommProvider<?>) getParentHub().getModuleRegistry().loadSubModule(config.commSettings, true);
+            localMeshNodeId = fetchLocalMeshNodeId();
         }
+
+        // Use manual serial number if provided, otherwise use the discovered radio node ID
+        String id;
+        if (config.serialNumber != null && !config.serialNumber.isBlank()) {
+            id = config.serialNumber; //Use the Serial Number if someone writes it in the admin panel
+        } else if (localMeshNodeId != null) {
+            id = localMeshNodeId; // If serial number is left black, driver will automatically fetch the meshtastic node id of the radio being used
+        } else {
+            throw new SensorHubException("Could not determine radio node ID — check comm settings and ensure the radio is connected");
+        }
+        generateUniqueID(UID_PREFIX, id);
+        generateXmlID(XML_PREFIX, id);
 
         // CREATE AND INITIALIZE OUTPUTS
         textOutput = new MeshtasticOutputTextMessage(this);
@@ -119,6 +132,9 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
             sendMessage(handshake);
 
             // BEGIN PROCESSING DATA
+            if (executor == null || executor.isShutdown() || executor.isTerminated()) {
+                executor = Executors.newSingleThreadExecutor();
+            }
             startProcessing();
         } else {
             throw new SensorHubException("No communication provider configured");
@@ -129,19 +145,24 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
     public void doStop() throws SensorHubException {
         super.doStop();
 
-        //Stop processing the loop
         isProcessing.set(false);
 
-        // Stop comm
-        if(commProvider != null){
-            try {
-                commProvider.getInputStream().close();
-            } catch (IOException e) {
-                getLogger().warn("Failed to close input stream", e);
-            }
+        // 1. Close comm first → this unblocks read()
+        if (commProvider != null) {
+            commProvider.stop();
         }
 
-
+        // 2. Then shutdown executor
+        if (executor != null) {
+            executor.shutdownNow();
+            try {
+                if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                    getLogger().warn("Executor did not terminate cleanly");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     @Override
@@ -181,76 +202,162 @@ public class MeshtasticSensor extends AbstractSensorModule<Config> {
         }
 
         executor.execute(() -> {
-            // try-with-resources to auto-close
-            try (InputStream in = commProvider.getInputStream()){
+            try (InputStream in = commProvider.getInputStream()) {
                 isProcessing.set(true);
-                while (isProcessing.get()) {
-                    int b;
-                    // find START1 in Input Stream, indicating that a Protobuf messages is being sent
-                    do {
-                        b = in.read();
-                        if (b == -1) return;
-//                        if (b != START1) {
-////                            optional: treat as debug ASCII
-//                            System.out.print((char) b);
-//                        }
-                    } while (b != START1);
-
-                    // If START1(0x94) is found, expect START2
-                    b = in.read();
-                    // invalid header
-                    if (b != START2) {
-                        getLogger().warn("Invalid header");
-                        continue;
-                    }
-
-                    // GET LENGTH OF PROTOBUF MESSAGE
-                    int lenMSB = in.read();
-                    int lenLSB = in.read();
-                    if (lenMSB == -1 || lenLSB == -1) break;
-
-                    int length = ((lenMSB & 0xFF) << 8) | (lenLSB & 0xFF);
-                    if (length <= 0 || length > 512) {
-                        getLogger().info("Invalid length, resyncing...");
-                        continue;
-                    }
-
-                    // PROTOBUF DATA
-                    byte[] payload = new byte[length];
-                    int read = 0;
-                    while (read < length) {
-                        int r = in.read(payload, read, length - read);
-                        if (r == -1) break;
-                        read += r;
-                    }
-
-                    if (read < length) {
-                        getLogger().info("Truncated packet, resyncing...");
-                        continue;
-                    }
-
-                    // parse protobuf
-                    try {
-                        MeshProtos.FromRadio msg = MeshProtos.FromRadio.parseFrom(payload);
-                        if(msg.hasPacket()){
-                            MeshProtos.MeshPacket packet = msg.getPacket();
-                            meshtasticHandler.handlePacket(packet);
-                        }
-//                        getLogger().info("New message: " + msg);
-                    } catch (Exception e) {
-                        getLogger().error("Invalid protobuf: " + e.getMessage());
-                    }
-                }
-
+                processInputStream(in);
             } catch (IOException e) {
-                if (isProcessing.get()) {
-                    getLogger().error("Error reading from comm provider", e);
-                }
+                // This IOException is from getInputStream() or closing stream
+                getLogger().debug("Input stream failed or closed: {}", e.getMessage());
             } finally {
                 isProcessing.set(false);
             }
         });
     }
+
+    private void processInputStream(InputStream in) {
+        while (isProcessing.get()) {
+            try {
+                processNextPacket(in);
+            } catch (Exception e) {
+                // Catch EBADF exception when comm provider is stopped and port is closed
+                if (!isProcessing.get() && e instanceof IllegalArgumentException && e.getMessage().contains("EBADF")) {
+                    getLogger().debug("Serial port closed during shutdown (EBADF).");
+                    break;
+                }
+                getLogger().error("Unexpected error in processing loop", e);
+            }
+        }
+
+    }
+
+
+    private void processNextPacket(InputStream in) throws IOException {
+        // CHECK TO SEE IF PACKET SHOULD PROCESS
+        if (!findStartOfPacket(in)){
+            return;
+        }
+
+        // GET LENGTHH OF PACKET AND CHECK THAT IT MATCHES STYLE
+        int length = readPacketLength(in);
+        if (length <= 0 || length > 512) {
+            getLogger().info("Invalid length, resyncing...");
+            return;
+        }
+
+        // READ PROTOBUF PAYLOAD DATA
+        byte[] payload = readPayload(in, length);
+        if(payload.length == 0){
+            getLogger().info("Truncated packet, resyncing...");
+            return;
+        }
+
+        // PARSE PROTOBUF PAYLOAD USING MESHTASTIC PROTOS
+        parseProtobuf(payload);
+    }
+
+    private boolean findStartOfPacket(InputStream in) throws IOException {
+        int b;
+        // find START1 in Input Stream, indicating that a Protobuf messages is being sent
+        do {
+            b = in.read();
+            if (b == -1) return false;
+        } while (b != START1);
+
+        // If START1(0x94) is found, expect START2
+        b = in.read();
+        // invalid header
+        if (b != START2) {
+            getLogger().warn("Invalid header");
+            return false;
+        }
+
+        return true;
+    }
+
+    // GET LENGTH OF PROTOBUF MESSAGE
+    private int readPacketLength(InputStream in) throws IOException {
+        int lenMSB = in.read();
+        int lenLSB = in.read();
+        if (lenMSB == -1 || lenLSB == -1) return -1;
+        return ((lenMSB & 0xFF) <<8 | (lenLSB & 0xFF));
+    }
+
+    // READ A PAYLOAD FROM INPUT STREAM
+    private byte[] readPayload(InputStream in, int length) throws IOException {
+        byte[] payload = new byte[length];
+        int read = 0;
+        while(read < length ){
+            int r = in.read(payload,read,length-read);
+            if (r == -1) {
+                return new byte[0];
+            }
+            read += r;
+        }
+        return payload;
+    }
+
+    // PARSE MESHTASTIC RADIO MESSAGE
+    private void parseProtobuf(byte[] payload){
+        try {
+            MeshProtos.FromRadio msg = MeshProtos.FromRadio.parseFrom(payload);
+            if(msg.hasMyInfo()){
+                handleMyInfo(msg.getMyInfo());
+            }
+            if(msg.hasPacket()){
+                MeshProtos.MeshPacket packet = msg.getPacket();
+                meshtasticHandler.handlePacket(packet);
+            }
+        } catch (Exception e) {
+            getLogger().error("Invalid protobuf: {} ", e.getMessage());
+        }
+    }
+
+    private void handleMyInfo(MeshProtos.MyNodeInfo myInfo){
+        long nodeNum = Integer.toUnsignedLong(myInfo.getMyNodeNum());
+        localMeshNodeId = String.format("!%08x", nodeNum);
+        getLogger().info("Connected to Meshtastic radio: node ID = {}", localMeshNodeId);
+    }
+
+    private String fetchLocalMeshNodeId() {
+        ExecutorService fetchExecutor = Executors.newSingleThreadExecutor();
+        try {
+            commProvider.start();
+            Thread.sleep(100);
+            sendMessage(MeshProtos.ToRadio.newBuilder().setWantConfigId(0).build());
+
+            Future<String> future = fetchExecutor.submit(() -> {
+                try (InputStream in = commProvider.getInputStream()) {
+                    while (!Thread.currentThread().isInterrupted()) {
+                        if (!findStartOfPacket(in)) continue;
+                        int length = readPacketLength(in);
+                        if (length <= 0 || length > 512) continue;
+                        byte[] payload = readPayload(in, length);
+                        if (payload.length == 0) continue;
+                        MeshProtos.FromRadio msg = MeshProtos.FromRadio.parseFrom(payload);
+                        if (msg.hasMyInfo()) {
+                            long nodeNum = Integer.toUnsignedLong(msg.getMyInfo().getMyNodeNum());
+                            return String.format("!%08x", nodeNum);
+                        }
+                    }
+                }
+                return null;
+            });
+
+            return future.get(5, TimeUnit.SECONDS);
+
+        } catch (TimeoutException e) {
+            getLogger().warn("Timed out waiting for radio node ID, falling back to serial number");
+        } catch (Exception e) {
+            getLogger().warn("Could not fetch radio node ID: {}", e.getMessage());
+        } finally {
+            fetchExecutor.shutdownNow();
+            try { commProvider.stop(); } catch (Exception ignored) {}
+        }
+        
+        return null;
+    }
+
+
 
     public boolean sendMessage(MeshProtos.ToRadio message) {
         byte[] bytes = message.toByteArray();
