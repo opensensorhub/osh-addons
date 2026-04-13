@@ -103,17 +103,17 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
-                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
-                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
+//                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+//                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
                 String lowerBound = temporalFilter.getRange() != null && temporalFilter.getRange().lowerBoundType().equals(BoundType.OPEN) ? "" : "=";
                 String upperBound = temporalFilter.getRange() != null && temporalFilter.getRange().upperBoundType().equals(BoundType.OPEN) ? "" : "=";
 
                 addCondition(
-                        this.tableName+".resultTime >" + lowerBound + " '"+min+"'"
+                        this.tableName+".resultTime >" + lowerBound + " '"+temporalFilter.getMin()+"'"
                 );
                 addCondition(
-                        this.tableName+".resultTime <" + upperBound + " '"+max+"'"
+                        this.tableName+".resultTime <" + upperBound + " '"+temporalFilter.getMax()+"'"
                 );
             }
         }
