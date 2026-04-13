@@ -1,25 +1,58 @@
 name: Publish package to GitHub Packages
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      run_all:
+        description: "Publish all subprojects"
+        required: true
+        default: "false"
+      run_specific:
+        description: "Publish specific subproject"
+        required: false
+        default: ""
+  push:
+    branches: [ "master" ]
 jobs:
-  publish:
+  detect-changes:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          submodules: recursive
-      - uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@017a9effdb900e5b5b2fddfb590a105619dca3c3 # v4.4.2
+      - uses: actions/checkout@v4
+      - name: Detect changed subprojects
+        id: changes
+        run: |
+          # get all projects
+          CHANGED=$(./gradlew projects --quiet | grep "Project " | awk '{print $3}' | sed "s/'\|://g")
+          
+          #handle if project is specified
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ inputs.run_all }}" = "false" ]; then
+              CHANGED="${{ inputs.run_specific }}"
+            fi
+          else #merge to master, detect specific changes
+            CHANGED=$(grep -F -o -f <(echo "$CHANGED") <(git diff --name-only HEAD~ HEAD))
+          fi
+          
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+      - name: Build matrix
+        id: set-matrix
+        run: |
+          ARR=$(echo "${{ steps.changes.outputs.changed }}" | jq -R -s -c 'split("\n")[:-1]')
+          echo "matrix={\"project\":$ARR}" >> $GITHUB_OUTPUT
 
-      - name: Publish package
-        run: ./gradlew publish --continue #don't block progress for other packages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  publish:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish project
+        run: |
+          echo "Publishing ${{ matrix.project }}"
+          VERSION=$(./gradlew --quiet :${{ matrix.project }}:printVersion)
+          if [ "${{ github.event_name }}" = "push" ]; then
+            VERSION="${VERSION}-SNAPSHOT"
+          fi
+          ./gradlew :${{ matrix.project }}:publish -Pversion="$VERSION"
