@@ -14,6 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.filter.obs;
 
+import com.google.common.collect.BoundType;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FoiFilter;
@@ -81,11 +82,15 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
+
+                String lowerBound = temporalFilter.getRange() != null && temporalFilter.getRange().lowerBoundType().equals(BoundType.OPEN) ? "" : "=";
+                String upperBound = temporalFilter.getRange() != null && temporalFilter.getRange().upperBoundType().equals(BoundType.OPEN) ? "" : "=";
+
                 addCondition(
-                        this.tableName+".phenomenonTime >= '"+temporalFilter.getMin()+"'"
+                        this.tableName+".phenomenonTime >" + lowerBound + " '"+temporalFilter.getMin()+"'"
                 );
                 addCondition(
-                        this.tableName+".phenomenonTime <= '"+temporalFilter.getMax()+"'"
+                        this.tableName+".phenomenonTime <" + upperBound + " '"+temporalFilter.getMax()+"'"
                 );
             }
         }
@@ -98,10 +103,18 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
-                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
-                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
+//                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+//                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
+
+                String lowerBound = temporalFilter.getRange() != null && temporalFilter.getRange().lowerBoundType().equals(BoundType.OPEN) ? "" : "=";
+                String upperBound = temporalFilter.getRange() != null && temporalFilter.getRange().upperBoundType().equals(BoundType.OPEN) ? "" : "=";
+
                 addCondition(
-                        "tsrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
+                        this.tableName+".resultTime >" + lowerBound + " '"+temporalFilter.getMin()+"'"
+                );
+                addCondition(
+                        this.tableName+".resultTime <" + upperBound + " '"+temporalFilter.getMax()+"'"
+                );
             }
         }
     }
