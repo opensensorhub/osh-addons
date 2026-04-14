@@ -93,7 +93,8 @@ public class UnmannedControlTakeoff extends AbstractSensorControl<UnmannedSystem
                 .name(SENSOR_CONTROL_NAME)
                 .label(SENSOR_CONTROL_LABEL)
                 .description(SENSOR_CONTROL_DESCRIPTION)
-                .addField("TakeoffAltitudeAGL", factory.createQuantity())
+                .addField("TakeoffAltitudeAGL", factory.createQuantity()
+                                .definition(GeoPosHelper.DEF_ALTITUDE_GROUND))
                 .build();
     }
 

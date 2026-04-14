@@ -23,6 +23,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.command.CommandException;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 /**
@@ -83,7 +84,9 @@ public class UnmannedControlFlightMode extends AbstractSensorControl<UnmannedSys
                 .name(SENSOR_CONTROL_NAME)
                 .label(SENSOR_CONTROL_LABEL)
                 .description(SENSOR_CONTROL_DESCRIPTION)
-                .addField("FlightMode", factory.createQuantity())
+                .addField("FlightMode", factory.createQuantity()
+                        .definition(SWEHelper.getPropertyUri("Control"))
+                )
                 .build();
     }
 

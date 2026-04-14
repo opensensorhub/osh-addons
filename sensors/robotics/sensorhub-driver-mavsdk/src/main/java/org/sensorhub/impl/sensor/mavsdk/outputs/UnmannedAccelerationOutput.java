@@ -19,6 +19,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.ArrayList;
@@ -76,6 +77,7 @@ public class UnmannedAccelerationOutput extends AbstractSensorOutput<UnmannedSys
                    .description("Time of data collection"))
                 .addField( "Acceleration", sweFactory.createAccelerationVector("m/s2")
                     .label("Acceleration")
+                    .definition(SWEHelper.getPropertyUri("LinearAcceleration"))
                     .description("Acceleration measured by raw IMU"))
                 .build();
 

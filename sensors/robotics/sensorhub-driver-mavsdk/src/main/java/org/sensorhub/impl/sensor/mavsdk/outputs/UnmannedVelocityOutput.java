@@ -19,6 +19,8 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEConstants;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.ArrayList;
@@ -73,6 +75,7 @@ public class UnmannedVelocityOutput extends AbstractSensorOutput<UnmannedSystem>
                    .description("Time of data collection"))
                 .addField( "Velocity", sweFactory.createVelocityVectorNED("m/s")
                     .label("Velocity")
+                    .definition(SWEHelper.getPropertyUri("LinearVelocity"))
                     .description("Velocity"))
                 .build();
 

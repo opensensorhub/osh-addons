@@ -19,6 +19,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.ArrayList;
@@ -76,6 +77,7 @@ public class UnmannedAngularVelocityOutput extends AbstractSensorOutput<Unmanned
                    .description("Time of data collection"))
                 .addField( "AngularVelocity", sweFactory.createAngularVelocityVector("rad/s")
                     .label("AngularVelocity")
+                    .definition(SWEHelper.getPropertyUri("AngularVelocity"))
                     .description("Angular velocity measured by gyroscopes from raw IMU"))
                 .build();
 

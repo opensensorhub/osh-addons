@@ -19,6 +19,8 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEConstants;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.ArrayList;
@@ -74,6 +76,7 @@ public class UnmannedMagneticFieldOutput extends AbstractSensorOutput<UnmannedSy
                 .addField("MagneticField", sweFactory.createVector3()
                     .label("MagneticField")
                     .refFrame("FRD")
+                    .definition(SWEConstants.QUDT_URI_PREFIX + "MagneticFluxDensity")
                     .build())
                 .build();
 

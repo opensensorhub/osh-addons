@@ -19,6 +19,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.ArrayList;
@@ -73,6 +74,7 @@ public class UnmannedTemperatureOutput extends AbstractSensorOutput<UnmannedSyst
                    .description("Time of data collection"))
                 .addField( "Temperature", sweFactory.createQuantity()
                     .label("Temperature")
+                    .definition(SWEHelper.getPropertyUri("temperature"))
                     .description("Temperature in degrees celsius"))
                 .build();
 

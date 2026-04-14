@@ -23,6 +23,7 @@ import org.sensorhub.api.command.ICommandData;
 import org.sensorhub.api.command.ICommandStatus;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 import org.vast.util.TimeExtent;
 import java.time.Instant;
@@ -67,7 +68,9 @@ public class UnmannedControlPauseMission extends AbstractSensorControl<UnmannedS
                 .id("PauseMission")
                 .label("PauseMission")
                 .description("PauseMission")
-                .addField("Resume", helper.createBoolean())
+                .addField("Resume", helper.createBoolean()
+                        .definition(SWEHelper.getPropertyUri("Control"))
+                )
                 .build();
     }
 

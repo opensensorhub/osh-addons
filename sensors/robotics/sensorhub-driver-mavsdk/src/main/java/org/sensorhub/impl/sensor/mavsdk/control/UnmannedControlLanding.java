@@ -24,6 +24,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.command.CommandException;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 /**
@@ -88,7 +89,9 @@ public class UnmannedControlLanding extends AbstractSensorControl<UnmannedSystem
                 .name(SENSOR_CONTROL_NAME)
                 .label(SENSOR_CONTROL_LABEL)
                 .description(SENSOR_CONTROL_DESCRIPTION)
-                .addField("disarm", factory.createBoolean().value(true))
+                .addField("disarm", factory.createBoolean().value(true)
+                        .definition(SWEHelper.getPropertyUri("Control"))
+                )
                 .build();
     }
 

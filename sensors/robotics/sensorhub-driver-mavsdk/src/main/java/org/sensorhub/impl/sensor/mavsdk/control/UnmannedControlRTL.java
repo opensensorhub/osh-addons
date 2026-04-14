@@ -27,6 +27,7 @@ import org.sensorhub.api.command.ICommandData;
 import org.sensorhub.api.command.ICommandStatus;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 import org.vast.util.TimeExtent;
 
@@ -91,7 +92,9 @@ public class UnmannedControlRTL extends AbstractSensorControl<UnmannedSystem>
                 .name(SENSOR_CONTROL_NAME)
                 .label(SENSOR_CONTROL_LABEL)
                 .description(SENSOR_CONTROL_DESCRIPTION)
-                .addField("rtl", factory.createBoolean().value(true))
+                .addField("rtl", factory.createBoolean()
+                        .definition(SWEHelper.getPropertyUri("Control"))
+                        .value(true))
                 .build();
     }
 

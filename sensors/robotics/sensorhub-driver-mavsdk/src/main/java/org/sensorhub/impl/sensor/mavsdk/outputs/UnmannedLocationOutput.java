@@ -19,6 +19,8 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEConstants;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.ArrayList;
@@ -60,6 +62,7 @@ public class UnmannedLocationOutput extends AbstractSensorOutput<UnmannedSystem>
     public void doInit() {
         // Get an instance of SWE Factory suitable to build components
         GeoPosHelper sweFactory = new GeoPosHelper();
+        SWEHelper sweHelper = new SWEHelper();
 
         // Create the data record description
         dataRecord = sweFactory.createRecord()
@@ -72,7 +75,9 @@ public class UnmannedLocationOutput extends AbstractSensorOutput<UnmannedSystem>
                    .description("Time of data collection"))
                 .addField("Location", sweFactory.createLocationVectorLLA()
                    .label("Location")
+                   .definition(SWEConstants.DEF_SENSOR_LOC)
                    .description("Location Latitude Longitude Altitude"))
+
                 .build();
 
         dataEncoding = sweFactory.newTextEncoding(",", "\n");

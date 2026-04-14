@@ -19,6 +19,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEConstants;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.ArrayList;
@@ -72,6 +73,7 @@ public class UnmannedHomeOutput extends AbstractSensorOutput<UnmannedSystem> {
                    .description("Time of data collection"))
                 .addField("Home", sweFactory.createLocationVectorLLA()
                    .label("Home")
+                   .definition(SWEConstants.DEF_SENSOR_LOC)
                    .description("Home Latitude Longitude Altitude"))
                 .build();
 

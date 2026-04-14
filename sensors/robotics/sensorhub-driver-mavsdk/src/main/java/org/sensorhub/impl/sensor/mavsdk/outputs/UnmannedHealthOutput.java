@@ -19,6 +19,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.ArrayList;
@@ -76,24 +77,31 @@ public class UnmannedHealthOutput extends AbstractSensorOutput<UnmannedSystem> {
                         .description("Time of data collection"))
                 .addField("IsArmable", sweFactory.createBoolean()
                         .label("Is Armable")
+                        .definition(SWEHelper.getPropertyUri("SystemStatus"))
                         .description("UAS is Armable"))
                 .addField("IsGyrometerCalibrationOk", sweFactory.createBoolean()
                         .label("Gyrometer Calibration OK")
+                        .definition(SWEHelper.getPropertyUri("SystemStatus"))
                         .description("Gyrometer Calibration OK"))
                 .addField("IsAccelerometerCalibrationOk", sweFactory.createBoolean()
                         .label("Accelerometer Calibration OK")
+                        .definition(SWEHelper.getPropertyUri("SystemStatus"))
                         .description("Accelerometer Calibration OK"))
                 .addField("IsMagnetometerCalibrationOk", sweFactory.createBoolean()
                         .label("Magnetometer Calibration OK")
+                        .definition(SWEHelper.getPropertyUri("SystemStatus"))
                         .description("Magnetometer Calibration OK"))
                 .addField("IsGlobalPositionOk", sweFactory.createBoolean()
                         .label("GlobalPosition OK")
+                        .definition(SWEHelper.getPropertyUri("SystemStatus"))
                         .description("GlobalPosition OK"))
                 .addField("IsHomePositionOk", sweFactory.createBoolean()
                         .label("HomePosition OK")
+                        .definition(SWEHelper.getPropertyUri("SystemStatus"))
                         .description("HomePosition OK"))
                 .addField("IsLocalPositionOk", sweFactory.createBoolean()
                         .label("LocalPosition OK")
+                        .definition(SWEHelper.getPropertyUri("SystemStatus"))
                         .description("LocalPosition OK"))
                 .build();
 

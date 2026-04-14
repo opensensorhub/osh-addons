@@ -23,6 +23,7 @@ import net.opengis.swe.v20.*;
 import org.sensorhub.api.command.CommandException;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.concurrent.TimeUnit;
@@ -142,8 +143,12 @@ public class UnmannedControlLocation extends AbstractSensorControl<UnmannedSyste
                         .addCoordinate("AltitudeAGL", factory.createQuantity()
                                 .uom("m")
                                 .value(30)))
-                .addField( "returnToStart", factory.createBoolean().value(false))
-                .addField( "hoverSeconds", factory.createCount().value(0))
+                .addField( "returnToStart", factory.createBoolean().value(false)
+                        .definition(SWEHelper.getPropertyUri("Control"))
+                )
+                .addField( "hoverSeconds", factory.createCount().value(0)
+                        .definition(SWEHelper.getPropertyUri("Control"))
+                )
                 .build();
     }
 

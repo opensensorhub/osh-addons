@@ -19,6 +19,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.ArrayList;
@@ -71,9 +72,11 @@ public class UnmannedStatusEventOutput extends AbstractSensorOutput<UnmannedSyst
                         .label("Sample Time")
                         .description("Time of data collection"))
                 .addField("StatusType", sweFactory.createText()
+                        .definition(SWEHelper.getPropertyUri("StatusType"))
                         .label("Type")
                         .description("Status type output"))
                 .addField("Status", sweFactory.createText()
+                        .definition(SWEHelper.getPropertyUri("SystemStatus"))
                         .label("Status")
                         .description("Status text output"))
                 .build();

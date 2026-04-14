@@ -19,6 +19,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.ArrayList;
@@ -74,7 +75,8 @@ public class UnmannedAttitudeOutput extends AbstractSensorOutput<UnmannedSystem>
                    .asSamplingTimeIsoUTC()
                    .label("Sample Time")
                    .description("Time of data collection"))
-                .addField("Attitude", sweFactory.createEulerOrientationYPR("deg"))
+                .addField("Attitude", sweFactory.createEulerOrientationYPR("deg")
+                        .definition(SWEHelper.getPropertyUri("attitude")))
                 .build();
 
         dataEncoding = sweFactory.newTextEncoding(",", "\n");

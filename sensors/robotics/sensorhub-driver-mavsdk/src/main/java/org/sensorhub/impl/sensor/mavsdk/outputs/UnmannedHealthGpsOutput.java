@@ -72,6 +72,7 @@ public class UnmannedHealthGpsOutput extends AbstractSensorOutput<UnmannedSystem
                         .description("Time of data collection"))
                 .addField("NumGpsSatellites", sweFactory.createCount()
                         .label("Number GPS Satellites")
+                        .definition("http://sensorml.com/ont/isa/property/Satellites")
                         .description("Number of GPS satellites detected"))
                 .build();
 

@@ -27,6 +27,7 @@ import org.sensorhub.api.command.ICommandData;
 import org.sensorhub.api.command.ICommandStatus;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 import org.vast.util.TimeExtent;
 
@@ -90,6 +91,7 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
                 .id(SENSOR_CONTROL_NAME)
                 .label(SENSOR_CONTROL_LABEL)
                 .description(SENSOR_CONTROL_DESCRIPTION)
+                .definition(SWEHelper.getPropertyUri("Control"))
                 .addField("fileType", helper.createText())
                 .addField("groundStation", helper.createText())
                 .addField("mission", helper.createRecord()

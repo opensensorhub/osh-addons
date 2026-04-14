@@ -25,6 +25,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.command.*;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 import org.vast.util.TimeExtent;
 import java.time.Instant;
@@ -87,7 +88,9 @@ public class UnmannedControlQGCMission extends AbstractSensorControl<UnmannedSys
                 .label(SENSOR_CONTROL_LABEL)
                 .description(SENSOR_CONTROL_DESCRIPTION)
                 .addField("qGroundControlPlan",
-                        helper.createText().value("None").build())
+                        helper.createText()
+                                .definition(SWEHelper.getPropertyUri("Control"))
+                                .value("None").build())
                 .build();
     }
 

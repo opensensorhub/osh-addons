@@ -79,6 +79,7 @@ public class UnmannedControlEnableLocation extends AbstractSensorControl<Unmanne
                 .label(SENSOR_CONTROL_LABEL)
                 .description(SENSOR_CONTROL_DESCRIPTION)
                 .addField("EnableLocationControl", factory.createBoolean()
+                        .definition("http://sensorml.com/ont/isa/property/Enabled")
                         .value(true) )
                 .build();
     }

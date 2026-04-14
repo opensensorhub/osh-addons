@@ -19,6 +19,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedSystem;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.ArrayList;
@@ -71,10 +72,12 @@ public class UnmannedAbRelAltitudeOutput extends AbstractSensorOutput<UnmannedSy
                    .description("Time of data collection"))
                 .addField("AbsoluteAltitude", sweFactory.createQuantity()
                    .label("AbsoluteAltitude")
+                   .definition(SWEHelper.getPropertyUri("Altitude"))
                    .description("Absolute Altitude"))
                 .addField("RelativeAltitude", sweFactory.createQuantity()
-                        .label("RelativeAltitude")
-                        .description("Relative Altitude"))
+                   .label("RelativeAltitude")
+                   .definition(SWEHelper.getPropertyUri("Altitude"))
+                   .description("Relative Altitude"))
                 .build();
 
         dataEncoding = sweFactory.newTextEncoding(",", "\n");
