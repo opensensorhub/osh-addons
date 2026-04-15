@@ -14,17 +14,18 @@ Copyright (C) 2024 Botts Innovative Research, Inc. All Rights Reserved.
 
 package com.georobotix.impl.service.mcp.tools;
 
+import com.georobotix.impl.service.mcp.JavaxMcpStreamableTransport;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
-import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.command.CommandData;
 import org.sensorhub.api.command.ICommandData;
 import org.sensorhub.api.command.ICommandStreamInfo;
 import org.sensorhub.api.common.BigId;
+import org.sensorhub.api.common.IdEncoders;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.data.ObsData;
@@ -32,19 +33,38 @@ import org.sensorhub.api.database.IDatabaseRegistry;
 import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.datastore.command.CommandFilter;
 import org.sensorhub.api.datastore.command.CommandStreamFilter;
+import org.sensorhub.api.datastore.command.CommandStreamKey;
 import org.sensorhub.api.datastore.deployment.DeploymentFilter;
+import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.FoiFilter;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
+import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.datastore.system.SystemFilter;
+import org.sensorhub.api.event.IEventBus;
+import org.sensorhub.api.system.IDeploymentWithDesc;
 import org.sensorhub.api.system.ISystemWithDesc;
+import org.sensorhub.impl.common.IdEncodersBase32;
+import org.sensorhub.impl.service.consys.deployment.DeploymentBindingGeoJson;
+import org.sensorhub.impl.service.consys.feature.FoiBindingGeoJson;
+import org.sensorhub.impl.service.consys.obs.DataStreamBindingJson;
+import org.sensorhub.impl.service.consys.obs.ObsBindingOmJson;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.consys.system.SystemBindingGeoJson;
+import org.sensorhub.impl.service.consys.task.CommandBindingJson;
+import org.sensorhub.impl.service.consys.task.CommandStreamBindingJson;
+import org.sensorhub.impl.system.SystemDatabaseTransactionHandler;
 import org.vast.ogc.gml.IFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -90,12 +110,16 @@ public class DatabaseTool extends AbstractMcpTool {
     private static final int MAX_LIMIT = 10000;
 
     private final IDatabaseRegistry databaseRegistry;
+    private final IEventBus eventBus;
     private final String writeDatabaseId;
+    private final IdEncoders idEncoders;
     private final Gson gson;
 
-    public DatabaseTool(IDatabaseRegistry databaseRegistry, String writeDatabaseId) {
+    public DatabaseTool(IDatabaseRegistry databaseRegistry, IEventBus eventBus, String writeDatabaseId) {
         this.databaseRegistry = databaseRegistry;
+        this.eventBus = eventBus;
         this.writeDatabaseId = writeDatabaseId;
+        this.idEncoders = new IdEncodersBase32();
         this.gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .disableHtmlEscaping()
@@ -252,7 +276,7 @@ public class DatabaseTool extends AbstractMcpTool {
         builder.withLimit(limit + offset);
 
         try (var stream = db.getSystemDescStore().select(builder.build())) {
-            List<Map<String, Object>> results = stream
+            List<String> results = stream
                     .skip(offset)
                     .limit(limit)
                     .map(this::serializeSystem)
@@ -285,7 +309,7 @@ public class DatabaseTool extends AbstractMcpTool {
         builder.withLimit(limit + offset);
 
         try (var stream = db.getDataStreamStore().select(builder.build())) {
-            List<Map<String, Object>> results = stream
+            List<String> results = stream
                     .skip(offset)
                     .limit(limit)
                     .map(this::serializeDataStream)
@@ -338,7 +362,7 @@ public class DatabaseTool extends AbstractMcpTool {
         builder.withLimit(limit + offset);
 
         try (var stream = db.getObservationStore().select(builder.build())) {
-            List<Map<String, Object>> results = stream
+            List<String> results = stream
                     .skip(offset)
                     .limit(limit)
                     .map(obs -> serializeObservation(obs, db))
@@ -366,7 +390,7 @@ public class DatabaseTool extends AbstractMcpTool {
         builder.withLimit(limit + offset);
 
         try (var stream = db.getFoiStore().select(builder.build())) {
-            List<Map<String, Object>> results = stream
+            List<String> results = stream
                     .skip(offset)
                     .limit(limit)
                     .map(this::serializeFeature)
@@ -407,7 +431,7 @@ public class DatabaseTool extends AbstractMcpTool {
         builder.withLimit(limit + offset);
 
         try (var stream = db.getCommandStore().select(builder.build())) {
-            List<Map<String, Object>> results = stream
+            List<String> results = stream
                     .skip(offset)
                     .limit(limit)
                     .map(cmd -> serializeCommand(cmd, db))
@@ -430,11 +454,11 @@ public class DatabaseTool extends AbstractMcpTool {
 
         builder.withLimit(limit + offset);
 
-        try (var stream = db.getCommandStreamStore().select(builder.build())) {
-            List<Map<String, Object>> results = stream
+        try (var stream = db.getCommandStreamStore().selectEntries(builder.build())) {
+            List<String> results = stream
                     .skip(offset)
                     .limit(limit)
-                    .map(this::serializeCommandStream)
+                    .map(e -> serializeCommandStream(e.getKey().getInternalID(), e.getValue()))
                     .collect(Collectors.toList());
 
             return resultBuilder()
@@ -455,7 +479,7 @@ public class DatabaseTool extends AbstractMcpTool {
         builder.withLimit(limit + offset);
 
         try (var stream = db.getDeploymentStore().select(builder.build())) {
-            List<Map<String, Object>> results = stream
+            List<String> results = stream
                     .skip(offset)
                     .limit(limit)
                     .map(this::serializeDeployment)
@@ -481,7 +505,7 @@ public class DatabaseTool extends AbstractMcpTool {
         try {
             BigId id = BigId.fromString32(resourceId);
 
-            Map<String, Object> resource = switch (type) {
+            String resource = switch (type) {
                 case SYSTEMS -> {
                     var filter = new SystemFilter.Builder().withInternalIDs(id).build();
                     try (var stream = fedDb.getSystemDescStore().select(filter)) {
@@ -515,7 +539,7 @@ public class DatabaseTool extends AbstractMcpTool {
                 case COMMANDSTREAMS -> {
                     var filter = new CommandStreamFilter.Builder().withInternalIDs(id).build();
                     try (var stream = fedDb.getCommandStreamStore().select(filter)) {
-                        yield stream.findFirst().map(this::serializeCommandStream).orElse(null);
+                        yield stream.findFirst().map(cs -> serializeCommandStream(id, cs)).orElse(null);
                     }
                 }
                 case DEPLOYMENTS -> {
@@ -543,9 +567,6 @@ public class DatabaseTool extends AbstractMcpTool {
 
     @SuppressWarnings("unchecked")
     private McpSchema.CallToolResult writeObservation(Map<String, Object> args) {
-        if (writeDatabaseId == null || writeDatabaseId.isBlank())
-            return errorResult("Write operations are disabled: no write database configured");
-
         String datastreamId = (String) args.get("datastreamId");
         if (datastreamId == null || datastreamId.isBlank())
             return errorResult("datastreamId is required for write_observation");
@@ -559,7 +580,6 @@ public class DatabaseTool extends AbstractMcpTool {
             return errorResult("resultData is required for write_observation");
 
         try {
-            IObsSystemDatabase writeDb = databaseRegistry.getObsDatabaseByModuleID(writeDatabaseId);
             BigId dsId = BigId.fromString32(datastreamId);
             Instant phenomenonTime = Instant.parse(phenomenonTimeStr);
 
@@ -574,7 +594,7 @@ public class DatabaseTool extends AbstractMcpTool {
 
             DataBlock dataBlock = buildDataBlock(dsInfo.getRecordStructure(), resultData);
 
-            // Build and store observation
+            // Build observation
             String foiIdStr = (String) args.get("foiId");
             var obsBuilder = new ObsData.Builder()
                     .withDataStream(dsId)
@@ -584,18 +604,23 @@ public class DatabaseTool extends AbstractMcpTool {
             if (foiIdStr != null && !foiIdStr.isBlank())
                 obsBuilder.withFoi(BigId.fromString32(foiIdStr));
 
-            BigId obsId = writeDb.getObservationStore().add(obsBuilder.build());
-            writeDb.commit();
+            // Submit through transaction handler so ObsEvent is published to subscribers
+            var txHandler = new SystemDatabaseTransactionHandler(eventBus,
+                    databaseRegistry.getFederatedDatabase());
+            var dsHandler = txHandler.getDataStreamHandler(dsId);
+            if (dsHandler == null)
+                return errorResult("Datastream handler not found for: " + datastreamId);
 
-            Map<String, Object> result = new LinkedHashMap<>();
-            result.put("observationId", BigId.toString32(obsId));
-            result.put("datastreamId", datastreamId);
-            result.put("phenomenonTime", phenomenonTime.toString());
+            BigId obsId = dsHandler.addObs(obsBuilder.build());
+
+            String resultJson = "{\"observationId\":\"" + BigId.toString32(obsId)
+                    + "\",\"datastreamId\":\"" + escapeJson(datastreamId)
+                    + "\",\"phenomenonTime\":\"" + escapeJson(phenomenonTime.toString()) + "\"}";
 
             return resultBuilder()
                     .success(true)
                     .message("Observation written successfully")
-                    .resource(result)
+                    .resource(resultJson)
                     .build();
         } catch (Exception e) {
             return errorResult("Failed to write observation: " + e.getMessage());
@@ -604,9 +629,6 @@ public class DatabaseTool extends AbstractMcpTool {
 
     @SuppressWarnings("unchecked")
     private McpSchema.CallToolResult writeCommand(Map<String, Object> args) {
-        if (writeDatabaseId == null || writeDatabaseId.isBlank())
-            return errorResult("Write operations are disabled: no write database configured");
-
         String commandstreamId = (String) args.get("commandstreamId");
         if (commandstreamId == null || commandstreamId.isBlank())
             return errorResult("commandstreamId is required for write_command");
@@ -616,7 +638,6 @@ public class DatabaseTool extends AbstractMcpTool {
             return errorResult("commandData is required for write_command");
 
         try {
-            IObsSystemDatabase writeDb = databaseRegistry.getObsDatabaseByModuleID(writeDatabaseId);
             BigId csId = BigId.fromString32(commandstreamId);
 
             // Look up the command stream to get its record structure
@@ -632,6 +653,7 @@ public class DatabaseTool extends AbstractMcpTool {
 
             var cmdBuilder = new CommandData.Builder()
                     .withCommandStream(csId)
+                    .withSender(JavaxMcpStreamableTransport.getCurrentUser())
                     .withIssueTime(Instant.now())
                     .withParams(dataBlock);
 
@@ -639,18 +661,26 @@ public class DatabaseTool extends AbstractMcpTool {
             if (foiIdStr != null && !foiIdStr.isBlank())
                 cmdBuilder.withFoi(BigId.fromString32(foiIdStr));
 
-            BigId cmdId = writeDb.getCommandStore().add(cmdBuilder.build());
-            writeDb.commit();
+            // Submit command through the event bus so it reaches the live driver
+            var txHandler = new SystemDatabaseTransactionHandler(eventBus,
+                    databaseRegistry.getFederatedDatabase());
+            var csHandler = txHandler.getCommandStreamHandler(csId);
+            if (csHandler == null)
+                return errorResult("Command stream handler not found for: " + commandstreamId);
 
-            Map<String, Object> result = new LinkedHashMap<>();
-            result.put("commandId", BigId.toString32(cmdId));
-            result.put("commandstreamId", commandstreamId);
-            result.put("issueTime", Instant.now().toString());
+            long correlationID = System.nanoTime();
+            var status = csHandler.submitCommand(correlationID, cmdBuilder.build(),
+                    5, TimeUnit.SECONDS).get();
+
+            String resultJson = "{\"commandId\":\"" + BigId.toString32(status.getCommandID())
+                    + "\",\"commandstreamId\":\"" + escapeJson(commandstreamId)
+                    + "\",\"statusCode\":\"" + escapeJson(status.getStatusCode().toString())
+                    + "\",\"issueTime\":\"" + escapeJson(Instant.now().toString()) + "\"}";
 
             return resultBuilder()
                     .success(true)
-                    .message("Command written successfully")
-                    .resource(result)
+                    .message("Command submitted successfully (status: " + status.getStatusCode() + ")")
+                    .resource(resultJson)
                     .build();
         } catch (Exception e) {
             return errorResult("Failed to write command: " + e.getMessage());
@@ -659,180 +689,103 @@ public class DatabaseTool extends AbstractMcpTool {
 
     // ==================== Serialization ====================
 
-    private Map<String, Object> serializeSystem(ISystemWithDesc system) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("uniqueID", system.getUniqueIdentifier());
-        map.put("name", system.getName());
-        map.put("description", system.getDescription());
-        map.put("type", system.getType());
-        if (system.getValidTime() != null) {
-            map.put("validTimeBegin", system.getValidTime().begin().toString());
-            map.put("validTimeEnd", system.getValidTime().endsNow() ? "now" : system.getValidTime().end().toString());
+    private String serializeSystem(ISystemWithDesc system) {
+        try {
+            var buffer = new ByteArrayOutputStream();
+            var ctx = new RequestContext(buffer);
+            var db = databaseRegistry.getFederatedDatabase();
+            var binding = new SystemBindingGeoJson(ctx, idEncoders, db, false);
+            binding.serialize((FeatureKey) null, system, false);
+            return buffer.toString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.warn("Failed to serialize system: {}", e.getMessage());
+            return "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
         }
-
-        // Include SensorML details if available
-        AbstractProcess smlDesc = system.getFullDescription();
-        if (smlDesc != null) {
-            if (smlDesc.getNumInputs() > 0) {
-                List<String> inputs = new ArrayList<>();
-                for (int i = 0; i < smlDesc.getInputList().size(); i++)
-                    inputs.add(smlDesc.getInputList().getComponent(i).getName());
-                map.put("inputs", inputs);
-            }
-            if (smlDesc.getNumOutputs() > 0) {
-                List<String> outputs = new ArrayList<>();
-                for (int i = 0; i < smlDesc.getOutputList().size(); i++)
-                    outputs.add(smlDesc.getOutputList().getComponent(i).getName());
-                map.put("outputs", outputs);
-            }
-        }
-        return map;
     }
 
-    private Map<String, Object> serializeDataStream(IDataStreamInfo ds) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        if (ds.getSystemID() != null) {
-            map.put("systemUID", ds.getSystemID().getUniqueID());
+    private String serializeDataStream(IDataStreamInfo ds) {
+        try {
+            var buffer = new ByteArrayOutputStream();
+            var ctx = new RequestContext(buffer);
+            var db = databaseRegistry.getFederatedDatabase();
+            var binding = new DataStreamBindingJson(ctx, idEncoders, db, false, Collections.emptyMap());
+            binding.serialize((DataStreamKey) null, ds, false);
+            return buffer.toString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.warn("Failed to serialize datastream: {}", e.getMessage());
+            return "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
         }
-        map.put("outputName", ds.getOutputName());
-        if (ds.getValidTime() != null) {
-            map.put("validTimeBegin", ds.getValidTime().begin().toString());
-            map.put("validTimeEnd", ds.getValidTime().endsNow() ? "now" : ds.getValidTime().end().toString());
-        }
-        if (ds.getPhenomenonTimeRange() != null) {
-            map.put("phenomenonTimeBegin", ds.getPhenomenonTimeRange().begin().toString());
-            map.put("phenomenonTimeEnd", ds.getPhenomenonTimeRange().endsNow() ? "now" : ds.getPhenomenonTimeRange().end().toString());
-        }
-
-        // Serialize record structure
-        DataComponent recordStruct = ds.getRecordStructure();
-        if (recordStruct != null) {
-            map.put("recordStructure", serializeDataComponent(recordStruct));
-        }
-        return map;
     }
 
-    private Map<String, Object> serializeObservation(IObsData obs, IObsSystemDatabase db) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("datastreamId", BigId.toString32(obs.getDataStreamID()));
-        map.put("phenomenonTime", obs.getPhenomenonTime().toString());
-        if (obs.getResultTime() != null && !obs.getResultTime().equals(obs.getPhenomenonTime()))
-            map.put("resultTime", obs.getResultTime().toString());
-        if (obs.hasFoi())
-            map.put("foiId", BigId.toString32(obs.getFoiID()));
-
-        // Serialize result data using the datastream's record structure
-        DataBlock result = obs.getResult();
-        if (result != null) {
-            try {
-                var dsFilter = new DataStreamFilter.Builder().withInternalIDs(obs.getDataStreamID()).build();
-                try (var stream = db.getDataStreamStore().select(dsFilter)) {
-                    IDataStreamInfo dsInfo = stream.findFirst().orElse(null);
-                    if (dsInfo != null && dsInfo.getRecordStructure() != null) {
-                        map.put("result", deserializeDataBlock(dsInfo.getRecordStructure(), result));
-                    } else {
-                        map.put("result", dataBlockToList(result));
-                    }
-                }
-            } catch (Exception e) {
-                map.put("result", dataBlockToList(result));
-            }
+    private String serializeObservation(IObsData obs, IObsSystemDatabase db) {
+        try {
+            var buffer = new ByteArrayOutputStream();
+            var ctx = new RequestContext(buffer);
+            var binding = new ObsBindingOmJson(ctx, idEncoders, false, db.getObservationStore());
+            binding.serialize((BigId) null, obs, false);
+            return buffer.toString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.warn("Failed to serialize observation: {}", e.getMessage());
+            return "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
         }
-        return map;
     }
 
-    private Map<String, Object> serializeFeature(IFeature feature) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("uniqueID", feature.getUniqueIdentifier());
-        map.put("name", feature.getName());
-        map.put("description", feature.getDescription());
-        map.put("type", feature.getType());
-        if (feature.getGeometry() != null)
-            map.put("geometry", feature.getGeometry().toString());
-        if (feature.getValidTime() != null) {
-            map.put("validTimeBegin", feature.getValidTime().begin().toString());
-            map.put("validTimeEnd", feature.getValidTime().endsNow() ? "now" : feature.getValidTime().end().toString());
+    private String serializeFeature(IFeature feature) {
+        try {
+            var buffer = new ByteArrayOutputStream();
+            var ctx = new RequestContext(buffer);
+            var db = databaseRegistry.getFederatedDatabase();
+            var binding = new FoiBindingGeoJson(ctx, idEncoders, db, false);
+            binding.serialize((FeatureKey) null, feature, false);
+            return buffer.toString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.warn("Failed to serialize feature: {}", e.getMessage());
+            return "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
         }
-        return map;
     }
 
-    private Map<String, Object> serializeCommand(ICommandData cmd, IObsSystemDatabase db) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("commandstreamId", BigId.toString32(cmd.getCommandStreamID()));
-        map.put("issueTime", cmd.getIssueTime().toString());
-        if (cmd.getSenderID() != null)
-            map.put("senderId", cmd.getSenderID());
-        if (cmd.hasFoi())
-            map.put("foiId", BigId.toString32(cmd.getFoiID()));
-
-        DataBlock params = cmd.getParams();
-        if (params != null) {
-            try {
-                var csFilter = new CommandStreamFilter.Builder().withInternalIDs(cmd.getCommandStreamID()).build();
-                try (var stream = db.getCommandStreamStore().select(csFilter)) {
-                    ICommandStreamInfo csInfo = stream.findFirst().orElse(null);
-                    if (csInfo != null && csInfo.getRecordStructure() != null) {
-                        map.put("params", deserializeDataBlock(csInfo.getRecordStructure(), params));
-                    } else {
-                        map.put("params", dataBlockToList(params));
-                    }
-                }
-            } catch (Exception e) {
-                map.put("params", dataBlockToList(params));
-            }
+    private String serializeCommand(ICommandData cmd, IObsSystemDatabase db) {
+        try {
+            var buffer = new ByteArrayOutputStream();
+            var ctx = new RequestContext(buffer);
+            var binding = new CommandBindingJson(ctx, idEncoders, false, db.getCommandStore());
+            binding.serialize((BigId) null, cmd, false);
+            return buffer.toString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.warn("Failed to serialize command: {}", e.getMessage());
+            return "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
         }
-        return map;
     }
 
-    private Map<String, Object> serializeCommandStream(ICommandStreamInfo cs) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        if (cs.getSystemID() != null) {
-            map.put("systemUID", cs.getSystemID().getUniqueID());
+    private String serializeCommandStream(BigId id, ICommandStreamInfo cs) {
+        try {
+            var buffer = new ByteArrayOutputStream();
+            var ctx = new RequestContext(buffer);
+            var db = databaseRegistry.getFederatedDatabase();
+            var binding = new CommandStreamBindingJson(ctx, idEncoders, db, false);
+            binding.serialize(new CommandStreamKey(id), cs, false);
+            return buffer.toString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.warn("Failed to serialize command stream: {}", e.getMessage());
+            return "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
         }
-        map.put("controlInputName", cs.getControlInputName());
-        if (cs.getValidTime() != null) {
-            map.put("validTimeBegin", cs.getValidTime().begin().toString());
-            map.put("validTimeEnd", cs.getValidTime().endsNow() ? "now" : cs.getValidTime().end().toString());
-        }
-
-        DataComponent recordStruct = cs.getRecordStructure();
-        if (recordStruct != null) {
-            map.put("recordStructure", serializeDataComponent(recordStruct));
-        }
-        return map;
     }
 
-    private Map<String, Object> serializeDeployment(org.sensorhub.api.system.IDeploymentWithDesc dep) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("uniqueID", dep.getUniqueIdentifier());
-        map.put("name", dep.getName());
-        map.put("description", dep.getDescription());
-        map.put("type", dep.getType());
-        if (dep.getValidTime() != null) {
-            map.put("validTimeBegin", dep.getValidTime().begin().toString());
-            map.put("validTimeEnd", dep.getValidTime().endsNow() ? "now" : dep.getValidTime().end().toString());
+    private String serializeDeployment(IDeploymentWithDesc dep) {
+        try {
+            var buffer = new ByteArrayOutputStream();
+            var ctx = new RequestContext(buffer);
+            var db = databaseRegistry.getFederatedDatabase();
+            var binding = new DeploymentBindingGeoJson(ctx, idEncoders, db, false);
+            binding.serialize((FeatureKey) null, dep, false);
+            return buffer.toString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.warn("Failed to serialize deployment: {}", e.getMessage());
+            return "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
         }
-        return map;
     }
 
     // ==================== Data Component Helpers ====================
-
-    private Map<String, Object> serializeDataComponent(DataComponent comp) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("name", comp.getName());
-        if (comp.getLabel() != null) map.put("label", comp.getLabel());
-        if (comp.getDescription() != null) map.put("description", comp.getDescription());
-        map.put("type", comp.getClass().getSimpleName());
-
-        if (comp.getComponentCount() > 0) {
-            List<Map<String, Object>> fields = new ArrayList<>();
-            for (int i = 0; i < comp.getComponentCount(); i++) {
-                fields.add(serializeDataComponent(comp.getComponent(i)));
-            }
-            map.put("fields", fields);
-        }
-        return map;
-    }
 
     private DataBlock buildDataBlock(DataComponent structure, Map<String, Object> values) {
         structure.assignNewDataBlock();
@@ -877,79 +830,6 @@ public class DatabaseTool extends AbstractMcpTool {
         } catch (Exception e) {
             log.warn("Failed to set value on component '{}': {}", comp.getName(), e.getMessage());
         }
-    }
-
-    private Map<String, Object> deserializeDataBlock(DataComponent structure, DataBlock block) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        structure.setData(block);
-        extractValues(structure, result);
-        return result;
-    }
-
-    private void extractValues(DataComponent comp, Map<String, Object> result) {
-        if (comp.getComponentCount() == 0) {
-            // Scalar - extract value
-            try {
-                if (comp.hasData()) {
-                    result.put(comp.getName(), getScalarValue(comp.getData()));
-                }
-            } catch (Exception e) {
-                result.put(comp.getName(), null);
-            }
-        } else {
-            for (int i = 0; i < comp.getComponentCount(); i++) {
-                DataComponent child = comp.getComponent(i);
-                if (child.getComponentCount() > 0) {
-                    Map<String, Object> nested = new LinkedHashMap<>();
-                    extractValues(child, nested);
-                    result.put(child.getName(), nested);
-                } else {
-                    try {
-                        if (child.hasData()) {
-                            result.put(child.getName(), getScalarValue(child.getData()));
-                        }
-                    } catch (Exception e) {
-                        result.put(child.getName(), null);
-                    }
-                }
-            }
-        }
-    }
-
-    private Object getScalarValue(DataBlock data) {
-        try {
-            switch (data.getDataType()) {
-                case DOUBLE:
-                case FLOAT:
-                    return data.getDoubleValue();
-                case INT:
-                case SHORT:
-                case BYTE:
-                case LONG:
-                    return data.getIntValue();
-                case BOOLEAN:
-                    return data.getBooleanValue();
-                case UTF_STRING:
-                case ASCII_STRING:
-                    return data.getStringValue();
-                default:
-                    return data.getStringValue();
-            }
-        } catch (Exception e) {
-            return data.getStringValue();
-        }
-    }
-
-    private List<Object> dataBlockToList(DataBlock block) {
-        List<Object> values = new ArrayList<>();
-        for (int i = 0; i < block.getAtomCount(); i++) {
-            try {
-                values.add(block.getStringValue(i));
-            } catch (Exception e) {
-                values.add(null);
-            }
-        }
-        return values;
     }
 
     // ==================== Filter Helpers ====================
@@ -1004,38 +884,42 @@ public class DatabaseTool extends AbstractMcpTool {
     }
 
     private class ResultBuilder {
-        private final Map<String, Object> result = new LinkedHashMap<>();
+        private boolean success;
+        private String message;
+        private List<String> jsonResults;
+        private String jsonResource;
 
-        ResultBuilder success(boolean success) {
-            result.put("success", success);
-            return this;
-        }
-
-        ResultBuilder message(String message) {
-            result.put("message", message);
-            return this;
-        }
-
-        ResultBuilder results(List<Map<String, Object>> items) {
-            result.put("count", items.size());
-            result.put("results", items);
-            return this;
-        }
-
-        ResultBuilder resource(Map<String, Object> resource) {
-            result.put("resource", resource);
-            return this;
-        }
+        ResultBuilder success(boolean success) { this.success = success; return this; }
+        ResultBuilder message(String message) { this.message = message; return this; }
+        ResultBuilder results(List<String> items) { this.jsonResults = items; return this; }
+        ResultBuilder resource(String json) { this.jsonResource = json; return this; }
 
         McpSchema.CallToolResult build() {
-            String json = gson.toJson(result);
-            boolean isError = !Boolean.TRUE.equals(result.get("success"));
+            var sb = new StringBuilder();
+            sb.append("{\"success\":").append(success);
+            sb.append(",\"message\":\"").append(escapeJson(message)).append("\"");
+            if (jsonResults != null) {
+                sb.append(",\"count\":").append(jsonResults.size());
+                sb.append(",\"results\":[");
+                sb.append(String.join(",", jsonResults));
+                sb.append("]");
+            }
+            if (jsonResource != null) {
+                sb.append(",\"resource\":").append(jsonResource);
+            }
+            sb.append("}");
+            String json = sb.toString();
+            boolean isError = !success;
             return McpSchema.CallToolResult.builder()
                     .content(List.of(new McpSchema.TextContent(json)))
-                    .structuredContent(result)
                     .isError(isError)
                     .build();
         }
+    }
+
+    private String escapeJson(String text) {
+        if (text == null) return "";
+        return text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
     }
 
     private McpSchema.CallToolResult errorResult(String message) {

@@ -44,10 +44,28 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
     private static final String APPLICATION_JSON = "application/json";
     private static final String MESSAGE_EVENT_TYPE = "message";
 
+    private static final ThreadLocal<String> currentUser = new ThreadLocal<>();
+
     private final McpJsonMapper jsonMapper;
     private final ConcurrentHashMap<String, McpStreamableServerSession> sessions = new ConcurrentHashMap<>();
     private McpStreamableServerSession.Factory sessionFactory;
     private volatile boolean isClosing = false;
+    private volatile String oauthMetadataJson;
+
+    /**
+     * Returns the authenticated user for the current HTTP request, or "anonymous" if not authenticated.
+     */
+    public static String getCurrentUser() {
+        var user = currentUser.get();
+        return user != null ? user : "anonymous";
+    }
+
+    /**
+     * Sets the OAuth metadata JSON to serve at the well-known sub-path within this transport.
+     */
+    public void setOAuthMetadata(String metadataJson) {
+        this.oauthMetadataJson = metadataJson;
+    }
 
     public JavaxMcpStreamableTransport() {
         this.jsonMapper = McpJsonDefaults.getMapper();
@@ -56,8 +74,6 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
     public JavaxMcpStreamableTransport(McpJsonMapper jsonMapper) {
         this.jsonMapper = jsonMapper;
     }
-
-    // ==================== McpStreamableServerTransportProvider ====================
 
     @Override
     public void setSessionFactory(McpStreamableServerSession.Factory sessionFactory) {
@@ -108,6 +124,17 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
             return;
         }
 
+        // Store authenticated user for the duration of this request
+        var principal = req.getUserPrincipal();
+        currentUser.set(principal != null ? principal.getName() : req.getRemoteUser());
+        try {
+            doPostInternal(req, resp);
+        } finally {
+            currentUser.remove();
+        }
+    }
+
+    private void doPostInternal(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         // Read the request body
         String body = readRequestBody(req);
         McpSchema.JSONRPCMessage message;

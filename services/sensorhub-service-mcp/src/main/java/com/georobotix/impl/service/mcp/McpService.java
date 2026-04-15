@@ -35,6 +35,7 @@ public class McpService extends AbstractHttpServiceModule<McpServiceConfig> {
 
     private ScheduledExecutorService threadPool;
     private JavaxMcpStreamableTransport transportProvider;
+    private McpOAuthMetadataServlet oauthMetadataServlet;
     private McpAsyncServer mcpServer;
 
     // Resources
@@ -73,6 +74,7 @@ public class McpService extends AbstractHttpServiceModule<McpServiceConfig> {
         moduleTool = new ModuleTool(registry);
         databaseTool = new DatabaseTool(
                 getParentHub().getDatabaseRegistry(),
+                getParentHub().getEventBus(),
                 config.writeDatabaseId
         );
         processTool = new ProcessTool(getParentHub());
@@ -196,6 +198,21 @@ public class McpService extends AbstractHttpServiceModule<McpServiceConfig> {
         httpServer.deployServlet((HttpServlet) transportProvider, wildcardEndpoint);
         httpServer.addServletSecurity(wildcardEndpoint, config.security.requireAuth);
 
+        // Deploy OAuth metadata endpoint if configured
+        if (config.oauth != null && config.oauth.enabled) {
+            oauthMetadataServlet = new McpOAuthMetadataServlet(config.oauth);
+
+            // Deploy at BOTH the RFC 8414 well-known path AND within the MCP endpoint.
+            // The well-known path per MCP spec is: /.well-known/oauth-authorization-server{mcpPath}
+            // Since OSH deploys servlets under the /sensorhub context, we register under
+            // that context for the well-known path. We also register it as a path within
+            // the MCP endpoint itself for clients that discover it there.
+            var wellKnownInContext = "/.well-known/oauth-authorization-server" + config.endPoint;
+            httpServer.deployServlet(oauthMetadataServlet, wellKnownInContext);
+            // Do NOT add security — this endpoint must be publicly accessible
+            log.info("OAuth metadata endpoint deployed at {}", wellKnownInContext);
+        }
+
         log.info("MCP Streamable HTTP service deployed at {}", getPublicEndpointUrl());
     }
 
@@ -245,6 +262,15 @@ public class McpService extends AbstractHttpServiceModule<McpServiceConfig> {
             } catch (Exception e) {
                 log.warn("Error undeploying MCP servlet", e);
             }
+        }
+
+        if (oauthMetadataServlet != null) {
+            try {
+                httpServer.undeployServlet(oauthMetadataServlet);
+            } catch (Exception e) {
+                log.warn("Error undeploying OAuth metadata servlet", e);
+            }
+            oauthMetadataServlet = null;
         }
     }
 

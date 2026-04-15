@@ -61,6 +61,10 @@ public class McpServiceConfig extends OGCServiceConfig
     public SecurityConfig security = new SecurityConfig();
 
 
+    @DisplayInfo(label="OAuth Configuration", desc="OAuth 2.0 configuration for MCP client authentication (proxies to external provider)")
+    public McpOAuthConfig oauth = new McpOAuthConfig();
+
+
     @DisplayInfo(label="Max Limit", desc="Maximum number of resources returned in a single page")
     public int maxResponseLimit = 100000;
     
@@ -75,7 +79,7 @@ public class McpServiceConfig extends OGCServiceConfig
 
     public McpServiceConfig()
     {
-        this.moduleClass = McpServiceConfig.class.getCanonicalName();
+        this.moduleClass = McpService.class.getCanonicalName();
         this.endPoint = "/mcp";
     }
 }

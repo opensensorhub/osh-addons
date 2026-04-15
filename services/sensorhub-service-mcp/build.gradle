@@ -3,6 +3,7 @@ ext.details = 'MCP server exposing OSH APIs'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation 'org.sensorhub:sensorhub-service-consys:' + oshCoreVersion
     implementation 'io.modelcontextprotocol.sdk:mcp:1.1.1'
 }
 
