@@ -1,6 +1,6 @@
 rootProject.name = 'osh-addons'
 
-//gradle.ext.oshCoreDir = "$rootDir/../osh-core"
+gradle.ext.oshCoreDir = "$rootDir/../osh-core"
 if (gradle.hasProperty('oshCoreDir') && new File(gradle.oshCoreDir).exists()) {
   // include osh-core build only if not part of larger build
   // this is needed to avoid nested composite builds
