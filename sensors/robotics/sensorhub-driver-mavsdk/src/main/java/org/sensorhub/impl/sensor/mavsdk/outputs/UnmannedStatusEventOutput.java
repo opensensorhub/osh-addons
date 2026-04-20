@@ -160,7 +160,7 @@ public class UnmannedStatusEventOutput extends AbstractSensorOutput<UnmannedSyst
 
                             setData(System.currentTimeMillis(), status );
                         },
-                        err -> System.err.println("MAVSDK: status error: " + err)
+                        err -> log.error("MAVSDK: status error: " + err)
                 );
     }
 

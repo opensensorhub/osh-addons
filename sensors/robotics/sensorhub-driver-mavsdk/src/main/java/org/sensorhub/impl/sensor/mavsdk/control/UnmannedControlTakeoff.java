@@ -104,7 +104,7 @@ public class UnmannedControlTakeoff extends AbstractSensorControl<UnmannedSystem
         try {
             double altitude = command.getDoubleValue(0);
 
-            System.out.println("Command received - Alt: " + altitude);
+            log.debug("Command received - Alt: " + altitude);
 
             if (system != null) {
                 takeOff(altitude);
@@ -122,14 +122,14 @@ public class UnmannedControlTakeoff extends AbstractSensorControl<UnmannedSystem
 
     private void takeOff( double altAglParam ) {
 
-        System.out.println("Setting up scenario...");
+        log.debug("Setting up scenario...");
 
-        System.out.println("Setting takeoff altitude AGL: " + altAglParam);
+        log.debug("Setting takeoff altitude AGL: " + altAglParam);
 
         Disposable disposable = system.getAction().arm()
                 .doOnComplete(() -> {
 
-                    System.out.println("Arming...");
+                    log.debug("Arming...");
 
                 })
                 .onErrorResumeNext(throwable ->
@@ -140,7 +140,7 @@ public class UnmannedControlTakeoff extends AbstractSensorControl<UnmannedSystem
                 .andThen(system.getAction().takeoff()
                         .doOnComplete(() -> {
 
-                            System.out.println("Taking off...");
+                            log.debug("Taking off...");
 
                         })
                         .onErrorResumeNext(throwable ->
@@ -151,7 +151,7 @@ public class UnmannedControlTakeoff extends AbstractSensorControl<UnmannedSystem
                         .ignoreElement()
                 )
                 .subscribe(() -> {
-                        System.out.println("Reached takeoff altitude");
+                        log.debug("Reached takeoff altitude");
 
                         if ( null != locationRef) {
                             locationRef.enable();

@@ -96,7 +96,7 @@ public class UnmannedControlShell extends AbstractSensorControl<UnmannedSystem>
     protected boolean execCommand(DataBlock command) throws CommandException {
         String shellCommand = command.getStringValue(0);
 
-        System.out.println("Command received - Shell Command: " + command.getStringValue(0));
+        log.debug("Command received - Shell Command: " + command.getStringValue(0));
 
         if ( system != null ) {
             sendShellCommand( shellCommand );
@@ -110,7 +110,7 @@ public class UnmannedControlShell extends AbstractSensorControl<UnmannedSystem>
 
     private void sendShellCommand( String shellCommand ) {
 
-        System.out.println("Sending Command...");
+        log.debug("Sending Command...");
 
         // Logging shell response
         system.getShell().getReceive()
@@ -121,11 +121,11 @@ public class UnmannedControlShell extends AbstractSensorControl<UnmannedSystem>
 
         system.getShell().send("command long 21 0 0 0 0 0 0 0" + "\n")
                 .doOnError(throwable -> {
-                    System.out.println("Error during shell");
+                    log.debug("Error during shell");
                     throw new CommandException(throwable.getMessage());
                 })
                 .subscribe(() -> { }, throwable -> {
-                    System.out.println("Failed to send: "
+                    log.debug("Failed to send: "
                             + ((Shell.ShellException) throwable).getCode());
                     throw new CommandException(throwable.getMessage());
                 });
@@ -146,7 +146,7 @@ public class UnmannedControlShell extends AbstractSensorControl<UnmannedSystem>
 //
 //            system.getShell().send(shellCommand)
 //                    .subscribe(() -> { }, throwable -> {
-//                        System.out.println("Failed to send: "
+//                        log.debug("Failed to send: "
 //                                + ((Shell.ShellException) throwable).getCode());
 //                        throw new CommandException(throwable.getMessage());
 //                    });

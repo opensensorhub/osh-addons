@@ -158,7 +158,7 @@ public class UnmannedVelocityOutput extends AbstractSensorOutput<UnmannedSystem>
         drone.getTelemetry().getVelocityNed()
                 .subscribe(
                         vel -> {
-                            //System.out.println("MAVSDK: Velocity E:" + vel.getEastMS() + " M/S, N:" + vel.getNorthMS() + " M/S");
+                            //log.debug("MAVSDK: Velocity E:" + vel.getEastMS() + " M/S, N:" + vel.getNorthMS() + " M/S");
 
                             lock.lock();
                             try {
@@ -169,7 +169,7 @@ public class UnmannedVelocityOutput extends AbstractSensorOutput<UnmannedSystem>
 
                             setData(System.currentTimeMillis());
                         },
-                        err -> System.err.println("MAVSDK: Position error: " + err)
+                        err -> log.error("MAVSDK: Position error: " + err)
                 );
 
     }

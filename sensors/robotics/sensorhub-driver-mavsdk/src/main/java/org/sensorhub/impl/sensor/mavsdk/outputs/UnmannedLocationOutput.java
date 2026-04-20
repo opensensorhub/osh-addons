@@ -155,10 +155,11 @@ public class UnmannedLocationOutput extends AbstractSensorOutput<UnmannedSystem>
     }
 
     public void subscribe(io.mavsdk.System drone ) {
+
         drone.getTelemetry().getPosition()
                 .subscribe(
                         pos -> {
-                            //System.out.println("MAVSDK: Lat: " + pos.getLatitudeDeg() + ", Lon: " + pos.getLongitudeDeg());
+                            //log.debug("MAVSDK: Lat: " + pos.getLatitudeDeg() + ", Lon: " + pos.getLongitudeDeg());
 
                             lock.lock();
                             try {
@@ -169,7 +170,7 @@ public class UnmannedLocationOutput extends AbstractSensorOutput<UnmannedSystem>
 
                             setData(System.currentTimeMillis());
                         },
-                        err -> System.err.println("MAVSDK: Position error: " + err)
+                        err -> log.error("MAVSDK: Position error: " + err)
                 );
     }
 

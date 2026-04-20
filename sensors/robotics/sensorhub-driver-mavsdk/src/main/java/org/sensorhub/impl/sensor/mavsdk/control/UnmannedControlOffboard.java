@@ -79,7 +79,7 @@ public class UnmannedControlOffboard extends AbstractSensorControl<UnmannedSyste
         system = systemParam;
         if (!system.getOffboard().isActive().blockingGet())
             system.getOffboard().start()
-                    .doOnComplete(() -> System.out.println("Started offboard control"))
+                    .doOnComplete(() -> log.debug("Started offboard control"))
                     .doOnError(throwable -> throwable.printStackTrace());
     }
 
@@ -115,8 +115,8 @@ public class UnmannedControlOffboard extends AbstractSensorControl<UnmannedSyste
 
         if (system != null)
             system.getOffboard().setVelocityBody(velocityBodyYawspeed)
-                .doOnComplete(() -> System.out.println("Moving in direction " + forwardVelocity + ", " + rightVelocity + ", " + downVelocity))
-                .doOnError((e) -> System.out.println("Unable to set body velocity: " + e.getMessage()))
+                .doOnComplete(() -> log.debug("Moving in direction " + forwardVelocity + ", " + rightVelocity + ", " + downVelocity))
+                .doOnError((e) -> log.debug("Unable to set body velocity: " + e.getMessage()))
                 .subscribe(() -> {
                     //???
                 });

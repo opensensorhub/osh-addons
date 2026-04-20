@@ -12,7 +12,10 @@
 
 package org.sensorhub.impl.sensor.mavsdk.util;
 
+import org.sensorhub.impl.sensor.mavsdk.MavLinkCommNetwork;
 import org.sensorhub.impl.sensor.mavsdk.UnmannedConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +31,8 @@ import java.time.Instant;
 public class MavSdkServerHandler {
 
     private Process process = null;
+
+    private static final Logger log = LoggerFactory.getLogger(MavLinkCommNetwork.class);
 
     public void stop() {
         if ( null != process && process.isAlive() ) {
@@ -106,14 +111,14 @@ public class MavSdkServerHandler {
                 switch ( ownership ) {
                     case OWNED_BY_MAVSDK -> {
                         // The correct mavsdk_server is already running on this port — reuse it.
-                        System.out.println(mavsdkServerString
+                        log.debug(mavsdkServerString
                                 + " is already running on port " + config.SDKPort
                                 + "; reusing existing instance.");
                         return true;
                     }
                     case OWNED_BY_OTHER -> {
                         // Something else is on our port — we cannot start safely.
-                        System.out.println("MAVSDK_SERVER: port " + config.SDKPort
+                        log.debug("MAVSDK_SERVER: port " + config.SDKPort
                                 + " is already in use by a different process; cannot start "
                                 + mavsdkServerString + ".");
                         return false;
@@ -135,22 +140,22 @@ public class MavSdkServerHandler {
                         connected = true;
                         break;
                     } catch (IOException e) {
-                        System.out.println("Not ready yet: " + e.getMessage()); // remove after debugging
+                        log.debug("Not ready yet: " + e.getMessage()); // remove after debugging
                     }
                     Thread.sleep(200);
                 }
 
                 if (!connected) {
-                    System.err.println("Timed out connecting to " + config.SDKAddress + ":" + config.SDKPort);
+                    log.error("Timed out connecting to " + config.SDKAddress + ":" + config.SDKPort);
                 }
 
                 // Stop the process when the JVM exits
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    System.out.println("Stopping " + mStr + " ...");
+                    log.debug("Stopping " + mStr + " ...");
                     process.destroy();
                 }));
 
-                System.out.println(mStr + " started in background.");
+                log.debug(mStr + " started in background.");
 
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -161,7 +166,7 @@ public class MavSdkServerHandler {
             return true;
 
         } else {
-            System.out.println("MAVSDK_SERVER: couldn't start mavsdk_server");
+            log.debug("MAVSDK_SERVER: couldn't start mavsdk_server");
             return false;
         }
 

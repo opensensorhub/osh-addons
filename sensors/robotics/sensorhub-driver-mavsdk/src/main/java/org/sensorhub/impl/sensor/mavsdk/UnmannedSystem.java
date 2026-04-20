@@ -237,14 +237,15 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
 
     private void receiveDrone( ) {
 
-        System.out.println("Listening for drone connection...");
+        Logger log = LoggerFactory.getLogger(MavLinkCommNetwork.class);
+        log.debug("Listening for drone connection...");
 
         io.mavsdk.System drone = new io.mavsdk.System(config.SDKAddress, config.SDKPort);
         drone.getCore().getConnectionState()
                 .filter(Core.ConnectionState::getIsConnected)
                 .firstElement()
                 .subscribe(state -> {
-                    System.out.println("Drone connection detected.");
+                    log.debug("Drone connection detected.");
 
                     drone.getMavlinkDirect().initialize();
 
@@ -256,7 +257,7 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
                             0,
                            ""
                     )).doOnError( t -> {
-                        System.out.println("Error sending heartbeat: " + t.getMessage());
+                        log.debug("Error sending heartbeat: " + t.getMessage());
                     });
 
                     unmannedControlLocation.setSystem(drone);
@@ -288,7 +289,7 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
 
         drone.getInfo().getVersion()
                 .flatMap(version -> {
-                    System.out.println("Flight software version: " +
+                    logger.debug("Flight software version: " +
                             version.getFlightSwMajor() + "." +
                             version.getFlightSwMinor() + "." +
                             version.getFlightSwPatch());
@@ -297,9 +298,9 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
                     return drone.getInfo().getIdentification();
                 })
                 .subscribe(identification -> {
-                    System.out.println("Hardware UID: " + identification.getHardwareUid());
+                    logger.debug("Hardware UID: " + identification.getHardwareUid());
                 }, throwable -> {
-                    System.err.println("Failed to get info: " + throwable.getMessage());
+                    logger.error("Failed to get info: " + throwable.getMessage());
                 });
 
     }

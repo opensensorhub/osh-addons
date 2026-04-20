@@ -105,7 +105,7 @@ public class UnmannedControlLanding extends AbstractSensorControl<UnmannedSystem
 
         boolean disarm = command.getBooleanValue(0);
 
-        System.out.println("Command received - Land - Disarm: " + disarm );
+        log.debug("Command received - Land - Disarm: " + disarm );
 
         if ( system != null ) {
             land( disarm );
@@ -119,16 +119,16 @@ public class UnmannedControlLanding extends AbstractSensorControl<UnmannedSystem
 
     private void land( boolean disarmParam ) {
 
-        System.out.println("Setting up scenario...");
+        log.debug("Setting up scenario...");
 
         system.getAction().land()
                 .doOnComplete( () -> {
 
-                    System.out.println("Landing...");
+                    log.debug("Landing...");
 
                 })
                 .doOnError( throwable -> {
-                    System.out.println("Failed to land: " + ((Action.ActionException) throwable).getCode());
+                    log.debug("Failed to land: " + ((Action.ActionException) throwable).getCode());
 
                 })
                 .andThen(system.getTelemetry().getLandedState()
@@ -138,29 +138,29 @@ public class UnmannedControlLanding extends AbstractSensorControl<UnmannedSystem
                 )
                 .subscribe(() -> {
 
-                    System.out.println("Landed");
+                    log.debug("Landed");
 
                     if ( disarmParam ) {
 
-                        System.out.println("Checking to see if disarm necessary..." );
+                        log.debug("Checking to see if disarm necessary..." );
 
                         system.getTelemetry().getArmed()
                             .firstElement()
                             .subscribe( armed -> {
                                if ( armed ) {
 
-                                   System.out.println("System already disarmed.");
+                                   log.debug("System already disarmed.");
                                } else {
 
                                    system.getAction().disarm()
                                            .doOnComplete( () -> {
 
-                                               System.out.println("Disarming...");
+                                               log.debug("Disarming...");
 
                                            })
                                            .doOnError( throwable -> {
 
-                                               System.out.println("Failed to disarm: " + ((Action.ActionException) throwable).getCode());
+                                               log.debug("Failed to disarm: " + ((Action.ActionException) throwable).getCode());
 
                                            });
                                }

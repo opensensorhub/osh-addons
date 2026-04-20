@@ -112,7 +112,7 @@ public class UnmannedControlQGCMission extends AbstractSensorControl<UnmannedSys
                     return missionRaw.uploadMission(importData.getMissionItems());
                 })
                 .doOnComplete(() -> {
-                    java.lang.System.out.println("Mission Uploaded Successfully");
+                   log.debug("Mission Uploaded Successfully");
 
                     Action action = system.getAction();
 
@@ -132,20 +132,20 @@ public class UnmannedControlQGCMission extends AbstractSensorControl<UnmannedSys
                                                             .andThen(
                                                                     missionRaw.startMission()
                                                                             .doOnComplete(() -> {
-                                                                                java.lang.System.out.println("Mission started!");
+                                                                                log.debug("Mission started!");
                                                                             })
                                                                             .doOnError(throwable -> {
-                                                                                java.lang.System.err.println("Failed to start mission: " +
+                                                                                log.error("Failed to start mission: " +
                                                                                         throwable.getMessage());
                                                                             })
                                                             )
                                                             .doOnError(throwable -> {
-                                                                java.lang.System.err.println("Failed to take off: " +
+                                                                log.error("Failed to take off: " +
                                                                         throwable.getMessage());
                                                             })
                                                     )
                                                     .doOnError(throwable -> {
-                                                        java.lang.System.err.println("Failed to arm: " +
+                                                        log.error("Failed to arm: " +
                                                                 throwable.getMessage());
                                                     })
                                                     .subscribe();
@@ -159,7 +159,7 @@ public class UnmannedControlQGCMission extends AbstractSensorControl<UnmannedSys
                                         if ( isInAir ) {
                                             missionRaw.startMission()
                                                     .doOnError(throwable -> {
-                                                        java.lang.System.err.println("Failed to start mission: " +
+                                                        log.error("Failed to start mission: " +
                                                                 throwable.getMessage());
                                                     })
                                                     .subscribe();
@@ -167,15 +167,15 @@ public class UnmannedControlQGCMission extends AbstractSensorControl<UnmannedSys
                                             action.takeoff()
                                                 .andThen(missionRaw.startMission()
                                                         .doOnError(throwable -> {
-                                                            java.lang.System.err.println("Failed to start mission: " +
+                                                            log.error("Failed to start mission: " +
                                                                     throwable.getMessage());
                                                         })
                                                 )
                                                 .doOnComplete(() -> {
-                                                    java.lang.System.out.println("Mission started!");
+                                                    log.debug("Mission started!");
                                                 })
                                                 .doOnError( throwable -> {
-                                                    java.lang.System.err.println("Failed to take off: " +
+                                                    log.error("Failed to take off: " +
                                                             throwable.getMessage());
                                                 })
                                                 .subscribe();
@@ -187,7 +187,7 @@ public class UnmannedControlQGCMission extends AbstractSensorControl<UnmannedSys
 
                 })
                 .doOnError(error -> {
-                    java.lang.System.err.println("Upload Failed: " + error.getMessage());
+                    log.error("Upload Failed: " + error.getMessage());
                 })
                 .subscribe();
 

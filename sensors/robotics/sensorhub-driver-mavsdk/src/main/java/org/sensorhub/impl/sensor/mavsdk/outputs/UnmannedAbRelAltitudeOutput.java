@@ -158,7 +158,7 @@ public class UnmannedAbRelAltitudeOutput extends AbstractSensorOutput<UnmannedSy
         drone.getTelemetry().getPosition()
                 .subscribe(
                         pos -> {
-                            //System.out.println("MAVSDK: Lat: " + pos.getLatitudeDeg() + ", Lon: " + pos.getLongitudeDeg());
+                            //log.debug("MAVSDK: Lat: " + pos.getLatitudeDeg() + ", Lon: " + pos.getLongitudeDeg());
 
                             lock.lock();
                             try {
@@ -169,7 +169,7 @@ public class UnmannedAbRelAltitudeOutput extends AbstractSensorOutput<UnmannedSy
 
                             setData(System.currentTimeMillis());
                         },
-                        err -> System.err.println("MAVSDK: Position error: " + err)
+                        err -> log.error("MAVSDK: Position error: " + err)
                 );
     }
 

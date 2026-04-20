@@ -149,7 +149,7 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
                     return missionRaw.uploadMission(importData.getMissionItems());
                 })
                 .doOnComplete(() -> {
-                    System.out.println("Mission Uploaded Successfully");
+                    log.debug("Mission Uploaded Successfully");
 
                     Action action = system.getAction();
 
@@ -169,20 +169,20 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
                                                             .andThen(
                                                                     missionRaw.startMission()
                                                                             .doOnComplete(() -> {
-                                                                                System.out.println("Mission started!");
+                                                                                log.debug("Mission started!");
                                                                             })
                                                                             .doOnError(throwable -> {
-                                                                                System.err.println("Failed to start mission: " +
+                                                                                log.error("Failed to start mission: " +
                                                                                         throwable.getMessage());
                                                                             })
                                                             )
                                                             .doOnError(throwable -> {
-                                                                System.err.println("Failed to take off: " +
+                                                                log.error("Failed to take off: " +
                                                                         throwable.getMessage());
                                                             })
                                                     )
                                                     .doOnError(throwable -> {
-                                                        System.err.println("Failed to arm: " +
+                                                        log.error("Failed to arm: " +
                                                                 throwable.getMessage());
                                                     })
                                                     .subscribe();
@@ -196,7 +196,7 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
                                         if ( isInAir ) {
                                             missionRaw.startMission()
                                                     .doOnError(throwable -> {
-                                                        System.err.println("Failed to start mission: " +
+                                                        log.error("Failed to start mission: " +
                                                                 throwable.getMessage());
                                                     })
                                                     .subscribe();
@@ -204,15 +204,15 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
                                             action.takeoff()
                                                 .andThen(missionRaw.startMission()
                                                         .doOnError(throwable -> {
-                                                            System.err.println("Failed to start mission: " +
+                                                            log.error("Failed to start mission: " +
                                                                     throwable.getMessage());
                                                         })
                                                 )
                                                 .doOnComplete(() -> {
-                                                    System.out.println("Mission started!");
+                                                    log.debug("Mission started!");
                                                 })
                                                 .doOnError( throwable -> {
-                                                    System.err.println("Failed to take off: " +
+                                                    log.error("Failed to take off: " +
                                                             throwable.getMessage());
                                                 })
                                                 .subscribe();
@@ -224,7 +224,7 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
 
                 })
                 .doOnError(error -> {
-                    System.err.println("Upload Failed: " + error.getMessage());
+                    log.error("Upload Failed: " + error.getMessage());
                 })
                 .subscribe();
 

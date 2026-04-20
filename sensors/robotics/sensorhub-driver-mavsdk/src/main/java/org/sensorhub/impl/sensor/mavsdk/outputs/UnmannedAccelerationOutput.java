@@ -159,8 +159,8 @@ public class UnmannedAccelerationOutput extends AbstractSensorOutput<UnmannedSys
     public void subscribe( io.mavsdk.System drone ) {
 
         drone.getTelemetry().setRateRawImu(0.5) // Hz
-                .subscribe(() -> System.out.println("Rate set."),
-                        err -> System.err.println("Failed: " + err.getMessage()));
+                .subscribe(() -> log.debug("Rate set."),
+                        err -> log.error("Failed: " + err.getMessage()));
 
         drone.getTelemetry().getRawImu()
                 .subscribe(imu -> {

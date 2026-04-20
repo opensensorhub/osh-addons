@@ -56,6 +56,8 @@ public class UnmannedControlEnableLocation extends AbstractSensorControl<Unmanne
      */
     private static final String NODE_NAME_STR = "/SensorHub/spot/enable_location_control";
 
+
+
     private UnmannedControlLocation locationRef;
 
     public UnmannedControlEnableLocation(UnmannedSystem parentSensor) {
@@ -90,7 +92,7 @@ public class UnmannedControlEnableLocation extends AbstractSensorControl<Unmanne
 
         boolean enabled = command.getBooleanValue(0);
 
-        System.out.println("Command received - Enable Location: " + enabled );
+        log.debug("Command received - Enable Location: " + enabled );
 
         if ( enabled ) {
             locationRef.enable();

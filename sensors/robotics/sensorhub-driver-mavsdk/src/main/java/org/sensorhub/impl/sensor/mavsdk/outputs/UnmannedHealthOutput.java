@@ -192,13 +192,13 @@ public class UnmannedHealthOutput extends AbstractSensorOutput<UnmannedSystem> {
                     healthData = health;
 
                     if (!healthDisplayed) {
-                        System.out.println("Gyro online: " + health.getIsGyrometerCalibrationOk());
-                        System.out.println("Accel online: " + health.getIsAccelerometerCalibrationOk());
-                        System.out.println("Mag online: " + health.getIsMagnetometerCalibrationOk());
-                        System.out.println("GPS online: " + health.getIsGlobalPositionOk());
-                        System.out.println("Is Armable: " + health.getIsArmable());
-                        System.out.println("Is Local Position Ok: " + health.getIsLocalPositionOk());
-                        System.out.println("Is Home Position Ok: " + health.getIsHomePositionOk());
+                        log.debug("Gyro online: " + health.getIsGyrometerCalibrationOk());
+                        log.debug("Accel online: " + health.getIsAccelerometerCalibrationOk());
+                        log.debug("Mag online: " + health.getIsMagnetometerCalibrationOk());
+                        log.debug("GPS online: " + health.getIsGlobalPositionOk());
+                        log.debug("Is Armable: " + health.getIsArmable());
+                        log.debug("Is Local Position Ok: " + health.getIsLocalPositionOk());
+                        log.debug("Is Home Position Ok: " + health.getIsHomePositionOk());
 
                         healthDisplayed = true;
                     }

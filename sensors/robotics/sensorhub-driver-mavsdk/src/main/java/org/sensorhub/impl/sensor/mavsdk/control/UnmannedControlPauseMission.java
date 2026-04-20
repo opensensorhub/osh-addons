@@ -124,7 +124,7 @@ public class UnmannedControlPauseMission extends AbstractSensorControl<UnmannedS
                                 }
                                  }, throwable -> {
 
-                                System.err.println("Failed to get system ID when pausing mission");
+                                log.error("Failed to get system ID when pausing mission");
 
                                         future.complete(new CommandStatus.Builder()
                                                 .withCommand(command.getID())
@@ -135,7 +135,7 @@ public class UnmannedControlPauseMission extends AbstractSensorControl<UnmannedS
                             );
                 }, throwable -> {
 
-                    System.err.println("Failed to get System ID when pausing mission");
+                    log.error("Failed to get System ID when pausing mission");
 
                     future.complete(new CommandStatus.Builder()
                             .withCommand(command.getID())
@@ -156,7 +156,7 @@ public class UnmannedControlPauseMission extends AbstractSensorControl<UnmannedS
                 .subscribe(
                         () -> {
 
-                            System.out.println("Mavlink Mission Paused");
+                            log.debug("Mavlink Mission Paused");
                             future.complete(new CommandStatus.Builder()
                                     .withCommand(command.getID())
                                     .withStatusCode(ICommandStatus.CommandStatusCode.COMPLETED)
@@ -166,7 +166,7 @@ public class UnmannedControlPauseMission extends AbstractSensorControl<UnmannedS
                         },
                         error -> {
 
-                            System.err.println("Failed to send command: " + error.getMessage());
+                            log.error("Failed to send command: " + error.getMessage());
 
                             future.complete(new CommandStatus.Builder()
                                     .withCommand(command.getID())

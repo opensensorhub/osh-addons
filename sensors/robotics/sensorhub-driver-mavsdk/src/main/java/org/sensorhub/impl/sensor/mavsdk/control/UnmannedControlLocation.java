@@ -104,7 +104,7 @@ public class UnmannedControlLocation extends AbstractSensorControl<UnmannedSyste
             system.getTelemetry().getPosition()
                     .subscribe(
                             pos -> {
-                                //System.out.println("MAVSDK: Lat: " + pos.getLatitudeDeg() + ", Lon: " + pos.getLongitudeDeg());
+                                //log.debug("MAVSDK: Lat: " + pos.getLatitudeDeg() + ", Lon: " + pos.getLongitudeDeg());
 
                                 lock.lock();
                                 try {
@@ -114,7 +114,7 @@ public class UnmannedControlLocation extends AbstractSensorControl<UnmannedSyste
                                     lock.unlock();
                                 }
                             },
-                            err -> System.err.println("MAVSDK: Position error: " + err)
+                            err -> log.error("MAVSDK: Position error: " + err)
                     );
         }
     }
@@ -166,7 +166,7 @@ public class UnmannedControlLocation extends AbstractSensorControl<UnmannedSyste
 //        boolean returnToStart = command.getBooleanValue(3);
 //        long hoverSeconds = command.getLongValue(4);
 
-        System.out.println("Command received - Lat: " + latitude + " Lon: " + longitude + " Alt: " + altitude );
+        log.debug("Command received - Lat: " + latitude + " Lon: " + longitude + " Alt: " + altitude );
 
         if ( system != null ) {
             sendToLocation( latitude, longitude, altitude );
@@ -182,10 +182,10 @@ public class UnmannedControlLocation extends AbstractSensorControl<UnmannedSyste
                                  double longitudeParam,
                                  double altAglParam ) {
 
-        System.out.println("Preparing to send to location...");
+        log.debug("Preparing to send to location...");
 
         float altMsl = getAltMsl((float) altAglParam);
-        System.out.println("setting altitude MSL to: " + altMsl);
+        log.debug("setting altitude MSL to: " + altMsl);
 
         goLocation(latitudeParam, longitudeParam, altMsl ).subscribe();
     }
@@ -195,12 +195,12 @@ public class UnmannedControlLocation extends AbstractSensorControl<UnmannedSyste
         return system.getAction().gotoLocation(latitudeParam, longitudeParam, altMsl, 45.0F)
                 .doOnComplete(() -> {
 
-                    System.out.println("Moving to target location");
+                    log.debug("Moving to target location");
 
                 })
                 .doOnError(throwable -> {
 
-                    System.out.println("Failed to go to target: " + ((Action.ActionException) throwable).getCode());
+                    log.debug("Failed to go to target: " + ((Action.ActionException) throwable).getCode());
 
                 });
     }

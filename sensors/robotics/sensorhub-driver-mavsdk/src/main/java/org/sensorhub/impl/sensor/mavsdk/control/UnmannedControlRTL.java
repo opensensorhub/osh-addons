@@ -106,7 +106,7 @@ public class UnmannedControlRTL extends AbstractSensorControl<UnmannedSystem>
 
         boolean value = command.getParams().getBooleanValue(0);
 
-        System.out.println("Command received - RTL");
+        log.debug("Command received - RTL");
 
         if ( system != null ) {
             RTL( value );
@@ -130,18 +130,18 @@ public class UnmannedControlRTL extends AbstractSensorControl<UnmannedSystem>
 
     private void RTL( boolean disarmParam ) {
 
-        System.out.println("Setting up scenario...");
+        log.debug("Setting up scenario...");
 
         system.getAction().returnToLaunch()
                 .doOnComplete( () -> {
-                    System.out.println("RTL...");
+                    log.debug("RTL...");
                 })
                 .doOnError( throwable -> {
-                    System.out.println("Failed to send RTL: " + ((Action.ActionException) throwable).getCode());
+                    log.debug("Failed to send RTL: " + ((Action.ActionException) throwable).getCode());
 
                 })
                 .subscribe(() -> {
-                    System.out.println("Command Sent");
+                    log.debug("Command Sent");
                 });
     }
 

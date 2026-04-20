@@ -96,11 +96,11 @@ public class UnmannedControlFlightMode extends AbstractSensorControl<UnmannedSys
 
         double altitude = command.getDoubleValue(0);
 
-        System.out.println("Command received - Alt: " + altitude );
+        log.debug("Command received - Alt: " + altitude );
 
         system.getActionServer().getFlightModeChange()
                 .subscribe( fMode -> {
-                    System.out.println("Flight mode changed to: " + fMode.toString());
+                    log.debug("Flight mode changed to: " + fMode.toString());
                 });
 
         system.getActionServer().setFlightMode(ActionServer.FlightMode.STABILIZED);
