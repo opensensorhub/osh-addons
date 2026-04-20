@@ -109,8 +109,5 @@ public class UnmannedControlFlightMode extends AbstractSensorControl<UnmannedSys
     }
 
 
-    public void stop() {
-        // TODO Auto-generated method stub
-    }
 }
 

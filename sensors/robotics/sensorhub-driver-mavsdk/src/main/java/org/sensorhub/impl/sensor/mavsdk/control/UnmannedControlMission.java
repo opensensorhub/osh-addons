@@ -239,9 +239,6 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
         });
     }
 
-    public void stop() {
-        // TODO Auto-generated method stub
-    }
 
     /**
      * Currently missions through MAVSDK appear to not work via ArduPilot SITL. For now

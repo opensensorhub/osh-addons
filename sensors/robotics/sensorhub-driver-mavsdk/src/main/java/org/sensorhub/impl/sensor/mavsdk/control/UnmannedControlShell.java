@@ -154,8 +154,5 @@ public class UnmannedControlShell extends AbstractSensorControl<UnmannedSystem>
     }
 
 
-    public void stop() {
-        // TODO Auto-generated method stub
-    }
 }
 
