@@ -131,8 +131,12 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
     }
 
 
+    protected void closeStore() {
+
+    }
+
     @Override
-    protected void beforeStop() {
+    protected void doStop() throws SensorHubException {
         // Try to close every store separately
         try {
             obsStore.close();
@@ -170,14 +174,6 @@ public class PostgisObsSystemDatabase extends AbstractModule<PostgisObsSystemDat
         if(timerTask != null) {
             timerTask.cancel();
         }
-    }
-
-    protected void closeStore() {
-
-    }
-
-    @Override
-    protected void doStop() throws SensorHubException {
     }
 
 
