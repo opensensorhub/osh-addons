@@ -69,6 +69,7 @@ public class UnmannedMagneticFieldOutput extends AbstractSensorOutput<UnmannedSy
                 .name(SENSOR_OUTPUT_NAME)
                 .label(SENSOR_OUTPUT_LABEL)
                 .description(SENSOR_OUTPUT_DESCRIPTION)
+                .definition(SWEConstants.QUDT_URI_PREFIX + "MagneticFluxDensity")
                 .addField("sampleTime", sweFactory.createTime()
                    .asSamplingTimeIsoUTC()
                    .label("Sample Time")

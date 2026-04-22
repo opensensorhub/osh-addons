@@ -87,9 +87,10 @@ public class UnmannedControlQGCMission extends AbstractSensorControl<UnmannedSys
                 .id(SENSOR_CONTROL_NAME)
                 .label(SENSOR_CONTROL_LABEL)
                 .description(SENSOR_CONTROL_DESCRIPTION)
+                .definition(SWEHelper.getPropertyUri("Control"))
                 .addField("qGroundControlPlan",
                         helper.createText()
-                                .definition(SWEHelper.getPropertyUri("Control"))
+                                .definition(SWEHelper.getPropertyUri("Mission"))
                                 .value("None").build())
                 .build();
     }

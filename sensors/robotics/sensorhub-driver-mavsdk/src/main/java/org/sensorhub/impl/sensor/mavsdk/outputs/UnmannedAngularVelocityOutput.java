@@ -71,6 +71,7 @@ public class UnmannedAngularVelocityOutput extends AbstractSensorOutput<Unmanned
                 .name(SENSOR_OUTPUT_NAME)
                 .label(SENSOR_OUTPUT_LABEL)
                 .description(SENSOR_OUTPUT_DESCRIPTION)
+                .definition(SWEHelper.getPropertyUri("AngularVelocity"))
                 .addField("sampleTime", sweFactory.createTime()
                    .asSamplingTimeIsoUTC()
                    .label("Sample Time")

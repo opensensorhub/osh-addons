@@ -71,6 +71,7 @@ public class UnmannedAccelerationOutput extends AbstractSensorOutput<UnmannedSys
                 .name(SENSOR_OUTPUT_NAME)
                 .label(SENSOR_OUTPUT_LABEL)
                 .description(SENSOR_OUTPUT_DESCRIPTION)
+                .definition(SWEHelper.getPropertyUri("LinearAcceleration"))
                 .addField("sampleTime", sweFactory.createTime()
                    .asSamplingTimeIsoUTC()
                    .label("Sample Time")

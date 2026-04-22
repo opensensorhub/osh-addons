@@ -66,6 +66,7 @@ public class UnmannedAbRelAltitudeOutput extends AbstractSensorOutput<UnmannedSy
                 .name(SENSOR_OUTPUT_NAME)
                 .label(SENSOR_OUTPUT_LABEL)
                 .description(SENSOR_OUTPUT_DESCRIPTION)
+                .definition(SWEHelper.getPropertyUri("Altitude"))
                 .addField("sampleTime", sweFactory.createTime()
                    .asSamplingTimeIsoUTC()
                    .label("Sample Time")

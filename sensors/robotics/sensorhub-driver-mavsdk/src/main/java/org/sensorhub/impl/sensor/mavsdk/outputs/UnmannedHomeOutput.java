@@ -67,6 +67,7 @@ public class UnmannedHomeOutput extends AbstractSensorOutput<UnmannedSystem> {
                 .name(SENSOR_OUTPUT_NAME)
                 .label(SENSOR_OUTPUT_LABEL)
                 .description(SENSOR_OUTPUT_DESCRIPTION)
+                .definition(SWEConstants.DEF_SENSOR_LOC)
                 .addField("sampleTime", sweFactory.createTime()
                    .asSamplingTimeIsoUTC()
                    .label("Sample Time")

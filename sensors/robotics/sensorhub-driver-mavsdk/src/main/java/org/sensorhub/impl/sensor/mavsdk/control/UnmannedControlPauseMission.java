@@ -68,8 +68,9 @@ public class UnmannedControlPauseMission extends AbstractSensorControl<UnmannedS
                 .id("PauseMission")
                 .label("PauseMission")
                 .description("PauseMission")
+                .definition(SWEHelper.getPropertyUri("Control"))
                 .addField("Resume", helper.createBoolean()
-                        .definition(SWEHelper.getPropertyUri("Control"))
+                        .definition(SWEHelper.getPropertyUri("Pause"))
                 )
                 .build();
     }

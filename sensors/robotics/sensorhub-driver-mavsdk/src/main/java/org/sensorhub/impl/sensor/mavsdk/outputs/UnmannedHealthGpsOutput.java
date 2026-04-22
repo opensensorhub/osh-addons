@@ -66,6 +66,7 @@ public class UnmannedHealthGpsOutput extends AbstractSensorOutput<UnmannedSystem
                 .name(SENSOR_OUTPUT_NAME)
                 .label(SENSOR_OUTPUT_LABEL)
                 .description(SENSOR_OUTPUT_DESCRIPTION)
+                .definition("http://sensorml.com/ont/isa/property/Satellites")
                 .addField("sampleTime", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")

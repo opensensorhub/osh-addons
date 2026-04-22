@@ -84,8 +84,9 @@ public class UnmannedControlFlightMode extends AbstractSensorControl<UnmannedSys
                 .name(SENSOR_CONTROL_NAME)
                 .label(SENSOR_CONTROL_LABEL)
                 .description(SENSOR_CONTROL_DESCRIPTION)
+                .definition(SWEHelper.getPropertyUri("Control"))
                 .addField("FlightMode", factory.createQuantity()
-                        .definition(SWEHelper.getPropertyUri("Control"))
+                        .definition(SWEHelper.getPropertyUri("FlightMode"))
                 )
                 .build();
     }

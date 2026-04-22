@@ -89,8 +89,9 @@ public class UnmannedControlLanding extends AbstractSensorControl<UnmannedSystem
                 .name(SENSOR_CONTROL_NAME)
                 .label(SENSOR_CONTROL_LABEL)
                 .description(SENSOR_CONTROL_DESCRIPTION)
+                .definition(SWEHelper.getPropertyUri("Control"))
                 .addField("disarm", factory.createBoolean().value(true)
-                        .definition(SWEHelper.getPropertyUri("Control"))
+                        .definition(SWEHelper.getPropertyUri("Disarm"))
                 )
                 .build();
     }

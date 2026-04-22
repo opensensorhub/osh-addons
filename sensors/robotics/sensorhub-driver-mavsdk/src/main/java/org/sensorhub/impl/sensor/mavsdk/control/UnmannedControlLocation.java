@@ -135,6 +135,7 @@ public class UnmannedControlLocation extends AbstractSensorControl<UnmannedSyste
                 .name(SENSOR_CONTROL_NAME)
                 .label(SENSOR_CONTROL_LABEL)
                 .description(SENSOR_CONTROL_DESCRIPTION)
+                .definition(SWEHelper.getPropertyUri("Control"))
                 .addField( "locationVectorLLA", factory.createVector()
                         .addCoordinate("Latitude", factory.createQuantity()
                                 .uom("deg"))
@@ -144,10 +145,10 @@ public class UnmannedControlLocation extends AbstractSensorControl<UnmannedSyste
                                 .uom("m")
                                 .value(30)))
                 .addField( "returnToStart", factory.createBoolean().value(false)
-                        .definition(SWEHelper.getPropertyUri("Control"))
+                        .definition(SWEHelper.getPropertyUri("ReturnToStart"))
                 )
                 .addField( "hoverSeconds", factory.createCount().value(0)
-                        .definition(SWEHelper.getPropertyUri("Control"))
+                        .definition(SWEHelper.getPropertyUri("HoverSeconds"))
                 )
                 .build();
     }

@@ -67,6 +67,7 @@ public class UnmannedStatusEventOutput extends AbstractSensorOutput<UnmannedSyst
                 .name(SENSOR_OUTPUT_NAME)
                 .label(SENSOR_OUTPUT_LABEL)
                 .description(SENSOR_OUTPUT_DESCRIPTION)
+                .definition(SWEHelper.getPropertyUri("SystemStatus"))
                 .addField("sampleTime", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
