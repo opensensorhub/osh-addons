@@ -14,17 +14,12 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.mesh;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardWatchEventKinds;
 import java.util.regex.Pattern;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.utils.grid.DirectoryWatcher;
-import org.sensorhub.impl.utils.grid.FileListener;
+import org.sensorhub.utils.datafiles.DataFileWatcher;
 
 
 /**
@@ -35,14 +30,13 @@ import org.sensorhub.impl.utils.grid.FileListener;
  * TODO:  Need a thread that monitors the watcherThread and restarts it if it dies
  *
  */
-public class MeshSensor extends AbstractSensorModule<MeshConfig> implements FileListener
+public class MeshSensor extends AbstractSensorModule<MeshConfig>
 {
     static final Pattern DATA_FILE_REGEX = Pattern.compile(".*MESH.*grb2");
     
     MeshOutput meshInterface;
-	Thread watcherThread;
-	DirectoryWatcher watcher;
-
+    DataFileWatcher dataFileWatcher;
+    
 	
 	@Override
     protected void doInit() throws SensorHubException
@@ -63,16 +57,26 @@ public class MeshSensor extends AbstractSensorModule<MeshConfig> implements File
 	@Override
 	protected void doStart() throws SensorHubException
 	{
-	    startDirectoryWatcher();
-        readLatestDataFile();
+	    dataFileWatcher = new DataFileWatcher(
+            "MESH",
+            config.dataPath,
+            ".+",
+            config.fileNamePattern,
+            config.latestPointerFileName,
+            this::newFile,
+            getLogger());
+	    dataFileWatcher.start();
+	    dataFileWatcher.readLatestDataFile();
 	}
 
 
 	@Override
 	protected void doStop() throws SensorHubException
 	{
-	    if (watcherThread != null)
-            watcherThread.interrupt();
+	    if (dataFileWatcher != null) {
+            dataFileWatcher.stop();
+            dataFileWatcher = null;
+        }
 	}
 
 
@@ -81,65 +85,13 @@ public class MeshSensor extends AbstractSensorModule<MeshConfig> implements File
 	{
 		return true;
 	}
-
-
-    private void startDirectoryWatcher() throws SensorHubException
-    {
-        try
-        {
-            watcher = new DirectoryWatcher(Paths.get(config.dataPath), StandardWatchEventKinds.ENTRY_CREATE);
-            watcherThread = new Thread(watcher);
-            watcher.addListener(this);
-            watcherThread.start();
-            getLogger().info("Watching directory {} for data updates", config.dataPath);
-        }
-        catch (IOException e)
-        {
-            throw new SensorHubException("Error creating directory watcher on " + config.dataPath, e);
-        }
-    }
-    
-    
-    private void readLatestDataFile() throws SensorHubException
-    {
-        // list all available MESH data files
-        File dir = new File(config.dataPath);
-        File[] turbFiles = dir.listFiles(new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return DATA_FILE_REGEX.matcher(name).matches();
-            }
-        });        
-        
-        // skip if nothing is available
-        if (turbFiles.length == 0)
-        {
-            getLogger().warn("No MESH data file available");
-            return;
-        }
-        
-        // get the one with latest time stamp
-        File latestFile = turbFiles[0];
-        for (File f: turbFiles)
-        {
-            if (f.lastModified() > latestFile.lastModified())
-                latestFile = f;
-        }
-        
-        // trigger reader
-        newFile(latestFile.toPath());
-    }
-
+	
 
     /*
      * called whenever we get a new MESH file
      */
-    @Override
     public void newFile(Path p)
-    {
-        // only continue when it's a new turbulence GRIB file
-        if (!DATA_FILE_REGEX.matcher(p.getFileName().toString()).matches())
-            return;
-        
+    {       
         // try to read file with MeshReader
         try
         {
@@ -155,7 +107,7 @@ public class MeshSensor extends AbstractSensorModule<MeshConfig> implements File
         }
         catch (Exception e)
         {
-            reportError("Error reading data file \"" + p + "\"", e);
+            reportError("Error reading MESH data file \"" + p + "\"", e);
         }
     }
 }
