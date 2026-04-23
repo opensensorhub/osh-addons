@@ -112,8 +112,18 @@ public class CQLFilterHandler {
         if (value == null) {
             whereClause.append(buildJsonPathExtract(propertyName)).append(" IS NOT NULL");
         } else if (value instanceof Boolean || value instanceof Number || value instanceof String) {
-            // NOT containment for inequality
-            whereClause.append("NOT (result @> ").append(buildNestedJsonObject(propertyName, value)).append(")");
+            // Guard with jsonb_typeof to ensure the field exists before negating containment,
+            // otherwise NOT @> matches all rows where the field is missing
+            String[] parts = propertyName.split("\\.");
+            StringBuilder jsonbPath = new StringBuilder("result");
+            for (String part : parts) {
+                jsonbPath.append("->'").append(escapeJsonKey(part)).append("'");
+            }
+            String expectedType = value instanceof Boolean ? "boolean"
+                    : value instanceof Number ? "number" : "string";
+            whereClause.append("(jsonb_typeof(").append(jsonbPath).append(") = '")
+                    .append(expectedType).append("' AND NOT (result @> ")
+                    .append(buildNestedJsonObject(propertyName, value)).append("))");
         } else {
             whereClause.append(buildJsonPathExtract(propertyName)).append(" != ")
                     .append(escapeSqlString(value.toString()));
@@ -123,34 +133,41 @@ public class CQLFilterHandler {
     private void handleGreaterThan(PropertyIsGreaterThan filter) {
         String propertyName = getPropertyName(filter.getExpression1());
         Object value = getLiteralValue(filter.getExpression2());
-
-        // Range queries can't use containment, use jsonb_path_query or extraction
-        whereClause.append("(").append(buildJsonPathExtract(propertyName)).append(")::numeric > ")
-                .append(value);
+        appendNumericComparison(propertyName, ">", value);
     }
 
     private void handleGreaterThanOrEqual(PropertyIsGreaterThanOrEqualTo filter) {
         String propertyName = getPropertyName(filter.getExpression1());
         Object value = getLiteralValue(filter.getExpression2());
-
-        whereClause.append("(").append(buildJsonPathExtract(propertyName)).append(")::numeric >= ")
-                .append(value);
+        appendNumericComparison(propertyName, ">=", value);
     }
 
     private void handleLessThan(PropertyIsLessThan filter) {
         String propertyName = getPropertyName(filter.getExpression1());
         Object value = getLiteralValue(filter.getExpression2());
-
-        whereClause.append("(").append(buildJsonPathExtract(propertyName)).append(")::numeric < ")
-                .append(value);
+        appendNumericComparison(propertyName, "<", value);
     }
 
     private void handleLessThanOrEqual(PropertyIsLessThanOrEqualTo filter) {
         String propertyName = getPropertyName(filter.getExpression1());
         Object value = getLiteralValue(filter.getExpression2());
+        appendNumericComparison(propertyName, "<=", value);
+    }
 
-        whereClause.append("(").append(buildJsonPathExtract(propertyName)).append(")::numeric <= ")
-                .append(value);
+    /**
+     * Builds a safe numeric comparison by guarding the ::numeric cast with a jsonb_typeof check.
+     * This prevents PostgreSQL cast errors when rows contain missing, null, or non-numeric values.
+     */
+    private void appendNumericComparison(String propertyName, String operator, Object value) {
+        String[] parts = propertyName.split("\\.");
+        StringBuilder jsonbPath = new StringBuilder("result");
+        for (String part : parts) {
+            jsonbPath.append("->'").append(escapeJsonKey(part)).append("'");
+        }
+
+        whereClause.append("(jsonb_typeof(").append(jsonbPath).append(") = 'number' AND (")
+                .append(buildJsonPathExtract(propertyName)).append(")::numeric ")
+                .append(operator).append(" ").append(value).append(")");
     }
 
     private void handleLike(PropertyIsLike filter) {
