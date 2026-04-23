@@ -12,7 +12,7 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.utils.grid;
+package org.sensorhub.utils.datafiles;
 
 import java.io.IOException;
 import java.nio.file.Path;
