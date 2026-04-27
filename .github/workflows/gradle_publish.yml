@@ -56,3 +56,5 @@ jobs:
             VERSION="${VERSION}-SNAPSHOT"
           fi
           ./gradlew :${{ matrix.project }}:publish -Pversion="$VERSION"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
