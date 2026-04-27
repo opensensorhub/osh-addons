@@ -61,6 +61,7 @@ jobs:
           if [ "${{ github.event_name }}" = "push" ]; then
             VERSION="${VERSION}-SNAPSHOT"
           fi
+          ./gradlew :${{ matrix.project }}:build -Pversion="$VERSION" -x test
           ./gradlew :${{ matrix.project }}:publish -Pversion="$VERSION"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
