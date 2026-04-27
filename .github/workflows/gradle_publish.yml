@@ -34,11 +34,15 @@ jobs:
             CHANGED=$(grep -F -o -f <(echo "$CHANGED") <(git diff --name-only HEAD~ HEAD))
           fi
           
+          CHANGED=$(echo -n "$CHANGED" | base64)
+          
           echo "changed=$CHANGED" >> $GITHUB_OUTPUT
       - name: Build matrix
         id: set-matrix
         run: |
-          ARR=$(echo "${{ steps.changes.outputs.changed }}" | jq -R -s -c 'split("\n")[:-1]')
+          ENCODED=${{ steps.changes.outputs.changed }}
+          CHANGED=$(echo -n "$ENCODED" | base64 --decode)
+          ARR=$(echo "$CHANGED" | jq -R -s -c 'split("\n")[:-1]')
           echo "matrix={\"project\":$ARR}" >> $GITHUB_OUTPUT
 
   publish:
