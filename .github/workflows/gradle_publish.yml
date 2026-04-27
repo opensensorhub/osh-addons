@@ -28,7 +28,7 @@ jobs:
           #handle if project is specified
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             if [ "${{ inputs.run_all }}" = "false" ]; then
-              CHANGED="${{ inputs.run_specific }}"
+              CHANGED=${{ inputs.run_specific }}
             fi
           else #merge to master, detect specific changes
             CHANGED=$(grep -F -o -f <(echo "$CHANGED") <(git diff --name-only HEAD~ HEAD))
