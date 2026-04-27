@@ -19,8 +19,6 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Detect changed subprojects
         id: changes
         run: |
@@ -55,6 +53,8 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Publish project
         run: |
           echo "Publishing ${{ matrix.project }}"
