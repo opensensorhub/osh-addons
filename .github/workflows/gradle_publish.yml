@@ -34,7 +34,7 @@ jobs:
             CHANGED=$(grep -F -o -f <(echo "$CHANGED") <(git diff --name-only HEAD~ HEAD))
           fi
           
-          CHANGED=$(echo -n "$CHANGED" | base64)
+          CHANGED=$(echo -n "$CHANGED" | base64 -w 0)
           
           echo "changed=$CHANGED" >> $GITHUB_OUTPUT
       - name: Build matrix
