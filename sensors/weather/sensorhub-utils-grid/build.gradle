@@ -18,6 +18,7 @@ rootProject.allprojects {
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  api project(':sensorhub-utils-datafiles')
   embeddedApi ('edu.ucar:grib:4.6.10') {
     exclude group: 'com.amazonaws', module: 'aws-java-sdk-s3'
     exclude group: 'org.apache.httpcomponents', module: 'httpcore'

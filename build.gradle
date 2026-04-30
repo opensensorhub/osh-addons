@@ -292,6 +292,9 @@ subprojects {
       publications {
         mavenJava(MavenPublication) {
           from components.java
+          artifact(p.tasks.osgi) {
+            classifier = 'bundle'
+          }
           pom.withXml {
             asNode().get('version') + ({
               resolveStrategy = Closure.DELEGATE_FIRST
@@ -387,6 +390,16 @@ task osgiIndexOnline(type: Copy) {
   doLast {
     exec {
       commandLine 'kubectl', 'cp', "$buildDir/osgi/index_online.xml", 'osh-addons-69497bf779-4q65x:/opt/osh-node/data/addons/index.xml'
+    }
+  }
+}
+
+
+// collect all configured repositories in parent build
+gradle.projectsEvaluated { g ->
+  if (gradle.parent != null) {
+    gradle.parent.rootProject {
+      repositories.addAll(g.rootProject.repositories)
     }
   }
 }

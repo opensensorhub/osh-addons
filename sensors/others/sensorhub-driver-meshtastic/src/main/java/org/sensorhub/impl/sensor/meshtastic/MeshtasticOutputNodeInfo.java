@@ -20,16 +20,15 @@ import org.sensorhub.api.data.DataEvent;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
-import java.util.ArrayList;
 import java.util.Base64;
 
 /**
  * Output specification and provider for {@link MeshtasticSensor}.
  */
 public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo implements MeshtasticOutputInterface{
-    static final String OUTPUT_NAME = "NodeInfo";
-    static final String OUTPUT_LABEL = "meshtastic Node Information Packet";
-    static final String OUTPUT_DESCRIPTION = "Output data for the Node Info";
+    private static final String OUTPUT_NAME = "NodeInfo";
+    private static final String OUTPUT_LABEL = "meshtastic Node Information Packet";
+    private static final String OUTPUT_DESCRIPTION = "Output data for the Node Info";
 
     private final Object processingLock = new Object();
 
@@ -113,8 +112,6 @@ public class MeshtasticOutputNodeInfo extends MeshtasticOutputPacketInfo impleme
                 String nodePrimaryKey = Base64.getEncoder().encodeToString(nodeInfoData.getPublicKey().toByteArray());
                 String nodeHwModel =  nodeInfoData.getHwModel().toString();
                 String nodeRole = (nodeInfoData.getRole() == ConfigProtos.Config.DeviceConfig.Role.UNRECOGNIZED) ? "Unknown Role" : nodeInfoData.getRole().name();
-//                boolean isUnmessageable =  node_info.getIsUnmessagable();
-//                boolean canBeMessaged = node_info.hasIsUnmessagable();
 
                 DataBlock dataBlock = latestRecord == null ? packetRecord.createDataBlock() : latestRecord.renew();
 

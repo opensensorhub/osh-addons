@@ -14,6 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.filter.obs;
 
+import com.google.common.collect.BoundType;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FoiFilter;
@@ -81,8 +82,14 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
+                String lowerBoundEquals = temporalFilter.getRange().lowerBoundType().equals(BoundType.OPEN) ? "":"=";
+                String upperBoundEquals = temporalFilter.getRange().upperBoundType().equals(BoundType.OPEN) ? "":"=";
                 addCondition(
-                        "tsrange('"+temporalFilter.getMin()+"','"+temporalFilter.getMax()+"', '[]') @> "+this.tableName+".phenomenonTime");
+                        this.tableName+".phenomenonTime >"+lowerBoundEquals+" '"+temporalFilter.getMin()+"'"
+                );
+                addCondition(
+                        this.tableName+".phenomenonTime <"+upperBoundEquals+" '"+temporalFilter.getMax()+"'"
+                );
             }
         }
     }
@@ -94,10 +101,19 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
-                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
-                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
+//                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+//                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
+//                addCondition(
+//                        "tsrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
+//            }
+                String lowerBoundEquals = temporalFilter.getRange().lowerBoundType().equals(BoundType.OPEN) ? "":"=";
+                String upperBoundEquals = temporalFilter.getRange().upperBoundType().equals(BoundType.OPEN) ? "":"=";
                 addCondition(
-                        "tsrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
+                        this.tableName + ".resultTime >"+lowerBoundEquals+" '" + temporalFilter.getMin() + "'"
+                );
+                addCondition(
+                        this.tableName + ".resultTime <"+upperBoundEquals+" '" + temporalFilter.getMax() + "'"
+                );
             }
         }
     }

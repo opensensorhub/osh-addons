@@ -29,12 +29,8 @@ import org.sensorhub.api.sensor.SensorConfig;
  * }</pre>
  */
 public class Config extends SensorConfig {
-    /**
-     * The unique identifier for the configured sensor (or sensor platform).
-     */
-    @DisplayInfo.Required
-    @DisplayInfo(desc = "Serial number or unique identifier")
-    public String serialNumber = "001";
+    @DisplayInfo(desc = "Optional serial number or unique identifier. If left blank, the radio's node ID will be used automatically.")
+    public String serialNumber = "";
 
     @DisplayInfo(desc = "Comm settings used to interface over serial, UDP, TCP, etc.")
     public CommProviderConfig<?> commSettings;

@@ -15,14 +15,25 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.mesh;
 
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.sensor.SensorConfig;
 
 
 public class MeshConfig extends SensorConfig
 {
     
-    @DisplayInfo(desc="Directory to search for MESH data files")
+    @Required
+    @DisplayInfo(desc="Directory to watch for MESH data files")
     public String dataPath;
+    
+    
+    @Required
+    @DisplayInfo(desc="File name pattern for MESH data files")
+    public String fileNamePattern = ".*MESH.*\\.grb2";
+    
+    
+    @DisplayInfo(desc="Name of file containing the path of the latest available data file (null if no such file is available)")
+    public String latestPointerFileName;
     
     
 }
