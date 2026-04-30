@@ -14,6 +14,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.consys.mqtt;
 
+import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.service.ServiceConfig;
 
 
@@ -27,5 +28,11 @@ import org.sensorhub.api.service.ServiceConfig;
  */
 public class ConSysApiMqttServiceConfig extends ServiceConfig
 {
+    @DisplayInfo(label="Node ID",
+        desc="MQTT topic namespace prefix for all topics. Per OGC CS API Part 3, topics become " +
+             "'{nodeId}/systems/{id}' and '{nodeId}/systems/{id}/...:data'. " +
+             "Defaults to 'api' so topics are 'api/systems/...'. " +
+             "Set to null or blank to use the HTTP endpoint path as prefix instead.")
+    public String nodeId = "api";
 
 }
